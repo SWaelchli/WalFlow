@@ -48,7 +48,7 @@ class Orifice(HydraulicNode):
 
         # 6. Calculate Permanent Pressure Loss (unrecoverable loss)
 
-        perm_delta_p = rec_delta_p * (1 - discharge_coefficient**2)
+        perm_delta_p = rec_delta_p * (1 - beta_ratio**2)
 
         return  perm_delta_p
 
