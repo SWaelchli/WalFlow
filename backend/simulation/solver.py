@@ -6,6 +6,8 @@ from simulation.equipment.base_node import HydraulicNode
 from simulation.equipment.tank import Tank
 from simulation.equipment.pipe import Pipe
 from simulation.equipment.orifice import Orifice
+from simulation.equipment.valve import Valve
+from simulation.equipment.pump import Pump
 
 
 class NetworkSolver:
@@ -21,6 +23,8 @@ class NetworkSolver:
         self.tanks = [n for n in nodes if isinstance(n, Tank)]
         self.pipes = [n for n in nodes if isinstance(n, Pipe)]
         self.orifices = [n for n in nodes if isinstance(n, Orifice)]
+        self.valves = [n for n in nodes if isinstance(n, Valve)]
+        self.pumps = [n for n in nodes if isinstance(n, Pump)]
 
     def objective_function(self, flows: np.ndarray) -> np.ndarray:
         """
@@ -32,8 +36,10 @@ class NetworkSolver:
         q_guess = flows[0]
         
         tank_in = self.tanks[0]
+        pump = self.pumps[0]
         pipe = self.pipes[0]
         orifice = self.orifices[0]
+        valve = self.valves[0]
         tank_out = self.tanks[1]
         
         # 1. Get the starting boundary pressure from the first tank
@@ -45,9 +51,16 @@ class NetworkSolver:
         
         # 2.b Calculate the pressure drop across the orifice based on the guessed flow.
         dp_orifice = orifice.calculate_delta_p(q_guess, density=1000.0)
-        
-        # 3. Calculate what the end pressure *should* be
-        p_end_calculated = p_start - dp_pipe - dp_orifice
+
+        # 2.c Calculate the pressure drop across the valve based on the guessed flow.
+        dp_valve = valve.calculate_delta_p(q_guess, density=1000.0)
+
+        # 2.d Calculate the pressure increase across the pump based on the guessed flow.
+        dp_pump = pump.calculate_delta_p(q_guess, density=1000.0)
+
+        # 3 Calculate the pressure drop across the valve based on the guessed flow.
+        # Notice that dp_pump is ADDED to the starting pressure, while resistances are subtracted.
+        p_end_calculated = p_start + dp_pump - dp_pipe - dp_orifice - dp_valve
         
         # 4. Get the actual fixed boundary pressure of the destination tank
         p_end_boundary = tank_out.calculate()
@@ -67,8 +80,18 @@ class NetworkSolver:
         # Provide an initial guess for the flow rate (0.1 m^3/s)
         initial_guess = np.array([0.1])
         
-        # Run SciPy's root finding algorithm (hybr is a robust Newton-Raphson hybrid)
-        solution = root(self.objective_function, initial_guess, method='hybr')
+       # Run SciPy's root finding algorithm 
+        solution = root(self.objective_function, initial_guess, method='lm')
+        
+        # Check if SciPy claims success AND the final error is actually near zero
+        # (e.g., an error of less than 0.01 Pascals)
+        if solution.success and abs(solution.fun[0]) < 0.01:
+            final_q = solution.x[0]
+            # ... update internal states ...
+            return final_q
+        else:
+            raise ValueError(f"Solver failed to balance energy. Final error: {solution.fun[0]:.2f} Pa")
+        
         
         if solution.success:
             final_q = solution.x[0]
@@ -79,6 +102,14 @@ class NetworkSolver:
             # Update the orifice's internal state with the final correct answer
             self.orifices[0].inlets[0].flow_rate = final_q
             self.orifices[0].calculate()
+
+            # Update the valve's internal state with the final correct answer
+            self.valves[0].inlets[0].flow_rate = final_q
+            self.valves[0].calculate()
+
+            # Update the pump's internal state with the final correct answer
+            self.pumps[0].inlets[0].flow_rate = final_q 
+            self.pumps[0].calculate()
             
             return final_q
         else:
