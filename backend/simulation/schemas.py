@@ -1,0 +1,23 @@
+from pydantic import BaseModel, Field
+from typing import Optional
+import uuid
+
+class Port(BaseModel):
+    """
+    A Port represents a physical connection point on a piece of equipment.
+    We use Pydantic (BaseModel) here because it automatically validates data types,
+    which will prevent crashes when the React frontend sends us text instead of numbers.
+    """
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    
+    # State Variables (Using SI Units as standard: Pascals, m^3/s, kg/m^3)
+    pressure: float = 101325.0  # Default to 1 atm (atmospheric pressure)
+    flow_rate: float = 0.0      # Volumetric flow rate (Q)
+    
+    # Fluid Properties (Defaulting to water at standard conditions)
+    density: float = 1000.0     
+    viscosity: float = 0.001    
+    
+    # Network Tracking: Which port on another piece of equipment is this connected to?
+    connected_to_port_id: Optional[str] = None
+
