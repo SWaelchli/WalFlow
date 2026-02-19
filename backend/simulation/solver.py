@@ -5,6 +5,8 @@ from typing import List
 from simulation.equipment.base_node import HydraulicNode
 from simulation.equipment.tank import Tank
 from simulation.equipment.pipe import Pipe
+from simulation.equipment.orifice import Orifice
+
 
 class NetworkSolver:
     """
@@ -18,6 +20,7 @@ class NetworkSolver:
         # to solve a simple 1D series circuit (Tank -> Pipe -> Tank)
         self.tanks = [n for n in nodes if isinstance(n, Tank)]
         self.pipes = [n for n in nodes if isinstance(n, Pipe)]
+        self.orifices = [n for n in nodes if isinstance(n, Orifice)]
 
     def objective_function(self, flows: np.ndarray) -> np.ndarray:
         """
@@ -30,17 +33,21 @@ class NetworkSolver:
         
         tank_in = self.tanks[0]
         pipe = self.pipes[0]
+        orifice = self.orifices[0]
         tank_out = self.tanks[1]
         
         # 1. Get the starting boundary pressure from the first tank
         p_start = tank_in.calculate()
         
-        # 2. Calculate the pressure drop across the pipe based on the guessed flow.
+        # 2.a Calculate the pressure drop across the pipe based on the guessed flow.
         # (Assuming standard water density of 1000.0 kg/m^3 for now)
         dp_pipe = pipe.calculate_delta_p(q_guess, density=1000.0)
         
+        # 2.b Calculate the pressure drop across the orifice based on the guessed flow.
+        dp_orifice = orifice.calculate_delta_p(q_guess, density=1000.0)
+        
         # 3. Calculate what the end pressure *should* be
-        p_end_calculated = p_start - dp_pipe
+        p_end_calculated = p_start - dp_pipe - dp_orifice
         
         # 4. Get the actual fixed boundary pressure of the destination tank
         p_end_boundary = tank_out.calculate()
@@ -68,6 +75,10 @@ class NetworkSolver:
             # Update the pipe's internal state with the final correct answer
             self.pipes[0].inlets[0].flow_rate = final_q
             self.pipes[0].calculate() 
+
+            # Update the orifice's internal state with the final correct answer
+            self.orifices[0].inlets[0].flow_rate = final_q
+            self.orifices[0].calculate()
             
             return final_q
         else:

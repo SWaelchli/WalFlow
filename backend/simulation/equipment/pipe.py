@@ -6,6 +6,7 @@ class Pipe(HydraulicNode):
     A Pipe connects two nodes and calculates the pressure drop caused by fluid friction.
     """
     def __init__(self, name: str, length: float, diameter: float, friction_factor: float = 0.02):
+        # Call the parent class constructor to set up the ID and lists        
         super().__init__(name, node_type="pipe")
         
         self.length = length                    # Pipe length (meters)
