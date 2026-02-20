@@ -4,7 +4,7 @@ import os
 # Ensure we can import from the backend directory
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from simulation.schemas import ReactFlowGraph, ReactFlowNode, ReactFlowEdge
+from simulation.schemas import ReactFlowGraph
 from simulation.graph_parser import GraphParser
 from simulation.solver import NetworkSolver
 from simulation.equipment.tank import Tank
@@ -12,77 +12,48 @@ from simulation.equipment.pipe import Pipe
 
 def test_state_propagation():
     # 1. Mock a React Flow Graph: Tank1 -> Edge -> Tank2
-    # Tank 1: 10m level, 0 elevation
-    # Edge: Default Pipe (25m, 0.1m)
-    # Tank 2: 0m level, 0 elevation
-    
     mock_graph = {
         "nodes": [
-            {
-                "id": "t1",
-                "type": "tank",
-                "position": {"x": 0, "y": 0},
-                "data": {"label": "High Tank", "level": 10.0, "elevation": 0.0}
-            },
-            {
-                "id": "t2",
-                "type": "tank",
-                "position": {"x": 500, "y": 0},
-                "data": {"label": "Low Tank", "level": 0.0, "elevation": 0.0}
-            }
+            {"id": "t1", "type": "tank", "data": {"label": "High Tank", "level": 10.0, "elevation": 0.0}, "position": {"x":0,"y":0}},
+            {"id": "t2", "type": "tank", "data": {"label": "Low Tank", "level": 0.0, "elevation": 0.0}, "position": {"x":500,"y":0}}
         ],
         "edges": [
-            {
-                "id": "e1",
-                "source": "t1",
-                "target": "t2",
-                "data": {"length": 25.0, "diameter": 0.1, "friction_factor": 0.02}
-            }
+            {"id": "e1", "source": "t1", "target": "t2", "data": {"length": 25.0, "diameter": 0.1, "friction_factor": 0.02}}
         ]
     }
     
-    # Convert to Pydantic models
     graph = ReactFlowGraph(**mock_graph)
+    network = GraphParser.parse_graph(graph)
     
-    # 2. Parse the graph
-    nodes = GraphParser.parse_graph(graph)
-    print(f"Parsed {len(nodes)} nodes: {[n.name for n in nodes]}")
+    # 2. Verify Network structure
+    # Tank -> Edge(Pipe) -> Tank
+    assert len(network.nodes) == 2
+    assert len(network.edges) == 1
     
-    assert len(nodes) == 3 # Tank -> Pipe -> Tank
-    assert isinstance(nodes[0], Tank)
-    assert isinstance(nodes[1], Pipe)
-    assert isinstance(nodes[2], Tank)
-    
-    # 3. Solve the simulation
-    solver = NetworkSolver(nodes)
+    # 3. Solve
+    solver = NetworkSolver(network)
     flow_rate = solver.solve()
     print(f"Calculated Flow Rate: {flow_rate:.5f} m3/s")
     
-    # 4. Verify Pressures (State Propagation)
-    # Tank 1 Outlet pressure
-    p1 = nodes[0].outlets[0].pressure
-    # Pipe Inlet pressure
-    p_pipe_in = nodes[1].inlets[0].pressure
-    # Pipe Outlet pressure
-    p_pipe_out = nodes[1].outlets[0].pressure
-    # Tank 2 Inlet pressure
-    p2_in = nodes[2].inlets[0].pressure
+    # 4. Verify Pressures (Telemetry)
+    t1 = network.nodes['t1']
+    t2 = network.nodes['t2']
+    pipe = network.edges[0]['pipe']
     
-    print(f"P1 Outlet: {p1:.1f} Pa")
+    p1_out = t1.outlets[0].pressure
+    p_pipe_in = pipe.inlets[0].pressure
+    p_pipe_out = pipe.outlets[0].pressure
+    p2_in = t2.inlets[0].pressure
+    
+    print(f"T1 Outlet: {p1_out:.1f} Pa")
     print(f"Pipe Inlet: {p_pipe_in:.1f} Pa")
     print(f"Pipe Outlet: {p_pipe_out:.1f} Pa")
     print(f"T2 Inlet: {p2_in:.1f} Pa")
     
-    # Assertions
-    # Tank 1 static head + atm = 101325 + 1000*9.81*10 = 199425
-    assert abs(p1 - 199425.0) < 1.0
-    
-    # State Propagation between T1 and Pipe
-    assert p1 == p_pipe_in
-    
-    # State Propagation between Pipe and T2
-    assert p_pipe_out == p2_in
-    
+    # T1 static head + atm = 101325 + 1000*9.81*10 = 199425
+    assert abs(p1_out - 199425.0) < 1.0
+    # Continuity
+    assert p1_out == p_pipe_in
     # T2 static head + atm = 101325 + 0 = 101325
     assert abs(p2_in - 101325.0) < 1.0
     

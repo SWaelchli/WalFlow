@@ -42,3 +42,14 @@ class ReactFlowGraph(BaseModel):
     nodes: List[ReactFlowNode]
     edges: List[ReactFlowEdge]
 
+class HydraulicNetwork(BaseModel):
+    """
+    A full graph of equipment and their connections.
+    Used by the solver to traverse and build system equations.
+    """
+    class Config:
+        arbitrary_types_allowed = True
+
+    nodes: Dict[str, Any]  # ID -> HydraulicNode
+    edges: List[Dict[str, Any]]  # List of connections: {'source': id, 'target': id, 'pipe': PipeNode}
+

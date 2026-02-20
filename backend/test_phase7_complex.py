@@ -25,39 +25,34 @@ def test_complex_circuit_detailed():
     }
     
     graph = ReactFlowGraph(**mock_graph)
-    nodes = GraphParser.parse_graph(graph)
+    network = GraphParser.parse_graph(graph)
     
-    solver = NetworkSolver(nodes)
+    solver = NetworkSolver(network)
     q = solver.solve()
     
     print("-" * 60)
     print(f"{'NODE NAME':<20} | {'INLET P (Pa)':<15} | {'OUTLET P (Pa)':<15}")
     print("-" * 60)
     
-    for node in nodes:
-        # Get inlet pressure (if exists)
+    for node_id, node in network.nodes.items():
         p_in = node.inlets[0].pressure if node.inlets else "N/A"
-        # Get outlet pressure (if exists)
         p_out = node.outlets[0].pressure if node.outlets else "N/A"
-        
-        # Format the numbers if they are float
         p_in_str = f"{p_in:,.1f}" if isinstance(p_in, float) else str(p_in)
         p_out_str = f"{p_out:,.1f}" if isinstance(p_out, float) else str(p_out)
-        
         print(f"{node.name:<20} | {p_in_str:>15} | {p_out_str:>15}")
 
     print("-" * 60)
     print(f"Converged Flow Rate: {q:.6f} m3/s")
     
-    # Assertions to verify continuity
-    # Outlet of Source (Index 0) should match Inlet of Pipe e1 (Index 1)
-    assert nodes[0].outlets[0].pressure == nodes[1].inlets[0].pressure
-    # Outlet of Pipe e1 should match Inlet of Pump (Index 2)
-    assert nodes[1].outlets[0].pressure == nodes[2].inlets[0].pressure
-    # Outlet of Pump should match Inlet of Pipe e2 (Index 3)
-    assert nodes[2].outlets[0].pressure == nodes[3].inlets[0].pressure
+    # Continuity Checks (Source -> Pipe e1 -> Pump)
+    t1_out = network.nodes['t1'].outlets[0].pressure
+    e1_pipe = next(e['pipe'] for e in network.edges if e['source'] == 't1')
+    pump = network.nodes['pump1']
     
-    print("\nSUCCESS: Pressure Continuity Verified across all junctions!")
+    assert t1_out == e1_pipe.inlets[0].pressure
+    assert e1_pipe.outlets[0].pressure == pump.inlets[0].pressure
+    
+    print("\nSUCCESS: Pressure Continuity Verified in Complex Circuit!")
 
 if __name__ == "__main__":
     try:

@@ -92,10 +92,10 @@ The app should be modularized and easaly to maintain and expand.
 * **Edge as a Pipe:** [x] Upgrade the edge logic so every drawn line represents a physical `Pipe` object with user-defined length and diameter.
 * **State Propagation (Node-to-Node Math):** [x] Mathematically chain the objects so the calculated outlet state of one node feeds directly into the inlet state of the next ($P_{in, n+1} = P_{out, n}$).
 
-### Phase 8: Parallel Networks & Junctions [ ]
+### Phase 8: Parallel Networks & Junctions [x]
 *Goal: Evolve the solver from a simple 1D series circuit to a complex network capable of handling headers and branches.*
-* **Junction Nodes (Tees and Manifolds):** [ ] Create `Splitter` and `Mixer` nodes to handle flow division (e.g., supplying thrust and journal bearings simultaneously).
-* **Kirchhoff's Flow Logic:** [ ] Upgrade the SciPy solver to guess pressures at every junction, ensuring the sum of flows entering a tee exactly equals the flows leaving it.
+* **Junction Nodes (Tees and Manifolds):** [x] Create `Splitter` and `Mixer` nodes to handle flow division (e.g., supplying thrust and journal bearings simultaneously).
+* **Kirchhoff's Flow Logic:** [x] Upgrade the SciPy solver to guess pressures at every junction, ensuring the sum of flows entering a tee exactly equals the flows leaving it.
 
 ### Phase 9: Lube Oil Specific Physics [ ]
 *Goal: Introduce the thermodynamics and specialized equipment required for compressor lubrication.*
