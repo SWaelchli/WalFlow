@@ -24,11 +24,11 @@ def test_dual_source_to_sink():
             {"id": "t1", "type": "tank", "data": {"label": "Source High", "level": 10.0, "elevation": 0.0}, "position": {"x":0,"y":0}},
             {"id": "t2", "type": "tank", "data": {"label": "Source Low", "level": 9.0, "elevation": 0.0}, "position": {"x":0,"y":200}},
             {"id": "mix1", "type": "mixer", "data": {"label": "Mixer"}, "position": {"x":200,"y":100}},
-            {"id": "ori1", "type": "orifice", "data": {"label": "Restricting Orifice", "pipe_diameter": 0.1, "orifice_diameter": 0.05}, "position": {"x":400,"y":100}},
+            {"id": "ori1", "type": "orifice", "data": {"label": "Restricting Orifice", "pipe_diameter": 0.1, "orifice_diameter": 0.08}, "position": {"x":400,"y":100}},
             {"id": "t3", "type": "tank", "data": {"label": "Sink", "level": 1.0, "elevation": 0.0}, "position": {"x":600,"y":100}},
         ],
         "edges": [
-            {"id": "e1", "source": "t1", "target": "mix1", "data": {"length": 50.0, "diameter": 0.1}},
+            {"id": "e1", "source": "t1", "target": "mix1", "data": {"length": 5.0, "diameter": 0.1}},
             {"id": "e2", "source": "t2", "target": "mix1", "data": {"length": 5.0, "diameter": 0.1}},
             {"id": "e3", "source": "mix1", "target": "ori1", "data": {"length": 2.0, "diameter": 0.1}},
             {"id": "e4", "source": "ori1", "target": "t3", "data": {"length": 5.0, "diameter": 0.1}},

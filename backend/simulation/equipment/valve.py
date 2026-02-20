@@ -12,7 +12,7 @@ class Valve(HydraulicNode):
         self.add_inlet()
         self.add_outlet()
 
-    def calculate_delta_p(self, flow_rate: float, density: float) -> float:
+    def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
         """
         Calculates pressure drop across the valve based on its current position.
         """
@@ -35,10 +35,13 @@ class Valve(HydraulicNode):
         inlet = self.inlets[0]
         outlet = self.outlets[0]
         
-        dp = self.calculate_delta_p(inlet.flow_rate, inlet.density)
+        dp = self.calculate_delta_p(inlet.flow_rate, inlet.density, inlet.viscosity)
         
         outlet.pressure = inlet.pressure - dp
         outlet.flow_rate = inlet.flow_rate
         outlet.density = inlet.density
+        outlet.viscosity = inlet.viscosity
+        
+        self.calculate_temperature()
         
         return dp

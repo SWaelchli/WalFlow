@@ -1,41 +1,50 @@
 import { Handle, Position } from 'reactflow';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { paToBar, kToC } from '../utils/converters';
 
-export default function ValveNode({ data }) {
-  // We give the valve its own React state so the slider moves smoothly
-  // We initialize it to whatever value is passed in from the blueprint (default 50)
+export default function ValveNode({ id, data }) {
   const [opening, setOpening] = useState(data.opening || 50);
+  const telemetry = data.telemetry;
+  const pIn = telemetry?.inlets?.[0]?.pressure || 0;
+  const pOut = telemetry?.outlets?.[0]?.pressure || 0;
+  const t = telemetry?.inlets?.[0]?.temperature || 293.15;
+  const dP = pIn - pOut;
 
-  // This function fires every time the user drags the slider
+  // Sync internal slider with external updates (e.g. from save/load)
+  useEffect(() => {
+    if (data.opening !== undefined) setOpening(data.opening);
+  }, [data.opening]);
+
   const handleSliderChange = (e) => {
-    const newValue = e.target.value;
+    const newValue = parseFloat(e.target.value);
     setOpening(newValue);
-    
-    // In the next step, we will pass a WebSocket function into data.onChange
-    // so dragging this slider talks directly to Python.
     if (data.onChange) {
-      data.onChange(newValue);
+      data.onChange(newValue, id); // Pass ID so backend knows which valve
     }
   };
 
   return (
     <div style={{
-      width: 130, padding: '10px', background: '#f8fafc',
+      width: 140, padding: '10px', background: '#f8fafc',
       border: '2px solid #64748b', borderRadius: '6px',
       textAlign: 'center', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
     }}>
-      <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '8px' }}>
+      <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>
         {data.label || 'Control Valve'}
       </div>
       
-      {/* Display the current opening percentage */}
-      <div style={{ fontSize: '11px', color: '#475569', marginBottom: '4px' }}>
-        Open: {opening}%
+      {/* Telemetry Display */}
+      <div style={{ fontSize: '10px', color: '#64748b', marginBottom: '8px', display: 'flex', justifyContent: 'space-between' }}>
+        <span>dP: {paToBar(dP)} bar</span>
+        <span style={{ color: '#0369a1' }}>{kToC(t)}°C</span>
       </div>
       
-      {/* The HTML Range Slider */}
+      <div style={{ fontSize: '11px', color: '#475569', marginBottom: '4px' }}>
+        Open: {opening.toFixed(1)}%
+      </div>
+      
       <input 
-        className="nodrag"  // in order to not move whole node, when dragging handle.
+        className="nodrag"
         type="range" 
         min="0.1" 
         max="100" 
@@ -45,8 +54,8 @@ export default function ValveNode({ data }) {
         style={{ width: '100%', cursor: 'pointer' }}
       />
       
-      <Handle type="target" position={Position.Left} id="inlet" style={{ background: '#64748b', width: '8px', height: '8px' }} />
-      <Handle type="source" position={Position.Right} id="outlet" style={{ background: '#64748b', width: '8px', height: '8px' }} />
+      <Handle type="target" position={Position.Left} id="inlet-0" style={{ background: '#64748b', width: '8px', height: '8px' }} />
+      <Handle type="source" position={Position.Right} id="outlet-0" style={{ background: '#64748b', width: '8px', height: '8px' }} />
     </div>
   );
 }

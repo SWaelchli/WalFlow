@@ -1,153 +1,241 @@
-import ReactFlow, { Background, Controls, MiniMap, useNodesState, useEdgesState } from 'reactflow';
+import ReactFlow, { 
+  Background, 
+  Controls, 
+  MiniMap, 
+  useNodesState, 
+  useEdgesState,
+  addEdge
+} from 'reactflow';
 import 'reactflow/dist/style.css'; 
 import { useEffect, useRef, useState, useCallback } from 'react';
 
-// Import all 4 custom equipment nodes
+// Import all custom equipment nodes
 import TankNode from './nodes/TankNode';
 import PumpNode from './nodes/PumpNode';
 import OrificeNode from './nodes/OrificeNode';
 import ValveNode from './nodes/ValveNode';
+import FilterNode from './nodes/FilterNode';
+import HeatExchangerNode from './nodes/HeatExchangerNode';
+import SplitterNode from './nodes/SplitterNode';
+import MixerNode from './nodes/MixerNode';
+
+import Sidebar from './Sidebar';
+import PropertyEditor from './PropertyEditor';
 
 const nodeTypes = {
   tank: TankNode,
   pump: PumpNode,
   orifice: OrificeNode,
   valve: ValveNode,
+  filter: FilterNode,
+  heat_exchanger: HeatExchangerNode,
+  splitter: SplitterNode,
+  mixer: MixerNode,
 };
 
 const initialEdges = [
-  { id: 'edge-1', source: 'tank-a', target: 'pump-1', sourceHandle: 'outlet', targetHandle: 'inlet', animated: true },
-  { id: 'edge-2', source: 'pump-1', target: 'orifice-1', sourceHandle: 'outlet', targetHandle: 'inlet', animated: true },
-  { id: 'edge-3', source: 'orifice-1', target: 'valve-1', sourceHandle: 'outlet', targetHandle: 'inlet', animated: true },
-  { id: 'edge-4', source: 'valve-1', target: 'tank-b', sourceHandle: 'outlet', targetHandle: 'inlet', animated: true },
+  { id: 'edge-1', source: 'tank-a', target: 'pump-1', sourceHandle: 'outlet-0', targetHandle: 'inlet-0', animated: true },
 ];
 
+let idCount = 0;
+const getId = () => `node_${idCount++}`;
+
 export default function App() {
-  // We use a React "ref" to hold onto the WebSocket connection without causing the screen to redraw
+  const reactFlowWrapper = useRef(null);
+  const [reactFlowInstance, setReactFlowInstance] = useState(null);
   const ws = useRef(null);
   
-  // A new piece of state to hold the live flow rate coming back from Python
   const [flowRate, setFlowRate] = useState(0.0);
+  const [selectedNode, setSelectedNode] = useState(null);
 
-  // Define the function that the valve slider will call when it moves
-  const handleValveChange = useCallback((newValue) => {
-    // If the socket is open and ready, fire the JSON command to Python!
+  const handleValveChange = useCallback((newValue, nodeId) => {
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-      ws.current.send(JSON.stringify({ action: 'update_valve', value: parseFloat(newValue) }));
+      ws.current.send(JSON.stringify({ 
+        action: 'update_valve', 
+        value: parseFloat(newValue),
+        node_id: nodeId
+      }));
     }
   }, []);
 
-  // The initial blueprint. Notice we pass handleValveChange directly into the valve's data!
   const initialNodes = [
     { 
       id: 'tank-a', 
       type: 'tank', 
       position: { x: 50, y: 150 }, 
-      data: { label: 'Source Tank', level: 2.0, elevation: 0.0 } 
+      data: { label: 'Source Tank', level: 2.0, elevation: 0.0, temperature: 313.15, fluid_type: 'iso_vg_46' } 
     },
     { 
       id: 'pump-1', 
       type: 'pump', 
       position: { x: 250, y: 170 }, 
-      data: { label: 'Booster Pump', A: 80.0, B: 0.0, C: -2000.0 } 
-    },
-    { 
-      id: 'orifice-1', 
-      type: 'orifice', 
-      position: { x: 400, y: 175 }, 
-      data: { label: 'Flow Meter', pipe_diameter: 0.1, orifice_diameter: 0.07 } 
-    },
-    { 
-      id: 'valve-1', 
-      type: 'valve', 
-      position: { x: 550, y: 140 }, 
-      data: { label: 'FCV-101', opening: 50, max_cv: 0.05, onChange: handleValveChange } 
-    },
-    { 
-      id: 'tank-b', 
-      type: 'tank', 
-      position: { x: 750, y: 150 }, 
-      data: { label: 'Dest Tank', level: 2.0, elevation: 20.0 } 
+      data: { label: 'Main Pump', A: 80.0, B: 0.0, C: -2000.0 } 
     },
   ];
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
-  // This block runs once when the app first loads to connect the WebSocket
+  const onConnect = useCallback((params) => {
+    setEdges((eds) => addEdge({ ...params, animated: true }, eds));
+  }, [setEdges]);
+
+  const onNodeClick = useCallback((event, node) => {
+    setSelectedNode(node);
+  }, []);
+
+  const onPaneClick = useCallback(() => {
+    setSelectedNode(null);
+  }, []);
+
+  const updateNodeData = useCallback((nodeId, newData) => {
+    setNodes((nds) =>
+      nds.map((node) => {
+        if (node.id === nodeId) {
+          const updatedNode = { ...node, data: { ...node.data, ...newData } };
+          // If we are currently selecting this node, update the selection state too
+          if (selectedNode && selectedNode.id === nodeId) {
+            setSelectedNode(updatedNode);
+          }
+          return updatedNode;
+        }
+        return node;
+      })
+    );
+  }, [selectedNode, setNodes]);
+
+  const onDragOver = useCallback((event) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+  }, []);
+
+  const onDrop = useCallback(
+    (event) => {
+      event.preventDefault();
+      const type = event.dataTransfer.getData('application/reactflow');
+      if (!type || !reactFlowInstance) return;
+
+      const position = reactFlowInstance.screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
+      
+      const newNode = {
+        id: getId(),
+        type,
+        position,
+        data: { 
+          label: `${type.toUpperCase()} ${idCount}`, 
+          onChange: type === 'valve' ? handleValveChange : undefined,
+          ...(type === 'pump' && { A: 80.0, B: 0.0, C: -2000.0 }),
+          ...(type === 'tank' && { level: 2.0, elevation: 0.0, temperature: 313.15, fluid_type: 'iso_vg_46' }),
+          ...(type === 'orifice' && { pipe_diameter: 0.1, orifice_diameter: 0.07 }),
+          ...(type === 'filter' && { resistance: 1000.0 }),
+          ...(type === 'heat_exchanger' && { heat_duty_kw: -10.0 }),
+        },
+      };
+
+      setNodes((nds) => nds.concat(newNode));
+    },
+    [reactFlowInstance, handleValveChange, setNodes]
+  );
+
+  const onSave = useCallback(() => {
+    const flowData = { nodes, edges };
+    const blob = new Blob([JSON.stringify(flowData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'walflow-pfd.json';
+    link.click();
+    URL.revokeObjectURL(url);
+  }, [nodes, edges]);
+
+  const onLoad = useCallback((data) => {
+    if (data.nodes && data.edges) {
+      const restoredNodes = data.nodes.map(node => ({
+        ...node,
+        data: {
+          ...node.data,
+          onChange: node.type === 'valve' ? handleValveChange : undefined
+        }
+      }));
+      setNodes(restoredNodes);
+      setEdges(data.edges);
+    }
+  }, [handleValveChange, setNodes, setEdges]);
+
+  // WebSocket Connection
   useEffect(() => {
     ws.current = new WebSocket('ws://localhost:8000/ws/simulate');
 
     ws.current.onopen = () => {
       console.log('Connected to Python WalFlow Engine!');
-      
-      // When we connect, send the initial graph to the backend
-      ws.current.send(JSON.stringify({ 
-        action: 'update_graph', 
-        graph: { nodes, edges } 
-      }));
-      
-      // Also trigger a valve update to start the loop
-      ws.current.send(JSON.stringify({ action: 'update_valve', value: 50.0 }));
+      ws.current.send(JSON.stringify({ action: 'update_graph', graph: { nodes, edges } }));
     };
 
-    // Every time Python finishes the Newton-Raphson math, it sends data here
     ws.current.onmessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.status === 'success') {
-        // Update the big flow rate number on the screen
         setFlowRate(data.flow_rate_m3s);
-      } else if (data.status === 'error') {
-        console.error('Simulation Error:', data.message);
-      } else if (data.status === 'waiting') {
-        console.log('Backend waiting:', data.message);
+        if (data.telemetry && data.telemetry.nodes) {
+          setNodes((nds) => 
+            nds.map((node) => {
+              const nodeTelemetry = data.telemetry.nodes[node.id];
+              return nodeTelemetry ? { ...node, data: { ...node.data, telemetry: nodeTelemetry } } : node;
+            })
+          );
+        }
       }
     };
 
-    // Cleanup the connection if the user closes the browser
-    return () => {
-      if (ws.current) ws.current.close();
-    };
+    return () => { if (ws.current) ws.current.close(); };
   }, []);
 
-  // Update backend graph when nodes or edges change (simplified for now)
-  // In a real app, we might debounce this to avoid excessive traffic
+  // Update backend on change
   useEffect(() => {
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-      ws.current.send(JSON.stringify({ 
-        action: 'update_graph', 
-        graph: { nodes, edges } 
-      }));
+      ws.current.send(JSON.stringify({ action: 'update_graph', graph: { nodes, edges } }));
     }
   }, [nodes, edges]);
 
   return (
-    <div style={{ width: '100vw', height: '100vh', backgroundColor: '#f4f4f5', position: 'relative' }}>
-      
-      {/* Heads-Up Display for the live Flow Rate */}
-      <div style={{
-        position: 'absolute', top: 20, left: 20, zIndex: 10,
-        background: '#fff', padding: '15px 25px', borderRadius: '8px',
-        border: '2px solid #0f172a', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-      }}>
-        <h3 style={{ margin: 0, color: '#475569', fontSize: '14px' }}>System Flow Rate</h3>
-        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#0284c7' }}>
-          {flowRate} <span style={{ fontSize: '14px', color: '#64748b' }}>m³/s</span>
-        </div>
-      </div>
+    <div style={{ width: '100vw', height: '100vh', display: 'flex', backgroundColor: '#f4f4f5' }}>
+      <Sidebar onSave={onSave} onLoad={onLoad} />
 
-      <ReactFlow 
-        nodes={nodes} 
-        edges={edges} 
-        nodeTypes={nodeTypes} 
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        fitView
-      >
-        <Background color="#ccc" gap={16} />
-        <Controls />
-        <MiniMap nodeStrokeColor="#000" nodeColor="#fff" />
-      </ReactFlow>
+      <div style={{ flexGrow: 1, position: 'relative' }} ref={reactFlowWrapper}>
+        <div style={{
+          position: 'absolute', top: 20, left: 20, zIndex: 10,
+          background: '#fff', padding: '15px 25px', borderRadius: '8px',
+          border: '2px solid #0f172a', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+        }}>
+          <h3 style={{ margin: 0, color: '#475569', fontSize: '14px' }}>System Flow Rate</h3>
+          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#0284c7' }}>
+            {(flowRate * 60000).toFixed(1)} <span style={{ fontSize: '14px', color: '#64748b' }}>L/min</span>
+          </div>
+        </div>
+
+        <PropertyEditor node={selectedNode} onUpdate={updateNodeData} />
+
+        <ReactFlow 
+          nodes={nodes} 
+          edges={edges} 
+          nodeTypes={nodeTypes} 
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onConnect={onConnect}
+          onNodeClick={onNodeClick}
+          onPaneClick={onPaneClick}
+          onInit={setReactFlowInstance}
+          onDrop={onDrop}
+          onDragOver={onDragOver}
+          fitView
+        >
+          <Background color="#ccc" gap={16} />
+          <Controls />
+          <MiniMap />
+        </ReactFlow>
+      </div>
     </div>
   );
 }

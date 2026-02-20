@@ -16,7 +16,7 @@ class Orifice(HydraulicNode):
         self.add_inlet()
         self.add_outlet()
 
-    def calculate_delta_p(self, flow_rate: float, density: float) -> float:
+    def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
         """
         Calculates pressure drop using the Bernoulli's equation.
         """
@@ -61,11 +61,14 @@ class Orifice(HydraulicNode):
         outlet = self.outlets[0]
         
         # Calculate the pressure drop based on the current flow rate passing through
-        dp = self.calculate_delta_p(inlet.flow_rate, inlet.density)
+        dp = self.calculate_delta_p(inlet.flow_rate, inlet.density, inlet.viscosity)
         
         # Update the outlet conditions
         outlet.pressure = inlet.pressure - dp
         outlet.flow_rate = inlet.flow_rate  # Incompressible flow means Q_in = Q_out
         outlet.density = inlet.density
+        outlet.viscosity = inlet.viscosity
+        
+        self.calculate_temperature()
         
         return dp

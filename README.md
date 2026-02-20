@@ -97,19 +97,25 @@ The app should be modularized and easaly to maintain and expand.
 * **Junction Nodes (Tees and Manifolds):** [x] Create `Splitter` and `Mixer` nodes to handle flow division (e.g., supplying thrust and journal bearings simultaneously).
 * **Kirchhoff's Flow Logic:** [x] Upgrade the SciPy solver to guess pressures at every junction, ensuring the sum of flows entering a tee exactly equals the flows leaving it.
 
-### Phase 9: Lube Oil Specific Physics [ ]
+### Phase 9: Lube Oil Specific Physics [x]
 *Goal: Introduce the thermodynamics and specialized equipment required for compressor lubrication.*
-* **Dynamic Viscosity & Temperature:** [ ] Update the `Port` class to track Temperature ($T$). Implement viscosity-temperature curves so cold startups dynamically increase system friction.
-* **Heat Exchanger Node:** [ ] Create a component that removes heat and calculates tube-bundle pressure drop.
-* **Filter Node:** [ ] Implement duplex filters allowing input of "clean" vs "dirty" $\Delta P$ to simulate clogging.
-* **Pressure Control Valves (PCV):** [ ] Introduce active throttling constraints to the solver to maintain specific downstream header pressures.
+* **Dynamic Viscosity & Temperature:** [x] Update the `Port` class to track Temperature ($T$). Implement viscosity-temperature curves so cold startups dynamically increase system friction.
+* **Heat Exchanger Node:** [x] Create a component that removes heat and calculates tube-bundle pressure drop.
+* **Filter Node:** [x] Implement duplex filters allowing input of "clean" vs "dirty" $\Delta P$ to simulate clogging.
+* **Bi-directional Propagation:** [x] Upgrade the solver and equipment classes to correctly propagate thermal and fluid properties even during reverse flow.
 
-### Phase 10: Canvas UX, State Management, & Deployment [ ]
+### Phase 10: Frontend Integration & Canvas UX [ ]
 *Goal: Polish the frontend into a professional CAD environment and prepare the application for self-hosted deployment.*
+* **New Equipment Nodes:** [ ] Create React Flow visual components for `Heat Exchanger` and `Filter`.
 * **The Equipment Library:** [ ] Build a drag-and-drop sidebar menu to pull unlimited components onto the canvas.
 * **Live Node Telemetry:** [ ] Display specific $\Delta P$ or generated head directly inside the visual icons on the canvas.
 * **Save/Load Functionality:** [ ] Add the ability to download the entire React Flow state and backend parameters as a `.json` file, and upload to restore a specific system design.
+
+
+## Stage 3: The Dynamic Engineering Tool [ ]
+
 * **Containerization:** [ ] Write a `Dockerfile` for the FastAPI backend and the React frontend, orchestrating them with a `docker-compose.yml` file so the finished tool can be easily deployed to a self-hosted Docker environment.
+
 
 # Hydraulic System Simulator: Project Structure
 

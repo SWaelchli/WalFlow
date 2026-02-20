@@ -13,6 +13,7 @@ class Port(BaseModel):
     # State Variables (Using SI Units as standard: Pascals, m^3/s, kg/m^3)
     pressure: float = 101325.0  # Default to 1 atm (atmospheric pressure)
     flow_rate: float = 0.0      # Volumetric flow rate (Q)
+    temperature: float = 293.15 # Kelvin (Default to 20°C)
     
     # Fluid Properties (Defaulting to water at standard conditions)
     density: float = 1000.0     
@@ -51,5 +52,5 @@ class HydraulicNetwork(BaseModel):
         arbitrary_types_allowed = True
 
     nodes: Dict[str, Any]  # ID -> HydraulicNode
-    edges: List[Dict[str, Any]]  # List of connections: {'source': id, 'target': id, 'pipe': PipeNode}
+    edges: List[Dict[str, Any]]  # List of: {'source': id, 'target': id, 'pipe': Pipe, 'source_port': str, 'target_port': str}
 

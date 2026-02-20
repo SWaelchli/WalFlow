@@ -22,6 +22,8 @@ class Splitter(HydraulicNode):
         for outlet in self.outlets:
             outlet.pressure = inlet.pressure
             outlet.density = inlet.density
+            outlet.viscosity = inlet.viscosity
+            outlet.temperature = inlet.temperature
             # Flow distribution is determined by the downstream resistance, 
             # not by the splitter itself.
         return 0.0

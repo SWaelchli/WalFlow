@@ -17,9 +17,10 @@ class Pipe(HydraulicNode):
         self.add_inlet()
         self.add_outlet()
 
-    def calculate_delta_p(self, flow_rate: float, density: float) -> float:
+    def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float) -> float:
         """
         Calculates pressure drop using the Darcy-Weisbach equation.
+        Friction factor is calculated based on Reynolds number.
         """
         if self.diameter <= 0:
             raise ValueError("Pipe diameter must be strictly positive.")
@@ -30,25 +31,51 @@ class Pipe(HydraulicNode):
         # 2. Calculate fluid velocity (v = Q / A)
         velocity = flow_rate / area
         
-        # 3. Calculate pressure drop (Delta P = f * (L/D) * (rho * v^2 / 2))
-        # We multiply by the absolute value of velocity to preserve the +/- direction of the flow
-        delta_p = self.friction_factor * (self.length / self.diameter) * (density * velocity * abs(velocity) / 2)
+        # 3. Calculate Reynolds Number (Re = rho * v * D / mu)
+        abs_v = abs(velocity)
+        if viscosity > 0 and abs_v > 0:
+            re = (density * abs_v * self.diameter) / viscosity
+            
+            # 4. Determine friction factor (f)
+            if re < 2300:
+                # Laminar flow
+                f = 64 / re
+            else:
+                # Turbulent flow (Simplified Haaland equation for smooth pipes)
+                f = (1.8 * math.log10(re / 6.9))**-2
+        else:
+            f = 0
+        
+        # 5. Calculate pressure drop (Delta P = f * (L/D) * (rho * v^2 / 2))
+        delta_p = f * (self.length / self.diameter) * (density * velocity * abs_v / 2)
         
         return delta_p
         
     def calculate(self):
         """
         Updates the outlet port's state based on the inlet port's state and the calculated drop.
+        Now handles bi-directional property propagation.
         """
         inlet = self.inlets[0]
         outlet = self.outlets[0]
         
         # Calculate the pressure drop based on the current flow rate passing through
-        dp = self.calculate_delta_p(inlet.flow_rate, inlet.density)
+        dp = self.calculate_delta_p(inlet.flow_rate, inlet.density, inlet.viscosity)
         
-        # Update the outlet conditions
+        # Update pressures (standard inlet -> outlet delta)
         outlet.pressure = inlet.pressure - dp
-        outlet.flow_rate = inlet.flow_rate  # Incompressible flow means Q_in = Q_out
-        outlet.density = inlet.density
+        outlet.flow_rate = inlet.flow_rate
+        
+        # Bi-directional Property Propagation
+        if inlet.flow_rate >= 0:
+            # Forward Flow: Inlet -> Outlet
+            outlet.temperature = inlet.temperature
+            outlet.density = inlet.density
+            outlet.viscosity = inlet.viscosity
+        else:
+            # Reverse Flow: Outlet -> Inlet
+            inlet.temperature = outlet.temperature
+            inlet.density = outlet.density
+            inlet.viscosity = outlet.viscosity
         
         return dp

@@ -2,21 +2,15 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import json
+import traceback
 
-# Import the simulation components
-from simulation.equipment.tank import Tank
-from simulation.equipment.pipe import Pipe
-from simulation.equipment.orifice import Orifice
-from simulation.equipment.valve import Valve
-from simulation.equipment.pump import Pump
 from simulation.solver import NetworkSolver
-from simulation.schemas import ReactFlowGraph
 from simulation.graph_parser import GraphParser
+from simulation.schemas import ReactFlowGraph
+from simulation.equipment.valve import Valve
 
-# 1. Initialize the FastAPI application
 app = FastAPI(title="WalFlow Engine", description="Hydraulic Simulation Backend")
 
-# 2. Configure CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -25,30 +19,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 3. Global Network State
-solver = None
-current_nodes = []
+# Global simulation state
+network_instance = None
+solver_instance = None
 
-def get_valve_from_nodes(nodes, name=None):
-    """Helper to find a valve node by name or just return the first one."""
-    for n in nodes:
-        if isinstance(n, Valve):
-            if name is None or n.name == name:
-                return n
-    return None
-
-# 4. Standard REST API Route
 @app.get("/")
 async def read_root():
-    return {"status": "online", "message": "WalFlow Engine is ready for connections."}
+    return {"status": "online", "message": "WalFlow Engine is ready."}
 
-# 5. WebSocket Route
 @app.websocket("/ws/simulate")
 async def websocket_endpoint(websocket: WebSocket):
-    global solver, current_nodes
+    global network_instance, solver_instance
     
     await websocket.accept()
-    print("Frontend client connected to simulation stream.")
+    print("Frontend client connected.")
     
     try:
         while True:
@@ -61,48 +45,70 @@ async def websocket_endpoint(websocket: WebSocket):
                 graph_data = data.get("graph")
                 if graph_data:
                     try:
-                        graph = ReactFlowGraph(**graph_data)
-                        current_nodes = GraphParser.parse_graph(graph)
-                        solver = NetworkSolver(nodes=current_nodes)
-                        print(f"Server: Graph updated with {len(current_nodes)} nodes.")
+                        # Parse the React Flow JSON into our HydraulicNetwork model
+                        rf_graph = ReactFlowGraph(**graph_data)
+                        network_instance = GraphParser.parse_graph(rf_graph)
+                        solver_instance = NetworkSolver(network_instance)
+                        print(f"Graph updated: {len(network_instance.nodes)} nodes, {len(network_instance.edges)} edges.")
                     except Exception as e:
-                        print(f"Error parsing graph: {e}")
-                        await websocket.send_text(json.dumps({"status": "error", "message": f"Graph Parse Error: {str(e)}"}))
+                        print(f"Graph Parse Error: {e}")
+                        traceback.print_exc()
+                        await websocket.send_text(json.dumps({"status": "error", "message": str(e)}))
                         continue
 
             elif action == "update_valve":
-                if solver:
+                if network_instance:
+                    valve_id = data.get("node_id")
                     new_pct = float(data.get("value", 50.0))
-                    new_pct = max(0.1, min(100.0, new_pct)) 
-                    valve = get_valve_from_nodes(current_nodes)
-                    if valve:
-                        valve.opening_pct = new_pct
-            
-            if solver:
+                    
+                    # Update specific valve if ID provided, else update all (for legacy support)
+                    for node_id, node in network_instance.nodes.items():
+                        if isinstance(node, Valve):
+                            if valve_id is None or node_id == valve_id:
+                                node.opening_pct = max(0.1, min(100.0, new_pct))
+
+            if solver_instance:
                 try:
-                    flow_rate = solver.solve()
-                    results = {
-                        "status": "success",
-                        "flow_rate_m3s": round(flow_rate, 5),
+                    # Run the physics engine
+                    main_flow = solver_instance.solve()
+                    
+                    # Package telemetry for all nodes and edges
+                    telemetry = {
+                        "nodes": {},
+                        "edges": {}
                     }
                     
-                    pump = next((n for n in current_nodes if isinstance(n, Pump)), None)
-                    valve = get_valve_from_nodes(current_nodes)
+                    for node_id, node in network_instance.nodes.items():
+                        telemetry["nodes"][node_id] = {
+                            "inlets": [p.dict() for p in node.inlets],
+                            "outlets": [p.dict() for p in node.outlets]
+                        }
                     
-                    if pump:
-                        results["pump_added_pa"] = round(pump.calculate_delta_p(flow_rate, 1000.0), 2)
-                    if valve:
-                        results["valve_drop_pa"] = round(valve.calculate_delta_p(flow_rate, 1000.0), 2)
-                        results["current_valve_pct"] = valve.opening_pct
+                    for i, edge in enumerate(network_instance.edges):
+                        # Use the index or a unique ID if available
+                        edge_id = f"edge_{i}" 
+                        pipe = edge["pipe"]
+                        telemetry["edges"][edge_id] = {
+                            "inlets": [p.dict() for p in pipe.inlets],
+                            "outlets": [p.dict() for p in pipe.outlets]
+                        }
 
-                    await websocket.send_text(json.dumps(results))
+                    await websocket.send_text(json.dumps({
+                        "status": "success",
+                        "flow_rate_m3s": main_flow,
+                        "telemetry": telemetry
+                    }))
                 except Exception as e:
+                    print(f"Solver Error: {e}")
                     await websocket.send_text(json.dumps({"status": "error", "message": str(e)}))
             else:
-                await websocket.send_text(json.dumps({"status": "waiting", "message": "Send graph to start simulation."}))
+                await websocket.send_text(json.dumps({"status": "waiting", "message": "Graph required."}))
             
     except WebSocketDisconnect:
         print("Frontend client disconnected.")
+
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="0.0.0.0", port=8000)
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

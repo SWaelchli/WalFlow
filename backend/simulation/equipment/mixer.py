@@ -28,5 +28,8 @@ class Mixer(HydraulicNode):
         # In the solver, this will be used to calculate the residual error.
         outlet.pressure = self.inlets[0].pressure
         outlet.density = self.inlets[0].density
+        outlet.viscosity = self.inlets[0].viscosity
+        
+        self.calculate_temperature()
         
         return 0.0

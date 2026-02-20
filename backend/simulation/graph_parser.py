@@ -7,6 +7,8 @@ from simulation.equipment.pipe import Pipe
 from simulation.equipment.orifice import Orifice
 from simulation.equipment.splitter import Splitter
 from simulation.equipment.mixer import Mixer
+from simulation.equipment.heat_exchanger import HeatExchanger
+from simulation.equipment.filter import Filter
 from simulation.equipment.base_node import HydraulicNode
 
 class GraphParser:
@@ -45,6 +47,8 @@ class GraphParser:
                 parsed_edges.append({
                     "source": edge.source,
                     "target": edge.target,
+                    "source_port": edge.sourceHandle,
+                    "target_port": edge.targetHandle,
                     "pipe": pipe
                 })
 
@@ -60,7 +64,9 @@ class GraphParser:
             return Tank(
                 name=name,
                 elevation=float(d.get('elevation', 0.0)),
-                fluid_level=float(d.get('level', 1.0))
+                fluid_level=float(d.get('level', 1.0)),
+                temperature=float(d.get('temperature', 293.15)),
+                fluid_type=d.get('fluid_type', 'water')
             )
         elif t == 'pump':
             return Pump(
@@ -80,6 +86,18 @@ class GraphParser:
                 name=name,
                 pipe_diameter=float(d.get('pipe_diameter', 0.1)),
                 orifice_diameter=float(d.get('orifice_diameter', 0.07))
+            )
+        elif t == 'heat_exchanger':
+            return HeatExchanger(
+                name=name,
+                heat_duty=float(d.get('heat_duty', 0.0)),
+                pressure_drop_factor=float(d.get('k_factor', 0.01))
+            )
+        elif t == 'filter':
+            return Filter(
+                name=name,
+                resistance_clean=float(d.get('resistance_clean', 1e6)),
+                clogging_factor=float(d.get('clogging_factor', 1.0))
             )
         elif t == 'splitter':
             # Count how many outlets we need (or default to 2)
