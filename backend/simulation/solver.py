@@ -80,37 +80,30 @@ class NetworkSolver:
         # Provide an initial guess for the flow rate (0.1 m^3/s)
         initial_guess = np.array([0.1])
         
-       # Run SciPy's root finding algorithm 
+        # Run SciPy's root finding algorithm 
         solution = root(self.objective_function, initial_guess, method='lm')
         
         # Check if SciPy claims success AND the final error is actually near zero
-        # (e.g., an error of less than 0.01 Pascals)
         if solution.success and abs(solution.fun[0]) < 0.01:
             final_q = solution.x[0]
-            # ... update internal states ...
-            return final_q
-        else:
-            raise ValueError(f"Solver failed to balance energy. Final error: {solution.fun[0]:.2f} Pa")
-        
-        
-        if solution.success:
-            final_q = solution.x[0]
-            # Update the pipe's internal state with the final correct answer
+            
+            # Update the pipe's internal state 
             self.pipes[0].inlets[0].flow_rate = final_q
             self.pipes[0].calculate() 
 
-            # Update the orifice's internal state with the final correct answer
+            # Update the orifice's internal state 
             self.orifices[0].inlets[0].flow_rate = final_q
             self.orifices[0].calculate()
 
-            # Update the valve's internal state with the final correct answer
+            # Update the valve's internal state 
             self.valves[0].inlets[0].flow_rate = final_q
             self.valves[0].calculate()
 
-            # Update the pump's internal state with the final correct answer
+            # Update the pump's internal state 
             self.pumps[0].inlets[0].flow_rate = final_q 
             self.pumps[0].calculate()
             
+            # NOW we return the final answer, after all objects are updated
             return final_q
         else:
-            raise ValueError(f"Solver failed to converge: {solution.message}")
+            raise ValueError(f"Solver failed to balance energy. Final error: {solution.fun[0]:.2f} Pa")
