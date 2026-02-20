@@ -44,52 +44,72 @@ The app should be modularized and easaly to maintain and expand.
 * Frontend: React, React Flow, Axios
 * Architecture: WebSocket-driven real-time node simulation
 
-## Phase 1: Backend Data Structures & The "Dumb" Physics
+## Master Roadmap
+
+## Stage 1: Setting up the Initial App (MVP) [COMPLETED]
+**Goal:** Create a foundational Python backend to simulate physics and a React frontend to control it.
+
+### Phase 1: Backend Data Structures & The "Dumb" Physics [x]
 *Goal: Establish the object-oriented structure for the hydraulic components without worrying about the solver or UI.*
+* **Initialize the Python Environment:** [x] Set up a clean Python project. Install `fastapi`, `pydantic`, `numpy`, and `scipy`.
+* **Define the `Port` Class:** [x] Create a model for a port holding state variables: Pressure ($P$), Flow Rate ($Q$), and fluid properties (density).
+* **Create the `HydraulicNode` Base Class:** [x] Parent class for all equipment with standard methods for calculating pressure drop/head.
+* **Build Static Components:** [x] Write `Tank` (boundary condition), `Pipe` (resistance), and `Orifice` classes.
 
-1. **Initialize the Python Environment:** Set up a clean Python project. Install `fastapi`, `pydantic`, `numpy`, and `scipy`.
-2. **Define the `Port` Class:** Create a Pydantic model or standard Python dataclass for a port. It must hold the state variables: Pressure ($P$), Flow Rate ($Q$), and fluid properties (density, viscosity).
-3. **Create the `HydraulicNode` Base Class:** This is the parent class for all equipment. It needs attributes for its inputs and outputs (lists of `Port` objects) and a standard method structure for calculating pressure drop or head.
-4. **Build Static Components:** * Write a `Tank` class (acts as a constant pressure boundary condition).
-    * Write a `Pipe` class (calculates pressure drop using the Darcy-Weisbach equation or a simplified resistance factor).
-
-## Phase 2: The Core Simulation Engine (The Solver)
+### Phase 2: The Core Simulation Engine (The Solver) [x]
 *Goal: Write the algorithm that figures out the operating conditions of a connected network.*
+* **Energy Balance Logic:** [x] The sum of pressure drops and gains around a closed loop must be zero.
+* **The Iterative Solver:** [x] Use `scipy.optimize.root` (Levenberg-Marquardt) to guess flow rates, calculate resulting pressures, and iterate until the system converges.
 
-1. **Graph Representation:** Write a utility function that takes a list of connected `HydraulicNode` objects and builds an adjacency list or matrix. The engine needs to know what is connected to what.
-2. **Mass Balance Logic:** Implement Kirchhoff's First Law for fluid: the sum of flow rates entering any junction (like a T-piece) must equal the flow rates leaving it.
-3. **Energy Balance Logic:** The sum of pressure drops and gains around any closed loop must be zero. 
-4. **The Iterative Solver:** Use `scipy.optimize.root` or write a custom Newton-Raphson solver. The solver will guess a flow rate $Q$, calculate the resulting pressures across all nodes, check the errors at the boundaries, and iterate until the system converges. 
-    * *Testing Step:* Hardcode a simple Tank -> Pipe -> Tank network in a Python script and verify the solver finds the correct flow rate.
-
-## Phase 3: Active Rotating Equipment
+### Phase 3: Active Rotating Equipment [x]
 *Goal: Introduce complex physics into the solver.*
+* **The `Pump` Class:** [x] Implement centrifugal pump logic calculating generated head based on a quadratic performance curve.
+* **The `Valve` Class:** [x] Implement a control valve using a Flow Coefficient ($C_v$) to determine variable pressure drop.
 
-1. **The `Pump` Class:** Implement the centrifugal pump logic. The class should take its performance curve coefficients ($A, B, C$) and calculate the generated pressure differential based on the solver's current guess for $Q$. 
-2. **The `Valve` Class:** Implement a valve that uses a Flow Coefficient ($C_v$) to determine pressure drop based on an adjustable "open percentage."
-3. **Integration Testing:** Add the pump and valve to your hardcoded Python test script and ensure the solver still converges.
+### Phase 4: The FastAPI & WebSocket Layer [x]
+*Goal: Expose the simulation engine so a frontend can interact with it.*
+* **REST Endpoints:** [x] Create standard health-check routes.
+* **WebSocket Endpoint:** [x] Create a `ws://` endpoint to receive commands (e.g., valve throttling) and broadcast calculated $P$ and $Q$ values in real-time.
 
-## Phase 4: The FastAPI & WebSocket Layer
-*Goal: Expose your simulation engine so a frontend can talk to it.*
-
-1. **REST Endpoints:** Create standard HTTP `POST` routes in FastAPI to receive a JSON payload of the network layout (the nodes and how they are connected).
-2. **WebSocket Endpoint:** Create a `ws://` endpoint. This is crucial for real-time simulation. The backend will run the solver in a continuous loop and broadcast the calculated $P$ and $Q$ values for every node through this WebSocket connection.
-
-## Phase 5: The React Flow Frontend Canvas
+### Phase 5: The React Flow Frontend Canvas [x]
 *Goal: Build the interactive Process Flow Diagram (PFD) interface.*
+* **Initialize React:** [x] Set up Vite with `reactflow` and `axios`.
+* **Create Custom Nodes:** [x] Build visually distinct React components for `Tank`, `Pump`, `Orifice`, and `Valve` (including an HTML range slider).
+* **Canvas Layout:** [x] Render the equipment on a gridded, interactive workspace.
 
-1. **Initialize React:** Set up a new React application and install `reactflow` and `axios`.
-2. **Create Custom Nodes:** Build visually distinct React components for each equipment type. Building these custom React Flow nodes and styling the SVG elements will feel like a natural progression from writing standard JavaScript canvas drawings for things like tanks and compressors. 
-3. **Drag-and-Drop Implementation:** Configure the React Flow canvas so users can drag equipment from a sidebar, drop it onto the grid, and draw edges (pipes) between the handles. 
+### Phase 6: Integration & Finalization [x]
+*Goal: Connect the visual canvas to the mathematical engine and lock in the MVP.*
+* **The Real-Time Loop:** [x] Wire the React valve slider to the FastAPI WebSocket to trigger real-time SciPy calculations and display the updated flow rate on the UI.
 
-## Phase 6: Integration & Finalization
-*Goal: Connect the visual canvas to the mathematical engine.*
+---
 
-1. **State Synchronization:** Write the frontend logic that translates the visual React Flow graph (nodes and edges) into the JSON payload your FastAPI backend expects.
-2. **The Real-Time Loop:** Connect the React app to the FastAPI WebSocket. When the user changes a valve position on the UI, send the update via WebSocket. The backend recalculates, sends back the new pressures, and the React app updates the text labels on the PFD in real-time.
-3. **Save/Load Functionality:** Add a button to download the React Flow state and backend parameters as a `.json` file, and an upload button to restore them.
-4. **Containerization (Optional but Recommended):** Write a `Dockerfile` for the FastAPI backend and another for the React frontend, orchestrating them with `docker-compose.yml`. Containerizing the app makes it incredibly easy to spin up in a local development environment or deploy directly to a Proxmox environment.
+## Stage 2: The Dynamic Engineering Tool [IN PROGRESS]
+**Goal:** Evolve the MVP into a legitimate sizing and troubleshooting utility for API 614 lube oil systems.
 
+### Phase 7: The Dynamic Graph Engine [ ]
+*Goal: Demolish the hardcoded backend and replace it with an engine that mathematically reads and interprets the React Flow canvas.*
+* **JSON Graph Parsing:** [ ] Write a FastAPI endpoint that accepts the full array of nodes and edges from React Flow and dynamically instantiates Python objects on the fly.
+* **Edge as a Pipe:** [ ] Upgrade the edge logic so every drawn line represents a physical `Pipe` object with user-defined length and diameter.
+* **State Propagation (Node-to-Node Math):** [ ] Mathematically chain the objects so the calculated outlet state of one node feeds directly into the inlet state of the next ($P_{in, n+1} = P_{out, n}$).
+
+### Phase 8: Parallel Networks & Junctions [ ]
+*Goal: Evolve the solver from a simple 1D series circuit to a complex network capable of handling headers and branches.*
+* **Junction Nodes (Tees and Manifolds):** [ ] Create `Splitter` and `Mixer` nodes to handle flow division (e.g., supplying thrust and journal bearings simultaneously).
+* **Kirchhoff's Flow Logic:** [ ] Upgrade the SciPy solver to guess pressures at every junction, ensuring the sum of flows entering a tee exactly equals the flows leaving it.
+
+### Phase 9: Lube Oil Specific Physics [ ]
+*Goal: Introduce the thermodynamics and specialized equipment required for compressor lubrication.*
+* **Dynamic Viscosity & Temperature:** [ ] Update the `Port` class to track Temperature ($T$). Implement viscosity-temperature curves so cold startups dynamically increase system friction.
+* **Heat Exchanger Node:** [ ] Create a component that removes heat and calculates tube-bundle pressure drop.
+* **Filter Node:** [ ] Implement duplex filters allowing input of "clean" vs "dirty" $\Delta P$ to simulate clogging.
+* **Pressure Control Valves (PCV):** [ ] Introduce active throttling constraints to the solver to maintain specific downstream header pressures.
+
+### Phase 10: Canvas UX, State Management, & Deployment [ ]
+*Goal: Polish the frontend into a professional CAD environment and prepare the application for self-hosted deployment.*
+* **The Equipment Library:** [ ] Build a drag-and-drop sidebar menu to pull unlimited components onto the canvas.
+* **Live Node Telemetry:** [ ] Display specific $\Delta P$ or generated head directly inside the visual icons on the canvas.
+* **Save/Load Functionality:** [ ] Add the ability to download the entire React Flow state and backend parameters as a `.json` file, and upload to restore a specific system design.
+* **Containerization:** [ ] Write a `Dockerfile` for the FastAPI backend and the React frontend, orchestrating them with a `docker-compose.yml` file so the finished tool can be easily deployed to a self-hosted Docker environment.
 
 # Hydraulic System Simulator: Project Structure
 
