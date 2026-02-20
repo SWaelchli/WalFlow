@@ -39,11 +39,36 @@ export default function App() {
 
   // The initial blueprint. Notice we pass handleValveChange directly into the valve's data!
   const initialNodes = [
-    { id: 'tank-a', type: 'tank', position: { x: 50, y: 150 }, data: { label: 'Source Tank', level: 2.0 } },
-    { id: 'pump-1', type: 'pump', position: { x: 250, y: 170 }, data: {} },
-    { id: 'orifice-1', type: 'orifice', position: { x: 400, y: 175 }, data: {} },
-    { id: 'valve-1', type: 'valve', position: { x: 550, y: 140 }, data: { label: 'FCV-101', opening: 50, onChange: handleValveChange } },
-    { id: 'tank-b', type: 'tank', position: { x: 750, y: 150 }, data: { label: 'Dest Tank', level: 20.0 } },
+    { 
+      id: 'tank-a', 
+      type: 'tank', 
+      position: { x: 50, y: 150 }, 
+      data: { label: 'Source Tank', level: 2.0, elevation: 0.0 } 
+    },
+    { 
+      id: 'pump-1', 
+      type: 'pump', 
+      position: { x: 250, y: 170 }, 
+      data: { label: 'Booster Pump', A: 80.0, B: 0.0, C: -2000.0 } 
+    },
+    { 
+      id: 'orifice-1', 
+      type: 'orifice', 
+      position: { x: 400, y: 175 }, 
+      data: { label: 'Flow Meter', pipe_diameter: 0.1, orifice_diameter: 0.07 } 
+    },
+    { 
+      id: 'valve-1', 
+      type: 'valve', 
+      position: { x: 550, y: 140 }, 
+      data: { label: 'FCV-101', opening: 50, max_cv: 0.05, onChange: handleValveChange } 
+    },
+    { 
+      id: 'tank-b', 
+      type: 'tank', 
+      position: { x: 750, y: 150 }, 
+      data: { label: 'Dest Tank', level: 2.0, elevation: 20.0 } 
+    },
   ];
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
@@ -55,7 +80,14 @@ export default function App() {
 
     ws.current.onopen = () => {
       console.log('Connected to Python WalFlow Engine!');
-      // Send an initial ping just to trigger the very first calculation
+      
+      // When we connect, send the initial graph to the backend
+      ws.current.send(JSON.stringify({ 
+        action: 'update_graph', 
+        graph: { nodes, edges } 
+      }));
+      
+      // Also trigger a valve update to start the loop
       ws.current.send(JSON.stringify({ action: 'update_valve', value: 50.0 }));
     };
 
@@ -65,8 +97,10 @@ export default function App() {
       if (data.status === 'success') {
         // Update the big flow rate number on the screen
         setFlowRate(data.flow_rate_m3s);
-      } else {
+      } else if (data.status === 'error') {
         console.error('Simulation Error:', data.message);
+      } else if (data.status === 'waiting') {
+        console.log('Backend waiting:', data.message);
       }
     };
 
@@ -75,6 +109,17 @@ export default function App() {
       if (ws.current) ws.current.close();
     };
   }, []);
+
+  // Update backend graph when nodes or edges change (simplified for now)
+  // In a real app, we might debounce this to avoid excessive traffic
+  useEffect(() => {
+    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+      ws.current.send(JSON.stringify({ 
+        action: 'update_graph', 
+        graph: { nodes, edges } 
+      }));
+    }
+  }, [nodes, edges]);
 
   return (
     <div style={{ width: '100vw', height: '100vh', backgroundColor: '#f4f4f5', position: 'relative' }}>

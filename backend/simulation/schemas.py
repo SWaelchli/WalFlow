@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, List, Dict, Any
 import uuid
 
 class Port(BaseModel):
@@ -20,4 +20,25 @@ class Port(BaseModel):
     
     # Network Tracking: Which port on another piece of equipment is this connected to?
     connected_to_port_id: Optional[str] = None
+
+class ReactFlowNode(BaseModel):
+    """Represents a node from React Flow."""
+    id: str
+    type: str
+    position: Dict[str, float]
+    data: Dict[str, Any]
+
+class ReactFlowEdge(BaseModel):
+    """Represents an edge from React Flow."""
+    id: str
+    source: str
+    target: str
+    sourceHandle: Optional[str] = None
+    targetHandle: Optional[str] = None
+    data: Optional[Dict[str, Any]] = Field(default_factory=dict)
+
+class ReactFlowGraph(BaseModel):
+    """Represents the full graph sent from the React frontend."""
+    nodes: List[ReactFlowNode]
+    edges: List[ReactFlowEdge]
 

@@ -13,6 +13,7 @@ class Tank(HydraulicNode):
         self.fluid_level = fluid_level  # Height of the liquid inside the tank (meters)
         
         # A tank typically acts as a source or sink, so we give it one default connection port
+        self.add_inlet()
         self.add_outlet()
 
     def calculate(self):

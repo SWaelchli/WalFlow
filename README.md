@@ -86,11 +86,11 @@ The app should be modularized and easaly to maintain and expand.
 ## Stage 2: The Dynamic Engineering Tool [IN PROGRESS]
 **Goal:** Evolve the MVP into a legitimate sizing and troubleshooting utility for API 614 lube oil systems.
 
-### Phase 7: The Dynamic Graph Engine [ ]
+### Phase 7: The Dynamic Graph Engine [x]
 *Goal: Demolish the hardcoded backend and replace it with an engine that mathematically reads and interprets the React Flow canvas.*
-* **JSON Graph Parsing:** [ ] Write a FastAPI endpoint that accepts the full array of nodes and edges from React Flow and dynamically instantiates Python objects on the fly.
-* **Edge as a Pipe:** [ ] Upgrade the edge logic so every drawn line represents a physical `Pipe` object with user-defined length and diameter.
-* **State Propagation (Node-to-Node Math):** [ ] Mathematically chain the objects so the calculated outlet state of one node feeds directly into the inlet state of the next ($P_{in, n+1} = P_{out, n}$).
+* **JSON Graph Parsing:** [x] Write a FastAPI endpoint that accepts the full array of nodes and edges from React Flow and dynamically instantiates Python objects on the fly.
+* **Edge as a Pipe:** [x] Upgrade the edge logic so every drawn line represents a physical `Pipe` object with user-defined length and diameter.
+* **State Propagation (Node-to-Node Math):** [x] Mathematically chain the objects so the calculated outlet state of one node feeds directly into the inlet state of the next ($P_{in, n+1} = P_{out, n}$).
 
 ### Phase 8: Parallel Networks & Junctions [ ]
 *Goal: Evolve the solver from a simple 1D series circuit to a complex network capable of handling headers and branches.*

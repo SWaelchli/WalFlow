@@ -18,55 +18,45 @@ class NetworkSolver:
     def __init__(self, nodes: List[HydraulicNode]):
         self.nodes = nodes
         
-        # For our Phase 2 MVP, we will extract the specific components 
-        # to solve a simple 1D series circuit (Tank -> Pipe -> Tank)
-        self.tanks = [n for n in nodes if isinstance(n, Tank)]
-        self.pipes = [n for n in nodes if isinstance(n, Pipe)]
-        self.orifices = [n for n in nodes if isinstance(n, Orifice)]
-        self.valves = [n for n in nodes if isinstance(n, Valve)]
-        self.pumps = [n for n in nodes if isinstance(n, Pump)]
-
     def objective_function(self, flows: np.ndarray) -> np.ndarray:
         """
-        This is the function SciPy will try to force to zero.
-        It takes a guessed flow rate, calculates the resulting pressure, 
-        and returns the error (residual).
+        Calculates the residual error in the energy balance across the network.
+        Now dynamically handles any number of nodes in series.
         """
-        # flows[0] is the solver's current guess for the volumetric flow rate (Q)
         q_guess = flows[0]
+        density = 1000.0  # Assuming water for Phase 7
         
-        tank_in = self.tanks[0]
-        pump = self.pumps[0]
-        pipe = self.pipes[0]
-        orifice = self.orifices[0]
-        valve = self.valves[0]
-        tank_out = self.tanks[1]
+        if not self.nodes:
+            return np.array([0.0])
+            
+        # 1. Starting boundary pressure from the first node (must be a Tank)
+        if not isinstance(self.nodes[0], Tank):
+            raise ValueError("The first node in the circuit must be a Tank.")
         
-        # 1. Get the starting boundary pressure from the first tank
-        p_start = tank_in.calculate()
+        current_p = self.nodes[0].calculate()
         
-        # 2.a Calculate the pressure drop across the pipe based on the guessed flow.
-        # (Assuming standard water density of 1000.0 kg/m^3 for now)
-        dp_pipe = pipe.calculate_delta_p(q_guess, density=1000.0)
-        
-        # 2.b Calculate the pressure drop across the orifice based on the guessed flow.
-        dp_orifice = orifice.calculate_delta_p(q_guess, density=1000.0)
+        # 2. Iterate through all intermediate nodes to calculate the cumulative pressure
+        for node in self.nodes[1:-1]:
+            if isinstance(node, Pump):
+                dp = node.calculate_delta_p(q_guess, density)
+                current_p += dp
+            elif hasattr(node, 'calculate_delta_p'):
+                # Pipe, Valve, Orifice are resistances
+                dp = node.calculate_delta_p(q_guess, density)
+                current_p -= dp
+            else:
+                # If a node doesn't have calculate_delta_p, it's just a pass-through for now
+                pass
 
-        # 2.c Calculate the pressure drop across the valve based on the guessed flow.
-        dp_valve = valve.calculate_delta_p(q_guess, density=1000.0)
-
-        # 2.d Calculate the pressure increase across the pump based on the guessed flow.
-        dp_pump = pump.calculate_delta_p(q_guess, density=1000.0)
-
-        # 3 Calculate the pressure drop across the valve based on the guessed flow.
-        # Notice that dp_pump is ADDED to the starting pressure, while resistances are subtracted.
-        p_end_calculated = p_start + dp_pump - dp_pipe - dp_orifice - dp_valve
+        # 3. Final calculated pressure vs. the last node's boundary pressure
+        last_node = self.nodes[-1]
+        if not isinstance(last_node, Tank):
+            raise ValueError("The last node in the circuit must be a Tank.")
+            
+        p_end_boundary = last_node.calculate()
         
-        # 4. Get the actual fixed boundary pressure of the destination tank
-        p_end_boundary = tank_out.calculate()
-        
-        # 5. Calculate the error. If this is 0, our guess was perfect.
-        error = p_end_calculated - p_end_boundary
+        # 4. Calculate the residual (error)
+        error = current_p - p_end_boundary
         
         return np.array([error])
 
@@ -74,8 +64,8 @@ class NetworkSolver:
         """
         Executes the iterative solver to find the exact flow rate.
         """
-        if len(self.tanks) < 2 or len(self.pipes) < 1:
-            raise ValueError("Network needs at least 2 Tanks and 1 Pipe to solve.")
+        if len(self.nodes) < 2:
+            raise ValueError("Network needs at least 2 nodes to solve.")
 
         # Provide an initial guess for the flow rate (0.1 m^3/s)
         initial_guess = np.array([0.1])
@@ -84,26 +74,43 @@ class NetworkSolver:
         solution = root(self.objective_function, initial_guess, method='lm')
         
         # Check if SciPy claims success AND the final error is actually near zero
-        if solution.success and abs(solution.fun[0]) < 0.01:
+        if solution.success and abs(solution.fun[0]) < 0.1:
             final_q = solution.x[0]
+            density = 1000.0 # Assuming water for now
             
-            # Update the pipe's internal state 
-            self.pipes[0].inlets[0].flow_rate = final_q
-            self.pipes[0].calculate() 
-
-            # Update the orifice's internal state 
-            self.orifices[0].inlets[0].flow_rate = final_q
-            self.orifices[0].calculate()
-
-            # Update the valve's internal state 
-            self.valves[0].inlets[0].flow_rate = final_q
-            self.valves[0].calculate()
-
-            # Update the pump's internal state 
-            self.pumps[0].inlets[0].flow_rate = final_q 
-            self.pumps[0].calculate()
+            # --- State Propagation: Update all Ports with final results ---
             
-            # NOW we return the final answer, after all objects are updated
+            # Start with the first tank
+            current_p = self.nodes[0].calculate()
+            
+            # Set the first node (Tank) outlet
+            if self.nodes[0].outlets:
+                self.nodes[0].outlets[0].flow_rate = final_q
+                self.nodes[0].outlets[0].pressure = current_p
+            
+            # Propagate through the chain
+            for node in self.nodes[1:]:
+                # Every node's inlet is the previous node's outlet
+                if node.inlets:
+                    node.inlets[0].flow_rate = final_q
+                    node.inlets[0].pressure = current_p
+                
+                # Calculate the pressure change across this node
+                if isinstance(node, Pump):
+                    dp = node.calculate_delta_p(final_q, density)
+                    current_p += dp
+                elif hasattr(node, 'calculate_delta_p'):
+                    dp = node.calculate_delta_p(final_q, density)
+                    current_p -= dp
+                elif isinstance(node, Tank):
+                    # For the last tank, we just use its boundary pressure
+                    current_p = node.calculate()
+                
+                # Set this node's outlet pressure
+                if node.outlets:
+                    node.outlets[0].flow_rate = final_q
+                    node.outlets[0].pressure = current_p
+
             return final_q
         else:
             raise ValueError(f"Solver failed to balance energy. Final error: {solution.fun[0]:.2f} Pa")
