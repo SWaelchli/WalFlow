@@ -11,7 +11,7 @@ const equipmentTypes = [
   { type: 'mixer', label: 'Mixer', description: 'Return Manifold / T-Piece' },
 ];
 
-export default function Sidebar({ onSave, onLoad }) {
+export default function Sidebar({ onSave, onLoad, onClear }) {
   const onDragStart = (event, nodeType) => {
     event.dataTransfer.setData('application/reactflow', nodeType);
     event.dataTransfer.effectAllowed = 'move';
@@ -28,11 +28,11 @@ export default function Sidebar({ onSave, onLoad }) {
         <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>Drag and drop onto the canvas</p>
       </div>
 
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
         <button 
           onClick={onSave}
           style={{
-            flex: 1, padding: '8px', background: '#0f172a', color: '#fff',
+            flex: '1 1 100px', padding: '8px', background: '#0f172a', color: '#fff',
             border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px'
           }}
         >
@@ -41,11 +41,20 @@ export default function Sidebar({ onSave, onLoad }) {
         <button 
           onClick={() => document.getElementById('file-upload').click()}
           style={{
-            flex: 1, padding: '8px', background: '#e2e8f0', color: '#1e293b',
+            flex: '1 1 100px', padding: '8px', background: '#e2e8f0', color: '#1e293b',
             border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px'
           }}
         >
           Load Plan
+        </button>
+        <button 
+          onClick={onClear}
+          style={{
+            flex: '1 1 100px', padding: '8px', background: '#fee2e2', color: '#991b1b',
+            border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px'
+          }}
+        >
+          Clear Canvas
         </button>
         <input 
           id="file-upload" 

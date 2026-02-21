@@ -1,12 +1,18 @@
 import React from 'react';
 
-export default function PropertyEditor({ node, onUpdate }) {
+export default function PropertyEditor({ node, onUpdate, onDelete }) {
   if (!node) return null;
 
   const { id, type, data } = node;
 
   const handleChange = (field, value) => {
     onUpdate(id, { [field]: parseFloat(value) || value });
+  };
+
+  const handleDelete = () => {
+    if (window.confirm(`Are you sure you want to delete this ${type}?`)) {
+      onDelete(id);
+    }
   };
 
   return (
@@ -16,9 +22,20 @@ export default function PropertyEditor({ node, onUpdate }) {
       borderRadius: '8px', border: '1px solid #e2e8f0',
       boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
     }}>
-      <h3 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#0f172a' }}>
-        Equipment Properties: {type.toUpperCase()}
-      </h3>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+        <h3 style={{ margin: 0, fontSize: '14px', color: '#0f172a' }}>
+          Equipment Properties: {type.toUpperCase()}
+        </h3>
+        <button 
+          onClick={handleDelete}
+          style={{
+            background: '#ef4444', color: 'white', border: 'none', borderRadius: '4px',
+            padding: '4px 8px', fontSize: '10px', cursor: 'pointer'
+          }}
+        >
+          Delete
+        </button>
+      </div>
       
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         <div key="label">

@@ -105,12 +105,6 @@ class NetworkSolver:
         except (ValueError, IndexError, AttributeError):
             return 0
 
-    def _parse_port_idx(self, port_str: str) -> int:
-        try:
-            return int(port_str.split('-')[-1])
-        except (ValueError, IndexError, AttributeError):
-            return 0
-
     def _get_node_p_out(self, node, p_in, q_node):
         """Helper to calculate outlet pressure of any node."""
         inlet = node.inlets[0] if node.inlets else None
@@ -186,24 +180,37 @@ class NetworkSolver:
         for i, p in self.fixed_pressure_nodes.items(): p_in_all[i] = p
         for i, idx in enumerate(self.internal_node_indices): p_in_all[idx] = p_in_internal[i]
 
-        node_flows_in = np.zeros(len(self.nodes_list))
-        node_flows_out = np.zeros(len(self.nodes_list))
-        for j, edge in enumerate(self.edges_list):
-            node_flows_in[self.node_id_to_idx[edge['target']]] += q_edges[j]
-            node_flows_out[self.node_id_to_idx[edge['source']]] += q_edges[j]
+        # Reset all node flow rates first
+        for node in self.nodes_list:
+            for port in node.inlets: port.flow_rate = 0.0
+            for port in node.outlets: port.flow_rate = 0.0
 
-        # Update Node Ports
+        # Update Node Ports from connected edges
+        for j, edge in enumerate(self.edges_list):
+            q = q_edges[j]
+            src_node = self.network.nodes[edge['source']]
+            tgt_node = self.network.nodes[edge['target']]
+            
+            src_port_idx = self._parse_port_idx(edge.get('source_port', 'outlet-0'))
+            if src_port_idx < len(src_node.outlets):
+                src_node.outlets[src_port_idx].flow_rate += q
+                
+            tgt_port_idx = self._parse_port_idx(edge.get('target_port', 'inlet-0'))
+            if tgt_port_idx < len(tgt_node.inlets):
+                tgt_node.inlets[tgt_port_idx].flow_rate += q
+
+        # Update Node Pressures
         for i, node in enumerate(self.nodes_list):
-            q_in = node_flows_in[i]
             p_in = p_in_all[i]
-            p_out = self._get_node_p_out(node, p_in, q_in)
+            # For multi-port nodes, we assume zero internal pressure drop (junctions)
+            # For others, we take the flow through the FIRST inlet as the reference for dP.
+            q_ref = node.inlets[0].flow_rate if node.inlets else 0.0
+            p_out = self._get_node_p_out(node, p_in, q_ref)
             
             for port in node.inlets:
                 port.pressure = p_in
-                port.flow_rate = q_in
             for port in node.outlets:
                 port.pressure = p_out
-                port.flow_rate = node_flows_out[i]
 
         # Update Edge (Pipe) Ports
         for j, edge in enumerate(self.edges_list):
@@ -213,8 +220,8 @@ class NetworkSolver:
             tgt_idx = self.node_id_to_idx[edge['target']]
             
             p_src_in = p_in_all[src_idx]
-            q_src_in = node_flows_in[src_idx]
-            p_src_out = self._get_node_p_out(self.nodes_list[src_idx], p_src_in, q_src_in)
+            q_src_ref = self.nodes_list[src_idx].inlets[0].flow_rate if self.nodes_list[src_idx].inlets else 0.0
+            p_src_out = self._get_node_p_out(self.nodes_list[src_idx], p_src_in, q_src_ref)
             
             pipe.inlets[0].pressure = p_src_out
             pipe.inlets[0].flow_rate = q

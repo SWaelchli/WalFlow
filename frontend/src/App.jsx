@@ -165,6 +165,20 @@ export default function App() {
     }
   }, [handleValveChange, setNodes, setEdges]);
 
+  const onDeleteNode = useCallback((nodeId) => {
+    setNodes((nds) => nds.filter((node) => node.id !== nodeId));
+    setEdges((eds) => eds.filter((edge) => edge.source !== nodeId && edge.target !== nodeId));
+    setSelectedNode(null);
+  }, [setNodes, setEdges]);
+
+  const onClearCanvas = useCallback(() => {
+    if (window.confirm('Are you sure you want to clear the entire canvas?')) {
+      setNodes([]);
+      setEdges([]);
+      setSelectedNode(null);
+    }
+  }, [setNodes, setEdges]);
+
   // WebSocket Connection
   useEffect(() => {
     ws.current = new WebSocket('ws://localhost:8000/ws/simulate');
@@ -201,7 +215,7 @@ export default function App() {
 
   return (
     <div style={{ width: '100vw', height: '100vh', display: 'flex', backgroundColor: '#f4f4f5' }}>
-      <Sidebar onSave={onSave} onLoad={onLoad} />
+      <Sidebar onSave={onSave} onLoad={onLoad} onClear={onClearCanvas} />
 
       <div style={{ flexGrow: 1, position: 'relative' }} ref={reactFlowWrapper}>
         <div style={{
@@ -215,7 +229,7 @@ export default function App() {
           </div>
         </div>
 
-        <PropertyEditor node={selectedNode} onUpdate={updateNodeData} />
+        <PropertyEditor node={selectedNode} onUpdate={updateNodeData} onDelete={onDeleteNode} />
 
         <ReactFlow 
           nodes={nodes} 

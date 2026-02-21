@@ -90,19 +90,21 @@ class GraphParser:
         elif t == 'heat_exchanger':
             return HeatExchanger(
                 name=name,
-                heat_duty=float(d.get('heat_duty', 0.0)),
-                pressure_drop_factor=float(d.get('k_factor', 0.01))
+                heat_duty=float(d.get('heat_duty_kw', 0.0)) * 1000.0,
+                # Use a default or look for k_factor in data
+                pressure_drop_factor=float(d.get('k_factor', 10.0))
             )
         elif t == 'filter':
             return Filter(
                 name=name,
-                resistance_clean=float(d.get('resistance_clean', 1e6)),
+                resistance_clean=float(d.get('resistance', 1000.0)),
                 clogging_factor=float(d.get('clogging_factor', 1.0))
             )
         elif t == 'splitter':
-            # Count how many outlets we need (or default to 2)
-            return Splitter(name=name, num_outlets=2)
+            # Matching the 3 outlets in SplitterNode.jsx
+            return Splitter(name=name, num_outlets=3)
         elif t == 'mixer':
-            return Mixer(name=name, num_inlets=2)
+            # Matching the 3 inlets in MixerNode.jsx
+            return Mixer(name=name, num_inlets=3)
         else:
             return HydraulicNode(name=name, node_type=t)

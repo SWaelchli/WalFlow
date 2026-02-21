@@ -104,13 +104,18 @@ The app should be modularized and easaly to maintain and expand.
 * **Filter Node:** [x] Implement duplex filters allowing input of "clean" vs "dirty" $\Delta P$ to simulate clogging.
 * **Bi-directional Propagation:** [x] Upgrade the solver and equipment classes to correctly propagate thermal and fluid properties even during reverse flow.
 
-### Phase 10: Frontend Integration & Canvas UX [ ]
+### Phase 10: Frontend Integration & Canvas UX [x]
 *Goal: Polish the frontend into a professional CAD environment and prepare the application for self-hosted deployment.*
-* **New Equipment Nodes:** [ ] Create React Flow visual components for `Heat Exchanger` and `Filter`.
-* **The Equipment Library:** [ ] Build a drag-and-drop sidebar menu to pull unlimited components onto the canvas.
-* **Live Node Telemetry:** [ ] Display specific $\Delta P$ or generated head directly inside the visual icons on the canvas.
-* **Save/Load Functionality:** [ ] Add the ability to download the entire React Flow state and backend parameters as a `.json` file, and upload to restore a specific system design.
+* **New Equipment Nodes:** [x] Create React Flow visual components for `Heat Exchanger` and `Filter`.
+* **The Equipment Library:** [x] Build a drag-and-drop sidebar menu to pull unlimited components onto the canvas.
+* **Live Node Telemetry:** [x] Display specific $\Delta P$ or generated head directly inside the visual icons on the canvas.
+* **Save/Load Functionality:** [x] Add the ability to download the entire React Flow state and backend parameters as a `.json` file, and upload to restore a specific system design.
 
+### Phase 11: Refining of App & Bug Fixing [ ]
+*Goal: Refining and debugging of existing app. Find inconsistencies, missing essential features and layout issues. Resolve the same.*
+* **Find Missing Features:** [ ] Finding essential features such as deleting equipment and connections on canvas.
+* **Add more visuals:** [ ] In order to make the tool more usable add more live operating data. This has to be aligned in concuntion with Me. Iterate this step with me until satisfactory.
+* **Verify Functionalities** [ ] Test and simulate different PFDs by draging equipment from libary into canvas and test their output. Build different test cases.
 
 ## Stage 3: The Dynamic Engineering Tool [ ]
 
