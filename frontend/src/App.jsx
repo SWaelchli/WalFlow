@@ -34,7 +34,7 @@ const nodeTypes = {
 };
 
 const initialEdges = [
-  { id: 'edge-1', source: 'tank-a', target: 'pump-1', sourceHandle: 'outlet-0', targetHandle: 'inlet-0', animated: true },
+  { id: 'edge-1', source: 'tank-a', target: 'pump-1', sourceHandle: 'outlet-0', targetHandle: 'inlet-0', animated: true, data: { length: 25.0, diameter: 0.1 } },
 ];
 
 let idCount = 0;
@@ -47,6 +47,7 @@ export default function App() {
   
   const [flowRate, setFlowRate] = useState(0.0);
   const [selectedNode, setSelectedNode] = useState(null);
+  const [selectedEdge, setSelectedEdge] = useState(null);
 
   const handleValveChange = useCallback((newValue, nodeId) => {
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {
@@ -77,15 +78,22 @@ export default function App() {
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
   const onConnect = useCallback((params) => {
-    setEdges((eds) => addEdge({ ...params, animated: true }, eds));
+    setEdges((eds) => addEdge({ ...params, animated: true, data: { length: 25.0, diameter: 0.1 } }, eds));
   }, [setEdges]);
 
   const onNodeClick = useCallback((event, node) => {
     setSelectedNode(node);
+    setSelectedEdge(null);
+  }, []);
+
+  const onEdgeClick = useCallback((event, edge) => {
+    setSelectedEdge(edge);
+    setSelectedNode(null);
   }, []);
 
   const onPaneClick = useCallback(() => {
     setSelectedNode(null);
+    setSelectedEdge(null);
   }, []);
 
   const updateNodeData = useCallback((nodeId, newData) => {
@@ -93,7 +101,6 @@ export default function App() {
       nds.map((node) => {
         if (node.id === nodeId) {
           const updatedNode = { ...node, data: { ...node.data, ...newData } };
-          // If we are currently selecting this node, update the selection state too
           if (selectedNode && selectedNode.id === nodeId) {
             setSelectedNode(updatedNode);
           }
@@ -103,6 +110,21 @@ export default function App() {
       })
     );
   }, [selectedNode, setNodes]);
+
+  const updateEdgeData = useCallback((edgeId, newData) => {
+    setEdges((eds) =>
+      eds.map((edge) => {
+        if (edge.id === edgeId) {
+          const updatedEdge = { ...edge, data: { ...edge.data, ...newData } };
+          if (selectedEdge && selectedEdge.id === edgeId) {
+            setSelectedEdge(updatedEdge);
+          }
+          return updatedEdge;
+        }
+        return edge;
+      })
+    );
+  }, [selectedEdge, setEdges]);
 
   const onDragOver = useCallback((event) => {
     event.preventDefault();
@@ -171,11 +193,17 @@ export default function App() {
     setSelectedNode(null);
   }, [setNodes, setEdges]);
 
+  const onDeleteEdge = useCallback((edgeId) => {
+    setEdges((eds) => eds.filter((edge) => edge.id !== edgeId));
+    setSelectedEdge(null);
+  }, [setEdges]);
+
   const onClearCanvas = useCallback(() => {
     if (window.confirm('Are you sure you want to clear the entire canvas?')) {
       setNodes([]);
       setEdges([]);
       setSelectedNode(null);
+      setSelectedEdge(null);
     }
   }, [setNodes, setEdges]);
 
@@ -229,7 +257,14 @@ export default function App() {
           </div>
         </div>
 
-        <PropertyEditor node={selectedNode} onUpdate={updateNodeData} onDelete={onDeleteNode} />
+        <PropertyEditor 
+          node={selectedNode} 
+          edge={selectedEdge}
+          onUpdate={updateNodeData} 
+          onUpdateEdge={updateEdgeData}
+          onDelete={onDeleteNode} 
+          onDeleteEdge={onDeleteEdge}
+        />
 
         <ReactFlow 
           nodes={nodes} 
@@ -239,6 +274,13 @@ export default function App() {
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           onNodeClick={onNodeClick}
+          onEdgeClick={onEdgeClick}
+          onNodesDelete={(deleted) => {
+            if (selectedNode && deleted.some(n => n.id === selectedNode.id)) setSelectedNode(null);
+          }}
+          onEdgesDelete={(deleted) => {
+            if (selectedEdge && deleted.some(e => e.id === selectedEdge.id)) setSelectedEdge(null);
+          }}
           onPaneClick={onPaneClick}
           onInit={setReactFlowInstance}
           onDrop={onDrop}

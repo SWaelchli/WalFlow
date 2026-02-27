@@ -8,6 +8,7 @@ export default function ValveNode({ id, data }) {
   const pIn = telemetry?.inlets?.[0]?.pressure || 0;
   const pOut = telemetry?.outlets?.[0]?.pressure || 0;
   const t = telemetry?.inlets?.[0]?.temperature || 293.15;
+  const Q = telemetry?.inlets?.[0]?.flow || 0;
   const dP = pIn - pOut;
 
   // Sync internal slider with external updates (e.g. from save/load)
@@ -36,6 +37,7 @@ export default function ValveNode({ id, data }) {
       {/* Telemetry Display */}
       <div style={{ fontSize: '10px', color: '#64748b', marginBottom: '8px', display: 'flex', justifyContent: 'space-between' }}>
         <span>dP: {paToBar(dP)} bar</span>
+        <span>Q: {(Q)} m3/s</span>
         <span style={{ color: '#0369a1' }}>{kToC(t)}°C</span>
       </div>
       

@@ -1,17 +1,28 @@
 import React from 'react';
 
-export default function PropertyEditor({ node, onUpdate, onDelete }) {
-  if (!node) return null;
+export default function PropertyEditor({ node, edge, onUpdate, onUpdateEdge, onDelete, onDeleteEdge }) {
+  if (!node && !edge) return null;
 
-  const { id, type, data } = node;
+  const isNode = !!node;
+  const item = isNode ? node : edge;
+  const { id, type, data } = item;
 
   const handleChange = (field, value) => {
-    onUpdate(id, { [field]: parseFloat(value) || value });
+    if (isNode) {
+      onUpdate(id, { [field]: parseFloat(value) || value });
+    } else {
+      onUpdateEdge(id, { [field]: parseFloat(value) || value });
+    }
   };
 
   const handleDelete = () => {
-    if (window.confirm(`Are you sure you want to delete this ${type}?`)) {
-      onDelete(id);
+    const label = isNode ? `node ${type}` : 'connection';
+    if (window.confirm(`Are you sure you want to delete this ${label}?`)) {
+      if (isNode) {
+        onDelete(id);
+      } else {
+        onDeleteEdge(id);
+      }
     }
   };
 
@@ -24,7 +35,7 @@ export default function PropertyEditor({ node, onUpdate, onDelete }) {
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
         <h3 style={{ margin: 0, fontSize: '14px', color: '#0f172a' }}>
-          Equipment Properties: {type.toUpperCase()}
+          {isNode ? `Equipment: ${type.toUpperCase()}` : 'Connection: PIPE'}
         </h3>
         <button 
           onClick={handleDelete}
@@ -38,16 +49,37 @@ export default function PropertyEditor({ node, onUpdate, onDelete }) {
       </div>
       
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        <div key="label">
-          <label style={{ fontSize: '11px', color: '#64748b' }}>Name Tag</label>
-          <input 
-            style={{ width: '100%', fontSize: '12px', padding: '4px' }}
-            value={data.label || ''} 
-            onChange={(e) => handleChange('label', e.target.value)}
-          />
-        </div>
+        {isNode && (
+          <div key="label">
+            <label style={{ fontSize: '11px', color: '#64748b' }}>Name Tag</label>
+            <input 
+              style={{ width: '100%', fontSize: '12px', padding: '4px' }}
+              value={data.label || ''} 
+              onChange={(e) => handleChange('label', e.target.value)}
+            />
+          </div>
+        )}
 
-        {type === 'tank' && (
+        {!isNode && (
+          <>
+            <div>
+              <label style={{ fontSize: '11px', color: '#64748b' }}>Pipe Length (m)</label>
+              <input 
+                type="number" style={{ width: '100%', fontSize: '12px' }}
+                value={data.length || 25.0} onChange={(e) => handleChange('length', e.target.value)}
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: '11px', color: '#64748b' }}>Pipe Diameter (m)</label>
+              <input 
+                type="number" style={{ width: '100%', fontSize: '12px' }}
+                value={data.diameter || 0.1} onChange={(e) => handleChange('diameter', e.target.value)}
+              />
+            </div>
+          </>
+        )}
+
+        {isNode && type === 'tank' && (
           <>
             <div>
               <label style={{ fontSize: '11px', color: '#64748b' }}>Fluid Level (m)</label>
@@ -73,7 +105,7 @@ export default function PropertyEditor({ node, onUpdate, onDelete }) {
           </>
         )}
 
-        {type === 'pump' && (
+        {isNode && type === 'pump' && (
           <>
             <div>
               <label style={{ fontSize: '11px', color: '#64748b' }}>Curve A (Shutoff Head)</label>
@@ -92,7 +124,7 @@ export default function PropertyEditor({ node, onUpdate, onDelete }) {
           </>
         )}
 
-        {type === 'valve' && (
+        {isNode && type === 'valve' && (
           <div>
             <label style={{ fontSize: '11px', color: '#64748b' }}>Max Cv (Flow Coeff)</label>
             <input 
@@ -102,7 +134,7 @@ export default function PropertyEditor({ node, onUpdate, onDelete }) {
           </div>
         )}
 
-        {type === 'heat_exchanger' && (
+        {isNode && type === 'heat_exchanger' && (
           <div>
             <label style={{ fontSize: '11px', color: '#64748b' }}>Heat Duty (kW, negative for cooling)</label>
             <input 
@@ -112,7 +144,7 @@ export default function PropertyEditor({ node, onUpdate, onDelete }) {
           </div>
         )}
 
-        {type === 'filter' && (
+        {isNode && type === 'filter' && (
           <div>
             <label style={{ fontSize: '11px', color: '#64748b' }}>Resistance Factor</label>
             <input 
