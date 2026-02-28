@@ -1,5 +1,5 @@
 import { Handle, Position } from 'reactflow';
-import { paToBar, m3sToLmin } from '../utils/converters';
+import { paToBar, m3sToLmin, mToMm } from '../utils/converters';
 
 export default function OrificeNode({ data }) {
   const telemetry = data.telemetry;
@@ -8,11 +8,13 @@ export default function OrificeNode({ data }) {
   const q = telemetry?.outlets?.[0]?.flow_rate || 0;
   const dP = pIn - pOut;
 
+  const orificeDia = data.orifice_diameter || 0.07;
+
   return (
     <div style={{ position: 'relative' }}>
       {/* Telemetry Display Above the Node */}
       <div style={{
-        position: 'absolute', top: -45, left: '50%', transform: 'translateX(-50%)',
+        position: 'absolute', top: -55, left: '50%', transform: 'translateX(-50%)',
         textAlign: 'center', width: '80px', pointerEvents: 'none'
       }}>
         <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#64748b' }}>
@@ -20,6 +22,9 @@ export default function OrificeNode({ data }) {
         </div>
         <div style={{ fontSize: '9px', color: '#64748b' }}>
           {m3sToLmin(q)} L/min
+        </div>
+        <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#0f172a', marginTop: '2px' }}>
+          Ø {mToMm(orificeDia)} mm
         </div>
       </div>
 

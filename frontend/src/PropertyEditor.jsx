@@ -1,4 +1,5 @@
 import React from 'react';
+import { mToMm, mmToM } from './utils/converters';
 
 export default function PropertyEditor({ node, edge, onUpdate, onUpdateEdge, onDelete, onDeleteEdge }) {
   if (!node && !edge) return null;
@@ -152,6 +153,27 @@ export default function PropertyEditor({ node, edge, onUpdate, onUpdateEdge, onD
               value={data.resistance} onChange={(e) => handleChange('resistance', e.target.value)}
             />
           </div>
+        )}
+
+        {isNode && type === 'orifice' && (
+          <>
+            <div>
+              <label style={{ fontSize: '11px', color: '#64748b' }}>Pipe Diameter (mm)</label>
+              <input 
+                type="number" style={{ width: '100%', fontSize: '12px' }}
+                value={mToMm(data.pipe_diameter || 0.1)} 
+                onChange={(e) => handleChange('pipe_diameter', mmToM(parseFloat(e.target.value) || 0))}
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: '11px', color: '#64748b' }}>Orifice Diameter (mm)</label>
+              <input 
+                type="number" style={{ width: '100%', fontSize: '12px' }}
+                value={mToMm(data.orifice_diameter || 0.07)} 
+                onChange={(e) => handleChange('orifice_diameter', mmToM(parseFloat(e.target.value) || 0))}
+              />
+            </div>
+          </>
         )}
       </div>
     </div>
