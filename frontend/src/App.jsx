@@ -322,7 +322,7 @@ export default function App() {
           </ReactFlow>
         </div>
         
-        <DataList nodes={nodes} edges={edges} />
+        <DataList nodes={nodes} edges={edges} onUpdateEdge={updateEdgeData} />
       </div>
     </div>
   );

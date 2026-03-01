@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { paToBar, m3sToLmin, kToC, mToMm } from './utils/converters';
-import { findClosestPipeMatch, ASME_PIPE_STANDARDS } from './utils/standards_library';
+import { findClosestPipeMatch, ASME_PIPE_STANDARDS, calculatePipeId } from './utils/standards_library';
 
-export default function DataList({ nodes, edges }) {
+export default function DataList({ nodes, edges, onUpdateEdge }) {
   const [activeTab, setActiveTab] = useState('pipes');
   const [manualOrder, setManualOrder] = useState([]);
 
@@ -108,14 +108,35 @@ export default function DataList({ nodes, edges }) {
             const match = findClosestPipeMatch(diaValue);
             let npsDisplay = "-";
             let schDisplay = "-";
+            let currentDn = 50;
+            let currentSch = "40";
             
             if (match) {
+              currentDn = match.dn;
+              currentSch = match.sch;
               const pipeInfo = ASME_PIPE_STANDARDS.find(p => p.dn === match.dn);
               npsDisplay = pipeInfo ? `${pipeInfo.nps}"` : `${match.dn}mm`;
               schDisplay = match.sch;
             } else if (diaValue > 0) {
               npsDisplay = `Custom (${mToMm(diaValue)}mm)`;
             }
+
+            const handleDnChange = (newDn) => {
+              const pipe = ASME_PIPE_STANDARDS.find(p => p.dn === parseInt(newDn));
+              if (pipe) {
+                const sch = pipe.schedules[currentSch] ? currentSch : Object.keys(pipe.schedules)[0];
+                const newId = calculatePipeId(pipe.od, pipe.schedules[sch]);
+                if (onUpdateEdge && !isNode) onUpdateEdge(item.id, { diameter: newId });
+              }
+            };
+
+            const handleSchChange = (newSch) => {
+              const pipe = ASME_PIPE_STANDARDS.find(p => p.dn === currentDn);
+              if (pipe && pipe.schedules[newSch]) {
+                const newId = calculatePipeId(pipe.od, pipe.schedules[newSch]);
+                if (onUpdateEdge && !isNode) onUpdateEdge(item.id, { diameter: newId });
+              }
+            };
 
             const masterIdx = manualOrder.findIndex(ref => ref.id === item.id);
 
@@ -134,8 +155,41 @@ export default function DataList({ nodes, edges }) {
                 <td style={{ padding: '6px' }}>{paToBar(pStart)}</td>
                 <td style={{ padding: '6px' }}>{paToBar(pEnd)}</td>
                 <td style={{ padding: '6px' }}>{kToC(temp)}</td>
-                {isPipeOnly && <td style={{ padding: '6px' }}>{npsDisplay}</td>}
-                {isPipeOnly && <td style={{ padding: '6px' }}>{schDisplay}</td>}
+                {isPipeOnly && (
+                  <td style={{ padding: '6px' }}>
+                    {!isNode ? (
+                      <select 
+                        style={{ fontSize: '10px', padding: '2px', border: '1px solid #cbd5e1', borderRadius: '4px' }}
+                        value={match ? currentDn : "custom"}
+                        onChange={(e) => {
+                          if (e.target.value !== 'custom') handleDnChange(e.target.value);
+                        }}
+                      >
+                        {!match && <option value="custom">{npsDisplay}</option>}
+                        {ASME_PIPE_STANDARDS.map(p => (
+                          <option key={p.dn} value={p.dn}>DN {p.dn} ({p.nps}")</option>
+                        ))}
+                      </select>
+                    ) : npsDisplay}
+                  </td>
+                )}
+                {isPipeOnly && (
+                  <td style={{ padding: '6px' }}>
+                    {!isNode ? (
+                      <select 
+                        style={{ fontSize: '10px', padding: '2px', border: '1px solid #cbd5e1', borderRadius: '4px' }}
+                        value={match ? currentSch : ""}
+                        onChange={(e) => handleSchChange(e.target.value)}
+                        disabled={!match}
+                      >
+                        {!match && <option value="">-</option>}
+                        {match && Object.keys(ASME_PIPE_STANDARDS.find(p => p.dn === currentDn).schedules).map(sch => (
+                          <option key={sch} value={sch}>{sch}</option>
+                        ))}
+                      </select>
+                    ) : schDisplay}
+                  </td>
+                )}
               </tr>
             );
           })}
