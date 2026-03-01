@@ -2,11 +2,12 @@ from simulation.equipment.tank import Tank
 from simulation.equipment.pipe import Pipe
 from simulation.equipment.pump import Pump
 from simulation.equipment.heat_exchanger import HeatExchanger
-from simulation.schemas import HydraulicNetwork
+from simulation.schemas import HydraulicNetwork, GlobalSettings
 from simulation.solver import NetworkSolver
 
 def test_thermal_balance():
     print("\n--- Phase 9: Thermal Balance Test ---")
+    gs = GlobalSettings()
     
     # Setup: Tank(40C) -> Pump -> HeatExchanger(Cooling) -> Tank
     temp_initial_c = 40.0
@@ -24,12 +25,16 @@ def test_thermal_balance():
         "hx1": hx,
         "t2": tank_sink
     }
+    for node in nodes.values():
+        node.global_settings = gs
     
     edges = [
         {"source": "t1", "target": "p1", "pipe": Pipe("p1", 1, 0.05)},
         {"source": "p1", "target": "hx1", "pipe": Pipe("p2", 1, 0.05)},
         {"source": "hx1", "target": "t2", "pipe": Pipe("p3", 1, 0.05)}
     ]
+    for edge in edges:
+        edge['pipe'].global_settings = gs
     
     network = HydraulicNetwork(nodes=nodes, edges=edges)
     solver = NetworkSolver(network)

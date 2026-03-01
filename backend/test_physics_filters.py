@@ -2,7 +2,7 @@ from simulation.equipment.tank import Tank
 from simulation.equipment.pipe import Pipe
 from simulation.equipment.pump import Pump
 from simulation.equipment.filter import Filter
-from simulation.schemas import HydraulicNetwork
+from simulation.schemas import HydraulicNetwork, GlobalSettings
 from simulation.solver import NetworkSolver
 
 def test_filter_viscosity():
@@ -10,6 +10,7 @@ def test_filter_viscosity():
     
     def solve_with_filter(temp_c):
         temp_k = temp_c + 273.15
+        gs = GlobalSettings()
         
         tank_source = Tank("Oil Tank", fluid_level=2.0, temperature=temp_k, fluid_type="iso_vg_46")
         pump = Pump("Main Pump", A=100.0, B=0, C=-1000.0)
@@ -18,11 +19,16 @@ def test_filter_viscosity():
         tank_sink = Tank("Return Tank", fluid_level=1.0, temperature=temp_k, fluid_type="iso_vg_46")
         
         nodes = {"t1": tank_source, "p1": pump, "f1": filt, "t2": tank_sink}
+        for node in nodes.values():
+            node.global_settings = gs
+
         edges = [
             {"source": "t1", "target": "p1", "pipe": Pipe("p1", 1, 0.05)},
             {"source": "p1", "target": "f1", "pipe": Pipe("p2", 1, 0.05)},
             {"source": "f1", "target": "t2", "pipe": Pipe("p3", 1, 0.05)}
         ]
+        for edge in edges:
+            edge['pipe'].global_settings = gs
         
         network = HydraulicNetwork(nodes=nodes, edges=edges)
         solver = NetworkSolver(network)

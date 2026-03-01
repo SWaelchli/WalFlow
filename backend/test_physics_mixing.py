@@ -1,11 +1,12 @@
 from simulation.equipment.tank import Tank
 from simulation.equipment.pipe import Pipe
 from simulation.equipment.mixer import Mixer
-from simulation.schemas import HydraulicNetwork
+from simulation.schemas import HydraulicNetwork, GlobalSettings
 from simulation.solver import NetworkSolver
 
 def test_thermal_mixing():
     print("\n--- Phase 9: Thermal Mixing Integrity Test ---")
+    gs = GlobalSettings()
     
     # Tank 1: Hot Oil (80C), 10m head
     t_hot = Tank("Hot Tank", fluid_level=10.0, temperature=80 + 273.15, fluid_type="iso_vg_46")
@@ -16,6 +17,8 @@ def test_thermal_mixing():
     t_sink = Tank("Return Tank", fluid_level=0.0, temperature=20 + 273.15, fluid_type="iso_vg_46")
     
     nodes = {"t1": t_hot, "t2": t_cold, "mix": mix, "t3": t_sink}
+    for node in nodes.values():
+        node.global_settings = gs
     
     # We use different diameters to get different flow rates
     edges = [
@@ -23,6 +26,8 @@ def test_thermal_mixing():
         {"source": "t2", "target": "mix", "target_port": "inlet-1", "pipe": Pipe("p_cold", 5, 0.08)}, # Larger pipe for cold side
         {"source": "mix", "target": "t3", "target_port": "inlet-0", "pipe": Pipe("p_out", 5, 0.08)}
     ]
+    for edge in edges:
+        edge['pipe'].global_settings = gs
     
     network = HydraulicNetwork(nodes=nodes, edges=edges)
     solver = NetworkSolver(network)

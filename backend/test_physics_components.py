@@ -14,13 +14,22 @@ from simulation.equipment.filter import Filter
 from simulation.equipment.heat_exchanger import HeatExchanger
 from simulation.equipment.mixer import Mixer
 from simulation.equipment.splitter import Splitter
-from simulation.schemas import HydraulicNetwork
+from simulation.schemas import HydraulicNetwork, GlobalSettings
 from simulation.solver import NetworkSolver
 from simulation.fluid_utils import FluidProperties
 
 def run_validation_test(name, nodes, edges):
     print(f"\n>>> Running Validation Test: {name} <<<")
+    # Explicitly use default global settings for validation tests
+    gs = GlobalSettings(atmospheric_pressure=101325.0, global_roughness=0.000045)
     network = HydraulicNetwork(nodes=nodes, edges=edges)
+    
+    # Manually inject global settings and link nodes (simulating GraphParser)
+    for node in nodes.values():
+        node.global_settings = gs
+    for edge in edges:
+        edge['pipe'].global_settings = gs
+
     solver = NetworkSolver(network)
     
     try:

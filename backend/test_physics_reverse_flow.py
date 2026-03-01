@@ -1,11 +1,12 @@
 from simulation.equipment.tank import Tank
 from simulation.equipment.pipe import Pipe
 from simulation.equipment.pump import Pump
-from simulation.schemas import HydraulicNetwork
+from simulation.schemas import HydraulicNetwork, GlobalSettings
 from simulation.solver import NetworkSolver
 
 def test_reverse_flow_integrity():
     print("\n--- Phase 9: Reverse Flow Integrity Test ---")
+    gs = GlobalSettings()
     
     # Tank 1: 5m level, 80C
     t1 = Tank("High Tank", fluid_level=5.0, temperature=80 + 273.15, fluid_type="iso_vg_46")
@@ -16,10 +17,15 @@ def test_reverse_flow_integrity():
     pump = Pump("Dead Pump", A=0, B=0, C=0)
     
     nodes = {"t1": t1, "t2": t2, "p1": pump}
+    for node in nodes.values():
+        node.global_settings = gs
+
     edges = [
         {"source": "t1", "target": "p1", "target_port": "inlet-0", "pipe": Pipe("pipe1", 1, 0.1)},
         {"source": "p1", "target": "t2", "target_port": "inlet-0", "pipe": Pipe("pipe2", 1, 0.1)}
     ]
+    for edge in edges:
+        edge['pipe'].global_settings = gs
     
     network = HydraulicNetwork(nodes=nodes, edges=edges)
     solver = NetworkSolver(network)
