@@ -12,7 +12,7 @@
         "level": 0.0002,
         "elevation": 0,
         "temperature": 313.15,
-        "fluid_type": "iso_vg_46",
+        
         "telemetry": {
           "inlets": [
             {
@@ -247,7 +247,7 @@
         "level": 0.0012,
         "elevation": 0,
         "temperature": 313.15,
-        "fluid_type": "iso_vg_46",
+        
         "telemetry": {
           "inlets": [
             {
@@ -391,7 +391,7 @@
         "level": 0.0012,
         "elevation": 0,
         "temperature": 313.15,
-        "fluid_type": "iso_vg_46",
+        
         "telemetry": {
           "inlets": [
             {
@@ -438,7 +438,7 @@
         "level": 0.002,
         "elevation": 0,
         "temperature": 313.15,
-        "fluid_type": "iso_vg_46",
+        
         "telemetry": {
           "inlets": [
             {

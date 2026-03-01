@@ -181,7 +181,7 @@ export default function App() {
           label: `${type.toUpperCase()} ${idCount}`, 
           onChange: type === 'valve' ? handleValveChange : undefined,
           ...(type === 'pump' && { A: 80.0, B: 0.0, C: -2000.0 }),
-          ...(type === 'tank' && { level: 2.0, elevation: 0.0, temperature: 313.15, fluid_type: 'iso_vg_46' }),
+          ...(type === 'tank' && { level: 2.0, elevation: 0.0, temperature: 313.15 }),
           ...(type === 'valve' && { max_cv: 0.05, opening: 50.0 }),
           ...(type === 'orifice' && { pipe_diameter: 0.1, orifice_diameter: 0.07 }),
           ...(type === 'filter' && { resistance: 1000.0 }),
