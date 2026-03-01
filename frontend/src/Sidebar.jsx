@@ -11,7 +11,7 @@ const equipmentTypes = [
   { type: 'mixer', label: 'Mixer', description: 'Return Manifold / T-Piece' },
 ];
 
-export default function Sidebar({ onSave, onLoad, onClear }) {
+export default function Sidebar({ onSave, onLoad, onClear, onCalculate, isSimulating }) {
   const onDragStart = (event, nodeType) => {
     event.dataTransfer.setData('application/reactflow', nodeType);
     event.dataTransfer.effectAllowed = 'move';
@@ -29,6 +29,18 @@ export default function Sidebar({ onSave, onLoad, onClear }) {
       </div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
+        <button 
+          onClick={onCalculate}
+          disabled={isSimulating}
+          style={{
+            flex: '1 1 100%', padding: '12px', background: isSimulating ? '#94a3b8' : '#0284c7', 
+            color: '#fff', border: 'none', borderRadius: '4px', cursor: isSimulating ? 'not-allowed' : 'pointer', 
+            fontSize: '14px', fontWeight: 'bold', marginBottom: '8px', transition: 'all 0.2s',
+            boxShadow: '0 2px 4px rgba(2, 132, 199, 0.2)'
+          }}
+        >
+          {isSimulating ? '⌛ Calculating...' : 'Calculate Network'}
+        </button>
         <button 
           onClick={onSave}
           style={{

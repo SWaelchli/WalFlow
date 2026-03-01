@@ -22,6 +22,7 @@ import MixerNode from './nodes/MixerNode';
 import Sidebar from './Sidebar';
 import PropertyEditor from './PropertyEditor';
 import DataList from './DataList';
+import examplePFD from '../Example_PFD.json';
 
 const nodeTypes = {
   tank: TankNode,
@@ -34,11 +35,7 @@ const nodeTypes = {
   mixer: MixerNode,
 };
 
-const initialEdges = [
-  { id: 'Pipe 1', source: 'tank-a', target: 'pump-1', sourceHandle: 'outlet-0', targetHandle: 'inlet-0', animated: true, data: { label: 'Pipe 1', length: 25.0, diameter: 0.05248 } },
-];
-
-let idCount = 0;
+let idCount = examplePFD.nodes.length + 1;
 const getId = () => `node_${idCount++}`;
 
 export default function App() {
@@ -46,31 +43,24 @@ export default function App() {
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   const ws = useRef(null);
   
-    const [flowRate, setFlowRate] = useState(0.0);
     const [selectedNode, setSelectedNode] = useState(null);
     const [selectedEdge, setSelectedEdge] = useState(null);
   
-    const initialNodes = [
-      {
-        id: 'tank-a',
-        type: 'tank',
-        position: { x: 50, y: 150 },
-        data: { label: 'Source Tank', level: 2.0, elevation: 0.0, temperature: 313.15, fluid_type: 'iso_vg_46' }
-      },
-      {
-        id: 'pump-1',
-        type: 'pump',
-        position: { x: 250, y: 170 },
-        data: { label: 'Main Pump', A: 80.0, B: 0.0, C: -2000.0 }
-      },
-    ];
+    const [nodes, setNodes, onNodesChange] = useNodesState([]);
+    const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+    const [edgeIdCount, setEdgeIdCount] = useState(examplePFD.edges.length + 1);
+    const [isSimulating, setIsSimulating] = useState(false);
+    const [isConnected, setIsConnected] = useState(false);
   
-    const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-    const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-    const [edgeIdCount, setEdgeIdCount] = useState(initialEdges.length + 1);
-  
+    const runSimulation = useCallback(() => {
+      if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+        setIsSimulating(true);
+        ws.current.send(JSON.stringify({ action: 'run_simulation' }));
+      }
+    }, []);
+
     const handleValveChange = useCallback((newValue, nodeId) => {
-      // 1. Send to backend for immediate physics response
+      // 1. Update backend state (solver will run on next 'Calculate' click)
       if (ws.current && ws.current.readyState === WebSocket.OPEN) {
         ws.current.send(JSON.stringify({
           action: 'update_valve',
@@ -86,6 +76,19 @@ export default function App() {
         )
       );
     }, [setNodes]);
+
+    // Initialize nodes with example PFD
+    useEffect(() => {
+      const initialNodes = examplePFD.nodes.map(node => ({
+        ...node,
+        data: {
+          ...node.data,
+          onChange: node.type === 'valve' ? handleValveChange : undefined
+        }
+      }));
+      setNodes(initialNodes);
+      setEdges(examplePFD.edges);
+    }, [handleValveChange, setNodes, setEdges]);
     const onConnect = useCallback((params) => {
     setEdges((eds) => {
       const newId = `Pipe ${edgeIdCount}`;
@@ -233,13 +236,18 @@ export default function App() {
 
     ws.current.onopen = () => {
       console.log('Connected to Python WalFlow Engine!');
-      ws.current.send(JSON.stringify({ action: 'update_graph', graph: { nodes, edges } }));
+      setIsConnected(true);
+    };
+
+    ws.current.onclose = () => {
+      console.log('Disconnected from Python WalFlow Engine');
+      setIsConnected(false);
     };
 
     ws.current.onmessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.status === 'success') {
-        setFlowRate(data.flow_rate_m3s);
+        setIsSimulating(false);
         if (data.telemetry && data.telemetry.nodes) {
           setNodes((nds) => 
             nds.map((node) => {
@@ -262,30 +270,33 @@ export default function App() {
     return () => { if (ws.current) ws.current.close(); };
   }, []);
 
-  // Update backend on change
+  // Update backend on change (Debounced to ensure consistency)
   useEffect(() => {
-    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-      ws.current.send(JSON.stringify({ action: 'update_graph', graph: { nodes, edges } }));
-    }
-  }, [nodes, edges]);
+    const handler = setTimeout(() => {
+      if (isConnected && ws.current && ws.current.readyState === WebSocket.OPEN) {
+        console.log('Sending graph update to backend...');
+        ws.current.send(JSON.stringify({ 
+          action: 'update_graph', 
+          graph: { nodes, edges } 
+        }));
+      }
+    }, 250); // 250ms debounce
+
+    return () => clearTimeout(handler);
+  }, [nodes, edges, isConnected]);
 
   return (
     <div style={{ width: '100vw', height: '100vh', display: 'flex', backgroundColor: '#f4f4f5' }}>
-      <Sidebar onSave={onSave} onLoad={onLoad} onClear={onClearCanvas} />
+      <Sidebar 
+        onSave={onSave} 
+        onLoad={onLoad} 
+        onClear={onClearCanvas} 
+        onCalculate={runSimulation}
+        isSimulating={isSimulating}
+      />
 
       <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
         <div style={{ flexGrow: 1, position: 'relative' }} ref={reactFlowWrapper}>
-          <div style={{
-            position: 'absolute', top: 20, left: 20, zIndex: 10,
-            background: '#fff', padding: '15px 25px', borderRadius: '8px',
-            border: '2px solid #0f172a', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-          }}>
-            <h3 style={{ margin: 0, color: '#475569', fontSize: '14px' }}>System Flow Rate</h3>
-            <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#0284c7' }}>
-              {(flowRate * 60000).toFixed(1)} <span style={{ fontSize: '14px', color: '#64748b' }}>L/min</span>
-            </div>
-          </div>
-
           <PropertyEditor 
             node={selectedNode} 
             edge={selectedEdge}

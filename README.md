@@ -121,72 +121,97 @@ The app should be modularized and easaly to maintain and expand.
 
 * **Containerization:** [ ] Write a `Dockerfile` for the FastAPI backend and the React frontend, orchestrating them with a `docker-compose.yml` file so the finished tool can be easily deployed to a self-hosted Docker environment.
 
+---
 
-# Hydraulic System Simulator: Project Structure
+# How to Add New Equipment
 
-## 1. Initial Folder Structure
-*(Start Phase 1 with this structure)*
+Adding a new hydraulic component to WalFlow requires updates to both the physics engine (Backend) and the visual canvas (Frontend).
 
-```text
-hydraulic-simulator/
-│
-├── backend/
-│   ├── requirements.txt      # Your Python BOM (fastapi, pydantic, numpy, scipy, websockets)
-│   ├── main.py               # The entry point for your FastAPI server
-│   └── simulation/           # Folder for your physics and solver logic
-│       ├── __init__.py       # Tells Python this folder is a module
-│       └── core.py           # Where you'll start writing your base classes
-│
-└── frontend/
-    └── (This will remain empty until Phase 5, when we initialize React)
+## 1. Backend Integration (Physics)
+
+### Step A: Create the Equipment Class
+Create a new file in `backend/simulation/equipment/<name>.py`. Your class must inherit from `HydraulicNode`.
+
+```python
+from simulation.equipment.base_node import HydraulicNode
+
+class NewEquipment(HydraulicNode):
+    def __init__(self, name: str, param1: float):
+        # node_type must match the frontend type string
+        super().__init__(name, node_type="new_equipment")
+        self.param1 = param1
+        
+        # Define the number of ports
+        self.add_inlet()
+        self.add_outlet()
+
+    def calculate(self):
+        """Mandatory: Update outlet state based on inlet and physics."""
+        inlet = self.inlets[0]
+        outlet = self.outlets[0]
+        
+        # Implement your physics here (e.g., pressure drop)
+        dp = self.param1 * (inlet.flow_rate ** 2)
+        
+        outlet.pressure = inlet.pressure - dp
+        outlet.flow_rate = inlet.flow_rate
+        # Always propagate fluid properties
+        outlet.density = inlet.density
+        outlet.viscosity = inlet.viscosity
+        
+        # Mandatory: Calculate temperature propagation/change
+        self.calculate_temperature()
+        return dp
 ```
 
-## 2. Finished Example Structure
-*(How the project will look as you complete Phase 6)*
+### Step B: Register in Graph Parser
+Open `backend/simulation/graph_parser.py` and:
+1.  Import your new class.
+2.  Add a case in the `create_node` static method to instantiate it from the incoming JSON data.
 
-```text
-hydraulic-simulator/
-│
-├── backend/
-│   ├── requirements.txt
-│   ├── main.py                     # FastAPI app initialization and WebSocket routing
-│   │
-│   ├── api/                        # REST API routes (Save/Load state)
-│   │   ├── __init__.py
-│   │   └── routes.py               
-│   │
-│   └── simulation/                 # The Physics Engine
-│       ├── __init__.py
-│       ├── solver.py               # The Newton-Raphson network solver
-│       ├── schemas.py              # Pydantic models (Port definitions, data validation)
-│       │
-│       └── equipment/              # Modular equipment classes
-│           ├── __init__.py
-│           ├── base_node.py        # The parent HydraulicNode class
-│           ├── pipe.py             
-│           ├── tank.py             
-│           ├── pump.py             # Centrifugal pump logic
-│           └── valve.py            # Cv and pressure drop logic
-│
-└── frontend/                       # The React App
-    ├── package.json                # The JavaScript equivalent of requirements.txt
-    ├── public/
-    │   └── index.html
-    │
-    └── src/
-        ├── App.js                  # Main React component
-        ├── App.css                 # Global styles
-        │
-        ├── components/             # Reusable UI pieces
-        │   ├── Toolbar.js          # Sidebar for drag-and-drop
-        │   └── ControlPanel.js     # Start/Stop simulation buttons
-        │
-        ├── nodes/                  # Custom React Flow visual nodes
-        │   ├── PumpNode.js         # The visual canvas drawing of a pump
-        │   ├── ValveNode.js
-        │   └── TankNode.js
-        │
-        └── services/
-            ├── api.js              # Axios logic for REST calls (save/load)
-            └── websocket.js        # Logic to receive real-time P and Q updates
+```python
+elif t == 'new_equipment':
+    return NewEquipment(
+        name=name,
+        param1=float(d.get('param1', 1.0))
+    )
 ```
+
+## 2. Frontend Integration (UI)
+
+### Step A: Create the Node Component
+Create a new React component in `frontend/src/nodes/NewNode.jsx`. Use the standard `Handle` components for connections.
+
+```jsx
+import { Handle, Position } from 'reactflow';
+
+export default function NewNode({ data }) {
+  const telemetry = data.telemetry || {};
+  
+  return (
+    <div className="custom-node">
+      <Handle type="target" position={Position.Left} id="inlet-0" />
+      <div>
+        <strong>{data.label}</strong>
+        {/* Display live telemetry if available */}
+        <div className="telemetry-text">
+          {telemetry.p_in_bar?.toFixed(2)} bar
+        </div>
+      </div>
+      <Handle type="source" position={Position.Right} id="outlet-0" />
+    </div>
+  );
+}
+```
+
+### Step B: Register Node Type
+In `frontend/src/App.jsx`:
+1.  Import your new node component.
+2.  Add it to the `nodeTypes` object.
+3.  Update the `onDrop` function to include default parameters in the `data` object for your new type.
+
+### Step C: Add to Sidebar
+In `frontend/src/Sidebar.jsx`, add an entry to the `equipmentTypes` array so it appears in the draggable library.
+
+### Step D: Add Property Controls
+In `frontend/src/PropertyEditor.jsx`, add a conditional block for your `type` to render the input fields (labels, number inputs, etc.) required to edit your equipment's parameters.

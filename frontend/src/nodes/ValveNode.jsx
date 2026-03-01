@@ -6,7 +6,7 @@ import { Handle, Position } from 'reactflow';
  */
 export default function ValveNode({ id, data }) {
   const telemetry = data.telemetry;
-  const opening = data.opening || 50;
+  const opening = data.opening ?? 50;
   const flow = telemetry?.outlets?.[0]?.flow_rate || 0;
   const flowLmin = (flow * 60000).toFixed(1);
 

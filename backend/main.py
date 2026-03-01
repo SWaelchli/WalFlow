@@ -67,41 +67,42 @@ async def websocket_endpoint(websocket: WebSocket):
                             if valve_id is None or node_id == valve_id:
                                 node.opening_pct = max(0.1, min(100.0, new_pct))
 
-            if solver_instance:
-                try:
-                    # Run the physics engine
-                    main_flow = solver_instance.solve()
-                    
-                    # Package telemetry for all nodes and edges
-                    telemetry = {
-                        "nodes": {},
-                        "edges": {}
-                    }
-                    
-                    for node_id, node in network_instance.nodes.items():
-                        telemetry["nodes"][node_id] = {
-                            "inlets": [p.dict() for p in node.inlets],
-                            "outlets": [p.dict() for p in node.outlets]
+            elif action == "run_simulation":
+                if solver_instance:
+                    try:
+                        # Run the physics engine
+                        main_flow = solver_instance.solve()
+                        
+                        # Package telemetry for all nodes and edges
+                        telemetry = {
+                            "nodes": {},
+                            "edges": {}
                         }
-                    
-                    for edge in network_instance.edges:
-                        edge_id = edge["id"]
-                        pipe = edge["pipe"]
-                        telemetry["edges"][edge_id] = {
-                            "inlets": [p.dict() for p in pipe.inlets],
-                            "outlets": [p.dict() for p in pipe.outlets]
-                        }
+                        
+                        for node_id, node in network_instance.nodes.items():
+                            telemetry["nodes"][node_id] = {
+                                "inlets": [p.dict() for p in node.inlets],
+                                "outlets": [p.dict() for p in node.outlets]
+                            }
+                        
+                        for edge in network_instance.edges:
+                            edge_id = edge["id"]
+                            pipe = edge["pipe"]
+                            telemetry["edges"][edge_id] = {
+                                "inlets": [p.dict() for p in pipe.inlets],
+                                "outlets": [p.dict() for p in pipe.outlets]
+                            }
 
-                    await websocket.send_text(json.dumps({
-                        "status": "success",
-                        "flow_rate_m3s": main_flow,
-                        "telemetry": telemetry
-                    }))
-                except Exception as e:
-                    print(f"Solver Error: {e}")
-                    await websocket.send_text(json.dumps({"status": "error", "message": str(e)}))
-            else:
-                await websocket.send_text(json.dumps({"status": "waiting", "message": "Graph required."}))
+                        await websocket.send_text(json.dumps({
+                            "status": "success",
+                            "flow_rate_m3s": main_flow,
+                            "telemetry": telemetry
+                        }))
+                    except Exception as e:
+                        print(f"Solver Error: {e}")
+                        await websocket.send_text(json.dumps({"status": "error", "message": str(e)}))
+                else:
+                    await websocket.send_text(json.dumps({"status": "waiting", "message": "Graph required before simulation."}))
             
     except WebSocketDisconnect:
         print("Frontend client disconnected.")
