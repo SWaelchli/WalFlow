@@ -13,15 +13,6 @@ export default function FilterNode({ data }) {
 
   return (
     <div style={{ position: 'relative' }}>
-      <div style={{
-        position: 'absolute', top: -35, left: '50%', transform: 'translateX(-50%)',
-        textAlign: 'center', width: '80px', pointerEvents: 'none'
-      }}>
-        <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#ef4444' }}> 
-          -{paToBar(dP)} bar
-        </div>
-      </div>
-
       <div style={{ width: 60, height: 40, background: 'transparent', position: 'relative' }}>
         <svg width="60" height="40" viewBox="0 0 60 40">
           {/* Rectangular Strainer Body - x=5 to x=55 */}
@@ -46,8 +37,18 @@ export default function FilterNode({ data }) {
           style={{ top: '20px', right: '5px', background: '#ef4444', width: '8px', height: '8px' }} 
         />
       </div>
-      <div style={{ fontSize: '9px', textAlign: 'center', marginTop: '2px', color: '#334155', fontWeight: 'bold' }}>
-        {data.label || 'STRAINER'}
+
+      <div style={{ textAlign: 'center', marginTop: '2px' }}>
+        <div style={{ fontSize: '9px', color: '#334155', fontWeight: 'bold' }}>
+          {data.label || 'STRAINER'}
+        </div>
+
+        {/* Telemetry below Name Tag */}
+        <div style={{ marginTop: '2px' }}>
+          <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#ef4444' }}> 
+            -{paToBar(dP)} bar
+          </div>
+        </div>
       </div>
     </div>
   );

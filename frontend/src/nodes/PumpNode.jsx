@@ -14,18 +14,6 @@ export default function PumpNode({ data }) {
 
   return (
     <div style={{ position: 'relative' }}>
-      <div style={{
-        position: 'absolute', top: -35, left: '50%', transform: 'translateX(-50%)',
-        textAlign: 'center', width: '80px', pointerEvents: 'none'
-      }}>
-        <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#0369a1' }}> 
-          +{paToBar(dP)} bar
-        </div>
-        <div style={{ fontSize: '9px', color: '#64748b' }}>
-          {m3sToLmin(q)} L/min
-        </div>
-      </div>
-
       <div style={{ width: 60, height: 60, background: 'transparent', position: 'relative' }}>
         <svg width="60" height="60" viewBox="0 0 60 60">
           {/* Main Circle Body - left edge at 10, right edge at 50 */}
@@ -52,8 +40,21 @@ export default function PumpNode({ data }) {
           style={{ top: '15px', right: '-4px', background: '#ef4444', width: '8px', height: '8px' }} 
         />
       </div>
-      <div style={{ fontSize: '9px', textAlign: 'center', marginTop: '2px', color: '#334155', fontWeight: 'bold' }}>
-        {data.label || 'PUMP'}
+
+      <div style={{ textAlign: 'center', marginTop: '2px' }}>
+        <div style={{ fontSize: '9px', color: '#334155', fontWeight: 'bold' }}>
+          {data.label || 'PUMP'}
+        </div>
+
+        {/* Telemetry below Name Tag */}
+        <div style={{ marginTop: '2px' }}>
+          <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#0369a1' }}> 
+            +{paToBar(dP)} bar
+          </div>
+          <div style={{ fontSize: '9px', color: '#64748b' }}>
+            {m3sToLmin(q)} L/min
+          </div>
+        </div>
       </div>
     </div>
   );

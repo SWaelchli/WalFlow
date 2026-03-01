@@ -12,18 +12,6 @@ export default function ValveNode({ id, data }) {
 
   return (
     <div style={{ position: 'relative' }}>
-      <div style={{
-        position: 'absolute', top: -35, left: '50%', transform: 'translateX(-50%)',
-        textAlign: 'center', width: '80px', pointerEvents: 'none'
-      }}>
-        <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#0369a1' }}> 
-          {opening.toFixed(1)} %
-        </div>
-        <div style={{ fontSize: '9px', color: '#64748b' }}>
-          {flowLmin} L/min
-        </div>
-      </div>
-
       <div style={{ width: 60, height: 60, background: 'transparent', position: 'relative' }}>
         <svg width="60" height="60" viewBox="0 0 60 60">
           <line x1="30" y1="35" x2="30" y2="15" stroke="#334155" strokeWidth="1.5" />
@@ -51,24 +39,36 @@ export default function ValveNode({ id, data }) {
         />
       </div>
 
-      {/* Interactive Slider */}
-      <div className="nodrag" style={{ padding: '2px 0' }}>
-        <input 
-          type="range" 
-          min="0.1" 
-          max="100" 
-          step="0.1"
-          value={opening} 
-          onChange={(e) => {
-            const val = parseFloat(e.target.value);
-            if (data.onChange) data.onChange(val, id);
-          }}
-          style={{ width: '60px', cursor: 'pointer', display: 'block' }}
-        />
-      </div>
+      <div style={{ textAlign: 'center', marginTop: '2px' }}>
+        {/* Interactive Slider - ABOVE Name Tag */}
+        <div className="nodrag" style={{ padding: '2px 0' }}>
+          <input 
+            type="range" 
+            min="0.1" 
+            max="100" 
+            step="0.1"
+            value={opening} 
+            onChange={(e) => {
+              const val = parseFloat(e.target.value);
+              if (data.onChange) data.onChange(val, id);
+            }}
+            style={{ width: '60px', cursor: 'pointer', display: 'block', margin: '0 auto' }}
+          />
+        </div>
 
-      <div style={{ fontSize: '9px', textAlign: 'center', marginTop: '2px', color: '#334155', fontWeight: 'bold' }}>
-        {data.label || 'VALVE'}
+        <div style={{ fontSize: '9px', color: '#334155', fontWeight: 'bold' }}>
+          {data.label || 'VALVE'}
+        </div>
+
+        {/* Telemetry below Name Tag */}
+        <div style={{ marginTop: '2px' }}>
+          <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#0369a1' }}> 
+            {opening.toFixed(1)} %
+          </div>
+          <div style={{ fontSize: '9px', color: '#64748b' }}>
+            {flowLmin} L/min
+          </div>
+        </div>
       </div>
     </div>
   );

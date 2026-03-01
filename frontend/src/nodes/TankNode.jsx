@@ -12,18 +12,6 @@ export default function TankNode({ data }) {
 
   return (
     <div style={{ position: 'relative' }}>
-      <div style={{
-        position: 'absolute', top: -35, left: '50%', transform: 'translateX(-50%)',
-        textAlign: 'center', width: '80px', pointerEvents: 'none'
-      }}>
-        <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#0369a1' }}> 
-          {level.toFixed(2)} m
-        </div>
-        <div style={{ fontSize: '9px', color: '#64748b' }}>
-          {tempC} °C
-        </div>
-      </div>
-
       <div style={{ width: 60, height: 100, background: 'transparent', position: 'relative' }}>
         <svg width="60" height="100" viewBox="0 0 60 100">
           {/* Main Body with Dome Top/Bottom - starts at x=10, ends at x=50 */}
@@ -59,8 +47,21 @@ export default function TankNode({ data }) {
           style={{ top: '80px', right: '10px', background: '#ef4444', width: '8px', height: '8px' }} 
         />
       </div>
-      <div style={{ fontSize: '9px', textAlign: 'center', marginTop: '2px', color: '#334155', fontWeight: 'bold' }}>
-        {data.label || 'TANK'}
+
+      <div style={{ textAlign: 'center', marginTop: '2px' }}>
+        <div style={{ fontSize: '9px', color: '#334155', fontWeight: 'bold' }}>
+          {data.label || 'TANK'}
+        </div>
+        
+        {/* Telemetry below Name Tag */}
+        <div style={{ marginTop: '2px' }}>
+          <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#0369a1' }}> 
+            {level.toFixed(2)} m
+          </div>
+          <div style={{ fontSize: '9px', color: '#64748b' }}>
+            {tempC} °C
+          </div>
+        </div>
       </div>
     </div>
   );
