@@ -1,40 +1,67 @@
 import { Handle, Position } from 'reactflow';
-import { paToBar, kToC } from '../utils/converters';
 
+/**
+ * Vertical Tank (ISA / PFD style)
+ * Domed top and bottom.
+ */
 export default function TankNode({ data }) {
   const telemetry = data.telemetry;
-  const p = telemetry?.outlets?.[0]?.pressure || 0;
-  const t = telemetry?.outlets?.[0]?.temperature || 293.15;
+  const level = data.level || 0;
+  const temp = telemetry?.outlets?.[0]?.temperature || data.temperature || 293.15;
+  const tempC = (temp - 273.15).toFixed(1);
 
   return (
-    <div style={{
-      width: 100, height: 130, background: '#e0f2fe',
-      border: '2px solid #0284c7', borderRadius: '4px',
-      display: 'flex', flexDirection: 'column', overflow: 'hidden',
-      boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-    }}>
-      {/* Tank Header/Label */}
-      <div style={{ 
-        background: '#0284c7', color: 'white', textAlign: 'center', 
-        padding: '4px', fontSize: '11px', fontWeight: 'bold' 
+    <div style={{ position: 'relative' }}>
+      <div style={{
+        position: 'absolute', top: -35, left: '50%', transform: 'translateX(-50%)',
+        textAlign: 'center', width: '80px', pointerEvents: 'none'
       }}>
-        {data.label}
+        <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#0369a1' }}> 
+          {level.toFixed(2)} m
+        </div>
+        <div style={{ fontSize: '9px', color: '#64748b' }}>
+          {tempC} °C
+        </div>
       </div>
-      
-      {/* Tank Body (Level and Telemetry) */}
-      <div style={{ 
-        flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', 
-        justifyContent: 'center', fontSize: '10px', color: '#334155', gap: '4px'
-      }}>
-        <div style={{ fontWeight: 'bold' }}>{data.level}m</div>
-        <div style={{ borderTop: '1px solid #bae6fd', width: '80%', margin: '2px 0' }} />
-        <div>{paToBar(p)} bar</div>
-        <div style={{ color: '#0369a1' }}>{kToC(t)}°C</div>
+
+      <div style={{ width: 60, height: 100, background: 'transparent', position: 'relative' }}>
+        <svg width="60" height="100" viewBox="0 0 60 100">
+          {/* Main Body with Dome Top/Bottom - starts at x=10, ends at x=50 */}
+          <path 
+            d="M 10 20 L 10 80 Q 10 95 30 95 Q 50 95 50 80 L 50 20 Q 50 5 30 5 Q 10 5 10 20 Z" 
+            fill="white" 
+            stroke="#334155" 
+            strokeWidth="2.5" 
+          />
+          {/* Level Fill */}
+          <rect 
+            x="10" 
+            y={80 - Math.min(60, (level/5)*60)} 
+            width="40" 
+            height={Math.min(60, (level/5)*60)} 
+            fill="#3b82f633" 
+          />
+        </svg>
+
+        {/* Tank Inlet - Top left at x=10 */}
+        <Handle 
+          type="target" 
+          position={Position.Left} 
+          id="inlet-0" 
+          style={{ top: '25px', left: '10px', background: '#3b82f6', width: '8px', height: '8px' }} 
+        />
+        
+        {/* Tank Outlet - Bottom Right (side) at x=50, y=80 */}
+        <Handle 
+          type="source" 
+          position={Position.Right} 
+          id="outlet-0" 
+          style={{ top: '80px', right: '10px', background: '#ef4444', width: '8px', height: '8px' }} 
+        />
       </div>
-      
-      {/* The Physical Ports - Blue for In, Red for Out */}
-      <Handle type="target" position={Position.Left} id="inlet-0" style={{ background: '#3b82f6', width: '8px', height: '8px' }} />
-      <Handle type="source" position={Position.Right} id="outlet-0" style={{ background: '#ef4444', width: '8px', height: '8px' }} />
+      <div style={{ fontSize: '9px', textAlign: 'center', marginTop: '2px', color: '#334155', fontWeight: 'bold' }}>
+        {data.label || 'TANK'}
+      </div>
     </div>
   );
 }

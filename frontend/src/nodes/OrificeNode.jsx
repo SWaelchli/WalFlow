@@ -1,52 +1,54 @@
 import { Handle, Position } from 'reactflow';
-import { paToBar, m3sToLmin, mToMm } from '../utils/converters';
+import { paToBar } from '../utils/converters';
 
+/**
+ * Orifice Plate (ISA / PFD style)
+ * A restriction in the line, typically represented by a narrow gap or perpendicular lines.
+ */
 export default function OrificeNode({ data }) {
   const telemetry = data.telemetry;
   const pIn = telemetry?.inlets?.[0]?.pressure || 0;
   const pOut = telemetry?.outlets?.[0]?.pressure || 0;
-  const q = telemetry?.outlets?.[0]?.flow_rate || 0;
   const dP = pIn - pOut;
-
-  const orificeDia = data.orifice_diameter || 0.07;
 
   return (
     <div style={{ position: 'relative' }}>
-      {/* Telemetry Display Above the Node */}
       <div style={{
-        position: 'absolute', top: -55, left: '50%', transform: 'translateX(-50%)',
+        position: 'absolute', top: -35, left: '50%', transform: 'translateX(-50%)',
         textAlign: 'center', width: '80px', pointerEvents: 'none'
       }}>
-        <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#64748b' }}> 
-          {paToBar(dP)} bar
-        </div>
-        <div style={{ fontSize: '9px', color: '#64748b' }}>
-          {m3sToLmin(q)} L/min
-        </div>
-        <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#0f172a', marginTop: '2px' }}>
-          Ø {mToMm(orificeDia)} mm
+        <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#ef4444' }}> 
+          -{paToBar(dP)} bar
         </div>
       </div>
 
-      <div style={{
-        width: 80, height: 60, background: '#fff',
-        border: '2px solid #0f172a', borderRadius: '4px',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        position: 'relative', boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-      }}>
-        {/* Top and Bottom "plate" lines to mimic an orifice restriction */}     
-        <div style={{ width: '6px', height: '15px', background: '#0f172a', position: 'absolute', top: 0 }}></div>
-        <div style={{ width: '6px', height: '15px', background: '#0f172a', position: 'absolute', bottom: 0 }}></div>
+      <div style={{ width: 40, height: 60, background: 'transparent', position: 'relative' }}>
+        <svg width="40" height="60" viewBox="0 0 40 60">
+          {/* Orifice Plate Marking */}
+          <line x1="20" y1="10" x2="20" y2="25" stroke="#334155" strokeWidth="2.5" />
+          <line x1="20" y1="35" x2="20" y2="50" stroke="#334155" strokeWidth="2.5" />
+          {/* Horizontal line representing the pipe section */}
+          <line x1="0" y1="30" x2="40" y2="30" stroke="#334155" strokeWidth="1.5" strokeDasharray="4,4" />
+        </svg>
 
-        <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#0f172a' }}> 
-          ORIFICE
-        </div>
-
-        {/* Inlet - Blue */}
-        <Handle type="target" position={Position.Left} id="inlet-0" style={{ background: '#3b82f6', width: '8px', height: '8px' }} />
+        {/* Inlet - Middle Left */}
+        <Handle 
+          type="target" 
+          position={Position.Left} 
+          id="inlet-0" 
+          style={{ background: '#3b82f6', width: '8px', height: '8px' }} 
+        />
         
-        {/* Outlet - Red */}
-        <Handle type="source" position={Position.Right} id="outlet-0" style={{ background: '#ef4444', width: '8px', height: '8px' }} />
+        {/* Outlet - Middle Right */}
+        <Handle 
+          type="source" 
+          position={Position.Right} 
+          id="outlet-0" 
+          style={{ background: '#ef4444', width: '8px', height: '8px' }} 
+        />
+      </div>
+      <div style={{ fontSize: '9px', textAlign: 'center', marginTop: '2px', color: '#334155', fontWeight: 'bold' }}>
+        {data.label || 'ORIFICE'}
       </div>
     </div>
   );

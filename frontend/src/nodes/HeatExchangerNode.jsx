@@ -1,54 +1,53 @@
 import { Handle, Position } from 'reactflow';
-import { paToBar, kToC } from '../utils/converters';
 
+/**
+ * Shell and Tube Heat Exchanger (ISA / PFD style)
+ */
 export default function HeatExchangerNode({ data }) {
   const telemetry = data.telemetry;
-  const pIn = telemetry?.inlets?.[0]?.pressure || 0;
-  const pOut = telemetry?.outlets?.[0]?.pressure || 0;
   const tIn = telemetry?.inlets?.[0]?.temperature || 293.15;
   const tOut = telemetry?.outlets?.[0]?.temperature || 293.15;
-  const dP = pIn - pOut;
+  const duty = data.heat_duty_kw || 0;
 
   return (
     <div style={{ position: 'relative' }}>
-      {/* Telemetry Display Above the Node */}
       <div style={{
-        position: 'absolute', top: -45, left: '50%', transform: 'translateX(-50%)',
-        textAlign: 'center', width: '100px', pointerEvents: 'none'
+        position: 'absolute', top: -35, left: '50%', transform: 'translateX(-50%)',
+        textAlign: 'center', width: '80px', pointerEvents: 'none'
       }}>
-        <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#64748b' }}> 
-          dP: {paToBar(dP)} bar
+        <div style={{ fontSize: '10px', fontWeight: 'bold', color: duty < 0 ? '#3b82f6' : '#ef4444' }}> 
+          {duty} kW
         </div>
-        <div style={{ fontSize: '9px', color: '#0369a1' }}>
-          {kToC(tIn)}°C → {kToC(tOut)}°C
+        <div style={{ fontSize: '9px', color: '#64748b' }}>
+          ΔT: {(tOut - tIn).toFixed(1)} K
         </div>
       </div>
 
-      <div style={{
-        width: 100, height: 60, background: '#eff6ff',
-        border: '2px solid #2563eb', borderRadius: '4px',
-        display: 'flex', flexDirection: 'column', alignItems: 'center',
-        justifyContent: 'center', position: 'relative',
-        boxShadow: '0 2px 4px rgba(29, 78, 216, 0.1)'
-      }}>
-        {/* Visual zigzag for tube bundle */}
-        <svg width="80%" height="60%" viewBox="0 0 80 40" style={{ position: 'absolute', opacity: 0.3 }}>
-          <polyline points="0,20 10,10 20,30 30,10 40,30 50,10 60,30 70,10 80,20"
-                    fill="none" stroke="#2563eb" strokeWidth="2" />
+      <div style={{ width: 60, height: 60, background: 'transparent', position: 'relative' }}>
+        <svg width="60" height="60" viewBox="0 0 60 60">
+          {/* Main Circle Body - starts at x=5, ends at x=55 */}
+          <circle cx="30" cy="30" r="25" fill="white" stroke="#334155" strokeWidth="2.5" />
+          <path d="M 10 30 L 20 20 L 30 40 L 40 20 L 50 30" fill="none" stroke="#334155" strokeWidth="2" />
         </svg>
 
-        <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#1d4ed8', zIndex: 1 }}>
-          COOLER
-        </div>
-        <div style={{ fontSize: '9px', color: '#3b82f6', zIndex: 1 }}>
-          Duty: {data.heat_duty_kw || 0}kW
-        </div>
-
-        {/* Inlet - Blue */}
-        <Handle type="target" position={Position.Left} id="inlet-0" style={{ background: '#3b82f6', width: '8px', height: '8px' }} />
-
-        {/* Outlet - Red */}
-        <Handle type="source" position={Position.Right} id="outlet-0" style={{ background: '#ef4444', width: '8px', height: '8px' }} />
+        {/* Process Inlet - Exactly on left edge at x=5 */}
+        <Handle 
+          type="target" 
+          position={Position.Left} 
+          id="inlet-0" 
+          style={{ background: '#3b82f6', width: '8px', height: '8px' }} 
+        />
+        
+        {/* Process Outlet - Exactly on right edge at x=55 */}
+        <Handle 
+          type="source" 
+          position={Position.Right} 
+          id="outlet-0" 
+          style={{ background: '#ef4444', width: '8px', height: '8px' }} 
+        />
+      </div>
+      <div style={{ fontSize: '9px', textAlign: 'center', marginTop: '2px', color: '#334155', fontWeight: 'bold' }}>
+        {data.label || 'HEAT EXCH'}
       </div>
     </div>
   );

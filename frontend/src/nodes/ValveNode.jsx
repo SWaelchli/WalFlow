@@ -1,66 +1,75 @@
 import { Handle, Position } from 'reactflow';
-import { useState, useEffect } from 'react';
-import { paToBar, kToC, m3sToLmin } from '../utils/converters';
 
+/**
+ * Control Valve (ISA / PFD style)
+ * Includes an interactive slider for the opening percentage.
+ */
 export default function ValveNode({ id, data }) {
-  const [opening, setOpening] = useState(data.opening || 50);
   const telemetry = data.telemetry;
-  const pIn = telemetry?.inlets?.[0]?.pressure || 0;
-  const pOut = telemetry?.outlets?.[0]?.pressure || 0;
-  const t = telemetry?.inlets?.[0]?.temperature || 293.15;
-  const Q = telemetry?.inlets?.[0]?.flow_rate || 0;
-  const dP = pIn - pOut;
-
-  // Sync internal slider with external updates (e.g. from save/load)
-  useEffect(() => {
-    if (data.opening !== undefined) setOpening(data.opening);
-  }, [data.opening]);
-
-  const handleSliderChange = (e) => {
-    const newValue = parseFloat(e.target.value);
-    setOpening(newValue);
-    if (data.onChange) {
-      data.onChange(newValue, id); // Pass ID so backend knows which valve       
-    }
-  };
+  const opening = data.opening || 50;
+  const flow = telemetry?.outlets?.[0]?.flow_rate || 0;
+  const flowLmin = (flow * 60000).toFixed(1);
 
   return (
-    <div style={{
-      width: 140, padding: '10px', background: '#f8fafc',
-      border: '2px solid #64748b', borderRadius: '6px',
-      textAlign: 'center', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-    }}>
-      <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>
-        {data.label || 'Control Valve'}
+    <div style={{ position: 'relative' }}>
+      <div style={{
+        position: 'absolute', top: -35, left: '50%', transform: 'translateX(-50%)',
+        textAlign: 'center', width: '80px', pointerEvents: 'none'
+      }}>
+        <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#0369a1' }}> 
+          {opening.toFixed(1)} %
+        </div>
+        <div style={{ fontSize: '9px', color: '#64748b' }}>
+          {flowLmin} L/min
+        </div>
       </div>
 
-      {/* Telemetry Display */}
-      <div style={{ fontSize: '10px', color: '#64748b', marginBottom: '8px', display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '5px' }}>
-        <span>dP: {paToBar(dP)} bar</span>
-        <span style={{ fontWeight: 'bold', color: '#0284c7' }}>{m3sToLmin(Q)} L/min</span>
-        <span style={{ color: '#0369a1' }}>{kToC(t)}°C</span>
+      <div style={{ width: 60, height: 60, background: 'transparent', position: 'relative' }}>
+        <svg width="60" height="60" viewBox="0 0 60 60">
+          <line x1="30" y1="35" x2="30" y2="15" stroke="#334155" strokeWidth="1.5" />
+          <path d="M 20 15 Q 30 5 40 15 Z" fill="white" stroke="#334155" strokeWidth="1.5" />
+          
+          {/* Main Valve Body - starts at x=10, ends at x=50 */}
+          <path d="M 10 20 L 30 35 L 10 50 Z" fill="white" stroke="#334155" strokeWidth="2.5" />
+          <path d="M 50 20 L 30 35 L 50 50 Z" fill="white" stroke="#334155" strokeWidth="2.5" />
+        </svg>
+
+        {/* Inlet - Far Left at x=10 */}
+        <Handle 
+          type="target" 
+          position={Position.Left} 
+          id="inlet-0" 
+          style={{ top: '35px', left: '10px', background: '#3b82f6', width: '8px', height: '8px' }} 
+        />
+        
+        {/* Outlet - Far Right at x=50 */}
+        <Handle 
+          type="source" 
+          position={Position.Right} 
+          id="outlet-0" 
+          style={{ top: '35px', right: '10px', background: '#ef4444', width: '8px', height: '8px' }} 
+        />
       </div>
 
-      <div style={{ fontSize: '11px', color: '#475569', marginBottom: '4px' }}>  
-        Open: {opening.toFixed(1)}%
+      {/* Interactive Slider */}
+      <div className="nodrag" style={{ padding: '2px 0' }}>
+        <input 
+          type="range" 
+          min="0.1" 
+          max="100" 
+          step="0.1"
+          value={opening} 
+          onChange={(e) => {
+            const val = parseFloat(e.target.value);
+            if (data.onChange) data.onChange(val, id);
+          }}
+          style={{ width: '60px', cursor: 'pointer', display: 'block' }}
+        />
       </div>
 
-      <input
-        className="nodrag"
-        type="range"
-        min="0.1"
-        max="100"
-        step="0.1"
-        value={opening}
-        onChange={handleSliderChange}
-        style={{ width: '100%', cursor: 'pointer' }}
-      />
-
-      {/* Inlet - Blue */}
-      <Handle type="target" position={Position.Left} id="inlet-0" style={{ background: '#3b82f6', width: '8px', height: '8px' }} />
-      
-      {/* Outlet - Red */}
-      <Handle type="source" position={Position.Right} id="outlet-0" style={{ background: '#ef4444', width: '8px', height: '8px' }} />
+      <div style={{ fontSize: '9px', textAlign: 'center', marginTop: '2px', color: '#334155', fontWeight: 'bold' }}>
+        {data.label || 'VALVE'}
+      </div>
     </div>
   );
 }
