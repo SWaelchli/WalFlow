@@ -40,7 +40,11 @@ class NetworkSolver:
         """
         Propagates Temperature, Density, and Viscosity based on flow direction.
         """
-        for _ in range(5):
+        iterations = 5
+        if self.nodes_list and self.nodes_list[0].global_settings:
+            iterations = getattr(self.nodes_list[0].global_settings, 'property_iterations', 5)
+
+        for _ in range(iterations):
             # 1. Update edges (pipes)
             for j, edge in enumerate(self.edges_list):
                 src_node = self.network.nodes[edge['source']]
@@ -125,7 +129,11 @@ class NetworkSolver:
         
         if num_vars == 0: return 0.0
 
-        avg_p = np.mean(list(self.fixed_pressure_nodes.values())) if self.fixed_pressure_nodes else 101325.0
+        atm_p = 101325.0
+        if self.nodes_list and self.nodes_list[0].global_settings:
+            atm_p = getattr(self.nodes_list[0].global_settings, 'atmospheric_pressure', 101325.0)
+
+        avg_p = np.mean(list(self.fixed_pressure_nodes.values())) if self.fixed_pressure_nodes else atm_p
         x0 = np.concatenate([np.full(num_internal, avg_p), np.full(num_edges, 0.1)])
 
         def objective(x):

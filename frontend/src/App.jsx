@@ -51,6 +51,15 @@ export default function App() {
     const [edgeIdCount, setEdgeIdCount] = useState(examplePFD.edges.length + 1);
     const [isSimulating, setIsSimulating] = useState(false);
     const [isConnected, setIsConnected] = useState(false);
+    const [globalSettings, setGlobalSettings] = useState({
+      fluid_type: 'water',
+      ambient_temperature: 293.15,
+      atmospheric_pressure: 101325.0,
+      global_roughness: 0.000045,
+      property_iterations: 5,
+      tolerance: 1e-6,
+      max_iterations: 1000
+    });
   
     const runSimulation = useCallback(() => {
       if (ws.current && ws.current.readyState === WebSocket.OPEN) {
@@ -186,7 +195,7 @@ export default function App() {
   );
 
   const onSave = useCallback(() => {
-    const flowData = { nodes, edges };
+    const flowData = { nodes, edges, globalSettings };
     const blob = new Blob([JSON.stringify(flowData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -194,7 +203,7 @@ export default function App() {
     link.download = 'walflow-pfd.json';
     link.click();
     URL.revokeObjectURL(url);
-  }, [nodes, edges]);
+  }, [nodes, edges, globalSettings]);
 
   const onLoad = useCallback((data) => {
     if (data.nodes && data.edges) {
@@ -207,6 +216,9 @@ export default function App() {
       }));
       setNodes(restoredNodes);
       setEdges(data.edges);
+      if (data.globalSettings) {
+        setGlobalSettings(data.globalSettings);
+      }
     }
   }, [handleValveChange, setNodes, setEdges]);
 
@@ -264,6 +276,9 @@ export default function App() {
             })
           );
         }
+      } else if (data.status === 'error') {
+        setIsSimulating(false);
+        alert(`Simulation Error: ${data.message}`);
       }
     };
 
@@ -277,13 +292,17 @@ export default function App() {
         console.log('Sending graph update to backend...');
         ws.current.send(JSON.stringify({ 
           action: 'update_graph', 
-          graph: { nodes, edges } 
+          graph: { 
+            nodes, 
+            edges, 
+            global_settings: globalSettings 
+          } 
         }));
       }
     }, 250); // 250ms debounce
 
     return () => clearTimeout(handler);
-  }, [nodes, edges, isConnected]);
+  }, [nodes, edges, isConnected, globalSettings]);
 
   return (
     <div style={{ width: '100vw', height: '100vh', display: 'flex', backgroundColor: '#f4f4f5' }}>
@@ -293,6 +312,8 @@ export default function App() {
         onClear={onClearCanvas} 
         onCalculate={runSimulation}
         isSimulating={isSimulating}
+        globalSettings={globalSettings}
+        onUpdateGlobalSettings={setGlobalSettings}
       />
 
       <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>

@@ -14,6 +14,7 @@ class HydraulicNode:
         self.id = str(uuid.uuid4())  # Unique ID for the React Flow canvas to track
         self.name = name
         self.node_type = node_type   # e.g., "centrifugal_pump", "gate_valve"
+        self.global_settings = None # To be injected by GraphParser
         
         # Every node can have multiple inlets and outlets
         self.inlets: List[Port] = []

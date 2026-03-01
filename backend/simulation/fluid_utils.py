@@ -20,6 +20,10 @@ class FluidProperties:
             # Typical lube oil density: 875 kg/m³ @ 15°C, alpha ~ 0.0007 /°C
             return 875.0 * (1 - 0.0007 * (t_c - 15))
         
+        elif fluid_type == "iso_vg_32":
+            # Typical lube oil density: 870 kg/m³ @ 15°C, alpha ~ 0.0007 /°C
+            return 870.0 * (1 - 0.0007 * (t_c - 15))
+        
         return 1000.0
 
     @staticmethod
@@ -36,21 +40,20 @@ class FluidProperties:
             # More accurate: mu = 2.414e-5 * 10^(247.8 / (T - 140))
             return 2.414e-5 * 10**(247.8 / (temp_k - 140))
         
-        elif fluid_type == "iso_vg_46":
-            # ISO VG 46: 46 cSt @ 40°C, ~6.8 cSt @ 100°C
-            # We calculate kinematic viscosity nu (cSt) then multiply by density
-            # Vogel Equation for ISO VG 46 (approximate constants):
-            # ln(nu) = A + B / (T + C)
-            # Using typical values for mineral oil:
-            A = -3.5
-            B = 850.0
-            C = -160.0 # T in Kelvin
+        elif fluid_type in ["iso_vg_46", "iso_vg_32"]:
+            # Vogel Equation for Lubricating Oils: ln(nu) = A + B / (T + C)
+            if fluid_type == "iso_vg_46":
+                # ISO VG 46: 46 cSt @ 40°C, ~6.8 cSt @ 100°C
+                A, B, C = -3.5, 850.0, -160.0
+            else:
+                # ISO VG 32: 32 cSt @ 40°C, ~5.4 cSt @ 100°C (Approximated Vogel)
+                A, B, C = -3.7, 820.0, -165.0
             
             # nu in cSt (mm^2/s)
             nu_cst = math.exp(A + B / (temp_k + C))
             
             # Convert to Pa*s: (cSt * 1e-6) * density
-            density = FluidProperties.get_density("iso_vg_46", temp_k)
+            density = FluidProperties.get_density(fluid_type, temp_k)
             return (nu_cst * 1e-6) * density
             
         return 0.001 # Default to water @ 20°C
