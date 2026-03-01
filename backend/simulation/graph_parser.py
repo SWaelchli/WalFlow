@@ -45,6 +45,7 @@ class GraphParser:
             
             if source_node and target_node:
                 parsed_edges.append({
+                    "id": edge.id,
                     "source": edge.source,
                     "target": edge.target,
                     "source_port": edge.sourceHandle,

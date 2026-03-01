@@ -15,6 +15,8 @@ class Valve(HydraulicNode):
     def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
         """
         Calculates pressure drop across the valve based on its current position.
+        Uses the standard liquid Cv formula: Q [GPM] = Cv * sqrt(dP [PSI] / SG)
+        Converted to SI: dP [Pa] = (1.732e9 * rho * Q^2) / Cv^2
         """
         # Prevent division by zero mathematically. 
         # A "closed" valve is just simulated as having an incredibly small opening.
@@ -23,8 +25,11 @@ class Valve(HydraulicNode):
         # Calculate the effective Cv (assuming a linear trim for simplicity)
         cv_eff = self.max_cv * effective_opening
         
-        # Calculate pressure drop. We use (flow_rate * abs(flow_rate)) to preserve flow direction stability
-        dp = (density / 2.0) * (flow_rate * abs(flow_rate)) / (cv_eff**2)
+        # Conversion constant: (15850.32^2 * 6894.76 / 1000) approx 1.732e9
+        # This converts US GPM^2/PSI to m^6/s^2/Pa scaled by density
+        K_CV_SI = 1.732e9
+        
+        dp = (K_CV_SI * density * flow_rate * abs(flow_rate)) / (cv_eff**2)
         
         return abs(dp)
 

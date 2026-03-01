@@ -84,9 +84,8 @@ async def websocket_endpoint(websocket: WebSocket):
                             "outlets": [p.dict() for p in node.outlets]
                         }
                     
-                    for i, edge in enumerate(network_instance.edges):
-                        # Use the index or a unique ID if available
-                        edge_id = f"edge_{i}" 
+                    for edge in network_instance.edges:
+                        edge_id = edge["id"]
                         pipe = edge["pipe"]
                         telemetry["edges"][edge_id] = {
                             "inlets": [p.dict() for p in pipe.inlets],

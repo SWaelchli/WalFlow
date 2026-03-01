@@ -126,13 +126,28 @@ export default function PropertyEditor({ node, edge, onUpdate, onUpdateEdge, onD
         )}
 
         {isNode && type === 'valve' && (
-          <div>
-            <label style={{ fontSize: '11px', color: '#64748b' }}>Max Cv (Flow Coeff)</label>
-            <input 
-              type="number" style={{ width: '100%', fontSize: '12px' }}
-              value={data.max_cv} onChange={(e) => handleChange('max_cv', e.target.value)}
-            />
-          </div>
+          <>
+            <div>
+              <label style={{ fontSize: '11px', color: '#64748b' }}>Max Cv (Flow Coeff)</label>
+              <input 
+                type="number" style={{ width: '100%', fontSize: '12px' }}
+                value={data.max_cv} onChange={(e) => handleChange('max_cv', e.target.value)}
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: '11px', color: '#64748b' }}>Opening (%)</label>
+              <input 
+                type="number" style={{ width: '100%', fontSize: '12px' }}
+                min="0.1" max="100" step="0.1"
+                value={data.opening || 50.0} 
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value) || 0;
+                  handleChange('opening', val);
+                  if (data.onChange) data.onChange(val, id);
+                }}
+              />
+            </div>
+          </>
         )}
 
         {isNode && type === 'heat_exchanger' && (

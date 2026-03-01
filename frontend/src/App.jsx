@@ -21,6 +21,7 @@ import MixerNode from './nodes/MixerNode';
 
 import Sidebar from './Sidebar';
 import PropertyEditor from './PropertyEditor';
+import DataList from './DataList';
 
 const nodeTypes = {
   tank: TankNode,
@@ -45,39 +46,46 @@ export default function App() {
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   const ws = useRef(null);
   
-  const [flowRate, setFlowRate] = useState(0.0);
-  const [selectedNode, setSelectedNode] = useState(null);
-  const [selectedEdge, setSelectedEdge] = useState(null);
-
-  const handleValveChange = useCallback((newValue, nodeId) => {
-    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-      ws.current.send(JSON.stringify({ 
-        action: 'update_valve', 
-        value: parseFloat(newValue),
-        node_id: nodeId
-      }));
-    }
-  }, []);
-
-  const initialNodes = [
-    { 
-      id: 'tank-a', 
-      type: 'tank', 
-      position: { x: 50, y: 150 }, 
-      data: { label: 'Source Tank', level: 2.0, elevation: 0.0, temperature: 313.15, fluid_type: 'iso_vg_46' } 
-    },
-    { 
-      id: 'pump-1', 
-      type: 'pump', 
-      position: { x: 250, y: 170 }, 
-      data: { label: 'Main Pump', A: 80.0, B: 0.0, C: -2000.0 } 
-    },
-  ];
-
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-
-  const onConnect = useCallback((params) => {
+    const [flowRate, setFlowRate] = useState(0.0);
+    const [selectedNode, setSelectedNode] = useState(null);
+    const [selectedEdge, setSelectedEdge] = useState(null);
+  
+    const initialNodes = [
+      {
+        id: 'tank-a',
+        type: 'tank',
+        position: { x: 50, y: 150 },
+        data: { label: 'Source Tank', level: 2.0, elevation: 0.0, temperature: 313.15, fluid_type: 'iso_vg_46' }
+      },
+      {
+        id: 'pump-1',
+        type: 'pump',
+        position: { x: 250, y: 170 },
+        data: { label: 'Main Pump', A: 80.0, B: 0.0, C: -2000.0 }
+      },
+    ];
+  
+    const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+    const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  
+    const handleValveChange = useCallback((newValue, nodeId) => {
+      // 1. Send to backend for immediate physics response
+      if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+        ws.current.send(JSON.stringify({
+          action: 'update_valve',
+          value: parseFloat(newValue),
+          node_id: nodeId
+        }));
+      }
+  
+      // 2. Update local state so it's not reset by other graph updates
+      setNodes((nds) =>
+        nds.map((node) =>
+          node.id === nodeId ? { ...node, data: { ...node.data, opening: newValue } } : node
+        )
+      );
+    }, [setNodes]);
+    const onConnect = useCallback((params) => {
     setEdges((eds) => addEdge({ ...params, animated: true, data: { length: 25.0, diameter: 0.1 } }, eds));
   }, [setEdges]);
 
@@ -151,6 +159,7 @@ export default function App() {
           onChange: type === 'valve' ? handleValveChange : undefined,
           ...(type === 'pump' && { A: 80.0, B: 0.0, C: -2000.0 }),
           ...(type === 'tank' && { level: 2.0, elevation: 0.0, temperature: 313.15, fluid_type: 'iso_vg_46' }),
+          ...(type === 'valve' && { max_cv: 0.05, opening: 50.0 }),
           ...(type === 'orifice' && { pipe_diameter: 0.1, orifice_diameter: 0.07 }),
           ...(type === 'filter' && { resistance: 1000.0 }),
           ...(type === 'heat_exchanger' && { heat_duty_kw: -10.0 }),
@@ -228,6 +237,14 @@ export default function App() {
             })
           );
         }
+        if (data.telemetry && data.telemetry.edges) {
+          setEdges((eds) => 
+            eds.map((edge) => {
+              const edgeTelemetry = data.telemetry.edges[edge.id];
+              return edgeTelemetry ? { ...edge, data: { ...edge.data, telemetry: edgeTelemetry } } : edge;
+            })
+          );
+        }
       }
     };
 
@@ -245,52 +262,56 @@ export default function App() {
     <div style={{ width: '100vw', height: '100vh', display: 'flex', backgroundColor: '#f4f4f5' }}>
       <Sidebar onSave={onSave} onLoad={onLoad} onClear={onClearCanvas} />
 
-      <div style={{ flexGrow: 1, position: 'relative' }} ref={reactFlowWrapper}>
-        <div style={{
-          position: 'absolute', top: 20, left: 20, zIndex: 10,
-          background: '#fff', padding: '15px 25px', borderRadius: '8px',
-          border: '2px solid #0f172a', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-        }}>
-          <h3 style={{ margin: 0, color: '#475569', fontSize: '14px' }}>System Flow Rate</h3>
-          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#0284c7' }}>
-            {(flowRate * 60000).toFixed(1)} <span style={{ fontSize: '14px', color: '#64748b' }}>L/min</span>
+      <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+        <div style={{ flexGrow: 1, position: 'relative' }} ref={reactFlowWrapper}>
+          <div style={{
+            position: 'absolute', top: 20, left: 20, zIndex: 10,
+            background: '#fff', padding: '15px 25px', borderRadius: '8px',
+            border: '2px solid #0f172a', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+          }}>
+            <h3 style={{ margin: 0, color: '#475569', fontSize: '14px' }}>System Flow Rate</h3>
+            <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#0284c7' }}>
+              {(flowRate * 60000).toFixed(1)} <span style={{ fontSize: '14px', color: '#64748b' }}>L/min</span>
+            </div>
           </div>
+
+          <PropertyEditor 
+            node={selectedNode} 
+            edge={selectedEdge}
+            onUpdate={updateNodeData} 
+            onUpdateEdge={updateEdgeData}
+            onDelete={onDeleteNode} 
+            onDeleteEdge={onDeleteEdge}
+          />
+
+          <ReactFlow 
+            nodes={nodes} 
+            edges={edges} 
+            nodeTypes={nodeTypes} 
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            onNodeClick={onNodeClick}
+            onEdgeClick={onEdgeClick}
+            onNodesDelete={(deleted) => {
+              if (selectedNode && deleted.some(n => n.id === selectedNode.id)) setSelectedNode(null);
+            }}
+            onEdgesDelete={(deleted) => {
+              if (selectedEdge && deleted.some(e => e.id === selectedEdge.id)) setSelectedEdge(null);
+            }}
+            onPaneClick={onPaneClick}
+            onInit={setReactFlowInstance}
+            onDrop={onDrop}
+            onDragOver={onDragOver}
+            fitView
+          >
+            <Background color="#ccc" gap={16} />
+            <Controls />
+            <MiniMap />
+          </ReactFlow>
         </div>
-
-        <PropertyEditor 
-          node={selectedNode} 
-          edge={selectedEdge}
-          onUpdate={updateNodeData} 
-          onUpdateEdge={updateEdgeData}
-          onDelete={onDeleteNode} 
-          onDeleteEdge={onDeleteEdge}
-        />
-
-        <ReactFlow 
-          nodes={nodes} 
-          edges={edges} 
-          nodeTypes={nodeTypes} 
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
-          onNodeClick={onNodeClick}
-          onEdgeClick={onEdgeClick}
-          onNodesDelete={(deleted) => {
-            if (selectedNode && deleted.some(n => n.id === selectedNode.id)) setSelectedNode(null);
-          }}
-          onEdgesDelete={(deleted) => {
-            if (selectedEdge && deleted.some(e => e.id === selectedEdge.id)) setSelectedEdge(null);
-          }}
-          onPaneClick={onPaneClick}
-          onInit={setReactFlowInstance}
-          onDrop={onDrop}
-          onDragOver={onDragOver}
-          fitView
-        >
-          <Background color="#ccc" gap={16} />
-          <Controls />
-          <MiniMap />
-        </ReactFlow>
+        
+        <DataList nodes={nodes} edges={edges} />
       </div>
     </div>
   );

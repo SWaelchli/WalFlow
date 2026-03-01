@@ -1,0 +1,153 @@
+import React, { useState, useEffect } from 'react';
+import { paToBar, m3sToLmin, kToC, mToMm } from './utils/converters';
+
+export default function DataList({ nodes, edges }) {
+  const [activeTab, setActiveTab] = useState('pipes');
+  const [manualOrder, setManualOrder] = useState([]);
+
+  // Calculate initial topological order
+  useEffect(() => {
+    const ordered = [];
+    const incomingCounts = {};
+    nodes.forEach(n => incomingCounts[n.id] = 0);
+    edges.forEach(e => incomingCounts[e.target] = (incomingCounts[e.target] || 0) + 1);
+
+    const queue = nodes.filter(n => incomingCounts[n.id] === 0);
+    if (queue.length === 0 && nodes.length > 0) queue.push(nodes[0]);
+
+    const processedNodes = new Set();
+    const processedEdges = new Set();
+
+    while (queue.length > 0) {
+      const node = queue.shift();
+      if (!node || processedNodes.has(node.id)) continue;
+      
+      processedNodes.add(node.id);
+      ordered.push({ type: 'node', id: node.id });
+
+      const outgoingEdges = edges.filter(e => e.source === node.id);
+      outgoingEdges.forEach(edge => {
+        if (!processedEdges.has(edge.id)) {
+          processedEdges.add(edge.id);
+          ordered.push({ type: 'edge', id: edge.id });
+          
+          const targetNode = nodes.find(n => n.id === edge.target);
+          if (targetNode) queue.push(targetNode);
+        }
+      });
+    }
+
+    // Add orphans
+    nodes.forEach(n => { if (!processedNodes.has(n.id)) ordered.push({ type: 'node', id: n.id }); });
+    edges.forEach(e => { if (!processedEdges.has(e.id)) ordered.push({ type: 'edge', id: e.id }); });
+
+    setManualOrder(ordered);
+  }, [nodes.length, edges.length]); 
+
+  const moveItem = (index, direction) => {
+    const newOrder = [...manualOrder];
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= newOrder.length) return;
+    
+    const [moved] = newOrder.splice(index, 1);
+    newOrder.splice(targetIndex, 0, moved);
+    setManualOrder(newOrder);
+  };
+
+  const renderTable = (filterType) => {
+    const items = manualOrder
+      .map(ref => {
+        if (ref.type === 'node') {
+          const node = nodes.find(n => n.id === ref.id);
+          return node ? { type: 'node', item: node } : null;
+        } else {
+          const edge = edges.find(e => e.id === ref.id);
+          return edge ? { type: 'edge', item: edge } : null;
+        }
+      })
+      .filter(i => i !== null && (filterType === 'all' || i.type === filterType));
+
+    return (
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', textAlign: 'left' }}>
+        <thead>
+          <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>
+            <th style={{ padding: '6px' }}>Move</th>
+            <th style={{ padding: '6px' }}>Type</th>
+            <th style={{ padding: '6px' }}>Name</th>
+            <th style={{ padding: '6px' }}>Flow (L/min)</th>
+            <th style={{ padding: '6px' }}>P Start (bar)</th>
+            <th style={{ padding: '6px' }}>P End (bar)</th>
+            <th style={{ padding: '6px' }}>Temp (°C)</th>
+            <th style={{ padding: '6px' }}>Dia (mm)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((entry) => {
+            const isNode = entry.type === 'node';
+            const item = entry.item;
+            const telemetry = item.data?.telemetry;
+            
+            const pStart = telemetry?.inlets?.[0]?.pressure || 0;
+            const pEnd = telemetry?.outlets?.[0]?.pressure || 0;
+            const flow = telemetry?.outlets?.[0]?.flow_rate || 0;
+            const temp = (telemetry?.outlets?.[0]?.temperature || telemetry?.inlets?.[0]?.temperature) || 293.15;
+            const dia = isNode ? (item.data.orifice_diameter || item.data.pipe_diameter || 0) : (item.data.diameter || 0.1);
+
+            const masterIdx = manualOrder.findIndex(ref => ref.id === item.id);
+
+            return (
+              <tr key={item.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                <td style={{ padding: '4px' }}>
+                  <div style={{ display: 'flex', gap: '2px' }}>
+                    <button onClick={() => moveItem(masterIdx, -1)} style={{ padding: '1px 4px', fontSize: '9px', cursor: 'pointer' }}>▲</button>
+                    <button onClick={() => moveItem(masterIdx, 1)} style={{ padding: '1px 4px', fontSize: '9px', cursor: 'pointer' }}>▼</button>
+                  </div>
+                </td>
+                <td style={{ padding: '6px', color: '#94a3b8' }}>{isNode ? item.type.toUpperCase() : 'PIPE'}</td>
+                <td style={{ padding: '6px', fontWeight: 'bold' }}>{item.data.label || item.id}</td>
+                <td style={{ padding: '6px' }}>{m3sToLmin(flow)}</td>
+                <td style={{ padding: '6px' }}>{paToBar(pStart)}</td>
+                <td style={{ padding: '6px' }}>{paToBar(pEnd)}</td>
+                <td style={{ padding: '6px' }}>{kToC(temp)}</td>
+                <td style={{ padding: '6px' }}>{dia > 0 ? mToMm(dia) : '-'}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    );
+  };
+
+  return (
+    <div style={{
+      height: '350px', background: '#fff', borderTop: '2px solid #e2e8f0',
+      display: 'flex', flexDirection: 'column', overflow: 'hidden'
+    }}>
+      <div style={{ display: 'flex', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+        <button 
+          onClick={() => setActiveTab('pipes')}
+          style={{
+            padding: '10px 20px', border: 'none', background: activeTab === 'pipes' ? '#fff' : 'transparent',
+            borderBottom: activeTab === 'pipes' ? '2px solid #3b82f6' : 'none',
+            fontWeight: activeTab === 'pipes' ? 'bold' : 'normal', cursor: 'pointer', fontSize: '12px'
+          }}
+        >
+          Pipe List
+        </button>
+        <button 
+          onClick={() => setActiveTab('all')}
+          style={{
+            padding: '10px 20px', border: 'none', background: activeTab === 'all' ? '#fff' : 'transparent',
+            borderBottom: activeTab === 'all' ? '2px solid #3b82f6' : 'none',
+            fontWeight: activeTab === 'all' ? 'bold' : 'normal', cursor: 'pointer', fontSize: '12px'
+          }}
+        >
+          Pipe & Equipment List
+        </button>
+      </div>
+      <div style={{ flexGrow: 1, overflowY: 'auto', padding: '0 10px' }}>
+        {activeTab === 'pipes' ? renderTable('edge') : renderTable('all')}
+      </div>
+    </div>
+  );
+}
