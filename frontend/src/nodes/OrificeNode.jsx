@@ -17,7 +17,7 @@ export default function OrificeNode({ data }) {
         position: 'absolute', top: -55, left: '50%', transform: 'translateX(-50%)',
         textAlign: 'center', width: '80px', pointerEvents: 'none'
       }}>
-        <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#64748b' }}>
+        <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#64748b' }}> 
           {paToBar(dP)} bar
         </div>
         <div style={{ fontSize: '9px', color: '#64748b' }}>
@@ -34,16 +34,19 @@ export default function OrificeNode({ data }) {
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         position: 'relative', boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
       }}>
-        {/* Top and Bottom "plate" lines to mimic an orifice restriction */}
+        {/* Top and Bottom "plate" lines to mimic an orifice restriction */}     
         <div style={{ width: '6px', height: '15px', background: '#0f172a', position: 'absolute', top: 0 }}></div>
         <div style={{ width: '6px', height: '15px', background: '#0f172a', position: 'absolute', bottom: 0 }}></div>
-        
-        <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#0f172a' }}>
+
+        <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#0f172a' }}> 
           ORIFICE
         </div>
+
+        {/* Inlet - Blue */}
+        <Handle type="target" position={Position.Left} id="inlet-0" style={{ background: '#3b82f6', width: '8px', height: '8px' }} />
         
-        <Handle type="target" position={Position.Left} id="inlet-0" style={{ background: '#0f172a', width: '8px', height: '8px' }} />
-        <Handle type="source" position={Position.Right} id="outlet-0" style={{ background: '#0f172a', width: '8px', height: '8px' }} />
+        {/* Outlet - Red */}
+        <Handle type="source" position={Position.Right} id="outlet-0" style={{ background: '#ef4444', width: '8px', height: '8px' }} />
       </div>
     </div>
   );

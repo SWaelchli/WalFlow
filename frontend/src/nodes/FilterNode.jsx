@@ -15,7 +15,7 @@ export default function FilterNode({ data }) {
         position: 'absolute', top: -45, left: '50%', transform: 'translateX(-50%)',
         textAlign: 'center', width: '80px', pointerEvents: 'none'
       }}>
-        <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#64748b' }}>
+        <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#64748b' }}> 
           {paToBar(dP)} bar
         </div>
         <div style={{ fontSize: '9px', color: '#64748b' }}>
@@ -30,21 +30,21 @@ export default function FilterNode({ data }) {
         justifyContent: 'center', position: 'relative',
         boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
       }}>
-        {/* Visual representation of a filter element (the internal line) */}
+        {/* Visual representation of a filter element (the internal line) */}    
         <div style={{
           position: 'absolute', top: '50%', left: '10%', right: '10%',
           height: '2px', background: '#94a3b8', borderStyle: 'dashed'
         }} />
-        
+
         <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#475569', zIndex: 1 }}>
           FILTER
         </div>
-        
-        {/* Inlet */}
-        <Handle type="target" position={Position.Left} id="inlet-0" style={{ background: '#64748b' }} />
-        
-        {/* Outlet */}
-        <Handle type="source" position={Position.Right} id="outlet-0" style={{ background: '#64748b' }} />
+
+        {/* Inlet - Blue */}
+        <Handle type="target" position={Position.Left} id="inlet-0" style={{ background: '#3b82f6', width: '8px', height: '8px' }} />
+
+        {/* Outlet - Red */}
+        <Handle type="source" position={Position.Right} id="outlet-0" style={{ background: '#ef4444', width: '8px', height: '8px' }} />
       </div>
     </div>
   );

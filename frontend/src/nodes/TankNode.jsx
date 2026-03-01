@@ -32,9 +32,9 @@ export default function TankNode({ data }) {
         <div style={{ color: '#0369a1' }}>{kToC(t)}°C</div>
       </div>
       
-      {/* The Physical Ports */}
-      <Handle type="target" position={Position.Left} id="inlet-0" style={{ background: '#0284c7', width: '8px', height: '8px' }} />
-      <Handle type="source" position={Position.Right} id="outlet-0" style={{ background: '#0284c7', width: '8px', height: '8px' }} />
+      {/* The Physical Ports - Blue for In, Red for Out */}
+      <Handle type="target" position={Position.Left} id="inlet-0" style={{ background: '#3b82f6', width: '8px', height: '8px' }} />
+      <Handle type="source" position={Position.Right} id="outlet-0" style={{ background: '#ef4444', width: '8px', height: '8px' }} />
     </div>
   );
 }

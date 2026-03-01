@@ -22,20 +22,36 @@ export default function MixerNode({ data }) {
       </div>
 
       <div style={{
-        width: 40, height: 40, borderRadius: '50%', background: '#fff',
-        border: '2px solid #334155', display: 'flex', alignItems: 'center',
-        justifyContent: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+        width: 50, height: 40, background: '#fff',
+        border: '2px solid #0f172a', display: 'flex', alignItems: 'center',
+        justifyContent: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+        clipPath: 'polygon(0% 0%, 100% 50%, 0% 100%)', // Triangle symbol pointing right
       }}>
-        <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#334155' }}>M</div>
-        
-        {/* 2 or 3 Inlets */}
-        <Handle type="target" position={Position.Left} id="inlet-0" style={{ background: '#334155' }} />
-        <Handle type="target" position={Position.Top} id="inlet-1" style={{ background: '#334155', top: '10%' }} />
-        <Handle type="target" position={Position.Bottom} id="inlet-2" style={{ background: '#334155', top: '90%' }} />
-        
-        {/* 1 Outlet */}
-        <Handle type="source" position={Position.Right} id="outlet-0" style={{ background: '#334155' }} />
+        {/* We need to use a sub-div because the parent is clip-pathed */}
+        <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#0f172a', marginLeft: '-15px' }}>MIX</div>
       </div>
+
+      {/* 2 Inlets (Targets) - Blue Handles */}
+      <Handle 
+        type="target" 
+        position={Position.Left} 
+        id="inlet-0" 
+        style={{ background: '#3b82f6', width: '8px', height: '8px', top: '25%' }} 
+      />
+      <Handle 
+        type="target" 
+        position={Position.Left} 
+        id="inlet-1" 
+        style={{ background: '#3b82f6', width: '8px', height: '8px', top: '75%' }} 
+      />
+      
+      {/* 1 Outlet (Source) - Red Handle */}
+      <Handle 
+        type="source" 
+        position={Position.Right} 
+        id="outlet-0" 
+        style={{ background: '#ef4444', width: '8px', height: '8px', right: '-4px' }} 
+      />
     </div>
   );
 }

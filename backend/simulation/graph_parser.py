@@ -102,10 +102,10 @@ class GraphParser:
                 clogging_factor=float(d.get('clogging_factor', 1.0))
             )
         elif t == 'splitter':
-            # Matching the 3 outlets in SplitterNode.jsx
-            return Splitter(name=name, num_outlets=3)
+            # 1 inlet, 2 outlets
+            return Splitter(name=name, num_outlets=2)
         elif t == 'mixer':
-            # Matching the 3 inlets in MixerNode.jsx
-            return Mixer(name=name, num_inlets=3)
+            # 2 inlets, 1 outlet
+            return Mixer(name=name, num_inlets=2)
         else:
             return HydraulicNode(name=name, node_type=t)

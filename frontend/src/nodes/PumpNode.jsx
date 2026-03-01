@@ -15,7 +15,7 @@ export default function PumpNode({ data }) {
         position: 'absolute', top: -45, left: '50%', transform: 'translateX(-50%)',
         textAlign: 'center', width: '80px', pointerEvents: 'none'
       }}>
-        <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#0369a1' }}>
+        <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#0369a1' }}> 
           +{paToBar(dP)} bar
         </div>
         <div style={{ fontSize: '9px', color: '#64748b' }}>
@@ -26,18 +26,18 @@ export default function PumpNode({ data }) {
       {/* A classic circular representation for a centrifugal pump */}
       <div style={{
         width: 70, height: 70, borderRadius: '50%', background: '#fff',
-        border: '3px solid #334155', display: 'flex', alignItems: 'center',
+        border: '3px solid #334155', display: 'flex', alignItems: 'center',      
         justifyContent: 'center', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
       }}>
-        <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#334155' }}>
+        <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#334155' }}> 
           PUMP
         </div>
-        
-        {/* Inlet (Suction) */}
-        <Handle type="target" position={Position.Left} id="inlet-0" style={{ background: '#334155', width: '10px', height: '10px' }} />
-        
-        {/* Outlet (Discharge) */}
-        <Handle type="source" position={Position.Right} id="outlet-0" style={{ background: '#334155', width: '10px', height: '10px' }} />
+
+        {/* Inlet (Suction) - Blue */}
+        <Handle type="target" position={Position.Left} id="inlet-0" style={{ background: '#3b82f6', width: '10px', height: '10px' }} />
+
+        {/* Outlet (Discharge) - Red */}
+        <Handle type="source" position={Position.Right} id="outlet-0" style={{ background: '#ef4444', width: '10px', height: '10px' }} />
       </div>
     </div>
   );

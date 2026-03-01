@@ -16,7 +16,7 @@ export default function HeatExchangerNode({ data }) {
         position: 'absolute', top: -45, left: '50%', transform: 'translateX(-50%)',
         textAlign: 'center', width: '100px', pointerEvents: 'none'
       }}>
-        <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#64748b' }}>
+        <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#64748b' }}> 
           dP: {paToBar(dP)} bar
         </div>
         <div style={{ fontSize: '9px', color: '#0369a1' }}>
@@ -33,22 +33,22 @@ export default function HeatExchangerNode({ data }) {
       }}>
         {/* Visual zigzag for tube bundle */}
         <svg width="80%" height="60%" viewBox="0 0 80 40" style={{ position: 'absolute', opacity: 0.3 }}>
-          <polyline points="0,20 10,10 20,30 30,10 40,30 50,10 60,30 70,10 80,20" 
+          <polyline points="0,20 10,10 20,30 30,10 40,30 50,10 60,30 70,10 80,20"
                     fill="none" stroke="#2563eb" strokeWidth="2" />
         </svg>
-        
+
         <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#1d4ed8', zIndex: 1 }}>
           COOLER
         </div>
         <div style={{ fontSize: '9px', color: '#3b82f6', zIndex: 1 }}>
           Duty: {data.heat_duty_kw || 0}kW
         </div>
-        
-        {/* Inlet */}
-        <Handle type="target" position={Position.Left} id="inlet-0" style={{ background: '#2563eb' }} />
-        
-        {/* Outlet */}
-        <Handle type="source" position={Position.Right} id="outlet-0" style={{ background: '#2563eb' }} />
+
+        {/* Inlet - Blue */}
+        <Handle type="target" position={Position.Left} id="inlet-0" style={{ background: '#3b82f6', width: '8px', height: '8px' }} />
+
+        {/* Outlet - Red */}
+        <Handle type="source" position={Position.Right} id="outlet-0" style={{ background: '#ef4444', width: '8px', height: '8px' }} />
       </div>
     </div>
   );
