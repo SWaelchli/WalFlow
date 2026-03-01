@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { paToBar, m3sToLmin, kToC, mToMm } from './utils/converters';
+import { findClosestPipeMatch, ASME_PIPE_STANDARDS } from './utils/standards_library';
 
 export default function DataList({ nodes, edges }) {
   const [activeTab, setActiveTab] = useState('pipes');
@@ -78,7 +79,8 @@ export default function DataList({ nodes, edges }) {
             <th style={{ padding: '6px' }}>P Start (bar)</th>
             <th style={{ padding: '6px' }}>P End (bar)</th>
             <th style={{ padding: '6px' }}>Temp (°C)</th>
-            <th style={{ padding: '6px' }}>Dia (mm)</th>
+            <th style={{ padding: '6px' }}>NPS (inch)</th>
+            <th style={{ padding: '6px' }}>Sch</th>
           </tr>
         </thead>
         <tbody>
@@ -91,7 +93,19 @@ export default function DataList({ nodes, edges }) {
             const pEnd = telemetry?.outlets?.[0]?.pressure || 0;
             const flow = telemetry?.outlets?.[0]?.flow_rate || 0;
             const temp = (telemetry?.outlets?.[0]?.temperature || telemetry?.inlets?.[0]?.temperature) || 293.15;
-            const dia = isNode ? (item.data.orifice_diameter || item.data.pipe_diameter || 0) : (item.data.diameter || 0.1);
+            
+            const diaValue = isNode ? (item.data.orifice_diameter || item.data.pipe_diameter || 0) : (item.data.diameter || 0.1);
+            const match = findClosestPipeMatch(diaValue);
+            let npsDisplay = "-";
+            let schDisplay = "-";
+            
+            if (match) {
+              const pipeInfo = ASME_PIPE_STANDARDS.find(p => p.dn === match.dn);
+              npsDisplay = pipeInfo ? `${pipeInfo.nps}"` : `${match.dn}mm`;
+              schDisplay = match.sch;
+            } else if (diaValue > 0) {
+              npsDisplay = `Custom (${mToMm(diaValue)}mm)`;
+            }
 
             const masterIdx = manualOrder.findIndex(ref => ref.id === item.id);
 
@@ -109,7 +123,8 @@ export default function DataList({ nodes, edges }) {
                 <td style={{ padding: '6px' }}>{paToBar(pStart)}</td>
                 <td style={{ padding: '6px' }}>{paToBar(pEnd)}</td>
                 <td style={{ padding: '6px' }}>{kToC(temp)}</td>
-                <td style={{ padding: '6px' }}>{dia > 0 ? mToMm(dia) : '-'}</td>
+                <td style={{ padding: '6px' }}>{npsDisplay}</td>
+                <td style={{ padding: '6px' }}>{schDisplay}</td>
               </tr>
             );
           })}

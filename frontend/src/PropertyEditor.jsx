@@ -119,16 +119,14 @@ export default function PropertyEditor({ node, edge, onUpdate, onUpdateEdge, onD
       </div>
       
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        {isNode && (
-          <div key="label">
-            <label style={{ fontSize: '11px', color: '#64748b' }}>Name Tag</label>
-            <input 
-              style={{ width: '100%', fontSize: '12px', padding: '4px' }}
-              value={data.label || ''} 
-              onChange={(e) => handleChange('label', e.target.value)}
-            />
-          </div>
-        )}
+        <div key="label">
+          <label style={{ fontSize: '11px', color: '#64748b' }}>Name Tag</label>
+          <input 
+            style={{ width: '100%', fontSize: '12px', padding: '4px' }}
+            value={data.label || ''} 
+            onChange={(e) => handleChange('label', e.target.value)}
+          />
+        </div>
 
         {!isNode && (
           <>

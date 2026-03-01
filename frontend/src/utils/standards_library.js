@@ -41,6 +41,7 @@ export const calculatePipeId = (od, wt) => {
  * Useful for initializing the dropdowns when loading a project.
  */
 export const findClosestPipeMatch = (idMeters) => {
+  if (idMeters === undefined || idMeters === null || idMeters <= 0) return null;
   const idMm = idMeters * 1000;
   let closest = null;
   let minDiff = 0.001; // Tolerance in mm for "exact" match

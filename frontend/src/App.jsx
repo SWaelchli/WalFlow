@@ -35,7 +35,7 @@ const nodeTypes = {
 };
 
 const initialEdges = [
-  { id: 'edge-1', source: 'tank-a', target: 'pump-1', sourceHandle: 'outlet-0', targetHandle: 'inlet-0', animated: true, data: { length: 25.0, diameter: 0.1 } },
+  { id: 'Pipe 1', source: 'tank-a', target: 'pump-1', sourceHandle: 'outlet-0', targetHandle: 'inlet-0', animated: true, data: { label: 'Pipe 1', length: 25.0, diameter: 0.05248 } },
 ];
 
 let idCount = 0;
@@ -67,6 +67,7 @@ export default function App() {
   
     const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+    const [edgeIdCount, setEdgeIdCount] = useState(initialEdges.length + 1);
   
     const handleValveChange = useCallback((newValue, nodeId) => {
       // 1. Send to backend for immediate physics response
@@ -86,8 +87,18 @@ export default function App() {
       );
     }, [setNodes]);
     const onConnect = useCallback((params) => {
-    setEdges((eds) => addEdge({ ...params, animated: true, data: { length: 25.0, diameter: 0.1 } }, eds));
-  }, [setEdges]);
+    setEdges((eds) => {
+      const newId = `Pipe ${edgeIdCount}`;
+      const newEdge = { 
+        ...params, 
+        id: newId,
+        animated: true, 
+        data: { label: newId, length: 25.0, diameter: 0.05248 } 
+      };
+      setEdgeIdCount(prev => prev + 1);
+      return addEdge(newEdge, eds);
+    });
+  }, [setEdges, edgeIdCount]);
 
   const onNodeClick = useCallback((event, node) => {
     setSelectedNode(node);
