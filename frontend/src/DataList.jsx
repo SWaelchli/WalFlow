@@ -56,6 +56,7 @@ export default function DataList({ nodes, edges }) {
   };
 
   const renderTable = (filterType) => {
+    const isPipeOnly = filterType === 'edge';
     const items = manualOrder
       .map(ref => {
         if (ref.type === 'node') {
@@ -76,11 +77,12 @@ export default function DataList({ nodes, edges }) {
             <th style={{ padding: '6px' }}>Type</th>
             <th style={{ padding: '6px' }}>Name</th>
             <th style={{ padding: '6px' }}>Flow (L/min)</th>
+            {isPipeOnly && <th style={{ padding: '6px' }}>Velocity (m/s)</th>}
             <th style={{ padding: '6px' }}>P Start (bar)</th>
             <th style={{ padding: '6px' }}>P End (bar)</th>
             <th style={{ padding: '6px' }}>Temp (°C)</th>
-            <th style={{ padding: '6px' }}>NPS (inch)</th>
-            <th style={{ padding: '6px' }}>Sch</th>
+            {isPipeOnly && <th style={{ padding: '6px' }}>NPS (inch)</th>}
+            {isPipeOnly && <th style={{ padding: '6px' }}>Sch</th>}
           </tr>
         </thead>
         <tbody>
@@ -95,6 +97,14 @@ export default function DataList({ nodes, edges }) {
             const temp = (telemetry?.outlets?.[0]?.temperature || telemetry?.inlets?.[0]?.temperature) || 293.15;
             
             const diaValue = isNode ? (item.data.orifice_diameter || item.data.pipe_diameter || 0) : (item.data.diameter || 0.1);
+            
+            // Calculate Velocity: v = Q / A
+            let velocity = 0;
+            if (diaValue > 0) {
+              const area = Math.PI * Math.pow(diaValue, 2) / 4;
+              velocity = flow / area;
+            }
+
             const match = findClosestPipeMatch(diaValue);
             let npsDisplay = "-";
             let schDisplay = "-";
@@ -120,11 +130,12 @@ export default function DataList({ nodes, edges }) {
                 <td style={{ padding: '6px', color: '#94a3b8' }}>{isNode ? item.type.toUpperCase() : 'PIPE'}</td>
                 <td style={{ padding: '6px', fontWeight: 'bold' }}>{item.data.label || item.id}</td>
                 <td style={{ padding: '6px' }}>{m3sToLmin(flow)}</td>
+                {isPipeOnly && <td style={{ padding: '6px' }}>{velocity.toFixed(2)}</td>}
                 <td style={{ padding: '6px' }}>{paToBar(pStart)}</td>
                 <td style={{ padding: '6px' }}>{paToBar(pEnd)}</td>
                 <td style={{ padding: '6px' }}>{kToC(temp)}</td>
-                <td style={{ padding: '6px' }}>{npsDisplay}</td>
-                <td style={{ padding: '6px' }}>{schDisplay}</td>
+                {isPipeOnly && <td style={{ padding: '6px' }}>{npsDisplay}</td>}
+                {isPipeOnly && <td style={{ padding: '6px' }}>{schDisplay}</td>}
               </tr>
             );
           })}
