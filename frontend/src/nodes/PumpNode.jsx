@@ -5,7 +5,7 @@ import { paToBar, m3sToLmin } from '../utils/converters';
  * Centrifugal Pump (ISA / PFD style)
  * A circle with a discharge line tangential to the top.
  */
-export default function PumpNode({ data }) {
+export default function PumpNode({ data, selected }) {
   const telemetry = data.telemetry;
   const pIn = telemetry?.inlets?.[0]?.pressure || 0;
   const pOut = telemetry?.outlets?.[0]?.pressure || 0;
@@ -13,7 +13,14 @@ export default function PumpNode({ data }) {
   const dP = pOut - pIn;
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div style={{ 
+      position: 'relative',
+      outline: selected ? '2px solid #3b82f6' : 'none',
+      outlineOffset: '4px',
+      borderRadius: '4px',
+      boxShadow: selected ? '0 0 10px rgba(59, 130, 246, 0.5)' : 'none',
+      transition: 'all 0.2s'
+    }}>
       <div style={{ width: 60, height: 60, background: 'transparent', position: 'relative' }}>
         <svg width="60" height="60" viewBox="0 0 60 60">
           {/* Main Circle Body - left edge at 10, right edge at 50 */}

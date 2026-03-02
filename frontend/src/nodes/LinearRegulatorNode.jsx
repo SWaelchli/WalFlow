@@ -4,13 +4,20 @@ import { Handle, Position } from 'reactflow';
  * Pressure Regulator (ISA / PFD style)
  * Maintains a set pressure either upstream or downstream.
  */
-export default function LinearRegulatorNode({ id, data }) {
+export default function LinearRegulatorNode({ id, data, selected }) {
   const telemetry = data.telemetry;
   const opening = data.opening ?? 100;
   const setP = data.set_pressure ?? 500000;
   
   return (
-    <div style={{ position: 'relative' }}>
+    <div style={{ 
+      position: 'relative',
+      outline: selected ? '2px solid #3b82f6' : 'none',
+      outlineOffset: '4px',
+      borderRadius: '4px',
+      boxShadow: selected ? '0 0 10px rgba(59, 130, 246, 0.5)' : 'none',
+      transition: 'all 0.2s'
+    }}>
       <div style={{ width: 60, height: 60, background: 'transparent', position: 'relative' }}>
         <svg width="60" height="60" viewBox="0 0 60 60">
           {/* Actuator line and diaphragm */}

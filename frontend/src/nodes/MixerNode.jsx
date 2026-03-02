@@ -4,13 +4,20 @@ import { Handle, Position } from 'reactflow';
  * Mixer (ISA / PFD style)
  * Convergence point for multiple streams.
  */
-export default function MixerNode({ data }) {
+export default function MixerNode({ data, selected }) {
   const telemetry = data.telemetry;
   const qOut = telemetry?.outlets?.[0]?.flow_rate || 0;
   const qLmin = (qOut * 60000).toFixed(1);
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div style={{ 
+      position: 'relative',
+      outline: selected ? '2px solid #3b82f6' : 'none',
+      outlineOffset: '4px',
+      borderRadius: '4px',
+      boxShadow: selected ? '0 0 10px rgba(59, 130, 246, 0.5)' : 'none',
+      transition: 'all 0.2s'
+    }}>
       <div style={{ width: 40, height: 40, background: 'transparent', position: 'relative' }}>
         <svg width="40" height="40" viewBox="0 0 40 40">
           {/* Circular junction point */}

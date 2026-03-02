@@ -5,14 +5,21 @@ import { paToBar } from '../utils/converters';
  * Orifice Plate (ISA / PFD style)
  * A restriction in the line, typically represented by a narrow gap or perpendicular lines.
  */
-export default function OrificeNode({ data }) {
+export default function OrificeNode({ data, selected }) {
   const telemetry = data.telemetry;
   const pIn = telemetry?.inlets?.[0]?.pressure || 0;
   const pOut = telemetry?.outlets?.[0]?.pressure || 0;
   const dP = pIn - pOut;
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div style={{ 
+      position: 'relative',
+      outline: selected ? '2px solid #3b82f6' : 'none',
+      outlineOffset: '4px',
+      borderRadius: '4px',
+      boxShadow: selected ? '0 0 10px rgba(59, 130, 246, 0.5)' : 'none',
+      transition: 'all 0.2s'
+    }}>
       <div style={{ width: 40, height: 60, background: 'transparent', position: 'relative' }}>
         <svg width="40" height="60" viewBox="0 0 40 60">
           {/* Orifice Plate Marking */}

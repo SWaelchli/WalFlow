@@ -3,14 +3,21 @@ import { Handle, Position } from 'reactflow';
 /**
  * Shell and Tube Heat Exchanger (ISA / PFD style)
  */
-export default function HeatExchangerNode({ data }) {
+export default function HeatExchangerNode({ data, selected }) {
   const telemetry = data.telemetry;
   const tIn = telemetry?.inlets?.[0]?.temperature || 293.15;
   const tOut = telemetry?.outlets?.[0]?.temperature || 293.15;
   const duty = data.heat_duty_kw || 0;
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div style={{ 
+      position: 'relative',
+      outline: selected ? '2px solid #3b82f6' : 'none',
+      outlineOffset: '4px',
+      borderRadius: '4px',
+      boxShadow: selected ? '0 0 10px rgba(59, 130, 246, 0.5)' : 'none',
+      transition: 'all 0.2s'
+    }}>
       <div style={{ width: 60, height: 60, background: 'transparent', position: 'relative' }}>
         <svg width="60" height="60" viewBox="0 0 60 60">
           {/* Main Circle Body - starts at x=5, ends at x=55 */}

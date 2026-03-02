@@ -4,14 +4,22 @@ import { Handle, Position } from 'reactflow';
  * Splitter (ISA / PFD style)
  * Divergence point for multiple streams.
  */
-export default function SplitterNode({ data }) {
+export default function SplitterNode({ data, selected }) {
   const telemetry = data.telemetry;
-  const qIn = telemetry?.inlets?.[0]?.flow_rate || 0;
-  const qLmin = (qIn * 60000).toFixed(1);
+  const flow = telemetry?.inlets?.[0]?.flow_rate || 0;
+  const qLmin = (flow * 60000).toFixed(1);
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div style={{ 
+      position: 'relative',
+      outline: selected ? '2px solid #3b82f6' : 'none',
+      outlineOffset: '4px',
+      borderRadius: '4px',
+      boxShadow: selected ? '0 0 10px rgba(59, 130, 246, 0.5)' : 'none',
+      transition: 'all 0.2s'
+    }}>
       <div style={{ width: 40, height: 40, background: 'transparent', position: 'relative' }}>
+
         <svg width="40" height="40" viewBox="0 0 40 40">
           {/* Circular junction point */}
           <circle cx="20" cy="20" r="15" fill="white" stroke="#334155" strokeWidth="2.5" />

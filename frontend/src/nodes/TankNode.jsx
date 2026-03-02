@@ -4,14 +4,21 @@ import { Handle, Position } from 'reactflow';
  * Vertical Tank (ISA / PFD style)
  * Domed top and bottom.
  */
-export default function TankNode({ data }) {
+export default function TankNode({ data, selected }) {
   const telemetry = data.telemetry;
   const level = data.level || 0;
   const temp = telemetry?.outlets?.[0]?.temperature || data.temperature || 293.15;
   const tempC = (temp - 273.15).toFixed(1);
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div style={{ 
+      position: 'relative',
+      outline: selected ? '2px solid #3b82f6' : 'none',
+      outlineOffset: '4px',
+      borderRadius: '4px',
+      boxShadow: selected ? '0 0 10px rgba(59, 130, 246, 0.5)' : 'none',
+      transition: 'all 0.2s'
+    }}>
       <div style={{ width: 60, height: 100, background: 'transparent', position: 'relative' }}>
         <svg width="60" height="100" viewBox="0 0 60 100">
           {/* Main Body with Dome Top/Bottom - starts at x=10, ends at x=50 */}

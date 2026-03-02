@@ -4,14 +4,22 @@ import { Handle, Position } from 'reactflow';
  * Linear Control Valve (ISA / PFD style)
  * Includes an interactive slider for the opening percentage.
  */
-export default function LinearControlValveNode({ id, data }) {
+export default function LinearControlValveNode({ data, selected }) {
   const telemetry = data.telemetry;
   const opening = data.opening ?? 50;
   const flow = telemetry?.outlets?.[0]?.flow_rate || 0;
   const flowLmin = (flow * 60000).toFixed(1);
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div style={{ 
+      position: 'relative',
+      outline: selected ? '2px solid #3b82f6' : 'none',
+      outlineOffset: '4px',
+      borderRadius: '4px',
+      boxShadow: selected ? '0 0 10px rgba(59, 130, 246, 0.5)' : 'none',
+      transition: 'all 0.2s'
+    }}>
+
       <div style={{ width: 60, height: 60, background: 'transparent', position: 'relative' }}>
         <svg width="60" height="60" viewBox="0 0 60 60">
           <line x1="30" y1="35" x2="30" y2="15" stroke="#334155" strokeWidth="1.5" />

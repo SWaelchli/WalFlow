@@ -5,14 +5,21 @@ import { paToBar } from '../utils/converters';
  * Strainer (ISA style)
  * A rectangle with a diagonal line.
  */
-export default function FilterNode({ data }) {
+export default function FilterNode({ data, selected }) {
   const telemetry = data.telemetry;
   const pIn = telemetry?.inlets?.[0]?.pressure || 0;
   const pOut = telemetry?.outlets?.[0]?.pressure || 0;
   const dP = pIn - pOut;
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div style={{ 
+      position: 'relative',
+      outline: selected ? '2px solid #3b82f6' : 'none',
+      outlineOffset: '4px',
+      borderRadius: '4px',
+      boxShadow: selected ? '0 0 10px rgba(59, 130, 246, 0.5)' : 'none',
+      transition: 'all 0.2s'
+    }}>
       <div style={{ width: 60, height: 40, background: 'transparent', position: 'relative' }}>
         <svg width="60" height="40" viewBox="0 0 60 40">
           {/* Rectangular Strainer Body - x=5 to x=55 */}

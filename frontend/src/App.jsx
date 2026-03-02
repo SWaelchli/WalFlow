@@ -4,7 +4,8 @@ import ReactFlow, {
   MiniMap, 
   useNodesState, 
   useEdgesState,
-  addEdge
+  addEdge,
+  applyEdgeChanges
 } from 'reactflow';
 import 'reactflow/dist/style.css'; 
 import { useEffect, useRef, useState, useCallback } from 'react';
@@ -30,6 +31,7 @@ import examplePRV from '../Example_PRV.json';
 import exampleBPR from '../Example_BPR.json';
 import exampleBarossa from '../Barossa_FG_LOS.json';
 
+// Performance Fix: Define nodeTypes outside of component
 const nodeTypes = {
   tank: TankNode,
   pump: PumpNode,
@@ -50,72 +52,127 @@ export default function App() {
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   const ws = useRef(null);
   
-    const [selectedNode, setSelectedNode] = useState(null);
-    const [selectedEdge, setSelectedEdge] = useState(null);
-  
-    const [nodes, setNodes, onNodesChange] = useNodesState([]);
-    const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-    const [edgeIdCount, setEdgeIdCount] = useState(100);
-    const [isSimulating, setIsSimulating] = useState(false);
-    const [isConnected, setIsConnected] = useState(false);
-    const [globalSettings, setGlobalSettings] = useState({
-      fluid_type: 'water',
-      ambient_temperature: 293.15,
-      atmospheric_pressure: 101325.0,
-      global_roughness: 0.000045,
-      property_iterations: 5,
-      tolerance: 1e-6,
-      max_iterations: 1000
+  const [selectedNode, setSelectedNode] = useState(null);
+  const [selectedEdge, setSelectedEdge] = useState(null);
+
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges] = useEdgesState([]);
+  const [edgeIdCount, setEdgeIdCount] = useState(100);
+  const [isSimulating, setIsSimulating] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
+  const [globalSettings, setGlobalSettings] = useState({
+    fluid_type: 'water',
+    ambient_temperature: 293.15,
+    atmospheric_pressure: 101325.0,
+    global_roughness: 0.000045,
+    property_iterations: 5,
+    tolerance: 1e-6,
+    max_iterations: 1000
+  });
+
+  // Global UI Fix
+  useEffect(() => {
+    document.body.style.margin = '0';
+    document.body.style.padding = '0';
+    document.body.style.overflow = 'hidden';
+    document.body.style.width = '100vw';
+    document.body.style.height = '100vh';
+  }, []);
+
+  const runSimulation = useCallback(() => {
+    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+      setIsSimulating(true);
+      ws.current.send(JSON.stringify({ action: 'run_simulation' }));
+    }
+  }, []);
+
+  const handleValveChange = useCallback((newValue, nodeId) => {
+    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+      ws.current.send(JSON.stringify({
+        action: 'update_valve',
+        value: parseFloat(newValue),
+        node_id: nodeId
+      }));
+    }
+    setNodes((nds) =>
+      nds.map((node) =>
+        node.id === nodeId ? { ...node, data: { ...node.data, opening: newValue } } : node
+      )
+    );
+  }, [setNodes]);
+
+  // Logic to highlight nodes/edges programmatically
+  const selectNodeById = useCallback((id) => {
+    setNodes((nds) => {
+      const updated = nds.map((n) => ({ ...n, selected: n.id === id }));
+      const found = updated.find(n => n.id === id);
+      if (found) {
+        setSelectedNode(found);
+        setSelectedEdge(null);
+      }
+      return updated;
     });
-  
-    const runSimulation = useCallback(() => {
-      if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-        setIsSimulating(true);
-        ws.current.send(JSON.stringify({ action: 'run_simulation' }));
-      }
-    }, []);
+    setEdges((eds) => eds.map((e) => ({ ...e, selected: false, style: {} })));
+  }, [setNodes, setEdges]);
 
-    const handleValveChange = useCallback((newValue, nodeId) => {
-      if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-        ws.current.send(JSON.stringify({
-          action: 'update_valve',
-          value: parseFloat(newValue),
-          node_id: nodeId
-        }));
+  const selectEdgeById = useCallback((id) => {
+    setEdges((eds) => {
+      const updated = eds.map((e) => {
+        const isSelected = e.id === id;
+        return { 
+          ...e, 
+          selected: isSelected,
+          style: isSelected ? { stroke: '#3b82f6', strokeWidth: 3 } : {}
+        };
+      });
+      const found = updated.find(e => e.id === id);
+      if (found) {
+        setSelectedEdge(found);
+        setSelectedNode(null);
       }
-      setNodes((nds) =>
-        nds.map((node) =>
-          node.id === nodeId ? { ...node, data: { ...node.data, opening: newValue } } : node
-        )
-      );
-    }, [setNodes]);
+      return updated;
+    });
+    setNodes((nds) => nds.map((n) => ({ ...n, selected: false })));
+  }, [setEdges, setNodes]);
 
-    const loadData = useCallback((data) => {
-      if (data.nodes && data.edges) {
-        const restoredNodes = data.nodes.map(node => ({
-          ...node,
-          data: {
-            ...node.data,
-            onChange: node.type === 'linear_control_valve' ? handleValveChange : undefined
-          }
-        }));
-        const restoredEdges = data.edges.map(edge => ({
-          ...edge,
-          label: edge.data?.label || edge.id 
-        }));
-        setNodes(restoredNodes);
-        setEdges(restoredEdges);
-        if (data.globalSettings) {
-          setGlobalSettings(data.globalSettings);
+  // Handle manual edges selection on canvas
+  const onEdgesChange = useCallback(
+    (changes) => setEdges((eds) => {
+      const nextEdges = applyEdgeChanges(changes, eds);
+      return nextEdges.map(e => ({
+        ...e,
+        style: e.selected ? { stroke: '#3b82f6', strokeWidth: 3 } : {}
+      }));
+    }),
+    [setEdges]
+  );
+
+  const loadData = useCallback((data) => {
+    if (data.nodes && data.edges) {
+      const restoredNodes = data.nodes.map(node => ({
+        ...node,
+        data: {
+          ...node.data,
+          onChange: node.type === 'linear_control_valve' ? handleValveChange : undefined
         }
+      }));
+      const restoredEdges = data.edges.map(edge => ({
+        ...edge,
+        label: edge.data?.label || edge.id 
+      }));
+      setNodes(restoredNodes);
+      setEdges(restoredEdges);
+      if (data.globalSettings) {
+        setGlobalSettings(data.globalSettings);
       }
-    }, [handleValveChange, setNodes, setEdges]);
+    }
+  }, [handleValveChange, setNodes, setEdges]);
 
-    useEffect(() => {
-      loadData(examplePFD);
-    }, []);
+  useEffect(() => {
+    loadData(examplePFD);
+  }, []);
 
-    const onConnect = useCallback((params) => {
+  const onConnect = useCallback((params) => {
     setEdges((eds) => {
       const newId = `Pipe ${edgeIdCount}`;
       const newEdge = { 
@@ -249,52 +306,64 @@ export default function App() {
   }, [setNodes, setEdges]);
 
   useEffect(() => {
-    ws.current = new WebSocket('ws://localhost:8000/ws/simulate');
+    let socket = null;
+    let reconnectTimeout = null;
 
-    ws.current.onopen = () => {
-      console.log('Connected to Python WalFlow Engine!');
-      setIsConnected(true);
-    };
+    const connect = () => {
+      socket = new WebSocket('ws://localhost:8000/ws/simulate');
+      ws.current = socket;
 
-    ws.current.onclose = () => {
-      console.log('Disconnected from Python WalFlow Engine');
-      setIsConnected(false);
-    };
+      socket.onopen = () => {
+        console.log('Connected to Python WalFlow Engine!');
+        setIsConnected(true);
+      };
 
-    ws.current.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.status === 'success') {
-        setIsSimulating(false);
-        if (data.telemetry && data.telemetry.nodes) {
-          setNodes((nds) => 
-            nds.map((node) => {
-              const nodeTelemetry = data.telemetry.nodes[node.id];
-              if (nodeTelemetry) {
-                const newData = { ...node.data, telemetry: nodeTelemetry };
-                if (nodeTelemetry.opening_pct !== undefined) {
-                  newData.opening = nodeTelemetry.opening_pct;
+      socket.onclose = () => {
+        console.log('Disconnected from Python WalFlow Engine');
+        setIsConnected(false);
+        reconnectTimeout = setTimeout(connect, 3000);
+      };
+
+      socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.status === 'success') {
+          setIsSimulating(false);
+          if (data.telemetry && data.telemetry.nodes) {
+            setNodes((nds) => 
+              nds.map((node) => {
+                const nodeTelemetry = data.telemetry.nodes[node.id];
+                if (nodeTelemetry) {
+                  const newData = { ...node.data, telemetry: nodeTelemetry };
+                  if (nodeTelemetry.opening_pct !== undefined) {
+                    newData.opening = nodeTelemetry.opening_pct;
+                  }
+                  return { ...node, data: newData };
                 }
-                return { ...node, data: newData };
-              }
-              return node;
-            })
-          );
+                return node;
+              })
+            );
+          }
+          if (data.telemetry && data.telemetry.edges) {
+            setEdges((eds) => 
+              eds.map((edge) => {
+                const edgeTelemetry = data.telemetry.edges[edge.id];
+                return edgeTelemetry ? { ...edge, data: { ...edge.data, telemetry: edgeTelemetry } } : edge;
+              })
+            );
+          }
+        } else if (data.status === 'error') {
+          setIsSimulating(false);
+          alert(`Simulation Error: ${data.message}`);
         }
-        if (data.telemetry && data.telemetry.edges) {
-          setEdges((eds) => 
-            eds.map((edge) => {
-              const edgeTelemetry = data.telemetry.edges[edge.id];
-              return edgeTelemetry ? { ...edge, data: { ...edge.data, telemetry: edgeTelemetry } } : edge;
-            })
-          );
-        }
-      } else if (data.status === 'error') {
-        setIsSimulating(false);
-        alert(`Simulation Error: ${data.message}`);
-      }
+      };
     };
 
-    return () => { if (ws.current) ws.current.close(); };
+    connect();
+
+    return () => {
+      if (socket) socket.close();
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+    };
   }, []);
 
   useEffect(() => {
@@ -315,7 +384,7 @@ export default function App() {
   }, [nodes, edges, isConnected, globalSettings]);
 
   return (
-    <div style={{ width: '100vw', height: '100vh', display: 'flex', backgroundColor: '#f4f4f5' }}>
+    <div style={{ width: '100%', height: '100vh', display: 'flex', backgroundColor: '#f4f4f5', overflow: 'hidden' }}>
       <Sidebar 
         onSave={onSave} 
         onLoad={loadData} 
@@ -370,7 +439,14 @@ export default function App() {
           </ReactFlow>
         </div>
         
-        <DataList nodes={nodes} edges={edges} onUpdateEdge={updateEdgeData} />
+        <DataList 
+          nodes={nodes} 
+          edges={edges} 
+          onUpdateEdge={updateEdgeData} 
+          onUpdateNode={updateNodeData}
+          onSelectNode={selectNodeById}
+          onSelectEdge={selectEdgeById}
+        />
       </div>
     </div>
   );
