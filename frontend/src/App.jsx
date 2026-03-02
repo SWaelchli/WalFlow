@@ -23,6 +23,7 @@ import MixerNode from './nodes/MixerNode';
 
 import Sidebar from './Sidebar';
 import PropertyEditor from './PropertyEditor';
+import DetailPanel from './DetailPanel';
 import DataList from './DataList';
 
 // Import Examples
@@ -274,7 +275,7 @@ export default function App() {
           rotation: 0,
           onRotate: handleRotation,
           onChange: type === 'linear_control_valve' ? handleValveChange : undefined,
-          ...(type === 'pump' && { A: 80.0, B: 0.0, C: -2000.0 }),
+          ...(type === 'pump' && { A: 80.0, B: 0.0, C: -30000.0 }),
           ...(type === 'tank' && { level: 2.0, elevation: 0.0, temperature: 313.15 }),
           ...(type === 'linear_control_valve' && { max_cv: 0.05, opening: 50.0 }),
           ...(type === 'linear_regulator' && { max_cv: 0.05, set_pressure: 500000.0, backpressure: false }),
@@ -351,11 +352,9 @@ export default function App() {
                 const nodeTele = data.telemetry.nodes[node.id];
                 if (!nodeTele) return node;
 
-                // Optimization: Deep comparison check
                 const currentTeleStr = JSON.stringify(node.data.telemetry);
                 const nextTeleStr = JSON.stringify(nodeTele);
                 
-                // If telemetry or calculated opening changed, update reference
                 if (currentTeleStr !== nextTeleStr || nodeTele.opening_pct !== node.data.opening) {
                   hasChanged = true;
                   const newData = { ...node.data, telemetry: nodeTele };
@@ -439,6 +438,8 @@ export default function App() {
 
       <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
         <div style={{ flexGrow: 1, position: 'relative' }} ref={reactFlowWrapper}>
+          <DetailPanel selectedNode={selectedNode} />
+          
           <PropertyEditor 
             node={selectedNode} 
             edge={selectedEdge}

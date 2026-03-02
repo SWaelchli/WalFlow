@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import walflowLogo from './assets/Logo_WalFlow.svg';
 
 const equipmentTypes = [
   { type: 'tank', label: 'Tank', description: 'Fluid Reservoir (Atm Pressure)' },
@@ -26,8 +27,8 @@ export default function Sidebar({ onSave, onLoad, onClear, onCalculate, isSimula
       padding: '20px', display: 'flex', flexDirection: 'column', gap: '15px',
       overflowY: 'auto', zIndex: 10, position: 'relative', boxShadow: '2px 0 5px rgba(0,0,0,0.05)'
     }}>
-      <div style={{ marginBottom: '10px' }}>
-        <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 5px 0' }}>WalFlow Library</h2>
+      <div style={{ marginBottom: '10px', textAlign: 'center' }}>
+        <img src={walflowLogo} alt="WalFlow Logo" style={{ width: '100%', maxWidth: '200px', marginBottom: '5px' }} />
         <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>PFD Design & Simulation</p>
       </div>
 
