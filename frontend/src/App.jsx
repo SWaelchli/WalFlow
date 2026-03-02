@@ -56,7 +56,7 @@ export default function App() {
   const [selectedEdge, setSelectedEdge] = useState(null);
 
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges] = useEdgesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [edgeIdCount, setEdgeIdCount] = useState(100);
   const [isSimulating, setIsSimulating] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
@@ -101,7 +101,19 @@ export default function App() {
     );
   }, [setNodes]);
 
-  // Logic to highlight nodes/edges programmatically
+  const handleRotation = useCallback((nodeId) => {
+    setNodes((nds) =>
+      nds.map((node) => {
+        if (node.id === nodeId) {
+          const currentRotation = node.data.rotation || 0;
+          const nextRotation = (currentRotation + 90) % 360;
+          return { ...node, data: { ...node.data, rotation: nextRotation } };
+        }
+        return node;
+      })
+    );
+  }, [setNodes]);
+
   const selectNodeById = useCallback((id) => {
     setNodes((nds) => {
       const updated = nds.map((n) => ({ ...n, selected: n.id === id }));
@@ -135,8 +147,7 @@ export default function App() {
     setNodes((nds) => nds.map((n) => ({ ...n, selected: false })));
   }, [setEdges, setNodes]);
 
-  // Handle manual edges selection on canvas
-  const onEdgesChange = useCallback(
+  const onEdgesChangeCustom = useCallback(
     (changes) => setEdges((eds) => {
       const nextEdges = applyEdgeChanges(changes, eds);
       return nextEdges.map(e => ({
@@ -153,6 +164,8 @@ export default function App() {
         ...node,
         data: {
           ...node.data,
+          rotation: node.data.rotation || 0,
+          onRotate: handleRotation,
           onChange: node.type === 'linear_control_valve' ? handleValveChange : undefined
         }
       }));
@@ -166,7 +179,7 @@ export default function App() {
         setGlobalSettings(data.globalSettings);
       }
     }
-  }, [handleValveChange, setNodes, setEdges]);
+  }, [handleValveChange, handleRotation, setNodes, setEdges]);
 
   useEffect(() => {
     loadData(examplePFD);
@@ -258,6 +271,8 @@ export default function App() {
         position,
         data: { 
           label: `${type.toUpperCase()} ${idCount}`, 
+          rotation: 0,
+          onRotate: handleRotation,
           onChange: type === 'linear_control_valve' ? handleValveChange : undefined,
           ...(type === 'pump' && { A: 80.0, B: 0.0, C: -2000.0 }),
           ...(type === 'tank' && { level: 2.0, elevation: 0.0, temperature: 313.15 }),
@@ -271,7 +286,7 @@ export default function App() {
 
       setNodes((nds) => nds.concat(newNode));
     },
-    [reactFlowInstance, handleValveChange, setNodes]
+    [reactFlowInstance, handleValveChange, handleRotation, setNodes]
   );
 
   const onSave = useCallback(() => {
@@ -328,28 +343,49 @@ export default function App() {
         const data = JSON.parse(event.data);
         if (data.status === 'success') {
           setIsSimulating(false);
+          
           if (data.telemetry && data.telemetry.nodes) {
-            setNodes((nds) => 
-              nds.map((node) => {
-                const nodeTelemetry = data.telemetry.nodes[node.id];
-                if (nodeTelemetry) {
-                  const newData = { ...node.data, telemetry: nodeTelemetry };
-                  if (nodeTelemetry.opening_pct !== undefined) {
-                    newData.opening = nodeTelemetry.opening_pct;
-                  }
+            setNodes((nds) => {
+              let hasChanged = false;
+              const nextNodes = nds.map((node) => {
+                const nodeTele = data.telemetry.nodes[node.id];
+                if (!nodeTele) return node;
+
+                // Optimization: Deep comparison check
+                const currentTeleStr = JSON.stringify(node.data.telemetry);
+                const nextTeleStr = JSON.stringify(nodeTele);
+                
+                // If telemetry or calculated opening changed, update reference
+                if (currentTeleStr !== nextTeleStr || nodeTele.opening_pct !== node.data.opening) {
+                  hasChanged = true;
+                  const newData = { ...node.data, telemetry: nodeTele };
+                  if (nodeTele.opening_pct !== undefined) newData.opening = nodeTele.opening_pct;
                   return { ...node, data: newData };
                 }
                 return node;
-              })
-            );
+              });
+              return hasChanged ? nextNodes : nds;
+            });
           }
+
           if (data.telemetry && data.telemetry.edges) {
-            setEdges((eds) => 
-              eds.map((edge) => {
-                const edgeTelemetry = data.telemetry.edges[edge.id];
-                return edgeTelemetry ? { ...edge, data: { ...edge.data, telemetry: edgeTelemetry } } : edge;
-              })
-            );
+            setEdges((eds) => {
+              let hasChanged = false;
+              const nextEdges = eds.map((edge) => {
+                const edgeTele = data.telemetry.edges[edge.id];
+                if (!edgeTele) return edge;
+
+                const currentTeleStr = JSON.stringify(edge.data.telemetry);
+                const nextTeleStr = JSON.stringify(edgeTele);
+
+                if (currentTeleStr !== nextTeleStr) {
+                  hasChanged = true;
+                  return { ...edge, data: { ...edge.data, telemetry: edgeTele } };
+                }
+                return edge;
+              });
+              return hasChanged ? nextEdges : eds;
+            });
           }
         } else if (data.status === 'error') {
           setIsSimulating(false);
@@ -417,7 +453,7 @@ export default function App() {
             edges={edges} 
             nodeTypes={nodeTypes} 
             onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
+            onEdgesChange={onEdgesChangeCustom}
             onConnect={onConnect}
             onNodeClick={onNodeClick}
             onEdgeClick={onEdgeClick}

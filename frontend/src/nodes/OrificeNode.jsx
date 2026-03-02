@@ -1,62 +1,75 @@
-import { Handle, Position } from 'reactflow';
+import { Handle, Position, useUpdateNodeInternals } from 'reactflow';
+import { useEffect } from 'react';
 import { paToBar } from '../utils/converters';
+import { RotateButton, getRotatedPosition } from '../utils/rotation_logic.jsx';
 
 /**
  * Orifice Plate (ISA / PFD style)
- * A restriction in the line, typically represented by a narrow gap or perpendicular lines.
  */
-export default function OrificeNode({ data, selected }) {
+export default function OrificeNode({ id, data, selected }) {
+  const updateNodeInternals = useUpdateNodeInternals();
   const telemetry = data.telemetry;
+  const rotation = data.rotation || 0;
   const pIn = telemetry?.inlets?.[0]?.pressure || 0;
   const pOut = telemetry?.outlets?.[0]?.pressure || 0;
   const dP = pIn - pOut;
 
+  useEffect(() => {
+    updateNodeInternals(id);
+  }, [id, rotation, updateNodeInternals]);
+
   return (
-    <div style={{ 
-      position: 'relative',
-      outline: selected ? '2px solid #3b82f6' : 'none',
-      outlineOffset: '4px',
-      borderRadius: '4px',
-      boxShadow: selected ? '0 0 10px rgba(59, 130, 246, 0.5)' : 'none',
-      transition: 'all 0.2s'
-    }}>
-      <div style={{ width: 40, height: 60, background: 'transparent', position: 'relative' }}>
+    <div style={{ position: 'relative' }}>
+      {selected && (
+        <div style={{
+          position: 'absolute',
+          top: -5, left: -5, right: -5, bottom: -5,
+          border: '2px solid #3b82f6',
+          borderRadius: '6px',
+          boxShadow: '0 0 10px rgba(59, 130, 246, 0.3)',
+          pointerEvents: 'none'
+        }} />
+      )}
+
+      <RotateButton visible={selected} onClick={() => data.onRotate(id)} />
+
+      <div style={{ 
+        width: 40, height: 60, background: 'transparent', position: 'relative',
+        transform: `rotate(${rotation}deg)`
+      }}>
         <svg width="40" height="60" viewBox="0 0 40 60">
-          {/* Orifice Plate Marking */}
           <line x1="20" y1="10" x2="20" y2="25" stroke="#334155" strokeWidth="2.5" />
           <line x1="20" y1="35" x2="20" y2="50" stroke="#334155" strokeWidth="2.5" />
-          {/* Horizontal line representing the pipe section */}
           <line x1="0" y1="30" x2="40" y2="30" stroke="#334155" strokeWidth="1.5" strokeDasharray="4,4" />
         </svg>
 
-        {/* Inlet - Middle Left */}
         <Handle 
           type="target" 
-          position={Position.Left} 
+          position={getRotatedPosition(Position.Left, rotation)} 
           id="inlet-0" 
-          style={{ background: '#3b82f6', width: '8px', height: '8px' }} 
+          style={{ 
+            top: '30px', left: '0px', 
+            marginTop: '-4px', marginLeft: '-4px',
+            right: 'auto', bottom: 'auto', transform: 'none',
+            background: '#3b82f6', width: '8px', height: '8px' 
+          }} 
         />
-        
-        {/* Outlet - Middle Right */}
         <Handle 
           type="source" 
-          position={Position.Right} 
+          position={getRotatedPosition(Position.Right, rotation)} 
           id="outlet-0" 
-          style={{ background: '#ef4444', width: '8px', height: '8px' }} 
+          style={{ 
+            top: '30px', left: '40px', 
+            marginTop: '-4px', marginLeft: '-4px',
+            right: 'auto', bottom: 'auto', transform: 'none',
+            background: '#ef4444', width: '8px', height: '8px' 
+          }} 
         />
       </div>
 
-      <div style={{ textAlign: 'center', marginTop: '2px' }}>
-        <div style={{ fontSize: '9px', color: '#334155', fontWeight: 'bold' }}>
-          {data.label || 'ORIFICE'}
-        </div>
-
-        {/* Telemetry below Name Tag */}
-        <div style={{ marginTop: '2px' }}>
-          <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#ef4444' }}> 
-            -{paToBar(dP)} bar
-          </div>
-        </div>
+      <div style={{ textAlign: 'center', marginTop: '5px' }}>
+        <div style={{ fontSize: '9px', color: '#334155', fontWeight: 'bold' }}>{data.label || 'ORIFICE'}</div>
+        <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#ef4444' }}>-{paToBar(dP)} bar</div>
       </div>
     </div>
   );

@@ -1,61 +1,74 @@
-import { Handle, Position } from 'reactflow';
+import { Handle, Position, useUpdateNodeInternals } from 'reactflow';
+import { useEffect } from 'react';
 import { paToBar } from '../utils/converters';
+import { RotateButton, getRotatedPosition } from '../utils/rotation_logic.jsx';
 
 /**
  * Strainer (ISA style)
- * A rectangle with a diagonal line.
  */
-export default function FilterNode({ data, selected }) {
+export default function FilterNode({ id, data, selected }) {
+  const updateNodeInternals = useUpdateNodeInternals();
   const telemetry = data.telemetry;
+  const rotation = data.rotation || 0;
   const pIn = telemetry?.inlets?.[0]?.pressure || 0;
   const pOut = telemetry?.outlets?.[0]?.pressure || 0;
   const dP = pIn - pOut;
 
+  useEffect(() => {
+    updateNodeInternals(id);
+  }, [id, rotation, updateNodeInternals]);
+
   return (
-    <div style={{ 
-      position: 'relative',
-      outline: selected ? '2px solid #3b82f6' : 'none',
-      outlineOffset: '4px',
-      borderRadius: '4px',
-      boxShadow: selected ? '0 0 10px rgba(59, 130, 246, 0.5)' : 'none',
-      transition: 'all 0.2s'
-    }}>
-      <div style={{ width: 60, height: 40, background: 'transparent', position: 'relative' }}>
+    <div style={{ position: 'relative' }}>
+      {selected && (
+        <div style={{
+          position: 'absolute',
+          top: -5, left: -5, right: -5, bottom: -5,
+          border: '2px solid #3b82f6',
+          borderRadius: '6px',
+          boxShadow: '0 0 10px rgba(59, 130, 246, 0.3)',
+          pointerEvents: 'none'
+        }} />
+      )}
+
+      <RotateButton visible={selected} onClick={() => data.onRotate(id)} />
+
+      <div style={{ 
+        width: 60, height: 40, background: 'transparent', position: 'relative',
+        transform: `rotate(${rotation}deg)`
+      }}>
         <svg width="60" height="40" viewBox="0 0 60 40">
-          {/* Rectangular Strainer Body - x=5 to x=55 */}
           <rect x="5" y="5" width="50" height="30" fill="white" stroke="#334155" strokeWidth="2.5" />
-          {/* Diagonal Line */}
           <line x1="5" y1="35" x2="55" y2="5" stroke="#334155" strokeWidth="2.5" />
         </svg>
 
-        {/* Inlet - Far Left at x=5 */}
         <Handle 
           type="target" 
-          position={Position.Left} 
+          position={getRotatedPosition(Position.Left, rotation)} 
           id="inlet-0" 
-          style={{ top: '20px', left: '5px', background: '#3b82f6', width: '8px', height: '8px' }} 
+          style={{ 
+            top: '20px', left: '5px', 
+            marginTop: '-4px', marginLeft: '-4px',
+            right: 'auto', bottom: 'auto', transform: 'none',
+            background: '#3b82f6', width: '8px', height: '8px' 
+          }} 
         />
-        
-        {/* Outlet - Far Right at x=55 */}
         <Handle 
           type="source" 
-          position={Position.Right} 
+          position={getRotatedPosition(Position.Right, rotation)} 
           id="outlet-0" 
-          style={{ top: '20px', right: '5px', background: '#ef4444', width: '8px', height: '8px' }} 
+          style={{ 
+            top: '20px', left: '55px', 
+            marginTop: '-4px', marginLeft: '-4px',
+            right: 'auto', bottom: 'auto', transform: 'none',
+            background: '#ef4444', width: '8px', height: '8px' 
+          }} 
         />
       </div>
 
-      <div style={{ textAlign: 'center', marginTop: '2px' }}>
-        <div style={{ fontSize: '9px', color: '#334155', fontWeight: 'bold' }}>
-          {data.label || 'STRAINER'}
-        </div>
-
-        {/* Telemetry below Name Tag */}
-        <div style={{ marginTop: '2px' }}>
-          <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#ef4444' }}> 
-            -{paToBar(dP)} bar
-          </div>
-        </div>
+      <div style={{ textAlign: 'center', marginTop: '5px' }}>
+        <div style={{ fontSize: '9px', color: '#334155', fontWeight: 'bold' }}>{data.label || 'STRAINER'}</div>
+        <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#ef4444' }}>-{paToBar(dP)} bar</div>
       </div>
     </div>
   );
