@@ -189,7 +189,39 @@ export default function PropertyEditor({ node, edge, onUpdate, onUpdateEdge, onD
           </>
         )}
 
-        {isNode && type === 'valve' && (
+        {isNode && type === 'linear_regulator' && (
+          <>
+            <div>
+              <label style={{ fontSize: '11px', color: '#64748b' }}>Max Cv (Flow Coeff)</label>
+              <input 
+                type="number" style={{ width: '100%', fontSize: '12px' }}
+                value={data.max_cv} onChange={(e) => handleChange('max_cv', e.target.value)}
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: '11px', color: '#64748b' }}>Regulation Mode</label>
+              <select 
+                style={{ width: '100%', fontSize: '12px', padding: '4px' }}
+                value={data.backpressure ? "true" : "false"}
+                onChange={(e) => handleChange('backpressure', e.target.value === "true")}
+              >
+                <option value="false">Pressure Reducing (Downstream)</option>
+                <option value="true">Backpressure (Upstream)</option>
+              </select>
+            </div>
+            <div>
+              <label style={{ fontSize: '11px', color: '#64748b' }}>Set Point (bar)</label>
+              <input 
+                type="number" style={{ width: '100%', fontSize: '12px' }}
+                step="0.1"
+                value={(data.set_pressure / 100000).toFixed(1)} 
+                onChange={(e) => handleChange('set_pressure', parseFloat(e.target.value) * 100000)}
+              />
+            </div>
+          </>
+        )}
+
+        {isNode && type === 'linear_control_valve' && (
           <>
             <div>
               <label style={{ fontSize: '11px', color: '#64748b' }}>Max Cv (Flow Coeff)</label>

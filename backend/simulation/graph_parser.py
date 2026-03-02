@@ -2,7 +2,8 @@ from typing import List, Dict, Any
 from simulation.schemas import ReactFlowGraph, ReactFlowNode, ReactFlowEdge, HydraulicNetwork
 from simulation.equipment.tank import Tank
 from simulation.equipment.pump import Pump
-from simulation.equipment.valve import Valve
+from simulation.equipment.linear_control_valve import LinearControlValve
+from simulation.equipment.linear_regulator import LinearRegulator
 from simulation.equipment.pipe import Pipe
 from simulation.equipment.orifice import Orifice
 from simulation.equipment.splitter import Splitter
@@ -85,11 +86,18 @@ class GraphParser:
                 B=float(d.get('B', 0.0)),
                 C=float(d.get('C', -2000.0))
             )
-        elif t == 'valve':
-            node = Valve(
+        elif t == 'linear_control_valve':
+            node = LinearControlValve(
                 name=name,
                 max_cv=float(d.get('max_cv', 0.05)),
                 opening_pct=float(d.get('opening', 50.0))
+            )
+        elif t == 'linear_regulator':
+            node = LinearRegulator(
+                name=name,
+                max_cv=float(d.get('max_cv', 0.05)),
+                set_pressure=float(d.get('set_pressure', 500000.0)),
+                backpressure=bool(d.get('backpressure', False))
             )
         elif t == 'orifice':
             node = Orifice(

@@ -13,7 +13,8 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import TankNode from './nodes/TankNode';
 import PumpNode from './nodes/PumpNode';
 import OrificeNode from './nodes/OrificeNode';
-import ValveNode from './nodes/ValveNode';
+import LinearControlValveNode from './nodes/LinearControlValveNode';
+import LinearRegulatorNode from './nodes/LinearRegulatorNode';
 import FilterNode from './nodes/FilterNode';
 import HeatExchangerNode from './nodes/HeatExchangerNode';
 import SplitterNode from './nodes/SplitterNode';
@@ -22,20 +23,25 @@ import MixerNode from './nodes/MixerNode';
 import Sidebar from './Sidebar';
 import PropertyEditor from './PropertyEditor';
 import DataList from './DataList';
+
+// Import Examples
 import examplePFD from '../Example_PFD.json';
+import examplePRV from '../Example_PRV.json';
+import exampleBPR from '../Example_BPR.json';
 
 const nodeTypes = {
   tank: TankNode,
   pump: PumpNode,
   orifice: OrificeNode,
-  valve: ValveNode,
+  linear_control_valve: LinearControlValveNode,
+  linear_regulator: LinearRegulatorNode,
   filter: FilterNode,
   heat_exchanger: HeatExchangerNode,
   splitter: SplitterNode,
   mixer: MixerNode,
 };
 
-let idCount = examplePFD.nodes.length + 1;
+let idCount = 50; // High start to avoid conflicts with examples
 const getId = () => `node_${idCount++}`;
 
 export default function App() {
@@ -48,7 +54,7 @@ export default function App() {
   
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-    const [edgeIdCount, setEdgeIdCount] = useState(examplePFD.edges.length + 1);
+    const [edgeIdCount, setEdgeIdCount] = useState(100);
     const [isSimulating, setIsSimulating] = useState(false);
     const [isConnected, setIsConnected] = useState(false);
     const [globalSettings, setGlobalSettings] = useState({
@@ -69,7 +75,6 @@ export default function App() {
     }, []);
 
     const handleValveChange = useCallback((newValue, nodeId) => {
-      // 1. Update backend state (solver will run on next 'Calculate' click)
       if (ws.current && ws.current.readyState === WebSocket.OPEN) {
         ws.current.send(JSON.stringify({
           action: 'update_valve',
@@ -77,8 +82,6 @@ export default function App() {
           node_id: nodeId
         }));
       }
-  
-      // 2. Update local state so it's not reset by other graph updates
       setNodes((nds) =>
         nds.map((node) =>
           node.id === nodeId ? { ...node, data: { ...node.data, opening: newValue } } : node
@@ -86,18 +89,29 @@ export default function App() {
       );
     }, [setNodes]);
 
-    // Initialize nodes with example PFD
-    useEffect(() => {
-      const initialNodes = examplePFD.nodes.map(node => ({
-        ...node,
-        data: {
-          ...node.data,
-          onChange: node.type === 'valve' ? handleValveChange : undefined
+    // Internal Load Function (supports handle matching)
+    const loadData = useCallback((data) => {
+      if (data.nodes && data.edges) {
+        const restoredNodes = data.nodes.map(node => ({
+          ...node,
+          data: {
+            ...node.data,
+            onChange: node.type === 'linear_control_valve' ? handleValveChange : undefined
+          }
+        }));
+        setNodes(restoredNodes);
+        setEdges(data.edges);
+        if (data.globalSettings) {
+          setGlobalSettings(data.globalSettings);
         }
-      }));
-      setNodes(initialNodes);
-      setEdges(examplePFD.edges);
+      }
     }, [handleValveChange, setNodes, setEdges]);
+
+    // Initialize with default example
+    useEffect(() => {
+      loadData(examplePFD);
+    }, []);
+
     const onConnect = useCallback((params) => {
     setEdges((eds) => {
       const newId = `Pipe ${edgeIdCount}`;
@@ -179,10 +193,11 @@ export default function App() {
         position,
         data: { 
           label: `${type.toUpperCase()} ${idCount}`, 
-          onChange: type === 'valve' ? handleValveChange : undefined,
+          onChange: type === 'linear_control_valve' ? handleValveChange : undefined,
           ...(type === 'pump' && { A: 80.0, B: 0.0, C: -2000.0 }),
           ...(type === 'tank' && { level: 2.0, elevation: 0.0, temperature: 313.15 }),
-          ...(type === 'valve' && { max_cv: 0.05, opening: 50.0 }),
+          ...(type === 'linear_control_valve' && { max_cv: 0.05, opening: 50.0 }),
+          ...(type === 'linear_regulator' && { max_cv: 0.05, set_pressure: 500000.0, backpressure: false }),
           ...(type === 'orifice' && { pipe_diameter: 0.1, orifice_diameter: 0.07 }),
           ...(type === 'filter' && { resistance: 1000.0 }),
           ...(type === 'heat_exchanger' && { heat_duty_kw: -10.0 }),
@@ -204,23 +219,6 @@ export default function App() {
     link.click();
     URL.revokeObjectURL(url);
   }, [nodes, edges, globalSettings]);
-
-  const onLoad = useCallback((data) => {
-    if (data.nodes && data.edges) {
-      const restoredNodes = data.nodes.map(node => ({
-        ...node,
-        data: {
-          ...node.data,
-          onChange: node.type === 'valve' ? handleValveChange : undefined
-        }
-      }));
-      setNodes(restoredNodes);
-      setEdges(data.edges);
-      if (data.globalSettings) {
-        setGlobalSettings(data.globalSettings);
-      }
-    }
-  }, [handleValveChange, setNodes, setEdges]);
 
   const onDeleteNode = useCallback((nodeId) => {
     setNodes((nds) => nds.filter((node) => node.id !== nodeId));
@@ -264,7 +262,15 @@ export default function App() {
           setNodes((nds) => 
             nds.map((node) => {
               const nodeTelemetry = data.telemetry.nodes[node.id];
-              return nodeTelemetry ? { ...node, data: { ...node.data, telemetry: nodeTelemetry } } : node;
+              if (nodeTelemetry) {
+                const newData = { ...node.data, telemetry: nodeTelemetry };
+                // If backend sent an updated opening percentage, sync it to the main data field
+                if (nodeTelemetry.opening_pct !== undefined) {
+                  newData.opening = nodeTelemetry.opening_pct;
+                }
+                return { ...node, data: newData };
+              }
+              return node;
             })
           );
         }
@@ -299,7 +305,7 @@ export default function App() {
           } 
         }));
       }
-    }, 250); // 250ms debounce
+    }, 250);
 
     return () => clearTimeout(handler);
   }, [nodes, edges, isConnected, globalSettings]);
@@ -308,12 +314,17 @@ export default function App() {
     <div style={{ width: '100vw', height: '100vh', display: 'flex', backgroundColor: '#f4f4f5' }}>
       <Sidebar 
         onSave={onSave} 
-        onLoad={onLoad} 
+        onLoad={loadData} 
         onClear={onClearCanvas} 
         onCalculate={runSimulation}
         isSimulating={isSimulating}
         globalSettings={globalSettings}
         onUpdateGlobalSettings={setGlobalSettings}
+        templates={{
+          "Standard PFD": examplePFD,
+          "Pressure Reducing (PRV)": examplePRV,
+          "Backpressure (BPR)": exampleBPR
+        }}
       />
 
       <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>

@@ -1,10 +1,10 @@
 import { Handle, Position } from 'reactflow';
 
 /**
- * Control Valve (ISA / PFD style)
+ * Linear Control Valve (ISA / PFD style)
  * Includes an interactive slider for the opening percentage.
  */
-export default function ValveNode({ id, data }) {
+export default function LinearControlValveNode({ id, data }) {
   const telemetry = data.telemetry;
   const opening = data.opening ?? 50;
   const flow = telemetry?.outlets?.[0]?.flow_rate || 0;
@@ -57,7 +57,7 @@ export default function ValveNode({ id, data }) {
         </div>
 
         <div style={{ fontSize: '9px', color: '#334155', fontWeight: 'bold' }}>
-          {data.label || 'VALVE'}
+          {data.label || 'LIN VALVE'}
         </div>
 
         {/* Telemetry below Name Tag */}

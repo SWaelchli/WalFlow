@@ -3,7 +3,8 @@ import React, { useState } from 'react';
 const equipmentTypes = [
   { type: 'tank', label: 'Tank', description: 'Fluid Reservoir (Atm Pressure)' },
   { type: 'pump', label: 'Pump', description: 'Centrifugal Pump (A=80, C=-2000)' },
-  { type: 'valve', label: 'Valve', description: 'Control Valve (Variable Cv)' },
+  { type: 'linear_control_valve', label: 'Linear Control Valve', description: 'Control Valve (Linear Cv Trim)' },
+  { type: 'linear_regulator', label: 'Pressure Regulator', description: 'Maintains set P (Up/Downstream)' },
   { type: 'orifice', label: 'Orifice', description: 'Fixed Resistance Orifice' },
   { type: 'filter', label: 'Filter', description: 'Lube Oil Filter (Duplex)' },
   { type: 'heat_exchanger', label: 'Cooler', description: 'Shell & Tube Heat Exchanger' },
@@ -11,7 +12,7 @@ const equipmentTypes = [
   { type: 'mixer', label: 'Mixer', description: 'Return Manifold / T-Piece' },
 ];
 
-export default function Sidebar({ onSave, onLoad, onClear, onCalculate, isSimulating, globalSettings, onUpdateGlobalSettings }) {
+export default function Sidebar({ onSave, onLoad, onClear, onCalculate, isSimulating, globalSettings, onUpdateGlobalSettings, templates }) {
   const [activeTab, setActiveTab] = useState('library');
 
   const onDragStart = (event, nodeType) => {
@@ -115,30 +116,58 @@ export default function Sidebar({ onSave, onLoad, onClear, onCalculate, isSimula
       {/* Tab Content */}
       <div style={{ flexGrow: 1 }}>
         {activeTab === 'library' ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {equipmentTypes.map((item) => (
-              <div
-                key={item.type}
-                style={{
-                  padding: '12px', background: '#f8fafc', border: '1px solid #e2e8f0',
-                  borderRadius: '6px', cursor: 'grab', display: 'flex', flexDirection: 'column',
-                  gap: '4px', transition: 'all 0.2s'
-                }}
-                onDragStart={(event) => onDragStart(event, item.type)}
-                draggable
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = '#3b82f6';
-                  e.currentTarget.style.background = '#eff6ff';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = '#e2e8f0';
-                  e.currentTarget.style.background = '#f8fafc';
-                }}
-              >
-                <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#1e293b' }}>{item.label}</div>
-                <div style={{ fontSize: '11px', color: '#64748b' }}>{item.description}</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            
+            {/* Template Scenarios */}
+            <div>
+              <h3 style={{ fontSize: '11px', textTransform: 'uppercase', color: '#94a3b8', marginBottom: '8px' }}>Example Scenarios</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                {Object.entries(templates || {}).map(([name, data]) => (
+                  <button 
+                    key={name}
+                    onClick={() => { if(window.confirm(`Load "${name}"? Current canvas will be replaced.`)) onLoad(data); }}
+                    style={{
+                      padding: '6px 10px', background: '#f1f5f9', border: '1px solid #e2e8f0',
+                      borderRadius: '4px', fontSize: '11px', textAlign: 'left', cursor: 'pointer',
+                      color: '#475569', transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.target.style.background = '#e2e8f0'}
+                    onMouseLeave={(e) => e.target.style.background = '#f1f5f9'}
+                  >
+                    📂 {name}
+                  </button>
+                ))}
               </div>
-            ))}
+            </div>
+
+            <div>
+              <h3 style={{ fontSize: '11px', textTransform: 'uppercase', color: '#94a3b8', marginBottom: '8px' }}>Components</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {equipmentTypes.map((item) => (
+                  <div
+                    key={item.type}
+                    style={{
+                      padding: '12px', background: '#f8fafc', border: '1px solid #e2e8f0',
+                      borderRadius: '6px', cursor: 'grab', display: 'flex', flexDirection: 'column',
+                      gap: '4px', transition: 'all 0.2s'
+                    }}
+                    onDragStart={(event) => onDragStart(event, item.type)}
+                    draggable
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = '#3b82f6';
+                      e.currentTarget.style.background = '#eff6ff';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = '#e2e8f0';
+                      e.currentTarget.style.background = '#f8fafc';
+                    }}
+                  >
+                    <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#1e293b' }}>{item.label}</div>
+                    <div style={{ fontSize: '11px', color: '#64748b' }}>{item.description}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '5px' }}>

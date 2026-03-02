@@ -7,7 +7,7 @@ import traceback
 from simulation.solver import NetworkSolver
 from simulation.graph_parser import GraphParser
 from simulation.schemas import ReactFlowGraph
-from simulation.equipment.valve import Valve
+from simulation.equipment.linear_control_valve import LinearControlValve
 
 app = FastAPI(title="WalFlow Engine", description="Hydraulic Simulation Backend")
 
@@ -63,7 +63,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     
                     # Update specific valve if ID provided, else update all (for legacy support)
                     for node_id, node in network_instance.nodes.items():
-                        if isinstance(node, Valve):
+                        if isinstance(node, LinearControlValve):
                             if valve_id is None or node_id == valve_id:
                                 node.opening_pct = max(0.1, min(100.0, new_pct))
 
@@ -80,10 +80,15 @@ async def websocket_endpoint(websocket: WebSocket):
                         }
                         
                         for node_id, node in network_instance.nodes.items():
-                            telemetry["nodes"][node_id] = {
+                            node_telemetry = {
                                 "inlets": [p.dict() for p in node.inlets],
                                 "outlets": [p.dict() for p in node.outlets]
                             }
+                            # Include dynamic properties like opening percentage
+                            if hasattr(node, 'opening_pct'):
+                                node_telemetry["opening_pct"] = node.opening_pct
+                                
+                            telemetry["nodes"][node_id] = node_telemetry
                         
                         for edge in network_instance.edges:
                             edge_id = edge["id"]

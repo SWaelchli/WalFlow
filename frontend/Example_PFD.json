@@ -95,7 +95,7 @@
     },
     {
       "id": "node_0",
-      "type": "valve",
+      "type": "linear_control_valve",
       "position": {
         "x": 260.76013022517577,
         "y": 36.37426746791681
