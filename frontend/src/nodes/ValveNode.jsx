@@ -44,9 +44,9 @@ export default function ValveNode({ id, data }) {
         <div className="nodrag" style={{ padding: '2px 0' }}>
           <input 
             type="range" 
-            min="0.1" 
+            min="0" 
             max="100" 
-            step="0.1"
+            step="1"
             value={opening} 
             onChange={(e) => {
               const val = parseFloat(e.target.value);
