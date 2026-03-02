@@ -26,7 +26,7 @@ class LinearRegulator(HydraulicNode):
         K_CV_SI = 1.732e9
         dp = (K_CV_SI * density * flow_rate * abs(flow_rate)) / (cv_eff**2)
         
-        return abs(dp)
+        return dp
 
     def calculate(self):
         inlet = self.inlets[0]

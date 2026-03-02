@@ -20,7 +20,7 @@ class Filter(HydraulicNode):
         """
         Laminar-style pressure drop: DeltaP = R * mu * Q
         """
-        return self.resistance_clean * self.clogging_factor * viscosity * abs(flow_rate)
+        return self.resistance_clean * self.clogging_factor * viscosity * flow_rate
 
     def calculate(self):
         inlet = self.inlets[0]

@@ -20,8 +20,8 @@ class HeatExchanger(HydraulicNode):
         """
         Simple quadratic pressure drop for the HX internals.
         """
-        # DeltaP = K * rho * v^2 / 2. Simplified to K * Q^2 for HX.
-        return self.k_factor * density * (flow_rate ** 2)
+        # DeltaP = K * rho * v^2 / 2. Signed version: K * rho * Q * abs(Q)
+        return self.k_factor * density * flow_rate * abs(flow_rate)
 
     def calculate_temperature(self):
         """

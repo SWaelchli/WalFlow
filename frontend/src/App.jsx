@@ -28,6 +28,7 @@ import DataList from './DataList';
 import examplePFD from '../Example_PFD.json';
 import examplePRV from '../Example_PRV.json';
 import exampleBPR from '../Example_BPR.json';
+import exampleBarossa from '../Barossa_FG_LOS.json';
 
 const nodeTypes = {
   tank: TankNode,
@@ -326,7 +327,8 @@ export default function App() {
         templates={{
           "Standard PFD": examplePFD,
           "Pressure Reducing (PRV)": examplePRV,
-          "Backpressure (BPR)": exampleBPR
+          "Backpressure (BPR)": exampleBPR,
+          "Barossa Oil System": exampleBarossa
         }}
       />
 

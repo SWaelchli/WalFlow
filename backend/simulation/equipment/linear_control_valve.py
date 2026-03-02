@@ -31,7 +31,7 @@ class LinearControlValve(HydraulicNode):
         
         dp = (K_CV_SI * density * flow_rate * abs(flow_rate)) / (cv_eff**2)
         
-        return abs(dp)
+        return dp
 
     def calculate(self):
         """
