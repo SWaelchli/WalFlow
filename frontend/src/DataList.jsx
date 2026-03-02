@@ -16,67 +16,34 @@ export default function DataList({ nodes, edges, onUpdateEdge, onUpdateNode, onS
       const currentIds = new Set([...nodes.map(n => n.id), ...edges.map(e => e.id)]);
       let newOrder = prev.filter(item => currentIds.has(item.id));
       const existingIds = new Set(newOrder.map(item => item.id));
-      
       nodes.forEach(n => { if (!existingIds.has(n.id)) newOrder.push({ type: 'node', id: n.id }); });
       edges.forEach(e => { if (!existingIds.has(e.id)) newOrder.push({ type: 'edge', id: e.id }); });
-
       if (prev.length === 0 && newOrder.length > 0) return autoSortLogic(nodes, edges);
       return newOrder;
     });
   }, [nodes.length, edges.length]); 
 
-  /**
-   * autoSortLogic: Refined Engineering Sequence Algorithm
-   * 
-   * This algorithm organizes the equipment and pipe list in a logical process flow order:
-   * 1. IDENTIFY SOURCES: Finds all nodes with no incoming pipes (typically supply tanks).
-   * 2. DOWNSTREAM DFS: Traverses the graph from each source following pipe connections.
-   * 3. SPLITTER BRANCHING: At splitters, it prioritizes 'outlet-0' (Outlet 1) and follows that 
-   *    branch to its end before returning to follow 'outlet-1' (Outlet 2).
-   * 4. MIXER CONVERGENCE (The "Wait" Rule): If a node has multiple inlets (like a Mixer), 
-   *    the algorithm pauses that branch and does NOT add the Mixer to the list until 
-   *    ALL incoming branches have been fully explored and reached the Mixer.
-   * 5. LOOP/ORPHAN HANDLING: Ensures any recycle loops or disconnected islands are 
-   *    appended to the end so no component is missed.
-   */
   const autoSortLogic = (nodes, edges) => {
     const ordered = [];
     const visitedNodes = new Set();
     const visitedEdges = new Set();
-    
-    // 1. Calculate In-Degrees (how many pipes enter each node)
     const inDegree = {};
-    nodes.forEach(n => {
-      inDegree[n.id] = edges.filter(e => e.target === n.id).length;
-    });
-
-    // 2. Track how many incoming paths have reached a node during traversal
+    nodes.forEach(n => inDegree[n.id] = edges.filter(e => e.target === n.id).length);
     const reachedCount = {};
     nodes.forEach(n => reachedCount[n.id] = 0);
-
     const sources = nodes.filter(n => !edges.some(e => e.target === n.id));
     sources.sort((a, b) => a.position.y - b.position.y);
 
     const traverse = (nodeId) => {
       const node = nodes.find(n => n.id === nodeId);
       if (!node) return;
-
-      // Increment reached count for this node
       reachedCount[nodeId]++;
-
-      // If it's a Mixer (In-degree > 1), wait until all paths arrive
-      if (inDegree[nodeId] > 1 && reachedCount[nodeId] < inDegree[nodeId]) {
-        return; // Pause this branch
-      }
-
+      if (inDegree[nodeId] > 1 && reachedCount[nodeId] < inDegree[nodeId]) return;
       if (visitedNodes.has(nodeId)) return;
       visitedNodes.add(nodeId);
       ordered.push({ type: 'node', id: nodeId });
-
-      // Get outgoing pipes, prioritizing outlet-0 then outlet-1
       let outgoing = edges.filter(e => e.source === nodeId);
       outgoing.sort((a, b) => (a.sourceHandle || "outlet-0").localeCompare(b.sourceHandle || "outlet-0"));
-
       outgoing.forEach(edge => {
         if (!visitedEdges.has(edge.id)) {
           visitedEdges.add(edge.id);
@@ -85,19 +52,9 @@ export default function DataList({ nodes, edges, onUpdateEdge, onUpdateNode, onS
         }
       });
     };
-
-    // Start from all sources
     sources.forEach(s => traverse(s.id));
-
-    // Fallback for loops or disconnected islands
     nodes.forEach(n => { if (!visitedNodes.has(n.id)) traverse(n.id); });
-    edges.forEach(e => {
-      if (!visitedEdges.has(e.id)) {
-        ordered.push({ type: 'edge', id: e.id });
-        visitedEdges.add(e.id);
-      }
-    });
-
+    edges.forEach(e => { if (!visitedEdges.has(e.id)) { ordered.push({ type: 'edge', id: e.id }); visitedEdges.add(e.id); } });
     return ordered;
   };
 
@@ -166,8 +123,11 @@ export default function DataList({ nodes, edges, onUpdateEdge, onUpdateNode, onS
           displayType: node.type.replace('_',' ').toUpperCase(),
           flow: telemetry?.outlets?.[0]?.flow_rate || 0,
           dp: Math.abs(pStart - pEnd) / 100000,
-          pStart: pStart / 100000, pEnd: pEnd / 100000,
-          temp: (telemetry?.outlets?.[0]?.temperature || telemetry?.inlets?.[0]?.temperature) || 293.15
+          pStart: pStart / 100000,
+          pEnd: pEnd / 100000,
+          temp: (telemetry?.outlets?.[0]?.temperature || telemetry?.inlets?.[0]?.temperature) || 293.15,
+          length: 0,
+          velocity: 0
         };
       } else {
         const edge = edges.find(e => e.id === ref.id);
@@ -183,7 +143,8 @@ export default function DataList({ nodes, edges, onUpdateEdge, onUpdateNode, onS
           flow: flow, dp: Math.abs(pStart - pEnd) / 100000,
           pStart: pStart / 100000, pEnd: pEnd / 100000,
           temp: (telemetry?.outlets?.[0]?.temperature || telemetry?.inlets?.[0]?.temperature) || 293.15,
-          velocity: area > 0 ? flow / area : 0
+          velocity: area > 0 ? flow / area : 0,
+          length: edge.data.length || 0
         };
       }
     }).filter(i => i !== null && (filterType === 'all' || i.type === filterType));
@@ -203,8 +164,13 @@ export default function DataList({ nodes, edges, onUpdateEdge, onUpdateNode, onS
   }, [manualOrder, nodes, edges, activeTab, filterText, sortConfig]);
 
   const exportCSV = useCallback(() => {
-    const headers = ["Type", "Name", "Flow (L/min)", "dP (bar)", "P Start (bar)", "P End (bar)", "Temp (C)"];
-    const rows = processedItems.map(i => [i.displayType, i.label, m3sToLmin(i.flow), i.dp.toFixed(3), i.pStart.toFixed(2), i.pEnd.toFixed(2), kToC(i.temp)].join(","));
+    const headers = ["Type", "Name", "Flow (L/min)", "Velocity (m/s)", "dP (bar)", "P Start (bar)", "P End (bar)", "Temp (C)"];
+    if (activeTab === 'pipes') headers.push("Length (m)");
+    const rows = processedItems.map(i => {
+      const row = [i.displayType, i.label, m3sToLmin(i.flow), i.velocity.toFixed(2), i.dp.toFixed(3), i.pStart.toFixed(2), i.pEnd.toFixed(2), kToC(i.temp)];
+      if (activeTab === 'pipes') row.push(i.length);
+      return row.join(",");
+    });
     const blob = new Blob([[headers.join(","), ...rows].join("\n")], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -257,13 +223,14 @@ export default function DataList({ nodes, edges, onUpdateEdge, onUpdateNode, onS
               <SortHeader label="Type" sortKey="displayType" />
               <SortHeader label="Name" sortKey="label" />
               <SortHeader label="Flow (L/min)" sortKey="flow" align="right" />
+              <SortHeader label="Velocity (m/s)" sortKey="velocity" align="right" />
               <SortHeader label="dP (bar)" sortKey="dp" align="right" />
-              {activeTab === 'pipes' && <SortHeader label="Velocity (m/s)" sortKey="velocity" align="right" />}
               <SortHeader label="P Start" sortKey="pStart" align="right" />
               <SortHeader label="P End" sortKey="pEnd" align="right" />
               <SortHeader label="Temp (°C)" sortKey="temp" align="right" />
               {activeTab === 'pipes' && <th style={{ padding: '8px' }}>NPS</th>}
-              {activeTab === 'pipes' && <th style={{ padding: '8px' }}>Sch</th>}
+              {activeTab === 'pipes' && <th style={{ padding: '8px' }}>Schedule</th>}
+              {activeTab === 'pipes' && <SortHeader label="Length (m)" sortKey="length" align="right" />}
             </tr>
           </thead>
           <tbody>
@@ -272,31 +239,41 @@ export default function DataList({ nodes, edges, onUpdateEdge, onUpdateNode, onS
               const item = entry.item;
               const diaValue = isNode ? (item.data.orifice_diameter || item.data.pipe_diameter || 0) : (item.data.diameter || 0.1);
               const match = findClosestPipeMatch(diaValue);
-              let npsDisplay = "-", schDisplay = "-", currentDn = 50, currentSch = "40";
-              if (match) {
-                currentDn = match.dn; currentSch = match.sch;
-                const pipeInfo = ASME_PIPE_STANDARDS.find(p => p.dn === match.dn);
-                npsDisplay = pipeInfo ? `${pipeInfo.nps}"` : `${match.dn}mm`; schDisplay = match.sch;
-              }
+              const currentDn = item.data.standardDn || (match ? match.dn : 50);
+              const currentSch = item.data.standardSch || (match ? match.sch : "40");
+              const pipeInfo = ASME_PIPE_STANDARDS.find(p => p.dn === currentDn);
+              const npsDisplay = pipeInfo ? `${pipeInfo.nps}"` : `${currentDn}mm`;
+              const schDisplay = currentSch;
+
               const handleDnChange = (newDn) => {
-                const pipe = ASME_PIPE_STANDARDS.find(p => p.dn === parseInt(newDn));
-                if (pipe) {
+                const dnInt = parseInt(newDn);
+                const pipe = ASME_PIPE_STANDARDS.find(p => p.dn === dnInt);
+                if (pipe && !isNode) {
                   const sch = pipe.schedules[currentSch] ? currentSch : Object.keys(pipe.schedules)[0];
                   const newId = calculatePipeId(pipe.od, pipe.schedules[sch]);
-                  if (onUpdateEdge && !isNode) onUpdateEdge(item.id, { diameter: newId });
+                  onUpdateEdge(item.id, { diameter: newId, standardDn: dnInt, standardSch: sch });
                 }
               };
+
               const handleSchChange = (newSch) => {
                 const pipe = ASME_PIPE_STANDARDS.find(p => p.dn === currentDn);
-                if (pipe && pipe.schedules[newSch]) {
+                if (pipe && pipe.schedules[newSch] && !isNode) {
                   const newId = calculatePipeId(pipe.od, pipe.schedules[newSch]);
-                  if (onUpdateEdge && !isNode) onUpdateEdge(item.id, { diameter: newId });
+                  onUpdateEdge(item.id, { diameter: newId, standardSch: newSch });
                 }
               };
+
               const handleNameChange = (newName) => {
                 if (isNode) { if (onUpdateNode) onUpdateNode(item.id, { label: newName }); }
                 else { if (onUpdateEdge) onUpdateEdge(item.id, { label: newName }); }
               };
+
+              const handleLengthChange = (newLen) => {
+                if (!isNode && onUpdateEdge) {
+                  onUpdateEdge(item.id, { length: parseFloat(newLen) || 0 });
+                }
+              };
+
               const isDragging = draggedIdx === entry.originalIndex;
               const isDragOver = dragOverIdx === entry.originalIndex;
 
@@ -306,8 +283,8 @@ export default function DataList({ nodes, edges, onUpdateEdge, onUpdateNode, onS
                   onClick={() => handleRowClick(entry)}
                   style={{ 
                     borderBottom: '1px solid #f1f5f9', cursor: sortConfig.key ? 'pointer' : 'grab', transition: 'background 0.1s',
-                    backgroundColor: item.selected ? '#f0f9ff' : (isDragging ? '#f8fafc' : 'transparent'),
-                    borderTop: isDragOver ? '2px solid #000' : 'none', opacity: isDragging ? 0.5 : 1
+                    backgroundColor: item.selected ? '#f0f9ff' : (draggedIdx === entry.originalIndex ? '#f8fafc' : 'transparent'),
+                    borderTop: dragOverIdx === entry.originalIndex ? '2px solid #000' : 'none', opacity: draggedIdx === entry.originalIndex ? 0.5 : 1
                   }}
                   onMouseEnter={(e) => e.currentTarget.style.background = item.selected ? '#e0f2fe' : '#f8fafc'}
                   onMouseLeave={(e) => e.currentTarget.style.background = item.selected ? '#f0f9ff' : 'transparent'}
@@ -319,8 +296,8 @@ export default function DataList({ nodes, edges, onUpdateEdge, onUpdateNode, onS
                       value={item.data.label || item.id} onChange={(e) => handleNameChange(e.target.value)} onFocus={() => handleRowClick(entry)} />
                   </td>
                   <td style={{ padding: '8px', textAlign: 'right' }}>{m3sToLmin(entry.flow)}</td>
-                  <td style={{ padding: '8px', textAlign: 'right', fontWeight: 'bold', color: '#0284c7' }}>{entry.dp.toFixed(3)}</td>
-                  {activeTab === 'pipes' && <td style={{ padding: '8px', textAlign: 'right' }}>{entry.velocity?.toFixed(2)}</td>}
+                  <td style={{ padding: '8px', textAlign: 'right' }}>{entry.velocity?.toFixed(2)}</td>
+                  <td style={{ padding: '8px', textAlign: 'right' }}>{entry.dp.toFixed(3)}</td>
                   <td style={{ padding: '8px', textAlign: 'right' }}>{entry.pStart.toFixed(2)}</td>
                   <td style={{ padding: '8px', textAlign: 'right' }}>{entry.pEnd.toFixed(2)}</td>
                   <td style={{ padding: '8px', textAlign: 'right' }}>{kToC(entry.temp)}</td>
@@ -328,8 +305,7 @@ export default function DataList({ nodes, edges, onUpdateEdge, onUpdateNode, onS
                     <td style={{ padding: '8px' }} onClick={(e) => e.stopPropagation()}>
                       {!isNode ? (
                         <select style={{ fontSize: '10px', padding: '2px', border: '1px solid #cbd5e1', borderRadius: '4px' }}
-                          value={match ? currentDn : "custom"} onChange={(e) => { if (e.target.value !== 'custom') handleDnChange(e.target.value); }} onFocus={() => handleRowClick(entry)}>
-                          {!match && <option value="custom">Custom</option>}
+                          value={currentDn} onChange={(e) => { handleDnChange(e.target.value); }} onFocus={() => handleRowClick(entry)}>
                           {ASME_PIPE_STANDARDS.map(p => <option key={p.dn} value={p.dn}>DN {p.dn} ({p.nps}")</option>)}
                         </select>
                       ) : npsDisplay}
@@ -339,11 +315,23 @@ export default function DataList({ nodes, edges, onUpdateEdge, onUpdateNode, onS
                     <td style={{ padding: '8px' }} onClick={(e) => e.stopPropagation()}>
                       {!isNode ? (
                         <select style={{ fontSize: '10px', padding: '2px', border: '1px solid #cbd5e1', borderRadius: '4px' }}
-                          value={match ? currentSch : ""} onChange={(e) => handleSchChange(e.target.value)} disabled={!match} onFocus={() => handleRowClick(entry)}>
-                          {!match && <option value="">-</option>}
-                          {match && Object.keys(ASME_PIPE_STANDARDS.find(p => p.dn === currentDn).schedules).map(sch => <option key={sch} value={sch}>{sch}</option>)}
+                          value={currentSch} onChange={(e) => handleSchChange(e.target.value)} onFocus={() => handleRowClick(entry)}>
+                          {pipeInfo && Object.keys(pipeInfo.schedules).map(sch => <option key={sch} value={sch}>{sch}</option>)}
                         </select>
                       ) : schDisplay}
+                    </td>
+                  )}
+                  {activeTab === 'pipes' && (
+                    <td style={{ padding: '8px', textAlign: 'right' }} onClick={(e) => e.stopPropagation()}>
+                      {!isNode && (
+                        <input 
+                          type="number" step="0.1"
+                          style={{ width: '50px', fontSize: '11px', border: '1px solid #e2e8f0', padding: '2px 4px', borderRadius: '3px', textAlign: 'right' }}
+                          value={item.data.length}
+                          onChange={(e) => handleLengthChange(e.target.value)}
+                          onFocus={() => handleRowClick(entry)}
+                        />
+                      )}
                     </td>
                   )}
                 </tr>
