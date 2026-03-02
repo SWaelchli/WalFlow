@@ -16,7 +16,6 @@ class GraphParser:
     def parse_graph(graph: ReactFlowGraph) -> HydraulicNetwork:
         """
         Converts a React Flow graph into a HydraulicNetwork.
-        Unlike Phase 7, this preserves the full branching structure.
         """
         # 1. Instantiate Equipment Nodes
         nodes_dict: Dict[str, HydraulicNode] = {}
