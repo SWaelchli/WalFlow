@@ -161,10 +161,12 @@ export default function PropertyEditor({ node, edge, onUpdate, onUpdateEdge, onD
               />
             </div>
             <div>
-              <label style={{ fontSize: '11px', color: '#64748b' }}>Temp (K)</label>
+              <label style={{ fontSize: '11px', color: '#64748b' }}>Temp (°C)</label>
               <input 
                 type="number" style={{ width: '100%', fontSize: '12px' }}
-                value={data.temperature} onChange={(e) => handleChange('temperature', e.target.value)}
+                step="0.1"
+                value={(data.temperature - 273.15).toFixed(1)} 
+                onChange={(e) => handleChange('temperature', parseFloat(e.target.value) + 273.15)}
               />
             </div>
           </>
