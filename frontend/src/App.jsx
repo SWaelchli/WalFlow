@@ -41,7 +41,7 @@ const nodeTypes = {
   mixer: MixerNode,
 };
 
-let idCount = 50; // High start to avoid conflicts with examples
+let idCount = 50; 
 const getId = () => `node_${idCount++}`;
 
 export default function App() {
@@ -89,7 +89,6 @@ export default function App() {
       );
     }, [setNodes]);
 
-    // Internal Load Function (supports handle matching)
     const loadData = useCallback((data) => {
       if (data.nodes && data.edges) {
         const restoredNodes = data.nodes.map(node => ({
@@ -99,15 +98,18 @@ export default function App() {
             onChange: node.type === 'linear_control_valve' ? handleValveChange : undefined
           }
         }));
+        const restoredEdges = data.edges.map(edge => ({
+          ...edge,
+          label: edge.data?.label || edge.id 
+        }));
         setNodes(restoredNodes);
-        setEdges(data.edges);
+        setEdges(restoredEdges);
         if (data.globalSettings) {
           setGlobalSettings(data.globalSettings);
         }
       }
     }, [handleValveChange, setNodes, setEdges]);
 
-    // Initialize with default example
     useEffect(() => {
       loadData(examplePFD);
     }, []);
@@ -118,6 +120,7 @@ export default function App() {
       const newEdge = { 
         ...params, 
         id: newId,
+        label: newId,
         animated: true, 
         data: { label: newId, length: 25.0, diameter: 0.05248 } 
       };
@@ -160,7 +163,11 @@ export default function App() {
     setEdges((eds) =>
       eds.map((edge) => {
         if (edge.id === edgeId) {
-          const updatedEdge = { ...edge, data: { ...edge.data, ...newData } };
+          const updatedEdge = { 
+            ...edge, 
+            label: newData.label !== undefined ? newData.label : edge.label,
+            data: { ...edge.data, ...newData } 
+          };
           if (selectedEdge && selectedEdge.id === edgeId) {
             setSelectedEdge(updatedEdge);
           }
@@ -240,7 +247,6 @@ export default function App() {
     }
   }, [setNodes, setEdges]);
 
-  // WebSocket Connection
   useEffect(() => {
     ws.current = new WebSocket('ws://localhost:8000/ws/simulate');
 
@@ -264,7 +270,6 @@ export default function App() {
               const nodeTelemetry = data.telemetry.nodes[node.id];
               if (nodeTelemetry) {
                 const newData = { ...node.data, telemetry: nodeTelemetry };
-                // If backend sent an updated opening percentage, sync it to the main data field
                 if (nodeTelemetry.opening_pct !== undefined) {
                   newData.opening = nodeTelemetry.opening_pct;
                 }
@@ -291,11 +296,9 @@ export default function App() {
     return () => { if (ws.current) ws.current.close(); };
   }, []);
 
-  // Update backend on change (Debounced to ensure consistency)
   useEffect(() => {
     const handler = setTimeout(() => {
       if (isConnected && ws.current && ws.current.readyState === WebSocket.OPEN) {
-        console.log('Sending graph update to backend...');
         ws.current.send(JSON.stringify({ 
           action: 'update_graph', 
           graph: { 
