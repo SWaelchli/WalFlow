@@ -20,6 +20,7 @@ import FilterNode from './nodes/FilterNode';
 import HeatExchangerNode from './nodes/HeatExchangerNode';
 import SplitterNode from './nodes/SplitterNode';
 import MixerNode from './nodes/MixerNode';
+import RemoteControlValveNode from './nodes/RemoteControlValveNode';
 
 import Sidebar from './Sidebar';
 import PropertyEditor from './PropertyEditor';
@@ -31,6 +32,7 @@ import examplePFD from '../Example_PFD.json';
 import examplePRV from '../Example_PRV.json';
 import exampleBPR from '../Example_BPR.json';
 import exampleBarossa from '../Barossa_FG_LOS.json';
+import exampleRemoteControl from '../Example_RemoteControl.json';
 
 const nodeTypes = {
   tank: TankNode,
@@ -42,10 +44,10 @@ const nodeTypes = {
   heat_exchanger: HeatExchangerNode,
   splitter: SplitterNode,
   mixer: MixerNode,
+  remote_control_valve: RemoteControlValveNode,
 };
 
-let idCount = 50; 
-const getId = () => `node_${idCount++}`;
+const getId = () => `node_${crypto.randomUUID().split('-')[0]}`;
 
 export default function App() {
   const reactFlowWrapper = useRef(null);
@@ -166,7 +168,7 @@ export default function App() {
           ...node.data,
           rotation: node.data.rotation || 0,
           onRotate: handleRotation,
-          onChange: node.type === 'linear_control_valve' ? handleValveChange : undefined
+          onChange: (node.type === 'linear_control_valve' || node.type === 'remote_control_valve') ? handleValveChange : undefined
         }
       }));
       const restoredEdges = data.edges.map(edge => ({
@@ -187,13 +189,21 @@ export default function App() {
 
   const onConnect = useCallback((params) => {
     setEdges((eds) => {
-      const newId = `Pipe ${edgeIdCount}`;
+      const isSignal = params.sourceHandle === 'signal-out' || params.targetHandle === 'signal-in';
+      const newId = isSignal ? `Signal ${edgeIdCount}` : `Pipe ${edgeIdCount}`;
+      
       const newEdge = { 
         ...params, 
         id: newId,
         label: newId,
         animated: true, 
-        data: { label: newId, length: 25.0, diameter: 0.05248 } 
+        style: isSignal ? { stroke: '#eab308', strokeWidth: 2, strokeDasharray: '5,5' } : {},
+        data: { 
+          label: newId, 
+          type: isSignal ? 'signal' : 'hydraulic',
+          length: 25.0, 
+          diameter: 0.05248 
+        } 
       };
       setEdgeIdCount(prev => prev + 1);
       return addEdge(newEdge, eds);
@@ -270,7 +280,7 @@ export default function App() {
         type,
         position,
         data: { 
-          label: `${type.toUpperCase()} ${idCount}`, 
+          label: `${type.toUpperCase()}_${Math.floor(Math.random() * 1000)}`, 
           rotation: 0,
           onRotate: handleRotation,
           onChange: type === 'linear_control_valve' ? handleValveChange : undefined,
@@ -281,6 +291,7 @@ export default function App() {
           ...(type === 'orifice' && { pipe_diameter: 0.1, orifice_diameter: 0.07 }),
           ...(type === 'filter' && { resistance: 1000.0 }),
           ...(type === 'heat_exchanger' && { heat_duty_kw: -10.0 }),
+          ...(type === 'remote_control_valve' && { max_cv: 0.05, set_pressure: 500000.0 }),
         },
       };
 
@@ -418,7 +429,8 @@ export default function App() {
           "Standard PFD": examplePFD,
           "Pressure Reducing (PRV)": examplePRV,
           "Backpressure (BPR)": exampleBPR,
-          "Barossa Oil System": exampleBarossa
+          "Barossa Oil System": exampleBarossa,
+          "Remote Control Test": exampleRemoteControl
         }}
       />
 

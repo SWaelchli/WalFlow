@@ -1,6 +1,7 @@
 import { Handle, Position, useUpdateNodeInternals } from 'reactflow';
 import { useEffect } from 'react';
 import { RotateButton, getRotatedPosition } from '../utils/rotation_logic.jsx';
+import { SensingPin } from '../utils/SensingPin.jsx';
 
 /**
  * Shell and Tube Heat Exchanger (ISA / PFD style)
@@ -9,13 +10,14 @@ export default function HeatExchangerNode({ id, data, selected }) {
   const updateNodeInternals = useUpdateNodeInternals();
   const telemetry = data.telemetry;
   const rotation = data.rotation || 0;
+  const sensing = data.sensing || {};
   const tIn = telemetry?.inlets?.[0]?.temperature || 293.15;
   const tOut = telemetry?.outlets?.[0]?.temperature || 293.15;
   const duty = data.heat_duty_kw || 0;
 
   useEffect(() => {
     updateNodeInternals(id);
-  }, [id, rotation, updateNodeInternals]);
+  }, [id, rotation, sensing, updateNodeInternals]);
 
   return (
     <div style={{ position: 'relative' }}>
@@ -52,6 +54,8 @@ export default function HeatExchangerNode({ id, data, selected }) {
             background: '#3b82f6', width: '8px', height: '8px' 
           }} 
         />
+        {sensing['inlet-0'] && <SensingPin portId="inlet-0" offset={{ x: -25, y: 0 }} />}
+
         <Handle 
           type="source" 
           position={getRotatedPosition(Position.Right, rotation)} 
@@ -63,6 +67,7 @@ export default function HeatExchangerNode({ id, data, selected }) {
             background: '#ef4444', width: '8px', height: '8px' 
           }} 
         />
+        {sensing['outlet-0'] && <SensingPin portId="outlet-0" offset={{ x: 25, y: 0 }} />}
       </div>
 
       <div style={{ textAlign: 'center', marginTop: '5px' }}>

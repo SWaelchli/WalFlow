@@ -10,6 +10,7 @@ from simulation.equipment.pipe import Pipe
 from simulation.equipment.pump import Pump
 from simulation.equipment.linear_control_valve import LinearControlValve
 from simulation.equipment.linear_regulator import LinearRegulator
+from simulation.equipment.remote_control_valve import RemoteControlValve
 from simulation.equipment.orifice import Orifice
 from simulation.equipment.heat_exchanger import HeatExchanger
 from simulation.equipment.filter import Filter
@@ -18,7 +19,7 @@ from simulation.fluid_utils import FluidProperties
 class NetworkSolver:
     """
     Final Network Solver.
-    Uses a clean 'Direct Physics' outer loop for regulators.
+    Uses a clean 'Direct Physics' outer loop for regulators and control valves.
     """
     def __init__(self, network: HydraulicNetwork):
         self.network = network
@@ -29,62 +30,100 @@ class NetworkSolver:
         
         self.fixed_pressure_nodes = {}
         self.internal_node_indices = []
-        self.regulator_indices = []
+        self.control_node_indices = [] # Indices of regulators or RCVs
         
         for i, node in enumerate(self.nodes_list):
             if isinstance(node, Tank):
                 self.fixed_pressure_nodes[i] = node.calculate()
             else:
                 self.internal_node_indices.append(i)
-                if isinstance(node, LinearRegulator):
-                    self.regulator_indices.append(i)
+                if isinstance(node, (LinearRegulator, RemoteControlValve)):
+                    self.control_node_indices.append(i)
 
     def solve(self):
         max_outer_iterations = 40
         tolerance_bar = 0.01 
         
-        # Initialize regulators to a neutral position
-        for idx in self.regulator_indices:
+        # Initialize control nodes to a neutral position
+        for idx in self.control_node_indices:
             self.nodes_list[idx].opening_pct = 50.0
 
         for it in range(max_outer_iterations):
-            # 1. Solve the current hydraulics with fixed regulator positions
+            # 1. Solve the current hydraulics with fixed control positions
             try:
                 final_sol_x, num_int = self._solve_hydraulics_core()
             except ValueError:
-                # If solver fails, regulators might be too closed. Open them up and retry.
-                for idx in self.regulator_indices:
+                # If solver fails, control nodes might be too closed. Open them up and retry.
+                for idx in self.control_node_indices:
                     self.nodes_list[idx].opening_pct = 95.0
                 continue
             
-            # 2. Update regulator openings based on pressure error
+            # 2. Update control openings based on pressure error
             max_error = 0.0
-            for idx in self.regulator_indices:
-                reg = self.nodes_list[idx]
-                sensed = reg.inlets[0].pressure if reg.backpressure else reg.outlets[0].pressure
-                error_bar = abs(sensed - reg.set_pressure) / 100000.0
+            for idx in self.control_node_indices:
+                node = self.nodes_list[idx]
+                
+                # Determine sensed pressure
+                if isinstance(node, LinearRegulator):
+                    sensed = node.inlets[0].pressure if node.backpressure else node.outlets[0].pressure
+                    # Regulators always sense their own inlet/outlet
+                    sensed_at_outlet = not node.backpressure
+                elif isinstance(node, RemoteControlValve):
+                    sensed = 0.0
+                    config = node.remote_sensing_config
+                    if config and config["node_id"] in self.network.nodes:
+                        remote_node = self.network.nodes[config["node_id"]]
+                        port_type = config["port_type"]
+                        port_idx = config["port_idx"]
+                        
+                        if port_type == "inlet" and port_idx < len(remote_node.inlets):
+                            sensed = remote_node.inlets[port_idx].pressure
+                        elif port_type == "outlet" and port_idx < len(remote_node.outlets):
+                            sensed = remote_node.outlets[port_idx].pressure
+                        else:
+                            sensed = node.outlets[0].pressure # Fallback
+                    else:
+                        # Fallback to local sensing if no signal
+                        sensed = node.outlets[0].pressure
+                    node.sensed_pressure = sensed
+                    sensed_at_outlet = True # RCVs usually control downstream pressure
+                
+                error_bar = abs(sensed - node.set_pressure) / 100000.0
                 max_error = max(max_error, error_bar)
                 
                 # Calculate required dP to reach setpoint
-                target_dp = (reg.set_pressure - reg.outlets[0].pressure) if reg.backpressure else (reg.inlets[0].pressure - reg.set_pressure)
+                # If sensed_at_outlet=True (Standard Downstream Control):
+                #   We need to change our current dP by the error at the sensed location.
+                #   target_dp = current_dp + (sensed - set_pressure)
+                current_dp = (node.inlets[0].pressure - node.outlets[0].pressure)
+                
+                if sensed_at_outlet:
+                    # If remote pressure is TOO HIGH, we need MORE dP (close valve)
+                    # If remote pressure is TOO LOW, we need LESS dP (open valve)
+                    target_dp = current_dp + (sensed - node.set_pressure)
+                else:
+                    # Upstream control (rare for RCV but supported)
+                    # If remote pressure is TOO HIGH, we need LESS dP (open valve)
+                    # If remote pressure is TOO LOW, we need MORE dP (close valve)
+                    target_dp = current_dp + (node.set_pressure - sensed)
                 
                 # Use physics to find the target opening for this dP
-                rho = reg.inlets[0].density
-                q = reg.inlets[0].flow_rate
+                rho = node.inlets[0].density
+                q = node.inlets[0].flow_rate
                 abs_q = abs(q)
                 K_CV_SI = 1.732e9
                 
-                min_dp = (K_CV_SI * rho * q * abs_q) / (reg.max_cv**2)
+                min_dp = (K_CV_SI * rho * q * abs_q) / (node.max_cv**2)
                 
                 if target_dp <= min_dp or abs_q < 1e-8:
                     target_opening = 100.0
                 else:
-                    cv_req = math.sqrt((K_CV_SI * rho * q**2) / target_dp)
-                    target_opening = (cv_req / reg.max_cv) * 100.0
+                    cv_req = math.sqrt((K_CV_SI * rho * q**2) / max(1.0, target_dp))
+                    target_opening = (cv_req / node.max_cv) * 100.0
                 
                 # Damp the adjustment to prevent oscillation
-                reg.opening_pct = reg.opening_pct + 0.5 * (target_opening - reg.opening_pct)
-                reg.opening_pct = max(0.1, min(100.0, reg.opening_pct))
+                node.opening_pct = node.opening_pct + 0.5 * (target_opening - node.opening_pct)
+                node.opening_pct = max(0.1, min(100.0, node.opening_pct))
 
             if max_error < tolerance_bar:
                 break

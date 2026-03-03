@@ -13,6 +13,7 @@ export default function DetailPanel({ selectedNode }) {
       case 'pump':
         return <PumpDetails node={selectedNode} />;
       case 'linear_regulator':
+      case 'remote_control_valve':
         return <RegulatorDetails node={selectedNode} />;
       default:
         return <GenericDetails node={selectedNode} />;

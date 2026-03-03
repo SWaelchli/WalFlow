@@ -95,6 +95,11 @@ export default function PropertyEditor({ node, edge, onUpdate, onUpdateEdge, onD
     }
   };
 
+  const handleSensingToggle = (portId) => {
+    const sensing = data.sensing || {};
+    onUpdate(id, { sensing: { ...sensing, [portId]: !sensing[portId] } });
+  };
+
   return (
     <div 
       onPointerDown={(e) => e.stopPropagation()}
@@ -118,6 +123,29 @@ export default function PropertyEditor({ node, edge, onUpdate, onUpdateEdge, onD
           <label style={{ fontSize: '11px', color: '#64748b' }}>Name Tag</label>
           <input style={{ width: '100%', fontSize: '12px', padding: '4px' }} value={data.label || ''} onChange={(e) => handleChange('label', e.target.value)} />
         </div>
+
+        {isNode && (
+          <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '8px' }}>
+            <label style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold' }}>Sensing Nodes (Yellow Pin)</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '4px' }}>
+              {/* Default ports for most equipment */}
+              {['inlet-0', 'outlet-0'].map(portId => (
+                <button
+                  key={portId}
+                  onClick={() => handleSensingToggle(portId)}
+                  style={{
+                    fontSize: '10px', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer',
+                    background: data.sensing?.[portId] ? '#eab308' : '#f1f5f9',
+                    color: data.sensing?.[portId] ? '#fff' : '#475569',
+                    border: '1px solid #e2e8f0'
+                  }}
+                >
+                  {portId.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {!isNode && (
           <>
@@ -162,19 +190,21 @@ export default function PropertyEditor({ node, edge, onUpdate, onUpdateEdge, onD
           </>
         )}
 
-        {isNode && type === 'linear_regulator' && (
+        {isNode && (type === 'linear_regulator' || type === 'remote_control_valve') && (
           <>
             <div>
               <label style={{ fontSize: '11px', color: '#64748b' }}>Max Cv</label>
               <input type="number" style={{ width: '100%', fontSize: '12px' }} value={data.max_cv} onChange={(e) => handleChange('max_cv', e.target.value)} />
             </div>
-            <div>
-              <label style={{ fontSize: '11px', color: '#64748b' }}>Regulation Mode</label>
-              <select style={{ width: '100%', fontSize: '12px', padding: '4px' }} value={data.backpressure ? "true" : "false"} onChange={(e) => handleChange('backpressure', e.target.value === "true")}>
-                <option value="false">Pressure Reducing (Downstream)</option>
-                <option value="true">Backpressure (Upstream)</option>
-              </select>
-            </div>
+            {type === 'linear_regulator' && (
+              <div>
+                <label style={{ fontSize: '11px', color: '#64748b' }}>Regulation Mode</label>
+                <select style={{ width: '100%', fontSize: '12px', padding: '4px' }} value={data.backpressure ? "true" : "false"} onChange={(e) => handleChange('backpressure', e.target.value === "true")}>
+                  <option value="false">Pressure Reducing (Downstream)</option>
+                  <option value="true">Backpressure (Upstream)</option>
+                </select>
+              </div>
+            )}
             <div>
               <label style={{ fontSize: '11px', color: '#64748b' }}>Set Point (bar)</label>
               <input type="number" style={{ width: '100%', fontSize: '12px' }} step="0.1" value={(data.set_pressure / 100000).toFixed(1)} onChange={(e) => handleChange('set_pressure', parseFloat(e.target.value) * 100000)} />

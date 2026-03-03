@@ -87,6 +87,8 @@ async def websocket_endpoint(websocket: WebSocket):
                             # Include dynamic properties like opening percentage
                             if hasattr(node, 'opening_pct'):
                                 node_telemetry["opening_pct"] = node.opening_pct
+                            if hasattr(node, 'sensed_pressure'):
+                                node_telemetry["sensed_pressure"] = node.sensed_pressure
                                 
                             telemetry["nodes"][node_id] = node_telemetry
                         

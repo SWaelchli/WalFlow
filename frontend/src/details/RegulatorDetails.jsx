@@ -10,7 +10,9 @@ export default function RegulatorDetails({ node }) {
   const currentQ = telemetry?.inlets?.[0]?.flow_rate || 0;
   const pIn = telemetry?.inlets?.[0]?.pressure || 101325;
   const pOut = telemetry?.outlets?.[0]?.pressure || 101325;
-  const sensedP = backpressure ? pIn : pOut;
+  
+  // Use telemetry.sensed_pressure if available (for RCV), otherwise local port pressure (for Regulator)
+  const sensedP = telemetry?.sensed_pressure !== undefined ? telemetry.sensed_pressure : (backpressure ? pIn : pOut);
   
   const setPBar = parseFloat((set_pressure / 100000).toFixed(2)) || 0;
   const sensedPBar = parseFloat((sensedP / 100000).toFixed(2)) || 0;

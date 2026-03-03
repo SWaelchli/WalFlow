@@ -4,14 +4,15 @@ import { RotateButton, getRotatedPosition } from '../utils/rotation_logic.jsx';
 import { SensingPin } from '../utils/SensingPin.jsx';
 
 /**
- * Linear Control Valve (ISA / PFD style)
+ * Remote Control Valve (RCV)
+ * Similar to Linear Control Valve, but controls to a remote sensing signal.
  */
-export default function LinearControlValveNode({ id, data, selected }) {
+export default function RemoteControlValveNode({ id, data, selected }) {
   const updateNodeInternals = useUpdateNodeInternals();
   const telemetry = data.telemetry;
   const rotation = data.rotation || 0;
   const sensing = data.sensing || {};
-  const opening = data.opening ?? 50;
+  const opening = telemetry?.opening_pct ?? (data.opening ?? 50.0);
   const flow = telemetry?.outlets?.[0]?.flow_rate || 0;
   const flowLmin = (flow * 60000).toFixed(1);
 
@@ -40,11 +41,26 @@ export default function LinearControlValveNode({ id, data, selected }) {
       }}>
         <svg width="60" height="60" viewBox="0 0 60 60">
           <line x1="30" y1="35" x2="30" y2="15" stroke="#334155" strokeWidth="1.5" />
-          <path d="M 20 15 Q 30 5 40 15 Z" fill="white" stroke="#334155" strokeWidth="1.5" />
+          {/* Actuator with a yellow signal connection point */}
+          <path d="M 20 15 Q 30 5 40 15 Z" fill="#fef08a" stroke="#854d0e" strokeWidth="1.5" />
           <path d="M 10 20 L 30 35 L 10 50 Z" fill="white" stroke="#334155" strokeWidth="2.5" />
           <path d="M 50 20 L 30 35 L 50 50 Z" fill="white" stroke="#334155" strokeWidth="2.5" />
         </svg>
 
+        {/* Remote Signal Input (Yellow Handle) */}
+        <Handle 
+          type="target" 
+          position={Position.Top} 
+          id="signal-in" 
+          style={{ 
+            top: '4px', left: '30px', 
+            marginTop: '-5px', marginLeft: '-5px',
+            background: '#eab308', width: '10px', height: '10px',
+            border: '1.5px solid #854d0e'
+          }} 
+        />
+
+        {/* Hydraulic Inlets/Outlets */}
         <Handle 
           type="target" 
           position={getRotatedPosition(Position.Left, rotation)} 
@@ -73,14 +89,10 @@ export default function LinearControlValveNode({ id, data, selected }) {
       </div>
 
       <div style={{ textAlign: 'center', marginTop: '5px' }}>
-        <div className="nodrag" style={{ padding: '2px 0' }}>
-          <input type="range" min="0" max="100" step="1" value={opening} 
-            onChange={(e) => data.onChange && data.onChange(parseFloat(e.target.value), id)}
-            style={{ width: '60px', cursor: 'pointer', display: 'block', margin: '0 auto' }} />
-        </div>
-        <div style={{ fontSize: '9px', color: '#334155', fontWeight: 'bold' }}>{data.label || 'LIN VALVE'}</div>
+        <div style={{ fontSize: '9px', color: '#334155', fontWeight: 'bold' }}>{data.label || 'RCV'}</div>
         <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#0369a1' }}>{opening.toFixed(1)} %</div>
         <div style={{ fontSize: '9px', color: '#64748b' }}>{flowLmin} L/min</div>
+        <div style={{ fontSize: '8px', color: '#854d0e', fontWeight: 'bold' }}>SET: {(data.set_pressure / 100000).toFixed(1)} bar</div>
       </div>
     </div>
   );

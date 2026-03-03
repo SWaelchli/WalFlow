@@ -10,6 +10,7 @@ from simulation.equipment.splitter import Splitter
 from simulation.equipment.mixer import Mixer
 from simulation.equipment.heat_exchanger import HeatExchanger
 from simulation.equipment.filter import Filter
+from simulation.equipment.remote_control_valve import RemoteControlValve
 from simulation.equipment.base_node import HydraulicNode
 
 class GraphParser:
@@ -25,13 +26,37 @@ class GraphParser:
             nodes_dict[node_data.id] = node
 
         # 2. Map Connections (Edges)
-        # Every Edge in React Flow is also a Pipe in our physics.
-        # We need to track the pipe object and the connections it forms.
         parsed_edges = []
         
         for edge in graph.edges:
-            # Create a Pipe node for this edge
             edge_data = edge.data or {}
+            
+            # Identify Signal Edges (Yellow Links)
+            if edge_data.get('type') == 'signal':
+                source_node = nodes_dict.get(edge.source)
+                target_node = nodes_dict.get(edge.target)
+                if isinstance(target_node, RemoteControlValve):
+                    # Handle IDs like "signal-inlet-0" or "signal-outlet-1"
+                    handle_id = str(edge.sourceHandle or "")
+                    parts = handle_id.split('-')
+                    if len(parts) >= 3:
+                        port_type = parts[1] # "inlet" or "outlet"
+                        port_idx = int(parts[2])
+                        target_node.remote_sensing_config = {
+                            "node_id": edge.source,
+                            "port_type": port_type,
+                            "port_idx": port_idx
+                        }
+                    else:
+                        # Fallback to node-level sensing (legacy)
+                        target_node.remote_sensing_config = {
+                            "node_id": edge.source,
+                            "port_type": "outlet", # Default
+                            "port_idx": 0
+                        }
+                continue # Do not create a Pipe for signal edges
+
+            # Create a Pipe node for this hydraulic edge
             pipe = Pipe(
                 name=f"Pipe {edge.id}",
                 length=float(edge_data.get('length', 25.0)),
@@ -40,7 +65,6 @@ class GraphParser:
             )
             pipe.global_settings = graph.global_settings
             
-            # Connect the source equipment to the pipe inlet
             source_node = nodes_dict.get(edge.source)
             target_node = nodes_dict.get(edge.target)
             
@@ -90,6 +114,12 @@ class GraphParser:
                 name=name,
                 max_cv=float(d.get('max_cv', 0.05)),
                 opening_pct=float(d.get('opening', 50.0))
+            )
+        elif t == 'remote_control_valve':
+            node = RemoteControlValve(
+                name=name,
+                max_cv=float(d.get('max_cv', 0.05)),
+                set_pressure=float(d.get('set_pressure', 500000.0))
             )
         elif t == 'linear_regulator':
             node = LinearRegulator(

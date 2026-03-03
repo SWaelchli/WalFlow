@@ -1,0 +1,506 @@
+{
+  "nodes": [
+    {
+      "id": "rc-tank-source",
+      "type": "tank",
+      "position": {
+        "x": 0,
+        "y": 200
+      },
+      "data": {
+        "label": "Source Tank",
+        "level": 2,
+        "elevation": 0,
+        "temperature": 293.15,
+        "rotation": 0,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "a5be81d5-d159-496c-937f-2898dfb9c184",
+              "pressure": 120945,
+              "flow_rate": 0,
+              "temperature": 293.15,
+              "density": 1000,
+              "viscosity": 0.0010017487594089526,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "a12c545c-f3ef-4e2f-971a-f5fd45b1f6b5",
+              "pressure": 120945,
+              "flow_rate": 0.00041705446895630373,
+              "temperature": 293.15,
+              "density": 1000,
+              "viscosity": 0.0010017487594089526,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "width": 60,
+      "height": 136
+    },
+    {
+      "id": "rc-pump",
+      "type": "pump",
+      "position": {
+        "x": 150,
+        "y": 230
+      },
+      "data": {
+        "label": "Supply Pump",
+        "A": 80,
+        "B": 0,
+        "C": -20000,
+        "rotation": 0,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "eeafbf1a-58e2-492b-b4fb-c42dfb02b493",
+              "pressure": 120942.33756417729,
+              "flow_rate": 0.00041705446895630373,
+              "temperature": 293.15,
+              "density": 1000,
+              "viscosity": 0.0010017487594089526,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "eb7ee820-c6e2-4a5a-ba24-3f4f1ec23ec7",
+              "pressure": 905708.2116289963,
+              "flow_rate": 0.00041705446895630373,
+              "temperature": 293.15,
+              "density": 1000,
+              "viscosity": 0.0010017487594089526,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "width": 60,
+      "height": 96
+    },
+    {
+      "id": "rc-valve",
+      "type": "remote_control_valve",
+      "position": {
+        "x": 300,
+        "y": 229.2421417167448
+      },
+      "data": {
+        "label": "Remote CV",
+        "max_cv": 5,
+        "set_pressure": 300000,
+        "rotation": 0,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "f890cf6c-9b97-4972-9108-ba4306e8fd07",
+              "pressure": 905692.8911181635,
+              "flow_rate": 0.00041705446895630373,
+              "temperature": 293.15,
+              "density": 1000,
+              "viscosity": 0.0010017487594089526,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "4f134091-8088-494c-b71f-26bfa07bf944",
+              "pressure": 301256.34054223215,
+              "flow_rate": 0.00041705446895630373,
+              "temperature": 293.15,
+              "density": 1000,
+              "viscosity": 0.0010017487594089526,
+              "connected_to_port_id": null
+            }
+          ],
+          "opening_pct": 14.11224080731525,
+          "sensed_pressure": 205942.82784246528
+        },
+        "opening": 14.11224080731525
+      },
+      "width": 60,
+      "height": 105,
+      "selected": false,
+      "dragging": false,
+      "positionAbsolute": {
+        "x": 300,
+        "y": 229.2421417167448
+      }
+    },
+    {
+      "id": "rc-orifice",
+      "type": "orifice",
+      "position": {
+        "x": 434.22384006149434,
+        "y": 217.11640918466162
+      },
+      "data": {
+        "label": "Line Resistance",
+        "pipe_diameter": 0.1,
+        "orifice_diameter": 0.008,
+        "sensing": {
+          "outlet-0": false,
+          "inlet-0": false
+        },
+        "rotation": 0,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "40ad2f6c-0fea-47be-aeb3-87c79352d8bf",
+              "pressure": 301225.69952056673,
+              "flow_rate": 0.00041705446895630373,
+              "temperature": 293.15,
+              "density": 1000,
+              "viscosity": 0.0010017487594089526,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "a0700b2b-438c-4e8e-b12b-4208ea37adb4",
+              "pressure": 206229.300039238,
+              "flow_rate": 0.00041705446895630373,
+              "temperature": 293.15,
+              "density": 1000,
+              "viscosity": 0.0010017487594089526,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "width": 60,
+      "height": 86,
+      "selected": false,
+      "dragging": false,
+      "positionAbsolute": {
+        "x": 434.22384006149434,
+        "y": 217.11640918466162
+      }
+    },
+    {
+      "id": "rc-tank-sink",
+      "type": "tank",
+      "position": {
+        "x": 700,
+        "y": 199.28769805728362
+      },
+      "data": {
+        "label": "Sink Tank",
+        "level": 1,
+        "elevation": 0,
+        "temperature": 293.15,
+        "rotation": 0,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "3abf55bc-76e5-4d40-add0-033bd27bed9a",
+              "pressure": 111135,
+              "flow_rate": 0.00041705446895630373,
+              "temperature": 293.15,
+              "density": 1000,
+              "viscosity": 0.0010017487594089526,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "6f64f7dd-8359-4e9b-a224-dd681888bee1",
+              "pressure": 111135,
+              "flow_rate": 0,
+              "temperature": 293.15,
+              "density": 1000,
+              "viscosity": 0.0010017487594089526,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "width": 60,
+      "height": 136,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 700,
+        "y": 199.28769805728362
+      },
+      "dragging": false
+    },
+    {
+      "id": "node_97d18273",
+      "type": "orifice",
+      "position": {
+        "x": 585.8233024996388,
+        "y": 211.05441735051562
+      },
+      "data": {
+        "label": "ORIFICE_656",
+        "rotation": 0,
+        "pipe_diameter": 0.1,
+        "orifice_diameter": 0.00801,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "28a5388d-cc81-420c-8404-9c18660e42b1",
+              "pressure": 205942.82784246528,
+              "flow_rate": 0.00041705446895630373,
+              "temperature": 293.15,
+              "density": 1000,
+              "viscosity": 0.0010017487594089526,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "52244013-7456-42a8-aaa5-9c59f5c10534",
+              "pressure": 111421.47219677275,
+              "flow_rate": 0.00041705446895630373,
+              "temperature": 293.15,
+              "density": 1000,
+              "viscosity": 0.0010017487594089526,
+              "connected_to_port_id": null
+            }
+          ]
+        },
+        "sensing": {
+          "inlet-0": true
+        }
+      },
+      "width": 57,
+      "height": 86,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 585.8233024996388,
+        "y": 211.05441735051562
+      },
+      "dragging": false
+    }
+  ],
+  "edges": [
+    {
+      "id": "rc-p1",
+      "source": "rc-tank-source",
+      "sourceHandle": "outlet-0",
+      "target": "rc-pump",
+      "targetHandle": "inlet-0",
+      "animated": true,
+      "data": {
+        "label": "Suction",
+        "length": 5,
+        "diameter": 0.1,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "f32096a9-2551-429a-94de-702614b9c2e6",
+              "pressure": 120945,
+              "flow_rate": 0.00041705446895630373,
+              "temperature": 293.15,
+              "density": 1000,
+              "viscosity": 0.0010017487594089526,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "16d9e125-60a3-424c-ba43-98c36baddba0",
+              "pressure": 120942.33756417729,
+              "flow_rate": 0.00041705446895630373,
+              "temperature": 293.15,
+              "density": 1000,
+              "viscosity": 0.0010017487594089526,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "label": "Suction",
+      "style": {}
+    },
+    {
+      "id": "rc-p2",
+      "source": "rc-pump",
+      "sourceHandle": "outlet-0",
+      "target": "rc-valve",
+      "targetHandle": "inlet-0",
+      "animated": true,
+      "data": {
+        "label": "Discharge",
+        "length": 10,
+        "diameter": 0.08,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "969a70f3-f09c-418c-ac08-42fd9c421590",
+              "pressure": 905708.2116289963,
+              "flow_rate": 0.00041705446895630373,
+              "temperature": 293.15,
+              "density": 1000,
+              "viscosity": 0.0010017487594089526,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "c4f07838-e810-4190-a54f-6ab96e663764",
+              "pressure": 905692.8911181635,
+              "flow_rate": 0.00041705446895630373,
+              "temperature": 293.15,
+              "density": 1000,
+              "viscosity": 0.0010017487594089526,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "label": "Discharge",
+      "style": {}
+    },
+    {
+      "id": "rc-p3",
+      "source": "rc-valve",
+      "sourceHandle": "outlet-0",
+      "target": "rc-orifice",
+      "targetHandle": "inlet-0",
+      "animated": true,
+      "data": {
+        "label": "Main Line",
+        "length": 20,
+        "diameter": 0.08,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "010ce077-9079-4579-9f86-2f37f71cc685",
+              "pressure": 301256.34054223215,
+              "flow_rate": 0.00041705446895630373,
+              "temperature": 293.15,
+              "density": 1000,
+              "viscosity": 0.0010017487594089526,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "df51c062-d620-42c0-b583-44046be6e05b",
+              "pressure": 301225.69952056673,
+              "flow_rate": 0.00041705446895630373,
+              "temperature": 293.15,
+              "density": 1000,
+              "viscosity": 0.0010017487594089526,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "label": "Main Line",
+      "style": {}
+    },
+    {
+      "source": "rc-orifice",
+      "sourceHandle": "outlet-0",
+      "target": "node_97d18273",
+      "targetHandle": "inlet-0",
+      "id": "Pipe 100",
+      "label": "Pipe 100",
+      "animated": true,
+      "style": {},
+      "data": {
+        "label": "Pipe 100",
+        "type": "hydraulic",
+        "length": 25,
+        "diameter": 0.05248,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "0a7ffbe5-87a5-45c5-846b-a2a060b102d8",
+              "pressure": 206229.300039238,
+              "flow_rate": 0.00041705446895630373,
+              "temperature": 293.15,
+              "density": 1000,
+              "viscosity": 0.0010017487594089526,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "8fbed15a-c237-4871-a317-314b1cba1867",
+              "pressure": 205942.82784246528,
+              "flow_rate": 0.00041705446895630373,
+              "temperature": 293.15,
+              "density": 1000,
+              "viscosity": 0.0010017487594089526,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "source": "node_97d18273",
+      "sourceHandle": "outlet-0",
+      "target": "rc-tank-sink",
+      "targetHandle": "inlet-0",
+      "id": "Pipe 102",
+      "label": "Pipe 102",
+      "animated": true,
+      "style": {},
+      "data": {
+        "label": "Pipe 102",
+        "type": "hydraulic",
+        "length": 25,
+        "diameter": 0.05248,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "6b9de91a-71f4-4792-95da-c4a4099c52c7",
+              "pressure": 111421.47219677275,
+              "flow_rate": 0.00041705446895630373,
+              "temperature": 293.15,
+              "density": 1000,
+              "viscosity": 0.0010017487594089526,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "0b1de3fd-fd28-434f-b297-12be0708bf9d",
+              "pressure": 111135,
+              "flow_rate": 0.00041705446895630373,
+              "temperature": 293.15,
+              "density": 1000,
+              "viscosity": 0.0010017487594089526,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "source": "node_97d18273",
+      "sourceHandle": "signal-inlet-0",
+      "target": "rc-valve",
+      "targetHandle": "signal-in",
+      "id": "Signal 108",
+      "label": "Signal 108",
+      "animated": true,
+      "style": {},
+      "data": {
+        "label": "Signal 108",
+        "type": "signal",
+        "length": 25,
+        "diameter": 0.05248
+      },
+      "selected": false
+    }
+  ],
+  "globalSettings": {
+    "fluid_type": "water",
+    "ambient_temperature": 293.15,
+    "atmospheric_pressure": 101325,
+    "global_roughness": 0.000045,
+    "property_iterations": 5,
+    "tolerance": 0.000001,
+    "max_iterations": 1000
+  }
+}

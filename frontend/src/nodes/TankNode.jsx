@@ -1,6 +1,7 @@
 import { Handle, Position, useUpdateNodeInternals } from 'reactflow';
 import { useEffect } from 'react';
 import { RotateButton, getRotatedPosition } from '../utils/rotation_logic.jsx';
+import { SensingPin } from '../utils/SensingPin.jsx';
 
 /**
  * Vertical Tank (ISA / PFD style)
@@ -8,12 +9,13 @@ import { RotateButton, getRotatedPosition } from '../utils/rotation_logic.jsx';
 export default function TankNode({ id, data, selected }) {
   const updateNodeInternals = useUpdateNodeInternals();
   const rotation = data.rotation || 0;
+  const sensing = data.sensing || {};
   const level = data.level || 0;
   const temp = (data.telemetry?.outlets?.[0]?.temperature || data.temperature || 293.15) - 273.15;
 
   useEffect(() => {
     updateNodeInternals(id);
-  }, [id, rotation, updateNodeInternals]);
+  }, [id, rotation, sensing, updateNodeInternals]);
 
   return (
     <div style={{ position: 'relative' }}>
@@ -56,6 +58,8 @@ export default function TankNode({ id, data, selected }) {
             background: '#3b82f6', width: '8px', height: '8px' 
           }} 
         />
+        {sensing['inlet-0'] && <SensingPin portId="inlet-0" offset={{ x: -20, y: 0 }} />}
+
         <Handle 
           type="source" 
           position={getRotatedPosition(Position.Right, rotation)} 
@@ -67,6 +71,7 @@ export default function TankNode({ id, data, selected }) {
             background: '#ef4444', width: '8px', height: '8px' 
           }} 
         />
+        {sensing['outlet-0'] && <SensingPin portId="outlet-0" offset={{ x: 20, y: 30 }} />}
       </div>
 
       <div style={{ textAlign: 'center', marginTop: '5px' }}>

@@ -2,6 +2,7 @@ import { Handle, Position, useUpdateNodeInternals } from 'reactflow';
 import { useEffect } from 'react';
 import { paToBar } from '../utils/converters';
 import { RotateButton, getRotatedPosition } from '../utils/rotation_logic.jsx';
+import { SensingPin } from '../utils/SensingPin.jsx';
 
 /**
  * Strainer (ISA style)
@@ -10,13 +11,14 @@ export default function FilterNode({ id, data, selected }) {
   const updateNodeInternals = useUpdateNodeInternals();
   const telemetry = data.telemetry;
   const rotation = data.rotation || 0;
+  const sensing = data.sensing || {};
   const pIn = telemetry?.inlets?.[0]?.pressure || 0;
   const pOut = telemetry?.outlets?.[0]?.pressure || 0;
   const dP = pIn - pOut;
 
   useEffect(() => {
     updateNodeInternals(id);
-  }, [id, rotation, updateNodeInternals]);
+  }, [id, rotation, sensing, updateNodeInternals]);
 
   return (
     <div style={{ position: 'relative' }}>
@@ -53,6 +55,8 @@ export default function FilterNode({ id, data, selected }) {
             background: '#3b82f6', width: '8px', height: '8px' 
           }} 
         />
+        {sensing['inlet-0'] && <SensingPin portId="inlet-0" offset={{ x: -25, y: 0 }} />}
+
         <Handle 
           type="source" 
           position={getRotatedPosition(Position.Right, rotation)} 
@@ -64,6 +68,7 @@ export default function FilterNode({ id, data, selected }) {
             background: '#ef4444', width: '8px', height: '8px' 
           }} 
         />
+        {sensing['outlet-0'] && <SensingPin portId="outlet-0" offset={{ x: 25, y: 0 }} />}
       </div>
 
       <div style={{ textAlign: 'center', marginTop: '5px' }}>

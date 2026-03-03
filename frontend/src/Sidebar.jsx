@@ -5,6 +5,7 @@ const equipmentTypes = [
   { type: 'tank', label: 'Tank', description: 'Fluid Reservoir (Atm Pressure)' },
   { type: 'pump', label: 'Pump', description: 'Centrifugal Pump (A=80, C=-2000)' },
   { type: 'linear_control_valve', label: 'Linear Control Valve', description: 'Control Valve (Linear Cv Trim)' },
+  { type: 'remote_control_valve', label: 'Remote Control Valve', description: 'RCV (Senses via Yellow Handle)' },
   { type: 'linear_regulator', label: 'Pressure Regulator', description: 'Maintains set P (Up/Downstream)' },
   { type: 'orifice', label: 'Orifice', description: 'Fixed Resistance Orifice' },
   { type: 'filter', label: 'Filter', description: 'Lube Oil Filter (Duplex)' },
