@@ -1,11 +1,12 @@
 from simulation.equipment.tank import Tank
 from simulation.equipment.pipe import Pipe
 from simulation.equipment.pump import Pump
-from simulation.schemas import HydraulicNetwork
+from simulation.schemas import HydraulicNetwork, GlobalSettings
 from simulation.solver import NetworkSolver
 
 def test_viscosity_impact():
     print("\n--- Phase 9: Temperature/Viscosity Impact Test ---")
+    gs = GlobalSettings()
     
     # We'll use ISO VG 46 Oil
     # At 20°C (293.15 K), viscosity is high.
@@ -26,11 +27,15 @@ def test_viscosity_impact():
             "pipe1": pipe,
             "t2": tank_sink
         }
+        for node in nodes.values():
+            node.global_settings = gs
         
         edges = [
             {"source": "t1", "target": "p1", "pipe": Pipe("p0", 1, 0.05)},
             {"source": "p1", "target": "t2", "pipe": pipe}
         ]
+        for edge in edges:
+            edge['pipe'].global_settings = gs
         
         network = HydraulicNetwork(nodes=nodes, edges=edges)
         solver = NetworkSolver(network)

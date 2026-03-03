@@ -20,7 +20,7 @@ class Pipe(HydraulicNode):
     def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float) -> float:
         """
         Calculates pressure drop using the Darcy-Weisbach equation.
-        Friction factor is calculated based on Reynolds number.
+        Friction factor is calculated based on Reynolds number and roughness.
         """
         if self.diameter <= 0:
             raise ValueError("Pipe diameter must be strictly positive.")
@@ -41,8 +41,13 @@ class Pipe(HydraulicNode):
                 # Laminar flow
                 f = 64 / re
             else:
-                # Turbulent flow (Simplified Haaland equation for smooth pipes)
-                f = (1.8 * math.log10(re / 6.9))**-2
+                # Turbulent flow
+                roughness = 0.000045 # Default
+                if self.global_settings:
+                    roughness = getattr(self.global_settings, 'global_roughness', 0.000045)
+                
+                # Swamee-Jain equation (Approximate Colebrook-White)
+                f = 0.25 / (math.log10(roughness / (3.7 * self.diameter) + 5.74 / re**0.9))**2
         else:
             f = 0
         

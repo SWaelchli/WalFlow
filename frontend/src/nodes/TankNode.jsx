@@ -1,40 +1,79 @@
-import { Handle, Position } from 'reactflow';
-import { paToBar, kToC } from '../utils/converters';
+import { Handle, Position, useUpdateNodeInternals } from 'reactflow';
+import { useEffect } from 'react';
+import { RotateButton, getRotatedPosition } from '../utils/rotation_logic.jsx';
 
-export default function TankNode({ data }) {
-  const telemetry = data.telemetry;
-  const p = telemetry?.outlets?.[0]?.pressure || 0;
-  const t = telemetry?.outlets?.[0]?.temperature || 293.15;
+/**
+ * Vertical Tank (ISA / PFD style)
+ */
+export default function TankNode({ id, data, selected }) {
+  const updateNodeInternals = useUpdateNodeInternals();
+  const rotation = data.rotation || 0;
+  const level = data.level || 0;
+  const temp = (data.telemetry?.outlets?.[0]?.temperature || data.temperature || 293.15) - 273.15;
+
+  useEffect(() => {
+    updateNodeInternals(id);
+  }, [id, rotation, updateNodeInternals]);
 
   return (
-    <div style={{
-      width: 100, height: 130, background: '#e0f2fe',
-      border: '2px solid #0284c7', borderRadius: '4px',
-      display: 'flex', flexDirection: 'column', overflow: 'hidden',
-      boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-    }}>
-      {/* Tank Header/Label */}
+    <div style={{ position: 'relative' }}>
+      {selected && (
+        <div style={{
+          position: 'absolute',
+          top: -5, left: -5, right: -5, bottom: -5,
+          border: '2px solid #3b82f6',
+          borderRadius: '6px',
+          boxShadow: '0 0 10px rgba(59, 130, 246, 0.3)',
+          pointerEvents: 'none'
+        }} />
+      )}
+
+      <RotateButton visible={selected} onClick={() => data.onRotate(id)} />
+
+      {/* Symbol Container: 60x100 */}
       <div style={{ 
-        background: '#0284c7', color: 'white', textAlign: 'center', 
-        padding: '4px', fontSize: '11px', fontWeight: 'bold' 
+        width: 60, height: 100, background: 'transparent', position: 'relative',
+        transform: `rotate(${rotation}deg)`
       }}>
-        {data.label}
+        <svg width="60" height="100" viewBox="0 0 60 100">
+          <path d="M 10 20 L 10 80 Q 10 95 30 95 Q 50 95 50 80 L 50 20 Q 50 5 30 5 Q 10 5 10 20 Z" fill="white" stroke="#334155" strokeWidth="2.5" />
+          <rect x="10" y={80 - Math.min(60, (level/5)*60)} width="40" height={Math.min(60, (level/5)*60)} fill="#3b82f633" />
+        </svg>
+
+        {/* 
+          Pixel-Perfect Handles
+          Inlet at y=50 (Center of tank vertically)
+          Outlet at y=80 (Bottom discharge port)
+        */}
+        <Handle 
+          type="target" 
+          position={getRotatedPosition(Position.Left, rotation)} 
+          id="inlet-0" 
+          style={{ 
+            top: '50%', left: '10px', 
+            marginTop: '-4px', marginLeft: '-4px',
+            right: 'auto', bottom: 'auto', transform: 'none',
+            background: '#3b82f6', width: '8px', height: '8px' 
+          }} 
+        />
+        <Handle 
+          type="source" 
+          position={getRotatedPosition(Position.Right, rotation)} 
+          id="outlet-0" 
+          style={{ 
+            top: '80%', left: '50px', 
+            marginTop: '-4px', marginLeft: '-4px',
+            right: 'auto', bottom: 'auto', transform: 'none',
+            background: '#ef4444', width: '8px', height: '8px' 
+          }} 
+        />
       </div>
-      
-      {/* Tank Body (Level and Telemetry) */}
-      <div style={{ 
-        flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', 
-        justifyContent: 'center', fontSize: '10px', color: '#334155', gap: '4px'
-      }}>
-        <div style={{ fontWeight: 'bold' }}>{data.level}m</div>
-        <div style={{ borderTop: '1px solid #bae6fd', width: '80%', margin: '2px 0' }} />
-        <div>{paToBar(p)} bar</div>
-        <div style={{ color: '#0369a1' }}>{kToC(t)}°C</div>
+
+      <div style={{ textAlign: 'center', marginTop: '5px' }}>
+        <div style={{ fontSize: '9px', color: '#334155', fontWeight: 'bold' }}>{data.label || 'TANK'}</div>
+        <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#0369a1' }}>{level.toFixed(2)} m</div>
+        <div style={{ fontSize: '9px', color: '#64748b' }}>{temp.toFixed(1)} °C</div>
       </div>
-      
-      {/* The Physical Ports */}
-      <Handle type="target" position={Position.Left} id="inlet-0" style={{ background: '#0284c7', width: '8px', height: '8px' }} />
-      <Handle type="source" position={Position.Right} id="outlet-0" style={{ background: '#0284c7', width: '8px', height: '8px' }} />
     </div>
   );
 }

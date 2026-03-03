@@ -1,29 +1,75 @@
-import { Handle, Position } from 'reactflow';
+import { Handle, Position, useUpdateNodeInternals } from 'reactflow';
+import { useEffect } from 'react';
+import { paToBar } from '../utils/converters';
+import { RotateButton, getRotatedPosition } from '../utils/rotation_logic.jsx';
 
-export default function FilterNode({ data }) {
+/**
+ * Strainer (ISA style)
+ */
+export default function FilterNode({ id, data, selected }) {
+  const updateNodeInternals = useUpdateNodeInternals();
+  const telemetry = data.telemetry;
+  const rotation = data.rotation || 0;
+  const pIn = telemetry?.inlets?.[0]?.pressure || 0;
+  const pOut = telemetry?.outlets?.[0]?.pressure || 0;
+  const dP = pIn - pOut;
+
+  useEffect(() => {
+    updateNodeInternals(id);
+  }, [id, rotation, updateNodeInternals]);
+
   return (
-    <div style={{
-      width: 60, height: 80, background: '#f8fafc',
-      border: '2px solid #64748b', borderRadius: '4px',
-      display: 'flex', flexDirection: 'column', alignItems: 'center',
-      justifyContent: 'center', position: 'relative',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-    }}>
-      {/* Visual representation of a filter element (the internal line) */}
-      <div style={{
-        position: 'absolute', top: '50%', left: '10%', right: '10%',
-        height: '2px', background: '#94a3b8', borderStyle: 'dashed'
-      }} />
-      
-      <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#475569', zIndex: 1 }}>
-        FILTER
+    <div style={{ position: 'relative' }}>
+      {selected && (
+        <div style={{
+          position: 'absolute',
+          top: -5, left: -5, right: -5, bottom: -5,
+          border: '2px solid #3b82f6',
+          borderRadius: '6px',
+          boxShadow: '0 0 10px rgba(59, 130, 246, 0.3)',
+          pointerEvents: 'none'
+        }} />
+      )}
+
+      <RotateButton visible={selected} onClick={() => data.onRotate(id)} />
+
+      <div style={{ 
+        width: 60, height: 40, background: 'transparent', position: 'relative',
+        transform: `rotate(${rotation}deg)`
+      }}>
+        <svg width="60" height="40" viewBox="0 0 60 40">
+          <rect x="5" y="5" width="50" height="30" fill="white" stroke="#334155" strokeWidth="2.5" />
+          <line x1="5" y1="35" x2="55" y2="5" stroke="#334155" strokeWidth="2.5" />
+        </svg>
+
+        <Handle 
+          type="target" 
+          position={getRotatedPosition(Position.Left, rotation)} 
+          id="inlet-0" 
+          style={{ 
+            top: '20px', left: '5px', 
+            marginTop: '-4px', marginLeft: '-4px',
+            right: 'auto', bottom: 'auto', transform: 'none',
+            background: '#3b82f6', width: '8px', height: '8px' 
+          }} 
+        />
+        <Handle 
+          type="source" 
+          position={getRotatedPosition(Position.Right, rotation)} 
+          id="outlet-0" 
+          style={{ 
+            top: '20px', left: '55px', 
+            marginTop: '-4px', marginLeft: '-4px',
+            right: 'auto', bottom: 'auto', transform: 'none',
+            background: '#ef4444', width: '8px', height: '8px' 
+          }} 
+        />
       </div>
-      
-      {/* Inlet */}
-      <Handle type="target" position={Position.Left} id="inlet-0" style={{ background: '#64748b' }} />
-      
-      {/* Outlet */}
-      <Handle type="source" position={Position.Right} id="outlet-0" style={{ background: '#64748b' }} />
+
+      <div style={{ textAlign: 'center', marginTop: '5px' }}>
+        <div style={{ fontSize: '9px', color: '#334155', fontWeight: 'bold' }}>{data.label || 'STRAINER'}</div>
+        <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#ef4444' }}>-{paToBar(dP)} bar</div>
+      </div>
     </div>
   );
 }

@@ -1,43 +1,77 @@
-import { Handle, Position } from 'reactflow';
+import { Handle, Position, useUpdateNodeInternals } from 'reactflow';
+import { useEffect } from 'react';
 import { paToBar, m3sToLmin } from '../utils/converters';
+import { RotateButton, getRotatedPosition } from '../utils/rotation_logic.jsx';
 
-export default function PumpNode({ data }) {
-  const telemetry = data.telemetry;
-  const pIn = telemetry?.inlets?.[0]?.pressure || 0;
-  const pOut = telemetry?.outlets?.[0]?.pressure || 0;
-  const q = telemetry?.outlets?.[0]?.flow_rate || 0;
+/**
+ * Centrifugal Pump (ISA / PFD style)
+ */
+export default function PumpNode({ id, data, selected }) {
+  const updateNodeInternals = useUpdateNodeInternals();
+  const rotation = data.rotation || 0;
+  const pIn = data.telemetry?.inlets?.[0]?.pressure || 0;
+  const pOut = data.telemetry?.outlets?.[0]?.pressure || 0;
+  const q = data.telemetry?.outlets?.[0]?.flow_rate || 0;
   const dP = pOut - pIn;
+
+  useEffect(() => {
+    updateNodeInternals(id);
+  }, [id, rotation, updateNodeInternals]);
 
   return (
     <div style={{ position: 'relative' }}>
-      {/* Telemetry Display Above the Node */}
-      <div style={{
-        position: 'absolute', top: -45, left: '50%', transform: 'translateX(-50%)',
-        textAlign: 'center', width: '80px', pointerEvents: 'none'
+      {selected && (
+        <div style={{
+          position: 'absolute',
+          top: -5, left: -5, right: -5, bottom: -5,
+          border: '2px solid #3b82f6',
+          borderRadius: '6px',
+          boxShadow: '0 0 10px rgba(59, 130, 246, 0.3)',
+          pointerEvents: 'none'
+        }} />
+      )}
+
+      <RotateButton visible={selected} onClick={() => data.onRotate(id)} />
+
+      <div style={{ 
+        width: 60, height: 60, background: 'transparent', position: 'relative',
+        transform: `rotate(${rotation}deg)`
       }}>
-        <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#0369a1' }}>
-          +{paToBar(dP)} bar
-        </div>
-        <div style={{ fontSize: '9px', color: '#64748b' }}>
-          {m3sToLmin(q)} L/min
-        </div>
+        <svg width="60" height="60" viewBox="0 0 60 60">
+          <circle cx="30" cy="35" r="20" fill="white" stroke="#334155" strokeWidth="2.5" />
+          <line x1="30" y1="15" x2="30" y2="55" stroke="#334155" strokeWidth="1" strokeDasharray="2,2" />
+          <line x1="10" y1="35" x2="50" y2="35" stroke="#334155" strokeWidth="1" strokeDasharray="2,2" />
+          <line x1="30" y1="15" x2="60" y2="15" stroke="#334155" strokeWidth="2.5" />
+        </svg>
+
+        <Handle 
+          type="target" 
+          position={getRotatedPosition(Position.Left, rotation)} 
+          id="inlet-0" 
+          style={{ 
+            top: '35px', left: '10px', 
+            marginTop: '-4px', marginLeft: '-4px',
+            right: 'auto', bottom: 'auto', transform: 'none',
+            background: '#3b82f6', width: '8px', height: '8px' 
+          }} 
+        />
+        <Handle 
+          type="source" 
+          position={getRotatedPosition(Position.Right, rotation)} 
+          id="outlet-0" 
+          style={{ 
+            top: '15px', left: '60px', 
+            marginTop: '-4px', marginLeft: '-4px',
+            right: 'auto', bottom: 'auto', transform: 'none',
+            background: '#ef4444', width: '8px', height: '8px' 
+          }} 
+        />
       </div>
 
-      {/* A classic circular representation for a centrifugal pump */}
-      <div style={{
-        width: 70, height: 70, borderRadius: '50%', background: '#fff',
-        border: '3px solid #334155', display: 'flex', alignItems: 'center',
-        justifyContent: 'center', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-      }}>
-        <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#334155' }}>
-          PUMP
-        </div>
-        
-        {/* Inlet (Suction) */}
-        <Handle type="target" position={Position.Left} id="inlet-0" style={{ background: '#334155', width: '10px', height: '10px' }} />
-        
-        {/* Outlet (Discharge) */}
-        <Handle type="source" position={Position.Right} id="outlet-0" style={{ background: '#334155', width: '10px', height: '10px' }} />
+      <div style={{ textAlign: 'center', marginTop: '5px' }}>
+        <div style={{ fontSize: '9px', color: '#334155', fontWeight: 'bold' }}>{data.label || 'PUMP'}</div>
+        <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#0369a1' }}>+{paToBar(dP)} bar</div>
+        <div style={{ fontSize: '9px', color: '#64748b' }}>{m3sToLmin(q)} L/min</div>
       </div>
     </div>
   );

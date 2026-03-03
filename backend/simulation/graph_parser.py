@@ -2,7 +2,8 @@ from typing import List, Dict, Any
 from simulation.schemas import ReactFlowGraph, ReactFlowNode, ReactFlowEdge, HydraulicNetwork
 from simulation.equipment.tank import Tank
 from simulation.equipment.pump import Pump
-from simulation.equipment.valve import Valve
+from simulation.equipment.linear_control_valve import LinearControlValve
+from simulation.equipment.linear_regulator import LinearRegulator
 from simulation.equipment.pipe import Pipe
 from simulation.equipment.orifice import Orifice
 from simulation.equipment.splitter import Splitter
@@ -20,7 +21,7 @@ class GraphParser:
         # 1. Instantiate Equipment Nodes
         nodes_dict: Dict[str, HydraulicNode] = {}
         for node_data in graph.nodes:
-            node = GraphParser.create_node(node_data)
+            node = GraphParser.create_node(node_data, graph.global_settings)
             nodes_dict[node_data.id] = node
 
         # 2. Map Connections (Edges)
@@ -37,6 +38,7 @@ class GraphParser:
                 diameter=float(edge_data.get('diameter', 0.1)),
                 friction_factor=float(edge_data.get('friction_factor', 0.02))
             )
+            pipe.global_settings = graph.global_settings
             
             # Connect the source equipment to the pipe inlet
             source_node = nodes_dict.get(edge.source)
@@ -44,6 +46,7 @@ class GraphParser:
             
             if source_node and target_node:
                 parsed_edges.append({
+                    "id": edge.id,
                     "source": edge.source,
                     "target": edge.target,
                     "source_port": edge.sourceHandle,
@@ -54,54 +57,75 @@ class GraphParser:
         return HydraulicNetwork(nodes=nodes_dict, edges=parsed_edges)
 
     @staticmethod
-    def create_node(node_data: ReactFlowNode) -> HydraulicNode:
+    def create_node(node_data: ReactFlowNode, global_settings: Any = None) -> HydraulicNode:
         t = node_data.type
         d = node_data.data
         name = d.get('label', f"{t}_{node_data.id}")
         
+        node = None
         if t == 'tank':
-            return Tank(
+            # Priority: Node data > Global settings > Default
+            fluid_type = d.get('fluid_type')
+            if not fluid_type and global_settings:
+                fluid_type = getattr(global_settings, 'fluid_type', 'water')
+            if not fluid_type:
+                fluid_type = 'water'
+
+            node = Tank(
                 name=name,
                 elevation=float(d.get('elevation', 0.0)),
                 fluid_level=float(d.get('level', 1.0)),
                 temperature=float(d.get('temperature', 293.15)),
-                fluid_type=d.get('fluid_type', 'water')
+                fluid_type=fluid_type
             )
         elif t == 'pump':
-            return Pump(
+            node = Pump(
                 name=name,
                 A=float(d.get('A', 80.0)),
                 B=float(d.get('B', 0.0)),
                 C=float(d.get('C', -2000.0))
             )
-        elif t == 'valve':
-            return Valve(
+        elif t == 'linear_control_valve':
+            node = LinearControlValve(
                 name=name,
                 max_cv=float(d.get('max_cv', 0.05)),
                 opening_pct=float(d.get('opening', 50.0))
             )
+        elif t == 'linear_regulator':
+            node = LinearRegulator(
+                name=name,
+                max_cv=float(d.get('max_cv', 0.05)),
+                set_pressure=float(d.get('set_pressure', 500000.0)),
+                backpressure=bool(d.get('backpressure', False))
+            )
         elif t == 'orifice':
-            return Orifice(
+            node = Orifice(
                 name=name,
                 pipe_diameter=float(d.get('pipe_diameter', 0.1)),
                 orifice_diameter=float(d.get('orifice_diameter', 0.07))
             )
         elif t == 'heat_exchanger':
-            return HeatExchanger(
+            node = HeatExchanger(
                 name=name,
-                heat_duty=float(d.get('heat_duty', 0.0)),
-                pressure_drop_factor=float(d.get('k_factor', 0.01))
+                heat_duty=float(d.get('heat_duty_kw', 0.0)) * 1000.0,
+                # Use a default or look for k_factor in data
+                pressure_drop_factor=float(d.get('k_factor', 10.0))
             )
         elif t == 'filter':
-            return Filter(
+            node = Filter(
                 name=name,
-                resistance_clean=float(d.get('resistance_clean', 1e6)),
+                resistance_clean=float(d.get('resistance', 1000.0)),
                 clogging_factor=float(d.get('clogging_factor', 1.0))
             )
         elif t == 'splitter':
-            # Count how many outlets we need (or default to 2)
-            return Splitter(name=name, num_outlets=2)
+            # 1 inlet, 2 outlets
+            node = Splitter(name=name, num_outlets=2)
         elif t == 'mixer':
-            return Mixer(name=name, num_inlets=2)
+            # 2 inlets, 1 outlet
+            node = Mixer(name=name, num_inlets=2)
         else:
-            return HydraulicNode(name=name, node_type=t)
+            node = HydraulicNode(name=name, node_type=t)
+        
+        if node:
+            node.global_settings = global_settings
+        return node

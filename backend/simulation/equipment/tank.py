@@ -25,20 +25,23 @@ class Tank(HydraulicNode):
         Math: P = P_atm + (density * gravity * total_height)
         """
         gravity = 9.81
-        
+        atm_p = 101325.0
+        if self.global_settings:
+            atm_p = getattr(self.global_settings, 'atmospheric_pressure', 101325.0)
+
         # Calculate properties based on tank temperature
         density = FluidProperties.get_density(self.fluid_type, self.temperature)
         viscosity = FluidProperties.get_viscosity(self.fluid_type, self.temperature)
-        
+
         # Apply properties and pressure to ALL ports
         # (A tank is a large reservoir, so all connections share the same state)
         for port in self.inlets + self.outlets:
             port.temperature = self.temperature
             port.density = density
             port.viscosity = viscosity
-            
+
             # Calculate the total hydraulic head (elevation + fluid level)
             total_head = self.elevation + self.fluid_level
-            port.pressure = 101325.0 + (density * gravity * total_head)
-        
+            port.pressure = atm_p + (density * gravity * total_head)
+
         return self.outlets[0].pressure
