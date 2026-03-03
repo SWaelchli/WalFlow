@@ -1,5 +1,6 @@
 import React from 'react';
 import PumpDetails from './details/PumpDetails';
+import RegulatorDetails from './details/RegulatorDetails';
 import GenericDetails from './details/GenericDetails';
 
 export default function DetailPanel({ selectedNode }) {
@@ -11,6 +12,8 @@ export default function DetailPanel({ selectedNode }) {
     switch (type) {
       case 'pump':
         return <PumpDetails node={selectedNode} />;
+      case 'linear_regulator':
+        return <RegulatorDetails node={selectedNode} />;
       default:
         return <GenericDetails node={selectedNode} />;
     }

@@ -32,7 +32,6 @@ import examplePRV from '../Example_PRV.json';
 import exampleBPR from '../Example_BPR.json';
 import exampleBarossa from '../Barossa_FG_LOS.json';
 
-// Performance Fix: Define nodeTypes outside of component
 const nodeTypes = {
   tank: TankNode,
   pump: PumpNode,
@@ -346,45 +345,23 @@ export default function App() {
           setIsSimulating(false);
           
           if (data.telemetry && data.telemetry.nodes) {
-            setNodes((nds) => {
-              let hasChanged = false;
-              const nextNodes = nds.map((node) => {
-                const nodeTele = data.telemetry.nodes[node.id];
-                if (!nodeTele) return node;
-
-                const currentTeleStr = JSON.stringify(node.data.telemetry);
-                const nextTeleStr = JSON.stringify(nodeTele);
-                
-                if (currentTeleStr !== nextTeleStr || nodeTele.opening_pct !== node.data.opening) {
-                  hasChanged = true;
-                  const newData = { ...node.data, telemetry: nodeTele };
-                  if (nodeTele.opening_pct !== undefined) newData.opening = nodeTele.opening_pct;
-                  return { ...node, data: newData };
-                }
-                return node;
-              });
-              return hasChanged ? nextNodes : nds;
-            });
+            setNodes((nds) => nds.map((node) => {
+              const nodeTele = data.telemetry.nodes[node.id];
+              if (!nodeTele) return node;
+              
+              // Direct update to avoid stringify issues with functions
+              const newData = { ...node.data, telemetry: nodeTele };
+              if (nodeTele.opening_pct !== undefined) newData.opening = nodeTele.opening_pct;
+              return { ...node, data: newData };
+            }));
           }
 
           if (data.telemetry && data.telemetry.edges) {
-            setEdges((eds) => {
-              let hasChanged = false;
-              const nextEdges = eds.map((edge) => {
-                const edgeTele = data.telemetry.edges[edge.id];
-                if (!edgeTele) return edge;
-
-                const currentTeleStr = JSON.stringify(edge.data.telemetry);
-                const nextTeleStr = JSON.stringify(edgeTele);
-
-                if (currentTeleStr !== nextTeleStr) {
-                  hasChanged = true;
-                  return { ...edge, data: { ...edge.data, telemetry: edgeTele } };
-                }
-                return edge;
-              });
-              return hasChanged ? nextEdges : eds;
-            });
+            setEdges((eds) => eds.map((edge) => {
+              const edgeTele = data.telemetry.edges[edge.id];
+              if (!edgeTele) return edge;
+              return { ...edge, data: { ...edge.data, telemetry: edgeTele } };
+            }));
           }
         } else if (data.status === 'error') {
           setIsSimulating(false);
@@ -401,6 +378,7 @@ export default function App() {
     };
   }, []);
 
+  // Update backend on change (Debounced)
   useEffect(() => {
     const handler = setTimeout(() => {
       if (isConnected && ws.current && ws.current.readyState === WebSocket.OPEN) {
@@ -417,6 +395,14 @@ export default function App() {
 
     return () => clearTimeout(handler);
   }, [nodes, edges, isConnected, globalSettings]);
+
+  // Sync selectedNode state for DetailPanel
+  useEffect(() => {
+    if (selectedNode) {
+      const liveNode = nodes.find(n => n.id === selectedNode.id);
+      if (liveNode) setSelectedNode(liveNode);
+    }
+  }, [nodes]);
 
   return (
     <div style={{ width: '100%', height: '100vh', display: 'flex', backgroundColor: '#f4f4f5', overflow: 'hidden' }}>
