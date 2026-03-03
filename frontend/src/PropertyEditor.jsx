@@ -196,15 +196,13 @@ export default function PropertyEditor({ node, edge, onUpdate, onUpdateEdge, onD
               <label style={{ fontSize: '11px', color: '#64748b' }}>Max Cv</label>
               <input type="number" style={{ width: '100%', fontSize: '12px' }} value={data.max_cv} onChange={(e) => handleChange('max_cv', e.target.value)} />
             </div>
-            {type === 'linear_regulator' && (
-              <div>
-                <label style={{ fontSize: '11px', color: '#64748b' }}>Regulation Mode</label>
-                <select style={{ width: '100%', fontSize: '12px', padding: '4px' }} value={data.backpressure ? "true" : "false"} onChange={(e) => handleChange('backpressure', e.target.value === "true")}>
-                  <option value="false">Pressure Reducing (Downstream)</option>
-                  <option value="true">Backpressure (Upstream)</option>
-                </select>
-              </div>
-            )}
+            <div>
+              <label style={{ fontSize: '11px', color: '#64748b' }}>Regulation Mode</label>
+              <select style={{ width: '100%', fontSize: '12px', padding: '4px' }} value={data.backpressure ? "true" : "false"} onChange={(e) => handleChange('backpressure', e.target.value === "true")}>
+                <option value="false">{type === 'linear_regulator' ? 'Pressure Reducing (Downstream)' : 'Pressure Reducing (Downstream Remote)'}</option>
+                <option value="true">{type === 'linear_regulator' ? 'Backpressure (Upstream)' : 'Backpressure (Upstream Remote)'}</option>
+              </select>
+            </div>
             <div>
               <label style={{ fontSize: '11px', color: '#64748b' }}>Set Point (bar)</label>
               <input type="number" style={{ width: '100%', fontSize: '12px' }} step="0.1" value={(data.set_pressure / 100000).toFixed(1)} onChange={(e) => handleChange('set_pressure', parseFloat(e.target.value) * 100000)} />

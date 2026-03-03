@@ -31,8 +31,8 @@ import DataList from './DataList';
 import examplePFD from '../Example_PFD.json';
 import examplePRV from '../Example_PRV.json';
 import exampleBPR from '../Example_BPR.json';
-import exampleBarossa from '../Barossa_FG_LOS.json';
 import exampleRemoteControl from '../Example_RemoteControl.json';
+import exampleAPI614 from '../API_614_LOS.json';
 
 const nodeTypes = {
   tank: TankNode,
@@ -454,10 +454,10 @@ export default function App() {
           "Standard PFD": examplePFD,
           "Pressure Reducing (PRV)": examplePRV,
           "Backpressure (BPR)": exampleBPR,
-          "Barossa Oil System": exampleBarossa,
+          "API 614 LOS": exampleAPI614,
           "Remote Control Test": exampleRemoteControl
         }}
-      />
+        />
 
       <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
         <div style={{ flexGrow: 1, position: 'relative' }} ref={reactFlowWrapper}>

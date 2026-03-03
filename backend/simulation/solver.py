@@ -86,7 +86,7 @@ class NetworkSolver:
                         # Fallback to local sensing if no signal
                         sensed = node.outlets[0].pressure
                     node.sensed_pressure = sensed
-                    sensed_at_outlet = True # RCVs usually control downstream pressure
+                    sensed_at_outlet = not node.backpressure # If backpressure=True, sensed_at_outlet=False (Upstream)
                 
                 error_bar = abs(sensed - node.set_pressure) / 100000.0
                 max_error = max(max_error, error_bar)

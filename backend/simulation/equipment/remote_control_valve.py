@@ -6,10 +6,11 @@ class RemoteControlValve(HydraulicNode):
     Its opening_pct is adjusted by the solver to reach the target pressure
     at the connected SensingNode.
     """
-    def __init__(self, name: str, max_cv: float, set_pressure: float = 500000.0):
+    def __init__(self, name: str, max_cv: float, set_pressure: float = 500000.0, backpressure: bool = False):
         super().__init__(name, node_type="remote_control_valve")
         self.max_cv = max_cv
         self.set_pressure = set_pressure
+        self.backpressure = backpressure
         
         # Configuration for remote sensing: {"node_id": str, "port_type": "inlet"|"outlet", "port_idx": int}
         self.remote_sensing_config = None

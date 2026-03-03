@@ -120,7 +120,8 @@ class GraphParser:
             node = RemoteControlValve(
                 name=name,
                 max_cv=float(d.get('max_cv', 0.05)),
-                set_pressure=float(d.get('set_pressure', 500000.0))
+                set_pressure=float(d.get('set_pressure', 500000.0)),
+                backpressure=bool(d.get('backpressure', False))
             )
         elif t == 'linear_regulator':
             node = LinearRegulator(
