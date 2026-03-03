@@ -111,6 +111,8 @@ export default function DataList({ nodes, edges, onUpdateEdge, onUpdateNode, onS
 
   const processedItems = useMemo(() => {
     const filterType = activeTab === 'pipes' ? 'edge' : 'all';
+    
+    // Filter manualOrder to exclude any items that are SIGNAL edges
     let items = manualOrder.map((ref, index) => {
       if (ref.type === 'node') {
         const node = nodes.find(n => n.id === ref.id);
@@ -132,6 +134,10 @@ export default function DataList({ nodes, edges, onUpdateEdge, onUpdateNode, onS
       } else {
         const edge = edges.find(e => e.id === ref.id);
         if (!edge) return null;
+        
+        // EXCLUDE SIGNALS
+        if (edge.data?.type === 'SIGNAL') return null;
+
         const telemetry = edge.data?.telemetry;
         const pStart = telemetry?.inlets?.[0]?.pressure || 0;
         const pEnd = telemetry?.outlets?.[0]?.pressure || 0;

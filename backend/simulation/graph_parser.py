@@ -32,7 +32,8 @@ class GraphParser:
             edge_data = edge.data or {}
             
             # Identify Signal Edges (Yellow Links)
-            if edge_data.get('type') == 'signal':
+            edge_type = str(edge_data.get('type', '')).upper()
+            if edge_type == 'SIGNAL':
                 source_node = nodes_dict.get(edge.source)
                 target_node = nodes_dict.get(edge.target)
                 if isinstance(target_node, RemoteControlValve):

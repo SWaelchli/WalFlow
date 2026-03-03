@@ -113,7 +113,7 @@ export default function PropertyEditor({ node, edge, onUpdate, onUpdateEdge, onD
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
         <h3 style={{ margin: 0, fontSize: '14px', color: '#0f172a' }}>
-          {isNode ? `Equipment: ${type.toUpperCase()}` : 'Connection: PIPE'}
+          {isNode ? `Equipment: ${type.toUpperCase()}` : `Connection: ${data.type || 'PIPE'}`}
         </h3>
         <button onClick={handleDelete} style={{ background: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', padding: '4px 8px', fontSize: '10px', cursor: 'pointer' }}>Delete</button>
       </div>
@@ -147,7 +147,7 @@ export default function PropertyEditor({ node, edge, onUpdate, onUpdateEdge, onD
           </div>
         )}
 
-        {!isNode && (
+        {!isNode && data.type !== 'SIGNAL' && (
           <>
             <div>
               <label style={{ fontSize: '11px', color: '#64748b' }}>Pipe Length (m)</label>

@@ -3,45 +3,45 @@ import { Handle, Position } from 'reactflow';
 
 /**
  * SensingPin Component
- * Renders the pin visual and the yellow signal handle.
+ * Renders a needle visual where the "head" is the actual React Flow Handle.
  * 
  * @param {string} portId - The ID of the hydraulic port (e.g., "inlet-0")
  * @param {object} offset - { x, y } offset relative to the handle position
  */
 export const SensingPin = ({ portId, offset = { x: 0, y: 0 } }) => {
-  // We use the same offset logic as the Pin Node visual
   const pinStyle = {
     position: 'absolute',
     left: `calc(50% + ${offset.x}px)`,
     top: `calc(50% + ${offset.y}px)`,
-    transform: 'translate(-50%, -100%)', // Align needle tip to handle
+    transform: 'translate(-50%, -100%)', // Anchor at bottom-center (the needle tip)
+    width: '30px',
+    height: '40px',
     pointerEvents: 'none',
     zIndex: 10
   };
 
   return (
     <div style={pinStyle}>
-      <svg width="30" height="45" viewBox="0 0 40 60" style={{ display: 'block' }}>
-        {/* Needle */}
-        <line x1="20" y1="30" x2="20" y2="55" stroke="#64748b" strokeWidth="3" strokeLinecap="round" />
-        {/* Pin Head */}
-        <circle cx="20" cy="20" r="12" fill="#eab308" stroke="#854d0e" strokeWidth="2" />
-        <circle cx="20" cy="20" r="4" fill="#fef08a" />
+      <svg width="30" height="40" viewBox="0 0 30 40" style={{ display: 'block' }}>
+        {/* Needle Body - Ends at the handle center (15, 12) */}
+        <line x1="15" y1="12" x2="15" y2="38" stroke="#64748b" strokeWidth="2.5" strokeLinecap="round" />
       </svg>
       
-      {/* The Signal Source Handle (Yellow) */}
+      {/* The Signal Source Handle (Yellow) - Acts as the visual "head" */}
       <Handle 
         type="source" 
         position={Position.Top} 
         id={`signal-${portId}`} 
         style={{ 
-          top: '10px',
-          left: '20px',
-          background: '#eab308', 
-          width: '10px', 
-          height: '10px',
+          top: '12px',
+          left: '15px',
+          transform: 'translate(-50%, -50%)', 
+          background: '#fde047', 
+          width: '8px', 
+          height: '8px',
           border: '1.5px solid #854d0e',
-          pointerEvents: 'all' // Enable connection
+          pointerEvents: 'all',
+          boxShadow: '0 1px 2px rgba(0,0,0,0.2)'
         }} 
       />
     </div>

@@ -16,7 +16,7 @@
         "telemetry": {
           "inlets": [
             {
-              "id": "a5be81d5-d159-496c-937f-2898dfb9c184",
+              "id": "c4a307bf-77d7-4c71-a698-df0b2bf71008",
               "pressure": 120945,
               "flow_rate": 0,
               "temperature": 293.15,
@@ -27,9 +27,9 @@
           ],
           "outlets": [
             {
-              "id": "a12c545c-f3ef-4e2f-971a-f5fd45b1f6b5",
+              "id": "0ec15d44-5414-46df-b6da-6629e57da878",
               "pressure": 120945,
-              "flow_rate": 0.00041705446895630373,
+              "flow_rate": 0.0008563604116167093,
               "temperature": 293.15,
               "density": 1000,
               "viscosity": 0.0010017487594089526,
@@ -57,9 +57,9 @@
         "telemetry": {
           "inlets": [
             {
-              "id": "eeafbf1a-58e2-492b-b4fb-c42dfb02b493",
-              "pressure": 120942.33756417729,
-              "flow_rate": 0.00041705446895630373,
+              "id": "6e2a1961-2723-4e13-96fd-e7af2b855ec7",
+              "pressure": 120935.7639538153,
+              "flow_rate": 0.0008563604116167093,
               "temperature": 293.15,
               "density": 1000,
               "viscosity": 0.0010017487594089526,
@@ -68,9 +68,9 @@
           ],
           "outlets": [
             {
-              "id": "eb7ee820-c6e2-4a5a-ba24-3f4f1ec23ec7",
-              "pressure": 905708.2116289963,
-              "flow_rate": 0.00041705446895630373,
+              "id": "7ff4af3e-5f32-4c00-a34f-c217b3d89af4",
+              "pressure": 905591.8800648858,
+              "flow_rate": 0.0008563604116167351,
               "temperature": 293.15,
               "density": 1000,
               "viscosity": 0.0010017487594089526,
@@ -97,10 +97,10 @@
         "telemetry": {
           "inlets": [
             {
-              "id": "f890cf6c-9b97-4972-9108-ba4306e8fd07",
-              "pressure": 905692.8911181635,
-              "flow_rate": 0.00041705446895630373,
-              "temperature": 293.15,
+              "id": "f1088f99-6221-4211-a999-a2236c039e79",
+              "pressure": 905538.1347836865,
+              "flow_rate": 0.000005065898098158619,
+              "temperature": 293.1499999999999,
               "density": 1000,
               "viscosity": 0.0010017487594089526,
               "connected_to_port_id": null
@@ -108,19 +108,19 @@
           ],
           "outlets": [
             {
-              "id": "4f134091-8088-494c-b71f-26bfa07bf944",
-              "pressure": 301256.34054223215,
-              "flow_rate": 0.00041705446895630373,
-              "temperature": 293.15,
+              "id": "10b8e421-b53c-44fd-9731-00bc7309109c",
+              "pressure": 510707.4035953368,
+              "flow_rate": 0.0000050658980981553405,
+              "temperature": 293.1499999999999,
               "density": 1000,
               "viscosity": 0.0010017487594089526,
               "connected_to_port_id": null
             }
           ],
-          "opening_pct": 14.11224080731525,
-          "sensed_pressure": 205942.82784246528
+          "opening_pct": 0.19177842070376414,
+          "sensed_pressure": 510707.4035953368
         },
-        "opening": 14.11224080731525
+        "opening": 0.19177842070376414
       },
       "width": 60,
       "height": 105,
@@ -150,10 +150,10 @@
         "telemetry": {
           "inlets": [
             {
-              "id": "40ad2f6c-0fea-47be-aeb3-87c79352d8bf",
-              "pressure": 301225.69952056673,
-              "flow_rate": 0.00041705446895630373,
-              "temperature": 293.15,
+              "id": "e1de0756-9550-460e-bbc5-66dd4d6166d6",
+              "pressure": 510707.3026389598,
+              "flow_rate": 0.0000050658980981553405,
+              "temperature": 293.1499999999999,
               "density": 1000,
               "viscosity": 0.0010017487594089526,
               "connected_to_port_id": null
@@ -161,10 +161,10 @@
           ],
           "outlets": [
             {
-              "id": "a0700b2b-438c-4e8e-b12b-4208ea37adb4",
-              "pressure": 206229.300039238,
-              "flow_rate": 0.00041705446895630373,
-              "temperature": 293.15,
+              "id": "b267ea3c-a8cf-49a3-9f59-3c078966fc74",
+              "pressure": 510693.28630341287,
+              "flow_rate": 0.000005065898098155104,
+              "temperature": 293.1499999999999,
               "density": 1000,
               "viscosity": 0.0010017487594089526,
               "connected_to_port_id": null
@@ -197,9 +197,9 @@
         "telemetry": {
           "inlets": [
             {
-              "id": "3abf55bc-76e5-4d40-add0-033bd27bed9a",
+              "id": "c60c1edc-d9c8-4906-9338-c0311cec2db7",
               "pressure": 111135,
-              "flow_rate": 0.00041705446895630373,
+              "flow_rate": 0.0008563604116167324,
               "temperature": 293.15,
               "density": 1000,
               "viscosity": 0.0010017487594089526,
@@ -208,7 +208,7 @@
           ],
           "outlets": [
             {
-              "id": "6f64f7dd-8359-4e9b-a224-dd681888bee1",
+              "id": "96c42e2b-8e23-412c-a2cf-6823412d7b14",
               "pressure": 111135,
               "flow_rate": 0,
               "temperature": 293.15,
@@ -243,10 +243,10 @@
         "telemetry": {
           "inlets": [
             {
-              "id": "28a5388d-cc81-420c-8404-9c18660e42b1",
-              "pressure": 205942.82784246528,
-              "flow_rate": 0.00041705446895630373,
-              "temperature": 293.15,
+              "id": "745a90d9-9b6d-4b73-83f4-f85a63b75395",
+              "pressure": 510692.6048439204,
+              "flow_rate": 0.000005065898098155104,
+              "temperature": 293.1499999999999,
               "density": 1000,
               "viscosity": 0.0010017487594089526,
               "connected_to_port_id": null
@@ -254,10 +254,10 @@
           ],
           "outlets": [
             {
-              "id": "52244013-7456-42a8-aaa5-9c59f5c10534",
-              "pressure": 111421.47219677275,
-              "flow_rate": 0.00041705446895630373,
-              "temperature": 293.15,
+              "id": "cc0fcf8d-93ae-4cd3-b115-ebf0544e7adb",
+              "pressure": 510678.6585991752,
+              "flow_rate": 0.000005065898098155909,
+              "temperature": 293.1499999999999,
               "density": 1000,
               "viscosity": 0.0010017487594089526,
               "connected_to_port_id": null
@@ -293,9 +293,9 @@
         "telemetry": {
           "inlets": [
             {
-              "id": "f32096a9-2551-429a-94de-702614b9c2e6",
+              "id": "504af41d-2846-4f44-958f-b36a70fb8db6",
               "pressure": 120945,
-              "flow_rate": 0.00041705446895630373,
+              "flow_rate": 0.0008563604116167093,
               "temperature": 293.15,
               "density": 1000,
               "viscosity": 0.0010017487594089526,
@@ -304,9 +304,9 @@
           ],
           "outlets": [
             {
-              "id": "16d9e125-60a3-424c-ba43-98c36baddba0",
-              "pressure": 120942.33756417729,
-              "flow_rate": 0.00041705446895630373,
+              "id": "fb5b4e87-00db-4866-8f1b-445d0f4f20b3",
+              "pressure": 120935.7639538153,
+              "flow_rate": 0.0008563604116167093,
               "temperature": 293.15,
               "density": 1000,
               "viscosity": 0.0010017487594089526,
@@ -332,9 +332,9 @@
         "telemetry": {
           "inlets": [
             {
-              "id": "969a70f3-f09c-418c-ac08-42fd9c421590",
-              "pressure": 905708.2116289963,
-              "flow_rate": 0.00041705446895630373,
+              "id": "7eee1277-d631-4892-9564-4499cacd9de3",
+              "pressure": 905591.8800648858,
+              "flow_rate": 0.0008563604116167351,
               "temperature": 293.15,
               "density": 1000,
               "viscosity": 0.0010017487594089526,
@@ -343,9 +343,9 @@
           ],
           "outlets": [
             {
-              "id": "c4f07838-e810-4190-a54f-6ab96e663764",
-              "pressure": 905692.8911181635,
-              "flow_rate": 0.00041705446895630373,
+              "id": "c384f02c-f5d2-46b3-97a4-8f929b527dba",
+              "pressure": 905538.1347836865,
+              "flow_rate": 0.0008563604116167351,
               "temperature": 293.15,
               "density": 1000,
               "viscosity": 0.0010017487594089526,
@@ -371,10 +371,10 @@
         "telemetry": {
           "inlets": [
             {
-              "id": "010ce077-9079-4579-9f86-2f37f71cc685",
-              "pressure": 301256.34054223215,
-              "flow_rate": 0.00041705446895630373,
-              "temperature": 293.15,
+              "id": "d6d470b4-e69d-42d2-a861-8317772a5ff9",
+              "pressure": 510707.4035953368,
+              "flow_rate": 0.0000050658980981553405,
+              "temperature": 293.1499999999999,
               "density": 1000,
               "viscosity": 0.0010017487594089526,
               "connected_to_port_id": null
@@ -382,10 +382,10 @@
           ],
           "outlets": [
             {
-              "id": "df51c062-d620-42c0-b583-44046be6e05b",
-              "pressure": 301225.69952056673,
-              "flow_rate": 0.00041705446895630373,
-              "temperature": 293.15,
+              "id": "e3702a46-cc50-4f88-8036-bcbb0322bcbb",
+              "pressure": 510707.3026389598,
+              "flow_rate": 0.0000050658980981553405,
+              "temperature": 293.1499999999999,
               "density": 1000,
               "viscosity": 0.0010017487594089526,
               "connected_to_port_id": null
@@ -413,10 +413,10 @@
         "telemetry": {
           "inlets": [
             {
-              "id": "0a7ffbe5-87a5-45c5-846b-a2a060b102d8",
-              "pressure": 206229.300039238,
-              "flow_rate": 0.00041705446895630373,
-              "temperature": 293.15,
+              "id": "f066d6da-d005-4871-ab28-12b210678efc",
+              "pressure": 510693.28630341287,
+              "flow_rate": 0.000005065898098155104,
+              "temperature": 293.1499999999999,
               "density": 1000,
               "viscosity": 0.0010017487594089526,
               "connected_to_port_id": null
@@ -424,10 +424,10 @@
           ],
           "outlets": [
             {
-              "id": "8fbed15a-c237-4871-a317-314b1cba1867",
-              "pressure": 205942.82784246528,
-              "flow_rate": 0.00041705446895630373,
-              "temperature": 293.15,
+              "id": "3b77b68e-a604-4550-85be-2a13a366ca14",
+              "pressure": 510692.6048439204,
+              "flow_rate": 0.000005065898098155104,
+              "temperature": 293.1499999999999,
               "density": 1000,
               "viscosity": 0.0010017487594089526,
               "connected_to_port_id": null
@@ -453,10 +453,10 @@
         "telemetry": {
           "inlets": [
             {
-              "id": "6b9de91a-71f4-4792-95da-c4a4099c52c7",
-              "pressure": 111421.47219677275,
-              "flow_rate": 0.00041705446895630373,
-              "temperature": 293.15,
+              "id": "fbd8a51f-779e-4980-8241-ef91c1c289f3",
+              "pressure": 510678.6585991752,
+              "flow_rate": 0.0008563604116167324,
+              "temperature": 293.1499999999999,
               "density": 1000,
               "viscosity": 0.0010017487594089526,
               "connected_to_port_id": null
@@ -464,10 +464,10 @@
           ],
           "outlets": [
             {
-              "id": "0b1de3fd-fd28-434f-b297-12be0708bf9d",
+              "id": "67f83a37-1705-40f9-b4dc-3523be0f08a5",
               "pressure": 111135,
-              "flow_rate": 0.00041705446895630373,
-              "temperature": 293.15,
+              "flow_rate": 0.0008563604116167324,
+              "temperature": 293.1499999999999,
               "density": 1000,
               "viscosity": 0.0010017487594089526,
               "connected_to_port_id": null
@@ -481,15 +481,44 @@
       "sourceHandle": "signal-inlet-0",
       "target": "rc-valve",
       "targetHandle": "signal-in",
-      "id": "Signal 108",
-      "label": "Signal 108",
+      "id": "Signal 100",
+      "label": "Signal 100",
       "animated": true,
-      "style": {},
+      "type": "step",
+      "style": {
+        "stroke": "#fde047",
+        "strokeWidth": 3,
+        "strokeDasharray": "5,5"
+      },
       "data": {
-        "label": "Signal 108",
-        "type": "signal",
+        "label": "Signal 100",
+        "type": "SIGNAL",
         "length": 25,
-        "diameter": 0.05248
+        "diameter": 0.05248,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "4089cef9-3132-40f2-9e15-d554516e54b8",
+              "pressure": 510678.6585991752,
+              "flow_rate": -0.0008512945135185765,
+              "temperature": 293.1499999999999,
+              "density": 1000,
+              "viscosity": 0.0010017487594089526,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "52087118-1a36-4fa0-940c-360f0c1e96b3",
+              "pressure": 905538.1347836865,
+              "flow_rate": -0.0008512945135185765,
+              "temperature": 293.1499999999999,
+              "density": 1000,
+              "viscosity": 0.0010017487594089526,
+              "connected_to_port_id": null
+            }
+          ]
+        }
       },
       "selected": false
     }

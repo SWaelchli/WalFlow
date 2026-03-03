@@ -53,10 +53,14 @@ export default function RemoteControlValveNode({ id, data, selected }) {
           position={Position.Top} 
           id="signal-in" 
           style={{ 
-            top: '4px', left: '30px', 
-            marginTop: '-5px', marginLeft: '-5px',
-            background: '#eab308', width: '10px', height: '10px',
-            border: '1.5px solid #854d0e'
+            top: '5px', 
+            left: '30px', 
+            transform: 'translate(-50%, -50%)',
+            background: '#fde047', 
+            width: '8px', 
+            height: '8px',
+            border: '1.5px solid #854d0e',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.2)'
           }} 
         />
 

@@ -133,10 +133,19 @@ export default function App() {
     setEdges((eds) => {
       const updated = eds.map((e) => {
         const isSelected = e.id === id;
+        const isSignal = e.data?.type === 'SIGNAL';
+
+        let style = {};
+        if (isSelected) {
+          style = { stroke: '#3b82f6', strokeWidth: 3 };
+        } else if (isSignal) {
+          style = { stroke: '#fde047', strokeWidth: 3, strokeDasharray: '5,5' };
+        }
+
         return { 
           ...e, 
           selected: isSelected,
-          style: isSelected ? { stroke: '#3b82f6', strokeWidth: 3 } : {}
+          style: style
         };
       });
       const found = updated.find(e => e.id === id);
@@ -147,15 +156,23 @@ export default function App() {
       return updated;
     });
     setNodes((nds) => nds.map((n) => ({ ...n, selected: false })));
-  }, [setEdges, setNodes]);
+  }, [setNodes, setEdges]);
 
   const onEdgesChangeCustom = useCallback(
     (changes) => setEdges((eds) => {
       const nextEdges = applyEdgeChanges(changes, eds);
-      return nextEdges.map(e => ({
-        ...e,
-        style: e.selected ? { stroke: '#3b82f6', strokeWidth: 3 } : {}
-      }));
+      return nextEdges.map(e => {
+        const isSignal = e.data?.type === 'SIGNAL';
+        let style = {};
+
+        if (e.selected) {
+          style = { stroke: '#3b82f6', strokeWidth: 3 };
+        } else if (isSignal) {
+          style = { stroke: '#fde047', strokeWidth: 3, strokeDasharray: '5,5' };
+        }
+
+        return { ...e, style };
+      });
     }),
     [setEdges]
   );
@@ -189,7 +206,15 @@ export default function App() {
 
   const onConnect = useCallback((params) => {
     setEdges((eds) => {
-      const isSignal = params.sourceHandle === 'signal-out' || params.targetHandle === 'signal-in';
+      const isSourceSignal = params.sourceHandle?.startsWith('signal-');
+      const isTargetSignal = params.targetHandle?.startsWith('signal-');
+      
+      if (isSourceSignal !== isTargetSignal) {
+        alert("Cannot connect a signal handle to a hydraulic port.");
+        return eds;
+      }
+
+      const isSignal = isSourceSignal && isTargetSignal;
       const newId = isSignal ? `Signal ${edgeIdCount}` : `Pipe ${edgeIdCount}`;
       
       const newEdge = { 
@@ -197,10 +222,13 @@ export default function App() {
         id: newId,
         label: newId,
         animated: true, 
-        style: isSignal ? { stroke: '#eab308', strokeWidth: 2, strokeDasharray: '5,5' } : {},
+        type: isSignal ? 'step' : 'default',
+        style: isSignal 
+          ? { stroke: '#fde047', strokeWidth: 3, strokeDasharray: '5,5' }
+          : {},
         data: { 
           label: newId, 
-          type: isSignal ? 'signal' : 'hydraulic',
+          type: isSignal ? 'SIGNAL' : 'PIPE',
           length: 25.0, 
           diameter: 0.05248 
         } 
@@ -360,7 +388,6 @@ export default function App() {
               const nodeTele = data.telemetry.nodes[node.id];
               if (!nodeTele) return node;
               
-              // Direct update to avoid stringify issues with functions
               const newData = { ...node.data, telemetry: nodeTele };
               if (nodeTele.opening_pct !== undefined) newData.opening = nodeTele.opening_pct;
               return { ...node, data: newData };
@@ -387,9 +414,8 @@ export default function App() {
       if (socket) socket.close();
       if (reconnectTimeout) clearTimeout(reconnectTimeout);
     };
-  }, []);
+  }, [setNodes, setEdges]);
 
-  // Update backend on change (Debounced)
   useEffect(() => {
     const handler = setTimeout(() => {
       if (isConnected && ws.current && ws.current.readyState === WebSocket.OPEN) {
@@ -407,7 +433,6 @@ export default function App() {
     return () => clearTimeout(handler);
   }, [nodes, edges, isConnected, globalSettings]);
 
-  // Sync selectedNode state for DetailPanel
   useEffect(() => {
     if (selectedNode) {
       const liveNode = nodes.find(n => n.id === selectedNode.id);
