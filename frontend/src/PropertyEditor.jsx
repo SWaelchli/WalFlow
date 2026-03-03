@@ -13,7 +13,7 @@ const PipeSelector = ({ data, onChange }) => {
   const currentSch = data.standardSch || (match ? match.sch : "40");
 
   const handleDnChange = (newDn) => {
-    const dnInt = parseInt(newDn);
+    const dnInt = parseInt(newDn, 10);
     const pipe = ASME_PIPE_STANDARDS.find(p => p.dn === dnInt);
     if (pipe) {
       const sch = pipe.schedules[currentSch] ? currentSch : Object.keys(pipe.schedules)[0];
@@ -79,11 +79,11 @@ export default function PropertyEditor({ node, edge, onUpdate, onUpdateEdge, onD
   const { id, type, data } = item;
 
   const handleChange = (field, value) => {
-    const parsedValue = (typeof value === 'string' && !isNaN(parseFloat(value))) ? parseFloat(value) : value;
+    // Keep raw value, parse only where numerically required
     if (isNode) {
-      onUpdate(id, { [field]: parsedValue });
+      onUpdate(id, { [field]: value });
     } else {
-      onUpdateEdge(id, { [field]: parsedValue });
+      onUpdateEdge(id, { [field]: value });
     }
   };
 
