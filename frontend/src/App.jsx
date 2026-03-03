@@ -317,7 +317,7 @@ export default function App() {
           ...(type === 'linear_control_valve' && { max_cv: 0.05, opening: 50.0 }),
           ...(type === 'linear_regulator' && { max_cv: 0.05, set_pressure: 500000.0, backpressure: false }),
           ...(type === 'orifice' && { pipe_diameter: 0.1, orifice_diameter: 0.07 }),
-          ...(type === 'filter' && { resistance: 1000.0 }),
+          ...(type === 'filter' && { dp_clean: 0.2, dp_terminal: 1.0, flow_ref: 100.0, clogging: 0.0 }),
           ...(type === 'heat_exchanger' && { heat_duty_kw: -10.0 }),
           ...(type === 'remote_control_valve' && { max_cv: 0.05, set_pressure: 500000.0 }),
         },

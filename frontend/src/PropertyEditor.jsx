@@ -233,10 +233,24 @@ export default function PropertyEditor({ node, edge, onUpdate, onUpdateEdge, onD
         )}
 
         {isNode && type === 'filter' && (
-          <div>
-            <label style={{ fontSize: '11px', color: '#64748b' }}>Resistance Factor</label>
-            <input type="number" style={{ width: '100%', fontSize: '12px' }} value={data.resistance} onChange={(e) => handleChange('resistance', e.target.value)} />
-          </div>
+          <>
+            <div>
+              <label style={{ fontSize: '11px', color: '#64748b' }}>Clean ΔP (bar)</label>
+              <input type="number" step="0.01" style={{ width: '100%', fontSize: '12px' }} value={data.dp_clean || 0.2} onChange={(e) => handleChange('dp_clean', e.target.value)} />
+            </div>
+            <div>
+              <label style={{ fontSize: '11px', color: '#64748b' }}>Terminal ΔP (bar)</label>
+              <input type="number" step="0.1" style={{ width: '100%', fontSize: '12px' }} value={data.dp_terminal || 1.0} onChange={(e) => handleChange('dp_terminal', e.target.value)} />
+            </div>
+            <div>
+              <label style={{ fontSize: '11px', color: '#64748b' }}>Rated Flow (L/min)</label>
+              <input type="number" style={{ width: '100%', fontSize: '12px' }} value={data.flow_ref || 100.0} onChange={(e) => handleChange('flow_ref', e.target.value)} />
+            </div>
+            <div>
+              <label style={{ fontSize: '11px', color: '#64748b' }}>Clogging Level (%)</label>
+              <input type="number" style={{ width: '100%', fontSize: '12px' }} value={data.clogging || 0.0} onChange={(e) => handleChange('clogging', e.target.value)} />
+            </div>
+          </>
         )}
 
         {isNode && type === 'orifice' && (

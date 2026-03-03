@@ -145,8 +145,10 @@ class GraphParser:
         elif t == 'filter':
             node = Filter(
                 name=name,
-                resistance_clean=float(d.get('resistance', 1000.0)),
-                clogging_factor=float(d.get('clogging_factor', 1.0))
+                dp_clean_bar=float(d.get('dp_clean', 0.2)),
+                dp_terminal_bar=float(d.get('dp_terminal', 1.0)),
+                flow_ref_lmin=float(d.get('flow_ref', 100.0)),
+                clogging_pct=float(d.get('clogging', 0.0))
             )
         elif t == 'splitter':
             # 1 inlet, 2 outlets

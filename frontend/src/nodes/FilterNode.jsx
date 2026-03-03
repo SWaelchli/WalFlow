@@ -15,6 +15,7 @@ export default function FilterNode({ id, data, selected }) {
   const pIn = telemetry?.inlets?.[0]?.pressure || 0;
   const pOut = telemetry?.outlets?.[0]?.pressure || 0;
   const dP = pIn - pOut;
+  const clogging = data.clogging || 0;
 
   useEffect(() => {
     updateNodeInternals(id);
@@ -74,6 +75,7 @@ export default function FilterNode({ id, data, selected }) {
       <div style={{ textAlign: 'center', marginTop: '5px' }}>
         <div style={{ fontSize: '9px', color: '#334155', fontWeight: 'bold' }}>{data.label || 'STRAINER'}</div>
         <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#ef4444' }}>-{paToBar(dP)} bar</div>
+        <div style={{ fontSize: '8px', color: '#64748b' }}>Clogging: {clogging.toFixed(0)}%</div>
       </div>
     </div>
   );
