@@ -30,6 +30,9 @@ async def read_root():
 @app.websocket("/ws/simulate")
 async def websocket_endpoint(websocket: WebSocket):
     global network_instance, solver_instance
+    # Simulation state specific to this connection
+    network_instance = None
+    solver_instance = None
     
     await websocket.accept()
     print("Frontend client connected.")
