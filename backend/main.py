@@ -92,6 +92,8 @@ async def websocket_endpoint(websocket: WebSocket):
                                 node_telemetry["opening_pct"] = node.opening_pct
                             if hasattr(node, 'sensed_pressure'):
                                 node_telemetry["sensed_pressure"] = node.sensed_pressure
+                            if hasattr(node, 'cavitation_warning'):
+                                node_telemetry["cavitation_warning"] = node.cavitation_warning
                                 
                             telemetry["nodes"][node_id] = node_telemetry
                         
