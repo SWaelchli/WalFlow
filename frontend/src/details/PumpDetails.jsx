@@ -4,10 +4,33 @@ import {
 } from 'recharts';
 import { m3sToLmin } from '../utils/converters';
 
+const CavitationWarning = () => (
+  <div style={{
+    background: '#fff1f2',
+    padding: '10px',
+    borderRadius: '6px',
+    border: '1px solid #ffdde0',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px'
+  }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#be123c', fontWeight: 'bold' }}>
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 9v4m0 4h.01M2.75 12A9.25 9.25 0 0 1 12 2.75 9.25 9.25 0 0 1 21.25 12 9.25 9.25 0 0 1 12 21.25 9.25 9.25 0 0 1 2.75 12Z"/>
+      </svg>
+      CAVITATION RISK
+    </div>
+    <p style={{ fontSize: '11px', color: '#be123c', margin: 0, paddingLeft: '24px' }}>
+      Suction pressure is critically low. Pump may be cavitating, leading to damage and reduced performance.
+    </p>
+  </div>
+);
+
 export default function PumpDetails({ node }) {
   const { type, data } = node;
   const { A, B, C, flow_rated, motor_power, efficiency, telemetry } = data;
   
+  const showCavitationWarning = telemetry?.cavitation_warning === true;
   const currentQ = telemetry?.inlets?.[0]?.flow_rate || 0;
   const currentPin = telemetry?.inlets?.[0]?.pressure || 0;
   const currentPout = telemetry?.outlets?.[0]?.pressure || 0;
@@ -72,6 +95,8 @@ export default function PumpDetails({ node }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+      {showCavitationWarning && <CavitationWarning />}
+
       <div style={{ fontSize: '12px', color: '#0f172a', fontWeight: 'bold', borderLeft: '3px solid #0284c7', paddingLeft: '8px' }}>
         Pump Performance
       </div>

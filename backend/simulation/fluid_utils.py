@@ -57,3 +57,34 @@ class FluidProperties:
             return (nu_cst * 1e-6) * density
             
         return 0.001 # Default to water @ 20°C
+
+    @staticmethod
+    def get_vapor_pressure(fluid_type: str, temp_k: float) -> float:
+        """
+        Calculates vapor pressure in Pascals (Pa) using Antoine equation.
+        """
+        t_c = temp_k - 273.15
+        
+        if fluid_type == "water" or fluid_type not in ["iso_vg_46", "iso_vg_32"]:
+            # For unknown fluids, default to dynamic water calculation
+            # Antoine equation for water: log10(P) = A - (B / (C + T))
+            # P is in mmHg, T is in °C
+            if t_c < 100.0:
+                # Constants valid for 1°C to 100°C
+                A, B, C = 8.07131, 1730.63, 233.426
+            else:
+                # Constants valid for 99°C to 374°C
+                A, B, C = 8.14019, 1810.94, 244.485
+            
+            # Avoid singularity at T = -C
+            if t_c <= -C:
+                return 0.0
+                
+            pressure_mmhg = 10**(A - (B / (C + t_c)))
+            
+            # Convert mmHg to Pascals (1 mmHg = 133.322387 Pa)
+            return pressure_mmhg * 133.322387
+            
+        elif fluid_type in ["iso_vg_46", "iso_vg_32"]:
+            # Lube oils have very low vapor pressure, ~0 for this simulation
+            return 1.0
