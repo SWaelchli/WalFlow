@@ -129,3 +129,26 @@ In `frontend/src/Sidebar.jsx`, add an entry to the `equipmentTypes` array so it 
 
 ### Step D: Add Property Controls
 In `frontend/src/PropertyEditor.jsx`, add a conditional block for your `type` to render the input fields (labels, number inputs, etc.) required to edit your equipment's parameters.
+
+### Step E: Implement a Detail Component (Optional)
+If your equipment requires specialized telemetry visualization (like a pump curve), create a new component in `frontend/src/details/NewEquipmentDetails.jsx`.
+
+```jsx
+import React from 'react';
+
+export default function NewEquipmentDetails({ node }) {
+  const { telemetry } = node.data;
+  // Use telemetry data to render charts or detailed tables
+  return (
+    <div>
+      {/* Your custom visualization */}
+    </div>
+  );
+}
+```
+
+Then, register it in `frontend/src/DetailPanel.jsx`:
+1. Import your new details component.
+2. Add a case for your `node_type` in the `renderContent` switch statement.
+
+If you don't create a custom detail component, the `GenericDetails` component will automatically be used to display basic pressure and flow data.

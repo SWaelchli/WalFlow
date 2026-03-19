@@ -7,7 +7,8 @@ from simulation.schemas import HydraulicNetwork
 from simulation.equipment.base_node import HydraulicNode
 from simulation.equipment.tank import Tank
 from simulation.equipment.pipe import Pipe
-from simulation.equipment.pump import Pump
+from simulation.equipment.centrifugal_pump import CentrifugalPump
+from simulation.equipment.volumetric_pump import VolumetricPump
 from simulation.equipment.linear_control_valve import LinearControlValve
 from simulation.equipment.linear_regulator import LinearRegulator
 from simulation.equipment.remote_control_valve import RemoteControlValve
@@ -44,6 +45,9 @@ class NetworkSolver:
         max_outer_iterations = 40
         tolerance_bar = 0.01 
         
+        final_sol_x = None
+        num_int = 0
+
         # Initialize control nodes to a neutral position
         for idx in self.control_node_indices:
             self.nodes_list[idx].opening_pct = 50.0
@@ -199,8 +203,8 @@ class NetworkSolver:
                 if isinstance(node, Tank):
                     node.calculate()
                     continue
-                for edge in self.edges_list:
-                    q = q_edges[self.edges_list.index(edge)]
+                for j, edge in enumerate(self.edges_list):
+                    q = q_edges[j]
                     pipe = edge['pipe']
                     if edge['target'] == node_id:
                         port_idx = self._parse_port_idx(edge.get('target_port', 'inlet-0'))
@@ -232,7 +236,7 @@ class NetworkSolver:
         inlet = node.inlets[0] if node.inlets else None
         density = inlet.density if inlet else 1000.0
         viscosity = inlet.viscosity if inlet else 0.001
-        if isinstance(node, Pump):
+        if isinstance(node, (CentrifugalPump, VolumetricPump)):
             return p_in + node.calculate_delta_p(q_node, density, viscosity)
         elif hasattr(node, 'calculate_delta_p'):
             return p_in - node.calculate_delta_p(q_node, density, viscosity)
@@ -259,10 +263,16 @@ class NetworkSolver:
                 tgt_node.inlets[tgt_port_idx].flow_rate += q
         for i, node in enumerate(self.nodes_list):
             p_in = p_in_all[i]
-            q_ref = node.inlets[0].flow_rate if node.inlets else 0.0
-            p_out = self._get_node_p_out(node, p_in, q_ref)
-            for port in node.inlets: port.pressure = p_in
-            for port in node.outlets: port.pressure = p_out
+            for port in node.inlets:
+                port.pressure = p_in
+            
+            # Calculate p_out for each outlet based on the flow passing through it
+            # For simplicity in this iteration, we use the sum of outlet flows
+            q_node_total = sum(p.flow_rate for p in node.outlets)
+            p_out = self._get_node_p_out(node, p_in, q_node_total)
+            
+            for port in node.outlets:
+                port.pressure = p_out
         for j, edge in enumerate(self.edges_list):
             pipe = edge['pipe']
             q = q_edges[j]

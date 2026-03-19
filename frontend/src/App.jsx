@@ -12,7 +12,8 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 
 // Import all custom equipment nodes
 import TankNode from './nodes/TankNode';
-import PumpNode from './nodes/PumpNode';
+import CentrifugalPumpNode from './nodes/CentrifugalPumpNode';
+import VolumetricPumpNode from './nodes/VolumetricPumpNode';
 import OrificeNode from './nodes/OrificeNode';
 import LinearControlValveNode from './nodes/LinearControlValveNode';
 import LinearRegulatorNode from './nodes/LinearRegulatorNode';
@@ -33,10 +34,13 @@ import examplePRV from '../Example_PRV.json';
 import exampleBPR from '../Example_BPR.json';
 import exampleRemoteControl from '../Example_RemoteControl.json';
 import exampleAPI614 from '../API_614_LOS.json';
+import exampleVolumetric from '../Example_Volumetric.json';
 
 const nodeTypes = {
   tank: TankNode,
-  pump: PumpNode,
+  pump: CentrifugalPumpNode, // Legacy support
+  centrifugal_pump: CentrifugalPumpNode,
+  volumetric_pump: VolumetricPumpNode,
   orifice: OrificeNode,
   linear_control_valve: LinearControlValveNode,
   linear_regulator: LinearRegulatorNode,
@@ -312,7 +316,9 @@ export default function App() {
           rotation: 0,
           onRotate: handleRotation,
           onChange: type === 'linear_control_valve' ? handleValveChange : undefined,
+          ...(type === 'centrifugal_pump' && { A: 80.0, B: 0.0, C: -30000.0 }),
           ...(type === 'pump' && { A: 80.0, B: 0.0, C: -30000.0 }),
+          ...(type === 'volumetric_pump' && { flow_rated: 100.0, motor_power: 5.0, efficiency: 85.0 }),
           ...(type === 'tank' && { level: 2.0, elevation: 0.0, temperature: 313.15 }),
           ...(type === 'linear_control_valve' && { max_cv: 0.05, opening: 50.0 }),
           ...(type === 'linear_regulator' && { max_cv: 0.05, set_pressure: 500000.0, backpressure: false }),
@@ -452,6 +458,7 @@ export default function App() {
         onUpdateGlobalSettings={setGlobalSettings}
         templates={{
           "Standard PFD": examplePFD,
+          "Volumetric Pump Example": exampleVolumetric,
           "Pressure Reducing (PRV)": examplePRV,
           "Backpressure (BPR)": exampleBPR,
           "API 614 LOS": exampleAPI614,

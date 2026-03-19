@@ -1,7 +1,8 @@
 from typing import List, Dict, Any
 from simulation.schemas import ReactFlowGraph, ReactFlowNode, ReactFlowEdge, HydraulicNetwork
 from simulation.equipment.tank import Tank
-from simulation.equipment.pump import Pump
+from simulation.equipment.centrifugal_pump import CentrifugalPump
+from simulation.equipment.volumetric_pump import VolumetricPump
 from simulation.equipment.linear_control_valve import LinearControlValve
 from simulation.equipment.linear_regulator import LinearRegulator
 from simulation.equipment.pipe import Pipe
@@ -103,12 +104,31 @@ class GraphParser:
                 temperature=float(d.get('temperature', 293.15)),
                 fluid_type=fluid_type
             )
-        elif t == 'pump':
-            node = Pump(
+        elif t == 'centrifugal_pump' or t == 'pump':
+            node = CentrifugalPump(
                 name=name,
                 A=float(d.get('A', 80.0)),
                 B=float(d.get('B', 0.0)),
                 C=float(d.get('C', -2000.0))
+            )
+        elif t == 'volumetric_pump':
+            # flow_rated in L/min -> convert to m3/s
+            flow_lmin = float(d.get('flow_rated', 100.0))
+            flow_m3s = flow_lmin / 60000.0
+            
+            # motor_power in kW -> convert to W
+            power_kw = float(d.get('motor_power', 5.0))
+            power_w = power_kw * 1000.0
+            
+            # efficiency in % -> convert to decimal
+            eff_pct = float(d.get('efficiency', 85.0))
+            eff_dec = eff_pct / 100.0
+
+            node = VolumetricPump(
+                name=name,
+                flow_rated=flow_m3s,
+                motor_power=power_w,
+                efficiency=eff_dec
             )
         elif t == 'linear_control_valve':
             node = LinearControlValve(

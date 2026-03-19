@@ -1,18 +1,150 @@
 import React, { useState } from 'react';
 import walflowLogo from './assets/Logo_WalFlow.svg';
 
-const equipmentTypes = [
-  { type: 'tank', label: 'Tank', description: 'Fluid Reservoir (Atm Pressure)' },
-  { type: 'pump', label: 'Pump', description: 'Centrifugal Pump (A=80, C=-2000)' },
-  { type: 'linear_control_valve', label: 'Linear Control Valve', description: 'Control Valve (Linear Cv Trim)' },
-  { type: 'remote_control_valve', label: 'Remote Control Valve', description: 'RCV (Senses via Yellow Handle)' },
-  { type: 'linear_regulator', label: 'Pressure Regulator', description: 'Maintains set P (Up/Downstream)' },
-  { type: 'orifice', label: 'Orifice', description: 'Fixed Resistance Orifice' },
-  { type: 'filter', label: 'Filter', description: 'Lube Oil Filter (Duplex)' },
-  { type: 'heat_exchanger', label: 'Cooler', description: 'Shell & Tube Heat Exchanger' },
-  { type: 'splitter', label: 'Splitter', description: 'Supply Manifold / T-Piece' },
-  { type: 'mixer', label: 'Mixer', description: 'Return Manifold / T-Piece' },
+const categorizedEquipment = [
+  {
+    name: 'Fluid Sources',
+    items: [
+      { type: 'tank', label: 'Tank', description: 'Fluid Reservoir (Atm Pressure)' },
+    ]
+  },
+  {
+    name: 'Power & Drive',
+    items: [
+      { type: 'centrifugal_pump', label: 'Centrifugal Pump', description: 'Quadratic Curve (A=80, C=-2000)' },
+      { type: 'volumetric_pump', label: 'Volumetric Pump', description: 'PD Pump (Fixed Q, Power Limited)' },
+    ]
+  },
+  {
+    name: 'Pressure & Flow Control',
+    items: [
+      { type: 'linear_control_valve', label: 'Linear Control Valve', description: 'Control Valve (Linear Cv Trim)' },
+      { type: 'remote_control_valve', label: 'Remote Control Valve', description: 'RCV (Senses via Yellow Handle)' },
+      { type: 'linear_regulator', label: 'Pressure Regulator', description: 'Maintains set P (Up/Downstream)' },
+      { type: 'orifice', label: 'Orifice', description: 'Fixed Resistance Orifice' },
+    ]
+  },
+  {
+    name: 'Distribution & Topology',
+    items: [
+      { type: 'splitter', label: 'Splitter', description: 'Supply Manifold / T-Piece' },
+      { type: 'mixer', label: 'Mixer', description: 'Return Manifold / T-Piece' },
+    ]
+  },
+  {
+    name: 'Auxiliary & Thermal',
+    items: [
+      { type: 'filter', label: 'Filter', description: 'Lube Oil Filter (Duplex)' },
+      { type: 'heat_exchanger', label: 'Cooler', description: 'Shell & Tube Heat Exchanger' },
+    ]
+  }
 ];
+
+function CollapsibleCategory({ name, items, onDragStart }) {
+  const [isExpanded, setIsExpanded] = useState(true);
+
+  return (
+    <div style={{ marginBottom: '5px' }}>
+      <div 
+        onClick={() => setIsExpanded(!isExpanded)}
+        style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          padding: '8px 4px', 
+          cursor: 'pointer',
+          borderBottom: '1px solid #f1f5f9',
+          userSelect: 'none'
+        }}
+      >
+        <h3 style={{ fontSize: '11px', textTransform: 'uppercase', color: '#94a3b8', margin: 0 }}>{name}</h3>
+        <span style={{ fontSize: '10px', color: '#94a3b8', transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }}>▼</span>
+      </div>
+      
+      {isExpanded && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px', paddingBottom: '10px' }}>
+          {items.map((item) => (
+            <div
+              key={item.type}
+              style={{
+                padding: '10px', background: '#f8fafc', border: '1px solid #e2e8f0',
+                borderRadius: '6px', cursor: 'grab', display: 'flex', flexDirection: 'column',
+                gap: '2px', transition: 'all 0.2s'
+              }}
+              onDragStart={(event) => onDragStart(event, item.type)}
+              draggable
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#3b82f6';
+                e.currentTarget.style.background = '#eff6ff';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = '#e2e8f0';
+                e.currentTarget.style.background = '#f8fafc';
+              }}
+            >
+              <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#1e293b' }}>{item.label}</div>
+              <div style={{ fontSize: '10px', color: '#64748b', lineHeight: '1.2' }}>{item.description}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CollapsibleScenarios({ templates, onLoad }) {
+  const [isExpanded, setIsExpanded] = useState(false); // Default collapsed for scenarios
+
+  return (
+    <div style={{ marginBottom: '15px', borderRadius: '6px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+      <div 
+        onClick={() => setIsExpanded(!isExpanded)}
+        style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          padding: '10px 12px', 
+          cursor: 'pointer',
+          background: '#0f172a',
+          color: '#fff',
+          userSelect: 'none'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '14px' }}>📂</span>
+          <h3 style={{ fontSize: '11px', textTransform: 'uppercase', margin: 0, fontWeight: 'bold', letterSpacing: '0.5px' }}>Example Scenarios</h3>
+        </div>
+        <span style={{ fontSize: '10px', transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }}>▼</span>
+      </div>
+      
+      {isExpanded && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '8px', background: '#f8fafc' }}>
+          {Object.entries(templates || {}).map(([name, data]) => (
+            <button 
+              key={name}
+              onClick={() => { if(window.confirm(`Load "${name}"? Current canvas will be replaced.`)) onLoad(data); }}
+              style={{
+                padding: '8px 10px', background: '#fff', border: '1px solid #e2e8f0',
+                borderRadius: '4px', fontSize: '11px', textAlign: 'left', cursor: 'pointer',
+                color: '#1e293b', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '6px'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#0284c7';
+                e.currentTarget.style.background = '#f0f9ff';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = '#e2e8f0';
+                e.currentTarget.style.background = '#fff';
+              }}
+            >
+              <span style={{ color: '#0284c7' }}>•</span> {name}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Sidebar({ onSave, onLoad, onClear, onCalculate, isSimulating, globalSettings, onUpdateGlobalSettings, templates }) {
   const [activeTab, setActiveTab] = useState('library');
@@ -118,57 +250,20 @@ export default function Sidebar({ onSave, onLoad, onClear, onCalculate, isSimula
       {/* Tab Content */}
       <div style={{ flexGrow: 1 }}>
         {activeTab === 'library' ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
             
             {/* Template Scenarios */}
-            <div>
-              <h3 style={{ fontSize: '11px', textTransform: 'uppercase', color: '#94a3b8', marginBottom: '8px' }}>Example Scenarios</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                {Object.entries(templates || {}).map(([name, data]) => (
-                  <button 
-                    key={name}
-                    onClick={() => { if(window.confirm(`Load "${name}"? Current canvas will be replaced.`)) onLoad(data); }}
-                    style={{
-                      padding: '6px 10px', background: '#f1f5f9', border: '1px solid #e2e8f0',
-                      borderRadius: '4px', fontSize: '11px', textAlign: 'left', cursor: 'pointer',
-                      color: '#475569', transition: 'all 0.2s'
-                    }}
-                    onMouseEnter={(e) => e.target.style.background = '#e2e8f0'}
-                    onMouseLeave={(e) => e.target.style.background = '#f1f5f9'}
-                  >
-                    📂 {name}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <CollapsibleScenarios templates={templates} onLoad={onLoad} />
 
-            <div>
-              <h3 style={{ fontSize: '11px', textTransform: 'uppercase', color: '#94a3b8', marginBottom: '8px' }}>Components</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {equipmentTypes.map((item) => (
-                  <div
-                    key={item.type}
-                    style={{
-                      padding: '12px', background: '#f8fafc', border: '1px solid #e2e8f0',
-                      borderRadius: '6px', cursor: 'grab', display: 'flex', flexDirection: 'column',
-                      gap: '4px', transition: 'all 0.2s'
-                    }}
-                    onDragStart={(event) => onDragStart(event, item.type)}
-                    draggable
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = '#3b82f6';
-                      e.currentTarget.style.background = '#eff6ff';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = '#e2e8f0';
-                      e.currentTarget.style.background = '#f8fafc';
-                    }}
-                  >
-                    <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#1e293b' }}>{item.label}</div>
-                    <div style={{ fontSize: '11px', color: '#64748b' }}>{item.description}</div>
-                  </div>
-                ))}
-              </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              {categorizedEquipment.map((category) => (
+                <CollapsibleCategory 
+                  key={category.name} 
+                  name={category.name} 
+                  items={category.items} 
+                  onDragStart={onDragStart} 
+                />
+              ))}
             </div>
           </div>
         ) : (

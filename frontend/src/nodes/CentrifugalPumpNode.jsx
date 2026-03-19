@@ -74,7 +74,7 @@ export default function PumpNode({ id, data, selected }) {
       </div>
 
       <div style={{ textAlign: 'center', marginTop: '5px' }}>
-        <div style={{ fontSize: '9px', color: '#334155', fontWeight: 'bold' }}>{data.label || 'PUMP'}</div>
+        <div style={{ fontSize: '9px', color: '#334155', fontWeight: 'bold' }}>{data.label || 'C-PUMP'}</div>
         <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#0369a1' }}>+{paToBar(dP)} bar</div>
         <div style={{ fontSize: '9px', color: '#64748b' }}>{m3sToLmin(q)} L/min</div>
       </div>
