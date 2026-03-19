@@ -30,7 +30,8 @@ class GlobalSettings(BaseModel):
     global_roughness: float = 0.000045 # 0.045mm (Standard Steel)
     property_iterations: int = 5
     tolerance: float = 1e-6
-    max_iterations: int = 1000
+    inner_iterations: int = 1000 # Max steps for the hydraulic solver (HYBR/LM)
+    control_iterations: int = 100 # Max steps for the regulator control loop
     solver_method: str = "hybr" # "hybr" or "lm"
 
 class ReactFlowNode(BaseModel):

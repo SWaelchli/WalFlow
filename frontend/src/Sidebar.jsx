@@ -348,7 +348,7 @@ export default function Sidebar({ onSave, onLoad, onClear, onCalculate, isSimula
               <div style={{ marginBottom: '12px' }}>
                 <label style={{ display: 'block', fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>Solver Method</label>
                 <select 
-                  value={globalSettings.solver_method || 'lm'}
+                  value={globalSettings.solver_method || 'hybr'}
                   onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, solver_method: e.target.value })}
                   style={{
                     width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #e2e8f0',
@@ -358,7 +358,18 @@ export default function Sidebar({ onSave, onLoad, onClear, onCalculate, isSimula
                   <option value="hybr">HYBR (Fast, for Simple Nets)</option>
                   <option value="lm">LM (Robust, for Stiff Nets)</option>
                 </select>
-                <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>HYBR is faster; LM handles high resistance.</p>
+                <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>HYBR is Powell's hybrid; LM is Levenberg-Marquardt (better for extreme resistance).</p>
+              </div>
+
+              <div style={{ marginBottom: '12px' }}>
+                <label style={{ display: 'block', fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>Control Iterations</label>
+                <input 
+                  type="number"
+                  value={globalSettings.control_iterations || 100}
+                  onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, control_iterations: parseInt(e.target.value) })}
+                  style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #e2e8f0', fontSize: '12px' }}
+                />
+                <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>Outer loop for Regulators/RCVs to reach setpoint.</p>
               </div>
 
               <div style={{ marginBottom: '12px' }}>
@@ -369,7 +380,7 @@ export default function Sidebar({ onSave, onLoad, onClear, onCalculate, isSimula
                   onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, property_iterations: parseInt(e.target.value) })}
                   style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #e2e8f0', fontSize: '12px' }}
                 />
-                <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>Thermal/Property propagation loops</p>
+                <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>Thermal/Property propagation loops per hydraulic step.</p>
               </div>
 
               <div style={{ marginBottom: '12px' }}>
@@ -381,16 +392,18 @@ export default function Sidebar({ onSave, onLoad, onClear, onCalculate, isSimula
                   onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, tolerance: parseFloat(e.target.value) })}
                   style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #e2e8f0', fontSize: '12px' }}
                 />
+                <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>Target precision for balancing flow and pressure.</p>
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>Max Iterations</label>
+                <label style={{ display: 'block', fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>Inner Solver Iterations</label>
                 <input 
                   type="number"
-                  value={globalSettings.max_iterations}
-                  onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, max_iterations: parseInt(e.target.value) })}
+                  value={globalSettings.inner_iterations || 1000}
+                  onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, inner_iterations: parseInt(e.target.value) })}
                   style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #e2e8f0', fontSize: '12px' }}
                 />
+                <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>Max steps the math solver takes to find a balance.</p>
               </div>
             </div>
           </div>
