@@ -3,61 +3,166 @@
     {
       "id": "t1",
       "type": "tank",
-      "position": { "x": 0, "y": 200 },
-      "data": { "label": "Source", "level": 1.0, "elevation": 0, "temperature": 293.15 }
+      "position": {
+        "x": 0,
+        "y": 200
+      },
+      "data": {
+        "label": "Source",
+        "level": 1.0,
+        "elevation": 0,
+        "temperature": 293.15
+      }
     },
     {
       "id": "p1",
       "type": "pump",
-      "position": { "x": 150, "y": 200 },
-      "data": { "label": "High Head Pump", "A": 150, "B": 0, "C": 0 }
+      "position": {
+        "x": 150,
+        "y": 200
+      },
+      "data": {
+        "label": "High Head Pump",
+        "A": 150,
+        "B": 0,
+        "C": 0
+      }
     },
     {
       "id": "split",
       "type": "splitter",
-      "position": { "x": 300, "y": 200 },
-      "data": { "label": "Supply Manifold" }
+      "position": {
+        "x": 300,
+        "y": 200
+      },
+      "data": {
+        "label": "Supply Manifold"
+      }
     },
     {
       "id": "reg",
       "type": "linear_regulator",
-      "position": { "x": 450, "y": 100 },
-      "data": { "label": "BPR (Set 8 bar)", "max_cv": 5.0, "set_pressure": 901325, "backpressure": true }
+      "position": {
+        "x": 450,
+        "y": 100
+      },
+      "data": {
+        "label": "BPR (Set 8 bar)",
+        "max_cv": 5.0,
+        "set_pressure": 901325,
+        "backpressure": true
+      }
     },
     {
       "id": "ori",
       "type": "orifice",
-      "position": { "x": 450, "y": 300 },
-      "data": { "label": "Main Process Load", "pipe_diameter": 0.0266, "orifice_diameter": 0.012 }
+      "position": {
+        "x": 450,
+        "y": 300
+      },
+      "data": {
+        "label": "Main Process Load",
+        "pipe_diameter": 0.0266,
+        "orifice_diameter": 0.012
+      }
     },
     {
       "id": "t_sink1",
       "type": "tank",
-      "position": { "x": 650, "y": 100 },
-      "data": { "label": "Bypass Return", "level": 0.0, "elevation": 0, "temperature": 293.15 }
+      "position": {
+        "x": 650,
+        "y": 100
+      },
+      "data": {
+        "label": "Bypass Return",
+        "level": 0.0,
+        "elevation": 0,
+        "temperature": 293.15
+      }
     },
     {
       "id": "t_sink2",
       "type": "tank",
-      "position": { "x": 650, "y": 300 },
-      "data": { "label": "Process End", "level": 0.0, "elevation": 0, "temperature": 293.15 }
+      "position": {
+        "x": 650,
+        "y": 300
+      },
+      "data": {
+        "label": "Process End",
+        "level": 0.0,
+        "elevation": 0,
+        "temperature": 293.15
+      }
     }
   ],
   "edges": [
-    { "id": "e1", "source": "t1",    "target": "p1",    "data": { "length": 1, "diameter": 0.0266 } },
-    { "id": "e2", "source": "p1",    "target": "split", "data": { "length": 1, "diameter": 0.0266 } },
-    { "id": "e3", "source": "split", "sourceHandle": "outlet-0", "target": "reg", "targetHandle": "inlet-0", "data": { "length": 1, "diameter": 0.0266 } },
-    { "id": "e4", "source": "split", "sourceHandle": "outlet-1", "target": "ori", "targetHandle": "inlet-0", "data": { "length": 1, "diameter": 0.0266 } },
-    { "id": "e5", "source": "reg",   "target": "t_sink1", "data": { "length": 1, "diameter": 0.0266 } },
-    { "id": "e6", "source": "ori",   "target": "t_sink2", "data": { "length": 1, "diameter": 0.0266 } }
+    {
+      "id": "e1",
+      "source": "t1",
+      "target": "p1",
+      "data": {
+        "length": 1,
+        "diameter": 0.0266
+      }
+    },
+    {
+      "id": "e2",
+      "source": "p1",
+      "target": "split",
+      "data": {
+        "length": 1,
+        "diameter": 0.0266
+      }
+    },
+    {
+      "id": "e3",
+      "source": "split",
+      "sourceHandle": "outlet-0",
+      "target": "reg",
+      "targetHandle": "inlet-0",
+      "data": {
+        "length": 1,
+        "diameter": 0.0266
+      }
+    },
+    {
+      "id": "e4",
+      "source": "split",
+      "sourceHandle": "outlet-1",
+      "target": "ori",
+      "targetHandle": "inlet-0",
+      "data": {
+        "length": 1,
+        "diameter": 0.0266
+      }
+    },
+    {
+      "id": "e5",
+      "source": "reg",
+      "target": "t_sink1",
+      "data": {
+        "length": 1,
+        "diameter": 0.0266
+      }
+    },
+    {
+      "id": "e6",
+      "source": "ori",
+      "target": "t_sink2",
+      "data": {
+        "length": 1,
+        "diameter": 0.0266
+      }
+    }
   ],
   "globalSettings": {
     "fluid_type": "water",
     "ambient_temperature": 293.15,
     "atmospheric_pressure": 101325.0,
-    "global_roughness": 0.000045,
+    "global_roughness": 4.5e-05,
     "property_iterations": 5,
-    "tolerance": 1e-6,
-    "max_iterations": 1000
+    "tolerance": 1e-06,
+    "max_iterations": 1000,
+    "solver_method": "hybr"
   }
 }

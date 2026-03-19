@@ -12,7 +12,6 @@
         "level": 0.0002,
         "elevation": 0,
         "temperature": 313.15,
-        
         "telemetry": {
           "inlets": [
             {
@@ -247,7 +246,6 @@
         "level": 0.0012,
         "elevation": 0,
         "temperature": 313.15,
-        
         "telemetry": {
           "inlets": [
             {
@@ -391,7 +389,6 @@
         "level": 0.0012,
         "elevation": 0,
         "temperature": 313.15,
-        
         "telemetry": {
           "inlets": [
             {
@@ -438,7 +435,6 @@
         "level": 0.002,
         "elevation": 0,
         "temperature": 313.15,
-        
         "telemetry": {
           "inlets": [
             {
@@ -809,5 +805,15 @@
         }
       }
     }
-  ]
+  ],
+  "globalSettings": {
+    "fluid_type": "water",
+    "ambient_temperature": 293.15,
+    "atmospheric_pressure": 101325.0,
+    "global_roughness": 4.5e-05,
+    "property_iterations": 5,
+    "tolerance": 1e-06,
+    "max_iterations": 1000,
+    "solver_method": "hybr"
+  }
 }

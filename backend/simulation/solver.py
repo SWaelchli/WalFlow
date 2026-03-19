@@ -150,13 +150,20 @@ class NetworkSolver:
         atm_p = 101325.0
         if self.nodes_list and self.nodes_list[0].global_settings:
             atm_p = getattr(self.nodes_list[0].global_settings, 'atmospheric_pressure', 101325.0)
-        avg_p = np.mean(list(self.fixed_pressure_nodes.values())) if self.fixed_pressure_nodes else atm_p
         
-        x0 = np.concatenate([np.full(num_internal, avg_p), np.full(num_edges, 0.005)])
+        # Scaling Factors
+        p_scale = 100000.0  # 1 bar
+        q_scale = 0.001     # 1 L/s
+        
+        # Initial guess (scaled)
+        avg_p = np.mean(list(self.fixed_pressure_nodes.values())) if self.fixed_pressure_nodes else atm_p
+        x0 = np.concatenate([np.full(num_internal, avg_p / p_scale), np.full(num_edges, 0.005 / q_scale)])
 
-        def objective(x):
-            p_in_internal = x[:num_internal]
-            q_edges = x[num_internal:]
+        def objective(x_scaled):
+            # Unscale variables for physics calculations
+            p_in_internal = x_scaled[:num_internal] * p_scale
+            q_edges = x_scaled[num_internal:] * q_scale
+            
             self._propagate_properties(q_edges)
             
             p_in_all = np.zeros(len(self.nodes_list))
@@ -164,29 +171,45 @@ class NetworkSolver:
             for i, idx in enumerate(self.internal_node_indices): p_in_all[idx] = p_in_internal[i]
             
             residuals = []
+            
+            # 1. Mass Balance Residuals (Scaled)
             for i, node_idx in enumerate(self.internal_node_indices):
                 node_id = self.node_ids[node_idx]
                 q_in = sum(q_edges[j] for j, e in enumerate(self.edges_list) if e['target'] == node_id)
                 q_out = sum(q_edges[j] for j, e in enumerate(self.edges_list) if e['source'] == node_id)
-                residuals.append(q_in - q_out)
+                # Residual is already dimensionless because we divide by q_scale
+                residuals.append((q_in - q_out) / q_scale)
+            
+            # 2. Pressure Balance Residuals (Scaled)
             for j, edge in enumerate(self.edges_list):
-                src_idx = self.node_id_to_idx[edge['source']]
-                tgt_idx = self.node_id_to_idx[edge['target']]
-                p_src_out = self._get_node_p_out(self.nodes_list[src_idx], p_in_all[src_idx], q_edges[j])
+                src_id = edge['source']
+                tgt_id = edge['target']
+                src_idx = self.node_id_to_idx[src_id]
+                tgt_idx = self.node_id_to_idx[tgt_id]
+                src_node = self.nodes_list[src_idx]
+                
+                q_in_node = sum(q_edges[k] for k, e in enumerate(self.edges_list) if e['target'] == src_id)
+                q_out_node = sum(q_edges[k] for k, e in enumerate(self.edges_list) if e['source'] == src_id)
+                
+                p_src_out = self._get_node_p_out(src_node, p_in_all[src_idx], q_in_node, q_out_node)
                 dp_pipe = edge['pipe'].calculate_delta_p(q_edges[j], edge['pipe'].inlets[0].density, edge['pipe'].inlets[0].viscosity)
-                residuals.append((p_src_out - p_in_all[tgt_idx]) - dp_pipe)
+                
+                # Residual is dimensionless because we divide by p_scale
+                residuals.append(((p_src_out - p_in_all[tgt_idx]) - dp_pipe) / p_scale)
+                
             return np.array(residuals)
 
-        # Use 'lm' (Levenberg-Marquardt) which is often more robust for stiff problems
-        # like high-resistance piping systems.
         if method == 'hybr':
             solution = root(objective, x0, method='hybr', options={'maxfev': 2000})
         else:
             solution = root(objective, x0, method='lm', options={'maxiter': 2000})
             
         if solution.success:
-            self._update_telemetry(solution.x[:num_internal], solution.x[num_internal:])
-            return solution.x, num_internal
+            # Unscale the final solution before updating telemetry
+            final_p = solution.x[:num_internal] * p_scale
+            final_q = solution.x[num_internal:] * q_scale
+            self._update_telemetry(final_p, final_q)
+            return np.concatenate([final_p, final_q]), num_internal
         else:
             raise ValueError(f"Hydraulic solver failed ({method}): {solution.message}")
 
@@ -244,14 +267,26 @@ class NetworkSolver:
         except (ValueError, IndexError, AttributeError):
             return 0
 
-    def _get_node_p_out(self, node, p_in, q_node):
+    def _get_node_p_out(self, node, p_in, q_in, q_out):
+        """
+        Calculates the pressure at the node's outlet(s).
+        q_in: Total flow entering the node.
+        q_out: Total flow leaving the node.
+        """
         inlet = node.inlets[0] if node.inlets else None
         density = inlet.density if inlet else 1000.0
         viscosity = inlet.viscosity if inlet else 0.001
+        
+        # Pumps ADD pressure based on the flow passing through them
         if isinstance(node, (CentrifugalPump, VolumetricPump)):
-            return p_in + node.calculate_delta_p(q_node, density, viscosity)
+            # Use the flow entering the pump (should equal flow leaving)
+            return p_in + node.calculate_delta_p(q_in, density, viscosity)
+        
+        # Other components SUBTRACT pressure (pressure drop)
         elif hasattr(node, 'calculate_delta_p'):
-            return p_in - node.calculate_delta_p(q_node, density, viscosity)
+            return p_in - node.calculate_delta_p(q_in, density, viscosity)
+        
+        # Default: No pressure change (Mixers, Splitters, Tanks)
         else:
             return p_in
 
@@ -278,22 +313,21 @@ class NetworkSolver:
             for port in node.inlets:
                 port.pressure = p_in
             
-            # Calculate p_out for each outlet based on the flow passing through it
-            # For simplicity in this iteration, we use the sum of outlet flows
-            q_node_total = sum(p.flow_rate for p in node.outlets)
-            p_out = self._get_node_p_out(node, p_in, q_node_total)
+            # Use net flow for pressure calculation
+            q_in_total = sum(p.flow_rate for p in node.inlets)
+            q_out_total = sum(p.flow_rate for p in node.outlets)
+            
+            p_out = self._get_node_p_out(node, p_in, q_in_total, q_out_total)
             
             for port in node.outlets:
                 port.pressure = p_out
         for j, edge in enumerate(self.edges_list):
             pipe = edge['pipe']
             q = q_edges[j]
-            src_idx = self.node_id_to_idx[edge['source']]
-            tgt_idx = self.node_id_to_idx[edge['target']]
-            p_src_in = p_in_all[src_idx]
-            q_src_ref = self.nodes_list[src_idx].inlets[0].flow_rate if self.nodes_list[src_idx].inlets else 0.0
-            p_src_out = self._get_node_p_out(self.nodes_list[src_idx], p_src_in, q_src_ref)
-            pipe.inlets[0].pressure = p_src_out
+            src_node = self.nodes_list[self.node_id_to_idx[edge['source']]]
+            tgt_node = self.nodes_list[self.node_id_to_idx[edge['target']]]
+            
+            pipe.inlets[0].pressure = src_node.outlets[0].pressure
             pipe.inlets[0].flow_rate = q
-            pipe.outlets[0].pressure = p_in_all[tgt_idx]
+            pipe.outlets[0].pressure = tgt_node.inlets[0].pressure
             pipe.outlets[0].flow_rate = q

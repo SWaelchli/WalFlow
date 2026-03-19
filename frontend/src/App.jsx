@@ -73,7 +73,8 @@ export default function App() {
     global_roughness: 0.000045,
     property_iterations: 5,
     tolerance: 1e-6,
-    max_iterations: 1000
+    max_iterations: 1000,
+    solver_method: 'hybr'
   });
 
   // Global UI Fix
@@ -199,7 +200,7 @@ export default function App() {
       setNodes(restoredNodes);
       setEdges(restoredEdges);
       if (data.globalSettings) {
-        setGlobalSettings(data.globalSettings);
+        setGlobalSettings(prev => ({ ...prev, ...data.globalSettings }));
       }
     }
   }, [handleValveChange, handleRotation, setNodes, setEdges]);

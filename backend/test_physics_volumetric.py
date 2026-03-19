@@ -42,7 +42,8 @@ def test_volumetric_physics_isolation():
     # 4. Dead Head (Very low flow)
     q_1 = 1.0 / 60000.0
     dp_1 = pump.calculate_delta_p(q_1, 1000.0)
-    assert dp_1 == 10_000_000.0
+    # Now capped at 200 bar (20,000,000 Pa)
+    assert dp_1 == 20_000_000.0
 
     # 5. Efficiency Scaling
     pump_low_eff = VolumetricPump("LowEff", flow_rated=q_rated_m3s, motor_power=5000.0, efficiency=0.4)

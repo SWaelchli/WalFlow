@@ -31,7 +31,7 @@ class GlobalSettings(BaseModel):
     property_iterations: int = 5
     tolerance: float = 1e-6
     max_iterations: int = 1000
-    solver_method: str = "lm" # "hybr" or "lm"
+    solver_method: str = "hybr" # "hybr" or "lm"
 
 class ReactFlowNode(BaseModel):
     """Represents a node from React Flow."""
