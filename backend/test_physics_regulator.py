@@ -7,7 +7,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from simulation.equipment.tank import Tank
 from simulation.equipment.pipe import Pipe
-from simulation.equipment.pump import Pump
+from simulation.equipment.centrifugal_pump import CentrifugalPump
 from simulation.equipment.linear_regulator import LinearRegulator
 from simulation.schemas import HydraulicNetwork, GlobalSettings
 from simulation.solver import NetworkSolver
@@ -86,7 +86,7 @@ def test_all_scenarios():
     # 2. BPR Baseline (Pump ~11 bar -> Set 8 bar)
     set_pa = 8.0 * 100000 + 101325
     t1 = Tank("Source", fluid_level=1.0)
-    p1 = Pump("Feed Pump", A=100.0, B=0, C=0) # 100m head ~ 10bar + 1atm
+    p1 = CentrifugalPump("Feed Pump", A=100.0, B=0, C=0) # 100m head ~ 10bar + 1atm
     reg = LinearRegulator("BPR", max_cv=5.0, set_pressure=set_pa, backpressure=True)
     t2 = Tank("Sink", fluid_level=1.0)
     nodes = {"t1": t1, "p1": p1, "reg": reg, "t2": t2}

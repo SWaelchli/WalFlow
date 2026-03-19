@@ -1,4 +1,5 @@
 from simulation.equipment.base_node import HydraulicNode
+from simulation.fluid_utils import FluidProperties
 
 class CentrifugalPump(HydraulicNode):
     """
@@ -9,6 +10,7 @@ class CentrifugalPump(HydraulicNode):
         self.A = A  # Shut-off head (meters)
         self.B = B  # Linear coefficient
         self.C = C  # Quadratic coefficient (steepness of the drop-off)
+        self.cavitation_warning = False
         
         self.add_inlet()
         self.add_outlet()
@@ -36,6 +38,18 @@ class CentrifugalPump(HydraulicNode):
         inlet = self.inlets[0]
         outlet = self.outlets[0]
         
+        # Cavitation Check
+        # Default to 'water' if global settings are not available for some reason
+        fluid_type = self.global_settings.fluid_type if self.global_settings else 'water'
+        vapor_pressure = FluidProperties.get_vapor_pressure(fluid_type, inlet.temperature)
+        
+        # Warn if suction pressure is less than 120% of the vapor pressure
+        npsh_safety_margin = 1.2 
+        if inlet.pressure < (vapor_pressure * npsh_safety_margin):
+            self.cavitation_warning = True
+        else:
+            self.cavitation_warning = False
+
         # Calculate the generated pressure
         dp = self.calculate_delta_p(inlet.flow_rate, inlet.density, inlet.viscosity)
         

@@ -7,7 +7,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from simulation.equipment.tank import Tank
 from simulation.equipment.pipe import Pipe
-from simulation.equipment.pump import Pump
+from simulation.equipment.centrifugal_pump import CentrifugalPump
 from simulation.equipment.splitter import Splitter
 from simulation.equipment.orifice import Orifice
 from simulation.equipment.linear_regulator import LinearRegulator
@@ -58,7 +58,7 @@ def test_scenarios():
     set_prv = 5.0 * 100000 + 101325
     nodes1 = {
         "t1": Tank("Source", fluid_level=1.0),
-        "p1": Pump("Pump", A=100.0, B=0, C=0), # 10bar head
+        "p1": CentrifugalPump("Pump", A=100.0, B=0, C=0), # 10bar head
         "reg": LinearRegulator("PRV", max_cv=5.0, set_pressure=set_prv, backpressure=False),
         "ori": Orifice("Load", pipe_diameter=id_1inch, orifice_diameter=0.012),
         "t2": Tank("Sink", fluid_level=0.0)
@@ -77,7 +77,7 @@ def test_scenarios():
     set_bpr = 8.0 * 100000 + 101325
     nodes2 = {
         "t1": Tank("Source", fluid_level=1.0),
-        "p1": Pump("Pump", A=150.0, B=0, C=0), # ~15bar head
+        "p1": CentrifugalPump("Pump", A=150.0, B=0, C=0), # ~15bar head
         "split": Splitter("Splitter"),
         "reg": LinearRegulator("BPR", max_cv=5.0, set_pressure=set_bpr, backpressure=True),
         "ori": Orifice("Bypass Load", pipe_diameter=id_1inch, orifice_diameter=0.012),

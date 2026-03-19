@@ -15,6 +15,7 @@ export default function VolumetricPumpNode({ id, data, selected }) {
   const pOut = data.telemetry?.outlets?.[0]?.pressure || 0;
   const q = data.telemetry?.outlets?.[0]?.flow_rate || 0;
   const dP = pOut - pIn;
+  const cavitation = data.telemetry?.cavitation_warning || false;
 
   useEffect(() => {
     updateNodeInternals(id);
@@ -33,7 +34,28 @@ export default function VolumetricPumpNode({ id, data, selected }) {
         }} />
       )}
 
+      {cavitation && (
+        <div 
+          className="animate-pulse"
+          style={{
+            position: 'absolute',
+            top: -15,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            color: '#ef4444',
+            fontSize: '20px',
+            fontWeight: 'bold',
+            textShadow: '0 0 5px rgba(239, 68, 68, 0.5)',
+            zIndex: 10
+          }}
+          title="CAVITATION RISK: Low Suction Pressure"
+        >
+          ⚠
+        </div>
+      )}
+
       <RotateButton visible={selected} onClick={() => data.onRotate(id)} />
+
 
       <div style={{ 
         width: 60, height: 60, background: 'transparent', position: 'relative',

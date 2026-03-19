@@ -1,6 +1,6 @@
 from simulation.equipment.tank import Tank
 from simulation.equipment.pipe import Pipe
-from simulation.equipment.pump import Pump
+from simulation.equipment.centrifugal_pump import CentrifugalPump
 from simulation.equipment.filter import Filter
 from simulation.schemas import HydraulicNetwork, GlobalSettings
 from simulation.solver import NetworkSolver
@@ -13,7 +13,7 @@ def test_filter_viscosity():
         gs = GlobalSettings()
         
         tank_source = Tank("Oil Tank", fluid_level=2.0, temperature=temp_k, fluid_type="iso_vg_46")
-        pump = Pump("Main Pump", A=100.0, B=0, C=-1000.0)
+        pump = CentrifugalPump("Main Pump", A=100.0, B=0, C=-1000.0)
         # Filter with high resistance to make it dominant
         filt = Filter("Oil Filter", resistance_clean=1e7)
         tank_sink = Tank("Return Tank", fluid_level=1.0, temperature=temp_k, fluid_type="iso_vg_46")

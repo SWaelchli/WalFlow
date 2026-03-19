@@ -7,7 +7,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from simulation.equipment.tank import Tank
 from simulation.equipment.pipe import Pipe
-from simulation.equipment.pump import Pump
+from simulation.equipment.centrifugal_pump import CentrifugalPump
 from simulation.equipment.linear_control_valve import LinearControlValve  
 from simulation.equipment.orifice import Orifice
 from simulation.equipment.filter import Filter
@@ -27,9 +27,9 @@ def test_tank_static_pressure():
     # Global settings will manage fluid properties
     gs = GlobalSettings(fluid_type="iso_vg_46")
     
-    t1 = Tank("Source Tank", fluid_level=h, elevation=elev, temperature=293.15)
+    t1 = Tank("Source Tank", fluid_level=h, elevation=elev, temperature=293.15, fluid_type="iso_vg_46")
     v1 = LinearControlValve("Closed LinearControlValve", max_cv=0.0000001, opening_pct=0.1) 
-    t2 = Tank("Sink Tank", fluid_level=0, elevation=0, temperature=293.15)
+    t2 = Tank("Sink Tank", fluid_level=0, elevation=0, temperature=293.15, fluid_type="iso_vg_46")
 
     nodes = {"t1": t1, "v1": v1, "t2": t2}
     edges = [
@@ -61,10 +61,10 @@ def test_pump_curve():
     gs = GlobalSettings(fluid_type="iso_vg_46")
     
     A, B, C = 80.0, 0.0, -2000.0
-    t1 = Tank("Source", fluid_level=1.0, elevation=0, temperature=293.15)
-    p1 = Pump("Pump", A=A, B=B, C=C)
+    t1 = Tank("Source", fluid_level=1.0, elevation=0, temperature=293.15, fluid_type="iso_vg_46")
+    p1 = CentrifugalPump("Pump", A=A, B=B, C=C)
     v1 = LinearControlValve("LinearControlValve", max_cv=0.05, opening_pct=100.0)
-    t2 = Tank("Sink", fluid_level=1.0, elevation=0, temperature=293.15)
+    t2 = Tank("Sink", fluid_level=1.0, elevation=0, temperature=293.15, fluid_type="iso_vg_46")
 
     nodes = {"t1": t1, "p1": p1, "v1": v1, "t2": t2}
     edges = [
@@ -98,12 +98,12 @@ def test_heat_exchanger():
     gs = GlobalSettings(fluid_type="iso_vg_46")
     
     duty_kw = -10.0 # 10 kW cooling
-    t1 = Tank("Source", fluid_level=5.0, elevation=0, temperature=333.15)
+    t1 = Tank("Source", fluid_level=5.0, elevation=0, temperature=333.15, fluid_type="iso_vg_46")
     # Low flow to see temperature change clearly
     v1 = LinearControlValve("Restriction", max_cv=0.001, opening_pct=100.0)
-    p1 = Pump("Pump", A=20.0, B=0, C=0)
+    p1 = CentrifugalPump("Pump", A=20.0, B=0, C=0)
     hx = HeatExchanger("Cooler", heat_duty=duty_kw * 1000.0)
-    t2 = Tank("Sink", fluid_level=1.0, elevation=0, temperature=293.15)
+    t2 = Tank("Sink", fluid_level=1.0, elevation=0, temperature=293.15, fluid_type="iso_vg_46")
 
     nodes = {"t1": t1, "v1": v1, "p1": p1, "hx": hx, "t2": t2}
     edges = [
@@ -137,11 +137,11 @@ def test_mass_balance():
     print("\n--- Test 4: Mass Balance (Mixer) ---")
     gs = GlobalSettings(fluid_type="iso_vg_46")
     
-    t1 = Tank("T1", fluid_level=10, temperature=300)
-    t2 = Tank("T2", fluid_level=8, temperature=300) # Same temp to isolate mass vs vol
+    t1 = Tank("T1", fluid_level=10, temperature=300, fluid_type="iso_vg_46")
+    t2 = Tank("T2", fluid_level=8, temperature=300, fluid_type="iso_vg_46") # Same temp to isolate mass vs vol
     mix = Mixer("Mixer")
     v_load = LinearControlValve("Load", max_cv=0.01, opening_pct=100.0)   
-    t_out = Tank("Out", fluid_level=0, temperature=300)
+    t_out = Tank("Out", fluid_level=0, temperature=300, fluid_type="iso_vg_46")
 
     nodes = {"t1": t1, "t2": t2, "mix": mix, "vl": v_load, "out": t_out}  
     edges = [

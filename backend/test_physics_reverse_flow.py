@@ -1,6 +1,6 @@
 from simulation.equipment.tank import Tank
 from simulation.equipment.pipe import Pipe
-from simulation.equipment.pump import Pump
+from simulation.equipment.centrifugal_pump import CentrifugalPump
 from simulation.schemas import HydraulicNetwork, GlobalSettings
 from simulation.solver import NetworkSolver
 
@@ -14,7 +14,7 @@ def test_reverse_flow_integrity():
     t2 = Tank("Deep Tank", fluid_level=10.0, temperature=20 + 273.15, fluid_type="iso_vg_46")
     
     # We'll put a Pump in between, but keep it OFF (A=0)
-    pump = Pump("Dead Pump", A=0, B=0, C=0)
+    pump = CentrifugalPump("Dead Pump", A=0, B=0, C=0)
     
     nodes = {"t1": t1, "t2": t2, "p1": pump}
     for node in nodes.values():

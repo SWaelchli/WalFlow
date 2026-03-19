@@ -1,6 +1,6 @@
 from simulation.equipment.tank import Tank
 from simulation.equipment.pipe import Pipe
-from simulation.equipment.pump import Pump
+from simulation.equipment.centrifugal_pump import CentrifugalPump
 from simulation.equipment.heat_exchanger import HeatExchanger
 from simulation.schemas import HydraulicNetwork, GlobalSettings
 from simulation.solver import NetworkSolver
@@ -14,7 +14,7 @@ def test_thermal_balance():
     temp_initial_k = temp_initial_c + 273.15
     
     tank_source = Tank("Hot Oil Tank", fluid_level=2.0, temperature=temp_initial_k, fluid_type="iso_vg_46")
-    pump = Pump("Main Pump", A=100.0, B=0, C=-1000.0)
+    pump = CentrifugalPump("Main Pump", A=100.0, B=0, C=-1000.0)
     # Cooling duty: -1,000,000 Watts (1 MW)
     hx = HeatExchanger("Oil Cooler", heat_duty=-1000000.0, pressure_drop_factor=0.005)
     tank_sink = Tank("Return Tank", fluid_level=1.0, temperature=temp_initial_k, fluid_type="iso_vg_46")

@@ -1,4 +1,5 @@
 from simulation.equipment.base_node import HydraulicNode
+from simulation.fluid_utils import FluidProperties
 
 class VolumetricPump(HydraulicNode):
     """
@@ -10,6 +11,7 @@ class VolumetricPump(HydraulicNode):
         self.flow_rated = flow_rated    # Rated flow (m³/s)
         self.motor_power = motor_power  # Rated power (W)
         self.efficiency = efficiency    # Decimal efficiency (0.0 to 1.0)
+        self.cavitation_warning = False
         
         # Internal slip parameter to allow solver convergence.
         # This makes the dP curve very steep but not vertical.
@@ -55,6 +57,17 @@ class VolumetricPump(HydraulicNode):
         inlet = self.inlets[0]
         outlet = self.outlets[0]
         
+        # Cavitation Check
+        fluid_type = self.global_settings.fluid_type if self.global_settings else 'water'
+        vapor_pressure = FluidProperties.get_vapor_pressure(fluid_type, inlet.temperature)
+        
+        # NPSH safety margin for PD pumps is also important
+        npsh_safety_margin = 1.2
+        if inlet.pressure < (vapor_pressure * npsh_safety_margin):
+            self.cavitation_warning = True
+        else:
+            self.cavitation_warning = False
+
         # Calculate the generated pressure
         dp = self.calculate_delta_p(inlet.flow_rate, inlet.density, inlet.viscosity)
         
