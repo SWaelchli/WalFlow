@@ -18,7 +18,7 @@ def test_volumetric_physics_isolation():
     # Q_rated = 100 L/min = 0.001666 m3/s
     # Use very high power to test slip in isolation
     q_rated_m3s = 100.0 / 60000.0
-    pump = VolumetricCentrifugalPump("TestPump", flow_rated=q_rated_m3s, motor_power=1e6, efficiency=1.0)
+    pump = VolumetricPump("TestPump", flow_rated=q_rated_m3s, motor_power=1e6, efficiency=1.0)
 
     # 1. Ideal Flow (0.1% slip)
     # At Q = Q_rated, dP should be 0
@@ -33,7 +33,7 @@ def test_volumetric_physics_isolation():
     assert approx(dp_99, 100e5, rel=0.01)
 
     # 3. Power Limit Hit (Now create a power-limited pump)
-    pump_lim = VolumetricCentrifugalPump("LimPump", flow_rated=q_rated_m3s, motor_power=5000.0, efficiency=0.8)
+    pump_lim = VolumetricPump("LimPump", flow_rated=q_rated_m3s, motor_power=5000.0, efficiency=0.8)
     q_50 = 50.0 / 60000.0
     dp_50 = pump_lim.calculate_delta_p(q_50, 1000.0)
     # Usable = 4000W. P = 4000 / (50/60000) = 4,800,000 Pa (48 bar)
@@ -45,7 +45,7 @@ def test_volumetric_physics_isolation():
     assert dp_1 == 10_000_000.0
 
     # 5. Efficiency Scaling
-    pump_low_eff = VolumetricCentrifugalPump("LowEff", flow_rated=q_rated_m3s, motor_power=5000.0, efficiency=0.4)
+    pump_low_eff = VolumetricPump("LowEff", flow_rated=q_rated_m3s, motor_power=5000.0, efficiency=0.4)
     dp_50_low = pump_low_eff.calculate_delta_p(q_50, 1000.0)
     assert approx(dp_50_low * 2, dp_50, rel=0.05)
 
@@ -94,7 +94,7 @@ def test_volumetric_network_scenarios():
     
     # 7. Density Independence
     # Verify flow remains constant when density changes (unlike centrifugal pumps)
-    pump = VolumetricCentrifugalPump("VP", flow_rated=q_rated_m3s, motor_power=10000, efficiency=0.9)
+    pump = VolumetricPump("VP", flow_rated=q_rated_m3s, motor_power=10000, efficiency=0.9)
     net = create_simple_network(pump, valve_opening=50.0)
     
     solver = NetworkSolver(net)
@@ -110,8 +110,8 @@ def test_volumetric_network_scenarios():
     assert approx(q_water, q_oil, rel=0.01)
 
     # 8. Parallel Pumps
-    p1 = VolumetricCentrifugalPump("P1", flow_rated=q_rated_m3s, motor_power=10000, efficiency=0.9)
-    p2 = VolumetricCentrifugalPump("P2", flow_rated=q_rated_m3s, motor_power=10000, efficiency=0.9)
+    p1 = VolumetricPump("P1", flow_rated=q_rated_m3s, motor_power=10000, efficiency=0.9)
+    p2 = VolumetricPump("P2", flow_rated=q_rated_m3s, motor_power=10000, efficiency=0.9)
 
     t_in = Tank("In", fluid_level=0)
     t_in.add_outlet() # Now has outlet-0 and outlet-1
@@ -148,7 +148,7 @@ def test_volumetric_network_scenarios():
     # Small motor (500W). Usable = 450W.
     # At 100 L/min, max dP = 450 / (100/60000) = 2.7e5 Pa (2.7 bar)
     # If we restrict the valve, flow MUST drop below 100 L/min to balance.
-    p_small = VolumetricCentrifugalPump("Small", flow_rated=q_rated_m3s, motor_power=500, efficiency=0.9)
+    p_small = VolumetricPump("Small", flow_rated=q_rated_m3s, motor_power=500, efficiency=0.9)
     net_small = create_simple_network(p_small, valve_opening=5.0) # Highly restricted
     solver_small = NetworkSolver(net_small)
     q_res = solver_small.solve()
@@ -161,8 +161,8 @@ def test_volumetric_network_scenarios():
 
     # 10. Series Stability
     # Two pumps in series. This is often unstable for solvers.
-    p_s1 = VolumetricCentrifugalPump("S1", flow_rated=q_rated_m3s, motor_power=10000, efficiency=0.9)
-    p_s2 = VolumetricCentrifugalPump("S2", flow_rated=q_rated_m3s, motor_power=10000, efficiency=0.9)
+    p_s1 = VolumetricPump("S1", flow_rated=q_rated_m3s, motor_power=10000, efficiency=0.9)
+    p_s2 = VolumetricPump("S2", flow_rated=q_rated_m3s, motor_power=10000, efficiency=0.9)
     nodes_ser = {"tin": t_in, "p1": p_s1, "p2": p_s2, "tout": t_out}
     edges_ser = [
         {"id": "e1", "source": "tin", "target": "p1", "pipe": Pipe("p1",1,0.01)},

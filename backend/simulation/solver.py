@@ -41,10 +41,16 @@ class NetworkSolver:
                 if isinstance(node, (LinearRegulator, RemoteControlValve)):
                     self.control_node_indices.append(i)
 
-    def solve(self):
+    def solve(self, method=None):
         max_outer_iterations = 40
         tolerance_bar = 0.01 
         
+        # Use method from GlobalSettings if not explicitly passed
+        if method is None:
+            # Check if network has global settings and it contains solver_method
+            gs = getattr(self.network, 'global_settings', None)
+            method = getattr(gs, 'solver_method', 'lm') if gs else 'lm'
+
         final_sol_x = None
         num_int = 0
 
@@ -55,7 +61,7 @@ class NetworkSolver:
         for it in range(max_outer_iterations):
             # 1. Solve the current hydraulics with fixed control positions
             try:
-                final_sol_x, num_int = self._solve_hydraulics_core()
+                final_sol_x, num_int = self._solve_hydraulics_core(method=method)
             except ValueError:
                 # If solver fails, control nodes might be too closed. Open them up and retry.
                 for idx in self.control_node_indices:
@@ -136,7 +142,7 @@ class NetworkSolver:
         final_q = final_sol_x[num_int] if final_sol_x is not None and len(final_sol_x) > num_int else 0.0
         return final_q
 
-    def _solve_hydraulics_core(self):
+    def _solve_hydraulics_core(self, method='lm'):
         num_internal = len(self.internal_node_indices)
         num_edges = len(self.edges_list)
         if (num_internal + num_edges) == 0: return np.array([]), 0
@@ -171,12 +177,18 @@ class NetworkSolver:
                 residuals.append((p_src_out - p_in_all[tgt_idx]) - dp_pipe)
             return np.array(residuals)
 
-        solution = root(objective, x0, method='hybr', options={'maxfev': 1000})
+        # Use 'lm' (Levenberg-Marquardt) which is often more robust for stiff problems
+        # like high-resistance piping systems.
+        if method == 'hybr':
+            solution = root(objective, x0, method='hybr', options={'maxfev': 2000})
+        else:
+            solution = root(objective, x0, method='lm', options={'maxiter': 2000})
+            
         if solution.success:
             self._update_telemetry(solution.x[:num_internal], solution.x[num_internal:])
             return solution.x, num_internal
         else:
-            raise ValueError(f"Hydraulic solver failed: {solution.message}")
+            raise ValueError(f"Hydraulic solver failed ({method}): {solution.message}")
 
     def _propagate_properties(self, q_edges):
         iterations = 5

@@ -31,6 +31,7 @@ class GlobalSettings(BaseModel):
     property_iterations: int = 5
     tolerance: float = 1e-6
     max_iterations: int = 1000
+    solver_method: str = "lm" # "hybr" or "lm"
 
 class ReactFlowNode(BaseModel):
     """Represents a node from React Flow."""
@@ -64,3 +65,4 @@ class HydraulicNetwork(BaseModel):
 
     nodes: Dict[str, Any]  # ID -> HydraulicNode
     edges: List[Dict[str, Any]]  # List of: {'source': id, 'target': id, 'pipe': Pipe, 'source_port': str, 'target_port': str}
+    global_settings: Optional[GlobalSettings] = None

@@ -346,6 +346,22 @@ export default function Sidebar({ onSave, onLoad, onClear, onCalculate, isSimula
               <h4 style={{ fontSize: '11px', textTransform: 'uppercase', color: '#94a3b8', marginBottom: '10px' }}>Solver Controls</h4>
               
               <div style={{ marginBottom: '12px' }}>
+                <label style={{ display: 'block', fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>Solver Method</label>
+                <select 
+                  value={globalSettings.solver_method || 'lm'}
+                  onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, solver_method: e.target.value })}
+                  style={{
+                    width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #e2e8f0',
+                    background: '#fff', fontSize: '12px', color: '#1e293b'
+                  }}
+                >
+                  <option value="hybr">HYBR (Fast, for Simple Nets)</option>
+                  <option value="lm">LM (Robust, for Stiff Nets)</option>
+                </select>
+                <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>HYBR is faster; LM handles high resistance.</p>
+              </div>
+
+              <div style={{ marginBottom: '12px' }}>
                 <label style={{ display: 'block', fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>Property Iterations</label>
                 <input 
                   type="number"

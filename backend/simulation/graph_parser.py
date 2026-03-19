@@ -80,7 +80,9 @@ class GraphParser:
                     "pipe": pipe
                 })
 
-        return HydraulicNetwork(nodes=nodes_dict, edges=parsed_edges)
+        network = HydraulicNetwork(nodes=nodes_dict, edges=parsed_edges)
+        network.global_settings = graph.global_settings
+        return network
 
     @staticmethod
     def create_node(node_data: ReactFlowNode, global_settings: Any = None) -> HydraulicNode:

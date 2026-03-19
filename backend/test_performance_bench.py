@@ -1,13 +1,12 @@
 import time
 import os
 import sys
-import json
 from datetime import datetime
 
 # Add backend to path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from simulation.schemas import ReactFlowGraph, GlobalSettings
+from simulation.schemas import ReactFlowGraph
 from simulation.graph_parser import GraphParser
 from simulation.solver import NetworkSolver
 
@@ -18,7 +17,7 @@ def generate_stress_network(size=10):
     """
     nodes = [
         {"id": "t_start", "type": "tank", "data": {"label": "Source", "level": 10.0}, "position": {"x":0,"y":0}},
-        {"id": "p_main", "type": "pump", "data": {"A": 100, "B": 0, "C": -1000}, "position": {"x":100,"y":0}},
+        {"id": "p_main", "type": "centrifugal_pump", "data": {"A": 100, "B": 0, "C": -1000}, "position": {"x":100,"y":0}},
     ]
     edges = [
         {"id": "e_start", "source": "t_start", "target": "p_main", "data": {"length": 1, "diameter": 0.1}}
@@ -47,10 +46,10 @@ def generate_stress_network(size=10):
     return {"nodes": nodes, "edges": edges}
 
 def run_benchmark():
-    print("🚀 Starting WalFlow Performance Benchmark...")
+    print("🚀 Starting WalFlow Performance Benchmark (HYBR Method)...")
     
     # 1. Setup
-    complexity = 15 # Number of loops
+    complexity = 15 # Number of loops (yields 33 nodes, 47 edges)
     mock_data = generate_stress_network(complexity)
     
     start_time = time.perf_counter()
@@ -64,7 +63,8 @@ def run_benchmark():
     solver_start = time.perf_counter()
     try:
         solver = NetworkSolver(network)
-        solver.solve()
+        # Explicitly use hybr to maintain benchmark consistency
+        solver.solve(method='hybr')
         solve_success = True
     except Exception as e:
         print(f"❌ Solver Failed during benchmark: {e}")
@@ -74,7 +74,7 @@ def run_benchmark():
     total_time = time.perf_counter() - start_time
     
     # 4. Logging
-    log_result(complexity, len(mock_data['nodes']), len(mock_data['edges']), parse_time, solve_time, total_time, solve_success)
+    log_result(len(mock_data['nodes']), len(mock_data['edges']), parse_time, solve_time, total_time, solve_success)
     
     print(f"✅ Benchmark Complete!")
     print(f"   - Nodes: {len(mock_data['nodes'])}")
@@ -83,7 +83,7 @@ def run_benchmark():
     print(f"   - Solve Time: {solve_time*1000:.2f} ms")
     print(f"   - Total Time: {total_time*1000:.2f} ms")
 
-def log_result(complexity, nodes, edges, parse, solve, total, success):
+def log_result(nodes, edges, parse, solve, total, success):
     log_file = os.path.join(os.path.dirname(__file__), "performance_log.md")
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     status = "PASS" if success else "FAIL"
