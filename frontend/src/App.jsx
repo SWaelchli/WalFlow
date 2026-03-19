@@ -472,6 +472,7 @@ export default function App() {
           <DetailPanel selectedNode={selectedNode} />
           
           <PropertyEditor 
+            key={selectedNode?.id || selectedEdge?.id || 'none'}
             node={selectedNode} 
             edge={selectedEdge}
             onUpdate={updateNodeData} 

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { mToMm, mmToM } from './utils/converters';
 import { ASME_PIPE_STANDARDS, calculatePipeId, findClosestPipeMatch } from './utils/standards_library';
 
@@ -19,7 +19,6 @@ const PipeSelector = ({ data, onChange }) => {
       const sch = pipe.schedules[currentSch] ? currentSch : Object.keys(pipe.schedules)[0];
       const newId = calculatePipeId(pipe.od, pipe.schedules[sch]);
       
-      // Update all three related fields to ensure sync with DataList
       onChange('diameter', newId);
       onChange('standardDn', dnInt);
       onChange('standardSch', sch);
@@ -72,7 +71,7 @@ const PipeSelector = ({ data, onChange }) => {
 };
 
 export default function PropertyEditor({ node, edge, onUpdate, onUpdateEdge, onDelete, onDeleteEdge }) {
-  const [isCollapsed, setIsCollapsed] = React.useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   if (!node && !edge) return null;
 
@@ -80,13 +79,50 @@ export default function PropertyEditor({ node, edge, onUpdate, onUpdateEdge, onD
   const item = isNode ? node : edge;
   const { id, type, data } = item;
 
-  const handleChange = (field, value) => {
-    // Keep raw value, parse only where numerically required
-    if (isNode) {
-      onUpdate(id, { [field]: value });
-    } else {
-      onUpdateEdge(id, { [field]: value });
+  // Track raw strings for all numeric inputs to allow empty state while typing
+  const [localDrafts, setLocalDrafts] = useState({});
+
+  const validateAndCommit = (field, rawValue, isCritical = false) => {
+    let finalValue = rawValue;
+
+    // Handle empty string
+    if (finalValue === '') {
+      if (isCritical) {
+        alert(`${field} cannot be empty or zero. Reverting to previous value.`);
+        // Reset local draft to original data
+        setLocalDrafts({}); 
+        return;
+      }
+      finalValue = "0";
     }
+
+    const numericValue = parseFloat(finalValue);
+
+    // Critical validation (e.g., diameter, Cv cannot be 0)
+    if (isCritical && (isNaN(numericValue) || numericValue <= 0)) {
+      alert(`${field} must be a positive number greater than zero.`);
+      setLocalDrafts({});
+      return;
+    }
+
+    const processedValue = isNaN(numericValue) ? finalValue : numericValue;
+
+    if (isNode) {
+      onUpdate(id, { [field]: processedValue });
+    } else {
+      onUpdateEdge(id, { [field]: processedValue });
+    }
+    
+    // Clear local draft for this field once committed
+    setLocalDrafts(prev => {
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  };
+
+  const handleDraftChange = (field, val) => {
+    setLocalDrafts(prev => ({ ...prev, [field]: val }));
   };
 
   const handleDelete = () => {
@@ -138,7 +174,12 @@ export default function PropertyEditor({ node, edge, onUpdate, onUpdateEdge, onD
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div key="label">
             <label style={{ fontSize: '11px', color: '#64748b' }}>Name Tag</label>
-            <input style={{ width: '100%', fontSize: '12px', padding: '4px' }} value={data.label || ''} onChange={(e) => handleChange('label', e.target.value)} />
+            <input 
+              style={{ width: '100%', fontSize: '12px', padding: '4px' }} 
+              value={localDrafts.label !== undefined ? localDrafts.label : (data.label || '')} 
+              onChange={(e) => handleDraftChange('label', e.target.value)}
+              onBlur={(e) => validateAndCommit('label', e.target.value)}
+            />
           </div>
 
           {isNode && (
@@ -167,11 +208,17 @@ export default function PropertyEditor({ node, edge, onUpdate, onUpdateEdge, onD
             <>
               <div>
                 <label style={{ fontSize: '11px', color: '#64748b' }}>Pipe Length (m)</label>
-                <input type="number" style={{ width: '100%', fontSize: '12px' }} value={data.length || 25.0} onChange={(e) => handleChange('length', e.target.value)} />
+                <input 
+                  type="number" 
+                  style={{ width: '100%', fontSize: '12px' }} 
+                  value={localDrafts.length !== undefined ? localDrafts.length : (data.length || 25.0)} 
+                  onChange={(e) => handleDraftChange('length', e.target.value)}
+                  onBlur={(e) => validateAndCommit('length', e.target.value, true)}
+                />
               </div>
               <div>
                 <label style={{ fontSize: '11px', color: '#64748b' }}>Pipe Diameter</label>
-                <PipeSelector data={data} onChange={handleChange} />
+                <PipeSelector data={data} onChange={(field, val) => validateAndCommit(field, val, field === 'diameter')} />
               </div>
             </>
           )}
@@ -180,15 +227,34 @@ export default function PropertyEditor({ node, edge, onUpdate, onUpdateEdge, onD
             <>
               <div>
                 <label style={{ fontSize: '11px', color: '#64748b' }}>Fluid Level (m)</label>
-                <input type="number" style={{ width: '100%', fontSize: '12px' }} value={data.level} onChange={(e) => handleChange('level', e.target.value)} />
+                <input 
+                  type="number" 
+                  style={{ width: '100%', fontSize: '12px' }} 
+                  value={localDrafts.level !== undefined ? localDrafts.level : (data.level || 0)} 
+                  onChange={(e) => handleDraftChange('level', e.target.value)}
+                  onBlur={(e) => validateAndCommit('level', e.target.value)}
+                />
               </div>
               <div>
                 <label style={{ fontSize: '11px', color: '#64748b' }}>Elevation (m)</label>
-                <input type="number" style={{ width: '100%', fontSize: '12px' }} value={data.elevation} onChange={(e) => handleChange('elevation', e.target.value)} />
+                <input 
+                  type="number" 
+                  style={{ width: '100%', fontSize: '12px' }} 
+                  value={localDrafts.elevation !== undefined ? localDrafts.elevation : (data.elevation || 0)} 
+                  onChange={(e) => handleDraftChange('elevation', e.target.value)}
+                  onBlur={(e) => validateAndCommit('elevation', e.target.value)}
+                />
               </div>
               <div>
                 <label style={{ fontSize: '11px', color: '#64748b' }}>Temp (°C)</label>
-                <input type="number" style={{ width: '100%', fontSize: '12px' }} step="0.1" value={(data.temperature - 273.15).toFixed(1)} onChange={(e) => handleChange('temperature', parseFloat(e.target.value) + 273.15)} />
+                <input 
+                  type="number" 
+                  style={{ width: '100%', fontSize: '12px' }} 
+                  step="0.1" 
+                  value={localDrafts.temperature !== undefined ? localDrafts.temperature : (data.temperature - 273.15).toFixed(1)} 
+                  onChange={(e) => handleDraftChange('temperature', e.target.value)}
+                  onBlur={(e) => validateAndCommit('temperature', parseFloat(e.target.value) + 273.15)}
+                />
               </div>
             </>
           )}
@@ -197,11 +263,23 @@ export default function PropertyEditor({ node, edge, onUpdate, onUpdateEdge, onD
             <>
               <div>
                 <label style={{ fontSize: '11px', color: '#64748b' }}>Curve A (Shutoff Head, m)</label>
-                <input type="number" style={{ width: '100%', fontSize: '12px' }} value={data.A} onChange={(e) => handleChange('A', e.target.value)} />
+                <input 
+                  type="number" 
+                  style={{ width: '100%', fontSize: '12px' }} 
+                  value={localDrafts.A !== undefined ? localDrafts.A : (data.A || 0)} 
+                  onChange={(e) => handleDraftChange('A', e.target.value)}
+                  onBlur={(e) => validateAndCommit('A', e.target.value)}
+                />
               </div>
               <div>
                 <label style={{ fontSize: '11px', color: '#64748b' }}>Curve C (Slope)</label>
-                <input type="number" style={{ width: '100%', fontSize: '12px' }} value={data.C} onChange={(e) => handleChange('C', e.target.value)} />
+                <input 
+                  type="number" 
+                  style={{ width: '100%', fontSize: '12px' }} 
+                  value={localDrafts.C !== undefined ? localDrafts.C : (data.C || 0)} 
+                  onChange={(e) => handleDraftChange('C', e.target.value)}
+                  onBlur={(e) => validateAndCommit('C', e.target.value)}
+                />
               </div>
             </>
           )}
@@ -210,15 +288,33 @@ export default function PropertyEditor({ node, edge, onUpdate, onUpdateEdge, onD
             <>
               <div>
                 <label style={{ fontSize: '11px', color: '#64748b' }}>Rated Flow (L/min)</label>
-                <input type="number" style={{ width: '100%', fontSize: '12px' }} value={data.flow_rated} onChange={(e) => handleChange('flow_rated', e.target.value)} />
+                <input 
+                  type="number" 
+                  style={{ width: '100%', fontSize: '12px' }} 
+                  value={localDrafts.flow_rated !== undefined ? localDrafts.flow_rated : (data.flow_rated || 0)} 
+                  onChange={(e) => handleDraftChange('flow_rated', e.target.value)}
+                  onBlur={(e) => validateAndCommit('flow_rated', e.target.value, true)}
+                />
               </div>
               <div>
                 <label style={{ fontSize: '11px', color: '#64748b' }}>Motor Power (kW)</label>
-                <input type="number" style={{ width: '100%', fontSize: '12px' }} value={data.motor_power} onChange={(e) => handleChange('motor_power', e.target.value)} />
+                <input 
+                  type="number" 
+                  style={{ width: '100%', fontSize: '12px' }} 
+                  value={localDrafts.motor_power !== undefined ? localDrafts.motor_power : (data.motor_power || 0)} 
+                  onChange={(e) => handleDraftChange('motor_power', e.target.value)}
+                  onBlur={(e) => validateAndCommit('motor_power', e.target.value, true)}
+                />
               </div>
               <div>
                 <label style={{ fontSize: '11px', color: '#64748b' }}>Efficiency (%)</label>
-                <input type="number" style={{ width: '100%', fontSize: '12px' }} value={data.efficiency} onChange={(e) => handleChange('efficiency', e.target.value)} />
+                <input 
+                  type="number" 
+                  style={{ width: '100%', fontSize: '12px' }} 
+                  value={localDrafts.efficiency !== undefined ? localDrafts.efficiency : (data.efficiency || 0)} 
+                  onChange={(e) => handleDraftChange('efficiency', e.target.value)}
+                  onBlur={(e) => validateAndCommit('efficiency', e.target.value, true)}
+                />
               </div>
             </>
           )}
@@ -227,18 +323,38 @@ export default function PropertyEditor({ node, edge, onUpdate, onUpdateEdge, onD
             <>
               <div>
                 <label style={{ fontSize: '11px', color: '#64748b' }}>Max Cv</label>
-                <input type="number" style={{ width: '100%', fontSize: '12px' }} value={data.max_cv} onChange={(e) => handleChange('max_cv', e.target.value)} />
+                <input 
+                  type="number" 
+                  style={{ width: '100%', fontSize: '12px' }} 
+                  value={localDrafts.max_cv !== undefined ? localDrafts.max_cv : (data.max_cv || 0)} 
+                  onChange={(e) => handleDraftChange('max_cv', e.target.value)}
+                  onBlur={(e) => validateAndCommit('max_cv', e.target.value, true)}
+                />
               </div>
               <div>
                 <label style={{ fontSize: '11px', color: '#64748b' }}>Regulation Mode</label>
-                <select style={{ width: '100%', fontSize: '12px', padding: '4px' }} value={data.backpressure ? "true" : "false"} onChange={(e) => handleChange('backpressure', e.target.value === "true")}>
+                <select 
+                  style={{ width: '100%', fontSize: '12px', padding: '4px' }} 
+                  value={data.backpressure ? "true" : "false"} 
+                  onChange={(e) => {
+                    const isBack = e.target.value === "true";
+                    if (isNode) onUpdate(id, { backpressure: isBack });
+                  }}
+                >
                   <option value="false">{type === 'linear_regulator' ? 'Pressure Reducing (Downstream)' : 'Pressure Reducing (Downstream Remote)'}</option>
                   <option value="true">{type === 'linear_regulator' ? 'Backpressure (Upstream)' : 'Backpressure (Upstream Remote)'}</option>
                 </select>
               </div>
               <div>
                 <label style={{ fontSize: '11px', color: '#64748b' }}>Set Point (bar)</label>
-                <input type="number" style={{ width: '100%', fontSize: '12px' }} step="0.1" value={(data.set_pressure / 100000).toFixed(1)} onChange={(e) => handleChange('set_pressure', parseFloat(e.target.value) * 100000)} />
+                <input 
+                  type="number" 
+                  style={{ width: '100%', fontSize: '12px' }} 
+                  step="0.1" 
+                  value={localDrafts.set_pressure !== undefined ? localDrafts.set_pressure : (data.set_pressure / 100000).toFixed(1)} 
+                  onChange={(e) => handleDraftChange('set_pressure', e.target.value)}
+                  onBlur={(e) => validateAndCommit('set_pressure', parseFloat(e.target.value) * 100000)}
+                />
               </div>
             </>
           )}
@@ -247,11 +363,28 @@ export default function PropertyEditor({ node, edge, onUpdate, onUpdateEdge, onD
             <>
               <div>
                 <label style={{ fontSize: '11px', color: '#64748b' }}>Max Cv</label>
-                <input type="number" style={{ width: '100%', fontSize: '12px' }} value={data.max_cv} onChange={(e) => handleChange('max_cv', e.target.value)} />
+                <input 
+                  type="number" 
+                  style={{ width: '100%', fontSize: '12px' }} 
+                  value={localDrafts.max_cv !== undefined ? localDrafts.max_cv : (data.max_cv || 0)} 
+                  onChange={(e) => handleDraftChange('max_cv', e.target.value)}
+                  onBlur={(e) => validateAndCommit('max_cv', e.target.value, true)}
+                />
               </div>
               <div>
                 <label style={{ fontSize: '11px', color: '#64748b' }}>Opening (%)</label>
-                <input type="number" style={{ width: '100%', fontSize: '12px' }} min="0.1" max="100" step="0.1" value={data.opening || 50.0} onChange={(e) => { const val = parseFloat(e.target.value) || 0; handleChange('opening', val); if (data.onChange) data.onChange(val, id); }} />
+                <input 
+                  type="number" 
+                  style={{ width: '100%', fontSize: '12px' }} 
+                  min="0.1" max="100" step="0.1" 
+                  value={localDrafts.opening !== undefined ? localDrafts.opening : (data.opening || 50.0)} 
+                  onChange={(e) => {
+                    handleDraftChange('opening', e.target.value);
+                    const val = parseFloat(e.target.value);
+                    if (data.onChange && !isNaN(val)) data.onChange(val, id);
+                  }}
+                  onBlur={(e) => validateAndCommit('opening', e.target.value, true)}
+                />
               </div>
             </>
           )}
@@ -259,7 +392,13 @@ export default function PropertyEditor({ node, edge, onUpdate, onUpdateEdge, onD
           {isNode && type === 'heat_exchanger' && (
             <div>
               <label style={{ fontSize: '11px', color: '#64748b' }}>Heat Duty (kW)</label>
-              <input type="number" style={{ width: '100%', fontSize: '12px' }} value={data.heat_duty_kw} onChange={(e) => handleChange('heat_duty_kw', e.target.value)} />
+              <input 
+                type="number" 
+                style={{ width: '100%', fontSize: '12px' }} 
+                value={localDrafts.heat_duty_kw !== undefined ? localDrafts.heat_duty_kw : (data.heat_duty_kw || 0)} 
+                onChange={(e) => handleDraftChange('heat_duty_kw', e.target.value)}
+                onBlur={(e) => validateAndCommit('heat_duty_kw', e.target.value)}
+              />
             </div>
           )}
 
@@ -267,19 +406,43 @@ export default function PropertyEditor({ node, edge, onUpdate, onUpdateEdge, onD
             <>
               <div>
                 <label style={{ fontSize: '11px', color: '#64748b' }}>Clean ΔP (bar)</label>
-                <input type="number" step="0.01" style={{ width: '100%', fontSize: '12px' }} value={data.dp_clean || 0.2} onChange={(e) => handleChange('dp_clean', e.target.value)} />
+                <input 
+                  type="number" step="0.01" 
+                  style={{ width: '100%', fontSize: '12px' }} 
+                  value={localDrafts.dp_clean !== undefined ? localDrafts.dp_clean : (data.dp_clean || 0.2)} 
+                  onChange={(e) => handleDraftChange('dp_clean', e.target.value)}
+                  onBlur={(e) => validateAndCommit('dp_clean', e.target.value, true)}
+                />
               </div>
               <div>
                 <label style={{ fontSize: '11px', color: '#64748b' }}>Terminal ΔP (bar)</label>
-                <input type="number" step="0.1" style={{ width: '100%', fontSize: '12px' }} value={data.dp_terminal || 1.0} onChange={(e) => handleChange('dp_terminal', e.target.value)} />
+                <input 
+                  type="number" step="0.1" 
+                  style={{ width: '100%', fontSize: '12px' }} 
+                  value={localDrafts.dp_terminal !== undefined ? localDrafts.dp_terminal : (data.dp_terminal || 1.0)} 
+                  onChange={(e) => handleDraftChange('dp_terminal', e.target.value)}
+                  onBlur={(e) => validateAndCommit('dp_terminal', e.target.value, true)}
+                />
               </div>
               <div>
                 <label style={{ fontSize: '11px', color: '#64748b' }}>Rated Flow (L/min)</label>
-                <input type="number" style={{ width: '100%', fontSize: '12px' }} value={data.flow_ref || 100.0} onChange={(e) => handleChange('flow_ref', e.target.value)} />
+                <input 
+                  type="number" 
+                  style={{ width: '100%', fontSize: '12px' }} 
+                  value={localDrafts.flow_ref !== undefined ? localDrafts.flow_ref : (data.flow_ref || 100.0)} 
+                  onChange={(e) => handleDraftChange('flow_ref', e.target.value)}
+                  onBlur={(e) => validateAndCommit('flow_ref', e.target.value, true)}
+                />
               </div>
               <div>
                 <label style={{ fontSize: '11px', color: '#64748b' }}>Clogging Level (%)</label>
-                <input type="number" style={{ width: '100%', fontSize: '12px' }} value={data.clogging || 0.0} onChange={(e) => handleChange('clogging', e.target.value)} />
+                <input 
+                  type="number" 
+                  style={{ width: '100%', fontSize: '12px' }} 
+                  value={localDrafts.clogging !== undefined ? localDrafts.clogging : (data.clogging || 0.0)} 
+                  onChange={(e) => handleDraftChange('clogging', e.target.value)}
+                  onBlur={(e) => validateAndCommit('clogging', e.target.value)}
+                />
               </div>
             </>
           )}
@@ -295,14 +458,20 @@ export default function PropertyEditor({ node, edge, onUpdate, onUpdateEdge, onD
                     standardSch: data.standardSch 
                   }} 
                   onChange={(field, val) => {
-                    if (field === 'diameter') handleChange('pipe_diameter', val);
-                    else handleChange(field, val);
+                    if (field === 'diameter') validateAndCommit('pipe_diameter', val, true);
+                    else if (isNode) onUpdate(id, { [field]: val });
                   }} 
                 />
               </div>
               <div>
                 <label style={{ fontSize: '11px', color: '#64748b' }}>Orifice Diameter (mm)</label>
-                <input type="number" style={{ width: '100%', fontSize: '12px' }} value={mToMm(data.orifice_diameter || 0.07)} onChange={(e) => handleChange('orifice_diameter', mmToM(parseFloat(e.target.value) || 0))} />
+                <input 
+                  type="number" 
+                  style={{ width: '100%', fontSize: '12px' }} 
+                  value={localDrafts.orifice_diameter !== undefined ? localDrafts.orifice_diameter : mToMm(data.orifice_diameter || 0.07)} 
+                  onChange={(e) => handleDraftChange('orifice_diameter', e.target.value)}
+                  onBlur={(e) => validateAndCommit('orifice_diameter', mmToM(parseFloat(e.target.value) || 0), true)}
+                />
               </div>
             </>
           )}
