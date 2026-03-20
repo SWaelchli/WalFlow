@@ -66,6 +66,7 @@ export default function App() {
   const [edgeIdCount, setEdgeIdCount] = useState(100);
   const [isSimulating, setIsSimulating] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+  const [lastStats, setLastStats] = useState(null);
   const [globalSettings, setGlobalSettings] = useState({
     fluid_type: 'water',
     ambient_temperature: 293.15,
@@ -392,7 +393,7 @@ export default function App() {
         const data = JSON.parse(event.data);
         if (data.status === 'success') {
           setIsSimulating(false);
-          
+          if (data.stats) setLastStats(data.stats);
           if (data.telemetry && data.telemetry.nodes) {
             setNodes((nds) => nds.map((node) => {
               const nodeTele = data.telemetry.nodes[node.id];
@@ -460,6 +461,7 @@ export default function App() {
         isSimulating={isSimulating}
         globalSettings={globalSettings}
         onUpdateGlobalSettings={setGlobalSettings}
+        lastStats={lastStats}
         templates={{
           "Standard PFD": examplePFD,
           "Volumetric Pump Example": exampleVolumetric,

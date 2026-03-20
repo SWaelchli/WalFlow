@@ -87,7 +87,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 if solver_instance:
                     try:
                         # Run the physics engine
-                        main_flow = solver_instance.solve()
+                        stats = solver_instance.solve()
                         
                         # Package telemetry for all nodes and edges
                         telemetry = {
@@ -100,7 +100,6 @@ async def websocket_endpoint(websocket: WebSocket):
                                 "inlets": [p.dict() for p in node.inlets],
                                 "outlets": [p.dict() for p in node.outlets]
                             }
-                            # Include dynamic properties like opening percentage
                             if hasattr(node, 'opening_pct'):
                                 node_telemetry["opening_pct"] = node.opening_pct
                             if hasattr(node, 'sensed_pressure'):
@@ -120,11 +119,12 @@ async def websocket_endpoint(websocket: WebSocket):
 
                         await websocket.send_text(json.dumps({
                             "status": "success",
-                            "flow_rate_m3s": main_flow,
+                            "stats": stats,
                             "telemetry": telemetry
                         }))
                     except Exception as e:
                         print(f"Solver Error: {e}")
+                        traceback.print_exc()
                         await websocket.send_text(json.dumps({"status": "error", "message": str(e)}))
                 else:
                     await websocket.send_text(json.dumps({"status": "waiting", "message": "Graph required before simulation."}))

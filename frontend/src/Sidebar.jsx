@@ -52,6 +52,88 @@ const theme = {
   shadow: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)'
 };
 
+function DiagnosticsContent({ stats }) {
+  if (!stats) {
+    return (
+      <div style={{ textAlign: 'center', padding: '40px 20px', color: theme.slate500 }}>
+        <div style={{ fontSize: '32px', marginBottom: '12px' }}>📊</div>
+        <p style={{ fontSize: '13px', margin: 0 }}>No simulation data yet.</p>
+        <p style={{ fontSize: '11px', marginTop: '4px' }}>Run a simulation to see engine performance.</p>
+      </div>
+    );
+  }
+
+  const { success, time_ms, outer_iterations, total_inner_iterations, fallback_used, system_size, bottleneck, error } = stats;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      <div style={{ 
+        padding: '16px', 
+        borderRadius: '8px', 
+        background: success ? '#f0fdf4' : '#fef2f2',
+        border: `1px solid ${success ? '#bbf7d0' : '#fecaca'}`,
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px'
+      }}>
+        <div style={{ fontSize: '20px' }}>{success ? '✅' : '❌'}</div>
+        <div>
+          <div style={{ fontSize: '14px', fontWeight: '700', color: success ? '#166534' : '#991b1b' }}>
+            {success ? 'SOLVER CONVERGED' : 'SOLVER FAILED'}
+          </div>
+          <div style={{ fontSize: '11px', color: success ? '#15803d' : '#b91c1c' }}>
+            {success ? 'System is balanced.' : error || 'Non-physical results found.'}
+          </div>
+        </div>
+      </div>
+
+      {bottleneck && (
+        <div style={{ 
+          padding: '16px', 
+          borderRadius: '8px', 
+          background: theme.slate800,
+          color: theme.white,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px'
+        }}>
+          <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: '#94a3b8' }}>Critical Bottleneck</div>
+          <div>
+            <div style={{ fontSize: '14px', fontWeight: '700' }}>{bottleneck.name}</div>
+            <div style={{ fontSize: '11px', color: '#94a3b8' }}>{bottleneck.error_type}</div>
+          </div>
+          <div style={{ fontSize: '10px', color: '#64748b', borderTop: '1px solid #334155', paddingTop: '8px', marginTop: '4px' }}>
+            This component has the largest mathematical error. Check its sizing or connections.
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+        <StatCard label="Total Time" value={`${time_ms.toFixed(1)} ms`} />
+        <StatCard label="System Size" value={`${system_size} Eq.`} />
+        <StatCard label="Control Steps" value={outer_iterations} hint="Outer Loop" />
+        <StatCard label="Math Steps" value={total_inner_iterations} hint="Total Inner" />
+      </div>
+
+      {fallback_used && (
+        <div style={{ fontSize: '11px', color: '#854d0e', background: '#fefce8', padding: '10px', borderRadius: '6px', border: '1px solid #fef08a' }}>
+          <strong>Note:</strong> Robust fallback (LM) was used to ensure convergence.
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StatCard({ label, value, hint }) {
+  return (
+    <div style={{ background: theme.white, padding: '12px', borderRadius: '8px', border: `1px solid ${theme.slate200}` }}>
+      <div style={{ fontSize: '10px', fontWeight: '600', color: theme.slate500, textTransform: 'uppercase' }}>{label}</div>
+      <div style={{ fontSize: '16px', fontWeight: '700', color: theme.slate800, margin: '2px 0' }}>{value}</div>
+      {hint && <div style={{ fontSize: '9px', color: theme.slate500 }}>{hint}</div>}
+    </div>
+  );
+}
+
 function CollapsibleCategory({ name, items, onDragStart }) {
   const [isExpanded, setIsExpanded] = useState(true);
 
@@ -162,7 +244,7 @@ function CollapsibleScenarios({ templates, onLoad }) {
   );
 }
 
-export default function Sidebar({ onSave, onLoad, onClear, onCalculate, isSimulating, globalSettings, onUpdateGlobalSettings, templates }) {
+export default function Sidebar({ onSave, onLoad, onClear, onCalculate, isSimulating, globalSettings, onUpdateGlobalSettings, templates, lastStats }) {
   const [activeTab, setActiveTab] = useState('library');
 
   const onDragStart = (event, nodeType) => {
@@ -197,6 +279,7 @@ export default function Sidebar({ onSave, onLoad, onClear, onCalculate, isSimula
       <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
         <img src={walflowLogo} alt="Logo" style={{ height: '32px' }} />
       </div>
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         <button 
           onClick={onCalculate}
@@ -233,39 +316,36 @@ export default function Sidebar({ onSave, onLoad, onClear, onCalculate, isSimula
       </div>
 
       <div style={{ display: 'flex', background: theme.slate100, padding: '4px', borderRadius: '8px' }}>
-        <button 
-          onClick={() => setActiveTab('library')}
-          style={{
-            flex: 1, padding: '8px', border: 'none', borderRadius: '6px',
-            fontSize: '12px', fontWeight: '600', cursor: 'pointer',
-            background: activeTab === 'library' ? theme.white : 'transparent',
-            color: activeTab === 'library' ? theme.primary : theme.slate500,
-            boxShadow: activeTab === 'library' ? theme.shadow : 'none',
-            transition: 'all 0.2s'
-          }}
-        >Library</button>
-        <button 
-          onClick={() => setActiveTab('settings')}
-          style={{
-            flex: 1, padding: '8px', border: 'none', borderRadius: '6px',
-            fontSize: '12px', fontWeight: '600', cursor: 'pointer',
-            background: activeTab === 'settings' ? theme.white : 'transparent',
-            color: activeTab === 'settings' ? theme.primary : theme.slate500,
-            boxShadow: activeTab === 'settings' ? theme.shadow : 'none',
-            transition: 'all 0.2s'
-          }}
-        >Settings</button>
+        {['library', 'settings', 'diagnostics'].map((tab) => (
+          <button 
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            style={{
+              flex: 1, padding: '8px', border: 'none', borderRadius: '6px',
+              fontSize: '11px', fontWeight: '600', cursor: 'pointer',
+              textTransform: 'capitalize',
+              background: activeTab === tab ? theme.white : 'transparent',
+              color: activeTab === tab ? theme.primary : theme.slate500,
+              boxShadow: activeTab === tab ? theme.shadow : 'none',
+              transition: 'all 0.2s'
+            }}
+          >
+            {tab === 'diagnostics' ? '📈 Stats' : tab}
+          </button>
+        ))}
       </div>
 
       <div style={{ flexGrow: 1 }}>
-        {activeTab === 'library' ? (
+        {activeTab === 'library' && (
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <CollapsibleScenarios templates={templates} onLoad={onLoad} />
             {categorizedEquipment.map((category) => (
               <CollapsibleCategory key={category.name} name={category.name} items={category.items} onDragStart={onDragStart} />
             ))}
           </div>
-        ) : (
+        )}
+
+        {activeTab === 'settings' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <h4 style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', color: theme.slate500, margin: 0, letterSpacing: '0.05em' }}>Fluid Dynamics</h4>
@@ -378,6 +458,10 @@ export default function Sidebar({ onSave, onLoad, onClear, onCalculate, isSimula
               </div>
             </div>
           </div>
+        )}
+
+        {activeTab === 'diagnostics' && (
+          <DiagnosticsContent stats={lastStats} />
         )}
       </div>
     </aside>

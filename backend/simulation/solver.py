@@ -1,7 +1,8 @@
 import numpy as np
 import math
+import time
 from scipy.optimize import root
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Tuple
 
 from simulation.schemas import HydraulicNetwork
 from simulation.equipment.base_node import HydraulicNode
@@ -19,8 +20,7 @@ from simulation.fluid_utils import FluidProperties
 
 class NetworkSolver:
     """
-    Final Network Solver.
-    Uses a clean 'Direct Physics' outer loop for regulators and control valves.
+    Final Network Solver with Live Diagnostics and Bottleneck Detection.
     """
     def __init__(self, network: HydraulicNetwork):
         self.network = network
@@ -31,7 +31,7 @@ class NetworkSolver:
         
         self.fixed_pressure_nodes = {}
         self.internal_node_indices = []
-        self.control_node_indices = [] # Indices of regulators or RCVs
+        self.control_node_indices = []
         
         for i, node in enumerate(self.nodes_list):
             if isinstance(node, Tank):
@@ -42,40 +42,48 @@ class NetworkSolver:
                     self.control_node_indices.append(i)
 
     def solve(self, method=None):
-        # Default Settings
+        start_time = time.perf_counter()
+        
         max_outer_iterations = 100
         tolerance_bar = 0.001 
         
-        # Pull dynamic settings from network global_settings
         gs = getattr(self.network, 'global_settings', None)
         if gs:
             max_outer_iterations = getattr(gs, 'control_iterations', 100)
-            # Use user-defined tolerance if possible (convert to bar if needed, assuming SI Pascals)
-            # For simplicity here we keep the 0.001 bar as standard unless user specifically needs more.
         
         if method is None:
             method = getattr(gs, 'solver_method', 'hybr') if gs else 'hybr'
 
         final_sol_x = None
         num_int = 0
+        total_inner_iterations = 0
+        outer_iterations = 0
+        fallback_triggered = False
         
-        # Initialize x0 for Warm Starting
         x_start = self._generate_initial_guess()
 
-        # Initialize control nodes to a neutral position
+        # Reset control positions
         for idx in self.control_node_indices:
             self.nodes_list[idx].opening_pct = 50.0
 
+        solve_error = None
+        last_residuals = None
+
         for it in range(max_outer_iterations):
+            outer_iterations += 1
             try:
-                final_sol_x, num_int = self._solve_hydraulics_core(method=method, x0_custom=x_start)
+                # Solve core hydraulics
+                res = self._solve_hydraulics_core(method=method, x0_custom=x_start)
+                final_sol_x, num_int, inner_iters, fallback, last_residuals = res
+                
+                total_inner_iterations += inner_iters
+                if fallback: fallback_triggered = True
                 x_start = final_sol_x
-            except ValueError:
-                for idx in self.control_node_indices:
-                    self.nodes_list[idx].opening_pct = 95.0
-                x_start = self._generate_initial_guess()
-                continue
+            except ValueError as e:
+                solve_error = str(e)
+                break
             
+            # Update control valves/regulators
             max_error = 0.0
             for idx in self.control_node_indices:
                 node = self.nodes_list[idx]
@@ -105,17 +113,14 @@ class NetworkSolver:
                 max_error = max(max_error, error_bar)
                 
                 current_dp = (node.inlets[0].pressure - node.outlets[0].pressure)
-                if sensed_at_outlet:
-                    target_dp = current_dp + (sensed - node.set_pressure)
-                else:
-                    target_dp = current_dp + (node.set_pressure - sensed)
+                target_dp = current_dp + (sensed - node.set_pressure) if sensed_at_outlet else current_dp + (node.set_pressure - sensed)
                 
                 rho = node.inlets[0].density
                 q = node.inlets[0].flow_rate
                 abs_q = abs(q)
                 K_CV_SI = 1.732e9
-                
                 min_dp = (K_CV_SI * rho * q * abs_q) / (node.max_cv**2)
+                
                 if target_dp <= min_dp or abs_q < 1e-8:
                     target_opening = 100.0
                 else:
@@ -127,9 +132,57 @@ class NetworkSolver:
 
             if max_error < tolerance_bar:
                 break
+
+        # Calculate Bottleneck if needed
+        bottleneck = self._identify_bottleneck(last_residuals) if last_residuals is not None else None
+
+        # Prepare Statistics
+        stats = {
+            "success": solve_error is None,
+            "error": solve_error,
+            "time_ms": (time.perf_counter() - start_time) * 1000,
+            "outer_iterations": outer_iterations,
+            "total_inner_iterations": total_inner_iterations,
+            "fallback_used": fallback_triggered,
+            "system_size": len(self.internal_node_indices) + len(self.edges_list),
+            "bottleneck": bottleneck
+        }
         
-        final_q = final_sol_x[num_int] if final_sol_x is not None and len(final_sol_x) > num_int else 0.0
-        return final_q
+        return stats
+
+    def _identify_bottleneck(self, residuals) -> Dict[str, Any]:
+        """
+        Finds the component corresponding to the highest residual error.
+        """
+        if residuals is None or len(residuals) == 0:
+            return None
+            
+        abs_res = np.abs(residuals)
+        max_idx = np.argmax(abs_res)
+        max_val = float(abs_res[max_idx])
+        
+        num_internal = len(self.internal_node_indices)
+        
+        if max_idx < num_internal:
+            # It's a Node Mass Balance error
+            node_idx = self.internal_node_indices[max_idx]
+            node = self.nodes_list[node_idx]
+            return {
+                "type": "Node",
+                "name": node.name,
+                "error_type": "Mass Balance (Flow Leak)",
+                "magnitude": max_val
+            }
+        else:
+            # It's an Edge Pressure Balance error
+            edge_idx = max_idx - num_internal
+            edge = self.edges_list[edge_idx]
+            return {
+                "type": "Connection",
+                "name": edge.get('label') or edge.get('id'),
+                "error_type": "Pressure Balance (Resistance)",
+                "magnitude": max_val
+            }
 
     def _generate_initial_guess(self):
         num_internal = len(self.internal_node_indices)
@@ -145,10 +198,10 @@ class NetworkSolver:
                 break
         return np.concatenate([np.full(num_internal, avg_p), np.full(num_edges, q_guess_base)])
 
-    def _solve_hydraulics_core(self, method='lm', x0_custom=None):
+    def _solve_hydraulics_core(self, method='hybr', x0_custom=None) -> Tuple[np.ndarray, int, int, bool, np.ndarray]:
         num_internal = len(self.internal_node_indices)
         num_edges = len(self.edges_list)
-        if (num_internal + num_edges) == 0: return np.array([]), 0
+        if (num_internal + num_edges) == 0: return np.array([]), 0, 0, False, np.array([])
 
         p_scale = 100000.0
         q_scale = 0.001
@@ -185,70 +238,37 @@ class NetworkSolver:
                 residuals.append(((p_src_out - p_in_all[tgt_idx]) - dp_pipe) / p_scale)
             return np.array(residuals)
 
-        # Pull dynamic max iterations for the inner solver
+        def is_physical(x_scaled):
+            q_edges = x_scaled[num_internal:] * q_scale
+            p_nodes = x_scaled[:num_internal] * p_scale
+            if np.any(p_nodes < -100000.0): return False
+            for j, edge in enumerate(self.edges_list):
+                src_node = self.network.nodes[edge['source']]
+                if isinstance(src_node, (CentrifugalPump, VolumetricPump)):
+                    if q_edges[j] < -1e-6: return False
+            return True
+
         gs = getattr(self.network, 'global_settings', None)
         inner_max_steps = getattr(gs, 'inner_iterations', 1000) if gs else 1000
 
-        if method == 'hybr':
-            solution = root(objective, x0, method='hybr', options={'maxfev': inner_max_steps})
-        else:
-            solution = root(objective, x0, method='lm', options={'maxiter': inner_max_steps})
-            
-        if solution.success:
-            final_p = solution.x[:num_internal] * p_scale
-            final_q = solution.x[num_internal:] * q_scale
-            self._update_telemetry(final_p, final_q)
-            return np.concatenate([final_p, final_q]), num_internal
-        else:
-            raise ValueError(f"Hydraulic solver failed ({method}): {solution.message}")
+        fallback_used = False
+        sol = root(objective, x0, method=method, options={'maxfev': inner_max_steps})
+        
+        # Fallback Logic
+        if method == 'hybr' and (not sol.success or not is_physical(sol.x)):
+            fallback_used = True
+            sol = root(objective, sol.x, method='lm', options={'maxiter': inner_max_steps})
 
-    def _propagate_properties(self, q_edges):
-        iterations = 5
-        if self.nodes_list and self.nodes_list[0].global_settings:
-            iterations = getattr(self.nodes_list[0].global_settings, 'property_iterations', 5)
-        for _ in range(iterations):
-            for j, edge in enumerate(self.edges_list):
-                src_node = self.network.nodes[edge['source']]
-                tgt_node = self.network.nodes[edge['target']]
-                pipe = edge['pipe']
-                q = q_edges[j]
-                pipe.inlets[0].flow_rate = q
-                pipe.outlets[0].flow_rate = q
-                if q >= 0:
-                    pipe.inlets[0].temperature = src_node.outlets[0].temperature
-                    pipe.inlets[0].density = src_node.outlets[0].density
-                    pipe.inlets[0].viscosity = src_node.outlets[0].viscosity
-                else:
-                    pipe.outlets[0].temperature = tgt_node.inlets[0].temperature
-                    pipe.outlets[0].density = tgt_node.inlets[0].density
-                    pipe.outlets[0].viscosity = tgt_node.inlets[0].viscosity
-                pipe.calculate() 
-            for node_id, node in self.network.nodes.items():
-                if isinstance(node, Tank):
-                    node.calculate()
-                    continue
-                for j, edge in enumerate(self.edges_list):
-                    q = q_edges[j]
-                    pipe = edge['pipe']
-                    if edge['target'] == node_id:
-                        port_idx = self._parse_port_idx(edge.get('target_port', 'inlet-0'))
-                        if port_idx < len(node.inlets):
-                            node.inlets[port_idx].flow_rate = q
-                            if q >= 0:
-                                node.inlets[port_idx].temperature = pipe.outlets[0].temperature
-                                node.inlets[port_idx].density = pipe.outlets[0].density
-                                node.inlets[port_idx].viscosity = pipe.outlets[0].viscosity
-                    if edge['source'] == node_id:
-                        port_idx = self._parse_port_idx(edge.get('source_port', 'outlet-0'))
-                        if port_idx < len(node.outlets):
-                            node.outlets[port_idx].flow_rate = q
-                            if q < 0:
-                                node.outlets[port_idx].temperature = pipe.inlets[0].temperature
-                                node.outlets[port_idx].density = pipe.inlets[0].density
-                                node.outlets[port_idx].viscosity = pipe.inlets[0].viscosity
-                if hasattr(node, 'calculate_temperature'):
-                    node.calculate_temperature()
-                node.calculate()
+        final_residuals = objective(sol.x)
+
+        if sol.success:
+            final_p = sol.x[:num_internal] * p_scale
+            final_q = sol.x[num_internal:] * q_scale
+            self._update_telemetry(final_p, final_q)
+            return np.concatenate([final_p, final_q]), num_internal, getattr(sol, 'nfev', 0), fallback_used, final_residuals
+        else:
+            # Still return residuals even on failure so we can identify the bottleneck
+            raise ValueError(f"Solver failed: {sol.message}")
 
     def _parse_port_idx(self, port_str: str) -> int:
         try:
@@ -287,13 +307,11 @@ class NetworkSolver:
                 tgt_node.inlets[tgt_port_idx].flow_rate += q
         for i, node in enumerate(self.nodes_list):
             p_in = p_in_all[i]
-            for port in node.inlets:
-                port.pressure = p_in
+            for port in node.inlets: port.pressure = p_in
             q_in_total = sum(p.flow_rate for p in node.inlets)
             q_out_total = sum(p.flow_rate for p in node.outlets)
             p_out = self._get_node_p_out(node, p_in, q_in_total, q_out_total)
-            for port in node.outlets:
-                port.pressure = p_out
+            for port in node.outlets: port.pressure = p_out
         for j, edge in enumerate(self.edges_list):
             pipe = edge['pipe']
             q = q_edges[j]
@@ -303,3 +321,67 @@ class NetworkSolver:
             pipe.inlets[0].flow_rate = q
             pipe.outlets[0].pressure = tgt_node.inlets[0].pressure
             pipe.outlets[0].flow_rate = q
+
+    def _propagate_properties(self, q_edges):
+        """
+        Propagates fluid properties (Temperature, Density, Viscosity) through the network.
+        Handles both forward and reverse flow conditions.
+        """
+        iterations = 5
+        if self.nodes_list and self.nodes_list[0].global_settings:
+            iterations = getattr(self.nodes_list[0].global_settings, 'property_iterations', 5)
+            
+        for _ in range(iterations):
+            # 1. Update Pipes
+            for j, edge in enumerate(self.edges_list):
+                src_node = self.network.nodes[edge['source']]
+                tgt_node = self.network.nodes[edge['target']]
+                pipe = edge['pipe']
+                q = q_edges[j]
+                
+                pipe.inlets[0].flow_rate = q
+                pipe.outlets[0].flow_rate = q
+                
+                if q >= 0:
+                    # Forward Flow: Properties from Source Node
+                    pipe.inlets[0].temperature = src_node.outlets[0].temperature
+                    pipe.inlets[0].density = src_node.outlets[0].density
+                    pipe.inlets[0].viscosity = src_node.outlets[0].viscosity
+                else:
+                    # Reverse Flow: Properties from Target Node
+                    pipe.outlets[0].temperature = tgt_node.inlets[0].temperature
+                    pipe.outlets[0].density = tgt_node.inlets[0].density
+                    pipe.outlets[0].viscosity = tgt_node.inlets[0].viscosity
+                pipe.calculate() 
+
+            # 2. Update Nodes
+            for node_id, node in self.network.nodes.items():
+                if isinstance(node, Tank):
+                    node.calculate()
+                    continue
+                    
+                for j, edge in enumerate(self.edges_list):
+                    q = q_edges[j]
+                    pipe = edge['pipe']
+                    
+                    if edge['target'] == node_id:
+                        port_idx = self._parse_port_idx(edge.get('target_port', 'inlet-0'))
+                        if port_idx < len(node.inlets):
+                            node.inlets[port_idx].flow_rate = q
+                            if q >= 0:
+                                node.inlets[port_idx].temperature = pipe.outlets[0].temperature
+                                node.inlets[port_idx].density = pipe.outlets[0].density
+                                node.inlets[port_idx].viscosity = pipe.outlets[0].viscosity
+                                
+                    if edge['source'] == node_id:
+                        port_idx = self._parse_port_idx(edge.get('source_port', 'outlet-0'))
+                        if port_idx < len(node.outlets):
+                            node.outlets[port_idx].flow_rate = q
+                            if q < 0:
+                                node.outlets[port_idx].temperature = pipe.inlets[0].temperature
+                                node.outlets[port_idx].density = pipe.inlets[0].density
+                                node.outlets[port_idx].viscosity = pipe.inlets[0].viscosity
+                
+                if hasattr(node, 'calculate_temperature'):
+                    node.calculate_temperature()
+                node.calculate()
