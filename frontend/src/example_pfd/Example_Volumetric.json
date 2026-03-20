@@ -1,0 +1,140 @@
+{
+  "nodes": [
+    {
+      "id": "main-reservoir",
+      "type": "tank",
+      "position": { "x": 0, "y": 150 },
+      "data": {
+        "label": "Main Reservoir",
+        "level": 2.0,
+        "elevation": 0.0,
+        "temperature": 313.15,
+        "fluid_type": "water"
+      }
+    },
+    {
+      "id": "suction-splitter",
+      "type": "splitter",
+      "position": { "x": 100, "y": 150 },
+      "data": { "label": "Suction Splitter" }
+    },
+    {
+      "id": "pump-duty",
+      "type": "volumetric_pump",
+      "position": { "x": 250, "y": 50 },
+      "data": {
+        "label": "Duty PD Pump",
+        "flow_rated": 120.0,
+        "motor_power": 15.0,
+        "efficiency": 85.0
+      }
+    },
+    {
+      "id": "pump-standby",
+      "type": "volumetric_pump",
+      "position": { "x": 250, "y": 250 },
+      "data": {
+        "label": "Standby PD Pump",
+        "flow_rated": 60.0,
+        "motor_power": 2.0,
+        "efficiency": 80.0
+      }
+    },
+    {
+      "id": "discharge-mixer",
+      "type": "mixer",
+      "position": { "x": 450, "y": 150 },
+      "data": { "label": "Discharge Mixer" }
+    },
+    {
+      "id": "pressure-control-valve",
+      "type": "linear_control_valve",
+      "position": { "x": 600, "y": 150 },
+      "data": {
+        "label": "System Backpressure Valve",
+        "max_cv": 0.05,
+        "opening": 20.0
+      }
+    },
+    {
+      "id": "return-tank",
+      "type": "tank",
+      "position": { "x": 800, "y": 150 },
+      "data": {
+        "label": "Return Reservoir",
+        "level": 1.0,
+        "elevation": 0.0,
+        "temperature": 313.15,
+        "fluid_type": "water"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "pipe-reservoir-to-split",
+      "source": "main-reservoir",
+      "sourceHandle": "outlet-0",
+      "target": "suction-splitter",
+      "targetHandle": "inlet-0",
+      "data": { "label": "Main Suction", "length": 1.0, "diameter": 0.1 }
+    },
+    {
+      "id": "pipe-split-to-duty",
+      "source": "suction-splitter",
+      "sourceHandle": "outlet-0",
+      "target": "pump-duty",
+      "targetHandle": "inlet-0",
+      "data": { "label": "Duty Suction", "length": 2.0, "diameter": 0.05 }
+    },
+    {
+      "id": "pipe-split-to-standby",
+      "source": "suction-splitter",
+      "sourceHandle": "outlet-1",
+      "target": "pump-standby",
+      "targetHandle": "inlet-0",
+      "data": { "label": "Standby Suction", "length": 2.0, "diameter": 0.05 }
+    },
+    {
+      "id": "pipe-duty-discharge",
+      "source": "pump-duty",
+      "sourceHandle": "outlet-0",
+      "target": "discharge-mixer",
+      "targetHandle": "inlet-0",
+      "data": { "label": "Duty Discharge", "length": 5.0, "diameter": 0.04 }
+    },
+    {
+      "id": "pipe-standby-discharge",
+      "source": "pump-standby",
+      "sourceHandle": "outlet-0",
+      "target": "discharge-mixer",
+      "targetHandle": "inlet-1",
+      "data": { "label": "Standby Discharge", "length": 5.0, "diameter": 0.04 }
+    },
+    {
+      "id": "pipe-mixer-to-pcv",
+      "source": "discharge-mixer",
+      "sourceHandle": "outlet-0",
+      "target": "pressure-control-valve",
+      "targetHandle": "inlet-0",
+      "data": { "label": "Header Line", "length": 1.0, "diameter": 0.06 }
+    },
+    {
+      "id": "pipe-pcv-to-reservoir",
+      "source": "pressure-control-valve",
+      "sourceHandle": "outlet-0",
+      "target": "return-tank",
+      "targetHandle": "inlet-0",
+      "data": { "label": "System Return", "length": 10.0, "diameter": 0.06 }
+    }
+  ],
+  "globalSettings": {
+    "fluid_type": "water",
+    "ambient_temperature": 293.15,
+    "atmospheric_pressure": 101325.0,
+    "global_roughness": 4.5e-05,
+    "property_iterations": 5,
+    "tolerance": 1e-06,
+    "max_iterations": 1000,
+    "solver_method": "hybr"
+  }
+}

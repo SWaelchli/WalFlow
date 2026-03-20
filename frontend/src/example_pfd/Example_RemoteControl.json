@@ -1,0 +1,133 @@
+{
+  "nodes": [
+    {
+      "id": "source-tank",
+      "type": "tank",
+      "position": { "x": 0, "y": 200 },
+      "data": {
+        "label": "Source Reservoir",
+        "level": 2,
+        "elevation": 0,
+        "temperature": 293.15,
+        "fluid_type": "water"
+      }
+    },
+    {
+      "id": "supply-pump",
+      "type": "pump",
+      "position": { "x": 150, "y": 230 },
+      "data": {
+        "label": "Main Supply Pump",
+        "flow_rated_lmin": 100.0,
+        "pressure_rated_bar": 5.0,
+        "rise_to_shutoff_pct": 20.0
+      }
+    },
+    {
+      "id": "remote-cv",
+      "type": "remote_control_valve",
+      "position": { "x": 300, "y": 230 },
+      "data": {
+        "label": "Remote Control Valve",
+        "max_cv": 5,
+        "set_pressure": 300000,
+        "backpressure": false
+      }
+    },
+    {
+      "id": "line-orifice",
+      "type": "orifice",
+      "position": { "x": 450, "y": 230 },
+      "data": {
+        "label": "Line Resistance Orifice",
+        "pipe_diameter": 0.1,
+        "orifice_diameter": 0.008
+      }
+    },
+    {
+      "id": "sensing-orifice",
+      "type": "orifice",
+      "position": { "x": 600, "y": 230 },
+      "data": {
+        "label": "Process Sensing Orifice",
+        "pipe_diameter": 0.1,
+        "orifice_diameter": 0.00801,
+        "sensing": { "inlet-0": true }
+      }
+    },
+    {
+      "id": "sink-tank",
+      "type": "tank",
+      "position": { "x": 750, "y": 200 },
+      "data": {
+        "label": "Return Reservoir",
+        "level": 1,
+        "elevation": 0,
+        "temperature": 293.15,
+        "fluid_type": "water"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "pipe-suction",
+      "source": "source-tank",
+      "sourceHandle": "outlet-0",
+      "target": "supply-pump",
+      "targetHandle": "inlet-0",
+      "data": { "label": "Suction Line", "length": 5, "diameter": 0.1 }
+    },
+    {
+      "id": "pipe-pump-discharge",
+      "source": "supply-pump",
+      "sourceHandle": "outlet-0",
+      "target": "remote-cv",
+      "targetHandle": "inlet-0",
+      "data": { "label": "Pump Discharge", "length": 10, "diameter": 0.08 }
+    },
+    {
+      "id": "pipe-to-load",
+      "source": "remote-cv",
+      "sourceHandle": "outlet-0",
+      "target": "line-orifice",
+      "targetHandle": "inlet-0",
+      "data": { "label": "Main Supply Header", "length": 20, "diameter": 0.08 }
+    },
+    {
+      "id": "pipe-inter-orifice",
+      "source": "line-orifice",
+      "sourceHandle": "outlet-0",
+      "target": "sensing-orifice",
+      "targetHandle": "inlet-0",
+      "data": { "label": "Process Connection", "length": 2, "diameter": 0.05248 }
+    },
+    {
+      "id": "pipe-to-return",
+      "source": "sensing-orifice",
+      "sourceHandle": "outlet-0",
+      "target": "sink-tank",
+      "targetHandle": "inlet-0",
+      "data": { "label": "Return Line", "length": 5, "diameter": 0.05248 }
+    },
+    {
+      "id": "signal-remote-pressure",
+      "source": "sensing-orifice",
+      "sourceHandle": "signal-inlet-0",
+      "target": "remote-cv",
+      "targetHandle": "signal-in",
+      "type": "step",
+      "style": { "stroke": "#fde047", "strokeWidth": 3, "strokeDasharray": "5,5" },
+      "data": { "label": "Remote Pressure Signal", "type": "SIGNAL" }
+    }
+  ],
+  "globalSettings": {
+    "fluid_type": "water",
+    "ambient_temperature": 293.15,
+    "atmospheric_pressure": 101325,
+    "global_roughness": 4.5e-05,
+    "property_iterations": 5,
+    "tolerance": 1e-06,
+    "max_iterations": 1000,
+    "solver_method": "hybr"
+  }
+}

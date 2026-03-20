@@ -1,0 +1,848 @@
+{
+    "nodes":  [
+                  {
+                      "id":  "main-reservoir",
+                      "type":  "tank",
+                      "position":  {
+                                       "x":  199.6,
+                                       "y":  302.9
+                                   },
+                      "data":  {
+                                   "label":  "Oil Reservoir",
+                                   "level":  2.0,
+                                   "elevation":  0,
+                                   "temperature":  333.15
+                               }
+                  },
+                  {
+                      "id":  "main-oil-pump",
+                      "type":  "pump",
+                      "position":  {
+                                       "x":  303.1,
+                                       "y":  247.0
+                                   },
+                      "data":  {
+                                   "label":  "Main Oil Pump",
+                                   "rotation":  270,
+                                   "flow_rated_lmin":  100.0,
+                                   "pressure_rated_bar":  5.0,
+                                   "rise_to_shutoff_pct":  20.0
+                               }
+                  },
+                  {
+                      "id":  "pump-discharge-splitter",
+                      "type":  "splitter",
+                      "position":  {
+                                       "x":  306.7,
+                                       "y":  122.5
+                                   },
+                      "data":  {
+                                   "label":  "Splitter 54",
+                                   "rotation":  270
+                               }
+                  },
+                  {
+                      "id":  "spill-over-valve",
+                      "type":  "remote_control_valve",
+                      "position":  {
+                                       "x":  429.1,
+                                       "y":  41.7
+                                   },
+                      "data":  {
+                                   "label":  "Spill Over Valve",
+                                   "max_cv":  40,
+                                   "set_pressure":  650000,
+                                   "backpressure":  true
+                               }
+                  },
+                  {
+                      "id":  "reservoir-return-tank",
+                      "type":  "tank",
+                      "position":  {
+                                       "x":  649.4,
+                                       "y":  26.0
+                                   },
+                      "data":  {
+                                   "label":  "Main Tank Return",
+                                   "level":  0.0002,
+                                   "elevation":  0,
+                                   "temperature":  313.15
+                               }
+                  },
+                  {
+                      "id":  "cooler-bypass-splitter",
+                      "type":  "splitter",
+                      "position":  {
+                                       "x":  77.1,
+                                       "y":  2.2
+                                   },
+                      "data":  {
+                                   "label":  "Splitter 57",
+                                   "rotation":  270
+                               }
+                  },
+                  {
+                      "id":  "oil-cooler",
+                      "type":  "heat_exchanger",
+                      "position":  {
+                                       "x":  3.4,
+                                       "y":  -104.6
+                                   },
+                      "data":  {
+                                   "label":  "Cooler",
+                                   "heat_duty_kw":  -267,
+                                   "rotation":  270
+                               }
+                  },
+                  {
+                      "id":  "cooler-return-mixer",
+                      "type":  "mixer",
+                      "position":  {
+                                       "x":  167.3,
+                                       "y":  -121.8
+                                   },
+                      "data":  {
+                                   "label":  "Mixer 59"
+                               }
+                  },
+                  {
+                      "id":  "main-filter",
+                      "type":  "filter",
+                      "position":  {
+                                       "x":  370.5,
+                                       "y":  -146.1
+                                   },
+                      "data":  {
+                                   "label":  "Filter 60",
+                                   "dp_clean":  0.2,
+                                   "dp_terminal":  1.0,
+                                   "flow_ref":  550,
+                                   "clogging":  0.0
+                               }
+                  },
+                  {
+                      "id":  "flow-sensing-orifice",
+                      "type":  "orifice",
+                      "position":  {
+                                       "x":  592.4,
+                                       "y":  -156.7
+                                   },
+                      "data":  {
+                                   "label":  "FO-3041A",
+                                   "pipe_diameter":  0.07366,
+                                   "orifice_diameter":  0.0242,
+                                   "sensing":  {
+                                                   "inlet-0":  true
+                                               }
+                               }
+                  },
+                  {
+                      "id":  "distribution-header-splitter",
+                      "type":  "splitter",
+                      "position":  {
+                                       "x":  825.2,
+                                       "y":  -163.7
+                                   },
+                      "data":  {
+                                   "label":  "Splitter 62"
+                               }
+                  },
+                  {
+                      "id":  "motor-bearing-splitter",
+                      "type":  "splitter",
+                      "position":  {
+                                       "x":  1000.2,
+                                       "y":  -246.7
+                                   },
+                      "data":  {
+                                   "label":  "Splitter 63",
+                                   "rotation":  270
+                               }
+                  },
+                  {
+                      "id":  "orifice-motor-nde",
+                      "type":  "orifice",
+                      "position":  {
+                                       "x":  1148.0,
+                                       "y":  -519.7
+                                   },
+                      "data":  {
+                                   "label":  "Motor NDE",
+                                   "pipe_diameter":  0.01888,
+                                   "orifice_diameter":  0.003
+                               }
+                  },
+                  {
+                      "id":  "orifice-motor-de",
+                      "type":  "orifice",
+                      "position":  {
+                                       "x":  1163.2,
+                                       "y":  -361.7
+                                   },
+                      "data":  {
+                                   "label":  "Motor DE",
+                                   "pipe_diameter":  0.01888,
+                                   "orifice_diameter":  0.003
+                               }
+                  },
+                  {
+                      "id":  "drain-motor-nde",
+                      "type":  "tank",
+                      "position":  {
+                                       "x":  1273.2,
+                                       "y":  -539.7
+                                   },
+                      "data":  {
+                                   "label":  "Drain Motor NDE",
+                                   "level":  0.0002,
+                                   "elevation":  0,
+                                   "temperature":  313.15
+                               }
+                  },
+                  {
+                      "id":  "drain-motor-de",
+                      "type":  "tank",
+                      "position":  {
+                                       "x":  1320.4,
+                                       "y":  -228.6
+                                   },
+                      "data":  {
+                                   "label":  "Drain Motor DE",
+                                   "level":  2E-05,
+                                   "elevation":  0,
+                                   "temperature":  313.15
+                               }
+                  },
+                  {
+                      "id":  "gearbox-splitter",
+                      "type":  "splitter",
+                      "position":  {
+                                       "x":  955.4,
+                                       "y":  -102.7
+                                   },
+                      "data":  {
+                                   "label":  "Splitter 68"
+                               }
+                  },
+                  {
+                      "id":  "orifice-gearbox",
+                      "type":  "orifice",
+                      "position":  {
+                                       "x":  1162.4,
+                                       "y":  -184.8
+                                   },
+                      "data":  {
+                                   "label":  "Gearbox",
+                                   "pipe_diameter":  0.03814,
+                                   "orifice_diameter":  0.017
+                               }
+                  },
+                  {
+                      "id":  "rb35-splitter",
+                      "type":  "splitter",
+                      "position":  {
+                                       "x":  1011.0,
+                                       "y":  36.2
+                                   },
+                      "data":  {
+                                   "label":  "Splitter 70",
+                                   "rotation":  90
+                               }
+                  },
+                  {
+                      "id":  "drain-gearbox",
+                      "type":  "tank",
+                      "position":  {
+                                       "x":  1313.8,
+                                       "y":  -35.2
+                                   },
+                      "data":  {
+                                   "label":  "Drain Gearbox",
+                                   "level":  2E-05,
+                                   "elevation":  0,
+                                   "temperature":  313.15
+                               }
+                  },
+                  {
+                      "id":  "orifice-rb35-de",
+                      "type":  "orifice",
+                      "position":  {
+                                       "x":  1172.0,
+                                       "y":  145.1
+                                   },
+                      "data":  {
+                                   "label":  "RB35 DE",
+                                   "pipe_diameter":  0.01888,
+                                   "orifice_diameter":  0.0073
+                               }
+                  },
+                  {
+                      "id":  "rb35-nde-splitter",
+                      "type":  "splitter",
+                      "position":  {
+                                       "x":  1000.2,
+                                       "y":  183.2
+                                   },
+                      "data":  {
+                                   "label":  "Splitter 73",
+                                   "rotation":  90
+                               }
+                  },
+                  {
+                      "id":  "orifice-rb35-nde",
+                      "type":  "orifice",
+                      "position":  {
+                                       "x":  1155.1,
+                                       "y":  302.5
+                                   },
+                      "data":  {
+                                   "label":  "RB35 NDE",
+                                   "pipe_diameter":  0.03814,
+                                   "orifice_diameter":  0.0171
+                               }
+                  },
+                  {
+                      "id":  "rb28-splitter",
+                      "type":  "splitter",
+                      "position":  {
+                                       "x":  1025.7,
+                                       "y":  387.1
+                                   },
+                      "data":  {
+                                   "label":  "Splitter 75"
+                               }
+                  },
+                  {
+                      "id":  "orifice-rb28-de",
+                      "type":  "orifice",
+                      "position":  {
+                                       "x":  1157.6,
+                                       "y":  408.7
+                                   },
+                      "data":  {
+                                   "label":  "RB28 DE",
+                                   "pipe_diameter":  0.01888,
+                                   "orifice_diameter":  0.0046
+                               }
+                  },
+                  {
+                      "id":  "orifice-rb28-nde",
+                      "type":  "orifice",
+                      "position":  {
+                                       "x":  1156.9,
+                                       "y":  495.7
+                                   },
+                      "data":  {
+                                   "label":  "RB28 NDE",
+                                   "pipe_diameter":  0.03814,
+                                   "orifice_diameter":  0.013
+                               }
+                  },
+                  {
+                      "id":  "drain-rb35-de",
+                      "type":  "tank",
+                      "position":  {
+                                       "x":  1313.4,
+                                       "y":  111.5
+                                   },
+                      "data":  {
+                                   "label":  "Drain RB35 DE",
+                                   "level":  2E-05,
+                                   "elevation":  0,
+                                   "temperature":  313.15
+                               }
+                  },
+                  {
+                      "id":  "drain-rb35-nde",
+                      "type":  "tank",
+                      "position":  {
+                                       "x":  1306.1,
+                                       "y":  268.8
+                                   },
+                      "data":  {
+                                   "label":  "Drain RB35 NDE",
+                                   "level":  0.0002,
+                                   "elevation":  0,
+                                   "temperature":  313.15
+                               }
+                  },
+                  {
+                      "id":  "drain-rb28-de",
+                      "type":  "tank",
+                      "position":  {
+                                       "x":  1302.2,
+                                       "y":  420.9
+                                   },
+                      "data":  {
+                                   "label":  "Drain RB28 DE",
+                                   "level":  2E-05,
+                                   "elevation":  0,
+                                   "temperature":  313.15
+                               }
+                  },
+                  {
+                      "id":  "drain-rb28-nde",
+                      "type":  "tank",
+                      "position":  {
+                                       "x":  1302.3,
+                                       "y":  585.0
+                                   },
+                      "data":  {
+                                   "label":  "Drain RB28 NDE",
+                                   "level":  0.0002,
+                                   "elevation":  0,
+                                   "temperature":  313.15
+                               }
+                  }
+              ],
+    "edges":  [
+                  {
+                      "id":  "pump-suction-line",
+                      "source":  "main-reservoir",
+                      "sourceHandle":  "outlet-0",
+                      "target":  "main-oil-pump",
+                      "targetHandle":  "inlet-0",
+                      "label":  "Pump Suction Line",
+                      "animated":  true,
+                      "data":  {
+                                   "length":  8,
+                                   "diameter":  0.15408,
+                                   "type":  "PIPE"
+                               }
+                  },
+                  {
+                      "id":  "pump-discharge-line",
+                      "source":  "main-oil-pump",
+                      "sourceHandle":  "outlet-0",
+                      "target":  "pump-discharge-splitter",
+                      "targetHandle":  "inlet-0",
+                      "label":  "Pump Discharge Line",
+                      "animated":  true,
+                      "data":  {
+                                   "length":  8,
+                                   "diameter":  0.07792,
+                                   "type":  "PIPE"
+                               }
+                  },
+                  {
+                      "id":  "spill-over-line",
+                      "source":  "pump-discharge-splitter",
+                      "sourceHandle":  "outlet-1",
+                      "target":  "spill-over-valve",
+                      "targetHandle":  "inlet-0",
+                      "label":  "Spill Over Line",
+                      "animated":  true,
+                      "data":  {
+                                   "length":  8,
+                                   "diameter":  0.07792,
+                                   "type":  "PIPE"
+                               }
+                  },
+                  {
+                      "id":  "spill-over-return",
+                      "source":  "spill-over-valve",
+                      "sourceHandle":  "outlet-0",
+                      "target":  "reservoir-return-tank",
+                      "targetHandle":  "inlet-0",
+                      "label":  "Spill Over Return",
+                      "animated":  true,
+                      "data":  {
+                                   "length":  10,
+                                   "diameter":  0.07792,
+                                   "type":  "PIPE"
+                               }
+                  },
+                  {
+                      "id":  "main-supply-header",
+                      "source":  "pump-discharge-splitter",
+                      "sourceHandle":  "outlet-0",
+                      "target":  "cooler-bypass-splitter",
+                      "targetHandle":  "inlet-0",
+                      "label":  "Main Supply Header",
+                      "animated":  true,
+                      "data":  {
+                                   "length":  1,
+                                   "diameter":  0.10226,
+                                   "type":  "PIPE"
+                               }
+                  },
+                  {
+                      "id":  "cooler-supply-line",
+                      "source":  "cooler-bypass-splitter",
+                      "sourceHandle":  "outlet-0",
+                      "target":  "oil-cooler",
+                      "targetHandle":  "inlet-0",
+                      "label":  "Cooler Supply Line",
+                      "animated":  true,
+                      "data":  {
+                                   "length":  1,
+                                   "diameter":  0.07792,
+                                   "type":  "PIPE"
+                               }
+                  },
+                  {
+                      "id":  "cooler-bypass-line",
+                      "source":  "cooler-bypass-splitter",
+                      "sourceHandle":  "outlet-1",
+                      "target":  "cooler-return-mixer",
+                      "targetHandle":  "inlet-1",
+                      "label":  "Cooler Bypass Line",
+                      "animated":  true,
+                      "data":  {
+                                   "length":  2,
+                                   "diameter":  0.07792,
+                                   "type":  "PIPE"
+                               }
+                  },
+                  {
+                      "id":  "cooler-return-line",
+                      "source":  "oil-cooler",
+                      "sourceHandle":  "outlet-0",
+                      "target":  "cooler-return-mixer",
+                      "targetHandle":  "inlet-0",
+                      "label":  "Cooler Return Line",
+                      "animated":  true,
+                      "data":  {
+                                   "length":  1,
+                                   "diameter":  0.07792,
+                                   "type":  "PIPE"
+                               }
+                  },
+                  {
+                      "id":  "filter-supply-line",
+                      "source":  "cooler-return-mixer",
+                      "sourceHandle":  "outlet-0",
+                      "target":  "main-filter",
+                      "targetHandle":  "inlet-0",
+                      "label":  "Filter Supply Line",
+                      "animated":  true,
+                      "data":  {
+                                   "length":  1,
+                                   "diameter":  0.07792,
+                                   "type":  "PIPE"
+                               }
+                  },
+                  {
+                      "id":  "filter-discharge-line",
+                      "source":  "main-filter",
+                      "sourceHandle":  "outlet-0",
+                      "target":  "flow-sensing-orifice",
+                      "targetHandle":  "inlet-0",
+                      "label":  "Filter Discharge Line",
+                      "animated":  true,
+                      "data":  {
+                                   "length":  1,
+                                   "diameter":  0.07792,
+                                   "type":  "PIPE"
+                               }
+                  },
+                  {
+                      "id":  "sensing-line",
+                      "source":  "flow-sensing-orifice",
+                      "sourceHandle":  "outlet-0",
+                      "target":  "distribution-header-splitter",
+                      "targetHandle":  "inlet-0",
+                      "label":  "Sensing Line",
+                      "animated":  true,
+                      "data":  {
+                                   "length":  2,
+                                   "diameter":  0.07792,
+                                   "type":  "PIPE"
+                               }
+                  },
+                  {
+                      "id":  "motor-supply-line",
+                      "source":  "distribution-header-splitter",
+                      "sourceHandle":  "outlet-0",
+                      "target":  "motor-bearing-splitter",
+                      "targetHandle":  "inlet-0",
+                      "label":  "Motor Supply Line",
+                      "animated":  true,
+                      "data":  {
+                                   "length":  2,
+                                   "diameter":  0.02096,
+                                   "type":  "PIPE"
+                               }
+                  },
+                  {
+                      "id":  "main-distribution-line",
+                      "source":  "distribution-header-splitter",
+                      "sourceHandle":  "outlet-1",
+                      "target":  "gearbox-splitter",
+                      "targetHandle":  "inlet-0",
+                      "label":  "Main Distribution Line",
+                      "animated":  true,
+                      "data":  {
+                                   "length":  24,
+                                   "diameter":  0.07792,
+                                   "type":  "PIPE"
+                               }
+                  },
+                  {
+                      "id":  "motor-nde-supply",
+                      "source":  "motor-bearing-splitter",
+                      "sourceHandle":  "outlet-0",
+                      "target":  "orifice-motor-nde",
+                      "targetHandle":  "inlet-0",
+                      "label":  "Motor Nde Supply",
+                      "animated":  true,
+                      "data":  {
+                                   "length":  2,
+                                   "diameter":  0.02096,
+                                   "type":  "PIPE"
+                               }
+                  },
+                  {
+                      "id":  "motor-de-supply",
+                      "source":  "motor-bearing-splitter",
+                      "sourceHandle":  "outlet-1",
+                      "target":  "orifice-motor-de",
+                      "targetHandle":  "inlet-0",
+                      "label":  "Motor De Supply",
+                      "animated":  true,
+                      "data":  {
+                                   "length":  2,
+                                   "diameter":  0.02096,
+                                   "type":  "PIPE"
+                               }
+                  },
+                  {
+                      "id":  "motor-nde-drain",
+                      "source":  "orifice-motor-nde",
+                      "sourceHandle":  "outlet-0",
+                      "target":  "drain-motor-nde",
+                      "targetHandle":  "inlet-0",
+                      "label":  "Motor Nde Drain",
+                      "animated":  true,
+                      "data":  {
+                                   "length":  0,
+                                   "diameter":  0.05248,
+                                   "type":  "PIPE"
+                               }
+                  },
+                  {
+                      "id":  "motor-de-drain",
+                      "source":  "orifice-motor-de",
+                      "sourceHandle":  "outlet-0",
+                      "target":  "drain-motor-de",
+                      "targetHandle":  "inlet-0",
+                      "label":  "Motor De Drain",
+                      "animated":  true,
+                      "data":  {
+                                   "length":  0,
+                                   "diameter":  0.05248,
+                                   "type":  "PIPE"
+                               }
+                  },
+                  {
+                      "id":  "gearbox-supply",
+                      "source":  "gearbox-splitter",
+                      "sourceHandle":  "outlet-0",
+                      "target":  "orifice-gearbox",
+                      "targetHandle":  "inlet-0",
+                      "label":  "Gearbox Supply",
+                      "animated":  true,
+                      "data":  {
+                                   "length":  5,
+                                   "diameter":  0.03814,
+                                   "type":  "PIPE"
+                               }
+                  },
+                  {
+                      "id":  "aux-distribution-line",
+                      "source":  "gearbox-splitter",
+                      "sourceHandle":  "outlet-1",
+                      "target":  "rb35-splitter",
+                      "targetHandle":  "inlet-0",
+                      "label":  "Aux Distribution Line",
+                      "animated":  true,
+                      "data":  {
+                                   "length":  1,
+                                   "diameter":  0.05248,
+                                   "type":  "PIPE"
+                               }
+                  },
+                  {
+                      "id":  "gearbox-drain",
+                      "source":  "orifice-gearbox",
+                      "sourceHandle":  "outlet-0",
+                      "target":  "drain-gearbox",
+                      "targetHandle":  "inlet-0",
+                      "label":  "Gearbox Drain",
+                      "animated":  true,
+                      "data":  {
+                                   "length":  0,
+                                   "diameter":  0.05248,
+                                   "type":  "PIPE"
+                               }
+                  },
+                  {
+                      "id":  "rb35-de-supply",
+                      "source":  "rb35-splitter",
+                      "sourceHandle":  "outlet-0",
+                      "target":  "orifice-rb35-de",
+                      "targetHandle":  "inlet-0",
+                      "label":  "Rb35 De Supply",
+                      "animated":  true,
+                      "data":  {
+                                   "length":  2,
+                                   "diameter":  0.05248,
+                                   "type":  "PIPE"
+                               }
+                  },
+                  {
+                      "id":  "rb35-nde-manifold",
+                      "source":  "rb35-splitter",
+                      "sourceHandle":  "outlet-1",
+                      "target":  "rb35-nde-splitter",
+                      "targetHandle":  "inlet-0",
+                      "label":  "Rb35 Nde Manifold",
+                      "animated":  true,
+                      "data":  {
+                                   "length":  1,
+                                   "diameter":  0.05248,
+                                   "type":  "PIPE"
+                               }
+                  },
+                  {
+                      "id":  "rb35-de-drain",
+                      "source":  "orifice-rb35-de",
+                      "sourceHandle":  "outlet-0",
+                      "target":  "drain-rb35-de",
+                      "targetHandle":  "inlet-0",
+                      "label":  "Rb35 De Drain",
+                      "animated":  true,
+                      "data":  {
+                                   "length":  0,
+                                   "diameter":  0.05248,
+                                   "type":  "PIPE"
+                               }
+                  },
+                  {
+                      "id":  "rb35-nde-supply",
+                      "source":  "rb35-nde-splitter",
+                      "sourceHandle":  "outlet-0",
+                      "target":  "orifice-rb35-nde",
+                      "targetHandle":  "inlet-0",
+                      "label":  "Rb35 Nde Supply",
+                      "animated":  true,
+                      "data":  {
+                                   "length":  2,
+                                   "diameter":  0.05248,
+                                   "type":  "PIPE"
+                               }
+                  },
+                  {
+                      "id":  "rb28-manifold",
+                      "source":  "rb35-nde-splitter",
+                      "sourceHandle":  "outlet-1",
+                      "target":  "rb28-splitter",
+                      "targetHandle":  "inlet-0",
+                      "label":  "Rb28 Manifold",
+                      "animated":  true,
+                      "data":  {
+                                   "length":  1,
+                                   "diameter":  0.04094,
+                                   "type":  "PIPE"
+                               }
+                  },
+                  {
+                      "id":  "rb35-nde-drain",
+                      "source":  "orifice-rb35-nde",
+                      "sourceHandle":  "outlet-0",
+                      "target":  "drain-rb35-nde",
+                      "targetHandle":  "inlet-0",
+                      "label":  "Rb35 Nde Drain",
+                      "animated":  true,
+                      "data":  {
+                                   "length":  0,
+                                   "diameter":  0.05248,
+                                   "type":  "PIPE"
+                               }
+                  },
+                  {
+                      "id":  "rb28-de-supply",
+                      "source":  "rb28-splitter",
+                      "sourceHandle":  "outlet-0",
+                      "target":  "orifice-rb28-de",
+                      "targetHandle":  "inlet-0",
+                      "label":  "Rb28 De Supply",
+                      "animated":  true,
+                      "data":  {
+                                   "length":  2,
+                                   "diameter":  0.02096,
+                                   "type":  "PIPE"
+                               }
+                  },
+                  {
+                      "id":  "rb28-nde-supply",
+                      "source":  "rb28-splitter",
+                      "sourceHandle":  "outlet-1",
+                      "target":  "orifice-rb28-nde",
+                      "targetHandle":  "inlet-0",
+                      "label":  "Rb28 Nde Supply",
+                      "animated":  true,
+                      "data":  {
+                                   "length":  2,
+                                   "diameter":  0.04094,
+                                   "type":  "PIPE"
+                               }
+                  },
+                  {
+                      "id":  "rb28-de-drain",
+                      "source":  "orifice-rb28-de",
+                      "sourceHandle":  "outlet-0",
+                      "target":  "drain-rb28-de",
+                      "targetHandle":  "inlet-0",
+                      "label":  "Rb28 De Drain",
+                      "animated":  true,
+                      "data":  {
+                                   "length":  0,
+                                   "diameter":  0.05248,
+                                   "type":  "PIPE"
+                               }
+                  },
+                  {
+                      "id":  "rb28-nde-drain",
+                      "source":  "orifice-rb28-nde",
+                      "sourceHandle":  "outlet-0",
+                      "target":  "drain-rb28-nde",
+                      "targetHandle":  "inlet-0",
+                      "label":  "Rb28 Nde Drain",
+                      "animated":  true,
+                      "data":  {
+                                   "length":  0,
+                                   "diameter":  0.05248,
+                                   "type":  "PIPE"
+                               }
+                  },
+                  {
+                      "id":  "remote-pressure-signal",
+                      "source":  "flow-sensing-orifice",
+                      "sourceHandle":  "signal-inlet-0",
+                      "target":  "spill-over-valve",
+                      "targetHandle":  "signal-in",
+                      "label":  "Remote Pressure Signal",
+                      "animated":  true,
+                      "type":  "step",
+                      "style":  {
+                                    "stroke":  "#fde047",
+                                    "strokeWidth":  3,
+                                    "strokeDasharray":  "5,5"
+                                },
+                      "data":  {
+                                   "type":  "SIGNAL"
+                               }
+                  }
+              ],
+    "globalSettings":  {
+                           "fluid_type":  "iso_vg_46",
+                           "ambient_temperature":  293.15,
+                           "atmospheric_pressure":  101325,
+                           "global_roughness":  4.5E-05,
+                           "property_iterations":  5,
+                           "tolerance":  1E-06,
+                           "max_iterations":  1000,
+                           "solver_method":  "hybr"
+                       }
+}

@@ -1,0 +1,136 @@
+{
+  "nodes": [
+    {
+      "id": "source-tank",
+      "type": "tank",
+      "position": { "x": 0, "y": 200 },
+      "data": {
+        "label": "Source Reservoir",
+        "level": 1.0,
+        "elevation": 0,
+        "temperature": 293.15,
+        "fluid_type": "water"
+      }
+    },
+    {
+      "id": "main-pump",
+      "type": "pump",
+      "position": { "x": 150, "y": 200 },
+      "data": {
+        "label": "Main Pump",
+        "flow_rated_lmin": 100.0,
+        "pressure_rated_bar": 6.0,
+        "rise_to_shutoff_pct": 20.0
+      }
+    },
+    {
+      "id": "supply-manifold",
+      "type": "splitter",
+      "position": { "x": 300, "y": 200 },
+      "data": { "label": "Supply Manifold" }
+    },
+    {
+      "id": "bpr-valve",
+      "type": "linear_regulator",
+      "position": { "x": 450, "y": 100 },
+      "data": {
+        "label": "BPR Valve (Set 4 bar)",
+        "max_cv": 5.0,
+        "set_pressure": 501325,
+        "backpressure": true
+      }
+    },
+    {
+      "id": "process-load",
+      "type": "orifice",
+      "position": { "x": 450, "y": 300 },
+      "data": {
+        "label": "Process Load Orifice",
+        "pipe_diameter": 0.0266,
+        "orifice_diameter": 0.012
+      }
+    },
+    {
+      "id": "bypass-tank",
+      "type": "tank",
+      "position": { "x": 650, "y": 100 },
+      "data": {
+        "label": "Bypass Return Tank",
+        "level": 0.0,
+        "elevation": 0,
+        "temperature": 293.15
+      }
+    },
+    {
+      "id": "process-sink",
+      "type": "tank",
+      "position": { "x": 650, "y": 300 },
+      "data": {
+        "label": "Process Sink Tank",
+        "level": 0.0,
+        "elevation": 0,
+        "temperature": 293.15
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "pipe-suction",
+      "source": "source-tank",
+      "sourceHandle": "outlet-0",
+      "target": "main-pump",
+      "targetHandle": "inlet-0",
+      "data": { "label": "Suction Line", "length": 1, "diameter": 0.0266 }
+    },
+    {
+      "id": "pipe-pump-discharge",
+      "source": "main-pump",
+      "sourceHandle": "outlet-0",
+      "target": "supply-manifold",
+      "targetHandle": "inlet-0",
+      "data": { "label": "Pump Discharge", "length": 1, "diameter": 0.0266 }
+    },
+    {
+      "id": "pipe-to-bpr",
+      "source": "supply-manifold",
+      "sourceHandle": "outlet-0",
+      "target": "bpr-valve",
+      "targetHandle": "inlet-0",
+      "data": { "label": "Bypass Line", "length": 1, "diameter": 0.0266 }
+    },
+    {
+      "id": "pipe-to-process",
+      "source": "supply-manifold",
+      "sourceHandle": "outlet-1",
+      "target": "process-load",
+      "targetHandle": "inlet-0",
+      "data": { "label": "Process Supply", "length": 1, "diameter": 0.0266 }
+    },
+    {
+      "id": "pipe-bpr-return",
+      "source": "bpr-valve",
+      "sourceHandle": "outlet-0",
+      "target": "bypass-tank",
+      "targetHandle": "inlet-0",
+      "data": { "label": "Bypass Return", "length": 1, "diameter": 0.0266 }
+    },
+    {
+      "id": "pipe-process-return",
+      "source": "process-load",
+      "sourceHandle": "outlet-0",
+      "target": "process-sink",
+      "targetHandle": "inlet-0",
+      "data": { "label": "Process Return", "length": 1, "diameter": 0.0266 }
+    }
+  ],
+  "globalSettings": {
+    "fluid_type": "water",
+    "ambient_temperature": 293.15,
+    "atmospheric_pressure": 101325.0,
+    "global_roughness": 4.5e-05,
+    "property_iterations": 5,
+    "tolerance": 1e-06,
+    "max_iterations": 1000,
+    "solver_method": "hybr"
+  }
+}

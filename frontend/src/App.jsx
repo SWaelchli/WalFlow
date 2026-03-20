@@ -29,12 +29,12 @@ import DetailPanel from './DetailPanel';
 import DataList from './DataList';
 
 // Import Examples
-import examplePFD from '../Example_PFD.json';
-import examplePRV from '../Example_PRV.json';
-import exampleBPR from '../Example_BPR.json';
-import exampleRemoteControl from '../Example_RemoteControl.json';
-import exampleAPI614 from '../API_614_LOS.json';
-import exampleVolumetric from '../Example_Volumetric.json';
+import examplePFD from './example_pfd/Example_Standard_PFD.json';
+import examplePRV from './example_pfd/Example_PRV.json';
+import exampleBPR from './example_pfd/Example_BPR.json';
+import exampleRemoteControl from './example_pfd/Example_RemoteControl.json';
+import exampleAPI614 from './example_pfd/Example_API_614_LOS.json';
+import exampleVolumetric from './example_pfd/Example_Volumetric.json';
 
 const nodeTypes = {
   tank: TankNode,
