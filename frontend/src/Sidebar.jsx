@@ -87,7 +87,7 @@ function DiagnosticsContent({ stats }) {
         </div>
       </div>
 
-      {bottleneck && (
+      {bottleneck && !success && (
         <div style={{ 
           padding: '16px', 
           borderRadius: '8px', 
