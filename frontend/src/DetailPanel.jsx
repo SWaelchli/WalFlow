@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import PumpDetails from './details/PumpDetails';
-import RegulatorDetails from './details/RegulatorDetails';
+import ValveDetails from './details/ValveDetails';
 import GenericDetails from './details/GenericDetails';
 
 export default function DetailPanel({ selectedNode }) {
@@ -16,9 +16,10 @@ export default function DetailPanel({ selectedNode }) {
       case 'centrifugal_pump':
       case 'volumetric_pump':
         return <PumpDetails node={selectedNode} />;
+      case 'linear_control_valve':
       case 'linear_regulator':
       case 'remote_control_valve':
-        return <RegulatorDetails node={selectedNode} />;
+        return <ValveDetails node={selectedNode} />;
       default:
         return <GenericDetails node={selectedNode} />;
     }
