@@ -31,7 +31,8 @@ def test_reverse_flow_integrity():
     solver = NetworkSolver(network)
     
     # We expect negative flow in the solver output
-    q = solver.solve()
+    stats = solver.solve()
+    q = edges[0]['pipe'].inlets[0].flow_rate
     
     print(f"Calculated Flow: {q*60000:.2f} L/min (Expected Negative)")
     

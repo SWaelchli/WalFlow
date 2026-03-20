@@ -40,7 +40,8 @@ def test_viscosity_impact():
         network = HydraulicNetwork(nodes=nodes, edges=edges)
         solver = NetworkSolver(network)
         
-        q = solver.solve()
+        stats = solver.solve()
+        q = pump.inlets[0].flow_rate
         
         # Check source tank viscosity
         tank_mu = tank_source.outlets[0].viscosity

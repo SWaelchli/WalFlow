@@ -24,7 +24,7 @@ def run_regulator_test(name, nodes, edges, set_pa, is_backpressure):
 
     solver = NetworkSolver(network)
     try:
-        solver.solve()
+        stats = solver.solve()
         
         # Diagnostics
         reg = nodes['reg']

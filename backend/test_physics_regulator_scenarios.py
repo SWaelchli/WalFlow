@@ -26,7 +26,7 @@ def run_test(name, nodes, edges, set_pa, is_backpressure, sense_node_id):
 
     solver = NetworkSolver(network)
     try:
-        solver.solve()
+        stats = solver.solve()
         
         reg_node = nodes['reg']
         # Sensed pressure at the specific point of interest
@@ -77,7 +77,7 @@ def test_scenarios():
     set_bpr = 8.0 * 100000 + 101325
     nodes2 = {
         "t1": Tank("Source", fluid_level=1.0),
-        "p1": CentrifugalPump("Pump", A=150.0, B=0, C=0), # ~15bar head
+        "p1": CentrifugalPump("Pump", flow_rated=1.0, pressure_rated=15.0*100000.0, rise_to_shutoff_pct=0.0), # ~15bar head
         "split": Splitter("Splitter"),
         "reg": LinearRegulator("BPR", max_cv=5.0, set_pressure=set_bpr, backpressure=True),
         "ori": Orifice("Bypass Load", pipe_diameter=id_1inch, orifice_diameter=0.012),

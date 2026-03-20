@@ -36,7 +36,7 @@ def test_parallel_circuit():
     network = GraphParser.parse_graph(graph)
     
     solver = NetworkSolver(network)
-    solver.solve()
+    stats = solver.solve()
     
     # Extract flows from the edges
     q_path1 = 0

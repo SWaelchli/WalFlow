@@ -99,14 +99,16 @@ def test_volumetric_network_scenarios():
     net = create_simple_network(pump, valve_opening=50.0)
     
     solver = NetworkSolver(net)
-    q_water = solver.solve() # Water density 1000
+    stats_water = solver.solve() # Water density 1000
+    q_water = pump.inlets[0].flow_rate
     
     # Change density to 800 (Oil)
     for node in net.nodes.values():
         for port in node.inlets + node.outlets:
             port.density = 800.0
     
-    q_oil = solver.solve()
+    stats_oil = solver.solve()
+    q_oil = pump.inlets[0].flow_rate
     # Flow should be almost identical (dominated by rated flow + tiny slip)
     assert approx(q_water, q_oil, rel=0.01)
 
@@ -130,7 +132,7 @@ def test_volumetric_network_scenarios():
     ]
     net_para = HydraulicNetwork(nodes=nodes, edges=edges)
     solver_para = NetworkSolver(net_para)
-    solver_para.solve()
+    stats_para = solver_para.solve()
     
     print_network_state(net_para, "Parallel Network State")
     
@@ -152,7 +154,8 @@ def test_volumetric_network_scenarios():
     p_small = VolumetricPump("Small", flow_rated=q_rated_m3s, motor_power=500, efficiency=0.9)
     net_small = create_simple_network(p_small, valve_opening=5.0) # Highly restricted
     solver_small = NetworkSolver(net_small)
-    q_res = solver_small.solve()
+    stats_small = solver_small.solve()
+    q_res = p_small.inlets[0].flow_rate
     
     assert q_res < q_rated_m3s
     # Verify P*Q <= Power * Eff
@@ -172,7 +175,8 @@ def test_volumetric_network_scenarios():
     ]
     net_ser = HydraulicNetwork(nodes=nodes_ser, edges=edges_ser)
     solver_ser = NetworkSolver(net_ser)
-    q_ser = solver_ser.solve()
+    stats_ser = solver_ser.solve()
+    q_ser = p_s1.inlets[0].flow_rate
     assert approx(q_ser, q_rated_m3s, rel=0.01)
 
 if __name__ == "__main__":

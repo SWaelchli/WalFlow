@@ -42,7 +42,7 @@ def test_tank_static_pressure():
     for e in edges: e['pipe'].global_settings = gs
 
     solver = NetworkSolver(network)
-    solver.solve()
+    stats = solver.solve()
 
     p_expected = (870.0 * 9.81 * (h + elev)) + 101325.0
     p_actual = nodes["t1"].outlets[0].pressure
@@ -78,7 +78,8 @@ def test_pump_curve():
     for e in edges: e['pipe'].global_settings = gs
 
     solver = NetworkSolver(network)
-    q = solver.solve()
+    stats = solver.solve()
+    q = p1.inlets[0].flow_rate
 
     dp_pump = p1.outlets[0].pressure - p1.inlets[0].pressure
     head_calc = dp_pump / (870.0 * 9.81)
@@ -118,7 +119,8 @@ def test_heat_exchanger():
     for e in edges: e['pipe'].global_settings = gs
 
     solver = NetworkSolver(network)
-    q = solver.solve()
+    stats = solver.solve()
+    q = hx.inlets[0].flow_rate
 
     t_in = hx.inlets[0].temperature
     t_out = hx.outlets[0].temperature
@@ -156,7 +158,7 @@ def test_mass_balance():
     for e in edges: e['pipe'].global_settings = gs
 
     solver = NetworkSolver(network)
-    solver.solve()
+    stats = solver.solve()
 
     q1 = edges[0]['pipe'].inlets[0].flow_rate
     q2 = edges[1]['pipe'].inlets[0].flow_rate

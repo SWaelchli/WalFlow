@@ -39,7 +39,8 @@ def test_thermal_balance():
     network = HydraulicNetwork(nodes=nodes, edges=edges)
     solver = NetworkSolver(network)
     
-    q = solver.solve()
+    stats = solver.solve()
+    q = pump.inlets[0].flow_rate
     
     # Check source tank temp
     tank_t = tank_source.outlets[0].temperature - 273.15

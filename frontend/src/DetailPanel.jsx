@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import PumpDetails from './details/PumpDetails';
 import ValveDetails from './details/ValveDetails';
+import FilterDetails from './details/FilterDetails';
+import OrificeDetails from './details/OrificeDetails';
 import GenericDetails from './details/GenericDetails';
 
 export default function DetailPanel({ selectedNode }) {
@@ -20,6 +22,10 @@ export default function DetailPanel({ selectedNode }) {
       case 'linear_regulator':
       case 'remote_control_valve':
         return <ValveDetails node={selectedNode} />;
+      case 'filter':
+        return <FilterDetails node={selectedNode} />;
+      case 'orifice':
+        return <OrificeDetails node={selectedNode} />;
       default:
         return <GenericDetails node={selectedNode} />;
     }
