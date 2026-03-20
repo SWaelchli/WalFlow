@@ -1,4 +1,5 @@
 from simulation.equipment.base_node import HydraulicNode
+from simulation.fluid_utils import FluidProperties
 import math
 
 class Orifice(HydraulicNode):
@@ -59,16 +60,31 @@ class Orifice(HydraulicNode):
         """
         inlet = self.inlets[0]
         outlet = self.outlets[0]
-        
+
         # Calculate the pressure drop based on the current flow rate passing through
         dp = self.calculate_delta_p(inlet.flow_rate, inlet.density, inlet.viscosity)
-        
+
         # Update the outlet conditions
         outlet.pressure = inlet.pressure - dp
         outlet.flow_rate = inlet.flow_rate  # Incompressible flow means Q_in = Q_out
         outlet.density = inlet.density
         outlet.viscosity = inlet.viscosity
-        
+
+        # Throttling Heat: dT = abs(dP) / (rho * Cp)
+        # Apply to the port where fluid is EXITING the node.
+        fluid_type = getattr(self.global_settings, 'fluid_type', 'water')
+
+        if inlet.flow_rate >= 0:
+            # Forward flow: Inlet -> Outlet
+            cp = FluidProperties.get_specific_heat(fluid_type, inlet.temperature)
+            dt = abs(dp) / (inlet.density * cp)
+            outlet.temperature = inlet.temperature + dt
+        else:
+            # Reverse flow: Outlet -> Inlet
+            cp = FluidProperties.get_specific_heat(fluid_type, outlet.temperature)
+            dt = abs(dp) / (outlet.density * cp)
+            inlet.temperature = outlet.temperature + dt
+
         self.calculate_temperature()
-        
+
         return dp

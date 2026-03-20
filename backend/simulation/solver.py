@@ -33,6 +33,8 @@ class NetworkSolver:
         self.internal_node_indices = []
         self.control_node_indices = []
         
+        self.last_prop_iters = 0
+        
         for i, node in enumerate(self.nodes_list):
             if isinstance(node, Tank):
                 self.fixed_pressure_nodes[i] = node.calculate()
@@ -55,7 +57,6 @@ class NetworkSolver:
             method = getattr(gs, 'solver_method', 'hybr') if gs else 'hybr'
 
         final_sol_x = None
-        num_int = 0
         total_inner_iterations = 0
         outer_iterations = 0
         fallback_triggered = False
@@ -143,6 +144,7 @@ class NetworkSolver:
             "time_ms": (time.perf_counter() - start_time) * 1000,
             "outer_iterations": outer_iterations,
             "total_inner_iterations": total_inner_iterations,
+            "property_iterations": self.last_prop_iters,
             "fallback_used": fallback_triggered,
             "system_size": len(self.internal_node_indices) + len(self.edges_list),
             "bottleneck": bottleneck
@@ -151,9 +153,6 @@ class NetworkSolver:
         return stats
 
     def _identify_bottleneck(self, residuals) -> Dict[str, Any]:
-        """
-        Finds the component corresponding to the highest residual error.
-        """
         if residuals is None or len(residuals) == 0:
             return None
             
@@ -164,7 +163,6 @@ class NetworkSolver:
         num_internal = len(self.internal_node_indices)
         
         if max_idx < num_internal:
-            # It's a Node Mass Balance error
             node_idx = self.internal_node_indices[max_idx]
             node = self.nodes_list[node_idx]
             return {
@@ -174,7 +172,6 @@ class NetworkSolver:
                 "magnitude": max_val
             }
         else:
-            # It's an Edge Pressure Balance error
             edge_idx = max_idx - num_internal
             edge = self.edges_list[edge_idx]
             return {
@@ -192,10 +189,6 @@ class NetworkSolver:
             atm_p = getattr(self.nodes_list[0].global_settings, 'atmospheric_pressure', 101325.0)
         avg_p = np.mean(list(self.fixed_pressure_nodes.values())) if self.fixed_pressure_nodes else atm_p
         q_guess_base = 0.005
-        for node in self.nodes_list:
-            if hasattr(node, 'flow_rated') and node.flow_rated > 0:
-                q_guess_base = node.flow_rated
-                break
         return np.concatenate([np.full(num_internal, avg_p), np.full(num_edges, q_guess_base)])
 
     def _solve_hydraulics_core(self, method='hybr', x0_custom=None) -> Tuple[np.ndarray, int, int, bool, np.ndarray]:
@@ -254,7 +247,6 @@ class NetworkSolver:
         fallback_used = False
         sol = root(objective, x0, method=method, options={'maxfev': inner_max_steps})
         
-        # Fallback Logic
         if method == 'hybr' and (not sol.success or not is_physical(sol.x)):
             fallback_used = True
             sol = root(objective, sol.x, method='lm', options={'maxiter': inner_max_steps})
@@ -267,14 +259,7 @@ class NetworkSolver:
             self._update_telemetry(final_p, final_q)
             return np.concatenate([final_p, final_q]), num_internal, getattr(sol, 'nfev', 0), fallback_used, final_residuals
         else:
-            # Still return residuals even on failure so we can identify the bottleneck
             raise ValueError(f"Solver failed: {sol.message}")
-
-    def _parse_port_idx(self, port_str: str) -> int:
-        try:
-            return int(port_str.split('-')[-1])
-        except (ValueError, IndexError, AttributeError):
-            return 0
 
     def _get_node_p_out(self, node, p_in, q_in, q_out):
         inlet = node.inlets[0] if node.inlets else None
@@ -322,16 +307,22 @@ class NetworkSolver:
             pipe.outlets[0].pressure = tgt_node.inlets[0].pressure
             pipe.outlets[0].flow_rate = q
 
+    def _parse_port_idx(self, port_str: str) -> int:
+        try:
+            return int(port_str.split('-')[-1])
+        except (ValueError, IndexError, AttributeError):
+            return 0
+
     def _propagate_properties(self, q_edges):
-        """
-        Propagates fluid properties (Temperature, Density, Viscosity) through the network.
-        Handles both forward and reverse flow conditions.
-        """
-        iterations = 5
+        max_iterations = 5
         if self.nodes_list and self.nodes_list[0].global_settings:
-            iterations = getattr(self.nodes_list[0].global_settings, 'property_iterations', 5)
+            max_iterations = getattr(self.nodes_list[0].global_settings, 'property_iterations', 5)
             
-        for _ in range(iterations):
+        actual_iters = 0
+        for _ in range(max_iterations):
+            actual_iters += 1
+            max_temp_change = 0.0
+            
             # 1. Update Pipes
             for j, edge in enumerate(self.edges_list):
                 src_node = self.network.nodes[edge['source']]
@@ -343,12 +334,10 @@ class NetworkSolver:
                 pipe.outlets[0].flow_rate = q
                 
                 if q >= 0:
-                    # Forward Flow: Properties from Source Node
                     pipe.inlets[0].temperature = src_node.outlets[0].temperature
                     pipe.inlets[0].density = src_node.outlets[0].density
                     pipe.inlets[0].viscosity = src_node.outlets[0].viscosity
                 else:
-                    # Reverse Flow: Properties from Target Node
                     pipe.outlets[0].temperature = tgt_node.inlets[0].temperature
                     pipe.outlets[0].density = tgt_node.inlets[0].density
                     pipe.outlets[0].viscosity = tgt_node.inlets[0].viscosity
@@ -360,6 +349,8 @@ class NetworkSolver:
                     node.calculate()
                     continue
                     
+                old_temps = [p.temperature for p in node.outlets] + [p.temperature for p in node.inlets]
+                
                 for j, edge in enumerate(self.edges_list):
                     q = q_edges[j]
                     pipe = edge['pipe']
@@ -385,3 +376,12 @@ class NetworkSolver:
                 if hasattr(node, 'calculate_temperature'):
                     node.calculate_temperature()
                 node.calculate()
+                
+                new_temps = [p.temperature for p in node.outlets] + [p.temperature for p in node.inlets]
+                for old_t, new_t in zip(old_temps, new_temps):
+                    max_temp_change = max(max_temp_change, abs(new_t - old_t))
+            
+            if max_temp_change < 0.01: # 0.01K convergence
+                break
+                
+        self.last_prop_iters = actual_iters

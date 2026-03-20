@@ -88,3 +88,19 @@ class FluidProperties:
         elif fluid_type in ["iso_vg_46", "iso_vg_32"]:
             # Lube oils have very low vapor pressure, ~0 for this simulation
             return 1.0
+
+    @staticmethod
+    def get_specific_heat(fluid_type: str, temp_k: float) -> float:
+        """
+        Returns specific heat capacity (J/kg*K).
+        """
+        if fluid_type == "water":
+            return 4184.0  # Constant for water
+        
+        elif fluid_type in ["iso_vg_46", "iso_vg_32"]:
+            # Typical lube oil: 1800-2200 J/kg*K depending on temp
+            # Linear approximation: Cp = 1800 + 4.0 * (T_c - 20)
+            t_c = temp_k - 273.15
+            return 1860.0 + 4.0 * t_c
+            
+        return 2000.0 # Generic default

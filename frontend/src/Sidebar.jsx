@@ -113,6 +113,7 @@ function DiagnosticsContent({ stats }) {
         <StatCard label="System Size" value={`${system_size} Eq.`} />
         <StatCard label="Control Steps" value={outer_iterations} hint="Outer Loop" />
         <StatCard label="Math Steps" value={total_inner_iterations} hint="Total Inner" />
+        <StatCard label="Prop Steps" value={stats.property_iterations || 0} hint="Property Loops" />
       </div>
 
       {fallback_used && (

@@ -1,4 +1,5 @@
 from simulation.equipment.base_node import HydraulicNode
+from simulation.fluid_utils import FluidProperties
 
 class LinearControlValve(HydraulicNode):
     """
@@ -46,6 +47,19 @@ class LinearControlValve(HydraulicNode):
         outlet.flow_rate = inlet.flow_rate
         outlet.density = inlet.density
         outlet.viscosity = inlet.viscosity
+        
+        # Throttling Heat: dT = abs(dP) / (rho * Cp)
+        fluid_type = getattr(self.global_settings, 'fluid_type', 'water')
+        from simulation.fluid_utils import FluidProperties
+        
+        if inlet.flow_rate >= 0:
+            cp = FluidProperties.get_specific_heat(fluid_type, inlet.temperature)
+            dt = abs(dp) / (inlet.density * cp)
+            outlet.temperature = inlet.temperature + dt
+        else:
+            cp = FluidProperties.get_specific_heat(fluid_type, outlet.temperature)
+            dt = abs(dp) / (outlet.density * cp)
+            inlet.temperature = outlet.temperature + dt
         
         self.calculate_temperature()
         

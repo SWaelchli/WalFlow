@@ -89,5 +89,16 @@ class VolumetricPump(HydraulicNode):
         outlet.density = inlet.density
         outlet.viscosity = inlet.viscosity
         
+        # Pump Waste Heat: dT = (dP / (rho * Cp)) * ((1 - eta) / eta)
+        # Apply heat to the EXITING port
+        cp = FluidProperties.get_specific_heat(fluid_type, inlet.temperature)
+        eff_factor = (1.0 - self.efficiency) / max(0.1, self.efficiency)
+        dt = (abs(dp) / (inlet.density * cp)) * eff_factor
+        
+        if inlet.flow_rate >= 0:
+            outlet.temperature = inlet.temperature + dt
+        else:
+            inlet.temperature = outlet.temperature + dt
+
         self.calculate_temperature()
         return dp

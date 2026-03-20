@@ -1,9 +1,11 @@
 from simulation.equipment.base_node import HydraulicNode
+from simulation.fluid_utils import FluidProperties
 import math
 
 class Pipe(HydraulicNode):
     """
     A Pipe connects two nodes and calculates the pressure drop caused by fluid friction.
+    It also calculates temperature rise due to viscous dissipation.
     """
     def __init__(self, name: str, length: float, diameter: float, friction_factor: float = 0.02):
         # Call the parent class constructor to set up the ID and lists        
@@ -59,7 +61,7 @@ class Pipe(HydraulicNode):
     def calculate(self):
         """
         Updates the outlet port's state based on the inlet port's state and the calculated drop.
-        Now handles bi-directional property propagation.
+        Handles bi-directional property propagation and throttling heat.
         """
         inlet = self.inlets[0]
         outlet = self.outlets[0]
@@ -71,15 +73,22 @@ class Pipe(HydraulicNode):
         outlet.pressure = inlet.pressure - dp
         outlet.flow_rate = inlet.flow_rate
         
-        # Bi-directional Property Propagation
+        # Throttling Heat: dT = abs(dP) / (rho * Cp)
+        fluid_type = getattr(self.global_settings, 'fluid_type', 'water')
+        
+        # Bi-directional Property Propagation + Throttling Heat
         if inlet.flow_rate >= 0:
             # Forward Flow: Inlet -> Outlet
-            outlet.temperature = inlet.temperature
+            cp = FluidProperties.get_specific_heat(fluid_type, inlet.temperature)
+            dt = abs(dp) / (inlet.density * cp)
+            outlet.temperature = inlet.temperature + dt
             outlet.density = inlet.density
             outlet.viscosity = inlet.viscosity
         else:
             # Reverse Flow: Outlet -> Inlet
-            inlet.temperature = outlet.temperature
+            cp = FluidProperties.get_specific_heat(fluid_type, outlet.temperature)
+            dt = abs(dp) / (outlet.density * cp)
+            inlet.temperature = outlet.temperature + dt
             inlet.density = outlet.density
             inlet.viscosity = outlet.viscosity
         
