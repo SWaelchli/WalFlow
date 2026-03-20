@@ -77,7 +77,10 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "flow_rated_lmin": 100.0,
+        "pressure_rated_bar": 5.0,
+        "rise_to_shutoff_pct": 20.0
       },
       "width": 60,
       "height": 96

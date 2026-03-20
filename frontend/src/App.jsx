@@ -89,9 +89,12 @@ export default function App() {
   const runSimulation = useCallback(() => {
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {
       setIsSimulating(true);
-      ws.current.send(JSON.stringify({ action: 'run_simulation' }));
+      ws.current.send(JSON.stringify({ 
+        action: 'run_simulation',
+        graph: { nodes, edges, global_settings: globalSettings }
+      }));
     }
-  }, []);
+  }, [nodes, edges, globalSettings]);
 
   const handleValveChange = useCallback((newValue, nodeId) => {
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {
@@ -317,8 +320,8 @@ export default function App() {
           rotation: 0,
           onRotate: handleRotation,
           onChange: type === 'linear_control_valve' ? handleValveChange : undefined,
-          ...(type === 'centrifugal_pump' && { A: 80.0, B: 0.0, C: -30000.0 }),
-          ...(type === 'pump' && { A: 80.0, B: 0.0, C: -30000.0 }),
+          ...(type === 'centrifugal_pump' && { flow_rated_lmin: 100.0, pressure_rated_bar: 5.0, rise_to_shutoff_pct: 20.0 }),
+          ...(type === 'pump' && { flow_rated_lmin: 100.0, pressure_rated_bar: 5.0, rise_to_shutoff_pct: 20.0 }),
           ...(type === 'volumetric_pump' && { flow_rated: 100.0, motor_power: 5.0, efficiency: 85.0 }),
           ...(type === 'tank' && { level: 2.0, elevation: 0.0, temperature: 313.15 }),
           ...(type === 'linear_control_valve' && { max_cv: 0.05, opening: 50.0 }),

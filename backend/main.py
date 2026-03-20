@@ -71,6 +71,19 @@ async def websocket_endpoint(websocket: WebSocket):
                                 node.opening_pct = max(0.1, min(100.0, new_pct))
 
             elif action == "run_simulation":
+                # OPTIONAL: Allow updating the graph immediately before simulation 
+                # to prevent race conditions with debounced updates.
+                graph_data = data.get("graph")
+                if graph_data:
+                    try:
+                        rf_graph = ReactFlowGraph(**graph_data)
+                        network_instance = GraphParser.parse_graph(rf_graph)
+                        solver_instance = NetworkSolver(network_instance)
+                    except Exception as e:
+                        print(f"Graph Parse Error during Simulation: {e}")
+                        await websocket.send_text(json.dumps({"status": "error", "message": f"Parse Error: {str(e)}"}))
+                        continue
+
                 if solver_instance:
                     try:
                         # Run the physics engine

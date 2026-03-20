@@ -60,10 +60,10 @@ def test_pump_curve():
     print("\n--- Test 2: Pump Performance ---")
     gs = GlobalSettings(fluid_type="iso_vg_46")
     
-    A, B, C = 80.0, 0.0, -2000.0
+    # 100 L/min at 5 bar duty point
     t1 = Tank("Source", fluid_level=1.0, elevation=0, temperature=293.15, fluid_type="iso_vg_46")
-    p1 = CentrifugalPump("Pump", A=A, B=B, C=C)
-    v1 = LinearControlValve("LinearControlValve", max_cv=0.05, opening_pct=100.0)
+    p1 = CentrifugalPump("Pump", flow_rated=100.0/60000.0, pressure_rated=5.0*100000.0, rise_to_shutoff_pct=20.0)
+    v1 = LinearControlValve("LinearControlValve", max_cv=50.0, opening_pct=100.0)
     t2 = Tank("Sink", fluid_level=1.0, elevation=0, temperature=293.15, fluid_type="iso_vg_46")
 
     nodes = {"t1": t1, "p1": p1, "v1": v1, "t2": t2}
@@ -101,7 +101,7 @@ def test_heat_exchanger():
     t1 = Tank("Source", fluid_level=5.0, elevation=0, temperature=333.15, fluid_type="iso_vg_46")
     # Low flow to see temperature change clearly
     v1 = LinearControlValve("Restriction", max_cv=0.001, opening_pct=100.0)
-    p1 = CentrifugalPump("Pump", A=20.0, B=0, C=0)
+    p1 = CentrifugalPump("Pump", flow_rated=100.0/60000.0, pressure_rated=2.0*100000.0, rise_to_shutoff_pct=20.0)
     hx = HeatExchanger("Cooler", heat_duty=duty_kw * 1000.0)
     t2 = Tank("Sink", fluid_level=1.0, elevation=0, temperature=293.15, fluid_type="iso_vg_46")
 

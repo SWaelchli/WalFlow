@@ -262,23 +262,34 @@ export default function PropertyEditor({ node, edge, onUpdate, onUpdateEdge, onD
           {(type === 'centrifugal_pump' || type === 'pump') && (
             <>
               <div>
-                <label style={{ fontSize: '11px', color: '#64748b' }}>Curve A (Shutoff Head, m)</label>
+                <label style={{ fontSize: '11px', color: '#64748b' }}>Rated Flow (L/min)</label>
                 <input 
                   type="number" 
                   style={{ width: '100%', fontSize: '12px' }} 
-                  value={localDrafts.A !== undefined ? localDrafts.A : (data.A || 0)} 
-                  onChange={(e) => handleDraftChange('A', e.target.value)}
-                  onBlur={(e) => validateAndCommit('A', e.target.value)}
+                  value={localDrafts.flow_rated_lmin !== undefined ? localDrafts.flow_rated_lmin : (data.flow_rated_lmin || 100)} 
+                  onChange={(e) => handleDraftChange('flow_rated_lmin', e.target.value)}
+                  onBlur={(e) => validateAndCommit('flow_rated_lmin', e.target.value, true)}
                 />
               </div>
               <div>
-                <label style={{ fontSize: '11px', color: '#64748b' }}>Curve C (Slope)</label>
+                <label style={{ fontSize: '11px', color: '#64748b' }}>Rated Pressure (bar)</label>
+                <input 
+                  type="number" 
+                  step="0.1"
+                  style={{ width: '100%', fontSize: '12px' }} 
+                  value={localDrafts.pressure_rated_bar !== undefined ? localDrafts.pressure_rated_bar : (data.pressure_rated_bar || 5.0)} 
+                  onChange={(e) => handleDraftChange('pressure_rated_bar', e.target.value)}
+                  onBlur={(e) => validateAndCommit('pressure_rated_bar', e.target.value, true)}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '11px', color: '#64748b' }}>Rise to Shut-off (%)</label>
                 <input 
                   type="number" 
                   style={{ width: '100%', fontSize: '12px' }} 
-                  value={localDrafts.C !== undefined ? localDrafts.C : (data.C || 0)} 
-                  onChange={(e) => handleDraftChange('C', e.target.value)}
-                  onBlur={(e) => validateAndCommit('C', e.target.value)}
+                  value={localDrafts.rise_to_shutoff_pct !== undefined ? localDrafts.rise_to_shutoff_pct : (data.rise_to_shutoff_pct || 20.0)} 
+                  onChange={(e) => handleDraftChange('rise_to_shutoff_pct', e.target.value)}
+                  onBlur={(e) => validateAndCommit('rise_to_shutoff_pct', e.target.value)}
                 />
               </div>
             </>

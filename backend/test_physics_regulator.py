@@ -86,7 +86,7 @@ def test_all_scenarios():
     # 2. BPR Baseline (Pump ~11 bar -> Set 8 bar)
     set_pa = 8.0 * 100000 + 101325
     t1 = Tank("Source", fluid_level=1.0)
-    p1 = CentrifugalPump("Feed Pump", A=100.0, B=0, C=0) # 100m head ~ 10bar + 1atm
+    p1 = CentrifugalPump("Feed Pump", flow_rated=100.0/60000.0, pressure_rated=10.0*100000.0, rise_to_shutoff_pct=20.0) # 100m head ~ 10bar + 1atm
     reg = LinearRegulator("BPR", max_cv=5.0, set_pressure=set_pa, backpressure=True)
     t2 = Tank("Sink", fluid_level=1.0)
     nodes = {"t1": t1, "p1": p1, "reg": reg, "t2": t2}

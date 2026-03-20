@@ -13,7 +13,7 @@ def test_filter_viscosity():
         gs = GlobalSettings()
         
         tank_source = Tank("Oil Tank", fluid_level=2.0, temperature=temp_k, fluid_type="iso_vg_46")
-        pump = CentrifugalPump("Main Pump", A=100.0, B=0, C=-1000.0)
+        pump = CentrifugalPump("Main Pump", flow_rated=100.0/60000.0, pressure_rated=10.0*100000.0, rise_to_shutoff_pct=20.0)
         # Filter with high resistance to make it dominant
         filt = Filter("Oil Filter", dp_clean_bar=1.0, flow_ref_lmin=100.0)
         tank_sink = Tank("Return Tank", fluid_level=1.0, temperature=temp_k, fluid_type="iso_vg_46")

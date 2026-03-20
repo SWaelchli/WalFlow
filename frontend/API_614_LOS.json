@@ -26,7 +26,10 @@
         "A": 100,
         "B": 0,
         "C": -30000,
-        "rotation": 270
+        "rotation": 270,
+        "flow_rated_lmin": 100.0,
+        "pressure_rated_bar": 5.0,
+        "rise_to_shutoff_pct": 20.0
       }
     },
     {

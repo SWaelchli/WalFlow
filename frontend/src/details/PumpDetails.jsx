@@ -12,7 +12,8 @@ const CavitationWarning = () => (
     border: '1px solid #ffdde0',
     display: 'flex',
     flexDirection: 'column',
-    gap: '4px'
+    gap: '4px',
+    marginBottom: '10px'
   }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#be123c', fontWeight: 'bold' }}>
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -21,14 +22,17 @@ const CavitationWarning = () => (
       CAVITATION RISK
     </div>
     <p style={{ fontSize: '11px', color: '#be123c', margin: 0, paddingLeft: '24px' }}>
-      Suction pressure is critically low. Pump may be cavitating, leading to damage and reduced performance.
+      Suction pressure is critically low. Pump may be cavitating, leading to damage.
     </p>
   </div>
 );
 
 export default function PumpDetails({ node }) {
   const { type, data } = node;
-  const { A, B, C, flow_rated, motor_power, efficiency, telemetry } = data;
+  const { 
+    flow_rated_lmin, pressure_rated_bar, rise_to_shutoff_pct, // New Centrifugal Params
+    flow_rated, motor_power, efficiency, telemetry // PD Params
+  } = data;
   
   const showCavitationWarning = telemetry?.cavitation_warning === true;
   const currentQ = telemetry?.inlets?.[0]?.flow_rate || 0;
@@ -37,19 +41,24 @@ export default function PumpDetails({ node }) {
   const currentDpPa = currentPout - currentPin;
   const currentDpBar = currentDpPa / 100000;
   
-  const rho = telemetry?.inlets?.[0]?.density || 1000;
+  const rho = telemetry?.inlets?.[0]?.density || 870; 
   const g = 9.81;
 
-  // 1. Center the Operating Point on X-Axis
   const actualFlowLmin = parseFloat(m3sToLmin(Math.abs(currentQ)));
-  
   const isVolumetric = type === 'volumetric_pump';
-  const maxX = isVolumetric ? Math.max(200, parseFloat(flow_rated) * 1.5) : Math.max(300, actualFlowLmin * 2);
+  
+  // Dynamic MaxX based on rating
+  const ratedFlow = isVolumetric ? parseFloat(flow_rated || 100) : parseFloat(flow_rated_lmin || 100);
+  const maxX = Math.max(200, ratedFlow * 1.5, actualFlowLmin * 1.2);
 
-  const { chartData } = useMemo(() => {
+  const { chartData, maxY } = useMemo(() => {
     const dataPoints = [];
     const absQ = Math.abs(currentQ);
-    const K = (absQ > 1e-7 && currentDpBar > 0) ? currentDpBar / (absQ ** 2) : 0;
+    
+    // System Curve: dP = K * Q^2
+    const K = (absQ > 1e-7) ? Math.max(0, currentDpBar) / (absQ ** 2) : 0;
+
+    let localMaxY = 0;
 
     for (let i = 0; i <= 50; i++) {
       const qLmin = (maxX * i) / 50;
@@ -57,33 +66,51 @@ export default function PumpDetails({ node }) {
       
       let pumpBar = 0;
       if (isVolumetric) {
-          // PD Pump Curve: Steep slope capped by power
-          // dP_curve = (Q_rated - Q) / slip
-          const flow_rated_m3s = flow_rated / 60000;
-          const slip = (0.01 * flow_rated_m3s) / 10_000_000.0;
-          const dp_curve_pa = Math.max(0, (flow_rated_m3s - qM3s) / slip);
-          
-          const power_w = motor_power * 1000;
-          const eff_dec = efficiency / 100;
-          const safe_q = Math.max(qM3s, 1e-9);
-          const dp_power_pa = (power_w * eff_dec) / safe_q;
-          
-          pumpBar = Math.min(dp_curve_pa, dp_power_pa) / 100000;
+          // PD Pump Logic
+          const flow_rated_m3s = (parseFloat(flow_rated) || 100) / 60000;
+          const power_w = (parseFloat(motor_power) || 5) * 1000;
+          const eff_dec = (parseFloat(efficiency) || 85) / 100;
+          const hard_cap_pa = 20_000_000.0;
+          const stiffness = 10_000_000.0 / (0.01 * flow_rated_m3s);
+          const dp_displacement = Math.max(0, stiffness * (flow_rated_m3s - qM3s));
+          const safe_q = Math.sqrt(qM3s**2 + 1e-10);
+          const dp_power = (power_w * eff_dec) / safe_q;
+          pumpBar = Math.min(dp_displacement, dp_power, hard_cap_pa) / 100000;
       } else {
-          const headM = A + (B || 0) * qM3s + (C || 0) * (qM3s ** 2);
-          pumpBar = (rho * g * headM) / 100000;
+          // IMPROVEMENT: Synchronized Duty Point Centrifugal Math
+          const q_rated_m3s = (parseFloat(flow_rated_lmin) || 100) / 60000;
+          const p_rated_pa = (parseFloat(pressure_rated_bar) || 5.0) * 100000;
+          const rise = parseFloat(rise_to_shutoff_pct) || 20.0;
+          
+          const p_shutoff = p_rated_pa * (1.0 + rise / 100.0);
+          let c_coeff = 0;
+          if (q_rated_m3s > 0) {
+              c_coeff = (p_rated_pa - p_shutoff) / (q_rated_m3s ** 2);
+          }
+          
+          const pumpPa = Math.max(0, p_shutoff + c_coeff * (qM3s ** 2));
+          pumpBar = pumpPa / 100000;
       }
 
       const systemBar = K * (qM3s ** 2);
+      const pVal = parseFloat(pumpBar.toFixed(2));
+      const sVal = parseFloat(systemBar.toFixed(2));
       
+      if (pVal > localMaxY) localMaxY = pVal;
+      if (sVal > localMaxY && qLmin <= maxX) localMaxY = sVal;
+
       dataPoints.push({
         q: qLmin,
-        pump: parseFloat(Math.max(0, pumpBar).toFixed(2)),
-        system: parseFloat(systemBar.toFixed(2))
+        pump: pVal,
+        system: sVal
       });
     }
-    return { chartData: dataPoints };
-  }, [type, A, B, C, flow_rated, motor_power, efficiency, currentQ, currentDpBar, rho, maxX]);
+    
+    return { 
+      chartData: dataPoints, 
+      maxY: localMaxY * 1.1
+    };
+  }, [type, flow_rated_lmin, pressure_rated_bar, rise_to_shutoff_pct, flow_rated, motor_power, efficiency, currentQ, currentDpBar, maxX]);
 
   const hydraulicPowerKW = (currentDpPa * Math.abs(currentQ)) / 1000;
   const motorLimitKW = isVolumetric ? (motor_power * (efficiency / 100)) : 0;
@@ -94,53 +121,70 @@ export default function PumpDetails({ node }) {
   }], [actualFlowLmin, currentDpBar]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', fontFamily: 'inherit' }}>
       {showCavitationWarning && <CavitationWarning />}
 
-      <div style={{ fontSize: '12px', color: '#0f172a', fontWeight: 'bold', borderLeft: '3px solid #0284c7', paddingLeft: '8px' }}>
-        Pump Performance
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ width: '3px', height: '14px', background: '#2563eb', borderRadius: '2px' }} />
+        <span style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
+          Performance Curve
+        </span>
       </div>
       
-      <div style={{ width: '100%', height: '240px', minHeight: '240px' }}>
+      <div style={{ width: '100%', height: '220px', background: '#fff', borderRadius: '8px', padding: '10px 0' }}>
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={chartData} margin={{ top: 10, right: 10, left: -25, bottom: 10 }}>
+          <ComposedChart data={chartData} margin={{ top: 5, right: 20, left: -20, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-            <XAxis dataKey="q" type="number" domain={[0, maxX]} fontSize={10} tickCount={5} />
-            <YAxis type="number" domain={[0, 'auto']} fontSize={10} />
+            <XAxis 
+              dataKey="q" 
+              type="number" 
+              domain={[0, maxX]} 
+              fontSize={10} 
+              tick={{ fill: '#64748b' }}
+              axisLine={{ stroke: '#e2e8f0' }}
+            />
+            <YAxis 
+              type="number" 
+              domain={[0, maxY]} 
+              fontSize={10} 
+              tick={{ fill: '#64748b' }}
+              axisLine={{ stroke: '#e2e8f0' }}
+              label={{ value: 'bar', angle: -90, position: 'insideLeft', offset: 10, fontSize: 10, fill: '#94a3b8' }}
+            />
             
-            <Legend verticalAlign="top" height={36} wrapperStyle={{ fontSize: '10px' }} />
+            <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: '500', color: '#475569' }} />
             
-            <Line dataKey="pump" stroke="#0284c7" strokeWidth={2} dot={false} name="Pump" isAnimationActive={false} />
-            <Line dataKey="system" stroke="#10b981" strokeWidth={2} strokeDasharray="5 5" dot={false} name="System" isAnimationActive={false} />
+            <Line dataKey="pump" stroke="#2563eb" strokeWidth={2.5} dot={false} name="Pump Curve" isAnimationActive={false} />
+            <Line dataKey="system" stroke="#10b981" strokeWidth={2} strokeDasharray="4 4" dot={false} name="System Resistance" isAnimationActive={false} />
             
             {telemetry && (
-              <Scatter name="Operating Point" dataKey="p" data={opPoint} fill="red" isAnimationActive={false} style={{ pointerEvents: 'none' }} />
+              <Scatter name="Operating Point" dataKey="p" data={opPoint} fill="#ef4444" isAnimationActive={false} />
             )}
           </ComposedChart>
         </ResponsiveContainer>
       </div>
 
-      <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '6px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-          <span style={{ color: '#64748b' }}>Operating Flow:</span>
-          <span style={{ fontWeight: 'bold' }}>{actualFlowLmin.toFixed(1)} L/min</span>
+      <div style={{ 
+        display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px'
+      }}>
+        <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+          <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600', textTransform: 'uppercase', marginBottom: '4px' }}>Flow</div>
+          <div style={{ fontSize: '14px', fontWeight: '700', color: '#1e293b' }}>{actualFlowLmin.toFixed(1)} <span style={{ fontSize: '10px', fontWeight: '500' }}>L/min</span></div>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-          <span style={{ color: '#64748b' }}>Operating Boost:</span>
-          <span style={{ fontWeight: 'bold', color: '#0284c7' }}>{currentDpBar.toFixed(2)} bar</span>
+        <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+          <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600', textTransform: 'uppercase', marginBottom: '4px' }}>Pressure Increase</div>
+          <div style={{ fontSize: '14px', fontWeight: '700', color: '#2563eb' }}>{currentDpBar.toFixed(2)} <span style={{ fontSize: '10px', fontWeight: '500' }}>bar</span></div>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', borderTop: '1px solid #e2e8f0', marginTop: '4px', paddingTop: '4px' }}>
-          <span style={{ color: '#64748b' }}>Hydraulic Power:</span>
-          <span style={{ fontWeight: 'bold' }}>{hydraulicPowerKW.toFixed(2)} kW</span>
+        <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+          <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600', textTransform: 'uppercase', marginBottom: '4px' }}>Hydraulic Power</div>
+          <div style={{ fontSize: '14px', fontWeight: '700', color: '#1e293b' }}>{hydraulicPowerKW.toFixed(2)} <span style={{ fontSize: '10px', fontWeight: '500' }}>kW</span></div>
         </div>
-        {isVolumetric && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-            <span style={{ color: '#64748b' }}>Motor Power Limit:</span>
-            <span style={{ fontWeight: 'bold', color: hydraulicPowerKW > motorLimitKW * 0.98 ? '#ef4444' : '#10b981' }}>
-              {motorLimitKW.toFixed(2)} kW
-            </span>
+        <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+          <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600', textTransform: 'uppercase', marginBottom: '4px' }}>Load Factor</div>
+          <div style={{ fontSize: '14px', fontWeight: '700', color: isVolumetric && hydraulicPowerKW > motorLimitKW * 0.95 ? '#ef4444' : '#10b981' }}>
+            {isVolumetric ? ((hydraulicPowerKW / motorLimitKW) * 100).toFixed(0) : '—'} <span style={{ fontSize: '10px', fontWeight: '500' }}>%</span>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

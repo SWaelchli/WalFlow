@@ -107,11 +107,15 @@ class GraphParser:
                 fluid_type=fluid_type
             )
         elif t == 'centrifugal_pump' or t == 'pump':
+            flow_rated_lmin = float(d.get('flow_rated_lmin', 100.0))
+            pressure_rated_bar = float(d.get('pressure_rated_bar', 5.0))
+            rise_pct = float(d.get('rise_to_shutoff_pct', 20.0))
+
             node = CentrifugalPump(
                 name=name,
-                A=float(d.get('A', 80.0)),
-                B=float(d.get('B', 0.0)),
-                C=float(d.get('C', -2000.0))
+                flow_rated=flow_rated_lmin / 60000.0,
+                pressure_rated=pressure_rated_bar * 100000.0,
+                rise_to_shutoff_pct=rise_pct
             )
         elif t == 'volumetric_pump':
             # flow_rated in L/min -> convert to m3/s
