@@ -3,9 +3,10 @@ import PumpDetails from './details/PumpDetails';
 import ValveDetails from './details/ValveDetails';
 import FilterDetails from './details/FilterDetails';
 import OrificeDetails from './details/OrificeDetails';
+import JunctionDetails from './details/JunctionDetails';
 import GenericDetails from './details/GenericDetails';
 
-export default function DetailPanel({ selectedNode }) {
+export default function DetailPanel({ selectedNode, allNodes, allEdges }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   if (!selectedNode) return null;
@@ -26,6 +27,13 @@ export default function DetailPanel({ selectedNode }) {
         return <FilterDetails node={selectedNode} />;
       case 'orifice':
         return <OrificeDetails node={selectedNode} />;
+      case 'splitter':
+      case 'mixer':
+        return <JunctionDetails 
+          node={selectedNode} 
+          allNodes={allNodes} 
+          allEdges={allEdges} 
+        />;
       default:
         return <GenericDetails node={selectedNode} />;
     }

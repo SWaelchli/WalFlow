@@ -474,7 +474,11 @@ export default function App() {
 
       <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
         <div style={{ flexGrow: 1, position: 'relative' }} ref={reactFlowWrapper}>
-          <DetailPanel selectedNode={selectedNode} />
+          <DetailPanel 
+            selectedNode={selectedNode} 
+            allNodes={nodes}
+            allEdges={edges}
+          />
           
           <PropertyEditor 
             key={selectedNode?.id || selectedEdge?.id || 'none'}

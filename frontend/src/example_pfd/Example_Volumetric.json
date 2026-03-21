@@ -52,7 +52,7 @@
       "position": { "x": 600, "y": 150 },
       "data": {
         "label": "System Backpressure Valve",
-        "max_cv": 0.05,
+        "max_cv": 20,
         "opening": 20.0
       }
     },
