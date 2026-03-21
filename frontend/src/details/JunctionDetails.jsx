@@ -134,8 +134,7 @@ export default function JunctionDetails({ node, allNodes, allEdges }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <div style={{ width: '3px', height: '14px', background: theme.primary, borderRadius: '2px' }} />
-        <span style={{ fontSize: '12px', fontWeight: '700', color: theme.slate800, textTransform: 'uppercase' }}>
+        <span style={{ fontSize: '12px', color: '#0f172a', fontWeight: 'bold', borderLeft: '3px solid #3b82f6', paddingLeft: '8px' }}>
           Flow Balance
         </span>
       </div>
