@@ -21,6 +21,7 @@ const categorizedEquipment = [
       { type: 'linear_control_valve', label: 'Control Valve', description: 'Linear Cv Trim' },
       { type: 'remote_control_valve', label: 'Remote Valve', description: 'Remote Signal Control' },
       { type: 'linear_regulator', label: 'Pressure Regulator', description: 'Auto PRV / BPR' },
+      { type: 'three_way_tcv', label: '3-Way Temp Valve', description: 'Auto Thermal Mixing' },
       { type: 'orifice', label: 'Orifice', description: 'Fixed Restriction' },
     ]
   },

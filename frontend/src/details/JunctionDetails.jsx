@@ -74,6 +74,7 @@ function TelemetryList({ title, total, items }) {
 
 export default function JunctionDetails({ node, allNodes, allEdges }) {
   const { id, type, data } = node;
+  const isTCV = type === 'three_way_tcv';
 
   const { sankeyData, upstream, downstream, totalIn, totalOut } = useMemo(() => {
     const nodes = [];
@@ -161,6 +162,33 @@ export default function JunctionDetails({ node, allNodes, allEdges }) {
         <TelemetryList title="Supply" total={totalIn} items={upstream} />
         <TelemetryList title="Demand" total={totalOut} items={downstream} />
       </div>
+
+      {isTCV && (
+        <div style={{ 
+          background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0',
+          display: 'flex', flexDirection: 'column', gap: '12px'
+        }}>
+          <div style={{ fontSize: '10px', fontWeight: '800', color: theme.slate500, textTransform: 'uppercase' }}>Mixing Balance</div>
+          
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+            <span style={{ fontSize: '20px', fontWeight: '800', color: theme.primary }}>{(data.telemetry?.outlets?.[0]?.temperature - 273.15).toFixed(1)}°C</span>
+            <span style={{ fontSize: '11px', color: theme.slate500 }}>Target: {parseFloat(data.set_temperature_c).toFixed(1)}°C</span>
+          </div>
+
+          <div style={{ width: '100%', height: '8px', background: theme.slate200, borderRadius: '4px', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ 
+              position: 'absolute', left: 0, top: 0, height: '100%', 
+              width: `${(data.telemetry?.opening_pct || 50)}%`, 
+              background: theme.primary, transition: 'width 0.3s' 
+            }} />
+          </div>
+          
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', fontWeight: '600' }}>
+            <span>Port 1: {(data.telemetry?.opening_pct || 50).toFixed(0)}%</span>
+            <span>Port 2: {(100 - (data.telemetry?.opening_pct || 50)).toFixed(0)}%</span>
+          </div>
+        </div>
+      )}
 
       {hasError && (
         <div style={{ fontSize: '10px', color: '#991b1b', background: '#fef2f2', padding: '10px', borderRadius: '6px', border: '1px solid #fecaca' }}>

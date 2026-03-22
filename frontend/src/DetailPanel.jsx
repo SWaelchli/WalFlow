@@ -29,6 +29,7 @@ export default function DetailPanel({ selectedNode, allNodes, allEdges }) {
         return <OrificeDetails node={selectedNode} />;
       case 'splitter':
       case 'mixer':
+      case 'three_way_tcv':
         return <JunctionDetails 
           node={selectedNode} 
           allNodes={allNodes} 

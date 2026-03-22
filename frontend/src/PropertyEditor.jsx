@@ -370,6 +370,43 @@ export default function PropertyEditor({ node, edge, onUpdate, onUpdateEdge, onD
             </>
           )}
 
+          {isNode && type === 'three_way_tcv' && (
+            <>
+              <div>
+                <label style={{ fontSize: '11px', color: '#64748b' }}>Max Cv</label>
+                <input 
+                  type="number" 
+                  style={{ width: '100%', fontSize: '12px' }} 
+                  value={localDrafts.max_cv !== undefined ? localDrafts.max_cv : (data.max_cv || 0)} 
+                  onChange={(e) => handleDraftChange('max_cv', e.target.value)}
+                  onBlur={(e) => validateAndCommit('max_cv', e.target.value, true)}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '11px', color: '#64748b' }}>Set Temperature (°C)</label>
+                <input 
+                  type="number" 
+                  style={{ width: '100%', fontSize: '12px' }} 
+                  step="0.1" 
+                  value={localDrafts.set_temperature_c !== undefined ? localDrafts.set_temperature_c : (data.set_temperature_c || 40.0)} 
+                  onChange={(e) => handleDraftChange('set_temperature_c', e.target.value)}
+                  onBlur={(e) => validateAndCommit('set_temperature_c', e.target.value)}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '11px', color: '#64748b' }}>Hot Port Selection</label>
+                <select 
+                  style={{ width: '100%', fontSize: '12px', padding: '4px' }} 
+                  value={data.hot_port_idx || 0} 
+                  onChange={(e) => onUpdate(id, { hot_port_idx: parseInt(e.target.value) })}
+                >
+                  <option value="0">Inlet 1 (Left) is HOT</option>
+                  <option value="1">Inlet 2 (Bottom) is HOT</option>
+                </select>
+              </div>
+            </>
+          )}
+
           {isNode && type === 'linear_control_valve' && (
             <>
               <div>
@@ -401,16 +438,58 @@ export default function PropertyEditor({ node, edge, onUpdate, onUpdateEdge, onD
           )}
 
           {isNode && type === 'heat_exchanger' && (
-            <div>
-              <label style={{ fontSize: '11px', color: '#64748b' }}>Heat Duty (kW)</label>
-              <input 
-                type="number" 
-                style={{ width: '100%', fontSize: '12px' }} 
-                value={localDrafts.heat_duty_kw !== undefined ? localDrafts.heat_duty_kw : (data.heat_duty_kw || 0)} 
-                onChange={(e) => handleDraftChange('heat_duty_kw', e.target.value)}
-                onBlur={(e) => validateAndCommit('heat_duty_kw', e.target.value)}
-              />
-            </div>
+            <>
+              <div>
+                <label style={{ fontSize: '11px', color: '#64748b' }}>Rated Cooling (kW)</label>
+                <input 
+                  type="number" 
+                  style={{ width: '100%', fontSize: '12px' }} 
+                  value={localDrafts.rated_cooling_kw !== undefined ? localDrafts.rated_cooling_kw : (data.rated_cooling_kw || 300.0)} 
+                  onChange={(e) => handleDraftChange('rated_cooling_kw', e.target.value)}
+                  onBlur={(e) => validateAndCommit('rated_cooling_kw', e.target.value, true)}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '11px', color: '#64748b' }}>Rated Flow (L/min)</label>
+                <input 
+                  type="number" 
+                  style={{ width: '100%', fontSize: '12px' }} 
+                  value={localDrafts.rated_flow_lmin !== undefined ? localDrafts.rated_flow_lmin : (data.rated_flow_lmin || 500.0)} 
+                  onChange={(e) => handleDraftChange('rated_flow_lmin', e.target.value)}
+                  onBlur={(e) => validateAndCommit('rated_flow_lmin', e.target.value, true)}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '11px', color: '#64748b' }}>Design Inlet Temp (°C)</label>
+                <input 
+                  type="number" 
+                  style={{ width: '100%', fontSize: '12px' }} 
+                  value={localDrafts.design_inlet_temp_c !== undefined ? localDrafts.design_inlet_temp_c : (data.design_inlet_temp_c || 50.0)} 
+                  onChange={(e) => handleDraftChange('design_inlet_temp_c', e.target.value)}
+                  onBlur={(e) => validateAndCommit('design_inlet_temp_c', e.target.value)}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '11px', color: '#64748b' }}>Medium Temp (°C)</label>
+                <input 
+                  type="number" 
+                  style={{ width: '100%', fontSize: '12px' }} 
+                  value={localDrafts.medium_temp_c !== undefined ? localDrafts.medium_temp_c : (data.medium_temp_c || 10.0)} 
+                  onChange={(e) => handleDraftChange('medium_temp_c', e.target.value)}
+                  onBlur={(e) => validateAndCommit('medium_temp_c', e.target.value)}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '11px', color: '#64748b' }}>Pressure Drop Factor (k)</label>
+                <input 
+                  type="number" 
+                  style={{ width: '100%', fontSize: '12px' }} 
+                  value={localDrafts.k_factor !== undefined ? localDrafts.k_factor : (data.k_factor || 10.0)} 
+                  onChange={(e) => handleDraftChange('k_factor', e.target.value)}
+                  onBlur={(e) => validateAndCommit('k_factor', e.target.value, true)}
+                />
+              </div>
+            </>
           )}
 
           {isNode && type === 'filter' && (

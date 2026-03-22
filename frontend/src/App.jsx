@@ -22,6 +22,7 @@ import HeatExchangerNode from './nodes/HeatExchangerNode';
 import SplitterNode from './nodes/SplitterNode';
 import MixerNode from './nodes/MixerNode';
 import RemoteControlValveNode from './nodes/RemoteControlValveNode';
+import ThreeWayTCVNode from './nodes/ThreeWayTCVNode';
 
 import Sidebar from './Sidebar';
 import PropertyEditor from './PropertyEditor';
@@ -49,6 +50,7 @@ const nodeTypes = {
   splitter: SplitterNode,
   mixer: MixerNode,
   remote_control_valve: RemoteControlValveNode,
+  three_way_tcv: ThreeWayTCVNode,
 };
 
 const getId = () => `node_${crypto.randomUUID().split('-')[0]}`;
@@ -74,7 +76,8 @@ export default function App() {
     global_roughness: 0.000045,
     property_iterations: 5,
     tolerance: 1e-6,
-    max_iterations: 1000,
+    inner_iterations: 1000,
+    control_iterations: 100,
     solver_method: 'hybr'
   });
 
@@ -331,6 +334,7 @@ export default function App() {
           ...(type === 'filter' && { dp_clean: 0.2, dp_terminal: 1.0, flow_ref: 100.0, clogging: 0.0 }),
           ...(type === 'heat_exchanger' && { heat_duty_kw: -10.0 }),
           ...(type === 'remote_control_valve' && { max_cv: 0.05, set_pressure: 500000.0 }),
+          ...(type === 'three_way_tcv' && { max_cv: 0.1, set_temperature_c: 40.0, hot_port_idx: 0 }),
         },
       };
 

@@ -1,0 +1,2526 @@
+{
+  "nodes": [
+    {
+      "id": "main-reservoir",
+      "type": "tank",
+      "position": {
+        "x": 199.6,
+        "y": 302.9
+      },
+      "data": {
+        "label": "Oil Reservoir",
+        "level": 2,
+        "elevation": 0,
+        "temperature": 333.15,
+        "rotation": 0,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "299a3100-6533-4a30-bc96-454c8b9861c5",
+              "pressure": 117951.72375,
+              "flow_rate": 0,
+              "temperature": 333.15,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "66175af2-7053-4cf2-b87c-eb12f4acc652",
+              "pressure": 117951.72375,
+              "flow_rate": 0.036044655452869036,
+              "temperature": 333.15,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "width": 60,
+      "height": 143
+    },
+    {
+      "id": "main-oil-pump",
+      "type": "pump",
+      "position": {
+        "x": 303.1,
+        "y": 247
+      },
+      "data": {
+        "label": "Main Oil Pump",
+        "rotation": 270,
+        "flow_rated_lmin": 1500,
+        "pressure_rated_bar": 10,
+        "rise_to_shutoff_pct": 20,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "b3bd8c74-c98f-4df7-940d-0a0e70dc1901",
+              "pressure": 116268.30277117017,
+              "flow_rate": 0.036044655452869036,
+              "temperature": 333.15094594473044,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "b1648f33-787c-4f31-a34b-c0eafae52ab8",
+              "pressure": 900518.8030220369,
+              "flow_rate": 0.036044655452869036,
+              "temperature": 333.29784053234766,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "cavitation_warning": false
+        }
+      },
+      "width": 63,
+      "height": 103,
+      "selected": false,
+      "dragging": false
+    },
+    {
+      "id": "pump-discharge-splitter",
+      "type": "splitter",
+      "position": {
+        "x": 306.7,
+        "y": 122.5
+      },
+      "data": {
+        "label": "Splitter 54",
+        "rotation": 270,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "64328bdd-09b7-49e7-b061-0a7a1f28aa1b",
+              "pressure": 850997.5773559463,
+              "flow_rate": 0.036044655452869036,
+              "temperature": 333.3256595718833,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "8450e5c7-ff88-4bc2-92b9-bb66306952e2",
+              "pressure": 850997.5773559463,
+              "flow_rate": 0.008742670991709327,
+              "temperature": 333.3256595718833,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            },
+            {
+              "id": "7e8eb0f9-1320-47c8-893d-35620a4ce283",
+              "pressure": 850997.5773559463,
+              "flow_rate": 0.02730198446115971,
+              "temperature": 333.3256595718833,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "width": 62,
+      "height": 71,
+      "selected": false,
+      "dragging": false
+    },
+    {
+      "id": "spill-over-valve",
+      "type": "remote_control_valve",
+      "position": {
+        "x": 430.2639559905458,
+        "y": 41.7
+      },
+      "data": {
+        "label": "Spill Over Valve",
+        "max_cv": 40,
+        "set_pressure": 650000,
+        "backpressure": true,
+        "rotation": 0,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "78dc8133-18b2-4053-a201-5ee285f85891",
+              "pressure": 821718.0689400675,
+              "flow_rate": 0.02730198446115971,
+              "temperature": 333.3421067547824,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "5c35652e-dc84-498d-ac98-0e26cd10b5c1",
+              "pressure": 137926.07222672366,
+              "flow_rate": 0.02730198446115971,
+              "temperature": 333.72620131250216,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "opening_pct": 100,
+          "sensed_pressure": 657182.414847851
+        },
+        "opening": 100
+      },
+      "width": 66,
+      "height": 114,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 430.2639559905458,
+        "y": 41.7
+      },
+      "dragging": false
+    },
+    {
+      "id": "reservoir-return-tank",
+      "type": "tank",
+      "position": {
+        "x": 649.4,
+        "y": 26
+      },
+      "data": {
+        "label": "Main Tank Return",
+        "level": 0.0002,
+        "elevation": 0,
+        "temperature": 313.15,
+        "rotation": 0,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "fac00644-dc5a-41df-8a0a-410f4345c68a",
+              "pressure": 101326.686706875,
+              "flow_rate": 0.02730198446115971,
+              "temperature": 313.15,
+              "density": 859.6875,
+              "viscosity": 0.006678730597627306,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "cc656390-7d47-4ada-a24d-f5abf0dfbc20",
+              "pressure": 101326.686706875,
+              "flow_rate": 0,
+              "temperature": 313.15,
+              "density": 859.6875,
+              "viscosity": 0.006678730597627306,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "width": 75,
+      "height": 143
+    },
+    {
+      "id": "cooler-bypass-splitter",
+      "type": "splitter",
+      "position": {
+        "x": 77.1,
+        "y": 2.2
+      },
+      "data": {
+        "label": "Splitter 57",
+        "rotation": 270,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "8097ca7b-2ee4-4ea7-899d-684f9a4d7baf",
+              "pressure": 850878.8802598389,
+              "flow_rate": 0.008742670991709327,
+              "temperature": 333.3257262476219,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "d853e78b-4439-4af1-8c82-92ecf2a738fa",
+              "pressure": 850878.8802598389,
+              "flow_rate": 0.000024583255779174335,
+              "temperature": 333.3257262476219,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            },
+            {
+              "id": "76f47bea-a759-41af-99f9-2a049eb09228",
+              "pressure": 850878.8802598389,
+              "flow_rate": 0.008718087735930153,
+              "temperature": 333.3257262476219,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "width": 56,
+      "height": 71
+    },
+    {
+      "id": "oil-cooler",
+      "type": "heat_exchanger",
+      "position": {
+        "x": 8.899999999999977,
+        "y": -162.26851716581444
+      },
+      "data": {
+        "label": "Cooler",
+        "heat_duty_kw": -267,
+        "rotation": 270,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "d37bad37-363e-4263-ae8c-280926775743",
+              "pressure": 850878.786038558,
+              "flow_rate": 0.000024583255779174335,
+              "temperature": 333.3257263005488,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "7f6af9d4-e055-4f0d-a09c-46bc554980c8",
+              "pressure": 850878.7860334367,
+              "flow_rate": 0.000024583255779174335,
+              "temperature": -6074.846683466806,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "width": 60,
+      "height": 103,
+      "selected": true,
+      "positionAbsolute": {
+        "x": 8.899999999999977,
+        "y": -162.26851716581444
+      },
+      "dragging": false
+    },
+    {
+      "id": "main-filter",
+      "type": "filter",
+      "position": {
+        "x": 370.5,
+        "y": -146.1
+      },
+      "data": {
+        "label": "Filter 60",
+        "dp_clean": 0.2,
+        "dp_terminal": 1,
+        "flow_ref": 550,
+        "clogging": 0,
+        "rotation": 0,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "199f953f-e1a1-4cd3-a8c0-0b728d78b9b0",
+              "pressure": 673044.4570132765,
+              "flow_rate": 0.008742670991709327,
+              "temperature": 315.3955434375195,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "68b1f9a9-9bb5-48d7-9796-6164f03d7751",
+              "pressure": 657627.343651905,
+              "flow_rate": 0.008742670991709327,
+              "temperature": 315.4045098178439,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "width": 60,
+      "height": 82
+    },
+    {
+      "id": "flow-sensing-orifice",
+      "type": "orifice",
+      "position": {
+        "x": 592.4,
+        "y": -156.7
+      },
+      "data": {
+        "label": "FO-3041A",
+        "pipe_diameter": 0.07366,
+        "orifice_diameter": 0.0242,
+        "sensing": {
+          "inlet-0": true
+        },
+        "rotation": 0,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "555e46fd-1fd7-401a-8292-e552f3b132e6",
+              "pressure": 657182.414847851,
+              "flow_rate": 0.008742670991709327,
+              "temperature": 315.4047685777209,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "4416f3dd-ce5b-4240-8b35-bcf51e2f1474",
+              "pressure": 282270.896031092,
+              "flow_rate": 0.008742670991709327,
+              "temperature": 315.62280797663533,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "width": 42,
+      "height": 91,
+      "selected": false,
+      "dragging": false
+    },
+    {
+      "id": "distribution-header-splitter",
+      "type": "splitter",
+      "position": {
+        "x": 825.2,
+        "y": -163.7
+      },
+      "data": {
+        "label": "Splitter 62",
+        "rotation": 0,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "5e7bc45c-5201-4653-89ab-8234efcc5723",
+              "pressure": 281381.0384229837,
+              "flow_rate": 0.008742670991709327,
+              "temperature": 315.62332554257773,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "0fd839d5-a9a3-4b78-82c9-0172796de819",
+              "pressure": 281381.0384229837,
+              "flow_rate": 0.00017684365670316007,
+              "temperature": 315.62332554257773,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            },
+            {
+              "id": "aac99ab0-0ba7-426c-9425-d807a6293d65",
+              "pressure": 281381.0384229837,
+              "flow_rate": 0.008565827335006167,
+              "temperature": 315.62332554257773,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "width": 56,
+      "height": 71
+    },
+    {
+      "id": "motor-bearing-splitter",
+      "type": "splitter",
+      "position": {
+        "x": 1000.2,
+        "y": -246.7
+      },
+      "data": {
+        "label": "Splitter 63",
+        "rotation": 270,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "559d2797-f742-456a-9dd4-d024e0fe5633",
+              "pressure": 280865.2299180313,
+              "flow_rate": 0.00017684365670316007,
+              "temperature": 315.6236248586195,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "94c15ba5-2d3e-4a71-a9e2-72e4a0337344",
+              "pressure": 280865.2299180313,
+              "flow_rate": 0.00008842164137866672,
+              "temperature": 315.6236248586195,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            },
+            {
+              "id": "c05ba1a9-d87f-4538-b205-746609eae091",
+              "pressure": 280865.2299180313,
+              "flow_rate": 0.00008842201532449336,
+              "temperature": 315.6236248586195,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "width": 50,
+      "height": 71
+    },
+    {
+      "id": "orifice-motor-nde",
+      "type": "orifice",
+      "position": {
+        "x": 1148,
+        "y": -519.7
+      },
+      "data": {
+        "label": "Motor NDE",
+        "pipe_diameter": 0.01888,
+        "orifice_diameter": 0.003,
+        "rotation": 0,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "ad296a49-a73f-4f66-9b04-995602e6e8d8",
+              "pressure": 280735.7719355735,
+              "flow_rate": 0.00008842164137866672,
+              "temperature": 315.62370038336167,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "ae6d5699-b527-4054-b4e8-8c6cef6107a6",
+              "pressure": 101326.68670687499,
+              "flow_rate": 0.00008842164137866672,
+              "temperature": 315.72799531946816,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "width": 48,
+      "height": 91
+    },
+    {
+      "id": "orifice-motor-de",
+      "type": "orifice",
+      "position": {
+        "x": 1163.2,
+        "y": -361.7
+      },
+      "data": {
+        "label": "Motor DE",
+        "pipe_diameter": 0.01888,
+        "orifice_diameter": 0.003,
+        "rotation": 0,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "044fcee5-f005-4824-9b7c-7a35a4804808",
+              "pressure": 280735.77138808,
+              "flow_rate": 0.00008842201532449336,
+              "temperature": 315.62370038367993,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "ed40d572-e69d-48f6-96e4-522eeb9ef64c",
+              "pressure": 101325.16867068748,
+              "flow_rate": 0.00008842201532449336,
+              "temperature": 315.7279962019401,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "width": 42,
+      "height": 91
+    },
+    {
+      "id": "drain-motor-nde",
+      "type": "tank",
+      "position": {
+        "x": 1273.2,
+        "y": -539.7
+      },
+      "data": {
+        "label": "Drain Motor NDE",
+        "level": 0.0002,
+        "elevation": 0,
+        "temperature": 313.15,
+        "rotation": 0,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "a14bc4ff-1e27-4f76-bc7e-00abdcfd5ffb",
+              "pressure": 101326.686706875,
+              "flow_rate": 0.00008842164137866672,
+              "temperature": 313.15,
+              "density": 859.6875,
+              "viscosity": 0.006678730597627306,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "06f8cd5c-8336-4bb2-9061-320ed868f273",
+              "pressure": 101326.686706875,
+              "flow_rate": 0,
+              "temperature": 313.15,
+              "density": 859.6875,
+              "viscosity": 0.006678730597627306,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "width": 73,
+      "height": 143
+    },
+    {
+      "id": "drain-motor-de",
+      "type": "tank",
+      "position": {
+        "x": 1320.4,
+        "y": -228.6
+      },
+      "data": {
+        "label": "Drain Motor DE",
+        "level": 0.00002,
+        "elevation": 0,
+        "temperature": 313.15,
+        "rotation": 0,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "1d24b853-2f63-4469-96cd-963ee2947840",
+              "pressure": 101325.1686706875,
+              "flow_rate": 0.00008842201532449336,
+              "temperature": 313.15,
+              "density": 859.6875,
+              "viscosity": 0.006678730597627306,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "8ee6cda6-2aca-4139-bcdf-41bc59439a09",
+              "pressure": 101325.1686706875,
+              "flow_rate": 0,
+              "temperature": 313.15,
+              "density": 859.6875,
+              "viscosity": 0.006678730597627306,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "width": 66,
+      "height": 143
+    },
+    {
+      "id": "gearbox-splitter",
+      "type": "splitter",
+      "position": {
+        "x": 955.4,
+        "y": -102.7
+      },
+      "data": {
+        "label": "Splitter 68",
+        "rotation": 0,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "0f5d5d30-b08b-4c8f-b8b7-10b6d1d7557c",
+              "pressure": 271091.8585682344,
+              "flow_rate": 0.008565827335006167,
+              "temperature": 315.6293063651784,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "c5b63c40-c344-4760-8b23-65a345b83b51",
+              "pressure": 271091.8585682344,
+              "flow_rate": 0.003008790181478905,
+              "temperature": 315.6293063651784,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            },
+            {
+              "id": "21e62b55-e13e-4811-afa7-77c44c8ecbab",
+              "pressure": 271091.8585682344,
+              "flow_rate": 0.005557037153527262,
+              "temperature": 315.6293063651784,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "width": 56,
+      "height": 71
+    },
+    {
+      "id": "orifice-gearbox",
+      "type": "orifice",
+      "position": {
+        "x": 1162.4,
+        "y": -184.8
+      },
+      "data": {
+        "label": "Gearbox",
+        "pipe_diameter": 0.03814,
+        "orifice_diameter": 0.017,
+        "rotation": 0,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "19841e27-d0e3-42da-814a-9d886747f6f8",
+              "pressure": 260511.07052026174,
+              "flow_rate": 0.003008790181478905,
+              "temperature": 315.6354574384726,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "50c1ae17-6bfd-4e52-ab22-809428b62c3b",
+              "pressure": 101325.1686706875,
+              "flow_rate": 0.003008790181478905,
+              "temperature": 315.72799399430886,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "width": 42,
+      "height": 91
+    },
+    {
+      "id": "rb35-splitter",
+      "type": "splitter",
+      "position": {
+        "x": 1011,
+        "y": 36.2
+      },
+      "data": {
+        "label": "Splitter 70",
+        "rotation": 90,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "31167eb7-6c35-4617-ac7b-8ef316db6e0d",
+              "pressure": 269740.55581175536,
+              "flow_rate": 0.005557037153527262,
+              "temperature": 315.63009216979856,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "b4bc2a68-f799-4499-a148-4fcaa8c15d8e",
+              "pressure": 269740.55581175536,
+              "flow_rate": 0.0005489728152973942,
+              "temperature": 315.63009216979856,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            },
+            {
+              "id": "00c9991c-aa23-4790-9b29-abb15f745ef6",
+              "pressure": 269740.55581175536,
+              "flow_rate": 0.005008064338229868,
+              "temperature": 315.63009216979856,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "width": 56,
+      "height": 71
+    },
+    {
+      "id": "drain-gearbox",
+      "type": "tank",
+      "position": {
+        "x": 1313.8,
+        "y": -35.2
+      },
+      "data": {
+        "label": "Drain Gearbox",
+        "level": 0.00002,
+        "elevation": 0,
+        "temperature": 313.15,
+        "rotation": 0,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "dd42b82e-c5be-4412-b26e-6879005c0ba0",
+              "pressure": 101325.1686706875,
+              "flow_rate": 0.003008790181478905,
+              "temperature": 313.15,
+              "density": 859.6875,
+              "viscosity": 0.006678730597627306,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "cf39e6e4-e582-4bde-9fe8-eef802810746",
+              "pressure": 101325.1686706875,
+              "flow_rate": 0,
+              "temperature": 313.15,
+              "density": 859.6875,
+              "viscosity": 0.006678730597627306,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "width": 61,
+      "height": 143
+    },
+    {
+      "id": "orifice-rb35-de",
+      "type": "orifice",
+      "position": {
+        "x": 1172,
+        "y": 145.1
+      },
+      "data": {
+        "label": "RB35 DE",
+        "pipe_diameter": 0.01888,
+        "orifice_diameter": 0.0073,
+        "rotation": 0,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "285cd071-7e40-4eb8-9adc-de6ae171648a",
+              "pressure": 269694.5618861677,
+              "flow_rate": 0.0005489728152973942,
+              "temperature": 315.6301189083902,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "a064478c-56ff-4ee0-8005-caff5342a1c5",
+              "pressure": 101325.1686706875,
+              "flow_rate": 0.0005489728152973942,
+              "temperature": 315.72799496070036,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "width": 42,
+      "height": 91
+    },
+    {
+      "id": "rb35-nde-splitter",
+      "type": "splitter",
+      "position": {
+        "x": 1000.2,
+        "y": 183.2
+      },
+      "data": {
+        "label": "Splitter 73",
+        "rotation": 90,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "3b6c08b6-58cc-4231-a9d2-5e94332882b2",
+              "pressure": 268623.1659023693,
+              "flow_rate": 0.005008064338229868,
+              "temperature": 315.63074172951514,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "9b28618c-c172-4bac-ae2c-ee6fb090750a",
+              "pressure": 268623.1659023693,
+              "flow_rate": 0.003118107984005315,
+              "temperature": 315.63074172951514,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            },
+            {
+              "id": "f754a9f8-ff13-474e-950f-16497b1a4782",
+              "pressure": 268623.1659023693,
+              "flow_rate": 0.001889956354224553,
+              "temperature": 315.63074172951514,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "width": 56,
+      "height": 71
+    },
+    {
+      "id": "orifice-rb35-nde",
+      "type": "orifice",
+      "position": {
+        "x": 1155.1,
+        "y": 302.5
+      },
+      "data": {
+        "label": "RB35 NDE",
+        "pipe_diameter": 0.03814,
+        "orifice_diameter": 0.0171,
+        "rotation": 0,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "f30e65ac-4c8a-4382-a83f-1d54cc011bac",
+              "pressure": 267674.9094430544,
+              "flow_rate": 0.003118107984005315,
+              "temperature": 315.63129296526404,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "69184486-e2f3-456f-8523-556dcb5525b8",
+              "pressure": 101326.68670687501,
+              "flow_rate": 0.003118107984005315,
+              "temperature": 315.72799385235555,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "width": 43,
+      "height": 91
+    },
+    {
+      "id": "rb28-splitter",
+      "type": "splitter",
+      "position": {
+        "x": 1025.7,
+        "y": 387.1
+      },
+      "data": {
+        "label": "Splitter 75",
+        "rotation": 0,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "cbcb2a1f-046e-4b97-9a4f-27e0cecb9a9c",
+              "pressure": 267977.2839421154,
+              "flow_rate": 0.001889956354224553,
+              "temperature": 315.6311171899322,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "f24b858c-139d-439a-93db-a27acc3b2104",
+              "pressure": 267977.2839421154,
+              "flow_rate": 0.00020385506519228407,
+              "temperature": 315.6311171899322,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            },
+            {
+              "id": "aba3c0c0-c228-4c93-8ebc-b7b65095cfb8",
+              "pressure": 267977.2839421154,
+              "flow_rate": 0.0016861012890322688,
+              "temperature": 315.6311171899322,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "width": 56,
+      "height": 71
+    },
+    {
+      "id": "orifice-rb28-de",
+      "type": "orifice",
+      "position": {
+        "x": 1157.6,
+        "y": 408.7
+      },
+      "data": {
+        "label": "RB28 DE",
+        "pipe_diameter": 0.01888,
+        "orifice_diameter": 0.0046,
+        "rotation": 0,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "b2b09068-98e0-46a9-b308-926bdde340cf",
+              "pressure": 267320.6681719493,
+              "flow_rate": 0.00020385506519228407,
+              "temperature": 315.63149889133183,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "60940f0a-38cf-4854-8015-3e3b62c46a0c",
+              "pressure": 101325.16867068753,
+              "flow_rate": 0.00020385506519228407,
+              "temperature": 315.7279946955995,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "width": 42,
+      "height": 91
+    },
+    {
+      "id": "orifice-rb28-nde",
+      "type": "orifice",
+      "position": {
+        "x": 1156.9,
+        "y": 495.7
+      },
+      "data": {
+        "label": "RB28 NDE",
+        "pipe_diameter": 0.03814,
+        "orifice_diameter": 0.013,
+        "rotation": 0,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "afc28a56-0c82-486a-bc49-3b83c6323ac0",
+              "pressure": 266923.57699832297,
+              "flow_rate": 0.0016861012890322688,
+              "temperature": 315.6317297268732,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "858a5ead-273d-446d-b7e3-caa56028e7bd",
+              "pressure": 101326.68670687501,
+              "flow_rate": 0.0016861012890322688,
+              "temperature": 315.72799376952753,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "width": 43,
+      "height": 91
+    },
+    {
+      "id": "drain-rb35-de",
+      "type": "tank",
+      "position": {
+        "x": 1313.4,
+        "y": 111.5
+      },
+      "data": {
+        "label": "Drain RB35 DE",
+        "level": 0.00002,
+        "elevation": 0,
+        "temperature": 313.15,
+        "rotation": 0,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "bc516f65-4d5d-44c4-ae01-9bc9d19057e3",
+              "pressure": 101325.1686706875,
+              "flow_rate": 0.0005489728152973942,
+              "temperature": 313.15,
+              "density": 859.6875,
+              "viscosity": 0.006678730597627306,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "15f8f5bd-327b-4590-8311-d52910c3ecd7",
+              "pressure": 101325.1686706875,
+              "flow_rate": 0,
+              "temperature": 313.15,
+              "density": 859.6875,
+              "viscosity": 0.006678730597627306,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "width": 61,
+      "height": 143
+    },
+    {
+      "id": "drain-rb35-nde",
+      "type": "tank",
+      "position": {
+        "x": 1306.1,
+        "y": 268.8
+      },
+      "data": {
+        "label": "Drain RB35 NDE",
+        "level": 0.0002,
+        "elevation": 0,
+        "temperature": 313.15,
+        "rotation": 0,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "9c911e98-5e84-48a4-9e2c-39b91e29b316",
+              "pressure": 101326.686706875,
+              "flow_rate": 0.003118107984005315,
+              "temperature": 313.15,
+              "density": 859.6875,
+              "viscosity": 0.006678730597627306,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "44de3b93-fe19-4018-b39c-f41d5717eb42",
+              "pressure": 101326.686706875,
+              "flow_rate": 0,
+              "temperature": 313.15,
+              "density": 859.6875,
+              "viscosity": 0.006678730597627306,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "width": 69,
+      "height": 143
+    },
+    {
+      "id": "drain-rb28-de",
+      "type": "tank",
+      "position": {
+        "x": 1302.2,
+        "y": 420.9
+      },
+      "data": {
+        "label": "Drain RB28 DE",
+        "level": 0.00002,
+        "elevation": 0,
+        "temperature": 313.15,
+        "rotation": 0,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "15ce990a-9f52-4a4e-99d8-63754b5545e7",
+              "pressure": 101325.1686706875,
+              "flow_rate": 0.00020385506519228407,
+              "temperature": 313.15,
+              "density": 859.6875,
+              "viscosity": 0.006678730597627306,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "eb3fa2c0-a2ae-4056-80c1-75ee018f4eaa",
+              "pressure": 101325.1686706875,
+              "flow_rate": 0,
+              "temperature": 313.15,
+              "density": 859.6875,
+              "viscosity": 0.006678730597627306,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "width": 61,
+      "height": 143
+    },
+    {
+      "id": "drain-rb28-nde",
+      "type": "tank",
+      "position": {
+        "x": 1302.3,
+        "y": 585
+      },
+      "data": {
+        "label": "Drain RB28 NDE",
+        "level": 0.0002,
+        "elevation": 0,
+        "temperature": 313.15,
+        "rotation": 0,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "29933d10-0b18-46ee-96f4-18a53bc4e2e0",
+              "pressure": 101326.686706875,
+              "flow_rate": 0.0016861012890322688,
+              "temperature": 313.15,
+              "density": 859.6875,
+              "viscosity": 0.006678730597627306,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "ee5687ac-7438-45ac-9e6f-7797dcab6b48",
+              "pressure": 101326.686706875,
+              "flow_rate": 0,
+              "temperature": 313.15,
+              "density": 859.6875,
+              "viscosity": 0.006678730597627306,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "width": 69,
+      "height": 143
+    },
+    {
+      "id": "node_1689aa49",
+      "type": "three_way_tcv",
+      "position": {
+        "x": 186.91073776479175,
+        "y": -182.06588750913082
+      },
+      "data": {
+        "label": "THREE_WAY_TCV_381",
+        "rotation": 0,
+        "max_cv": 100,
+        "set_temperature_c": 45,
+        "hot_port_idx": 1,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "2975fa3a-4e85-43d5-b161-e0e429fcf264",
+              "pressure": 762165.1438619453,
+              "flow_rate": 0.000024583255779174335,
+              "temperature": -6074.846684040847,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            },
+            {
+              "id": "7428d6ea-bd69-407a-a219-c0f21d33edc4",
+              "pressure": 762165.1438619453,
+              "flow_rate": 0.008718087735930153,
+              "temperature": 333.36928036085936,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "a444e4f5-9f36-42a9-b4ca-abfd5c58df91",
+              "pressure": 762165.1438619453,
+              "flow_rate": 0.008742670991709327,
+              "temperature": 315.3502090392385,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "cavitation_warning": false
+        }
+      },
+      "width": 91,
+      "height": 101,
+      "selected": false,
+      "dragging": false,
+      "positionAbsolute": {
+        "x": 186.91073776479175,
+        "y": -182.06588750913082
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "pump-suction-line",
+      "source": "main-reservoir",
+      "sourceHandle": "outlet-0",
+      "target": "main-oil-pump",
+      "targetHandle": "inlet-0",
+      "label": "pump-suction-line",
+      "animated": true,
+      "data": {
+        "length": 8,
+        "diameter": 0.15408,
+        "type": "PIPE",
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "0f99d5b2-1725-4a25-a2bf-eaa7eb99871c",
+              "pressure": 117951.72375,
+              "flow_rate": 0.036044655452869036,
+              "temperature": 333.15,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "c829ee60-11be-400f-94fd-bc2b9f2615f4",
+              "pressure": 116268.30277117017,
+              "flow_rate": 0.036044655452869036,
+              "temperature": 333.15094594473044,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "style": {}
+    },
+    {
+      "id": "pump-discharge-line",
+      "source": "main-oil-pump",
+      "sourceHandle": "outlet-0",
+      "target": "pump-discharge-splitter",
+      "targetHandle": "inlet-0",
+      "label": "pump-discharge-line",
+      "animated": true,
+      "data": {
+        "length": 8,
+        "diameter": 0.07792,
+        "type": "PIPE",
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "cbbdb95f-177f-4834-b727-a08d20c3e364",
+              "pressure": 900518.8030220369,
+              "flow_rate": 0.036044655452869036,
+              "temperature": 333.29784053234766,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "0fe4a7d6-5a0f-4012-8974-2b5f1c51fab4",
+              "pressure": 850997.5773559463,
+              "flow_rate": 0.036044655452869036,
+              "temperature": 333.3256595718833,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "style": {}
+    },
+    {
+      "id": "spill-over-line",
+      "source": "pump-discharge-splitter",
+      "sourceHandle": "outlet-1",
+      "target": "spill-over-valve",
+      "targetHandle": "inlet-0",
+      "label": "spill-over-line",
+      "animated": true,
+      "data": {
+        "length": 8,
+        "diameter": 0.07792,
+        "type": "PIPE",
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "2a55384a-b762-4694-9e8b-5905d9941d29",
+              "pressure": 850997.5773559463,
+              "flow_rate": 0.02730198446115971,
+              "temperature": 333.3256595718833,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "d129dc22-5d5c-4cdf-9189-6bc43e62d4b8",
+              "pressure": 821718.0689400675,
+              "flow_rate": 0.02730198446115971,
+              "temperature": 333.3421067547824,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "style": {}
+    },
+    {
+      "id": "spill-over-return",
+      "source": "spill-over-valve",
+      "sourceHandle": "outlet-0",
+      "target": "reservoir-return-tank",
+      "targetHandle": "inlet-0",
+      "label": "spill-over-return",
+      "animated": true,
+      "data": {
+        "length": 10,
+        "diameter": 0.07792,
+        "type": "PIPE",
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "05c24193-bc1a-494b-bb73-156f9b3501b7",
+              "pressure": 137926.07222672366,
+              "flow_rate": 0.02730198446115971,
+              "temperature": 333.72620131250216,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "b9a888eb-aade-4fc0-8f05-f1f49162fcf6",
+              "pressure": 101326.686706875,
+              "flow_rate": 0.02730198446115971,
+              "temperature": 333.7467446231238,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "style": {}
+    },
+    {
+      "id": "main-supply-header",
+      "source": "pump-discharge-splitter",
+      "sourceHandle": "outlet-0",
+      "target": "cooler-bypass-splitter",
+      "targetHandle": "inlet-0",
+      "label": "main-supply-header",
+      "animated": true,
+      "data": {
+        "length": 1,
+        "diameter": 0.10226,
+        "type": "PIPE",
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "2e80dfef-1704-4d1c-ad88-acb916c87922",
+              "pressure": 850997.5773559463,
+              "flow_rate": 0.008742670991709327,
+              "temperature": 333.3256595718833,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "01e4acf9-f060-4d9a-833c-41375a89ccbb",
+              "pressure": 850878.8802598389,
+              "flow_rate": 0.008742670991709327,
+              "temperature": 333.3257262476219,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "style": {},
+      "selected": false
+    },
+    {
+      "id": "cooler-supply-line",
+      "source": "cooler-bypass-splitter",
+      "sourceHandle": "outlet-0",
+      "target": "oil-cooler",
+      "targetHandle": "inlet-0",
+      "label": "cooler-supply-line",
+      "animated": true,
+      "data": {
+        "length": 1,
+        "diameter": 0.07792,
+        "type": "PIPE",
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "7719b6dc-f147-487d-a9b9-775982a6f857",
+              "pressure": 850878.8802598389,
+              "flow_rate": 0.000024583255779174335,
+              "temperature": 333.3257262476219,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "3cc549fb-b2c6-4f68-bf7d-b266de8aee8e",
+              "pressure": 850878.786038558,
+              "flow_rate": 0.000024583255779174335,
+              "temperature": 333.3257263005488,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "style": {}
+    },
+    {
+      "id": "filter-discharge-line",
+      "source": "main-filter",
+      "sourceHandle": "outlet-0",
+      "target": "flow-sensing-orifice",
+      "targetHandle": "inlet-0",
+      "label": "filter-discharge-line",
+      "animated": true,
+      "data": {
+        "length": 1,
+        "diameter": 0.07792,
+        "type": "PIPE",
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "39cc80c2-bd80-4a52-ad4c-2bcf8bd160cc",
+              "pressure": 657627.343651905,
+              "flow_rate": 0.008742670991709327,
+              "temperature": 315.404509817844,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "8fd969ce-a6fd-4f46-99cc-cdde39ef5227",
+              "pressure": 657182.414847851,
+              "flow_rate": 0.008742670991709327,
+              "temperature": 315.4047685777209,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "style": {}
+    },
+    {
+      "id": "sensing-line",
+      "source": "flow-sensing-orifice",
+      "sourceHandle": "outlet-0",
+      "target": "distribution-header-splitter",
+      "targetHandle": "inlet-0",
+      "label": "sensing-line",
+      "animated": true,
+      "data": {
+        "length": 2,
+        "diameter": 0.07792,
+        "type": "PIPE",
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "1b9c8fd9-ab03-425f-8ea4-da1bf400db54",
+              "pressure": 282270.896031092,
+              "flow_rate": 0.008742670991709327,
+              "temperature": 315.6228082454441,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "6a1df76f-0cd0-433f-bcfe-81aad5cd3219",
+              "pressure": 281381.0384229837,
+              "flow_rate": 0.008742670991709327,
+              "temperature": 315.62332554257773,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "style": {}
+    },
+    {
+      "id": "motor-supply-line",
+      "source": "distribution-header-splitter",
+      "sourceHandle": "outlet-0",
+      "target": "motor-bearing-splitter",
+      "targetHandle": "inlet-0",
+      "label": "motor-supply-line",
+      "animated": true,
+      "data": {
+        "length": 2,
+        "diameter": 0.02096,
+        "type": "PIPE",
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "267f910c-2453-42f8-95a5-815aebf71986",
+              "pressure": 281381.0384229837,
+              "flow_rate": 0.00017684365670316007,
+              "temperature": 315.6233250061634,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "33bd542d-6e04-4d04-a470-38c52c4221eb",
+              "pressure": 280865.2299180313,
+              "flow_rate": 0.00017684365670316007,
+              "temperature": 315.6236248586195,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "style": {}
+    },
+    {
+      "id": "main-distribution-line",
+      "source": "distribution-header-splitter",
+      "sourceHandle": "outlet-1",
+      "target": "gearbox-splitter",
+      "targetHandle": "inlet-0",
+      "label": "main-distribution-line",
+      "animated": true,
+      "data": {
+        "length": 24,
+        "diameter": 0.07792,
+        "type": "PIPE",
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "d25c7458-efbc-4a56-aa6e-66d3925fd004",
+              "pressure": 281381.0384229837,
+              "flow_rate": 0.008565827335006167,
+              "temperature": 315.6233250061634,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "d3a2c69e-06f6-4f1c-8047-9ef4dc51a930",
+              "pressure": 271091.8585682344,
+              "flow_rate": 0.008565827335006167,
+              "temperature": 315.6293063651784,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "style": {}
+    },
+    {
+      "id": "motor-nde-supply",
+      "source": "motor-bearing-splitter",
+      "sourceHandle": "outlet-0",
+      "target": "orifice-motor-nde",
+      "targetHandle": "inlet-0",
+      "label": "motor-nde-supply",
+      "animated": true,
+      "data": {
+        "length": 2,
+        "diameter": 0.02096,
+        "type": "PIPE",
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "63d1b6a3-d1ef-44ef-a797-ef8cbd1ed6ae",
+              "pressure": 280865.2299180313,
+              "flow_rate": 0.00008842164137866672,
+              "temperature": 315.6236251262252,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "a0f77d21-2f8c-4205-887a-79be14c9ca10",
+              "pressure": 280735.7719355735,
+              "flow_rate": 0.00008842164137866672,
+              "temperature": 315.62370038336167,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "style": {}
+    },
+    {
+      "id": "motor-de-supply",
+      "source": "motor-bearing-splitter",
+      "sourceHandle": "outlet-1",
+      "target": "orifice-motor-de",
+      "targetHandle": "inlet-0",
+      "label": "motor-de-supply",
+      "animated": true,
+      "data": {
+        "length": 2,
+        "diameter": 0.02096,
+        "type": "PIPE",
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "ef6b3ca3-fd5b-40ff-8877-d2bedecb91e0",
+              "pressure": 280865.2299180313,
+              "flow_rate": 0.00008842201532449336,
+              "temperature": 315.6236251262252,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "07fb6261-3c23-4cfe-9584-21f82673b237",
+              "pressure": 280735.77138808,
+              "flow_rate": 0.00008842201532449336,
+              "temperature": 315.62370038367993,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "style": {}
+    },
+    {
+      "id": "motor-nde-drain",
+      "source": "orifice-motor-nde",
+      "sourceHandle": "outlet-0",
+      "target": "drain-motor-nde",
+      "targetHandle": "inlet-0",
+      "label": "motor-nde-drain",
+      "animated": true,
+      "data": {
+        "length": 0,
+        "diameter": 0.05248,
+        "type": "PIPE",
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "cfd1a3b1-ebf4-411a-9192-b3d50270dff7",
+              "pressure": 101326.68670687499,
+              "flow_rate": 0.00008842164137866672,
+              "temperature": 315.72799532099043,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "878fdd2c-bfa1-4726-85b0-fc6ac9ad21c7",
+              "pressure": 101326.686706875,
+              "flow_rate": 0.00008842164137866672,
+              "temperature": 315.72799532099043,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "style": {}
+    },
+    {
+      "id": "motor-de-drain",
+      "source": "orifice-motor-de",
+      "sourceHandle": "outlet-0",
+      "target": "drain-motor-de",
+      "targetHandle": "inlet-0",
+      "label": "motor-de-drain",
+      "animated": true,
+      "data": {
+        "length": 0,
+        "diameter": 0.05248,
+        "type": "PIPE",
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "f58f03bf-e2f1-4a63-929d-c2a8a63880e7",
+              "pressure": 101325.16867068748,
+              "flow_rate": 0.00008842201532449336,
+              "temperature": 315.72799620346234,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "d3556160-457f-4197-8212-e5102771c96e",
+              "pressure": 101325.1686706875,
+              "flow_rate": 0.00008842201532449336,
+              "temperature": 315.72799620346234,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "style": {}
+    },
+    {
+      "id": "gearbox-supply",
+      "source": "gearbox-splitter",
+      "sourceHandle": "outlet-0",
+      "target": "orifice-gearbox",
+      "targetHandle": "inlet-0",
+      "label": "gearbox-supply",
+      "animated": true,
+      "data": {
+        "length": 5,
+        "diameter": 0.03814,
+        "type": "PIPE",
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "4d43f842-c718-4fb8-928c-0dae30560c7d",
+              "pressure": 271091.8585682344,
+              "flow_rate": 0.003008790181478905,
+              "temperature": 315.6293066327811,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "ab889a49-3158-473c-8ac6-fbf28818eabd",
+              "pressure": 260511.07052026174,
+              "flow_rate": 0.003008790181478905,
+              "temperature": 315.6354574384726,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "style": {}
+    },
+    {
+      "id": "aux-distribution-line",
+      "source": "gearbox-splitter",
+      "sourceHandle": "outlet-1",
+      "target": "rb35-splitter",
+      "targetHandle": "inlet-0",
+      "label": "aux-distribution-line",
+      "animated": true,
+      "data": {
+        "length": 1,
+        "diameter": 0.05248,
+        "type": "PIPE",
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "f1c4a6c0-cf04-4c25-a0fd-1d1abc766a08",
+              "pressure": 271091.8585682344,
+              "flow_rate": 0.005557037153527262,
+              "temperature": 315.6293066327811,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "5347bf81-9176-499d-b44b-4e7f5ee60339",
+              "pressure": 269740.55581175536,
+              "flow_rate": 0.005557037153527262,
+              "temperature": 315.63009216979856,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "style": {}
+    },
+    {
+      "id": "gearbox-drain",
+      "source": "orifice-gearbox",
+      "sourceHandle": "outlet-0",
+      "target": "drain-gearbox",
+      "targetHandle": "inlet-0",
+      "label": "gearbox-drain",
+      "animated": true,
+      "data": {
+        "length": 0,
+        "diameter": 0.05248,
+        "type": "PIPE",
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "b7105e57-921b-46cd-aa81-f148dd13865f",
+              "pressure": 101325.1686706875,
+              "flow_rate": 0.003008790181478905,
+              "temperature": 315.7279939958311,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "32742a8f-1104-4c40-8389-9c6b521d2966",
+              "pressure": 101325.1686706875,
+              "flow_rate": 0.003008790181478905,
+              "temperature": 315.7279939958311,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "style": {}
+    },
+    {
+      "id": "rb35-de-supply",
+      "source": "rb35-splitter",
+      "sourceHandle": "outlet-0",
+      "target": "orifice-rb35-de",
+      "targetHandle": "inlet-0",
+      "label": "rb35-de-supply",
+      "animated": true,
+      "data": {
+        "length": 2,
+        "diameter": 0.05248,
+        "type": "PIPE",
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "660d7a28-a25a-4bf3-b096-4268774e94d6",
+              "pressure": 269740.55581175536,
+              "flow_rate": 0.0005489728152973942,
+              "temperature": 315.6300921713211,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "c6c5be2b-8ed8-413f-9596-2f4c48db909a",
+              "pressure": 269694.5618861677,
+              "flow_rate": 0.0005489728152973942,
+              "temperature": 315.6301189083902,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "style": {}
+    },
+    {
+      "id": "rb35-nde-manifold",
+      "source": "rb35-splitter",
+      "sourceHandle": "outlet-1",
+      "target": "rb35-nde-splitter",
+      "targetHandle": "inlet-0",
+      "label": "rb35-nde-manifold",
+      "animated": true,
+      "data": {
+        "length": 1,
+        "diameter": 0.05248,
+        "type": "PIPE",
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "41683e4f-97f2-4a22-ab23-b7795320b92c",
+              "pressure": 269740.55581175536,
+              "flow_rate": 0.005008064338229868,
+              "temperature": 315.6300921713211,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "7d0a6ec4-8a8f-411e-8162-bea515780d5e",
+              "pressure": 268623.1659023693,
+              "flow_rate": 0.005008064338229868,
+              "temperature": 315.63074172951514,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "style": {}
+    },
+    {
+      "id": "rb35-de-drain",
+      "source": "orifice-rb35-de",
+      "sourceHandle": "outlet-0",
+      "target": "drain-rb35-de",
+      "targetHandle": "inlet-0",
+      "label": "rb35-de-drain",
+      "animated": true,
+      "data": {
+        "length": 0,
+        "diameter": 0.05248,
+        "type": "PIPE",
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "e72c6e81-6454-4cc6-aacf-c3162fc51e3a",
+              "pressure": 101325.1686706875,
+              "flow_rate": 0.0005489728152973942,
+              "temperature": 315.72799495917815,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "faa84b5b-97f9-495e-b2c1-0d6c10588401",
+              "pressure": 101325.1686706875,
+              "flow_rate": 0.0005489728152973942,
+              "temperature": 315.72799495917815,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "style": {}
+    },
+    {
+      "id": "rb35-nde-supply",
+      "source": "rb35-nde-splitter",
+      "sourceHandle": "outlet-0",
+      "target": "orifice-rb35-nde",
+      "targetHandle": "inlet-0",
+      "label": "rb35-nde-supply",
+      "animated": true,
+      "data": {
+        "length": 2,
+        "diameter": 0.05248,
+        "type": "PIPE",
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "3b43dadc-9b3c-427a-87ae-b11caf00335a",
+              "pressure": 268623.1659023693,
+              "flow_rate": 0.003118107984005315,
+              "temperature": 315.6307417279926,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "079c960c-60f8-4baf-aee1-841b2f112a87",
+              "pressure": 267674.9094430544,
+              "flow_rate": 0.003118107984005315,
+              "temperature": 315.63129296526404,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "style": {}
+    },
+    {
+      "id": "rb28-manifold",
+      "source": "rb35-nde-splitter",
+      "sourceHandle": "outlet-1",
+      "target": "rb28-splitter",
+      "targetHandle": "inlet-0",
+      "label": "rb28-manifold",
+      "animated": true,
+      "data": {
+        "length": 1,
+        "diameter": 0.04094,
+        "type": "PIPE",
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "2e631dbf-80ea-4b28-af18-9839ba4b4d41",
+              "pressure": 268623.1659023693,
+              "flow_rate": 0.001889956354224553,
+              "temperature": 315.6307417279926,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "3afd3c08-38d5-4d0c-8f8d-bd93f0d37937",
+              "pressure": 267977.2839421154,
+              "flow_rate": 0.001889956354224553,
+              "temperature": 315.6311171899322,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "style": {}
+    },
+    {
+      "id": "rb35-nde-drain",
+      "source": "orifice-rb35-nde",
+      "sourceHandle": "outlet-0",
+      "target": "drain-rb35-nde",
+      "targetHandle": "inlet-0",
+      "label": "rb35-nde-drain",
+      "animated": true,
+      "data": {
+        "length": 0,
+        "diameter": 0.05248,
+        "type": "PIPE",
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "4f338c53-aaa0-4010-b33d-2f8250e5c86a",
+              "pressure": 101326.68670687501,
+              "flow_rate": 0.003118107984005315,
+              "temperature": 315.72799385235555,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "9845596f-b90a-483a-86f6-34a5818f202c",
+              "pressure": 101326.686706875,
+              "flow_rate": 0.003118107984005315,
+              "temperature": 315.72799385235555,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "style": {}
+    },
+    {
+      "id": "rb28-de-supply",
+      "source": "rb28-splitter",
+      "sourceHandle": "outlet-0",
+      "target": "orifice-rb28-de",
+      "targetHandle": "inlet-0",
+      "label": "rb28-de-supply",
+      "animated": true,
+      "data": {
+        "length": 2,
+        "diameter": 0.02096,
+        "type": "PIPE",
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "4145ea7a-20fb-4382-abef-3a361f4c0f8d",
+              "pressure": 267977.2839421154,
+              "flow_rate": 0.00020385506519228407,
+              "temperature": 315.6311171899322,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "3d74c39f-17e2-4d84-810e-3cc509679b51",
+              "pressure": 267320.6681719493,
+              "flow_rate": 0.00020385506519228407,
+              "temperature": 315.63149889133183,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "style": {}
+    },
+    {
+      "id": "rb28-nde-supply",
+      "source": "rb28-splitter",
+      "sourceHandle": "outlet-1",
+      "target": "orifice-rb28-nde",
+      "targetHandle": "inlet-0",
+      "label": "rb28-nde-supply",
+      "animated": true,
+      "data": {
+        "length": 2,
+        "diameter": 0.04094,
+        "type": "PIPE",
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "b9eb932f-f20b-42ad-8738-a5cd1d1bcc84",
+              "pressure": 267977.2839421154,
+              "flow_rate": 0.0016861012890322688,
+              "temperature": 315.6311171899322,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "3956fa49-5ca1-4af8-ab91-e729563e9b34",
+              "pressure": 266923.57699832297,
+              "flow_rate": 0.0016861012890322688,
+              "temperature": 315.6317297268732,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "style": {}
+    },
+    {
+      "id": "rb28-de-drain",
+      "source": "orifice-rb28-de",
+      "sourceHandle": "outlet-0",
+      "target": "drain-rb28-de",
+      "targetHandle": "inlet-0",
+      "label": "rb28-de-drain",
+      "animated": true,
+      "data": {
+        "length": 0,
+        "diameter": 0.05248,
+        "type": "PIPE",
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "23e98f99-3340-49a4-8db4-df47dfba8c09",
+              "pressure": 101325.16867068753,
+              "flow_rate": 0.00020385506519228407,
+              "temperature": 315.7279946955995,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "75a61332-a838-4d28-b93f-25a831640b53",
+              "pressure": 101325.1686706875,
+              "flow_rate": 0.00020385506519228407,
+              "temperature": 315.7279946955995,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "style": {}
+    },
+    {
+      "id": "rb28-nde-drain",
+      "source": "orifice-rb28-nde",
+      "sourceHandle": "outlet-0",
+      "target": "drain-rb28-nde",
+      "targetHandle": "inlet-0",
+      "label": "rb28-nde-drain",
+      "animated": true,
+      "data": {
+        "length": 0,
+        "diameter": 0.05248,
+        "type": "PIPE",
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "405333c9-ba70-4232-b55c-65fb41b1ecce",
+              "pressure": 101326.68670687501,
+              "flow_rate": 0.0016861012890322688,
+              "temperature": 315.72799376952753,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "2c5b60ad-0215-4140-aa82-3484b0139b86",
+              "pressure": 101326.686706875,
+              "flow_rate": 0.0016861012890322688,
+              "temperature": 315.72799376952753,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "style": {}
+    },
+    {
+      "id": "remote-pressure-signal",
+      "source": "flow-sensing-orifice",
+      "sourceHandle": "signal-inlet-0",
+      "target": "spill-over-valve",
+      "targetHandle": "signal-in",
+      "label": "remote-pressure-signal",
+      "animated": true,
+      "type": "step",
+      "style": {
+        "stroke": "#fde047",
+        "strokeWidth": 3,
+        "strokeDasharray": "5,5"
+      },
+      "data": {
+        "type": "SIGNAL"
+      }
+    },
+    {
+      "source": "node_1689aa49",
+      "sourceHandle": "outlet-0",
+      "target": "main-filter",
+      "targetHandle": "inlet-0",
+      "id": "Pipe 104",
+      "label": "Pipe 104",
+      "animated": true,
+      "type": "default",
+      "style": {},
+      "data": {
+        "label": "Pipe 104",
+        "type": "PIPE",
+        "length": 25,
+        "diameter": 0.05248,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "e42a47ad-82a1-4cb4-8049-cf2f925011ec",
+              "pressure": 762165.1438619453,
+              "flow_rate": 0.008742670991709327,
+              "temperature": 315.3502090392385,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "b0235882-fe7b-48bc-9a62-96e261359d4e",
+              "pressure": 673044.4570132765,
+              "flow_rate": 0.008742670991709327,
+              "temperature": 315.3955434375195,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "selected": false
+    },
+    {
+      "source": "oil-cooler",
+      "sourceHandle": "outlet-0",
+      "target": "node_1689aa49",
+      "targetHandle": "inlet-0",
+      "id": "Pipe 110",
+      "label": "Pipe 110",
+      "animated": true,
+      "type": "default",
+      "style": {},
+      "data": {
+        "label": "Pipe 110",
+        "type": "PIPE",
+        "length": 25,
+        "diameter": 0.05248,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "5cac399f-7d54-4d02-83bb-f175a668fccb",
+              "pressure": 850878.7860334367,
+              "flow_rate": 0.000024583255779174335,
+              "temperature": -6074.846683466806,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "3971eab0-f158-4502-906a-39b81c926286",
+              "pressure": 762165.1438619453,
+              "flow_rate": 0.000024583255779174335,
+              "temperature": -6074.846684040847,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "selected": false
+    },
+    {
+      "source": "cooler-bypass-splitter",
+      "sourceHandle": "outlet-1",
+      "target": "node_1689aa49",
+      "targetHandle": "inlet-1",
+      "id": "Pipe 112",
+      "label": "Pipe 112",
+      "animated": true,
+      "type": "default",
+      "style": {},
+      "data": {
+        "label": "Pipe 112",
+        "type": "PIPE",
+        "length": 25,
+        "diameter": 0.05248,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "db0c3dd6-046a-47fa-a459-6372c4ddafc3",
+              "pressure": 850878.8802598389,
+              "flow_rate": 0.008718087735930153,
+              "temperature": 333.3257262476219,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "17e7359a-ef8c-4fd3-974f-735dbd9a6ff6",
+              "pressure": 762165.1438619453,
+              "flow_rate": 0.008718087735930153,
+              "temperature": 333.36928036085936,
+              "density": 847.4375,
+              "viscosity": 0.00346773005558966,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "selected": false
+    }
+  ],
+  "globalSettings": {
+    "fluid_type": "iso_vg_46",
+    "ambient_temperature": 293.15,
+    "atmospheric_pressure": 101325,
+    "global_roughness": 0.000045,
+    "property_iterations": 5,
+    "tolerance": 0.000001,
+    "inner_iterations": 1000,
+    "control_iterations": 100,
+    "solver_method": "hybr",
+    "max_iterations": 1000
+  }
+}

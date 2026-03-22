@@ -12,6 +12,7 @@ from simulation.equipment.mixer import Mixer
 from simulation.equipment.heat_exchanger import HeatExchanger
 from simulation.equipment.filter import Filter
 from simulation.equipment.remote_control_valve import RemoteControlValve
+from simulation.equipment.three_way_tcv import ThreeWayTCV
 from simulation.equipment.base_node import HydraulicNode
 
 class GraphParser:
@@ -165,8 +166,10 @@ class GraphParser:
         elif t == 'heat_exchanger':
             node = HeatExchanger(
                 name=name,
-                heat_duty=float(d.get('heat_duty_kw', 0.0)) * 1000.0,
-                # Use a default or look for k_factor in data
+                rated_cooling_kw=float(d.get('rated_cooling_kw', 300.0)),
+                rated_flow_lmin=float(d.get('rated_flow_lmin', 500.0)),
+                design_inlet_temp_c=float(d.get('design_inlet_temp_c', 50.0)),
+                medium_temp_c=float(d.get('medium_temp_c', 10.0)),
                 pressure_drop_factor=float(d.get('k_factor', 10.0))
             )
         elif t == 'filter':
@@ -183,6 +186,13 @@ class GraphParser:
         elif t == 'mixer':
             # 2 inlets, 1 outlet
             node = Mixer(name=name, num_inlets=2)
+        elif t == 'three_way_tcv':
+            node = ThreeWayTCV(
+                name=name,
+                max_cv=float(d.get('max_cv', 0.1)),
+                set_temperature=float(d.get('set_temperature_c', 40.0)) + 273.15,
+                hot_port_idx=int(d.get('hot_port_idx', 0))
+            )
         else:
             node = HydraulicNode(name=name, node_type=t)
         
