@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import walflowLogo from './assets/Logo_WalFlow.svg';
+import { EquipmentSymbol } from './utils/SymbolLibrary';
 
 const categorizedEquipment = [
+// ... (rest of categorizedEquipment remains the same)
   {
     name: 'Fluid Sources',
     items: [
@@ -139,6 +141,8 @@ function StatCard({ label, value, hint }) {
 function CollapsibleCategory({ name, items, onDragStart }) {
   const [isExpanded, setIsExpanded] = useState(true);
 
+  if (items.length === 0) return null;
+
   return (
     <div style={{ marginBottom: '4px' }}>
       <div 
@@ -160,17 +164,20 @@ function CollapsibleCategory({ name, items, onDragStart }) {
       </div>
       
       {isExpanded && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px', padding: '8px 4px 16px 4px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '8px 4px 16px 4px' }}>
           {items.map((item) => (
             <div
               key={item.type}
               onDragStart={(event) => onDragStart(event, item.type)}
               draggable
               style={{
-                padding: '12px', background: theme.white, border: `1px solid ${theme.slate200}`,
+                padding: '12px 8px', background: theme.white, border: `1px solid ${theme.slate200}`,
                 borderRadius: '8px', cursor: 'grab', display: 'flex', flexDirection: 'column',
-                gap: '2px', transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                alignItems: 'center', justifyContent: 'center',
+                gap: '4px', transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                minHeight: '120px',
+                textAlign: 'center'
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.borderColor = theme.primary;
@@ -183,8 +190,11 @@ function CollapsibleCategory({ name, items, onDragStart }) {
                 e.currentTarget.style.transform = 'translateY(0)';
               }}
             >
-              <div style={{ fontSize: '13px', fontWeight: '600', color: theme.slate800 }}>{item.label}</div>
-              <div style={{ fontSize: '11px', color: theme.slate500, lineHeight: '1.4' }}>{item.description}</div>
+              <div style={{ height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '4px' }}>
+                <EquipmentSymbol type={item.type} size={36} />
+              </div>
+              <div style={{ fontSize: '11px', fontWeight: '700', color: theme.slate800, lineHeight: '1.2' }}>{item.label}</div>
+              <div style={{ fontSize: '9px', color: theme.slate500, lineHeight: '1.3', marginTop: '2px' }}>{item.description}</div>
             </div>
           ))}
         </div>
@@ -248,6 +258,19 @@ function CollapsibleScenarios({ templates, onLoad }) {
 
 export default function Sidebar({ onSave, onLoad, onClear, onCalculate, isSimulating, globalSettings, onUpdateGlobalSettings, templates, lastStats }) {
   const [activeTab, setActiveTab] = useState('library');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredEquipment = useMemo(() => {
+    const query = searchQuery.toLowerCase();
+    return categorizedEquipment.map(category => ({
+      ...category,
+      items: category.items.filter(item => 
+        item.label.toLowerCase().includes(query) ||
+        item.description.toLowerCase().includes(query) ||
+        item.type.toLowerCase().includes(query)
+      )
+    })).filter(category => category.items.length > 0);
+  }, [searchQuery]);
 
   const onDragStart = (event, nodeType) => {
     event.dataTransfer.setData('application/reactflow', nodeType);
@@ -339,11 +362,39 @@ export default function Sidebar({ onSave, onLoad, onClear, onCalculate, isSimula
 
       <div style={{ flexGrow: 1 }}>
         {activeTab === 'library' && (
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <CollapsibleScenarios templates={templates} onLoad={onLoad} />
-            {categorizedEquipment.map((category) => (
-              <CollapsibleCategory key={category.name} name={category.name} items={category.items} onDragStart={onDragStart} />
-            ))}
+
+            <div style={{ position: 'sticky', top: 0, background: theme.white, zIndex: 5, paddingBottom: '8px' }}>
+              <div style={{ position: 'relative' }}>
+                <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: theme.slate500, fontSize: '14px' }}>🔍</span>
+                <input 
+                  type="text" 
+                  placeholder="Search equipment..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{ ...inputStyle, paddingLeft: '36px' }}
+                />
+                {searchQuery && (
+                  <button 
+                    onClick={() => setSearchQuery('')}
+                    style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', color: theme.slate500, cursor: 'pointer', fontSize: '16px' }}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            </div>
+            
+            {filteredEquipment.length > 0 ? (
+              filteredEquipment.map((category) => (
+                <CollapsibleCategory key={category.name} name={category.name} items={category.items} onDragStart={onDragStart} />
+              ))
+            ) : (
+              <div style={{ textAlign: 'center', padding: '20px', color: theme.slate500, fontSize: '12px' }}>
+                No components match "{searchQuery}"
+              </div>
+            )}
           </div>
         )}
 
