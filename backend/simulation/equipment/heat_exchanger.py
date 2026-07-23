@@ -16,9 +16,14 @@ class HeatExchanger(HydraulicNode):
                  rated_flow_lmin: float = 500.0,
                  design_inlet_temp_c: float = 50.0,
                  medium_temp_c: float = 10.0,
-                 pressure_drop_factor: float = 10.0):
+                 pressure_drop_factor: float = 10.0,
+                 heat_duty: float = None):
         
         super().__init__(name, node_type="heat_exchanger")
+        
+        if heat_duty is not None:
+            # Handle legacy heat_duty (in Watts)
+            rated_cooling_kw = abs(heat_duty) / 1000.0
         
         # Design Parameters
         self.rated_cooling_kw = rated_cooling_kw

@@ -1,0 +1,23 @@
+@keyframes flowDash {
+  from {
+    stroke-dashoffset: 18;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes signalPulse {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Custom ReactFlow edge hover effects */
+.react-flow__edge:hover .react-flow__edge-path {
+  stroke-width: 5px !important;
+  cursor: pointer;
+}

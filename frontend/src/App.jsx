@@ -1,14 +1,16 @@
 import ReactFlow, { 
   Background, 
   Controls, 
+  ControlButton,
   MiniMap, 
+  Panel,
   useNodesState, 
   useEdgesState,
   addEdge,
   applyEdgeChanges
 } from 'reactflow';
 import 'reactflow/dist/style.css'; 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 
 // Import all custom equipment nodes
 import TankNode from './nodes/TankNode';
@@ -28,6 +30,11 @@ import Sidebar from './Sidebar';
 import PropertyEditor from './PropertyEditor';
 import DetailPanel from './DetailPanel';
 import DataList from './DataList';
+
+import PipeEdge from './edges/PipeEdge';
+import SignalEdge from './edges/SignalEdge';
+import HeatmapLegend from './components/HeatmapLegend';
+import './index.css';
 
 // Import Examples
 import examplePFD from './example_pfd/Example_Standard_PFD.json';
@@ -53,6 +60,12 @@ const nodeTypes = {
   three_way_tcv: ThreeWayTCVNode,
 };
 
+const edgeTypes = {
+  pipe: PipeEdge,
+  default: PipeEdge,
+  signal: SignalEdge,
+};
+
 const getId = () => `node_${crypto.randomUUID().split('-')[0]}`;
 
 export default function App() {
@@ -69,6 +82,18 @@ export default function App() {
   const [isSimulating, setIsSimulating] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [lastStats, setLastStats] = useState(null);
+  const [heatmapMode, setHeatmapMode] = useState('default');
+
+  const edgesWithHeatmap = useMemo(() => {
+    return edges.map((e) => ({
+      ...e,
+      type: e.data?.type === 'SIGNAL' ? 'signal' : 'pipe',
+      data: {
+        ...e.data,
+        heatmapMode,
+      },
+    }));
+  }, [edges, heatmapMode]);
   const [globalSettings, setGlobalSettings] = useState({
     fluid_type: 'water',
     ambient_temperature: 293.15,
@@ -496,8 +521,9 @@ export default function App() {
 
           <ReactFlow 
             nodes={nodes} 
-            edges={edges} 
-            nodeTypes={nodeTypes} 
+            edges={edgesWithHeatmap} 
+            nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes} 
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChangeCustom}
             onConnect={onConnect}
@@ -515,10 +541,75 @@ export default function App() {
             onDragOver={onDragOver}
             fitView
           >
+            {/* Prominent Floating Heatmap Toolbar - Only displayed when Heatmap is active */}
+            {heatmapMode !== 'default' && (
+              <Panel position="top-center">
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  backgroundColor: '#ffffff',
+                  padding: '8px 16px',
+                  borderRadius: '30px',
+                  boxShadow: '0 8px 20px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.05)',
+                  border: '1px solid #cbd5e1',
+                  fontSize: '13px',
+                  fontFamily: 'Inter, system-ui, sans-serif'
+                }}>
+                  <span style={{ fontWeight: 700, color: '#1e293b', marginRight: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span style={{ fontSize: '14px' }}>🎨</span> Heatmap:
+                  </span>
+                  {[
+                    { id: 'default', label: 'Off' },
+                    { id: 'pressure', label: 'Pressure (bar)' },
+                    { id: 'temperature', label: 'Temp (°C)' },
+                    { id: 'velocity', label: 'Velocity' }
+                  ].map((mode) => (
+                    <button
+                      key={mode.id}
+                      onClick={() => setHeatmapMode(mode.id)}
+                      style={{
+                        border: 'none',
+                        borderRadius: '20px',
+                        padding: '5px 14px',
+                        fontSize: '12px',
+                        fontWeight: heatmapMode === mode.id ? 600 : 500,
+                        backgroundColor: heatmapMode === mode.id ? '#2563eb' : '#f1f5f9',
+                        color: heatmapMode === mode.id ? '#ffffff' : '#475569',
+                        cursor: 'pointer',
+                        boxShadow: heatmapMode === mode.id ? '0 2px 8px rgba(37, 99, 235, 0.3)' : 'none',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      {mode.label}
+                    </button>
+                  ))}
+                </div>
+              </Panel>
+            )}
+
             <Background color="#ccc" gap={16} />
-            <Controls />
+            <Controls>
+              <ControlButton 
+                onClick={() => setHeatmapMode(prev => prev === 'default' ? 'pressure' : 'default')}
+                title={heatmapMode === 'default' ? "Turn On Heatmap" : "Turn Off Heatmap"}
+                style={{
+                  backgroundColor: heatmapMode !== 'default' ? '#2563eb' : '#ffffff',
+                  color: heatmapMode !== 'default' ? '#ffffff' : '#334155',
+                  fontSize: '13px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                🎨
+              </ControlButton>
+            </Controls>
             <MiniMap />
           </ReactFlow>
+
+          <HeatmapLegend heatmapMode={heatmapMode} onModeChange={setHeatmapMode} />
         </div>
         
         <DataList 
