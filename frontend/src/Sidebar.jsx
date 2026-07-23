@@ -44,16 +44,19 @@ const categorizedEquipment = [
 ];
 
 const theme = {
-  primary: '#2563eb',
-  primaryHover: '#1d4ed8',
-  slate50: '#f8fafc',
-  slate100: '#f1f5f9',
-  slate200: '#e2e8f0',
-  slate500: '#64748b',
-  slate800: '#1e293b',
+  primary: '#FA8507',
+  primaryHover: '#E07600',
+  brandDark: '#395253',
+  brandDarker: '#253637',
+  slate50: '#F4F7F6',
+  slate100: '#EBF0EF',
+  slate200: '#D8E2E1',
+  slate500: '#587071',
+  slate800: '#1C2B2C',
   white: '#ffffff',
-  shadow: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)'
+  shadow: '0 4px 12px -2px rgba(57, 82, 83, 0.1)'
 };
+
 
 function DiagnosticsContent({ stats }) {
   if (!stats) {
@@ -279,11 +282,11 @@ export default function Sidebar({ onSave, onLoad, onClear, onCalculate, isSimula
 
   const btnStyle = {
     padding: '10px 16px',
-    borderRadius: '6px',
+    borderRadius: '8px',
     fontSize: '12px',
     fontWeight: '600',
     cursor: 'pointer',
-    transition: 'all 0.2s',
+    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
     border: 'none',
     display: 'flex',
     alignItems: 'center',
@@ -291,44 +294,48 @@ export default function Sidebar({ onSave, onLoad, onClear, onCalculate, isSimula
     gap: '6px'
   };
 
-  const labelStyle = { display: 'block', fontSize: '12px', fontWeight: '600', color: theme.slate800, marginBottom: '6px' };
-  const inputStyle = { width: '100%', padding: '10px', borderRadius: '6px', border: `1px solid ${theme.slate200}`, fontSize: '13px', background: theme.white };
+  const labelStyle = { display: 'block', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', color: theme.slate500, marginBottom: '6px', letterSpacing: '0.04em' };
+  const inputStyle = { width: '100%', padding: '10px 12px', borderRadius: '8px', border: `1px solid ${theme.slate200}`, fontSize: '13px', background: theme.white, outline: 'none', transition: 'border-color 0.2s, box-shadow 0.2s' };
   const hintStyle = { fontSize: '10px', color: theme.slate500, marginTop: '4px' };
 
   return (
     <aside style={{
-      width: '300px', background: theme.white, borderRight: `1px solid ${theme.slate200}`,
-      padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px',
-      overflowY: 'auto', zIndex: 10, position: 'relative'
+      width: '320px', minWidth: '320px', background: theme.white, borderRight: `1px solid ${theme.slate200}`,
+      padding: '20px', display: 'flex', flexDirection: 'column', gap: '18px',
+      overflowY: 'auto', zIndex: 10, position: 'relative', boxShadow: '2px 0 12px rgba(57,82,83,0.03)'
     }}>
-      <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <img src={walflowLogo} alt="Logo" style={{ height: '32px' }} />
+      <div style={{ padding: '8px 4px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${theme.slate100}`, paddingBottom: '16px' }}>
+        <img src={walflowLogo} alt="WälFlow Logo" style={{ height: '36px' }} />
+        <span style={{ fontSize: '10px', fontWeight: '700', color: theme.brandDark, background: theme.slate100, padding: '3px 8px', borderRadius: '12px', letterSpacing: '0.05em' }}>v2.0 PFD</span>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         <button 
           onClick={onCalculate}
           disabled={isSimulating}
+          className={!isSimulating ? "pulse-primary" : ""}
           style={{
             ...btnStyle,
             padding: '14px',
             background: isSimulating ? theme.slate200 : theme.primary,
             color: theme.white,
             fontSize: '14px',
-            boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.2)'
+            fontWeight: '700',
+            letterSpacing: '0.02em',
+            boxShadow: isSimulating ? 'none' : '0 6px 16px -2px rgba(250, 133, 7, 0.4)'
           }}
           onMouseEnter={(e) => !isSimulating && (e.currentTarget.style.background = theme.primaryHover)}
           onMouseLeave={(e) => !isSimulating && (e.currentTarget.style.background = theme.primary)}
         >
-          {isSimulating ? '⌛ Simulating...' : '▶ Run Simulation'}
+          {isSimulating ? '⌛ Simulating Flow...' : '▶ Run Simulation'}
         </button>
         
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-          <button onClick={onSave} style={{ ...btnStyle, background: theme.slate800, color: theme.white }}>💾 Save</button>
-          <button onClick={() => document.getElementById('file-upload').click()} style={{ ...btnStyle, background: theme.slate100, color: theme.slate800, border: `1px solid ${theme.slate200}` }}>📂 Load</button>
+          <button onClick={onSave} style={{ ...btnStyle, background: theme.brandDark, color: theme.white }} onMouseEnter={(e) => e.currentTarget.style.background = theme.brandDarker} onMouseLeave={(e) => e.currentTarget.style.background = theme.brandDark}>💾 Save</button>
+          <button onClick={() => document.getElementById('file-upload').click()} style={{ ...btnStyle, background: theme.slate50, color: theme.slate800, border: `1px solid ${theme.slate200}` }} onMouseEnter={(e) => e.currentTarget.style.background = theme.slate100} onMouseLeave={(e) => e.currentTarget.style.background = theme.slate50}>📂 Load</button>
         </div>
         
-        <button onClick={onClear} style={{ ...btnStyle, background: 'transparent', color: '#ef4444', border: '1px solid #fee2e2' }} onMouseEnter={(e) => e.currentTarget.style.background = '#fef2f2'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>🗑 Clear Workspace</button>
+        <button onClick={onClear} style={{ ...btnStyle, background: 'transparent', color: '#ef4444', border: '1px solid #fee2e2' }} onMouseEnter={(e) => e.currentTarget.style.background = '#fef2f2'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>🗑 Clear Canvas</button>
         
         <input id="file-upload" type="file" style={{ display: 'none' }} accept=".json" onChange={(e) => {
           const file = e.target.files[0];
@@ -340,25 +347,26 @@ export default function Sidebar({ onSave, onLoad, onClear, onCalculate, isSimula
         }} />
       </div>
 
-      <div style={{ display: 'flex', background: theme.slate100, padding: '4px', borderRadius: '8px' }}>
+      <div style={{ display: 'flex', background: theme.slate50, padding: '4px', borderRadius: '10px', border: `1px solid ${theme.slate200}` }}>
         {['library', 'settings', 'diagnostics'].map((tab) => (
           <button 
             key={tab}
             onClick={() => setActiveTab(tab)}
             style={{
-              flex: 1, padding: '8px', border: 'none', borderRadius: '6px',
-              fontSize: '11px', fontWeight: '600', cursor: 'pointer',
+              flex: 1, padding: '8px', border: 'none', borderRadius: '7px',
+              fontSize: '11px', fontWeight: '700', cursor: 'pointer',
               textTransform: 'capitalize',
-              background: activeTab === tab ? theme.white : 'transparent',
-              color: activeTab === tab ? theme.primary : theme.slate500,
+              background: activeTab === tab ? theme.brandDark : 'transparent',
+              color: activeTab === tab ? theme.white : theme.slate500,
               boxShadow: activeTab === tab ? theme.shadow : 'none',
-              transition: 'all 0.2s'
+              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
             }}
           >
-            {tab === 'diagnostics' ? '📈 Stats' : tab}
+            {tab === 'diagnostics' ? '📊 Stats' : tab}
           </button>
         ))}
       </div>
+
 
       <div style={{ flexGrow: 1 }}>
         {activeTab === 'library' && (

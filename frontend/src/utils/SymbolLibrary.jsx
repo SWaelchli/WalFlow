@@ -17,8 +17,7 @@ export const EquipmentSymbol = ({ type, size = 40, style = {} }) => {
   
   // Scale factor to fit the 'size' prop while maintaining aspect ratio
   const scale = size / Math.max(width, height);
-  const finalWidth = width * scale;
-  const finalHeight = height * scale;
+
 
   const renderSVG = () => {
     switch (type) {

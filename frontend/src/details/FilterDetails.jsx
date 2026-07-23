@@ -42,7 +42,7 @@ const FilterDetails = memo(function FilterDetails({ node }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-      <div style={{ fontSize: '12px', color: '#0f172a', fontWeight: 'bold', borderLeft: '3px solid #3b82f6', paddingLeft: '8px' }}>
+      <div style={{ fontSize: '12px', color: '#395253', fontWeight: '700', borderLeft: '3px solid #FA8507', paddingLeft: '8px' }}>
         Filter Performance (ΔP)
       </div>
       
@@ -54,9 +54,9 @@ const FilterDetails = memo(function FilterDetails({ node }) {
             <YAxis type="number" fontSize={10} tickCount={6} />
             <Legend verticalAlign="top" align="right" height={40} iconType="plainline" wrapperStyle={{ fontSize: '11px' }} />
             <Line dataKey="clean" stroke="#22c55e" strokeWidth={1.5} dot={false} name="Clean" isAnimationActive={false} />
-            <Line dataKey="current" stroke="#2563eb" strokeWidth={2} dot={false} name="Current" isAnimationActive={false} />
-            <Line dataKey="terminal" stroke="#ef4444" strokeWidth={1} dot={false} name="Terminal" isAnimationActive={false} />
-            {telemetry && <Scatter name="Operating Point" dataKey="dp" data={[{q: actualFlowLmin, dp: currentDpBar}]} fill="#000" isAnimationActive={false} shape="cross" />}
+            <Line dataKey="current" stroke="#FA8507" strokeWidth={2.5} dot={false} name="Current" isAnimationActive={false} />
+            <Line dataKey="terminal" stroke="#ef4444" strokeWidth={1.5} dot={false} name="Terminal" isAnimationActive={false} />
+            {telemetry && <Scatter name="Operating Point" dataKey="dp" data={[{q: actualFlowLmin, dp: currentDpBar}]} fill="#395253" isAnimationActive={false} shape="cross" />}
           </ComposedChart>
         </ResponsiveContainer>
       </div>

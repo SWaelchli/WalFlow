@@ -1,8 +1,53 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { paToBar, m3sToLmin, kToC, mToMm } from './utils/converters';
+import { m3sToLmin, kToC } from './utils/converters';
 import { findClosestPipeMatch, ASME_PIPE_STANDARDS, calculatePipeId } from './utils/standards_library';
 
+const autoSortLogic = (nodes, edges) => {
+  const ordered = [];
+  const visitedNodes = new Set();
+  const visitedEdges = new Set();
+  const inDegree = {};
+  nodes.forEach(n => inDegree[n.id] = edges.filter(e => e.target === n.id).length);
+  const reachedCount = {};
+  nodes.forEach(n => reachedCount[n.id] = 0);
+  const sources = nodes.filter(n => !edges.some(e => e.target === n.id));
+  sources.sort((a, b) => a.position.y - b.position.y);
+
+  const traverse = (nodeId) => {
+    const node = nodes.find(n => n.id === nodeId);
+    if (!node) return;
+    reachedCount[nodeId]++;
+    if (inDegree[nodeId] > 1 && reachedCount[nodeId] < inDegree[nodeId]) return;
+    if (visitedNodes.has(nodeId)) return;
+    visitedNodes.add(nodeId);
+    ordered.push({ type: 'node', id: nodeId });
+    let outgoing = edges.filter(e => e.source === nodeId);
+    outgoing.sort((a, b) => (a.sourceHandle || "outlet-0").localeCompare(b.sourceHandle || "outlet-0"));
+    outgoing.forEach(edge => {
+      if (!visitedEdges.has(edge.id)) {
+        visitedEdges.add(edge.id);
+        ordered.push({ type: 'edge', id: edge.id });
+        traverse(edge.target);
+      }
+    });
+  };
+  sources.forEach(s => traverse(s.id));
+  nodes.forEach(n => { if (!visitedNodes.has(n.id)) traverse(n.id); });
+  edges.forEach(e => { if (!visitedEdges.has(e.id)) { ordered.push({ type: 'edge', id: e.id }); visitedEdges.add(e.id); } });
+  return ordered;
+};
+
+function SortHeader({ label, sortKey, sortConfig, requestSort, align = 'left' }) {
+  const isSorted = sortConfig.key === sortKey;
+  return (
+    <th onClick={() => requestSort(sortKey)} style={{ padding: '8px', cursor: 'pointer', textAlign: align, userSelect: 'none', backgroundColor: isSorted ? '#e2e8f0' : 'inherit', transition: 'background 0.2s' }}>
+      {label} {isSorted ? (sortConfig.direction === 'asc' ? '↑' : '↓') : '↕'}
+    </th>
+  );
+}
+
 export default function DataList({ nodes, edges, onUpdateEdge, onUpdateNode, onSelectNode, onSelectEdge }) {
+
   const [activeTab, setActiveTab] = useState('pipes');
   const [manualOrder, setManualOrder] = useState([]);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
@@ -13,6 +58,7 @@ export default function DataList({ nodes, edges, onUpdateEdge, onUpdateNode, onS
   const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setManualOrder(prev => {
       const currentIds = new Set([...nodes.map(n => n.id), ...edges.map(e => e.id)]);
       let newOrder = prev.filter(item => currentIds.has(item.id));
@@ -22,42 +68,7 @@ export default function DataList({ nodes, edges, onUpdateEdge, onUpdateNode, onS
       if (prev.length === 0 && newOrder.length > 0) return autoSortLogic(nodes, edges);
       return newOrder;
     });
-  }, [nodes.length, edges.length]); 
-
-  const autoSortLogic = (nodes, edges) => {
-    const ordered = [];
-    const visitedNodes = new Set();
-    const visitedEdges = new Set();
-    const inDegree = {};
-    nodes.forEach(n => inDegree[n.id] = edges.filter(e => e.target === n.id).length);
-    const reachedCount = {};
-    nodes.forEach(n => reachedCount[n.id] = 0);
-    const sources = nodes.filter(n => !edges.some(e => e.target === n.id));
-    sources.sort((a, b) => a.position.y - b.position.y);
-
-    const traverse = (nodeId) => {
-      const node = nodes.find(n => n.id === nodeId);
-      if (!node) return;
-      reachedCount[nodeId]++;
-      if (inDegree[nodeId] > 1 && reachedCount[nodeId] < inDegree[nodeId]) return;
-      if (visitedNodes.has(nodeId)) return;
-      visitedNodes.add(nodeId);
-      ordered.push({ type: 'node', id: nodeId });
-      let outgoing = edges.filter(e => e.source === nodeId);
-      outgoing.sort((a, b) => (a.sourceHandle || "outlet-0").localeCompare(b.sourceHandle || "outlet-0"));
-      outgoing.forEach(edge => {
-        if (!visitedEdges.has(edge.id)) {
-          visitedEdges.add(edge.id);
-          ordered.push({ type: 'edge', id: edge.id });
-          traverse(edge.target);
-        }
-      });
-    };
-    sources.forEach(s => traverse(s.id));
-    nodes.forEach(n => { if (!visitedNodes.has(n.id)) traverse(n.id); });
-    edges.forEach(e => { if (!visitedEdges.has(e.id)) { ordered.push({ type: 'edge', id: e.id }); visitedEdges.add(e.id); } });
-    return ordered;
-  };
+  }, [nodes, edges]);
 
   const handleAutoSortClick = () => {
     const newOrder = autoSortLogic(nodes, edges);
@@ -184,39 +195,44 @@ export default function DataList({ nodes, edges, onUpdateEdge, onUpdateNode, onS
     link.setAttribute("href", url); link.setAttribute("download", `walflow_export_${activeTab}.csv`); link.click();
   }, [processedItems, activeTab]);
 
-  const SortHeader = ({ label, sortKey, align = 'left' }) => {
-    const isSorted = sortConfig.key === sortKey;
-    return (
-      <th onClick={() => requestSort(sortKey)} style={{ padding: '8px', cursor: 'pointer', textAlign: align, userSelect: 'none', backgroundColor: isSorted ? '#e2e8f0' : 'inherit', transition: 'background 0.2s' }}>
-        {label} {isSorted ? (sortConfig.direction === 'asc' ? '↑' : '↓') : '↕'}
-      </th>
-    );
-  };
-
   return (
-    <div style={{ height: '350px', background: '#fff', borderTop: '2px solid #e2e8f0', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      <div style={{ display: 'flex', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', justifyContent: 'space-between', alignItems: 'center', padding: '0 15px' }}>
-        <div style={{ display: 'flex' }}>
+    <div style={{ height: '350px', background: '#ffffff', borderTop: '1px solid #D8E2E1', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 -4px 16px rgba(57, 82, 83, 0.05)' }}>
+      <div style={{ display: 'flex', background: '#F4F7F6', borderBottom: '1px solid #D8E2E1', justifyContent: 'space-between', alignItems: 'center', padding: '0 16px' }}>
+        <div style={{ display: 'flex', gap: '4px' }}>
           <button onClick={() => { setActiveTab('pipes'); setSortConfig({key:null, direction:'asc'}); }}
-            style={{ padding: '12px 20px', border: 'none', background: activeTab === 'pipes' ? '#fff' : 'transparent', borderBottom: activeTab === 'pipes' ? '2px solid #3b82f6' : 'none', fontWeight: activeTab === 'pipes' ? 'bold' : 'normal', cursor: 'pointer', fontSize: '12px', color: activeTab === 'pipes' ? '#3b82f6' : '#64748b' }}>
-            Pipe List
+            style={{ 
+              padding: '12px 20px', border: 'none', 
+              background: activeTab === 'pipes' ? '#ffffff' : 'transparent', 
+              borderBottom: activeTab === 'pipes' ? '3px solid #FA8507' : '3px solid transparent', 
+              fontWeight: '700', cursor: 'pointer', fontSize: '12px', 
+              color: activeTab === 'pipes' ? '#FA8507' : '#587071',
+              transition: 'all 0.2s'
+            }}>
+            Pipe Network List
           </button>
           <button onClick={() => { setActiveTab('all'); setSortConfig({key:null, direction:'asc'}); }}
-            style={{ padding: '12px 20px', border: 'none', background: activeTab === 'all' ? '#fff' : 'transparent', borderBottom: activeTab === 'all' ? '2px solid #3b82f6' : 'none', fontWeight: activeTab === 'all' ? 'bold' : 'normal', cursor: 'pointer', fontSize: '12px', color: activeTab === 'all' ? '#3b82f6' : '#64748b' }}>
-            Pipe & Equipment List
+            style={{ 
+              padding: '12px 20px', border: 'none', 
+              background: activeTab === 'all' ? '#ffffff' : 'transparent', 
+              borderBottom: activeTab === 'all' ? '3px solid #FA8507' : '3px solid transparent', 
+              fontWeight: '700', cursor: 'pointer', fontSize: '12px', 
+              color: activeTab === 'all' ? '#FA8507' : '#587071',
+              transition: 'all 0.2s'
+            }}>
+            Full Equipment & Pipeline Data
           </button>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div style={{ position: 'relative' }}>
             <input type="text" placeholder="🔍 Filter list..." value={filterText} onChange={(e) => setFilterText(e.target.value)}
-              style={{ padding: '4px 8px', fontSize: '11px', border: '1px solid #cbd5e1', borderRadius: '4px', width: '150px' }} />
-            {filterText && <button onClick={() => setFilterText("")} style={{ position:'absolute', right:5, top:'50%', transform:'translateY(-50%)', border:'none', background:'none', cursor:'pointer', color:'#94a3b8' }}>×</button>}
+              style={{ padding: '6px 10px', fontSize: '11px', border: '1px solid #D8E2E1', borderRadius: '6px', width: '160px', outline: 'none' }} />
+            {filterText && <button onClick={() => setFilterText("")} style={{ position:'absolute', right:5, top:'50%', transform:'translateY(-50%)', border:'none', background:'none', cursor:'pointer', color:'#587071' }}>×</button>}
           </div>
-          <button onClick={handleAutoSortClick} style={{ padding: '6px 12px', background: '#0284c7', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>
+          <button onClick={handleAutoSortClick} style={{ padding: '6px 14px', background: '#395253', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '11px', fontWeight: '700', transition: 'background 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.background = '#253637'} onMouseLeave={(e) => e.currentTarget.style.background = '#395253'}>
             🪄 Auto Sort
           </button>
-          <button onClick={exportCSV} style={{ padding: '6px 12px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>
+          <button onClick={exportCSV} style={{ padding: '6px 14px', background: '#FA8507', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '11px', fontWeight: '700', transition: 'background 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.background = '#E07600'} onMouseLeave={(e) => e.currentTarget.style.background = '#FA8507'}>
             ⬇ Export CSV
           </button>
         </div>
@@ -225,19 +241,20 @@ export default function DataList({ nodes, edges, onUpdateEdge, onUpdateNode, onS
       <div style={{ flexGrow: 1, overflowY: 'auto', overflowX: 'auto', maxWidth: '100%' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', textAlign: 'left' }}>
           <thead>
-            <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #e2e8f0', color: '#475569', position: 'sticky', top: 0, zIndex: 1 }}>
+            <tr style={{ background: '#EBF0EF', borderBottom: '2px solid #D8E2E1', color: '#395253', fontWeight: '700', position: 'sticky', top: 0, zIndex: 1 }}>
+
               <th style={{ padding: '8px', width: '40px' }}></th>
-              <SortHeader label="Type" sortKey="displayType" />
-              <SortHeader label="Name" sortKey="label" />
-              <SortHeader label="Flow (L/min)" sortKey="flow" align="right" />
-              <SortHeader label="Velocity (m/s)" sortKey="velocity" align="right" />
-              <SortHeader label="dP (bar)" sortKey="dp" align="right" />
-              <SortHeader label="P Start" sortKey="pStart" align="right" />
-              <SortHeader label="P End" sortKey="pEnd" align="right" />
-              <SortHeader label="Temp (°C)" sortKey="temp" align="right" />
+              <SortHeader label="Type" sortKey="displayType" sortConfig={sortConfig} requestSort={requestSort} />
+              <SortHeader label="Name" sortKey="label" sortConfig={sortConfig} requestSort={requestSort} />
+              <SortHeader label="Flow (L/min)" sortKey="flow" align="right" sortConfig={sortConfig} requestSort={requestSort} />
+              <SortHeader label="Velocity (m/s)" sortKey="velocity" align="right" sortConfig={sortConfig} requestSort={requestSort} />
+              <SortHeader label="dP (bar)" sortKey="dp" align="right" sortConfig={sortConfig} requestSort={requestSort} />
+              <SortHeader label="P Start" sortKey="pStart" align="right" sortConfig={sortConfig} requestSort={requestSort} />
+              <SortHeader label="P End" sortKey="pEnd" align="right" sortConfig={sortConfig} requestSort={requestSort} />
+              <SortHeader label="Temp (°C)" sortKey="temp" align="right" sortConfig={sortConfig} requestSort={requestSort} />
               {activeTab === 'pipes' && <th style={{ padding: '8px' }}>NPS</th>}
               {activeTab === 'pipes' && <th style={{ padding: '8px' }}>Schedule</th>}
-              {activeTab === 'pipes' && <SortHeader label="Length (m)" sortKey="length" align="right" />}
+              {activeTab === 'pipes' && <SortHeader label="Length (m)" sortKey="length" align="right" sortConfig={sortConfig} requestSort={requestSort} />}
             </tr>
           </thead>
           <tbody>
@@ -280,9 +297,6 @@ export default function DataList({ nodes, edges, onUpdateEdge, onUpdateNode, onS
                   onUpdateEdge(item.id, { length: parseFloat(newLen) || 0 });
                 }
               };
-
-              const isDragging = draggedIdx === entry.originalIndex;
-              const isDragOver = dragOverIdx === entry.originalIndex;
 
               return (
                 <tr key={item.id} draggable={!sortConfig.key && !isEditing} onDragStart={(e) => onDragStart(e, entry.originalIndex)}

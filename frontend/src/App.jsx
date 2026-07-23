@@ -1,9 +1,9 @@
 import ReactFlow, { 
   Background, 
-  Controls, 
+  Controls,
   ControlButton,
-  MiniMap, 
   Panel,
+  MiniMap, 
   useNodesState, 
   useEdgesState,
   addEdge,
@@ -11,8 +11,6 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css'; 
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-
-// Import all custom equipment nodes
 import TankNode from './nodes/TankNode';
 import CentrifugalPumpNode from './nodes/CentrifugalPumpNode';
 import VolumetricPumpNode from './nodes/VolumetricPumpNode';
@@ -34,7 +32,6 @@ import DataList from './DataList';
 import PipeEdge from './edges/PipeEdge';
 import SignalEdge from './edges/SignalEdge';
 import HeatmapLegend from './components/HeatmapLegend';
-import './index.css';
 
 // Import Examples
 import examplePFD from './example_pfd/Example_Standard_PFD.json';
@@ -77,23 +74,11 @@ export default function App() {
   const [selectedEdge, setSelectedEdge] = useState(null);
 
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [edges, setEdges] = useEdgesState([]);
   const [edgeIdCount, setEdgeIdCount] = useState(100);
   const [isSimulating, setIsSimulating] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [lastStats, setLastStats] = useState(null);
-  const [heatmapMode, setHeatmapMode] = useState('default');
-
-  const edgesWithHeatmap = useMemo(() => {
-    return edges.map((e) => ({
-      ...e,
-      type: e.data?.type === 'SIGNAL' ? 'signal' : 'pipe',
-      data: {
-        ...e.data,
-        heatmapMode,
-      },
-    }));
-  }, [edges, heatmapMode]);
   const [globalSettings, setGlobalSettings] = useState({
     fluid_type: 'water',
     ambient_temperature: 293.15,
@@ -239,6 +224,7 @@ export default function App() {
 
   useEffect(() => {
     loadData(examplePFD);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const onConnect = useCallback((params) => {
@@ -478,10 +464,35 @@ export default function App() {
       const liveNode = nodes.find(n => n.id === selectedNode.id);
       if (liveNode) setSelectedNode(liveNode);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodes]);
 
+  const [heatmapMode, setHeatmapMode] = useState('default');
+
+  const styledEdges = useMemo(() => {
+    return edges.map(edge => {
+      const hasFlow = isSimulating || (edge.data && edge.data.flow_rate && Math.abs(edge.data.flow_rate) > 1e-5);
+      return {
+        ...edge,
+        type: edge.data?.type === 'SIGNAL' ? 'signal' : 'pipe',
+        animated: hasFlow,
+        className: hasFlow ? 'simulating' : '',
+        data: {
+          ...edge.data,
+          heatmapMode,
+          isSimulating,
+        },
+        style: {
+          ...edge.style,
+          stroke: heatmapMode !== 'default' ? undefined : (hasFlow ? '#FA8507' : '#395253'),
+          strokeWidth: hasFlow ? 3.5 : 2.5,
+        }
+      };
+    });
+  }, [edges, isSimulating, heatmapMode]);
+
   return (
-    <div style={{ width: '100%', height: '100vh', display: 'flex', backgroundColor: '#f4f4f5', overflow: 'hidden' }}>
+    <div style={{ width: '100%', height: '100vh', display: 'flex', backgroundColor: '#F0F4F4', overflow: 'hidden' }}>
       <Sidebar 
         onSave={onSave} 
         onLoad={loadData} 
@@ -521,9 +532,9 @@ export default function App() {
 
           <ReactFlow 
             nodes={nodes} 
-            edges={edgesWithHeatmap} 
-            nodeTypes={nodeTypes}
-            edgeTypes={edgeTypes} 
+            edges={styledEdges} 
+            nodeTypes={nodeTypes} 
+            edgeTypes={edgeTypes}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChangeCustom}
             onConnect={onConnect}
@@ -541,22 +552,20 @@ export default function App() {
             onDragOver={onDragOver}
             fitView
           >
-            {/* Prominent Floating Heatmap Toolbar - Only displayed when Heatmap is active */}
             {heatmapMode !== 'default' && (
               <Panel position="top-center">
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px',
+                  gap: '6px',
                   backgroundColor: '#ffffff',
-                  padding: '8px 16px',
+                  padding: '6px 14px',
                   borderRadius: '30px',
-                  boxShadow: '0 8px 20px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.05)',
-                  border: '1px solid #cbd5e1',
-                  fontSize: '13px',
-                  fontFamily: 'Inter, system-ui, sans-serif'
+                  boxShadow: '0 8px 20px rgba(57, 82, 83, 0.15)',
+                  border: '1px solid #D8E2E1',
+                  fontSize: '12px'
                 }}>
-                  <span style={{ fontWeight: 700, color: '#1e293b', marginRight: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span style={{ fontWeight: 700, color: '#395253', marginRight: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <span style={{ fontSize: '14px' }}>🎨</span> Heatmap:
                   </span>
                   {[
@@ -571,13 +580,12 @@ export default function App() {
                       style={{
                         border: 'none',
                         borderRadius: '20px',
-                        padding: '5px 14px',
-                        fontSize: '12px',
-                        fontWeight: heatmapMode === mode.id ? 600 : 500,
-                        backgroundColor: heatmapMode === mode.id ? '#2563eb' : '#f1f5f9',
-                        color: heatmapMode === mode.id ? '#ffffff' : '#475569',
+                        padding: '4px 12px',
+                        fontSize: '11px',
+                        fontWeight: heatmapMode === mode.id ? 700 : 500,
+                        backgroundColor: heatmapMode === mode.id ? '#FA8507' : '#F4F7F6',
+                        color: heatmapMode === mode.id ? '#ffffff' : '#587071',
                         cursor: 'pointer',
-                        boxShadow: heatmapMode === mode.id ? '0 2px 8px rgba(37, 99, 235, 0.3)' : 'none',
                         transition: 'all 0.15s ease'
                       }}
                     >
@@ -588,15 +596,15 @@ export default function App() {
               </Panel>
             )}
 
-            <Background color="#ccc" gap={16} />
+            <Background color="#B8C9C8" gap={16} size={1} />
             <Controls>
               <ControlButton 
                 onClick={() => setHeatmapMode(prev => prev === 'default' ? 'pressure' : 'default')}
                 title={heatmapMode === 'default' ? "Turn On Heatmap" : "Turn Off Heatmap"}
                 style={{
-                  backgroundColor: heatmapMode !== 'default' ? '#2563eb' : '#ffffff',
-                  color: heatmapMode !== 'default' ? '#ffffff' : '#334155',
-                  fontSize: '13px',
+                  backgroundColor: heatmapMode !== 'default' ? '#FA8507' : '#ffffff',
+                  color: heatmapMode !== 'default' ? '#ffffff' : '#395253',
+                  fontSize: '14px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -606,11 +614,12 @@ export default function App() {
                 🎨
               </ControlButton>
             </Controls>
-            <MiniMap />
+            <MiniMap nodeColor={() => '#395253'} maskColor="rgba(240, 244, 244, 0.7)" />
           </ReactFlow>
 
           <HeatmapLegend heatmapMode={heatmapMode} onModeChange={setHeatmapMode} />
         </div>
+
         
         <DataList 
           nodes={nodes} 

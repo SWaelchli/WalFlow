@@ -45,19 +45,19 @@ export default function DetailPanel({ selectedNode, allNodes, allEdges }) {
       position: 'absolute',
       left: '20px',
       top: '20px',
-      width: '300px',
-      maxHeight: isCollapsed ? 'auto' : 'calc(100vh - 400px)',
+      width: '320px',
+      maxHeight: isCollapsed ? 'auto' : 'calc(100vh - 360px)',
       background: '#ffffff',
-      borderRadius: '8px',
-      border: '1px solid #e2e8f0',
-      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+      borderRadius: '12px',
+      border: '1px solid #D8E2E1',
+      boxShadow: '0 10px 25px -3px rgba(57, 82, 83, 0.15), 0 4px 6px -2px rgba(57, 82, 83, 0.05)',
       zIndex: 10,
-      padding: isCollapsed ? '10px 20px' : '20px',
+      padding: isCollapsed ? '12px 18px' : '20px',
       overflowY: 'auto',
       display: 'flex',
       flexDirection: 'column',
       gap: '15px',
-      transition: 'all 0.2s ease-in-out'
+      transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
     }}>
       <div 
         onClick={() => setIsCollapsed(!isCollapsed)}
@@ -65,20 +65,20 @@ export default function DetailPanel({ selectedNode, allNodes, allEdges }) {
           display: 'flex', 
           justifyContent: 'space-between', 
           alignItems: 'center', 
-          borderBottom: isCollapsed ? 'none' : '1px solid #f1f5f9', 
+          borderBottom: isCollapsed ? 'none' : '1px solid #EBF0EF', 
           paddingBottom: isCollapsed ? '0' : '10px',
           cursor: 'pointer',
           userSelect: 'none'
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '12px', transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▼</span>
-          <h3 style={{ margin: 0, fontSize: '14px', color: '#0f172a', fontWeight: 'bold' }}>
+          <span style={{ fontSize: '11px', color: '#587071', transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▼</span>
+          <h3 style={{ margin: 0, fontSize: '14px', color: '#395253', fontWeight: '700', letterSpacing: '0.01em' }}>
             {data.label || type.toUpperCase()}
           </h3>
         </div>
         {!isCollapsed && (
-          <span style={{ fontSize: '10px', color: '#94a3b8', background: '#f8fafc', padding: '2px 6px', borderRadius: '10px', border: '1px solid #f1f5f9' }}>
+          <span style={{ fontSize: '10px', fontWeight: '700', color: '#FA8507', background: 'rgba(250, 133, 7, 0.12)', padding: '3px 8px', borderRadius: '12px' }}>
             {type.toUpperCase()}
           </span>
         )}
@@ -88,3 +88,4 @@ export default function DetailPanel({ selectedNode, allNodes, allEdges }) {
     </div>
   );
 }
+

@@ -22,7 +22,7 @@ export default function MixerNode({ id, data, selected }) {
         <div style={{
           position: 'absolute',
           top: -5, left: -5, right: -5, bottom: -5,
-          border: '2px solid #3b82f6',
+          border: '2px solid #FA8507',
           borderRadius: '6px',
           boxShadow: '0 0 10px rgba(59, 130, 246, 0.3)',
           pointerEvents: 'none'
@@ -50,7 +50,7 @@ export default function MixerNode({ id, data, selected }) {
             top: '10px', left: '5px', 
             marginTop: '-4px', marginLeft: '-4px',
             right: 'auto', bottom: 'auto', transform: 'none',
-            background: '#3b82f6', width: '8px', height: '8px' 
+            background: '#FA8507', width: '8px', height: '8px' 
           }} 
         />
         <Handle 
@@ -61,7 +61,7 @@ export default function MixerNode({ id, data, selected }) {
             top: '30px', left: '5px', 
             marginTop: '-4px', marginLeft: '-4px',
             right: 'auto', bottom: 'auto', transform: 'none',
-            background: '#3b82f6', width: '8px', height: '8px' 
+            background: '#FA8507', width: '8px', height: '8px' 
           }} 
         />
         <Handle 

@@ -1,5 +1,5 @@
 import { Handle, Position, useUpdateNodeInternals } from 'reactflow';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { paToBar, m3sToLmin } from '../utils/converters';
 import { RotateButton, getRotatedPosition } from '../utils/rotation_logic.jsx';
 import { SensingPin } from '../utils/SensingPin.jsx';
@@ -10,7 +10,7 @@ import { SensingPin } from '../utils/SensingPin.jsx';
 export default function VolumetricPumpNode({ id, data, selected }) {
   const updateNodeInternals = useUpdateNodeInternals();
   const rotation = data.rotation || 0;
-  const sensing = data.sensing || {};
+  const sensing = useMemo(() => data.sensing || {}, [data.sensing]);
   const pIn = data.telemetry?.inlets?.[0]?.pressure || 0;
   const pOut = data.telemetry?.outlets?.[0]?.pressure || 0;
   const q = data.telemetry?.outlets?.[0]?.flow_rate || 0;
@@ -27,7 +27,7 @@ export default function VolumetricPumpNode({ id, data, selected }) {
         <div style={{
           position: 'absolute',
           top: -5, left: -5, right: -5, bottom: -5,
-          border: '2px solid #3b82f6',
+          border: '2px solid #FA8507',
           borderRadius: '6px',
           boxShadow: '0 0 10px rgba(59, 130, 246, 0.3)',
           pointerEvents: 'none'
@@ -83,7 +83,7 @@ export default function VolumetricPumpNode({ id, data, selected }) {
             top: '35px', left: '10px', 
             marginTop: '-4px', marginLeft: '-4px',
             right: 'auto', bottom: 'auto', transform: 'none',
-            background: '#3b82f6', width: '8px', height: '8px' 
+            background: '#FA8507', width: '8px', height: '8px' 
           }} 
         />
         {sensing['inlet-0'] && <SensingPin portId="inlet-0" offset={{ x: -20, y: 5 }} />}

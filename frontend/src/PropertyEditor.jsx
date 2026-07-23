@@ -72,6 +72,7 @@ const PipeSelector = ({ data, onChange }) => {
 
 export default function PropertyEditor({ node, edge, onUpdate, onUpdateEdge, onDelete, onDeleteEdge }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [localDrafts, setLocalDrafts] = useState({});
 
   if (!node && !edge) return null;
 
@@ -79,8 +80,6 @@ export default function PropertyEditor({ node, edge, onUpdate, onUpdateEdge, onD
   const item = isNode ? node : edge;
   const { id, type, data } = item;
 
-  // Track raw strings for all numeric inputs to allow empty state while typing
-  const [localDrafts, setLocalDrafts] = useState({});
 
   const validateAndCommit = (field, rawValue, isCritical = false) => {
     let finalValue = rawValue;
@@ -144,10 +143,10 @@ export default function PropertyEditor({ node, edge, onUpdate, onUpdateEdge, onD
       onClick={(e) => e.stopPropagation()}
       style={{
         position: 'absolute', top: 20, right: 20, zIndex: 10,
-        width: '240px', background: '#fff', padding: isCollapsed ? '10px 20px' : '20px',
-        borderRadius: '8px', border: '1px solid #e2e8f0',
-        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-        transition: 'all 0.2s ease-in-out'
+        width: '280px', background: '#ffffff', padding: isCollapsed ? '12px 18px' : '20px',
+        borderRadius: '12px', border: '1px solid #D8E2E1',
+        boxShadow: '0 10px 25px -3px rgba(57, 82, 83, 0.15), 0 4px 6px -2px rgba(57, 82, 83, 0.05)',
+        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
       }}
     >
       <div 
@@ -156,19 +155,39 @@ export default function PropertyEditor({ node, edge, onUpdate, onUpdateEdge, onD
           display: 'flex', 
           justifyContent: 'space-between', 
           alignItems: 'center', 
-          marginBottom: isCollapsed ? '0' : '10px',
+          marginBottom: isCollapsed ? '0' : '14px',
           cursor: 'pointer',
-          userSelect: 'none'
+          userSelect: 'none',
+          borderBottom: isCollapsed ? 'none' : '1px solid #EBF0EF',
+          paddingBottom: isCollapsed ? '0' : '10px'
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '12px', transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▼</span>
-          <h3 style={{ margin: 0, fontSize: '14px', color: '#0f172a' }}>
+          <span style={{ fontSize: '11px', color: '#587071', transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▼</span>
+          <h3 style={{ margin: 0, fontSize: '13px', fontWeight: '700', color: '#395253', letterSpacing: '0.01em' }}>
             {isNode ? `Equipment: ${type.toUpperCase()}` : `Connection: ${data.type || 'PIPE'}`}
           </h3>
         </div>
-        <button onClick={(e) => { e.stopPropagation(); handleDelete(); }} style={{ background: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', padding: '4px 8px', fontSize: '10px', cursor: 'pointer' }}>Delete</button>
+        <button 
+          onClick={(e) => { e.stopPropagation(); handleDelete(); }} 
+          style={{ 
+            background: 'rgba(239, 68, 68, 0.1)', 
+            color: '#ef4444', 
+            border: '1px solid rgba(239, 68, 68, 0.2)', 
+            borderRadius: '6px', 
+            padding: '4px 10px', 
+            fontSize: '11px', 
+            fontWeight: '600',
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.background = '#ef4444'}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'; e.currentTarget.style.color = '#ef4444'; }}
+        >
+          Delete
+        </button>
       </div>
+
       
       {!isCollapsed && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>

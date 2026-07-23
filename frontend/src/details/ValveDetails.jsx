@@ -2,7 +2,7 @@ import React, { useMemo, memo } from 'react';
 import { 
   ComposedChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Scatter, Legend
 } from 'recharts';
-import { m3sToLmin, paToBar } from '../utils/converters';
+import { m3sToLmin } from '../utils/converters';
 
 const ValveDetails = memo(function ValveDetails({ node }) {
   const { type } = node;
@@ -72,7 +72,7 @@ const ValveDetails = memo(function ValveDetails({ node }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ fontSize: '12px', color: '#0f172a', fontWeight: 'bold', borderLeft: '3px solid #3b82f6', paddingLeft: '8px' }}>
+        <div style={{ fontSize: '12px', color: '#395253', fontWeight: '700', borderLeft: '3px solid #FA8507', paddingLeft: '8px' }}>
           {isRegulator ? 'Regulation Envelope' : 'Valve Performance'}
         </div>
         <span style={{ 
@@ -90,11 +90,11 @@ const ValveDetails = memo(function ValveDetails({ node }) {
             <YAxis type="number" fontSize={10} domain={yDomain} tickCount={6} />
             <Legend verticalAlign="top" align="right" height={40} iconType="plainline" wrapperStyle={{ fontSize: '11px' }} />
             
-            {isRegulator && <Line dataKey="setpoint" stroke="#3b82f6" strokeWidth={2} dot={false} name="Setpoint" isAnimationActive={false} />}
-            <Line dataKey="currentCurve" stroke="#2563eb" strokeWidth={2} dot={false} name="Current Pos" isAnimationActive={false} />
+            {isRegulator && <Line dataKey="setpoint" stroke="#FA8507" strokeWidth={2} dot={false} name="Setpoint" isAnimationActive={false} />}
+            <Line dataKey="currentCurve" stroke="#395253" strokeWidth={2.5} dot={false} name="Current Pos" isAnimationActive={false} />
             <Line dataKey="limit" stroke="#94a3b8" strokeWidth={1} dot={false} name="Max Open" isAnimationActive={false} />
             
-            {telemetry && <Scatter name="Operating Point" dataKey="p" data={opPoint} fill="#000" isAnimationActive={false} shape="cross" />}
+            {telemetry && <Scatter name="Operating Point" dataKey="p" data={opPoint} fill="#FA8507" isAnimationActive={false} shape="cross" />}
           </ComposedChart>
         </ResponsiveContainer>
       </div>
@@ -106,7 +106,7 @@ const ValveDetails = memo(function ValveDetails({ node }) {
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ color: '#64748b' }}>Sensed Pressure:</span>
-          <span style={{ fontWeight: 'bold', color: '#3b82f6' }}>{sensedPBar.toFixed(2)} bar</span>
+          <span style={{ fontWeight: 'bold', color: '#FA8507' }}>{sensedPBar.toFixed(2)} bar</span>
         </div>
         {isRegulator && (
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>

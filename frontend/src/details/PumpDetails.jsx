@@ -82,7 +82,7 @@ const PumpDetails = memo(function PumpDetails({ node }) {
       dataPoints.push({ q: qLmin, pump: pumpBar, system: systemBar });
     }
     return { chartData: dataPoints, maxY: localMaxY * 1.1 };
-  }, [type, flow_rated_lmin, pressure_rated_bar, rise_to_shutoff_pct, flow_rated, motor_power, efficiency, currentQ, currentDpBar, maxX]);
+  }, [isVolumetric, flow_rated_lmin, pressure_rated_bar, rise_to_shutoff_pct, flow_rated, motor_power, efficiency, currentQ, currentDpBar, maxX]);
 
   const hydraulicPowerKW = (currentDpPa * Math.abs(currentQ)) / 1000;
   const motorLimitKW = isVolumetric ? (motor_power * (efficiency / 100)) : 0;

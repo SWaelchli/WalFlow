@@ -35,18 +35,17 @@ export default function HeatmapLegend({ heatmapMode, onModeChange }) {
       position: 'absolute',
       top: '16px',
       right: '16px',
-      backgroundColor: 'rgba(255, 255, 255, 0.95)',
-      backdropFilter: 'blur(8px)',
-      border: '1px solid #e4e4e7',
-      borderRadius: '10px',
-      padding: '12px 16px',
-      boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05)',
+      backgroundColor: 'rgba(255, 255, 255, 0.96)',
+      backdropFilter: 'blur(10px)',
+      border: '1px solid #D8E2E1',
+      borderRadius: '12px',
+      padding: '14px 18px',
+      boxShadow: '0 10px 25px -5px rgba(57, 82, 83, 0.15), 0 4px 6px -2px rgba(57, 82, 83, 0.05)',
       zIndex: 1000,
-      minWidth: '240px',
-      fontFamily: 'Inter, system-ui, sans-serif'
+      minWidth: '250px'
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-        <span style={{ fontSize: '13px', fontWeight: 600, color: '#18181b' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+        <span style={{ fontSize: '13px', fontWeight: 700, color: '#395253' }}>
           {config.title}
         </span>
         <button

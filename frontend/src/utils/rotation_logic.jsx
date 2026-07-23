@@ -5,6 +5,7 @@ import { Position } from 'reactflow';
  * Maps a base React Flow position to its rotated equivalent.
  * rotation: 0, 90, 180, 270
  */
+/* eslint-disable-next-line react-refresh/only-export-components */
 export const getRotatedPosition = (basePosition, rotation = 0) => {
   if (rotation === 0) return basePosition;
 
@@ -41,16 +42,26 @@ export const RotateButton = ({ onClick, visible }) => {
         height: '24px',
         borderRadius: '50%',
         background: '#fff',
-        border: '1px solid #3b82f6',
-        color: '#3b82f6',
+        border: '1.5px solid #FA8507',
+        color: '#FA8507',
         fontSize: '14px',
+        fontWeight: 'bold',
         cursor: 'pointer',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+        boxShadow: '0 2px 8px rgba(250, 133, 7, 0.25)',
         zIndex: 1000,
-        padding: 0
+        padding: 0,
+        transition: 'transform 0.2s, background 0.2s'
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = '#FA8507';
+        e.currentTarget.style.color = '#ffffff';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = '#ffffff';
+        e.currentTarget.style.color = '#FA8507';
       }}
     >
       ↻

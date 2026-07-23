@@ -4,9 +4,10 @@ import { getSmoothStepPath } from 'reactflow';
 /**
  * Custom Color Interpolation Utilities for Heatmaps
  */
+/* eslint-disable-next-line react-refresh/only-export-components */
 export function getHeatmapColor(edgeData, heatmapMode = 'default') {
   if (!heatmapMode || heatmapMode === 'default') {
-    return edgeData?.selected ? '#2563eb' : '#475569';
+    return edgeData?.selected ? '#FA8507' : '#395253';
   }
 
   const telemetry = edgeData?.telemetry || {};

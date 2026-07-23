@@ -1,5 +1,5 @@
 import { Handle, Position, useUpdateNodeInternals } from 'reactflow';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { RotateButton, getRotatedPosition } from '../utils/rotation_logic.jsx';
 import { SensingPin } from '../utils/SensingPin.jsx';
 
@@ -8,9 +8,8 @@ import { SensingPin } from '../utils/SensingPin.jsx';
  */
 export default function LinearRegulatorNode({ id, data, selected }) {
   const updateNodeInternals = useUpdateNodeInternals();
-  const telemetry = data.telemetry;
   const rotation = data.rotation || 0;
-  const sensing = data.sensing || {};
+  const sensing = useMemo(() => data.sensing || {}, [data.sensing]);
   const opening = data.opening ?? 100;
   const setP = data.set_pressure ?? 500000;
   
@@ -24,7 +23,7 @@ export default function LinearRegulatorNode({ id, data, selected }) {
         <div style={{
           position: 'absolute',
           top: -5, left: -5, right: -5, bottom: -5,
-          border: '2px solid #3b82f6',
+          border: '2px solid #FA8507',
           borderRadius: '6px',
           boxShadow: '0 0 10px rgba(59, 130, 246, 0.3)',
           pointerEvents: 'none'
@@ -53,7 +52,7 @@ export default function LinearRegulatorNode({ id, data, selected }) {
             top: '35px', left: '10px', 
             marginTop: '-4px', marginLeft: '-4px',
             right: 'auto', bottom: 'auto', transform: 'none',
-            background: '#3b82f6', width: '8px', height: '8px' 
+            background: '#FA8507', width: '8px', height: '8px' 
           }} 
         />
         {sensing['inlet-0'] && <SensingPin portId="inlet-0" offset={{ x: -20, y: 5 }} />}

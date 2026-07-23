@@ -4,6 +4,17 @@ import {
 } from 'recharts';
 import { m3sToLmin } from '../utils/converters';
 
+const calculateDp = (qM3s, density, D, d, beta) => {
+  if (D <= 0 || d <= 0) return 0;
+  const area = Math.PI * (D / 2) ** 2;
+  const velocity = qM3s / area;
+  const dynamicP = 0.5 * density * velocity ** 2;
+  const Cd = 0.6;
+  const geometryFactor = (1 - beta ** 4) / (Cd ** 2 * beta ** 4);
+  const recDp = dynamicP * geometryFactor;
+  return recDp * (1 - beta ** 2);
+};
+
 const OrificeDetails = memo(function OrificeDetails({ node }) {
   const { pipe_diameter, orifice_diameter, telemetry } = node.data;
   
@@ -15,17 +26,6 @@ const OrificeDetails = memo(function OrificeDetails({ node }) {
   const d = orifice_diameter || 0.07;
   const beta = d / D;
 
-  const calculateDp = (qM3s, density) => {
-    if (D <= 0 || d <= 0) return 0;
-    const area = Math.PI * (D / 2) ** 2;
-    const velocity = qM3s / area;
-    const dynamicP = 0.5 * density * velocity ** 2;
-    const Cd = 0.6;
-    const geometryFactor = (1 - beta ** 4) / (Cd ** 2 * beta ** 4);
-    const recDp = dynamicP * geometryFactor;
-    return recDp * (1 - beta ** 2);
-  };
-
   const maxX = Math.max(300, actualFlowLmin * 2);
 
   const chartData = useMemo(() => {
@@ -36,7 +36,7 @@ const OrificeDetails = memo(function OrificeDetails({ node }) {
       const qM3s = qLmin / 60000;
       data.push({
         q: qLmin,
-        dp: calculateDp(qM3s, rho) / 100000
+        dp: calculateDp(qM3s, rho, D, d, beta) / 100000
       });
     }
     return data;
@@ -46,7 +46,7 @@ const OrificeDetails = memo(function OrificeDetails({ node }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-      <div style={{ fontSize: '12px', color: '#0f172a', fontWeight: 'bold', borderLeft: '3px solid #3b82f6', paddingLeft: '8px' }}>
+      <div style={{ fontSize: '12px', color: '#395253', fontWeight: '700', borderLeft: '3px solid #FA8507', paddingLeft: '8px' }}>
         Orifice Restriction Curve
       </div>
       
@@ -57,8 +57,8 @@ const OrificeDetails = memo(function OrificeDetails({ node }) {
             <XAxis dataKey="q" type="number" domain={[0, maxX]} fontSize={10} tickCount={6} />
             <YAxis type="number" fontSize={10} tickCount={6} />
             <Legend verticalAlign="top" align="right" height={40} iconType="plainline" wrapperStyle={{ fontSize: '11px' }} />
-            <Line dataKey="dp" stroke="#2563eb" strokeWidth={2} dot={false} name="Pressure Loss" isAnimationActive={false} />
-            {telemetry && <Scatter name="Operating Point" dataKey="dp" data={[{q: actualFlowLmin, dp: currentDpBar}]} fill="#000" isAnimationActive={false} shape="cross" />}
+            <Line dataKey="dp" stroke="#FA8507" strokeWidth={2.5} dot={false} name="Pressure Loss" isAnimationActive={false} />
+            {telemetry && <Scatter name="Operating Point" dataKey="dp" data={[{q: actualFlowLmin, dp: currentDpBar}]} fill="#395253" isAnimationActive={false} shape="cross" />}
           </ComposedChart>
         </ResponsiveContainer>
       </div>
