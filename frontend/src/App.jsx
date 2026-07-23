@@ -30,6 +30,7 @@ import DataList from './DataList';
 import PipeEdge from './edges/PipeEdge';
 import SignalEdge from './edges/SignalEdge';
 import HeatmapLegend from './components/HeatmapLegend';
+import HelpInfoModal from './components/HelpInfoModal';
 
 // Import Examples
 import examplePFD from './example_pfd/Example_Standard_PFD.json';
@@ -77,6 +78,12 @@ export default function App() {
   const [isSimulating, setIsSimulating] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [lastStats, setLastStats] = useState(null);
+  const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
+
+  const clipboardRef = useRef({ nodes: [], edges: [] });
+  const historyStack = useRef([]);
+  const historyIndex = useRef(-1);
+  const isRestoringHistory = useRef(false);
   const [globalSettings, setGlobalSettings] = useState({
     fluid_type: 'water',
     ambient_temperature: 293.15,
@@ -135,6 +142,323 @@ export default function App() {
       })
     );
   }, [setNodes]);
+
+  const pushHistorySnapshot = useCallback((nodesState, edgesState) => {
+    if (isRestoringHistory.current) return;
+    const cleanNodes = (nodesState || []).map(({ data, ...rest }) => {
+      const { telemetry: _telemetry, onRotate: _onRotate, onChange: _onChange, ...restData } = data || {};
+      return { ...rest, data: restData };
+    });
+    const cleanEdges = (edgesState || []).map(({ data, ...rest }) => {
+      const { telemetry: _telemetry, ...restData } = data || {};
+      return { ...rest, data: restData };
+    });
+
+    const snapshot = {
+      nodes: JSON.parse(JSON.stringify(cleanNodes)),
+      edges: JSON.parse(JSON.stringify(cleanEdges)),
+    };
+
+    const newStack = historyStack.current.slice(0, historyIndex.current + 1);
+    newStack.push(snapshot);
+    if (newStack.length > 50) newStack.shift();
+
+    historyStack.current = newStack;
+    historyIndex.current = newStack.length - 1;
+  }, []);
+
+  const undo = useCallback(() => {
+    if (historyIndex.current > 0) {
+      historyIndex.current -= 1;
+      const snapshot = historyStack.current[historyIndex.current];
+      if (snapshot) {
+        isRestoringHistory.current = true;
+        const restoredNodes = snapshot.nodes.map((node) => ({
+          ...node,
+          data: {
+            ...node.data,
+            rotation: node.data.rotation || 0,
+            onRotate: handleRotation,
+            onChange: (node.type === 'linear_control_valve' || node.type === 'remote_control_valve') ? handleValveChange : undefined,
+          },
+        }));
+        setNodes(restoredNodes);
+        setEdges(snapshot.edges);
+        setSelectedNode(null);
+        setSelectedEdge(null);
+        setTimeout(() => {
+          isRestoringHistory.current = false;
+        }, 50);
+      }
+    }
+  }, [handleRotation, handleValveChange, setNodes, setEdges]);
+
+  const redo = useCallback(() => {
+    if (historyIndex.current < historyStack.current.length - 1) {
+      historyIndex.current += 1;
+      const snapshot = historyStack.current[historyIndex.current];
+      if (snapshot) {
+        isRestoringHistory.current = true;
+        const restoredNodes = snapshot.nodes.map((node) => ({
+          ...node,
+          data: {
+            ...node.data,
+            rotation: node.data.rotation || 0,
+            onRotate: handleRotation,
+            onChange: (node.type === 'linear_control_valve' || node.type === 'remote_control_valve') ? handleValveChange : undefined,
+          },
+        }));
+        setNodes(restoredNodes);
+        setEdges(snapshot.edges);
+        setSelectedNode(null);
+        setSelectedEdge(null);
+        setTimeout(() => {
+          isRestoringHistory.current = false;
+        }, 50);
+      }
+    }
+  }, [handleRotation, handleValveChange, setNodes, setEdges]);
+
+  const copySelected = useCallback(() => {
+    const selectedNodesList = nodes.filter((n) => n.selected || (selectedNode && n.id === selectedNode.id));
+    const selectedNodeIds = new Set(selectedNodesList.map((n) => n.id));
+    const selectedEdgesList = edges.filter(
+      (e) => e.selected || (selectedEdge && e.id === selectedEdge.id) || (selectedNodeIds.has(e.source) && selectedNodeIds.has(e.target))
+    );
+
+    if (selectedNodesList.length > 0 || selectedEdgesList.length > 0) {
+      const cleanNodes = selectedNodesList.map(({ data, ...rest }) => {
+        const { telemetry: _telemetry, onRotate: _onRotate, onChange: _onChange, ...restData } = data || {};
+        return { ...rest, data: restData };
+      });
+      const cleanEdges = selectedEdgesList.map(({ data, ...rest }) => {
+        const { telemetry: _telemetry, ...restData } = data || {};
+        return { ...rest, data: restData };
+      });
+      clipboardRef.current = {
+        nodes: JSON.parse(JSON.stringify(cleanNodes)),
+        edges: JSON.parse(JSON.stringify(cleanEdges)),
+      };
+    }
+  }, [nodes, edges, selectedNode, selectedEdge]);
+
+  const pasteCopied = useCallback(() => {
+    const copiedNodes = clipboardRef.current.nodes;
+    const copiedEdges = clipboardRef.current.edges;
+    if (!copiedNodes || copiedNodes.length === 0) return;
+
+    const idMap = {};
+    const offset = 40;
+
+    const newNodes = copiedNodes.map((n) => {
+      const newId = getId();
+      idMap[n.id] = newId;
+
+      return {
+        ...n,
+        id: newId,
+        position: {
+          x: n.position.x + offset,
+          y: n.position.y + offset,
+        },
+        selected: true,
+        data: {
+          ...n.data,
+          label: n.data?.label ? `${n.data.label}_copy` : `${n.type}_copy`,
+          onRotate: handleRotation,
+          onChange: (n.type === 'linear_control_valve' || n.type === 'remote_control_valve') ? handleValveChange : undefined,
+        },
+      };
+    });
+
+    const newEdges = (copiedEdges || [])
+      .filter((e) => idMap[e.source] && idMap[e.target])
+      .map((e, idx) => {
+        const isSignal = e.data?.type === 'SIGNAL';
+        const newEdgeId = isSignal ? `Signal ${edgeIdCount + idx}` : `Pipe ${edgeIdCount + idx}`;
+        return {
+          ...e,
+          id: newEdgeId,
+          source: idMap[e.source],
+          target: idMap[e.target],
+          selected: true,
+          data: {
+            ...e.data,
+            label: newEdgeId,
+          },
+        };
+      });
+
+    setEdgeIdCount((prev) => prev + newEdges.length);
+
+    setNodes((nds) => {
+      const updated = nds.map((n) => ({ ...n, selected: false })).concat(newNodes);
+      pushHistorySnapshot(updated, edges);
+      return updated;
+    });
+
+    setEdges((eds) => {
+      const updated = eds.map((e) => ({ ...e, selected: false })).concat(newEdges);
+      return updated;
+    });
+
+    if (newNodes.length === 1) {
+      setSelectedNode(newNodes[0]);
+      setSelectedEdge(null);
+    }
+  }, [edgeIdCount, handleRotation, handleValveChange, setNodes, setEdges, edges, pushHistorySnapshot]);
+
+  const duplicateSelected = useCallback(() => {
+    copySelected();
+    setTimeout(() => {
+      pasteCopied();
+    }, 0);
+  }, [copySelected, pasteCopied]);
+
+  const deleteSelected = useCallback(() => {
+    const selectedNodesList = nodes.filter((n) => n.selected || (selectedNode && n.id === selectedNode.id));
+    const selectedEdgesList = edges.filter((e) => e.selected || (selectedEdge && e.id === selectedEdge.id));
+
+    if (selectedNodesList.length === 0 && selectedEdgesList.length === 0) return;
+
+    const nodeIdsToDelete = new Set(selectedNodesList.map((n) => n.id));
+    const edgeIdsToDelete = new Set(selectedEdgesList.map((e) => e.id));
+
+    const nextNodes = nodes.filter((n) => !nodeIdsToDelete.has(n.id));
+    const nextEdges = edges.filter(
+      (e) => !edgeIdsToDelete.has(e.id) && !nodeIdsToDelete.has(e.source) && !nodeIdsToDelete.has(e.target)
+    );
+
+    setNodes(nextNodes);
+    setEdges(nextEdges);
+    setSelectedNode(null);
+    setSelectedEdge(null);
+
+    pushHistorySnapshot(nextNodes, nextEdges);
+  }, [nodes, edges, selectedNode, selectedEdge, setNodes, setEdges, pushHistorySnapshot]);
+
+  const selectAllNodes = useCallback(() => {
+    setNodes((nds) => nds.map((n) => ({ ...n, selected: true })));
+    setEdges((eds) => eds.map((e) => ({ ...e, selected: false })));
+  }, [setNodes, setEdges]);
+
+  const rotateSelectedNode = useCallback(() => {
+    const selectedNodesList = nodes.filter((n) => n.selected || (selectedNode && n.id === selectedNode.id));
+    if (selectedNodesList.length > 0) {
+      selectedNodesList.forEach((n) => handleRotation(n.id));
+      pushHistorySnapshot(nodes, edges);
+    }
+  }, [nodes, edges, selectedNode, handleRotation, pushHistorySnapshot]);
+
+  const deselectAll = useCallback(() => {
+    setNodes((nds) => nds.map((n) => ({ ...n, selected: false })));
+    setEdges((eds) => eds.map((e) => ({ ...e, selected: false })));
+    setSelectedNode(null);
+    setSelectedEdge(null);
+  }, [setNodes, setEdges]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const activeEl = document.activeElement;
+      const isInputActive =
+        activeEl &&
+        (activeEl.tagName === 'INPUT' ||
+          activeEl.tagName === 'TEXTAREA' ||
+          activeEl.tagName === 'SELECT' ||
+          activeEl.isContentEditable);
+
+      if (isInputActive) {
+        return;
+      }
+
+      const isMod = e.ctrlKey || e.metaKey;
+      const key = e.key.toLowerCase();
+
+      // Copy: Ctrl + C
+      if (isMod && key === 'c') {
+        e.preventDefault();
+        copySelected();
+        return;
+      }
+
+      // Paste: Ctrl + V
+      if (isMod && key === 'v') {
+        e.preventDefault();
+        pasteCopied();
+        return;
+      }
+
+      // Duplicate: Ctrl + D
+      if (isMod && key === 'd') {
+        e.preventDefault();
+        duplicateSelected();
+        return;
+      }
+
+      // Select All: Ctrl + A
+      if (isMod && key === 'a') {
+        e.preventDefault();
+        selectAllNodes();
+        return;
+      }
+
+      // Undo: Ctrl + Z (without Shift)
+      if (isMod && key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+        return;
+      }
+
+      // Redo: Ctrl + Y or Ctrl + Shift + Z
+      if ((isMod && key === 'y') || (isMod && key === 'z' && e.shiftKey)) {
+        e.preventDefault();
+        redo();
+        return;
+      }
+
+      // Delete: Delete / Backspace
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        deleteSelected();
+        return;
+      }
+
+      // Rotate: R
+      if (!isMod && key === 'r') {
+        e.preventDefault();
+        rotateSelectedNode();
+        return;
+      }
+
+      // Deselect / Close Modal: Escape
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        deselectAll();
+        setIsHelpModalOpen(false);
+        return;
+      }
+
+      // Toggle Help: ? or Shift + /
+      if (e.key === '?' || (e.shiftKey && e.key === '/')) {
+        e.preventDefault();
+        setIsHelpModalOpen((prev) => !prev);
+        return;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [
+    copySelected,
+    pasteCopied,
+    duplicateSelected,
+    selectAllNodes,
+    undo,
+    redo,
+    deleteSelected,
+    rotateSelectedNode,
+    deselectAll,
+  ]);
 
   const selectNodeById = useCallback((id) => {
     setNodes((nds) => {
@@ -600,6 +924,7 @@ export default function App() {
             onInit={setReactFlowInstance}
             onDrop={onDrop}
             onDragOver={onDragOver}
+            onNodeDragStop={() => pushHistorySnapshot(nodes, edges)}
             fitView
           >
             <Background color="#B8C9C8" gap={16} size={1} />
@@ -619,8 +944,28 @@ export default function App() {
               >
                 🎨
               </ControlButton>
+              <ControlButton 
+                onClick={() => setIsHelpModalOpen(true)}
+                title="Help & Information (?)"
+                style={{
+                  backgroundColor: '#ffffff',
+                  color: '#395253',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                ❓
+              </ControlButton>
             </Controls>
           </ReactFlow>
+
+          <HelpInfoModal 
+            isOpen={isHelpModalOpen} 
+            onClose={() => setIsHelpModalOpen(false)} 
+          />
 
           <HeatmapLegend 
             heatmapMode={heatmapSettings.mode} 
