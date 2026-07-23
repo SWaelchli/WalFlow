@@ -258,7 +258,7 @@ export default function DataList({ nodes, edges, onUpdateEdge, onUpdateNode, onS
             </tr>
           </thead>
           <tbody>
-            {processedItems.map((entry) => {
+            {processedItems.map((entry, idx) => {
               const isNode = entry.type === 'node';
               const item = entry.item;
               const diaValue = isNode ? (item.data.orifice_diameter || item.data.pipe_diameter || 0) : (item.data.diameter || 0.1);
@@ -298,23 +298,26 @@ export default function DataList({ nodes, edges, onUpdateEdge, onUpdateNode, onS
                 }
               };
 
+              const baseBg = item.selected ? '#FFF4E5' : (idx % 2 === 0 ? '#ffffff' : '#F8FAFA');
+              const hoverBg = item.selected ? '#FFEAD1' : '#F0F4F4';
+
               return (
                 <tr key={item.id} draggable={!sortConfig.key && !isEditing} onDragStart={(e) => onDragStart(e, entry.originalIndex)}
                   onDragOver={(e) => onDragOver(e, entry.originalIndex)} onDrop={(e) => onDrop(e, entry.originalIndex)}
                   onClick={() => handleRowClick(entry)}
                   style={{ 
-                    borderBottom: '1px solid #f1f5f9', cursor: sortConfig.key ? 'pointer' : (isEditing ? 'text' : 'grab'), transition: 'background 0.1s',
-                    backgroundColor: item.selected ? '#f0f9ff' : (draggedIdx === entry.originalIndex ? '#f8fafc' : 'transparent'),
-                    borderTop: dragOverIdx === entry.originalIndex ? '2px solid #000' : 'none', opacity: draggedIdx === entry.originalIndex ? 0.5 : 1
+                    borderBottom: '1px solid #EBF0EF', cursor: sortConfig.key ? 'pointer' : (isEditing ? 'text' : 'grab'), transition: 'background 0.15s ease',
+                    backgroundColor: draggedIdx === entry.originalIndex ? '#EBF0EF' : baseBg,
+                    borderTop: dragOverIdx === entry.originalIndex ? '2px solid #FA8507' : 'none', opacity: draggedIdx === entry.originalIndex ? 0.5 : 1
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = item.selected ? '#e0f2fe' : '#f8fafc'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = item.selected ? '#f0f9ff' : 'transparent'}
+                  onMouseEnter={(e) => e.currentTarget.style.background = hoverBg}
+                  onMouseLeave={(e) => e.currentTarget.style.background = baseBg}
                 >
-                  <td style={{ padding: '8px', color: '#94a3b8', fontSize: '10px' }}>{sortConfig.key ? "—" : "☰"}</td>
-                  <td style={{ padding: '8px', color: '#94a3b8' }}>{entry.displayType}</td>
+                  <td style={{ padding: '8px', color: '#849A9B', fontSize: '10px' }}>{sortConfig.key ? "—" : "☰"}</td>
+                  <td style={{ padding: '8px', color: '#587071', fontWeight: '600' }}>{entry.displayType}</td>
                   <td style={{ padding: '8px' }}>
                     <input 
-                      style={{ width: '100px', fontSize: '11px', border: '1px solid #e2e8f0', padding: '2px 4px', borderRadius: '3px', fontWeight: 'bold' }}
+                      style={{ width: '110px', fontSize: '11px', border: '1px solid #D8E2E1', padding: '3px 6px', borderRadius: '5px', fontWeight: '700', color: '#1C2B2C', outline: 'none' }}
                       value={item.data.label || item.id} 
                       onChange={(e) => handleNameChange(e.target.value)} 
                       onFocus={() => { handleRowClick(entry); setIsEditing(true); }}
@@ -325,7 +328,7 @@ export default function DataList({ nodes, edges, onUpdateEdge, onUpdateNode, onS
                       draggable={false}
                     />
                   </td>
-                  <td style={{ padding: '8px', textAlign: 'right' }}>{m3sToLmin(entry.flow)}</td>
+                  <td style={{ padding: '8px', textAlign: 'right', fontWeight: '600' }}>{m3sToLmin(entry.flow)}</td>
                   <td style={{ padding: '8px', textAlign: 'right' }}>{entry.velocity?.toFixed(2)}</td>
                   <td style={{ padding: '8px', textAlign: 'right' }}>{entry.dp.toFixed(3)}</td>
                   <td style={{ padding: '8px', textAlign: 'right' }}>{entry.pStart.toFixed(2)}</td>
@@ -335,7 +338,7 @@ export default function DataList({ nodes, edges, onUpdateEdge, onUpdateNode, onS
                     <td style={{ padding: '8px' }} onClick={(e) => e.stopPropagation()}>
                       {!isNode ? (
                         <select 
-                          style={{ fontSize: '10px', padding: '2px', border: '1px solid #cbd5e1', borderRadius: '4px' }}
+                          style={{ fontSize: '11px', padding: '3px 6px', border: '1px solid #D8E2E1', borderRadius: '5px', color: '#395253', fontWeight: '600', background: '#ffffff', outline: 'none' }}
                           value={currentDn} 
                           onChange={(e) => { handleDnChange(e.target.value); }} 
                           onFocus={() => { handleRowClick(entry); setIsEditing(true); }}
@@ -352,7 +355,7 @@ export default function DataList({ nodes, edges, onUpdateEdge, onUpdateNode, onS
                     <td style={{ padding: '8px' }} onClick={(e) => e.stopPropagation()}>
                       {!isNode ? (
                         <select 
-                          style={{ fontSize: '10px', padding: '2px', border: '1px solid #cbd5e1', borderRadius: '4px' }}
+                          style={{ fontSize: '11px', padding: '3px 6px', border: '1px solid #D8E2E1', borderRadius: '5px', color: '#395253', fontWeight: '600', background: '#ffffff', outline: 'none' }}
                           value={currentSch} 
                           onChange={(e) => handleSchChange(e.target.value)} 
                           onFocus={() => { handleRowClick(entry); setIsEditing(true); }}
@@ -370,7 +373,7 @@ export default function DataList({ nodes, edges, onUpdateEdge, onUpdateNode, onS
                       {!isNode && (
                         <input 
                           type="number" step="0.1"
-                          style={{ width: '50px', fontSize: '11px', border: '1px solid #e2e8f0', padding: '2px 4px', borderRadius: '3px', textAlign: 'right' }}
+                          style={{ width: '55px', fontSize: '11px', border: '1px solid #D8E2E1', padding: '3px 6px', borderRadius: '5px', textAlign: 'right', fontWeight: '600', color: '#395253', outline: 'none' }}
                           value={item.data.length}
                           onChange={(e) => handleLengthChange(e.target.value)}
                           onFocus={() => { handleRowClick(entry); setIsEditing(true); }}

@@ -306,7 +306,6 @@ export default function Sidebar({ onSave, onLoad, onClear, onCalculate, isSimula
     }}>
       <div style={{ padding: '8px 4px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${theme.slate100}`, paddingBottom: '16px' }}>
         <img src={walflowLogo} alt="WälFlow Logo" style={{ height: '36px' }} />
-        <span style={{ fontSize: '10px', fontWeight: '700', color: theme.brandDark, background: theme.slate100, padding: '3px 8px', borderRadius: '12px', letterSpacing: '0.05em' }}>v2.0 PFD</span>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>

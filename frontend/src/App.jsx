@@ -2,8 +2,6 @@ import ReactFlow, {
   Background, 
   Controls,
   ControlButton,
-  Panel,
-  MiniMap, 
   useNodesState, 
   useEdgesState,
   addEdge,
@@ -520,19 +518,20 @@ export default function App() {
 
   const styledEdges = useMemo(() => {
     return edges.map(edge => {
+      const isSignal = edge.data?.type === 'SIGNAL';
       const hasFlow = isSimulating || (edge.data && edge.data.flow_rate && Math.abs(edge.data.flow_rate) > 1e-5);
       return {
         ...edge,
-        type: edge.data?.type === 'SIGNAL' ? 'signal' : 'pipe',
-        animated: hasFlow,
-        className: hasFlow ? 'simulating' : '',
+        type: isSignal ? 'signal' : 'pipe',
+        animated: !isSignal && hasFlow,
+        className: (!isSignal && hasFlow) ? 'simulating' : '',
         data: {
           ...edge.data,
           heatmapMode: heatmapSettings.mode,
           activeRange: computedHeatmapRange,
           isSimulating,
         },
-        style: {
+        style: isSignal ? edge.style : {
           ...edge.style,
           stroke: heatmapSettings.mode !== 'default' ? undefined : (hasFlow ? '#FA8507' : '#395253'),
           strokeWidth: hasFlow ? 3.5 : 2.5,
@@ -602,50 +601,6 @@ export default function App() {
             onDragOver={onDragOver}
             fitView
           >
-            {heatmapSettings.mode !== 'default' && (
-              <Panel position="top-center">
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  backgroundColor: '#ffffff',
-                  padding: '6px 14px',
-                  borderRadius: '30px',
-                  boxShadow: '0 8px 20px rgba(57, 82, 83, 0.15)',
-                  border: '1px solid #D8E2E1',
-                  fontSize: '12px'
-                }}>
-                  <span style={{ fontWeight: 700, color: '#395253', marginRight: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <span style={{ fontSize: '14px' }}>🎨</span> Heatmap:
-                  </span>
-                  {[
-                    { id: 'default', label: 'Off' },
-                    { id: 'pressure', label: 'Pressure (bar)' },
-                    { id: 'temperature', label: 'Temp (°C)' },
-                    { id: 'velocity', label: 'Velocity' }
-                  ].map((mode) => (
-                    <button
-                      key={mode.id}
-                      onClick={() => setHeatmapSettings(prev => ({ ...prev, mode: mode.id }))}
-                      style={{
-                        border: 'none',
-                        borderRadius: '20px',
-                        padding: '4px 12px',
-                        fontSize: '11px',
-                        fontWeight: heatmapSettings.mode === mode.id ? 700 : 500,
-                        backgroundColor: heatmapSettings.mode === mode.id ? '#FA8507' : '#F4F7F6',
-                        color: heatmapSettings.mode === mode.id ? '#ffffff' : '#587071',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease'
-                      }}
-                    >
-                      {mode.label}
-                    </button>
-                  ))}
-                </div>
-              </Panel>
-            )}
-
             <Background color="#B8C9C8" gap={16} size={1} />
             <Controls>
               <ControlButton 
@@ -664,7 +619,6 @@ export default function App() {
                 🎨
               </ControlButton>
             </Controls>
-            <MiniMap nodeColor={() => '#395253'} maskColor="rgba(240, 244, 244, 0.7)" />
           </ReactFlow>
 
           <HeatmapLegend 

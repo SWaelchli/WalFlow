@@ -47,19 +47,20 @@ export default function RemoteControlValveNode({ id, data, selected }) {
           <path d="M 50 20 L 30 35 L 50 50 Z" fill="white" stroke="#334155" strokeWidth="2.5" />
         </svg>
 
-        {/* Remote Signal Input (Yellow Handle) */}
+        {/* Remote Signal Input (Orange Handle) */}
         <Handle 
           type="target" 
           position={Position.Top} 
           id="signal-in" 
+          className="handle-signal"
           style={{ 
             top: '5px', 
             left: '30px', 
             transform: 'translate(-50%, -50%)',
-            background: '#fde047', 
+            background: '#FA8507', 
             width: '8px', 
             height: '8px',
-            border: '1.5px solid #854d0e',
+            border: '1.5px solid #E07600',
             boxShadow: '0 1px 2px rgba(0,0,0,0.2)'
           }} 
         />
@@ -69,11 +70,12 @@ export default function RemoteControlValveNode({ id, data, selected }) {
           type="target" 
           position={getRotatedPosition(Position.Left, rotation)} 
           id="inlet-0" 
+          className="handle-inlet"
           style={{ 
             top: '35px', left: '10px', 
             marginTop: '-4px', marginLeft: '-4px',
             right: 'auto', bottom: 'auto', transform: 'none',
-            background: '#FA8507', width: '8px', height: '8px' 
+            background: '#0284C7', width: '8px', height: '8px' 
           }} 
         />
         {sensing['inlet-0'] && <SensingPin portId="inlet-0" offset={{ x: -20, y: 5 }} />}
@@ -82,11 +84,12 @@ export default function RemoteControlValveNode({ id, data, selected }) {
           type="source" 
           position={getRotatedPosition(Position.Right, rotation)} 
           id="outlet-0" 
+          className="handle-outlet"
           style={{ 
             top: '35px', left: '50px', 
             marginTop: '-4px', marginLeft: '-4px',
             right: 'auto', bottom: 'auto', transform: 'none',
-            background: '#ef4444', width: '8px', height: '8px' 
+            background: '#E11D48', width: '8px', height: '8px' 
           }} 
         />
         {sensing['outlet-0'] && <SensingPin portId="outlet-0" offset={{ x: 20, y: 5 }} />}

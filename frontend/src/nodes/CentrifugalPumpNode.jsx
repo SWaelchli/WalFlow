@@ -71,11 +71,12 @@ export default function PumpNode({ id, data, selected }) {
           type="target" 
           position={getRotatedPosition(Position.Left, rotation)} 
           id="inlet-0" 
+          className="handle-inlet"
           style={{ 
             top: '35px', left: '10px', 
             marginTop: '-4px', marginLeft: '-4px',
             right: 'auto', bottom: 'auto', transform: 'none',
-            background: '#FA8507', width: '8px', height: '8px' 
+            background: '#0284C7', width: '8px', height: '8px' 
           }} 
         />
         {sensing['inlet-0'] && <SensingPin portId="inlet-0" offset={{ x: -20, y: 5 }} />}
@@ -84,11 +85,12 @@ export default function PumpNode({ id, data, selected }) {
           type="source" 
           position={getRotatedPosition(Position.Right, rotation)} 
           id="outlet-0" 
+          className="handle-outlet"
           style={{ 
             top: '15px', left: '60px', 
             marginTop: '-4px', marginLeft: '-4px',
             right: 'auto', bottom: 'auto', transform: 'none',
-            background: '#ef4444', width: '8px', height: '8px' 
+            background: '#E11D48', width: '8px', height: '8px' 
           }} 
         />
         {sensing['outlet-0'] && <SensingPin portId="outlet-0" offset={{ x: 30, y: -15 }} />}

@@ -44,17 +44,56 @@ export default function HeatmapLegend({
       backgroundColor: 'rgba(255, 255, 255, 0.96)',
       backdropFilter: 'blur(10px)',
       border: '1px solid #D8E2E1',
-      borderRadius: '12px',
+      borderRadius: '14px',
       padding: '14px 18px',
       boxShadow: '0 10px 25px -5px rgba(57, 82, 83, 0.15), 0 4px 6px -2px rgba(57, 82, 83, 0.05)',
       zIndex: 1000,
-      minWidth: '310px',
+      width: '320px',
+      maxWidth: 'calc(100vw - 32px)',
       display: 'flex',
       flexDirection: 'column',
-      gap: '10px'
+      gap: '12px'
     }}>
-      {/* Header Bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+      {/* Mode Switcher Pills */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '4px',
+        backgroundColor: '#F4F7F6',
+        padding: '3px',
+        borderRadius: '20px',
+        border: '1px solid #EBF0EF'
+      }}>
+        {[
+          { id: 'pressure', label: 'Pressure' },
+          { id: 'temperature', label: 'Temp' },
+          { id: 'velocity', label: 'Velocity' }
+        ].map((mode) => (
+          <button
+            key={mode.id}
+            onClick={() => onModeChange(mode.id)}
+            style={{
+              flex: 1,
+              border: 'none',
+              borderRadius: '16px',
+              padding: '4px 8px',
+              fontSize: '11px',
+              fontWeight: heatmapMode === mode.id ? 700 : 500,
+              backgroundColor: heatmapMode === mode.id ? '#FA8507' : 'transparent',
+              color: heatmapMode === mode.id ? '#ffffff' : '#587071',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+              whiteSpace: 'nowrap',
+              textAlign: 'center'
+            }}
+          >
+            {mode.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Control Row: Title + Auto Toggle + Close */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
         <span style={{ fontSize: '13px', fontWeight: 700, color: '#395253', whiteSpace: 'nowrap' }}>
           {config.title}
         </span>
@@ -91,7 +130,7 @@ export default function HeatmapLegend({
               padding: '2px 4px',
               borderRadius: '4px'
             }}
-            title="Close Heatmap"
+            title="Turn Off Heatmap"
           >
             ✕
           </button>
@@ -107,7 +146,7 @@ export default function HeatmapLegend({
         boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)'
       }} />
 
-      {/* Range Labels / Manual Inputs */}
+      {/* Range Footer: Auto Labels vs Manual Inputs */}
       {autoScale ? (
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#587071', fontWeight: 600 }}>
           <span>Min: {minDisplay} {config.unit}</span>
@@ -124,7 +163,7 @@ export default function HeatmapLegend({
               value={customRange?.min ?? 0}
               onChange={(e) => onUpdateCustomRange && onUpdateCustomRange(parseFloat(e.target.value) || 0, customRange?.max ?? 10)}
               style={{
-                width: '65px',
+                width: '60px',
                 padding: '3px 6px',
                 fontSize: '11px',
                 fontWeight: '700',
@@ -145,7 +184,7 @@ export default function HeatmapLegend({
               value={customRange?.max ?? 10}
               onChange={(e) => onUpdateCustomRange && onUpdateCustomRange(customRange?.min ?? 0, parseFloat(e.target.value) || 10)}
               style={{
-                width: '65px',
+                width: '60px',
                 padding: '3px 6px',
                 fontSize: '11px',
                 fontWeight: '700',
