@@ -70,7 +70,7 @@ const PipeSelector = ({ data, onChange }) => {
   );
 };
 
-export default function PropertyEditor({ node, edge, onUpdate, onUpdateEdge, onDelete, onDeleteEdge }) {
+export default function PropertyEditor({ node, edge, onUpdate, onUpdateEdge, onDelete, onDeleteEdge, heatmapActive = false }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [localDrafts, setLocalDrafts] = useState({});
 
@@ -142,11 +142,11 @@ export default function PropertyEditor({ node, edge, onUpdate, onUpdateEdge, onD
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
       style={{
-        position: 'absolute', top: 20, right: 20, zIndex: 10,
+        position: 'absolute', top: heatmapActive ? '185px' : '16px', right: '16px', zIndex: 10,
         width: '280px', background: '#ffffff', padding: isCollapsed ? '12px 18px' : '20px',
         borderRadius: '12px', border: '1px solid #D8E2E1',
         boxShadow: '0 10px 25px -3px rgba(57, 82, 83, 0.15), 0 4px 6px -2px rgba(57, 82, 83, 0.05)',
-        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+        transition: 'top 0.25s cubic-bezier(0.4, 0, 0.2, 1), padding 0.2s ease, box-shadow 0.2s ease'
       }}
     >
       <div 

@@ -577,6 +577,7 @@ export default function App() {
             onUpdateEdge={updateEdgeData}
             onDelete={onDeleteNode} 
             onDeleteEdge={onDeleteEdge}
+            heatmapActive={heatmapSettings.mode !== 'default'}
           />
 
           <ReactFlow 
