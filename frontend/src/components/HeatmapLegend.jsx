@@ -1,34 +1,55 @@
 import React from 'react';
 
-export default function HeatmapLegend({ heatmapMode, onModeChange }) {
+export default function HeatmapLegend({ 
+  heatmapMode, 
+  onModeChange, 
+  autoScale = true, 
+  onToggleAutoScale,
+  activeRange = { min: 0, max: 6 },
+  customRange = { min: 0, max: 6 },
+  onUpdateCustomRange,
+  onResetCustomRange
+}) {
   if (!heatmapMode || heatmapMode === 'default') return null;
 
   const modeConfigs = {
     pressure: {
       title: 'Pressure Heatmap',
       unit: 'bar',
-      lowLabel: '0.0 bar (Low)',
-      highLabel: '6.0+ bar (High)',
-      gradient: 'linear-gradient(to right, hsl(210, 90%, 46%), hsl(140, 85%, 48%), hsl(45, 90%, 50%), hsl(0, 90%, 46%))'
+      gradient: 'linear-gradient(to right, hsl(210, 90%, 46%), hsl(140, 85%, 48%), hsl(45, 90%, 50%), hsl(0, 90%, 46%))',
+      presets: [
+        { label: 'Std 0–6 bar', min: 0, max: 6 },
+        { label: 'High P 0–250 bar', min: 0, max: 250 },
+        { label: 'Low P 0–3 bar', min: 0, max: 3 }
+      ]
     },
     temperature: {
       title: 'Temperature Heatmap',
       unit: '°C',
-      lowLabel: '20 °C (Cool)',
-      highLabel: '60 °C (Hot)',
-      gradient: 'linear-gradient(to right, hsl(210, 90%, 45%), hsl(120, 80%, 45%), hsl(40, 95%, 50%), hsl(0, 90%, 45%))'
+      gradient: 'linear-gradient(to right, hsl(210, 90%, 45%), hsl(120, 80%, 45%), hsl(40, 95%, 50%), hsl(0, 90%, 45%))',
+      presets: [
+        { label: 'Std 20–60 °C', min: 20, max: 60 },
+        { label: 'Hot 20–120 °C', min: 20, max: 120 },
+        { label: 'Cold 0–40 °C', min: 0, max: 40 }
+      ]
     },
     velocity: {
       title: 'Flow Velocity',
       unit: 'L/min',
-      lowLabel: '0 L/min',
-      highLabel: '200+ L/min',
-      gradient: 'linear-gradient(to right, hsl(220, 80%, 50%), hsl(270, 80%, 50%), hsl(330, 80%, 50%))'
+      gradient: 'linear-gradient(to right, hsl(220, 80%, 50%), hsl(270, 80%, 50%), hsl(330, 80%, 50%))',
+      presets: [
+        { label: 'Std 0–200 L/min', min: 0, max: 200 },
+        { label: 'High Q 0–1000 L/min', min: 0, max: 1000 },
+        { label: 'Low Q 0–50 L/min', min: 0, max: 50 }
+      ]
     }
   };
 
   const config = modeConfigs[heatmapMode];
   if (!config) return null;
+
+  const minDisplay = (activeRange?.min ?? 0).toFixed(1);
+  const maxDisplay = (activeRange?.max ?? 10).toFixed(1);
 
   return (
     <div style={{
@@ -42,27 +63,53 @@ export default function HeatmapLegend({ heatmapMode, onModeChange }) {
       padding: '14px 18px',
       boxShadow: '0 10px 25px -5px rgba(57, 82, 83, 0.15), 0 4px 6px -2px rgba(57, 82, 83, 0.05)',
       zIndex: 1000,
-      minWidth: '250px'
+      minWidth: '270px',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '10px'
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+      {/* Header Bar */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={{ fontSize: '13px', fontWeight: 700, color: '#395253' }}>
           {config.title}
         </span>
-        <button
-          onClick={() => onModeChange('default')}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: '#71717a',
-            cursor: 'pointer',
-            fontSize: '12px',
-            padding: '2px 6px',
-            borderRadius: '4px'
-          }}
-          title="Close Heatmap"
-        >
-          ✕
-        </button>
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <button
+            onClick={onToggleAutoScale}
+            style={{
+              fontSize: '10px',
+              fontWeight: 700,
+              padding: '3px 8px',
+              borderRadius: '12px',
+              border: 'none',
+              cursor: 'pointer',
+              background: autoScale ? '#FA8507' : '#EBF0EF',
+              color: autoScale ? '#ffffff' : '#587071',
+              boxShadow: autoScale ? '0 2px 6px rgba(250, 133, 7, 0.3)' : 'none',
+              transition: 'all 0.2s ease'
+            }}
+            title={autoScale ? 'Auto-Scaling is ON (click to switch to manual bounds)' : 'Auto-Scaling is OFF (click to auto-detect system limits)'}
+          >
+            ⚡ Auto: {autoScale ? 'ON' : 'OFF'}
+          </button>
+          
+          <button
+            onClick={() => onModeChange('default')}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#587071',
+              cursor: 'pointer',
+              fontSize: '12px',
+              padding: '2px 6px',
+              borderRadius: '4px'
+            }}
+            title="Close Heatmap"
+          >
+            ✕
+          </button>
+        </div>
       </div>
 
       {/* Gradient Bar */}
@@ -71,14 +118,98 @@ export default function HeatmapLegend({ heatmapMode, onModeChange }) {
         width: '100%',
         borderRadius: '5px',
         background: config.gradient,
-        marginBottom: '6px'
+        boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)'
       }} />
 
-      {/* Labels */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#52525b', fontWeight: 500 }}>
-        <span>{config.lowLabel}</span>
-        <span>{config.highLabel}</span>
-      </div>
+      {/* Range Labels / Inputs */}
+      {autoScale ? (
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#587071', fontWeight: 600 }}>
+          <span>Min: {minDisplay} {config.unit}</span>
+          <span style={{ color: '#FA8507', fontWeight: 700 }}>[Auto-Scaled]</span>
+          <span>Max: {maxDisplay} {config.unit}</span>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <span style={{ fontSize: '10px', fontWeight: 700, color: '#587071' }}>MIN</span>
+              <input
+                type="number"
+                step="0.5"
+                value={customRange?.min ?? 0}
+                onChange={(e) => onUpdateCustomRange && onUpdateCustomRange(parseFloat(e.target.value) || 0, customRange?.max ?? 10)}
+                style={{
+                  width: '65px',
+                  padding: '3px 6px',
+                  fontSize: '11px',
+                  fontWeight: '700',
+                  borderRadius: '6px',
+                  border: '1px solid #D8E2E1',
+                  textAlign: 'center',
+                  outline: 'none'
+                }}
+              />
+              <span style={{ fontSize: '10px', color: '#849A9B' }}>{config.unit}</span>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <span style={{ fontSize: '10px', fontWeight: 700, color: '#587071' }}>MAX</span>
+              <input
+                type="number"
+                step="0.5"
+                value={customRange?.max ?? 10}
+                onChange={(e) => onUpdateCustomRange && onUpdateCustomRange(customRange?.min ?? 0, parseFloat(e.target.value) || 10)}
+                style={{
+                  width: '65px',
+                  padding: '3px 6px',
+                  fontSize: '11px',
+                  fontWeight: '700',
+                  borderRadius: '6px',
+                  border: '1px solid #D8E2E1',
+                  textAlign: 'center',
+                  outline: 'none'
+                }}
+              />
+              <span style={{ fontSize: '10px', color: '#849A9B' }}>{config.unit}</span>
+            </div>
+          </div>
+
+          {/* Quick Presets & Reset */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #EBF0EF', paddingTop: '6px' }}>
+            <select
+              onChange={(e) => {
+                const idx = parseInt(e.target.value, 10);
+                if (!isNaN(idx) && config.presets[idx]) {
+                  const p = config.presets[idx];
+                  onUpdateCustomRange && onUpdateCustomRange(p.min, p.max);
+                }
+              }}
+              defaultValue=""
+              style={{ fontSize: '10px', padding: '3px 6px', borderRadius: '6px', border: '1px solid #D8E2E1', background: '#F4F7F6', color: '#395253' }}
+            >
+              <option value="" disabled>Select Preset...</option>
+              {config.presets.map((p, i) => (
+                <option key={p.label} value={i}>{p.label}</option>
+              ))}
+            </select>
+
+            <button
+              onClick={onResetCustomRange}
+              style={{
+                fontSize: '10px',
+                fontWeight: 600,
+                color: '#587071',
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer'
+              }}
+              title="Reset default range"
+            >
+              ↺ Reset
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

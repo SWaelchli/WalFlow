@@ -5,7 +5,7 @@ import { getSmoothStepPath } from 'reactflow';
  * Custom Color Interpolation Utilities for Heatmaps
  */
 /* eslint-disable-next-line react-refresh/only-export-components */
-export function getHeatmapColor(edgeData, heatmapMode = 'default') {
+export function getHeatmapColor(edgeData, heatmapMode = 'default', activeRange) {
   if (!heatmapMode || heatmapMode === 'default') {
     return edgeData?.selected ? '#FA8507' : '#395253';
   }
@@ -24,33 +24,27 @@ export function getHeatmapColor(edgeData, heatmapMode = 'default') {
   const q_out = telemetry.outlets?.[0]?.flow_rate != null ? Math.abs(telemetry.outlets[0].flow_rate * 60000.0) : 0;
   const avgQ = (q_in + q_out) / 2.0;
 
-  if (heatmapMode === 'pressure') {
-    // Low pressure (0 bar): Deep Blue/Teal (Hue 210). High pressure (6+ bar): Vibrant Red/Orange (Hue 0).
-    const minP = 0.0;  // 0 bar
-    const maxP = 6.0;  // 6 bar scale for high sensitivity in hydraulic networks
-    const norm = Math.min(1.0, Math.max(0.0, (avgP - minP) / (maxP - minP)));
-    const hue = (1.0 - norm) * 210; // 210 (Blue/Teal) -> 0 (Orange/Red)
+  const defaultMax = heatmapMode === 'pressure' ? 6.0 : heatmapMode === 'temperature' ? 60.0 : 200.0;
+  const defaultMin = heatmapMode === 'temperature' ? 20.0 : 0.0;
+
+  const minVal = activeRange?.min ?? defaultMin;
+  const maxVal = activeRange?.max ?? defaultMax;
+  const span = maxVal - minVal;
+
+  if (heatmapMode === 'pressure' || heatmapMode === 'temperature') {
+    const val = heatmapMode === 'pressure' ? avgP : avgT;
+    const norm = Math.min(1.0, Math.max(0.0, span > 0 ? (val - minVal) / span : 0));
+    const hue = (1.0 - norm) * 210; // 210 (Blue/Teal) -> 0 (Red)
     return `hsl(${hue}, 90%, 46%)`;
   }
 
-  if (heatmapMode === 'temperature') {
-    // Cold (20 °C): Cool Blue (Hue 210). Hot (60 °C+): Crimson Red (Hue 0).
-    const minT = 20.0; // 20 °C
-    const maxT = 60.0; // 60 °C
-    const norm = Math.min(1.0, Math.max(0.0, (avgT - minT) / (maxT - minT)));
-    const hue = (1.0 - norm) * 210;
-    return `hsl(${hue}, 90%, 45%)`;
-  }
-
   if (heatmapMode === 'velocity') {
-    // 0 flow: Slate Blue (Hue 220), high flow (200 L/min): Electric Pink/Magenta (Hue 330)
-    const maxQ = 200.0; // L/min scale
-    const norm = Math.min(1.0, Math.max(0.0, avgQ / maxQ));
+    const norm = Math.min(1.0, Math.max(0.0, span > 0 ? (avgQ - minVal) / span : 0));
     const hue = 220 + norm * 110; // 220 (Blue) -> 330 (Magenta)
     return `hsl(${hue}, 85%, 50%)`;
   }
 
-  return '#475569';
+  return '#395253';
 }
 
 export default function PipeEdge({
@@ -77,7 +71,7 @@ export default function PipeEdge({
   });
 
   const heatmapMode = data.heatmapMode || 'default';
-  const strokeColor = getHeatmapColor({ ...data, selected }, heatmapMode);
+  const strokeColor = getHeatmapColor({ ...data, selected }, heatmapMode, data.activeRange);
 
   // Extract flow velocity / rate for particle animation
   const telemetry = data.telemetry || {};

@@ -467,7 +467,56 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodes]);
 
-  const [heatmapMode, setHeatmapMode] = useState('default');
+  const [heatmapSettings, setHeatmapSettings] = useState({
+    mode: 'default',
+    autoScale: true,
+    customRanges: {
+      pressure: { min: 0.0, max: 6.0 },
+      temperature: { min: 20.0, max: 60.0 },
+      velocity: { min: 0.0, max: 200.0 }
+    }
+  });
+
+  const computedHeatmapRange = useMemo(() => {
+    const mode = heatmapSettings.mode;
+    if (mode === 'default') return { min: 0, max: 1 };
+
+    if (!heatmapSettings.autoScale) {
+      const custom = heatmapSettings.customRanges[mode];
+      return custom || { min: 0, max: 10 };
+    }
+
+    let minVal = Infinity;
+    let maxVal = -Infinity;
+
+    edges.forEach((e) => {
+      const tele = e.data?.telemetry || {};
+      if (mode === 'pressure') {
+        const p1 = tele.inlets?.[0]?.pressure != null ? tele.inlets[0].pressure / 100000.0 : null;
+        const p2 = tele.outlets?.[0]?.pressure != null ? tele.outlets[0].pressure / 100000.0 : null;
+        if (p1 !== null) { minVal = Math.min(minVal, p1); maxVal = Math.max(maxVal, p1); }
+        if (p2 !== null) { minVal = Math.min(minVal, p2); maxVal = Math.max(maxVal, p2); }
+      } else if (mode === 'temperature') {
+        const t1 = tele.inlets?.[0]?.temperature != null ? tele.inlets[0].temperature - 273.15 : null;
+        const t2 = tele.outlets?.[0]?.temperature != null ? tele.outlets[0].temperature - 273.15 : null;
+        if (t1 !== null) { minVal = Math.min(minVal, t1); maxVal = Math.max(maxVal, t1); }
+        if (t2 !== null) { minVal = Math.min(minVal, t2); maxVal = Math.max(maxVal, t2); }
+      } else if (mode === 'velocity') {
+        const q1 = tele.inlets?.[0]?.flow_rate != null ? Math.abs(tele.inlets[0].flow_rate * 60000.0) : null;
+        const q2 = tele.outlets?.[0]?.flow_rate != null ? Math.abs(tele.outlets[0].flow_rate * 60000.0) : null;
+        if (q1 !== null) { minVal = Math.min(minVal, q1); maxVal = Math.max(maxVal, q1); }
+        if (q2 !== null) { minVal = Math.min(minVal, q2); maxVal = Math.max(maxVal, q2); }
+      }
+    });
+
+    if (minVal === Infinity || maxVal === -Infinity || Math.abs(maxVal - minVal) < 1e-4) {
+      if (mode === 'pressure') return { min: 0.0, max: 6.0 };
+      if (mode === 'temperature') return { min: 20.0, max: 60.0 };
+      if (mode === 'velocity') return { min: 0.0, max: 200.0 };
+    }
+
+    return { min: Math.max(0, minVal), max: maxVal };
+  }, [edges, heatmapSettings.mode, heatmapSettings.autoScale, heatmapSettings.customRanges]);
 
   const styledEdges = useMemo(() => {
     return edges.map(edge => {
@@ -479,17 +528,18 @@ export default function App() {
         className: hasFlow ? 'simulating' : '',
         data: {
           ...edge.data,
-          heatmapMode,
+          heatmapMode: heatmapSettings.mode,
+          activeRange: computedHeatmapRange,
           isSimulating,
         },
         style: {
           ...edge.style,
-          stroke: heatmapMode !== 'default' ? undefined : (hasFlow ? '#FA8507' : '#395253'),
+          stroke: heatmapSettings.mode !== 'default' ? undefined : (hasFlow ? '#FA8507' : '#395253'),
           strokeWidth: hasFlow ? 3.5 : 2.5,
         }
       };
     });
-  }, [edges, isSimulating, heatmapMode]);
+  }, [edges, isSimulating, heatmapSettings.mode, computedHeatmapRange]);
 
   return (
     <div style={{ width: '100%', height: '100vh', display: 'flex', backgroundColor: '#F0F4F4', overflow: 'hidden' }}>
@@ -552,7 +602,7 @@ export default function App() {
             onDragOver={onDragOver}
             fitView
           >
-            {heatmapMode !== 'default' && (
+            {heatmapSettings.mode !== 'default' && (
               <Panel position="top-center">
                 <div style={{
                   display: 'flex',
@@ -576,15 +626,15 @@ export default function App() {
                   ].map((mode) => (
                     <button
                       key={mode.id}
-                      onClick={() => setHeatmapMode(mode.id)}
+                      onClick={() => setHeatmapSettings(prev => ({ ...prev, mode: mode.id }))}
                       style={{
                         border: 'none',
                         borderRadius: '20px',
                         padding: '4px 12px',
                         fontSize: '11px',
-                        fontWeight: heatmapMode === mode.id ? 700 : 500,
-                        backgroundColor: heatmapMode === mode.id ? '#FA8507' : '#F4F7F6',
-                        color: heatmapMode === mode.id ? '#ffffff' : '#587071',
+                        fontWeight: heatmapSettings.mode === mode.id ? 700 : 500,
+                        backgroundColor: heatmapSettings.mode === mode.id ? '#FA8507' : '#F4F7F6',
+                        color: heatmapSettings.mode === mode.id ? '#ffffff' : '#587071',
                         cursor: 'pointer',
                         transition: 'all 0.15s ease'
                       }}
@@ -599,11 +649,11 @@ export default function App() {
             <Background color="#B8C9C8" gap={16} size={1} />
             <Controls>
               <ControlButton 
-                onClick={() => setHeatmapMode(prev => prev === 'default' ? 'pressure' : 'default')}
-                title={heatmapMode === 'default' ? "Turn On Heatmap" : "Turn Off Heatmap"}
+                onClick={() => setHeatmapSettings(prev => ({ ...prev, mode: prev.mode === 'default' ? 'pressure' : 'default' }))}
+                title={heatmapSettings.mode === 'default' ? "Turn On Heatmap" : "Turn Off Heatmap"}
                 style={{
-                  backgroundColor: heatmapMode !== 'default' ? '#FA8507' : '#ffffff',
-                  color: heatmapMode !== 'default' ? '#ffffff' : '#395253',
+                  backgroundColor: heatmapSettings.mode !== 'default' ? '#FA8507' : '#ffffff',
+                  color: heatmapSettings.mode !== 'default' ? '#ffffff' : '#395253',
                   fontSize: '14px',
                   display: 'flex',
                   alignItems: 'center',
@@ -617,7 +667,28 @@ export default function App() {
             <MiniMap nodeColor={() => '#395253'} maskColor="rgba(240, 244, 244, 0.7)" />
           </ReactFlow>
 
-          <HeatmapLegend heatmapMode={heatmapMode} onModeChange={setHeatmapMode} />
+          <HeatmapLegend 
+            heatmapMode={heatmapSettings.mode} 
+            onModeChange={(mode) => setHeatmapSettings(prev => ({ ...prev, mode }))}
+            autoScale={heatmapSettings.autoScale}
+            onToggleAutoScale={() => setHeatmapSettings(prev => ({ ...prev, autoScale: !prev.autoScale }))}
+            activeRange={computedHeatmapRange}
+            customRange={heatmapSettings.customRanges[heatmapSettings.mode]}
+            onUpdateCustomRange={(min, max) => setHeatmapSettings(prev => ({
+              ...prev,
+              customRanges: {
+                ...prev.customRanges,
+                [prev.mode]: { min, max }
+              }
+            }))}
+            onResetCustomRange={() => setHeatmapSettings(prev => ({
+              ...prev,
+              customRanges: {
+                ...prev.customRanges,
+                [prev.mode]: prev.mode === 'pressure' ? { min: 0.0, max: 6.0 } : prev.mode === 'temperature' ? { min: 20.0, max: 60.0 } : { min: 0.0, max: 200.0 }
+              }
+            }))}
+          />
         </div>
 
         
