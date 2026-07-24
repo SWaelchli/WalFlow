@@ -1,9 +1,15 @@
 {
+  "version": "0.1",
+  "app_version": "0.1.0",
+  "format": "walflow",
   "nodes": [
     {
       "id": "main-reservoir",
       "type": "tank",
-      "position": { "x": 0, "y": 150 },
+      "position": {
+        "x": 0,
+        "y": 150
+      },
       "data": {
         "label": "Main Reservoir",
         "level": 2.0,
@@ -15,13 +21,21 @@
     {
       "id": "suction-splitter",
       "type": "splitter",
-      "position": { "x": 100, "y": 150 },
-      "data": { "label": "Suction Splitter" }
+      "position": {
+        "x": 100,
+        "y": 150
+      },
+      "data": {
+        "label": "Suction Splitter"
+      }
     },
     {
       "id": "pump-duty",
       "type": "volumetric_pump",
-      "position": { "x": 250, "y": 50 },
+      "position": {
+        "x": 250,
+        "y": 50
+      },
       "data": {
         "label": "Duty PD Pump",
         "flow_rated": 120.0,
@@ -32,7 +46,10 @@
     {
       "id": "pump-standby",
       "type": "volumetric_pump",
-      "position": { "x": 250, "y": 250 },
+      "position": {
+        "x": 250,
+        "y": 250
+      },
       "data": {
         "label": "Standby PD Pump",
         "flow_rated": 60.0,
@@ -43,13 +60,21 @@
     {
       "id": "discharge-mixer",
       "type": "mixer",
-      "position": { "x": 450, "y": 150 },
-      "data": { "label": "Discharge Mixer" }
+      "position": {
+        "x": 450,
+        "y": 150
+      },
+      "data": {
+        "label": "Discharge Mixer"
+      }
     },
     {
       "id": "pressure-control-valve",
       "type": "linear_control_valve",
-      "position": { "x": 600, "y": 150 },
+      "position": {
+        "x": 600,
+        "y": 150
+      },
       "data": {
         "label": "System Backpressure Valve",
         "max_cv": 20,
@@ -59,7 +84,10 @@
     {
       "id": "return-tank",
       "type": "tank",
-      "position": { "x": 800, "y": 150 },
+      "position": {
+        "x": 800,
+        "y": 150
+      },
       "data": {
         "label": "Return Reservoir",
         "level": 1.0,
@@ -76,7 +104,11 @@
       "sourceHandle": "outlet-0",
       "target": "suction-splitter",
       "targetHandle": "inlet-0",
-      "data": { "label": "Main Suction", "length": 1.0, "diameter": 0.1 }
+      "data": {
+        "label": "Main Suction",
+        "length": 1.0,
+        "diameter": 0.1
+      }
     },
     {
       "id": "pipe-split-to-duty",
@@ -84,7 +116,11 @@
       "sourceHandle": "outlet-0",
       "target": "pump-duty",
       "targetHandle": "inlet-0",
-      "data": { "label": "Duty Suction", "length": 2.0, "diameter": 0.05 }
+      "data": {
+        "label": "Duty Suction",
+        "length": 2.0,
+        "diameter": 0.05
+      }
     },
     {
       "id": "pipe-split-to-standby",
@@ -92,7 +128,11 @@
       "sourceHandle": "outlet-1",
       "target": "pump-standby",
       "targetHandle": "inlet-0",
-      "data": { "label": "Standby Suction", "length": 2.0, "diameter": 0.05 }
+      "data": {
+        "label": "Standby Suction",
+        "length": 2.0,
+        "diameter": 0.05
+      }
     },
     {
       "id": "pipe-duty-discharge",
@@ -100,7 +140,11 @@
       "sourceHandle": "outlet-0",
       "target": "discharge-mixer",
       "targetHandle": "inlet-0",
-      "data": { "label": "Duty Discharge", "length": 5.0, "diameter": 0.04 }
+      "data": {
+        "label": "Duty Discharge",
+        "length": 5.0,
+        "diameter": 0.04
+      }
     },
     {
       "id": "pipe-standby-discharge",
@@ -108,7 +152,11 @@
       "sourceHandle": "outlet-0",
       "target": "discharge-mixer",
       "targetHandle": "inlet-1",
-      "data": { "label": "Standby Discharge", "length": 5.0, "diameter": 0.04 }
+      "data": {
+        "label": "Standby Discharge",
+        "length": 5.0,
+        "diameter": 0.04
+      }
     },
     {
       "id": "pipe-mixer-to-pcv",
@@ -116,7 +164,11 @@
       "sourceHandle": "outlet-0",
       "target": "pressure-control-valve",
       "targetHandle": "inlet-0",
-      "data": { "label": "Header Line", "length": 1.0, "diameter": 0.06 }
+      "data": {
+        "label": "Header Line",
+        "length": 1.0,
+        "diameter": 0.06
+      }
     },
     {
       "id": "pipe-pcv-to-reservoir",
@@ -124,7 +176,11 @@
       "sourceHandle": "outlet-0",
       "target": "return-tank",
       "targetHandle": "inlet-0",
-      "data": { "label": "System Return", "length": 10.0, "diameter": 0.06 }
+      "data": {
+        "label": "System Return",
+        "length": 10.0,
+        "diameter": 0.06
+      }
     }
   ],
   "globalSettings": {

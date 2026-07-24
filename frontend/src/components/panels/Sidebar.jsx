@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import walflowLogo from '../../assets/Logo_WalFlow.svg';
 import { EquipmentSymbol } from '../symbols/SymbolLibrary';
+import { useAuth } from '../../hooks/useAuth';
 
 const categorizedEquipment = [
 // ... (rest of categorizedEquipment remains the same)
@@ -259,8 +260,16 @@ function CollapsibleScenarios({ templates, onLoad }) {
   );
 }
 
-export default function Sidebar({ onSave, onLoad, onClear, onCalculate, isSimulating, globalSettings, onUpdateGlobalSettings, templates, lastStats }) {
+export default function Sidebar({ onSave, onLoad, onClear, onCalculate, isSimulating, globalSettings, onUpdateGlobalSettings, templates, lastStats, onOpenAuthModal, onOpenProjectsModal, onLogoutClear }) {
+  const { currentUser, isAuthenticated, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('library');
+
+  const handleUserLogout = () => {
+    logout();
+    if (onLogoutClear) {
+      onLogoutClear();
+    }
+  };
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredEquipment = useMemo(() => {
@@ -304,8 +313,58 @@ export default function Sidebar({ onSave, onLoad, onClear, onCalculate, isSimula
       padding: '20px', display: 'flex', flexDirection: 'column', gap: '18px',
       overflowY: 'auto', zIndex: 10, position: 'relative', boxShadow: '2px 0 12px rgba(57,82,83,0.03)'
     }}>
-      <div style={{ padding: '8px 4px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${theme.slate100}`, paddingBottom: '16px' }}>
-        <img src={walflowLogo} alt="WälFlow Logo" style={{ height: '36px' }} />
+      <div style={{ padding: '4px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${theme.slate100}`, paddingBottom: '14px' }}>
+        <img src={walflowLogo} alt="WälFlow Logo" style={{ height: '32px' }} />
+        
+        {isAuthenticated ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span
+              style={{
+                fontSize: '11px',
+                fontWeight: '700',
+                backgroundColor: theme.slate100,
+                color: theme.slate800,
+                padding: '4px 8px',
+                borderRadius: '12px',
+                border: `1px solid ${theme.slate200}`
+              }}
+              title={`Logged in as ${currentUser?.username}`}
+            >
+              👤 {currentUser?.username}
+            </span>
+            <button
+              onClick={handleUserLogout}
+              title="Sign Out"
+              style={{
+                border: 'none',
+                background: 'transparent',
+                color: theme.slate500,
+                cursor: 'pointer',
+                fontSize: '14px',
+                padding: '4px'
+              }}
+            >
+              🚪
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={onOpenAuthModal}
+            style={{
+              padding: '6px 12px',
+              borderRadius: '16px',
+              border: `1px solid ${theme.primary}`,
+              backgroundColor: 'transparent',
+              color: theme.primary,
+              fontSize: '11px',
+              fontWeight: '700',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            🔒 Sign In
+          </button>
+        )}
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -329,9 +388,29 @@ export default function Sidebar({ onSave, onLoad, onClear, onCalculate, isSimula
           {isSimulating ? '⌛ Simulating Flow...' : '▶ Run Simulation'}
         </button>
         
+        <button
+          onClick={() => {
+            if (isAuthenticated) {
+              onOpenProjectsModal();
+            } else {
+              onOpenAuthModal();
+            }
+          }}
+          style={{
+            ...btnStyle,
+            background: theme.brandDark,
+            color: theme.white,
+            boxShadow: '0 4px 12px rgba(57, 82, 83, 0.2)'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.background = theme.brandDarker}
+          onMouseLeave={(e) => e.currentTarget.style.background = theme.brandDark}
+        >
+          ☁️ Cloud Projects {isAuthenticated ? '' : '(Login)'}
+        </button>
+
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-          <button onClick={onSave} style={{ ...btnStyle, background: theme.brandDark, color: theme.white }} onMouseEnter={(e) => e.currentTarget.style.background = theme.brandDarker} onMouseLeave={(e) => e.currentTarget.style.background = theme.brandDark}>💾 Save</button>
-          <button onClick={() => document.getElementById('file-upload').click()} style={{ ...btnStyle, background: theme.slate50, color: theme.slate800, border: `1px solid ${theme.slate200}` }} onMouseEnter={(e) => e.currentTarget.style.background = theme.slate100} onMouseLeave={(e) => e.currentTarget.style.background = theme.slate50}>📂 Load</button>
+          <button onClick={onSave} style={{ ...btnStyle, background: theme.slate50, color: theme.slate800, border: `1px solid ${theme.slate200}` }} onMouseEnter={(e) => e.currentTarget.style.background = theme.slate100} onMouseLeave={(e) => e.currentTarget.style.background = theme.slate50}>💾 Export .wlf</button>
+          <button onClick={() => document.getElementById('file-upload').click()} style={{ ...btnStyle, background: theme.slate50, color: theme.slate800, border: `1px solid ${theme.slate200}` }} onMouseEnter={(e) => e.currentTarget.style.background = theme.slate100} onMouseLeave={(e) => e.currentTarget.style.background = theme.slate50}>📂 Import .wlf</button>
         </div>
         
         <button onClick={onClear} style={{ ...btnStyle, background: 'transparent', color: '#ef4444', border: '1px solid #fee2e2' }} onMouseEnter={(e) => e.currentTarget.style.background = '#fef2f2'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>🗑 Clear Canvas</button>

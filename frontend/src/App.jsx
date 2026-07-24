@@ -32,6 +32,9 @@ import PipeEdge from './edges/PipeEdge';
 import SignalEdge from './edges/SignalEdge';
 import HeatmapLegend from './components/overlays/HeatmapLegend';
 import HelpInfoModal from './components/modals/HelpInfoModal';
+import LoginModal from './components/modals/LoginModal';
+import ProjectManagerModal from './components/modals/ProjectManagerModal';
+import { AuthProvider } from './context/AuthProvider';
 
 import { useWebSocketSimulation } from './hooks/useWebSocketSimulation';
 import { useCanvasHistory } from './hooks/useCanvasHistory';
@@ -40,12 +43,12 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { APP_VERSION, FILE_FORMAT_VERSION, FILE_EXTENSION } from './constants';
 
 // Import Examples
-import examplePFD from './data/examples/Example_Standard_PFD.json';
-import examplePRV from './data/examples/Example_PRV.json';
-import exampleBPR from './data/examples/Example_BPR.json';
-import exampleRemoteControl from './data/examples/Example_RemoteControl.json';
-import exampleAPI614 from './data/examples/Example_API_614_LOS.json';
-import exampleVolumetric from './data/examples/Example_Volumetric.json';
+import examplePFD from './data/examples/Example_Standard_PFD.wlf';
+import examplePRV from './data/examples/Example_PRV.wlf';
+import exampleBPR from './data/examples/Example_BPR.wlf';
+import exampleRemoteControl from './data/examples/Example_RemoteControl.wlf';
+import exampleAPI614 from './data/examples/Example_API_614_LOS.wlf';
+import exampleVolumetric from './data/examples/Example_Volumetric.wlf';
 
 const nodeTypes = {
   tank: TankNode,
@@ -71,7 +74,7 @@ const edgeTypes = {
 
 const getId = () => `node_${crypto.randomUUID().split('-')[0]}`;
 
-export default function App() {
+function WalFlowContent() {
   const reactFlowWrapper = useRef(null);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   
@@ -82,6 +85,8 @@ export default function App() {
   const [edges, setEdges] = useEdgesState([]);
   const [edgeIdCount, setEdgeIdCount] = useState(100);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isProjectManagerModalOpen, setIsProjectManagerModalOpen] = useState(false);
   const dragCounter = useRef(0);
   const [isFileDragging, setIsFileDragging] = useState(false);
 
@@ -451,7 +456,8 @@ export default function App() {
   const onDragEnter = useCallback((event) => {
     event.preventDefault();
     dragCounter.current += 1;
-    if (event.dataTransfer.types && Array.from(event.dataTransfer.types).includes('Files')) {
+    const types = event.dataTransfer.types ? Array.from(event.dataTransfer.types) : [];
+    if (types.includes('Files') && !types.includes('application/reactflow')) {
       setIsFileDragging(true);
     }
   }, []);
@@ -467,7 +473,7 @@ export default function App() {
 
   const onDragOver = useCallback((event) => {
     event.preventDefault();
-    event.dataTransfer.dropEffect = 'copy';
+    event.dataTransfer.dropEffect = 'move';
   }, []);
 
   const onDrop = useCallback(
@@ -560,14 +566,18 @@ export default function App() {
     setSelectedEdge(null);
   }, [setEdges]);
 
+  const resetCanvas = useCallback(() => {
+    setNodes([]);
+    setEdges([]);
+    setSelectedNode(null);
+    setSelectedEdge(null);
+  }, [setNodes, setEdges]);
+
   const onClearCanvas = useCallback(() => {
     if (window.confirm('Are you sure you want to clear the entire canvas?')) {
-      setNodes([]);
-      setEdges([]);
-      setSelectedNode(null);
-      setSelectedEdge(null);
+      resetCanvas();
     }
-  }, [setNodes, setEdges]);
+  }, [resetCanvas]);
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -688,6 +698,9 @@ export default function App() {
           "API 614 LOS": exampleAPI614,
           "Remote Control Test": exampleRemoteControl
         }}
+        onOpenAuthModal={() => setIsAuthModalOpen(true)}
+        onOpenProjectsModal={() => setIsProjectManagerModalOpen(true)}
+        onLogoutClear={resetCanvas}
       />
 
       <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
@@ -813,6 +826,18 @@ export default function App() {
             onClose={() => setIsHelpModalOpen(false)} 
           />
 
+          <LoginModal 
+            isOpen={isAuthModalOpen}
+            onClose={() => setIsAuthModalOpen(false)}
+          />
+
+          <ProjectManagerModal
+            isOpen={isProjectManagerModalOpen}
+            onClose={() => setIsProjectManagerModalOpen(false)}
+            currentFlowData={{ nodes, edges, globalSettings }}
+            onLoadDiagram={loadData}
+          />
+
           <HeatmapLegend 
             heatmapMode={heatmapSettings.mode} 
             onModeChange={(mode) => setHeatmapSettings(prev => ({ ...prev, mode }))}
@@ -847,5 +872,13 @@ export default function App() {
         />
       </div>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <WalFlowContent />
+    </AuthProvider>
   );
 }

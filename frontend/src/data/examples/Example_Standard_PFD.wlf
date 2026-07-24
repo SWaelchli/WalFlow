@@ -1,9 +1,15 @@
 {
+  "version": "0.1",
+  "app_version": "0.1.0",
+  "format": "walflow",
   "nodes": [
     {
       "id": "main-reservoir",
       "type": "tank",
-      "position": { "x": 0, "y": 150 },
+      "position": {
+        "x": 0,
+        "y": 150
+      },
       "data": {
         "label": "Main Reservoir",
         "level": 1.5,
@@ -15,7 +21,10 @@
     {
       "id": "main-supply-pump",
       "type": "pump",
-      "position": { "x": 150, "y": 150 },
+      "position": {
+        "x": 150,
+        "y": 150
+      },
       "data": {
         "label": "Main Supply Pump",
         "flow_rated_lmin": 150.0,
@@ -26,13 +35,21 @@
     {
       "id": "discharge-splitter",
       "type": "splitter",
-      "position": { "x": 300, "y": 150 },
-      "data": { "label": "Discharge Header" }
+      "position": {
+        "x": 300,
+        "y": 150
+      },
+      "data": {
+        "label": "Discharge Header"
+      }
     },
     {
       "id": "pressure-control-valve",
       "type": "linear_control_valve",
-      "position": { "x": 450, "y": 50 },
+      "position": {
+        "x": 450,
+        "y": 50
+      },
       "data": {
         "label": "Pressure Control Valve",
         "max_cv": 10.0,
@@ -42,13 +59,21 @@
     {
       "id": "supply-distribution-splitter",
       "type": "splitter",
-      "position": { "x": 450, "y": 250 },
-      "data": { "label": "Supply Distribution" }
+      "position": {
+        "x": 450,
+        "y": 250
+      },
+      "data": {
+        "label": "Supply Distribution"
+      }
     },
     {
       "id": "bearing-1-orifice",
       "type": "orifice",
-      "position": { "x": 600, "y": 200 },
+      "position": {
+        "x": 600,
+        "y": 200
+      },
       "data": {
         "label": "Bearing 1 Orifice",
         "pipe_diameter": 0.05,
@@ -58,17 +83,23 @@
     {
       "id": "bearing-2-orifice",
       "type": "orifice",
-      "position": { "x": 600, "y": 300 },
+      "position": {
+        "x": 600,
+        "y": 300
+      },
       "data": {
         "label": "Bearing 2 Orifice",
         "pipe_diameter": 0.05,
-        "orifice_diameter": 0.010
+        "orifice_diameter": 0.01
       }
     },
     {
       "id": "bearing-1-drain",
       "type": "tank",
-      "position": { "x": 750, "y": 200 },
+      "position": {
+        "x": 750,
+        "y": 200
+      },
       "data": {
         "label": "Bearing 1 Drain",
         "level": 0.1,
@@ -80,7 +111,10 @@
     {
       "id": "bearing-2-drain",
       "type": "tank",
-      "position": { "x": 750, "y": 300 },
+      "position": {
+        "x": 750,
+        "y": 300
+      },
       "data": {
         "label": "Bearing 2 Drain",
         "level": 0.1,
@@ -92,7 +126,10 @@
     {
       "id": "return-header-tank",
       "type": "tank",
-      "position": { "x": 750, "y": 50 },
+      "position": {
+        "x": 750,
+        "y": 50
+      },
       "data": {
         "label": "Return Header Sink",
         "level": 0.5,
@@ -109,7 +146,11 @@
       "sourceHandle": "outlet-0",
       "target": "main-supply-pump",
       "targetHandle": "inlet-0",
-      "data": { "label": "Suction Line", "length": 5, "diameter": 0.08 }
+      "data": {
+        "label": "Suction Line",
+        "length": 5,
+        "diameter": 0.08
+      }
     },
     {
       "id": "pipe-discharge",
@@ -117,7 +158,11 @@
       "sourceHandle": "outlet-0",
       "target": "discharge-splitter",
       "targetHandle": "inlet-0",
-      "data": { "label": "Main Discharge", "length": 5, "diameter": 0.05 }
+      "data": {
+        "label": "Main Discharge",
+        "length": 5,
+        "diameter": 0.05
+      }
     },
     {
       "id": "pipe-to-pcv",
@@ -125,7 +170,11 @@
       "sourceHandle": "outlet-0",
       "target": "pressure-control-valve",
       "targetHandle": "inlet-0",
-      "data": { "label": "PCV Supply", "length": 2, "diameter": 0.05 }
+      "data": {
+        "label": "PCV Supply",
+        "length": 2,
+        "diameter": 0.05
+      }
     },
     {
       "id": "pipe-to-distribution",
@@ -133,7 +182,11 @@
       "sourceHandle": "outlet-1",
       "target": "supply-distribution-splitter",
       "targetHandle": "inlet-0",
-      "data": { "label": "Distribution Supply", "length": 10, "diameter": 0.05 }
+      "data": {
+        "label": "Distribution Supply",
+        "length": 10,
+        "diameter": 0.05
+      }
     },
     {
       "id": "pipe-pcv-return",
@@ -141,7 +194,11 @@
       "sourceHandle": "outlet-0",
       "target": "return-header-tank",
       "targetHandle": "inlet-0",
-      "data": { "label": "PCV Return Line", "length": 15, "diameter": 0.05 }
+      "data": {
+        "label": "PCV Return Line",
+        "length": 15,
+        "diameter": 0.05
+      }
     },
     {
       "id": "pipe-brg1-supply",
@@ -149,7 +206,11 @@
       "sourceHandle": "outlet-0",
       "target": "bearing-1-orifice",
       "targetHandle": "inlet-0",
-      "data": { "label": "Bearing 1 Supply", "length": 5, "diameter": 0.025 }
+      "data": {
+        "label": "Bearing 1 Supply",
+        "length": 5,
+        "diameter": 0.025
+      }
     },
     {
       "id": "pipe-brg2-supply",
@@ -157,7 +218,11 @@
       "sourceHandle": "outlet-1",
       "target": "bearing-2-orifice",
       "targetHandle": "inlet-0",
-      "data": { "label": "Bearing 2 Supply", "length": 5, "diameter": 0.025 }
+      "data": {
+        "label": "Bearing 2 Supply",
+        "length": 5,
+        "diameter": 0.025
+      }
     },
     {
       "id": "pipe-brg1-drain",
@@ -165,7 +230,11 @@
       "sourceHandle": "outlet-0",
       "target": "bearing-1-drain",
       "targetHandle": "inlet-0",
-      "data": { "label": "Bearing 1 Drain Line", "length": 5, "diameter": 0.025 }
+      "data": {
+        "label": "Bearing 1 Drain Line",
+        "length": 5,
+        "diameter": 0.025
+      }
     },
     {
       "id": "pipe-brg2-drain",
@@ -173,7 +242,11 @@
       "sourceHandle": "outlet-0",
       "target": "bearing-2-drain",
       "targetHandle": "inlet-0",
-      "data": { "label": "Bearing 2 Drain Line", "length": 5, "diameter": 0.025 }
+      "data": {
+        "label": "Bearing 2 Drain Line",
+        "length": 5,
+        "diameter": 0.025
+      }
     }
   ],
   "globalSettings": {

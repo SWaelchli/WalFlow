@@ -1,9 +1,15 @@
 {
+  "version": "0.1",
+  "app_version": "0.1.0",
+  "format": "walflow",
   "nodes": [
     {
       "id": "source-tank",
       "type": "tank",
-      "position": { "x": 0, "y": 200 },
+      "position": {
+        "x": 0,
+        "y": 200
+      },
       "data": {
         "label": "Source Reservoir",
         "level": 1.0,
@@ -15,7 +21,10 @@
     {
       "id": "main-pump",
       "type": "pump",
-      "position": { "x": 150, "y": 200 },
+      "position": {
+        "x": 150,
+        "y": 200
+      },
       "data": {
         "label": "Main Pump",
         "flow_rated_lmin": 100.0,
@@ -26,13 +35,21 @@
     {
       "id": "supply-manifold",
       "type": "splitter",
-      "position": { "x": 300, "y": 200 },
-      "data": { "label": "Supply Manifold" }
+      "position": {
+        "x": 300,
+        "y": 200
+      },
+      "data": {
+        "label": "Supply Manifold"
+      }
     },
     {
       "id": "bpr-valve",
       "type": "linear_regulator",
-      "position": { "x": 450, "y": 100 },
+      "position": {
+        "x": 450,
+        "y": 100
+      },
       "data": {
         "label": "BPR Valve (Set 4 bar)",
         "max_cv": 5.0,
@@ -43,7 +60,10 @@
     {
       "id": "process-load",
       "type": "orifice",
-      "position": { "x": 450, "y": 300 },
+      "position": {
+        "x": 450,
+        "y": 300
+      },
       "data": {
         "label": "Process Load Orifice",
         "pipe_diameter": 0.0266,
@@ -53,7 +73,10 @@
     {
       "id": "bypass-tank",
       "type": "tank",
-      "position": { "x": 650, "y": 100 },
+      "position": {
+        "x": 650,
+        "y": 100
+      },
       "data": {
         "label": "Bypass Return Tank",
         "level": 0.0,
@@ -64,7 +87,10 @@
     {
       "id": "process-sink",
       "type": "tank",
-      "position": { "x": 650, "y": 300 },
+      "position": {
+        "x": 650,
+        "y": 300
+      },
       "data": {
         "label": "Process Sink Tank",
         "level": 0.0,
@@ -80,7 +106,11 @@
       "sourceHandle": "outlet-0",
       "target": "main-pump",
       "targetHandle": "inlet-0",
-      "data": { "label": "Suction Line", "length": 1, "diameter": 0.0266 }
+      "data": {
+        "label": "Suction Line",
+        "length": 1,
+        "diameter": 0.0266
+      }
     },
     {
       "id": "pipe-pump-discharge",
@@ -88,7 +118,11 @@
       "sourceHandle": "outlet-0",
       "target": "supply-manifold",
       "targetHandle": "inlet-0",
-      "data": { "label": "Pump Discharge", "length": 1, "diameter": 0.0266 }
+      "data": {
+        "label": "Pump Discharge",
+        "length": 1,
+        "diameter": 0.0266
+      }
     },
     {
       "id": "pipe-to-bpr",
@@ -96,7 +130,11 @@
       "sourceHandle": "outlet-0",
       "target": "bpr-valve",
       "targetHandle": "inlet-0",
-      "data": { "label": "Bypass Line", "length": 1, "diameter": 0.0266 }
+      "data": {
+        "label": "Bypass Line",
+        "length": 1,
+        "diameter": 0.0266
+      }
     },
     {
       "id": "pipe-to-process",
@@ -104,7 +142,11 @@
       "sourceHandle": "outlet-1",
       "target": "process-load",
       "targetHandle": "inlet-0",
-      "data": { "label": "Process Supply", "length": 1, "diameter": 0.0266 }
+      "data": {
+        "label": "Process Supply",
+        "length": 1,
+        "diameter": 0.0266
+      }
     },
     {
       "id": "pipe-bpr-return",
@@ -112,7 +154,11 @@
       "sourceHandle": "outlet-0",
       "target": "bypass-tank",
       "targetHandle": "inlet-0",
-      "data": { "label": "Bypass Return", "length": 1, "diameter": 0.0266 }
+      "data": {
+        "label": "Bypass Return",
+        "length": 1,
+        "diameter": 0.0266
+      }
     },
     {
       "id": "pipe-process-return",
@@ -120,7 +166,11 @@
       "sourceHandle": "outlet-0",
       "target": "process-sink",
       "targetHandle": "inlet-0",
-      "data": { "label": "Process Return", "length": 1, "diameter": 0.0266 }
+      "data": {
+        "label": "Process Return",
+        "length": 1,
+        "diameter": 0.0266
+      }
     }
   ],
   "globalSettings": {

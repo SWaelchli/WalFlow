@@ -1,0 +1,36 @@
+services:
+  ############################
+  # WalFlow - Backend Engine
+  ############################
+  walflow-backend:
+    image: ghcr.io/swaelchli/walflow-backend:latest
+    # Or build locally: build: { context: ., dockerfile: Dockerfile.backend }
+    container_name: walflow-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - /docker/walflow/data:/app/backend
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - TZ=${TZ}
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - PYTHONUNBUFFERED=1
+
+  ############################
+  # WalFlow - Frontend & Nginx Proxy
+  ############################
+  walflow-frontend:
+    image: ghcr.io/swaelchli/walflow-frontend:latest
+    # Or build locally: build: { context: ., dockerfile: Dockerfile.frontend }
+    container_name: walflow-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      - walflow-backend
+    environment:
+      - TZ=${TZ}
+      - PUID=${PUID}
+      - PGID=${PGID}

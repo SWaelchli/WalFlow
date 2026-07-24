@@ -11,7 +11,12 @@ export function useWebSocketSimulation({ nodes, edges, setNodes, setEdges, globa
   const [lastStats, setLastStats] = useState(null);
 
   useEffect(() => {
-    const socket = new WebSocket('ws://localhost:8000/ws/simulate');
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port === '5173'
+      ? 'ws://localhost:8000/ws/simulate'
+      : `${protocol}//${window.location.host}/ws/simulate`;
+
+    const socket = new WebSocket(wsUrl);
     ws.current = socket;
 
     socket.onopen = () => {
@@ -32,9 +37,9 @@ export function useWebSocketSimulation({ nodes, edges, setNodes, setEdges, globa
     socket.onmessage = (event) => {
       try {
         const response = JSON.parse(event.data);
-        if (response.type === 'simulation_results') {
+        if (response.status === 'success') {
           setIsSimulating(false);
-          const telemetryData = response.data;
+          const telemetryData = response.telemetry || response.data || {};
           setLastStats(response.stats);
 
           // Update nodes telemetry
@@ -68,6 +73,11 @@ export function useWebSocketSimulation({ nodes, edges, setNodes, setEdges, globa
               return edge;
             })
           );
+        } else if (response.status === 'error') {
+          setIsSimulating(false);
+          alert(`Simulation Engine Error: ${response.message}`);
+        } else {
+          setIsSimulating(false);
         }
       } catch (e) {
         console.error('Failed to parse WebSocket message:', e);
