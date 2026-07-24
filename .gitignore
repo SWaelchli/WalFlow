@@ -1,3 +1,7 @@
 .venv/
 __pycache__/
 GEMINI.md
+*.db
+*.sqlite
+*.sqlite3
+walflow.db

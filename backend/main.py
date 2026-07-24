@@ -9,6 +9,10 @@ from simulation.graph_parser import GraphParser
 from simulation.schemas import ReactFlowGraph
 from simulation.equipment.linear_control_valve import LinearControlValve
 
+from db.database import init_db
+from routers.auth import router as auth_router
+from routers.diagrams import router as diagrams_router
+
 app = FastAPI(title="WalFlow Engine", description="Hydraulic Simulation Backend")
 
 app.add_middleware(
@@ -19,13 +23,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.on_event("startup")
+def on_startup():
+    init_db()
+
+app.include_router(auth_router)
+app.include_router(diagrams_router)
+
 # Global simulation state
 network_instance = None
 solver_instance = None
 
 @app.get("/")
 async def read_root():
-    return {"status": "online", "message": "WalFlow Engine is ready."}
+    return {"status": "online", "message": "WalFlow Engine is ready.", "version": "0.1.0"}
 
 @app.websocket("/ws/simulate")
 async def websocket_endpoint(websocket: WebSocket):
