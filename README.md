@@ -5,6 +5,40 @@ WalFlow is a web-based hydraulic simulator. Drag and drop rotating equipment, va
 
 See [ROADMAP.md](./ROADMAP.md) for planned features and overlay ideas.
 
+---
+
+## 🐳 Production Deployment (Docker Compose)
+
+Deploy WalFlow on a Linux server using pre-built container images from GitHub Container Registry:
+
+```yaml
+services:
+  walflow-backend:
+    image: ghcr.io/swaelchli/walflow-backend:latest
+    container_name: walflow-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - /docker/walflow/data:/app/data
+    environment:
+      - DATABASE_PATH=/app/data/walflow.db
+      - PYTHONUNBUFFERED=1
+
+  walflow-frontend:
+    image: ghcr.io/swaelchli/walflow-frontend:latest
+    container_name: walflow-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      - walflow-backend
+```
+
+Run `docker-compose up -d` and access `http://localhost:5173` (or point your reverse proxy e.g. Nginx to port 5173).
+
+---
+
 
 # App Strategy
 

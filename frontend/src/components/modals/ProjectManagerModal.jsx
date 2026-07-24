@@ -112,49 +112,85 @@ const ProjectManagerModal = ({ isOpen, onClose, currentFlowData, onLoadDiagram }
     <div style={{
       position: 'fixed',
       top: 0, left: 0, right: 0, bottom: 0,
-      backgroundColor: 'rgba(15, 23, 42, 0.85)',
+      backgroundColor: 'rgba(26, 40, 41, 0.75)',
       backdropFilter: 'blur(8px)',
       WebkitBackdropFilter: 'blur(8px)',
       zIndex: 10000,
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '20px'
+      padding: '20px',
+      fontFamily: "var(--font-sans, 'Inter', sans-serif)"
     }}>
       <div style={{
-        backgroundColor: '#1E293B',
-        border: '1px solid #334155',
+        backgroundColor: '#1A2829',
+        color: '#ffffff',
+        border: '1px solid #395253',
         borderRadius: '16px',
         width: '100%',
         maxWidth: '680px',
         maxHeight: '85vh',
         display: 'flex',
         flexDirection: 'column',
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-        overflow: 'hidden'
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(250, 133, 7, 0.15)',
+        overflow: 'hidden',
+        animation: 'walflowFadeIn 0.2s ease-out'
       }}>
+        <style>
+          {`
+            @keyframes walflowFadeIn {
+              from { opacity: 0; transform: scale(0.97); }
+              to { opacity: 1; transform: scale(1); }
+            }
+          `}
+        </style>
+
         {/* Header */}
         <div style={{
-          padding: '20px 28px',
-          borderBottom: '1px solid #334155',
+          padding: '24px 28px 16px 28px',
+          borderBottom: '1px solid #263839',
+          backgroundColor: '#223233',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center'
         }}>
-          <h3 style={{ margin: 0, color: '#F8FAFC', fontSize: '18px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span>☁️</span> Cloud PFD Manager
-          </h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div style={{
+              width: '42px',
+              height: '42px',
+              borderRadius: '12px',
+              background: 'linear-gradient(135deg, #FA8507 0%, #E07600 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '20px',
+              boxShadow: '0 4px 12px rgba(250, 133, 7, 0.3)'
+            }}>
+              ☁️
+            </div>
+            <div>
+              <h3 style={{ margin: 0, color: '#ffffff', fontSize: '18px', fontWeight: '700' }}>
+                Cloud PFD Manager
+              </h3>
+              <p style={{ margin: '2px 0 0 0', color: '#B8C9C8', fontSize: '12px' }}>
+                Save & load diagrams from database server
+              </p>
+            </div>
+          </div>
           <button
             onClick={onClose}
             style={{
-              background: 'none',
+              background: 'transparent',
               border: 'none',
-              color: '#94A3B8',
-              fontSize: '20px',
+              color: '#B8C9C8',
+              fontSize: '22px',
               cursor: 'pointer',
               padding: '4px 8px',
-              borderRadius: '6px'
+              borderRadius: '6px',
+              transition: 'all 0.15s ease'
             }}
+            onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#263839'; e.currentTarget.style.color = '#ffffff'; }}
+            onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#B8C9C8'; }}
           >
             ✕
           </button>
@@ -164,33 +200,36 @@ const ProjectManagerModal = ({ isOpen, onClose, currentFlowData, onLoadDiagram }
         <div style={{ padding: '24px 28px', overflowY: 'auto', flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '24px' }}>
           
           {/* Section 1: Save Active Canvas to DB */}
-          <div style={{ backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '12px', padding: '16px 20px' }}>
-            <h4 style={{ margin: '0 0 12px 0', color: '#FA8507', fontSize: '14px', fontWeight: '700' }}>
-              💾 Save Active Canvas to Server Database
+          <div style={{ backgroundColor: '#223233', border: '1px solid #395253', borderRadius: '12px', padding: '18px 20px' }}>
+            <h4 style={{ margin: '0 0 14px 0', color: '#FA8507', fontSize: '13px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>💾</span> Save Active Canvas to Server Database
             </h4>
-            <form onSubmit={handleSaveCurrentDiagram} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <form onSubmit={handleSaveCurrentDiagram} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                 <div>
-                  <label style={{ display: 'block', color: '#94A3B8', fontSize: '11px', fontWeight: '600', marginBottom: '4px' }}>Title</label>
+                  <label style={{ display: 'block', color: '#B8C9C8', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '6px' }}>Title</label>
                   <input
                     type="text"
                     value={saveTitle}
                     onChange={(e) => setSaveTitle(e.target.value)}
                     style={{
                       width: '100%',
-                      padding: '8px 12px',
-                      borderRadius: '6px',
-                      border: '1px solid #475569',
-                      backgroundColor: '#1E293B',
-                      color: '#F8FAFC',
+                      padding: '9px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid #395253',
+                      backgroundColor: '#1A2829',
+                      color: '#ffffff',
                       fontSize: '13px',
+                      outline: 'none',
                       boxSizing: 'border-box'
                     }}
+                    onFocus={(e) => e.target.style.borderColor = '#FA8507'}
+                    onBlur={(e) => e.target.style.borderColor = '#395253'}
                     required
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', color: '#94A3B8', fontSize: '11px', fontWeight: '600', marginBottom: '4px' }}>Description (optional)</label>
+                  <label style={{ display: 'block', color: '#B8C9C8', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '6px' }}>Description (optional)</label>
                   <input
                     type="text"
                     value={saveDescription}
@@ -198,14 +237,17 @@ const ProjectManagerModal = ({ isOpen, onClose, currentFlowData, onLoadDiagram }
                     placeholder="e.g. 2-pump high pressure loop"
                     style={{
                       width: '100%',
-                      padding: '8px 12px',
-                      borderRadius: '6px',
-                      border: '1px solid #475569',
-                      backgroundColor: '#1E293B',
-                      color: '#F8FAFC',
+                      padding: '9px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid #395253',
+                      backgroundColor: '#1A2829',
+                      color: '#ffffff',
                       fontSize: '13px',
+                      outline: 'none',
                       boxSizing: 'border-box'
                     }}
+                    onFocus={(e) => e.target.style.borderColor = '#FA8507'}
+                    onBlur={(e) => e.target.style.borderColor = '#395253'}
                   />
                 </div>
               </div>
@@ -214,14 +256,15 @@ const ProjectManagerModal = ({ isOpen, onClose, currentFlowData, onLoadDiagram }
                 disabled={isSaving}
                 style={{
                   alignSelf: 'flex-end',
-                  padding: '8px 16px',
-                  borderRadius: '6px',
+                  padding: '9px 18px',
+                  borderRadius: '10px',
                   border: 'none',
-                  backgroundColor: '#FA8507',
+                  background: 'linear-gradient(135deg, #FA8507 0%, #E07600 100%)',
                   color: '#FFFFFF',
                   fontSize: '12px',
                   fontWeight: '700',
-                  cursor: isSaving ? 'not-allowed' : 'pointer'
+                  cursor: isSaving ? 'not-allowed' : 'pointer',
+                  boxShadow: '0 4px 12px rgba(250, 133, 7, 0.3)'
                 }}
               >
                 {isSaving ? 'Saving...' : 'Save to Cloud DB'}
@@ -231,35 +274,35 @@ const ProjectManagerModal = ({ isOpen, onClose, currentFlowData, onLoadDiagram }
 
           {/* Section 2: Saved Projects List */}
           <div>
-            <h4 style={{ margin: '0 0 12px 0', color: '#F8FAFC', fontSize: '14px', fontWeight: '700' }}>
-              📁 Saved Projects on Server
+            <h4 style={{ margin: '0 0 14px 0', color: '#FA8507', fontSize: '13px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>📁</span> Saved Projects on Server
             </h4>
             
             {loading ? (
-              <div style={{ color: '#94A3B8', fontSize: '13px', textAlign: 'center', padding: '20px' }}>⌛ Loading cloud projects...</div>
+              <div style={{ color: '#B8C9C8', fontSize: '13px', textAlign: 'center', padding: '20px' }}>⌛ Loading cloud projects...</div>
             ) : error ? (
-              <div style={{ color: '#FCA5A5', fontSize: '13px', padding: '12px', backgroundColor: 'rgba(239,68,68,0.1)', borderRadius: '8px' }}>{error}</div>
+              <div style={{ color: '#FCA5A5', fontSize: '13px', padding: '12px', backgroundColor: 'rgba(239,68,68,0.15)', borderRadius: '10px', border: '1px solid #EF4444' }}>{error}</div>
             ) : diagrams.length === 0 ? (
-              <div style={{ color: '#64748B', fontSize: '13px', textAlign: 'center', padding: '24px', backgroundColor: '#0F172A', borderRadius: '12px', border: '1px dashed #334155' }}>
+              <div style={{ color: '#B8C9C8', fontSize: '13px', textAlign: 'center', padding: '28px', backgroundColor: '#223233', borderRadius: '12px', border: '1px dashed #395253' }}>
                 No saved cloud projects yet. Use the form above to save your first PFD diagram.
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {diagrams.map(diagram => (
                   <div key={diagram.id} style={{
-                    backgroundColor: '#0F172A',
-                    border: '1px solid #334155',
-                    borderRadius: '10px',
+                    backgroundColor: '#223233',
+                    border: '1px solid #395253',
+                    borderRadius: '12px',
                     padding: '14px 18px',
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center'
                   }}>
                     <div>
-                      <h5 style={{ margin: '0 0 4px 0', color: '#F8FAFC', fontSize: '14px', fontWeight: '700' }}>
+                      <h5 style={{ margin: '0 0 4px 0', color: '#ffffff', fontSize: '14px', fontWeight: '700' }}>
                         {diagram.title}
                       </h5>
-                      <div style={{ color: '#94A3B8', fontSize: '12px' }}>
+                      <div style={{ color: '#B8C9C8', fontSize: '12px' }}>
                         {diagram.description || 'No description'} • Updated {new Date(diagram.updated_at).toLocaleDateString()}
                       </div>
                     </div>
@@ -268,14 +311,15 @@ const ProjectManagerModal = ({ isOpen, onClose, currentFlowData, onLoadDiagram }
                       <button
                         onClick={() => handleLoadDiagram(diagram.id)}
                         style={{
-                          padding: '6px 12px',
-                          borderRadius: '6px',
+                          padding: '6px 14px',
+                          borderRadius: '8px',
                           border: 'none',
-                          backgroundColor: '#FA8507',
+                          background: 'linear-gradient(135deg, #FA8507 0%, #E07600 100%)',
                           color: '#FFFFFF',
                           fontSize: '12px',
                           fontWeight: '700',
-                          cursor: 'pointer'
+                          cursor: 'pointer',
+                          boxShadow: '0 2px 8px rgba(250, 133, 7, 0.3)'
                         }}
                       >
                         Open
@@ -283,12 +327,13 @@ const ProjectManagerModal = ({ isOpen, onClose, currentFlowData, onLoadDiagram }
                       <button
                         onClick={() => handleExportDiagramAsFile(diagram)}
                         style={{
-                          padding: '6px 10px',
-                          borderRadius: '6px',
-                          border: '1px solid #475569',
-                          backgroundColor: '#1E293B',
-                          color: '#CBD5E1',
+                          padding: '6px 12px',
+                          borderRadius: '8px',
+                          border: '1px solid #4A6768',
+                          backgroundColor: '#263839',
+                          color: '#ffffff',
                           fontSize: '12px',
+                          fontWeight: '600',
                           cursor: 'pointer'
                         }}
                         title="Download as .wlf"
@@ -299,9 +344,9 @@ const ProjectManagerModal = ({ isOpen, onClose, currentFlowData, onLoadDiagram }
                         onClick={() => handleDeleteDiagram(diagram.id, diagram.title)}
                         style={{
                           padding: '6px 10px',
-                          borderRadius: '6px',
-                          border: '1px solid rgba(239, 68, 68, 0.4)',
-                          backgroundColor: 'transparent',
+                          borderRadius: '8px',
+                          border: '1px solid #EF4444',
+                          backgroundColor: 'rgba(239, 68, 68, 0.15)',
                           color: '#EF4444',
                           fontSize: '12px',
                           cursor: 'pointer'

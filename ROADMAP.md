@@ -25,16 +25,3 @@ This document outlines planned features, overlays, and enhancements for the WalF
   * **System Resource Monitoring**: Track CPU % consumed by matrix calculations (SciPy/NumPy), RAM usage per active simulation WebSocket, and average solver iteration time (ms) using `psutil`.
   * **Session & User Usage Stats**: Record active connected user count, duration of simulation runs, and historical simulation sessions in the database.
   * **Live Admin Performance Dashboard**: Build an integrated admin dashboard featuring live gauges and historical charts of server compute power and active simulation sessions.
-
----
-
-## 🔐 Admin Hub & Registration Approval Backlog
-
-- [ ] **Admin Account Initialization**:
-  * On initial app deployment and database creation, a default **Admin User** is automatically created in the database.
-- [ ] **Admin Hub Panel**:
-  * Dedicated administrative hub for user management, role assignments, and system telemetry monitoring.
-- [ ] **User Registration Approval Workflow**:
-  * When a new user registers (`POST /api/auth/register`), their account status is set to `pending_approval`.
-  * Admin users have a registration backlog in the Admin Hub where they can **Approve** or **Reject** pending user registrations before the user account is allowed to log in and run simulations.
-

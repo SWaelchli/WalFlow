@@ -12,8 +12,16 @@ from simulation.equipment.linear_control_valve import LinearControlValve
 from db.database import init_db
 from routers.auth import router as auth_router
 from routers.diagrams import router as diagrams_router
+from routers.admin import router as admin_router
 
-app = FastAPI(title="WalFlow Engine", description="Hydraulic Simulation Backend")
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    yield
+
+app = FastAPI(title="WalFlow Engine", description="Hydraulic Simulation Backend", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -28,12 +36,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.on_event("startup")
-def on_startup():
-    init_db()
-
 app.include_router(auth_router)
 app.include_router(diagrams_router)
+app.include_router(admin_router)
 
 # Global simulation state
 network_instance = None

@@ -16,7 +16,8 @@ class User(Base):
     id = Column(String, primary_key=True, default=generate_uuid)
     username = Column(String, unique=True, index=True, nullable=False)
     password_hash = Column(String, nullable=False)
-    created_at = Column(DateTime, default=utc_now)
+    role = Column(String, default="user", nullable=False)
+    status = Column(String, default="approved", nullable=False)
 
     diagrams = relationship("Diagram", back_populates="owner", cascade="all, delete-orphan")
 

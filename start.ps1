@@ -20,10 +20,13 @@ if (Test-Path ".\.venv\Scripts\Activate.ps1") {
 $nodeVer = node -v
 Write-Host "🚀 Ready to go! (Node: $nodeVer)" -ForegroundColor Magenta
 
+$rootDir = $PSScriptRoot
+if (-not $rootDir) { $rootDir = (Get-Location).Path }
+
 # 4. Start the backend in a new window
 Write-Host "Starting Backend in a new window..." -ForegroundColor Green
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "if (Test-Path '.\.venv\Scripts\Activate.ps1') { . .\.venv\Scripts\Activate.ps1 }; cd backend; python main.py"
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "Set-Location '$rootDir'; if (Test-Path '.\.venv\Scripts\Activate.ps1') { . .\.venv\Scripts\Activate.ps1 }; Set-Location '$rootDir\backend'; python main.py"
 
 # 5. Start the frontend in a new window
 Write-Host "Starting Frontend in a new window..." -ForegroundColor Cyan
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd frontend; npm run dev"
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "Set-Location '$rootDir\frontend'; npm run dev"

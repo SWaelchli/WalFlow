@@ -31,6 +31,20 @@ def get_db():
         db.close()
 
 
+from sqlalchemy import inspect, text
+
 def init_db():
-    """Initializes all database tables defined in SQLAlchemy ORM models."""
+    """Initializes all database tables defined in SQLAlchemy ORM models and runs light migrations."""
     Base.metadata.create_all(bind=engine)
+    
+    # Check if role and status columns exist in users table
+    with engine.connect() as conn:
+        inspector = inspect(engine)
+        if "users" in inspector.get_table_names():
+            columns = [c["name"] for c in inspector.get_columns("users")]
+            if "role" not in columns:
+                conn.execute(text("ALTER TABLE users ADD COLUMN role VARCHAR DEFAULT 'user'"))
+            if "status" not in columns:
+                conn.execute(text("ALTER TABLE users ADD COLUMN status VARCHAR DEFAULT 'approved'"))
+            conn.commit()
+

@@ -34,7 +34,10 @@ import HeatmapLegend from './components/overlays/HeatmapLegend';
 import HelpInfoModal from './components/modals/HelpInfoModal';
 import LoginModal from './components/modals/LoginModal';
 import ProjectManagerModal from './components/modals/ProjectManagerModal';
+import AdminSetupModal from './components/modals/AdminSetupModal';
+import AdminHubModal from './components/modals/AdminHubModal';
 import { AuthProvider } from './context/AuthProvider';
+import { useAuth } from './hooks/useAuth';
 
 import { useWebSocketSimulation } from './hooks/useWebSocketSimulation';
 import { useCanvasHistory } from './hooks/useCanvasHistory';
@@ -75,6 +78,7 @@ const edgeTypes = {
 const getId = () => `node_${crypto.randomUUID().split('-')[0]}`;
 
 function WalFlowContent() {
+  const { adminStatus } = useAuth();
   const reactFlowWrapper = useRef(null);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   
@@ -85,8 +89,15 @@ function WalFlowContent() {
   const [edges, setEdges] = useEdgesState([]);
   const [edgeIdCount, setEdgeIdCount] = useState(100);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
+  const [helpModalInitialTab, setHelpModalInitialTab] = useState('shortcuts');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isProjectManagerModalOpen, setIsProjectManagerModalOpen] = useState(false);
+  const [isAdminHubOpen, setIsAdminHubOpen] = useState(false);
+
+  const handleOpenHelpModal = (tab = 'shortcuts') => {
+    setHelpModalInitialTab(tab);
+    setIsHelpModalOpen(true);
+  };
   const dragCounter = useRef(0);
   const [isFileDragging, setIsFileDragging] = useState(false);
 
@@ -700,6 +711,8 @@ function WalFlowContent() {
         }}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
         onOpenProjectsModal={() => setIsProjectManagerModalOpen(true)}
+        onOpenAdminHub={() => setIsAdminHubOpen(true)}
+        onOpenHelpModal={(tab) => handleOpenHelpModal(tab || 'about')}
         onLogoutClear={resetCanvas}
       />
 
@@ -804,7 +817,7 @@ function WalFlowContent() {
                 🎨
               </ControlButton>
               <ControlButton 
-                onClick={() => setIsHelpModalOpen(true)}
+                onClick={() => handleOpenHelpModal('shortcuts')}
                 title="Help & Information (?)"
                 style={{
                   backgroundColor: '#ffffff',
@@ -824,6 +837,7 @@ function WalFlowContent() {
           <HelpInfoModal 
             isOpen={isHelpModalOpen} 
             onClose={() => setIsHelpModalOpen(false)} 
+            initialTab={helpModalInitialTab}
           />
 
           <LoginModal 
@@ -835,6 +849,17 @@ function WalFlowContent() {
             isOpen={isProjectManagerModalOpen}
             onClose={() => setIsProjectManagerModalOpen(false)}
             currentFlowData={{ nodes, edges, globalSettings }}
+            onLoadDiagram={loadData}
+          />
+
+          <AdminSetupModal
+            isOpen={!adminStatus.adminExists}
+            onClose={() => {}}
+          />
+
+          <AdminHubModal
+            isOpen={isAdminHubOpen}
+            onClose={() => setIsAdminHubOpen(false)}
             onLoadDiagram={loadData}
           />
 

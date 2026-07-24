@@ -260,8 +260,8 @@ function CollapsibleScenarios({ templates, onLoad }) {
   );
 }
 
-export default function Sidebar({ onSave, onLoad, onClear, onCalculate, isSimulating, globalSettings, onUpdateGlobalSettings, templates, lastStats, onOpenAuthModal, onOpenProjectsModal, onLogoutClear }) {
-  const { currentUser, isAuthenticated, logout } = useAuth();
+export default function Sidebar({ onSave, onLoad, onClear, onCalculate, isSimulating, globalSettings, onUpdateGlobalSettings, templates, lastStats, onOpenAuthModal, onOpenProjectsModal, onOpenAdminHub, onOpenHelpModal, onLogoutClear }) {
+  const { currentUser, isAuthenticated, isAdmin, adminStatus, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('library');
 
   const handleUserLogout = () => {
@@ -313,56 +313,83 @@ export default function Sidebar({ onSave, onLoad, onClear, onCalculate, isSimula
       padding: '20px', display: 'flex', flexDirection: 'column', gap: '18px',
       overflowY: 'auto', zIndex: 10, position: 'relative', boxShadow: '2px 0 12px rgba(57,82,83,0.03)'
     }}>
-      <div style={{ padding: '4px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${theme.slate100}`, paddingBottom: '14px' }}>
-        <img src={walflowLogo} alt="WälFlow Logo" style={{ height: '32px' }} />
-        
+      <div style={{ padding: '2px 0 10px 0', borderBottom: `1px solid ${theme.slate100}` }}>
+        <img
+          src={walflowLogo}
+          alt="WälFlow Logo"
+          onClick={() => onOpenHelpModal && onOpenHelpModal('about')}
+          title="Click for Help & Documentation"
+          style={{ height: '32px', display: 'block', cursor: 'pointer' }}
+        />
+      </div>
+
+      <div style={{
+        backgroundColor: isAuthenticated ? (isAdmin ? 'rgba(250, 133, 7, 0.06)' : theme.slate50) : 'transparent',
+        border: `1px solid ${isAuthenticated ? (isAdmin ? 'rgba(250, 133, 7, 0.25)' : theme.slate200) : theme.primary}`,
+        borderRadius: '8px',
+        padding: '3px 10px',
+        minHeight: '28px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginTop: '-10px',
+        marginBottom: '-6px'
+      }}>
         {isAuthenticated ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span
-              style={{
-                fontSize: '11px',
-                fontWeight: '700',
-                backgroundColor: theme.slate100,
-                color: theme.slate800,
-                padding: '4px 8px',
-                borderRadius: '12px',
-                border: `1px solid ${theme.slate200}`
-              }}
-              title={`Logged in as ${currentUser?.username}`}
-            >
-              👤 {currentUser?.username}
+          <>
+            <span style={{
+              fontSize: '11px',
+              fontWeight: '700',
+              color: isAdmin ? '#FA8507' : theme.slate800,
+              whiteSpace: 'nowrap',
+              textOverflow: 'ellipsis',
+              overflow: 'hidden'
+            }}>
+              {isAdmin ? '👑' : '👤'} {currentUser?.username}
             </span>
+
             <button
               onClick={handleUserLogout}
               title="Sign Out"
               style={{
+                backgroundColor: 'transparent',
                 border: 'none',
-                background: 'transparent',
-                color: theme.slate500,
+                color: '#EF4444',
                 cursor: 'pointer',
-                fontSize: '14px',
-                padding: '4px'
+                fontSize: '10px',
+                fontWeight: '700',
+                padding: '2px 6px',
+                borderRadius: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '3px',
+                transition: 'background-color 0.15s ease'
               }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             >
-              🚪
+              <span>🚪</span> Log Out
             </button>
-          </div>
+          </>
         ) : (
           <button
             onClick={onOpenAuthModal}
             style={{
-              padding: '6px 12px',
-              borderRadius: '16px',
-              border: `1px solid ${theme.primary}`,
+              width: '100%',
               backgroundColor: 'transparent',
+              border: 'none',
               color: theme.primary,
               fontSize: '11px',
               fontWeight: '700',
               cursor: 'pointer',
-              transition: 'all 0.15s ease'
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              padding: '2px 0'
             }}
           >
-            🔒 Sign In
+            🔒 Sign In to Account
           </button>
         )}
       </div>
@@ -388,6 +415,34 @@ export default function Sidebar({ onSave, onLoad, onClear, onCalculate, isSimula
           {isSimulating ? '⌛ Simulating Flow...' : '▶ Run Simulation'}
         </button>
         
+        {isAdmin && (
+          <button
+            onClick={onOpenAdminHub}
+            style={{
+              ...btnStyle,
+              background: 'linear-gradient(135deg, #1E293B 0%, #0F172A 100%)',
+              color: '#FA8507',
+              border: '1px solid #FA8507',
+              boxShadow: '0 4px 12px rgba(250, 133, 7, 0.2)'
+            }}
+          >
+            👑 Admin Hub
+            {adminStatus?.pendingCount > 0 && (
+              <span style={{
+                backgroundColor: '#EF4444',
+                color: '#FFFFFF',
+                borderRadius: '10px',
+                padding: '2px 6px',
+                fontSize: '10px',
+                fontWeight: '800',
+                marginLeft: '4px'
+              }}>
+                {adminStatus.pendingCount}
+              </span>
+            )}
+          </button>
+        )}
+
         <button
           onClick={() => {
             if (isAuthenticated) {
@@ -409,8 +464,8 @@ export default function Sidebar({ onSave, onLoad, onClear, onCalculate, isSimula
         </button>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-          <button onClick={onSave} style={{ ...btnStyle, background: theme.slate50, color: theme.slate800, border: `1px solid ${theme.slate200}` }} onMouseEnter={(e) => e.currentTarget.style.background = theme.slate100} onMouseLeave={(e) => e.currentTarget.style.background = theme.slate50}>💾 Export .wlf</button>
-          <button onClick={() => document.getElementById('file-upload').click()} style={{ ...btnStyle, background: theme.slate50, color: theme.slate800, border: `1px solid ${theme.slate200}` }} onMouseEnter={(e) => e.currentTarget.style.background = theme.slate100} onMouseLeave={(e) => e.currentTarget.style.background = theme.slate50}>📂 Import .wlf</button>
+          <button onClick={onSave} style={{ ...btnStyle, background: theme.slate50, color: theme.slate800, border: `1px solid ${theme.slate200}` }} onMouseEnter={(e) => e.currentTarget.style.background = theme.slate100} onMouseLeave={(e) => e.currentTarget.style.background = theme.slate50}>💾 Export</button>
+          <button onClick={() => document.getElementById('file-upload').click()} style={{ ...btnStyle, background: theme.slate50, color: theme.slate800, border: `1px solid ${theme.slate200}` }} onMouseEnter={(e) => e.currentTarget.style.background = theme.slate100} onMouseLeave={(e) => e.currentTarget.style.background = theme.slate50}>📂 Import</button>
         </div>
         
         <button onClick={onClear} style={{ ...btnStyle, background: 'transparent', color: '#ef4444', border: '1px solid #fee2e2' }} onMouseEnter={(e) => e.currentTarget.style.background = '#fef2f2'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>🗑 Clear Canvas</button>

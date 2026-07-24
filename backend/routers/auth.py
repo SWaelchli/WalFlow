@@ -19,9 +19,47 @@ class UserLoginSchema(BaseModel):
 class UserResponseSchema(BaseModel):
     id: str
     username: str
+    role: str
+    status: str
 
     class Config:
         from_attributes = True
+
+@router.get("/admin-status")
+def get_admin_status(db: Session = Depends(get_db)):
+    admin_exists = db.query(User).filter(User.role == "admin").first() is not None
+    pending_count = db.query(User).filter(User.status == "pending_approval").count()
+    return {
+        "admin_exists": admin_exists,
+        "pending_count": pending_count
+    }
+
+@router.post("/setup-admin", response_model=UserResponseSchema, status_code=status.HTTP_201_CREATED)
+def setup_first_admin(payload: UserRegisterSchema, db: Session = Depends(get_db)):
+    admin_exists = db.query(User).filter(User.role == "admin").first() is not None
+    if admin_exists:
+        raise HTTPException(status_code=400, detail="An administrator account already exists.")
+
+    clean_username = payload.username.strip()
+    if len(clean_username) < 3:
+        raise HTTPException(status_code=400, detail="Username must be at least 3 characters.")
+    if len(payload.password) < 4:
+        raise HTTPException(status_code=400, detail="Password must be at least 4 characters.")
+
+    existing_user = db.query(User).filter(User.username == clean_username).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Username already exists.")
+
+    admin_user = User(
+        username=clean_username,
+        password_hash=hash_password(payload.password),
+        role="admin",
+        status="approved"
+    )
+    db.add(admin_user)
+    db.commit()
+    db.refresh(admin_user)
+    return admin_user
 
 @router.post("/register", response_model=UserResponseSchema, status_code=status.HTTP_201_CREATED)
 def register_user(payload: UserRegisterSchema, db: Session = Depends(get_db)):
@@ -35,9 +73,17 @@ def register_user(payload: UserRegisterSchema, db: Session = Depends(get_db)):
     if existing_user:
         raise HTTPException(status_code=400, detail="Username already exists.")
 
+    admin_exists = db.query(User).filter(User.role == "admin").first() is not None
+    
+    # If no admin exists yet, make this user the admin & approve. Otherwise, user is pending approval.
+    initial_role = "admin" if not admin_exists else "user"
+    initial_status = "approved" if not admin_exists else "pending_approval"
+
     new_user = User(
         username=clean_username,
-        password_hash=hash_password(payload.password)
+        password_hash=hash_password(payload.password),
+        role=initial_role,
+        status=initial_status
     )
     db.add(new_user)
     db.commit()
@@ -55,7 +101,18 @@ def login_user(payload: UserLoginSchema, response: Response, db: Session = Depen
             detail="Incorrect username or password"
         )
 
-    token = create_access_token(data={"sub": user.id, "username": user.username})
+    if user.status == "pending_approval":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account registration is pending administrator approval."
+        )
+    elif user.status == "rejected":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account registration was rejected by an administrator."
+        )
+
+    token = create_access_token(data={"sub": user.id, "username": user.username, "role": user.role})
 
     # Set HttpOnly cookie for browser security
     response.set_cookie(
@@ -72,7 +129,9 @@ def login_user(payload: UserLoginSchema, response: Response, db: Session = Depen
         "token_type": "bearer",
         "user": {
             "id": user.id,
-            "username": user.username
+            "username": user.username,
+            "role": user.role,
+            "status": user.status
         }
     }
 

@@ -24,8 +24,20 @@ const SHORTCUT_GROUPS = [
   },
 ];
 
-export default function HelpInfoModal({ isOpen, onClose }) {
-  const [activeTab, setActiveTab] = useState('shortcuts');
+export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts' }) {
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  // Sync activeTab when modal transitions from closed to open or initialTab changes
+  const [prevIsOpen, setPrevIsOpen] = useState(false);
+  const [prevInitialTab, setPrevInitialTab] = useState(initialTab);
+
+  if (isOpen !== prevIsOpen || (isOpen && initialTab !== prevInitialTab)) {
+    setPrevIsOpen(isOpen);
+    setPrevInitialTab(initialTab);
+    if (isOpen) {
+      setActiveTab(initialTab);
+    }
+  }
 
   if (!isOpen) return null;
 
@@ -209,16 +221,16 @@ export default function HelpInfoModal({ isOpen, onClose }) {
             ⌨️ Keyboard Shortcuts
           </button>
           <button
-            className={`walflow-tab-btn ${activeTab === 'about' ? 'active' : ''}`}
-            onClick={() => setActiveTab('about')}
-          >
-            💡 About & Copyright
-          </button>
-          <button
             className={`walflow-tab-btn ${activeTab === 'guide' ? 'active' : ''}`}
             onClick={() => setActiveTab('guide')}
           >
             📖 User Guide
+          </button>
+          <button
+            className={`walflow-tab-btn ${activeTab === 'about' ? 'active' : ''}`}
+            onClick={() => setActiveTab('about')}
+          >
+            💡 About & Copyright
           </button>
         </div>
 
