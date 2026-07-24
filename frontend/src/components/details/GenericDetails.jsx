@@ -1,5 +1,5 @@
 import React from 'react';
-import { paToBar, m3sToLmin } from '../utils/converters';
+import { paToBar, m3sToLmin } from '../../utils/converters';
 
 export default function GenericDetails({ node }) {
   const data = node.data;

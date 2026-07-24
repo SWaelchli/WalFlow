@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { mToMm, mmToM } from './utils/converters';
-import { ASME_PIPE_STANDARDS, calculatePipeId, findClosestPipeMatch } from './utils/standards_library';
+import { mToMm, mmToM } from '../../utils/converters';
+import { ASME_PIPE_STANDARDS, calculatePipeId, findClosestPipeMatch } from '../../utils/standards_library';
 
 /**
  * PipeSelector component.

@@ -2,7 +2,7 @@ import React, { useMemo, memo } from 'react';
 import { 
   ComposedChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Scatter, Legend
 } from 'recharts';
-import { m3sToLmin } from '../utils/converters';
+import { m3sToLmin } from '../../utils/converters';
 
 const FilterDetails = memo(function FilterDetails({ node }) {
   const { dp_clean, dp_terminal, flow_ref, clogging, telemetry } = node.data;

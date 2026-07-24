@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import PumpDetails from './details/PumpDetails';
-import ValveDetails from './details/ValveDetails';
-import FilterDetails from './details/FilterDetails';
-import OrificeDetails from './details/OrificeDetails';
-import JunctionDetails from './details/JunctionDetails';
-import GenericDetails from './details/GenericDetails';
+import PumpDetails from './PumpDetails';
+import ValveDetails from './ValveDetails';
+import FilterDetails from './FilterDetails';
+import OrificeDetails from './OrificeDetails';
+import JunctionDetails from './JunctionDetails';
+import GenericDetails from './GenericDetails';
 
 export default function DetailPanel({ selectedNode, allNodes, allEdges }) {
   const [isCollapsed, setIsCollapsed] = useState(false);

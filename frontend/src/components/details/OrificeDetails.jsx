@@ -2,7 +2,7 @@ import React, { useMemo, memo } from 'react';
 import { 
   ComposedChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Scatter, Legend
 } from 'recharts';
-import { m3sToLmin } from '../utils/converters';
+import { m3sToLmin } from '../../utils/converters';
 
 const calculateDp = (qM3s, density, D, d, beta) => {
   if (D <= 0 || d <= 0) return 0;

@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Sankey, ResponsiveContainer, Tooltip, Layer, Rectangle } from 'recharts';
-import { m3sToLmin } from '../utils/converters';
+import { m3sToLmin } from '../../utils/converters';
 
 const theme = {
   primary: '#2563eb',

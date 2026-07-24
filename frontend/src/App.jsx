@@ -1,14 +1,15 @@
 import ReactFlow, { 
   Background, 
-  Controls,
-  ControlButton,
+  Controls, 
+  ControlButton, 
   useNodesState, 
-  useEdgesState,
-  addEdge,
-  applyEdgeChanges
+  useEdgesState, 
+  addEdge, 
+  applyEdgeChanges 
 } from 'reactflow';
 import 'reactflow/dist/style.css'; 
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+
 import TankNode from './nodes/TankNode';
 import CentrifugalPumpNode from './nodes/CentrifugalPumpNode';
 import VolumetricPumpNode from './nodes/VolumetricPumpNode';
@@ -22,23 +23,27 @@ import MixerNode from './nodes/MixerNode';
 import RemoteControlValveNode from './nodes/RemoteControlValveNode';
 import ThreeWayTCVNode from './nodes/ThreeWayTCVNode';
 
-import Sidebar from './Sidebar';
-import PropertyEditor from './PropertyEditor';
-import DetailPanel from './DetailPanel';
-import DataList from './DataList';
+import Sidebar from './components/panels/Sidebar';
+import PropertyEditor from './components/panels/PropertyEditor';
+import DataList from './components/panels/DataList';
+import DetailPanel from './components/details/DetailPanel';
 
 import PipeEdge from './edges/PipeEdge';
 import SignalEdge from './edges/SignalEdge';
-import HeatmapLegend from './components/HeatmapLegend';
-import HelpInfoModal from './components/HelpInfoModal';
+import HeatmapLegend from './components/overlays/HeatmapLegend';
+import HelpInfoModal from './components/modals/HelpInfoModal';
+
+import { useWebSocketSimulation } from './hooks/useWebSocketSimulation';
+import { useCanvasHistory } from './hooks/useCanvasHistory';
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 
 // Import Examples
-import examplePFD from './example_pfd/Example_Standard_PFD.json';
-import examplePRV from './example_pfd/Example_PRV.json';
-import exampleBPR from './example_pfd/Example_BPR.json';
-import exampleRemoteControl from './example_pfd/Example_RemoteControl.json';
-import exampleAPI614 from './example_pfd/Example_API_614_LOS.json';
-import exampleVolumetric from './example_pfd/Example_Volumetric.json';
+import examplePFD from './data/examples/Example_Standard_PFD.json';
+import examplePRV from './data/examples/Example_PRV.json';
+import exampleBPR from './data/examples/Example_BPR.json';
+import exampleRemoteControl from './data/examples/Example_RemoteControl.json';
+import exampleAPI614 from './data/examples/Example_API_614_LOS.json';
+import exampleVolumetric from './data/examples/Example_Volumetric.json';
 
 const nodeTypes = {
   tank: TankNode,
@@ -67,7 +72,6 @@ const getId = () => `node_${crypto.randomUUID().split('-')[0]}`;
 export default function App() {
   const reactFlowWrapper = useRef(null);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
-  const ws = useRef(null);
   
   const [selectedNode, setSelectedNode] = useState(null);
   const [selectedEdge, setSelectedEdge] = useState(null);
@@ -75,15 +79,9 @@ export default function App() {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges] = useEdgesState([]);
   const [edgeIdCount, setEdgeIdCount] = useState(100);
-  const [isSimulating, setIsSimulating] = useState(false);
-  const [isConnected, setIsConnected] = useState(false);
-  const [lastStats, setLastStats] = useState(null);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
 
   const clipboardRef = useRef({ nodes: [], edges: [] });
-  const historyStack = useRef([]);
-  const historyIndex = useRef(-1);
-  const isRestoringHistory = useRef(false);
   const [globalSettings, setGlobalSettings] = useState({
     fluid_type: 'water',
     ambient_temperature: 293.15,
@@ -96,7 +94,7 @@ export default function App() {
     solver_method: 'hybr'
   });
 
-  // Global UI Fix
+  // Global UI Body Fix
   useEffect(() => {
     document.body.style.margin = '0';
     document.body.style.padding = '0';
@@ -104,31 +102,6 @@ export default function App() {
     document.body.style.width = '100vw';
     document.body.style.height = '100vh';
   }, []);
-
-  const runSimulation = useCallback(() => {
-    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-      setIsSimulating(true);
-      ws.current.send(JSON.stringify({ 
-        action: 'run_simulation',
-        graph: { nodes, edges, global_settings: globalSettings }
-      }));
-    }
-  }, [nodes, edges, globalSettings]);
-
-  const handleValveChange = useCallback((newValue, nodeId) => {
-    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-      ws.current.send(JSON.stringify({
-        action: 'update_valve',
-        value: parseFloat(newValue),
-        node_id: nodeId
-      }));
-    }
-    setNodes((nds) =>
-      nds.map((node) =>
-        node.id === nodeId ? { ...node, data: { ...node.data, opening: newValue } } : node
-      )
-    );
-  }, [setNodes]);
 
   const handleRotation = useCallback((nodeId) => {
     setNodes((nds) =>
@@ -143,82 +116,33 @@ export default function App() {
     );
   }, [setNodes]);
 
-  const pushHistorySnapshot = useCallback((nodesState, edgesState) => {
-    if (isRestoringHistory.current) return;
-    const cleanNodes = (nodesState || []).map(({ data, ...rest }) => {
-      const { telemetry: _telemetry, onRotate: _onRotate, onChange: _onChange, ...restData } = data || {};
-      return { ...rest, data: restData };
-    });
-    const cleanEdges = (edgesState || []).map(({ data, ...rest }) => {
-      const { telemetry: _telemetry, ...restData } = data || {};
-      return { ...rest, data: restData };
-    });
+  // WebSocket custom hook
+  const {
+    ws,
+    isSimulating,
+    isConnected,
+    lastStats,
+    runSimulation,
+    handleValveChange,
+  } = useWebSocketSimulation({
+    nodes,
+    edges,
+    setNodes,
+    setEdges,
+    globalSettings,
+  });
 
-    const snapshot = {
-      nodes: JSON.parse(JSON.stringify(cleanNodes)),
-      edges: JSON.parse(JSON.stringify(cleanEdges)),
-    };
+  // History stack hook
+  const { pushHistorySnapshot, undo, redo } = useCanvasHistory({
+    setNodes,
+    setEdges,
+    setSelectedNode,
+    setSelectedEdge,
+    handleRotation,
+    handleValveChange,
+  });
 
-    const newStack = historyStack.current.slice(0, historyIndex.current + 1);
-    newStack.push(snapshot);
-    if (newStack.length > 50) newStack.shift();
-
-    historyStack.current = newStack;
-    historyIndex.current = newStack.length - 1;
-  }, []);
-
-  const undo = useCallback(() => {
-    if (historyIndex.current > 0) {
-      historyIndex.current -= 1;
-      const snapshot = historyStack.current[historyIndex.current];
-      if (snapshot) {
-        isRestoringHistory.current = true;
-        const restoredNodes = snapshot.nodes.map((node) => ({
-          ...node,
-          data: {
-            ...node.data,
-            rotation: node.data.rotation || 0,
-            onRotate: handleRotation,
-            onChange: (node.type === 'linear_control_valve' || node.type === 'remote_control_valve') ? handleValveChange : undefined,
-          },
-        }));
-        setNodes(restoredNodes);
-        setEdges(snapshot.edges);
-        setSelectedNode(null);
-        setSelectedEdge(null);
-        setTimeout(() => {
-          isRestoringHistory.current = false;
-        }, 50);
-      }
-    }
-  }, [handleRotation, handleValveChange, setNodes, setEdges]);
-
-  const redo = useCallback(() => {
-    if (historyIndex.current < historyStack.current.length - 1) {
-      historyIndex.current += 1;
-      const snapshot = historyStack.current[historyIndex.current];
-      if (snapshot) {
-        isRestoringHistory.current = true;
-        const restoredNodes = snapshot.nodes.map((node) => ({
-          ...node,
-          data: {
-            ...node.data,
-            rotation: node.data.rotation || 0,
-            onRotate: handleRotation,
-            onChange: (node.type === 'linear_control_valve' || node.type === 'remote_control_valve') ? handleValveChange : undefined,
-          },
-        }));
-        setNodes(restoredNodes);
-        setEdges(snapshot.edges);
-        setSelectedNode(null);
-        setSelectedEdge(null);
-        setTimeout(() => {
-          isRestoringHistory.current = false;
-        }, 50);
-      }
-    }
-  }, [handleRotation, handleValveChange, setNodes, setEdges]);
-
+  // Copy / Paste / Actions
   const copySelected = useCallback(() => {
     const selectedNodesList = nodes.filter((n) => n.selected || (selectedNode && n.id === selectedNode.id));
     const selectedNodeIds = new Set(selectedNodesList.map((n) => n.id));
@@ -357,150 +281,38 @@ export default function App() {
     setSelectedEdge(null);
   }, [setNodes, setEdges]);
 
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      const activeEl = document.activeElement;
-      const isInputActive =
-        activeEl &&
-        (activeEl.tagName === 'INPUT' ||
-          activeEl.tagName === 'TEXTAREA' ||
-          activeEl.tagName === 'SELECT' ||
-          activeEl.isContentEditable);
-
-      if (isInputActive) {
-        return;
-      }
-
-      const isMod = e.ctrlKey || e.metaKey;
-      const key = e.key.toLowerCase();
-
-      // Copy: Ctrl + C
-      if (isMod && key === 'c') {
-        e.preventDefault();
-        copySelected();
-        return;
-      }
-
-      // Paste: Ctrl + V
-      if (isMod && key === 'v') {
-        e.preventDefault();
-        pasteCopied();
-        return;
-      }
-
-      // Duplicate: Ctrl + D
-      if (isMod && key === 'd') {
-        e.preventDefault();
-        duplicateSelected();
-        return;
-      }
-
-      // Select All: Ctrl + A
-      if (isMod && key === 'a') {
-        e.preventDefault();
-        selectAllNodes();
-        return;
-      }
-
-      // Undo: Ctrl + Z (without Shift)
-      if (isMod && key === 'z' && !e.shiftKey) {
-        e.preventDefault();
-        undo();
-        return;
-      }
-
-      // Redo: Ctrl + Y or Ctrl + Shift + Z
-      if ((isMod && key === 'y') || (isMod && key === 'z' && e.shiftKey)) {
-        e.preventDefault();
-        redo();
-        return;
-      }
-
-      // Delete: Delete / Backspace
-      if (e.key === 'Delete' || e.key === 'Backspace') {
-        e.preventDefault();
-        deleteSelected();
-        return;
-      }
-
-      // Rotate: R
-      if (!isMod && key === 'r') {
-        e.preventDefault();
-        rotateSelectedNode();
-        return;
-      }
-
-      // Deselect / Close Modal: Escape
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        deselectAll();
-        setIsHelpModalOpen(false);
-        return;
-      }
-
-      // Toggle Help: ? or Shift + /
-      if (e.key === '?' || (e.shiftKey && e.key === '/')) {
-        e.preventDefault();
-        setIsHelpModalOpen((prev) => !prev);
-        return;
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [
+  // Register Keyboard Shortcuts
+  useKeyboardShortcuts({
     copySelected,
     pasteCopied,
     duplicateSelected,
-    selectAllNodes,
-    undo,
-    redo,
     deleteSelected,
+    selectAllNodes,
     rotateSelectedNode,
     deselectAll,
-  ]);
+    undo,
+    redo,
+  });
 
-  const selectNodeById = useCallback((id) => {
-    setNodes((nds) => {
-      const updated = nds.map((n) => ({ ...n, selected: n.id === id }));
-      const found = updated.find(n => n.id === id);
-      if (found) {
-        setSelectedNode(found);
-        setSelectedEdge(null);
-      }
-      return updated;
-    });
-    setEdges((eds) => eds.map((e) => ({ ...e, selected: false, style: {} })));
-  }, [setNodes, setEdges]);
+  const selectNodeById = useCallback((nodeId) => {
+    const targetNode = nodes.find(n => n.id === nodeId);
+    if (targetNode) {
+      setSelectedNode(targetNode);
+      setSelectedEdge(null);
+      setNodes((nds) => nds.map((n) => ({ ...n, selected: n.id === nodeId })));
+      setEdges((eds) => eds.map((e) => ({ ...e, selected: false })));
+    }
+  }, [nodes, setNodes, setEdges]);
 
-  const selectEdgeById = useCallback((id) => {
-    setEdges((eds) => {
-      const updated = eds.map((e) => {
-        const isSelected = e.id === id;
-        const isSignal = e.data?.type === 'SIGNAL';
-
-        let style = {};
-        if (isSelected) {
-          style = { stroke: '#3b82f6', strokeWidth: 3 };
-        } else if (isSignal) {
-          style = { stroke: '#fde047', strokeWidth: 3, strokeDasharray: '5,5' };
-        }
-
-        return { 
-          ...e, 
-          selected: isSelected,
-          style: style
-        };
-      });
-      const found = updated.find(e => e.id === id);
-      if (found) {
-        setSelectedEdge(found);
-        setSelectedNode(null);
-      }
-      return updated;
-    });
-    setNodes((nds) => nds.map((n) => ({ ...n, selected: false })));
-  }, [setNodes, setEdges]);
+  const selectEdgeById = useCallback((edgeId) => {
+    const targetEdge = edges.find(e => e.id === edgeId);
+    if (targetEdge) {
+      setSelectedEdge(targetEdge);
+      setSelectedNode(null);
+      setEdges((eds) => eds.map((e) => ({ ...e, selected: e.id === edgeId })));
+      setNodes((nds) => nds.map((n) => ({ ...n, selected: false })));
+    }
+  }, [edges, setNodes, setEdges]);
 
   const onEdgesChangeCustom = useCallback(
     (changes) => setEdges((eds) => {
@@ -708,63 +520,6 @@ export default function App() {
   }, [setNodes, setEdges]);
 
   useEffect(() => {
-    let socket = null;
-    let reconnectTimeout = null;
-
-    const connect = () => {
-      socket = new WebSocket('ws://localhost:8000/ws/simulate');
-      ws.current = socket;
-
-      socket.onopen = () => {
-        console.log('Connected to Python WalFlow Engine!');
-        setIsConnected(true);
-      };
-
-      socket.onclose = () => {
-        console.log('Disconnected from Python WalFlow Engine');
-        setIsConnected(false);
-        reconnectTimeout = setTimeout(connect, 3000);
-      };
-
-      socket.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        if (data.status === 'success') {
-          setIsSimulating(false);
-          if (data.stats) setLastStats(data.stats);
-          if (data.telemetry && data.telemetry.nodes) {
-            setNodes((nds) => nds.map((node) => {
-              const nodeTele = data.telemetry.nodes[node.id];
-              if (!nodeTele) return node;
-              
-              const newData = { ...node.data, telemetry: nodeTele };
-              if (nodeTele.opening_pct !== undefined) newData.opening = nodeTele.opening_pct;
-              return { ...node, data: newData };
-            }));
-          }
-
-          if (data.telemetry && data.telemetry.edges) {
-            setEdges((eds) => eds.map((edge) => {
-              const edgeTele = data.telemetry.edges[edge.id];
-              if (!edgeTele) return edge;
-              return { ...edge, data: { ...edge.data, telemetry: edgeTele } };
-            }));
-          }
-        } else if (data.status === 'error') {
-          setIsSimulating(false);
-          alert(`Simulation Error: ${data.message}`);
-        }
-      };
-    };
-
-    connect();
-
-    return () => {
-      if (socket) socket.close();
-      if (reconnectTimeout) clearTimeout(reconnectTimeout);
-    };
-  }, [setNodes, setEdges]);
-
-  useEffect(() => {
     const handler = setTimeout(() => {
       if (isConnected && ws.current && ws.current.readyState === WebSocket.OPEN) {
         ws.current.send(JSON.stringify({ 
@@ -779,7 +534,7 @@ export default function App() {
     }, 250);
 
     return () => clearTimeout(handler);
-  }, [nodes, edges, isConnected, globalSettings]);
+  }, [nodes, edges, isConnected, globalSettings, ws]);
 
   useEffect(() => {
     if (selectedNode) {
@@ -883,7 +638,7 @@ export default function App() {
           "API 614 LOS": exampleAPI614,
           "Remote Control Test": exampleRemoteControl
         }}
-        />
+      />
 
       <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
         <div style={{ flexGrow: 1, position: 'relative' }} ref={reactFlowWrapper}>
@@ -991,7 +746,6 @@ export default function App() {
           />
         </div>
 
-        
         <DataList 
           nodes={nodes} 
           edges={edges} 

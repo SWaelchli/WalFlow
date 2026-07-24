@@ -1,14 +1,14 @@
-import { Handle, Position, useUpdateNodeInternals } from 'reactflow';
-import { useEffect, useMemo } from 'react';
+import { Handle, Position } from 'reactflow';
+import { useMemo } from 'react';
 import { paToBar } from '../utils/converters';
-import { RotateButton, getRotatedPosition } from '../utils/rotation_logic.jsx';
-import { SensingPin } from '../utils/SensingPin.jsx';
+import { getRotatedPosition } from '../components/canvas/NodeRotationHandle';
+import { SensingPin } from '../components/canvas/SensingPin';
+import BaseNode from './BaseNode';
 
 /**
  * Strainer (ISA style)
  */
 export default function FilterNode({ id, data, selected }) {
-  const updateNodeInternals = useUpdateNodeInternals();
   const telemetry = data.telemetry;
   const rotation = data.rotation || 0;
   const sensing = useMemo(() => data.sensing || {}, [data.sensing]);
@@ -17,68 +17,53 @@ export default function FilterNode({ id, data, selected }) {
   const dP = pIn - pOut;
   const clogging = data.clogging || 0;
 
-  useEffect(() => {
-    updateNodeInternals(id);
-  }, [id, rotation, sensing, updateNodeInternals]);
-
   return (
-    <div style={{ position: 'relative' }}>
-      {selected && (
-        <div style={{
-          position: 'absolute',
-          top: -5, left: -5, right: -5, bottom: -5,
-          border: '2px solid #FA8507',
-          borderRadius: '6px',
-          boxShadow: '0 0 10px rgba(59, 130, 246, 0.3)',
-          pointerEvents: 'none'
-        }} />
-      )}
+    <BaseNode
+      id={id}
+      data={data}
+      selected={selected}
+      width={60}
+      height={40}
+      footer={
+        <>
+          <div style={{ fontSize: '9px', color: '#334155', fontWeight: 'bold' }}>{data.label || 'STRAINER'}</div>
+          <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#ef4444' }}>-{paToBar(dP)} bar</div>
+          <div style={{ fontSize: '8px', color: '#64748b' }}>Clogging: {clogging.toFixed(0)}%</div>
+        </>
+      }
+    >
+      <svg width="60" height="40" viewBox="0 0 60 40">
+        <rect x="5" y="5" width="50" height="30" fill="white" stroke="#334155" strokeWidth="2.5" />
+        <line x1="5" y1="35" x2="55" y2="5" stroke="#334155" strokeWidth="2.5" />
+      </svg>
 
-      <RotateButton visible={selected} onClick={() => data.onRotate(id)} />
+      <Handle 
+        type="target" 
+        position={getRotatedPosition(Position.Left, rotation)} 
+        id="inlet-0" 
+        className="handle-inlet"
+        style={{ 
+          top: '20px', left: '5px', 
+          marginTop: '-4px', marginLeft: '-4px',
+          right: 'auto', bottom: 'auto', transform: 'none',
+          background: '#0284C7', width: '8px', height: '8px' 
+        }} 
+      />
+      {sensing['inlet-0'] && <SensingPin portId="inlet-0" offset={{ x: -25, y: 0 }} />}
 
-      <div style={{ 
-        width: 60, height: 40, background: 'transparent', position: 'relative',
-        transform: `rotate(${rotation}deg)`
-      }}>
-        <svg width="60" height="40" viewBox="0 0 60 40">
-          <rect x="5" y="5" width="50" height="30" fill="white" stroke="#334155" strokeWidth="2.5" />
-          <line x1="5" y1="35" x2="55" y2="5" stroke="#334155" strokeWidth="2.5" />
-        </svg>
-
-        <Handle 
-          type="target" 
-          position={getRotatedPosition(Position.Left, rotation)} 
-          id="inlet-0" 
-          className="handle-inlet"
-          style={{ 
-            top: '20px', left: '5px', 
-            marginTop: '-4px', marginLeft: '-4px',
-            right: 'auto', bottom: 'auto', transform: 'none',
-            background: '#0284C7', width: '8px', height: '8px' 
-          }} 
-        />
-        {sensing['inlet-0'] && <SensingPin portId="inlet-0" offset={{ x: -25, y: 0 }} />}
-
-        <Handle 
-          type="source" 
-          position={getRotatedPosition(Position.Right, rotation)} 
-          id="outlet-0" 
-          className="handle-outlet"
-          style={{ 
-            top: '20px', left: '55px', 
-            marginTop: '-4px', marginLeft: '-4px',
-            right: 'auto', bottom: 'auto', transform: 'none',
-            background: '#E11D48', width: '8px', height: '8px' 
-          }} 
-        />
-        {sensing['outlet-0'] && <SensingPin portId="outlet-0" offset={{ x: 25, y: 0 }} />}
-      </div>
-
-      <div style={{ textAlign: 'center', marginTop: '5px' }}>
-        <div style={{ fontSize: '9px', color: '#334155', fontWeight: 'bold' }}>{data.label || 'STRAINER'}</div>
-        <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#ef4444' }}>-{paToBar(dP)} bar</div>
-        <div style={{ fontSize: '8px', color: '#64748b' }}>Clogging: {clogging.toFixed(0)}%</div>
-      </div>
-    </div>
+      <Handle 
+        type="source" 
+        position={getRotatedPosition(Position.Right, rotation)} 
+        id="outlet-0" 
+        className="handle-outlet"
+        style={{ 
+          top: '20px', left: '55px', 
+          marginTop: '-4px', marginLeft: '-4px',
+          right: 'auto', bottom: 'auto', transform: 'none',
+          background: '#E11D48', width: '8px', height: '8px' 
+        }} 
+      />
+      {sensing['outlet-0'] && <SensingPin portId="outlet-0" offset={{ x: 25, y: 0 }} />}
+    </BaseNode>
   );
 }

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import walflowLogo from './assets/Logo_WalFlow.svg';
-import { EquipmentSymbol } from './utils/SymbolLibrary';
+import walflowLogo from '../../assets/Logo_WalFlow.svg';
+import { EquipmentSymbol } from '../symbols/SymbolLibrary';
 
 const categorizedEquipment = [
 // ... (rest of categorizedEquipment remains the same)

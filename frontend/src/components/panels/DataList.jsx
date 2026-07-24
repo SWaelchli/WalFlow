@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { m3sToLmin, kToC } from './utils/converters';
-import { findClosestPipeMatch, ASME_PIPE_STANDARDS, calculatePipeId } from './utils/standards_library';
+import { m3sToLmin, kToC } from '../../utils/converters';
+import { findClosestPipeMatch, ASME_PIPE_STANDARDS, calculatePipeId } from '../../utils/standards_library';
 
 const autoSortLogic = (nodes, edges) => {
   const ordered = [];
