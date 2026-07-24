@@ -4,7 +4,7 @@ All notable changes to the WälFlow project will be documented in this file.
 
 ---
 
-## [Unreleased] (v0.1.0)
+## [0.1.1]
 
 ### 🔐 Admin Hub & Registration Backlog
 - Added **First-Time Admin Setup** modal on launch when no admin user exists in the database.

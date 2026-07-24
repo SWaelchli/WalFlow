@@ -46,7 +46,7 @@ solver_instance = None
 
 @app.get("/")
 async def read_root():
-    return {"status": "online", "message": "WalFlow Engine is ready.", "version": "0.1.0"}
+    return {"status": "online", "message": "WalFlow Engine is ready.", "version": "0.1.1"}
 
 @app.websocket("/ws/simulate")
 async def websocket_endpoint(websocket: WebSocket):
