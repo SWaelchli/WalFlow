@@ -473,7 +473,7 @@ export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts
                 </h4>
                 <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: '#D8E2E1', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <li><strong>Toggle Heatmaps:</strong> Click the 🎨 button in the canvas controls bar to overlay thermal gradients onto the pipes.</li>
-                  <li><strong>Modes:</strong> Switch between <strong>Pressure Gradient</strong> ($bar$), <strong>Temperature Profile</strong> ($^\circ C$), and <strong>Flow Velocity</strong> ($m/s$).</li>
+                  <li><strong>Modes:</strong> Switch between <strong>Pressure Gradient</strong> ($bar$), <strong>Temperature Profile</strong> ($^\circ C$), <strong>Volume Flow</strong> ($l/min$), and <strong>Velocity</strong> ($m/s$).</li>
                   <li><strong>Custom Scale Ranges:</strong> Toggle auto-scaling or manually define custom min/max bounds via the floating Heatmap Legend.</li>
                 </ul>
               </div>

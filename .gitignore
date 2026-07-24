@@ -5,3 +5,4 @@ GEMINI.md
 *.sqlite
 *.sqlite3
 walflow.db
+test_walflow.db

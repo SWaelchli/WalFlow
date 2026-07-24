@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import walflowLogo from '../../assets/Logo_WalFlow.svg';
 import { EquipmentSymbol } from '../symbols/SymbolLibrary';
-import { useAuth } from '../../hooks/useAuth';
+
 
 const categorizedEquipment = [
 // ... (rest of categorizedEquipment remains the same)
@@ -22,6 +21,8 @@ const categorizedEquipment = [
     name: 'Pressure & Flow Control',
     items: [
       { type: 'linear_control_valve', label: 'Control Valve', description: 'Linear Cv Trim' },
+      { type: 'check_valve', label: 'Check Valve', description: 'Non-Return Protection' },
+      { type: 'check_valve_orifice', label: 'Check Valve w/ Orifice', description: 'Non-Return with Bypass' },
       { type: 'remote_control_valve', label: 'Remote Valve', description: 'Remote Signal Control' },
       { type: 'linear_regulator', label: 'Pressure Regulator', description: 'Auto PRV / BPR' },
       { type: 'three_way_tcv', label: '3-Way Temp Valve', description: 'Auto Thermal Mixing' },
@@ -260,16 +261,8 @@ function CollapsibleScenarios({ templates, onLoad }) {
   );
 }
 
-export default function Sidebar({ onSave, onLoad, onClear, onCalculate, isSimulating, globalSettings, onUpdateGlobalSettings, templates, lastStats, onOpenAuthModal, onOpenProjectsModal, onOpenAdminHub, onOpenHelpModal, onLogoutClear }) {
-  const { currentUser, isAuthenticated, isAdmin, adminStatus, logout } = useAuth();
+export default function Sidebar({ onLoad, globalSettings, onUpdateGlobalSettings, templates, lastStats }) {
   const [activeTab, setActiveTab] = useState('library');
-
-  const handleUserLogout = () => {
-    logout();
-    if (onLogoutClear) {
-      onLogoutClear();
-    }
-  };
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredEquipment = useMemo(() => {
@@ -289,20 +282,6 @@ export default function Sidebar({ onSave, onLoad, onClear, onCalculate, isSimula
     event.dataTransfer.effectAllowed = 'move';
   };
 
-  const btnStyle = {
-    padding: '10px 16px',
-    borderRadius: '8px',
-    fontSize: '12px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-    border: 'none',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '6px'
-  };
-
   const labelStyle = { display: 'block', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', color: theme.slate500, marginBottom: '6px', letterSpacing: '0.04em' };
   const inputStyle = { width: '100%', padding: '10px 12px', borderRadius: '8px', border: `1px solid ${theme.slate200}`, fontSize: '13px', background: theme.white, outline: 'none', transition: 'border-color 0.2s, box-shadow 0.2s' };
   const hintStyle = { fontSize: '10px', color: theme.slate500, marginTop: '4px' };
@@ -310,184 +289,9 @@ export default function Sidebar({ onSave, onLoad, onClear, onCalculate, isSimula
   return (
     <aside style={{
       width: '320px', minWidth: '320px', background: theme.white, borderRight: `1px solid ${theme.slate200}`,
-      padding: '20px', display: 'flex', flexDirection: 'column', gap: '18px',
+      padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px',
       overflowY: 'auto', zIndex: 10, position: 'relative', boxShadow: '2px 0 12px rgba(57,82,83,0.03)'
     }}>
-      <div style={{ padding: '2px 0 10px 0', borderBottom: `1px solid ${theme.slate100}` }}>
-        <img
-          src={walflowLogo}
-          alt="WälFlow Logo"
-          onClick={() => onOpenHelpModal && onOpenHelpModal('about')}
-          title="Click for Help & Documentation"
-          style={{ height: '32px', display: 'block', cursor: 'pointer' }}
-        />
-      </div>
-
-      <div style={{
-        backgroundColor: isAuthenticated ? (isAdmin ? 'rgba(250, 133, 7, 0.06)' : theme.slate50) : 'transparent',
-        border: `1px solid ${isAuthenticated ? (isAdmin ? 'rgba(250, 133, 7, 0.25)' : theme.slate200) : theme.primary}`,
-        borderRadius: '8px',
-        padding: '3px 10px',
-        minHeight: '28px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginTop: '-10px',
-        marginBottom: '-6px'
-      }}>
-        {isAuthenticated ? (
-          <>
-            <span style={{
-              fontSize: '11px',
-              fontWeight: '700',
-              color: isAdmin ? '#FA8507' : theme.slate800,
-              whiteSpace: 'nowrap',
-              textOverflow: 'ellipsis',
-              overflow: 'hidden'
-            }}>
-              {isAdmin ? '👑' : '👤'} {currentUser?.username}
-            </span>
-
-            <button
-              onClick={handleUserLogout}
-              title="Sign Out"
-              style={{
-                backgroundColor: 'transparent',
-                border: 'none',
-                color: '#EF4444',
-                cursor: 'pointer',
-                fontSize: '10px',
-                fontWeight: '700',
-                padding: '2px 6px',
-                borderRadius: '4px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '3px',
-                transition: 'background-color 0.15s ease'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-            >
-              <span>🚪</span> Log Out
-            </button>
-          </>
-        ) : (
-          <button
-            onClick={onOpenAuthModal}
-            style={{
-              width: '100%',
-              backgroundColor: 'transparent',
-              border: 'none',
-              color: theme.primary,
-              fontSize: '11px',
-              fontWeight: '700',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px',
-              padding: '2px 0'
-            }}
-          >
-            🔒 Sign In to Account
-          </button>
-        )}
-      </div>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <button 
-          onClick={onCalculate}
-          disabled={isSimulating}
-          className={!isSimulating ? "pulse-primary" : ""}
-          style={{
-            ...btnStyle,
-            padding: '14px',
-            background: isSimulating ? theme.slate200 : theme.primary,
-            color: theme.white,
-            fontSize: '14px',
-            fontWeight: '700',
-            letterSpacing: '0.02em',
-            boxShadow: isSimulating ? 'none' : '0 6px 16px -2px rgba(250, 133, 7, 0.4)'
-          }}
-          onMouseEnter={(e) => !isSimulating && (e.currentTarget.style.background = theme.primaryHover)}
-          onMouseLeave={(e) => !isSimulating && (e.currentTarget.style.background = theme.primary)}
-        >
-          {isSimulating ? '⌛ Simulating Flow...' : '▶ Run Simulation'}
-        </button>
-        
-        {isAdmin && (
-          <button
-            onClick={onOpenAdminHub}
-            style={{
-              ...btnStyle,
-              background: 'linear-gradient(135deg, #1E293B 0%, #0F172A 100%)',
-              color: '#FA8507',
-              border: '1px solid #FA8507',
-              boxShadow: '0 4px 12px rgba(250, 133, 7, 0.2)'
-            }}
-          >
-            👑 Admin Hub
-            {adminStatus?.pendingCount > 0 && (
-              <span style={{
-                backgroundColor: '#EF4444',
-                color: '#FFFFFF',
-                borderRadius: '10px',
-                padding: '2px 6px',
-                fontSize: '10px',
-                fontWeight: '800',
-                marginLeft: '4px'
-              }}>
-                {adminStatus.pendingCount}
-              </span>
-            )}
-          </button>
-        )}
-
-        <button
-          onClick={() => {
-            if (isAuthenticated) {
-              onOpenProjectsModal();
-            } else {
-              onOpenAuthModal();
-            }
-          }}
-          style={{
-            ...btnStyle,
-            background: theme.brandDark,
-            color: theme.white,
-            boxShadow: '0 4px 12px rgba(57, 82, 83, 0.2)'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.background = theme.brandDarker}
-          onMouseLeave={(e) => e.currentTarget.style.background = theme.brandDark}
-        >
-          ☁️ Cloud Projects {isAuthenticated ? '' : '(Login)'}
-        </button>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-          <button onClick={onSave} style={{ ...btnStyle, background: theme.slate50, color: theme.slate800, border: `1px solid ${theme.slate200}` }} onMouseEnter={(e) => e.currentTarget.style.background = theme.slate100} onMouseLeave={(e) => e.currentTarget.style.background = theme.slate50}>💾 Export</button>
-          <button onClick={() => document.getElementById('file-upload').click()} style={{ ...btnStyle, background: theme.slate50, color: theme.slate800, border: `1px solid ${theme.slate200}` }} onMouseEnter={(e) => e.currentTarget.style.background = theme.slate100} onMouseLeave={(e) => e.currentTarget.style.background = theme.slate50}>📂 Import</button>
-        </div>
-        
-        <button onClick={onClear} style={{ ...btnStyle, background: 'transparent', color: '#ef4444', border: '1px solid #fee2e2' }} onMouseEnter={(e) => e.currentTarget.style.background = '#fef2f2'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>🗑 Clear Canvas</button>
-        
-        <input id="file-upload" type="file" style={{ display: 'none' }} accept=".wlf,.json" onChange={(e) => {
-          const file = e.target.files[0];
-          if (file) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-              try {
-                const parsed = JSON.parse(event.target.result);
-                onLoad(parsed);
-              } catch {
-                alert('Failed to load project file. Please ensure it is a valid .wlf or .json file.');
-              }
-            };
-            reader.readAsText(file);
-          }
-          e.target.value = '';
-        }} />
-      </div>
-
       <div style={{ display: 'flex', background: theme.slate50, padding: '4px', borderRadius: '10px', border: `1px solid ${theme.slate200}` }}>
         {['library', 'settings', 'diagnostics'].map((tab) => (
           <button 
@@ -507,6 +311,7 @@ export default function Sidebar({ onSave, onLoad, onClear, onCalculate, isSimula
           </button>
         ))}
       </div>
+
 
 
       <div style={{ flexGrow: 1 }}>

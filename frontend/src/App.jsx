@@ -22,7 +22,10 @@ import SplitterNode from './nodes/SplitterNode';
 import MixerNode from './nodes/MixerNode';
 import RemoteControlValveNode from './nodes/RemoteControlValveNode';
 import ThreeWayTCVNode from './nodes/ThreeWayTCVNode';
+import CheckValveNode from './nodes/CheckValveNode';
+import CheckValveOrificeNode from './nodes/CheckValveOrificeNode';
 
+import Navbar from './components/layout/Navbar';
 import Sidebar from './components/panels/Sidebar';
 import PropertyEditor from './components/panels/PropertyEditor';
 import DataList from './components/panels/DataList';
@@ -60,6 +63,8 @@ const nodeTypes = {
   volumetric_pump: VolumetricPumpNode,
   orifice: OrificeNode,
   linear_control_valve: LinearControlValveNode,
+  check_valve: CheckValveNode,
+  check_valve_orifice: CheckValveOrificeNode,
   linear_regulator: LinearRegulatorNode,
   filter: FilterNode,
   heat_exchanger: HeatExchangerNode,
@@ -534,11 +539,13 @@ function WalFlowContent() {
           ...(type === 'tank' && { level: 2.0, elevation: 0.0, temperature: 313.15 }),
           ...(type === 'linear_control_valve' && { max_cv: 0.05, opening: 50.0 }),
           ...(type === 'linear_regulator' && { max_cv: 0.05, set_pressure: 500000.0, backpressure: false }),
-          ...(type === 'orifice' && { pipe_diameter: 0.1, orifice_diameter: 0.07 }),
+          ...(type === 'orifice' && { pipe_diameter: 0.05248, orifice_diameter: 0.02, standardDn: 50, standardSch: '40' }),
           ...(type === 'filter' && { dp_clean: 0.2, dp_terminal: 1.0, flow_ref: 100.0, clogging: 0.0 }),
           ...(type === 'heat_exchanger' && { heat_duty_kw: -10.0 }),
           ...(type === 'remote_control_valve' && { max_cv: 0.05, set_pressure: 500000.0 }),
           ...(type === 'three_way_tcv' && { max_cv: 0.1, set_temperature_c: 40.0, hot_port_idx: 0 }),
+          ...(type === 'check_valve' && { cv: 10.0, cracking_pressure_bar: 0.05 }),
+          ...(type === 'check_valve_orifice' && { cv: 10.0, cracking_pressure_bar: 0.05, pipe_diameter: 0.05248, orifice_diameter: 0.01, standardDn: 50, standardSch: '40' }),
         },
       };
 
@@ -621,7 +628,8 @@ function WalFlowContent() {
     customRanges: {
       pressure: { min: 0.0, max: 6.0 },
       temperature: { min: 20.0, max: 60.0 },
-      velocity: { min: 0.0, max: 200.0 }
+      volumeflow: { min: 0.0, max: 200.0 },
+      velocity: { min: 0.0, max: 10.0 }
     }
   });
 
@@ -649,18 +657,28 @@ function WalFlowContent() {
         const t2 = tele.outlets?.[0]?.temperature != null ? tele.outlets[0].temperature - 273.15 : null;
         if (t1 !== null) { minVal = Math.min(minVal, t1); maxVal = Math.max(maxVal, t1); }
         if (t2 !== null) { minVal = Math.min(minVal, t2); maxVal = Math.max(maxVal, t2); }
-      } else if (mode === 'velocity') {
+      } else if (mode === 'volumeflow') {
         const q1 = tele.inlets?.[0]?.flow_rate != null ? Math.abs(tele.inlets[0].flow_rate * 60000.0) : null;
         const q2 = tele.outlets?.[0]?.flow_rate != null ? Math.abs(tele.outlets[0].flow_rate * 60000.0) : null;
         if (q1 !== null) { minVal = Math.min(minVal, q1); maxVal = Math.max(maxVal, q1); }
         if (q2 !== null) { minVal = Math.min(minVal, q2); maxVal = Math.max(maxVal, q2); }
+      } else if (mode === 'velocity') {
+        const dia = e.data?.diameter || 0.1;
+        const area = (Math.PI * Math.pow(dia, 2)) / 4.0;
+        const q1 = tele.inlets?.[0]?.flow_rate != null ? Math.abs(tele.inlets[0].flow_rate) : null;
+        const q2 = tele.outlets?.[0]?.flow_rate != null ? Math.abs(tele.outlets[0].flow_rate) : null;
+        const v1 = (q1 !== null && area > 0) ? q1 / area : null;
+        const v2 = (q2 !== null && area > 0) ? q2 / area : null;
+        if (v1 !== null) { minVal = Math.min(minVal, v1); maxVal = Math.max(maxVal, v1); }
+        if (v2 !== null) { minVal = Math.min(minVal, v2); maxVal = Math.max(maxVal, v2); }
       }
     });
 
     if (minVal === Infinity || maxVal === -Infinity || Math.abs(maxVal - minVal) < 1e-4) {
       if (mode === 'pressure') return { min: 0.0, max: 6.0 };
       if (mode === 'temperature') return { min: 20.0, max: 60.0 };
-      if (mode === 'velocity') return { min: 0.0, max: 200.0 };
+      if (mode === 'volumeflow') return { min: 0.0, max: 200.0 };
+      if (mode === 'velocity') return { min: 0.0, max: 10.0 };
     }
 
     return { min: Math.max(0, minVal), max: maxVal };
@@ -691,24 +709,13 @@ function WalFlowContent() {
   }, [edges, isSimulating, heatmapSettings.mode, computedHeatmapRange]);
 
   return (
-    <div style={{ width: '100%', height: '100vh', display: 'flex', backgroundColor: '#F0F4F4', overflow: 'hidden' }}>
-      <Sidebar 
+    <div style={{ width: '100%', height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#F0F4F4', overflow: 'hidden' }}>
+      <Navbar 
         onSave={onSave} 
         onLoad={loadData} 
         onClear={onClearCanvas} 
         onCalculate={runSimulation}
         isSimulating={isSimulating}
-        globalSettings={globalSettings}
-        onUpdateGlobalSettings={setGlobalSettings}
-        lastStats={lastStats}
-        templates={{
-          "Standard PFD": examplePFD,
-          "Volumetric Pump Example": exampleVolumetric,
-          "Pressure Reducing (PRV)": examplePRV,
-          "Backpressure (BPR)": exampleBPR,
-          "API 614 LOS": exampleAPI614,
-          "Remote Control Test": exampleRemoteControl
-        }}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
         onOpenProjectsModal={() => setIsProjectManagerModalOpen(true)}
         onOpenAdminHub={() => setIsAdminHubOpen(true)}
@@ -716,13 +723,29 @@ function WalFlowContent() {
         onLogoutClear={resetCanvas}
       />
 
-      <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
-        <div 
-          style={{ flexGrow: 1, position: 'relative' }} 
-          ref={reactFlowWrapper}
-          onDragEnter={onDragEnter}
-          onDragLeave={onDragLeave}
-        >
+      <div style={{ flexGrow: 1, display: 'flex', height: 'calc(100vh - 56px)', overflow: 'hidden' }}>
+        <Sidebar 
+          onLoad={loadData} 
+          globalSettings={globalSettings}
+          onUpdateGlobalSettings={setGlobalSettings}
+          lastStats={lastStats}
+          templates={{
+            "Standard PFD": examplePFD,
+            "Volumetric Pump Example": exampleVolumetric,
+            "Pressure Reducing (PRV)": examplePRV,
+            "Backpressure (BPR)": exampleBPR,
+            "API 614 LOS": exampleAPI614,
+            "Remote Control Test": exampleRemoteControl
+          }}
+        />
+
+        <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+          <div 
+            style={{ flexGrow: 1, position: 'relative' }} 
+            ref={reactFlowWrapper}
+            onDragEnter={onDragEnter}
+            onDragLeave={onDragLeave}
+          >
           {isFileDragging && (
             <div style={{
               position: 'absolute',
@@ -897,7 +920,8 @@ function WalFlowContent() {
         />
       </div>
     </div>
-  );
+  </div>
+);
 }
 
 export default function App() {

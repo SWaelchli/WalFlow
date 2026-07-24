@@ -3,6 +3,10 @@ import json
 import os
 import sys
 
+# Ensure tests use an isolated test database
+TEST_DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test_walflow.db")
+os.environ["DATABASE_PATH"] = TEST_DB_PATH
+
 # Add backend directory to sys.path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -18,6 +22,17 @@ class TestAuthAndDiagrams(unittest.TestCase):
         Base.metadata.drop_all(bind=engine)
         init_db()
         cls.client = TestClient(app)
+
+    @classmethod
+    def tearDownClass(cls):
+        Base.metadata.drop_all(bind=engine)
+        engine.dispose()
+        if os.path.exists(TEST_DB_PATH):
+            try:
+                os.remove(TEST_DB_PATH)
+            except OSError:
+                pass
+
 
     def test_01_health_check(self):
         response = self.client.get("/")

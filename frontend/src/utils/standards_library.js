@@ -43,16 +43,18 @@ export const calculatePipeId = (od, wt) => {
 export const findClosestPipeMatch = (idMeters) => {
   if (idMeters === undefined || idMeters === null || idMeters <= 0) return null;
   const idMm = idMeters * 1000;
-  let minDiff = 0.001; // Tolerance in mm for "exact" match
+  let minDiff = Infinity;
+  let bestMatch = null;
 
   for (const pipe of ASME_PIPE_STANDARDS) {
     for (const [sch, wt] of Object.entries(pipe.schedules)) {
       const id = pipe.od - 2 * wt;
       const diff = Math.abs(id - idMm);
       if (diff < minDiff) {
-        return { dn: pipe.dn, sch };
+        minDiff = diff;
+        bestMatch = { dn: pipe.dn, sch };
       }
     }
   }
-  return null;
+  return bestMatch;
 };

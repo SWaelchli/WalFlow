@@ -12,21 +12,28 @@ export default function HeatmapLegend({
 }) {
   if (!heatmapMode || heatmapMode === 'default') return null;
 
+  const BLUE_TO_RED_GRADIENT = 'linear-gradient(to right, hsl(210, 90%, 46%), hsl(140, 85%, 48%), hsl(45, 90%, 50%), hsl(0, 90%, 46%))';
+
   const modeConfigs = {
     pressure: {
       title: 'Pressure Heatmap',
       unit: 'bar',
-      gradient: 'linear-gradient(to right, hsl(210, 90%, 46%), hsl(140, 85%, 48%), hsl(45, 90%, 50%), hsl(0, 90%, 46%))'
+      gradient: BLUE_TO_RED_GRADIENT
     },
     temperature: {
       title: 'Temperature Heatmap',
       unit: '°C',
-      gradient: 'linear-gradient(to right, hsl(210, 90%, 45%), hsl(120, 80%, 45%), hsl(40, 95%, 50%), hsl(0, 90%, 45%))'
+      gradient: BLUE_TO_RED_GRADIENT
+    },
+    volumeflow: {
+      title: 'Volume Flow Heatmap',
+      unit: 'l/min',
+      gradient: BLUE_TO_RED_GRADIENT
     },
     velocity: {
-      title: 'Flow Velocity',
-      unit: 'L/min',
-      gradient: 'linear-gradient(to right, hsl(220, 80%, 50%), hsl(270, 80%, 50%), hsl(330, 80%, 50%))'
+      title: 'Velocity Heatmap',
+      unit: 'm/s',
+      gradient: BLUE_TO_RED_GRADIENT
     }
   };
 
@@ -48,7 +55,7 @@ export default function HeatmapLegend({
       padding: '14px 18px',
       boxShadow: '0 10px 25px -5px rgba(57, 82, 83, 0.15), 0 4px 6px -2px rgba(57, 82, 83, 0.05)',
       zIndex: 1000,
-      width: '320px',
+      width: '330px',
       maxWidth: 'calc(100vw - 32px)',
       display: 'flex',
       flexDirection: 'column',
@@ -67,6 +74,7 @@ export default function HeatmapLegend({
         {[
           { id: 'pressure', label: 'Pressure' },
           { id: 'temperature', label: 'Temp' },
+          { id: 'volumeflow', label: 'Flow' },
           { id: 'velocity', label: 'Velocity' }
         ].map((mode) => (
           <button

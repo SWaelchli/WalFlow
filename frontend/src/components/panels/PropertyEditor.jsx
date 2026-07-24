@@ -456,6 +456,84 @@ export default function PropertyEditor({ node, edge, onUpdate, onUpdateEdge, onD
             </>
           )}
 
+          {isNode && type === 'check_valve' && (
+            <>
+              <div>
+                <label style={{ fontSize: '11px', color: '#64748b' }}>Flow Coefficient (Cv)</label>
+                <input 
+                  type="number" 
+                  style={{ width: '100%', fontSize: '12px' }} 
+                  step="0.1"
+                  value={localDrafts.cv !== undefined ? localDrafts.cv : (data.cv ?? 10.0)} 
+                  onChange={(e) => handleDraftChange('cv', e.target.value)}
+                  onBlur={(e) => validateAndCommit('cv', e.target.value, true)}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '11px', color: '#64748b' }}>Cracking Pressure (bar)</label>
+                <input 
+                  type="number" 
+                  style={{ width: '100%', fontSize: '12px' }} 
+                  step="0.01" min="0"
+                  value={localDrafts.cracking_pressure_bar !== undefined ? localDrafts.cracking_pressure_bar : (data.cracking_pressure_bar ?? 0.05)} 
+                  onChange={(e) => handleDraftChange('cracking_pressure_bar', e.target.value)}
+                  onBlur={(e) => validateAndCommit('cracking_pressure_bar', e.target.value, true)}
+                />
+              </div>
+            </>
+          )}
+
+          {isNode && type === 'check_valve_orifice' && (
+            <>
+              <div>
+                <label style={{ fontSize: '11px', color: '#64748b' }}>Flow Coefficient (Cv)</label>
+                <input 
+                  type="number" 
+                  style={{ width: '100%', fontSize: '12px' }} 
+                  step="0.1"
+                  value={localDrafts.cv !== undefined ? localDrafts.cv : (data.cv ?? 10.0)} 
+                  onChange={(e) => handleDraftChange('cv', e.target.value)}
+                  onBlur={(e) => validateAndCommit('cv', e.target.value, true)}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '11px', color: '#64748b' }}>Cracking Pressure (bar)</label>
+                <input 
+                  type="number" 
+                  style={{ width: '100%', fontSize: '12px' }} 
+                  step="0.01" min="0"
+                  value={localDrafts.cracking_pressure_bar !== undefined ? localDrafts.cracking_pressure_bar : (data.cracking_pressure_bar ?? 0.05)} 
+                  onChange={(e) => handleDraftChange('cracking_pressure_bar', e.target.value)}
+                  onBlur={(e) => validateAndCommit('cracking_pressure_bar', e.target.value, true)}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '11px', color: '#64748b' }}>Reference Pipe Selection</label>
+                <PipeSelector 
+                  data={{ 
+                    diameter: data.pipe_diameter, 
+                    standardDn: data.standardDn, 
+                    standardSch: data.standardSch 
+                  }} 
+                  onChange={(field, val) => {
+                    if (field === 'diameter') validateAndCommit('pipe_diameter', val, true);
+                    else if (isNode) onUpdate(id, { [field]: val });
+                  }} 
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '11px', color: '#64748b' }}>Orifice Diameter (mm)</label>
+                <input 
+                  type="number" 
+                  style={{ width: '100%', fontSize: '12px' }} 
+                  value={localDrafts.orifice_diameter !== undefined ? localDrafts.orifice_diameter : mToMm(data.orifice_diameter || 0.01)} 
+                  onChange={(e) => handleDraftChange('orifice_diameter', e.target.value)}
+                  onBlur={(e) => validateAndCommit('orifice_diameter', mmToM(parseFloat(e.target.value) || 0), true)}
+                />
+              </div>
+            </>
+          )}
+
           {isNode && type === 'heat_exchanger' && (
             <>
               <div>

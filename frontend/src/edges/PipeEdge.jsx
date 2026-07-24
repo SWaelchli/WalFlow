@@ -20,31 +20,34 @@ export function getHeatmapColor(edgeData, heatmapMode = 'default', activeRange) 
   const t_out = telemetry.outlets?.[0]?.temperature != null ? telemetry.outlets[0].temperature - 273.15 : 20;
   const avgT = (t_in + t_out) / 2.0;
 
-  const q_in = telemetry.inlets?.[0]?.flow_rate != null ? Math.abs(telemetry.inlets[0].flow_rate * 60000.0) : 0; // L/min
-  const q_out = telemetry.outlets?.[0]?.flow_rate != null ? Math.abs(telemetry.outlets[0].flow_rate * 60000.0) : 0;
-  const avgQ = (q_in + q_out) / 2.0;
+  const q_in_m3s = telemetry.inlets?.[0]?.flow_rate != null ? Math.abs(telemetry.inlets[0].flow_rate) : 0;
+  const q_out_m3s = telemetry.outlets?.[0]?.flow_rate != null ? Math.abs(telemetry.outlets[0].flow_rate) : 0;
+  const avgQ_m3s = (q_in_m3s + q_out_m3s) / 2.0;
+  const avgQ_lmin = avgQ_m3s * 60000.0;
 
-  const defaultMax = heatmapMode === 'pressure' ? 6.0 : heatmapMode === 'temperature' ? 60.0 : 200.0;
+  const diaValue = edgeData?.diameter || 0.1;
+  const area = (Math.PI * Math.pow(diaValue, 2)) / 4.0;
+  const avgV = area > 0 ? avgQ_m3s / area : 0;
+
+  const defaultMax = heatmapMode === 'pressure' ? 6.0 : heatmapMode === 'temperature' ? 60.0 : heatmapMode === 'volumeflow' ? 200.0 : 10.0;
   const defaultMin = heatmapMode === 'temperature' ? 20.0 : 0.0;
 
   const minVal = activeRange?.min ?? defaultMin;
   const maxVal = activeRange?.max ?? defaultMax;
   const span = maxVal - minVal;
 
-  if (heatmapMode === 'pressure' || heatmapMode === 'temperature') {
-    const val = heatmapMode === 'pressure' ? avgP : avgT;
-    const norm = Math.min(1.0, Math.max(0.0, span > 0 ? (val - minVal) / span : 0));
-    const hue = (1.0 - norm) * 210; // 210 (Blue/Teal) -> 0 (Red)
-    return `hsl(${hue}, 90%, 46%)`;
-  }
+  const val =
+    heatmapMode === 'pressure'
+      ? avgP
+      : heatmapMode === 'temperature'
+      ? avgT
+      : heatmapMode === 'volumeflow'
+      ? avgQ_lmin
+      : avgV;
 
-  if (heatmapMode === 'velocity') {
-    const norm = Math.min(1.0, Math.max(0.0, span > 0 ? (avgQ - minVal) / span : 0));
-    const hue = 220 + norm * 110; // 220 (Blue) -> 330 (Magenta)
-    return `hsl(${hue}, 85%, 50%)`;
-  }
-
-  return '#395253';
+  const norm = Math.min(1.0, Math.max(0.0, span > 0 ? (val - minVal) / span : 0));
+  const hue = (1.0 - norm) * 210; // 210 (Blue) -> 0 (Red)
+  return `hsl(${hue}, 90%, 46%)`;
 }
 
 export default function PipeEdge({

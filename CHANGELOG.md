@@ -6,6 +6,13 @@ All notable changes to the WälFlow project will be documented in this file.
 
 ## [0.1.1]
 
+### 🔩 Equipment & Simulation
+- Added **Check Valve (Non-Return Valve)** equipment with configurable flow coefficient ($C_v$), cracking pressure, backflow prevention, SVG symbol, and property editor integration.
+- Added **Check Valve with Orifice** equipment combining non-return check valve seat logic with Bernoulli bypass orifice restriction math from `Orifice` equipment for controlled sub-cracking and reverse bypass flow.
+
+### 🎨 Visualizations & Heatmaps
+- Separated Volume Flow (`l/min`) and Velocity (`m/s`) into dedicated heatmaps with individual auto-scaling and custom range controls.
+
 ### 🔐 Admin Hub & Registration Backlog
 - Added **First-Time Admin Setup** modal on launch when no admin user exists in the database.
 - Added **Registration Approval Backlog** for admins to approve or reject self-registered user accounts before login.
@@ -16,6 +23,9 @@ All notable changes to the WälFlow project will be documented in this file.
   - Duplicate, rename, export `.wlf` files, and delete diagrams with popup confirmation.
 
 ### 🎨 UI & Layout Polish
+- Introduced **Top Navbar** (`Navbar.jsx`) housing WälFlow logo, primary **Run Simulation** action, canvas file operations (**Export**, **Import**, **Clear Canvas**), **Cloud Projects**, **Admin Hub**, and user auth status.
+- Refactored **Sidebar** (`Sidebar.jsx`) to focus strictly on component drag & drop, global settings, and stats diagnostics, with unified tab styling (`#395253` dark teal active state).
+- Added `# Design & Styling Philosophy` reference section in `GEMINI.md` defining color tokens, button state rules, and component guidelines.
 - Redesigned sidebar header with WälFlow logo and sleeker user account pill bar.
 - Clicking WälFlow logo opens the Help & Info modal directly to the "About & Copyright" tab.
 - Reordered Help & Info modal tabs: **Keyboard Shortcuts**, **User Guide**, and **About & Copyright**.

@@ -13,6 +13,8 @@ from simulation.equipment.heat_exchanger import HeatExchanger
 from simulation.equipment.filter import Filter
 from simulation.equipment.remote_control_valve import RemoteControlValve
 from simulation.equipment.three_way_tcv import ThreeWayTCV
+from simulation.equipment.check_valve import CheckValve
+from simulation.equipment.check_valve_orifice import CheckValveOrifice
 from simulation.equipment.base_node import HydraulicNode
 
 class GraphParser:
@@ -192,6 +194,20 @@ class GraphParser:
                 max_cv=float(d.get('max_cv', 0.1)),
                 set_temperature=float(d.get('set_temperature_c', 40.0)) + 273.15,
                 hot_port_idx=int(d.get('hot_port_idx', 0))
+            )
+        elif t == 'check_valve':
+            node = CheckValve(
+                name=name,
+                cv=float(d.get('cv', 10.0)),
+                cracking_pressure_bar=float(d.get('cracking_pressure_bar', 0.05))
+            )
+        elif t == 'check_valve_orifice':
+            node = CheckValveOrifice(
+                name=name,
+                cv=float(d.get('cv', 10.0)),
+                cracking_pressure_bar=float(d.get('cracking_pressure_bar', 0.05)),
+                pipe_diameter=float(d.get('pipe_diameter', 0.1)),
+                orifice_diameter=float(d.get('orifice_diameter', 0.01))
             )
         else:
             node = HydraulicNode(name=name, node_type=t)

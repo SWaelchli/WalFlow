@@ -88,6 +88,28 @@ export const EquipmentSymbol = ({ type, size = 40, style = {} }) => {
             <text x="30" y="14" textAnchor="middle" style={{ fontSize: '8px', fontWeight: '800', fill: '#334155' }}>T</text>
           </svg>
         );
+      case 'check_valve':
+        return (
+          <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+            <line x1="10" y1="20" x2="10" y2="50" stroke="#334155" strokeWidth="2.5" strokeLinecap="round" />
+            <circle cx="10" cy="20" r="3.5" fill="#334155" />
+            <line x1="50" y1="20" x2="50" y2="50" stroke="#334155" strokeWidth="2.5" strokeLinecap="round" />
+            <line x1="10" y1="20" x2="48" y2="46" stroke="#334155" strokeWidth="2.5" strokeLinecap="round" />
+            <polygon points="50,48 39,44 45,37" fill="#334155" stroke="#334155" strokeWidth="0.5" />
+          </svg>
+        );
+      case 'check_valve_orifice':
+        return (
+          <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+            <line x1="10" y1="20" x2="10" y2="50" stroke="#334155" strokeWidth="2.5" strokeLinecap="round" />
+            <circle cx="10" cy="20" r="3.5" fill="#334155" />
+            <line x1="50" y1="20" x2="50" y2="50" stroke="#334155" strokeWidth="2.5" strokeLinecap="round" />
+            <line x1="10" y1="20" x2="48" y2="46" stroke="#334155" strokeWidth="2.5" strokeLinecap="round" />
+            <polygon points="50,48 39,44 45,37" fill="#334155" stroke="#334155" strokeWidth="0.5" />
+            <circle cx="30" cy="35" r="4" fill="white" stroke="#334155" strokeWidth="1.5" />
+            <circle cx="30" cy="35" r="1.5" fill="#334155" />
+          </svg>
+        );
       case 'orifice':
         return (
           <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
