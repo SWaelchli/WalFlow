@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { APP_VERSION, FILE_FORMAT_VERSION } from '../../constants';
 
 const SHORTCUT_GROUPS = [
   {
@@ -312,9 +313,19 @@ export default function HelpInfoModal({ isOpen, onClose }) {
                   lineHeight: '1.6',
                 }}
               >
-                <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', color: '#ffffff' }}>
-                  About WalFlow
-                </h3>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '0 0 10px 0' }}>
+                  <h3 style={{ margin: 0, fontSize: '16px', color: '#ffffff' }}>
+                    About WalFlow
+                  </h3>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <span style={{ backgroundColor: '#395253', color: '#FA8507', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '700' }}>
+                      App v{APP_VERSION}
+                    </span>
+                    <span style={{ backgroundColor: '#395253', color: '#60A5FA', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '700' }}>
+                      Format v{FILE_FORMAT_VERSION}
+                    </span>
+                  </div>
+                </div>
                 <p style={{ margin: 0, fontSize: '14px', color: '#D8E2E1' }}>
                   WalFlow is a full-stack web application designed for building and simulating hydraulic process and instrumentation diagrams (P&IDs) directly in your browser. It pairs a high-performance Python FastAPI physics engine with an interactive ReactFlow drag-and-drop canvas.
                 </p>
@@ -370,7 +381,7 @@ export default function HelpInfoModal({ isOpen, onClose }) {
                 }}
               >
                 <h4 style={{ margin: '0 0 8px 0', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#FA8507' }}>
-                  Copyright & Licensing
+                  Copyright & Licensing (WalFlow v{APP_VERSION})
                 </h4>
                 <p
                   style={{
@@ -381,6 +392,7 @@ export default function HelpInfoModal({ isOpen, onClose }) {
                     lineHeight: '1.5',
                   }}
                 >
+                  WalFlow v{APP_VERSION} (File Format v{FILE_FORMAT_VERSION})<br />
                   Copyright (c) 2026 Sebastian Waelchli (https://swaelchli.com). All rights reserved. Licensed under the PolyForm Noncommercial License.
                 </p>
               </div>
@@ -460,7 +472,7 @@ export default function HelpInfoModal({ isOpen, onClose }) {
                   <span>📁</span> 6. Save, Load & Preset PFD Templates
                 </h4>
                 <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: '#D8E2E1', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <li><strong>Save & Load JSON:</strong> Export your PFD model configuration to `walflow-pfd.json` or restore previously saved project files.</li>
+                  <li><strong>Save & Load .wlf:</strong> Export your PFD model configuration to `walflow-diagram.wlf` or restore previously saved project files (`.wlf` or legacy `.json`). You can also drag and drop `.wlf` files directly onto the canvas.</li>
                   <li><strong>Built-in Templates:</strong> Load pre-configured industrial examples from the top dropdown: *Standard PFD*, *Volumetric Pump*, *PRV System*, *BPR System*, *API 614 LOS*, or *Remote Control Test*.</li>
                 </ul>
               </div>

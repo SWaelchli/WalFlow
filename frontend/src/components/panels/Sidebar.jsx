@@ -336,13 +336,21 @@ export default function Sidebar({ onSave, onLoad, onClear, onCalculate, isSimula
         
         <button onClick={onClear} style={{ ...btnStyle, background: 'transparent', color: '#ef4444', border: '1px solid #fee2e2' }} onMouseEnter={(e) => e.currentTarget.style.background = '#fef2f2'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>🗑 Clear Canvas</button>
         
-        <input id="file-upload" type="file" style={{ display: 'none' }} accept=".json" onChange={(e) => {
+        <input id="file-upload" type="file" style={{ display: 'none' }} accept=".wlf,.json" onChange={(e) => {
           const file = e.target.files[0];
           if (file) {
             const reader = new FileReader();
-            reader.onload = (event) => onLoad(JSON.parse(event.target.result));
+            reader.onload = (event) => {
+              try {
+                const parsed = JSON.parse(event.target.result);
+                onLoad(parsed);
+              } catch {
+                alert('Failed to load project file. Please ensure it is a valid .wlf or .json file.');
+              }
+            };
             reader.readAsText(file);
           }
+          e.target.value = '';
         }} />
       </div>
 

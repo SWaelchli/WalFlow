@@ -3,6 +3,8 @@ Copyright (c) 2026 Sebastian Waelchli (https://swaelchli.com). All rights reserv
 # WalFlow
 WalFlow is a web-based hydraulic simulator. Drag and drop rotating equipment, valves, and pipes to build interactive PFDs and instantly simulate real-time network operating conditions.
 
+See [ROADMAP.md](./ROADMAP.md) for planned features and overlay ideas.
+
 
 # App Strategy
 

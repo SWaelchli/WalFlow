@@ -37,6 +37,8 @@ import { useWebSocketSimulation } from './hooks/useWebSocketSimulation';
 import { useCanvasHistory } from './hooks/useCanvasHistory';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 
+import { APP_VERSION, FILE_FORMAT_VERSION, FILE_EXTENSION } from './constants';
+
 // Import Examples
 import examplePFD from './data/examples/Example_Standard_PFD.json';
 import examplePRV from './data/examples/Example_PRV.json';
@@ -80,6 +82,8 @@ export default function App() {
   const [edges, setEdges] = useEdgesState([]);
   const [edgeIdCount, setEdgeIdCount] = useState(100);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
+  const dragCounter = useRef(0);
+  const [isFileDragging, setIsFileDragging] = useState(false);
 
   const clipboardRef = useRef({ nodes: [], edges: [] });
   const [globalSettings, setGlobalSettings] = useState({
@@ -444,14 +448,52 @@ export default function App() {
     );
   }, [selectedEdge, setEdges]);
 
+  const onDragEnter = useCallback((event) => {
+    event.preventDefault();
+    dragCounter.current += 1;
+    if (event.dataTransfer.types && Array.from(event.dataTransfer.types).includes('Files')) {
+      setIsFileDragging(true);
+    }
+  }, []);
+
+  const onDragLeave = useCallback((event) => {
+    event.preventDefault();
+    dragCounter.current -= 1;
+    if (dragCounter.current <= 0) {
+      dragCounter.current = 0;
+      setIsFileDragging(false);
+    }
+  }, []);
+
   const onDragOver = useCallback((event) => {
     event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
+    event.dataTransfer.dropEffect = 'copy';
   }, []);
 
   const onDrop = useCallback(
     (event) => {
       event.preventDefault();
+      dragCounter.current = 0;
+      setIsFileDragging(false);
+      
+      // Check if user dropped a .wlf or .json file onto the canvas
+      if (event.dataTransfer.files && event.dataTransfer.files.length > 0) {
+        const file = event.dataTransfer.files[0];
+        if (file.name.endsWith('.wlf') || file.name.endsWith('.json')) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            try {
+              const parsed = JSON.parse(e.target.result);
+              loadData(parsed);
+            } catch {
+              alert('Failed to parse dropped project file. Please check file format.');
+            }
+          };
+          reader.readAsText(file);
+          return;
+        }
+      }
+
       const type = event.dataTransfer.getData('application/reactflow');
       if (!type || !reactFlowInstance) return;
 
@@ -485,16 +527,24 @@ export default function App() {
 
       setNodes((nds) => nds.concat(newNode));
     },
-    [reactFlowInstance, handleValveChange, handleRotation, setNodes]
+    [reactFlowInstance, handleValveChange, handleRotation, setNodes, loadData]
   );
 
   const onSave = useCallback(() => {
-    const flowData = { nodes, edges, globalSettings };
+    const flowData = {
+      version: FILE_FORMAT_VERSION,
+      app_version: APP_VERSION,
+      format: 'walflow',
+      created_at: new Date().toISOString(),
+      nodes,
+      edges,
+      globalSettings,
+    };
     const blob = new Blob([JSON.stringify(flowData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'walflow-pfd.json';
+    link.download = `walflow-diagram${FILE_EXTENSION}`;
     link.click();
     URL.revokeObjectURL(url);
   }, [nodes, edges, globalSettings]);
@@ -641,7 +691,48 @@ export default function App() {
       />
 
       <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
-        <div style={{ flexGrow: 1, position: 'relative' }} ref={reactFlowWrapper}>
+        <div 
+          style={{ flexGrow: 1, position: 'relative' }} 
+          ref={reactFlowWrapper}
+          onDragEnter={onDragEnter}
+          onDragLeave={onDragLeave}
+        >
+          {isFileDragging && (
+            <div style={{
+              position: 'absolute',
+              top: 16,
+              left: 16,
+              right: 16,
+              bottom: 16,
+              backgroundColor: 'rgba(15, 23, 42, 0.88)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              zIndex: 9999,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '3px dashed #FA8507',
+              borderRadius: '16px',
+              boxShadow: '0 20px 40px rgba(0, 0, 0, 0.4)',
+              pointerEvents: 'none',
+              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+            }}>
+              <div style={{
+                fontSize: '64px',
+                marginBottom: '16px',
+                filter: 'drop-shadow(0 4px 12px rgba(250, 133, 7, 0.5))'
+              }}>
+                📥
+              </div>
+              <h2 style={{ color: '#FFFFFF', margin: '0 0 8px 0', fontSize: '24px', fontWeight: '700', letterSpacing: '-0.01em' }}>
+                Drop .wlf File to Import Diagram
+              </h2>
+              <p style={{ color: '#94A3B8', margin: 0, fontSize: '14px', fontWeight: '500' }}>
+                Release anywhere on the canvas to load PFD configuration
+              </p>
+            </div>
+          )}
           <DetailPanel 
             selectedNode={selectedNode} 
             allNodes={nodes}
