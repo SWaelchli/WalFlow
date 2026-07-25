@@ -104,7 +104,7 @@ export default function PipeEdge({
         />
       )}
 
-      {/* Main Pipe Line */}
+      {/* Main Pipe Line (Always Solid) */}
       <path
         id={id}
         className="react-flow__edge-path"
@@ -115,7 +115,8 @@ export default function PipeEdge({
           transition: 'stroke 0.3s ease, stroke-width 0.2s ease',
           ...cleanStyle,
           stroke: strokeColor,
-          strokeWidth: selected ? 4 : 3.5
+          strokeWidth: selected ? 4 : 3.5,
+          strokeDasharray: 'none'
         }}
       />
 
@@ -125,9 +126,10 @@ export default function PipeEdge({
           d={edgePath}
           fill="none"
           stroke="#ffffff"
-          strokeWidth={2.2}
-          strokeDasharray="6 12"
-          strokeOpacity={0.9}
+          strokeWidth={2.4}
+          strokeLinecap="round"
+          strokeDasharray="3 13"
+          strokeOpacity={0.85}
           style={{
             animation: `flowDash ${animDuration}s linear infinite ${isReverse ? 'reverse' : 'normal'}`,
             pointerEvents: 'none'

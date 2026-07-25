@@ -64,8 +64,15 @@ export default function TextBubbleNode({ id, data, selected }) {
         minWidth={140}
         minHeight={70}
         isVisible={selected}
-        lineStyle={{ borderColor: '#FA8507', borderWidth: 1 }}
-        handleStyle={{ width: 8, height: 8, borderRadius: 2, backgroundColor: '#FA8507', borderColor: '#FFFFFF' }}
+        lineStyle={{ borderColor: 'transparent', borderWidth: 0 }}
+        handleStyle={{
+          width: 9,
+          height: 9,
+          borderRadius: '50%',
+          backgroundColor: '#FA8507',
+          border: '2px solid #FFFFFF',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+        }}
       />
       <div
         onDoubleClick={() => setIsEditing(true)}
@@ -75,12 +82,12 @@ export default function TextBubbleNode({ id, data, selected }) {
           minWidth: '140px',
           minHeight: '70px',
           backgroundColor: '#FFFFFF',
-          border: `1.5px solid ${selected ? '#FA8507' : '#D8E2E1'}`,
+          border: selected ? '2px solid #FA8507' : '1px solid #D8E2E1',
           borderRadius: '8px',
           padding: '10px 12px',
           boxShadow: selected
-            ? '0 0 0 2px rgba(250, 133, 7, 0.25), 0 4px 12px rgba(0,0,0,0.08)'
-            : '0 2px 8px rgba(0,0,0,0.05)',
+            ? '0 4px 16px rgba(250, 133, 7, 0.18)'
+            : '0 2px 8px rgba(0,0,0,0.04)',
           position: 'relative',
           boxSizing: 'border-box',
           display: 'flex',
@@ -122,6 +129,8 @@ export default function TextBubbleNode({ id, data, selected }) {
               onChange={(e) => setDraftText(e.target.value)}
               onBlur={handleSaveText}
               onKeyDown={handleKeyDown}
+              onMouseDown={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
               className="nowheel nodrag nopan"
               style={{
                 width: '100%',
@@ -144,7 +153,7 @@ export default function TextBubbleNode({ id, data, selected }) {
                 whiteSpace: 'pre-wrap',
                 wordBreak: 'break-word',
                 lineHeight: 1.4,
-                overflow: 'hidden',
+                overflow: 'auto',
                 flex: 1,
               }}
             >

@@ -11,7 +11,7 @@ export default function TankNode({ id, data, selected }) {
   const rotation = data.rotation || 0;
   const sensing = useMemo(() => data.sensing || {}, [data.sensing]);
   const level = data.level || 0;
-  const temp = (data.telemetry?.outlets?.[0]?.temperature || data.temperature || 293.15) - 273.15;
+  const temp = ((data.temperature !== undefined ? data.temperature : data.telemetry?.outlets?.[0]?.temperature) || 293.15) - 273.15;
 
   return (
     <BaseNode

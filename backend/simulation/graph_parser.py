@@ -19,22 +19,72 @@ from simulation.equipment.base_node import HydraulicNode
 
 class GraphParser:
     @staticmethod
-    def parse_graph(graph: ReactFlowGraph) -> HydraulicNetwork:
+    def resolve_graph_for_case(graph: ReactFlowGraph, target_case_id: Optional[str] = None) -> ReactFlowGraph:
         """
-        Converts a React Flow graph into a HydraulicNetwork.
+        Creates a new ReactFlowGraph instance where the active case (or target_case_id) overrides
+        have been layered on top of the baseline node data and global settings.
         """
+        if not graph.cases:
+            return graph
+        
+        case_id = target_case_id or graph.active_case_id
+        if not case_id:
+            return graph
+
+        selected_case = next((c for c in graph.cases if c.id == case_id), None)
+        if not selected_case:
+            return graph
+
+        # Clone global settings with overrides if present
+        resolved_global_settings = graph.global_settings.copy() if graph.global_settings else None
+        if resolved_global_settings and selected_case.overrides and selected_case.overrides.global_settings:
+            for key, val in selected_case.overrides.global_settings.items():
+                if hasattr(resolved_global_settings, key):
+                    setattr(resolved_global_settings, key, val)
+
+        # Clone nodes with node-level overrides if present
+        resolved_nodes = []
+        node_overrides = (selected_case.overrides.nodes if selected_case.overrides else {}) or {}
+        for node in graph.nodes:
+            if node.id in node_overrides:
+                merged_data = {**node.data, **node_overrides[node.id]}
+                resolved_nodes.append(ReactFlowNode(
+                    id=node.id,
+                    type=node.type,
+                    position=node.position,
+                    data=merged_data
+                ))
+            else:
+                resolved_nodes.append(node)
+
+        return ReactFlowGraph(
+            nodes=resolved_nodes,
+            edges=graph.edges,
+            global_settings=resolved_global_settings,
+            cases=graph.cases,
+            active_case_id=case_id
+        )
+
+    @staticmethod
+    def parse_graph(graph: ReactFlowGraph, case_id: Optional[str] = None) -> HydraulicNetwork:
+        """
+        Converts a React Flow graph into a HydraulicNetwork, layering operating case overrides if specified.
+        """
+        resolved_graph = GraphParser.resolve_graph_for_case(graph, case_id)
+
         # 1. Instantiate Equipment Nodes (ignoring non-hydraulic visual annotations)
         nodes_dict: Dict[str, HydraulicNode] = {}
-        for node_data in graph.nodes:
+        for node_data in resolved_graph.nodes:
             if node_data.type in ['text_bubble', 'note', 'annotation']:
                 continue
-            node = GraphParser.create_node(node_data, graph.global_settings)
+            node = GraphParser.create_node(node_data, resolved_graph.global_settings)
             nodes_dict[node_data.id] = node
 
         # 2. Map Connections (Edges)
         parsed_edges = []
         
-        for edge in graph.edges:
+        for edge in resolved_graph.edges:
+
             edge_data = edge.data or {}
             
             # Identify Signal Edges (Yellow Links)
@@ -70,7 +120,7 @@ class GraphParser:
                 diameter=float(edge_data.get('diameter', 0.1)),
                 friction_factor=float(edge_data.get('friction_factor', 0.02))
             )
-            pipe.global_settings = graph.global_settings
+            pipe.global_settings = resolved_graph.global_settings
             
             source_node = nodes_dict.get(edge.source)
             target_node = nodes_dict.get(edge.target)
@@ -86,7 +136,7 @@ class GraphParser:
                 })
 
         network = HydraulicNetwork(nodes=nodes_dict, edges=parsed_edges)
-        network.global_settings = graph.global_settings
+        network.global_settings = resolved_graph.global_settings
         return network
 
     @staticmethod

@@ -4,7 +4,7 @@ import { useRef, useState, useEffect, useCallback } from 'react';
  * Custom hook managing WebSocket connection to FastAPI backend
  * and simulation message dispatches.
  */
-export function useWebSocketSimulation({ nodes, edges, setNodes, setEdges, globalSettings }) {
+export function useWebSocketSimulation({ nodes, edges, setNodes, setEdges, globalSettings, cases = [], activeCaseId = 'case_base', onUpdateCaseTelemetry }) {
   const ws = useRef(null);
   const [isSimulating, setIsSimulating] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
@@ -40,7 +40,12 @@ export function useWebSocketSimulation({ nodes, edges, setNodes, setEdges, globa
         if (response.status === 'success') {
           setIsSimulating(false);
           const telemetryData = response.telemetry || response.data || {};
+          const kpisData = response.kpis || null;
           setLastStats(response.stats);
+
+          if (onUpdateCaseTelemetry && activeCaseId) {
+            onUpdateCaseTelemetry(activeCaseId, telemetryData, kpisData);
+          }
 
           // Update nodes telemetry
           setNodes((nds) =>
@@ -90,7 +95,7 @@ export function useWebSocketSimulation({ nodes, edges, setNodes, setEdges, globa
         socket.close();
       }
     };
-  }, [setNodes, setEdges]);
+  }, [setNodes, setEdges, onUpdateCaseTelemetry, activeCaseId]);
 
   const runSimulation = useCallback(() => {
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {
@@ -98,11 +103,17 @@ export function useWebSocketSimulation({ nodes, edges, setNodes, setEdges, globa
       ws.current.send(
         JSON.stringify({
           action: 'run_simulation',
-          graph: { nodes, edges, global_settings: globalSettings },
+          graph: {
+            nodes,
+            edges,
+            global_settings: globalSettings,
+            cases,
+            active_case_id: activeCaseId
+          },
         })
       );
     }
-  }, [nodes, edges, globalSettings]);
+  }, [nodes, edges, globalSettings, cases, activeCaseId]);
 
   const handleValveChange = useCallback(
     (newValue, nodeId) => {

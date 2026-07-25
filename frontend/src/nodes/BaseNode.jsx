@@ -59,6 +59,31 @@ export default function BaseNode({
         </div>
       )}
 
+      {data.hasCaseOverrides && (
+        <div
+          style={{
+            position: 'absolute',
+            top: -6,
+            right: -6,
+            background: '#FA8507',
+            color: '#ffffff',
+            fontSize: '10px',
+            fontWeight: 'bold',
+            width: '16px',
+            height: '16px',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 2px 4px rgba(250, 133, 7, 0.4)',
+            zIndex: 12
+          }}
+          title="Contains active operating case overrides"
+        >
+          ⚡
+        </div>
+      )}
+
       <RotateButton visible={selected} onClick={() => data.onRotate && data.onRotate(id)} />
 
       <div style={{ 

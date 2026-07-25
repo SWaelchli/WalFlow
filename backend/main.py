@@ -13,6 +13,7 @@ from db.database import init_db
 from routers.auth import router as auth_router
 from routers.diagrams import router as diagrams_router
 from routers.admin import router as admin_router
+from routers.simulation import router as simulation_router, calculate_case_kpis
 
 from contextlib import asynccontextmanager
 
@@ -39,6 +40,7 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(diagrams_router)
 app.include_router(admin_router)
+app.include_router(simulation_router)
 
 # Global simulation state
 network_instance = None
@@ -140,10 +142,13 @@ async def websocket_endpoint(websocket: WebSocket):
                                 "outlets": [p.dict() for p in pipe.outlets]
                             }
 
+                        kpis = calculate_case_kpis(network_instance, telemetry, stats)
+
                         await websocket.send_text(json.dumps({
                             "status": "success",
                             "stats": stats,
-                            "telemetry": telemetry
+                            "telemetry": telemetry,
+                            "kpis": kpis
                         }))
                     except Exception as e:
                         print(f"Solver Error: {e}")

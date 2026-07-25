@@ -2,19 +2,57 @@
   "version": "0.1",
   "app_version": "0.1.1",
   "format": "walflow",
+  "active_case_id": "case_base",
+  "cases": [
+    {
+      "id": "case_base",
+      "name": "Case 1 (Design 80%)",
+      "is_base": true,
+      "overrides": {
+        "nodes": {},
+        "global_settings": {}
+      }
+    },
+    {
+      "id": "case_throttled",
+      "name": "Case 2 (Throttled 50%)",
+      "is_base": false,
+      "overrides": {
+        "nodes": {
+          "greeting-valve": {
+            "opening": 50.0
+          }
+        },
+        "global_settings": {}
+      }
+    },
+    {
+      "id": "case_restricted",
+      "name": "Case 3 (Low Flow 20%)",
+      "is_base": false,
+      "overrides": {
+        "nodes": {
+          "greeting-valve": {
+            "opening": 20.0
+          }
+        },
+        "global_settings": {}
+      }
+    }
+  ],
   "nodes": [
     {
       "id": "greeting-note",
       "type": "text_bubble",
       "position": {
-        "x": 220,
-        "y": 60
+        "x": 200,
+        "y": 30
       },
-      "width": 520,
-      "height": 210,
+      "width": 560,
+      "height": 260,
       "style": {
-        "width": 520,
-        "height": 210
+        "width": 560,
+        "height": 260
       },
       "data": {
         "label": "Note",
@@ -28,7 +66,7 @@
       "type": "tank",
       "position": {
         "x": 120,
-        "y": 330
+        "y": 350
       },
       "data": {
         "label": "Supply Reservoir",
@@ -42,7 +80,7 @@
       "type": "centrifugal_pump",
       "position": {
         "x": 320,
-        "y": 330
+        "y": 350
       },
       "data": {
         "label": "P-101 Main Pump",
@@ -56,7 +94,7 @@
       "type": "linear_control_valve",
       "position": {
         "x": 520,
-        "y": 330
+        "y": 350
       },
       "data": {
         "label": "FCV-101 Flow Control",
@@ -69,7 +107,7 @@
       "type": "tank",
       "position": {
         "x": 720,
-        "y": 330
+        "y": 350
       },
       "data": {
         "label": "Return Reservoir",

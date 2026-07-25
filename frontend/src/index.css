@@ -84,20 +84,61 @@ body {
   font-family: var(--font-sans);
   border-radius: var(--radius-md);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
-  cursor: pointer !important;
-}
-
-.react-flow__node * {
   cursor: pointer;
 }
 
-.react-flow__node.selected,
-.react-flow__node.selected * {
-  cursor: move !important;
+.react-flow__node:not(.selected) * {
+  cursor: pointer;
 }
 
 .react-flow__node.selected {
   box-shadow: 0 0 0 2px var(--color-primary), var(--shadow-lg) !important;
+  cursor: move;
+}
+
+/* ReactFlow NodeResizer Cursors */
+.react-flow__resize-control.top,
+.react-flow__resize-control.bottom {
+  cursor: ns-resize !important;
+}
+
+.react-flow__resize-control.left,
+.react-flow__resize-control.right {
+  cursor: ew-resize !important;
+}
+
+.react-flow__resize-control.top.left,
+.react-flow__resize-control.bottom.right {
+  cursor: nwse-resize !important;
+}
+
+.react-flow__resize-control.top.right,
+.react-flow__resize-control.bottom.left {
+  cursor: nesw-resize !important;
+}
+
+/* Wider invisible hit zones for NodeResizer edges */
+.react-flow__resize-control.line {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  z-index: 10;
+}
+
+.react-flow__resize-control.line.top,
+.react-flow__resize-control.line.bottom {
+  height: 14px !important;
+  transform: translateY(-50%);
+}
+
+.react-flow__resize-control.line.left,
+.react-flow__resize-control.line.right {
+  width: 14px !important;
+  transform: translateX(-50%);
+}
+
+.react-flow__resize-control.handle {
+  z-index: 11;
 }
 
 .react-flow__handle {
@@ -148,19 +189,17 @@ body {
 }
 
 .react-flow__edge.selected .react-flow__edge-path {
-  stroke: var(--color-primary) !important;
-  stroke-width: 3.5 !important;
+  stroke: var(--color-primary);
+  stroke-width: 3.5;
 }
 
-.react-flow__edge.simulating .react-flow__edge-path {
-  stroke: var(--color-primary) !important;
-  stroke-dasharray: 6;
-  animation: flowDash 0.8s linear infinite;
+.react-flow__edge.pipe .react-flow__edge-path {
+  stroke-dasharray: none !important;
 }
 
 @keyframes flowDash {
   from {
-    stroke-dashoffset: 24;
+    stroke-dashoffset: 16;
   }
   to {
     stroke-dashoffset: 0;
@@ -217,4 +256,22 @@ body {
 /* Hide ReactFlow Attribution Watermark */
 .react-flow__attribution {
   display: none !important;
+}
+
+/* Custom visible horizontal & vertical scrollbar for DataList matrix */
+.matrix-scroll-container::-webkit-scrollbar {
+  height: 10px;
+  width: 10px;
+}
+.matrix-scroll-container::-webkit-scrollbar-track {
+  background: #EBF0EF;
+  border-radius: 5px;
+}
+.matrix-scroll-container::-webkit-scrollbar-thumb {
+  background: #395253;
+  border-radius: 5px;
+  border: 2px solid #EBF0EF;
+}
+.matrix-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: #FA8507;
 }

@@ -49,6 +49,16 @@ import { useCanvasHistory } from './hooks/useCanvasHistory';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 
 import { APP_VERSION, FILE_FORMAT_VERSION, FILE_EXTENSION } from './constants';
+import { DEFAULT_BASE_CASE, isCaseVariableProperty } from './constants/case_constants';
+import {
+  getEffectiveNodeData,
+  getEffectiveEdgeData,
+  updateCaseTelemetry,
+  hasActiveOverrides,
+  updateCaseOverride,
+  removeCaseOverride,
+  duplicateCase
+} from './utils/case_resolver';
 
 // Import Examples
 import exampleAPI614 from './data/examples/Example_API_614_LOS.wlf';
@@ -105,6 +115,46 @@ function WalFlowContent() {
   const [isProjectManagerModalOpen, setIsProjectManagerModalOpen] = useState(false);
   const [isAdminHubOpen, setIsAdminHubOpen] = useState(false);
 
+  // Operating Case Manager State
+  const [cases, setCases] = useState([DEFAULT_BASE_CASE]);
+  const [activeCaseId, setActiveCaseId] = useState('case_base');
+
+  const handleAddCase = useCallback(() => {
+    const currentActiveCase = cases.find(c => c.id === activeCaseId) || cases[0] || DEFAULT_BASE_CASE;
+    const defaultName = `Case ${cases.length + 1}`;
+    const newCase = duplicateCase(currentActiveCase, defaultName);
+    setCases(prev => [...prev, newCase]);
+    setActiveCaseId(newCase.id);
+  }, [cases, activeCaseId]);
+
+  const handleRenameCase = useCallback((caseId, newName) => {
+    setCases(prev => prev.map(c => c.id === caseId ? { ...c, name: newName } : c));
+  }, []);
+
+  const handleDeleteCase = useCallback((caseId) => {
+    setCases(prev => {
+      const filtered = prev.filter(c => c.id !== caseId);
+      if (activeCaseId === caseId) {
+        setActiveCaseId(filtered[0]?.id || 'case_base');
+      }
+      return filtered;
+    });
+  }, [activeCaseId]);
+
+  const handleReorderCases = useCallback((fromIdx, toIdx) => {
+    setCases(prev => {
+      if (fromIdx <= 0 || toIdx <= 0 || fromIdx >= prev.length || toIdx >= prev.length) return prev;
+      const newCases = [...prev];
+      const [moved] = newCases.splice(fromIdx, 1);
+      newCases.splice(toIdx, 0, moved);
+      return newCases;
+    });
+  }, []);
+
+  const handleResetCaseOverride = useCallback((nodeId, propKey) => {
+    setCases(prev => removeCaseOverride(prev, activeCaseId, nodeId, propKey));
+  }, [activeCaseId]);
+
   const handleOpenHelpModal = (tab = 'shortcuts') => {
     setHelpModalInitialTab(tab);
     setIsHelpModalOpen(true);
@@ -148,6 +198,19 @@ function WalFlowContent() {
   }, [setNodes]);
 
   // WebSocket custom hook
+  const handleUpdateCaseTelemetry = useCallback((targetCaseId, telemetry, kpis) => {
+    setCases(prev => updateCaseTelemetry(prev, targetCaseId, telemetry, kpis));
+  }, []);
+
+  const handleBatchResultsTelemetry = useCallback((batchResults) => {
+    setCases(prev => prev.map(c => {
+      const match = batchResults.find(b => b.case_id === c.id);
+      return (match && (match.telemetry || match.kpis)) 
+        ? { ...c, telemetry: match.telemetry || c.telemetry, kpis: match.kpis || c.kpis } 
+        : c;
+    }));
+  }, []);
+
   const {
     ws,
     isSimulating,
@@ -161,6 +224,9 @@ function WalFlowContent() {
     setNodes,
     setEdges,
     globalSettings,
+    cases,
+    activeCaseId,
+    onUpdateCaseTelemetry: handleUpdateCaseTelemetry
   });
 
   // History stack hook
@@ -384,6 +450,13 @@ function WalFlowContent() {
       if (data.globalSettings) {
         setGlobalSettings(prev => ({ ...prev, ...data.globalSettings }));
       }
+      if (data.cases && Array.isArray(data.cases) && data.cases.length > 0) {
+        setCases(data.cases);
+        setActiveCaseId(data.active_case_id || data.cases[0].id);
+      } else {
+        setCases([DEFAULT_BASE_CASE]);
+        setActiveCaseId('case_base');
+      }
     }
   }, [handleValveChange, handleRotation, setNodes, setEdges]);
 
@@ -442,19 +515,60 @@ function WalFlowContent() {
   }, []);
 
   const updateNodeData = useCallback((nodeId, newData) => {
-    setNodes((nds) =>
-      nds.map((node) => {
-        if (node.id === nodeId) {
-          const updatedNode = { ...node, data: { ...node.data, ...newData } };
-          if (selectedNode && selectedNode.id === nodeId) {
-            setSelectedNode(updatedNode);
+    const activeCaseObj = cases.find(c => c.id === activeCaseId) || DEFAULT_BASE_CASE;
+    const isBase = activeCaseObj.is_base;
+
+    if (isBase) {
+      setNodes((nds) =>
+        nds.map((node) => {
+          if (node.id === nodeId) {
+            const updatedNode = { ...node, data: { ...node.data, ...newData } };
+            if (selectedNode && selectedNode.id === nodeId) {
+              setSelectedNode(updatedNode);
+            }
+            return updatedNode;
           }
-          return updatedNode;
+          return node;
+        })
+      );
+    } else {
+      const caseVarUpdates = {};
+      const globalUpdates = {};
+
+      Object.entries(newData).forEach(([key, val]) => {
+        if (isCaseVariableProperty(key)) {
+          caseVarUpdates[key] = val;
+        } else {
+          globalUpdates[key] = val;
         }
-        return node;
-      })
-    );
-  }, [selectedNode, setNodes]);
+      });
+
+      if (Object.keys(caseVarUpdates).length > 0) {
+        setCases(prev => {
+          let updatedCases = prev;
+          Object.entries(caseVarUpdates).forEach(([key, val]) => {
+            updatedCases = updateCaseOverride(updatedCases, activeCaseId, nodeId, key, val);
+          });
+          return updatedCases;
+        });
+      }
+
+      if (Object.keys(globalUpdates).length > 0) {
+        setNodes((nds) =>
+          nds.map((node) => {
+            if (node.id === nodeId) {
+              const updatedNode = { ...node, data: { ...node.data, ...globalUpdates } };
+              if (selectedNode && selectedNode.id === nodeId) {
+                setSelectedNode(updatedNode);
+              }
+              return updatedNode;
+            }
+            return node;
+          })
+        );
+      }
+    }
+  }, [activeCaseId, cases, selectedNode, setNodes]);
 
   const updateEdgeData = useCallback((edgeId, newData) => {
     setEdges((eds) =>
@@ -567,6 +681,8 @@ function WalFlowContent() {
       app_version: APP_VERSION,
       format: 'walflow',
       created_at: new Date().toISOString(),
+      active_case_id: activeCaseId,
+      cases,
       nodes,
       edges,
       globalSettings,
@@ -578,7 +694,7 @@ function WalFlowContent() {
     link.download = `walflow-diagram${FILE_EXTENSION}`;
     link.click();
     URL.revokeObjectURL(url);
-  }, [nodes, edges, globalSettings]);
+  }, [nodes, edges, globalSettings, cases, activeCaseId]);
 
   const onDeleteNode = useCallback((nodeId) => {
     setNodes((nds) => nds.filter((node) => node.id !== nodeId));
@@ -596,6 +712,8 @@ function WalFlowContent() {
     setEdges([]);
     setSelectedNode(null);
     setSelectedEdge(null);
+    setCases([DEFAULT_BASE_CASE]);
+    setActiveCaseId('case_base');
   }, [setNodes, setEdges]);
 
   const onClearCanvas = useCallback(() => {
@@ -612,14 +730,16 @@ function WalFlowContent() {
           graph: { 
             nodes, 
             edges, 
-            global_settings: globalSettings 
+            global_settings: globalSettings,
+            cases,
+            active_case_id: activeCaseId
           } 
         }));
       }
     }, 250);
 
     return () => clearTimeout(handler);
-  }, [nodes, edges, isConnected, globalSettings, ws]);
+  }, [nodes, edges, isConnected, globalSettings, cases, activeCaseId, ws]);
 
   useEffect(() => {
     if (selectedNode) {
@@ -653,7 +773,8 @@ function WalFlowContent() {
     let maxVal = -Infinity;
 
     edges.forEach((e) => {
-      const tele = e.data?.telemetry || {};
+      const effectiveData = getEffectiveEdgeData(e, cases, activeCaseId);
+      const tele = effectiveData.telemetry || e.data?.telemetry || {};
       if (mode === 'pressure') {
         const p1 = tele.inlets?.[0]?.pressure != null ? tele.inlets[0].pressure / 100000.0 : null;
         const p2 = tele.outlets?.[0]?.pressure != null ? tele.outlets[0].pressure / 100000.0 : null;
@@ -689,19 +810,22 @@ function WalFlowContent() {
     }
 
     return { min: Math.max(0, minVal), max: maxVal };
-  }, [edges, heatmapSettings.mode, heatmapSettings.autoScale, heatmapSettings.customRanges]);
+  }, [edges, cases, activeCaseId, heatmapSettings.mode, heatmapSettings.autoScale, heatmapSettings.customRanges]);
 
   const styledEdges = useMemo(() => {
     return edges.map(edge => {
+      const effectiveData = getEffectiveEdgeData(edge, cases, activeCaseId);
       const isSignal = edge.data?.type === 'SIGNAL';
-      const hasFlow = isSimulating || (edge.data && edge.data.flow_rate && Math.abs(edge.data.flow_rate) > 1e-5);
+      const tele = effectiveData.telemetry || edge.data?.telemetry || {};
+      const hasFlow = isSimulating || (tele.inlets?.[0]?.flow_rate && Math.abs(tele.inlets[0].flow_rate) > 1e-5);
       return {
         ...edge,
         type: isSignal ? 'signal' : 'pipe',
-        animated: !isSignal && hasFlow,
-        className: (!isSignal && hasFlow) ? 'simulating' : '',
+        animated: isSignal && hasFlow,
+        className: (isSignal && hasFlow) ? 'simulating' : '',
         data: {
           ...edge.data,
+          ...effectiveData,
           heatmapMode: heatmapSettings.mode,
           activeRange: computedHeatmapRange,
           isSimulating,
@@ -713,14 +837,25 @@ function WalFlowContent() {
         }
       };
     });
-  }, [edges, isSimulating, heatmapSettings.mode, computedHeatmapRange]);
+  }, [edges, cases, activeCaseId, isSimulating, heatmapSettings.mode, computedHeatmapRange]);
 
   const interactiveNodes = useMemo(() => {
-    return nodes.map(node => ({
-      ...node,
-      draggable: Boolean(node.selected),
-    }));
-  }, [nodes]);
+    return nodes.map(node => {
+      const effectiveData = getEffectiveNodeData(node, cases, activeCaseId);
+      const hasOverrides = hasActiveOverrides(node.id, cases, activeCaseId);
+      return {
+        ...node,
+        draggable: Boolean(node.selected),
+        data: {
+          ...node.data,
+          ...effectiveData,
+          hasCaseOverrides: hasOverrides,
+          onRotate: handleRotation,
+          onChange: (node.type === 'linear_control_valve' || node.type === 'remote_control_valve') ? handleValveChange : undefined,
+        }
+      };
+    });
+  }, [nodes, cases, activeCaseId, handleRotation, handleValveChange]);
 
   return (
     <div style={{ width: '100%', height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#F0F4F4', overflow: 'hidden' }}>
@@ -735,6 +870,12 @@ function WalFlowContent() {
         onOpenAdminHub={() => setIsAdminHubOpen(true)}
         onOpenHelpModal={(tab) => handleOpenHelpModal(tab || 'about')}
         onLogoutClear={resetCanvas}
+        cases={cases}
+        activeCaseId={activeCaseId}
+        onSelectCase={setActiveCaseId}
+        onAddCase={handleAddCase}
+        onRenameCase={handleRenameCase}
+        onDeleteCase={handleDeleteCase}
       />
 
       <div style={{ flexGrow: 1, display: 'flex', height: 'calc(100vh - 56px)', overflow: 'hidden' }}>
@@ -817,6 +958,9 @@ function WalFlowContent() {
             onDelete={onDeleteNode} 
             onDeleteEdge={onDeleteEdge}
             heatmapActive={heatmapSettings.mode !== 'default'}
+            cases={cases}
+            activeCaseId={activeCaseId}
+            onResetCaseOverride={handleResetCaseOverride}
           />
 
           <ReactFlow 
@@ -891,7 +1035,7 @@ function WalFlowContent() {
           <ProjectManagerModal
             isOpen={isProjectManagerModalOpen}
             onClose={() => setIsProjectManagerModalOpen(false)}
-            currentFlowData={{ nodes, edges, globalSettings }}
+            currentFlowData={{ nodes, edges, globalSettings, cases, active_case_id: activeCaseId }}
             onLoadDiagram={loadData}
           />
 
@@ -931,12 +1075,23 @@ function WalFlowContent() {
         </div>
 
         <DataList 
-          nodes={nodes} 
-          edges={edges} 
+          nodes={interactiveNodes} 
+          edges={styledEdges} 
+          rawNodes={nodes}
+          rawEdges={edges}
           onUpdateEdge={updateEdgeData} 
           onUpdateNode={updateNodeData}
           onSelectNode={selectNodeById}
           onSelectEdge={selectEdgeById}
+          cases={cases}
+          activeCaseId={activeCaseId}
+          globalSettings={globalSettings}
+          onSelectCase={setActiveCaseId}
+          onAddCase={handleAddCase}
+          onRenameCase={handleRenameCase}
+          onDeleteCase={handleDeleteCase}
+          onReorderCases={handleReorderCases}
+          onBatchResults={handleBatchResultsTelemetry}
         />
       </div>
     </div>

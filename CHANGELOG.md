@@ -6,6 +6,25 @@ All notable changes to the WälFlow project will be documented in this file.
 
 ## [0.1.1]
 
+### ⚡ Operating Case Manager (Multi-Case Scenario Engine)
+- Added **Operating Case Manager** allowing users to create, manage, and compare multiple operating cases (scenarios) on a single hydraulic diagram.
+- Implemented **Property Classification Matrix**: separates fixed **Global Hardware Specs** (`🌐 Global`) from dynamic **Case Variables** (`⚡ Case Variable`).
+- Added **Case Switcher Bar** in top Navbar with active case selector, `+ New Case` (duplicate active case), rename, and delete controls.
+- Added Property Inspector badging (`🌐 Global` / `⚡ Case Variable`), `● Overridden` indicators, and `↺ Reset to Base` buttons across **all** component types (Filters, Pumps, Valves, Heat Exchangers, Regulators, Orifices).
+- Added canvas node visual indicators (orange `⚡` badge pills) for equipment containing active operating case overrides.
+- Added **Operating Cases Matrix** tab in bottom Data Panel (`DataList.jsx`) with side-by-side KPI comparison matrix, relative delta metrics (`+18.2 bar (+25%)`), and cavitation risk highlights.
+- Configured Batch Solver to execute strictly on-demand via the `▶ Batch Solve Matrix` button.
+- Configured single-case simulation runs (via top `Run Simulation` button) to immediately update that active case's KPIs in the matrix and auto-recalculate differential delta metrics across all other cases when `Base Case` is run.
+- Fixed `Case 1` as the immutable baseline operating case (`Case 1 (Base)`), with newly duplicated cases defaulting to sequential names (`Case 2`, `Case 3`, etc.).
+- Renamed matrix first column header to **`Performance Metric`** with fixed `200px` width and single-line `whiteSpace: nowrap` formatting, permanently locking all row heights at 36px.
+- Added inline case renaming in the Data Panel matrix table with dynamic input width sizing and single horizontal line layout.
+- Added HTML5 drag-and-drop column reordering (`⋮⋮`) and red trash icon delete controls (`🗑️`) to non-base case headers in the Data Panel matrix.
+- Removed outer table margins in the Operating Cases Matrix tab for flush alignment with Data Panel borders, matching standard data tables.
+- Implemented full-height top-to-bottom vertical column drop line insertion indicator (`borderLeft: 3px solid #FA8507`) across all header and data cells for in-between column reordering.
+- Removed lightning icon from the Data Panel tab button label (`Operating Cases Matrix`).
+- Streamlined the top Navbar case section to feature exclusively the Case Switcher Dropdown and `+ New Case` button.
+- Implemented backend REST endpoint (`POST /api/simulation/batch`) and `GraphParser` case override resolution engine.
+
 ### 🔩 Equipment & Simulation
 - Added **Check Valve (Non-Return Valve)** equipment with configurable flow coefficient ($C_v$), cracking pressure, backflow prevention, SVG symbol, and property editor integration.
 - Added **Check Valve with Orifice** equipment combining non-return check valve seat logic with Bernoulli bypass orifice restriction math from `Orifice` equipment for controlled sub-cracking and reverse bypass flow.
@@ -13,6 +32,8 @@ All notable changes to the WälFlow project will be documented in this file.
 
 ### 🎨 Visualizations & Heatmaps
 - Separated Volume Flow (`l/min`) and Velocity (`m/s`) into dedicated heatmaps with individual auto-scaling and custom range controls.
+- Fixed Heatmap pipe stroke rendering by removing CSS `!important` overrides, enabling vibrant HSL pressure, temperature, flow, and velocity gradient displays across all pipes.
+- Implemented per-case telemetry storage and switching, dynamically updating canvas line flow metrics, Data Panel process values, and Heatmaps when switching active operating cases.
 
 ### 🔐 Admin Hub & Registration Backlog
 - Added **First-Time Admin Setup** modal on launch when no admin user exists in the database.

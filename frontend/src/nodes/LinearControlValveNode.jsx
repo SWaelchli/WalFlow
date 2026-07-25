@@ -24,7 +24,7 @@ export default function LinearControlValveNode({ id, data, selected }) {
       height={60}
       footer={
         <>
-          <div className="nodrag" style={{ padding: '2px 0' }}>
+          <div className="nodrag nopan" style={{ padding: '2px 0' }}>
             <input 
               type="range" 
               min="0" 
@@ -32,6 +32,8 @@ export default function LinearControlValveNode({ id, data, selected }) {
               step="1" 
               value={opening} 
               onChange={(e) => data.onChange && data.onChange(parseFloat(e.target.value), id)}
+              onMouseDown={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
               style={{ width: '60px', cursor: 'pointer', display: 'block', margin: '0 auto' }} 
             />
           </div>

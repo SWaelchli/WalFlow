@@ -46,7 +46,34 @@ function SortHeader({ label, sortKey, sortConfig, requestSort, align = 'left' })
   );
 }
 
-export default function DataList({ nodes, edges, onUpdateEdge, onUpdateNode, onSelectNode, onSelectEdge }) {
+const formatDelta = (val, baseVal, unit = '') => {
+  if (val === undefined || baseVal === undefined || val === null || baseVal === null) return null;
+  const delta = val - baseVal;
+  if (Math.abs(delta) < 1e-4) return null;
+  const pct = baseVal !== 0 ? (delta / baseVal) * 100 : 0;
+  const sign = delta > 0 ? '+' : '';
+  return `${sign}${delta.toFixed(2)} ${unit} (${sign}${pct.toFixed(1)}%)`;
+};
+
+export default function DataList({
+  nodes,
+  edges,
+  rawNodes,
+  rawEdges,
+  onUpdateEdge,
+  onUpdateNode,
+  onSelectNode,
+  onSelectEdge,
+  cases = [],
+  activeCaseId = 'case_base',
+  globalSettings = {},
+  onSelectCase,
+  onAddCase,
+  onRenameCase,
+  onDeleteCase,
+  onReorderCases,
+  onBatchResults
+}) {
 
   const [activeTab, setActiveTab] = useState('pipes');
   const [manualOrder, setManualOrder] = useState([]);
@@ -57,8 +84,89 @@ export default function DataList({ nodes, edges, onUpdateEdge, onUpdateNode, onS
   const [dragOverIdx, setDragOverIdx] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
 
+  // Column drag and drop state for Operating Cases Matrix
+  const [caseDragIdx, setCaseDragIdx] = useState(null);
+  const [caseDragOverIdx, setCaseDragOverIdx] = useState(null);
+
+  // Multi-Case Batch Matrix State
+  const [batchResults, setBatchResults] = useState(null);
+  const [isBatchLoading, setIsBatchLoading] = useState(false);
+  const [batchError, setBatchError] = useState(null);
+
+  const fetchBatchSimulations = useCallback(async () => {
+    setIsBatchLoading(true);
+    setBatchError(null);
+    try {
+      const baseNodes = rawNodes || nodes;
+      const baseEdges = rawEdges || edges;
+      const payload = {
+        nodes: baseNodes.map(n => ({ id: n.id, type: n.type, position: n.position, data: n.data })),
+        edges: baseEdges.map(e => ({ id: e.id, source: e.source, target: e.target, sourceHandle: e.sourceHandle, targetHandle: e.targetHandle, data: e.data })),
+        global_settings: globalSettings,
+        cases: cases,
+        active_case_id: activeCaseId
+      };
+      const response = await fetch('http://localhost:8000/api/simulation/batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!response.ok) {
+        throw new Error(`Batch server error (${response.status})`);
+      }
+      const data = await response.json();
+      const resList = data.results || [];
+      setBatchResults(resList);
+      if (onBatchResults) {
+        onBatchResults(resList);
+      }
+    } catch (err) {
+      console.error("Batch simulation failed:", err);
+      setBatchError(err.message || 'Failed to run batch simulation');
+    } finally {
+      setIsBatchLoading(false);
+    }
+  }, [nodes, edges, rawNodes, rawEdges, globalSettings, cases, activeCaseId, onBatchResults]);
+
+  const displayCases = useMemo(() => {
+    if (!cases || cases.length === 0) return [];
+    
+    return cases.map(c => {
+      const batchMatch = batchResults?.find(b => b.case_id === c.id);
+      return {
+        ...c,
+        case_id: c.id,
+        case_name: c.name,
+        kpis: c.kpis || batchMatch?.kpis
+      };
+    });
+  }, [cases, batchResults]);
+
+  const onCaseDragStart = (e, colIdx) => {
+    if (colIdx === 0) return; // Base Case cannot be dragged
+    setCaseDragIdx(colIdx);
+    e.dataTransfer.effectAllowed = "move";
+    const img = new Image();
+    img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+    e.dataTransfer.setDragImage(img, 0, 0);
+  };
+
+  const onCaseDragOver = (e, colIdx) => {
+    e.preventDefault();
+    if (colIdx === 0 || caseDragIdx === null || caseDragIdx === colIdx) return;
+    setCaseDragOverIdx(colIdx);
+  };
+
+  const onCaseDrop = (e, colIdx) => {
+    e.preventDefault();
+    if (colIdx !== 0 && caseDragIdx !== null && caseDragIdx !== colIdx && onReorderCases) {
+      onReorderCases(caseDragIdx, colIdx);
+    }
+    setCaseDragIdx(null);
+    setCaseDragOverIdx(null);
+  };
+
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setManualOrder(prev => {
       const currentIds = new Set([...nodes.map(n => n.id), ...edges.map(e => e.id)]);
       let newOrder = prev.filter(item => currentIds.has(item.id));
@@ -221,25 +329,260 @@ export default function DataList({ nodes, edges, onUpdateEdge, onUpdateNode, onS
             }}>
             Full Equipment & Pipeline Data
           </button>
+          <button onClick={() => { setActiveTab('cases'); setSortConfig({key:null, direction:'asc'}); }}
+            style={{ 
+              padding: '12px 20px', border: 'none', 
+              background: activeTab === 'cases' ? '#ffffff' : 'transparent', 
+              borderBottom: activeTab === 'cases' ? '3px solid #FA8507' : '3px solid transparent', 
+              fontWeight: '700', cursor: 'pointer', fontSize: '12px', 
+              color: activeTab === 'cases' ? '#FA8507' : '#587071',
+              transition: 'all 0.2s',
+              display: 'flex', alignItems: 'center', gap: '6px'
+            }}>
+            Operating Cases Matrix
+          </button>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ position: 'relative' }}>
-            <input type="text" placeholder="🔍 Filter list..." value={filterText} onChange={(e) => setFilterText(e.target.value)}
-              style={{ padding: '6px 10px', fontSize: '11px', border: '1px solid #D8E2E1', borderRadius: '6px', width: '160px', outline: 'none' }} />
-            {filterText && <button onClick={() => setFilterText("")} style={{ position:'absolute', right:5, top:'50%', transform:'translateY(-50%)', border:'none', background:'none', cursor:'pointer', color:'#587071' }}>×</button>}
-          </div>
-          <button onClick={handleAutoSortClick} style={{ padding: '6px 14px', background: '#395253', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '11px', fontWeight: '700', transition: 'background 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.background = '#253637'} onMouseLeave={(e) => e.currentTarget.style.background = '#395253'}>
-            🪄 Auto Sort
-          </button>
-          <button onClick={exportCSV} style={{ padding: '6px 14px', background: '#FA8507', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '11px', fontWeight: '700', transition: 'background 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.background = '#E07600'} onMouseLeave={(e) => e.currentTarget.style.background = '#FA8507'}>
-            ⬇ Export CSV
-          </button>
+          {activeTab === 'cases' ? (
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {onAddCase && (
+                <button
+                  onClick={onAddCase}
+                  style={{
+                    padding: '6px 12px',
+                    background: '#395253',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '11px',
+                    fontWeight: '700'
+                  }}
+                >
+                  ➕ Duplicate Case
+                </button>
+              )}
+              <button
+                onClick={fetchBatchSimulations}
+                disabled={isBatchLoading}
+                style={{
+                  padding: '6px 14px',
+                  background: isBatchLoading ? '#cbd5e1' : '#FA8507',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: isBatchLoading ? 'default' : 'pointer',
+                  fontSize: '11px',
+                  fontWeight: '700'
+                }}
+              >
+                {isBatchLoading ? '⌛ Solving Cases...' : '▶ Batch Solve Matrix'}
+              </button>
+            </div>
+          ) : (
+            <>
+              <div style={{ position: 'relative' }}>
+                <input type="text" placeholder="🔍 Filter list..." value={filterText} onChange={(e) => setFilterText(e.target.value)}
+                  style={{ padding: '6px 10px', fontSize: '11px', border: '1px solid #D8E2E1', borderRadius: '6px', width: '160px', outline: 'none' }} />
+                {filterText && <button onClick={() => setFilterText("")} style={{ position:'absolute', right:5, top:'50%', transform:'translateY(-50%)', border:'none', background:'none', cursor:'pointer', color:'#587071' }}>×</button>}
+              </div>
+              <button onClick={handleAutoSortClick} style={{ padding: '6px 14px', background: '#395253', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '11px', fontWeight: '700', transition: 'background 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.background = '#253637'} onMouseLeave={(e) => e.currentTarget.style.background = '#395253'}>
+                🪄 Auto Sort
+              </button>
+              <button onClick={exportCSV} style={{ padding: '6px 14px', background: '#FA8507', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '11px', fontWeight: '700', transition: 'background 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.background = '#E07600'} onMouseLeave={(e) => e.currentTarget.style.background = '#FA8507'}>
+                ⬇ Export CSV
+              </button>
+            </>
+          )}
         </div>
       </div>
 
-      <div style={{ flexGrow: 1, overflowY: 'auto', overflowX: 'auto', maxWidth: '100%' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', textAlign: 'left' }}>
+      <div className="matrix-scroll-container" style={{ flexGrow: 1, overflowY: 'auto', overflowX: 'auto', maxWidth: '100%', display: 'block' }}>
+        {activeTab === 'cases' ? (
+          <div style={{ display: 'inline-block', minWidth: '100%', boxSizing: 'border-box', verticalAlign: 'top' }}>
+            {isBatchLoading ? (
+              <div style={{ textAlign: 'center', padding: '40px 0', color: '#587071', fontSize: '13px', fontWeight: '600' }}>
+                ⌛ Running batch simulations across all operating cases...
+              </div>
+            ) : batchError ? (
+              <div style={{ padding: '16px', color: '#ef4444', background: '#fef2f2', borderRadius: '8px', border: '1px solid #fee2e2' }}>
+                <strong>Batch Simulation Error:</strong> {batchError}
+              </div>
+            ) : (
+              <table style={{ width: '100%', height: 'max-content', borderCollapse: 'collapse', fontSize: '11px', textAlign: 'left', tableLayout: 'auto' }}>
+                <thead>
+                  <tr style={{ background: '#EBF0EF', borderBottom: '2px solid #D8E2E1', color: '#395253', fontWeight: '700', height: '40px' }}>
+                    <th style={{ padding: '6px 12px', verticalAlign: 'middle', width: '200px', minWidth: '200px', maxWidth: '200px', whiteSpace: 'nowrap' }}>Performance Metric</th>
+                    {displayCases.map((c, colIdx) => {
+                      const caseId = c.case_id || c.id;
+                      const caseName = c.case_name || c.name || '';
+                      const isBase = c.is_base;
+                      const isActive = caseId === activeCaseId;
+                      const inputWidth = Math.max(65, Math.min(220, (caseName.length || 6) * 8 + 14));
+
+                      return (
+                        <th 
+                          key={caseId} 
+                          draggable={!isBase}
+                          onDragStart={(e) => onCaseDragStart(e, colIdx)}
+                          onDragOver={(e) => onCaseDragOver(e, colIdx)}
+                          onDrop={(e) => onCaseDrop(e, colIdx)}
+                          style={{ 
+                            padding: '6px 12px', 
+                            background: isActive ? '#fff7ed' : 'inherit', 
+                            borderLeft: caseDragOverIdx === colIdx ? '3px solid #FA8507' : '1px solid #D8E2E1',
+                            opacity: caseDragIdx === colIdx ? 0.5 : 1,
+                            cursor: isBase ? 'default' : 'grab',
+                            verticalAlign: 'middle',
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'nowrap', whiteSpace: 'nowrap' }}>
+                            {!isBase && (
+                              <span style={{ fontSize: '11px', color: '#94a3b8', cursor: 'grab', userSelect: 'none' }} title="Drag column to reorder">
+                                ⋮⋮
+                              </span>
+                            )}
+                            <input 
+                              style={{ 
+                                width: `${inputWidth}px`, 
+                                fontSize: '11px', 
+                                border: '1px solid #D8E2E1', 
+                                padding: '3px 6px', 
+                                borderRadius: '5px', 
+                                fontWeight: '700', 
+                                color: isActive ? '#FA8507' : '#1C2B2C', 
+                                outline: 'none', 
+                                background: '#ffffff',
+                                transition: 'width 0.15s ease'
+                              }}
+                              value={caseName} 
+                              onChange={(e) => onRenameCase && onRenameCase(caseId, e.target.value)}
+                              onPointerDown={(e) => e.stopPropagation()} 
+                              onMouseDown={(e) => e.stopPropagation()}
+                            />
+                            {isBase && <span style={{ fontSize: '10px', fontWeight: '800', color: '#395253' }}>(Base)</span>}
+                            {!isActive && onSelectCase && (
+                              <button
+                                onClick={() => onSelectCase(caseId)}
+                                style={{ padding: '2px 6px', fontSize: '10px', borderRadius: '4px', border: '1px solid #D8E2E1', background: '#ffffff', cursor: 'pointer', color: '#395253', fontWeight: '600', whiteSpace: 'nowrap' }}
+                              >
+                                ⚡ Switch
+                              </button>
+                            )}
+                            {!isBase && onDeleteCase && (
+                              <button
+                                onClick={() => {
+                                  if (confirm(`Delete case "${caseName}"?`)) {
+                                    onDeleteCase(caseId);
+                                  }
+                                }}
+                                title="Delete this operating case"
+                                style={{ padding: '2px 6px', fontSize: '10px', borderRadius: '4px', border: '1px solid #fee2e2', background: '#fef2f2', cursor: 'pointer', color: '#ef4444', fontWeight: '600', whiteSpace: 'nowrap' }}
+                              >
+                                🗑️
+                              </button>
+                            )}
+                            {isActive && <span style={{ fontSize: '10px', color: '#FA8507', fontWeight: 'bold' }}>Active</span>}
+                          </div>
+                        </th>
+                      );
+                    })}
+                  </tr>
+                </thead>
+                <tbody>
+                  {/* Max Pressure */}
+                  <tr style={{ borderBottom: '1px solid #EBF0EF', height: '36px' }}>
+                    <td style={{ padding: '6px 12px', fontWeight: '700', color: '#1C2B2C', verticalAlign: 'middle', width: '200px', minWidth: '200px', maxWidth: '200px', whiteSpace: 'nowrap' }}>System Max Pressure (bar)</td>
+                    {displayCases.map((c, colIdx) => {
+                      const baseKpis = displayCases.find(b => b.is_base)?.kpis;
+                      const kpis = c.kpis || {};
+                      const val = kpis.max_pressure_bar;
+                      const deltaStr = !c.is_base && baseKpis ? formatDelta(val, baseKpis.max_pressure_bar, 'bar') : null;
+                      return (
+                        <td key={c.case_id || c.id} style={{ padding: '6px 12px', borderLeft: caseDragOverIdx === colIdx ? '3px solid #FA8507' : '1px solid #D8E2E1', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                          <span style={{ fontWeight: '700', color: '#1C2B2C' }}>{val !== undefined ? `${val} bar` : '—'}</span>
+                          {deltaStr && <span style={{ fontSize: '10px', color: '#d97706', marginLeft: '8px' }}>{deltaStr}</span>}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                  {/* Min Pressure */}
+                  <tr style={{ borderBottom: '1px solid #EBF0EF', background: '#F8FAFA', height: '36px' }}>
+                    <td style={{ padding: '6px 12px', fontWeight: '700', color: '#1C2B2C', verticalAlign: 'middle', width: '200px', minWidth: '200px', maxWidth: '200px', whiteSpace: 'nowrap' }}>System Min Pressure (bar)</td>
+                    {displayCases.map((c, colIdx) => {
+                      const baseKpis = displayCases.find(b => b.is_base)?.kpis;
+                      const kpis = c.kpis || {};
+                      const val = kpis.min_pressure_bar;
+                      const deltaStr = !c.is_base && baseKpis ? formatDelta(val, baseKpis.min_pressure_bar, 'bar') : null;
+                      return (
+                        <td key={c.case_id || c.id} style={{ padding: '6px 12px', borderLeft: caseDragOverIdx === colIdx ? '3px solid #FA8507' : '1px solid #D8E2E1', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                          <span style={{ fontWeight: '700', color: '#1C2B2C' }}>{val !== undefined ? `${val} bar` : '—'}</span>
+                          {deltaStr && <span style={{ fontSize: '10px', color: '#d97706', marginLeft: '8px' }}>{deltaStr}</span>}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                  {/* Total Pump Flow */}
+                  <tr style={{ borderBottom: '1px solid #EBF0EF', height: '36px' }}>
+                    <td style={{ padding: '6px 12px', fontWeight: '700', color: '#1C2B2C', verticalAlign: 'middle', width: '200px', minWidth: '200px', maxWidth: '200px', whiteSpace: 'nowrap' }}>Total Pump Flow (L/min)</td>
+                    {displayCases.map((c, colIdx) => {
+                      const baseKpis = displayCases.find(b => b.is_base)?.kpis;
+                      const kpis = c.kpis || {};
+                      const val = kpis.total_flow_lmin;
+                      const deltaStr = !c.is_base && baseKpis ? formatDelta(val, baseKpis.total_flow_lmin, 'L/min') : null;
+                      return (
+                        <td key={c.case_id || c.id} style={{ padding: '6px 12px', borderLeft: caseDragOverIdx === colIdx ? '3px solid #FA8507' : '1px solid #D8E2E1', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                          <span style={{ fontWeight: '700', color: '#1C2B2C' }}>{val !== undefined ? `${val} L/min` : '—'}</span>
+                          {deltaStr && <span style={{ fontSize: '10px', color: '#d97706', marginLeft: '8px' }}>{deltaStr}</span>}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                  {/* Total Pump Power */}
+                  <tr style={{ borderBottom: '1px solid #EBF0EF', background: '#F8FAFA', height: '36px' }}>
+                    <td style={{ padding: '6px 12px', fontWeight: '700', color: '#1C2B2C', verticalAlign: 'middle', width: '200px', minWidth: '200px', maxWidth: '200px', whiteSpace: 'nowrap' }}>Total Pump Power (kW)</td>
+                    {displayCases.map((c, colIdx) => {
+                      const baseKpis = displayCases.find(b => b.is_base)?.kpis;
+                      const kpis = c.kpis || {};
+                      const val = kpis.total_pump_power_kw;
+                      const deltaStr = !c.is_base && baseKpis ? formatDelta(val, baseKpis.total_pump_power_kw, 'kW') : null;
+                      return (
+                        <td key={c.case_id || c.id} style={{ padding: '6px 12px', borderLeft: caseDragOverIdx === colIdx ? '3px solid #FA8507' : '1px solid #D8E2E1', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                          <span style={{ fontWeight: '700', color: '#1C2B2C' }}>{val !== undefined ? `${val} kW` : '—'}</span>
+                          {deltaStr && <span style={{ fontSize: '10px', color: '#d97706', marginLeft: '8px' }}>{deltaStr}</span>}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                  {/* Cavitation Warning */}
+                  <tr style={{ borderBottom: '1px solid #EBF0EF', height: '36px' }}>
+                    <td style={{ padding: '6px 12px', fontWeight: '700', color: '#1C2B2C', verticalAlign: 'middle', width: '200px', minWidth: '200px', maxWidth: '200px', whiteSpace: 'nowrap' }}>Cavitation Risk Status</td>
+                    {displayCases.map((c, colIdx) => {
+                      const kpis = c.kpis || {};
+                      const hasCav = kpis.has_cavitation_warning;
+                      return (
+                        <td key={c.case_id || c.id} style={{ padding: '6px 12px', borderLeft: caseDragOverIdx === colIdx ? '3px solid #FA8507' : '1px solid #D8E2E1', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                          {hasCav ? (
+                            <span style={{ fontSize: '10px', fontWeight: '700', color: '#ef4444', background: '#fef2f2', padding: '2px 8px', borderRadius: '10px', border: '1px solid #fee2e2' }}>
+                              ⚠️ Cavitation Risk
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: '10px', fontWeight: '700', color: '#16a34a', background: '#f0fdf4', padding: '2px 8px', borderRadius: '10px', border: '1px solid #dcfce7' }}>
+                              ✓ Normal
+                            </span>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                </tbody>
+              </table>
+            )}
+          </div>
+        ) : (
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', textAlign: 'left' }}>
           <thead>
             <tr style={{ background: '#EBF0EF', borderBottom: '2px solid #D8E2E1', color: '#395253', fontWeight: '700', position: 'sticky', top: 0, zIndex: 1 }}>
 
@@ -391,6 +734,7 @@ export default function DataList({ nodes, edges, onUpdateEdge, onUpdateNode, onS
             })}
           </tbody>
         </table>
+        )}
       </div>
     </div>
   );

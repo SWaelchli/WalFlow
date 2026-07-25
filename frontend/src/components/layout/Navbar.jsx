@@ -27,7 +27,11 @@ export default function Navbar({
   onOpenProjectsModal,
   onOpenAdminHub,
   onOpenHelpModal,
-  onLogoutClear
+  onLogoutClear,
+  cases = [],
+  activeCaseId = 'case_base',
+  onSelectCase,
+  onAddCase
 }) {
   const { currentUser, isAuthenticated, isAdmin, adminStatus, logout } = useAuth();
 
@@ -76,8 +80,8 @@ export default function Navbar({
       position: 'relative',
       boxShadow: '0 1px 3px rgba(57, 82, 83, 0.05)'
     }}>
-      {/* Left: Brand Logo */}
-      <div style={{ display: 'flex', alignItems: 'center' }}>
+      {/* Left: Brand Logo & Case Switcher */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
         <img
           src={walflowLogo}
           alt="WälFlow Logo"
@@ -85,6 +89,67 @@ export default function Navbar({
           title="Click for Help & Documentation"
           style={{ height: '28px', display: 'block', cursor: 'pointer' }}
         />
+
+        {/* Operating Case Switcher Bar */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          background: theme.slate50,
+          padding: '4px 10px',
+          borderRadius: '8px',
+          border: `1px solid ${theme.slate200}`
+        }}>
+          <span style={{ fontSize: '11px', fontWeight: '700', color: theme.slate800, display: 'flex', alignItems: 'center', gap: '3px' }}>
+            <span style={{ color: theme.primary }}>⚡</span> Case:
+          </span>
+
+          <select
+            value={activeCaseId}
+            onChange={(e) => onSelectCase && onSelectCase(e.target.value)}
+            style={{
+              height: '26px',
+              padding: '0 8px',
+              fontSize: '12px',
+              fontWeight: '600',
+              color: theme.slate800,
+              background: theme.white,
+              border: `1px solid ${theme.slate200}`,
+              borderRadius: '6px',
+              cursor: 'pointer',
+              outline: 'none'
+            }}
+          >
+            {cases.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name} {c.is_base ? ' (Base)' : ''}
+              </option>
+            ))}
+          </select>
+
+          <button
+            onClick={onAddCase}
+            title="Duplicate Active Case to create a New Case"
+            style={{
+              height: '26px',
+              padding: '0 8px',
+              borderRadius: '6px',
+              fontSize: '11px',
+              fontWeight: '600',
+              background: theme.white,
+              border: `1px solid ${theme.slate200}`,
+              color: theme.slate800,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = theme.slate100}
+            onMouseLeave={(e) => e.currentTarget.style.background = theme.white}
+          >
+            ➕ New Case
+          </button>
+        </div>
       </div>
 
       {/* Center: Main Canvas Controls */}

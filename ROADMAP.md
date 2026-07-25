@@ -13,6 +13,77 @@ This document outlines planned features, overlays, and enhancements for the WalF
 
 ---
 
+## 💾 State Management & Persistence
+
+- [ ] **💾 Canvas Session Auto-Save & Refresh State Recovery (`AutoSaveSessionManager`)**
+  * **Concept:** Automatic local state persistence ensuring users never lose working progress when the browser window is refreshed, navigated away from, or accidentally closed.
+
+### 1. Real-World Motivation & Use Cases
+Currently, refreshing the browser window (F5), closing a tab, or experiencing a browser crash resets the application to the default start canvas, causing total loss of unsaved diagrams and component configurations. Implementing seamless session auto-save guarantees that the exact workspace state is preserved and automatically reloaded on refresh.
+
+### 2. State Scope & Recovery Targets
+The auto-save mechanism captures the complete workspace context:
+* **Canvas Topography:** Nodes, edges, connections, custom text labels, and canvas annotations.
+* **Visual Framing:** Canvas pan `(x, y)` position and zoom level (`zoom`) so visual context is maintained exactly.
+* **Simulation & Parameter State:** Global fluid parameters (fluid type, temperature, viscosity), solver configurations, and active operating case selection.
+* **UI & Workspace State:** Selected node focus and open sidebar inspector panel state.
+
+### 3. Technical Architecture & Persistence Strategy
+* **Storage Engine:** Browser `localStorage` (with fallback to `IndexedDB` for large diagrams).
+  * Storage Key: `walflow_active_session_draft`
+  * Debounced Writes: Saves state to local browser storage automatically 1000ms after the user stops making canvas or property edits.
+* **Unload Hook:** Registers a `beforeunload` event handler for an instant synchronous write right before browser tab teardown or refresh.
+* **Hydration on Startup:** On application startup (`App.jsx`), WalFlow checks for a valid saved draft in `localStorage`. If found, it hydrates the ReactFlow diagram, viewport, fluid settings, and active operating case instead of rendering the blank start canvas.
+
+### 4. User Interface & Visual Design Concept
+Following WalFlow design tokens (Teal `#395253`, Orange `#FA8507`, Light Surface `#F4F7F6`):
+* **A. Top Header Auto-Save Pill:**
+  * Displays a live status badge next to diagram controls:
+    * `🟢 Saved to browser` — All current changes safely cached locally.
+    * `🟠 Auto-saving...` — Debounced save in progress.
+    * `⚠️ Unsaved changes` — Active draft differs from loaded named project file.
+* **B. Discard / Reset Action:**
+  * Integrated into the `Clear Canvas` action modal: Option to "Clear Canvas & Purge Cached Session", enabling users to start completely fresh when desired.
+* **C. Recovery Toast Notification:**
+  * Brief toast notification on refresh confirming: `"Restored unsaved session from [Timestamp]"`.
+
+### 5. Data Schema & Persistence Payload
+```json
+{
+  "file_format_version": "0.1",
+  "app_version": "0.1.1",
+  "timestamp": "2026-07-25T16:35:00Z",
+  "viewport": { "x": 120.5, "y": -45.0, "zoom": 1.25 },
+  "active_case_id": "case_base",
+  "cases": [ /* Active operating cases & overrides */ ],
+  "nodes": [ /* Canvas nodes & parameters */ ],
+  "edges": [ /* Canvas edges & connections */ ],
+  "global_fluid": { /* Global fluid properties */ },
+  "ui_state": {
+    "sidebar_tab": "components",
+    "selected_node_id": "node_pump_1"
+  }
+}
+```
+
+### 6. Phased Implementation Plan
+
+- [ ] **Phase 1: Debounced Persistence Engine & Hook**
+  * Create `useAutoSave` hook subscribing to state changes (ReactFlow nodes/edges, viewport, fluid settings, active case).
+  * Implement debounced storage writer (1000ms delay) targeting `localStorage` with `file_format_version` sanity check.
+  * Add `beforeunload` event listener for sync saving prior to page unload/refresh.
+
+- [ ] **Phase 2: Hydration & Startup Restoration Logic**
+  * Modify app initialization to check for existing draft payload on boot.
+  * Hydrate nodes, edges, viewport position/zoom, fluid parameters, and operating cases seamlessly before mounting the canvas.
+
+- [ ] **Phase 3: UI Indicators & Session Reset Controls**
+  * Add live "Saved to browser" status badge in the top header navbar.
+  * Update `Clear Canvas` workflow to allow purging local session cache.
+  * Add restoration toast notification confirming restored state timestamp on page reload.
+
+---
+
 ## ⚙️ Physics & Simulation
 
 ### 🧰 New Equipment & Component Additions

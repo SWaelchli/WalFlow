@@ -34,6 +34,25 @@ class GlobalSettings(BaseModel):
     control_iterations: int = 100 # Max steps for the regulator control loop
     solver_method: str = "hybr" # "hybr" or "lm"
 
+class OperatingCaseOverrides(BaseModel):
+    """
+    Stores parameter overrides for a specific operating case.
+    nodes: dictionary mapping node_id -> dict of overridden property names & values
+    global_settings: dictionary mapping global property names & values
+    """
+    nodes: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
+    global_settings: Dict[str, Any] = Field(default_factory=dict)
+
+class OperatingCase(BaseModel):
+    """
+    Represents an operating case scenario (e.g. Base Case, Cold Start, Throttled).
+    """
+    id: str
+    name: str = "Operating Case"
+    description: Optional[str] = ""
+    is_base: bool = False
+    overrides: OperatingCaseOverrides = Field(default_factory=OperatingCaseOverrides)
+
 class ReactFlowNode(BaseModel):
     """Represents a node from React Flow."""
     id: str
@@ -55,6 +74,22 @@ class ReactFlowGraph(BaseModel):
     nodes: List[ReactFlowNode]
     edges: List[ReactFlowEdge]
     global_settings: Optional[GlobalSettings] = Field(default_factory=GlobalSettings)
+    cases: Optional[List[OperatingCase]] = Field(default_factory=list)
+    active_case_id: Optional[str] = None
+
+class BatchCaseResult(BaseModel):
+    case_id: str
+    case_name: str
+    is_base: bool
+    status: str
+    error_message: Optional[str] = None
+    stats: Optional[Dict[str, Any]] = None
+    telemetry: Optional[Dict[str, Any]] = None
+    kpis: Optional[Dict[str, Any]] = None
+
+class BatchSimulationResponse(BaseModel):
+    status: str
+    results: List[BatchCaseResult]
 
 class HydraulicNetwork(BaseModel):
     """
@@ -67,3 +102,4 @@ class HydraulicNetwork(BaseModel):
     nodes: Dict[str, Any]  # ID -> HydraulicNode
     edges: List[Dict[str, Any]]  # List of: {'source': id, 'target': id, 'pipe': Pipe, 'source_port': str, 'target_port': str}
     global_settings: Optional[GlobalSettings] = None
+
