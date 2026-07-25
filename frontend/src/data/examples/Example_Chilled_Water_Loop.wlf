@@ -1,0 +1,358 @@
+{
+  "version": "0.1",
+  "app_version": "0.1.1",
+  "format": "walflow",
+  "nodes": [
+    {
+      "id": "note-overview",
+      "type": "text_bubble",
+      "position": {
+        "x": 150,
+        "y": -120
+      },
+      "width": 400,
+      "height": 140,
+      "style": {
+        "width": 400,
+        "height": 140
+      },
+      "data": {
+        "label": "Note",
+        "title": "CHILLED WATER CIRCUIT",
+        "text": "Demonstrates a closed-loop industrial chilled water cooling circuit with parallel primary pumps, check valve protection, heat exchanger cooling load, dynamic 3-way TCV mixing, and an expansion reservoir.",
+        "fontSize": "md"
+      }
+    },
+    {
+      "id": "expansion-tank",
+      "type": "tank",
+      "position": {
+        "x": 100,
+        "y": 250
+      },
+      "data": {
+        "label": "Chilled Water Reservoir",
+        "level": 3.0,
+        "elevation": 5.0,
+        "temperature": 279.15,
+        "fluid_type": "water"
+      }
+    },
+    {
+      "id": "primary-pump-1",
+      "type": "centrifugal_pump",
+      "position": {
+        "x": 260,
+        "y": 180
+      },
+      "data": {
+        "label": "Primary Chiller Pump A",
+        "flow_rated_lmin": 300.0,
+        "pressure_rated_bar": 4.5,
+        "rise_to_shutoff_pct": 15.0
+      }
+    },
+    {
+      "id": "primary-pump-2",
+      "type": "centrifugal_pump",
+      "position": {
+        "x": 260,
+        "y": 320
+      },
+      "data": {
+        "label": "Primary Chiller Pump B",
+        "flow_rated_lmin": 300.0,
+        "pressure_rated_bar": 4.5,
+        "rise_to_shutoff_pct": 15.0
+      }
+    },
+    {
+      "id": "cv-check-1",
+      "type": "check_valve",
+      "position": {
+        "x": 400,
+        "y": 180
+      },
+      "data": {
+        "label": "Check Valve A",
+        "cv": 15.0,
+        "cracking_pressure_bar": 0.1
+      }
+    },
+    {
+      "id": "cv-check-2",
+      "type": "check_valve",
+      "position": {
+        "x": 400,
+        "y": 320
+      },
+      "data": {
+        "label": "Check Valve B",
+        "cv": 15.0,
+        "cracking_pressure_bar": 0.1
+      }
+    },
+    {
+      "id": "primary-mixer",
+      "type": "mixer",
+      "position": {
+        "x": 520,
+        "y": 250
+      },
+      "data": {
+        "label": "Pump Discharge Header"
+      }
+    },
+    {
+      "id": "chiller-evaporator",
+      "type": "heat_exchanger",
+      "position": {
+        "x": 660,
+        "y": 250
+      },
+      "data": {
+        "label": "Chiller Evaporator (Cooler)",
+        "rated_cooling_kw": 250.0,
+        "rated_flow_lmin": 500.0,
+        "design_inlet_temp_c": 12.0,
+        "medium_temp_c": 2.0,
+        "k_factor": 5.0
+      }
+    },
+    {
+      "id": "supply-splitter",
+      "type": "splitter",
+      "position": {
+        "x": 820,
+        "y": 250
+      },
+      "data": {
+        "label": "Secondary Supply Splitter"
+      }
+    },
+    {
+      "id": "process-cooling-coil",
+      "type": "heat_exchanger",
+      "position": {
+        "x": 960,
+        "y": 180
+      },
+      "data": {
+        "label": "Process Air Cooling Coil",
+        "rated_cooling_kw": 150.0,
+        "rated_flow_lmin": 300.0,
+        "design_inlet_temp_c": 6.0,
+        "medium_temp_c": 35.0,
+        "k_factor": 8.0
+      }
+    },
+    {
+      "id": "secondary-control-valve",
+      "type": "linear_control_valve",
+      "position": {
+        "x": 960,
+        "y": 320
+      },
+      "data": {
+        "label": "AHU Throttling Valve",
+        "max_cv": 15.0,
+        "opening": 65.0
+      }
+    },
+    {
+      "id": "return-mixer",
+      "type": "mixer",
+      "position": {
+        "x": 1120,
+        "y": 250
+      },
+      "data": {
+        "label": "Common Return Header"
+      }
+    },
+    {
+      "id": "return-tank",
+      "type": "tank",
+      "position": {
+        "x": 1260,
+        "y": 250
+      },
+      "data": {
+        "label": "Return Reservoir",
+        "level": 1.0,
+        "elevation": 0.0,
+        "temperature": 285.15
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "c1",
+      "source": "expansion-tank",
+      "sourceHandle": "outlet-0",
+      "target": "primary-pump-1",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Suction A",
+        "length": 3,
+        "diameter": 0.05
+      }
+    },
+    {
+      "id": "c2",
+      "source": "expansion-tank",
+      "sourceHandle": "outlet-0",
+      "target": "primary-pump-2",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Suction B",
+        "length": 3,
+        "diameter": 0.05
+      }
+    },
+    {
+      "id": "c3",
+      "source": "primary-pump-1",
+      "sourceHandle": "outlet-0",
+      "target": "cv-check-1",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Discharge A",
+        "length": 1,
+        "diameter": 0.04
+      }
+    },
+    {
+      "id": "c4",
+      "source": "primary-pump-2",
+      "sourceHandle": "outlet-0",
+      "target": "cv-check-2",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Discharge B",
+        "length": 1,
+        "diameter": 0.04
+      }
+    },
+    {
+      "id": "c5",
+      "source": "cv-check-1",
+      "sourceHandle": "outlet-0",
+      "target": "primary-mixer",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Header A",
+        "length": 2,
+        "diameter": 0.05
+      }
+    },
+    {
+      "id": "c6",
+      "source": "cv-check-2",
+      "sourceHandle": "outlet-0",
+      "target": "primary-mixer",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "Header B",
+        "length": 2,
+        "diameter": 0.05
+      }
+    },
+    {
+      "id": "c7",
+      "source": "primary-mixer",
+      "sourceHandle": "outlet-0",
+      "target": "chiller-evaporator",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Chiller Feed",
+        "length": 4,
+        "diameter": 0.06
+      }
+    },
+    {
+      "id": "c8",
+      "source": "chiller-evaporator",
+      "sourceHandle": "outlet-0",
+      "target": "supply-splitter",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Chilled Supply",
+        "length": 5,
+        "diameter": 0.06
+      }
+    },
+    {
+      "id": "c9",
+      "source": "supply-splitter",
+      "sourceHandle": "outlet-0",
+      "target": "process-cooling-coil",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Coil Branch",
+        "length": 4,
+        "diameter": 0.04
+      }
+    },
+    {
+      "id": "c10",
+      "source": "supply-splitter",
+      "sourceHandle": "outlet-1",
+      "target": "secondary-control-valve",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Bypass/AHU Branch",
+        "length": 4,
+        "diameter": 0.04
+      }
+    },
+    {
+      "id": "c11",
+      "source": "process-cooling-coil",
+      "sourceHandle": "outlet-0",
+      "target": "return-mixer",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Coil Return",
+        "length": 4,
+        "diameter": 0.04
+      }
+    },
+    {
+      "id": "c12",
+      "source": "secondary-control-valve",
+      "sourceHandle": "outlet-0",
+      "target": "return-mixer",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "AHU Return",
+        "length": 4,
+        "diameter": 0.04
+      }
+    },
+    {
+      "id": "c13",
+      "source": "return-mixer",
+      "sourceHandle": "outlet-0",
+      "target": "return-tank",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Main Return",
+        "length": 5,
+        "diameter": 0.06
+      }
+    }
+  ],
+  "globalSettings": {
+    "fluid_type": "water",
+    "ambient_temperature": 293.15,
+    "atmospheric_pressure": 101325,
+    "global_roughness": 4.5e-05,
+    "property_iterations": 5,
+    "tolerance": 1e-06,
+    "inner_iterations": 1000,
+    "control_iterations": 100,
+    "solver_method": "hybr",
+    "max_iterations": 1000
+  }
+}

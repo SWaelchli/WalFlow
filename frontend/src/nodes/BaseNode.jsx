@@ -27,7 +27,7 @@ export default function BaseNode({
   }, [id, rotation, sensing, updateNodeInternals]);
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div style={{ position: 'relative', cursor: selected ? 'move' : 'pointer' }}>
       {selected && (
         <div style={{
           position: 'absolute',

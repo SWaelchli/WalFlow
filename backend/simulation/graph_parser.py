@@ -23,9 +23,11 @@ class GraphParser:
         """
         Converts a React Flow graph into a HydraulicNetwork.
         """
-        # 1. Instantiate Equipment Nodes
+        # 1. Instantiate Equipment Nodes (ignoring non-hydraulic visual annotations)
         nodes_dict: Dict[str, HydraulicNode] = {}
         for node_data in graph.nodes:
+            if node_data.type in ['text_bubble', 'note', 'annotation']:
+                continue
             node = GraphParser.create_node(node_data, graph.global_settings)
             nodes_dict[node_data.id] = node
 

@@ -1,0 +1,307 @@
+{
+  "version": "0.1",
+  "app_version": "0.1.1",
+  "format": "walflow",
+  "nodes": [
+    {
+      "id": "note-overview",
+      "type": "text_bubble",
+      "position": {
+        "x": 100,
+        "y": -120
+      },
+      "width": 400,
+      "height": 140,
+      "style": {
+        "width": 400,
+        "height": 140
+      },
+      "data": {
+        "label": "Note",
+        "title": "PARALLEL PUMPING & MIN-FLOW",
+        "text": "Demonstrates parallel centrifugal pump operation (Duty/Standby) discharging into a common header. Illustrates check valve backflow protection and minimum-flow bypass orifices to protect pumps from deadheading under low demand.",
+        "fontSize": "md"
+      }
+    },
+    {
+      "id": "common-suction-tank",
+      "type": "tank",
+      "position": {
+        "x": 100,
+        "y": 250
+      },
+      "data": {
+        "label": "Suction Storage Tank",
+        "level": 3.0,
+        "elevation": 0.0,
+        "temperature": 293.15
+      }
+    },
+    {
+      "id": "pump-a",
+      "type": "centrifugal_pump",
+      "position": {
+        "x": 260,
+        "y": 140
+      },
+      "data": {
+        "label": "Duty Pump A",
+        "flow_rated_lmin": 250.0,
+        "pressure_rated_bar": 6.0,
+        "rise_to_shutoff_pct": 20.0
+      }
+    },
+    {
+      "id": "check-bypass-a",
+      "type": "check_valve_orifice",
+      "position": {
+        "x": 420,
+        "y": 140
+      },
+      "data": {
+        "label": "Check Valve + Min Flow Bypass A",
+        "cv": 12.0,
+        "cracking_pressure_bar": 0.2,
+        "pipe_diameter": 0.04,
+        "orifice_diameter": 0.006
+      }
+    },
+    {
+      "id": "pump-b",
+      "type": "centrifugal_pump",
+      "position": {
+        "x": 260,
+        "y": 360
+      },
+      "data": {
+        "label": "Standby Pump B",
+        "flow_rated_lmin": 250.0,
+        "pressure_rated_bar": 6.0,
+        "rise_to_shutoff_pct": 20.0
+      }
+    },
+    {
+      "id": "check-bypass-b",
+      "type": "check_valve_orifice",
+      "position": {
+        "x": 420,
+        "y": 360
+      },
+      "data": {
+        "label": "Check Valve + Min Flow Bypass B",
+        "cv": 12.0,
+        "cracking_pressure_bar": 0.2,
+        "pipe_diameter": 0.04,
+        "orifice_diameter": 0.006
+      }
+    },
+    {
+      "id": "common-header-mixer",
+      "type": "mixer",
+      "position": {
+        "x": 580,
+        "y": 250
+      },
+      "data": {
+        "label": "Common Discharge Header Mixer"
+      }
+    },
+    {
+      "id": "header-splitter",
+      "type": "splitter",
+      "position": {
+        "x": 720,
+        "y": 250
+      },
+      "data": {
+        "label": "Distribution Splitter"
+      }
+    },
+    {
+      "id": "load-a",
+      "type": "orifice",
+      "position": {
+        "x": 860,
+        "y": 160
+      },
+      "data": {
+        "label": "Process Load Branch 1",
+        "pipe_diameter": 0.032,
+        "orifice_diameter": 0.015
+      }
+    },
+    {
+      "id": "load-b",
+      "type": "orifice",
+      "position": {
+        "x": 860,
+        "y": 340
+      },
+      "data": {
+        "label": "Process Load Branch 2",
+        "pipe_diameter": 0.032,
+        "orifice_diameter": 0.015
+      }
+    },
+    {
+      "id": "discharge-sink",
+      "type": "tank",
+      "position": {
+        "x": 1040,
+        "y": 250
+      },
+      "data": {
+        "label": "Header Sink Tank",
+        "level": 1.0,
+        "elevation": 0.0,
+        "temperature": 293.15
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "pp1",
+      "source": "common-suction-tank",
+      "sourceHandle": "outlet-0",
+      "target": "pump-a",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Suction A",
+        "length": 2,
+        "diameter": 0.04
+      }
+    },
+    {
+      "id": "pp2",
+      "source": "common-suction-tank",
+      "sourceHandle": "outlet-0",
+      "target": "pump-b",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Suction B",
+        "length": 2,
+        "diameter": 0.04
+      }
+    },
+    {
+      "id": "pp3",
+      "source": "pump-a",
+      "sourceHandle": "outlet-0",
+      "target": "check-bypass-a",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Discharge A",
+        "length": 1,
+        "diameter": 0.032
+      }
+    },
+    {
+      "id": "pp4",
+      "source": "pump-b",
+      "sourceHandle": "outlet-0",
+      "target": "check-bypass-b",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Discharge B",
+        "length": 1,
+        "diameter": 0.032
+      }
+    },
+    {
+      "id": "pp5",
+      "source": "check-bypass-a",
+      "sourceHandle": "outlet-0",
+      "target": "common-header-mixer",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Header Feed A",
+        "length": 3,
+        "diameter": 0.04
+      }
+    },
+    {
+      "id": "pp6",
+      "source": "check-bypass-b",
+      "sourceHandle": "outlet-0",
+      "target": "common-header-mixer",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "Header Feed B",
+        "length": 3,
+        "diameter": 0.04
+      }
+    },
+    {
+      "id": "pp7",
+      "source": "common-header-mixer",
+      "sourceHandle": "outlet-0",
+      "target": "header-splitter",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Main Header",
+        "length": 4,
+        "diameter": 0.05
+      }
+    },
+    {
+      "id": "pp8",
+      "source": "header-splitter",
+      "sourceHandle": "outlet-0",
+      "target": "load-a",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Branch 1",
+        "length": 3,
+        "diameter": 0.032
+      }
+    },
+    {
+      "id": "pp9",
+      "source": "header-splitter",
+      "sourceHandle": "outlet-1",
+      "target": "load-b",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Branch 2",
+        "length": 3,
+        "diameter": 0.032
+      }
+    },
+    {
+      "id": "pp10",
+      "source": "load-a",
+      "sourceHandle": "outlet-0",
+      "target": "discharge-sink",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Return 1",
+        "length": 3,
+        "diameter": 0.032
+      }
+    },
+    {
+      "id": "pp11",
+      "source": "load-b",
+      "sourceHandle": "outlet-0",
+      "target": "discharge-sink",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Return 2",
+        "length": 3,
+        "diameter": 0.032
+      }
+    }
+  ],
+  "globalSettings": {
+    "fluid_type": "water",
+    "ambient_temperature": 293.15,
+    "atmospheric_pressure": 101325,
+    "global_roughness": 4.5e-05,
+    "property_iterations": 5,
+    "tolerance": 1e-06,
+    "inner_iterations": 1000,
+    "control_iterations": 100,
+    "solver_method": "hybr",
+    "max_iterations": 1000
+  }
+}

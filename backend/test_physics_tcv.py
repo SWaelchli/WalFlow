@@ -125,3 +125,23 @@ if __name__ == "__main__":
     # 10. Low Capacity
     net, tcv = build_tcv_network(max_cv=0.001)
     run_test("Low Capacity (Tiny Cv)", net, tcv, expected_temp=40.0)
+
+    # 11. Downstream Network Integration (Regression for TCV residual coupling)
+    print("\n▶ Testing: Downstream Network Integration (TCV + Filter + Distribution Header)")
+    net, tcv = build_tcv_network(hot_temp=333.15, cold_temp=303.15, set_temp=318.15)
+    solver = NetworkSolver(net)
+    stats = solver.solve()
+    assert stats["success"] is True, f"Solver failed: {stats.get('error')}"
+    assert tcv.outlets[0].pressure > 0, "TCV outlet pressure must be positive"
+    assert abs(tcv.outlets[0].temperature - 318.15) < 0.5, "TCV outlet temperature must match setpoint"
+    print("  Result: SUCCESS (Positive pressures and temperature target reached)")
+
+def test_tcv_downstream_network_integration():
+    """Pytest test case to verify 3-Way TCV convergence and pressure coupling in a hydraulic network."""
+    net, tcv = build_tcv_network(hot_temp=333.15, cold_temp=303.15, set_temp=318.15)
+    solver = NetworkSolver(net)
+    stats = solver.solve()
+    assert stats["success"] is True, f"Solver failed to converge: {stats.get('error')}"
+    assert tcv.outlets[0].pressure > 100000.0, "TCV outlet pressure must remain realistic and positive"
+    assert abs(tcv.outlets[0].temperature - 318.15) < 0.5, f"TCV target 45C (318.15K) missed, got {tcv.outlets[0].temperature}K"
+

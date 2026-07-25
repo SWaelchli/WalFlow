@@ -13,7 +13,24 @@ export default function HeatExchangerNode({ id, data, selected }) {
   const sensing = useMemo(() => data.sensing || {}, [data.sensing]);
   const tIn = telemetry?.inlets?.[0]?.temperature || 293.15;
   const tOut = telemetry?.outlets?.[0]?.temperature || 293.15;
-  const duty = data.heat_duty_kw || 0;
+  const flowRate = telemetry?.inlets?.[0]?.flow_rate || 0;
+  const density = telemetry?.inlets?.[0]?.density || 1000;
+
+  // Calculate or read duty in kW
+  let dutyVal = 0;
+  if (telemetry?.actual_duty_kw !== undefined && telemetry?.actual_duty_kw !== null) {
+    dutyVal = telemetry.actual_duty_kw;
+  } else if (data.heat_duty_kw !== undefined && data.heat_duty_kw !== null) {
+    dutyVal = data.heat_duty_kw;
+  } else if (Math.abs(flowRate) > 1e-9) {
+    // Dynamic thermodynamic fallback: Q = m_dot * Cp * deltaT
+    const cp = (density < 900) ? 2000 : 4184; // Approx Cp for oil vs water
+    const mDot = Math.abs(flowRate) * density;
+    dutyVal = (mDot * cp * (tIn - tOut)) / 1000.0;
+  }
+
+  const deltaT = (tOut - tIn).toFixed(1);
+  const dutyFormatted = Math.abs(dutyVal) < 0.01 ? '0' : dutyVal.toFixed(1);
 
   return (
     <BaseNode
@@ -25,8 +42,10 @@ export default function HeatExchangerNode({ id, data, selected }) {
       footer={
         <>
           <div style={{ fontSize: '9px', color: '#334155', fontWeight: 'bold' }}>{data.label || 'HEAT EXCH'}</div>
-          <div style={{ fontSize: '10px', fontWeight: 'bold', color: duty < 0 ? '#3b82f6' : '#ef4444' }}>{duty} kW</div>
-          <div style={{ fontSize: '9px', color: '#64748b' }}>ΔT: {(tOut - tIn).toFixed(1)} K</div>
+          <div style={{ fontSize: '10px', fontWeight: 'bold', color: dutyVal > 0.01 ? '#ef4444' : dutyVal < -0.01 ? '#3b82f6' : '#64748b' }}>
+            {dutyFormatted} kW
+          </div>
+          <div style={{ fontSize: '9px', color: '#64748b' }}>ΔT: {deltaT} K</div>
         </>
       }
     >

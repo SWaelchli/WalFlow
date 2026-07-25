@@ -3,44 +3,49 @@ import { EquipmentSymbol } from '../symbols/SymbolLibrary';
 
 
 const categorizedEquipment = [
-// ... (rest of categorizedEquipment remains the same)
   {
     name: 'Fluid Sources',
     items: [
-      { type: 'tank', label: 'Tank', description: 'Atmospheric Reservoir' },
+      { type: 'tank', label: 'Tank', description: '' },
     ]
   },
   {
     name: 'Power & Drive',
     items: [
-      { type: 'centrifugal_pump', label: 'Centrifugal Pump', description: 'Quadratic Performance Curve' },
+      { type: 'centrifugal_pump', label: 'Centrifugal Pump', description: '' },
       { type: 'volumetric_pump', label: 'Volumetric Pump', description: 'Positive Displacement' },
     ]
   },
   {
     name: 'Pressure & Flow Control',
     items: [
-      { type: 'linear_control_valve', label: 'Control Valve', description: 'Linear Cv Trim' },
-      { type: 'check_valve', label: 'Check Valve', description: 'Non-Return Protection' },
-      { type: 'check_valve_orifice', label: 'Check Valve w/ Orifice', description: 'Non-Return with Bypass' },
-      { type: 'remote_control_valve', label: 'Remote Valve', description: 'Remote Signal Control' },
-      { type: 'linear_regulator', label: 'Pressure Regulator', description: 'Auto PRV / BPR' },
-      { type: 'three_way_tcv', label: '3-Way Temp Valve', description: 'Auto Thermal Mixing' },
-      { type: 'orifice', label: 'Orifice', description: 'Fixed Restriction' },
+      { type: 'linear_control_valve', label: 'Control Valve', description: '' },
+      { type: 'check_valve', label: 'Check Valve', description: '' },
+      { type: 'check_valve_orifice', label: 'Check Valve w/ Orifice', description: 'With Bypass' },
+      { type: 'remote_control_valve', label: 'Remote Valve', description: 'Pilot Signal Control' },
+      { type: 'linear_regulator', label: 'Pressure Regulator', description: '' },
+      { type: 'three_way_tcv', label: '3-Way Temp Valve', description: 'Thermal Mixing' },
+      { type: 'orifice', label: 'Orifice', description: '' },
     ]
   },
   {
     name: 'Distribution',
     items: [
-      { type: 'splitter', label: 'Splitter', description: 'Supply Manifold' },
-      { type: 'mixer', label: 'Mixer', description: 'Return Manifold' },
+      { type: 'splitter', label: 'Splitter', description: '' },
+      { type: 'mixer', label: 'Mixer', description: '' },
     ]
   },
   {
     name: 'Auxiliary',
     items: [
-      { type: 'filter', label: 'Filter', description: 'Duplex Lube Filter' },
-      { type: 'heat_exchanger', label: 'Cooler', description: 'Heat Exchanger' },
+      { type: 'filter', label: 'Filter', description: '' },
+      { type: 'heat_exchanger', label: 'Cooler', description: '' },
+    ]
+  },
+  {
+    name: 'Documentation & Notes',
+    items: [
+      { type: 'text_bubble', label: 'Note', description: '' },
     ]
   }
 ];
@@ -199,7 +204,9 @@ function CollapsibleCategory({ name, items, onDragStart }) {
                 <EquipmentSymbol type={item.type} size={36} />
               </div>
               <div style={{ fontSize: '11px', fontWeight: '700', color: theme.slate800, lineHeight: '1.2' }}>{item.label}</div>
-              <div style={{ fontSize: '9px', color: theme.slate500, lineHeight: '1.3', marginTop: '2px' }}>{item.description}</div>
+              {item.description ? (
+                <div style={{ fontSize: '9px', color: theme.slate500, lineHeight: '1.3', marginTop: '2px' }}>{item.description}</div>
+              ) : null}
             </div>
           ))}
         </div>
@@ -210,6 +217,9 @@ function CollapsibleCategory({ name, items, onDragStart }) {
 
 function CollapsibleScenarios({ templates, onLoad }) {
   const [isExpanded, setIsExpanded] = useState(false);
+
+  // Check if templates has categories (nested objects)
+  const isCategorized = templates && Object.values(templates).some(v => v && typeof v === 'object' && !v.format && !v.nodes);
 
   return (
     <div style={{ marginBottom: '16px', borderRadius: '8px', overflow: 'hidden', border: `1px solid ${theme.slate200}` }}>
@@ -233,28 +243,61 @@ function CollapsibleScenarios({ templates, onLoad }) {
       </div>
       
       {isExpanded && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '12px', background: theme.white }}>
-          {Object.entries(templates || {}).map(([name, data]) => (
-            <button 
-              key={name}
-              onClick={() => { if(window.confirm(`Load "${name}"?`)) onLoad(data); }}
-              style={{
-                padding: '10px 12px', background: 'transparent', border: 'none',
-                borderRadius: '6px', fontSize: '12px', textAlign: 'left', cursor: 'pointer',
-                color: theme.slate800, transition: 'all 0.2s'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = theme.slate50;
-                e.currentTarget.style.color = theme.primary;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'transparent';
-                e.currentTarget.style.color = theme.slate800;
-              }}
-            >
-              • {name}
-            </button>
-          ))}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: theme.white, maxHeight: '400px', overflowY: 'auto' }}>
+          {isCategorized ? (
+            Object.entries(templates || {}).map(([category, items]) => (
+              <div key={category} style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                <div style={{ fontSize: '10px', fontWeight: '700', color: theme.slate500, textTransform: 'uppercase', letterSpacing: '0.5px', padding: '4px 8px 2px 8px' }}>
+                  {category}
+                </div>
+                {Object.entries(items || {}).map(([name, data]) => (
+                  <button 
+                    key={name}
+                    onClick={() => { if(window.confirm(`Load "${name}"?`)) onLoad(data); }}
+                    style={{
+                      padding: '8px 10px', background: 'transparent', border: 'none',
+                      borderRadius: '6px', fontSize: '12px', textAlign: 'left', cursor: 'pointer',
+                      color: theme.slate800, transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '6px'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = theme.slate50;
+                      e.currentTarget.style.color = theme.primary;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.color = theme.slate800;
+                    }}
+                  >
+                    <span style={{ fontSize: '10px', color: theme.primary }}>•</span>
+                    <span>{name}</span>
+                  </button>
+                ))}
+              </div>
+            ))
+          ) : (
+            Object.entries(templates || {}).map(([name, data]) => (
+              <button 
+                key={name}
+                onClick={() => { if(window.confirm(`Load "${name}"?`)) onLoad(data); }}
+                style={{
+                  padding: '8px 10px', background: 'transparent', border: 'none',
+                  borderRadius: '6px', fontSize: '12px', textAlign: 'left', cursor: 'pointer',
+                  color: theme.slate800, transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '6px'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = theme.slate50;
+                  e.currentTarget.style.color = theme.primary;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.color = theme.slate800;
+                }}
+              >
+                <span style={{ fontSize: '10px', color: theme.primary }}>•</span>
+                <span>{name}</span>
+              </button>
+            ))
+          )}
         </div>
       )}
     </div>

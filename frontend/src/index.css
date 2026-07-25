@@ -84,6 +84,16 @@ body {
   font-family: var(--font-sans);
   border-radius: var(--radius-md);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
+  cursor: pointer !important;
+}
+
+.react-flow__node * {
+  cursor: pointer;
+}
+
+.react-flow__node.selected,
+.react-flow__node.selected * {
+  cursor: move !important;
 }
 
 .react-flow__node.selected {

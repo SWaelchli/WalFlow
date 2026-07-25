@@ -241,7 +241,7 @@ class NetworkSolver:
                 src_node = self.nodes_list[src_idx]
                 
                 if isinstance(src_node, ThreeWayTCV):
-                    p_src_out = src_node.outlets[0].pressure
+                    p_src_out = p_in_all[src_idx]
                 else:
                     q_in_node = sum(q_edges[k] for k, e in enumerate(self.edges_list) if e['target'] == src_id)
                     q_out_node = sum(q_edges[k] for k, e in enumerate(self.edges_list) if e['source'] == src_id)
@@ -320,6 +320,8 @@ class NetworkSolver:
             q_out_total = sum(p.flow_rate for p in node.outlets)
             p_out = self._get_node_p_out(node, p_in, q_in_total, q_out_total)
             for port in node.outlets: port.pressure = p_out
+            if isinstance(node, ThreeWayTCV):
+                node.calculate()
         for j, edge in enumerate(self.edges_list):
             pipe = edge['pipe']
             q = q_edges[j]

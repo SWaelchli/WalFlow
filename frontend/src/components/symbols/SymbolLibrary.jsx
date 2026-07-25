@@ -150,6 +150,16 @@ export const EquipmentSymbol = ({ type, size = 40, style = {} }) => {
             <path d="M 25 20 L 35 20" stroke="#334155" strokeWidth="1.5" />
           </svg>
         );
+      case 'text_bubble':
+        return (
+          <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+            <rect x="5" y="10" width="50" height="40" rx="6" fill="#FFFFFF" stroke="#D8E2E1" strokeWidth="2" />
+            <line x1="12" y1="20" x2="40" y2="20" stroke="#395253" strokeWidth="2" strokeLinecap="round" />
+            <line x1="12" y1="28" x2="48" y2="28" stroke="#587071" strokeWidth="1.5" strokeLinecap="round" />
+            <line x1="12" y1="36" x2="32" y2="36" stroke="#587071" strokeWidth="1.5" strokeLinecap="round" />
+            <circle cx="45" cy="18" r="2.5" fill="#FA8507" />
+          </svg>
+        );
       default:
         return (
           <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>

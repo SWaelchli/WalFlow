@@ -191,17 +191,19 @@ export default function PropertyEditor({ node, edge, onUpdate, onUpdateEdge, onD
       
       {!isCollapsed && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div key="label">
-            <label style={{ fontSize: '11px', color: '#64748b' }}>Name Tag</label>
-            <input 
-              style={{ width: '100%', fontSize: '12px', padding: '4px' }} 
-              value={localDrafts.label !== undefined ? localDrafts.label : (data.label || '')} 
-              onChange={(e) => handleDraftChange('label', e.target.value)}
-              onBlur={(e) => validateAndCommit('label', e.target.value)}
-            />
-          </div>
+          {type !== 'text_bubble' && (
+            <div key="label">
+              <label style={{ fontSize: '11px', color: '#64748b' }}>Name Tag</label>
+              <input 
+                style={{ width: '100%', fontSize: '12px', padding: '4px' }} 
+                value={localDrafts.label !== undefined ? localDrafts.label : (data.label || '')} 
+                onChange={(e) => handleDraftChange('label', e.target.value)}
+                onBlur={(e) => validateAndCommit('label', e.target.value)}
+              />
+            </div>
+          )}
 
-          {isNode && (
+          {isNode && type !== 'text_bubble' && (
             <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '8px' }}>
               <label style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold' }}>Sensing Nodes (Yellow Pin)</label>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '4px' }}>
@@ -659,6 +661,42 @@ export default function PropertyEditor({ node, edge, onUpdate, onUpdateEdge, onD
                   onChange={(e) => handleDraftChange('orifice_diameter', e.target.value)}
                   onBlur={(e) => validateAndCommit('orifice_diameter', mmToM(parseFloat(e.target.value) || 0), true)}
                 />
+              </div>
+            </>
+          )}
+
+          {isNode && type === 'text_bubble' && (
+            <>
+              <div>
+                <label style={{ fontSize: '11px', color: '#64748b' }}>Title</label>
+                <input 
+                  style={{ width: '100%', fontSize: '12px', padding: '4px' }} 
+                  value={localDrafts.title !== undefined ? localDrafts.title : (data.title || 'NOTE')} 
+                  onChange={(e) => handleDraftChange('title', e.target.value)}
+                  onBlur={(e) => validateAndCommit('title', e.target.value)}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '11px', color: '#64748b' }}>Note Content</label>
+                <textarea 
+                  rows={4}
+                  style={{ width: '100%', fontSize: '12px', padding: '6px', fontFamily: 'inherit', resize: 'vertical' }} 
+                  value={localDrafts.text !== undefined ? localDrafts.text : (data.text || '')} 
+                  onChange={(e) => handleDraftChange('text', e.target.value)}
+                  onBlur={(e) => validateAndCommit('text', e.target.value)}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '11px', color: '#64748b' }}>Font Size</label>
+                <select
+                  style={{ width: '100%', fontSize: '12px', padding: '4px' }}
+                  value={data.fontSize || 'md'}
+                  onChange={(e) => onUpdate(id, { fontSize: e.target.value })}
+                >
+                  <option value="sm">Small (12px)</option>
+                  <option value="md">Medium (14px)</option>
+                  <option value="lg">Large (16px)</option>
+                </select>
               </div>
             </>
           )}

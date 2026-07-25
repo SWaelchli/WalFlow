@@ -1,0 +1,210 @@
+{
+  "version": "0.1",
+  "app_version": "0.1.1",
+  "format": "walflow",
+  "nodes": [
+    {
+      "id": "note-overview",
+      "type": "text_bubble",
+      "position": {
+        "x": 100,
+        "y": -120
+      },
+      "width": 400,
+      "height": 140,
+      "style": {
+        "width": 400,
+        "height": 140
+      },
+      "data": {
+        "label": "Note",
+        "title": "CENTRIFUGAL VS. VOLUMETRIC PUMPING",
+        "text": "Compares dynamic centrifugal pumping (flow varies inversely with discharge pressure head) side-by-side with positive displacement volumetric pumping (constant flow delivery regardless of system flow resistance).",
+        "fontSize": "md"
+      }
+    },
+    {
+      "id": "source-reservoir",
+      "type": "tank",
+      "position": {
+        "x": 100,
+        "y": 250
+      },
+      "data": {
+        "label": "Common Reservoir",
+        "level": 2.0,
+        "elevation": 0.0,
+        "temperature": 293.15
+      }
+    },
+    {
+      "id": "centrifugal-pump",
+      "type": "centrifugal_pump",
+      "position": {
+        "x": 300,
+        "y": 140
+      },
+      "data": {
+        "label": "Centrifugal Pump (Dynamic H-Q)",
+        "flow_rated_lmin": 100.0,
+        "pressure_rated_bar": 5.0,
+        "rise_to_shutoff_pct": 25.0
+      }
+    },
+    {
+      "id": "centrifugal-throttle",
+      "type": "linear_control_valve",
+      "position": {
+        "x": 500,
+        "y": 140
+      },
+      "data": {
+        "label": "Throttling Valve (50%)",
+        "max_cv": 8.0,
+        "opening": 50.0
+      }
+    },
+    {
+      "id": "centrifugal-sink",
+      "type": "tank",
+      "position": {
+        "x": 700,
+        "y": 140
+      },
+      "data": {
+        "label": "Centrifugal Train Discharge Tank",
+        "level": 0.5,
+        "elevation": 0.0,
+        "temperature": 293.15
+      }
+    },
+    {
+      "id": "volumetric-pump",
+      "type": "volumetric_pump",
+      "position": {
+        "x": 300,
+        "y": 360
+      },
+      "data": {
+        "label": "Volumetric Pump (Constant Flow)",
+        "flow_rated": 100.0,
+        "motor_power": 5.0,
+        "efficiency": 85.0
+      }
+    },
+    {
+      "id": "volumetric-prv",
+      "type": "linear_regulator",
+      "position": {
+        "x": 500,
+        "y": 360
+      },
+      "data": {
+        "label": "Safety PRV / Relief Dump",
+        "max_cv": 8.0,
+        "set_pressure": 600000,
+        "backpressure": true
+      }
+    },
+    {
+      "id": "volumetric-sink",
+      "type": "tank",
+      "position": {
+        "x": 700,
+        "y": 360
+      },
+      "data": {
+        "label": "Volumetric Train Discharge Tank",
+        "level": 0.5,
+        "elevation": 0.0,
+        "temperature": 293.15
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "b1",
+      "source": "source-reservoir",
+      "sourceHandle": "outlet-0",
+      "target": "centrifugal-pump",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Centrifugal Suction",
+        "length": 2,
+        "diameter": 0.032
+      }
+    },
+    {
+      "id": "b2",
+      "source": "centrifugal-pump",
+      "sourceHandle": "outlet-0",
+      "target": "centrifugal-throttle",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Centrifugal Line",
+        "length": 2,
+        "diameter": 0.025
+      }
+    },
+    {
+      "id": "b3",
+      "source": "centrifugal-throttle",
+      "sourceHandle": "outlet-0",
+      "target": "centrifugal-sink",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Delivery 1",
+        "length": 2,
+        "diameter": 0.025
+      }
+    },
+    {
+      "id": "b4",
+      "source": "source-reservoir",
+      "sourceHandle": "outlet-0",
+      "target": "volumetric-pump",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Volumetric Suction",
+        "length": 2,
+        "diameter": 0.032
+      }
+    },
+    {
+      "id": "b5",
+      "source": "volumetric-pump",
+      "sourceHandle": "outlet-0",
+      "target": "volumetric-prv",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "PD Line",
+        "length": 2,
+        "diameter": 0.025
+      }
+    },
+    {
+      "id": "b6",
+      "source": "volumetric-prv",
+      "sourceHandle": "outlet-0",
+      "target": "volumetric-sink",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Delivery 2",
+        "length": 2,
+        "diameter": 0.025
+      }
+    }
+  ],
+  "globalSettings": {
+    "fluid_type": "water",
+    "ambient_temperature": 293.15,
+    "atmospheric_pressure": 101325,
+    "global_roughness": 4.5e-05,
+    "property_iterations": 5,
+    "tolerance": 1e-06,
+    "inner_iterations": 1000,
+    "control_iterations": 100,
+    "solver_method": "hybr",
+    "max_iterations": 1000
+  }
+}

@@ -1,0 +1,567 @@
+{
+  "version": "0.1",
+  "app_version": "0.1.1",
+  "format": "walflow",
+  "created_at": "2026-07-25T19:04:47.983Z",
+  "nodes": [
+    {
+      "id": "note-overview",
+      "type": "text_bubble",
+      "position": {
+        "x": 200,
+        "y": -80
+      },
+      "width": 400,
+      "height": 140,
+      "style": {
+        "width": 400,
+        "height": 140
+      },
+      "data": {
+        "label": "Note",
+        "title": "API 682 SEAL FLUSH (PLAN 52/53)",
+        "text": "Demonstrates a dual mechanical seal barrier fluid circulation loop for process pumps. Features a barrier reservoir, circulation pump, orifice flow restriction, and heat exchanger to maintain seal lubrication and dissipate frictional heat.",
+        "fontSize": "md"
+      }
+    },
+    {
+      "id": "barrier-tank",
+      "type": "tank",
+      "position": {
+        "x": 100,
+        "y": 250
+      },
+      "data": {
+        "label": "Barrier Reservoir (30L)",
+        "level": 1.5,
+        "elevation": 0,
+        "temperature": 303.15,
+        "fluid_type": "iso_vg_32",
+        "rotation": 0,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "3c276e63-a9e9-429b-8a0f-0dda3aca3501",
+              "pressure": 113992.628475,
+              "flow_rate": 0,
+              "temperature": 303.15,
+              "density": 860.865,
+              "viscosity": 0.008050705197834867,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "24c836f0-41c4-48ad-838b-c5e7ff122449",
+              "pressure": 113992.628475,
+              "flow_rate": 0.0005828043440481049,
+              "temperature": 303.15,
+              "density": 860.865,
+              "viscosity": 0.008050705197834867,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "width": 95,
+      "height": 143
+    },
+    {
+      "id": "barrier-pump",
+      "type": "volumetric_pump",
+      "position": {
+        "x": 260,
+        "y": 250
+      },
+      "data": {
+        "label": "Flush Circulation Pump",
+        "flow_rated": 35,
+        "motor_power": 3,
+        "efficiency": 85,
+        "rotation": 0,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "f792dc25-fbf2-4b9c-8050-7d08db5436ef",
+              "pressure": 112335.10026005901,
+              "flow_rate": 0.0005828043440481049,
+              "temperature": 303.15097243523905,
+              "density": 860.865,
+              "viscosity": 0.008050705197834867,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "2472bcc7-f03d-44e0-93ee-b1bd02f9f25c",
+              "pressure": 1019173.8749374239,
+              "flow_rate": 0.0005828043440481049,
+              "temperature": 303.24485853982503,
+              "density": 860.865,
+              "viscosity": 0.008050705197834867,
+              "connected_to_port_id": null
+            }
+          ],
+          "cavitation_warning": false
+        }
+      },
+      "width": 98,
+      "height": 103
+    },
+    {
+      "id": "barrier-filter",
+      "type": "filter",
+      "position": {
+        "x": 420,
+        "y": 250
+      },
+      "data": {
+        "label": "Duplex Barrier Filter (10µm)",
+        "dp_clean": 0.15,
+        "dp_terminal": 1.5,
+        "flow_ref": 35,
+        "clogging": 0,
+        "rotation": 0,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "30e9635c-67b9-44d9-ab56-6b2b8b8bd3d6",
+              "pressure": 1012779.5092793346,
+              "flow_rate": 0.0005828043440481049,
+              "temperature": 303.2486092543365,
+              "density": 860.865,
+              "viscosity": 0.008050705197834867,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "2da0772a-1fc9-4e41-bd48-7ebc88f8f74f",
+              "pressure": 999889.9436331177,
+              "flow_rate": 0.0005828043440481049,
+              "temperature": 303.25616977202543,
+              "density": 860.865,
+              "viscosity": 0.008050705197834867,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "width": 119,
+      "height": 82
+    },
+    {
+      "id": "seal-prv",
+      "type": "linear_regulator",
+      "position": {
+        "x": 580,
+        "y": 250
+      },
+      "data": {
+        "label": "Seal Supply PRV (10 bar)",
+        "max_cv": 6,
+        "set_pressure": 1000000,
+        "backpressure": false,
+        "rotation": 0,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "148de4dd-2003-4553-9663-e083c7658308",
+              "pressure": 990298.3951458937,
+              "flow_rate": 0.0005828043440481049,
+              "temperature": 303.2617957152589,
+              "density": 860.865,
+              "viscosity": 0.008050705197834867,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "e92a3b3d-493b-4d30-a9f6-da9283585320",
+              "pressure": 976230.6011996085,
+              "flow_rate": 0.0005828043440481049,
+              "temperature": 303.2700471160572,
+              "density": 860.865,
+              "viscosity": 0.008050705197834867,
+              "connected_to_port_id": null
+            }
+          ],
+          "opening_pct": 100
+        }
+      },
+      "width": 105,
+      "height": 103
+    },
+    {
+      "id": "seal-chamber-orifice",
+      "type": "orifice",
+      "position": {
+        "x": 740,
+        "y": 250
+      },
+      "data": {
+        "label": "Seal Chamber Restriction",
+        "pipe_diameter": 0.02,
+        "orifice_diameter": 0.008,
+        "rotation": 0,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "d6d933dc-c7ee-4681-a94b-1468d40046be",
+              "pressure": 950704.7339548807,
+              "flow_rate": 0.0005828043440481049,
+              "temperature": 303.2850189483158,
+              "density": 860.865,
+              "viscosity": 0.008050705197834867,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "39f903f5-5696-4084-b5a5-944616711293",
+              "pressure": 819144.4004335457,
+              "flow_rate": 0.0005828043440481049,
+              "temperature": 303.3621814465359,
+              "density": 860.865,
+              "viscosity": 0.008050705197834867,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "width": 106,
+      "height": 91
+    },
+    {
+      "id": "seal-bpr",
+      "type": "linear_regulator",
+      "position": {
+        "x": 677.0977624898185,
+        "y": 97.7264251502344
+      },
+      "data": {
+        "label": "Seal Return BPR (8 bar)",
+        "max_cv": 6,
+        "set_pressure": 800000,
+        "backpressure": true,
+        "rotation": 180,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "8f55f165-c30d-47bb-8055-ed666dfe63a8",
+              "pressure": 799999.9999999998,
+              "flow_rate": 0.0005828043440481049,
+              "temperature": 303.3734082315954,
+              "density": 860.865,
+              "viscosity": 0.008050705197834867,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "6dcba9b3-458a-4db0-a6d0-9298f627acaf",
+              "pressure": 126836.13637879782,
+              "flow_rate": 0.0005828043440481049,
+              "temperature": 303.76816045714133,
+              "density": 860.865,
+              "viscosity": 0.008050705197834867,
+              "connected_to_port_id": null
+            }
+          ],
+          "opening_pct": 14.456148540236748
+        }
+      },
+      "width": 99,
+      "height": 103,
+      "selected": false,
+      "dragging": false,
+      "positionAbsolute": {
+        "x": 677.0977624898185,
+        "y": 97.7264251502344
+      }
+    },
+    {
+      "id": "return-tank",
+      "type": "tank",
+      "position": {
+        "x": 103.21523759932683,
+        "y": 72.71710180281286
+      },
+      "data": {
+        "label": "Barrier Return Tank",
+        "level": 1.5,
+        "elevation": 0,
+        "temperature": 305.15,
+        "rotation": 180,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "f4a247d9-1a57-4b2d-a719-1d6143fc7d98",
+              "pressure": 114047.40506250001,
+              "flow_rate": 0.0005828043440481049,
+              "temperature": 305.15,
+              "density": 864.5875,
+              "viscosity": 0.009120350712582038,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "fe46830c-7a7b-4dad-ad89-ca87a97bd3ff",
+              "pressure": 114047.40506250001,
+              "flow_rate": 0,
+              "temperature": 305.15,
+              "density": 864.5875,
+              "viscosity": 0.009120350712582038,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "width": 82,
+      "height": 143,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 103.21523759932683,
+        "y": 72.71710180281286
+      },
+      "dragging": false
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "barrier-tank",
+      "sourceHandle": "outlet-0",
+      "target": "barrier-pump",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Suction",
+        "length": 1.5,
+        "diameter": 0.025,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "e6a42754-4ca5-44a3-954b-385d5ae4ef97",
+              "pressure": 113992.628475,
+              "flow_rate": 0.0005828043440481049,
+              "temperature": 303.15,
+              "density": 860.865,
+              "viscosity": 0.008050705197834867,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "77e3f086-a925-45c8-a9c4-7106f086d995",
+              "pressure": 112335.10026005901,
+              "flow_rate": 0.0005828043440481049,
+              "temperature": 303.15097243523905,
+              "density": 860.865,
+              "viscosity": 0.008050705197834867,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "label": "Suction"
+    },
+    {
+      "id": "e2",
+      "source": "barrier-pump",
+      "sourceHandle": "outlet-0",
+      "target": "barrier-filter",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Pump Discharge",
+        "length": 2,
+        "diameter": 0.02,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "1e541c65-de4a-4ff4-ac77-f35462f73ba2",
+              "pressure": 1019173.8749374239,
+              "flow_rate": 0.0005828043440481049,
+              "temperature": 303.24485853982503,
+              "density": 860.865,
+              "viscosity": 0.008050705197834867,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "4e504bc3-9edd-402a-b647-ee7aa86631f0",
+              "pressure": 1012779.5092793346,
+              "flow_rate": 0.0005828043440481049,
+              "temperature": 303.2486092543365,
+              "density": 860.865,
+              "viscosity": 0.008050705197834867,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "label": "Pump Discharge"
+    },
+    {
+      "id": "e3",
+      "source": "barrier-filter",
+      "sourceHandle": "outlet-0",
+      "target": "seal-prv",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Filtered Flush",
+        "length": 3,
+        "diameter": 0.02,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "18ee12a3-4775-43fe-b619-2ed491f6d521",
+              "pressure": 999889.9436331177,
+              "flow_rate": 0.0005828043440481049,
+              "temperature": 303.25616977202543,
+              "density": 860.865,
+              "viscosity": 0.008050705197834867,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "4258b79d-d669-4397-8b50-920107c4ebe4",
+              "pressure": 990298.3951458937,
+              "flow_rate": 0.0005828043440481049,
+              "temperature": 303.2617957152589,
+              "density": 860.865,
+              "viscosity": 0.008050705197834867,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "label": "Filtered Flush"
+    },
+    {
+      "id": "e4",
+      "source": "seal-prv",
+      "sourceHandle": "outlet-0",
+      "target": "seal-chamber-orifice",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Seal Feed",
+        "length": 2,
+        "diameter": 0.015,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "079167fe-e1f2-42d7-b3d0-440ae36105f4",
+              "pressure": 976230.6011996085,
+              "flow_rate": 0.0005828043440481049,
+              "temperature": 303.2700471160572,
+              "density": 860.865,
+              "viscosity": 0.008050705197834867,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "ce366cda-b729-4a5c-8fa7-028393372f2b",
+              "pressure": 950704.7339548807,
+              "flow_rate": 0.0005828043440481049,
+              "temperature": 303.2850189483158,
+              "density": 860.865,
+              "viscosity": 0.008050705197834867,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "label": "Seal Feed"
+    },
+    {
+      "id": "e5",
+      "source": "seal-chamber-orifice",
+      "sourceHandle": "outlet-0",
+      "target": "seal-bpr",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Seal Cavity Outlet",
+        "length": 1.5,
+        "diameter": 0.015,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "bae85f25-a542-4251-91a8-e7bff43a0a12",
+              "pressure": 819144.4004335457,
+              "flow_rate": 0.0005828043440481049,
+              "temperature": 303.3621814465359,
+              "density": 860.865,
+              "viscosity": 0.008050705197834867,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "290ce9ba-0a58-4ac5-831c-78cd74d03b45",
+              "pressure": 799999.9999999998,
+              "flow_rate": 0.0005828043440481049,
+              "temperature": 303.3734082315954,
+              "density": 860.865,
+              "viscosity": 0.008050705197834867,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "label": "Seal Cavity Outlet"
+    },
+    {
+      "id": "e6",
+      "source": "seal-bpr",
+      "sourceHandle": "outlet-0",
+      "target": "return-tank",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Barrier Return Line",
+        "length": 4,
+        "diameter": 0.02,
+        "telemetry": {
+          "inlets": [
+            {
+              "id": "d1beddfe-41a0-4946-988f-e68b69e21df5",
+              "pressure": 126836.13637879782,
+              "flow_rate": 0.0005828043440481049,
+              "temperature": 303.76816045714133,
+              "density": 860.865,
+              "viscosity": 0.008050705197834867,
+              "connected_to_port_id": null
+            }
+          ],
+          "outlets": [
+            {
+              "id": "ce57dcdc-6c2c-4b62-b3ff-b996e675ad77",
+              "pressure": 114047.40506250001,
+              "flow_rate": 0.0005828043440481049,
+              "temperature": 303.77565396572766,
+              "density": 860.865,
+              "viscosity": 0.008050705197834867,
+              "connected_to_port_id": null
+            }
+          ]
+        }
+      },
+      "label": "Barrier Return Line"
+    }
+  ],
+  "globalSettings": {
+    "fluid_type": "iso_vg_46",
+    "ambient_temperature": 293.15,
+    "atmospheric_pressure": 101325,
+    "global_roughness": 0.000045,
+    "property_iterations": 5,
+    "tolerance": 0.000001,
+    "inner_iterations": 1000,
+    "control_iterations": 100,
+    "solver_method": "hybr",
+    "max_iterations": 1000
+  }
+}

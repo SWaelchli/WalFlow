@@ -56,15 +56,14 @@ class ThreeWayTCV(HydraulicNode):
             
         outlet.flow_rate = inlet_0.flow_rate + inlet_1.flow_rate
         
-        # Hydraulics
+        # Hydraulics & Port Telemetry:
+        # outlet.pressure is managed by the network solver (P_node).
+        # Inlet pressures reflect upstream line pressure before each valve port restriction (P_outlet + dp_port).
         dp0 = self.calculate_path_dp(inlet_0.flow_rate, inlet_0.density, 0)
         dp1 = self.calculate_path_dp(inlet_1.flow_rate, inlet_1.density, 1)
         
-        # Reference the higher flow for pressure balance
-        if m0 >= m1:
-            outlet.pressure = inlet_0.pressure - dp0
-        else:
-            outlet.pressure = inlet_1.pressure - dp1
+        inlet_0.pressure = outlet.pressure + dp0
+        inlet_1.pressure = outlet.pressure + dp1
             
         outlet.density = inlet_0.density
         outlet.viscosity = inlet_0.viscosity

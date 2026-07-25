@@ -5,7 +5,8 @@ import ReactFlow, {
   useNodesState, 
   useEdgesState, 
   addEdge, 
-  applyEdgeChanges 
+  applyEdgeChanges,
+  ReactFlowProvider
 } from 'reactflow';
 import 'reactflow/dist/style.css'; 
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
@@ -24,6 +25,7 @@ import RemoteControlValveNode from './nodes/RemoteControlValveNode';
 import ThreeWayTCVNode from './nodes/ThreeWayTCVNode';
 import CheckValveNode from './nodes/CheckValveNode';
 import CheckValveOrificeNode from './nodes/CheckValveOrificeNode';
+import TextBubbleNode from './nodes/TextBubbleNode';
 
 import Navbar from './components/layout/Navbar';
 import Sidebar from './components/panels/Sidebar';
@@ -49,12 +51,15 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { APP_VERSION, FILE_FORMAT_VERSION, FILE_EXTENSION } from './constants';
 
 // Import Examples
-import examplePFD from './data/examples/Example_Standard_PFD.wlf';
-import examplePRV from './data/examples/Example_PRV.wlf';
-import exampleBPR from './data/examples/Example_BPR.wlf';
-import exampleRemoteControl from './data/examples/Example_RemoteControl.wlf';
 import exampleAPI614 from './data/examples/Example_API_614_LOS.wlf';
-import exampleVolumetric from './data/examples/Example_Volumetric.wlf';
+import exampleAPI682 from './data/examples/Example_API_682_Seal_Flush.wlf';
+import exampleChilledWater from './data/examples/Example_Chilled_Water_Loop.wlf';
+import examplePressureReg from './data/examples/Example_Pressure_Regulation.wlf';
+import exampleThermal from './data/examples/Example_Thermal_Management.wlf';
+import examplePumpComp from './data/examples/Example_Pump_Comparison.wlf';
+import exampleRemoteControl from './data/examples/Example_Remote_Control.wlf';
+import exampleParallelPumps from './data/examples/Example_Parallel_Pumps.wlf';
+import greetingCanvas from './data/GreetingCanvas.wlf';
 
 const nodeTypes = {
   tank: TankNode,
@@ -72,6 +77,7 @@ const nodeTypes = {
   mixer: MixerNode,
   remote_control_valve: RemoteControlValveNode,
   three_way_tcv: ThreeWayTCVNode,
+  text_bubble: TextBubbleNode,
 };
 
 const edgeTypes = {
@@ -382,7 +388,7 @@ function WalFlowContent() {
   }, [handleValveChange, handleRotation, setNodes, setEdges]);
 
   useEffect(() => {
-    loadData(examplePFD);
+    loadData(greetingCanvas);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -546,6 +552,7 @@ function WalFlowContent() {
           ...(type === 'three_way_tcv' && { max_cv: 0.1, set_temperature_c: 40.0, hot_port_idx: 0 }),
           ...(type === 'check_valve' && { cv: 10.0, cracking_pressure_bar: 0.05 }),
           ...(type === 'check_valve_orifice' && { cv: 10.0, cracking_pressure_bar: 0.05, pipe_diameter: 0.05248, orifice_diameter: 0.01, standardDn: 50, standardSch: '40' }),
+          ...(type === 'text_bubble' && { label: 'Note', title: 'NOTE', text: 'Double-click to edit note...', fontSize: 'md' }),
         },
       };
 
@@ -708,6 +715,13 @@ function WalFlowContent() {
     });
   }, [edges, isSimulating, heatmapSettings.mode, computedHeatmapRange]);
 
+  const interactiveNodes = useMemo(() => {
+    return nodes.map(node => ({
+      ...node,
+      draggable: Boolean(node.selected),
+    }));
+  }, [nodes]);
+
   return (
     <div style={{ width: '100%', height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#F0F4F4', overflow: 'hidden' }}>
       <Navbar 
@@ -730,12 +744,18 @@ function WalFlowContent() {
           onUpdateGlobalSettings={setGlobalSettings}
           lastStats={lastStats}
           templates={{
-            "Standard PFD": examplePFD,
-            "Volumetric Pump Example": exampleVolumetric,
-            "Pressure Reducing (PRV)": examplePRV,
-            "Backpressure (BPR)": exampleBPR,
-            "API 614 LOS": exampleAPI614,
-            "Remote Control Test": exampleRemoteControl
+            "Industrial Process Systems": {
+              "API 614 Lube Oil System (LOS)": exampleAPI614,
+              "API 682 Mechanical Seal Flush": exampleAPI682,
+              "Industrial Chilled Water Circuit": exampleChilledWater
+            },
+            "Capability Spotlights": {
+              "Pressure Regulation: PRV vs BPR": examplePressureReg,
+              "Thermal Management & 3-Way TCV": exampleThermal,
+              "Centrifugal vs Volumetric Pumping": examplePumpComp,
+              "Remote Control & Interlocks": exampleRemoteControl,
+              "Parallel Pumping & Min-Flow": exampleParallelPumps
+            }
           }}
         />
 
@@ -800,7 +820,7 @@ function WalFlowContent() {
           />
 
           <ReactFlow 
-            nodes={nodes} 
+            nodes={interactiveNodes} 
             edges={styledEdges} 
             nodeTypes={nodeTypes} 
             edgeTypes={edgeTypes}
@@ -927,7 +947,9 @@ function WalFlowContent() {
 export default function App() {
   return (
     <AuthProvider>
-      <WalFlowContent />
+      <ReactFlowProvider>
+        <WalFlowContent />
+      </ReactFlowProvider>
     </AuthProvider>
   );
 }

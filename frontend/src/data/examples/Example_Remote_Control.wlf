@@ -1,0 +1,183 @@
+{
+  "version": "0.1",
+  "app_version": "0.1.1",
+  "format": "walflow",
+  "nodes": [
+    {
+      "id": "note-overview",
+      "type": "text_bubble",
+      "position": {
+        "x": 100,
+        "y": -20
+      },
+      "width": 400,
+      "height": 140,
+      "style": {
+        "width": 400,
+        "height": 140
+      },
+      "data": {
+        "label": "Note",
+        "title": "REMOTE CONTROL & INTERLOCKS",
+        "text": "Demonstrates automated hydraulic control and remote interlocks. Shows a remote control valve responding to downstream pressure setpoints and sensor triggers to cut off flow under emergency overpressure conditions.",
+        "fontSize": "md"
+      }
+    },
+    {
+      "id": "suction-tank",
+      "type": "tank",
+      "position": {
+        "x": 100,
+        "y": 250
+      },
+      "data": {
+        "label": "Supply Reservoir",
+        "level": 2.0,
+        "elevation": 0.0,
+        "temperature": 293.15
+      }
+    },
+    {
+      "id": "feed-pump",
+      "type": "centrifugal_pump",
+      "position": {
+        "x": 260,
+        "y": 250
+      },
+      "data": {
+        "label": "High-Pressure Feed Pump",
+        "flow_rated_lmin": 200.0,
+        "pressure_rated_bar": 10.0,
+        "rise_to_shutoff_pct": 20.0
+      }
+    },
+    {
+      "id": "sensing-node",
+      "type": "orifice",
+      "position": {
+        "x": 420,
+        "y": 250
+      },
+      "data": {
+        "label": "Header Pressure Sensor Orifice",
+        "pipe_diameter": 0.032,
+        "orifice_diameter": 0.02,
+        "sensing": {
+          "outlet-0": true
+        }
+      }
+    },
+    {
+      "id": "remote-valve",
+      "type": "remote_control_valve",
+      "position": {
+        "x": 620,
+        "y": 250
+      },
+      "data": {
+        "label": "Remote Emergency Cutoff Valve",
+        "max_cv": 12.0,
+        "opening": 100.0,
+        "set_pressure": 600000,
+        "backpressure": true
+      }
+    },
+    {
+      "id": "process-sink",
+      "type": "tank",
+      "position": {
+        "x": 800,
+        "y": 250
+      },
+      "data": {
+        "label": "Receiving Tank",
+        "level": 0.5,
+        "elevation": 0.0,
+        "temperature": 293.15
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "r1",
+      "source": "suction-tank",
+      "sourceHandle": "outlet-0",
+      "target": "feed-pump",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Suction",
+        "length": 2,
+        "diameter": 0.038
+      }
+    },
+    {
+      "id": "r2",
+      "source": "feed-pump",
+      "sourceHandle": "outlet-0",
+      "target": "sensing-node",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "High-P Discharge",
+        "length": 2,
+        "diameter": 0.032
+      }
+    },
+    {
+      "id": "r3",
+      "source": "sensing-node",
+      "sourceHandle": "outlet-0",
+      "target": "remote-valve",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Header Line",
+        "length": 3,
+        "diameter": 0.032
+      }
+    },
+    {
+      "id": "r4",
+      "source": "remote-valve",
+      "sourceHandle": "outlet-0",
+      "target": "process-sink",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Protected Delivery",
+        "length": 2,
+        "diameter": 0.032
+      }
+    },
+    {
+      "id": "Signal 100",
+      "source": "sensing-node",
+      "sourceHandle": "signal-outlet-0",
+      "target": "remote-valve",
+      "targetHandle": "signal-in",
+      "label": "Signal 100",
+      "type": "step",
+      "animated": true,
+      "style": {
+        "stroke": "#fde047",
+        "strokeWidth": 3,
+        "strokeDasharray": "5,5"
+      },
+      "data": {
+        "label": "Signal 100",
+        "type": "SIGNAL",
+        "length": 25,
+        "diameter": 0.05248
+      }
+    }
+  ],
+  "globalSettings": {
+    "fluid_type": "water",
+    "ambient_temperature": 293.15,
+    "atmospheric_pressure": 101325,
+    "global_roughness": 4.5e-05,
+    "property_iterations": 5,
+    "tolerance": 1e-06,
+    "inner_iterations": 1000,
+    "control_iterations": 100,
+    "solver_method": "hybr",
+    "max_iterations": 1000
+  }
+}

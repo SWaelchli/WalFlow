@@ -1,0 +1,233 @@
+{
+  "version": "0.1",
+  "app_version": "0.1.1",
+  "format": "walflow",
+  "nodes": [
+    {
+      "id": "note-overview",
+      "type": "text_bubble",
+      "position": {
+        "x": 100,
+        "y": -120
+      },
+      "width": 400,
+      "height": 140,
+      "style": {
+        "width": 400,
+        "height": 140
+      },
+      "data": {
+        "label": "Note",
+        "title": "PRV VS. BPR REGULATION",
+        "text": "Demonstrates the fundamental difference between pressure regulation modes: a Pressure Reducing Valve (PRV) maintains constant downstream load pressure, while a Backpressure Regulator (BPR) maintains constant upstream header pressure by bypassing excess flow.",
+        "fontSize": "md"
+      }
+    },
+    {
+      "id": "feed-tank",
+      "type": "tank",
+      "position": {
+        "x": 100,
+        "y": 250
+      },
+      "data": {
+        "label": "Feed Tank",
+        "level": 2.0,
+        "elevation": 0.0,
+        "temperature": 293.15
+      }
+    },
+    {
+      "id": "main-pump",
+      "type": "centrifugal_pump",
+      "position": {
+        "x": 260,
+        "y": 250
+      },
+      "data": {
+        "label": "Supply Pump",
+        "flow_rated_lmin": 150.0,
+        "pressure_rated_bar": 8.0,
+        "rise_to_shutoff_pct": 20.0
+      }
+    },
+    {
+      "id": "header-splitter",
+      "type": "splitter",
+      "position": {
+        "x": 420,
+        "y": 250
+      },
+      "data": {
+        "label": "Header Manifold Splitter"
+      }
+    },
+    {
+      "id": "bpr-valve",
+      "type": "linear_regulator",
+      "position": {
+        "x": 580,
+        "y": 140
+      },
+      "data": {
+        "label": "BPR (Upstream Set: 5 bar)",
+        "max_cv": 8.0,
+        "set_pressure": 500000,
+        "backpressure": true
+      }
+    },
+    {
+      "id": "bpr-tank",
+      "type": "tank",
+      "position": {
+        "x": 780,
+        "y": 140
+      },
+      "data": {
+        "label": "Overpressure Bypass Tank",
+        "level": 0.5,
+        "elevation": 0.0,
+        "temperature": 293.15
+      }
+    },
+    {
+      "id": "prv-valve",
+      "type": "linear_regulator",
+      "position": {
+        "x": 580,
+        "y": 360
+      },
+      "data": {
+        "label": "PRV (Downstream Set: 3 bar)",
+        "max_cv": 8.0,
+        "set_pressure": 300000,
+        "backpressure": false
+      }
+    },
+    {
+      "id": "downstream-load",
+      "type": "orifice",
+      "position": {
+        "x": 740,
+        "y": 360
+      },
+      "data": {
+        "label": "Process Load Orifice",
+        "pipe_diameter": 0.025,
+        "orifice_diameter": 0.012
+      }
+    },
+    {
+      "id": "process-sink",
+      "type": "tank",
+      "position": {
+        "x": 900,
+        "y": 360
+      },
+      "data": {
+        "label": "Process Sink Tank",
+        "level": 0.5,
+        "elevation": 0.0,
+        "temperature": 293.15
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "p1",
+      "source": "feed-tank",
+      "sourceHandle": "outlet-0",
+      "target": "main-pump",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Suction",
+        "length": 2,
+        "diameter": 0.032
+      }
+    },
+    {
+      "id": "p2",
+      "source": "main-pump",
+      "sourceHandle": "outlet-0",
+      "target": "header-splitter",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Discharge",
+        "length": 2,
+        "diameter": 0.025
+      }
+    },
+    {
+      "id": "p3",
+      "source": "header-splitter",
+      "sourceHandle": "outlet-0",
+      "target": "bpr-valve",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "BPR Branch",
+        "length": 2,
+        "diameter": 0.025
+      }
+    },
+    {
+      "id": "p4",
+      "source": "bpr-valve",
+      "sourceHandle": "outlet-0",
+      "target": "bpr-tank",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Bypass Return",
+        "length": 3,
+        "diameter": 0.025
+      }
+    },
+    {
+      "id": "p5",
+      "source": "header-splitter",
+      "sourceHandle": "outlet-1",
+      "target": "prv-valve",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "PRV Branch",
+        "length": 2,
+        "diameter": 0.025
+      }
+    },
+    {
+      "id": "p6",
+      "source": "prv-valve",
+      "sourceHandle": "outlet-0",
+      "target": "downstream-load",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Regulated Supply",
+        "length": 2,
+        "diameter": 0.025
+      }
+    },
+    {
+      "id": "p7",
+      "source": "downstream-load",
+      "sourceHandle": "outlet-0",
+      "target": "process-sink",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Sink Return",
+        "length": 2,
+        "diameter": 0.025
+      }
+    }
+  ],
+  "globalSettings": {
+    "fluid_type": "water",
+    "ambient_temperature": 293.15,
+    "atmospheric_pressure": 101325,
+    "global_roughness": 4.5e-05,
+    "property_iterations": 5,
+    "tolerance": 1e-06,
+    "inner_iterations": 1000,
+    "control_iterations": 100,
+    "solver_method": "hybr",
+    "max_iterations": 1000
+  }
+}

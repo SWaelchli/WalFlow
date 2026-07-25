@@ -128,7 +128,7 @@ export default function DataList({ nodes, edges, onUpdateEdge, onUpdateNode, onS
     let items = manualOrder.map((ref, index) => {
       if (ref.type === 'node') {
         const node = nodes.find(n => n.id === ref.id);
-        if (!node) return null;
+        if (!node || node.type === 'text_bubble' || node.type === 'note') return null;
         const telemetry = node.data?.telemetry;
         const pStart = telemetry?.inlets?.[0]?.pressure || 0;
         const pEnd = telemetry?.outlets?.[0]?.pressure || 0;

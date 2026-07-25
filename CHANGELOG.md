@@ -9,6 +9,7 @@ All notable changes to the WälFlow project will be documented in this file.
 ### 🔩 Equipment & Simulation
 - Added **Check Valve (Non-Return Valve)** equipment with configurable flow coefficient ($C_v$), cracking pressure, backflow prevention, SVG symbol, and property editor integration.
 - Added **Check Valve with Orifice** equipment combining non-return check valve seat logic with Bernoulli bypass orifice restriction math from `Orifice` equipment for controlled sub-cracking and reverse bypass flow.
+- Fixed **3-Way TCV (Temperature Control Valve)** network residual pressure coupling and telemetry propagation in the solver.
 
 ### 🎨 Visualizations & Heatmaps
 - Separated Volume Flow (`l/min`) and Velocity (`m/s`) into dedicated heatmaps with individual auto-scaling and custom range controls.
@@ -30,6 +31,10 @@ All notable changes to the WälFlow project will be documented in this file.
 - Clicking WälFlow logo opens the Help & Info modal directly to the "About & Copyright" tab.
 - Reordered Help & Info modal tabs: **Keyboard Shortcuts**, **User Guide**, and **About & Copyright**.
 - Unified design system and styling across all modals (`LoginModal`, `AdminSetupModal`, `AdminHubModal`, `ProjectManagerModal`, `HelpInfoModal`) using dark teal glassmorphism theme and custom gradients.
+
+### 📚 Documentation & Examples
+- Added **Greeting Canvas** as the default initial application view featuring a centerpiece "WELCOME TO WALFLOW" introductory note and a ready-to-run demo hydraulic circuit.
+- Added informative canvas note callout bubbles to all pre-configured example hydraulic diagrams to explain diagram context and hydraulic principles.
 
 ### ⚙️ System & Proxy Fixes
 - Added backend retry logic during frontend startup for server connection stability.

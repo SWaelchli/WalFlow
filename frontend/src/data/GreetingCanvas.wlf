@@ -1,0 +1,143 @@
+{
+  "version": "0.1",
+  "app_version": "0.1.1",
+  "format": "walflow",
+  "nodes": [
+    {
+      "id": "greeting-note",
+      "type": "text_bubble",
+      "position": {
+        "x": 220,
+        "y": 60
+      },
+      "width": 520,
+      "height": 210,
+      "style": {
+        "width": 520,
+        "height": 210
+      },
+      "data": {
+        "label": "Note",
+        "title": "WELCOME TO WALFLOW",
+        "text": "WalFlow is a web-based hydraulic process simulator for designing and modeling hydraulic flow networks.\n\n• Drag components from the sidebar onto the canvas to construct your P&ID.\n• Select components or pipes to view and edit operating parameters.\n• Click \"Run Simulation\" in the top bar to solve system pressures, flow rates, and fluid states.\n\nBelow is a simple starter circuit—press Run Simulation to see it in action!",
+        "fontSize": "md"
+      }
+    },
+    {
+      "id": "greeting-tank-1",
+      "type": "tank",
+      "position": {
+        "x": 120,
+        "y": 330
+      },
+      "data": {
+        "label": "Supply Reservoir",
+        "level": 3.0,
+        "elevation": 0.0,
+        "temperature": 293.15
+      }
+    },
+    {
+      "id": "greeting-pump",
+      "type": "centrifugal_pump",
+      "position": {
+        "x": 320,
+        "y": 330
+      },
+      "data": {
+        "label": "P-101 Main Pump",
+        "flow_rated_lmin": 150.0,
+        "pressure_rated_bar": 6.0,
+        "rise_to_shutoff_pct": 20.0
+      }
+    },
+    {
+      "id": "greeting-valve",
+      "type": "linear_control_valve",
+      "position": {
+        "x": 520,
+        "y": 330
+      },
+      "data": {
+        "label": "FCV-101 Flow Control",
+        "opening": 80.0,
+        "max_cv": 10.0
+      }
+    },
+    {
+      "id": "greeting-tank-2",
+      "type": "tank",
+      "position": {
+        "x": 720,
+        "y": 330
+      },
+      "data": {
+        "label": "Return Reservoir",
+        "level": 1.0,
+        "elevation": 2.0,
+        "temperature": 293.15
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "pipe-1",
+      "source": "greeting-tank-1",
+      "sourceHandle": "outlet-0",
+      "target": "greeting-pump",
+      "targetHandle": "inlet-0",
+      "type": "default",
+      "animated": true,
+      "label": "Suction Line",
+      "data": {
+        "label": "Suction Line",
+        "type": "PIPE",
+        "length": 3.0,
+        "diameter": 0.05
+      }
+    },
+    {
+      "id": "pipe-2",
+      "source": "greeting-pump",
+      "sourceHandle": "outlet-0",
+      "target": "greeting-valve",
+      "targetHandle": "inlet-0",
+      "type": "default",
+      "animated": true,
+      "label": "Pump Discharge",
+      "data": {
+        "label": "Pump Discharge",
+        "type": "PIPE",
+        "length": 5.0,
+        "diameter": 0.04
+      }
+    },
+    {
+      "id": "pipe-3",
+      "source": "greeting-valve",
+      "sourceHandle": "outlet-0",
+      "target": "greeting-tank-2",
+      "targetHandle": "inlet-0",
+      "type": "default",
+      "animated": true,
+      "label": "Return Line",
+      "data": {
+        "label": "Return Line",
+        "type": "PIPE",
+        "length": 4.0,
+        "diameter": 0.04
+      }
+    }
+  ],
+  "globalSettings": {
+    "fluid_type": "water",
+    "ambient_temperature": 293.15,
+    "atmospheric_pressure": 101325.0,
+    "global_roughness": 0.000045,
+    "property_iterations": 5,
+    "tolerance": 1e-6,
+    "inner_iterations": 1000,
+    "control_iterations": 100,
+    "solver_method": "hybr"
+  }
+}

@@ -1,0 +1,222 @@
+{
+  "version": "0.1",
+  "app_version": "0.1.1",
+  "format": "walflow",
+  "nodes": [
+    {
+      "id": "note-overview",
+      "type": "text_bubble",
+      "position": {
+        "x": 100,
+        "y": -120
+      },
+      "width": 400,
+      "height": 140,
+      "style": {
+        "width": 400,
+        "height": 140
+      },
+      "data": {
+        "label": "Note",
+        "title": "THERMAL MANAGEMENT & 3-WAY TCV",
+        "text": "Demonstrates temperature control using a 3-way Thermostatic Control Valve (TCV) in a hydraulic oil circuit. Shows dynamic temperature-dependent fluid viscosity calculations and heat dissipation through a heat exchanger.",
+        "fontSize": "md"
+      }
+    },
+    {
+      "id": "warm-reservoir",
+      "type": "tank",
+      "position": {
+        "x": 100,
+        "y": 250
+      },
+      "data": {
+        "label": "Warm Oil Reservoir (55\u00b0C)",
+        "level": 2.0,
+        "elevation": 0.0,
+        "temperature": 328.15,
+        "fluid_type": "iso_vg_46"
+      }
+    },
+    {
+      "id": "oil-pump",
+      "type": "centrifugal_pump",
+      "position": {
+        "x": 260,
+        "y": 250
+      },
+      "data": {
+        "label": "Circulation Pump",
+        "flow_rated_lmin": 200.0,
+        "pressure_rated_bar": 6.0,
+        "rise_to_shutoff_pct": 20.0
+      }
+    },
+    {
+      "id": "cooler-splitter",
+      "type": "splitter",
+      "position": {
+        "x": 420,
+        "y": 250
+      },
+      "data": {
+        "label": "Cooling Splitter"
+      }
+    },
+    {
+      "id": "oil-cooler",
+      "type": "heat_exchanger",
+      "position": {
+        "x": 580,
+        "y": 140
+      },
+      "data": {
+        "label": "Oil Cooler (Heat Exchanger)",
+        "rated_cooling_kw": 120.0,
+        "rated_flow_lmin": 200.0,
+        "design_inlet_temp_c": 55.0,
+        "medium_temp_c": 20.0,
+        "k_factor": 5.0
+      }
+    },
+    {
+      "id": "tcv-3way",
+      "type": "three_way_tcv",
+      "position": {
+        "x": 760,
+        "y": 250
+      },
+      "data": {
+        "label": "3-Way TCV (Target: 45\u00b0C)",
+        "max_cv": 25.0,
+        "set_temperature_c": 45.0,
+        "hot_port_idx": 1
+      }
+    },
+    {
+      "id": "process-heat-load",
+      "type": "linear_control_valve",
+      "position": {
+        "x": 920,
+        "y": 250
+      },
+      "data": {
+        "label": "Process Throttling Valve",
+        "max_cv": 15.0,
+        "opening": 70.0
+      }
+    },
+    {
+      "id": "return-reservoir",
+      "type": "tank",
+      "position": {
+        "x": 1080,
+        "y": 250
+      },
+      "data": {
+        "label": "Header Return Tank",
+        "level": 1.0,
+        "elevation": 0.0,
+        "temperature": 318.15
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "t1",
+      "source": "warm-reservoir",
+      "sourceHandle": "outlet-0",
+      "target": "oil-pump",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Suction",
+        "length": 2,
+        "diameter": 0.038
+      }
+    },
+    {
+      "id": "t2",
+      "source": "oil-pump",
+      "sourceHandle": "outlet-0",
+      "target": "cooler-splitter",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Discharge",
+        "length": 2,
+        "diameter": 0.032
+      }
+    },
+    {
+      "id": "t3",
+      "source": "cooler-splitter",
+      "sourceHandle": "outlet-0",
+      "target": "oil-cooler",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Cooler Feed",
+        "length": 2,
+        "diameter": 0.032
+      }
+    },
+    {
+      "id": "t4",
+      "source": "cooler-splitter",
+      "sourceHandle": "outlet-1",
+      "target": "tcv-3way",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "Hot Bypass Line",
+        "length": 3,
+        "diameter": 0.032
+      }
+    },
+    {
+      "id": "t5",
+      "source": "oil-cooler",
+      "sourceHandle": "outlet-0",
+      "target": "tcv-3way",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Cooled Stream",
+        "length": 2,
+        "diameter": 0.032
+      }
+    },
+    {
+      "id": "t6",
+      "source": "tcv-3way",
+      "sourceHandle": "outlet-0",
+      "target": "process-heat-load",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Temp Controlled Supply",
+        "length": 3,
+        "diameter": 0.032
+      }
+    },
+    {
+      "id": "t7",
+      "source": "process-heat-load",
+      "sourceHandle": "outlet-0",
+      "target": "return-reservoir",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Return Line",
+        "length": 3,
+        "diameter": 0.032
+      }
+    }
+  ],
+  "globalSettings": {
+    "fluid_type": "iso_vg_46",
+    "ambient_temperature": 293.15,
+    "atmospheric_pressure": 101325,
+    "global_roughness": 4.5e-05,
+    "property_iterations": 5,
+    "tolerance": 1e-06,
+    "inner_iterations": 1000,
+    "control_iterations": 100,
+    "solver_method": "hybr",
+    "max_iterations": 1000
+  }
+}
