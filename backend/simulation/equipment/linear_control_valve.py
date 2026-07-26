@@ -1,5 +1,6 @@
 from simulation.equipment.base_node import HydraulicNode
 from simulation.fluid_utils import FluidProperties
+import math
 
 class LinearControlValve(HydraulicNode):
     """
@@ -17,8 +18,7 @@ class LinearControlValve(HydraulicNode):
     def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
         """
         Calculates pressure drop across the valve based on its current position.
-        Uses the standard liquid Cv formula: Q [GPM] = Cv * sqrt(dP [PSI] / SG)
-        Converted to SI: dP [Pa] = (1.732e9 * rho * Q^2) / Cv^2
+        Uses the liquid Cv formula with IEC 60534-2-1 viscosity correction (Fr).
         """
         # Prevent division by zero mathematically. 
         # A "closed" valve is just simulated as having an incredibly small opening.
@@ -27,10 +27,18 @@ class LinearControlValve(HydraulicNode):
         # Calculate the effective Cv (assuming a linear trim)
         cv_eff = self.max_cv * effective_opening
         
+        # Viscosity correction via Valve Reynolds number (IEC 60534-2-1 principle)
+        d_v = max(0.002, 0.01 * math.sqrt(cv_eff))
+        v_v = flow_rate / (0.25 * math.pi * d_v**2)
+        re_v = (density * abs(v_v) * d_v) / max(1e-7, viscosity)
+        
+        fr = FluidProperties.get_valve_fr(re_v)
+        cv_eff_adj = max(0.0001, cv_eff * fr)
+        
         # Conversion constant: (15850.32^2 * 6894.76 / 1000) approx 1.732e9
         K_CV_SI = 1.732e9
         
-        dp = (K_CV_SI * density * flow_rate * abs(flow_rate)) / (cv_eff**2)
+        dp = (K_CV_SI * density * flow_rate * abs(flow_rate)) / (cv_eff_adj**2)
         
         return dp
 

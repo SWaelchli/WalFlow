@@ -38,10 +38,12 @@ class Orifice(HydraulicNode):
         # 3. Calculate Dynamic Pressure term (0.5 * rho * v^2)
         dynamic_pressure = 0.5 * density * velocity * abs(velocity)  # abs to preserve direction of flow for pressure drop sign
 
-        # 4. Calculate the Geometry/Flow Factor (1 - beta^4) / (C_d^2 * beta^4)
-
-        # For simplicity, we will assume a discharge coefficient (C_d) of 0.6 for sharp-edged orifices
-        discharge_coefficient = 0.6
+        # 4. Calculate Orifice Reynolds number and dynamic Discharge Coefficient (C_d)
+        area_orifice = math.pi * (self.orifice_diameter / 2)**2
+        v_orifice = flow_rate / max(1e-9, area_orifice)
+        re_orifice = (density * abs(v_orifice) * self.orifice_diameter) / max(1e-7, viscosity)
+        
+        discharge_coefficient = FluidProperties.get_orifice_cd(re_orifice)
         geometry_factor = (1 - beta_ratio**4) / (discharge_coefficient**2 * beta_ratio**4)
         
         # 5. Calculate recoverable pressure drop at taps (Delta P = Dynamic Pressure * Geometry Factor) 

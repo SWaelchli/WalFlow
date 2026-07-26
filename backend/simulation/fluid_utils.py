@@ -41,22 +41,60 @@ class FluidProperties:
             return 2.414e-5 * 10**(247.8 / (temp_k - 140))
         
         elif fluid_type in ["iso_vg_46", "iso_vg_32"]:
-            # Vogel Equation for Lubricating Oils: ln(nu) = A + B / (T + C)
+            # Vogel Equation for Lubricating Oils: ln(nu) = A + B / (T_c + C)
+            # T_c is in °C, nu is in cSt (mm^2/s)
             if fluid_type == "iso_vg_46":
-                # ISO VG 46: 46 cSt @ 40°C, ~6.8 cSt @ 100°C
-                A, B, C = -3.5, 850.0, -160.0
+                # ISO VG 46: 46 cSt @ 40°C, ~6.5 cSt @ 100°C, ~300 cSt @ 10°C
+                A, B, C = -3.5, 1170.0, 120.0
             else:
-                # ISO VG 32: 32 cSt @ 40°C, ~5.4 cSt @ 100°C (Approximated Vogel)
-                A, B, C = -3.7, 820.0, -165.0
+                # ISO VG 32: 32 cSt @ 40°C, ~5.4 cSt @ 100°C, ~180 cSt @ 10°C
+                A, B, C = -3.7, 1130.0, 120.0
             
             # nu in cSt (mm^2/s)
-            nu_cst = math.exp(A + B / (temp_k + C))
+            nu_cst = math.exp(A + B / (t_c + C))
             
             # Convert to Pa*s: (cSt * 1e-6) * density
             density = FluidProperties.get_density(fluid_type, temp_k)
             return (nu_cst * 1e-6) * density
             
         return 0.001 # Default to water @ 20°C
+
+    @staticmethod
+    def get_orifice_cd(reynolds_number: float) -> float:
+        """
+        Calculates dynamic discharge coefficient Cd for sharp-edged orifices
+        based on Reynolds number.
+        As Re -> infinity, Cd -> 0.60 (turbulent limit).
+        As Re -> 0, Cd decreases smoothly due to viscous drag.
+        """
+        re_safe = max(1e-6, abs(reynolds_number))
+        cd_turbulent = 0.60
+        cd = cd_turbulent / math.sqrt(1.0 + 250.0 / re_safe)
+        return max(0.05, cd)
+
+    @staticmethod
+    def get_valve_fr(reynolds_number: float) -> float:
+        """
+        Calculates IEC 60534-2-1 valve viscosity correction factor Fr.
+        Scales effective Cv down smoothly when flow is in transition or laminar regime (Re < 2000).
+        Bounded between 0.4 and 1.0 for numerical stability.
+        """
+        re_safe = max(1e-6, abs(reynolds_number))
+        if re_safe >= 2000.0:
+            return 1.0
+        fr = (re_safe + 200.0) / (re_safe + 400.0)
+        return max(0.4, min(1.0, fr))
+
+    @staticmethod
+    def get_filter_viscosity_factor(reynolds_number: float) -> float:
+        """
+        Calculates dynamic friction multiplier for porous filter elements.
+        Accounts for laminar Darcy flow resistance at low Re.
+        """
+        re_safe = max(1e-6, abs(reynolds_number))
+        if re_safe >= 2000.0:
+            return 1.0
+        return 1.0 + (100.0 / re_safe)
 
     @staticmethod
     def get_vapor_pressure(fluid_type: str, temp_k: float) -> float:

@@ -66,6 +66,13 @@ export default function Navbar({
     color: theme.slate800
   };
 
+  const dividerStyle = {
+    height: '24px',
+    width: '1px',
+    backgroundColor: theme.slate100,
+    margin: '0 4px'
+  };
+
   return (
     <header style={{
       height: '56px',
@@ -80,98 +87,107 @@ export default function Navbar({
       position: 'relative',
       boxShadow: '0 1px 3px rgba(57, 82, 83, 0.05)'
     }}>
-      {/* Left: Brand Logo & Case Switcher */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-        <img
-          src={walflowLogo}
-          alt="WälFlow Logo"
-          onClick={() => onOpenHelpModal && onOpenHelpModal('about')}
-          title="Click for Help & Documentation"
-          style={{ height: '28px', display: 'block', cursor: 'pointer' }}
-        />
+      {/* Left: Brand Logo (300px aligned) + RUN Simulation & Case Switcher */}
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <div style={{ width: '316px', minWidth: '316px', display: 'flex', alignItems: 'center' }}>
+          <img
+            src={walflowLogo}
+            alt="WälFlow Logo"
+            onClick={() => onOpenHelpModal && onOpenHelpModal('about')}
+            title="Click for Help & Documentation"
+            style={{ height: '28px', display: 'block', cursor: 'pointer' }}
+          />
+        </div>
 
-        {/* Operating Case Switcher Bar */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          background: theme.slate50,
-          padding: '4px 10px',
-          borderRadius: '8px',
-          border: `1px solid ${theme.slate200}`
-        }}>
-          <span style={{ fontSize: '11px', fontWeight: '700', color: theme.slate800, display: 'flex', alignItems: 'center', gap: '3px' }}>
-            <span style={{ color: theme.primary }}>⚡</span> Case:
-          </span>
-
-          <select
-            value={activeCaseId}
-            onChange={(e) => onSelectCase && onSelectCase(e.target.value)}
-            style={{
-              height: '26px',
-              padding: '0 8px',
-              fontSize: '12px',
-              fontWeight: '600',
-              color: theme.slate800,
-              background: theme.white,
-              border: `1px solid ${theme.slate200}`,
-              borderRadius: '6px',
-              cursor: 'pointer',
-              outline: 'none'
-            }}
-          >
-            {cases.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name} {c.is_base ? ' (Base)' : ''}
-              </option>
-            ))}
-          </select>
-
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <button
-            onClick={onAddCase}
-            title="Duplicate Active Case to create a New Case"
+            onClick={onCalculate}
+            disabled={isSimulating}
+            title="Run hydraulic simulation for the active case (Ctrl + Enter)"
             style={{
-              height: '26px',
-              padding: '0 8px',
-              borderRadius: '6px',
-              fontSize: '11px',
-              fontWeight: '600',
-              background: theme.white,
-              border: `1px solid ${theme.slate200}`,
-              color: theme.slate800,
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '4px'
+              ...btnBaseStyle,
+              padding: '0 18px',
+              background: isSimulating ? theme.slate200 : theme.primary,
+              color: theme.white,
+              border: 'none',
+              fontSize: '12px',
+              fontWeight: '700',
+              boxShadow: isSimulating ? 'none' : '0 2px 6px rgba(250, 133, 7, 0.3)'
             }}
-            onMouseEnter={(e) => e.currentTarget.style.background = theme.slate100}
-            onMouseLeave={(e) => e.currentTarget.style.background = theme.white}
+            onMouseEnter={(e) => !isSimulating && (e.currentTarget.style.background = theme.primaryHover)}
+            onMouseLeave={(e) => !isSimulating && (e.currentTarget.style.background = theme.primary)}
           >
-            ➕ New Case
+            {isSimulating ? '⌛ Simulating...' : '▶ Run Simulation'}
           </button>
+
+          {/* Operating Case Switcher Bar (No Lightning Emoji) */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            background: theme.slate50,
+            padding: '0 8px',
+            height: '34px',
+            borderRadius: '8px',
+            border: `1px solid ${theme.slate200}`,
+            boxSizing: 'border-box'
+          }}>
+            <span style={{ fontSize: '12px', fontWeight: '600', color: theme.slate800 }}>
+              Case:
+            </span>
+
+            <select
+              value={activeCaseId}
+              onChange={(e) => onSelectCase && onSelectCase(e.target.value)}
+              style={{
+                height: '24px',
+                padding: '0 8px',
+                fontSize: '12px',
+                fontWeight: '600',
+                color: theme.slate800,
+                background: theme.white,
+                border: `1px solid ${theme.slate200}`,
+                borderRadius: '6px',
+                cursor: 'pointer',
+                outline: 'none'
+              }}
+            >
+              {cases.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name} {c.is_base ? ' (Base)' : ''}
+                </option>
+              ))}
+            </select>
+
+            <button
+              onClick={onAddCase}
+              title="Duplicate Active Case to create a New Case"
+              style={{
+                height: '24px',
+                padding: '0 8px',
+                borderRadius: '6px',
+                fontSize: '11px',
+                fontWeight: '600',
+                background: theme.white,
+                border: `1px solid ${theme.slate200}`,
+                color: theme.slate800,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = theme.slate100}
+              onMouseLeave={(e) => e.currentTarget.style.background = theme.white}
+            >
+              ➕ New Case
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Center: Main Canvas Controls */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <button
-          onClick={onCalculate}
-          disabled={isSimulating}
-          style={{
-            ...btnBaseStyle,
-            padding: '0 18px',
-            background: isSimulating ? theme.slate200 : theme.primary,
-            color: theme.white,
-            border: 'none',
-            fontSize: '12px',
-            fontWeight: '700',
-            boxShadow: isSimulating ? 'none' : '0 2px 6px rgba(250, 133, 7, 0.3)'
-          }}
-          onMouseEnter={(e) => !isSimulating && (e.currentTarget.style.background = theme.primaryHover)}
-          onMouseLeave={(e) => !isSimulating && (e.currentTarget.style.background = theme.primary)}
-        >
-          {isSimulating ? '⌛ Simulating...' : '▶ Run Simulation'}
-        </button>
+        <div style={dividerStyle} />
 
         <button
           onClick={onSave}
@@ -227,6 +243,8 @@ export default function Navbar({
         >
           🗑️ Clear Canvas
         </button>
+
+        <div style={dividerStyle} />
       </div>
 
       {/* Right: Cloud Projects, Admin Hub & User Auth */}

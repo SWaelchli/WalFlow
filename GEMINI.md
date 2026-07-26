@@ -11,6 +11,11 @@ WalFlow is a full-stack application that allows users to build and simulate hydr
 
 The application allows users to drag various hydraulic components (pumps, valves, pipes, etc.) onto a canvas, connect them, and then run a simulation to see the real-time operating conditions of the system.
 
+## Simulation & Physics Principles
+
+* **Steady-State Static Solver**: WalFlow is strictly a static, steady-state hydraulic simulator. The backend solver calculates instantaneous algebraic equilibrium (pressures, flow rates, temperatures, fluid velocities) with no time-stepping ($\Delta t = 0$).
+* **No Time-Step Dynamics**: Concepts involving time integration—such as dynamic accumulator charging/discharging over time ($P_1 V_1^n = P_2 V_2^n$), dynamic tank level filling/emptying over time, valve ramping, or transient water hammer—are incompatible with the current steady-state solver model and should not be proposed or modeled as time-dependent processes.
+
 ## Building and Running
 
 ### Backend (Python)

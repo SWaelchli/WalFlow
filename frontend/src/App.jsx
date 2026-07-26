@@ -752,6 +752,7 @@ function WalFlowContent() {
   const [heatmapSettings, setHeatmapSettings] = useState({
     mode: 'default',
     autoScale: true,
+    globalAutoScale: true,
     customRanges: {
       pressure: { min: 0.0, max: 6.0 },
       temperature: { min: 20.0, max: 60.0 },
@@ -759,6 +760,56 @@ function WalFlowContent() {
       velocity: { min: 0.0, max: 10.0 }
     }
   });
+
+  const computeGlobalHeatmapRange = useCallback((mode) => {
+    if (!mode || mode === 'default') return { min: 0, max: 1 };
+
+    let minVal = Infinity;
+    let maxVal = -Infinity;
+
+    const targetCases = (cases && cases.length > 0) ? cases : [{ id: activeCaseId }];
+
+    targetCases.forEach((c) => {
+      edges.forEach((e) => {
+        const effectiveData = getEffectiveEdgeData(e, cases, c.id);
+        const tele = effectiveData.telemetry || e.data?.telemetry || {};
+        if (mode === 'pressure') {
+          const p1 = tele.inlets?.[0]?.pressure != null ? tele.inlets[0].pressure / 100000.0 : null;
+          const p2 = tele.outlets?.[0]?.pressure != null ? tele.outlets[0].pressure / 100000.0 : null;
+          if (p1 !== null) { minVal = Math.min(minVal, p1); maxVal = Math.max(maxVal, p1); }
+          if (p2 !== null) { minVal = Math.min(minVal, p2); maxVal = Math.max(maxVal, p2); }
+        } else if (mode === 'temperature') {
+          const t1 = tele.inlets?.[0]?.temperature != null ? tele.inlets[0].temperature - 273.15 : null;
+          const t2 = tele.outlets?.[0]?.temperature != null ? tele.outlets[0].temperature - 273.15 : null;
+          if (t1 !== null) { minVal = Math.min(minVal, t1); maxVal = Math.max(maxVal, t1); }
+          if (t2 !== null) { minVal = Math.min(minVal, t2); maxVal = Math.max(maxVal, t2); }
+        } else if (mode === 'volumeflow') {
+          const q1 = tele.inlets?.[0]?.flow_rate != null ? Math.abs(tele.inlets[0].flow_rate * 60000.0) : null;
+          const q2 = tele.outlets?.[0]?.flow_rate != null ? Math.abs(tele.outlets[0].flow_rate * 60000.0) : null;
+          if (q1 !== null) { minVal = Math.min(minVal, q1); maxVal = Math.max(maxVal, q1); }
+          if (q2 !== null) { minVal = Math.min(minVal, q2); maxVal = Math.max(maxVal, q2); }
+        } else if (mode === 'velocity') {
+          const dia = e.data?.diameter || 0.1;
+          const area = (Math.PI * Math.pow(dia, 2)) / 4.0;
+          const q1 = tele.inlets?.[0]?.flow_rate != null ? Math.abs(tele.inlets[0].flow_rate) : null;
+          const q2 = tele.outlets?.[0]?.flow_rate != null ? Math.abs(tele.outlets[0].flow_rate) : null;
+          const v1 = (q1 !== null && area > 0) ? q1 / area : null;
+          const v2 = (q2 !== null && area > 0) ? q2 / area : null;
+          if (v1 !== null) { minVal = Math.min(minVal, v1); maxVal = Math.max(maxVal, v1); }
+          if (v2 !== null) { minVal = Math.min(minVal, v2); maxVal = Math.max(maxVal, v2); }
+        }
+      });
+    });
+
+    if (minVal === Infinity || maxVal === -Infinity || Math.abs(maxVal - minVal) < 1e-4) {
+      if (mode === 'pressure') return { min: 0.0, max: 6.0 };
+      if (mode === 'temperature') return { min: 20.0, max: 60.0 };
+      if (mode === 'volumeflow') return { min: 0.0, max: 200.0 };
+      if (mode === 'velocity') return { min: 0.0, max: 10.0 };
+    }
+
+    return { min: Math.max(0, parseFloat(minVal.toFixed(1))), max: parseFloat(maxVal.toFixed(1)) };
+  }, [edges, cases, activeCaseId]);
 
   const computedHeatmapRange = useMemo(() => {
     const mode = heatmapSettings.mode;
@@ -772,34 +823,40 @@ function WalFlowContent() {
     let minVal = Infinity;
     let maxVal = -Infinity;
 
-    edges.forEach((e) => {
-      const effectiveData = getEffectiveEdgeData(e, cases, activeCaseId);
-      const tele = effectiveData.telemetry || e.data?.telemetry || {};
-      if (mode === 'pressure') {
-        const p1 = tele.inlets?.[0]?.pressure != null ? tele.inlets[0].pressure / 100000.0 : null;
-        const p2 = tele.outlets?.[0]?.pressure != null ? tele.outlets[0].pressure / 100000.0 : null;
-        if (p1 !== null) { minVal = Math.min(minVal, p1); maxVal = Math.max(maxVal, p1); }
-        if (p2 !== null) { minVal = Math.min(minVal, p2); maxVal = Math.max(maxVal, p2); }
-      } else if (mode === 'temperature') {
-        const t1 = tele.inlets?.[0]?.temperature != null ? tele.inlets[0].temperature - 273.15 : null;
-        const t2 = tele.outlets?.[0]?.temperature != null ? tele.outlets[0].temperature - 273.15 : null;
-        if (t1 !== null) { minVal = Math.min(minVal, t1); maxVal = Math.max(maxVal, t1); }
-        if (t2 !== null) { minVal = Math.min(minVal, t2); maxVal = Math.max(maxVal, t2); }
-      } else if (mode === 'volumeflow') {
-        const q1 = tele.inlets?.[0]?.flow_rate != null ? Math.abs(tele.inlets[0].flow_rate * 60000.0) : null;
-        const q2 = tele.outlets?.[0]?.flow_rate != null ? Math.abs(tele.outlets[0].flow_rate * 60000.0) : null;
-        if (q1 !== null) { minVal = Math.min(minVal, q1); maxVal = Math.max(maxVal, q1); }
-        if (q2 !== null) { minVal = Math.min(minVal, q2); maxVal = Math.max(maxVal, q2); }
-      } else if (mode === 'velocity') {
-        const dia = e.data?.diameter || 0.1;
-        const area = (Math.PI * Math.pow(dia, 2)) / 4.0;
-        const q1 = tele.inlets?.[0]?.flow_rate != null ? Math.abs(tele.inlets[0].flow_rate) : null;
-        const q2 = tele.outlets?.[0]?.flow_rate != null ? Math.abs(tele.outlets[0].flow_rate) : null;
-        const v1 = (q1 !== null && area > 0) ? q1 / area : null;
-        const v2 = (q2 !== null && area > 0) ? q2 / area : null;
-        if (v1 !== null) { minVal = Math.min(minVal, v1); maxVal = Math.max(maxVal, v1); }
-        if (v2 !== null) { minVal = Math.min(minVal, v2); maxVal = Math.max(maxVal, v2); }
-      }
+    const targetCases = (heatmapSettings.globalAutoScale && cases && cases.length > 0)
+      ? cases
+      : [{ id: activeCaseId }];
+
+    targetCases.forEach((c) => {
+      edges.forEach((e) => {
+        const effectiveData = getEffectiveEdgeData(e, cases, c.id);
+        const tele = effectiveData.telemetry || e.data?.telemetry || {};
+        if (mode === 'pressure') {
+          const p1 = tele.inlets?.[0]?.pressure != null ? tele.inlets[0].pressure / 100000.0 : null;
+          const p2 = tele.outlets?.[0]?.pressure != null ? tele.outlets[0].pressure / 100000.0 : null;
+          if (p1 !== null) { minVal = Math.min(minVal, p1); maxVal = Math.max(maxVal, p1); }
+          if (p2 !== null) { minVal = Math.min(minVal, p2); maxVal = Math.max(maxVal, p2); }
+        } else if (mode === 'temperature') {
+          const t1 = tele.inlets?.[0]?.temperature != null ? tele.inlets[0].temperature - 273.15 : null;
+          const t2 = tele.outlets?.[0]?.temperature != null ? tele.outlets[0].temperature - 273.15 : null;
+          if (t1 !== null) { minVal = Math.min(minVal, t1); maxVal = Math.max(maxVal, t1); }
+          if (t2 !== null) { minVal = Math.min(minVal, t2); maxVal = Math.max(maxVal, t2); }
+        } else if (mode === 'volumeflow') {
+          const q1 = tele.inlets?.[0]?.flow_rate != null ? Math.abs(tele.inlets[0].flow_rate * 60000.0) : null;
+          const q2 = tele.outlets?.[0]?.flow_rate != null ? Math.abs(tele.outlets[0].flow_rate * 60000.0) : null;
+          if (q1 !== null) { minVal = Math.min(minVal, q1); maxVal = Math.max(maxVal, q1); }
+          if (q2 !== null) { minVal = Math.min(minVal, q2); maxVal = Math.max(maxVal, q2); }
+        } else if (mode === 'velocity') {
+          const dia = e.data?.diameter || 0.1;
+          const area = (Math.PI * Math.pow(dia, 2)) / 4.0;
+          const q1 = tele.inlets?.[0]?.flow_rate != null ? Math.abs(tele.inlets[0].flow_rate) : null;
+          const q2 = tele.outlets?.[0]?.flow_rate != null ? Math.abs(tele.outlets[0].flow_rate) : null;
+          const v1 = (q1 !== null && area > 0) ? q1 / area : null;
+          const v2 = (q2 !== null && area > 0) ? q2 / area : null;
+          if (v1 !== null) { minVal = Math.min(minVal, v1); maxVal = Math.max(maxVal, v1); }
+          if (v2 !== null) { minVal = Math.min(minVal, v2); maxVal = Math.max(maxVal, v2); }
+        }
+      });
     });
 
     if (minVal === Infinity || maxVal === -Infinity || Math.abs(maxVal - minVal) < 1e-4) {
@@ -810,7 +867,7 @@ function WalFlowContent() {
     }
 
     return { min: Math.max(0, minVal), max: maxVal };
-  }, [edges, cases, activeCaseId, heatmapSettings.mode, heatmapSettings.autoScale, heatmapSettings.customRanges]);
+  }, [edges, cases, activeCaseId, heatmapSettings.mode, heatmapSettings.autoScale, heatmapSettings.globalAutoScale, heatmapSettings.customRanges]);
 
   const styledEdges = useMemo(() => {
     return edges.map(edge => {
@@ -1054,7 +1111,23 @@ function WalFlowContent() {
             heatmapMode={heatmapSettings.mode} 
             onModeChange={(mode) => setHeatmapSettings(prev => ({ ...prev, mode }))}
             autoScale={heatmapSettings.autoScale}
-            onToggleAutoScale={() => setHeatmapSettings(prev => ({ ...prev, autoScale: !prev.autoScale }))}
+            onToggleAutoScale={() => setHeatmapSettings(prev => {
+              const nextAutoScale = !prev.autoScale;
+              if (!nextAutoScale) {
+                const globalRange = computeGlobalHeatmapRange(prev.mode);
+                return {
+                  ...prev,
+                  autoScale: false,
+                  customRanges: {
+                    ...prev.customRanges,
+                    [prev.mode]: globalRange
+                  }
+                };
+              }
+              return { ...prev, autoScale: true };
+            })}
+            globalAutoScale={heatmapSettings.globalAutoScale}
+            onToggleGlobalAutoScale={() => setHeatmapSettings(prev => ({ ...prev, globalAutoScale: !prev.globalAutoScale }))}
             activeRange={computedHeatmapRange}
             customRange={heatmapSettings.customRanges[heatmapSettings.mode]}
             onUpdateCustomRange={(min, max) => setHeatmapSettings(prev => ({
@@ -1064,13 +1137,16 @@ function WalFlowContent() {
                 [prev.mode]: { min, max }
               }
             }))}
-            onResetCustomRange={() => setHeatmapSettings(prev => ({
-              ...prev,
-              customRanges: {
-                ...prev.customRanges,
-                [prev.mode]: prev.mode === 'pressure' ? { min: 0.0, max: 6.0 } : prev.mode === 'temperature' ? { min: 20.0, max: 60.0 } : { min: 0.0, max: 200.0 }
-              }
-            }))}
+            onResetCustomRange={() => setHeatmapSettings(prev => {
+              const globalRange = computeGlobalHeatmapRange(prev.mode);
+              return {
+                ...prev,
+                customRanges: {
+                  ...prev.customRanges,
+                  [prev.mode]: globalRange
+                }
+              };
+            })}
           />
         </div>
 

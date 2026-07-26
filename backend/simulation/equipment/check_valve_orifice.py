@@ -25,13 +25,18 @@ class CheckValveOrifice(HydraulicNode):
         self.add_inlet()
         self.add_outlet()
 
-    def _calculate_orifice_dp(self, flow_rate: float, density: float) -> float:
-        """Calculates pressure drop using standard Bernoulli orifice equation."""
+    def _calculate_orifice_dp(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
+        """Calculates pressure drop using Bernoulli orifice equation with Re-dependent Cd."""
         beta_ratio = min(0.99, self.orifice_diameter / self.pipe_diameter)
         area_pipe = math.pi * (self.pipe_diameter / 2.0)**2
         velocity = flow_rate / area_pipe
         dynamic_pressure = 0.5 * density * velocity * abs(velocity)
-        discharge_coefficient = 0.6
+        
+        area_orifice = math.pi * (self.orifice_diameter / 2.0)**2
+        v_orifice = flow_rate / max(1e-9, area_orifice)
+        re_orifice = (density * abs(v_orifice) * self.orifice_diameter) / max(1e-7, viscosity)
+        
+        discharge_coefficient = FluidProperties.get_orifice_cd(re_orifice)
         geometry_factor = (1.0 - beta_ratio**4) / ((discharge_coefficient**2) * (beta_ratio**4))
         rec_delta_p = dynamic_pressure * geometry_factor
         perm_delta_p = rec_delta_p * (1.0 - beta_ratio**2)
@@ -45,7 +50,7 @@ class CheckValveOrifice(HydraulicNode):
         """
         K_CV_SI = 1.732e9
         cracking_pa = self.cracking_pressure_bar * 100000.0
-        dp_ori = self._calculate_orifice_dp(flow_rate, density)
+        dp_ori = self._calculate_orifice_dp(flow_rate, density, viscosity)
 
         if flow_rate <= 0 or dp_ori < cracking_pa:
             # Main seat closed -> all flow through orifice

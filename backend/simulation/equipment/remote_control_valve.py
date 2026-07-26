@@ -1,5 +1,6 @@
 from simulation.equipment.base_node import HydraulicNode
 from simulation.fluid_utils import FluidProperties
+import math
 
 class RemoteControlValve(HydraulicNode):
     """
@@ -24,13 +25,21 @@ class RemoteControlValve(HydraulicNode):
         self.add_outlet()
 
     def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
-        """Standard Cv-based dP using current opening_pct."""
+        """Standard Cv-based dP using current opening_pct with IEC viscosity correction."""
         # Clamp opening to physical limits
         eff_opening = max(0.001, min(100.0, self.opening_pct)) / 100.0
         cv_eff = self.max_cv * eff_opening
         
+        # Viscosity correction via Valve Reynolds number (IEC 60534-2-1 principle)
+        d_v = max(0.002, 0.01 * math.sqrt(cv_eff))
+        v_v = flow_rate / (0.25 * math.pi * d_v**2)
+        re_v = (density * abs(v_v) * d_v) / max(1e-7, viscosity)
+        
+        fr = FluidProperties.get_valve_fr(re_v)
+        cv_eff_adj = max(0.0001, cv_eff * fr)
+        
         K_CV_SI = 1.732e9
-        dp = (K_CV_SI * density * flow_rate * abs(flow_rate)) / (cv_eff**2)
+        dp = (K_CV_SI * density * flow_rate * abs(flow_rate)) / (cv_eff_adj**2)
         
         return dp
 

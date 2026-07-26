@@ -1,5 +1,6 @@
 from simulation.equipment.base_node import HydraulicNode
 from simulation.fluid_utils import FluidProperties
+import math
 
 class CheckValve(HydraulicNode):
     """
@@ -16,8 +17,8 @@ class CheckValve(HydraulicNode):
 
     def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
         """
-        Calculates pressure drop across the check valve.
-        Forward flow (Q >= 0): dP = Cracking_Pressure + (1.732e9 * density * Q^2) / Cv^2
+        Calculates pressure drop across the check valve with viscosity correction.
+        Forward flow (Q >= 0): dP = Cracking_Pressure + (1.732e9 * density * Q^2) / (Cv * Fr)^2
         Reverse flow (Q < 0): Severe resistance (Cv_closed = 1e-4) to block backflow.
         """
         K_CV_SI = 1.732e9
@@ -25,7 +26,13 @@ class CheckValve(HydraulicNode):
 
         if flow_rate >= 0:
             effective_cv = max(0.001, self.cv)
-            dp_friction = (K_CV_SI * density * flow_rate * flow_rate) / (effective_cv ** 2)
+            d_v = max(0.002, 0.01 * math.sqrt(effective_cv))
+            v_v = flow_rate / (0.25 * math.pi * d_v**2)
+            re_v = (density * abs(v_v) * d_v) / max(1e-7, viscosity)
+            fr = FluidProperties.get_valve_fr(re_v)
+            cv_adj = max(0.0001, effective_cv * fr)
+            
+            dp_friction = (K_CV_SI * density * flow_rate * flow_rate) / (cv_adj ** 2)
             return cracking_pa + dp_friction
         else:
             # Backflow restriction (closed check valve)

@@ -1,4 +1,5 @@
 from simulation.equipment.base_node import HydraulicNode
+from simulation.fluid_utils import FluidProperties
 
 class Filter(HydraulicNode):
     """
@@ -39,7 +40,14 @@ class Filter(HydraulicNode):
 
     def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
         k_curr = self.get_resistance_k()
-        return k_curr * density * flow_rate * abs(flow_rate)
+        # Representative element dimension & velocity for filter mesh Reynolds number
+        d_pore = 0.001  # 1mm effective pore/mesh dimension
+        a_ref = max(1e-4, self.flow_ref / max(0.1, (2.0 * max(100.0, self.dp_clean) / 1000.0)**0.5))
+        v_elem = flow_rate / a_ref
+        re_filter = (density * abs(v_elem) * d_pore) / max(1e-7, viscosity)
+        
+        visc_factor = FluidProperties.get_filter_viscosity_factor(re_filter)
+        return k_curr * density * flow_rate * abs(flow_rate) * visc_factor
 
     def calculate(self):
         inlet = self.inlets[0]

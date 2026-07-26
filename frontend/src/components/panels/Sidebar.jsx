@@ -362,7 +362,19 @@ export default function Sidebar({ onLoad, globalSettings, onUpdateGlobalSettings
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <CollapsibleScenarios templates={templates} onLoad={onLoad} />
 
-            <div style={{ position: 'sticky', top: 0, background: theme.white, zIndex: 5, paddingBottom: '8px' }}>
+            <div style={{ 
+              position: 'sticky', 
+              top: '-16px', 
+              marginTop: '-16px',
+              marginLeft: '-16px',
+              marginRight: '-16px',
+              paddingTop: '16px',
+              paddingLeft: '16px',
+              paddingRight: '16px',
+              paddingBottom: '8px', 
+              background: theme.white, 
+              zIndex: 5
+            }}>
               <div style={{ position: 'relative' }}>
                 <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: theme.slate500, fontSize: '14px' }}>🔍</span>
                 <input 

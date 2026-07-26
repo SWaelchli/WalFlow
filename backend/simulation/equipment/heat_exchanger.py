@@ -63,8 +63,13 @@ class HeatExchanger(HydraulicNode):
         return q_rated_si / dt
 
     def calculate_delta_p(self, flow: float, density: float, viscosity: float) -> float:
-        # Simplified pressure drop: dP = k * Q^2
-        return self.pressure_drop_factor * (flow**2) * (density / 1000.0)
+        # Scale friction for heat exchanger tubes/channels at low Re
+        d_hx = 0.01  # ~10mm tube/channel characteristic dimension
+        a_hx = max(1e-4, (self.rated_flow_lmin / 60000.0) / 2.0)
+        v_hx = flow / a_hx
+        re_hx = (density * abs(v_hx) * d_hx) / max(1e-7, viscosity)
+        visc_factor = FluidProperties.get_filter_viscosity_factor(re_hx)
+        return self.pressure_drop_factor * (flow**2) * (density / 1000.0) * visc_factor
 
     def calculate_temperature(self):
         """

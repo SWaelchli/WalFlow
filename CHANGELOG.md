@@ -26,12 +26,15 @@ All notable changes to the WälFlow project will be documented in this file.
 - Implemented backend REST endpoint (`POST /api/simulation/batch`) and `GraphParser` case override resolution engine.
 
 ### 🔩 Equipment & Simulation
+- Fixed lube oil Vogel viscosity calculation formula in `FluidProperties` to accurately compute dynamic viscosity across temperature ranges (e.g., ISO VG 46 cold start at 10 °C evaluating to ~215 mPa·s / 240 cSt).
+- Implemented dynamic Reynolds number ($Re$) dependent viscosity corrections across `Orifice`, `CheckValveOrifice`, `LinearControlValve`, `RemoteControlValve`, `CheckValve`, `LinearRegulator`, `Filter`, and `HeatExchanger` equipment nodes, capturing low-$Re$ viscous friction losses under cold-start conditions.
 - Added **Check Valve (Non-Return Valve)** equipment with configurable flow coefficient ($C_v$), cracking pressure, backflow prevention, SVG symbol, and property editor integration.
 - Added **Check Valve with Orifice** equipment combining non-return check valve seat logic with Bernoulli bypass orifice restriction math from `Orifice` equipment for controlled sub-cracking and reverse bypass flow.
 - Fixed **3-Way TCV (Temperature Control Valve)** network residual pressure coupling and telemetry propagation in the solver.
 
 ### 🎨 Visualizations & Heatmaps
 - Separated Volume Flow (`l/min`) and Velocity (`m/s`) into dedicated heatmaps with individual auto-scaling and custom range controls.
+- Added **Global vs. Case-Specific Auto-Scaling** toggle (`Global` check mark box) in the Heatmap Legend, defaulting to global auto-scaling across all operating cases.
 - Fixed Heatmap pipe stroke rendering by removing CSS `!important` overrides, enabling vibrant HSL pressure, temperature, flow, and velocity gradient displays across all pipes.
 - Implemented per-case telemetry storage and switching, dynamically updating canvas line flow metrics, Data Panel process values, and Heatmaps when switching active operating cases.
 
@@ -45,6 +48,7 @@ All notable changes to the WälFlow project will be documented in this file.
   - Duplicate, rename, export `.wlf` files, and delete diagrams with popup confirmation.
 
 ### 🎨 UI & Layout Polish
+- Reorganized UI layout: full vertical height Sidebar (`100vh`) with WälFlow logo top header, left-aligned **Run Simulation** button and Case Selector in Navbar without lightning icon, vertical divider grouping, and standardized controls.
 - Introduced **Top Navbar** (`Navbar.jsx`) housing WälFlow logo, primary **Run Simulation** action, canvas file operations (**Export**, **Import**, **Clear Canvas**), **Cloud Projects**, **Admin Hub**, and user auth status.
 - Refactored **Sidebar** (`Sidebar.jsx`) to focus strictly on component drag & drop, global settings, and stats diagnostics, with unified tab styling (`#395253` dark teal active state).
 - Added `# Design & Styling Philosophy` reference section in `GEMINI.md` defining color tokens, button state rules, and component guidelines.
@@ -54,6 +58,7 @@ All notable changes to the WälFlow project will be documented in this file.
 - Unified design system and styling across all modals (`LoginModal`, `AdminSetupModal`, `AdminHubModal`, `ProjectManagerModal`, `HelpInfoModal`) using dark teal glassmorphism theme and custom gradients.
 
 ### 📚 Documentation & Examples
+- Standardized equipment, tag, junction, and pipe naming in the example **API 614 Lube Oil System** diagram (`Example_API_614_LOS.wlf`) according to API 614 standard practices (replacing project-specific tags like `FO-3041A` and frame codes `RB35`/`RB28`).
 - Added **Greeting Canvas** as the default initial application view featuring a centerpiece "WELCOME TO WALFLOW" introductory note and a ready-to-run demo hydraulic circuit.
 - Added informative canvas note callout bubbles to all pre-configured example hydraulic diagrams to explain diagram context and hydraulic principles.
 

@@ -5,6 +5,8 @@ export default function HeatmapLegend({
   onModeChange, 
   autoScale = true, 
   onToggleAutoScale,
+  globalAutoScale = true,
+  onToggleGlobalAutoScale,
   activeRange = { min: 0, max: 6 },
   customRange = { min: 0, max: 6 },
   onUpdateCustomRange,
@@ -61,6 +63,29 @@ export default function HeatmapLegend({
       flexDirection: 'column',
       gap: '12px'
     }}>
+      {/* Top-Right Close Button */}
+      <button
+        onClick={() => onModeChange('default')}
+        style={{
+          position: 'absolute',
+          top: '10px',
+          right: '12px',
+          background: 'none',
+          border: 'none',
+          color: '#587071',
+          cursor: 'pointer',
+          fontSize: '14px',
+          fontWeight: 700,
+          padding: '2px 6px',
+          borderRadius: '4px',
+          lineHeight: 1,
+          zIndex: 10
+        }}
+        title="Turn Off Heatmap"
+      >
+        ✕
+      </button>
+
       {/* Mode Switcher Pills */}
       <div style={{
         display: 'flex',
@@ -69,7 +94,8 @@ export default function HeatmapLegend({
         backgroundColor: '#F4F7F6',
         padding: '3px',
         borderRadius: '20px',
-        border: '1px solid #EBF0EF'
+        border: '1px solid #EBF0EF',
+        marginRight: '22px'
       }}>
         {[
           { id: 'pressure', label: 'Pressure' },
@@ -100,7 +126,7 @@ export default function HeatmapLegend({
         ))}
       </div>
 
-      {/* Control Row: Title + Auto Toggle + Close */}
+      {/* Control Row: Title + Auto Toggle + Global Checkbox */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
         <span style={{ fontSize: '13px', fontWeight: 700, color: '#395253', whiteSpace: 'nowrap' }}>
           {config.title}
@@ -124,24 +150,21 @@ export default function HeatmapLegend({
             }}
             title={autoScale ? 'Auto-Scaling is ON (click to switch to manual bounds)' : 'Auto-Scaling is OFF (click to auto-detect system limits)'}
           >
-            ⚡ Auto: {autoScale ? 'ON' : 'OFF'}
+            Auto: {autoScale ? 'ON' : 'OFF'}
           </button>
           
-          <button
-            onClick={() => onModeChange('default')}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#587071',
-              cursor: 'pointer',
-              fontSize: '12px',
-              padding: '2px 4px',
-              borderRadius: '4px'
-            }}
-            title="Turn Off Heatmap"
+          <label 
+            title={globalAutoScale ? "Global auto-scaling considers all operating cases" : "Case-specific auto-scaling considers the active case only"}
+            style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', userSelect: 'none', color: '#395253', fontSize: '11px', fontWeight: 600 }}
           >
-            ✕
-          </button>
+            <input
+              type="checkbox"
+              checked={!!globalAutoScale}
+              onChange={onToggleGlobalAutoScale}
+              style={{ accentColor: '#FA8507', cursor: 'pointer', width: '13px', height: '13px' }}
+            />
+            Global
+          </label>
         </div>
       </div>
 
@@ -156,9 +179,8 @@ export default function HeatmapLegend({
 
       {/* Range Footer: Auto Labels vs Manual Inputs */}
       {autoScale ? (
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#587071', fontWeight: 600 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', color: '#587071', fontWeight: 600 }}>
           <span>Min: {minDisplay} {config.unit}</span>
-          <span style={{ color: '#FA8507', fontWeight: 700 }}>[Auto-Scaled]</span>
           <span>Max: {maxDisplay} {config.unit}</span>
         </div>
       ) : (
