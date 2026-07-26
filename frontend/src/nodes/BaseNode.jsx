@@ -65,22 +65,22 @@ export default function BaseNode({
             position: 'absolute',
             top: -6,
             right: -6,
-            background: '#FA8507',
-            color: '#ffffff',
-            fontSize: '10px',
-            fontWeight: 'bold',
+            background: 'transparent',
+            border: '1.5px solid #FA8507',
             width: '16px',
             height: '16px',
             borderRadius: '50%',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 2px 4px rgba(250, 133, 7, 0.4)',
+            boxShadow: '0 1px 3px rgba(250, 133, 7, 0.25)',
             zIndex: 12
           }}
           title="Contains active operating case overrides"
         >
-          ⚡
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="#FA8507">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+          </svg>
         </div>
       )}
 

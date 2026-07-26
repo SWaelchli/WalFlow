@@ -23,7 +23,8 @@ All notable changes to the WälFlow project will be documented in this file.
 - Implemented **Property Classification Matrix**: separates fixed **Global Hardware Specs** (`🌐 Global`) from dynamic **Case Variables** (`⚡ Case Variable`).
 - Added **Case Switcher Bar** in top Navbar with active case selector, `+ New Case` (duplicate active case), rename, and delete controls.
 - Added Property Inspector badging (`🌐 Global` / `⚡ Case Variable`), `● Overridden` indicators, and `↺ Reset to Base` buttons across **all** component types (Filters, Pumps, Valves, Heat Exchangers, Regulators, Orifices).
-- Added canvas node visual indicators (orange `⚡` badge pills) for equipment containing active operating case overrides.
+- Added canvas node visual indicators (orange `⚡` lightning SVG badge) for equipment containing active operating case overrides.
+- Fixed missing `Optional` import in `backend/simulation/graph_parser.py` causing backend container startup crash.
 - Added **Operating Cases Matrix** tab in bottom Data Panel (`DataList.jsx`) with side-by-side KPI comparison matrix, relative delta metrics (`+18.2 bar (+25%)`), and cavitation risk highlights.
 - Configured Batch Solver to execute strictly on-demand via the `▶ Batch Solve Matrix` button.
 - Configured single-case simulation runs (via top `Run Simulation` button) to immediately update that active case's KPIs in the matrix and auto-recalculate differential delta metrics across all other cases when `Base Case` is run.
