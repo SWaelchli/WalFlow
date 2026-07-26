@@ -53,7 +53,7 @@ The application allows users to drag various hydraulic components (pumps, valves
 
 ### Adding New Equipment
 
-The project has a clear process for adding new hydraulic components, which involves updating both the backend and frontend. The `README.md` file contains a detailed guide on how to:
+The project has a clear process for adding new hydraulic components, which involves updating both the backend and frontend. The [DEVELOPMENT.md](./DEVELOPMENT.md) file contains a detailed guide on how to:
 1.  Create a new equipment class in the Python backend.
 2.  Register the new equipment in the backend's graph parser.
 3.  Create a corresponding React component for the equipment in the frontend.
