@@ -290,7 +290,7 @@ export default function DataList({
   }, [manualOrder, nodes, edges, activeTab, filterText, sortConfig]);
 
   const exportCSV = useCallback(() => {
-    const headers = ["Type", "Name", "Flow (L/min)", "Velocity (m/s)", "dP (bar)", "P Start (bar)", "P End (bar)", "Temp (C)"];
+    const headers = ["Type", "Name", "Flow (L/min)", "Velocity (m/s)", "dP (bar)", "P Start (bara)", "P End (bara)", "Temp (C)"];
     if (activeTab === 'pipes') headers.push("Length (m)");
     const rows = processedItems.map(i => {
       const row = [i.displayType, i.label, m3sToLmin(i.flow), i.velocity.toFixed(2), i.dp.toFixed(3), i.pStart.toFixed(2), i.pEnd.toFixed(2), kToC(i.temp)];
@@ -592,8 +592,8 @@ export default function DataList({
               <SortHeader label="Flow (L/min)" sortKey="flow" align="right" sortConfig={sortConfig} requestSort={requestSort} />
               <SortHeader label="Velocity (m/s)" sortKey="velocity" align="right" sortConfig={sortConfig} requestSort={requestSort} />
               <SortHeader label="dP (bar)" sortKey="dp" align="right" sortConfig={sortConfig} requestSort={requestSort} />
-              <SortHeader label="P Start" sortKey="pStart" align="right" sortConfig={sortConfig} requestSort={requestSort} />
-              <SortHeader label="P End" sortKey="pEnd" align="right" sortConfig={sortConfig} requestSort={requestSort} />
+              <SortHeader label="P Start (bara)" sortKey="pStart" align="right" sortConfig={sortConfig} requestSort={requestSort} />
+              <SortHeader label="P End (bara)" sortKey="pEnd" align="right" sortConfig={sortConfig} requestSort={requestSort} />
               <SortHeader label="Temp (°C)" sortKey="temp" align="right" sortConfig={sortConfig} requestSort={requestSort} />
               {activeTab === 'pipes' && <th style={{ padding: '8px' }}>NPS</th>}
               {activeTab === 'pipes' && <th style={{ padding: '8px' }}>Schedule</th>}

@@ -61,6 +61,7 @@ All notable changes to the WälFlow project will be documented in this file.
   - Duplicate, rename, export `.wlf` files, and delete diagrams with popup confirmation.
 
 ### 🎨 UI & Layout Polish
+- Updated static pressure column headers in Data Panel table and CSV export to specify absolute pressure engineering units (`P Start (bara)` and `P End (bara)`).
 - Reorganized UI layout: full vertical height Sidebar (`100vh`) with WälFlow logo top header, left-aligned **Run Simulation** button and Case Selector in Navbar without lightning icon, vertical divider grouping, and standardized controls.
 - Standardized top Navbar typography (`Inter` font family, `12px` font size, `600` font weight across all buttons and `<select>` dropdowns) and updated auth controls to pair `🔒 Sign In` and `🔓 Sign Out` with clean text-only username display.
 - Added configurable `RELEASE_STAGE` (`Beta`) constant in `constants.js` and rendered clean baseline-aligned version text (`v0.1.1 • Beta`) matching the `#395253` brand dark letter color next to the WälFlow logo in the top Navbar.
