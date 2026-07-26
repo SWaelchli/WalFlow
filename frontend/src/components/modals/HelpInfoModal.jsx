@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { APP_VERSION, FILE_FORMAT_VERSION } from '../../constants';
+import { APP_VERSION, RELEASE_STAGE, FILE_FORMAT_VERSION } from '../../constants';
 
 const SHORTCUT_GROUPS = [
   {
@@ -394,7 +394,7 @@ export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts
                 }}
               >
                 <h4 style={{ margin: '0 0 8px 0', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#FA8507' }}>
-                  Copyright & Licensing (WalFlow v{APP_VERSION})
+                  Copyright & Licensing (WalFlow v{APP_VERSION}{RELEASE_STAGE ? ` ${RELEASE_STAGE}` : ''})
                 </h4>
                 <p
                   style={{
@@ -405,7 +405,7 @@ export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts
                     lineHeight: '1.5',
                   }}
                 >
-                  WalFlow v{APP_VERSION} (File Format v{FILE_FORMAT_VERSION})<br />
+                  WalFlow v{APP_VERSION} {RELEASE_STAGE ? `(${RELEASE_STAGE})` : ''} (File Format v{FILE_FORMAT_VERSION})<br />
                   Copyright (c) 2026 Sebastian Waelchli (https://swaelchli.com). All rights reserved. Licensed under the PolyForm Noncommercial License.
                 </p>
               </div>

@@ -1,6 +1,7 @@
 import React from 'react';
 import walflowLogo from '../../assets/Logo_WalFlow.svg';
 import { useAuth } from '../../hooks/useAuth';
+import { APP_VERSION, RELEASE_STAGE } from '../../constants';
 
 const theme = {
   primary: '#FA8507',
@@ -93,7 +94,7 @@ export default function Navbar({
     }}>
       {/* Left: Brand Logo (300px aligned) + RUN Simulation & Case Switcher */}
       <div style={{ display: 'flex', alignItems: 'center' }}>
-        <div style={{ width: '316px', minWidth: '316px', display: 'flex', alignItems: 'center' }}>
+        <div style={{ width: '316px', minWidth: '316px', display: 'flex', alignItems: 'flex-end', gap: '8px' }}>
           <img
             src={walflowLogo}
             alt="WälFlow Logo"
@@ -101,6 +102,23 @@ export default function Navbar({
             title="Click for Help & Documentation"
             style={{ height: '28px', display: 'block', cursor: 'pointer' }}
           />
+          <span
+            onClick={() => onOpenHelpModal && onOpenHelpModal('about')}
+            title="Click for Help & Documentation"
+            style={{
+              fontSize: '11px',
+              fontWeight: '600',
+              color: theme.brandDark,
+              cursor: 'pointer',
+              userSelect: 'none',
+              fontFamily: 'inherit',
+              lineHeight: '1',
+              marginBottom: '2px',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            v{APP_VERSION} {RELEASE_STAGE ? `• ${RELEASE_STAGE}` : ''}
+          </span>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
