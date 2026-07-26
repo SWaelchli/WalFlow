@@ -61,6 +61,7 @@ All notable changes to the WälFlow project will be documented in this file.
 
 ### 🎨 UI & Layout Polish
 - Reorganized UI layout: full vertical height Sidebar (`100vh`) with WälFlow logo top header, left-aligned **Run Simulation** button and Case Selector in Navbar without lightning icon, vertical divider grouping, and standardized controls.
+- Standardized top Navbar typography (`Inter` font family, `12px` font size, `600` font weight across all buttons and `<select>` dropdowns) and updated auth controls to pair `🔒 Sign In` and `🔓 Sign Out` with clean text-only username display.
 - Introduced **Top Navbar** (`Navbar.jsx`) housing WälFlow logo, primary **Run Simulation** action, canvas file operations (**Export**, **Import**, **Clear Canvas**), **Cloud Projects**, **Admin Hub**, and user auth status.
 - Refactored **Sidebar** (`Sidebar.jsx`) to focus strictly on component drag & drop, global settings, and stats diagnostics, with unified tab styling (`#395253` dark teal active state).
 - Added `# Design & Styling Philosophy` reference section in `GEMINI.md` defining color tokens, button state rules, and component guidelines.

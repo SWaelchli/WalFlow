@@ -48,6 +48,14 @@
   box-sizing: border-box;
 }
 
+button,
+select,
+input,
+textarea {
+  font-family: inherit;
+}
+
+
 body {
   font-family: var(--font-sans);
   background-color: var(--color-bg-canvas);

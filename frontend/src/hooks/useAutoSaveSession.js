@@ -12,7 +12,8 @@ export function useAutoSaveSession({
   activeCaseId,
   reactFlowInstance,
   isAuthenticated,
-  activeProject
+  activeProject,
+  setActiveProject
 }) {
   const [saveStatus, setSaveStatus] = useState('saved_local'); // 'saved_cloud' | 'saving_cloud' | 'saved_local' | 'saving_local' | 'error'
   const [lastSavedTimestamp, setLastSavedTimestamp] = useState(null);
@@ -134,7 +135,13 @@ export function useAutoSaveSession({
           setLastSavedTimestamp(new Date().toLocaleTimeString());
         } catch (err) {
           console.error('Cloud auto-save failed:', err);
-          setSaveStatus('error');
+          if (err.response && (err.response.status === 404 || err.response.status === 403)) {
+            console.warn('Active cloud project no longer accessible. Detaching cloud sync.');
+            if (setActiveProject) setActiveProject(null);
+            setSaveStatus('saved_local');
+          } else {
+            setSaveStatus('error');
+          }
         }
       }, 2000);
     }
@@ -144,7 +151,7 @@ export function useAutoSaveSession({
       clearTimeout(localTimer);
       if (cloudTimer) clearTimeout(cloudTimer);
     };
-  }, [nodes, edges, globalSettings, cases, activeCaseId, activeProject, isAuthenticated, saveToLocalDraft, serializeWorkspaceState]);
+  }, [nodes, edges, globalSettings, cases, activeCaseId, activeProject, isAuthenticated, saveToLocalDraft, serializeWorkspaceState, setActiveProject]);
 
   // Manual Trigger for Instant Cloud Save
   const triggerManualCloudSave = useCallback(async () => {
@@ -168,10 +175,16 @@ export function useAutoSaveSession({
       return true;
     } catch (err) {
       console.error('Manual cloud save failed:', err);
+      if (err.response && (err.response.status === 404 || err.response.status === 403)) {
+        console.warn('Active cloud project no longer accessible. Detaching cloud sync.');
+        if (setActiveProject) setActiveProject(null);
+        setSaveStatus('saved_local');
+        return true;
+      }
       setSaveStatus('error');
       return false;
     }
-  }, [activeProject, isAuthenticated, saveToLocalDraft, serializeWorkspaceState]);
+  }, [activeProject, isAuthenticated, saveToLocalDraft, serializeWorkspaceState, setActiveProject]);
 
   // Hydration Loader on Boot
   const loadLocalDraftOnBoot = useCallback(() => {

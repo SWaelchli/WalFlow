@@ -100,7 +100,7 @@ const edgeTypes = {
 const getId = () => `node_${crypto.randomUUID().split('-')[0]}`;
 
 function WalFlowContent() {
-  const { isAuthenticated, adminStatus } = useAuth();
+  const { currentUser, isAuthenticated, adminStatus } = useAuth();
   const reactFlowWrapper = useRef(null);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   
@@ -119,6 +119,15 @@ function WalFlowContent() {
   // Active Cloud Project & Auto-Save Session Hook
   const [activeProject, setActiveProject] = useState(null);
   const [showRestoredToast, setShowRestoredToast] = useState(false);
+
+  // Reset active cloud project when user switches accounts or logs out
+  const prevUserIdRef = useRef(currentUser?.id);
+  useEffect(() => {
+    if (prevUserIdRef.current !== currentUser?.id) {
+      prevUserIdRef.current = currentUser?.id;
+      setActiveProject(null);
+    }
+  }, [currentUser?.id]);
 
   // Operating Case Manager State
   const [cases, setCases] = useState([DEFAULT_BASE_CASE]);
@@ -195,7 +204,8 @@ function WalFlowContent() {
     activeCaseId,
     reactFlowInstance,
     isAuthenticated,
-    activeProject
+    activeProject,
+    setActiveProject
   });
 
   // Global UI Body Fix

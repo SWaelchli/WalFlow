@@ -34,8 +34,7 @@ export default function Navbar({
   onAddCase,
   activeProject,
   saveStatus = 'saved_local',
-  lastSavedTimestamp,
-  onTriggerManualSave
+  lastSavedTimestamp
 }) {
   const { currentUser, isAuthenticated, isAdmin, adminStatus, logout } = useAuth();
 
@@ -50,6 +49,7 @@ export default function Navbar({
     height: '34px',
     padding: '0 14px',
     borderRadius: '8px',
+    fontFamily: 'inherit',
     fontSize: '12px',
     fontWeight: '600',
     cursor: 'pointer',
@@ -146,6 +146,7 @@ export default function Navbar({
               style={{
                 height: '24px',
                 padding: '0 8px',
+                fontFamily: 'inherit',
                 fontSize: '12px',
                 fontWeight: '600',
                 color: theme.slate800,
@@ -170,7 +171,8 @@ export default function Navbar({
                 height: '24px',
                 padding: '0 8px',
                 borderRadius: '6px',
-                fontSize: '11px',
+                fontFamily: 'inherit',
+                fontSize: '12px',
                 fontWeight: '600',
                 background: theme.white,
                 border: `1px solid ${theme.slate200}`,
@@ -196,9 +198,7 @@ export default function Navbar({
         {/* Unified Cloud Projects & Auto-Save Control */}
         <button
           onClick={() => {
-            if (saveStatus === 'error') {
-              onTriggerManualSave();
-            } else if (isAuthenticated) {
+            if (isAuthenticated) {
               onOpenProjectsModal();
             } else {
               onOpenAuthModal();
@@ -378,11 +378,12 @@ export default function Navbar({
             <>
               <span style={{
                 fontSize: '12px',
-                fontWeight: '700',
+                fontWeight: '600',
+                fontFamily: 'inherit',
                 color: isAdmin ? theme.primary : theme.slate800,
                 whiteSpace: 'nowrap'
               }}>
-                {isAdmin ? '👑' : '👤'} {currentUser?.username}
+                {currentUser?.username}
               </span>
 
               <button
@@ -393,7 +394,8 @@ export default function Navbar({
                   border: 'none',
                   color: theme.danger,
                   cursor: 'pointer',
-                  fontSize: '11px',
+                  fontFamily: 'inherit',
+                  fontSize: '12px',
                   fontWeight: '600',
                   padding: '2px 4px',
                   borderRadius: '4px',
@@ -405,7 +407,7 @@ export default function Navbar({
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = theme.dangerBg}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               >
-                <span>🚪</span> Log Out
+                <span>🔓</span> Sign Out
               </button>
             </>
           ) : (
@@ -415,8 +417,9 @@ export default function Navbar({
                 backgroundColor: 'transparent',
                 border: 'none',
                 color: theme.primary,
+                fontFamily: 'inherit',
                 fontSize: '12px',
-                fontWeight: '700',
+                fontWeight: '600',
                 cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
