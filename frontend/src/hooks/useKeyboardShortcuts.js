@@ -13,6 +13,7 @@ export function useKeyboardShortcuts({
   deselectAll,
   undo,
   redo,
+  onSaveShortcut,
 }) {
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -30,6 +31,13 @@ export function useKeyboardShortcuts({
 
       const isMod = e.ctrlKey || e.metaKey;
       const key = e.key.toLowerCase();
+
+      // Save: Ctrl + S
+      if (isMod && key === 's') {
+        e.preventDefault();
+        if (onSaveShortcut) onSaveShortcut();
+        return;
+      }
 
       // Copy: Ctrl + C
       if (isMod && key === 'c') {
@@ -107,5 +115,6 @@ export function useKeyboardShortcuts({
     deselectAll,
     undo,
     redo,
+    onSaveShortcut,
   ]);
 }

@@ -15,11 +15,23 @@ This document outlines planned features, overlays, and enhancements for the WalF
 
 ## 💾 State Management & Persistence
 
-- [ ] **💾 Canvas Session Auto-Save & Refresh State Recovery (`AutoSaveSessionManager`)**
-  * **Concept:** Automatic local state persistence ensuring users never lose working progress when the browser window is refreshed, navigated away from, or accidentally closed.
+- [x] **💾 Dual-Mode Session Auto-Save & Cloud Project Sync (`AutoSaveSessionManager`)**
+  * **Concept:** Automatic local state persistence ensuring users never lose working progress when browser windows refresh, alongside seamless auto-sync to backend database projects when an active cloud project is selected.
 
-### 1. Real-World Motivation & Use Cases
-Currently, refreshing the browser window (F5), closing a tab, or experiencing a browser crash resets the application to the default start canvas, causing total loss of unsaved diagrams and component configurations. Implementing seamless session auto-save guarantees that the exact workspace state is preserved and automatically reloaded on refresh.
+### 1. Dual-Mode Persistence Architecture
+* **Mode 1: Temporary Local Session Draft (No Project Selected)**
+  * Captures active workspace context (nodes, edges, viewport, fluid settings, operating cases).
+  * Automatically cached in browser `localStorage` (`walflow_active_session_draft`) debounced at **1000ms** + `beforeunload` listener.
+  * Hydrates seamlessly on startup with a restoration toast notification.
+* **Mode 2: Active Cloud Project Auto-Sync (Project Opened / Selected)**
+  * Selected or newly created cloud project in `ProjectManagerModal` tracks as `activeProject`.
+  * Canvas changes automatically sync to FastAPI server (`PUT /api/diagrams/{id}`) debounced at **2000ms**.
+  * Visual live navbar status pills:
+    * `🟢 Saved to cloud (Project: Title)` — All changes synced to database.
+    * `🟠 Saving to cloud...` — Sync request in progress.
+    * `🟢 Saved to browser (Draft)` — All changes cached locally in browser.
+    * `🟠 Saving draft...` — Local draft save in progress.
+    * `⚠️ Sync error` — Network error or backend offline.
 
 ### 2. State Scope & Recovery Targets
 The auto-save mechanism captures the complete workspace context:
@@ -28,59 +40,36 @@ The auto-save mechanism captures the complete workspace context:
 * **Simulation & Parameter State:** Global fluid parameters (fluid type, temperature, viscosity), solver configurations, and active operating case selection.
 * **UI & Workspace State:** Selected node focus and open sidebar inspector panel state.
 
-### 3. Technical Architecture & Persistence Strategy
-* **Storage Engine:** Browser `localStorage` (with fallback to `IndexedDB` for large diagrams).
-  * Storage Key: `walflow_active_session_draft`
-  * Debounced Writes: Saves state to local browser storage automatically 1000ms after the user stops making canvas or property edits.
-* **Unload Hook:** Registers a `beforeunload` event handler for an instant synchronous write right before browser tab teardown or refresh.
-* **Hydration on Startup:** On application startup (`App.jsx`), WalFlow checks for a valid saved draft in `localStorage`. If found, it hydrates the ReactFlow diagram, viewport, fluid settings, and active operating case instead of rendering the blank start canvas.
-
-### 4. User Interface & Visual Design Concept
-Following WalFlow design tokens (Teal `#395253`, Orange `#FA8507`, Light Surface `#F4F7F6`):
-* **A. Top Header Auto-Save Pill:**
-  * Displays a live status badge next to diagram controls:
-    * `🟢 Saved to browser` — All current changes safely cached locally.
-    * `🟠 Auto-saving...` — Debounced save in progress.
-    * `⚠️ Unsaved changes` — Active draft differs from loaded named project file.
-* **B. Discard / Reset Action:**
-  * Integrated into the `Clear Canvas` action modal: Option to "Clear Canvas & Purge Cached Session", enabling users to start completely fresh when desired.
-* **C. Recovery Toast Notification:**
-  * Brief toast notification on refresh confirming: `"Restored unsaved session from [Timestamp]"`.
-
-### 5. Data Schema & Persistence Payload
+### 3. Data Schema & Persistence Payload
 ```json
 {
   "file_format_version": "0.1",
   "app_version": "0.1.1",
-  "timestamp": "2026-07-25T16:35:00Z",
+  "timestamp": "2026-07-26T10:00:00Z",
+  "active_project_id": "proj_12345",
   "viewport": { "x": 120.5, "y": -45.0, "zoom": 1.25 },
   "active_case_id": "case_base",
   "cases": [ /* Active operating cases & overrides */ ],
   "nodes": [ /* Canvas nodes & parameters */ ],
   "edges": [ /* Canvas edges & connections */ ],
-  "global_fluid": { /* Global fluid properties */ },
-  "ui_state": {
-    "sidebar_tab": "components",
-    "selected_node_id": "node_pump_1"
-  }
+  "global_fluid": { /* Global fluid properties */ }
 }
 ```
 
-### 6. Phased Implementation Plan
+---
 
-- [ ] **Phase 1: Debounced Persistence Engine & Hook**
-  * Create `useAutoSave` hook subscribing to state changes (ReactFlow nodes/edges, viewport, fluid settings, active case).
-  * Implement debounced storage writer (1000ms delay) targeting `localStorage` with `file_format_version` sanity check.
-  * Add `beforeunload` event listener for sync saving prior to page unload/refresh.
+## 📁 Project Management & Collaboration
 
-- [ ] **Phase 2: Hydration & Startup Restoration Logic**
-  * Modify app initialization to check for existing draft payload on boot.
-  * Hydrate nodes, edges, viewport position/zoom, fluid parameters, and operating cases seamlessly before mounting the canvas.
+- [ ] **📁 Multi-PFD Diagrams per Project Container**
+  * **Concept:** Expand `ProjectManagerModal` and workspace model so a single Project container can store multiple PFD diagrams (e.g. Main Loop, Pilot System, Lube Subsystem).
+  * **Architecture:** Projects will act as top-level parent entities containing an array of PFD diagrams, accessible via tabbed navigation within the workspace.
 
-- [ ] **Phase 3: UI Indicators & Session Reset Controls**
-  * Add live "Saved to browser" status badge in the top header navbar.
-  * Update `Clear Canvas` workflow to allow purging local session cache.
-  * Add restoration toast notification confirming restored state timestamp on page reload.
+- [ ] **👥 Shared Project Access & Multi-User Collaboration**
+  * **Concept:** Project owners can share project access with other registered WalFlow users via email/username invites with role-based access control.
+  * **Permissions Matrix:**
+    * **Owner:** Full management, deletion, and sharing permissions.
+    * **Editor:** Real-time editing and auto-sync to project PFDs.
+    * **Viewer:** Read-only canvas access and simulation execution.
 
 ---
 
@@ -133,4 +122,17 @@ Following WalFlow design tokens (Teal `#395253`, Orange `#FA8507`, Light Surface
   * **System Resource Monitoring**: Track CPU % consumed by matrix calculations (SciPy/NumPy), RAM usage per active simulation WebSocket, and average solver iteration time (ms) using `psutil`.
   * **Session & User Usage Stats**: Record active connected user count, duration of simulation runs, and historical simulation sessions in the database.
   * **Live Admin Performance Dashboard**: Build an integrated admin dashboard featuring live gauges and historical charts of server compute power and active simulation sessions.
+
+---
+
+## 🔐 Administration & Dedicated Admin Page
+
+- [ ] **🌐 Dedicated Standalone Admin Portal (`/admin`)**
+  * **Concept:** Transition the Admin Hub from a modal dialog (`AdminHubModal`) to a full standalone subpage route (`http://localhost:5173/admin`).
+  * **Functionality & Capabilities:**
+    * Centralized administrative interface for managing users, server settings, database projects, and performance diagnostics.
+    * Navigation bar **Admin Hub** button directs admins directly to the `/admin` subpage.
+  * **Access Control & Security:**
+    * Strict client-side and backend route protection—non-admin users attempting to access `/admin` are denied access and redirected.
+
 

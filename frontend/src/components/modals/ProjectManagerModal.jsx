@@ -3,7 +3,14 @@ import axios from 'axios';
 import { useAuth } from '../../hooks/useAuth';
 import { FILE_FORMAT_VERSION, APP_VERSION, FILE_EXTENSION } from '../../constants';
 
-const ProjectManagerModal = ({ isOpen, onClose, currentFlowData, onLoadDiagram }) => {
+const ProjectManagerModal = ({
+  isOpen,
+  onClose,
+  currentFlowData,
+  onLoadDiagram,
+  activeProject,
+  setActiveProject
+}) => {
   const { isAuthenticated } = useAuth();
   const [diagrams, setDiagrams] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -38,7 +45,8 @@ const ProjectManagerModal = ({ isOpen, onClose, currentFlowData, onLoadDiagram }
 
   const handleSaveCurrentDiagram = async (e) => {
     e.preventDefault();
-    if (!saveTitle.trim()) {
+    const cleanTitle = typeof saveTitle === 'string' ? saveTitle.trim() : '';
+    if (!cleanTitle) {
       alert('Please enter a project title.');
       return;
     }
@@ -52,19 +60,30 @@ const ProjectManagerModal = ({ isOpen, onClose, currentFlowData, onLoadDiagram }
         created_at: new Date().toISOString(),
         nodes: currentFlowData.nodes || [],
         edges: currentFlowData.edges || [],
-        globalSettings: currentFlowData.globalSettings || {}
+        globalSettings: currentFlowData.globalSettings || {},
+        cases: currentFlowData.cases || [],
+        active_case_id: currentFlowData.activeCaseId || 'case_base'
       };
 
-      await axios.post('/api/diagrams', {
-        title: saveTitle.strip ? saveTitle.strip() : saveTitle.trim(),
+      const response = await axios.post('/api/diagrams', {
+        title: cleanTitle,
         description: saveDescription.trim(),
         diagram_data: JSON.stringify(formattedData)
       });
 
+      if (setActiveProject) {
+        setActiveProject({
+          id: response.data.id,
+          title: response.data.title,
+          description: response.data.description,
+          updated_at: response.data.updated_at
+        });
+      }
+
       setSaveTitle('My Hydraulic System');
       setSaveDescription('');
       fetchDiagrams();
-      alert('Diagram saved successfully to server database!');
+      alert(`Project '${response.data.title}' saved to cloud DB & active project auto-sync enabled!`);
     } catch {
       alert('Failed to save diagram to server.');
     } finally {
@@ -76,6 +95,14 @@ const ProjectManagerModal = ({ isOpen, onClose, currentFlowData, onLoadDiagram }
     try {
       const response = await axios.get(`/api/diagrams/${diagramId}`);
       const parsedData = JSON.parse(response.data.diagram_data);
+      if (setActiveProject) {
+        setActiveProject({
+          id: response.data.id,
+          title: response.data.title,
+          description: response.data.description,
+          updated_at: response.data.updated_at
+        });
+      }
       onLoadDiagram(parsedData);
       onClose();
     } catch {
@@ -83,10 +110,19 @@ const ProjectManagerModal = ({ isOpen, onClose, currentFlowData, onLoadDiagram }
     }
   };
 
+  const handleUnlinkProject = () => {
+    if (setActiveProject) {
+      setActiveProject(null);
+    }
+  };
+
   const handleDeleteDiagram = async (diagramId, title) => {
     if (!window.confirm(`Are you sure you want to delete '${title}' from the server?`)) return;
     try {
       await axios.delete(`/api/diagrams/${diagramId}`);
+      if (activeProject && activeProject.id === diagramId && setActiveProject) {
+        setActiveProject(null);
+      }
       setDiagrams(prev => prev.filter(d => d.id !== diagramId));
     } catch {
       alert('Failed to delete diagram.');
@@ -199,6 +235,50 @@ const ProjectManagerModal = ({ isOpen, onClose, currentFlowData, onLoadDiagram }
         {/* Content Body */}
         <div style={{ padding: '24px 28px', overflowY: 'auto', flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '24px' }}>
           
+          {/* Active Project Callout (if linked) */}
+          {activeProject ? (
+            <div style={{
+              backgroundColor: '#263839',
+              border: '1px solid #FA8507',
+              borderRadius: '12px',
+              padding: '14px 18px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <div>
+                <div style={{ fontSize: '11px', fontWeight: '700', color: '#FA8507', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '2px' }}>
+                  🟢 Active Cloud Project Auto-Sync Enabled
+                </div>
+                <div style={{ color: '#ffffff', fontSize: '15px', fontWeight: '700' }}>
+                  {activeProject.title}
+                </div>
+                {activeProject.description && (
+                  <div style={{ color: '#B8C9C8', fontSize: '12px', marginTop: '2px' }}>
+                    {activeProject.description}
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={handleUnlinkProject}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  border: '1px solid #395253',
+                  backgroundColor: '#1A2829',
+                  color: '#B8C9C8',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#EF4444'; e.currentTarget.style.color = '#EF4444'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#395253'; e.currentTarget.style.color = '#B8C9C8'; }}
+              >
+                Detach Cloud Sync
+              </button>
+            </div>
+          ) : null}
+
           {/* Section 1: Save Active Canvas to DB */}
           <div style={{ backgroundColor: '#223233', border: '1px solid #395253', borderRadius: '12px', padding: '18px 20px' }}>
             <h4 style={{ margin: '0 0 14px 0', color: '#FA8507', fontSize: '13px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '8px' }}>

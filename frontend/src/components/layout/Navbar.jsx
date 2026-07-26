@@ -31,7 +31,11 @@ export default function Navbar({
   cases = [],
   activeCaseId = 'case_base',
   onSelectCase,
-  onAddCase
+  onAddCase,
+  activeProject,
+  saveStatus = 'saved_local',
+  lastSavedTimestamp,
+  onTriggerManualSave
 }) {
   const { currentUser, isAuthenticated, isAdmin, adminStatus, logout } = useAuth();
 
@@ -185,9 +189,94 @@ export default function Navbar({
         </div>
       </div>
 
-      {/* Center: Main Canvas Controls */}
+      {/* Center: Main Canvas & Cloud Project Controls */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         <div style={dividerStyle} />
+
+        {/* Unified Cloud Projects & Auto-Save Control */}
+        <button
+          onClick={() => {
+            if (saveStatus === 'error') {
+              onTriggerManualSave();
+            } else if (isAuthenticated) {
+              onOpenProjectsModal();
+            } else {
+              onOpenAuthModal();
+            }
+          }}
+          title={
+            saveStatus === 'saved_cloud'
+              ? `Auto-saved to Cloud DB project "${activeProject?.title}". Click to open Cloud Projects manager.`
+              : saveStatus === 'saving_cloud'
+              ? 'Syncing changes to Cloud DB project...'
+              : saveStatus === 'saved_local'
+              ? `Cached in local browser storage (${lastSavedTimestamp ? `Saved ${lastSavedTimestamp}` : 'Up to date'}). Click to save or manage Cloud Projects.`
+              : saveStatus === 'saving_local'
+              ? 'Saving draft to browser storage...'
+              : 'Sync error. Click to retry manual save or open Cloud Projects.'
+          }
+          style={{
+            ...btnBaseStyle,
+            backgroundColor:
+              saveStatus === 'error'
+                ? '#FEF2F2'
+                : saveStatus.includes('saving')
+                ? '#FFFBEB'
+                : theme.slate50,
+            border:
+              saveStatus === 'error'
+                ? '1px solid #FEE2E2'
+                : saveStatus.includes('saving')
+                ? '1px solid #FCD34D'
+                : activeProject
+                ? `1px solid ${theme.primary}`
+                : `1px solid ${theme.slate200}`,
+            color:
+              saveStatus === 'error'
+                ? theme.danger
+                : saveStatus.includes('saving')
+                ? '#D97706'
+                : theme.slate800
+          }}
+          onMouseEnter={(e) => {
+            if (!saveStatus.includes('saving') && saveStatus !== 'error') {
+              e.currentTarget.style.background = theme.slate100;
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!saveStatus.includes('saving') && saveStatus !== 'error') {
+              e.currentTarget.style.background = theme.slate50;
+            }
+          }}
+        >
+          <span style={{
+            width: '7px',
+            height: '7px',
+            borderRadius: '50%',
+            backgroundColor:
+              saveStatus === 'error'
+                ? '#EF4444'
+                : saveStatus.includes('saving')
+                ? '#F59E0B'
+                : '#10B981',
+            boxShadow: saveStatus.includes('saving') ? '0 0 6px #F59E0B' : 'none',
+            display: 'inline-block'
+          }} />
+
+          <span>☁️</span>
+
+          {saveStatus === 'saved_cloud' ? (
+            <span>Cloud: <strong>{activeProject?.title}</strong></span>
+          ) : saveStatus === 'saving_cloud' ? (
+            <span>Saving to cloud...</span>
+          ) : saveStatus === 'saving_local' ? (
+            <span>Saving draft...</span>
+          ) : saveStatus === 'error' ? (
+            <span>Sync Error</span>
+          ) : (
+            <span>Cloud Projects {isAuthenticated ? '' : '(Login)'}</span>
+          )}
+        </button>
 
         <button
           onClick={onSave}
@@ -219,7 +308,7 @@ export default function Navbar({
               reader.onload = (event) => {
                 try {
                   const parsed = JSON.parse(event.target.result);
-                  onLoad(parsed);
+                  onLoad(parsed, file.name);
                 } catch {
                   alert('Failed to load project file. Please ensure it is a valid .wlf or .json file.');
                 }
@@ -247,22 +336,8 @@ export default function Navbar({
         <div style={dividerStyle} />
       </div>
 
-      {/* Right: Cloud Projects, Admin Hub & User Auth */}
+      {/* Right: Admin Hub & User Auth */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <button
-          onClick={() => {
-            if (isAuthenticated) {
-              onOpenProjectsModal();
-            } else {
-              onOpenAuthModal();
-            }
-          }}
-          style={btnSecondaryStyle}
-          onMouseEnter={(e) => e.currentTarget.style.background = theme.slate100}
-          onMouseLeave={(e) => e.currentTarget.style.background = theme.slate50}
-        >
-          ☁️ Cloud Projects {isAuthenticated ? '' : '(Login)'}
-        </button>
 
         {isAdmin && (
           <button

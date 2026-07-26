@@ -6,6 +6,18 @@ All notable changes to the WälFlow project will be documented in this file.
 
 ## [0.1.1]
 
+### 💾 State Management & Persistence
+- Implemented **Dual-Mode Session Persistence & Cloud Auto-Sync** (`useAutoSaveSession.js`):
+  - **Unlinked Scratchpad Draft Mode**: Canvas state, viewport framing, fluid settings, and operating cases automatically save to browser `localStorage` (debounced 1000ms + `beforeunload`), seamlessly recovering progress on page refresh.
+  - **Active Cloud Project Auto-Sync Mode**: Loading or saving a project in `ProjectManagerModal` links it as the `activeProject`, automatically syncing edits to the FastAPI backend database (`PUT /api/diagrams/{id}`).
+- Consolidated status pill and Cloud Projects button into a **Unified Cloud & Auto-Save Control Component** in the top Navbar (`Navbar.jsx`), saving horizontal navbar space and providing clear live status indicators (`🟢 Cloud: Title`, `🟠 Saving...`, `🟢 Saved to browser`, `⚠️ Sync Error`).
+- Added active project status card in `ProjectManagerModal` with **Detach Cloud Sync** button for unlinking projects.
+- Added **`Ctrl + S` Keyboard Shortcut** (`useKeyboardShortcuts.js`) intercepting browser page save prompts to execute instant manual workspace saves, listed in `HelpInfoModal.jsx`.
+- Added **Safe Diagram Loading Guard** (`handleLoadDiagramWithCheck`) that prompts confirmation and automatically detaches cloud sync before loading example templates or imported `.wlf` files to prevent overwriting cloud database projects.
+- Added session restoration toast notification on boot when a saved draft is hydrated.
+
+---
+
 ### ⚡ Operating Case Manager (Multi-Case Scenario Engine)
 - Added **Operating Case Manager** allowing users to create, manage, and compare multiple operating cases (scenarios) on a single hydraulic diagram.
 - Implemented **Property Classification Matrix**: separates fixed **Global Hardware Specs** (`🌐 Global`) from dynamic **Case Variables** (`⚡ Case Variable`).

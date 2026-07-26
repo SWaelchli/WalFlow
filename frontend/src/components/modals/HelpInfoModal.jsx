@@ -17,6 +17,7 @@ const SHORTCUT_GROUPS = [
   {
     title: 'History & Canvas',
     shortcuts: [
+      { keys: ['Ctrl', 'S'], label: 'Manual save session draft or cloud project' },
       { keys: ['Ctrl', 'Z'], label: 'Undo previous canvas action' },
       { keys: ['Ctrl', 'Y'], extraKeys: ['Ctrl', 'Shift', 'Z'], label: 'Redo canvas action' },
       { keys: ['Shift', '?'], label: 'Toggle Help & Info screen' },

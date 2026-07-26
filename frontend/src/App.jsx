@@ -47,6 +47,7 @@ import { useAuth } from './hooks/useAuth';
 import { useWebSocketSimulation } from './hooks/useWebSocketSimulation';
 import { useCanvasHistory } from './hooks/useCanvasHistory';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
+import { useAutoSaveSession } from './hooks/useAutoSaveSession';
 
 import { APP_VERSION, FILE_FORMAT_VERSION, FILE_EXTENSION } from './constants';
 import { DEFAULT_BASE_CASE, isCaseVariableProperty } from './constants/case_constants';
@@ -99,7 +100,7 @@ const edgeTypes = {
 const getId = () => `node_${crypto.randomUUID().split('-')[0]}`;
 
 function WalFlowContent() {
-  const { adminStatus } = useAuth();
+  const { isAuthenticated, adminStatus } = useAuth();
   const reactFlowWrapper = useRef(null);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   
@@ -114,6 +115,10 @@ function WalFlowContent() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isProjectManagerModalOpen, setIsProjectManagerModalOpen] = useState(false);
   const [isAdminHubOpen, setIsAdminHubOpen] = useState(false);
+
+  // Active Cloud Project & Auto-Save Session Hook
+  const [activeProject, setActiveProject] = useState(null);
+  const [showRestoredToast, setShowRestoredToast] = useState(false);
 
   // Operating Case Manager State
   const [cases, setCases] = useState([DEFAULT_BASE_CASE]);
@@ -173,6 +178,24 @@ function WalFlowContent() {
     inner_iterations: 1000,
     control_iterations: 100,
     solver_method: 'hybr'
+  });
+
+  const {
+    saveStatus,
+    lastSavedTimestamp,
+    restoredDraftTime,
+    clearLocalDraft,
+    loadLocalDraftOnBoot,
+    triggerManualCloudSave
+  } = useAutoSaveSession({
+    nodes,
+    edges,
+    globalSettings,
+    cases,
+    activeCaseId,
+    reactFlowInstance,
+    isAuthenticated,
+    activeProject
   });
 
   // Global UI Body Fix
@@ -389,6 +412,7 @@ function WalFlowContent() {
     deselectAll,
     undo,
     redo,
+    onSaveShortcut: triggerManualCloudSave,
   });
 
   const selectNodeById = useCallback((nodeId) => {
@@ -460,8 +484,49 @@ function WalFlowContent() {
     }
   }, [handleValveChange, handleRotation, setNodes, setEdges]);
 
+  const handleLoadDiagramWithCheck = useCallback((data, diagramTitle = '', options = {}) => {
+    if (activeProject && !options.skipProjectCheck) {
+      const displayTitle = diagramTitle ? `"${diagramTitle}"` : 'this diagram';
+      const confirmText = `Are you sure you want to load ${displayTitle}?\n\nNote: Loading this example or diagram will detach cloud sync for project "${activeProject.title}" to prevent overwriting your cloud project.`;
+
+      if (!window.confirm(confirmText)) {
+        return false;
+      }
+
+      // Detach cloud sync FIRST
+      setActiveProject(null);
+    } else if (diagramTitle && (options.isTemplate || options.promptConfirmation)) {
+      if (!window.confirm(`Load "${diagramTitle}"?`)) {
+        return false;
+      }
+    }
+
+    loadData(data);
+    return true;
+  }, [activeProject, loadData]);
+
+  const hasAttemptedHydration = useRef(false);
+
   useEffect(() => {
-    loadData(greetingCanvas);
+    if (hasAttemptedHydration.current) return;
+    hasAttemptedHydration.current = true;
+
+    const draft = loadLocalDraftOnBoot();
+    if (draft) {
+      loadData(draft);
+      if (draft.active_project_id && draft.active_project_title) {
+        setActiveProject({
+          id: draft.active_project_id,
+          title: draft.active_project_title,
+          description: '',
+          updated_at: draft.timestamp || new Date().toISOString()
+        });
+      }
+      setShowRestoredToast(true);
+      setTimeout(() => setShowRestoredToast(false), 5000);
+    } else {
+      loadData(greetingCanvas);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -626,7 +691,7 @@ function WalFlowContent() {
           reader.onload = (e) => {
             try {
               const parsed = JSON.parse(e.target.result);
-              loadData(parsed);
+              handleLoadDiagramWithCheck(parsed, file.name);
             } catch {
               alert('Failed to parse dropped project file. Please check file format.');
             }
@@ -672,7 +737,7 @@ function WalFlowContent() {
 
       setNodes((nds) => nds.concat(newNode));
     },
-    [reactFlowInstance, handleValveChange, handleRotation, setNodes, loadData]
+    [reactFlowInstance, handleValveChange, handleRotation, setNodes, handleLoadDiagramWithCheck]
   );
 
   const onSave = useCallback(() => {
@@ -717,10 +782,12 @@ function WalFlowContent() {
   }, [setNodes, setEdges]);
 
   const onClearCanvas = useCallback(() => {
-    if (window.confirm('Are you sure you want to clear the entire canvas?')) {
+    if (window.confirm('Are you sure you want to clear the entire canvas and purge the cached session draft?')) {
       resetCanvas();
+      setActiveProject(null);
+      clearLocalDraft();
     }
-  }, [resetCanvas]);
+  }, [resetCanvas, clearLocalDraft]);
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -918,7 +985,7 @@ function WalFlowContent() {
     <div style={{ width: '100%', height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#F0F4F4', overflow: 'hidden' }}>
       <Navbar 
         onSave={onSave} 
-        onLoad={loadData} 
+        onLoad={handleLoadDiagramWithCheck} 
         onClear={onClearCanvas} 
         onCalculate={runSimulation}
         isSimulating={isSimulating}
@@ -933,11 +1000,15 @@ function WalFlowContent() {
         onAddCase={handleAddCase}
         onRenameCase={handleRenameCase}
         onDeleteCase={handleDeleteCase}
+        activeProject={activeProject}
+        saveStatus={saveStatus}
+        lastSavedTimestamp={lastSavedTimestamp}
+        onTriggerManualSave={triggerManualCloudSave}
       />
 
       <div style={{ flexGrow: 1, display: 'flex', height: 'calc(100vh - 56px)', overflow: 'hidden' }}>
         <Sidebar 
-          onLoad={loadData} 
+          onLoad={handleLoadDiagramWithCheck} 
           globalSettings={globalSettings}
           onUpdateGlobalSettings={setGlobalSettings}
           lastStats={lastStats}
@@ -1092,9 +1163,62 @@ function WalFlowContent() {
           <ProjectManagerModal
             isOpen={isProjectManagerModalOpen}
             onClose={() => setIsProjectManagerModalOpen(false)}
-            currentFlowData={{ nodes, edges, globalSettings, cases, active_case_id: activeCaseId }}
+            currentFlowData={{ nodes, edges, globalSettings, cases, activeCaseId }}
             onLoadDiagram={loadData}
+            activeProject={activeProject}
+            setActiveProject={setActiveProject}
           />
+
+          {showRestoredToast && (
+            <div style={{
+              position: 'fixed',
+              bottom: '24px',
+              right: '24px',
+              backgroundColor: '#1C2B2C',
+              color: '#ffffff',
+              border: '1px solid #395253',
+              borderRadius: '12px',
+              padding: '12px 18px',
+              fontSize: '13px',
+              fontWeight: '600',
+              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(250, 133, 7, 0.2)',
+              zIndex: 99999,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              animation: 'walflowToastFadeIn 0.3s ease-out'
+            }}>
+              <style>
+                {`
+                  @keyframes walflowToastFadeIn {
+                    from { opacity: 0; transform: translateY(10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                  }
+                `}
+              </style>
+              <span style={{ fontSize: '18px' }}>🟢</span>
+              <div>
+                <div style={{ fontWeight: '700', color: '#FA8507' }}>Restored Session Draft</div>
+                <div style={{ fontSize: '11px', color: '#B8C9C8', fontWeight: '400', marginTop: '1px' }}>
+                  {restoredDraftTime ? `Restored workspace saved at ${restoredDraftTime}` : 'Restored previous unsaved workspace'}
+                </div>
+              </div>
+              <button
+                onClick={() => setShowRestoredToast(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#B8C9C8',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  padding: '2px 6px',
+                  borderRadius: '4px'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+          )}
 
           <AdminSetupModal
             isOpen={!adminStatus.adminExists}

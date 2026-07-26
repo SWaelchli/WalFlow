@@ -253,7 +253,7 @@ function CollapsibleScenarios({ templates, onLoad }) {
                 {Object.entries(items || {}).map(([name, data]) => (
                   <button 
                     key={name}
-                    onClick={() => { if(window.confirm(`Load "${name}"?`)) onLoad(data); }}
+                    onClick={() => onLoad(data, name, { isTemplate: true })}
                     style={{
                       padding: '8px 10px', background: 'transparent', border: 'none',
                       borderRadius: '6px', fontSize: '12px', textAlign: 'left', cursor: 'pointer',
@@ -278,7 +278,7 @@ function CollapsibleScenarios({ templates, onLoad }) {
             Object.entries(templates || {}).map(([name, data]) => (
               <button 
                 key={name}
-                onClick={() => { if(window.confirm(`Load "${name}"?`)) onLoad(data); }}
+                onClick={() => onLoad(data, name, { isTemplate: true })}
                 style={{
                   padding: '8px 10px', background: 'transparent', border: 'none',
                   borderRadius: '6px', fontSize: '12px', textAlign: 'left', cursor: 'pointer',

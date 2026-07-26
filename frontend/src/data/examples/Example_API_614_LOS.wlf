@@ -3,7 +3,7 @@
   "app_version": "0.1.1",
   "format": "walflow",
   "created_at": "2026-07-26T13:38:38.490Z",
-  "active_case_id": "case_tcv_failed_open",
+  "active_case_id": "case_base",
   "cases": [
     {
       "id": "case_base",
