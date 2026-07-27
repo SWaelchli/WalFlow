@@ -85,6 +85,7 @@ class BatchCaseResult(BaseModel):
     error_message: Optional[str] = None
     stats: Optional[Dict[str, Any]] = None
     telemetry: Optional[Dict[str, Any]] = None
+    telemetry_unmitigated: Optional[Dict[str, Any]] = None
     kpis: Optional[Dict[str, Any]] = None
 
 class BatchSimulationResponse(BaseModel):

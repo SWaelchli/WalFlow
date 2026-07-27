@@ -15,6 +15,8 @@ from simulation.equipment.remote_control_valve import RemoteControlValve
 from simulation.equipment.three_way_tcv import ThreeWayTCV
 from simulation.equipment.check_valve import CheckValve
 from simulation.equipment.check_valve_orifice import CheckValveOrifice
+from simulation.equipment.pressure_safety_valve import PressureSafetyValve
+from simulation.equipment.rupture_disc import RuptureDisc
 from simulation.equipment.base_node import HydraulicNode
 
 class GraphParser:
@@ -134,6 +136,26 @@ class GraphParser:
                     "target_port": edge.targetHandle,
                     "pipe": pipe
                 })
+
+        # Auto-detect connected pipe diameter for Orifice, CheckValveOrifice, and RuptureDisc nodes
+        for node_id, node in nodes_dict.items():
+            if hasattr(node, 'orifice_diameter') or getattr(node, 'bore_type', '') == 'reduced_bore':
+                connected_d = None
+                # Check connected inlet pipes (upstream pipe diameter takes precedence)
+                for edge_info in parsed_edges:
+                    if edge_info["target"] == node_id and edge_info["pipe"].diameter > 0:
+                        connected_d = edge_info["pipe"].diameter
+                        break
+                # Check connected outlet pipes if no inlet pipe found
+                if connected_d is None:
+                    for edge_info in parsed_edges:
+                        if edge_info["source"] == node_id and edge_info["pipe"].diameter > 0:
+                            connected_d = edge_info["pipe"].diameter
+                            break
+                if connected_d is not None and connected_d > 0:
+                    node.pipe_diameter = connected_d
+                elif not getattr(node, 'pipe_diameter', 0):
+                    node.pipe_diameter = 0.05248 # Default fallback (DN50)
 
         network = HydraulicNetwork(nodes=nodes_dict, edges=parsed_edges)
         network.global_settings = resolved_graph.global_settings
@@ -260,6 +282,25 @@ class GraphParser:
                 cracking_pressure_bar=float(d.get('cracking_pressure_bar', 0.05)),
                 pipe_diameter=float(d.get('pipe_diameter', 0.1)),
                 orifice_diameter=float(d.get('orifice_diameter', 0.01))
+            )
+        elif t == 'pressure_safety_valve' or t == 'psv':
+            node = PressureSafetyValve(
+                name=name,
+                set_pressure_bar=float(d.get('set_pressure_bar', 20.0)),
+                cv=float(d.get('cv', 10.0)),
+                action_mode=str(d.get('action_mode', 'pop_action')),
+                blowdown_pct=float(d.get('blowdown_pct', 7.0)),
+                forced_state=str(d.get('forced_state', 'auto'))
+            )
+        elif t == 'rupture_disc':
+            node = RuptureDisc(
+                name=name,
+                burst_pressure_bar=float(d.get('burst_pressure_bar', 25.0)),
+                bore_type=str(d.get('bore_type', 'full_bore')),
+                cv=float(d.get('cv', 10.0)),
+                pipe_diameter=float(d.get('pipe_diameter', 0.05248)),
+                orifice_diameter=float(d.get('orifice_diameter', 0.01)),
+                forced_state=str(d.get('forced_state', 'auto'))
             )
         else:
             node = HydraulicNode(name=name, node_type=t)

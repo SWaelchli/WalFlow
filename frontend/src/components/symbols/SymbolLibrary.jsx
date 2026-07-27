@@ -110,6 +110,31 @@ export const EquipmentSymbol = ({ type, size = 40, style = {} }) => {
             <circle cx="30" cy="35" r="1.5" fill="#334155" />
           </svg>
         );
+      case 'pressure_safety_valve':
+      case 'psv':
+        return (
+          <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+            <line x1="10" y1="35" x2="25" y2="35" stroke="#334155" strokeWidth="2.5" />
+            <line x1="45" y1="35" x2="60" y2="35" stroke="#334155" strokeWidth="2.5" />
+            <polygon points="25,23 25,47 35,35" fill="white" stroke="#334155" strokeWidth="2" />
+            <polygon points="45,23 45,47 35,35" fill="white" stroke="#334155" strokeWidth="2" />
+            <line x1="35" y1="35" x2="35" y2="12" stroke="#334155" strokeWidth="2" />
+            <rect x="29" y="8" width="12" height="10" fill="#f8fafc" stroke="#334155" strokeWidth="1.8" rx="2" />
+            <line x1="32" y1="11" x2="38" y2="11" stroke="#334155" strokeWidth="1.5" />
+            <line x1="32" y1="13.5" x2="38" y2="13.5" stroke="#334155" strokeWidth="1.5" />
+            <line x1="32" y1="16" x2="38" y2="16" stroke="#334155" strokeWidth="1.5" />
+          </svg>
+        );
+      case 'rupture_disc':
+        return (
+          <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+            <line x1="10" y1="35" x2="28" y2="35" stroke="#334155" strokeWidth="2.5" />
+            <line x1="42" y1="35" x2="60" y2="35" stroke="#334155" strokeWidth="2.5" />
+            <rect x="26" y="22" width="3" height="26" fill="#334155" rx="1" />
+            <rect x="41" y="22" width="3" height="26" fill="#334155" rx="1" />
+            <path d="M 29,24 Q 35,35 29,46" fill="none" stroke="#FA8507" strokeWidth="3" />
+          </svg>
+        );
       case 'orifice':
         return (
           <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>

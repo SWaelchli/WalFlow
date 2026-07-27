@@ -15,6 +15,7 @@ All notable changes to the WälFlow project will be documented in this file.
 - Added **`Ctrl + S` Keyboard Shortcut** (`useKeyboardShortcuts.js`) intercepting browser page save prompts to execute instant manual workspace saves, listed in `HelpInfoModal.jsx`.
 - Added **Safe Diagram Loading Guard** (`handleLoadDiagramWithCheck`) that prompts confirmation and automatically detaches cloud sync before loading example templates or imported `.wlf` files to prevent overwriting cloud database projects.
 - Added session restoration toast notification on boot when a saved draft is hydrated.
+- Fixed **Cloud Project `.wlf` File Export Bug** in `ProjectManagerModal.jsx`: fetched full diagram detail payload before creating download blob so exported `.wlf` files contain valid PFD JSON structure instead of `undefined`.
 
 ---
 
@@ -39,6 +40,18 @@ All notable changes to the WälFlow project will be documented in this file.
 - Implemented backend REST endpoint (`POST /api/simulation/batch`) and `GraphParser` case override resolution engine.
 
 ### 🔩 Equipment & Simulation
+- Fixed **Relief & Contingency Matrix Overrides**: Changing relief modes (`Auto`, `Forced Closed`, `Forced Open`) for any case in the matrix now correctly updates target case overrides and immediately triggers batch re-simulation across all cases.
+- Fixed **Unmitigated Peak Pressure** calculation in Data Panel Relief & Contingency tab to resolve peak pressure from unmitigated node telemetry, and updated telemetry mode toggle buttons to `🟢 Normal Relief (Mitigated)` and `🔴 All Relief Devices Closed (Unmitigated)`.
+- Added **Pressure Safety Relief Valve (`PSV` / `PRV`) & Emergency Relief Analysis**:
+  - Implemented `PressureSafetyValve` equipment supporting **Pop Action** (snap-open with blowdown reset), **Modulating** (proportional lift), and **Rupture Disc** (burst diaphragm) relief modes.
+  - Implemented **Dual-Pass Hydraulic Solver** engine in backend (`solver.py` & `main.py`) with unmitigated-first warm-starting optimization, automatically calculating both normal relief operation and worst-case unmitigated baseline overpressure.
+  - Added **Global Telemetry Mode Switcher** pill in top Navbar (`[ 🟢 Mitigated ]` vs `[ 🔴 Unmitigated ]`) that globally switches telemetry across canvas lines, heatmaps, inspector panels, and bottom Data Panel tables.
+- Added **Rupture Disc (`RuptureDisc` / `rupture_disc`)** safety equipment component:
+  - Supports **Full Bore** ($C_v$ governed) and **Reduced Bore** (Bernoulli Orifice equation $Q = C_d A \sqrt{2 \Delta P / \rho}$ based on `orifice_diameter_mm`).
+  - Evaluates as intact at the start of each simulation run ($P_{\text{in}} < P_{\text{burst}}$); bursts 100% open if burst pressure is reached.
+  - Added mechanical diaphragm SVG symbol (`RuptureDiscNode.jsx`), inspector Safety Assessment Card (`RuptureDiscDetails.jsx`), Property Editor controls, and registered item under `Pressure & Flow Control` in Sidebar.
+- Audited and sanitized all 10 pre-built `.wlf` example PFD files, removing redundant `pipe_diameter` JSON attributes from orifice-like nodes (`Orifice`, `CheckValveOrifice`, `RuptureDisc`).
+- Implemented automated **ID Deduplication & Sanitization Guard** inside `loadData()` in `App.jsx` to resolve non-unique or duplicate node/edge IDs on-the-fly upon diagram loading/importing.
 - Fixed lube oil Vogel viscosity calculation formula in `FluidProperties` to accurately compute dynamic viscosity across temperature ranges (e.g., ISO VG 46 cold start at 10 °C evaluating to ~215 mPa·s / 240 cSt).
 - Implemented dynamic Reynolds number ($Re$) dependent viscosity corrections across `Orifice`, `CheckValveOrifice`, `LinearControlValve`, `RemoteControlValve`, `CheckValve`, `LinearRegulator`, `Filter`, and `HeatExchanger` equipment nodes, capturing low-$Re$ viscous friction losses under cold-start conditions.
 - Added **Check Valve (Non-Return Valve)** equipment with configurable flow coefficient ($C_v$), cracking pressure, backflow prevention, SVG symbol, and property editor integration.

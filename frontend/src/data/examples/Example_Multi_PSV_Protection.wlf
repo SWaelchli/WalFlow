@@ -1,0 +1,292 @@
+{
+  "version": "0.1",
+  "app_version": "0.1.1",
+  "format": "walflow",
+  "created_at": "2026-07-26T22:55:00.000Z",
+  "active_case_id": "case_base",
+  "cases": [
+    {
+      "id": "case_base",
+      "name": "Case 1",
+      "is_base": true,
+      "overrides": {
+        "nodes": {},
+        "global_settings": {}
+      }
+    }
+  ],
+  "nodes": [
+    {
+      "id": "node_supply_tank",
+      "type": "tank",
+      "position": { "x": 80, "y": 300 },
+      "data": {
+        "label": "TANK_SUPPLY",
+        "rotation": 0,
+        "level": 2.0,
+        "elevation": 0.0,
+        "temperature": 313.15
+      }
+    },
+    {
+      "id": "node_hp_pump",
+      "type": "volumetric_pump",
+      "position": { "x": 240, "y": 300 },
+      "data": {
+        "label": "PUMP_HP_101",
+        "rotation": 0,
+        "flow_rated": 120.0,
+        "motor_power": 7.5,
+        "efficiency": 85.0
+      }
+    },
+    {
+      "id": "node_header_splitter",
+      "type": "splitter",
+      "position": { "x": 400, "y": 300 },
+      "data": {
+        "label": "MAIN_HEADER_SPLITTER",
+        "rotation": 0
+      }
+    },
+    {
+      "id": "node_relief_splitter_1",
+      "type": "splitter",
+      "position": { "x": 400, "y": 180 },
+      "data": {
+        "label": "RELIEF_SPLITTER_1",
+        "rotation": 0
+      }
+    },
+    {
+      "id": "node_relief_splitter_2",
+      "type": "splitter",
+      "position": { "x": 400, "y": 60 },
+      "data": {
+        "label": "RELIEF_SPLITTER_2",
+        "rotation": 0
+      }
+    },
+    {
+      "id": "node_psv_primary",
+      "type": "pressure_safety_valve",
+      "position": { "x": 580, "y": 180 },
+      "data": {
+        "label": "PSV-101 (Primary Pop)",
+        "rotation": 0,
+        "set_pressure_bar": 20.0,
+        "cv": 12.0,
+        "action_mode": "pop_action",
+        "blowdown_pct": 7.0,
+        "forced_state": "auto"
+      }
+    },
+    {
+      "id": "node_psv_secondary",
+      "type": "pressure_safety_valve",
+      "position": { "x": 580, "y": 60 },
+      "data": {
+        "label": "PSV-102 (Secondary Modulating)",
+        "rotation": 0,
+        "set_pressure_bar": 25.0,
+        "cv": 15.0,
+        "action_mode": "modulating",
+        "forced_state": "auto"
+      }
+    },
+    {
+      "id": "node_rupture_disc",
+      "type": "rupture_disc",
+      "position": { "x": 580, "y": -60 },
+      "data": {
+        "label": "RD-101 (Burst Diaphragm)",
+        "rotation": 0,
+        "burst_pressure_bar": 30.0,
+        "bore_type": "reduced_bore",
+        "orifice_diameter": 0.01,
+        "forced_state": "auto"
+      }
+    },
+    {
+      "id": "node_relief_mixer_1",
+      "type": "mixer",
+      "position": { "x": 760, "y": 60 },
+      "data": {
+        "label": "RELIEF_MIXER_1",
+        "rotation": 0
+      }
+    },
+    {
+      "id": "node_relief_mixer_2",
+      "type": "mixer",
+      "position": { "x": 760, "y": 180 },
+      "data": {
+        "label": "RELIEF_MIXER_2",
+        "rotation": 0
+      }
+    },
+    {
+      "id": "node_process_restriction",
+      "type": "orifice",
+      "position": { "x": 600, "y": 300 },
+      "data": {
+        "label": "PROCESS_RESTRICTION",
+        "rotation": 0,
+        "orifice_diameter": 0.004,
+        "standardDn": 50,
+        "standardSch": "40"
+      }
+    },
+    {
+      "id": "node_return_tank",
+      "type": "tank",
+      "position": { "x": 950, "y": 300 },
+      "data": {
+        "label": "TANK_RETURN",
+        "rotation": 0,
+        "level": 2.0,
+        "elevation": 0.0,
+        "temperature": 313.15
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "pipe_suction",
+      "source": "node_supply_tank",
+      "sourceHandle": "outlet-0",
+      "target": "node_hp_pump",
+      "targetHandle": "inlet-0",
+      "type": "default",
+      "data": { "label": "Suction Line", "type": "PIPE", "length": 10.0, "diameter": 0.05248 }
+    },
+    {
+      "id": "pipe_pump_discharge",
+      "source": "node_hp_pump",
+      "sourceHandle": "outlet-0",
+      "target": "node_header_splitter",
+      "targetHandle": "inlet-0",
+      "type": "default",
+      "data": { "label": "Discharge Line", "type": "PIPE", "length": 15.0, "diameter": 0.05248 }
+    },
+    {
+      "id": "pipe_process_line",
+      "source": "node_header_splitter",
+      "sourceHandle": "outlet-1",
+      "target": "node_process_restriction",
+      "targetHandle": "inlet-0",
+      "type": "default",
+      "data": { "label": "Process Line", "type": "PIPE", "length": 20.0, "diameter": 0.05248 }
+    },
+    {
+      "id": "pipe_process_return",
+      "source": "node_process_restriction",
+      "sourceHandle": "outlet-0",
+      "target": "node_return_tank",
+      "targetHandle": "inlet-0",
+      "type": "default",
+      "data": { "label": "Process Return", "type": "PIPE", "length": 15.0, "diameter": 0.05248 }
+    },
+    {
+      "id": "pipe_relief_hdr_1",
+      "source": "node_header_splitter",
+      "sourceHandle": "outlet-0",
+      "target": "node_relief_splitter_1",
+      "targetHandle": "inlet-0",
+      "type": "default",
+      "data": { "label": "Relief Header 1", "type": "PIPE", "length": 10.0, "diameter": 0.05248 }
+    },
+    {
+      "id": "pipe_psv101_inlet",
+      "source": "node_relief_splitter_1",
+      "sourceHandle": "outlet-0",
+      "target": "node_psv_primary",
+      "targetHandle": "inlet-0",
+      "type": "default",
+      "data": { "label": "PSV-101 Inlet", "type": "PIPE", "length": 5.0, "diameter": 0.05248 }
+    },
+    {
+      "id": "pipe_relief_hdr_2",
+      "source": "node_relief_splitter_1",
+      "sourceHandle": "outlet-1",
+      "target": "node_relief_splitter_2",
+      "targetHandle": "inlet-0",
+      "type": "default",
+      "data": { "label": "Relief Header 2", "type": "PIPE", "length": 10.0, "diameter": 0.05248 }
+    },
+    {
+      "id": "pipe_psv102_inlet",
+      "source": "node_relief_splitter_2",
+      "sourceHandle": "outlet-0",
+      "target": "node_psv_secondary",
+      "targetHandle": "inlet-0",
+      "type": "default",
+      "data": { "label": "PSV-102 Inlet", "type": "PIPE", "length": 5.0, "diameter": 0.05248 }
+    },
+    {
+      "id": "pipe_rd101_inlet",
+      "source": "node_relief_splitter_2",
+      "sourceHandle": "outlet-1",
+      "target": "node_rupture_disc",
+      "targetHandle": "inlet-0",
+      "type": "default",
+      "data": { "label": "RD-101 Inlet", "type": "PIPE", "length": 5.0, "diameter": 0.05248 }
+    },
+    {
+      "id": "pipe_rd101_outlet",
+      "source": "node_rupture_disc",
+      "sourceHandle": "outlet-0",
+      "target": "node_relief_mixer_1",
+      "targetHandle": "inlet-0",
+      "type": "default",
+      "data": { "label": "RD-101 Relief Line", "type": "PIPE", "length": 15.0, "diameter": 0.05248 }
+    },
+    {
+      "id": "pipe_psv102_outlet",
+      "source": "node_psv_secondary",
+      "sourceHandle": "outlet-0",
+      "target": "node_relief_mixer_1",
+      "targetHandle": "inlet-1",
+      "type": "default",
+      "data": { "label": "PSV-102 Relief Line", "type": "PIPE", "length": 15.0, "diameter": 0.05248 }
+    },
+    {
+      "id": "pipe_psv101_outlet",
+      "source": "node_psv_primary",
+      "sourceHandle": "outlet-0",
+      "target": "node_relief_mixer_2",
+      "targetHandle": "inlet-0",
+      "type": "default",
+      "data": { "label": "PSV-101 Relief Line", "type": "PIPE", "length": 15.0, "diameter": 0.05248 }
+    },
+    {
+      "id": "pipe_relief_collect_1",
+      "source": "node_relief_mixer_1",
+      "sourceHandle": "outlet-0",
+      "target": "node_relief_mixer_2",
+      "targetHandle": "inlet-1",
+      "type": "default",
+      "data": { "label": "Relief Return Header", "type": "PIPE", "length": 10.0, "diameter": 0.05248 }
+    },
+    {
+      "id": "pipe_relief_to_tank",
+      "source": "node_relief_mixer_2",
+      "sourceHandle": "outlet-0",
+      "target": "node_return_tank",
+      "targetHandle": "inlet-0",
+      "type": "default",
+      "data": { "label": "Common Relief Discharge", "type": "PIPE", "length": 20.0, "diameter": 0.05248 }
+    }
+  ],
+  "globalSettings": {
+    "fluid_type": "iso_vg_46",
+    "ambient_temperature": 293.15,
+    "atmospheric_pressure": 101325,
+    "global_roughness": 0.000045,
+    "property_iterations": 5,
+    "tolerance": 0.000001,
+    "inner_iterations": 1000,
+    "control_iterations": 100,
+    "solver_method": "hybr"
+  }
+}

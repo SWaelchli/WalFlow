@@ -59,6 +59,29 @@ def calculate_case_kpis(network, telemetry: Dict[str, Any], stats: Dict[str, Any
         "residual": stats.get("residual", 0.0)
     }
 
+def extract_telemetry_dict(network) -> Dict[str, Any]:
+    telemetry = {"nodes": {}, "edges": {}}
+    for node_id, node in network.nodes.items():
+        node_tel = {
+            "inlets": [p.dict() for p in node.inlets],
+            "outlets": [p.dict() for p in node.outlets]
+        }
+        if hasattr(node, 'opening_pct'): node_tel["opening_pct"] = node.opening_pct
+        if hasattr(node, 'sensed_pressure'): node_tel["sensed_pressure"] = node.sensed_pressure
+        if hasattr(node, 'cavitation_warning'): node_tel["cavitation_warning"] = node.cavitation_warning
+        if hasattr(node, 'actual_duty_kw'): node_tel["actual_duty_kw"] = node.actual_duty_kw
+        if hasattr(node, 'status'): node_tel["status"] = node.status
+        telemetry["nodes"][node_id] = node_tel
+
+    for edge in network.edges:
+        edge_id = edge["id"]
+        pipe = edge["pipe"]
+        telemetry["edges"][edge_id] = {
+            "inlets": [p.dict() for p in pipe.inlets],
+            "outlets": [p.dict() for p in pipe.outlets]
+        }
+    return telemetry
+
 @router.post("/batch", response_model=BatchSimulationResponse)
 def run_batch_simulation(graph: ReactFlowGraph):
     """
@@ -79,32 +102,33 @@ def run_batch_simulation(graph: ReactFlowGraph):
             # Parse graph layering the current case overrides
             network = GraphParser.parse_graph(graph, case_id=case.id)
             solver = NetworkSolver(network)
-            stats = solver.solve()
 
-            # Package node and edge telemetry
-            telemetry = {"nodes": {}, "edges": {}}
-            for node_id, node in network.nodes.items():
-                node_tel = {
-                    "inlets": [p.dict() for p in node.inlets],
-                    "outlets": [p.dict() for p in node.outlets]
-                }
-                if hasattr(node, 'opening_pct'):
-                    node_tel["opening_pct"] = node.opening_pct
-                if hasattr(node, 'sensed_pressure'):
-                    node_tel["sensed_pressure"] = node.sensed_pressure
-                if hasattr(node, 'cavitation_warning'):
-                    node_tel["cavitation_warning"] = node.cavitation_warning
-                if hasattr(node, 'actual_duty_kw'):
-                    node_tel["actual_duty_kw"] = node.actual_duty_kw
-                telemetry["nodes"][node_id] = node_tel
+            psv_nodes = [node for node in network.nodes.values() if getattr(node, 'node_type', '') in ['pressure_safety_valve', 'rupture_disc']]
+            has_psv = len(psv_nodes) > 0
+            telemetry_unmitigated = None
 
-            for edge in network.edges:
-                edge_id = edge["id"]
-                pipe = edge["pipe"]
-                telemetry["edges"][edge_id] = {
-                    "inlets": [p.dict() for p in pipe.inlets],
-                    "outlets": [p.dict() for p in pipe.outlets]
-                }
+            if has_psv:
+                # Pass 1: Unmitigated (PSVs forced closed)
+                original_states = {}
+                for node in psv_nodes:
+                    original_states[node.name] = node.forced_state
+                    node.forced_state = "forced_closed"
+                    node.reset_run_state()
+
+                solver.solve()
+                telemetry_unmitigated = extract_telemetry_dict(network)
+
+                # Pass 2: Mitigated (Auto / original states)
+                for node in psv_nodes:
+                    node.forced_state = original_states[node.name]
+                    node.reset_run_state()
+
+                stats = solver.solve()
+                telemetry = extract_telemetry_dict(network)
+            else:
+                stats = solver.solve()
+                telemetry = extract_telemetry_dict(network)
+                telemetry_unmitigated = telemetry
 
             kpis = calculate_case_kpis(network, telemetry, stats)
 
@@ -115,6 +139,7 @@ def run_batch_simulation(graph: ReactFlowGraph):
                 status="success",
                 stats=stats,
                 telemetry=telemetry,
+                telemetry_unmitigated=telemetry_unmitigated,
                 kpis=kpis
             ))
         except Exception as e:

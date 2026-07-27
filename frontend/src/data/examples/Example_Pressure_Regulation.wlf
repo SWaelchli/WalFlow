@@ -113,7 +113,6 @@
       },
       "data": {
         "label": "Process Load Orifice",
-        "pipe_diameter": 0.025,
         "orifice_diameter": 0.012
       }
     },

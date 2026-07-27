@@ -46,6 +46,44 @@ app.include_router(simulation_router)
 network_instance = None
 solver_instance = None
 
+def extract_telemetry(network):
+    telemetry = {"nodes": {}, "edges": {}}
+    for node_id, node in network.nodes.items():
+        node_tel = {
+            "inlets": [p.dict() for p in node.inlets],
+            "outlets": [p.dict() for p in node.outlets]
+        }
+        if hasattr(node, 'opening_pct'):
+            node_tel["opening_pct"] = node.opening_pct
+        if hasattr(node, 'sensed_pressure'):
+            node_tel["sensed_pressure"] = node.sensed_pressure
+        if hasattr(node, 'cavitation_warning'):
+            node_tel["cavitation_warning"] = node.cavitation_warning
+        if hasattr(node, 'actual_duty_kw'):
+            node_tel["actual_duty_kw"] = node.actual_duty_kw
+        if hasattr(node, 'status'):
+            node_tel["status"] = node.status
+        if hasattr(node, 'capacity_utilization_pct'):
+            node_tel["capacity_utilization_pct"] = node.capacity_utilization_pct
+        if hasattr(node, 'action_mode'):
+            node_tel["action_mode"] = node.action_mode
+        if hasattr(node, 'set_pressure_bar'):
+            node_tel["set_pressure_bar"] = node.set_pressure_bar
+        if hasattr(node, 'forced_state'):
+            node_tel["forced_state"] = node.forced_state
+        if hasattr(node, 'cv'):
+            node_tel["cv"] = node.cv
+        telemetry["nodes"][node_id] = node_tel
+
+    for edge in network.edges:
+        edge_id = edge["id"]
+        pipe = edge["pipe"]
+        telemetry["edges"][edge_id] = {
+            "inlets": [p.dict() for p in pipe.inlets],
+            "outlets": [p.dict() for p in pipe.outlets]
+        }
+    return telemetry
+
 @app.get("/")
 async def read_root():
     return {"status": "online", "message": "WalFlow Engine is ready.", "version": "0.1.1"}
@@ -109,45 +147,43 @@ async def websocket_endpoint(websocket: WebSocket):
 
                 if solver_instance:
                     try:
-                        # Run the physics engine
-                        stats = solver_instance.solve()
-                        
-                        # Package telemetry for all nodes and edges
-                        telemetry = {
-                            "nodes": {},
-                            "edges": {}
-                        }
-                        
-                        for node_id, node in network_instance.nodes.items():
-                            node_telemetry = {
-                                "inlets": [p.dict() for p in node.inlets],
-                                "outlets": [p.dict() for p in node.outlets]
-                            }
-                            if hasattr(node, 'opening_pct'):
-                                node_telemetry["opening_pct"] = node.opening_pct
-                            if hasattr(node, 'sensed_pressure'):
-                                node_telemetry["sensed_pressure"] = node.sensed_pressure
-                            if hasattr(node, 'cavitation_warning'):
-                                node_telemetry["cavitation_warning"] = node.cavitation_warning
-                            if hasattr(node, 'actual_duty_kw'):
-                                node_telemetry["actual_duty_kw"] = node.actual_duty_kw
-                                
-                            telemetry["nodes"][node_id] = node_telemetry
-                        
-                        for edge in network_instance.edges:
-                            edge_id = edge["id"]
-                            pipe = edge["pipe"]
-                            telemetry["edges"][edge_id] = {
-                                "inlets": [p.dict() for p in pipe.inlets],
-                                "outlets": [p.dict() for p in pipe.outlets]
-                            }
+                        # Run physics engine with Dual-Pass support for PSVs
+                        psv_nodes = [node for node in network_instance.nodes.values() if getattr(node, 'node_type', '') in ['pressure_safety_valve', 'rupture_disc']]
+                        has_psv = len(psv_nodes) > 0
 
-                        kpis = calculate_case_kpis(network_instance, telemetry, stats)
+                        telemetry_unmitigated = None
+
+                        if has_psv:
+                            # Pass 1: Unmitigated (PSVs forced closed)
+                            original_states = {}
+                            for node in psv_nodes:
+                                original_states[node.name] = node.forced_state
+                                node.forced_state = "forced_closed"
+                                node.reset_run_state()
+
+                            solver_instance.solve()
+                            telemetry_unmitigated = extract_telemetry(network_instance)
+
+                            # Pass 2: Mitigated (Warm-started, PSVs auto)
+                            for node in psv_nodes:
+                                node.forced_state = original_states[node.name]
+                                node.reset_run_state()
+
+                            stats = solver_instance.solve()
+                            telemetry_mitigated = extract_telemetry(network_instance)
+                        else:
+                            stats = solver_instance.solve()
+                            telemetry_mitigated = extract_telemetry(network_instance)
+                            telemetry_unmitigated = telemetry_mitigated
+
+                        kpis = calculate_case_kpis(network_instance, telemetry_mitigated, stats)
 
                         await websocket.send_text(json.dumps({
                             "status": "success",
                             "stats": stats,
-                            "telemetry": telemetry,
+                            "telemetry": telemetry_mitigated,
+                            "telemetry_unmitigated": telemetry_unmitigated,
+                            "has_psv": has_psv,
                             "kpis": kpis
                         }))
                     except Exception as e:

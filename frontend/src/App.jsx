@@ -25,6 +25,8 @@ import RemoteControlValveNode from './nodes/RemoteControlValveNode';
 import ThreeWayTCVNode from './nodes/ThreeWayTCVNode';
 import CheckValveNode from './nodes/CheckValveNode';
 import CheckValveOrificeNode from './nodes/CheckValveOrificeNode';
+import PressureSafetyValveNode from './nodes/PressureSafetyValveNode';
+import RuptureDiscNode from './nodes/RuptureDiscNode';
 import TextBubbleNode from './nodes/TextBubbleNode';
 
 import Navbar from './components/layout/Navbar';
@@ -70,6 +72,7 @@ import exampleThermal from './data/examples/Example_Thermal_Management.wlf';
 import examplePumpComp from './data/examples/Example_Pump_Comparison.wlf';
 import exampleRemoteControl from './data/examples/Example_Remote_Control.wlf';
 import exampleParallelPumps from './data/examples/Example_Parallel_Pumps.wlf';
+import exampleMultiPsv from './data/examples/Example_Multi_PSV_Protection.wlf';
 import greetingCanvas from './data/GreetingCanvas.wlf';
 
 const nodeTypes = {
@@ -81,6 +84,9 @@ const nodeTypes = {
   linear_control_valve: LinearControlValveNode,
   check_valve: CheckValveNode,
   check_valve_orifice: CheckValveOrificeNode,
+  pressure_safety_valve: PressureSafetyValveNode,
+  psv: PressureSafetyValveNode,
+  rupture_disc: RuptureDiscNode,
   linear_regulator: LinearRegulatorNode,
   filter: FilterNode,
   heat_exchanger: HeatExchangerNode,
@@ -169,6 +175,10 @@ function WalFlowContent() {
     setCases(prev => removeCaseOverride(prev, activeCaseId, nodeId, propKey));
   }, [activeCaseId]);
 
+  const handleSetCaseOverride = useCallback((caseId, nodeId, propKey, value) => {
+    setCases(prev => updateCaseOverride(prev, caseId, nodeId, propKey, value));
+  }, []);
+
   const handleOpenHelpModal = (tab = 'shortcuts') => {
     setHelpModalInitialTab(tab);
     setIsHelpModalOpen(true);
@@ -231,15 +241,20 @@ function WalFlowContent() {
   }, [setNodes]);
 
   // WebSocket custom hook
-  const handleUpdateCaseTelemetry = useCallback((targetCaseId, telemetry, kpis) => {
-    setCases(prev => updateCaseTelemetry(prev, targetCaseId, telemetry, kpis));
+  const handleUpdateCaseTelemetry = useCallback((targetCaseId, telemetry, kpis, telemetryUnmitigated) => {
+    setCases(prev => updateCaseTelemetry(prev, targetCaseId, telemetry, kpis, telemetryUnmitigated));
   }, []);
 
   const handleBatchResultsTelemetry = useCallback((batchResults) => {
     setCases(prev => prev.map(c => {
       const match = batchResults.find(b => b.case_id === c.id);
       return (match && (match.telemetry || match.kpis)) 
-        ? { ...c, telemetry: match.telemetry || c.telemetry, kpis: match.kpis || c.kpis } 
+        ? { 
+            ...c, 
+            telemetry: match.telemetry || c.telemetry, 
+            telemetry_unmitigated: match.telemetry_unmitigated || c.telemetry_unmitigated,
+            kpis: match.kpis || c.kpis 
+          } 
         : c;
     }));
   }, []);
@@ -251,6 +266,10 @@ function WalFlowContent() {
     lastStats,
     runSimulation,
     handleValveChange,
+    telemetryMode,
+    setTelemetryMode,
+    hasPsv,
+    telemetryUnmitigated
   } = useWebSocketSimulation({
     nodes,
     edges,
@@ -466,19 +485,38 @@ function WalFlowContent() {
 
   const loadData = useCallback((data) => {
     if (data.nodes && data.edges) {
-      const restoredNodes = data.nodes.map(node => ({
-        ...node,
-        data: {
-          ...node.data,
-          rotation: node.data.rotation || 0,
-          onRotate: handleRotation,
-          onChange: (node.type === 'linear_control_valve' || node.type === 'remote_control_valve') ? handleValveChange : undefined
+      const seenNodeIds = new Set();
+      const restoredNodes = data.nodes.map((node, idx) => {
+        let uniqueId = node.id || `node_${idx}`;
+        while (seenNodeIds.has(uniqueId)) {
+          uniqueId = `node_${Math.random().toString(36).substring(2, 9)}`;
         }
-      }));
-      const restoredEdges = data.edges.map(edge => ({
-        ...edge,
-        label: edge.data?.label || edge.id 
-      }));
+        seenNodeIds.add(uniqueId);
+        return {
+          ...node,
+          id: uniqueId,
+          data: {
+            ...node.data,
+            rotation: node.data?.rotation || 0,
+            onRotate: handleRotation,
+            onChange: (node.type === 'linear_control_valve' || node.type === 'remote_control_valve') ? handleValveChange : undefined
+          }
+        };
+      });
+
+      const seenEdgeIds = new Set();
+      const restoredEdges = data.edges.map((edge, idx) => {
+        let uniqueId = edge.id || `edge_${idx}`;
+        while (seenEdgeIds.has(uniqueId)) {
+          uniqueId = `edge_${Math.random().toString(36).substring(2, 9)}`;
+        }
+        seenEdgeIds.add(uniqueId);
+        return {
+          ...edge,
+          id: uniqueId,
+          label: edge.data?.label || uniqueId
+        };
+      });
       setNodes(restoredNodes);
       setEdges(restoredEdges);
       if (data.globalSettings) {
@@ -589,9 +627,10 @@ function WalFlowContent() {
     setSelectedEdge(null);
   }, []);
 
-  const updateNodeData = useCallback((nodeId, newData) => {
-    const activeCaseObj = cases.find(c => c.id === activeCaseId) || DEFAULT_BASE_CASE;
-    const isBase = activeCaseObj.is_base;
+  const updateNodeData = useCallback((nodeId, newData, targetCaseId = null) => {
+    const effectiveCaseId = targetCaseId || activeCaseId;
+    const targetCaseObj = cases.find(c => c.id === effectiveCaseId) || DEFAULT_BASE_CASE;
+    const isBase = targetCaseObj.is_base;
 
     if (isBase) {
       setNodes((nds) =>
@@ -948,7 +987,7 @@ function WalFlowContent() {
 
   const styledEdges = useMemo(() => {
     return edges.map(edge => {
-      const effectiveData = getEffectiveEdgeData(edge, cases, activeCaseId);
+      const effectiveData = getEffectiveEdgeData(edge, cases, activeCaseId, telemetryMode);
       const isSignal = edge.data?.type === 'SIGNAL';
       const tele = effectiveData.telemetry || edge.data?.telemetry || {};
       const hasFlow = isSimulating || (tele.inlets?.[0]?.flow_rate && Math.abs(tele.inlets[0].flow_rate) > 1e-5);
@@ -971,11 +1010,11 @@ function WalFlowContent() {
         }
       };
     });
-  }, [edges, cases, activeCaseId, isSimulating, heatmapSettings.mode, computedHeatmapRange]);
+  }, [edges, cases, activeCaseId, telemetryMode, isSimulating, heatmapSettings.mode, computedHeatmapRange]);
 
   const interactiveNodes = useMemo(() => {
     return nodes.map(node => {
-      const effectiveData = getEffectiveNodeData(node, cases, activeCaseId);
+      const effectiveData = getEffectiveNodeData(node, cases, activeCaseId, telemetryMode);
       const hasOverrides = hasActiveOverrides(node.id, cases, activeCaseId);
       return {
         ...node,
@@ -989,7 +1028,7 @@ function WalFlowContent() {
         }
       };
     });
-  }, [nodes, cases, activeCaseId, handleRotation, handleValveChange]);
+  }, [nodes, cases, activeCaseId, telemetryMode, handleRotation, handleValveChange]);
 
   return (
     <div style={{ width: '100%', height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#F0F4F4', overflow: 'hidden' }}>
@@ -1014,6 +1053,9 @@ function WalFlowContent() {
         saveStatus={saveStatus}
         lastSavedTimestamp={lastSavedTimestamp}
         onTriggerManualSave={triggerManualCloudSave}
+        telemetryMode={telemetryMode}
+        onToggleTelemetryMode={setTelemetryMode}
+        hasPsv={hasPsv || nodes.some(n => n.type === 'pressure_safety_valve' || n.type === 'psv' || n.type === 'rupture_disc')}
       />
 
       <div style={{ flexGrow: 1, display: 'flex', height: 'calc(100vh - 56px)', overflow: 'hidden' }}>
@@ -1033,7 +1075,8 @@ function WalFlowContent() {
               "Thermal Management & 3-Way TCV": exampleThermal,
               "Centrifugal vs Volumetric Pumping": examplePumpComp,
               "Remote Control & Interlocks": exampleRemoteControl,
-              "Parallel Pumping & Min-Flow": exampleParallelPumps
+              "Parallel Pumping & Min-Flow": exampleParallelPumps,
+              "Multi-PSV & Rupture Disc Protection": exampleMultiPsv
             }
           }}
         />
@@ -1085,6 +1128,7 @@ function WalFlowContent() {
             selectedNode={selectedNode} 
             allNodes={nodes}
             allEdges={edges}
+            unmitigatedTelemetry={telemetryUnmitigated}
           />
           
           <PropertyEditor 
@@ -1302,6 +1346,11 @@ function WalFlowContent() {
           onDeleteCase={handleDeleteCase}
           onReorderCases={handleReorderCases}
           onBatchResults={handleBatchResultsTelemetry}
+          telemetryMode={telemetryMode}
+          onToggleTelemetryMode={setTelemetryMode}
+          telemetryUnmitigated={telemetryUnmitigated}
+          onSetCaseOverride={handleSetCaseOverride}
+          runSimulation={runSimulation}
         />
       </div>
     </div>

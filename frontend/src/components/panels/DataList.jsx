@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { m3sToLmin, kToC } from '../../utils/converters';
 import { findClosestPipeMatch, ASME_PIPE_STANDARDS, calculatePipeId } from '../../utils/standards_library';
+import { updateCaseOverride } from '../../utils/case_resolver';
 
 const autoSortLogic = (nodes, edges) => {
   const ordered = [];
@@ -55,6 +56,33 @@ const formatDelta = (val, baseVal, unit = '') => {
   return `${sign}${delta.toFixed(2)} ${unit} (${sign}${pct.toFixed(1)}%)`;
 };
 
+const calculateMaxPressureBar = (telemetry) => {
+  if (!telemetry) return undefined;
+  if (telemetry.kpis?.max_pressure_bar !== undefined) return telemetry.kpis.max_pressure_bar;
+  let maxPa = 0;
+  if (telemetry.nodes) {
+    Object.values(telemetry.nodes).forEach(node => {
+      (node.inlets || []).forEach(port => {
+        if (typeof port.pressure === 'number' && port.pressure > maxPa) maxPa = port.pressure;
+      });
+      (node.outlets || []).forEach(port => {
+        if (typeof port.pressure === 'number' && port.pressure > maxPa) maxPa = port.pressure;
+      });
+    });
+  }
+  if (telemetry.edges) {
+    Object.values(telemetry.edges).forEach(edge => {
+      (edge.inlets || []).forEach(port => {
+        if (typeof port.pressure === 'number' && port.pressure > maxPa) maxPa = port.pressure;
+      });
+      (edge.outlets || []).forEach(port => {
+        if (typeof port.pressure === 'number' && port.pressure > maxPa) maxPa = port.pressure;
+      });
+    });
+  }
+  return maxPa > 0 ? maxPa / 100000.0 : undefined;
+};
+
 export default function DataList({
   nodes,
   edges,
@@ -72,7 +100,12 @@ export default function DataList({
   onRenameCase,
   onDeleteCase,
   onReorderCases,
-  onBatchResults
+  onBatchResults,
+  telemetryMode = 'mitigated',
+  onToggleTelemetryMode,
+  telemetryUnmitigated,
+  onSetCaseOverride,
+  runSimulation
 }) {
 
   const [activeTab, setActiveTab] = useState('pipes');
@@ -137,6 +170,8 @@ export default function DataList({
         ...c,
         case_id: c.id,
         case_name: c.name,
+        telemetry: c.telemetry || batchMatch?.telemetry,
+        telemetry_unmitigated: c.telemetry_unmitigated || batchMatch?.telemetry_unmitigated,
         kpis: c.kpis || batchMatch?.kpis
       };
     });
@@ -177,6 +212,37 @@ export default function DataList({
       return newOrder;
     });
   }, [nodes, edges]);
+  const reliefDevices = useMemo(() => {
+    return (rawNodes || nodes || []).filter(
+      n => n.type === 'pressure_safety_valve' || n.type === 'psv' || n.type === 'rupture_disc'
+    );
+  }, [rawNodes, nodes]);
+
+  const handleMatrixForcedStateChange = useCallback((caseId, nodeId, value) => {
+    const targetCase = displayCases.find(c => (c.id || c.case_id) === caseId);
+    if (!targetCase) return;
+
+    let nextCases = cases;
+    let nextNodes = rawNodes || nodes;
+
+    if (targetCase.is_base) {
+      if (onUpdateNode) {
+        onUpdateNode(nodeId, { forced_state: value }, caseId);
+      }
+      nextNodes = (rawNodes || nodes || []).map(n => n.id === nodeId ? { ...n, data: { ...n.data, forced_state: value } } : n);
+    } else {
+      if (onSetCaseOverride) {
+        onSetCaseOverride(caseId, nodeId, 'forced_state', value);
+      }
+      nextCases = updateCaseOverride(cases, caseId, nodeId, 'forced_state', value);
+    }
+
+    fetchBatchSimulations(nextCases, nextNodes);
+
+    if (caseId === activeCaseId && runSimulation) {
+      setTimeout(() => runSimulation(), 50);
+    }
+  }, [displayCases, cases, nodes, rawNodes, onUpdateNode, onSetCaseOverride, fetchBatchSimulations, activeCaseId, runSimulation]);
 
   const handleAutoSortClick = () => {
     const newOrder = autoSortLogic(nodes, edges);
@@ -341,6 +407,18 @@ export default function DataList({
             }}>
             Operating Cases Matrix
           </button>
+          <button onClick={() => { setActiveTab('relief'); setSortConfig({key:null, direction:'asc'}); }}
+            style={{ 
+              padding: '12px 20px', border: 'none', 
+              background: activeTab === 'relief' ? '#ffffff' : 'transparent', 
+              borderBottom: activeTab === 'relief' ? '3px solid #FA8507' : '3px solid transparent', 
+              fontWeight: '700', cursor: 'pointer', fontSize: '12px', 
+              color: activeTab === 'relief' ? '#FA8507' : '#587071',
+              transition: 'all 0.2s',
+              display: 'flex', alignItems: 'center', gap: '6px'
+            }}>
+            Relief & Contingency
+          </button>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -380,8 +458,53 @@ export default function DataList({
                 {isBatchLoading ? '⌛ Solving Cases...' : '▶ Batch Solve Matrix'}
               </button>
             </div>
+          ) : activeTab === 'relief' ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '11px', fontWeight: '700', color: '#587071', marginRight: '4px' }}>
+                Active Case View:
+              </span>
+              <button
+                onClick={() => onToggleTelemetryMode && onToggleTelemetryMode('mitigated')}
+                title="Display normal mitigated operating telemetry across canvas and tables"
+                style={{
+                  padding: '5px 12px',
+                  borderRadius: '6px',
+                  fontFamily: 'inherit',
+                  fontSize: '11px',
+                  fontWeight: '700',
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: telemetryMode === 'mitigated' ? '#10B981' : '#FFFFFF',
+                  color: telemetryMode === 'mitigated' ? '#FFFFFF' : '#395253',
+                  boxShadow: telemetryMode === 'mitigated' ? '0 2px 6px rgba(16, 185, 129, 0.3)' : 'inset 0 0 0 1px #D8E2E1',
+                  transition: 'all 0.2s'
+                }}
+              >
+                🟢 Normal Relief (Mitigated)
+              </button>
+
+              <button
+                onClick={() => onToggleTelemetryMode && onToggleTelemetryMode('unmitigated_global')}
+                title="Display unmitigated overpressure baseline with all relief devices forced closed"
+                style={{
+                  padding: '5px 12px',
+                  borderRadius: '6px',
+                  fontFamily: 'inherit',
+                  fontSize: '11px',
+                  fontWeight: '700',
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: telemetryMode === 'unmitigated_global' ? '#DC2626' : '#FFFFFF',
+                  color: telemetryMode === 'unmitigated_global' ? '#FFFFFF' : '#395253',
+                  boxShadow: telemetryMode === 'unmitigated_global' ? '0 2px 6px rgba(220, 38, 38, 0.3)' : 'inset 0 0 0 1px #D8E2E1',
+                  transition: 'all 0.2s'
+                }}
+              >
+                🔴 All Relief Devices Closed (Unmitigated)
+              </button>
+            </div>
           ) : (
-            <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{ position: 'relative' }}>
                 <input type="text" placeholder="🔍 Filter list..." value={filterText} onChange={(e) => setFilterText(e.target.value)}
                   style={{ padding: '6px 10px', fontSize: '11px', border: '1px solid #D8E2E1', borderRadius: '6px', width: '160px', outline: 'none' }} />
@@ -393,7 +516,7 @@ export default function DataList({
               <button onClick={exportCSV} style={{ padding: '6px 14px', background: '#FA8507', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '11px', fontWeight: '700', transition: 'background 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.background = '#E07600'} onMouseLeave={(e) => e.currentTarget.style.background = '#FA8507'}>
                 ⬇ Export CSV
               </button>
-            </>
+            </div>
           )}
         </div>
       </div>
@@ -573,6 +696,160 @@ export default function DataList({
                               ✓ Normal
                             </span>
                           )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                </tbody>
+              </table>
+            )}
+          </div>
+        ) : activeTab === 'relief' ? (
+          <div style={{ display: 'inline-block', minWidth: '100%', boxSizing: 'border-box', verticalAlign: 'top' }}>
+            {reliefDevices.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px 0', color: '#587071', fontSize: '13px', fontWeight: '600' }}>
+                ℹ No Pressure Safety Valves or Rupture Discs in the current diagram. Drag a PSV or Rupture Disc from the sidebar onto the canvas to enable relief contingency analysis.
+              </div>
+            ) : (
+              <table style={{ width: '100%', height: 'max-content', borderCollapse: 'collapse', fontSize: '11px', textAlign: 'left', tableLayout: 'auto' }}>
+                <thead>
+                  <tr style={{ background: '#EBF0EF', borderBottom: '2px solid #D8E2E1', color: '#395253', fontWeight: '700', height: '40px' }}>
+                    <th style={{ padding: '6px 12px', verticalAlign: 'middle', width: '180px', minWidth: '180px', whiteSpace: 'nowrap' }}>Relief Equipment Tag</th>
+                    <th style={{ padding: '6px 12px', verticalAlign: 'middle', width: '140px', minWidth: '140px', whiteSpace: 'nowrap' }}>Equipment Type</th>
+                    <th style={{ padding: '6px 12px', verticalAlign: 'middle', width: '120px', minWidth: '120px', whiteSpace: 'nowrap' }}>Set / Burst Rating</th>
+                    {displayCases.map(c => (
+                      <th key={c.id || c.case_id} style={{ padding: '6px 12px', verticalAlign: 'middle', minWidth: '160px', background: (c.id || c.case_id) === activeCaseId ? '#fff7ed' : 'inherit', borderLeft: '1px solid #D8E2E1', whiteSpace: 'nowrap' }}>
+                        {c.name || c.case_name} {c.is_base ? '(Base)' : ''}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {reliefDevices.map((dev, idx) => {
+                    const devTypeLabel = dev.type === 'rupture_disc'
+                      ? 'Rupture Disc'
+                      : (dev.data?.action_mode === 'modulating' ? 'PSV (Modulating)' : 'PSV (Pop Action)');
+                    const ratingLabel = dev.type === 'rupture_disc'
+                      ? `${dev.data?.burst_pressure_bar || 30.0} bar`
+                      : `${dev.data?.set_pressure_bar || 20.0} bar`;
+
+                    return (
+                      <tr key={dev.id} style={{ borderBottom: '1px solid #EBF0EF', background: idx % 2 === 0 ? '#FFFFFF' : '#F8FAFA', height: '36px' }}>
+                        <td 
+                          onClick={() => onSelectNode && onSelectNode(dev.id)} 
+                          style={{ padding: '6px 12px', fontWeight: '700', color: '#FA8507', cursor: 'pointer', verticalAlign: 'middle' }}
+                          title="Click to locate on canvas"
+                        >
+                          {dev.data?.label || dev.id}
+                        </td>
+                        <td style={{ padding: '6px 12px', color: '#587071', verticalAlign: 'middle' }}>{devTypeLabel}</td>
+                        <td style={{ padding: '6px 12px', fontWeight: '600', color: '#1C2B2C', verticalAlign: 'middle' }}>{ratingLabel}</td>
+                        
+                        {displayCases.map(c => {
+                          const caseId = c.id || c.case_id;
+                          const caseOverride = !c.is_base && c.overrides?.nodes?.[dev.id]?.forced_state;
+                          const effectiveForcedState = caseOverride || dev.data?.forced_state || 'auto';
+
+                          return (
+                            <td key={caseId} style={{ padding: '4px 12px', background: caseId === activeCaseId ? '#fff7ed' : 'inherit', borderLeft: '1px solid #D8E2E1', verticalAlign: 'middle' }}>
+                              <select
+                                value={effectiveForcedState}
+                                onChange={(e) => handleMatrixForcedStateChange(caseId, dev.id, e.target.value)}
+                                style={{
+                                  padding: '4px 8px',
+                                  fontSize: '11px',
+                                  fontWeight: '700',
+                                  borderRadius: '6px',
+                                  border: `1px solid ${
+                                    effectiveForcedState === 'forced_closed' ? '#FEE2E2' : (effectiveForcedState === 'forced_open' ? '#FEF3C7' : '#D8E2E1')
+                                  }`,
+                                  background: effectiveForcedState === 'forced_closed' ? '#FEF2F2' : (effectiveForcedState === 'forced_open' ? '#FFFBEB' : '#FFFFFF'),
+                                  color: effectiveForcedState === 'forced_closed' ? '#EF4444' : (effectiveForcedState === 'forced_open' ? '#D97706' : '#1C2B2C'),
+                                  cursor: 'pointer',
+                                  outline: 'none',
+                                  width: '100%'
+                                }}
+                              >
+                                <option value="auto">Auto (Normal Relief)</option>
+                                <option value="forced_closed">🔒 Forced Closed</option>
+                                <option value="forced_open">🔓 Forced Open</option>
+                              </select>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+
+                  {/* Summary Section Header */}
+                  <tr style={{ background: '#EBF0EF', borderTop: '2px solid #D8E2E1', borderBottom: '2px solid #D8E2E1', color: '#395253', fontWeight: '700', height: '36px' }}>
+                    <td colSpan={3} style={{ padding: '6px 12px', fontWeight: '800', verticalAlign: 'middle' }}>
+                      Overpressure & Relief Telemetry Summary
+                    </td>
+                    {displayCases.map(c => (
+                      <td key={c.id || c.case_id} style={{ padding: '6px 12px', fontWeight: '700', background: (c.id || c.case_id) === activeCaseId ? '#fff7ed' : 'inherit', borderLeft: '1px solid #D8E2E1', verticalAlign: 'middle' }}>
+                        {c.name || c.case_name}
+                      </td>
+                    ))}
+                  </tr>
+
+                  {/* Max System Pressure */}
+                  <tr style={{ borderBottom: '1px solid #EBF0EF', height: '36px' }}>
+                    <td colSpan={3} style={{ padding: '6px 12px', fontWeight: '700', color: '#1C2B2C', verticalAlign: 'middle' }}>Max System Pressure (bar)</td>
+                    {displayCases.map(c => {
+                      const pMax = c.kpis?.max_pressure_bar;
+                      return (
+                        <td key={c.id || c.case_id} style={{ padding: '6px 12px', fontWeight: '700', color: pMax > 20 ? '#EF4444' : '#10B981', borderLeft: '1px solid #D8E2E1', verticalAlign: 'middle' }}>
+                          {pMax !== undefined ? `${pMax.toFixed(2)} bar` : '—'}
+                        </td>
+                      );
+                    })}
+                  </tr>
+
+                  {/* Unmitigated Peak Pressure */}
+                  <tr style={{ borderBottom: '1px solid #EBF0EF', background: '#FEF2F2', height: '36px' }}>
+                    <td colSpan={3} style={{ padding: '6px 12px', fontWeight: '700', color: '#DC2626', verticalAlign: 'middle' }}>Unmitigated Peak Pressure (bara)</td>
+                    {displayCases.map(c => {
+                      const caseId = c.id || c.case_id;
+                      const unmit = caseId === activeCaseId ? (telemetryUnmitigated || c.telemetry_unmitigated) : c.telemetry_unmitigated;
+                      const pMaxUnmit = calculateMaxPressureBar(unmit);
+                      return (
+                        <td key={caseId} style={{ padding: '6px 12px', fontWeight: '700', color: '#DC2626', borderLeft: '1px solid #D8E2E1', verticalAlign: 'middle' }}>
+                          {pMaxUnmit !== undefined ? `${pMaxUnmit.toFixed(2)} bara` : '—'}
+                        </td>
+                      );
+                    })}
+                  </tr>
+
+                  {/* Total Relief Flow */}
+                  <tr style={{ borderBottom: '1px solid #EBF0EF', background: '#F8FAFA', height: '36px' }}>
+                    <td colSpan={3} style={{ padding: '6px 12px', fontWeight: '700', color: '#1C2B2C', verticalAlign: 'middle' }}>Total Relief Flow (L/min)</td>
+                    {displayCases.map(c => {
+                      const totalReliefFlow = reliefDevices.reduce((sum, dev) => {
+                        const devTel = c.telemetry?.nodes?.[dev.id];
+                        const qOut = devTel?.outlets?.[0]?.flow_rate || 0;
+                        return sum + Math.abs(qOut);
+                      }, 0) * 60000;
+                      return (
+                        <td key={c.id || c.case_id} style={{ padding: '6px 12px', fontWeight: '600', color: '#1C2B2C', borderLeft: '1px solid #D8E2E1', verticalAlign: 'middle' }}>
+                          {totalReliefFlow.toFixed(1)} L/min
+                        </td>
+                      );
+                    })}
+                  </tr>
+
+                  {/* Relief Operating Statuses */}
+                  <tr style={{ height: '36px' }}>
+                    <td colSpan={3} style={{ padding: '6px 12px', fontWeight: '700', color: '#1C2B2C', verticalAlign: 'middle' }}>Relief Operating Statuses</td>
+                    {displayCases.map(c => {
+                      const statuses = reliefDevices.map(dev => {
+                        const devTel = c.telemetry?.nodes?.[dev.id];
+                        const st = devTel?.status || 'N/A';
+                        return `${dev.data?.label || dev.id}: ${st}`;
+                      });
+                      return (
+                        <td key={c.id || c.case_id} style={{ padding: '6px 12px', fontSize: '10px', color: '#587071', borderLeft: '1px solid #D8E2E1', verticalAlign: 'middle' }}>
+                          {statuses.join(', ')}
                         </td>
                       );
                     })}

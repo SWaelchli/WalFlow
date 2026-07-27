@@ -129,9 +129,27 @@ const ProjectManagerModal = ({
     }
   };
 
-  const handleExportDiagramAsFile = (diagram) => {
+  const handleExportDiagramAsFile = async (diagram) => {
     try {
-      const blob = new Blob([diagram.diagram_data], { type: 'application/json' });
+      let dataStr = diagram.diagram_data;
+      if (!dataStr) {
+        const response = await axios.get(`/api/diagrams/${diagram.id}`);
+        dataStr = response.data.diagram_data;
+      }
+      if (!dataStr) {
+        alert('Diagram data is empty or unavailable.');
+        return;
+      }
+
+      // Pretty-print JSON with 2-space indentation to match Navbar Export
+      try {
+        const parsed = typeof dataStr === 'string' ? JSON.parse(dataStr) : dataStr;
+        dataStr = JSON.stringify(parsed, null, 2);
+      } catch {
+        // Keep raw string if parsing fails
+      }
+
+      const blob = new Blob([dataStr], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -140,7 +158,7 @@ const ProjectManagerModal = ({
       link.click();
       URL.revokeObjectURL(url);
     } catch {
-      alert('Export failed.');
+      alert('Failed to export diagram file.');
     }
   };
 

@@ -291,6 +291,8 @@ class NetworkSolver:
         if isinstance(node, (CentrifugalPump, VolumetricPump)):
             return p_in + node.calculate_delta_p(q_in, density, viscosity)
         elif hasattr(node, 'calculate_delta_p'):
+            if hasattr(node, 'node_type') and node.node_type in ['pressure_safety_valve', 'rupture_disc']:
+                return p_in - node.calculate_delta_p(q_in, density, viscosity, p_in_pa=p_in)
             return p_in - node.calculate_delta_p(q_in, density, viscosity)
         else:
             return p_in

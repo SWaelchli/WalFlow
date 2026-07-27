@@ -2,13 +2,63 @@ import { useRef, useState, useEffect, useCallback } from 'react';
 
 /**
  * Custom hook managing WebSocket connection to FastAPI backend
- * and simulation message dispatches.
+ * and simulation message dispatches with Dual-Pass Telemetry support.
  */
 export function useWebSocketSimulation({ nodes, edges, setNodes, setEdges, globalSettings, cases = [], activeCaseId = 'case_base', onUpdateCaseTelemetry }) {
   const ws = useRef(null);
   const [isSimulating, setIsSimulating] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [lastStats, setLastStats] = useState(null);
+
+  // Dual-Pass Telemetry States
+  const [telemetryMode, setTelemetryMode] = useState('mitigated'); // 'mitigated' | 'unmitigated_global'
+  const [hasPsv, setHasPsv] = useState(false);
+  const [telemetryMitigated, setTelemetryMitigated] = useState(null);
+  const [telemetryUnmitigated, setTelemetryUnmitigated] = useState(null);
+
+  const applyTelemetryToGraph = useCallback((telemetryData) => {
+    if (!telemetryData) return;
+
+    // Update nodes telemetry
+    setNodes((nds) =>
+      nds.map((node) => {
+        if (telemetryData.nodes && telemetryData.nodes[node.id]) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              telemetry: telemetryData.nodes[node.id],
+            },
+          };
+        }
+        return node;
+      })
+    );
+
+    // Update edges telemetry
+    setEdges((eds) =>
+      eds.map((edge) => {
+        if (telemetryData.edges && telemetryData.edges[edge.id]) {
+          return {
+            ...edge,
+            data: {
+              ...edge.data,
+              telemetry: telemetryData.edges[edge.id],
+            },
+          };
+        }
+        return edge;
+      })
+    );
+  }, [setNodes, setEdges]);
+
+  // Re-apply active telemetry dataset when telemetryMode changes
+  useEffect(() => {
+    const activeDataset = telemetryMode === 'unmitigated_global' ? telemetryUnmitigated : telemetryMitigated;
+    if (activeDataset) {
+      applyTelemetryToGraph(activeDataset);
+    }
+  }, [telemetryMode, telemetryMitigated, telemetryUnmitigated, applyTelemetryToGraph]);
 
   useEffect(() => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -39,45 +89,23 @@ export function useWebSocketSimulation({ nodes, edges, setNodes, setEdges, globa
         const response = JSON.parse(event.data);
         if (response.status === 'success') {
           setIsSimulating(false);
-          const telemetryData = response.telemetry || response.data || {};
+          const mitData = response.telemetry || response.data || {};
+          const unmitData = response.telemetry_unmitigated || mitData;
+          const psvPresent = Boolean(response.has_psv);
           const kpisData = response.kpis || null;
+
           setLastStats(response.stats);
+          setHasPsv(psvPresent);
+          setTelemetryMitigated(mitData);
+          setTelemetryUnmitigated(unmitData);
 
           if (onUpdateCaseTelemetry && activeCaseId) {
-            onUpdateCaseTelemetry(activeCaseId, telemetryData, kpisData);
+            onUpdateCaseTelemetry(activeCaseId, mitData, kpisData, unmitData);
           }
 
-          // Update nodes telemetry
-          setNodes((nds) =>
-            nds.map((node) => {
-              if (telemetryData.nodes && telemetryData.nodes[node.id]) {
-                return {
-                  ...node,
-                  data: {
-                    ...node.data,
-                    telemetry: telemetryData.nodes[node.id],
-                  },
-                };
-              }
-              return node;
-            })
-          );
+          const activeDataset = telemetryMode === 'unmitigated_global' ? unmitData : mitData;
+          applyTelemetryToGraph(activeDataset);
 
-          // Update edges telemetry
-          setEdges((eds) =>
-            eds.map((edge) => {
-              if (telemetryData.edges && telemetryData.edges[edge.id]) {
-                return {
-                  ...edge,
-                  data: {
-                    ...edge.data,
-                    telemetry: telemetryData.edges[edge.id],
-                  },
-                };
-              }
-              return edge;
-            })
-          );
         } else if (response.status === 'error') {
           setIsSimulating(false);
           alert(`Simulation Engine Error: ${response.message}`);
@@ -95,7 +123,7 @@ export function useWebSocketSimulation({ nodes, edges, setNodes, setEdges, globa
         socket.close();
       }
     };
-  }, [setNodes, setEdges, onUpdateCaseTelemetry, activeCaseId]);
+  }, [activeCaseId, applyTelemetryToGraph, onUpdateCaseTelemetry, telemetryMode]);
 
   const runSimulation = useCallback(() => {
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {
@@ -142,5 +170,10 @@ export function useWebSocketSimulation({ nodes, edges, setNodes, setEdges, globa
     lastStats,
     runSimulation,
     handleValveChange,
+    telemetryMode,
+    setTelemetryMode,
+    hasPsv,
+    telemetryMitigated,
+    telemetryUnmitigated
   };
 }

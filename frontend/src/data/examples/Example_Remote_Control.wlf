@@ -60,7 +60,6 @@
       },
       "data": {
         "label": "Header Pressure Sensor Orifice",
-        "pipe_diameter": 0.032,
         "orifice_diameter": 0.02,
         "sensing": {
           "outlet-0": true

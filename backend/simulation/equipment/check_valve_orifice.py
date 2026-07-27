@@ -27,9 +27,12 @@ class CheckValveOrifice(HydraulicNode):
 
     def _calculate_orifice_dp(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
         """Calculates pressure drop using Bernoulli orifice equation with Re-dependent Cd."""
-        beta_ratio = min(0.99, self.orifice_diameter / self.pipe_diameter)
-        area_pipe = math.pi * (self.pipe_diameter / 2.0)**2
-        velocity = flow_rate / area_pipe
+        pipe_d = max(0.001, getattr(self, 'pipe_diameter', 0.05248))
+        orif_d = max(0.0001, self.orifice_diameter)
+
+        beta_ratio = min(0.99, orif_d / pipe_d)
+        area_pipe = math.pi * (pipe_d / 2.0)**2
+        velocity = flow_rate / max(1e-9, area_pipe)
         dynamic_pressure = 0.5 * density * velocity * abs(velocity)
         
         area_orifice = math.pi * (self.orifice_diameter / 2.0)**2

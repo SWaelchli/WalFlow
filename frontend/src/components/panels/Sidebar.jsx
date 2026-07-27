@@ -22,6 +22,8 @@ const categorizedEquipment = [
       { type: 'linear_control_valve', label: 'Control Valve', description: '' },
       { type: 'check_valve', label: 'Check Valve', description: '' },
       { type: 'check_valve_orifice', label: 'Check Valve w/ Orifice', description: 'With Bypass' },
+      { type: 'pressure_safety_valve', label: 'Safety Relief Valve', description: 'PSV / PRV Overpressure' },
+      { type: 'rupture_disc', label: 'Rupture Disc', description: 'Burst Diaphragm' },
       { type: 'remote_control_valve', label: 'Remote Valve', description: 'Pilot Signal Control' },
       { type: 'linear_regulator', label: 'Pressure Regulator', description: '' },
       { type: 'three_way_tcv', label: '3-Way Temp Valve', description: 'Thermal Mixing' },

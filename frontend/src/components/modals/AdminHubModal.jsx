@@ -156,7 +156,14 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
 
   const handleExportDiagram = (diagram) => {
     try {
-      const blob = new Blob([diagram.diagram_data], { type: 'application/json' });
+      let dataStr = diagram.diagram_data || '{}';
+      try {
+        const parsed = typeof dataStr === 'string' ? JSON.parse(dataStr) : dataStr;
+        dataStr = JSON.stringify(parsed, null, 2);
+      } catch {
+        // Keep raw string if parsing fails
+      }
+      const blob = new Blob([dataStr], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;

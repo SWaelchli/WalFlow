@@ -62,7 +62,6 @@
         "label": "Check Valve + Min Flow Bypass A",
         "cv": 12.0,
         "cracking_pressure_bar": 0.2,
-        "pipe_diameter": 0.04,
         "orifice_diameter": 0.006
       }
     },
@@ -91,7 +90,6 @@
         "label": "Check Valve + Min Flow Bypass B",
         "cv": 12.0,
         "cracking_pressure_bar": 0.2,
-        "pipe_diameter": 0.04,
         "orifice_diameter": 0.006
       }
     },
@@ -126,7 +124,6 @@
       },
       "data": {
         "label": "Process Load Branch 1",
-        "pipe_diameter": 0.032,
         "orifice_diameter": 0.015
       }
     },
@@ -139,7 +136,6 @@
       },
       "data": {
         "label": "Process Load Branch 2",
-        "pipe_diameter": 0.032,
         "orifice_diameter": 0.015
       }
     },

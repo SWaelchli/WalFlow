@@ -19,6 +19,7 @@ export const CASE_VARIABLE_FIELDS = new Set([
   'set_pressure',      // Linear / Remote regulator set pressure (Pa)
   'set_temperature_c', // Three-way TCV set temperature (°C)
   'flow_demand',       // External flow demand
+  'forced_state',      // Contingency Test Mode (auto / forced_closed per case)
 ]);
 
 /**

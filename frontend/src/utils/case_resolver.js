@@ -11,7 +11,7 @@ export const getActiveCase = (cases = [], activeCaseId = 'case_base') => {
 /**
  * Computes effective node data by layering active case node overrides and telemetry over baseline node data.
  */
-export const getEffectiveNodeData = (node, cases = [], activeCaseId = 'case_base') => {
+export const getEffectiveNodeData = (node, cases = [], activeCaseId = 'case_base', telemetryMode = 'mitigated') => {
   if (!node) return {};
   const activeCase = getActiveCase(cases, activeCaseId);
   let effective = { ...(node.data || {}) };
@@ -23,11 +23,12 @@ export const getEffectiveNodeData = (node, cases = [], activeCaseId = 'case_base
     };
   }
 
-  const caseTelemetry = activeCase?.telemetry?.nodes?.[node.id];
+  const caseTelemetry = telemetryMode === 'unmitigated_global'
+    ? (activeCase?.telemetry_unmitigated?.nodes?.[node.id] || node.data?.telemetry)
+    : (activeCase?.telemetry?.nodes?.[node.id] || node.data?.telemetry);
+
   if (caseTelemetry) {
     effective.telemetry = caseTelemetry;
-  } else if (node.data?.telemetry) {
-    effective.telemetry = node.data.telemetry;
   }
 
   return effective;
@@ -36,30 +37,32 @@ export const getEffectiveNodeData = (node, cases = [], activeCaseId = 'case_base
 /**
  * Computes effective edge data by layering active case edge telemetry over baseline edge data.
  */
-export const getEffectiveEdgeData = (edge, cases = [], activeCaseId = 'case_base') => {
+export const getEffectiveEdgeData = (edge, cases = [], activeCaseId = 'case_base', telemetryMode = 'mitigated') => {
   if (!edge) return {};
   const activeCase = getActiveCase(cases, activeCaseId);
   let effective = { ...(edge.data || {}) };
 
-  const caseTelemetry = activeCase?.telemetry?.edges?.[edge.id];
+  const caseTelemetry = telemetryMode === 'unmitigated_global'
+    ? (activeCase?.telemetry_unmitigated?.edges?.[edge.id] || edge.data?.telemetry)
+    : (activeCase?.telemetry?.edges?.[edge.id] || edge.data?.telemetry);
+
   if (caseTelemetry) {
     effective.telemetry = caseTelemetry;
-  } else if (edge.data?.telemetry) {
-    effective.telemetry = edge.data.telemetry;
   }
 
   return effective;
 };
 
 /**
- * Updates the calculated telemetry for a specific operating case.
+ * Updates the calculated telemetry for a specific operating case (both Mitigated and Unmitigated passes).
  */
-export const updateCaseTelemetry = (cases = [], targetCaseId, telemetry, kpis) => {
+export const updateCaseTelemetry = (cases = [], targetCaseId, telemetry, kpis, telemetryUnmitigated) => {
   return cases.map(c => {
     if (c.id !== targetCaseId) return c;
     return {
       ...c,
       telemetry: telemetry || c.telemetry,
+      telemetry_unmitigated: telemetryUnmitigated || c.telemetry_unmitigated || telemetry || c.telemetry,
       kpis: kpis || c.kpis
     };
   });

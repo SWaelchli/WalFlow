@@ -5,8 +5,10 @@ import FilterDetails from './FilterDetails';
 import OrificeDetails from './OrificeDetails';
 import JunctionDetails from './JunctionDetails';
 import GenericDetails from './GenericDetails';
+import PressureSafetyValveDetails from './PressureSafetyValveDetails';
+import RuptureDiscDetails from './RuptureDiscDetails';
 
-export default function DetailPanel({ selectedNode, allNodes, allEdges }) {
+export default function DetailPanel({ selectedNode, allNodes, allEdges, unmitigatedTelemetry }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   if (!selectedNode) return null;
@@ -23,6 +25,11 @@ export default function DetailPanel({ selectedNode, allNodes, allEdges }) {
       case 'linear_regulator':
       case 'remote_control_valve':
         return <ValveDetails node={selectedNode} />;
+      case 'pressure_safety_valve':
+      case 'psv':
+        return <PressureSafetyValveDetails node={selectedNode} unmitigatedTelemetry={unmitigatedTelemetry} />;
+      case 'rupture_disc':
+        return <RuptureDiscDetails node={selectedNode} unmitigatedTelemetry={unmitigatedTelemetry} />;
       case 'filter':
         return <FilterDetails node={selectedNode} />;
       case 'orifice':

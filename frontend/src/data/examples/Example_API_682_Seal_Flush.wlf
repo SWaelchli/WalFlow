@@ -116,7 +116,7 @@
         "y": 250
       },
       "data": {
-        "label": "Duplex Barrier Filter (10µm)",
+        "label": "Duplex Barrier Filter (10\u00b5m)",
         "dp_clean": 0.15,
         "dp_terminal": 1.5,
         "flow_ref": 35,
@@ -201,7 +201,6 @@
       },
       "data": {
         "label": "Seal Chamber Restriction",
-        "pipe_diameter": 0.02,
         "orifice_diameter": 0.008,
         "rotation": 0,
         "telemetry": {
@@ -556,9 +555,9 @@
     "fluid_type": "iso_vg_46",
     "ambient_temperature": 293.15,
     "atmospheric_pressure": 101325,
-    "global_roughness": 0.000045,
+    "global_roughness": 4.5e-05,
     "property_iterations": 5,
-    "tolerance": 0.000001,
+    "tolerance": 1e-06,
     "inner_iterations": 1000,
     "control_iterations": 100,
     "solver_method": "hybr",

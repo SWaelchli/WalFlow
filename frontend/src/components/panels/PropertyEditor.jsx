@@ -530,6 +530,127 @@ export default function PropertyEditor({
             </>
           )}
 
+          {isNode && (type === 'pressure_safety_valve' || type === 'psv') && (
+            <>
+              <div>
+                {renderLabel('Cracking Set Pressure (bar)', 'set_pressure_bar')}
+                <input 
+                  type="number" step="0.1" min="0.01"
+                  style={{ width: '100%', fontSize: '12px' }} 
+                  value={localDrafts.set_pressure_bar !== undefined ? localDrafts.set_pressure_bar : (effectiveData.set_pressure_bar ?? 20.0)} 
+                  onChange={(e) => handleDraftChange('set_pressure_bar', e.target.value)}
+                  onBlur={(e) => validateAndCommit('set_pressure_bar', e.target.value, true)}
+                />
+              </div>
+              <div>
+                {renderLabel('Flow Coefficient (Cv)', 'cv')}
+                <input 
+                  type="number" step="0.1" min="0.001"
+                  style={{ width: '100%', fontSize: '12px' }} 
+                  value={localDrafts.cv !== undefined ? localDrafts.cv : (effectiveData.cv ?? 10.0)} 
+                  onChange={(e) => handleDraftChange('cv', e.target.value)}
+                  onBlur={(e) => validateAndCommit('cv', e.target.value, true)}
+                />
+              </div>
+              <div>
+                {renderLabel('Relief Action Mode', 'action_mode')}
+                <select 
+                  style={{ width: '100%', fontSize: '12px', padding: '4px' }} 
+                  value={effectiveData.action_mode || 'pop_action'} 
+                  onChange={(e) => onUpdate(id, { action_mode: e.target.value })}
+                >
+                  <option value="pop_action">Pop Action (Snap-Open)</option>
+                  <option value="modulating">Modulating (Proportional)</option>
+                </select>
+              </div>
+              {(effectiveData.action_mode === 'pop_action' || !effectiveData.action_mode) && (
+                <div>
+                  {renderLabel('Blowdown Reset (%)', 'blowdown_pct')}
+                  <input 
+                    type="number" step="0.5" min="0" max="50"
+                    style={{ width: '100%', fontSize: '12px' }} 
+                    value={localDrafts.blowdown_pct !== undefined ? localDrafts.blowdown_pct : (effectiveData.blowdown_pct ?? 7.0)} 
+                    onChange={(e) => handleDraftChange('blowdown_pct', e.target.value)}
+                    onBlur={(e) => validateAndCommit('blowdown_pct', e.target.value)}
+                  />
+                </div>
+              )}
+              <div>
+                {renderLabel('Contingency Test Mode', 'forced_state')}
+                <select 
+                  style={{ width: '100%', fontSize: '12px', padding: '4px' }} 
+                  value={effectiveData.forced_state || 'auto'} 
+                  onChange={(e) => onUpdate(id, { forced_state: e.target.value })}
+                >
+                  <option value="auto">Auto (Normal Relief)</option>
+                  <option value="forced_closed">🔒 Forced Closed</option>
+                  <option value="forced_open">🔓 Forced Open</option>
+                </select>
+              </div>
+            </>
+          )}
+
+          {isNode && type === 'rupture_disc' && (
+            <>
+              <div>
+                {renderLabel('Burst Pressure (bar)', 'burst_pressure_bar')}
+                <input 
+                  type="number" step="0.1" min="0.01"
+                  style={{ width: '100%', fontSize: '12px' }} 
+                  value={localDrafts.burst_pressure_bar !== undefined ? localDrafts.burst_pressure_bar : (effectiveData.burst_pressure_bar ?? 25.0)} 
+                  onChange={(e) => handleDraftChange('burst_pressure_bar', e.target.value)}
+                  onBlur={(e) => validateAndCommit('burst_pressure_bar', e.target.value, true)}
+                />
+              </div>
+              <div>
+                {renderLabel('Bore Configuration', 'bore_type')}
+                <select 
+                  style={{ width: '100%', fontSize: '12px', padding: '4px' }} 
+                  value={effectiveData.bore_type || 'full_bore'} 
+                  onChange={(e) => onUpdate(id, { bore_type: e.target.value })}
+                >
+                  <option value="full_bore">Full Bore (Unrestricted)</option>
+                  <option value="reduced_bore">Reduced Bore (Orifice Restricted)</option>
+                </select>
+              </div>
+              {effectiveData.bore_type === 'reduced_bore' ? (
+                <div>
+                  {renderLabel('Orifice Restriction Diameter (mm)', 'orifice_diameter')}
+                  <input 
+                    type="number" 
+                    style={{ width: '100%', fontSize: '12px' }} 
+                    value={localDrafts.orifice_diameter !== undefined ? localDrafts.orifice_diameter : mToMm(effectiveData.orifice_diameter || 0.01)} 
+                    onChange={(e) => handleDraftChange('orifice_diameter', e.target.value)}
+                    onBlur={(e) => validateAndCommit('orifice_diameter', mmToM(parseFloat(e.target.value) || 0), true)}
+                  />
+                </div>
+              ) : (
+                <div>
+                  {renderLabel('Flow Coefficient (Cv)', 'cv')}
+                  <input 
+                    type="number" step="0.1" min="0.001"
+                    style={{ width: '100%', fontSize: '12px' }} 
+                    value={localDrafts.cv !== undefined ? localDrafts.cv : (effectiveData.cv ?? 10.0)} 
+                    onChange={(e) => handleDraftChange('cv', e.target.value)}
+                    onBlur={(e) => validateAndCommit('cv', e.target.value, true)}
+                  />
+                </div>
+              )}
+              <div>
+                {renderLabel('Contingency Test Mode', 'forced_state')}
+                <select 
+                  style={{ width: '100%', fontSize: '12px', padding: '4px' }} 
+                  value={effectiveData.forced_state || 'auto'} 
+                  onChange={(e) => onUpdate(id, { forced_state: e.target.value })}
+                >
+                  <option value="auto">Auto (Normal Relief)</option>
+                  <option value="forced_closed">🔒 Forced Closed</option>
+                  <option value="forced_open">🔓 Forced Open</option>
+                </select>
+              </div>
+            </>
+          )}
+
           {isNode && type === 'check_valve' && (
             <>
               <div>
@@ -579,20 +700,6 @@ export default function PropertyEditor({
                   value={localDrafts.cracking_pressure_bar !== undefined ? localDrafts.cracking_pressure_bar : (effectiveData.cracking_pressure_bar ?? 0.05)} 
                   onChange={(e) => handleDraftChange('cracking_pressure_bar', e.target.value)}
                   onBlur={(e) => validateAndCommit('cracking_pressure_bar', e.target.value, true)}
-                />
-              </div>
-              <div>
-                {renderLabel('Reference Pipe Selection', 'pipe_diameter')}
-                <PipeSelector 
-                  data={{ 
-                    diameter: effectiveData.pipe_diameter, 
-                    standardDn: effectiveData.standardDn, 
-                    standardSch: effectiveData.standardSch 
-                  }} 
-                  onChange={(field, val) => {
-                    if (field === 'diameter') validateAndCommit('pipe_diameter', val, true);
-                    else if (isNode) onUpdate(id, { [field]: val });
-                  }} 
                 />
               </div>
               <div>
@@ -711,21 +818,7 @@ export default function PropertyEditor({
           {isNode && type === 'orifice' && (
             <>
               <div>
-                {renderLabel('Reference Pipe Selection', 'pipe_diameter')}
-                <PipeSelector 
-                  data={{ 
-                    diameter: effectiveData.pipe_diameter, 
-                    standardDn: effectiveData.standardDn, 
-                    standardSch: effectiveData.standardSch 
-                  }} 
-                  onChange={(field, val) => {
-                    if (field === 'diameter') validateAndCommit('pipe_diameter', val, true);
-                    else if (isNode) onUpdate(id, { [field]: val });
-                  }} 
-                />
-              </div>
-              <div>
-                {renderLabel('Orifice Diameter (mm)', 'orifice_diameter')}
+                {renderLabel('Orifice Restriction Diameter (mm)', 'orifice_diameter')}
                 <input 
                   type="number" 
                   style={{ width: '100%', fontSize: '12px' }} 
