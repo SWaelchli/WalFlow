@@ -793,14 +793,40 @@ export default function DataList({
                     ))}
                   </tr>
 
-                  {/* Max System Pressure */}
+                  {/* 
+                    RELIEF CONTINGENCY PRESSURE METRICS (ALL DISPLAYED IN BARA):
+                    1. Relieved system pressure: Steady-state max system pressure after relief devices open.
+                    2. Peak system pressure: Maximum pressure occurring during overpressure build-up at relief activation.
+                    3. Unmitigated peak pressure: Maximum baseline pressure if all relief devices remain closed.
+                  */}
+                  {/* Relieved System Pressure */}
                   <tr style={{ borderBottom: '1px solid #EBF0EF', height: '36px' }}>
-                    <td colSpan={3} style={{ padding: '6px 12px', fontWeight: '700', color: '#1C2B2C', verticalAlign: 'middle' }}>Max System Pressure (bar)</td>
+                    <td colSpan={3} style={{ padding: '6px 12px', fontWeight: '700', color: '#10B981', verticalAlign: 'middle' }}>
+                      Relieved system pressure (bara)
+                    </td>
                     {displayCases.map(c => {
-                      const pMax = c.kpis?.max_pressure_bar;
+                      const pRelieved = c.kpis?.relieved_pressure_bara ?? c.kpis?.max_pressure_bar ?? calculateMaxPressureBar(c.telemetry);
                       return (
-                        <td key={c.id || c.case_id} style={{ padding: '6px 12px', fontWeight: '700', color: pMax > 20 ? '#EF4444' : '#10B981', borderLeft: '1px solid #D8E2E1', verticalAlign: 'middle' }}>
-                          {pMax !== undefined ? `${pMax.toFixed(2)} bar` : '—'}
+                        <td key={c.id || c.case_id} style={{ padding: '6px 12px', fontWeight: '700', color: '#10B981', borderLeft: '1px solid #D8E2E1', verticalAlign: 'middle' }}>
+                          {pRelieved !== undefined ? `${pRelieved.toFixed(2)} bara` : '—'}
+                        </td>
+                      );
+                    })}
+                  </tr>
+
+                  {/* Peak System Pressure */}
+                  <tr style={{ borderBottom: '1px solid #EBF0EF', background: '#FFFBEB', height: '36px' }}>
+                    <td colSpan={3} style={{ padding: '6px 12px', fontWeight: '700', color: '#D97706', verticalAlign: 'middle' }}>
+                      Peak system pressure (bara)
+                    </td>
+                    {displayCases.map(c => {
+                      const caseId = c.id || c.case_id;
+                      const unmit = caseId === activeCaseId ? (telemetryUnmitigated || c.telemetry_unmitigated) : c.telemetry_unmitigated;
+                      const pUnmit = calculateMaxPressureBar(unmit);
+                      const pPeak = c.kpis?.peak_pressure_bara ?? pUnmit ?? calculateMaxPressureBar(c.telemetry);
+                      return (
+                        <td key={caseId} style={{ padding: '6px 12px', fontWeight: '700', color: '#D97706', borderLeft: '1px solid #D8E2E1', verticalAlign: 'middle' }}>
+                          {pPeak !== undefined ? `${pPeak.toFixed(2)} bara` : '—'}
                         </td>
                       );
                     })}
@@ -808,11 +834,13 @@ export default function DataList({
 
                   {/* Unmitigated Peak Pressure */}
                   <tr style={{ borderBottom: '1px solid #EBF0EF', background: '#FEF2F2', height: '36px' }}>
-                    <td colSpan={3} style={{ padding: '6px 12px', fontWeight: '700', color: '#DC2626', verticalAlign: 'middle' }}>Unmitigated Peak Pressure (bara)</td>
+                    <td colSpan={3} style={{ padding: '6px 12px', fontWeight: '700', color: '#DC2626', verticalAlign: 'middle' }}>
+                      Unmitigated peak pressure (bara)
+                    </td>
                     {displayCases.map(c => {
                       const caseId = c.id || c.case_id;
                       const unmit = caseId === activeCaseId ? (telemetryUnmitigated || c.telemetry_unmitigated) : c.telemetry_unmitigated;
-                      const pMaxUnmit = calculateMaxPressureBar(unmit);
+                      const pMaxUnmit = c.kpis?.unmitigated_peak_pressure_bara ?? calculateMaxPressureBar(unmit);
                       return (
                         <td key={caseId} style={{ padding: '6px 12px', fontWeight: '700', color: '#DC2626', borderLeft: '1px solid #D8E2E1', verticalAlign: 'middle' }}>
                           {pMaxUnmit !== undefined ? `${pMaxUnmit.toFixed(2)} bara` : '—'}

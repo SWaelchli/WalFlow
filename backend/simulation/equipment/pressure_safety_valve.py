@@ -57,12 +57,11 @@ class PressureSafetyValve(HydraulicNode):
                 return 1e-4
 
         elif self.action_mode == "pop_action":
-            reset_pressure_bar = self.set_pressure_bar * (1.0 - self.blowdown_pct / 100.0)
-            if p_inlet_bar >= self.set_pressure_bar:
-                self._was_open = True
+            if self._was_open or self.status in ["cracked", "overcapacity"]:
                 self.status = "cracked"
                 return self.cv
-            elif p_inlet_bar >= reset_pressure_bar and self._was_open:
+            if p_inlet_bar >= self.set_pressure_bar:
+                self._was_open = True
                 self.status = "cracked"
                 return self.cv
             else:
@@ -137,6 +136,11 @@ class PressureSafetyValve(HydraulicNode):
         outlet = self.outlets[0]
 
         dp = self.calculate_delta_p(inlet.flow_rate, inlet.density, inlet.viscosity)
+
+        if self.status == "closed" or self.forced_state == "forced_closed":
+            inlet.flow_rate = 0.0
+            outlet.flow_rate = 0.0
+            self.capacity_utilization_pct = 0.0
 
         outlet.pressure = inlet.pressure - dp
         outlet.flow_rate = inlet.flow_rate

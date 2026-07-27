@@ -4,7 +4,7 @@ import uvicorn
 import json
 import traceback
 
-from simulation.solver import NetworkSolver
+from simulation.solver import NetworkSolver, run_sequential_relief_simulation
 from simulation.graph_parser import GraphParser
 from simulation.schemas import ReactFlowGraph
 from simulation.equipment.linear_control_valve import LinearControlValve
@@ -147,34 +147,10 @@ async def websocket_endpoint(websocket: WebSocket):
 
                 if solver_instance:
                     try:
-                        # Run physics engine with Dual-Pass support for PSVs
-                        psv_nodes = [node for node in network_instance.nodes.values() if getattr(node, 'node_type', '') in ['pressure_safety_valve', 'rupture_disc']]
-                        has_psv = len(psv_nodes) > 0
-
-                        telemetry_unmitigated = None
-
-                        if has_psv:
-                            # Pass 1: Unmitigated (PSVs forced closed)
-                            original_states = {}
-                            for node in psv_nodes:
-                                original_states[node.name] = node.forced_state
-                                node.forced_state = "forced_closed"
-                                node.reset_run_state()
-
-                            solver_instance.solve()
-                            telemetry_unmitigated = extract_telemetry(network_instance)
-
-                            # Pass 2: Mitigated (Warm-started, PSVs auto)
-                            for node in psv_nodes:
-                                node.forced_state = original_states[node.name]
-                                node.reset_run_state()
-
-                            stats = solver_instance.solve()
-                            telemetry_mitigated = extract_telemetry(network_instance)
-                        else:
-                            stats = solver_instance.solve()
-                            telemetry_mitigated = extract_telemetry(network_instance)
-                            telemetry_unmitigated = telemetry_mitigated
+                        # Run physics engine with Sequential Multi-Pass support for PSVs
+                        stats, telemetry_mitigated, telemetry_unmitigated, has_psv = run_sequential_relief_simulation(
+                            network_instance, solver_instance, extract_telemetry
+                        )
 
                         kpis = calculate_case_kpis(network_instance, telemetry_mitigated, stats)
 

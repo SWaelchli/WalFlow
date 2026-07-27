@@ -69,6 +69,10 @@ This document outlines planned features, overlays, and enhancements for the WalF
       * 🔴 **OVERCAPACITY / OVERPRESSURE** — Undersized PSV ($Q_{\text{incoming}} > Q_{\text{rated}}$).
   * **Engineering Value:** Enables true P&ID overpressure safety compliance, relief capacity sizing, and HAZOP failure analysis without manually re-piping or disabling components.
 
+- [ ] 🔬 **Relief Device Capacity Sizing Investigation (PSVs & Rupture Discs)**
+  * **Concept:** Detailed technical investigation into industry standard methodologies (e.g. API 520/526, ISO 4126, ASME Section VIII) for determining rated relief capacity ($Q_{\text{rated}}$), allowable overpressure accumulation (e.g., 10% for non-fire, 21% for fire case), and liquid vs. gas $C_v$ / coefficient of discharge ($K_d$) orifice sizing models across relief valves and burst diaphragms.
+  * **Goal:** Determine standard formulas and reference pressure drops ($\Delta P_{\text{ref}}$) for assessing capacity utilization percentage ($Q_{\text{actual}} / Q_{\text{rated}}$) and overcapacity alerts for both incompressible liquids and compressible gases.
+
 - [ ] **🎛️ Advanced Control Valve (Custom $C_v$ Trim Curves)**
   * **Concept:** Throttling flow control valve supporting custom inherent flow characteristics (Equal Percentage, Quick Opening, and Linear trims).
   * **Physics:** Computes effective flow coefficient $C_v(x)$ dynamic curves based on valve stem opening percentage $x$, with optional choked flow detection for compressible/high-$\Delta P$ regimes.

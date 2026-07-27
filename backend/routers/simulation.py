@@ -4,7 +4,7 @@ import traceback
 
 from simulation.schemas import ReactFlowGraph, BatchSimulationResponse, BatchCaseResult, OperatingCase
 from simulation.graph_parser import GraphParser
-from simulation.solver import NetworkSolver
+from simulation.solver import NetworkSolver, run_sequential_relief_simulation
 from simulation.equipment.volumetric_pump import VolumetricPump
 from simulation.equipment.centrifugal_pump import CentrifugalPump
 
@@ -49,7 +49,7 @@ def calculate_case_kpis(network, telemetry: Dict[str, Any], stats: Dict[str, Any
     if min_p_pa > 1e11:
         min_p_pa = 101325.0
 
-    return {
+    kpi_res = {
         "max_pressure_bar": round(max_p_pa / 100000.0, 2),
         "min_pressure_bar": round(min_p_pa / 100000.0, 2),
         "total_flow_lmin": round(total_flow_m3s * 60000.0, 2),
@@ -58,6 +58,14 @@ def calculate_case_kpis(network, telemetry: Dict[str, Any], stats: Dict[str, Any
         "iterations": stats.get("iterations", 0),
         "residual": stats.get("residual", 0.0)
     }
+
+    # Preserve relief contingency pressure metrics calculated by the solver in telemetry
+    if telemetry and "kpis" in telemetry:
+        for k in ["relieved_pressure_bara", "peak_pressure_bara", "unmitigated_peak_pressure_bara"]:
+            if k in telemetry["kpis"]:
+                kpi_res[k] = telemetry["kpis"][k]
+
+    return kpi_res
 
 def extract_telemetry_dict(network) -> Dict[str, Any]:
     telemetry = {"nodes": {}, "edges": {}}
@@ -103,32 +111,9 @@ def run_batch_simulation(graph: ReactFlowGraph):
             network = GraphParser.parse_graph(graph, case_id=case.id)
             solver = NetworkSolver(network)
 
-            psv_nodes = [node for node in network.nodes.values() if getattr(node, 'node_type', '') in ['pressure_safety_valve', 'rupture_disc']]
-            has_psv = len(psv_nodes) > 0
-            telemetry_unmitigated = None
-
-            if has_psv:
-                # Pass 1: Unmitigated (PSVs forced closed)
-                original_states = {}
-                for node in psv_nodes:
-                    original_states[node.name] = node.forced_state
-                    node.forced_state = "forced_closed"
-                    node.reset_run_state()
-
-                solver.solve()
-                telemetry_unmitigated = extract_telemetry_dict(network)
-
-                # Pass 2: Mitigated (Auto / original states)
-                for node in psv_nodes:
-                    node.forced_state = original_states[node.name]
-                    node.reset_run_state()
-
-                stats = solver.solve()
-                telemetry = extract_telemetry_dict(network)
-            else:
-                stats = solver.solve()
-                telemetry = extract_telemetry_dict(network)
-                telemetry_unmitigated = telemetry
+            stats, telemetry, telemetry_unmitigated, has_psv = run_sequential_relief_simulation(
+                network, solver, extract_telemetry_dict
+            )
 
             kpis = calculate_case_kpis(network, telemetry, stats)
 

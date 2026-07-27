@@ -125,6 +125,11 @@ class RuptureDisc(HydraulicNode):
 
         dp = self.calculate_delta_p(inlet.flow_rate, inlet.density, inlet.viscosity)
 
+        if self.status == "intact" or self.forced_state == "forced_closed":
+            inlet.flow_rate = 0.0
+            outlet.flow_rate = 0.0
+            self.capacity_utilization_pct = 0.0
+
         outlet.pressure = inlet.pressure - dp
         outlet.flow_rate = inlet.flow_rate
         outlet.density = inlet.density

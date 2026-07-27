@@ -80,6 +80,7 @@ class GraphParser:
             if node_data.type in ['text_bubble', 'note', 'annotation']:
                 continue
             node = GraphParser.create_node(node_data, resolved_graph.global_settings)
+            node.id = node_data.id
             nodes_dict[node_data.id] = node
 
         # 2. Map Connections (Edges)
