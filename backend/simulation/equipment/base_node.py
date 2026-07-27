@@ -15,6 +15,7 @@ class HydraulicNode:
         self.name = name
         self.node_type = node_type   # e.g., "centrifugal_pump", "gate_valve"
         self.global_settings = None # To be injected by GraphParser
+        self.active = True          # Component active status (can be overridden per case)
         
         # Every node can have multiple inlets and outlets
         self.inlets: List[Port] = []

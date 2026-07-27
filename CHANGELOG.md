@@ -6,6 +6,29 @@ All notable changes to the WälFlow project will be documented in this file.
 
 ## [0.1.1]
 
+### 🎛️ Scenario & Case Manager
+- Implemented **Scenario & Case Manager** floating overlay component (`CaseManager.jsx`) on the canvas:
+  - Unified controls for active Operating Case and Relief Case View (vertical segmented cards) with Title Case capitalization.
+  - Renamed the active case views to match the Datalist nomenclature: `Relieved system pressure (bara)`, `Peak system pressure (bara)`, and `Unmitigated peak pressure (bara)`.
+  - Added visibility toggle button (💼) inside the ReactFlow control panel and `Hide/Show Case Manager` buttons in the DataList tab headers (Operating Cases and Relief tabs).
+  - Restructured absolute positioning: the Heatmap Legend remains at `top: 16px` (on top of the stack), while the Case Manager dynamically offsets below it (`top: 190px`) if the Heatmap is active, or sits at `top: 16px` if inactive.
+  - Removed the `"Relief Active"` bubble, baseline descriptions, and overrides count text for a cleaner look.
+  - Added a close (x) button in the top-right corner of the Case Manager panel to easily dismiss it.
+  - Set the default initial state of the Case Manager visibility to hidden (`false`) on app load and refresh.
+- Added **Peak System Pressure Telemetry & Heatmap Auto-Scaling**:
+  - Implemented automatic telemetry interpolation (`case_resolver.js`) for the new `Peak system pressure (bara)` canvas view.
+  - Scales unmitigated node and edge pressures down to the cracking threshold of the first popped relief device, reflecting the peak system state on canvas values.
+  - Bound the active `telemetryMode` to heatmap auto-scaling bounds calculations (`App.jsx`), ensuring the canvas heatmap scaling dynamically adjusts when switching between different relief views.
+  - Added robust fallback calculations (`getMaxPressure`) to extract peak and unmitigated bounds directly from the telemetry dataset if the KPIs block is unpopulated, along with console debug logs to trace the scaling factor $S$.
+- Cleaned up Data Panel (`DataList.jsx`):
+  - Renamed the `"Relief & Contingency"` tab to `"Relief Analysis Matrix"`.
+  - Removed the `"Relief Operating Statuses"` row from the table body.
+  - Removed old case view toggles in the header toolbar, directing the user to the floating overlay panel.
+  - Integrated dynamic background highlighting in the Relief contingency table rows to reflect the active telemetry mode.
+  - Added active operating case `⚡ Switch` buttons to the Relief Analysis Matrix table headers.
+  - Renamed the `➕ Duplicate Case` button to `➕ New Case` and moved the `▶ Batch Solve Matrix` button to the very right of the Operating Cases header toolbar.
+  - Removed the redundant floating Case Manager guide text from the Relief tab header.
+
 ### 💾 State Management & Persistence
 - Implemented **Dual-Mode Session Persistence & Cloud Auto-Sync** (`useAutoSaveSession.js`):
   - **Unlinked Scratchpad Draft Mode**: Canvas state, viewport framing, fluid settings, and operating cases automatically save to browser `localStorage` (debounced 1000ms + `beforeunload`), seamlessly recovering progress on page refresh.
@@ -40,6 +63,12 @@ All notable changes to the WälFlow project will be documented in this file.
 - Implemented backend REST endpoint (`POST /api/simulation/batch`) and `GraphParser` case override resolution engine.
 
 ### 🔩 Equipment & Simulation
+- Added active/inactive status as a case variable to pumps and coolers:
+  - Centrifugal pumps when inactive produce 0 pressure boost but allow flow.
+  - Volumetric (positive displacement) pumps when inactive block flow using a high-resistance model.
+  - Heat Exchangers (coolers) when inactive bypass heat transfer calculations (inlet temperature propagates directly to outlet).
+  - Added "Operating Status" select dropdown to Property Editor.
+  - Added a red `OFF` badge to inactive nodes on the canvas.
 - Fixed **Relief & Contingency Matrix Overrides**: Changing relief modes (`Auto`, `Forced Closed`, `Forced Open`) for any case in the matrix now correctly updates target case overrides and immediately triggers batch re-simulation across all cases.
 - Fixed **Unmitigated Peak Pressure** calculation in Data Panel Relief & Contingency tab to resolve peak pressure from unmitigated node telemetry, and updated telemetry mode toggle buttons to `🟢 Normal Relief (Mitigated)` and `🔴 All Relief Devices Closed (Unmitigated)`.
 - Added **Pressure Safety Relief Valve (`PSV` / `PRV`) & Emergency Relief Analysis**:

@@ -78,7 +78,7 @@ class HeatExchanger(HydraulicNode):
         inlet = self.inlets[0]
         outlet = self.outlets[0]
         
-        if abs(inlet.flow_rate) < 1e-9:
+        if abs(inlet.flow_rate) < 1e-9 or not getattr(self, 'active', True):
             outlet.temperature = inlet.temperature
             self.actual_duty_kw = 0.0
             return

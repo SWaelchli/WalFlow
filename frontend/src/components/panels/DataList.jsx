@@ -102,10 +102,11 @@ export default function DataList({
   onReorderCases,
   onBatchResults,
   telemetryMode = 'mitigated',
-  onToggleTelemetryMode,
   telemetryUnmitigated,
   onSetCaseOverride,
-  runSimulation
+  runSimulation,
+  showCaseManager = true,
+  onToggleCaseManager
 }) {
 
   const [activeTab, setActiveTab] = useState('pipes');
@@ -417,7 +418,7 @@ export default function DataList({
               transition: 'all 0.2s',
               display: 'flex', alignItems: 'center', gap: '6px'
             }}>
-            Relief & Contingency
+            Relief Analysis Matrix
           </button>
         </div>
 
@@ -438,9 +439,36 @@ export default function DataList({
                     fontWeight: '700'
                   }}
                 >
-                  ➕ Duplicate Case
+                  ➕ New Case
                 </button>
               )}
+              <button
+                onClick={onToggleCaseManager}
+                style={{
+                  padding: '6px 14px',
+                  background: showCaseManager ? '#395253' : '#FFFFFF',
+                  color: showCaseManager ? '#ffffff' : '#1C2B2C',
+                  border: '1px solid #D8E2E1',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '11px',
+                  fontWeight: '700',
+                  transition: 'all 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+                onMouseEnter={(e) => {
+                  if (!showCaseManager) e.currentTarget.style.background = '#F4F7F6';
+                  else e.currentTarget.style.background = '#253637';
+                }}
+                onMouseLeave={(e) => {
+                  if (!showCaseManager) e.currentTarget.style.background = '#FFFFFF';
+                  else e.currentTarget.style.background = '#395253';
+                }}
+              >
+                💼 {showCaseManager ? 'Hide Case Manager' : 'Show Case Manager'}
+              </button>
               <button
                 onClick={fetchBatchSimulations}
                 disabled={isBatchLoading}
@@ -459,48 +487,33 @@ export default function DataList({
               </button>
             </div>
           ) : activeTab === 'relief' ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '11px', fontWeight: '700', color: '#587071', marginRight: '4px' }}>
-                Active Case View:
-              </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '6px 0' }}>
               <button
-                onClick={() => onToggleTelemetryMode && onToggleTelemetryMode('mitigated')}
-                title="Display normal mitigated operating telemetry across canvas and tables"
+                onClick={onToggleCaseManager}
                 style={{
-                  padding: '5px 12px',
+                  padding: '6px 14px',
+                  background: showCaseManager ? '#395253' : '#FFFFFF',
+                  color: showCaseManager ? '#ffffff' : '#1C2B2C',
+                  border: '1px solid #D8E2E1',
                   borderRadius: '6px',
-                  fontFamily: 'inherit',
+                  cursor: 'pointer',
                   fontSize: '11px',
                   fontWeight: '700',
-                  border: 'none',
-                  cursor: 'pointer',
-                  background: telemetryMode === 'mitigated' ? '#10B981' : '#FFFFFF',
-                  color: telemetryMode === 'mitigated' ? '#FFFFFF' : '#395253',
-                  boxShadow: telemetryMode === 'mitigated' ? '0 2px 6px rgba(16, 185, 129, 0.3)' : 'inset 0 0 0 1px #D8E2E1',
-                  transition: 'all 0.2s'
+                  transition: 'all 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+                onMouseEnter={(e) => {
+                  if (!showCaseManager) e.currentTarget.style.background = '#F4F7F6';
+                  else e.currentTarget.style.background = '#253637';
+                }}
+                onMouseLeave={(e) => {
+                  if (!showCaseManager) e.currentTarget.style.background = '#FFFFFF';
+                  else e.currentTarget.style.background = '#395253';
                 }}
               >
-                🟢 Normal Relief (Mitigated)
-              </button>
-
-              <button
-                onClick={() => onToggleTelemetryMode && onToggleTelemetryMode('unmitigated_global')}
-                title="Display unmitigated overpressure baseline with all relief devices forced closed"
-                style={{
-                  padding: '5px 12px',
-                  borderRadius: '6px',
-                  fontFamily: 'inherit',
-                  fontSize: '11px',
-                  fontWeight: '700',
-                  border: 'none',
-                  cursor: 'pointer',
-                  background: telemetryMode === 'unmitigated_global' ? '#DC2626' : '#FFFFFF',
-                  color: telemetryMode === 'unmitigated_global' ? '#FFFFFF' : '#395253',
-                  boxShadow: telemetryMode === 'unmitigated_global' ? '0 2px 6px rgba(220, 38, 38, 0.3)' : 'inset 0 0 0 1px #D8E2E1',
-                  transition: 'all 0.2s'
-                }}
-              >
-                🔴 All Relief Devices Closed (Unmitigated)
+                💼 {showCaseManager ? 'Hide Case Manager' : 'Show Case Manager'}
               </button>
             </div>
           ) : (
@@ -717,11 +730,26 @@ export default function DataList({
                     <th style={{ padding: '6px 12px', verticalAlign: 'middle', width: '180px', minWidth: '180px', whiteSpace: 'nowrap' }}>Relief Equipment Tag</th>
                     <th style={{ padding: '6px 12px', verticalAlign: 'middle', width: '140px', minWidth: '140px', whiteSpace: 'nowrap' }}>Equipment Type</th>
                     <th style={{ padding: '6px 12px', verticalAlign: 'middle', width: '120px', minWidth: '120px', whiteSpace: 'nowrap' }}>Set / Burst Rating</th>
-                    {displayCases.map(c => (
-                      <th key={c.id || c.case_id} style={{ padding: '6px 12px', verticalAlign: 'middle', minWidth: '160px', background: (c.id || c.case_id) === activeCaseId ? '#fff7ed' : 'inherit', borderLeft: '1px solid #D8E2E1', whiteSpace: 'nowrap' }}>
-                        {c.name || c.case_name} {c.is_base ? '(Base)' : ''}
-                      </th>
-                    ))}
+                    {displayCases.map(c => {
+                      const caseId = c.id || c.case_id;
+                      const isActive = caseId === activeCaseId;
+                      return (
+                        <th key={caseId} style={{ padding: '6px 12px', verticalAlign: 'middle', minWidth: '160px', background: isActive ? '#fff7ed' : 'inherit', borderLeft: '1px solid #D8E2E1', whiteSpace: 'nowrap' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'nowrap', whiteSpace: 'nowrap' }}>
+                            <span>{c.name || c.case_name} {c.is_base ? '(Base)' : ''}</span>
+                            {!isActive && onSelectCase && (
+                              <button
+                                onClick={() => onSelectCase(caseId)}
+                                style={{ padding: '2px 6px', fontSize: '10px', borderRadius: '4px', border: '1px solid #D8E2E1', background: '#ffffff', cursor: 'pointer', color: '#395253', fontWeight: '600', whiteSpace: 'nowrap' }}
+                              >
+                                ⚡ Switch
+                              </button>
+                            )}
+                            {isActive && <span style={{ fontSize: '10px', color: '#FA8507', fontWeight: 'bold' }}>Active</span>}
+                          </div>
+                        </th>
+                      );
+                    })}
                   </tr>
                 </thead>
                 <tbody>
@@ -799,55 +827,55 @@ export default function DataList({
                     2. Peak system pressure: Maximum pressure occurring during overpressure build-up at relief activation.
                     3. Unmitigated peak pressure: Maximum baseline pressure if all relief devices remain closed.
                   */}
-                  {/* Relieved System Pressure */}
-                  <tr style={{ borderBottom: '1px solid #EBF0EF', height: '36px' }}>
-                    <td colSpan={3} style={{ padding: '6px 12px', fontWeight: '700', color: '#10B981', verticalAlign: 'middle' }}>
-                      Relieved system pressure (bara)
-                    </td>
-                    {displayCases.map(c => {
-                      const pRelieved = c.kpis?.relieved_pressure_bara ?? c.kpis?.max_pressure_bar ?? calculateMaxPressureBar(c.telemetry);
-                      return (
-                        <td key={c.id || c.case_id} style={{ padding: '6px 12px', fontWeight: '700', color: '#10B981', borderLeft: '1px solid #D8E2E1', verticalAlign: 'middle' }}>
-                          {pRelieved !== undefined ? `${pRelieved.toFixed(2)} bara` : '—'}
-                        </td>
-                      );
-                    })}
-                  </tr>
-
-                  {/* Peak System Pressure */}
-                  <tr style={{ borderBottom: '1px solid #EBF0EF', background: '#FFFBEB', height: '36px' }}>
-                    <td colSpan={3} style={{ padding: '6px 12px', fontWeight: '700', color: '#D97706', verticalAlign: 'middle' }}>
-                      Peak system pressure (bara)
-                    </td>
-                    {displayCases.map(c => {
-                      const caseId = c.id || c.case_id;
-                      const unmit = caseId === activeCaseId ? (telemetryUnmitigated || c.telemetry_unmitigated) : c.telemetry_unmitigated;
-                      const pUnmit = calculateMaxPressureBar(unmit);
-                      const pPeak = c.kpis?.peak_pressure_bara ?? pUnmit ?? calculateMaxPressureBar(c.telemetry);
-                      return (
-                        <td key={caseId} style={{ padding: '6px 12px', fontWeight: '700', color: '#D97706', borderLeft: '1px solid #D8E2E1', verticalAlign: 'middle' }}>
-                          {pPeak !== undefined ? `${pPeak.toFixed(2)} bara` : '—'}
-                        </td>
-                      );
-                    })}
-                  </tr>
-
-                  {/* Unmitigated Peak Pressure */}
-                  <tr style={{ borderBottom: '1px solid #EBF0EF', background: '#FEF2F2', height: '36px' }}>
-                    <td colSpan={3} style={{ padding: '6px 12px', fontWeight: '700', color: '#DC2626', verticalAlign: 'middle' }}>
-                      Unmitigated peak pressure (bara)
-                    </td>
-                    {displayCases.map(c => {
-                      const caseId = c.id || c.case_id;
-                      const unmit = caseId === activeCaseId ? (telemetryUnmitigated || c.telemetry_unmitigated) : c.telemetry_unmitigated;
-                      const pMaxUnmit = c.kpis?.unmitigated_peak_pressure_bara ?? calculateMaxPressureBar(unmit);
-                      return (
-                        <td key={caseId} style={{ padding: '6px 12px', fontWeight: '700', color: '#DC2626', borderLeft: '1px solid #D8E2E1', verticalAlign: 'middle' }}>
-                          {pMaxUnmit !== undefined ? `${pMaxUnmit.toFixed(2)} bara` : '—'}
-                        </td>
-                      );
-                    })}
-                  </tr>
+                   {/* Relieved System Pressure */}
+                   <tr style={{ borderBottom: '1px solid #EBF0EF', height: '36px', background: telemetryMode === 'mitigated' ? '#ECFDF5' : '#ffffff' }}>
+                     <td colSpan={3} style={{ padding: '6px 12px', fontWeight: '700', color: '#10B981', verticalAlign: 'middle' }}>
+                       Relieved system pressure (bara)
+                     </td>
+                     {displayCases.map(c => {
+                       const pRelieved = c.kpis?.relieved_pressure_bara ?? c.kpis?.max_pressure_bar ?? calculateMaxPressureBar(c.telemetry);
+                       return (
+                         <td key={c.id || c.case_id} style={{ padding: '6px 12px', fontWeight: '700', color: '#10B981', borderLeft: '1px solid #D8E2E1', verticalAlign: 'middle' }}>
+                           {pRelieved !== undefined ? `${pRelieved.toFixed(2)} bara` : '—'}
+                         </td>
+                       );
+                     })}
+                   </tr>
+ 
+                   {/* Peak System Pressure */}
+                   <tr style={{ borderBottom: '1px solid #EBF0EF', height: '36px', background: telemetryMode === 'peak' ? '#FFFBEB' : '#ffffff' }}>
+                     <td colSpan={3} style={{ padding: '6px 12px', fontWeight: '700', color: '#D97706', verticalAlign: 'middle' }}>
+                       Peak system pressure (bara)
+                     </td>
+                     {displayCases.map(c => {
+                       const caseId = c.id || c.case_id;
+                       const unmit = caseId === activeCaseId ? (telemetryUnmitigated || c.telemetry_unmitigated) : c.telemetry_unmitigated;
+                       const pUnmit = calculateMaxPressureBar(unmit);
+                       const pPeak = c.kpis?.peak_pressure_bara ?? pUnmit ?? calculateMaxPressureBar(c.telemetry);
+                       return (
+                         <td key={caseId} style={{ padding: '6px 12px', fontWeight: '700', color: '#D97706', borderLeft: '1px solid #D8E2E1', verticalAlign: 'middle' }}>
+                           {pPeak !== undefined ? `${pPeak.toFixed(2)} bara` : '—'}
+                         </td>
+                       );
+                     })}
+                   </tr>
+ 
+                   {/* Unmitigated Peak Pressure */}
+                   <tr style={{ borderBottom: '1px solid #EBF0EF', height: '36px', background: telemetryMode === 'unmitigated_global' ? '#FEF2F2' : '#ffffff' }}>
+                     <td colSpan={3} style={{ padding: '6px 12px', fontWeight: '700', color: '#DC2626', verticalAlign: 'middle' }}>
+                       Unmitigated peak pressure (bara)
+                     </td>
+                     {displayCases.map(c => {
+                       const caseId = c.id || c.case_id;
+                       const unmit = caseId === activeCaseId ? (telemetryUnmitigated || c.telemetry_unmitigated) : c.telemetry_unmitigated;
+                       const pMaxUnmit = c.kpis?.unmitigated_peak_pressure_bara ?? calculateMaxPressureBar(unmit);
+                       return (
+                         <td key={caseId} style={{ padding: '6px 12px', fontWeight: '700', color: '#DC2626', borderLeft: '1px solid #D8E2E1', verticalAlign: 'middle' }}>
+                           {pMaxUnmit !== undefined ? `${pMaxUnmit.toFixed(2)} bara` : '—'}
+                         </td>
+                       );
+                     })}
+                   </tr>
 
                   {/* Total Relief Flow */}
                   <tr style={{ borderBottom: '1px solid #EBF0EF', background: '#F8FAFA', height: '36px' }}>
@@ -866,22 +894,6 @@ export default function DataList({
                     })}
                   </tr>
 
-                  {/* Relief Operating Statuses */}
-                  <tr style={{ height: '36px' }}>
-                    <td colSpan={3} style={{ padding: '6px 12px', fontWeight: '700', color: '#1C2B2C', verticalAlign: 'middle' }}>Relief Operating Statuses</td>
-                    {displayCases.map(c => {
-                      const statuses = reliefDevices.map(dev => {
-                        const devTel = c.telemetry?.nodes?.[dev.id];
-                        const st = devTel?.status || 'N/A';
-                        return `${dev.data?.label || dev.id}: ${st}`;
-                      });
-                      return (
-                        <td key={c.id || c.case_id} style={{ padding: '6px 12px', fontSize: '10px', color: '#587071', borderLeft: '1px solid #D8E2E1', verticalAlign: 'middle' }}>
-                          {statuses.join(', ')}
-                        </td>
-                      );
-                    })}
-                  </tr>
                 </tbody>
               </table>
             )}

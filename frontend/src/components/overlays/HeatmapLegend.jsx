@@ -10,7 +10,8 @@ export default function HeatmapLegend({
   activeRange = { min: 0, max: 6 },
   customRange = { min: 0, max: 6 },
   onUpdateCustomRange,
-  onResetCustomRange
+  onResetCustomRange,
+  style = {}
 }) {
   if (!heatmapMode || heatmapMode === 'default') return null;
 
@@ -61,7 +62,8 @@ export default function HeatmapLegend({
       maxWidth: 'calc(100vw - 32px)',
       display: 'flex',
       flexDirection: 'column',
-      gap: '12px'
+      gap: '12px',
+      ...style
     }}>
       {/* Top-Right Close Button */}
       <button

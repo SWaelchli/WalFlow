@@ -47,28 +47,6 @@ This document outlines planned features, overlays, and enhancements for the WalF
   * **Physics:** Backend graph parser inspects `source_type` property and dynamically registers either a pressure or flow constraint in the SciPy linear solver matrix.
   * **Engineering Value:** Compact component palette and seamless toggling between pressure-driven and flow-driven supply scenarios without re-piping.
 
-- [ ] **🛡️ Pressure Safety Relief Valve (`PSV` / `PRV`) & Emergency Relief Analysis**
-  * **Concept:** Emergency pressure relief valve featuring action mode toggles, capacity sizing metrics, dual-pass safety analysis, and global workspace telemetry mode switching.
-  * **Action Modes (Property Dropdown):**
-    * **Pop Action (Snap-Open):** Snaps 100% open at $P_{\text{set}}$ with adjustable blowdown reset percentage (e.g. 7–10%).
-    * **Modulating (Proportional):** Throttles lift proportionally based on overpressure above $P_{\text{set}}$.
-    * **Rupture Disc:** Mechanical pressure relief diaphragm. Evaluates as intact at the start of each simulation run; if burst pressure ($P_{\text{burst}}$) is reached, it bursts 100% open for that run.
-  * **Dual-Pass Safety Analysis & Multi-PSV Contingency:**
-    * **Mitigated Relief Pass:** Calculates operating pressure, relief flow rate ($Q_{\text{relief}}$), and relief line backpressure.
-    * **Global Unmitigated Pass (All PSVs Locked Closed):** Calculates worst-case hydrostatic overpressure potential across all system nodes if relief protection fails completely.
-    * **Targeted PSV Failure ($N-1$ Contingency):** Selectable failure check in PSV inspector (`Simulate Failure of: [ Tag ]`) to analyze localized overpressure when specific valves fail to pop.
-    * **Relief Capacity Sizing:** Computes orifice capacity utilization percentage ($Q_{\text{actual}} / Q_{\text{rated}}$) to verify if the PSV can handle incoming flow without exceeding allowable accumulation.
-  * **Global Telemetry Mode Switcher & Visual Indicators:**
-    * **Navbar Global Mode Toggle:** Prominent top Navbar control (`[ 🟢 Mitigated (Normal) ]` vs `[ 🔴 Unmitigated (Overpressure Mode) ]`) that globally switches telemetry across the entire workspace:
-      * **Canvas Lines & Badges:** Displays unmitigated line pressures, velocities, and tooltips on all canvas components.
-      * **Heatmap Overlays:** Recolors pipe gradients to highlight overpressurized headers.
-      * **Bottom Data Panel (DataList):** Updates process value tables, pressure drops, and operating cases matrix to display unmitigated state metrics.
-    * **PSV Canvas Badges:**
-      * 🟢 **CLOSED (Sealed)** — Normal operation ($P < P_{\text{set}}$).
-      * 🟡 **CRACKED / RELIEVING** — Active relief discharge ($P \ge P_{\text{set}}$).
-      * 🔴 **OVERCAPACITY / OVERPRESSURE** — Undersized PSV ($Q_{\text{incoming}} > Q_{\text{rated}}$).
-  * **Engineering Value:** Enables true P&ID overpressure safety compliance, relief capacity sizing, and HAZOP failure analysis without manually re-piping or disabling components.
-
 - [ ] 🔬 **Relief Device Capacity Sizing Investigation (PSVs & Rupture Discs)**
   * **Concept:** Detailed technical investigation into industry standard methodologies (e.g. API 520/526, ISO 4126, ASME Section VIII) for determining rated relief capacity ($Q_{\text{rated}}$), allowable overpressure accumulation (e.g., 10% for non-fire, 21% for fire case), and liquid vs. gas $C_v$ / coefficient of discharge ($K_d$) orifice sizing models across relief valves and burst diaphragms.
   * **Goal:** Determine standard formulas and reference pressure drops ($\Delta P_{\text{ref}}$) for assessing capacity utilization percentage ($Q_{\text{actual}} / Q_{\text{rated}}$) and overcapacity alerts for both incompressible liquids and compressible gases.

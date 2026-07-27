@@ -86,6 +86,27 @@ export default function BaseNode({
 
       <RotateButton visible={selected} onClick={() => data.onRotate && data.onRotate(id)} />
 
+      {data.active === false && (
+        <div
+          style={{
+            position: 'absolute',
+            top: height - 12,
+            left: width - 15,
+            background: '#ef4444',
+            color: 'white',
+            fontSize: '9px',
+            fontWeight: 'bold',
+            padding: '1px 3px',
+            borderRadius: '3px',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+            zIndex: 15
+          }}
+          title="Component is currently inactive (Off)"
+        >
+          OFF
+        </div>
+      )}
+
       <div style={{ 
         width, height, background: 'transparent', position: 'relative',
         transform: `rotate(${rotation}deg)`

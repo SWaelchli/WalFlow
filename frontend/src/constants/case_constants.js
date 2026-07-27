@@ -11,6 +11,7 @@ export const PROPERTY_TYPES = {
 
 // Set of property field keys that represent dynamic operating conditions
 export const CASE_VARIABLE_FIELDS = new Set([
+  'active',            // Component active/inactive state (boolean)
   'opening',           // Linear / Remote Control Valve opening percentage (%)
   'clogging',          // Filter clogging / dirt factor (%)
   'level',             // Tank fluid level (m)

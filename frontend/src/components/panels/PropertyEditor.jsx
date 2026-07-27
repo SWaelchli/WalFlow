@@ -355,6 +355,20 @@ export default function PropertyEditor({
           {(type === 'centrifugal_pump' || type === 'pump') && (
             <>
               <div>
+                {renderLabel('Operating Status', 'active')}
+                <select 
+                  style={{ width: '100%', fontSize: '12px', padding: '4px' }} 
+                  value={effectiveData.active !== false ? "true" : "false"} 
+                  onChange={(e) => {
+                    const isActive = e.target.value === "true";
+                    if (isNode) onUpdate(id, { active: isActive });
+                  }}
+                >
+                  <option value="true">Active (On)</option>
+                  <option value="false">Inactive (Off)</option>
+                </select>
+              </div>
+              <div>
                 {renderLabel('Rated Flow (L/min)', 'flow_rated_lmin')}
                 <input 
                   type="number" 
@@ -390,6 +404,20 @@ export default function PropertyEditor({
 
           {type === 'volumetric_pump' && (
             <>
+              <div>
+                {renderLabel('Operating Status', 'active')}
+                <select 
+                  style={{ width: '100%', fontSize: '12px', padding: '4px' }} 
+                  value={effectiveData.active !== false ? "true" : "false"} 
+                  onChange={(e) => {
+                    const isActive = e.target.value === "true";
+                    if (isNode) onUpdate(id, { active: isActive });
+                  }}
+                >
+                  <option value="true">Active (On)</option>
+                  <option value="false">Inactive (Off)</option>
+                </select>
+              </div>
               <div>
                 {renderLabel('Rated Flow (L/min)', 'flow_rated')}
                 <input 
@@ -717,6 +745,20 @@ export default function PropertyEditor({
 
           {isNode && type === 'heat_exchanger' && (
             <>
+              <div>
+                {renderLabel('Operating Status', 'active')}
+                <select 
+                  style={{ width: '100%', fontSize: '12px', padding: '4px' }} 
+                  value={effectiveData.active !== false ? "true" : "false"} 
+                  onChange={(e) => {
+                    const isActive = e.target.value === "true";
+                    if (isNode) onUpdate(id, { active: isActive });
+                  }}
+                >
+                  <option value="true">Active (On)</option>
+                  <option value="false">Inactive (Off)</option>
+                </select>
+              </div>
               <div>
                 {renderLabel('Rated Cooling (kW)', 'rated_cooling_kw')}
                 <input 

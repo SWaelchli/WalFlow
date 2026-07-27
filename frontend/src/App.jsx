@@ -38,6 +38,7 @@ import DetailPanel from './components/details/DetailPanel';
 import PipeEdge from './edges/PipeEdge';
 import SignalEdge from './edges/SignalEdge';
 import HeatmapLegend from './components/overlays/HeatmapLegend';
+import CaseManager from './components/overlays/CaseManager';
 import HelpInfoModal from './components/modals/HelpInfoModal';
 import LoginModal from './components/modals/LoginModal';
 import ProjectManagerModal from './components/modals/ProjectManagerModal';
@@ -138,6 +139,7 @@ function WalFlowContent() {
   // Operating Case Manager State
   const [cases, setCases] = useState([DEFAULT_BASE_CASE]);
   const [activeCaseId, setActiveCaseId] = useState('case_base');
+  const [showCaseManager, setShowCaseManager] = useState(false);
 
   const handleAddCase = useCallback(() => {
     const currentActiveCase = cases.find(c => c.id === activeCaseId) || cases[0] || DEFAULT_BASE_CASE;
@@ -767,15 +769,15 @@ function WalFlowContent() {
           rotation: 0,
           onRotate: handleRotation,
           onChange: type === 'linear_control_valve' ? handleValveChange : undefined,
-          ...(type === 'centrifugal_pump' && { flow_rated_lmin: 100.0, pressure_rated_bar: 5.0, rise_to_shutoff_pct: 20.0 }),
-          ...(type === 'pump' && { flow_rated_lmin: 100.0, pressure_rated_bar: 5.0, rise_to_shutoff_pct: 20.0 }),
-          ...(type === 'volumetric_pump' && { flow_rated: 100.0, motor_power: 5.0, efficiency: 85.0 }),
+          ...(type === 'centrifugal_pump' && { flow_rated_lmin: 100.0, pressure_rated_bar: 5.0, rise_to_shutoff_pct: 20.0, active: true }),
+          ...(type === 'pump' && { flow_rated_lmin: 100.0, pressure_rated_bar: 5.0, rise_to_shutoff_pct: 20.0, active: true }),
+          ...(type === 'volumetric_pump' && { flow_rated: 100.0, motor_power: 5.0, efficiency: 85.0, active: true }),
           ...(type === 'tank' && { level: 2.0, elevation: 0.0, temperature: 313.15 }),
           ...(type === 'linear_control_valve' && { max_cv: 0.05, opening: 50.0 }),
           ...(type === 'linear_regulator' && { max_cv: 0.05, set_pressure: 500000.0, backpressure: false }),
           ...(type === 'orifice' && { pipe_diameter: 0.05248, orifice_diameter: 0.02, standardDn: 50, standardSch: '40' }),
           ...(type === 'filter' && { dp_clean: 0.2, dp_terminal: 1.0, flow_ref: 100.0, clogging: 0.0 }),
-          ...(type === 'heat_exchanger' && { heat_duty_kw: -10.0 }),
+          ...(type === 'heat_exchanger' && { heat_duty_kw: -10.0, active: true }),
           ...(type === 'remote_control_valve' && { max_cv: 0.05, set_pressure: 500000.0 }),
           ...(type === 'three_way_tcv' && { max_cv: 0.1, set_temperature_c: 40.0, hot_port_idx: 0 }),
           ...(type === 'check_valve' && { cv: 10.0, cracking_pressure_bar: 0.05 }),
@@ -886,8 +888,8 @@ function WalFlowContent() {
     const targetCases = (cases && cases.length > 0) ? cases : [{ id: activeCaseId }];
 
     targetCases.forEach((c) => {
-      edges.forEach((e) => {
-        const effectiveData = getEffectiveEdgeData(e, cases, c.id);
+       edges.forEach((e) => {
+        const effectiveData = getEffectiveEdgeData(e, cases, c.id, telemetryMode);
         const tele = effectiveData.telemetry || e.data?.telemetry || {};
         if (mode === 'pressure') {
           const p1 = tele.inlets?.[0]?.pressure != null ? tele.inlets[0].pressure / 100000.0 : null;
@@ -925,7 +927,7 @@ function WalFlowContent() {
     }
 
     return { min: Math.max(0, parseFloat(minVal.toFixed(1))), max: parseFloat(maxVal.toFixed(1)) };
-  }, [edges, cases, activeCaseId]);
+  }, [edges, cases, activeCaseId, telemetryMode]);
 
   const computedHeatmapRange = useMemo(() => {
     const mode = heatmapSettings.mode;
@@ -945,7 +947,7 @@ function WalFlowContent() {
 
     targetCases.forEach((c) => {
       edges.forEach((e) => {
-        const effectiveData = getEffectiveEdgeData(e, cases, c.id);
+        const effectiveData = getEffectiveEdgeData(e, cases, c.id, telemetryMode);
         const tele = effectiveData.telemetry || e.data?.telemetry || {};
         if (mode === 'pressure') {
           const p1 = tele.inlets?.[0]?.pressure != null ? tele.inlets[0].pressure / 100000.0 : null;
@@ -983,7 +985,7 @@ function WalFlowContent() {
     }
 
     return { min: Math.max(0, minVal), max: maxVal };
-  }, [edges, cases, activeCaseId, heatmapSettings.mode, heatmapSettings.autoScale, heatmapSettings.globalAutoScale, heatmapSettings.customRanges]);
+  }, [edges, cases, activeCaseId, telemetryMode, heatmapSettings.mode, heatmapSettings.autoScale, heatmapSettings.globalAutoScale, heatmapSettings.customRanges]);
 
   const styledEdges = useMemo(() => {
     return edges.map(edge => {
@@ -1186,6 +1188,21 @@ function WalFlowContent() {
                 🎨
               </ControlButton>
               <ControlButton 
+                onClick={() => setShowCaseManager(prev => !prev)}
+                title={showCaseManager ? "Hide Case Manager" : "Show Case Manager"}
+                style={{
+                  backgroundColor: showCaseManager ? '#FA8507' : '#ffffff',
+                  color: showCaseManager ? '#ffffff' : '#395253',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                💼
+              </ControlButton>
+              <ControlButton 
                 onClick={() => handleOpenHelpModal('shortcuts')}
                 title="Help & Information (?)"
                 style={{
@@ -1285,6 +1302,18 @@ function WalFlowContent() {
             onLoadDiagram={loadData}
           />
 
+          {showCaseManager && (
+            <CaseManager
+              cases={cases}
+              activeCaseId={activeCaseId}
+              onSelectCase={setActiveCaseId}
+              telemetryMode={telemetryMode}
+              onToggleTelemetryMode={setTelemetryMode}
+              onClose={() => setShowCaseManager(false)}
+              style={{ top: heatmapSettings.mode !== 'default' ? '190px' : '16px' }}
+            />
+          )}
+
           <HeatmapLegend 
             heatmapMode={heatmapSettings.mode} 
             onModeChange={(mode) => setHeatmapSettings(prev => ({ ...prev, mode }))}
@@ -1347,10 +1376,11 @@ function WalFlowContent() {
           onReorderCases={handleReorderCases}
           onBatchResults={handleBatchResultsTelemetry}
           telemetryMode={telemetryMode}
-          onToggleTelemetryMode={setTelemetryMode}
           telemetryUnmitigated={telemetryUnmitigated}
           onSetCaseOverride={handleSetCaseOverride}
           runSimulation={runSimulation}
+          showCaseManager={showCaseManager}
+          onToggleCaseManager={() => setShowCaseManager(prev => !prev)}
         />
       </div>
     </div>

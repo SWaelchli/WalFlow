@@ -308,4 +308,6 @@ class GraphParser:
         
         if node:
             node.global_settings = global_settings
+            if 'active' in d:
+                node.active = bool(d['active'])
         return node
