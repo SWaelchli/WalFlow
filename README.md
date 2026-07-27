@@ -1,6 +1,6 @@
 Copyright (c) 2026 Sebastian Waelchli (https://swaelchli.com). All rights reserved. Licensed under the PolyForm Noncommercial License.
 
-# WalFlow
+<img width="1264" height="215" alt="Logo_WalFlow" src="https://github.com/user-attachments/assets/914e105e-2a84-4a10-85c1-22be7a99d3e4" />
 
 **WalFlow** is a modern, web-based hydraulic process simulator. Build, modify, and analyze Process Flow Diagrams (PFDs) directly in your browser with real-time steady-state solver telemetry.
 
@@ -15,6 +15,8 @@ Copyright (c) 2026 Sebastian Waelchli (https://swaelchli.com). All rights reserv
 * **Custom Fluids & Solver Control:** Select standard fluids (ISO VG oils, water, etc.) or configure custom fluid properties (density, viscosity) and ambient conditions.
 * **Scenario Templates & Cloud Storage:** Quickly load benchmark PFD scenarios or save, export, and import customized simulation models.
 
+---
+<img width="1033" height="667" alt="Untitled" src="https://github.com/user-attachments/assets/5839d719-bae1-4ee6-9179-d06644e6875b" />
 ---
 
 ## 🐳 Production Deployment (Docker Compose)
