@@ -1032,6 +1032,19 @@ function WalFlowContent() {
     });
   }, [nodes, cases, activeCaseId, telemetryMode, handleRotation, handleValveChange]);
 
+  const effectiveSelectedNode = useMemo(() => {
+    if (!selectedNode) return null;
+    const liveNode = nodes.find(n => n.id === selectedNode.id) || selectedNode;
+    const effectiveData = getEffectiveNodeData(liveNode, cases, activeCaseId, telemetryMode);
+    return {
+      ...liveNode,
+      data: {
+        ...liveNode.data,
+        ...effectiveData
+      }
+    };
+  }, [selectedNode, nodes, cases, activeCaseId, telemetryMode]);
+
   return (
     <div style={{ width: '100%', height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#F0F4F4', overflow: 'hidden' }}>
       <Navbar 
@@ -1127,7 +1140,7 @@ function WalFlowContent() {
             </div>
           )}
           <DetailPanel 
-            selectedNode={selectedNode} 
+            selectedNode={effectiveSelectedNode} 
             allNodes={nodes}
             allEdges={edges}
             unmitigatedTelemetry={telemetryUnmitigated}

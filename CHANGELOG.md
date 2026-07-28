@@ -63,6 +63,7 @@ All notable changes to the WälFlow project will be documented in this file.
 - Implemented backend REST endpoint (`POST /api/simulation/batch`) and `GraphParser` case override resolution engine.
 
 ### 🔩 Equipment & Simulation
+- Fixed **Linear Regulator Position Display Bug**: Updated `LinearRegulatorNode.jsx` and `ValveDetails.jsx` to correctly extract the valve opening percentage from simulated `telemetry.opening_pct` rather than falling back to the default `node.data.opening` (which rendered as 100% on the canvas).
 - Added active/inactive status as a case variable to pumps and coolers:
   - Centrifugal pumps when inactive produce 0 pressure boost but allow flow.
   - Volumetric (positive displacement) pumps when inactive block flow using a high-resistance model.

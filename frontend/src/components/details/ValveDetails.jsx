@@ -8,6 +8,7 @@ const ValveDetails = memo(function ValveDetails({ node }) {
   const { type } = node;
   const { max_cv, set_pressure, backpressure, telemetry, opening } = node.data;
   
+  const currentOpening = telemetry?.opening_pct ?? (opening ?? 100);
   const currentQ = telemetry?.inlets?.[0]?.flow_rate || 0;
   const pIn = telemetry?.inlets?.[0]?.pressure || 101325;
   const pOut = telemetry?.outlets?.[0]?.pressure || 101325;
@@ -23,9 +24,9 @@ const ValveDetails = memo(function ValveDetails({ node }) {
   const status = useMemo(() => {
     if (!isRegulator) return "ACTIVE";
     const error = Math.abs(sensedPBar - setPBar);
-    const isSaturated = (opening >= 99.9 || opening <= 0.15);
+    const isSaturated = (currentOpening >= 99.9 || currentOpening <= 0.15);
     return error < 0.1 ? "REGULATING" : (isSaturated ? "SATURATED" : "ADJUSTING");
-  }, [isRegulator, sensedPBar, setPBar, opening]);
+  }, [isRegulator, sensedPBar, setPBar, currentOpening]);
 
   const actualFlowLmin = parseFloat(m3sToLmin(Math.abs(currentQ)));
   const maxX = Math.max(300, actualFlowLmin * 2);
@@ -34,7 +35,6 @@ const ValveDetails = memo(function ValveDetails({ node }) {
     const data = [];
     const steps = 60; 
     const safeMaxCv = Math.max(0.0001, max_cv || 0.05);
-    const currentOpening = opening || 50;
     const currentCv = (currentOpening / 100) * safeMaxCv;
 
     for (let i = 0; i <= steps; i++) {
@@ -55,7 +55,7 @@ const ValveDetails = memo(function ValveDetails({ node }) {
       });
     }
     return data;
-  }, [max_cv, setPBar, pIn, pOut, backpressure, rho, maxX, isRegulator, opening]);
+  }, [max_cv, setPBar, pIn, pOut, backpressure, rho, maxX, isRegulator, currentOpening]);
 
   const opPoint = useMemo(() => [{
     q: actualFlowLmin,
@@ -102,7 +102,7 @@ const ValveDetails = memo(function ValveDetails({ node }) {
       <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ color: '#64748b' }}>Current Opening:</span>
-          <span style={{ fontWeight: 'bold' }}>{opening?.toFixed(1)} %</span>
+          <span style={{ fontWeight: 'bold' }}>{currentOpening?.toFixed(1)} %</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ color: '#64748b' }}>Sensed Pressure:</span>
