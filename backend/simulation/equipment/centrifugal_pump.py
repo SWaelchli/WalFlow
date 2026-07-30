@@ -75,6 +75,12 @@ class CentrifugalPump(HydraulicNode):
         else:
             inlet.temperature = outlet.temperature + dt
 
+        # Dynamically update local properties based on temperature feedback
+        outlet.density = FluidProperties.get_density(fluid_type, outlet.temperature)
+        outlet.viscosity = FluidProperties.get_viscosity(fluid_type, outlet.temperature)
+        inlet.density = FluidProperties.get_density(fluid_type, inlet.temperature)
+        inlet.viscosity = FluidProperties.get_viscosity(fluid_type, inlet.temperature)
+
         self.calculate_temperature()
         
         return dp

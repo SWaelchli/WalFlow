@@ -40,21 +40,20 @@ class RuptureDisc(HydraulicNode):
         self.capacity_utilization_pct = 0.0
         self.status = "intact"
 
-    def check_burst_status(self, p_inlet_bar: float) -> bool:
+    def check_burst_status(self, p_inlet_bar: float, update_state: bool = True) -> bool:
         """Determines if the diaphragm bursts open during this simulation run."""
         if self.forced_state == "forced_closed":
-            self.status = "intact"
+            if update_state:
+                self.status = "intact"
             return False
 
-        if p_inlet_bar >= self.burst_pressure_bar or self.is_burst:
-            self.is_burst = True
-            self.status = "burst"
-            return True
-        else:
-            self.status = "intact"
-            return False
+        burst = bool(self.is_burst or (p_inlet_bar >= self.burst_pressure_bar))
+        if update_state:
+            self.is_burst = burst
+            self.status = "burst" if burst else "intact"
+        return burst
 
-    def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001, p_in_pa: float = None) -> float:
+    def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001, p_in_pa: float = None, update_state: bool = True) -> float:
         """Calculates pressure drop across the Rupture Disc."""
         inlet = self.inlets[0]
         outlet = self.outlets[0]
@@ -62,16 +61,18 @@ class RuptureDisc(HydraulicNode):
         p_in_actual = p_in_pa if p_in_pa is not None else inlet.pressure
         p_in_bar = p_in_actual / 100000.0
 
-        burst_open = self.check_burst_status(p_in_bar)
+        burst_open = self.check_burst_status(p_in_bar, update_state=update_state)
 
         if not burst_open:
-            self.status = "intact"
-            self.capacity_utilization_pct = 0.0
+            if update_state:
+                self.status = "intact"
+                self.capacity_utilization_pct = 0.0
             R_CLOSED = 1.0e10
             return R_CLOSED * flow_rate
 
         # Diaphragm is burst open
-        self.status = "burst"
+        if update_state:
+            self.status = "burst"
 
         if self.bore_type == "reduced_bore":
             # Bernoulli Orifice Pressure Drop Math
@@ -96,7 +97,8 @@ class RuptureDisc(HydraulicNode):
             choked_q_m3s = area_orifice * math.sqrt(max(1000.0, 100000.0) / max(10.0, density))
             choked_q_lmin = choked_q_m3s * 60000.0
             actual_q_lmin = abs(flow_rate) * 60000.0
-            self.capacity_utilization_pct = min(999.0, (actual_q_lmin / max(0.01, choked_q_lmin)) * 100.0)
+            if update_state:
+                self.capacity_utilization_pct = min(999.0, (actual_q_lmin / max(0.01, choked_q_lmin)) * 100.0)
 
         else: # "full_bore"
             # Standard Cv Pressure Drop Math
@@ -112,10 +114,12 @@ class RuptureDisc(HydraulicNode):
             rated_q_m3s = (self.cv * math.sqrt(100000.0 / (K_CV_SI * density))) if density > 0 else 1.0
             rated_q_lmin = rated_q_m3s * 60000.0
             actual_q_lmin = abs(flow_rate) * 60000.0
-            self.capacity_utilization_pct = min(999.0, (actual_q_lmin / max(0.01, rated_q_lmin)) * 100.0)
+            if update_state:
+                self.capacity_utilization_pct = min(999.0, (actual_q_lmin / max(0.01, rated_q_lmin)) * 100.0)
 
-        if self.capacity_utilization_pct > 100.0:
-            self.status = "overcapacity"
+        if update_state:
+            if self.capacity_utilization_pct > 100.0:
+                self.status = "overcapacity"
 
         return dp
 
@@ -123,7 +127,7 @@ class RuptureDisc(HydraulicNode):
         inlet = self.inlets[0]
         outlet = self.outlets[0]
 
-        dp = self.calculate_delta_p(inlet.flow_rate, inlet.density, inlet.viscosity)
+        dp = self.calculate_delta_p(inlet.flow_rate, inlet.density, inlet.viscosity, update_state=True)
 
         if self.status == "intact" or self.forced_state == "forced_closed":
             inlet.flow_rate = 0.0
@@ -144,6 +148,12 @@ class RuptureDisc(HydraulicNode):
             cp = FluidProperties.get_specific_heat(fluid_type, outlet.temperature)
             dt = abs(dp) / (outlet.density * cp)
             inlet.temperature = outlet.temperature + dt
+
+        # Dynamically update local properties based on temperature feedback
+        outlet.density = FluidProperties.get_density(fluid_type, outlet.temperature)
+        outlet.viscosity = FluidProperties.get_viscosity(fluid_type, outlet.temperature)
+        inlet.density = FluidProperties.get_density(fluid_type, inlet.temperature)
+        inlet.viscosity = FluidProperties.get_viscosity(fluid_type, inlet.temperature)
 
         self.calculate_temperature()
         return dp

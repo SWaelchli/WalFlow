@@ -50,23 +50,31 @@ class CheckValveOrifice(HydraulicNode):
         Calculates total pressure drop across Check Valve w/ Orifice.
         Sub-cracking or reverse flow (Q < 0): All flow passes through the orifice.
         Forward flow above cracking pressure (Q > 0): Parallel flow across main seat and orifice.
+        Smoothly blended at the transition point using a sigmoid tanh function.
         """
         K_CV_SI = 1.732e9
         cracking_pa = self.cracking_pressure_bar * 100000.0
         dp_ori = self._calculate_orifice_dp(flow_rate, density, viscosity)
 
-        if flow_rate <= 0 or dp_ori < cracking_pa:
-            # Main seat closed -> all flow through orifice
-            return dp_ori
-        else:
-            # Main seat open -> parallel flow
-            # Conductance of main valve seat: K_v = Cv / sqrt(K_CV_SI * density)
-            k_v = self.cv / math.sqrt(K_CV_SI * density)
-            # Conductance of orifice: K_o = Q / sqrt(dp_ori)
-            k_o = abs(flow_rate) / math.sqrt(max(1.0, dp_ori))
-            k_total = k_v + k_o
-            dp_friction = (flow_rate / k_total)**2
-            return cracking_pa + dp_friction
+        # Sigmoid blend factor based on how much the orifice dP exceeds cracking pressure
+        # Center of transition is dp_ori = cracking_pa, width scale is 1000 Pa (0.01 bar)
+        scale = 1000.0
+        s = 0.5 * (1.0 + math.tanh((dp_ori - cracking_pa) / scale))
+
+        if flow_rate <= 0:
+            s = 0.0
+
+        # Closed seat dP (all flow through orifice)
+        dp_closed = dp_ori
+
+        # Open seat dP (parallel flow conducting through main seat + orifice bypass)
+        k_v = self.cv / math.sqrt(K_CV_SI * density)
+        k_o = abs(flow_rate) / math.sqrt(max(1.0, abs(dp_ori)))
+        k_total = k_v + k_o
+        dp_parallel = cracking_pa + (flow_rate / k_total)**2
+
+        # Smooth blend of closed and parallel flow
+        return (1.0 - s) * dp_closed + s * dp_parallel
 
     def calculate(self):
         """Updates outlet port conditions and thermal enthalpy balance."""
@@ -89,6 +97,12 @@ class CheckValveOrifice(HydraulicNode):
             cp = FluidProperties.get_specific_heat(fluid_type, outlet.temperature)
             dt = abs(dp) / (outlet.density * cp)
             inlet.temperature = outlet.temperature + dt
+
+        # Dynamically update local properties based on temperature feedback
+        outlet.density = FluidProperties.get_density(fluid_type, outlet.temperature)
+        outlet.viscosity = FluidProperties.get_viscosity(fluid_type, outlet.temperature)
+        inlet.density = FluidProperties.get_density(fluid_type, inlet.temperature)
+        inlet.viscosity = FluidProperties.get_viscosity(fluid_type, inlet.temperature)
 
         self.calculate_temperature()
         return dp

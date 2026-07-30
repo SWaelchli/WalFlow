@@ -10,7 +10,12 @@ from sqlalchemy.orm import Session
 from db.database import get_db
 from db.models import User
 
-SECRET_KEY = os.getenv("WALFLOW_SECRET_KEY", "walflow_dev_secret_key_change_in_production_39a48f2b")
+SECRET_KEY = os.getenv("WALFLOW_SECRET_KEY")
+if not SECRET_KEY:
+    import logging
+    logger = logging.getLogger("uvicorn")
+    logger.warning("WARNING: WALFLOW_SECRET_KEY environment variable is not set. Falling back to default insecure key for development.")
+    SECRET_KEY = "walflow_dev_secret_key_change_in_production_39a48f2b"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
 

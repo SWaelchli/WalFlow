@@ -1,8 +1,9 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, status
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import json
 import traceback
+from auth import decode_access_token
 
 from simulation.solver import NetworkSolver, run_sequential_relief_simulation
 from simulation.graph_parser import GraphParser
@@ -42,9 +43,7 @@ app.include_router(diagrams_router)
 app.include_router(admin_router)
 app.include_router(simulation_router)
 
-# Global simulation state
-network_instance = None
-solver_instance = None
+# Per-connection simulation state is managed locally inside websocket_endpoint
 
 def extract_telemetry(network):
     telemetry = {"nodes": {}, "edges": {}}
@@ -90,13 +89,21 @@ async def read_root():
 
 @app.websocket("/ws/simulate")
 async def websocket_endpoint(websocket: WebSocket):
-    global network_instance, solver_instance
-    # Simulation state specific to this connection
+    # Retrieve token from cookies or query parameters
+    token = websocket.cookies.get("walflow_auth_token")
+    if not token:
+        token = websocket.query_params.get("token")
+        
+    if not token or not decode_access_token(token):
+        # Reject connection if token is missing or invalid
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Not authenticated")
+        return
+
     network_instance = None
     solver_instance = None
     
     await websocket.accept()
-    print("Frontend client connected.")
+    print("Frontend client connected and authenticated.")
     
     try:
         while True:

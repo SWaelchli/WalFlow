@@ -61,7 +61,9 @@ import {
   hasActiveOverrides,
   updateCaseOverride,
   removeCaseOverride,
-  duplicateCase
+  duplicateCase,
+  getActiveCaseScalingInfo,
+  getActiveCase
 } from './utils/case_resolver';
 
 // Import Examples
@@ -987,9 +989,14 @@ function WalFlowContent() {
     return { min: Math.max(0, minVal), max: maxVal };
   }, [edges, cases, activeCaseId, telemetryMode, heatmapSettings.mode, heatmapSettings.autoScale, heatmapSettings.globalAutoScale, heatmapSettings.customRanges]);
 
+  const scalingInfo = useMemo(() => {
+    const activeCase = getActiveCase(cases, activeCaseId);
+    return getActiveCaseScalingInfo(activeCase);
+  }, [cases, activeCaseId]);
+
   const styledEdges = useMemo(() => {
     return edges.map(edge => {
-      const effectiveData = getEffectiveEdgeData(edge, cases, activeCaseId, telemetryMode);
+      const effectiveData = getEffectiveEdgeData(edge, cases, activeCaseId, telemetryMode, scalingInfo);
       const isSignal = edge.data?.type === 'SIGNAL';
       const tele = effectiveData.telemetry || edge.data?.telemetry || {};
       const hasFlow = isSimulating || (tele.inlets?.[0]?.flow_rate && Math.abs(tele.inlets[0].flow_rate) > 1e-5);
@@ -1012,15 +1019,15 @@ function WalFlowContent() {
         }
       };
     });
-  }, [edges, cases, activeCaseId, telemetryMode, isSimulating, heatmapSettings.mode, computedHeatmapRange]);
+  }, [edges, cases, activeCaseId, telemetryMode, isSimulating, heatmapSettings.mode, computedHeatmapRange, scalingInfo]);
 
   const interactiveNodes = useMemo(() => {
     return nodes.map(node => {
-      const effectiveData = getEffectiveNodeData(node, cases, activeCaseId, telemetryMode);
+      const effectiveData = getEffectiveNodeData(node, cases, activeCaseId, telemetryMode, scalingInfo);
       const hasOverrides = hasActiveOverrides(node.id, cases, activeCaseId);
       return {
         ...node,
-        draggable: Boolean(node.selected),
+        draggable: true, // Keep constantly true to eliminate click/drag re-render lags
         data: {
           ...node.data,
           ...effectiveData,
@@ -1030,12 +1037,12 @@ function WalFlowContent() {
         }
       };
     });
-  }, [nodes, cases, activeCaseId, telemetryMode, handleRotation, handleValveChange]);
+  }, [nodes, cases, activeCaseId, telemetryMode, handleRotation, handleValveChange, scalingInfo]);
 
   const effectiveSelectedNode = useMemo(() => {
     if (!selectedNode) return null;
     const liveNode = nodes.find(n => n.id === selectedNode.id) || selectedNode;
-    const effectiveData = getEffectiveNodeData(liveNode, cases, activeCaseId, telemetryMode);
+    const effectiveData = getEffectiveNodeData(liveNode, cases, activeCaseId, telemetryMode, scalingInfo);
     return {
       ...liveNode,
       data: {
@@ -1043,7 +1050,7 @@ function WalFlowContent() {
         ...effectiveData
       }
     };
-  }, [selectedNode, nodes, cases, activeCaseId, telemetryMode]);
+  }, [selectedNode, nodes, cases, activeCaseId, telemetryMode, scalingInfo]);
 
   return (
     <div style={{ width: '100%', height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#F0F4F4', overflow: 'hidden' }}>

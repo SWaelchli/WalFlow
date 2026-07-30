@@ -76,6 +76,7 @@ class NetworkSolver:
 
         solve_error = None
         last_residuals = None
+        prev_temperatures = {}
 
         for it in range(max_outer_iterations):
             outer_iterations += 1
@@ -88,6 +89,12 @@ class NetworkSolver:
             except ValueError as e:
                 solve_error = str(e)
                 break
+            
+            # Extract final q_edges (already unscaled from solver run)
+            q_edges = final_sol_x[num_int:]
+            
+            # Run property propagation in outer loop
+            self._propagate_properties(q_edges)
             
             max_err_bar = 0.0
             max_err_temp = 0.0
@@ -139,24 +146,38 @@ class NetworkSolver:
 
             # 2. 3-Way Thermal Control Valves
             # Physical Direction: The mix_ratio is tied STRICTLY to the user-selected HOT port.
-            # If Too Hot (t_err > 0) -> we MUST close the HOT port (decrease mix_ratio).
             for idx in self.tcv_node_indices:
                 node = self.nodes_list[idx]
                 t_out = node.outlets[0].temperature
                 t_err = t_out - node.set_temperature
                 max_err_temp = max(max_err_temp, abs(t_err))
                 
-                # Fixed Direction: 
-                # mix_ratio = 1.0 means Hot Port is wide open.
-                # Too Hot (t_err > 0) -> decrease mix_ratio.
-                # Too Cold (t_err < 0) -> increase mix_ratio.
-                direction = -1.0
+                # Dynamic Direction based on actual inlet temperatures:
+                t_hot_port = node.inlets[node.hot_port_idx].temperature
+                t_cold_port = node.inlets[1 - node.hot_port_idx].temperature
+                direction = -1.0 if t_hot_port >= t_cold_port else 1.0
                 
                 # Use a small damping factor (0.01) for thermal stability
                 adjustment = direction * 0.01 * t_err
                 node.mix_ratio = max(0.001, min(0.999, node.mix_ratio + adjustment))
 
-            if max_err_bar < tolerance_bar and max_err_temp < tolerance_temp:
+            # Calculate max temp change in properties to check convergence
+            max_temp_change = 0.0
+            curr_temperatures = {}
+            for node_id, node in self.network.nodes.items():
+                for p_idx, p in enumerate(node.inlets + node.outlets):
+                    key = f"{node_id}_p_{p_idx}"
+                    curr_temperatures[key] = p.temperature
+                    if key in prev_temperatures:
+                        max_temp_change = max(max_temp_change, abs(p.temperature - prev_temperatures[key]))
+            
+            if not prev_temperatures:
+                max_temp_change = 1.0
+            prev_temperatures = curr_temperatures
+
+            properties_converged = (max_temp_change < 0.05)
+
+            if max_err_bar < tolerance_bar and max_err_temp < tolerance_temp and properties_converged:
                 break
 
         bottleneck = self._identify_bottleneck(last_residuals) if last_residuals is not None else None
@@ -219,7 +240,7 @@ class NetworkSolver:
         def objective(x_scaled):
             p_in_internal = x_scaled[:num_internal] * p_scale
             q_edges = x_scaled[num_internal:] * q_scale
-            self._propagate_properties(q_edges)
+            # Removed self._propagate_properties(q_edges) from inner loop for solver stability
             p_in_all = np.zeros(len(self.nodes_list))
             for i, p in self.fixed_pressure_nodes.items(): p_in_all[i] = p
             for i, idx in enumerate(self.internal_node_indices): p_in_all[idx] = p_in_internal[i]
@@ -284,7 +305,7 @@ class NetworkSolver:
         else:
             raise ValueError(f"Solver failed: {sol.message}")
 
-    def _get_node_p_out(self, node, p_in, q_in, q_out):
+    def _get_node_p_out(self, node, p_in, q_in, q_out, update_state: bool = False):
         inlet = node.inlets[0] if node.inlets else None
         density = inlet.density if inlet else 1000.0
         viscosity = inlet.viscosity if inlet else 0.001
@@ -292,7 +313,7 @@ class NetworkSolver:
             return p_in + node.calculate_delta_p(q_in, density, viscosity)
         elif hasattr(node, 'calculate_delta_p'):
             if hasattr(node, 'node_type') and node.node_type in ['pressure_safety_valve', 'rupture_disc']:
-                return p_in - node.calculate_delta_p(q_in, density, viscosity, p_in_pa=p_in)
+                return p_in - node.calculate_delta_p(q_in, density, viscosity, p_in_pa=p_in, update_state=update_state)
             return p_in - node.calculate_delta_p(q_in, density, viscosity)
         else:
             return p_in
@@ -320,7 +341,7 @@ class NetworkSolver:
             for port in node.inlets: port.pressure = p_in
             q_in_total = sum(p.flow_rate for p in node.inlets)
             q_out_total = sum(p.flow_rate for p in node.outlets)
-            p_out = self._get_node_p_out(node, p_in, q_in_total, q_out_total)
+            p_out = self._get_node_p_out(node, p_in, q_in_total, q_out_total, update_state=True)
             for port in node.outlets: port.pressure = p_out
             if isinstance(node, ThreeWayTCV):
                 node.calculate()

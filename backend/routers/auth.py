@@ -114,11 +114,15 @@ def login_user(payload: UserLoginSchema, response: Response, db: Session = Depen
 
     token = create_access_token(data={"sub": user.id, "username": user.username, "role": user.role})
 
+    import os
+    is_secure_cookie = os.getenv("WALFLOW_SECURE_COOKIES", "true").lower() in ("true", "1")
+
     # Set HttpOnly cookie for browser security
     response.set_cookie(
         key="walflow_auth_token",
         value=token,
         httponly=True,
+        secure=is_secure_cookie,
         samesite="lax",
         max_age=60 * 60 * 24 * 7
     )

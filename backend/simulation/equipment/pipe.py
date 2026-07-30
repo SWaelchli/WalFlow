@@ -82,14 +82,18 @@ class Pipe(HydraulicNode):
             cp = FluidProperties.get_specific_heat(fluid_type, inlet.temperature)
             dt = abs(dp) / (inlet.density * cp)
             outlet.temperature = inlet.temperature + dt
-            outlet.density = inlet.density
-            outlet.viscosity = inlet.viscosity
+            outlet.density = FluidProperties.get_density(fluid_type, outlet.temperature)
+            outlet.viscosity = FluidProperties.get_viscosity(fluid_type, outlet.temperature)
+            inlet.density = FluidProperties.get_density(fluid_type, inlet.temperature)
+            inlet.viscosity = FluidProperties.get_viscosity(fluid_type, inlet.temperature)
         else:
             # Reverse Flow: Outlet -> Inlet
             cp = FluidProperties.get_specific_heat(fluid_type, outlet.temperature)
             dt = abs(dp) / (outlet.density * cp)
             inlet.temperature = outlet.temperature + dt
-            inlet.density = outlet.density
-            inlet.viscosity = outlet.viscosity
+            inlet.density = FluidProperties.get_density(fluid_type, inlet.temperature)
+            inlet.viscosity = FluidProperties.get_viscosity(fluid_type, inlet.temperature)
+            outlet.density = FluidProperties.get_density(fluid_type, outlet.temperature)
+            outlet.viscosity = FluidProperties.get_viscosity(fluid_type, outlet.temperature)
         
         return dp

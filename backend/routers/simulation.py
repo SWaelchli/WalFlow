@@ -41,7 +41,15 @@ def calculate_case_kpis(network, telemetry: Dict[str, Any], stats: Dict[str, Any
 
         # Aggregate pump power & flow
         if isinstance(node, (VolumetricPump, CentrifugalPump)):
-            if hasattr(node, 'motor_power'):
+            if isinstance(node, CentrifugalPump):
+                inlet_flow = node.inlets[0].flow_rate if node.inlets else 0.0
+                inlet_p = node.inlets[0].pressure if node.inlets else 101325.0
+                outlet_p = node.outlets[0].pressure if node.outlets else 101325.0
+                dp = max(0.0, outlet_p - inlet_p)
+                eta = getattr(node, 'efficiency', 0.75)
+                eta = max(0.05, eta)
+                total_pump_power_w += abs(inlet_flow * dp) / eta
+            else:
                 total_pump_power_w += getattr(node, 'motor_power', 0.0)
             for outlet in node.outlets:
                 total_flow_m3s += abs(outlet.flow_rate)
@@ -55,8 +63,8 @@ def calculate_case_kpis(network, telemetry: Dict[str, Any], stats: Dict[str, Any
         "total_flow_lmin": round(total_flow_m3s * 60000.0, 2),
         "total_pump_power_kw": round(total_pump_power_w / 1000.0, 2),
         "has_cavitation_warning": has_cavitation,
-        "iterations": stats.get("iterations", 0),
-        "residual": stats.get("residual", 0.0)
+        "iterations": stats.get("outer_iterations", stats.get("iterations", 0)),
+        "residual": stats.get("bottleneck", {}).get("magnitude", 0.0) if stats.get("bottleneck") else stats.get("residual", 0.0)
     }
 
     # Preserve relief contingency pressure metrics calculated by the solver in telemetry

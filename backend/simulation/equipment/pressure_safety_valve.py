@@ -39,52 +39,47 @@ class PressureSafetyValve(HydraulicNode):
         self.capacity_utilization_pct = 0.0
         self.status = "closed"
 
-    def get_effective_cv(self, p_inlet_bar: float, p_outlet_bar: float = 0.0) -> float:
+    def get_effective_cv(self, p_inlet_bar: float, p_outlet_bar: float = 0.0, update_state: bool = True) -> float:
         """Calculates effective flow coefficient based on upstream pressure and action mode."""
         if self.forced_state == "forced_closed":
-            self.status = "closed"
+            if update_state:
+                self.status = "closed"
             return 1e-4
 
         dp_bar = max(0.0, p_inlet_bar - p_outlet_bar)
 
         if self.action_mode == "rupture_disc":
-            if p_inlet_bar >= self.set_pressure_bar or self.is_burst:
-                self.is_burst = True
-                self.status = "cracked"
-                return self.cv
-            else:
-                self.status = "closed"
-                return 1e-4
+            burst = bool(self.is_burst or (p_inlet_bar >= self.set_pressure_bar))
+            if update_state:
+                self.is_burst = burst
+                self.status = "cracked" if burst else "closed"
+            return self.cv if burst else 1e-4
 
         elif self.action_mode == "pop_action":
-            if self._was_open or self.status in ["cracked", "overcapacity"]:
-                self.status = "cracked"
-                return self.cv
-            if p_inlet_bar >= self.set_pressure_bar:
-                self._was_open = True
-                self.status = "cracked"
-                return self.cv
-            else:
-                self._was_open = False
-                self.status = "closed"
-                return 1e-4
+            is_open = bool(self._was_open or (p_inlet_bar >= self.set_pressure_bar))
+            if update_state:
+                self._was_open = is_open
+                self.status = "cracked" if is_open else "closed"
+            return self.cv if is_open else 1e-4
 
         elif self.action_mode == "modulating":
             overpressure_bar = p_inlet_bar - self.set_pressure_bar
             if overpressure_bar <= 0:
-                self.status = "closed"
+                if update_state:
+                    self.status = "closed"
                 return 1e-4
             else:
                 # Full lift achieved at 10% overpressure above setpoint
                 full_lift_overpressure = max(0.1, 0.10 * self.set_pressure_bar)
                 lift_fraction = min(1.0, max(0.01, overpressure_bar / full_lift_overpressure))
                 eff_cv = max(1e-4, self.cv * lift_fraction)
-                self.status = "cracked"
+                if update_state:
+                    self.status = "cracked"
                 return eff_cv
 
         return 1e-4
 
-    def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001, p_in_pa: float = None) -> float:
+    def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001, p_in_pa: float = None, update_state: bool = True) -> float:
         """Calculates pressure drop across the PSV with viscosity correction."""
         inlet = self.inlets[0]
         outlet = self.outlets[0]
@@ -93,13 +88,27 @@ class PressureSafetyValve(HydraulicNode):
         p_in_bar = p_in_actual / 100000.0
         p_out_bar = outlet.pressure / 100000.0
 
-        eff_cv = self.get_effective_cv(p_in_bar, p_out_bar)
+        eff_cv = self.get_effective_cv(p_in_bar, p_out_bar, update_state=update_state)
 
         K_CV_SI = 1.732e9
 
-        if self.status == "closed":
+        # Determine status dynamically for this evaluation step
+        step_status = "closed"
+        if self.forced_state != "forced_closed":
+            if self.action_mode == "rupture_disc":
+                if self.is_burst or (p_in_bar >= self.set_pressure_bar):
+                    step_status = "cracked"
+            elif self.action_mode == "pop_action":
+                if self._was_open or (p_in_bar >= self.set_pressure_bar):
+                    step_status = "cracked"
+            elif self.action_mode == "modulating":
+                if p_in_bar > self.set_pressure_bar:
+                    step_status = "cracked"
+
+        if step_status == "closed":
             # Closed PSV seat: smooth C1 linear resistance model
-            self.capacity_utilization_pct = 0.0
+            if update_state:
+                self.capacity_utilization_pct = 0.0
             R_CLOSED = 1.0e10
             return R_CLOSED * flow_rate
 
@@ -121,13 +130,14 @@ class PressureSafetyValve(HydraulicNode):
         rated_q_lmin = rated_q_m3s * 60000.0
         actual_q_lmin = abs(flow_rate) * 60000.0
 
-        if rated_q_lmin > 0:
-            self.capacity_utilization_pct = min(999.0, (actual_q_lmin / rated_q_lmin) * 100.0)
-        else:
-            self.capacity_utilization_pct = 0.0
+        if update_state:
+            if rated_q_lmin > 0:
+                self.capacity_utilization_pct = min(999.0, (actual_q_lmin / rated_q_lmin) * 100.0)
+            else:
+                self.capacity_utilization_pct = 0.0
 
-        if self.status == "cracked" and self.capacity_utilization_pct > 100.0:
-            self.status = "overcapacity"
+            if self.status == "cracked" and self.capacity_utilization_pct > 100.0:
+                self.status = "overcapacity"
 
         return dp
 
@@ -135,7 +145,7 @@ class PressureSafetyValve(HydraulicNode):
         inlet = self.inlets[0]
         outlet = self.outlets[0]
 
-        dp = self.calculate_delta_p(inlet.flow_rate, inlet.density, inlet.viscosity)
+        dp = self.calculate_delta_p(inlet.flow_rate, inlet.density, inlet.viscosity, update_state=True)
 
         if self.status == "closed" or self.forced_state == "forced_closed":
             inlet.flow_rate = 0.0
@@ -156,6 +166,12 @@ class PressureSafetyValve(HydraulicNode):
             cp = FluidProperties.get_specific_heat(fluid_type, outlet.temperature)
             dt = abs(dp) / (outlet.density * cp)
             inlet.temperature = outlet.temperature + dt
+
+        # Dynamically update local properties based on temperature feedback
+        outlet.density = FluidProperties.get_density(fluid_type, outlet.temperature)
+        outlet.viscosity = FluidProperties.get_viscosity(fluid_type, outlet.temperature)
+        inlet.density = FluidProperties.get_density(fluid_type, inlet.temperature)
+        inlet.viscosity = FluidProperties.get_viscosity(fluid_type, inlet.temperature)
 
         self.calculate_temperature()
         return dp

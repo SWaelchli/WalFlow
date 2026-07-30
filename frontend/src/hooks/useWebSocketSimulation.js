@@ -62,9 +62,7 @@ export function useWebSocketSimulation({ nodes, edges, setNodes, setEdges, globa
 
   useEffect(() => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port === '5173'
-      ? 'ws://localhost:8000/ws/simulate'
-      : `${protocol}//${window.location.host}/ws/simulate`;
+    const wsUrl = `${protocol}//${window.location.host}/ws/simulate`;
 
     const socket = new WebSocket(wsUrl);
     ws.current = socket;

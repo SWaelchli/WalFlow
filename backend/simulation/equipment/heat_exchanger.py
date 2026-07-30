@@ -78,13 +78,14 @@ class HeatExchanger(HydraulicNode):
         inlet = self.inlets[0]
         outlet = self.outlets[0]
         
-        if abs(inlet.flow_rate) < 1e-9 or not getattr(self, 'active', True):
+        if abs(inlet.flow_rate) < 1e-12 or not getattr(self, 'active', True):
             outlet.temperature = inlet.temperature
             self.actual_duty_kw = 0.0
             return
 
         # Get fluid properties
-        cp = FluidProperties.get_specific_heat(inlet.temperature, getattr(self.global_settings, 'fluid_type', 'water'))
+        fluid_type = getattr(self.global_settings, 'fluid_type', 'water')
+        cp = FluidProperties.get_specific_heat(fluid_type, inlet.temperature)
         m_dot = abs(inlet.flow_rate) * inlet.density
         
         # 1. Get Base UA from design point
@@ -121,7 +122,13 @@ class HeatExchanger(HydraulicNode):
         
         outlet.flow_rate = inlet.flow_rate
         outlet.pressure = inlet.pressure - self.calculate_delta_p(inlet.flow_rate, inlet.density, inlet.viscosity)
-        outlet.density = inlet.density
-        outlet.viscosity = inlet.viscosity
+        
+        fluid_type = getattr(self.global_settings, 'fluid_type', 'water')
+        
+        # Dynamically update local properties based on temperature feedback
+        outlet.density = FluidProperties.get_density(fluid_type, outlet.temperature)
+        outlet.viscosity = FluidProperties.get_viscosity(fluid_type, outlet.temperature)
+        inlet.density = FluidProperties.get_density(fluid_type, inlet.temperature)
+        inlet.viscosity = FluidProperties.get_viscosity(fluid_type, inlet.temperature)
         
         return outlet.pressure

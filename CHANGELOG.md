@@ -6,6 +6,14 @@ All notable changes to the WälFlow project will be documented in this file.
 
 ## [0.1.1]
 
+### 🛡️ Quality, Stability, Performance & Security
+- **Core Physics & Solver Stability**: Segregated fluid properties calculation into an outer loop of the static solver, achieving up to 21x faster convergence; resolved mixing valve direction lockups and popping safety valve hysteresis.
+- **Dynamic Port Feedback**: Integrated thermodynamic feedback loops to dynamically recalculate local density and viscosity across all equipment nodes.
+- **WebSocket & Auth Hardening**: Isolated multi-connection simulation state by removing globals, and implemented JWT validation checks on WebSocket connections.
+- **WebSocket Dev Proxy Fix**: Added a `/ws` proxy rule with WebSocket support enabled (`ws: true`) to the Vite configuration, and updated the frontend WebSocket handler to use relative hosts. This ensures authentication cookies are automatically and securely forwarded to the backend during local development, resolving an issue where the solver would fail to update due to connection rejections.
+- **KPI Stats Mapping**: Restored correct mapping of solver iterations and residual values in the simulation KPI payload.
+- **UI Performance Optimization**: Hoisted case scaling computations to eliminate $O(N^2)$ render scans, and optimized ReactFlow node drag/select handlers to remove drag latency.
+
 ### 🎛️ Scenario & Case Manager
 - Implemented **Scenario & Case Manager** floating overlay component (`CaseManager.jsx`) on the canvas:
   - Unified controls for active Operating Case and Relief Case View (vertical segmented cards) with Title Case capitalization.

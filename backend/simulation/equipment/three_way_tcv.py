@@ -42,7 +42,7 @@ class ThreeWayTCV(HydraulicNode):
         cv_adj = max(0.0001, eff_cv * fr)
 
         K_CV_SI = 1.732e9
-        dp = (K_CV_SI * density * (flow**2)) / (cv_adj**2)
+        dp = (K_CV_SI * density * flow * abs(flow)) / (cv_adj**2)
         return dp
 
     def calculate(self):
@@ -51,26 +51,48 @@ class ThreeWayTCV(HydraulicNode):
         outlet = self.outlets[0]
         
         # Mass/Energy Balance
-        m0 = abs(inlet_0.flow_rate * inlet_0.density)
-        m1 = abs(inlet_1.flow_rate * inlet_1.density)
-        m_tot = m0 + m1
+        # Only include ports with INWARD flow as sources
+        m0 = inlet_0.flow_rate * inlet_0.density if inlet_0.flow_rate > 0 else 0.0
+        m1 = inlet_1.flow_rate * inlet_1.density if inlet_1.flow_rate > 0 else 0.0
+        m_out_rev = abs(outlet.flow_rate) * outlet.density if outlet.flow_rate < 0 else 0.0
+        m_tot = m0 + m1 + m_out_rev
         
         if m_tot > 1e-10:
-            outlet.temperature = (m0 * inlet_0.temperature + m1 * inlet_1.temperature) / m_tot
+            inward_temps = []
+            if inlet_0.flow_rate > 0:
+                inward_temps.append((m0, inlet_0.temperature))
+            if inlet_1.flow_rate > 0:
+                inward_temps.append((m1, inlet_1.temperature))
+            if outlet.flow_rate < 0:
+                inward_temps.append((m_out_rev, outlet.temperature))
+            mix_temp = sum(m * t for m, t in inward_temps) / m_tot
         else:
-            outlet.temperature = inlet_0.temperature
+            mix_temp = inlet_0.temperature
+            
+        if outlet.flow_rate >= 0:
+            outlet.temperature = mix_temp
+        if inlet_0.flow_rate <= 0:
+            inlet_0.temperature = mix_temp
+        if inlet_1.flow_rate <= 0:
+            inlet_1.temperature = mix_temp
             
         outlet.flow_rate = inlet_0.flow_rate + inlet_1.flow_rate
         
         # Hydraulics & Port Telemetry:
-        # outlet.pressure is managed by the network solver (P_node).
-        # Inlet pressures reflect upstream line pressure before each valve port restriction (P_outlet + dp_port).
         dp0 = self.calculate_path_dp(inlet_0.flow_rate, inlet_0.density, 0, inlet_0.viscosity)
         dp1 = self.calculate_path_dp(inlet_1.flow_rate, inlet_1.density, 1, inlet_1.viscosity)
         
         inlet_0.pressure = outlet.pressure + dp0
         inlet_1.pressure = outlet.pressure + dp1
             
-        outlet.density = inlet_0.density
-        outlet.viscosity = inlet_0.viscosity
+        fluid_type = getattr(self.global_settings, 'fluid_type', 'water')
+        
+        # Dynamically update local properties based on temperature feedback
+        outlet.density = FluidProperties.get_density(fluid_type, outlet.temperature)
+        outlet.viscosity = FluidProperties.get_viscosity(fluid_type, outlet.temperature)
+        inlet_0.density = FluidProperties.get_density(fluid_type, inlet_0.temperature)
+        inlet_0.viscosity = FluidProperties.get_viscosity(fluid_type, inlet_0.temperature)
+        inlet_1.density = FluidProperties.get_density(fluid_type, inlet_1.temperature)
+        inlet_1.viscosity = FluidProperties.get_viscosity(fluid_type, inlet_1.temperature)
+        
         return outlet.pressure

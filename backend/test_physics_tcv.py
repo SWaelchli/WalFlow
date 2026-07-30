@@ -50,7 +50,7 @@ def build_tcv_network(hot_temp=353.15, cold_temp=293.15, set_temp=313.15,
     return network, tcv
 
 def run_test(name, network, tcv, expected_temp=None, tol=0.5):
-    print(f"\n▶ Testing: {name}")
+    print(f"\n[TCV Test] Testing: {name}")
     solver = NetworkSolver(network)
     try:
         solver.solve(method='hybr')
@@ -77,11 +77,15 @@ def run_test(name, network, tcv, expected_temp=None, tol=0.5):
             # Only fail if it's not saturated and still missed the target
             assert False, f"Controller stalled at {tcv.mix_ratio*100:.1f}% without reaching {expected_temp}C (Actual: {t_out:.1f}C)"
         
+    except AssertionError as e:
+        print(f"  Result: FAILED ({e})")
+        raise
     except Exception as e:
         print(f"  Result: FAILED ({e})")
+        raise
 
 if __name__ == "__main__":
-    print("🔬 3-WAY TCV PHYSICS STRESS TEST")
+    print("[Test Suite] 3-WAY TCV PHYSICS STRESS TEST")
 
     # 1. Standard Mixing
     net, tcv = build_tcv_network(hot_temp=353.15, cold_temp=293.15, set_temp=313.15)
@@ -105,7 +109,7 @@ if __name__ == "__main__":
 
     # 6. Reverse Flow
     net, tcv = build_tcv_network(hot_p=1.5, cold_p=1.5, sink_p=10.0)
-    print("\n▶ Testing: Reverse Flow (High Backpressure)")
+    print("\n[TCV Test] Testing: Reverse Flow (High Backpressure)")
     solver = NetworkSolver(net)
     try:
         solver.solve()
@@ -127,7 +131,7 @@ if __name__ == "__main__":
     run_test("Low Capacity (Tiny Cv)", net, tcv, expected_temp=40.0)
 
     # 11. Downstream Network Integration (Regression for TCV residual coupling)
-    print("\n▶ Testing: Downstream Network Integration (TCV + Filter + Distribution Header)")
+    print("\n[TCV Test] Testing: Downstream Network Integration (TCV + Filter + Distribution Header)")
     net, tcv = build_tcv_network(hot_temp=333.15, cold_temp=303.15, set_temp=318.15)
     solver = NetworkSolver(net)
     stats = solver.solve()

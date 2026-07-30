@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import Column, String, Text, DateTime, ForeignKey
+from sqlalchemy import Column, String, Text, DateTime, ForeignKey, Index
 from sqlalchemy.orm import relationship
 from .database import Base
 
@@ -23,6 +23,9 @@ class User(Base):
 
 class Diagram(Base):
     __tablename__ = "diagrams"
+    __table_args__ = (
+        Index("idx_user_diagrams_updated_at", "user_id", "updated_at"),
+    )
 
     id = Column(String, primary_key=True, default=generate_uuid)
     user_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)

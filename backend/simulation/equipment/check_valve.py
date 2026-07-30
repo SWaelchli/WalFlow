@@ -18,27 +18,32 @@ class CheckValve(HydraulicNode):
     def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
         """
         Calculates pressure drop across the check valve with viscosity correction.
-        Forward flow (Q >= 0): dP = Cracking_Pressure + (1.732e9 * density * Q^2) / (Cv * Fr)^2
-        Reverse flow (Q < 0): Severe resistance (Cv_closed = 1e-4) to block backflow.
+        Uses hyperbolic tangent smoothing around Q = 0 to prevent jump discontinuities in derivatives.
         """
         K_CV_SI = 1.732e9
         cracking_pa = self.cracking_pressure_bar * 100000.0
 
-        if flow_rate >= 0:
-            effective_cv = max(0.001, self.cv)
-            d_v = max(0.002, 0.01 * math.sqrt(effective_cv))
-            v_v = flow_rate / (0.25 * math.pi * d_v**2)
-            re_v = (density * abs(v_v) * d_v) / max(1e-7, viscosity)
-            fr = FluidProperties.get_valve_fr(re_v)
-            cv_adj = max(0.0001, effective_cv * fr)
-            
-            dp_friction = (K_CV_SI * density * flow_rate * flow_rate) / (cv_adj ** 2)
-            return cracking_pa + dp_friction
-        else:
-            # Backflow restriction (closed check valve)
-            effective_cv = 1e-4
-            dp_friction = (K_CV_SI * density * flow_rate * abs(flow_rate)) / (effective_cv ** 2)
-            return -cracking_pa + dp_friction
+        # Width scale for transition (1e-5 m3/s = 0.6 L/min)
+        scale = 1e-5
+
+        # Smoothed cracking pressure term
+        cracking_term = cracking_pa * math.tanh(flow_rate / scale)
+
+        # Sigmoid blend factor for valve open/closed state
+        s = 0.5 * (1.0 + math.tanh(flow_rate / scale))
+
+        effective_cv = self.cv
+        d_v = max(0.002, 0.01 * math.sqrt(effective_cv))
+        v_v = flow_rate / (0.25 * math.pi * d_v**2) if d_v > 0 else 0.0
+        re_v = (density * abs(v_v) * d_v) / max(1e-7, viscosity)
+        fr = FluidProperties.get_valve_fr(re_v)
+        cv_adj = max(0.0001, effective_cv * fr)
+
+        # Blended Cv: transitions smoothly from open cv_adj to closed leak cv (1e-4)
+        cv_blended = s * cv_adj + (1.0 - s) * 1e-4
+
+        dp_friction = (K_CV_SI * density * flow_rate * abs(flow_rate)) / (cv_blended ** 2)
+        return cracking_term + dp_friction
 
     def calculate(self):
         """
@@ -63,6 +68,12 @@ class CheckValve(HydraulicNode):
             cp = FluidProperties.get_specific_heat(fluid_type, outlet.temperature)
             dt = abs(dp) / (outlet.density * cp)
             inlet.temperature = outlet.temperature + dt
+
+        # Dynamically update local properties based on temperature feedback
+        outlet.density = FluidProperties.get_density(fluid_type, outlet.temperature)
+        outlet.viscosity = FluidProperties.get_viscosity(fluid_type, outlet.temperature)
+        inlet.density = FluidProperties.get_density(fluid_type, inlet.temperature)
+        inlet.viscosity = FluidProperties.get_viscosity(fluid_type, inlet.temperature)
 
         self.calculate_temperature()
         return dp

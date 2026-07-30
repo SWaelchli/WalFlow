@@ -118,7 +118,7 @@ export const getActiveCaseScalingInfo = (activeCase) => {
 /**
  * Computes effective node data by layering active case node overrides and telemetry over baseline node data.
  */
-export const getEffectiveNodeData = (node, cases = [], activeCaseId = 'case_base', telemetryMode = 'mitigated') => {
+export const getEffectiveNodeData = (node, cases = [], activeCaseId = 'case_base', telemetryMode = 'mitigated', scalingInfo = null) => {
   if (!node) return {};
   const activeCase = getActiveCase(cases, activeCaseId);
   let effective = { ...(node.data || {}) };
@@ -135,7 +135,7 @@ export const getEffectiveNodeData = (node, cases = [], activeCaseId = 'case_base
     caseTelemetry = activeCase?.telemetry_unmitigated?.nodes?.[node.id] || node.data?.telemetry;
   } else if (telemetryMode === 'peak') {
     const unmitNode = activeCase?.telemetry_unmitigated?.nodes?.[node.id] || node.data?.telemetry;
-    const { S, pMinBar } = getActiveCaseScalingInfo(activeCase);
+    const { S, pMinBar } = scalingInfo || getActiveCaseScalingInfo(activeCase);
     caseTelemetry = scaleTelemetryItem(unmitNode, S, pMinBar);
   } else {
     caseTelemetry = activeCase?.telemetry?.nodes?.[node.id] || node.data?.telemetry;
@@ -151,7 +151,7 @@ export const getEffectiveNodeData = (node, cases = [], activeCaseId = 'case_base
 /**
  * Computes effective edge data by layering active case edge telemetry over baseline edge data.
  */
-export const getEffectiveEdgeData = (edge, cases = [], activeCaseId = 'case_base', telemetryMode = 'mitigated') => {
+export const getEffectiveEdgeData = (edge, cases = [], activeCaseId = 'case_base', telemetryMode = 'mitigated', scalingInfo = null) => {
   if (!edge) return {};
   const activeCase = getActiveCase(cases, activeCaseId);
   let effective = { ...(edge.data || {}) };
@@ -161,7 +161,7 @@ export const getEffectiveEdgeData = (edge, cases = [], activeCaseId = 'case_base
     caseTelemetry = activeCase?.telemetry_unmitigated?.edges?.[edge.id] || edge.data?.telemetry;
   } else if (telemetryMode === 'peak') {
     const unmitEdge = activeCase?.telemetry_unmitigated?.edges?.[edge.id] || edge.data?.telemetry;
-    const { S, pMinBar } = getActiveCaseScalingInfo(activeCase);
+    const { S, pMinBar } = scalingInfo || getActiveCaseScalingInfo(activeCase);
     caseTelemetry = scaleTelemetryItem(unmitEdge, S, pMinBar);
   } else {
     caseTelemetry = activeCase?.telemetry?.edges?.[edge.id] || edge.data?.telemetry;

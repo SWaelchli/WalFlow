@@ -74,7 +74,7 @@ class HydraulicNode:
             # If not mixing, only apply if the temperature is 'default' (meaning child class didn't set it)
             if is_mixing:
                 port.temperature = mix_temp
-            elif port.temperature <= 0.1 or abs(port.temperature - inward_ports[0].temperature) < 1e-6:
+            elif port.temperature <= 0.1 or abs(port.temperature - 293.15) < 1e-6 or abs(port.temperature - inward_ports[0].temperature) < 1e-6:
                 port.temperature = mix_temp
 
     def calculate(self):

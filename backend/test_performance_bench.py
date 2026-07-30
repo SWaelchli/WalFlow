@@ -46,7 +46,7 @@ def generate_stress_network(size=10):
     return {"nodes": nodes, "edges": edges}
 
 def run_benchmark():
-    print("🚀 Starting WalFlow Performance Benchmark (HYBR Method)...")
+    print("[Benchmark] Starting WalFlow Performance Benchmark (HYBR Method)...")
     
     # 1. Setup
     complexity = 15 # Number of loops (yields 33 nodes, 47 edges)
@@ -67,7 +67,7 @@ def run_benchmark():
         solver.solve(method='hybr')
         solve_success = True
     except Exception as e:
-        print(f"❌ Solver Failed during benchmark: {e}")
+        print(f"[Error] Solver Failed during benchmark: {e}")
         solve_success = False
     
     solve_time = time.perf_counter() - solver_start
@@ -76,7 +76,7 @@ def run_benchmark():
     # 4. Logging
     log_result(len(mock_data['nodes']), len(mock_data['edges']), parse_time, solve_time, total_time, solve_success)
     
-    print(f"✅ Benchmark Complete!")
+    print(f"[Benchmark] Complete!")
     print(f"   - Nodes: {len(mock_data['nodes'])}")
     print(f"   - Edges: {len(mock_data['edges'])}")
     print(f"   - Parse Time: {parse_time*1000:.2f} ms")

@@ -5,3 +5,4 @@ __pycache__/
 *.sqlite3
 walflow.db
 test_walflow.db
+performance_log.md
