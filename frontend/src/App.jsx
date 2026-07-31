@@ -107,6 +107,22 @@ const edgeTypes = {
 };
 
 const getId = () => `node_${crypto.randomUUID().split('-')[0]}`;
+const getEdgeId = () => `edge_${crypto.randomUUID().split('-')[0]}`;
+
+const getNextLabelNumber = (edges) => {
+  let maxNum = 99; // Default starting from 100
+  edges.forEach(edge => {
+    const label = edge.data?.label || edge.label || '';
+    const match = label.match(/(?:Pipe|Signal)\s+(\d+)/);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      if (num > maxNum) {
+        maxNum = num;
+      }
+    }
+  });
+  return maxNum + 1;
+};
 
 function WalFlowContent() {
   const { currentUser, isAuthenticated, adminStatus } = useAuth();
@@ -118,7 +134,6 @@ function WalFlowContent() {
 
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges] = useEdgesState([]);
-  const [edgeIdCount, setEdgeIdCount] = useState(100);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
   const [helpModalInitialTab, setHelpModalInitialTab] = useState('shortcuts');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -348,25 +363,27 @@ function WalFlowContent() {
       };
     });
 
+    const nextNum = getNextLabelNumber(edges);
     const newEdges = (copiedEdges || [])
       .filter((e) => idMap[e.source] && idMap[e.target])
       .map((e, idx) => {
         const isSignal = e.data?.type === 'SIGNAL';
-        const newEdgeId = isSignal ? `Signal ${edgeIdCount + idx}` : `Pipe ${edgeIdCount + idx}`;
+        const labelNum = nextNum + idx;
+        const label = isSignal ? `Signal ${labelNum}` : `Pipe ${labelNum}`;
+        const newEdgeId = getEdgeId();
         return {
           ...e,
           id: newEdgeId,
+          label: label,
           source: idMap[e.source],
           target: idMap[e.target],
           selected: true,
           data: {
             ...e.data,
-            label: newEdgeId,
+            label: label,
           },
         };
       });
-
-    setEdgeIdCount((prev) => prev + newEdges.length);
 
     setNodes((nds) => {
       const updated = nds.map((n) => ({ ...n, selected: false })).concat(newNodes);
@@ -383,7 +400,7 @@ function WalFlowContent() {
       setSelectedNode(newNodes[0]);
       setSelectedEdge(null);
     }
-  }, [edgeIdCount, handleRotation, handleValveChange, setNodes, setEdges, edges, pushHistorySnapshot]);
+  }, [handleRotation, handleValveChange, setNodes, setEdges, edges, pushHistorySnapshot]);
 
   const duplicateSelected = useCallback(() => {
     copySelected();
@@ -593,28 +610,29 @@ function WalFlowContent() {
       }
 
       const isSignal = isSourceSignal && isTargetSignal;
-      const newId = isSignal ? `Signal ${edgeIdCount}` : `Pipe ${edgeIdCount}`;
+      const nextNum = getNextLabelNumber(eds);
+      const label = isSignal ? `Signal ${nextNum}` : `Pipe ${nextNum}`;
+      const newId = getEdgeId();
       
       const newEdge = { 
         ...params, 
         id: newId,
-        label: newId,
+        label: label,
         animated: true, 
         type: isSignal ? 'step' : 'default',
         style: isSignal 
           ? { stroke: '#fde047', strokeWidth: 3, strokeDasharray: '5,5' }
           : {},
         data: { 
-          label: newId, 
+          label: label, 
           type: isSignal ? 'SIGNAL' : 'PIPE',
           length: 25.0, 
           diameter: 0.05248 
         } 
       };
-      setEdgeIdCount(prev => prev + 1);
       return addEdge(newEdge, eds);
     });
-  }, [setEdges, edgeIdCount]);
+  }, [setEdges]);
 
   const onNodeClick = useCallback((event, node) => {
     setSelectedNode(node);
