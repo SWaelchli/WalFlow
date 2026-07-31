@@ -195,8 +195,10 @@ function WalFlowContent() {
   }, [activeCaseId]);
 
   const handleSetCaseOverride = useCallback((caseId, nodeId, propKey, value) => {
-    setCases(prev => updateCaseOverride(prev, caseId, nodeId, propKey, value));
-  }, []);
+    const nodeObj = nodes.find(n => n.id === nodeId);
+    const baseValue = nodeObj?.data?.[propKey];
+    setCases(prev => updateCaseOverride(prev, caseId, nodeId, propKey, value, baseValue));
+  }, [nodes]);
 
   const handleOpenHelpModal = (tab = 'shortcuts') => {
     setHelpModalInitialTab(tab);
@@ -680,10 +682,12 @@ function WalFlowContent() {
       });
 
       if (Object.keys(caseVarUpdates).length > 0) {
+        const targetNode = nodes.find(n => n.id === nodeId);
         setCases(prev => {
           let updatedCases = prev;
           Object.entries(caseVarUpdates).forEach(([key, val]) => {
-            updatedCases = updateCaseOverride(updatedCases, activeCaseId, nodeId, key, val);
+            const baseValue = targetNode?.data?.[key];
+            updatedCases = updateCaseOverride(updatedCases, activeCaseId, nodeId, key, val, baseValue);
           });
           return updatedCases;
         });
@@ -704,7 +708,7 @@ function WalFlowContent() {
         );
       }
     }
-  }, [activeCaseId, cases, selectedNode, setNodes]);
+  }, [activeCaseId, cases, selectedNode, setNodes, nodes]);
 
   const updateEdgeData = useCallback((edgeId, newData) => {
     setEdges((eds) =>

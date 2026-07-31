@@ -169,11 +169,19 @@ export default function PropertyEditor({
 
     const numericValue = parseFloat(finalValue);
 
-    // Critical validation (e.g., diameter, Cv cannot be 0)
-    if (isCritical && (isNaN(numericValue) || numericValue <= 0)) {
-      alert(`${field} must be a positive number greater than zero.`);
-      setLocalDrafts({});
-      return;
+    // Critical validation
+    if (isCritical) {
+      if (field === 'opening') {
+        if (isNaN(numericValue) || numericValue < 0 || numericValue > 100) {
+          alert('Opening must be a number between 0 and 100.');
+          setLocalDrafts({});
+          return;
+        }
+      } else if (isNaN(numericValue) || numericValue <= 0) {
+        alert(`${field} must be a positive number greater than zero.`);
+        setLocalDrafts({});
+        return;
+      }
     }
 
     const processedValue = isNaN(numericValue) ? finalValue : numericValue;
@@ -545,8 +553,8 @@ export default function PropertyEditor({
                 <input 
                   type="number" 
                   style={{ width: '100%', fontSize: '12px' }} 
-                  min="0.1" max="100" step="0.1" 
-                  value={localDrafts.opening !== undefined ? localDrafts.opening : (effectiveData.opening || 50.0)} 
+                  min="0" max="100" step="0.1" 
+                  value={localDrafts.opening !== undefined ? localDrafts.opening : (effectiveData.opening ?? 50.0)} 
                   onChange={(e) => {
                     handleDraftChange('opening', e.target.value);
                     const val = parseFloat(e.target.value);

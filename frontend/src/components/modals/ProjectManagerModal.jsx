@@ -95,6 +95,21 @@ const ProjectManagerModal = ({
     try {
       const response = await axios.get(`/api/diagrams/${diagramId}`);
       const parsedData = JSON.parse(response.data.diagram_data);
+      
+      // Auto-upgrade diagram version in cloud DB if it differs
+      if (parsedData.app_version !== APP_VERSION) {
+        parsedData.app_version = APP_VERSION;
+        try {
+          await axios.put(`/api/diagrams/${diagramId}`, {
+            title: response.data.title,
+            description: response.data.description || '',
+            diagram_data: JSON.stringify(parsedData)
+          });
+        } catch (err) {
+          console.warn('Failed to auto-upgrade diagram version in DB:', err);
+        }
+      }
+
       if (setActiveProject) {
         setActiveProject({
           id: response.data.id,

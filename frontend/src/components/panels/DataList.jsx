@@ -232,10 +232,12 @@ export default function DataList({
       }
       nextNodes = (rawNodes || nodes || []).map(n => n.id === nodeId ? { ...n, data: { ...n.data, forced_state: value } } : n);
     } else {
+      const nodeObj = (rawNodes || nodes || []).find(n => n.id === nodeId);
+      const baseValue = nodeObj?.data?.forced_state;
       if (onSetCaseOverride) {
         onSetCaseOverride(caseId, nodeId, 'forced_state', value);
       }
-      nextCases = updateCaseOverride(cases, caseId, nodeId, 'forced_state', value);
+      nextCases = updateCaseOverride(cases, caseId, nodeId, 'forced_state', value, baseValue);
     }
 
     fetchBatchSimulations(nextCases, nextNodes);

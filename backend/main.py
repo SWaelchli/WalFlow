@@ -136,7 +136,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     for node_id, node in network_instance.nodes.items():
                         if isinstance(node, LinearControlValve):
                             if valve_id is None or node_id == valve_id:
-                                node.opening_pct = max(0.1, min(100.0, new_pct))
+                                node.opening_pct = max(0.0, min(100.0, new_pct))
 
             elif action == "run_simulation":
                 # OPTIONAL: Allow updating the graph immediately before simulation 

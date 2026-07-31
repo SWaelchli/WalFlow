@@ -220,9 +220,55 @@ export const hasActiveOverrides = (nodeId, cases = [], activeCaseId = 'case_base
 };
 
 /**
+ * Helper to determine if two values are equivalent, taking default values into account.
+ */
+export const areValuesEquivalent = (val1, val2, propKey) => {
+  let resolvedVal1 = val1;
+  let resolvedVal2 = val2;
+
+  const getFallback = (k) => {
+    if (k === 'active') return true;
+    if (k === 'forced_state') return 'auto';
+    if (k === 'clogging') return 0.0;
+    if (k === 'opening') return 50.0;
+    if (k === 'level') return 0.0;
+    if (k === 'temperature') return 313.15;
+    if (k === 'set_pressure') return 500000.0;
+    if (k === 'set_temperature_c') return 40.0;
+    return undefined;
+  };
+
+  if (resolvedVal1 === undefined || resolvedVal1 === null) {
+    resolvedVal1 = getFallback(propKey);
+  }
+  if (resolvedVal2 === undefined || resolvedVal2 === null) {
+    resolvedVal2 = getFallback(propKey);
+  }
+
+  if (resolvedVal1 === resolvedVal2) return true;
+
+  if (typeof resolvedVal1 === 'boolean' || typeof resolvedVal2 === 'boolean') {
+    const b1 = resolvedVal1 === true || String(resolvedVal1) === 'true';
+    const b2 = resolvedVal2 === true || String(resolvedVal2) === 'true';
+    return b1 === b2;
+  }
+
+  const n1 = parseFloat(resolvedVal1);
+  const n2 = parseFloat(resolvedVal2);
+  if (!isNaN(n1) && !isNaN(n2)) {
+    return Math.abs(n1 - n2) < 1e-9;
+  }
+
+  return String(resolvedVal1).trim() === String(resolvedVal2).trim();
+};
+
+/**
  * Returns a updated copy of the cases array with a specific property override set.
  */
-export const updateCaseOverride = (cases = [], activeCaseId, nodeId, propKey, value) => {
+export const updateCaseOverride = (cases = [], activeCaseId, nodeId, propKey, value, baseValue = undefined) => {
+  if (baseValue !== undefined && areValuesEquivalent(value, baseValue, propKey)) {
+    return removeCaseOverride(cases, activeCaseId, nodeId, propKey);
+  }
   return cases.map(c => {
     if (c.id !== activeCaseId) return c;
     const currentNodes = c.overrides?.nodes || {};
