@@ -105,8 +105,5 @@ This document outlines planned features, overlays, and enhancements for the WalF
   * **Issue:** Manually editing a case variable in a secondary operating case back to match the exact value of the Base Case does not reset or remove the case override. The `⚡ Case Variable` badge remains highlighted in the Property Editor and canvas inspectors.
   * **Planned Fix:** Update `updateCaseOverride` (or property change handlers) to perform a base-equivalence check: if a new case variable value equals the base case value (within numeric tolerance for floating-point numbers or exact match for strings/enums), automatically invoke `removeCaseOverride` to clear the override.
 
-- [x] **🐛 Duplicate Edge/Pipe ID Sanitization Guard (`Example PFD Template Fix`)**
-  * **Fix Summary:** Audited and sanitized all 10 `.wlf` example files. Implemented an automated **ID Deduplication Guard** inside `loadData()` in `App.jsx` that automatically resolves duplicate node/edge IDs upon diagram loading/importing.
-
 
 
