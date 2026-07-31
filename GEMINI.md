@@ -73,9 +73,9 @@ npm run lint
 
 ## Versioning Policy
 
-1. **App Version**: The current app version is `0.1.2`. The app version must ONLY be raised after explicit user confirmation. The app version takes the lead on major version increments.
+1. **App Version**: The current app version is `0.1.3`. The app version must ONLY be raised after explicit user confirmation. The app version takes the lead on major version increments.
 2. **File Format Version**: The current file format version is `0.1`. The file format version should ONLY be raised when there would otherwise be a data format incompatibility.
-3. **Version Alignment**: The major (first) digit of the App Version and File Format Version must always match (e.g., App `0.1.2` maps to File Format `0.1`). When the App Version reaches `1.0.0`, the File Format Version must advance to `1.0`.
+3. **Version Alignment**: The major (first) digit of the App Version and File Format Version must always match (e.g., App `0.1.3` maps to File Format `0.1`). When the App Version reaches `1.0.0`, the File Format Version must advance to `1.0`.
 4. **Git Release Tags**: Always use the `vX.X.X` format (e.g., `v0.1.1`) when creating and pushing new release tags to trigger automated Docker image builds via GitHub Actions.
 5. **Changelog Maintenance**: All implemented features and updates must be tracked in `CHANGELOG.md`. Keep changelog entries brief, concise, and high-level without going overboard with details. The changelog must be emptied after the version number is increased.
 
