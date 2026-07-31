@@ -85,7 +85,7 @@ def extract_telemetry(network):
 
 @app.get("/")
 async def read_root():
-    return {"status": "online", "message": "WalFlow Engine is ready.", "version": "0.1.1"}
+    return {"status": "online", "message": "WalFlow Engine is ready.", "version": "0.1.2"}
 
 @app.websocket("/ws/simulate")
 async def websocket_endpoint(websocket: WebSocket):
