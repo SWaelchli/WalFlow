@@ -1074,6 +1074,26 @@ function WalFlowContent() {
     };
   }, [selectedNode, nodes, cases, activeCaseId, telemetryMode, scalingInfo]);
 
+  const heatmapActive = heatmapSettings.mode !== 'default';
+  const autoScale = heatmapSettings.autoScale;
+
+  // Calculate dynamic top positions to prevent panel overlap on the right side
+  let caseManagerTop = '16px';
+  let propertyEditorTop = '16px';
+
+  if (heatmapActive) {
+    if (autoScale) {
+      caseManagerTop = '164px';
+      propertyEditorTop = showCaseManager ? '420px' : '164px';
+    } else {
+      caseManagerTop = '188px';
+      propertyEditorTop = showCaseManager ? '444px' : '188px';
+    }
+  } else {
+    caseManagerTop = '16px';
+    propertyEditorTop = showCaseManager ? '272px' : '16px';
+  }
+
   return (
     <div style={{ width: '100%', height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#F0F4F4', overflow: 'hidden' }}>
       <Navbar 
@@ -1183,10 +1203,15 @@ function WalFlowContent() {
             onUpdateEdge={updateEdgeData}
             onDelete={onDeleteNode} 
             onDeleteEdge={onDeleteEdge}
-            heatmapActive={heatmapSettings.mode !== 'default'}
+            heatmapActive={heatmapActive}
             cases={cases}
             activeCaseId={activeCaseId}
             onResetCaseOverride={handleResetCaseOverride}
+            style={{ 
+              top: propertyEditorTop,
+              maxHeight: `calc(100vh - ${parseInt(propertyEditorTop) + 120}px)`,
+              overflowY: 'auto'
+            }}
           />
 
           <ReactFlow 
@@ -1352,7 +1377,7 @@ function WalFlowContent() {
               telemetryMode={telemetryMode}
               onToggleTelemetryMode={setTelemetryMode}
               onClose={() => setShowCaseManager(false)}
-              style={{ top: heatmapSettings.mode !== 'default' ? '190px' : '16px' }}
+              style={{ top: caseManagerTop }}
             />
           )}
 

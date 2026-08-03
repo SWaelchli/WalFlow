@@ -1,14 +1,17 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
+import { useAuth } from './useAuth';
 
 /**
  * Custom hook managing WebSocket connection to FastAPI backend
  * and simulation message dispatches with Dual-Pass Telemetry support.
  */
 export function useWebSocketSimulation({ nodes, edges, setNodes, setEdges, globalSettings, cases = [], activeCaseId = 'case_base', onUpdateCaseTelemetry }) {
+  const { isAuthenticated } = useAuth();
   const ws = useRef(null);
   const [isSimulating, setIsSimulating] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [lastStats, setLastStats] = useState(null);
+  const [reconnectTrigger, setReconnectTrigger] = useState(0);
 
   // Dual-Pass Telemetry States
   const [telemetryMode, setTelemetryMode] = useState('mitigated'); // 'mitigated' | 'unmitigated_global'
@@ -61,8 +64,19 @@ export function useWebSocketSimulation({ nodes, edges, setNodes, setEdges, globa
   }, [telemetryMode, telemetryMitigated, telemetryUnmitigated, applyTelemetryToGraph]);
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      const timer = setTimeout(() => {
+        setIsConnected(false);
+        setIsSimulating(false);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/ws/simulate`;
+
+    let reconnectTimeoutId = null;
+    let isCleanClose = false;
 
     const socket = new WebSocket(wsUrl);
     ws.current = socket;
@@ -71,9 +85,21 @@ export function useWebSocketSimulation({ nodes, edges, setNodes, setEdges, globa
       setIsConnected(true);
     };
 
-    socket.onclose = () => {
+    socket.onclose = (event) => {
       setIsConnected(false);
       setIsSimulating(false);
+
+      if (event.code === 1008) {
+        console.warn('WebSocket closed due to policy violation (unauthenticated).');
+        return;
+      }
+
+      if (!isCleanClose) {
+        console.log('WebSocket disconnected unexpectedly. Retrying in 3 seconds...');
+        reconnectTimeoutId = setTimeout(() => {
+          setReconnectTrigger(prev => prev + 1);
+        }, 3000);
+      }
     };
 
     socket.onerror = (error) => {
@@ -117,11 +143,15 @@ export function useWebSocketSimulation({ nodes, edges, setNodes, setEdges, globa
     };
 
     return () => {
+      isCleanClose = true;
+      if (reconnectTimeoutId) {
+        clearTimeout(reconnectTimeoutId);
+      }
       if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
         socket.close();
       }
     };
-  }, [activeCaseId, applyTelemetryToGraph, onUpdateCaseTelemetry, telemetryMode]);
+  }, [activeCaseId, applyTelemetryToGraph, onUpdateCaseTelemetry, telemetryMode, isAuthenticated, reconnectTrigger]);
 
   const runSimulation = useCallback(() => {
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {
@@ -138,6 +168,8 @@ export function useWebSocketSimulation({ nodes, edges, setNodes, setEdges, globa
           },
         })
       );
+    } else {
+      alert("Simulation engine is not connected. Please ensure the backend is running and you are logged in.");
     }
   }, [nodes, edges, globalSettings, cases, activeCaseId]);
 

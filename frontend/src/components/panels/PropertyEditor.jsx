@@ -119,7 +119,8 @@ export default function PropertyEditor({
   heatmapActive = false,
   cases = [],
   activeCaseId = 'case_base',
-  onResetCaseOverride
+  onResetCaseOverride,
+  style = {}
 }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [localDrafts, setLocalDrafts] = useState({});
@@ -226,7 +227,10 @@ export default function PropertyEditor({
         width: '280px', background: '#ffffff', padding: isCollapsed ? '12px 18px' : '20px',
         borderRadius: '12px', border: '1px solid #D8E2E1',
         boxShadow: '0 10px 25px -3px rgba(57, 82, 83, 0.15), 0 4px 6px -2px rgba(57, 82, 83, 0.05)',
-        transition: 'top 0.25s cubic-bezier(0.4, 0, 0.2, 1), padding 0.2s ease, box-shadow 0.2s ease'
+        transition: 'top 0.25s cubic-bezier(0.4, 0, 0.2, 1), padding 0.2s ease, box-shadow 0.2s ease',
+        ...style,
+        maxHeight: isCollapsed ? 'auto' : (style.maxHeight || 'calc(100vh - 120px)'),
+        overflowY: isCollapsed ? 'visible' : (style.overflowY || 'auto')
       }}
     >
       <div 

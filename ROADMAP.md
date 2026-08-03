@@ -100,17 +100,3 @@ This document outlines planned features, overlays, and enhancements for the WalF
 ---
 
 ## 🐛 Bug Fixes & Refactoring Backlog
-
-- [x] **🐛 Case Variable Reset & Base Value Equivalence Check (`Case Resolver`)**
-  * **Issue:** Manually editing a case variable in a secondary operating case back to match the exact value of the Base Case does not reset or remove the case override. The `⚡ Case Variable` badge remains highlighted in the Property Editor and canvas inspectors.
-  * **Planned Fix:** Update `updateCaseOverride` (or property change handlers) to perform a base-equivalence check: if a new case variable value equals the base case value (within numeric tolerance for floating-point numbers or exact match for strings/enums), automatically invoke `removeCaseOverride` to clear the override.
-
-- [x] **🐛 Duplicate Edge/Pipe ID Sanitization Guard (`Example PFD Template Fix`)**
-  * **Fix Summary:** Audited and sanitized all 10 `.wlf` example files. Implemented an automated **ID Deduplication Guard** inside `loadData()` in `App.jsx` that automatically resolves duplicate node/edge IDs upon diagram loading/importing.
-
-- [ ] **🐛 PFDs update version number
- * **Issue:** When a PFD with a certain version, let's say 0.1.1 is opened with the new updated software 0.1.2. the wlf is not updated to the new version. The wlf remains at version 0.1.1
-
-- [ ] **🐛 Linear Control Valve cannot be closed fully
-* **Issue:** When closing the opening of a Linear Control valve to 0% via slider, the property editor defaults to 50%. 0% opening is entered into the property editor there is an error message "opening must be a positive number greater than zero."
-Add functionality to allow fully closed valve.

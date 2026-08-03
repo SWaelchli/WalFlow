@@ -52,54 +52,51 @@ export default function CaseManager({
       backdropFilter: 'blur(10px)',
       border: '1px solid #D8E2E1',
       borderRadius: '14px',
-      padding: '16px 18px',
+      padding: '14px 18px',
       boxShadow: '0 10px 25px -5px rgba(57, 82, 83, 0.15), 0 4px 6px -2px rgba(57, 82, 83, 0.05)',
       zIndex: 1000,
       width: '330px',
       maxWidth: 'calc(100vw - 32px)',
       display: 'flex',
       flexDirection: 'column',
-      gap: '14px',
+      gap: '12px',
+      transition: 'top 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
       ...style
     }}>
+      {/* Top-Right Close Button */}
+      {onClose && (
+        <button 
+          onClick={onClose} 
+          title="Close Case Manager"
+          style={{
+            position: 'absolute',
+            top: '10px',
+            right: '12px',
+            background: 'none',
+            border: 'none',
+            color: '#587071',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: 700,
+            padding: '2px 6px',
+            borderRadius: '4px',
+            lineHeight: 1,
+            zIndex: 10
+          }}
+        >
+          ✕
+        </button>
+      )}
+
       {/* Panel Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #EBF0EF', paddingBottom: '8px' }}>
-        <span style={{ fontSize: '13px', fontWeight: 800, color: '#1C2B2C', letterSpacing: '0.02em' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ fontSize: '13px', fontWeight: 700, color: '#395253' }}>
           Scenario & Case Manager
         </span>
-        {onClose && (
-          <button 
-            onClick={onClose} 
-            title="Close Case Manager"
-            style={{
-              background: 'none',
-              border: 'none',
-              fontSize: '16px',
-              cursor: 'pointer',
-              color: '#587071',
-              padding: '2px 6px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: '4px',
-              transition: 'all 0.15s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#F4F7F6';
-              e.currentTarget.style.color = '#ef4444';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.color = '#587071';
-            }}
-          >
-            ×
-          </button>
-        )}
       </div>
 
       {/* Operating Case Selection */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
         <label style={{ fontSize: '10px', fontWeight: 700, color: '#587071', letterSpacing: '0.04em' }}>
           Operating Case
         </label>
@@ -107,13 +104,13 @@ export default function CaseManager({
           value={activeCaseId}
           onChange={(e) => onSelectCase && onSelectCase(e.target.value)}
           style={{
-            padding: '8px 12px',
+            padding: '6px 10px',
             borderRadius: '8px',
             border: '1px solid #D8E2E1',
             backgroundColor: '#F4F7F6',
             color: '#1C2B2C',
             fontFamily: 'inherit',
-            fontSize: '12px',
+            fontSize: '11px',
             fontWeight: '700',
             cursor: 'pointer',
             outline: 'none',
@@ -130,7 +127,7 @@ export default function CaseManager({
       </div>
 
       {/* Relief contingency selection */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
         <label style={{ fontSize: '10px', fontWeight: 700, color: '#587071', letterSpacing: '0.04em' }}>
           Relief Case View
         </label>
@@ -141,12 +138,13 @@ export default function CaseManager({
               <button
                 key={mode.id}
                 onClick={() => onToggleTelemetryMode && onToggleTelemetryMode(mode.id)}
+                title={mode.desc}
                 style={{
                   display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '10px',
-                  padding: '10px 12px',
-                  borderRadius: '10px',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '6px 10px',
+                  borderRadius: '8px',
                   border: '1px solid',
                   borderColor: isActive ? mode.borderActive : '#D8E2E1',
                   backgroundColor: isActive ? mode.bgActive : '#ffffff',
@@ -175,26 +173,16 @@ export default function CaseManager({
                   height: '8px',
                   borderRadius: '50%',
                   backgroundColor: mode.color,
-                  marginTop: '4px',
                   flexShrink: 0
                 }} />
                 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                  <span style={{ 
-                    fontSize: '11px', 
-                    fontWeight: '700', 
-                    color: isActive ? mode.textActive : '#1C2B2C' 
-                  }}>
-                    {mode.label}
-                  </span>
-                  <span style={{ 
-                    fontSize: '9.5px', 
-                    color: isActive ? mode.textActive : '#587071',
-                    opacity: isActive ? 0.9 : 1
-                  }}>
-                    {mode.desc}
-                  </span>
-                </div>
+                <span style={{ 
+                  fontSize: '11px', 
+                  fontWeight: '700', 
+                  color: isActive ? mode.textActive : '#1C2B2C' 
+                }}>
+                  {mode.label}
+                </span>
               </button>
             );
           })}

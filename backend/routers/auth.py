@@ -115,7 +115,12 @@ def login_user(payload: UserLoginSchema, response: Response, db: Session = Depen
     token = create_access_token(data={"sub": user.id, "username": user.username, "role": user.role})
 
     import os
-    is_secure_cookie = os.getenv("WALFLOW_SECURE_COOKIES", "true").lower() in ("true", "1")
+    secure_cookie_env = os.getenv("WALFLOW_SECURE_COOKIES")
+    if secure_cookie_env is not None:
+        is_secure_cookie = secure_cookie_env.lower() in ("true", "1")
+    else:
+        # Default to false in local development (if no secret key is set), otherwise true for safety
+        is_secure_cookie = os.getenv("WALFLOW_SECRET_KEY") is not None
 
     # Set HttpOnly cookie for browser security
     response.set_cookie(
