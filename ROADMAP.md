@@ -4,6 +4,38 @@ This document outlines planned features, overlays, and enhancements for the WalF
 
 ---
 
+## 🚀 Production Readiness & QA Audit Actions
+
+> [!NOTE]
+> This section tracks actionable items identified in the [Master QA Synthesis & Audit Report](file:///c:/Users/c563871/Coding/WalFlow/qa_report/QA_SUMMARY_REPORT.md) (App version `0.1.3`).
+> Future AI agents and developers should refer directly to the detailed reports in `qa_report/` (including `engineering`, `ui`, `performance`, and `security` sub-folders) to implement these changes correctly and efficiently.
+> Once all of these changes are implemented, the `qa_report/` directory can be deleted.
+
+- [ ] **⚠️ [URGENT] Block application start if `WALFLOW_SECRET_KEY` is missing in production** (SEC-01)
+  * **Scope**: Modify `backend/main.py` or initialization scripts to detect if the environment is production and abort starting the application if the default development fallback secret key is in use.
+- [ ] **⚠️ [URGENT] Enforce `WALFLOW_REQUIRE_WS_AUTH=true` by default** (SEC-02)
+  * **Scope**: Change the default behavior of the backend WebSocket simulation authentication so that it requires authentication by default unless explicitly disabled, preventing unauthorized simulation triggers.
+- [ ] **⚠️ [URGENT] Refactor `useWebSocketSimulation.js` with `useRef` to eliminate socket churn** (R3 / Performance)
+  * **Scope**: Redesign the WebSocket hook connection lifecycle so that changing `telemetryMode` or `activeCaseId` updates refs rather than tearing down and recreating the WebSocket, eliminating socket connection churn.
+- [ ] **🇺🇸 Implement Imperial/US Customary unit conversions** (R2 / UI)
+  * **Scope**: Expand `frontend/src/utils/converters.js` to implement conversions for `psi`, `gpm`, `m³/h`, and `HP`, and update the UI controls (PropertyEditor, Sidebar, etc.) to display them correctly.
+- [ ] **🌐 Build global unit system selector (SI vs Imperial) in the top navbar** (R2 / UI)
+  * **Scope**: Add a global unit switch toggler to the navbar that propagates selected system units (Metric SI vs Imperial US) across the application panels and tooltips.
+- [ ] **⚡ Implement analytical sparse Jacobian calculation in the backend solver** (R3 / Performance)
+  * **Scope**: Derive and implement analytical derivatives for equipment equations to calculate the sparse Jacobian directly, instead of using finite differences.
+- [ ] **🏎️ Transition to `scipy.sparse` Newton-Krylov solver** (R3 / Performance)
+  * **Scope**: Integrate a sparse Newton-Krylov solver to scale calculations efficiently, reducing solver execution times for 100+ nodes to less than 200ms.
+- [ ] **🔐 Enforce 8-character password policy & reduce JWT lifespan to 60 minutes** (SEC-03 / SEC-04)
+  * **Scope**: Increase minimum password length validation to 8 characters and reduce JWT token expiration duration from 7 days to 60 minutes for higher account security.
+- [ ] **🚫 Implement in-memory/Redis JWT revocation blacklist on logout** (SEC-03)
+  * **Scope**: Keep track of logged-out token identifiers in an in-memory storage (e.g. Redis) to invalidate stateless JWT sessions immediately upon logout.
+- [ ] **🧹 Sanitize backend exception handlers to strip stack traces from client payloads** (SEC-06)
+  * **Scope**: Catch raw backend exceptions and format standard user-friendly messages for client payloads, stripping internal code stack traces and database paths to prevent data leakage.
+- [ ] **🛑 Add rate-limiting middleware (slowapi) to endpoints** (R4 / Security)
+  * **Scope**: Add rate limit restrictions to authentication (`/login`, `/register`) and simulation endpoints to prevent automated brute-force attacks and CPU-exhaustion DoS.
+
+---
+
 ## 🎨 Canvas & Overlays
 
 - [ ] **🛡️ Overpressure Safety Zone Overlay (`SafetyBoundsOverlay`)**
