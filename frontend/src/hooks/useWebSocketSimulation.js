@@ -55,6 +55,19 @@ export function useWebSocketSimulation({ nodes, edges, setNodes, setEdges, globa
     );
   }, [setNodes, setEdges]);
 
+  // Refs to eliminate socket churn
+  const activeCaseIdRef = useRef(activeCaseId);
+  const telemetryModeRef = useRef(telemetryMode);
+  const onUpdateCaseTelemetryRef = useRef(onUpdateCaseTelemetry);
+  const applyTelemetryToGraphRef = useRef(applyTelemetryToGraph);
+
+  useEffect(() => {
+    activeCaseIdRef.current = activeCaseId;
+    telemetryModeRef.current = telemetryMode;
+    onUpdateCaseTelemetryRef.current = onUpdateCaseTelemetry;
+    applyTelemetryToGraphRef.current = applyTelemetryToGraph;
+  }, [activeCaseId, telemetryMode, onUpdateCaseTelemetry, applyTelemetryToGraph]);
+
   // Re-apply active telemetry dataset when telemetryMode changes
   useEffect(() => {
     const activeDataset = telemetryMode === 'unmitigated_global' ? telemetryUnmitigated : telemetryMitigated;
@@ -115,12 +128,12 @@ export function useWebSocketSimulation({ nodes, edges, setNodes, setEdges, globa
           setTelemetryMitigated(mitData);
           setTelemetryUnmitigated(unmitData);
 
-          if (onUpdateCaseTelemetry && activeCaseId) {
-            onUpdateCaseTelemetry(activeCaseId, mitData, kpisData, unmitData);
+          if (onUpdateCaseTelemetryRef.current && activeCaseIdRef.current) {
+            onUpdateCaseTelemetryRef.current(activeCaseIdRef.current, mitData, kpisData, unmitData);
           }
 
-          const activeDataset = telemetryMode === 'unmitigated_global' ? unmitData : mitData;
-          applyTelemetryToGraph(activeDataset);
+          const activeDataset = telemetryModeRef.current === 'unmitigated_global' ? unmitData : mitData;
+          applyTelemetryToGraphRef.current(activeDataset);
 
         } else if (response.status === 'error') {
           setIsSimulating(false);
@@ -143,7 +156,7 @@ export function useWebSocketSimulation({ nodes, edges, setNodes, setEdges, globa
         socket.close();
       }
     };
-  }, [activeCaseId, applyTelemetryToGraph, onUpdateCaseTelemetry, telemetryMode, isAuthenticated, reconnectTrigger]);
+  }, [isAuthenticated, reconnectTrigger]);
 
   const runSimulation = useCallback(() => {
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {

@@ -15,7 +15,7 @@ This document outlines planned features, overlays, and enhancements for the WalF
   * **Scope**: Modify `backend/main.py` or initialization scripts to detect if the environment is production and abort starting the application if the default development fallback secret key is in use.
 - [x] **⚠️ [URGENT] Enforce `WALFLOW_REQUIRE_WS_AUTH=true` by default** (SEC-02)
   * **Scope**: Change the default behavior of the backend WebSocket simulation authentication so that it requires authentication by default unless explicitly disabled, preventing unauthorized simulation triggers.
-- [ ] **⚠️ [URGENT] Refactor `useWebSocketSimulation.js` with `useRef` to eliminate socket churn** (R3 / Performance)
+- [x] **⚠️ [URGENT] Refactor `useWebSocketSimulation.js` with `useRef` to eliminate socket churn** (R3 / Performance)
   * **Scope**: Redesign the WebSocket hook connection lifecycle so that changing `telemetryMode` or `activeCaseId` updates refs rather than tearing down and recreating the WebSocket, eliminating socket connection churn.
 - [ ] **🇺🇸 Implement Imperial/US Customary unit conversions** (R2 / UI)
   * **Scope**: Expand `frontend/src/utils/converters.js` to implement conversions for `psi`, `gpm`, `m³/h`, and `HP`, and update the UI controls (PropertyEditor, Sidebar, etc.) to display them correctly.
@@ -25,6 +25,8 @@ This document outlines planned features, overlays, and enhancements for the WalF
   * **Scope**: Derive and implement analytical derivatives for equipment equations to calculate the sparse Jacobian directly, instead of using finite differences.
 - [ ] **🏎️ Transition to `scipy.sparse` Newton-Krylov solver** (R3 / Performance)
   * **Scope**: Integrate a sparse Newton-Krylov solver to scale calculations efficiently, reducing solver execution times for 100+ nodes to less than 200ms.
+- [ ] **🌡️ Implement Warm-Start Initial State Vector Caching** (R3 / Performance)
+  * **Scope**: Cache the converged solution vector $x_{conv}$ from the previous simulation run. When a user adjusts a valve slider or operating case, reuse $x_{conv}$ as the initial guess $x_0$ to reduce iteration count (targeting >80% reduction). Additionally, ensure the caching scheme is compatible with and optimized for batch solving (the operating cases matrix) by storing case-specific converged state vectors to seed consecutive batch sweeps.
 - [ ] **🔐 Enforce 8-character password policy & reduce JWT lifespan to 60 minutes** (SEC-03 / SEC-04)
   * **Scope**: Increase minimum password length validation to 8 characters and reduce JWT token expiration duration from 7 days to 60 minutes for higher account security.
 - [ ] **🚫 Implement in-memory/Redis JWT revocation blacklist on logout** (SEC-03)
