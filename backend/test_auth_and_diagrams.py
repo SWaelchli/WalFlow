@@ -163,5 +163,52 @@ class TestAuthAndDiagrams(unittest.TestCase):
         delete_resp = self.client.delete(f"/api/diagrams/{diagram_id}", headers=headers)
         self.assertEqual(delete_resp.status_code, 200)
 
+    def test_05_secret_key_production_enforcement(self):
+        import importlib
+        import os
+        import auth
+
+        # Back up existing environment variables
+        old_env = os.environ.get("ENVIRONMENT")
+        old_key = os.environ.get("WALFLOW_SECRET_KEY")
+
+        try:
+            # Case 1: ENVIRONMENT=production, WALFLOW_SECRET_KEY is empty/unset
+            os.environ["ENVIRONMENT"] = "production"
+            if "WALFLOW_SECRET_KEY" in os.environ:
+                del os.environ["WALFLOW_SECRET_KEY"]
+
+            with self.assertRaises(ValueError) as context:
+                importlib.reload(auth)
+            self.assertIn("CRITICAL SECURITY ERROR", str(context.exception))
+
+            # Case 2: ENVIRONMENT=production, WALFLOW_SECRET_KEY is set
+            os.environ["WALFLOW_SECRET_KEY"] = "some_valid_production_secret"
+            reloaded_auth = importlib.reload(auth)
+            self.assertEqual(reloaded_auth.SECRET_KEY, "some_valid_production_secret")
+
+            # Case 3: ENVIRONMENT=development, WALFLOW_SECRET_KEY is empty/unset
+            os.environ["ENVIRONMENT"] = "development"
+            del os.environ["WALFLOW_SECRET_KEY"]
+            reloaded_auth = importlib.reload(auth)
+            self.assertIsNotNone(reloaded_auth.SECRET_KEY)
+            self.assertNotEqual(reloaded_auth.SECRET_KEY, "walflow_dev_secret_key_change_in_production_39a48f2b")
+            self.assertEqual(len(reloaded_auth.SECRET_KEY), 64) # secrets.token_hex(32) produces 64 character hex string
+
+        finally:
+            # Restore environment
+            if old_env is not None:
+                os.environ["ENVIRONMENT"] = old_env
+            elif "ENVIRONMENT" in os.environ:
+                del os.environ["ENVIRONMENT"]
+
+            if old_key is not None:
+                os.environ["WALFLOW_SECRET_KEY"] = old_key
+            elif "WALFLOW_SECRET_KEY" in os.environ:
+                del os.environ["WALFLOW_SECRET_KEY"]
+
+            # Reload auth one last time to restore normal state for other tests/modules
+            importlib.reload(auth)
+
 if __name__ == "__main__":
     unittest.main()

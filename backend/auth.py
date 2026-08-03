@@ -12,10 +12,12 @@ from db.models import User
 
 SECRET_KEY = os.getenv("WALFLOW_SECRET_KEY")
 if not SECRET_KEY:
+    if os.getenv("ENVIRONMENT") == "production":
+        raise ValueError("CRITICAL SECURITY ERROR: WALFLOW_SECRET_KEY environment variable is not set in production environment!")
     import logging
     logger = logging.getLogger("uvicorn")
-    logger.warning("WARNING: WALFLOW_SECRET_KEY environment variable is not set. Falling back to default insecure key for development.")
-    SECRET_KEY = "walflow_dev_secret_key_change_in_production_39a48f2b"
+    logger.warning("WARNING: WALFLOW_SECRET_KEY environment variable is not set. Falling back to an auto-generated random secret key for development.")
+    SECRET_KEY = secrets.token_hex(32)
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
 

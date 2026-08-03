@@ -11,4 +11,5 @@ All notable changes to the WälFlow project will be documented in this file.
 - Aligned Scenario & Case Manager design layout, typography, and close button with Heatmap Legend
 - Compacted Scenario & Case Manager components and moved relief case explanations to tooltips
 - Fixed unresponsive Run Simulation button by defaulting secure cookies to false in local development, enabling guest/unauthenticated simulations when running locally, and adding automatic frontend WebSocket reconnection upon login and connection drops
+- Blocked backend application startup in production environments if `WALFLOW_SECRET_KEY` is not configured, and replaced the hardcoded secret fallback with an auto-generated random key in development environments (SEC-01)
 

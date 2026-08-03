@@ -11,7 +11,7 @@ This document outlines planned features, overlays, and enhancements for the WalF
 > Future AI agents and developers should refer directly to the detailed reports in `qa_report/` (including `engineering`, `ui`, `performance`, and `security` sub-folders) to implement these changes correctly and efficiently.
 > Once all of these changes are implemented, the `qa_report/` directory can be deleted.
 
-- [ ] **⚠️ [URGENT] Block application start if `WALFLOW_SECRET_KEY` is missing in production** (SEC-01)
+- [x] **⚠️ [URGENT] Block application start if `WALFLOW_SECRET_KEY` is missing in production** (SEC-01)
   * **Scope**: Modify `backend/main.py` or initialization scripts to detect if the environment is production and abort starting the application if the default development fallback secret key is in use.
 - [ ] **⚠️ [URGENT] Enforce `WALFLOW_REQUIRE_WS_AUTH=true` by default** (SEC-02)
   * **Scope**: Change the default behavior of the backend WebSocket simulation authentication so that it requires authentication by default unless explicitly disabled, preventing unauthorized simulation triggers.
