@@ -96,10 +96,8 @@ async def websocket_endpoint(websocket: WebSocket):
         token = websocket.query_params.get("token")
         
     # Check if authentication is required for WebSocket simulation
-    # If WALFLOW_SECRET_KEY is not set (local development), default require_auth to false for easier guest/local simulation
-    secret_key_configured = os.getenv("WALFLOW_SECRET_KEY") is not None
-    default_require_auth = "true" if secret_key_configured else "false"
-    require_auth = os.getenv("WALFLOW_REQUIRE_WS_AUTH", default_require_auth).lower() in ("true", "1")
+    # Defaults to true across all environments (SEC-02) unless explicitly disabled via WALFLOW_REQUIRE_WS_AUTH
+    require_auth = os.getenv("WALFLOW_REQUIRE_WS_AUTH", "true").lower() in ("true", "1")
 
     if require_auth:
       if not token or not decode_access_token(token):

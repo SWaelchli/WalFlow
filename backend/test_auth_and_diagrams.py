@@ -210,5 +210,36 @@ class TestAuthAndDiagrams(unittest.TestCase):
             # Reload auth one last time to restore normal state for other tests/modules
             importlib.reload(auth)
 
+    def test_06_websocket_authentication_enforcement(self):
+        import os
+        from starlette.websockets import WebSocketDisconnect
+
+        # Backup existing environment variables
+        old_auth_req = os.environ.get("WALFLOW_REQUIRE_WS_AUTH")
+
+        try:
+            # Case 1: WALFLOW_REQUIRE_WS_AUTH is not set (should default to true)
+            if "WALFLOW_REQUIRE_WS_AUTH" in os.environ:
+                del os.environ["WALFLOW_REQUIRE_WS_AUTH"]
+
+            # Unauthenticated connection should fail with close code 1008
+            with self.assertRaises(WebSocketDisconnect) as context:
+                with self.client.websocket_connect("/ws/simulate") as ws:
+                    pass
+            self.assertEqual(context.exception.code, 1008)
+
+            # Case 2: WALFLOW_REQUIRE_WS_AUTH = "false" (explicitly disabled)
+            os.environ["WALFLOW_REQUIRE_WS_AUTH"] = "false"
+            with self.client.websocket_connect("/ws/simulate") as ws:
+                # Successfully connected and did not raise exception
+                pass
+
+        finally:
+            # Restore environment
+            if old_auth_req is not None:
+                os.environ["WALFLOW_REQUIRE_WS_AUTH"] = old_auth_req
+            elif "WALFLOW_REQUIRE_WS_AUTH" in os.environ:
+                del os.environ["WALFLOW_REQUIRE_WS_AUTH"]
+
 if __name__ == "__main__":
     unittest.main()

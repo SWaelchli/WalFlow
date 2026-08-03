@@ -13,7 +13,7 @@ This document outlines planned features, overlays, and enhancements for the WalF
 
 - [x] **⚠️ [URGENT] Block application start if `WALFLOW_SECRET_KEY` is missing in production** (SEC-01)
   * **Scope**: Modify `backend/main.py` or initialization scripts to detect if the environment is production and abort starting the application if the default development fallback secret key is in use.
-- [ ] **⚠️ [URGENT] Enforce `WALFLOW_REQUIRE_WS_AUTH=true` by default** (SEC-02)
+- [x] **⚠️ [URGENT] Enforce `WALFLOW_REQUIRE_WS_AUTH=true` by default** (SEC-02)
   * **Scope**: Change the default behavior of the backend WebSocket simulation authentication so that it requires authentication by default unless explicitly disabled, preventing unauthorized simulation triggers.
 - [ ] **⚠️ [URGENT] Refactor `useWebSocketSimulation.js` with `useRef` to eliminate socket churn** (R3 / Performance)
   * **Scope**: Redesign the WebSocket hook connection lifecycle so that changing `telemetryMode` or `activeCaseId` updates refs rather than tearing down and recreating the WebSocket, eliminating socket connection churn.

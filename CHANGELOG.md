@@ -12,4 +12,5 @@ All notable changes to the WälFlow project will be documented in this file.
 - Compacted Scenario & Case Manager components and moved relief case explanations to tooltips
 - Fixed unresponsive Run Simulation button by defaulting secure cookies to false in local development, enabling guest/unauthenticated simulations when running locally, and adding automatic frontend WebSocket reconnection upon login and connection drops
 - Blocked backend application startup in production environments if `WALFLOW_SECRET_KEY` is not configured, and replaced the hardcoded secret fallback with an auto-generated random key in development environments (SEC-01)
+- Enforced WebSocket simulation authentication requirement by default (`WALFLOW_REQUIRE_WS_AUTH=true`) across all environments to prevent unauthorized compute usage, while still allowing explicit disablement (SEC-02)
 
