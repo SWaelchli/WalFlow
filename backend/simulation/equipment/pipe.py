@@ -97,3 +97,32 @@ class Pipe(HydraulicNode):
             outlet.viscosity = FluidProperties.get_viscosity(fluid_type, outlet.temperature)
         
         return dp
+
+    def calculate_dp_derivative(self, flow_rate: float, density: float, viscosity: float) -> float:
+        """
+        Analytical derivative of Darcy-Weisbach pressure drop with respect to flow rate.
+        """
+        if self.diameter <= 0:
+            raise ValueError("Pipe diameter must be strictly positive.")
+            
+        area = math.pi * (self.diameter / 2)**2
+        velocity = flow_rate / area
+        abs_v = abs(velocity)
+        
+        if viscosity > 0 and abs_v > 0:
+            re = (density * abs_v * self.diameter) / viscosity
+            if re < 2300:
+                # Laminar: d(dp)/dq = 32 * mu * L / (D^2 * A)
+                return 32.0 * viscosity * self.length / ((self.diameter ** 2) * area)
+            else:
+                # Turbulent: dp = f * (L/D) * (rho * v * abs_v / 2)
+                # Differentiating q * abs(q) with respect to q gives 2 * abs(q)
+                # Assuming friction factor (f) is constant for the derivative step
+                roughness = 0.000045
+                if self.global_settings:
+                    roughness = getattr(self.global_settings, 'global_roughness', 0.000045)
+                f = 0.25 / (math.log10(roughness / (3.7 * self.diameter) + 5.74 / re**0.9))**2
+                return f * (self.length / self.diameter) * density * abs(flow_rate) / (area ** 2)
+        else:
+            return 0.0
+

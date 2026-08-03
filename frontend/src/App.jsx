@@ -217,8 +217,9 @@ function WalFlowContent() {
     tolerance: 1e-6,
     inner_iterations: 1000,
     control_iterations: 100,
-    solver_method: 'hybr'
+    solver_method: 'sparse_newton'
   });
+
 
   const {
     saveStatus,

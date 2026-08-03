@@ -47,7 +47,21 @@ class LinearControlValve(HydraulicNode):
         
         return dp
 
+    def calculate_dp_derivative(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
+        if self.opening_pct == 0.0:
+            return 1e12
+        effective_opening = max(0.001, self.opening_pct / 100.0)
+        cv_eff = self.max_cv * effective_opening
+        d_v = max(0.002, 0.01 * math.sqrt(cv_eff))
+        v_v = flow_rate / (0.25 * math.pi * d_v**2)
+        re_v = (density * abs(v_v) * d_v) / max(1e-7, viscosity)
+        fr = FluidProperties.get_valve_fr(re_v)
+        cv_eff_adj = max(0.0001, cv_eff * fr)
+        K_CV_SI = 1.732e9
+        return (2.0 * K_CV_SI * density * abs(flow_rate)) / (cv_eff_adj**2)
+
     def calculate(self):
+
         """
         Updates the outlet port's state based on the friction loss.
         """

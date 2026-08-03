@@ -21,8 +21,12 @@ from simulation.fluid_utils import FluidProperties
 
 class NetworkSolver:
     """
-    Final Network Solver with Live Diagnostics and 3-Way TCV Support.
+    Final Network Solver with Live Diagnostics, Analytical Sparse Jacobian,
+    Sparse Newton-Raphson Solver, and Warm-Start caching.
     """
+    # Class-level cache: (topology_key, active_case_id) -> np.ndarray (converged state vector)
+    _warm_start_cache = {}
+
     def __init__(self, network: HydraulicNetwork):
         self.network = network
         self.nodes_list = list(network.nodes.values())
@@ -36,6 +40,13 @@ class NetworkSolver:
         self.tcv_node_indices = []     # Thermal mixing valves
         
         self.last_prop_iters = 0
+        self.active_case_id = getattr(network, 'active_case_id', None) or 'default'
+        
+        # Build a fixed topology key that uniquely identifies the layout of nodes & edges
+        self.topology_key = (
+            tuple(self.node_ids),
+            tuple((e['source'], e['target'], e.get('source_port'), e.get('target_port')) for e in self.edges_list)
+        )
         
         for i, node in enumerate(self.nodes_list):
             if isinstance(node, Tank):
@@ -58,13 +69,14 @@ class NetworkSolver:
             max_outer_iterations = getattr(gs, 'control_iterations', 100)
         
         if method is None:
-            method = getattr(gs, 'solver_method', 'hybr') if gs else 'hybr'
+            method = getattr(gs, 'solver_method', 'sparse_newton') if gs else 'sparse_newton'
 
         final_sol_x = None
         num_int = 0
         total_inner_iterations = 0
         outer_iterations = 0
         fallback_triggered = False
+
         
         x_start = self._generate_initial_guess()
 
@@ -78,8 +90,17 @@ class NetworkSolver:
         last_residuals = None
         prev_temperatures = {}
 
+
         for it in range(max_outer_iterations):
             outer_iterations += 1
+            
+            # Record current control states before they are updated in this iteration
+            curr_control_states = {}
+            for idx in self.control_node_indices:
+                curr_control_states[idx] = self.nodes_list[idx].opening_pct
+            for idx in self.tcv_node_indices:
+                curr_control_states[f"tcv_{idx}"] = self.nodes_list[idx].mix_ratio
+
             try:
                 res = self._solve_hydraulics_core(method=method, x0_custom=x_start)
                 final_sol_x, num_int, inner_iters, fallback, last_residuals = res
@@ -152,14 +173,52 @@ class NetworkSolver:
                 t_err = t_out - node.set_temperature
                 max_err_temp = max(max_err_temp, abs(t_err))
                 
-                # Dynamic Direction based on actual inlet temperatures:
                 t_hot_port = node.inlets[node.hot_port_idx].temperature
                 t_cold_port = node.inlets[1 - node.hot_port_idx].temperature
-                direction = -1.0 if t_hot_port >= t_cold_port else 1.0
                 
-                # Use a small damping factor (0.01) for thermal stability
-                adjustment = direction * 0.01 * t_err
-                node.mix_ratio = max(0.001, min(0.999, node.mix_ratio + adjustment))
+                q_hot = node.inlets[node.hot_port_idx].flow_rate
+                q_cold = node.inlets[1 - node.hot_port_idx].flow_rate
+                
+                t_diff = t_hot_port - t_cold_port
+                
+                # Check if we have positive flow on both ports and a valid temperature diff
+                if q_hot > 1e-9 and q_cold > 1e-9 and abs(t_diff) > 0.5:
+                    # Check if target is physically within the range of inlet temperatures
+                    t_min = min(t_hot_port, t_cold_port)
+                    t_max = max(t_hot_port, t_cold_port)
+                    if node.set_temperature >= t_max:
+                        # Target is hotter than or equal to both inlets, open hot port fully
+                        target_mix = 1.0 if t_hot_port >= t_cold_port else 0.0
+                        node.mix_ratio = node.mix_ratio + 0.5 * (target_mix - node.mix_ratio)
+                    elif node.set_temperature <= t_min:
+                        # Target is colder than or equal to both inlets, open cold port fully
+                        target_mix = 0.0 if t_hot_port >= t_cold_port else 1.0
+                        node.mix_ratio = node.mix_ratio + 0.5 * (target_mix - node.mix_ratio)
+                    else:
+                        num = node.set_temperature - t_cold_port
+                        den = t_hot_port - node.set_temperature
+                        if abs(den) > 0.01:
+                            # R_target = (T_set - T_cold) / (T_hot - T_set)
+                            R_target = num / den
+                            # R_actual = Q_hot / Q_cold
+                            R_actual = q_hot / q_cold
+                            r_curr = node.mix_ratio
+                            X = (r_curr / max(0.0001, 1.0 - r_curr)) * (R_target / max(1e-10, R_actual))
+                            target_mix = X / (1.0 + X)
+                            target_mix = max(0.001, min(0.999, target_mix))
+                            # Damped update for stability
+                            node.mix_ratio = node.mix_ratio + 0.5 * (target_mix - node.mix_ratio)
+                        else:
+                            node.mix_ratio = 0.5
+                else:
+                    # Fallback to incremental adjustment if temperatures are close or negative flow is active
+                    direction = -1.0 if t_hot_port >= t_cold_port else 1.0
+                    adjustment = direction * 0.1 * t_err
+                    node.mix_ratio = max(0.001, min(0.999, node.mix_ratio + adjustment))
+                node.mix_ratio = max(0.001, min(0.999, node.mix_ratio))
+
+
+
 
             # Calculate max temp change in properties to check convergence
             max_temp_change = 0.0
@@ -177,8 +236,27 @@ class NetworkSolver:
 
             properties_converged = (max_temp_change < 0.05)
 
-            if max_err_bar < tolerance_bar and max_err_temp < tolerance_temp and properties_converged:
+            # Check if control states have changed during this iteration
+            control_settled = False
+            has_controls = (len(self.control_node_indices) > 0 or len(self.tcv_node_indices) > 0)
+            if has_controls and it >= 2:
+                max_mix_change = 0.0
+                max_open_change = 0.0
+                for idx in self.control_node_indices:
+                    diff = abs(self.nodes_list[idx].opening_pct - curr_control_states[idx])
+                    max_open_change = max(max_open_change, diff)
+                for idx in self.tcv_node_indices:
+                    diff = abs(self.nodes_list[idx].mix_ratio - curr_control_states[f"tcv_{idx}"])
+                    max_mix_change = max(max_mix_change, diff)
+
+                if max_mix_change < 0.001 and max_open_change < 0.05:
+                    control_settled = True
+
+
+            if (max_err_bar < tolerance_bar and max_err_temp < tolerance_temp and properties_converged) or control_settled:
                 break
+
+
 
         bottleneck = self._identify_bottleneck(last_residuals) if last_residuals is not None else None
         stats = {
@@ -210,6 +288,17 @@ class NetworkSolver:
             return {"type": "Connection", "name": edge.get('label') or edge.get('id'), "error_type": "Pressure Balance", "magnitude": max_val}
 
     def _generate_initial_guess(self):
+        # Check warm-start cache first
+        cache_key = (self.topology_key, self.active_case_id)
+        if cache_key in NetworkSolver._warm_start_cache:
+            return NetworkSolver._warm_start_cache[cache_key].copy()
+
+        # Fallback: reuse any cached solution with matching topology
+        for (tok, cid), cached_val in NetworkSolver._warm_start_cache.items():
+            if tok == self.topology_key:
+                return cached_val.copy()
+
+
         num_internal = len(self.internal_node_indices)
         num_edges = len(self.edges_list)
         atm_p = 101325.0
@@ -223,7 +312,180 @@ class NetworkSolver:
                 break
         return np.concatenate([np.full(num_internal, avg_p), np.full(num_edges, q_guess_base)])
 
-    def _solve_hydraulics_core(self, method='hybr', x0_custom=None) -> Tuple[np.ndarray, int, int, bool, np.ndarray]:
+    def calculate_jacobian(self, x_scaled) -> np.ndarray:
+        """
+        Calculates the sparse Jacobian J(x_scaled) analytically.
+        """
+        import scipy.sparse as sp
+        
+        num_internal = len(self.internal_node_indices)
+        num_edges = len(self.edges_list)
+        N = num_internal + num_edges
+        
+        p_scale = 100000.0
+        q_scale = 0.001
+        
+        rows = []
+        cols = []
+        data = []
+        
+        # Extract variables from x_scaled
+        p_in_internal = x_scaled[:num_internal] * p_scale
+        q_edges = x_scaled[num_internal:] * q_scale
+        
+        # Reconstruct all node pressures
+        p_in_all = np.zeros(len(self.nodes_list))
+        for i, p in self.fixed_pressure_nodes.items():
+            p_in_all[i] = p
+        for i, idx in enumerate(self.internal_node_indices):
+            p_in_all[idx] = p_in_internal[i]
+
+        # Precompute q_in_node for all nodes
+        q_in_node_all = np.zeros(len(self.nodes_list))
+        for j, edge in enumerate(self.edges_list):
+            tgt_idx = self.node_id_to_idx[edge['target']]
+            q_in_node_all[tgt_idx] += q_edges[j]
+
+        # 1. Mass Balance Rows (a < num_internal)
+        for a, node_idx in enumerate(self.internal_node_indices):
+            node_id = self.node_ids[node_idx]
+            for j, edge in enumerate(self.edges_list):
+                if edge['target'] == node_id:
+                    rows.append(a)
+                    cols.append(num_internal + j)
+                    data.append(5.0)
+                if edge['source'] == node_id:
+                    rows.append(a)
+                    cols.append(num_internal + j)
+                    data.append(-5.0)
+
+        # 2. Pressure Balance Rows (a = num_internal + j)
+        for j, edge in enumerate(self.edges_list):
+            a = num_internal + j
+            src_id = edge['source']
+            tgt_id = edge['target']
+            src_idx = self.node_id_to_idx[src_id]
+            tgt_idx = self.node_id_to_idx[tgt_id]
+            src_node = self.nodes_list[src_idx]
+            
+            src_internal_idx = -1
+            if src_idx in self.internal_node_indices:
+                src_internal_idx = self.internal_node_indices.index(src_idx)
+            tgt_internal_idx = -1
+            if tgt_idx in self.internal_node_indices:
+                tgt_internal_idx = self.internal_node_indices.index(tgt_idx)
+
+            if src_internal_idx != -1:
+                rows.append(a)
+                cols.append(src_internal_idx)
+                data.append(1.0)
+
+            if tgt_internal_idx != -1:
+                rows.append(a)
+                cols.append(tgt_internal_idx)
+                data.append(-1.0)
+
+            # Term 1: d(P_src_out)/dq_k
+            if not isinstance(src_node, ThreeWayTCV) and hasattr(src_node, 'calculate_delta_p'):
+                inlet = src_node.inlets[0] if src_node.inlets else None
+                density = inlet.density if inlet else 1000.0
+                viscosity = inlet.viscosity if inlet else 0.001
+                
+                dp_deriv_src = src_node.calculate_dp_derivative(q_in_node_all[src_idx], density, viscosity)
+                is_pump = isinstance(src_node, (CentrifugalPump, VolumetricPump))
+                sign = 1.0 if is_pump else -1.0
+                dp_deriv_src_signed = sign * dp_deriv_src
+                
+                for k, e in enumerate(self.edges_list):
+                    if e['target'] == src_id:
+                        rows.append(a)
+                        cols.append(num_internal + k)
+                        data.append((q_scale / p_scale) * dp_deriv_src_signed)
+
+            # Term 2: d(dp_pipe)/dq_j
+            pipe = edge['pipe']
+            pipe_inlet = pipe.inlets[0]
+            pipe_density = pipe_inlet.density
+            pipe_viscosity = pipe_inlet.viscosity
+            dp_deriv_pipe = max(100.0, pipe.calculate_dp_derivative(q_edges[j], pipe_density, pipe_viscosity))
+            
+            # Term 3: d(dp_tcv)/dq_j
+            dp_deriv_tcv = 0.0
+            if isinstance(self.network.nodes[tgt_id], ThreeWayTCV):
+                tgt_node = self.network.nodes[tgt_id]
+                port_idx = self._parse_port_idx(edge.get('target_port', 'inlet-0'))
+                tcv_density = tgt_node.inlets[port_idx].density
+                tcv_viscosity = tgt_node.inlets[port_idx].viscosity
+                dp_deriv_tcv = max(100.0, tgt_node.calculate_dp_derivative_path(q_edges[j], tcv_density, port_idx, tcv_viscosity))
+
+            rows.append(a)
+            cols.append(num_internal + j)
+            data.append((q_scale / p_scale) * (-dp_deriv_pipe - dp_deriv_tcv))
+
+        return sp.coo_matrix((data, (rows, cols)), shape=(N, N)).tocsr()
+
+    def _solve_sparse_newton(self, objective, x0, tol=1e-6, max_iter=100):
+        """
+        Custom high-performance sparse Newton-Raphson solver using backtracking line search.
+        """
+        import scipy.sparse.linalg as spla
+        
+        class SolResult:
+            def __init__(self, success, message, x, nfev, njev):
+                self.success = success
+                self.message = message
+                self.x = x
+                self.nfev = nfev
+                self.njev = njev
+
+        x = x0.copy()
+        r = objective(x)
+        err = np.max(np.abs(r))
+        
+        nfev = 1
+        njev = 0
+        
+        if err < tol:
+            return SolResult(True, "Already converged", x, nfev, njev)
+            
+        for it in range(max_iter):
+            J = self.calculate_jacobian(x)
+            njev += 1
+            
+            try:
+                # Solve linear system J * dx = -r
+                dx = spla.spsolve(J, -r)
+            except Exception as e:
+                return SolResult(False, f"Linear system solver failed: {e}", x, nfev, njev)
+            
+            # Backtracking line search
+            alpha = 1.0
+            r_norm = np.linalg.norm(r)
+            backtrack_success = False
+            
+            for bt in range(10):
+                x_next = x + alpha * dx
+                r_next = objective(x_next)
+                nfev += 1
+                r_next_norm = np.linalg.norm(r_next)
+                
+                if r_next_norm < r_norm:
+                    x = x_next
+                    r = r_next
+                    err = np.max(np.abs(r))
+                    backtrack_success = True
+                    break
+                alpha *= 0.5
+                
+            if not backtrack_success:
+                return SolResult(False, "Backtracking line search failed to decrease residual", x, nfev, njev)
+                
+            if err < tol:
+                return SolResult(True, "Converged", x, nfev, njev)
+                
+        return SolResult(False, f"Reached max iterations ({max_iter})", x, nfev, njev)
+
+    def _solve_hydraulics_core(self, method='sparse_newton', x0_custom=None) -> Tuple[np.ndarray, int, int, bool, np.ndarray]:
         num_internal = len(self.internal_node_indices)
         num_edges = len(self.edges_list)
         if (num_internal + num_edges) == 0: return np.array([]), 0, 0, False, np.array([])
@@ -240,7 +502,6 @@ class NetworkSolver:
         def objective(x_scaled):
             p_in_internal = x_scaled[:num_internal] * p_scale
             q_edges = x_scaled[num_internal:] * q_scale
-            # Removed self._propagate_properties(q_edges) from inner loop for solver stability
             p_in_all = np.zeros(len(self.nodes_list))
             for i, p in self.fixed_pressure_nodes.items(): p_in_all[i] = p
             for i, idx in enumerate(self.internal_node_indices): p_in_all[idx] = p_in_internal[i]
@@ -292,18 +553,34 @@ class NetworkSolver:
         gs = getattr(self.network, 'global_settings', None)
         inner_max_steps = getattr(gs, 'inner_iterations', 1000) if gs else 1000
         fallback_used = False
-        sol = root(objective, x0, method=method, options={'maxfev': inner_max_steps})
-        if method == 'hybr' and (not sol.success or not is_physical(sol.x)):
-            fallback_used = True
-            sol = root(objective, sol.x, method='lm', options={'maxiter': inner_max_steps})
+        
+        if method == 'sparse_newton':
+            sol = self._solve_sparse_newton(objective, x0, tol=1e-6, max_iter=inner_max_steps)
+            if not sol.success or not is_physical(sol.x):
+                # Fallback to LM starting from original initial guess x0
+                fallback_used = True
+                sol = root(objective, x0, method='lm', options={'maxiter': inner_max_steps})
+        else:
+            sol = root(objective, x0, method=method, options={'maxfev': inner_max_steps})
+            if method == 'hybr' and (not sol.success or not is_physical(sol.x)):
+                fallback_used = True
+                sol = root(objective, x0, method='lm', options={'maxiter': inner_max_steps})
+
+                
         final_residuals = objective(sol.x)
         if sol.success:
             final_p = sol.x[:num_internal] * p_scale
             final_q = sol.x[num_internal:] * q_scale
             self._update_telemetry(final_p, final_q)
-            return np.concatenate([final_p, final_q]), num_internal, getattr(sol, 'nfev', 0), fallback_used, final_residuals
+            
+            # Cache the converged state vector
+            converged_x = np.concatenate([final_p, final_q])
+            NetworkSolver._warm_start_cache[(self.topology_key, self.active_case_id)] = converged_x
+            
+            return converged_x, num_internal, getattr(sol, 'nfev', 0), fallback_used, final_residuals
         else:
             raise ValueError(f"Solver failed: {sol.message}")
+
 
     def _get_node_p_out(self, node, p_in, q_in, q_out, update_state: bool = False):
         inlet = node.inlets[0] if node.inlets else None

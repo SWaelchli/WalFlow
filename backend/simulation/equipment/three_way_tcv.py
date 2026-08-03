@@ -45,7 +45,25 @@ class ThreeWayTCV(HydraulicNode):
         dp = (K_CV_SI * density * flow * abs(flow)) / (cv_adj**2)
         return dp
 
+    def calculate_dp_derivative_path(self, flow: float, density: float, port_idx: int, viscosity: float = 0.001) -> float:
+        """
+        Analytical derivative of path pressure drop with respect to path flow rate.
+        """
+        is_hot_path = (port_idx == self.hot_port_idx)
+        opening = self.mix_ratio if is_hot_path else (1.0 - self.mix_ratio)
+        eff_cv = self.max_cv * max(0.0001, opening)
+        
+        d_v = max(0.002, 0.01 * math.sqrt(eff_cv))
+        v_v = flow / (0.25 * math.pi * d_v**2) if d_v > 0 else 0.0
+        re_v = (density * abs(v_v) * d_v) / max(1e-7, viscosity)
+        fr = FluidProperties.get_valve_fr(re_v)
+        cv_adj = max(0.0001, eff_cv * fr)
+        
+        K_CV_SI = 1.732e9
+        return (2.0 * K_CV_SI * density * abs(flow)) / (cv_adj**2)
+
     def calculate(self):
+
         inlet_0 = self.inlets[0]
         inlet_1 = self.inlets[1]
         outlet = self.outlets[0]

@@ -84,3 +84,22 @@ class HydraulicNode:
         we will override this method with the actual mathematical logic (like the pump curve).
         """
         raise NotImplementedError("This method must be overridden by the specific equipment class.")
+
+    def calculate_dp_derivative(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
+        """
+        Numerical derivative fallback of pressure drop with respect to flow rate.
+        Can be overridden by subclasses for analytical derivatives.
+        """
+        import inspect
+        dq = 1e-6
+        sig = inspect.signature(self.calculate_delta_p)
+        has_update_state = 'update_state' in sig.parameters
+
+        if has_update_state:
+            dp_plus = self.calculate_delta_p(flow_rate + dq, density, viscosity, update_state=False)
+            dp_minus = self.calculate_delta_p(flow_rate - dq, density, viscosity, update_state=False)
+        else:
+            dp_plus = self.calculate_delta_p(flow_rate + dq, density, viscosity)
+            dp_minus = self.calculate_delta_p(flow_rate - dq, density, viscosity)
+
+        return (dp_plus - dp_minus) / (2.0 * dq)

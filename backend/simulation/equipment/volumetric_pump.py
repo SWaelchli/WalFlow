@@ -67,13 +67,46 @@ class VolumetricPump(HydraulicNode):
         # Apply the physical hard cap
         if delta_p > hard_cap:
             delta_p = hard_cap
-            
         # If flow is HIGHER than rated, displacement pressure becomes negative.
         # This is correct: the pump resists being 'pushed' faster than its speed.
         
         return delta_p
 
+    def calculate_dp_derivative(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
+        """
+        Analytical derivative of volumetric pump pressure drop with respect to flow rate.
+        """
+        if not getattr(self, 'active', True):
+            return -1e11
+
+        if self.flow_rated > 0:
+            stiffness = 10_000_000.0 / (0.01 * self.flow_rated)
+        else:
+            stiffness = 1e12
+
+        available_power = self.motor_power * self.efficiency
+
+        if flow_rate < 0:
+            return -stiffness
+
+        dp_displacement = max(0.0, stiffness * (self.flow_rated - flow_rate))
+        safe_q = math.sqrt(flow_rate**2 + 1e-10)
+        dp_power_limit = available_power / safe_q
+
+        if dp_displacement > dp_power_limit:
+            if dp_power_limit > 20_000_000.0:
+                return 0.0
+            return -available_power * flow_rate / ((flow_rate**2 + 1e-10)**1.5)
+        else:
+            if dp_displacement > 20_000_000.0:
+                return 0.0
+            if flow_rate <= self.flow_rated:
+                return -stiffness
+            else:
+                return 0.0
+
     def calculate(self):
+
         inlet = self.inlets[0]
         outlet = self.outlets[0]
         

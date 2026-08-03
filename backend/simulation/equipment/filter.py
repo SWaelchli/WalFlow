@@ -49,7 +49,17 @@ class Filter(HydraulicNode):
         visc_factor = FluidProperties.get_filter_viscosity_factor(re_filter)
         return k_curr * density * flow_rate * abs(flow_rate) * visc_factor
 
+    def calculate_dp_derivative(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
+        k_curr = self.get_resistance_k()
+        d_pore = 0.001
+        a_ref = max(1e-4, self.flow_ref / max(0.1, (2.0 * max(100.0, self.dp_clean) / 1000.0)**0.5))
+        v_elem = flow_rate / a_ref
+        re_filter = (density * abs(v_elem) * d_pore) / max(1e-7, viscosity)
+        visc_factor = FluidProperties.get_filter_viscosity_factor(re_filter)
+        return 2.0 * k_curr * density * abs(flow_rate) * visc_factor
+
     def calculate(self):
+
         inlet = self.inlets[0]
         outlet = self.outlets[0]
         dp = self.calculate_delta_p(inlet.flow_rate, inlet.density, inlet.viscosity)

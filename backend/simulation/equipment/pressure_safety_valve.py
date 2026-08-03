@@ -141,7 +141,42 @@ class PressureSafetyValve(HydraulicNode):
 
         return dp
 
+    def calculate_dp_derivative(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
+        inlet = self.inlets[0]
+        outlet = self.outlets[0]
+        p_in_bar = inlet.pressure / 100000.0
+        p_out_bar = outlet.pressure / 100000.0
+        eff_cv = self.get_effective_cv(p_in_bar, p_out_bar, update_state=False)
+
+        step_status = "closed"
+        if self.forced_state != "forced_closed":
+            if self.action_mode == "rupture_disc":
+                if self.is_burst or (p_in_bar >= self.set_pressure_bar):
+                    step_status = "cracked"
+            elif self.action_mode == "pop_action":
+                if self._was_open or (p_in_bar >= self.set_pressure_bar):
+                    step_status = "cracked"
+            elif self.action_mode == "modulating":
+                if p_in_bar > self.set_pressure_bar:
+                    step_status = "cracked"
+
+        if step_status == "closed":
+            return 1.0e10
+
+        if flow_rate < 0:
+            return 1.0e10
+
+        d_v = max(0.002, 0.01 * math.sqrt(eff_cv))
+        v_v = flow_rate / (0.25 * math.pi * d_v**2) if d_v > 0 else 0.0
+        re_v = (density * abs(v_v) * d_v) / max(1e-7, viscosity)
+        fr = FluidProperties.get_valve_fr(re_v)
+        cv_adj = max(0.001, eff_cv * fr)
+
+        K_CV_SI = 1.732e9
+        return (2.0 * K_CV_SI * density * abs(flow_rate)) / (cv_adj ** 2)
+
     def calculate(self):
+
         inlet = self.inlets[0]
         outlet = self.outlets[0]
 

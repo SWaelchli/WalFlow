@@ -466,15 +466,17 @@ export default function Sidebar({ onLoad, globalSettings, onUpdateGlobalSettings
               <div>
                 <label style={labelStyle}>Solver Method</label>
                 <select 
-                  value={globalSettings.solver_method || 'hybr'}
+                  value={globalSettings.solver_method || 'sparse_newton'}
                   onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, solver_method: e.target.value })}
                   style={inputStyle}
                 >
+                  <option value="sparse_newton">Sparse Newton (Analytical)</option>
                   <option value="hybr">HYBR (Powell Hybrid)</option>
                   <option value="lm">LM (Least-Squares)</option>
                 </select>
-                <p style={hintStyle}>HYBR is faster; LM is more robust.</p>
+                <p style={hintStyle}>Sparse Newton is fast and scalable; HYBR/LM are legacy dense solvers.</p>
               </div>
+
 
               <div>
                 <label style={labelStyle}>Control Iterations</label>

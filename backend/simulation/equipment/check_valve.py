@@ -45,7 +45,29 @@ class CheckValve(HydraulicNode):
         dp_friction = (K_CV_SI * density * flow_rate * abs(flow_rate)) / (cv_blended ** 2)
         return cracking_term + dp_friction
 
+    def calculate_dp_derivative(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
+        """
+        Analytical derivative of CheckValve pressure drop with respect to flow rate.
+        """
+        scale = 1e-5
+        cracking_pa = self.cracking_pressure_bar * 100000.0
+        dtanh = cracking_pa * (1.0 - math.tanh(flow_rate / scale)**2) / scale
+
+        s = 0.5 * (1.0 + math.tanh(flow_rate / scale))
+        effective_cv = self.cv
+        d_v = max(0.002, 0.01 * math.sqrt(effective_cv))
+        v_v = flow_rate / (0.25 * math.pi * d_v**2) if d_v > 0 else 0.0
+        re_v = (density * abs(v_v) * d_v) / max(1e-7, viscosity)
+        fr = FluidProperties.get_valve_fr(re_v)
+        cv_adj = max(0.0001, effective_cv * fr)
+        cv_blended = s * cv_adj + (1.0 - s) * 1e-4
+
+        K_CV_SI = 1.732e9
+        dfriction = (2.0 * K_CV_SI * density * abs(flow_rate)) / (cv_blended ** 2)
+        return dtanh + dfriction
+
     def calculate(self):
+
         """
         Updates outlet conditions and status telemetry based on flow state.
         """

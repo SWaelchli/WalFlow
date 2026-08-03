@@ -123,9 +123,12 @@ def run_batch_simulation(graph: ReactFlowGraph):
                 network, solver, extract_telemetry_dict
             )
 
+            print(f"Batch Case '{case.name}': success={stats.get('success')}, error={stats.get('error')}, time={stats.get('time_ms', 0):.2f}ms, fallback={stats.get('fallback_used')}")
+
             kpis = calculate_case_kpis(network, telemetry, stats)
 
             results.append(BatchCaseResult(
+
                 case_id=case.id,
                 case_name=case.name,
                 is_base=case.is_base,

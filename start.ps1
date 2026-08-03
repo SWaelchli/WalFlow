@@ -25,7 +25,9 @@ if (-not $rootDir) { $rootDir = (Get-Location).Path }
 
 # 4. Start the backend in a new window
 Write-Host "Starting Backend in a new window..." -ForegroundColor Green
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "Set-Location '$rootDir'; if (Test-Path '.\.venv\Scripts\Activate.ps1') { . .\.venv\Scripts\Activate.ps1 }; Set-Location '$rootDir\backend'; python main.py"
+# Disable WebSocket authentication requirement for local development guest simulations
+$env:WALFLOW_REQUIRE_WS_AUTH = "false"
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "Set-Location '$rootDir'; if (Test-Path '.\.venv\Scripts\Activate.ps1') { . .\.venv\Scripts\Activate.ps1 }; `$env:WALFLOW_REQUIRE_WS_AUTH='false'; Set-Location '$rootDir\backend'; python main.py"
 
 # 5. Start the frontend in a new window
 Write-Host "Starting Frontend in a new window..." -ForegroundColor Cyan

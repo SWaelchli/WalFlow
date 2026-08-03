@@ -53,8 +53,24 @@ class Orifice(HydraulicNode):
 
         return  perm_delta_p
 
+    def calculate_dp_derivative(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
+        pipe_d = max(0.001, getattr(self, 'pipe_diameter', 0.05248))
+        orif_d = max(0.0001, self.orifice_diameter)
+        beta_ratio = min(0.99, orif_d / pipe_d)
+        area_pipe = math.pi * (pipe_d / 2.0)**2
+        velocity = flow_rate / max(1e-9, area_pipe)
+        
+        area_orifice = math.pi * (self.orifice_diameter / 2)**2
+        v_orifice = flow_rate / max(1e-9, area_orifice)
+        re_orifice = (density * abs(v_orifice) * self.orifice_diameter) / max(1e-7, viscosity)
+        
+        discharge_coefficient = FluidProperties.get_orifice_cd(re_orifice)
+        geometry_factor = (1.0 - beta_ratio**4) / (discharge_coefficient**2 * beta_ratio**4)
+        
+        return density * abs(velocity) / area_pipe * geometry_factor * (1.0 - beta_ratio**2)
 
     def calculate(self):
+
         """
         Updates the outlet port's state based on the inlet port's state and the calculated drop.
         """

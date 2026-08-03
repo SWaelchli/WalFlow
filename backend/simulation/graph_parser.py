@@ -160,7 +160,9 @@ class GraphParser:
 
         network = HydraulicNetwork(nodes=nodes_dict, edges=parsed_edges)
         network.global_settings = resolved_graph.global_settings
+        network.active_case_id = resolved_graph.active_case_id
         return network
+
 
     @staticmethod
     def create_node(node_data: ReactFlowNode, global_settings: Any = None) -> HydraulicNode:

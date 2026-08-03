@@ -160,12 +160,16 @@ async def websocket_endpoint(websocket: WebSocket):
 
                 if solver_instance:
                     try:
-                        # Run physics engine with Sequential Multi-Pass support for PSVs
                         stats, telemetry_mitigated, telemetry_unmitigated, has_psv = run_sequential_relief_simulation(
                             network_instance, solver_instance, extract_telemetry
                         )
 
+                        print(f"Simulation Run: success={stats.get('success')}, error={stats.get('error')}, time={stats.get('time_ms', 0):.2f}ms, fallback={stats.get('fallback_used')}")
+                        if not stats.get("success"):
+                            print(f"  Solver stats: {stats}")
+
                         kpis = calculate_case_kpis(network_instance, telemetry_mitigated, stats)
+
 
                         await websocket.send_text(json.dumps({
                             "status": "success",

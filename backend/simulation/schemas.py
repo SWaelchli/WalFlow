@@ -32,7 +32,8 @@ class GlobalSettings(BaseModel):
     tolerance: float = 1e-6
     inner_iterations: int = 1000 # Max steps for the hydraulic solver (HYBR/LM)
     control_iterations: int = 100 # Max steps for the regulator control loop
-    solver_method: str = "hybr" # "hybr" or "lm"
+    solver_method: str = "sparse_newton" # "sparse_newton", "hybr" or "lm"
+
 
 class OperatingCaseOverrides(BaseModel):
     """
@@ -103,4 +104,6 @@ class HydraulicNetwork(BaseModel):
     nodes: Dict[str, Any]  # ID -> HydraulicNode
     edges: List[Dict[str, Any]]  # List of: {'source': id, 'target': id, 'pipe': Pipe, 'source_port': str, 'target_port': str}
     global_settings: Optional[GlobalSettings] = None
+    active_case_id: Optional[str] = None
+
 
