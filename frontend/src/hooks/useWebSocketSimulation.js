@@ -64,14 +64,6 @@ export function useWebSocketSimulation({ nodes, edges, setNodes, setEdges, globa
   }, [telemetryMode, telemetryMitigated, telemetryUnmitigated, applyTelemetryToGraph]);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      const timer = setTimeout(() => {
-        setIsConnected(false);
-        setIsSimulating(false);
-      }, 0);
-      return () => clearTimeout(timer);
-    }
-
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/ws/simulate`;
 

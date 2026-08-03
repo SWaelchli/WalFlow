@@ -10,5 +10,5 @@ All notable changes to the WälFlow project will be documented in this file.
 - Added support for dynamic maxHeight boundaries and vertical scroll bar on Property Editor when pushed down
 - Aligned Scenario & Case Manager design layout, typography, and close button with Heatmap Legend
 - Compacted Scenario & Case Manager components and moved relief case explanations to tooltips
-- Fixed unresponsive Run Simulation button by defaulting secure cookies to false in local development and adding automatic frontend WebSocket reconnection upon login and connection drops
+- Fixed unresponsive Run Simulation button by defaulting secure cookies to false in local development, enabling guest/unauthenticated simulations when running locally, and adding automatic frontend WebSocket reconnection upon login and connection drops
 

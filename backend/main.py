@@ -89,12 +89,20 @@ async def read_root():
 
 @app.websocket("/ws/simulate")
 async def websocket_endpoint(websocket: WebSocket):
+    import os
     # Retrieve token from cookies or query parameters
     token = websocket.cookies.get("walflow_auth_token")
     if not token:
         token = websocket.query_params.get("token")
         
-    if not token or not decode_access_token(token):
+    # Check if authentication is required for WebSocket simulation
+    # If WALFLOW_SECRET_KEY is not set (local development), default require_auth to false for easier guest/local simulation
+    secret_key_configured = os.getenv("WALFLOW_SECRET_KEY") is not None
+    default_require_auth = "true" if secret_key_configured else "false"
+    require_auth = os.getenv("WALFLOW_REQUIRE_WS_AUTH", default_require_auth).lower() in ("true", "1")
+
+    if require_auth:
+      if not token or not decode_access_token(token):
         # Reject connection if token is missing or invalid
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Not authenticated")
         return
