@@ -105,8 +105,10 @@ class NewEquipment(HydraulicNode):
 #### Step A.2: Solver Stability Guidelines
 To ensure compatibility with the high-speed Newton solver:
 1. **Laminar Viscosity Derivatives:** If a component includes a viscous correction multiplier of the form $(1 + C / \text{Re})$ (e.g., porous filters, orifices), the pressure drop behaves as $dp \propto (q|q| + C' q)$ in the laminar regime. Its exact derivative is proportional to $(2|q| + C')$, **not** $(2|q| + 2C')$. Ensure you derive the viscosity-corrected term carefully.
-2. **Smooth Blending Transitions:** Avoid step jumps or discontinuities in pressure drops or derivatives (e.g., changing friction models instantly at a specific Reynolds number like $\text{Re} = 2300$). Always blend the regimes smoothly over a transitional range (e.g., $\text{Re} \in [2000, 4000]$) using linear or cubic interpolation.
-3. **No Dynamic Time-Steps:** All equations must represent steady-state algebraic relations. Do not integrate over time.
+2. **Smooth Blending & Continuous Curves ($C^0$ and $C^1$ Continuity):** Avoid step jumps or conditional branch discontinuities in pressure drop formulas or correction factors (e.g., hard-coding a cut-off boundary like `if Re >= 2000` which introduces a step change in viscosity multipliers). Ensure all curves are asymptotically continuous or smoothly blended (e.g., blending over a transitional range like $\text{Re} \in [2000, 4000]$).
+3. **Uncapped & Recoverable Curves for Derivatives:** Never cap pressure drop curves (like `max(0.0, dp)` for pumps or control valves) or make derivatives zero when operating limits are exceeded. The analytical derivative must remain active and continuous across all flow rates (even negative flow) to provide a smooth gradient that guides the Newton solver back to the valid physical domain during intermediate iterations.
+4. **Analytical Jacobians for Fallback Solvers:** When falling back to Scipy's dense solvers (`root` with `method='lm'` or `method='hybr'`), always pass a dense-wrapped analytical Jacobian (`jac=dense_jacobian` where `dense_jacobian = lambda x: calculate_jacobian(x).toarray()`). This avoids slow numerical finite-difference approximations, keeping fallback solves under ~600ms on large systems.
+5. **No Dynamic Time-Steps:** All equations must represent steady-state algebraic relations. Do not integrate over time.
 
 #### Step B: Register in Graph Parser
 Open `backend/simulation/graph_parser.py` and:
