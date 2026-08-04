@@ -67,7 +67,10 @@ const theme = {
 };
 
 
-function formatSolverName(method) {
+function formatSolverName(method, fallbackUsed = false) {
+  if (fallbackUsed) {
+    return 'Levenberg-Marq (fallback)';
+  }
   if (!method) return 'N/A';
   if (method === 'sparse_newton') return 'Sparse Newton';
   if (method === 'hybr') return 'Powell HYBR';
@@ -196,15 +199,9 @@ function DiagnosticsContent({ stats, batchStats }) {
             <StatCard label="Math Steps" value={total_inner_iterations} hint="Total Inner" />
             <StatCard label="Prop Steps" value={stats.property_iterations || 0} hint="Property Loops" />
             <StatCard label="Max Residual" value={stats.max_residual !== undefined ? stats.max_residual.toExponential(2) : 'N/A'} hint="Balance Error" />
-            <StatCard label="Solver Method" value={formatSolverName(stats.solver_method)} />
+            <StatCard label="Solver Method" value={formatSolverName(stats.solver_method, fallback_used)} />
             <StatCard label="Warm-Start" value={stats.warm_start_status || 'N/A'} />
           </div>
-
-          {fallback_used && (
-            <div style={{ fontSize: '11px', color: '#854d0e', background: '#fefce8', padding: '10px', borderRadius: '6px', border: '1px solid #fef08a' }}>
-              <strong>Note:</strong> Robust fallback (LM) was used to ensure convergence.
-            </div>
-          )}
         </div>
       )}
 
@@ -313,14 +310,8 @@ function DiagnosticsContent({ stats, batchStats }) {
                         <StatCard label="Math Steps" value={selectedCase.total_inner_iterations || 0} hint="Total Inner" />
                         <StatCard label="Prop Steps" value={selectedCase.property_iterations || 0} hint="Property Loops" />
                         <StatCard label="Max Residual" value={selectedCase.max_residual !== undefined ? selectedCase.max_residual.toExponential(2) : 'N/A'} hint="Balance Error" />
-                        <StatCard label="Solver Method" value={formatSolverName(selectedCase.solver_method)} />
+                        <StatCard label="Solver Method" value={formatSolverName(selectedCase.solver_method, selectedCase.fallback_used)} />
                         <StatCard label="Warm-Start" value={selectedCase.warm_start_status || 'N/A'} />
-                      </div>
-                    )}
-
-                    {selectedCase.fallback_used && (
-                      <div style={{ fontSize: '11px', color: '#854d0e', background: '#fefce8', padding: '10px', borderRadius: '6px', border: '1px solid #fef08a' }}>
-                        <strong>Note:</strong> Robust fallback (LM) was used to ensure convergence.
                       </div>
                     )}
                   </>
