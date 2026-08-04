@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from typing import Optional, List, Dict, Any
 import uuid
 
@@ -34,6 +34,25 @@ class GlobalSettings(BaseModel):
     control_iterations: int = 100 # Max steps for the regulator control loop
     solver_method: str = "sparse_newton" # "sparse_newton", "hybr" or "lm"
 
+    @model_validator(mode='before')
+    @classmethod
+    def populate_camel_case(cls, values: Any) -> Any:
+        if isinstance(values, dict):
+            mapping = {
+                'fluidType': 'fluid_type',
+                'ambientTemperature': 'ambient_temperature',
+                'atmosphericPressure': 'atmospheric_pressure',
+                'globalRoughness': 'global_roughness',
+                'propertyIterations': 'property_iterations',
+                'innerIterations': 'inner_iterations',
+                'controlIterations': 'control_iterations',
+                'solverMethod': 'solver_method'
+            }
+            for camel, snake in mapping.items():
+                if camel in values and snake not in values:
+                    values[snake] = values.pop(camel)
+        return values
+
 
 class OperatingCaseOverrides(BaseModel):
     """
@@ -43,6 +62,14 @@ class OperatingCaseOverrides(BaseModel):
     """
     nodes: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
     global_settings: Dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode='before')
+    @classmethod
+    def populate_camel_case(cls, values: Any) -> Any:
+        if isinstance(values, dict):
+            if 'globalSettings' in values and 'global_settings' not in values:
+                values['global_settings'] = values.pop('globalSettings')
+        return values
 
 class OperatingCase(BaseModel):
     """
@@ -77,6 +104,14 @@ class ReactFlowGraph(BaseModel):
     global_settings: Optional[GlobalSettings] = Field(default_factory=GlobalSettings)
     cases: Optional[List[OperatingCase]] = Field(default_factory=list)
     active_case_id: Optional[str] = None
+
+    @model_validator(mode='before')
+    @classmethod
+    def populate_camel_case(cls, values: Any) -> Any:
+        if isinstance(values, dict):
+            if 'globalSettings' in values and 'global_settings' not in values:
+                values['global_settings'] = values.pop('globalSettings')
+        return values
 
 class BatchCaseResult(BaseModel):
     case_id: str

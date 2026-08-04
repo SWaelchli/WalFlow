@@ -162,7 +162,7 @@ class NetworkSolver:
                     cv_req = math.sqrt((K_CV_SI * rho * q**2) / max(1.0, target_dp))
                     target_opening = (cv_req / node.max_cv) * 100.0
                 
-                node.opening_pct = node.opening_pct + 0.6 * (target_opening - node.opening_pct)
+                node.opening_pct = node.opening_pct + 0.25 * (target_opening - node.opening_pct)
                 node.opening_pct = max(0.1, min(100.0, node.opening_pct))
 
             # 2. 3-Way Thermal Control Valves
@@ -189,11 +189,11 @@ class NetworkSolver:
                     if node.set_temperature >= t_max:
                         # Target is hotter than or equal to both inlets, open hot port fully
                         target_mix = 1.0 if t_hot_port >= t_cold_port else 0.0
-                        node.mix_ratio = node.mix_ratio + 0.5 * (target_mix - node.mix_ratio)
+                        node.mix_ratio = node.mix_ratio + 0.25 * (target_mix - node.mix_ratio)
                     elif node.set_temperature <= t_min:
                         # Target is colder than or equal to both inlets, open cold port fully
                         target_mix = 0.0 if t_hot_port >= t_cold_port else 1.0
-                        node.mix_ratio = node.mix_ratio + 0.5 * (target_mix - node.mix_ratio)
+                        node.mix_ratio = node.mix_ratio + 0.25 * (target_mix - node.mix_ratio)
                     else:
                         num = node.set_temperature - t_cold_port
                         den = t_hot_port - node.set_temperature
@@ -207,13 +207,13 @@ class NetworkSolver:
                             target_mix = X / (1.0 + X)
                             target_mix = max(0.001, min(0.999, target_mix))
                             # Damped update for stability
-                            node.mix_ratio = node.mix_ratio + 0.5 * (target_mix - node.mix_ratio)
+                            node.mix_ratio = node.mix_ratio + 0.25 * (target_mix - node.mix_ratio)
                         else:
                             node.mix_ratio = 0.5
                 else:
                     # Fallback to incremental adjustment if temperatures are close or negative flow is active
                     direction = -1.0 if t_hot_port >= t_cold_port else 1.0
-                    adjustment = direction * 0.1 * t_err
+                    adjustment = direction * 0.05 * t_err
                     node.mix_ratio = max(0.001, min(0.999, node.mix_ratio + adjustment))
                 node.mix_ratio = max(0.001, min(0.999, node.mix_ratio))
 
@@ -349,6 +349,12 @@ class NetworkSolver:
         # 1. Mass Balance Rows (a < num_internal)
         for a, node_idx in enumerate(self.internal_node_indices):
             node_id = self.node_ids[node_idx]
+            
+            # Tiny regularization to prevent exactly singular matrix (floating nodes)
+            rows.append(a)
+            cols.append(a)
+            data.append(1e-9)
+            
             for j, edge in enumerate(self.edges_list):
                 if edge['target'] == node_id:
                     rows.append(a)
@@ -512,7 +518,7 @@ class NetworkSolver:
                 node_id = self.node_ids[node_idx]
                 q_in = sum(q_edges[j] for j, e in enumerate(self.edges_list) if e['target'] == node_id)
                 q_out = sum(q_edges[j] for j, e in enumerate(self.edges_list) if e['source'] == node_id)
-                residuals.append(5.0 * (q_in - q_out) / q_scale)
+                residuals.append(5.0 * (q_in - q_out) / q_scale + 1e-9 * x_scaled[i])
             
             # 2. Pressure Balance
             for j, edge in enumerate(self.edges_list):

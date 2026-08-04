@@ -49,7 +49,47 @@ services:
 
 Run `docker compose up -d` and navigate to `http://localhost:5173` (or route through a reverse proxy like Nginx or Cloudflare Tunnel).
 
+### Environment Variables Configuration
+
+The backend supports several environment variables that can be customized in the `environment:` section of the `walflow-backend` service:
+
+*   **`WALFLOW_REQUIRE_WS_AUTH`** (Default: `true`)
+    *   **What it does**: Controls whether WebSocket connections (required to run simulations) need user authentication/login.
+    *   **How to implement**: Set to `false` to allow guest users to run simulations:
+        ```yaml
+        - WALFLOW_REQUIRE_WS_AUTH=false
+        ```
+
+*   **`WALFLOW_SECRET_KEY`** (Default: Auto-generated random key at startup if not defined, provided `ENVIRONMENT` is not `production`)
+    *   **What it does**: The cryptographic key used to sign and verify JSON Web Tokens (JWT) for user authentication.
+    *   **Benefits & Trade-offs of Configuration Options**:
+        *   *Omitted / Not Set (Default)*: If not configured, the backend auto-generates a temporary random key on startup.
+            *   *Pros*: Zero-configuration setup, ideal for quick testing.
+            *   *Cons*: Every container restart or redeployment invalidates all active user login sessions, forcing users to log in again.
+        *   *Set explicitly*: Defined as a persistent, secure random string.
+            *   *Pros*: Keeps user sessions valid and logged in across container restarts and updates. Enforced in production environments.
+            *   *Cons*: Requires manual configuration and secure storage in your docker compose file.
+    *   **How to implement**:
+        ```yaml
+        - WALFLOW_SECRET_KEY=your_secure_random_key_here
+        ```
+
+*   **`ENVIRONMENT`** (Default: `development` behavior if not set)
+    *   **What it does**: Sets the execution mode. If set to `production`, the backend strictly enforces security checks, such as crashing on startup if `WALFLOW_SECRET_KEY` is not defined.
+    *   **How to implement**:
+        ```yaml
+        - ENVIRONMENT=production
+        ```
+
+*   **`WALFLOW_SECURE_COOKIES`** (Default: `true` if `WALFLOW_SECRET_KEY` is configured, `false` otherwise)
+    *   **What it does**: Overrides the `Secure` flag on HTTP cookies (tells the browser to only transmit cookies over encrypted `https://` connections).
+    *   **How to implement**: Set to `false` if deploying without HTTPS (e.g., local home network/LAN):
+        ```yaml
+        - WALFLOW_SECURE_COOKIES=false
+        ```
+
 ---
+
 
 ## 💻 Quick Start for Local Development
 

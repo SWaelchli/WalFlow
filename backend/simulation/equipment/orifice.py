@@ -58,16 +58,24 @@ class Orifice(HydraulicNode):
         orif_d = max(0.0001, self.orifice_diameter)
         beta_ratio = min(0.99, orif_d / pipe_d)
         area_pipe = math.pi * (pipe_d / 2.0)**2
-        velocity = flow_rate / max(1e-9, area_pipe)
         
-        area_orifice = math.pi * (self.orifice_diameter / 2)**2
+        area_orifice = math.pi * (self.orifice_diameter / 2.0)**2
         v_orifice = flow_rate / max(1e-9, area_orifice)
         re_orifice = (density * abs(v_orifice) * self.orifice_diameter) / max(1e-7, viscosity)
         
-        discharge_coefficient = FluidProperties.get_orifice_cd(re_orifice)
-        geometry_factor = (1.0 - beta_ratio**4) / (discharge_coefficient**2 * beta_ratio**4)
+        cd_turbulent = 0.60
+        re_safe = max(1e-6, re_orifice)
+        cd_val = cd_turbulent / math.sqrt(1.0 + 250.0 / re_safe)
         
-        return density * abs(velocity) / area_pipe * geometry_factor * (1.0 - beta_ratio**2)
+        c_const = 0.5 * density / (area_pipe ** 2) * (1.0 - beta_ratio**4) / (beta_ratio**4) * (1.0 - beta_ratio**2)
+        
+        if cd_val <= 0.05:
+            cd = 0.05
+            return c_const / (cd**2) * 2.0 * abs(flow_rate)
+        else:
+            c_re_coeff = (density * (1.0 / area_orifice) * self.orifice_diameter) / max(1e-7, viscosity)
+            c_inv_q = 250.0 / c_re_coeff
+            return c_const / 0.36 * (2.0 * abs(flow_rate) + c_inv_q)
 
     def calculate(self):
 

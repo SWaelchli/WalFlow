@@ -92,7 +92,21 @@ class NewEquipment(HydraulicNode):
         # Mandatory: Calculate temperature propagation/change
         self.calculate_temperature()
         return dp
+
+    def calculate_dp_derivative(self, flow_rate: float, density: float, viscosity: float) -> float:
+        """
+        Highly Recommended: Analytical derivative of pressure drop d(dP)/dq.
+        Ensures the sparse Newton-Raphson solver runs fast and converges robustly.
+        """
+        # For dP = param1 * q * |q|, the derivative is 2 * param1 * |q|
+        return 2.0 * self.param1 * abs(flow_rate)
 ```
+
+#### Step A.2: Solver Stability Guidelines
+To ensure compatibility with the high-speed Newton solver:
+1. **Laminar Viscosity Derivatives:** If a component includes a viscous correction multiplier of the form $(1 + C / \text{Re})$ (e.g., porous filters, orifices), the pressure drop behaves as $dp \propto (q|q| + C' q)$ in the laminar regime. Its exact derivative is proportional to $(2|q| + C')$, **not** $(2|q| + 2C')$. Ensure you derive the viscosity-corrected term carefully.
+2. **Smooth Blending Transitions:** Avoid step jumps or discontinuities in pressure drops or derivatives (e.g., changing friction models instantly at a specific Reynolds number like $\text{Re} = 2300$). Always blend the regimes smoothly over a transitional range (e.g., $\text{Re} \in [2000, 4000]$) using linear or cubic interpolation.
+3. **No Dynamic Time-Steps:** All equations must represent steady-state algebraic relations. Do not integrate over time.
 
 #### Step B: Register in Graph Parser
 Open `backend/simulation/graph_parser.py` and:

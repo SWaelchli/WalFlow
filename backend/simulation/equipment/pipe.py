@@ -22,63 +22,52 @@ class Pipe(HydraulicNode):
     def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float) -> float:
         """
         Calculates pressure drop using the Darcy-Weisbach equation.
-        Friction factor is calculated based on Reynolds number and roughness.
+        Friction factor is calculated with a smooth transition between laminar (Re < 2000)
+        and turbulent (Re > 4000) regimes to ensure solver stability.
         """
         if self.diameter <= 0:
             raise ValueError("Pipe diameter must be strictly positive.")
             
-        # 1. Calculate cross-sectional area (A = pi * r^2)
-        area = math.pi * (self.diameter / 2)**2
-        
-        # 2. Calculate fluid velocity (v = Q / A)
+        area = math.pi * (self.diameter / 2.0)**2
         velocity = flow_rate / area
-        
-        # 3. Calculate Reynolds Number (Re = rho * v * D / mu)
         abs_v = abs(velocity)
+        
         if viscosity > 0 and abs_v > 0:
             re = (density * abs_v * self.diameter) / viscosity
             
-            # 4. Determine friction factor (f)
-            if re < 2300:
-                # Laminar flow
-                f = 64 / re
-            else:
-                # Turbulent flow
-                roughness = 0.000045 # Default
+            # Helper for Swamee-Jain turbulent friction factor
+            def get_f_turb(re_val):
+                roughness = 0.000045
                 if self.global_settings:
                     roughness = getattr(self.global_settings, 'global_roughness', 0.000045)
-                
-                # Swamee-Jain equation (Approximate Colebrook-White)
-                f = 0.25 / (math.log10(roughness / (3.7 * self.diameter) + 5.74 / re**0.9))**2
+                return 0.25 / (math.log10(roughness / (3.7 * self.diameter) + 5.74 / re_val**0.9))**2
+
+            if re < 2000.0:
+                f = 64.0 / re
+            elif re > 4000.0:
+                f = get_f_turb(re)
+            else:
+                # Smooth blending between 2000 and 4000
+                f_lam = 64.0 / re
+                f_turb = get_f_turb(re)
+                w = (re - 2000.0) / 2000.0
+                f = (1.0 - w) * f_lam + w * f_turb
         else:
-            f = 0
-        
-        # 5. Calculate pressure drop (Delta P = f * (L/D) * (rho * v^2 / 2))
-        delta_p = f * (self.length / self.diameter) * (density * velocity * abs_v / 2)
-        
+            f = 0.0
+            
+        delta_p = f * (self.length / self.diameter) * (density * velocity * abs_v / 2.0)
         return delta_p
-        
+
     def calculate(self):
-        """
-        Updates the outlet port's state based on the inlet port's state and the calculated drop.
-        Handles bi-directional property propagation and throttling heat.
-        """
         inlet = self.inlets[0]
         outlet = self.outlets[0]
-        
-        # Calculate the pressure drop based on the current flow rate passing through
         dp = self.calculate_delta_p(inlet.flow_rate, inlet.density, inlet.viscosity)
         
-        # Update pressures (standard inlet -> outlet delta)
         outlet.pressure = inlet.pressure - dp
         outlet.flow_rate = inlet.flow_rate
         
-        # Throttling Heat: dT = abs(dP) / (rho * Cp)
         fluid_type = getattr(self.global_settings, 'fluid_type', 'water')
-        
-        # Bi-directional Property Propagation + Throttling Heat
         if inlet.flow_rate >= 0:
-            # Forward Flow: Inlet -> Outlet
             cp = FluidProperties.get_specific_heat(fluid_type, inlet.temperature)
             dt = abs(dp) / (inlet.density * cp)
             outlet.temperature = inlet.temperature + dt
@@ -87,7 +76,6 @@ class Pipe(HydraulicNode):
             inlet.density = FluidProperties.get_density(fluid_type, inlet.temperature)
             inlet.viscosity = FluidProperties.get_viscosity(fluid_type, inlet.temperature)
         else:
-            # Reverse Flow: Outlet -> Inlet
             cp = FluidProperties.get_specific_heat(fluid_type, outlet.temperature)
             dt = abs(dp) / (outlet.density * cp)
             inlet.temperature = outlet.temperature + dt
@@ -95,34 +83,36 @@ class Pipe(HydraulicNode):
             inlet.viscosity = FluidProperties.get_viscosity(fluid_type, inlet.temperature)
             outlet.density = FluidProperties.get_density(fluid_type, outlet.temperature)
             outlet.viscosity = FluidProperties.get_viscosity(fluid_type, outlet.temperature)
-        
         return dp
 
     def calculate_dp_derivative(self, flow_rate: float, density: float, viscosity: float) -> float:
-        """
-        Analytical derivative of Darcy-Weisbach pressure drop with respect to flow rate.
-        """
         if self.diameter <= 0:
             raise ValueError("Pipe diameter must be strictly positive.")
             
-        area = math.pi * (self.diameter / 2)**2
+        area = math.pi * (self.diameter / 2.0)**2
         velocity = flow_rate / area
         abs_v = abs(velocity)
         
         if viscosity > 0 and abs_v > 0:
             re = (density * abs_v * self.diameter) / viscosity
-            if re < 2300:
-                # Laminar: d(dp)/dq = 32 * mu * L / (D^2 * A)
-                return 32.0 * viscosity * self.length / ((self.diameter ** 2) * area)
-            else:
-                # Turbulent: dp = f * (L/D) * (rho * v * abs_v / 2)
-                # Differentiating q * abs(q) with respect to q gives 2 * abs(q)
-                # Assuming friction factor (f) is constant for the derivative step
+            
+            def get_dp_deriv_turb(q_val, re_val):
                 roughness = 0.000045
                 if self.global_settings:
                     roughness = getattr(self.global_settings, 'global_roughness', 0.000045)
-                f = 0.25 / (math.log10(roughness / (3.7 * self.diameter) + 5.74 / re**0.9))**2
-                return f * (self.length / self.diameter) * density * abs(flow_rate) / (area ** 2)
+                f = 0.25 / (math.log10(roughness / (3.7 * self.diameter) + 5.74 / re_val**0.9))**2
+                return f * (self.length / self.diameter) * density * abs(q_val) / (area ** 2)
+
+            if re < 2000.0:
+                return 32.0 * viscosity * self.length / ((self.diameter ** 2) * area)
+            elif re > 4000.0:
+                return get_dp_deriv_turb(flow_rate, re)
+            else:
+                # Blended derivative
+                deriv_lam = 32.0 * viscosity * self.length / ((self.diameter ** 2) * area)
+                deriv_turb = get_dp_deriv_turb(flow_rate, re)
+                w = (re - 2000.0) / 2000.0
+                return (1.0 - w) * deriv_lam + w * deriv_turb
         else:
             return 0.0
 

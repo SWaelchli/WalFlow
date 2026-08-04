@@ -17,6 +17,7 @@ services:
       - PUID=${PUID}
       - PGID=${PGID}
       - PYTHONUNBUFFERED=1
+      - WALFLOW_REQUIRE_WS_AUTH=false
 
   ############################
   # WalFlow - Frontend & Nginx Proxy

@@ -96,12 +96,12 @@ class GraphParser:
                 source_node = nodes_dict.get(edge.source)
                 target_node = nodes_dict.get(edge.target)
                 if isinstance(target_node, RemoteControlValve):
-                    # Handle IDs like "signal-inlet-0" or "signal-outlet-1"
+                    # Handle IDs like "signal-inlet-0" or just "inlet-0"
                     handle_id = str(edge.sourceHandle or "")
                     parts = handle_id.split('-')
-                    if len(parts) >= 3:
-                        port_type = parts[1] # "inlet" or "outlet"
-                        port_idx = int(parts[2])
+                    if len(parts) >= 2:
+                        port_type = parts[-2] # "inlet" or "outlet"
+                        port_idx = int(parts[-1])
                         target_node.remote_sensing_config = {
                             "node_id": edge.source,
                             "port_type": port_type,
