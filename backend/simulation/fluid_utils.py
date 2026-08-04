@@ -76,12 +76,10 @@ class FluidProperties:
     def get_valve_fr(reynolds_number: float) -> float:
         """
         Calculates IEC 60534-2-1 valve viscosity correction factor Fr.
-        Scales effective Cv down smoothly when flow is in transition or laminar regime (Re < 2000).
-        Bounded between 0.4 and 1.0 for numerical stability.
+        Scales effective Cv down smoothly when flow is in transition or laminar regime.
+        Continuous and smooth across all regimes.
         """
         re_safe = max(1e-6, abs(reynolds_number))
-        if re_safe >= 2000.0:
-            return 1.0
         fr = (re_safe + 200.0) / (re_safe + 400.0)
         return max(0.4, min(1.0, fr))
 
@@ -89,12 +87,16 @@ class FluidProperties:
     def get_filter_viscosity_factor(reynolds_number: float) -> float:
         """
         Calculates dynamic friction multiplier for porous filter elements.
-        Accounts for laminar Darcy flow resistance at low Re.
+        Smoothly blended between laminar (Re < 2000) and turbulent (Re > 4000) regimes.
         """
         re_safe = max(1e-6, abs(reynolds_number))
-        if re_safe >= 2000.0:
+        if re_safe < 2000.0:
+            return 1.0 + (100.0 / re_safe)
+        elif re_safe > 4000.0:
             return 1.0
-        return 1.0 + (100.0 / re_safe)
+        else:
+            w = (re_safe - 2000.0) / 2000.0
+            return 1.0 + (1.0 - w) * (100.0 / re_safe)
 
     @staticmethod
     def get_vapor_pressure(fluid_type: str, temp_k: float) -> float:

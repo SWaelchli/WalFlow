@@ -34,16 +34,14 @@ class CentrifugalPump(HydraulicNode):
         """
         if not getattr(self, 'active', True):
             return 0.0
-        delta_p = self.p_shutoff + (self.C_coeff * (flow_rate**2))
-        return max(0.0, delta_p)
+        # Return the analytical quadratic curve unconditionally to ensure gradient continuity
+        return self.p_shutoff + (self.C_coeff * (flow_rate**2))
 
     def calculate_dp_derivative(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
         if not getattr(self, 'active', True):
             return 0.0
-        val = self.p_shutoff + (self.C_coeff * (flow_rate**2))
-        if val > 0:
-            return 2.0 * self.C_coeff * flow_rate
-        return 0.0
+        # Return the derivative unconditionally
+        return 2.0 * self.C_coeff * flow_rate
 
 
     def calculate(self):

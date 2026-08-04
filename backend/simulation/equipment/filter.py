@@ -56,11 +56,17 @@ class Filter(HydraulicNode):
         v_elem = flow_rate / a_ref
         re_filter = (density * abs(v_elem) * d_pore) / max(1e-7, viscosity)
         
-        if re_filter >= 2000.0:
-            return 2.0 * k_curr * density * abs(flow_rate)
-        else:
+        deriv_turb = 2.0 * k_curr * density * abs(flow_rate)
+        if re_filter < 2000.0:
             c_lam = 100.0 * a_ref * viscosity / (density * d_pore)
             return k_curr * density * (2.0 * abs(flow_rate) + c_lam)
+        elif re_filter > 4000.0:
+            return deriv_turb
+        else:
+            c_lam = 100.0 * a_ref * viscosity / (density * d_pore)
+            deriv_lam = k_curr * density * (2.0 * abs(flow_rate) + c_lam)
+            w = (re_filter - 2000.0) / 2000.0
+            return (1.0 - w) * deriv_lam + w * deriv_turb
 
     def calculate(self):
 

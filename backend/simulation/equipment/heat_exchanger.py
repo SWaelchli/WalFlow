@@ -79,11 +79,17 @@ class HeatExchanger(HydraulicNode):
         
         c2 = self.pressure_drop_factor * (density / 1000.0)
         
-        if re_hx >= 2000.0:
-            return 2.0 * c2 * flow
-        else:
+        deriv_turb = 2.0 * c2 * flow
+        if re_hx < 2000.0:
             c_lam = 100.0 * a_hx * viscosity / (density * d_hx)
             return c2 * (2.0 * abs(flow) + c_lam)
+        elif re_hx > 4000.0:
+            return deriv_turb
+        else:
+            c_lam = 100.0 * a_hx * viscosity / (density * d_hx)
+            deriv_lam = c2 * (2.0 * abs(flow) + c_lam)
+            w = (re_hx - 2000.0) / 2000.0
+            return (1.0 - w) * deriv_lam + w * deriv_turb
 
 
     def calculate_temperature(self):

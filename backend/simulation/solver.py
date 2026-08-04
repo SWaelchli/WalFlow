@@ -565,6 +565,12 @@ class NetworkSolver:
                     if q_edges[j] < -1e-6: return False
             return True
 
+        def dense_jacobian(x_scaled):
+            p_val = x_scaled[:num_internal] * p_scale
+            q_val = x_scaled[num_internal:] * q_scale
+            x_unscaled = np.concatenate([p_val, q_val])
+            return self.calculate_jacobian(x_unscaled).toarray()
+
         gs = getattr(self.network, 'global_settings', None)
         inner_max_steps = getattr(gs, 'inner_iterations', 1000) if gs else 1000
         tol = getattr(gs, 'tolerance', 1e-6) if gs else 1e-6
@@ -575,12 +581,12 @@ class NetworkSolver:
             if not sol.success or not is_physical(sol.x):
                 # Fallback to LM starting from original initial guess x0
                 fallback_used = True
-                sol = root(objective, x0, method='lm', tol=tol, options={'maxiter': inner_max_steps})
+                sol = root(objective, x0, method='lm', jac=dense_jacobian, tol=tol, options={'maxiter': inner_max_steps})
         else:
-            sol = root(objective, x0, method=method, tol=tol, options={'maxfev': inner_max_steps})
+            sol = root(objective, x0, method=method, jac=dense_jacobian, tol=tol, options={'maxfev': inner_max_steps})
             if method == 'hybr' and (not sol.success or not is_physical(sol.x)):
                 fallback_used = True
-                sol = root(objective, x0, method='lm', tol=tol, options={'maxiter': inner_max_steps})
+                sol = root(objective, x0, method='lm', jac=dense_jacobian, tol=tol, options={'maxiter': inner_max_steps})
 
                 
         final_residuals = objective(sol.x)
