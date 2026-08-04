@@ -67,73 +67,267 @@ const theme = {
 };
 
 
-function DiagnosticsContent({ stats }) {
-  if (!stats) {
+function formatSolverName(method) {
+  if (!method) return 'N/A';
+  if (method === 'sparse_newton') return 'Sparse Newton';
+  if (method === 'hybr') return 'Powell HYBR';
+  if (method === 'lm') return 'Levenberg-Marq';
+  return method;
+}
+
+function DiagnosticsContent({ stats, batchStats }) {
+  const [statsSource, setStatsSource] = useState('single');
+  const [selectedBatchCaseId, setSelectedBatchCaseId] = useState('');
+
+  const [prevStats, setPrevStats] = useState(stats);
+  const [prevBatchStats, setPrevBatchStats] = useState(batchStats);
+
+  if (stats !== prevStats) {
+    setPrevStats(stats);
+    setStatsSource('single');
+  }
+
+  if (batchStats !== prevBatchStats) {
+    setPrevBatchStats(batchStats);
+    setStatsSource('batch');
+    if (batchStats && batchStats.length > 0) {
+      setSelectedBatchCaseId(batchStats[0].case_id);
+    }
+  }
+
+  if (!stats && (!batchStats || batchStats.length === 0)) {
     return (
       <div style={{ textAlign: 'center', padding: '40px 20px', color: theme.slate500 }}>
         <div style={{ fontSize: '32px', marginBottom: '12px' }}>📊</div>
         <p style={{ fontSize: '13px', margin: 0 }}>No simulation data yet.</p>
-        <p style={{ fontSize: '11px', marginTop: '4px' }}>Run a simulation to see engine performance.</p>
+        <p style={{ fontSize: '11px', marginTop: '4px' }}>Run a simulation or batch solve to see performance.</p>
       </div>
     );
   }
 
-  const { success, time_ms, outer_iterations, total_inner_iterations, fallback_used, system_size, bottleneck, error } = stats;
+  const hasSingle = !!stats;
+  const hasBatch = batchStats && batchStats.length > 0;
+  const activeSource = (statsSource === 'batch' && hasBatch) ? 'batch' : (hasSingle ? 'single' : 'batch');
+
+  // Single Case Stats
+  const { success, time_ms, outer_iterations, total_inner_iterations, fallback_used, system_size, bottleneck, error } = stats || {};
+
+  // Selected Batch Case Stats
+  const selectedCase = hasBatch ? (batchStats.find(c => c.case_id === selectedBatchCaseId) || batchStats[0]) : null;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <div style={{ 
-        padding: '16px', 
-        borderRadius: '8px', 
-        background: success ? '#f0fdf4' : '#fef2f2',
-        border: `1px solid ${success ? '#bbf7d0' : '#fecaca'}`,
-        display: 'flex',
-        alignItems: 'center',
-        gap: '12px'
-      }}>
-        <div style={{ fontSize: '20px' }}>{success ? '✅' : '❌'}</div>
-        <div>
-          <div style={{ fontSize: '14px', fontWeight: '700', color: success ? '#166534' : '#991b1b' }}>
-            {success ? 'SOLVER CONVERGED' : 'SOLVER FAILED'}
-          </div>
-          <div style={{ fontSize: '11px', color: success ? '#15803d' : '#b91c1c' }}>
-            {success ? 'System is balanced.' : error || 'Non-physical results found.'}
-          </div>
-        </div>
-      </div>
-
-      {bottleneck && !success && (
-        <div style={{ 
-          padding: '16px', 
-          borderRadius: '8px', 
-          background: theme.slate800,
-          color: theme.white,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '8px'
-        }}>
-          <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: '#94a3b8' }}>Critical Bottleneck</div>
-          <div>
-            <div style={{ fontSize: '14px', fontWeight: '700' }}>{bottleneck.name}</div>
-            <div style={{ fontSize: '11px', color: '#94a3b8' }}>{bottleneck.error_type}</div>
-          </div>
-          <div style={{ fontSize: '10px', color: '#64748b', borderTop: '1px solid #334155', paddingTop: '8px', marginTop: '4px' }}>
-            This component has the largest mathematical error. Check its sizing or connections.
-          </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      {hasSingle && hasBatch && (
+        <div style={{ display: 'flex', gap: '4px', background: theme.slate55 || '#F4F7F6', padding: '3px', borderRadius: '8px', border: `1px solid ${theme.slate200}` }}>
+          <button
+            onClick={() => setStatsSource('single')}
+            style={{
+              flex: 1, padding: '6px', border: 'none', borderRadius: '6px',
+              fontSize: '11px', fontWeight: '700', cursor: 'pointer',
+              background: statsSource === 'single' ? theme.brandDark : 'transparent',
+              color: statsSource === 'single' ? theme.white : theme.slate500,
+              transition: 'all 0.15s ease'
+            }}
+          >
+            Single Run
+          </button>
+          <button
+            onClick={() => setStatsSource('batch')}
+            style={{
+              flex: 1, padding: '6px', border: 'none', borderRadius: '6px',
+              fontSize: '11px', fontWeight: '700', cursor: 'pointer',
+              background: statsSource === 'batch' ? theme.brandDark : 'transparent',
+              color: statsSource === 'batch' ? theme.white : theme.slate500,
+              transition: 'all 0.15s ease'
+            }}
+          >
+            Batch Solve ({batchStats.length})
+          </button>
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-        <StatCard label="Total Time" value={`${time_ms.toFixed(1)} ms`} />
-        <StatCard label="System Size" value={`${system_size} Eq.`} />
-        <StatCard label="Control Steps" value={outer_iterations} hint="Outer Loop" />
-        <StatCard label="Math Steps" value={total_inner_iterations} hint="Total Inner" />
-        <StatCard label="Prop Steps" value={stats.property_iterations || 0} hint="Property Loops" />
-      </div>
+      {activeSource === 'single' && stats && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ 
+            padding: '16px', 
+            borderRadius: '8px', 
+            background: success ? '#f0fdf4' : '#fef2f2',
+            border: `1px solid ${success ? '#bbf7d0' : '#fecaca'}`,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px'
+          }}>
+            <div style={{ fontSize: '20px' }}>{success ? '✅' : '❌'}</div>
+            <div>
+              <div style={{ fontSize: '14px', fontWeight: '700', color: success ? '#166534' : '#991b1b' }}>
+                {success ? 'SOLVER CONVERGED' : 'SOLVER FAILED'}
+              </div>
+              <div style={{ fontSize: '11px', color: success ? '#15803d' : '#b91c1c' }}>
+                {success ? 'System is balanced.' : error || 'Non-physical results found.'}
+              </div>
+            </div>
+          </div>
 
-      {fallback_used && (
-        <div style={{ fontSize: '11px', color: '#854d0e', background: '#fefce8', padding: '10px', borderRadius: '6px', border: '1px solid #fef08a' }}>
-          <strong>Note:</strong> Robust fallback (LM) was used to ensure convergence.
+          {bottleneck && !success && (
+            <div style={{ 
+              padding: '16px', 
+              borderRadius: '8px', 
+              background: theme.slate800,
+              color: theme.white,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px'
+            }}>
+              <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: '#94a3b8' }}>Critical Bottleneck</div>
+              <div>
+                <div style={{ fontSize: '14px', fontWeight: '700' }}>{bottleneck.name}</div>
+                <div style={{ fontSize: '11px', color: '#94a3b8' }}>{bottleneck.error_type}</div>
+              </div>
+              <div style={{ fontSize: '10px', color: '#64748b', borderTop: '1px solid #334155', paddingTop: '8px', marginTop: '4px' }}>
+                This component has the largest mathematical error. Check its sizing or connections.
+              </div>
+            </div>
+          )}
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <StatCard label="Total Time" value={`${time_ms.toFixed(1)} ms`} />
+            <StatCard label="System Size" value={`${system_size} Eq.`} hint={stats.num_nodes !== undefined ? `${stats.num_nodes} Nodes / ${stats.num_edges} Pipes` : null} />
+            <StatCard label="Control Steps" value={outer_iterations} hint="Outer Loop" />
+            <StatCard label="Math Steps" value={total_inner_iterations} hint="Total Inner" />
+            <StatCard label="Prop Steps" value={stats.property_iterations || 0} hint="Property Loops" />
+            <StatCard label="Max Residual" value={stats.max_residual !== undefined ? stats.max_residual.toExponential(2) : 'N/A'} hint="Balance Error" />
+            <StatCard label="Solver Method" value={formatSolverName(stats.solver_method)} />
+            <StatCard label="Warm-Start" value={stats.warm_start_status || 'N/A'} />
+          </div>
+
+          {fallback_used && (
+            <div style={{ fontSize: '11px', color: '#854d0e', background: '#fefce8', padding: '10px', borderRadius: '6px', border: '1px solid #fef08a' }}>
+              <strong>Note:</strong> Robust fallback (LM) was used to ensure convergence.
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeSource === 'batch' && hasBatch && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ 
+            padding: '12px', 
+            borderRadius: '8px', 
+            background: theme.slate50, 
+            border: `1px solid ${theme.slate200}`,
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '8px'
+          }}>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: '9px', color: theme.slate500, fontWeight: '600', textTransform: 'uppercase' }}>Total Batch Time</span>
+              <span style={{ fontSize: '14px', fontWeight: '700', color: theme.slate800 }}>
+                {batchStats.reduce((sum, c) => sum + (c.time_ms || 0), 0).toFixed(1)} ms
+              </span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: '9px', color: theme.slate500, fontWeight: '600', textTransform: 'uppercase' }}>Success Rate</span>
+              <span style={{ fontSize: '14px', fontWeight: '700', color: theme.slate800 }}>
+                {((batchStats.filter(c => c.status === 'success' && !c.error_message).length / batchStats.length) * 100).toFixed(0)}%
+              </span>
+            </div>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: theme.slate500, marginBottom: '6px' }}>
+              Select Operating Case
+            </label>
+            <select
+              value={selectedBatchCaseId}
+              onChange={(e) => setSelectedBatchCaseId(e.target.value)}
+              style={{
+                width: '100%', padding: '10px 12px', borderRadius: '8px',
+                border: `1px solid ${theme.slate200}`, fontSize: '13px',
+                background: theme.white, outline: 'none'
+              }}
+            >
+              {batchStats.map(c => {
+                const caseSuccess = c.status === 'success' && !c.error_message;
+                return (
+                  <option key={c.case_id} value={c.case_id}>
+                    {c.case_name} ({caseSuccess ? 'Success' : 'Failed'})
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+
+          {selectedCase && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {(() => {
+                const caseSuccess = selectedCase.status === 'success' && !selectedCase.error_message;
+                const caseErr = selectedCase.error_message || selectedCase.error;
+                return (
+                  <>
+                    <div style={{ 
+                      padding: '16px', 
+                      borderRadius: '8px', 
+                      background: caseSuccess ? '#f0fdf4' : '#fef2f2',
+                      border: `1px solid ${caseSuccess ? '#bbf7d0' : '#fecaca'}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px'
+                    }}>
+                      <div style={{ fontSize: '20px' }}>{caseSuccess ? '✅' : '❌'}</div>
+                      <div>
+                        <div style={{ fontSize: '14px', fontWeight: '700', color: caseSuccess ? '#166534' : '#991b1b' }}>
+                          {caseSuccess ? 'CASE CONVERGED' : 'CASE FAILED'}
+                        </div>
+                        <div style={{ fontSize: '11px', color: caseSuccess ? '#15803d' : '#b91c1c' }}>
+                          {caseSuccess ? 'System is balanced.' : caseErr || 'Non-physical results found.'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {selectedCase.bottleneck && !caseSuccess && (
+                      <div style={{ 
+                        padding: '16px', 
+                        borderRadius: '8px', 
+                        background: theme.slate800,
+                        color: theme.white,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px'
+                      }}>
+                        <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: '#94a3b8' }}>Critical Bottleneck</div>
+                        <div>
+                          <div style={{ fontSize: '14px', fontWeight: '700' }}>{selectedCase.bottleneck.name}</div>
+                          <div style={{ fontSize: '11px', color: '#94a3b8' }}>{selectedCase.bottleneck.error_type}</div>
+                        </div>
+                        <div style={{ fontSize: '10px', color: '#64748b', borderTop: '1px solid #334155', paddingTop: '8px', marginTop: '4px' }}>
+                          This component has the largest mathematical error. Check its sizing or connections.
+                        </div>
+                      </div>
+                    )}
+
+                    {caseSuccess && (
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        <StatCard label="Solve Time" value={`${(selectedCase.time_ms || 0).toFixed(1)} ms`} />
+                        <StatCard label="System Size" value={`${selectedCase.system_size || 0} Eq.`} hint={selectedCase.num_nodes !== undefined ? `${selectedCase.num_nodes} Nodes / ${selectedCase.num_edges} Pipes` : null} />
+                        <StatCard label="Control Steps" value={selectedCase.outer_iterations || 0} hint="Outer Loop" />
+                        <StatCard label="Math Steps" value={selectedCase.total_inner_iterations || 0} hint="Total Inner" />
+                        <StatCard label="Prop Steps" value={selectedCase.property_iterations || 0} hint="Property Loops" />
+                        <StatCard label="Max Residual" value={selectedCase.max_residual !== undefined ? selectedCase.max_residual.toExponential(2) : 'N/A'} hint="Balance Error" />
+                        <StatCard label="Solver Method" value={formatSolverName(selectedCase.solver_method)} />
+                        <StatCard label="Warm-Start" value={selectedCase.warm_start_status || 'N/A'} />
+                      </div>
+                    )}
+
+                    {selectedCase.fallback_used && (
+                      <div style={{ fontSize: '11px', color: '#854d0e', background: '#fefce8', padding: '10px', borderRadius: '6px', border: '1px solid #fef08a' }}>
+                        <strong>Note:</strong> Robust fallback (LM) was used to ensure convergence.
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -306,7 +500,7 @@ function CollapsibleScenarios({ templates, onLoad }) {
   );
 }
 
-export default function Sidebar({ onLoad, globalSettings, onUpdateGlobalSettings, templates, lastStats }) {
+export default function Sidebar({ onLoad, globalSettings, onUpdateGlobalSettings, templates, lastStats, batchStats }) {
   const [activeTab, setActiveTab] = useState('library');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -425,6 +619,7 @@ export default function Sidebar({ onLoad, globalSettings, onUpdateGlobalSettings
                   <option value="iso_vg_32">ISO VG 32 Oil</option>
                   <option value="iso_vg_46">ISO VG 46 Oil</option>
                 </select>
+                <p style={hintStyle}>Sets fluid properties (density, viscosity, thermal capacity) circulating through the network.</p>
               </div>
 
               <div>
@@ -435,6 +630,7 @@ export default function Sidebar({ onLoad, globalSettings, onUpdateGlobalSettings
                   onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, ambient_temperature: parseFloat(e.target.value) + 273.15 })}
                   style={inputStyle}
                 />
+                <p style={hintStyle}>Baseline environment temperature affecting heat losses and fluid properties.</p>
               </div>
 
               <div>
@@ -445,6 +641,7 @@ export default function Sidebar({ onLoad, globalSettings, onUpdateGlobalSettings
                   onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, atmospheric_pressure: parseFloat(e.target.value) })}
                   style={inputStyle}
                 />
+                <p style={hintStyle}>Reference atmospheric pressure used for open reservoirs and absolute calculations.</p>
               </div>
 
               <div>
@@ -456,7 +653,7 @@ export default function Sidebar({ onLoad, globalSettings, onUpdateGlobalSettings
                   onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, global_roughness: parseFloat(e.target.value) })}
                   style={inputStyle}
                 />
-                <p style={hintStyle}>Steel ≈ 0.000045m</p>
+                <p style={hintStyle}>Friction roughness inside pipes. Steel is typically 0.000045m (45 µm).</p>
               </div>
             </div>
 
@@ -477,6 +674,32 @@ export default function Sidebar({ onLoad, globalSettings, onUpdateGlobalSettings
                 <p style={hintStyle}>Sparse Newton is fast and scalable; HYBR/LM are legacy dense solvers.</p>
               </div>
 
+              <div>
+                <label style={labelStyle}>Warm-Start Cache</label>
+                <select 
+                  value={globalSettings.warm_start !== false ? 'true' : 'false'}
+                  onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, warm_start: e.target.value === 'true' })}
+                  style={inputStyle}
+                >
+                  <option value="true">Enabled (Recommended)</option>
+                  <option value="false">Disabled (Force Cold Starts)</option>
+                </select>
+                <p style={hintStyle}>Reuses the last solved state as an initial guess. Speeds up real-time slider and operating case updates.</p>
+              </div>
+
+              <div>
+                <label style={labelStyle}>Damping Factor</label>
+                <input 
+                  type="number"
+                  step="0.05"
+                  min="0.05"
+                  max="1.0"
+                  value={globalSettings.damping_factor !== undefined ? globalSettings.damping_factor : 0.25}
+                  onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, damping_factor: parseFloat(e.target.value) })}
+                  style={inputStyle}
+                />
+                <p style={hintStyle}>Damping (0.05 to 1.0) for outer regulator updates. Lower prevents oscillations; higher speeds convergence.</p>
+              </div>
 
               <div>
                 <label style={labelStyle}>Control Iterations</label>
@@ -486,7 +709,7 @@ export default function Sidebar({ onLoad, globalSettings, onUpdateGlobalSettings
                   onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, control_iterations: parseInt(e.target.value) })}
                   style={inputStyle}
                 />
-                <p style={hintStyle}>Outer loop for Regulator setpoints.</p>
+                <p style={hintStyle}>Max outer loop iterations for regulators and remote control valves to settle on their setpoints.</p>
               </div>
 
               <div>
@@ -497,7 +720,7 @@ export default function Sidebar({ onLoad, globalSettings, onUpdateGlobalSettings
                   onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, property_iterations: parseInt(e.target.value) })}
                   style={inputStyle}
                 />
-                <p style={hintStyle}>Thermal propagation loops.</p>
+                <p style={hintStyle}>Max loops for propagating fluid temperature and thermal property updates across the network.</p>
               </div>
 
               <div>
@@ -509,7 +732,7 @@ export default function Sidebar({ onLoad, globalSettings, onUpdateGlobalSettings
                   onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, tolerance: parseFloat(e.target.value) })}
                   style={inputStyle}
                 />
-                <p style={hintStyle}>Target precision for balance.</p>
+                <p style={hintStyle}>Target numerical residual precision (e.g., 1e-6). Lower values increase solve accuracy.</p>
               </div>
 
               <div>
@@ -520,14 +743,14 @@ export default function Sidebar({ onLoad, globalSettings, onUpdateGlobalSettings
                   onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, inner_iterations: parseInt(e.target.value) })}
                   style={inputStyle}
                 />
-                <p style={hintStyle}>Max steps for the math engine.</p>
+                <p style={hintStyle}>Max steps the core matrix solver is allowed to take to resolve hydraulic equations per iteration.</p>
               </div>
             </div>
           </div>
         )}
 
         {activeTab === 'diagnostics' && (
-          <DiagnosticsContent stats={lastStats} />
+          <DiagnosticsContent stats={lastStats} batchStats={batchStats} />
         )}
       </div>
     </aside>

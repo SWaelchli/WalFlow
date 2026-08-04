@@ -217,8 +217,11 @@ function WalFlowContent() {
     tolerance: 1e-6,
     inner_iterations: 1000,
     control_iterations: 100,
-    solver_method: 'sparse_newton'
+    solver_method: 'sparse_newton',
+    warm_start: true,
+    damping_factor: 0.25
   });
+  const [batchStats, setBatchStats] = useState(null);
 
 
   const {
@@ -279,6 +282,16 @@ function WalFlowContent() {
           } 
         : c;
     }));
+
+    if (batchResults) {
+      setBatchStats(batchResults.map(r => ({
+        case_id: r.case_id,
+        case_name: r.case_name,
+        status: r.status,
+        error_message: r.error_message,
+        ...(r.stats || {})
+      })));
+    }
   }, []);
 
   const {
@@ -1129,6 +1142,7 @@ function WalFlowContent() {
           globalSettings={globalSettings}
           onUpdateGlobalSettings={setGlobalSettings}
           lastStats={lastStats}
+          batchStats={batchStats}
           templates={{
             "Industrial Process Systems": {
               "API 614 Lube Oil System (LOS)": exampleAPI614,

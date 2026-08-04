@@ -41,6 +41,7 @@ class NetworkSolver:
         
         self.last_prop_iters = 0
         self.active_case_id = getattr(network, 'active_case_id', None) or 'default'
+        self.warm_start_status = "Cold Start"
         
         # Build a fixed topology key that uniquely identifies the layout of nodes & edges
         self.topology_key = (
@@ -67,6 +68,7 @@ class NetworkSolver:
         gs = getattr(self.network, 'global_settings', None)
         if gs:
             max_outer_iterations = getattr(gs, 'control_iterations', 100)
+        damping_factor = getattr(gs, 'damping_factor', 0.25) if gs else 0.25
         
         if method is None:
             method = getattr(gs, 'solver_method', 'sparse_newton') if gs else 'sparse_newton'
@@ -144,25 +146,16 @@ class NetworkSolver:
                     node.sensed_pressure = sensed
                     sensed_at_outlet = not node.backpressure
                 
-                error_bar = abs(sensed - node.set_pressure) / 100000.0
-                max_err_bar = max(max_err_bar, error_bar)
+                error_bar = (sensed - node.set_pressure) / 100000.0
+                max_err_bar = max(max_err_bar, abs(error_bar))
                 
-                current_dp = (node.inlets[0].pressure - node.outlets[0].pressure)
-                target_dp = current_dp + (sensed - node.set_pressure) if sensed_at_outlet else current_dp + (node.set_pressure - sensed)
+                direction = 1.0 if node.backpressure else -1.0
+                # Proportional feedback update (15% opening adjustment per 1 bar of error)
+                gain = 15.0
+                target_opening = node.opening_pct + direction * gain * error_bar
+                target_opening = max(0.1, min(100.0, target_opening))
                 
-                rho = node.inlets[0].density
-                q = node.inlets[0].flow_rate
-                abs_q = abs(q)
-                K_CV_SI = 1.732e9
-                min_dp = (K_CV_SI * rho * q * abs_q) / (node.max_cv**2) if abs_q > 0 else 0
-                
-                if target_dp <= min_dp or abs_q < 1e-8:
-                    target_opening = 100.0
-                else:
-                    cv_req = math.sqrt((K_CV_SI * rho * q**2) / max(1.0, target_dp))
-                    target_opening = (cv_req / node.max_cv) * 100.0
-                
-                node.opening_pct = node.opening_pct + 0.25 * (target_opening - node.opening_pct)
+                node.opening_pct = node.opening_pct + damping_factor * (target_opening - node.opening_pct)
                 node.opening_pct = max(0.1, min(100.0, node.opening_pct))
 
             # 2. 3-Way Thermal Control Valves
@@ -189,11 +182,11 @@ class NetworkSolver:
                     if node.set_temperature >= t_max:
                         # Target is hotter than or equal to both inlets, open hot port fully
                         target_mix = 1.0 if t_hot_port >= t_cold_port else 0.0
-                        node.mix_ratio = node.mix_ratio + 0.25 * (target_mix - node.mix_ratio)
+                        node.mix_ratio = node.mix_ratio + damping_factor * (target_mix - node.mix_ratio)
                     elif node.set_temperature <= t_min:
                         # Target is colder than or equal to both inlets, open cold port fully
                         target_mix = 0.0 if t_hot_port >= t_cold_port else 1.0
-                        node.mix_ratio = node.mix_ratio + 0.25 * (target_mix - node.mix_ratio)
+                        node.mix_ratio = node.mix_ratio + damping_factor * (target_mix - node.mix_ratio)
                     else:
                         num = node.set_temperature - t_cold_port
                         den = t_hot_port - node.set_temperature
@@ -207,7 +200,7 @@ class NetworkSolver:
                             target_mix = X / (1.0 + X)
                             target_mix = max(0.001, min(0.999, target_mix))
                             # Damped update for stability
-                            node.mix_ratio = node.mix_ratio + 0.25 * (target_mix - node.mix_ratio)
+                            node.mix_ratio = node.mix_ratio + damping_factor * (target_mix - node.mix_ratio)
                         else:
                             node.mix_ratio = 0.5
                 else:
@@ -259,6 +252,7 @@ class NetworkSolver:
 
 
         bottleneck = self._identify_bottleneck(last_residuals) if last_residuals is not None else None
+        max_hydraulic_residual = float(np.max(np.abs(last_residuals))) if last_residuals is not None else 0.0
         stats = {
             "success": solve_error is None,
             "error": solve_error,
@@ -267,7 +261,12 @@ class NetworkSolver:
             "total_inner_iterations": total_inner_iterations,
             "property_iterations": self.last_prop_iters,
             "fallback_used": fallback_triggered,
+            "solver_method": method,
+            "warm_start_status": self.warm_start_status,
+            "max_residual": max_hydraulic_residual,
             "system_size": len(self.internal_node_indices) + len(self.edges_list),
+            "num_nodes": len(self.internal_node_indices),
+            "num_edges": len(self.edges_list),
             "bottleneck": bottleneck
         }
         return stats
@@ -288,15 +287,25 @@ class NetworkSolver:
             return {"type": "Connection", "name": edge.get('label') or edge.get('id'), "error_type": "Pressure Balance", "magnitude": max_val}
 
     def _generate_initial_guess(self):
-        # Check warm-start cache first
-        cache_key = (self.topology_key, self.active_case_id)
-        if cache_key in NetworkSolver._warm_start_cache:
-            return NetworkSolver._warm_start_cache[cache_key].copy()
+        gs = getattr(self.network, 'global_settings', None)
+        warm_start_enabled = getattr(gs, 'warm_start', True) if gs else True
+        
+        if warm_start_enabled:
+            # Check warm-start cache first
+            cache_key = (self.topology_key, self.active_case_id)
+            if cache_key in NetworkSolver._warm_start_cache:
+                self.warm_start_status = "Exact Hit"
+                return NetworkSolver._warm_start_cache[cache_key].copy()
 
-        # Fallback: reuse any cached solution with matching topology
-        for (tok, cid), cached_val in NetworkSolver._warm_start_cache.items():
-            if tok == self.topology_key:
-                return cached_val.copy()
+            # Fallback: reuse any cached solution with matching topology
+            for (tok, cid), cached_val in NetworkSolver._warm_start_cache.items():
+                if tok == self.topology_key:
+                    self.warm_start_status = "Topology Match"
+                    return cached_val.copy()
+            
+            self.warm_start_status = "Cold Start"
+        else:
+            self.warm_start_status = "Disabled"
 
 
         num_internal = len(self.internal_node_indices)
@@ -558,19 +567,20 @@ class NetworkSolver:
 
         gs = getattr(self.network, 'global_settings', None)
         inner_max_steps = getattr(gs, 'inner_iterations', 1000) if gs else 1000
+        tol = getattr(gs, 'tolerance', 1e-6) if gs else 1e-6
         fallback_used = False
         
         if method == 'sparse_newton':
-            sol = self._solve_sparse_newton(objective, x0, tol=1e-6, max_iter=inner_max_steps)
+            sol = self._solve_sparse_newton(objective, x0, tol=tol, max_iter=inner_max_steps)
             if not sol.success or not is_physical(sol.x):
                 # Fallback to LM starting from original initial guess x0
                 fallback_used = True
-                sol = root(objective, x0, method='lm', options={'maxiter': inner_max_steps})
+                sol = root(objective, x0, method='lm', tol=tol, options={'maxiter': inner_max_steps})
         else:
-            sol = root(objective, x0, method=method, options={'maxfev': inner_max_steps})
+            sol = root(objective, x0, method=method, tol=tol, options={'maxfev': inner_max_steps})
             if method == 'hybr' and (not sol.success or not is_physical(sol.x)):
                 fallback_used = True
-                sol = root(objective, x0, method='lm', options={'maxiter': inner_max_steps})
+                sol = root(objective, x0, method='lm', tol=tol, options={'maxiter': inner_max_steps})
 
                 
         final_residuals = objective(sol.x)
@@ -579,9 +589,12 @@ class NetworkSolver:
             final_q = sol.x[num_internal:] * q_scale
             self._update_telemetry(final_p, final_q)
             
-            # Cache the converged state vector
+            # Cache the converged state vector if enabled
+            gs = getattr(self.network, 'global_settings', None)
+            warm_start_enabled = getattr(gs, 'warm_start', True) if gs else True
             converged_x = np.concatenate([final_p, final_q])
-            NetworkSolver._warm_start_cache[(self.topology_key, self.active_case_id)] = converged_x
+            if warm_start_enabled:
+                NetworkSolver._warm_start_cache[(self.topology_key, self.active_case_id)] = converged_x
             
             return converged_x, num_internal, getattr(sol, 'nfev', 0), fallback_used, final_residuals
         else:

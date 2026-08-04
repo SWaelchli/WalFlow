@@ -33,6 +33,8 @@ class GlobalSettings(BaseModel):
     inner_iterations: int = 1000 # Max steps for the hydraulic solver (HYBR/LM)
     control_iterations: int = 100 # Max steps for the regulator control loop
     solver_method: str = "sparse_newton" # "sparse_newton", "hybr" or "lm"
+    warm_start: bool = True
+    damping_factor: float = 0.25
 
     @model_validator(mode='before')
     @classmethod
@@ -46,7 +48,9 @@ class GlobalSettings(BaseModel):
                 'propertyIterations': 'property_iterations',
                 'innerIterations': 'inner_iterations',
                 'controlIterations': 'control_iterations',
-                'solverMethod': 'solver_method'
+                'solverMethod': 'solver_method',
+                'warmStart': 'warm_start',
+                'dampingFactor': 'damping_factor'
             }
             for camel, snake in mapping.items():
                 if camel in values and snake not in values:
