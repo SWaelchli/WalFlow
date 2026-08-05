@@ -99,6 +99,7 @@ class ReactFlowEdge(BaseModel):
     target: str
     sourceHandle: Optional[str] = None
     targetHandle: Optional[str] = None
+    label: Optional[str] = None
     data: Optional[Dict[str, Any]] = Field(default_factory=dict)
 
 class ReactFlowGraph(BaseModel):

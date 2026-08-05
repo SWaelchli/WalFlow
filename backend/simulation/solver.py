@@ -280,11 +280,11 @@ class NetworkSolver:
         if max_idx < num_internal:
             node_idx = self.internal_node_indices[max_idx]
             node = self.nodes_list[node_idx]
-            return {"type": "Node", "name": node.name, "error_type": "Mass Balance", "magnitude": max_val}
+            return {"type": "Node", "name": node.name, "id": node.id, "error_type": "Mass Balance", "magnitude": max_val}
         else:
             edge_idx = max_idx - num_internal
             edge = self.edges_list[edge_idx]
-            return {"type": "Connection", "name": edge.get('label') or edge.get('id'), "error_type": "Pressure Balance", "magnitude": max_val}
+            return {"type": "Connection", "name": edge.get('label') or edge.get('id'), "id": edge.get('id'), "error_type": "Pressure Balance", "magnitude": max_val}
 
     def _generate_initial_guess(self):
         gs = getattr(self.network, 'global_settings', None)

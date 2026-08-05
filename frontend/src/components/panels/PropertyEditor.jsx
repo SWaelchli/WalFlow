@@ -884,6 +884,93 @@ export default function PropertyEditor({
             </>
           )}
 
+          {isNode && type === 'calibrated_restriction' && (
+            <>
+              <div>
+                {renderLabel('Restriction Model', 'restriction_model')}
+                <select 
+                  style={{ width: '100%', fontSize: '12px', padding: '4px' }} 
+                  value={effectiveData.restriction_model || 'orifice'} 
+                  onChange={(e) => onUpdate(id, { restriction_model: e.target.value })}
+                  title="Orifice (Turbulent with Re-dependent Cd), Laminar (dP proportional to viscosity & flow), or Quadratic (fixed K-factor)"
+                >
+                  <option value="orifice" title="Turbulent orifice flow. Calculates equivalent plate diameter.">Orifice Model (Re corrected)</option>
+                  <option value="laminar" title="Capillary/bearing clearance flow. dP scales with viscosity and flow rate.">Laminar/Linear Model</option>
+                  <option value="quadratic" title="Fixed K-factor flow resistance. dP scales with density and flow squared.">Simple Quadratic Model</option>
+                </select>
+                <div style={{ fontSize: '10px', color: '#587071', marginTop: '4px', background: '#f4f7f6', padding: '6px', borderRadius: '4px', border: '1px solid #d8e2e1' }}>
+                  {effectiveData.restriction_model === 'laminar' && (
+                    <span><strong>Laminar Model:</strong> dP = K_lam * mu * q. Best for narrow viscous clearances, fluid film journal bearings, capillary lines, and leakage channels.</span>
+                  )}
+                  {effectiveData.restriction_model === 'quadratic' && (
+                    <span><strong>Quadratic Model:</strong> dP = K_quad * rho * q^2. Models turbulent drag without viscosity effects. Best for fixed piping fittings/losses.</span>
+                  )}
+                  {(effectiveData.restriction_model === 'orifice' || !effectiveData.restriction_model) && (
+                    <span><strong>Orifice Model:</strong> Turbulent-dominated orifice flow. Baseline case solves for an equivalent diameter; Cd updates dynamically with Reynolds number. Best for restriction orifices.</span>
+                  )}
+                </div>
+              </div>
+              <div>
+                {renderLabel('Calibration Fluid', 'fluid_type')}
+                <select 
+                  style={{ width: '100%', fontSize: '12px', padding: '4px' }} 
+                  value={effectiveData.fluid_type || 'system'} 
+                  onChange={(e) => onUpdate(id, { fluid_type: e.target.value })}
+                  title="Fluid used to look up density & viscosity at baseline calibration temperature."
+                >
+                  <option value="system">System Fluid (Dynamic)</option>
+                  <option value="water">Water</option>
+                  <option value="iso_vg_46">ISO VG 46 (Lube Oil)</option>
+                  <option value="iso_vg_32">ISO VG 32 (Lube Oil)</option>
+                </select>
+              </div>
+              <div>
+                {renderLabel('Baseline Flow (L/min)', 'flow_base_lmin')}
+                <input 
+                  type="number" 
+                  step="0.1"
+                  style={{ width: '100%', fontSize: '12px' }} 
+                  value={localDrafts.flow_base_lmin !== undefined ? localDrafts.flow_base_lmin : (effectiveData.flow_base_lmin || 10.0)} 
+                  onChange={(e) => handleDraftChange('flow_base_lmin', e.target.value)}
+                  onBlur={(e) => validateAndCommit('flow_base_lmin', parseFloat(e.target.value) || 0.0, true)}
+                />
+              </div>
+              <div>
+                {renderLabel('Baseline Inlet Pressure (bar)', 'inlet_pressure_base_bar')}
+                <input 
+                  type="number" 
+                  step="0.05"
+                  style={{ width: '100%', fontSize: '12px' }} 
+                  value={localDrafts.inlet_pressure_base_bar !== undefined ? localDrafts.inlet_pressure_base_bar : (effectiveData.inlet_pressure_base_bar || 3.5)} 
+                  onChange={(e) => handleDraftChange('inlet_pressure_base_bar', e.target.value)}
+                  onBlur={(e) => validateAndCommit('inlet_pressure_base_bar', parseFloat(e.target.value) || 0.0, true)}
+                />
+              </div>
+              <div>
+                {renderLabel('Baseline Outlet Pressure (bar)', 'outlet_pressure_base_bar')}
+                <input 
+                  type="number" 
+                  step="0.05"
+                  style={{ width: '100%', fontSize: '12px' }} 
+                  value={localDrafts.outlet_pressure_base_bar !== undefined ? localDrafts.outlet_pressure_base_bar : (effectiveData.outlet_pressure_base_bar || 1.0)} 
+                  onChange={(e) => handleDraftChange('outlet_pressure_base_bar', e.target.value)}
+                  onBlur={(e) => validateAndCommit('outlet_pressure_base_bar', parseFloat(e.target.value) || 0.0, true)}
+                />
+              </div>
+              <div>
+                {renderLabel('Baseline Temp (°C)', 'temp_base_c')}
+                <input 
+                  type="number" 
+                  step="0.5"
+                  style={{ width: '100%', fontSize: '12px' }} 
+                  value={localDrafts.temp_base_c !== undefined ? localDrafts.temp_base_c : (effectiveData.temp_base_c || 45.0)} 
+                  onChange={(e) => handleDraftChange('temp_base_c', e.target.value)}
+                  onBlur={(e) => validateAndCommit('temp_base_c', parseFloat(e.target.value) || 0.0, true)}
+                />
+              </div>
+            </>
+          )}
+
           {isNode && type === 'text_bubble' && (
             <>
               <div>

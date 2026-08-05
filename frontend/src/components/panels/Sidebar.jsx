@@ -28,6 +28,7 @@ const categorizedEquipment = [
       { type: 'linear_regulator', label: 'Pressure Regulator', description: '' },
       { type: 'three_way_tcv', label: '3-Way Temp Valve', description: 'Thermal Mixing' },
       { type: 'orifice', label: 'Orifice', description: '' },
+      { type: 'calibrated_restriction', label: 'Calibrated Restriction', description: 'Flow/dP-calibrated clearance' },
     ]
   },
   {
@@ -78,7 +79,7 @@ function formatSolverName(method, fallbackUsed = false) {
   return method;
 }
 
-function DiagnosticsContent({ stats, batchStats }) {
+function DiagnosticsContent({ stats, batchStats, onSelectComponent }) {
   const [statsSource, setStatsSource] = useState('single');
   const [selectedBatchCaseId, setSelectedBatchCaseId] = useState('');
 
@@ -172,16 +173,35 @@ function DiagnosticsContent({ stats, batchStats }) {
           </div>
 
           {bottleneck && !success && (
-            <div style={{ 
-              padding: '16px', 
-              borderRadius: '8px', 
-              background: theme.slate800,
-              color: theme.white,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '8px'
-            }}>
-              <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: '#94a3b8' }}>Critical Bottleneck</div>
+            <div 
+              onClick={() => bottleneck.id && onSelectComponent && onSelectComponent(bottleneck.id, bottleneck.type)}
+              style={{ 
+                padding: '16px', 
+                borderRadius: '8px', 
+                background: theme.slate800,
+                color: theme.white,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+                cursor: bottleneck.id ? 'pointer' : 'default',
+                transition: 'all 0.2s ease',
+                border: '1px solid transparent'
+              }}
+              onMouseEnter={(e) => {
+                if (bottleneck.id) {
+                  e.currentTarget.style.borderColor = theme.primary;
+                  e.currentTarget.style.boxShadow = '0 0 8px rgba(250, 133, 7, 0.4)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'transparent';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            >
+              <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: '#94a3b8', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>Critical Bottleneck</span>
+                {bottleneck.id && <span style={{ fontSize: '9px', color: theme.primary, fontWeight: '700' }}>Click to locate</span>}
+              </div>
               <div>
                 <div style={{ fontSize: '14px', fontWeight: '700' }}>{bottleneck.name}</div>
                 <div style={{ fontSize: '11px', color: '#94a3b8' }}>{bottleneck.error_type}</div>
@@ -282,16 +302,35 @@ function DiagnosticsContent({ stats, batchStats }) {
                     </div>
 
                     {selectedCase.bottleneck && !caseSuccess && (
-                      <div style={{ 
-                        padding: '16px', 
-                        borderRadius: '8px', 
-                        background: theme.slate800,
-                        color: theme.white,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '8px'
-                      }}>
-                        <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: '#94a3b8' }}>Critical Bottleneck</div>
+                      <div 
+                        onClick={() => selectedCase.bottleneck.id && onSelectComponent && onSelectComponent(selectedCase.bottleneck.id, selectedCase.bottleneck.type)}
+                        style={{ 
+                          padding: '16px', 
+                          borderRadius: '8px', 
+                          background: theme.slate800,
+                          color: theme.white,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '8px',
+                          cursor: selectedCase.bottleneck.id ? 'pointer' : 'default',
+                          transition: 'all 0.2s ease',
+                          border: '1px solid transparent'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (selectedCase.bottleneck.id) {
+                            e.currentTarget.style.borderColor = theme.primary;
+                            e.currentTarget.style.boxShadow = '0 0 8px rgba(250, 133, 7, 0.4)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.borderColor = 'transparent';
+                          e.currentTarget.style.boxShadow = 'none';
+                        }}
+                      >
+                        <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: '#94a3b8', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span>Critical Bottleneck</span>
+                          {selectedCase.bottleneck.id && <span style={{ fontSize: '9px', color: theme.primary, fontWeight: '700' }}>Click to locate</span>}
+                        </div>
                         <div>
                           <div style={{ fontSize: '14px', fontWeight: '700' }}>{selectedCase.bottleneck.name}</div>
                           <div style={{ fontSize: '11px', color: '#94a3b8' }}>{selectedCase.bottleneck.error_type}</div>
@@ -491,7 +530,7 @@ function CollapsibleScenarios({ templates, onLoad }) {
   );
 }
 
-export default function Sidebar({ onLoad, globalSettings, onUpdateGlobalSettings, templates, lastStats, batchStats }) {
+export default function Sidebar({ onLoad, globalSettings, onUpdateGlobalSettings, templates, lastStats, batchStats, onSelectComponent }) {
   const [activeTab, setActiveTab] = useState('library');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -741,7 +780,7 @@ export default function Sidebar({ onLoad, globalSettings, onUpdateGlobalSettings
         )}
 
         {activeTab === 'diagnostics' && (
-          <DiagnosticsContent stats={lastStats} batchStats={batchStats} />
+          <DiagnosticsContent stats={lastStats} batchStats={batchStats} onSelectComponent={onSelectComponent} />
         )}
       </div>
     </aside>

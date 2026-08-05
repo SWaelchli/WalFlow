@@ -28,6 +28,7 @@ import CheckValveOrificeNode from './nodes/CheckValveOrificeNode';
 import PressureSafetyValveNode from './nodes/PressureSafetyValveNode';
 import RuptureDiscNode from './nodes/RuptureDiscNode';
 import TextBubbleNode from './nodes/TextBubbleNode';
+import CalibratedRestrictionNode from './nodes/CalibratedRestrictionNode';
 
 import Navbar from './components/layout/Navbar';
 import Sidebar from './components/panels/Sidebar';
@@ -98,6 +99,7 @@ const nodeTypes = {
   remote_control_valve: RemoteControlValveNode,
   three_way_tcv: ThreeWayTCVNode,
   text_bubble: TextBubbleNode,
+  calibrated_restriction: CalibratedRestrictionNode,
 };
 
 const edgeTypes = {
@@ -501,6 +503,39 @@ function WalFlowContent() {
     }
   }, [edges, setNodes, setEdges]);
 
+  const handleSelectComponent = useCallback((id, type) => {
+    let selectType = type;
+    if (!selectType) {
+      selectType = nodes.some(n => n.id === id) ? 'Node' : 'Connection';
+    }
+
+    if (selectType === 'Node') {
+      selectNodeById(id);
+      if (reactFlowInstance) {
+        const targetNode = nodes.find(n => n.id === id);
+        if (targetNode) {
+          const x = targetNode.position.x + (targetNode.width || 80) / 2;
+          const y = targetNode.position.y + (targetNode.height || 80) / 2;
+          reactFlowInstance.setCenter(x, y, { zoom: 1.2, duration: 800 });
+        }
+      }
+    } else {
+      selectEdgeById(id);
+      if (reactFlowInstance) {
+        const targetEdge = edges.find(e => e.id === id);
+        if (targetEdge) {
+          const sourceNode = nodes.find(n => n.id === targetEdge.source);
+          const targetNode = nodes.find(n => n.id === targetEdge.target);
+          if (sourceNode && targetNode) {
+            const x = (sourceNode.position.x + targetNode.position.x) / 2;
+            const y = (sourceNode.position.y + targetNode.position.y) / 2;
+            reactFlowInstance.setCenter(x, y, { zoom: 1.2, duration: 800 });
+          }
+        }
+      }
+    }
+  }, [nodes, edges, selectNodeById, selectEdgeById, reactFlowInstance]);
+
   const onEdgesChangeCustom = useCallback(
     (changes) => setEdges((eds) => {
       const nextEdges = applyEdgeChanges(changes, eds);
@@ -814,6 +849,7 @@ function WalFlowContent() {
           ...(type === 'linear_control_valve' && { max_cv: 0.05, opening: 50.0 }),
           ...(type === 'linear_regulator' && { max_cv: 0.05, set_pressure: 500000.0, backpressure: false }),
           ...(type === 'orifice' && { pipe_diameter: 0.05248, orifice_diameter: 0.02, standardDn: 50, standardSch: '40' }),
+          ...(type === 'calibrated_restriction' && { flow_base_lmin: 10.0, inlet_pressure_base_bar: 3.5, outlet_pressure_base_bar: 1.0, temp_base_c: 45.0, restriction_model: 'orifice', fluid_type: 'system' }),
           ...(type === 'filter' && { dp_clean: 0.2, dp_terminal: 1.0, flow_ref: 100.0, clogging: 0.0 }),
           ...(type === 'heat_exchanger' && { heat_duty_kw: -10.0, active: true }),
           ...(type === 'remote_control_valve' && { max_cv: 0.05, set_pressure: 500000.0 }),
@@ -1143,6 +1179,7 @@ function WalFlowContent() {
           onUpdateGlobalSettings={setGlobalSettings}
           lastStats={lastStats}
           batchStats={batchStats}
+          onSelectComponent={handleSelectComponent}
           templates={{
             "Industrial Process Systems": {
               "API 614 Lube Oil System (LOS)": exampleAPI614,

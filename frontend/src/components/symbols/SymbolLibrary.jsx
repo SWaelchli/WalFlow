@@ -8,6 +8,7 @@ export const EquipmentSymbol = ({ type, size = 40, style = {} }) => {
   const dimensions = {
     tank: { w: 60, h: 100 },
     orifice: { w: 40, h: 60 },
+    calibrated_restriction: { w: 40, h: 60 },
     splitter: { w: 40, h: 40 },
     mixer: { w: 40, h: 40 },
     filter: { w: 60, h: 40 },
@@ -141,6 +142,16 @@ export const EquipmentSymbol = ({ type, size = 40, style = {} }) => {
             <line x1="20" y1="10" x2="20" y2="25" stroke="#334155" strokeWidth="2.5" />
             <line x1="20" y1="35" x2="20" y2="50" stroke="#334155" strokeWidth="2.5" />
             <line x1="0" y1="30" x2="40" y2="30" stroke="#334155" strokeWidth="1.5" strokeDasharray="4,4" />
+          </svg>
+        );
+      case 'calibrated_restriction':
+        return (
+          <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+            <line x1="20" y1="10" x2="20" y2="22" stroke="#334155" strokeWidth="2.5" />
+            <line x1="20" y1="38" x2="20" y2="50" stroke="#334155" strokeWidth="2.5" />
+            <line x1="0" y1="30" x2="40" y2="30" stroke="#334155" strokeWidth="1.5" strokeDasharray="3,3" />
+            <circle cx="20" cy="30" r="6" fill="white" stroke="#FA8507" strokeWidth="2" />
+            <circle cx="20" cy="30" r="2.5" fill="#395253" />
           </svg>
         );
       case 'filter':

@@ -17,6 +17,7 @@ from simulation.equipment.check_valve import CheckValve
 from simulation.equipment.check_valve_orifice import CheckValveOrifice
 from simulation.equipment.pressure_safety_valve import PressureSafetyValve
 from simulation.equipment.rupture_disc import RuptureDisc
+from simulation.equipment.calibrated_restriction import CalibratedRestriction
 from simulation.equipment.base_node import HydraulicNode
 
 class GraphParser:
@@ -117,8 +118,9 @@ class GraphParser:
                 continue # Do not create a Pipe for signal edges
 
             # Create a Pipe node for this hydraulic edge
+            pipe_name = edge.label or edge_data.get('label') or f"Pipe {edge.id}"
             pipe = Pipe(
-                name=f"Pipe {edge.id}",
+                name=pipe_name,
                 length=float(edge_data.get('length', 25.0)),
                 diameter=float(edge_data.get('diameter', 0.1)),
                 friction_factor=float(edge_data.get('friction_factor', 0.02))
@@ -131,6 +133,7 @@ class GraphParser:
             if source_node and target_node:
                 parsed_edges.append({
                     "id": edge.id,
+                    "label": pipe_name,
                     "source": edge.source,
                     "target": edge.target,
                     "source_port": edge.sourceHandle,
@@ -140,7 +143,7 @@ class GraphParser:
 
         # Auto-detect connected pipe diameter for Orifice, CheckValveOrifice, and RuptureDisc nodes
         for node_id, node in nodes_dict.items():
-            if hasattr(node, 'orifice_diameter') or getattr(node, 'bore_type', '') == 'reduced_bore':
+            if hasattr(node, 'orifice_diameter') or node.node_type == 'calibrated_restriction' or getattr(node, 'bore_type', '') == 'reduced_bore':
                 connected_d = None
                 # Check connected inlet pipes (upstream pipe diameter takes precedence)
                 for edge_info in parsed_edges:
@@ -241,6 +244,16 @@ class GraphParser:
                 name=name,
                 pipe_diameter=float(d.get('pipe_diameter', 0.1)),
                 orifice_diameter=float(d.get('orifice_diameter', 0.07))
+            )
+        elif t == 'calibrated_restriction':
+            node = CalibratedRestriction(
+                name=name,
+                flow_base_lmin=float(d.get('flow_base_lmin', 10.0)),
+                inlet_pressure_base_bar=float(d.get('inlet_pressure_base_bar', 3.5)),
+                outlet_pressure_base_bar=float(d.get('outlet_pressure_base_bar', 1.0)),
+                temp_base_c=float(d.get('temp_base_c', 45.0)),
+                restriction_model=str(d.get('restriction_model', 'orifice')),
+                fluid_type=str(d.get('fluid_type', 'system'))
             )
         elif t == 'heat_exchanger':
             node = HeatExchanger(
