@@ -146,5 +146,4 @@ class VolumetricPump(HydraulicNode):
         inlet.density = FluidProperties.get_density(fluid_type, inlet.temperature)
         inlet.viscosity = FluidProperties.get_viscosity(fluid_type, inlet.temperature)
 
-        self.calculate_temperature()
         return dp

@@ -802,15 +802,31 @@ export default function PropertyEditor({
                 />
               </div>
               <div>
-                {renderLabel('Medium Temp (°C)', 'medium_temp_c')}
-                <input 
-                  type="number" 
-                  style={{ width: '100%', fontSize: '12px' }} 
-                  value={localDrafts.medium_temp_c !== undefined ? localDrafts.medium_temp_c : (effectiveData.medium_temp_c || 10.0)} 
-                  onChange={(e) => handleDraftChange('medium_temp_c', e.target.value)}
-                  onBlur={(e) => validateAndCommit('medium_temp_c', e.target.value)}
-                />
+                {renderLabel('Cooler Type', 'cooler_type')}
+                <select 
+                  style={{ width: '100%', fontSize: '12px', padding: '4px' }} 
+                  value={effectiveData.cooler_type || "water_cooled"} 
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (isNode) onUpdate(id, { cooler_type: val });
+                  }}
+                >
+                  <option value="water_cooled">Water Cooled</option>
+                  <option value="air_cooled">Air Cooled</option>
+                </select>
               </div>
+              {(effectiveData.cooler_type || "water_cooled") === "water_cooled" && (
+                <div>
+                  {renderLabel('Medium Temp (°C)', 'medium_temp_c')}
+                  <input 
+                    type="number" 
+                    style={{ width: '100%', fontSize: '12px' }} 
+                    value={localDrafts.medium_temp_c !== undefined ? localDrafts.medium_temp_c : (effectiveData.medium_temp_c || 10.0)} 
+                    onChange={(e) => handleDraftChange('medium_temp_c', e.target.value)}
+                    onBlur={(e) => validateAndCommit('medium_temp_c', e.target.value)}
+                  />
+                </div>
+              )}
               <div>
                 {renderLabel('Pressure Drop Factor (k)', 'k_factor')}
                 <input 

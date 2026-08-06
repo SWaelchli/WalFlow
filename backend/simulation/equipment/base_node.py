@@ -71,17 +71,8 @@ class HydraulicNode:
             
         mix_temp = weighted_temp_sum / total_mass_flow if total_mass_flow > 0 else inward_ports[0].temperature
         
-        # Only propagate mix_temp if there's actual mixing (multiple sources)
-        # OR if it's a simple pass-through and we haven't touched the temperature.
-        is_mixing = len(inward_ports) > 1
-        
         for port in outward_ports:
-            # If mixing, we MUST use the energy balance.
-            # If not mixing, only apply if the temperature is 'default' (meaning child class didn't set it)
-            if is_mixing:
-                port.temperature = mix_temp
-            elif port.temperature <= 0.1 or abs(port.temperature - 293.15) < 1e-6 or abs(port.temperature - inward_ports[0].temperature) < 1e-6:
-                port.temperature = mix_temp
+            port.temperature = mix_temp
 
     def calculate(self):
         """

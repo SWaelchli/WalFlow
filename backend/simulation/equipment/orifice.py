@@ -109,6 +109,4 @@ class Orifice(HydraulicNode):
             dt = abs(dp) / (outlet.density * cp)
             inlet.temperature = outlet.temperature + dt
 
-        self.calculate_temperature()
-
         return dp

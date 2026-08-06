@@ -262,7 +262,8 @@ class GraphParser:
                 rated_flow_lmin=float(d.get('rated_flow_lmin', 500.0)),
                 design_inlet_temp_c=float(d.get('design_inlet_temp_c', 50.0)),
                 medium_temp_c=float(d.get('medium_temp_c', 10.0)),
-                pressure_drop_factor=float(d.get('k_factor', 10.0))
+                pressure_drop_factor=float(d.get('k_factor', 10.0)),
+                cooler_type=str(d.get('cooler_type', 'water_cooled'))
             )
         elif t == 'filter':
             node = Filter(

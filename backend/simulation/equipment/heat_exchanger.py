@@ -17,7 +17,8 @@ class HeatExchanger(HydraulicNode):
                  design_inlet_temp_c: float = 50.0,
                  medium_temp_c: float = 10.0,
                  pressure_drop_factor: float = 10.0,
-                 heat_duty: float = None):
+                 heat_duty: float = None,
+                 cooler_type: str = "water_cooled"):
         
         super().__init__(name, node_type="heat_exchanger")
         
@@ -30,6 +31,7 @@ class HeatExchanger(HydraulicNode):
         self.rated_flow_lmin = rated_flow_lmin
         self.design_inlet_temp_c = design_inlet_temp_c
         self.medium_temp_c = medium_temp_c
+        self.cooler_type = cooler_type      # "water_cooled" or "air_cooled"
         
         # Hydraulic Parameters
         self.pressure_drop_factor = pressure_drop_factor
@@ -112,30 +114,35 @@ class HeatExchanger(HydraulicNode):
         # 1. Get Base UA from design point
         ua_rated = self._calculate_ua_rated(cp)
         
-        # 2. Scale UA with flow (Reynolds dependency, approx ^0.8 for turbulent)
+        # 2. Scale UA with flow (Reynolds dependency)
         flow_ratio = abs(inlet.flow_rate) / (self.rated_flow_lmin / 60000.0)
-        ua_actual = ua_rated * (flow_ratio ** 0.8)
         
-        # 3. Solve for Outlet Temperature using NTU-like effectiveness or energy balance
-        # Q = m_dot * cp * (Ti - To)  AND  Q = UA * ((Ti + To)/2 - Tm)
-        # Solving for To:
-        # m*cp*(Ti - To) = UA * (Ti/2 + To/2 - Tm)
-        # m*cp*Ti - m*cp*To = UA*Ti/2 + UA*To/2 - UA*Tm
-        # To * (UA/2 + m*cp) = m*cp*Ti - UA*Ti/2 + UA*Tm
-        
-        tm = self.medium_temp_c + 273.15
+        cooler_type = getattr(self, 'cooler_type', 'water_cooled')
+        if cooler_type == 'air_cooled':
+            ua_actual = ua_rated * (flow_ratio ** 0.6)
+            # Use global settings ambient temperature for air-cooled
+            if self.global_settings:
+                tm = getattr(self.global_settings, 'ambient_temperature', 293.15)
+            else:
+                tm = 293.15
+        else:
+            ua_actual = ua_rated * (flow_ratio ** 0.8)
+            tm = self.medium_temp_c + 273.15
+            
         ti = inlet.temperature
         
-        num = (m_dot * cp * ti) - (ua_actual * ti / 2.0) + (ua_actual * tm)
-        den = (m_dot * cp) + (ua_actual / 2.0)
+        # 3. Solve for Outlet Temperature using e-NTU method (bi-directional cooling/heating)
+        ntu = ua_actual / (m_dot * cp) if (m_dot * cp) > 0.0 else 0.0
         
-        to = num / den
+        # Effectiveness for phase change/constant utility temp (C_max = inf)
+        if ntu > 50.0:
+            to = tm
+        else:
+            effectiveness = 1.0 - math.exp(-ntu)
+            to = ti - effectiveness * (ti - tm)
         
-        # Physical clamp: Cannot cool below medium temperature
-        if to < tm: to = tm
-        
-        outlet.temperature = to
         self.actual_duty_kw = (m_dot * cp * (ti - to)) / 1000.0
+        outlet.temperature = to
 
     def calculate(self):
         inlet = self.inlets[0]
