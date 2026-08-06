@@ -256,13 +256,19 @@ class GraphParser:
                 fluid_type=str(d.get('fluid_type', 'system'))
             )
         elif t == 'heat_exchanger':
+            # Backwards compatibility: calculate rated_dp_bar from k_factor if not present
+            rated_flow = float(d.get('rated_flow_lmin', 500.0))
+            k_fac = float(d.get('k_factor', 10.0))
+            default_dp = (k_fac * (rated_flow / 60000.0)**2) / 100000.0
+            rated_dp = float(d.get('rated_dp_bar', default_dp))
+            
             node = HeatExchanger(
                 name=name,
                 rated_cooling_kw=float(d.get('rated_cooling_kw', 300.0)),
-                rated_flow_lmin=float(d.get('rated_flow_lmin', 500.0)),
+                rated_flow_lmin=rated_flow,
                 design_inlet_temp_c=float(d.get('design_inlet_temp_c', 50.0)),
                 medium_temp_c=float(d.get('medium_temp_c', 10.0)),
-                pressure_drop_factor=float(d.get('k_factor', 10.0)),
+                rated_dp_bar=rated_dp,
                 cooler_type=str(d.get('cooler_type', 'water_cooled'))
             )
         elif t == 'filter':

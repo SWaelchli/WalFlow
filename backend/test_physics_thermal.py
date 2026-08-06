@@ -16,7 +16,7 @@ def test_thermal_balance():
     tank_source = Tank("Hot Oil Tank", fluid_level=2.0, temperature=temp_initial_k, fluid_type="iso_vg_46")
     pump = CentrifugalPump("Main Pump", flow_rated=100.0/60000.0, pressure_rated=10.0*100000.0, rise_to_shutoff_pct=20.0)
     # Cooling duty: -1,000,000 Watts (1 MW)
-    hx = HeatExchanger("Oil Cooler", heat_duty=-1000000.0, pressure_drop_factor=0.005)
+    hx = HeatExchanger("Oil Cooler", heat_duty=-1000000.0, rated_dp_bar=0.01)
     tank_sink = Tank("Return Tank", fluid_level=1.0, temperature=temp_initial_k, fluid_type="iso_vg_46")
     
     nodes = {

@@ -16,9 +16,10 @@ class HeatExchanger(HydraulicNode):
                  rated_flow_lmin: float = 500.0,
                  design_inlet_temp_c: float = 50.0,
                  medium_temp_c: float = 10.0,
-                 pressure_drop_factor: float = 10.0,
+                 rated_dp_bar: float = 0.5,
                  heat_duty: float = None,
-                 cooler_type: str = "water_cooled"):
+                 cooler_type: str = "water_cooled",
+                 pressure_drop_factor: float = None):
         
         super().__init__(name, node_type="heat_exchanger")
         
@@ -32,9 +33,17 @@ class HeatExchanger(HydraulicNode):
         self.design_inlet_temp_c = design_inlet_temp_c
         self.medium_temp_c = medium_temp_c
         self.cooler_type = cooler_type      # "water_cooled" or "air_cooled"
+        self.rated_dp_bar = rated_dp_bar
         
-        # Hydraulic Parameters
-        self.pressure_drop_factor = pressure_drop_factor
+        # Calculate pressure drop factor from rated conditions or use explicit override
+        if pressure_drop_factor is not None:
+            self.pressure_drop_factor = pressure_drop_factor
+        else:
+            q_rated_si = rated_flow_lmin / 60000.0
+            if q_rated_si > 0.0:
+                self.pressure_drop_factor = (rated_dp_bar * 100000.0) / (q_rated_si ** 2)
+            else:
+                self.pressure_drop_factor = 0.0
         
         # Internal State
         self.actual_duty_kw = 0.0

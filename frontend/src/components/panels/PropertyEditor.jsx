@@ -792,16 +792,6 @@ export default function PropertyEditor({
                 />
               </div>
               <div>
-                {renderLabel('Design Inlet Temp (°C)', 'design_inlet_temp_c')}
-                <input 
-                  type="number" 
-                  style={{ width: '100%', fontSize: '12px' }} 
-                  value={localDrafts.design_inlet_temp_c !== undefined ? localDrafts.design_inlet_temp_c : (effectiveData.design_inlet_temp_c || 50.0)} 
-                  onChange={(e) => handleDraftChange('design_inlet_temp_c', e.target.value)}
-                  onBlur={(e) => validateAndCommit('design_inlet_temp_c', e.target.value)}
-                />
-              </div>
-              <div>
                 {renderLabel('Cooler Type', 'cooler_type')}
                 <select 
                   style={{ width: '100%', fontSize: '12px', padding: '4px' }} 
@@ -817,7 +807,7 @@ export default function PropertyEditor({
               </div>
               {(effectiveData.cooler_type || "water_cooled") === "water_cooled" && (
                 <div>
-                  {renderLabel('Medium Temp (°C)', 'medium_temp_c')}
+                  {renderLabel('Cooling Medium Temp (°C)', 'medium_temp_c')}
                   <input 
                     type="number" 
                     style={{ width: '100%', fontSize: '12px' }} 
@@ -828,13 +818,13 @@ export default function PropertyEditor({
                 </div>
               )}
               <div>
-                {renderLabel('Pressure Drop Factor (k)', 'k_factor')}
+                {renderLabel('Rated Pressure Drop (bar)', 'rated_dp_bar')}
                 <input 
-                  type="number" 
+                  type="number" step="0.01" 
                   style={{ width: '100%', fontSize: '12px' }} 
-                  value={localDrafts.k_factor !== undefined ? localDrafts.k_factor : (effectiveData.k_factor || 10.0)} 
-                  onChange={(e) => handleDraftChange('k_factor', e.target.value)}
-                  onBlur={(e) => validateAndCommit('k_factor', e.target.value, true)}
+                  value={localDrafts.rated_dp_bar !== undefined ? localDrafts.rated_dp_bar : (effectiveData.rated_dp_bar || 0.5)} 
+                  onChange={(e) => handleDraftChange('rated_dp_bar', e.target.value)}
+                  onBlur={(e) => validateAndCommit('rated_dp_bar', e.target.value, true)}
                 />
               </div>
             </>
