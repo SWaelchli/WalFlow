@@ -10,6 +10,8 @@ class VolumetricPump(HydraulicNode):
     """
     def __init__(self, name: str, flow_rated: float, motor_power: float, efficiency: float):
         super().__init__(name, node_type="volumetric_pump")
+        self.blocks_flow_on_shutdown = True
+        
         self.flow_rated = flow_rated    # Target Flow (m³/s)
         self.motor_power = motor_power  # Rated power (W)
         self.efficiency = efficiency    # Decimal efficiency

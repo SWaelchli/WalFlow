@@ -47,35 +47,17 @@ class RuptureDisc(HydraulicNode):
                 self.status = "intact"
             return False
 
-        burst = bool(self.is_burst or (p_inlet_bar >= self.burst_pressure_bar))
         if update_state:
+            burst = bool(self.is_burst or (p_inlet_bar >= self.burst_pressure_bar))
             self.is_burst = burst
             self.status = "burst" if burst else "intact"
-        return burst
+            return burst
+        else:
+            return self.is_burst
 
-    def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001, p_in_pa: float = None, update_state: bool = True) -> float:
-        """Calculates pressure drop across the Rupture Disc."""
-        inlet = self.inlets[0]
-        outlet = self.outlets[0]
-
-        p_in_actual = p_in_pa if p_in_pa is not None else inlet.pressure
-        p_in_bar = p_in_actual / 100000.0
-
-        burst_open = self.check_burst_status(p_in_bar, update_state=update_state)
-
-        if not burst_open:
-            if update_state:
-                self.status = "intact"
-                self.capacity_utilization_pct = 0.0
-            R_CLOSED = 1.0e10
-            return R_CLOSED * flow_rate
-
-        # Diaphragm is burst open
-        if update_state:
-            self.status = "burst"
-
+    def calculate_open_friction_and_deriv(self, flow_rate: float, density: float, viscosity: float = 0.001) -> tuple:
+        """Computes rupture disc open pressure drop and its analytical derivative w.r.t. flow rate."""
         if self.bore_type == "reduced_bore":
-            # Bernoulli Orifice Pressure Drop Math
             pipe_d = max(0.001, getattr(self, 'pipe_diameter', 0.05248))
             orif_d = max(0.0001, min(pipe_d * 0.99, self.orifice_diameter))
             beta_ratio = min(0.99, orif_d / pipe_d)
@@ -92,16 +74,11 @@ class RuptureDisc(HydraulicNode):
             geometry_factor = (1.0 - beta_ratio**4) / (discharge_coefficient**2 * beta_ratio**4)
             rec_delta_p = dynamic_pressure * geometry_factor
             dp = rec_delta_p * (1.0 - beta_ratio**2)
-
-            # Capacity utilization calculation based on maximum orifice choked capacity estimate
-            choked_q_m3s = area_orifice * math.sqrt(max(1000.0, 100000.0) / max(10.0, density))
-            choked_q_lmin = choked_q_m3s * 60000.0
-            actual_q_lmin = abs(flow_rate) * 60000.0
-            if update_state:
-                self.capacity_utilization_pct = min(999.0, (actual_q_lmin / max(0.01, choked_q_lmin)) * 100.0)
-
+            
+            # Derivative w.r.t. flow rate
+            deriv = density * abs(velocity) / area_pipe * geometry_factor * (1.0 - beta_ratio**2)
+            return dp, deriv
         else: # "full_bore"
-            # Standard Cv Pressure Drop Math
             K_CV_SI = 1.732e9
             d_v = max(0.002, 0.01 * math.sqrt(self.cv))
             v_v = flow_rate / (0.25 * math.pi * d_v**2) if d_v > 0 else 0.0
@@ -110,7 +87,60 @@ class RuptureDisc(HydraulicNode):
             cv_adj = max(0.0001, self.cv * fr)
 
             dp = (K_CV_SI * density * flow_rate * abs(flow_rate)) / (cv_adj ** 2)
+            deriv = (2.0 * K_CV_SI * density * abs(flow_rate)) / (cv_adj ** 2)
+            return dp, deriv
 
+    def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001, p_in_pa: float = None, p_out_pa: float = None, update_state: bool = True) -> float:
+        """Calculates pressure drop across the Rupture Disc."""
+        inlet = self.inlets[0]
+        outlet = self.outlets[0]
+
+        p_in_actual = p_in_pa if p_in_pa is not None else inlet.pressure
+        p_in_bar = p_in_actual / 100000.0
+        p_out_bar = (p_out_pa / 100000.0) if p_out_pa is not None else (outlet.pressure / 100000.0)
+
+        burst_open = self.check_burst_status(p_in_bar, update_state=update_state)
+
+        if not burst_open:
+            if p_in_pa is not None and p_out_pa is not None:
+                p_scale = 100000.0
+                q_scale = 0.001
+                epsilon = 1e-4
+                
+                burst_pa = self.burst_pressure_bar * 100000.0
+                dp_valve = p_in_pa - p_out_pa
+                dp_friction, _ = self.calculate_open_friction_and_deriv(flow_rate, density, viscosity)
+                
+                a = flow_rate / q_scale
+                b = (burst_pa + dp_friction - dp_valve) / p_scale
+                
+                phi = math.sqrt(a**2 + b**2 + epsilon**2) - (a + b)
+                return dp_valve - p_scale * phi
+
+            if update_state:
+                self.status = "intact"
+                self.capacity_utilization_pct = 0.0
+            R_CLOSED = 1.0e10
+            return R_CLOSED * flow_rate
+
+        # Diaphragm is burst open
+        if update_state:
+            self.status = "burst"
+
+        dp, _ = self.calculate_open_friction_and_deriv(flow_rate, density, viscosity)
+
+        # Capacity utilization calculation
+        if self.bore_type == "reduced_bore":
+            pipe_d = max(0.001, getattr(self, 'pipe_diameter', 0.05248))
+            orif_d = max(0.0001, min(pipe_d * 0.99, self.orifice_diameter))
+            area_orifice = math.pi * (orif_d / 2.0)**2
+            choked_q_m3s = area_orifice * math.sqrt(max(1000.0, 100000.0) / max(10.0, density))
+            choked_q_lmin = choked_q_m3s * 60000.0
+            actual_q_lmin = abs(flow_rate) * 60000.0
+            if update_state:
+                self.capacity_utilization_pct = min(999.0, (actual_q_lmin / max(0.01, choked_q_lmin)) * 100.0)
+        else: # "full_bore"
+            K_CV_SI = 1.732e9
             rated_q_m3s = (self.cv * math.sqrt(100000.0 / (K_CV_SI * density))) if density > 0 else 1.0
             rated_q_lmin = rated_q_m3s * 60000.0
             actual_q_lmin = abs(flow_rate) * 60000.0
@@ -131,7 +161,7 @@ class RuptureDisc(HydraulicNode):
         if self.forced_state == "forced_closed":
             burst_open = False
         else:
-            burst_open = bool(self.is_burst or (p_in_bar >= self.burst_pressure_bar))
+            burst_open = self.is_burst
 
         if not burst_open:
             return 1.0e10

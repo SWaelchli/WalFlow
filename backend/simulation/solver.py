@@ -29,19 +29,95 @@ class NetworkSolver:
 
     def __init__(self, network: HydraulicNetwork):
         self.network = network
-        self.nodes_list = list(network.nodes.values())
-        self.node_ids = list(network.nodes.keys())
-        self.edges_list = network.edges
+        
+        # Store original full lists of nodes and edges (these never change)
+        self.all_nodes_list = list(network.nodes.values())
+        self.all_node_ids = list(network.nodes.keys())
+        self.all_edges_list = network.edges
+        self.all_node_id_to_idx = {node_id: i for i, node_id in enumerate(self.all_node_ids)}
+        self.node_to_key = {id(n): nid for nid, n in network.nodes.items()}
+        
+        self.last_prop_iters = 0
+        self.active_case_id = getattr(network, 'active_case_id', None) or 'default'
+        self.warm_start_status = "Cold Start"
+        
+        # Initial topology pruning
+        self.prune_topology()
+
+    def prune_topology(self):
+        # 1. Identify inactive nodes
+        inactive_node_ids = set()
+        for node_id, node in self.network.nodes.items():
+            is_inactive_pump = (not getattr(node, 'active', True) and getattr(node, 'blocks_flow_on_shutdown', False))
+            is_closed_relief = (getattr(node, 'forced_state', '') == 'forced_closed' and getattr(node, 'node_type', '') in ['pressure_safety_valve', 'rupture_disc'])
+            if is_inactive_pump or is_closed_relief:
+                inactive_node_ids.add(node_id)
+                
+        # 2. Prune connected edges
+        active_edges = []
+        for edge in self.all_edges_list:
+            if edge['source'] not in inactive_node_ids and edge['target'] not in inactive_node_ids:
+                active_edges.append(edge)
+                
+        # 3. Reachability Analysis (undirected DFS from pressure boundaries)
+        boundary_ids = [nid for nid, node in self.network.nodes.items() if getattr(node, 'is_pressure_boundary', False)]
+        
+        adj = {nid: set() for nid in self.all_node_ids}
+        for edge in active_edges:
+            adj[edge['source']].add(edge['target'])
+            adj[edge['target']].add(edge['source'])
+            
+        visited = set()
+        def dfs(u):
+            visited.add(u)
+            for v in adj[u]:
+                if v not in visited:
+                    dfs(v)
+                    
+        for boundary_id in boundary_ids:
+            if boundary_id not in visited and boundary_id not in inactive_node_ids:
+                dfs(boundary_id)
+                
+        reachable_node_ids = visited.copy()
+        
+        # Clean active edges to only keep those connecting reachable nodes
+        active_edges = [e for e in active_edges if e['source'] in reachable_node_ids and e['target'] in reachable_node_ids]
+        
+        # 4. Leaf/Dead-End Pruning (recursively prune non-boundary nodes with degree <= 1)
+        pruned_nodes_set = set(self.all_node_ids) - reachable_node_ids
+        while True:
+            degree = {nid: 0 for nid in reachable_node_ids}
+            for edge in active_edges:
+                degree[edge['source']] += 1
+                degree[edge['target']] += 1
+                
+            leaves = []
+            for nid in reachable_node_ids:
+                node = self.network.nodes[nid]
+                if not getattr(node, 'is_pressure_boundary', False) and degree[nid] <= 1:
+                    leaves.append(nid)
+                    
+            if not leaves:
+                break
+                
+            for leaf_id in leaves:
+                reachable_node_ids.remove(leaf_id)
+                pruned_nodes_set.add(leaf_id)
+            active_edges = [e for e in active_edges if e['source'] in reachable_node_ids and e['target'] in reachable_node_ids]
+            
+        self.pruned_node_ids = pruned_nodes_set
+        self.active_node_ids = reachable_node_ids
+        
+        # Setup solver active lists
+        self.nodes_list = [self.network.nodes[nid] for nid in sorted(list(self.active_node_ids))]
+        self.node_ids = sorted(list(self.active_node_ids))
+        self.edges_list = active_edges
         self.node_id_to_idx = {node_id: i for i, node_id in enumerate(self.node_ids)}
         
         self.fixed_pressure_nodes = {}
         self.internal_node_indices = []
         self.control_node_indices = [] # Pressure regulators
         self.tcv_node_indices = []     # Thermal mixing valves
-        
-        self.last_prop_iters = 0
-        self.active_case_id = getattr(network, 'active_case_id', None) or 'default'
-        self.warm_start_status = "Cold Start"
         
         # Build a fixed topology key that uniquely identifies the layout of nodes & edges
         self.topology_key = (
@@ -50,7 +126,7 @@ class NetworkSolver:
         )
         
         for i, node in enumerate(self.nodes_list):
-            if isinstance(node, Tank):
+            if getattr(node, 'is_pressure_boundary', False):
                 self.fixed_pressure_nodes[i] = node.calculate()
             else:
                 self.internal_node_indices.append(i)
@@ -60,6 +136,7 @@ class NetworkSolver:
                     self.tcv_node_indices.append(i)
 
     def solve(self, method=None):
+        self.prune_topology()
         start_time = time.perf_counter()
         max_outer_iterations = 100
         tolerance_bar = 0.001 
@@ -111,6 +188,7 @@ class NetworkSolver:
                 x_start = final_sol_x
             except ValueError as e:
                 solve_error = str(e)
+                last_residuals = getattr(self, '_last_evaluated_residuals', None)
                 break
             
             # Extract final q_edges (already unscaled from solver run)
@@ -252,7 +330,7 @@ class NetworkSolver:
 
 
         bottleneck = self._identify_bottleneck(last_residuals) if last_residuals is not None else None
-        max_hydraulic_residual = float(np.max(np.abs(last_residuals))) if last_residuals is not None else 0.0
+        max_hydraulic_residual = float(np.max(np.abs(last_residuals))) if (last_residuals is not None and len(last_residuals) > 0) else 0.0
         stats = {
             "success": solve_error is None,
             "error": solve_error,
@@ -374,9 +452,9 @@ class NetworkSolver:
                     cols.append(num_internal + j)
                     data.append(-5.0)
 
-        # 2. Pressure Balance Rows (a = num_internal + j)
+        # 2. Pressure Balance Rows (a_row = num_internal + j)
         for j, edge in enumerate(self.edges_list):
-            a = num_internal + j
+            a_row = num_internal + j
             src_id = edge['source']
             tgt_id = edge['target']
             src_idx = self.node_id_to_idx[src_id]
@@ -390,52 +468,94 @@ class NetworkSolver:
             if tgt_idx in self.internal_node_indices:
                 tgt_internal_idx = self.internal_node_indices.index(tgt_idx)
 
-            if src_internal_idx != -1:
-                rows.append(a)
-                cols.append(src_internal_idx)
-                data.append(1.0)
-
-            if tgt_internal_idx != -1:
-                rows.append(a)
-                cols.append(tgt_internal_idx)
-                data.append(-1.0)
-
-            # Term 1: d(P_src_out)/dq_k
-            if not isinstance(src_node, ThreeWayTCV) and hasattr(src_node, 'calculate_delta_p'):
+            if self._use_mcp_for_node(src_node):
+                epsilon = 1e-4
+                cracking_pa = src_node.cracking_pressure_bar * 100000.0 if hasattr(src_node, 'cracking_pressure_bar') else getattr(src_node, 'burst_pressure_bar', 0.0) * 100000.0
+                
+                pipe = edge['pipe']
+                pipe_inlet = pipe.inlets[0]
+                pipe_density = pipe_inlet.density
+                pipe_viscosity = pipe_inlet.viscosity
+                dp_pipe = pipe.calculate_delta_p(q_edges[j], pipe_density, pipe_viscosity)
+                dp_deriv_pipe = max(100.0, pipe.calculate_dp_derivative(q_edges[j], pipe_density, pipe_viscosity))
+                
                 inlet = src_node.inlets[0] if src_node.inlets else None
                 density = inlet.density if inlet else 1000.0
                 viscosity = inlet.viscosity if inlet else 0.001
+                dp_friction, dfriction_dq = src_node.calculate_open_friction_and_deriv(q_edges[j], density, viscosity)
                 
-                dp_deriv_src = src_node.calculate_dp_derivative(q_in_node_all[src_idx], density, viscosity)
-                is_pump = isinstance(src_node, (CentrifugalPump, VolumetricPump))
-                sign = 1.0 if is_pump else -1.0
-                dp_deriv_src_signed = sign * dp_deriv_src
+                a_val = q_edges[j] / q_scale
+                p_in = p_in_all[src_idx]
+                p_tgt_in = p_in_all[tgt_idx]
+                dp_valve = p_in - (p_tgt_in + dp_pipe)
+                b_val = (cracking_pa + dp_friction - dp_valve) / p_scale
                 
-                for k, e in enumerate(self.edges_list):
-                    if e['target'] == src_id:
-                        rows.append(a)
-                        cols.append(num_internal + k)
-                        data.append((q_scale / p_scale) * dp_deriv_src_signed)
+                denom = math.sqrt(a_val**2 + b_val**2 + epsilon**2)
+                dPhi_da = (a_val / denom) - 1.0
+                dPhi_db = (b_val / denom) - 1.0
+                
+                if src_internal_idx != -1:
+                    rows.append(a_row)
+                    cols.append(src_internal_idx)
+                    data.append(-dPhi_db)
+                    
+                if tgt_internal_idx != -1:
+                    rows.append(a_row)
+                    cols.append(tgt_internal_idx)
+                    data.append(dPhi_db)
+                    
+                db_dq = (dfriction_dq + dp_deriv_pipe) / p_scale
+                dPhi_dq = dPhi_da + dPhi_db * db_dq * q_scale
+                rows.append(a_row)
+                cols.append(num_internal + j)
+                data.append(dPhi_dq)
+            else:
+                if src_internal_idx != -1:
+                    rows.append(a_row)
+                    cols.append(src_internal_idx)
+                    data.append(1.0)
 
-            # Term 2: d(dp_pipe)/dq_j
-            pipe = edge['pipe']
-            pipe_inlet = pipe.inlets[0]
-            pipe_density = pipe_inlet.density
-            pipe_viscosity = pipe_inlet.viscosity
-            dp_deriv_pipe = max(100.0, pipe.calculate_dp_derivative(q_edges[j], pipe_density, pipe_viscosity))
-            
-            # Term 3: d(dp_tcv)/dq_j
-            dp_deriv_tcv = 0.0
-            if isinstance(self.network.nodes[tgt_id], ThreeWayTCV):
-                tgt_node = self.network.nodes[tgt_id]
-                port_idx = self._parse_port_idx(edge.get('target_port', 'inlet-0'))
-                tcv_density = tgt_node.inlets[port_idx].density
-                tcv_viscosity = tgt_node.inlets[port_idx].viscosity
-                dp_deriv_tcv = max(100.0, tgt_node.calculate_dp_derivative_path(q_edges[j], tcv_density, port_idx, tcv_viscosity))
+                if tgt_internal_idx != -1:
+                    rows.append(a_row)
+                    cols.append(tgt_internal_idx)
+                    data.append(-1.0)
 
-            rows.append(a)
-            cols.append(num_internal + j)
-            data.append((q_scale / p_scale) * (-dp_deriv_pipe - dp_deriv_tcv))
+                # Term 1: d(P_src_out)/dq_k
+                if not isinstance(src_node, ThreeWayTCV) and hasattr(src_node, 'calculate_delta_p'):
+                    inlet = src_node.inlets[0] if src_node.inlets else None
+                    density = inlet.density if inlet else 1000.0
+                    viscosity = inlet.viscosity if inlet else 0.001
+                    
+                    dp_deriv_src = src_node.calculate_dp_derivative(q_in_node_all[src_idx], density, viscosity)
+                    is_pump = isinstance(src_node, (CentrifugalPump, VolumetricPump))
+                    sign = 1.0 if is_pump else -1.0
+                    dp_deriv_src_signed = sign * dp_deriv_src
+                    
+                    for k, e in enumerate(self.edges_list):
+                        if e['target'] == src_id:
+                            rows.append(a_row)
+                            cols.append(num_internal + k)
+                            data.append((q_scale / p_scale) * dp_deriv_src_signed)
+
+                # Term 2: d(dp_pipe)/dq_j
+                pipe = edge['pipe']
+                pipe_inlet = pipe.inlets[0]
+                pipe_density = pipe_inlet.density
+                pipe_viscosity = pipe_inlet.viscosity
+                dp_deriv_pipe = max(100.0, pipe.calculate_dp_derivative(q_edges[j], pipe_density, pipe_viscosity))
+                
+                # Term 3: d(dp_tcv)/dq_j
+                dp_deriv_tcv = 0.0
+                if isinstance(self.network.nodes[tgt_id], ThreeWayTCV):
+                    tgt_node = self.network.nodes[tgt_id]
+                    port_idx = self._parse_port_idx(edge.get('target_port', 'inlet-0'))
+                    tcv_density = tgt_node.inlets[port_idx].density
+                    tcv_viscosity = tgt_node.inlets[port_idx].viscosity
+                    dp_deriv_tcv = max(100.0, tgt_node.calculate_dp_derivative_path(q_edges[j], tcv_density, port_idx, tcv_viscosity))
+
+                rows.append(a_row)
+                cols.append(num_internal + j)
+                data.append((q_scale / p_scale) * (-dp_deriv_pipe - dp_deriv_tcv))
 
         return sp.coo_matrix((data, (rows, cols)), shape=(N, N)).tocsr()
 
@@ -478,7 +598,7 @@ class NetworkSolver:
             r_norm = np.linalg.norm(r)
             backtrack_success = False
             
-            for bt in range(10):
+            for bt in range(25):
                 x_next = x + alpha * dx
                 r_next = objective(x_next)
                 nfev += 1
@@ -503,7 +623,10 @@ class NetworkSolver:
     def _solve_hydraulics_core(self, method='sparse_newton', x0_custom=None) -> Tuple[np.ndarray, int, int, bool, np.ndarray]:
         num_internal = len(self.internal_node_indices)
         num_edges = len(self.edges_list)
-        if (num_internal + num_edges) == 0: return np.array([]), 0, 0, False, np.array([])
+        if (num_internal + num_edges) == 0:
+            self._update_telemetry(np.array([]), np.array([]))
+            self._last_evaluated_residuals = np.array([])
+            return np.array([]), 0, 0, False, np.array([])
 
         p_scale = 100000.0
         q_scale = 0.001
@@ -539,6 +662,16 @@ class NetworkSolver:
                 
                 if isinstance(src_node, ThreeWayTCV):
                     p_src_out = p_in_all[src_idx]
+                elif self._use_mcp_for_node(src_node):
+                    pipe = edge['pipe']
+                    dp_pipe = pipe.calculate_delta_p(q_edges[j], pipe.inlets[0].density, pipe.inlets[0].viscosity)
+                    p_out_est = p_in_all[tgt_idx] + dp_pipe
+                    
+                    inlet = src_node.inlets[0] if src_node.inlets else None
+                    density = inlet.density if inlet else 1000.0
+                    viscosity = inlet.viscosity if inlet else 0.001
+                    dp_node = src_node.calculate_delta_p(q_edges[j], density, viscosity, p_in_pa=p_in_all[src_idx], p_out_pa=p_out_est, update_state=False)
+                    p_src_out = p_in_all[src_idx] - dp_node
                 else:
                     q_in_node = sum(q_edges[k] for k, e in enumerate(self.edges_list) if e['target'] == src_id)
                     q_out_node = sum(q_edges[k] for k, e in enumerate(self.edges_list) if e['source'] == src_id)
@@ -566,31 +699,35 @@ class NetworkSolver:
             return True
 
         def dense_jacobian(x_scaled):
-            p_val = x_scaled[:num_internal] * p_scale
-            q_val = x_scaled[num_internal:] * q_scale
-            x_unscaled = np.concatenate([p_val, q_val])
-            return self.calculate_jacobian(x_unscaled).toarray()
+            return self.calculate_jacobian(x_scaled).toarray()
 
         gs = getattr(self.network, 'global_settings', None)
         inner_max_steps = getattr(gs, 'inner_iterations', 1000) if gs else 1000
         tol = getattr(gs, 'tolerance', 1e-6) if gs else 1e-6
         fallback_used = False
         
+        residual_tolerance = max(1e-4, 10.0 * tol)
+        
         if method == 'sparse_newton':
-            sol = self._solve_sparse_newton(objective, x0, tol=tol, max_iter=inner_max_steps)
+            sol = self._solve_sparse_newton(objective, x0, tol=residual_tolerance, max_iter=inner_max_steps)
             if not sol.success or not is_physical(sol.x):
                 # Fallback to LM starting from original initial guess x0
                 fallback_used = True
-                sol = root(objective, x0, method='lm', jac=dense_jacobian, tol=tol, options={'maxiter': inner_max_steps})
+                sol = root(objective, x0, method='lm', jac=dense_jacobian, tol=residual_tolerance, options={'maxiter': inner_max_steps})
         else:
-            sol = root(objective, x0, method=method, jac=dense_jacobian, tol=tol, options={'maxfev': inner_max_steps})
+            sol = root(objective, x0, method=method, jac=dense_jacobian, tol=residual_tolerance, options={'maxfev': inner_max_steps})
             if method == 'hybr' and (not sol.success or not is_physical(sol.x)):
                 fallback_used = True
-                sol = root(objective, x0, method='lm', jac=dense_jacobian, tol=tol, options={'maxiter': inner_max_steps})
+                sol = root(objective, x0, method='lm', jac=dense_jacobian, tol=residual_tolerance, options={'maxiter': inner_max_steps})
 
                 
         final_residuals = objective(sol.x)
-        if sol.success:
+        self._last_evaluated_residuals = final_residuals
+        max_res = np.max(np.abs(final_residuals))
+        
+        is_converged = bool(sol.success and (max_res <= residual_tolerance))
+        
+        if is_converged:
             final_p = sol.x[:num_internal] * p_scale
             final_q = sol.x[num_internal:] * q_scale
             self._update_telemetry(final_p, final_q)
@@ -604,16 +741,38 @@ class NetworkSolver:
             
             return converged_x, num_internal, getattr(sol, 'nfev', 0), fallback_used, final_residuals
         else:
-            raise ValueError(f"Solver failed: {sol.message}")
+            msg = getattr(sol, 'message', 'Residuals did not converge to tolerance')
+            raise ValueError(f"Solver failed to converge: message='{msg}', max_residual={max_res:.6f} (scaled)")
 
+
+    def _use_mcp_for_node(self, node) -> bool:
+        if getattr(node, 'use_mcp_formulation', False):
+            return True
+        if getattr(node, 'node_type', '') in ['pressure_safety_valve', 'rupture_disc']:
+            if getattr(node, 'forced_state', '') == 'auto':
+                is_open = getattr(node, 'status', '') in ['cracked', 'burst', 'overcapacity'] or getattr(node, 'is_burst', False)
+                return not is_open
+        return False
 
     def _get_node_p_out(self, node, p_in, q_in, q_out, update_state: bool = False):
         inlet = node.inlets[0] if node.inlets else None
         density = inlet.density if inlet else 1000.0
         viscosity = inlet.viscosity if inlet else 0.001
+        
         if isinstance(node, (CentrifugalPump, VolumetricPump)):
             return p_in + node.calculate_delta_p(q_in, density, viscosity)
         elif hasattr(node, 'calculate_delta_p'):
+            if self._use_mcp_for_node(node):
+                p_out_est = p_in
+                for edge in self.all_edges_list:
+                    if edge['source'] == node.id:
+                        tgt_id = edge['target']
+                        tgt_idx = self.all_node_id_to_idx[tgt_id]
+                        tgt_node = self.network.nodes[tgt_id]
+                        p_out_est = tgt_node.inlets[0].pressure + edge['pipe'].calculate_delta_p(q_in, density, viscosity)
+                        break
+                return p_in - node.calculate_delta_p(q_in, density, viscosity, p_in_pa=p_in, p_out_pa=p_out_est, update_state=update_state)
+            
             if hasattr(node, 'node_type') and node.node_type in ['pressure_safety_valve', 'rupture_disc']:
                 return p_in - node.calculate_delta_p(q_in, density, viscosity, p_in_pa=p_in, update_state=update_state)
             return p_in - node.calculate_delta_p(q_in, density, viscosity)
@@ -622,12 +781,29 @@ class NetworkSolver:
 
     def _update_telemetry(self, p_in_internal, q_edges):
         self._propagate_properties(q_edges)
-        p_in_all = np.zeros(len(self.nodes_list))
-        for i, p in self.fixed_pressure_nodes.items(): p_in_all[i] = p
-        for i, idx in enumerate(self.internal_node_indices): p_in_all[idx] = p_in_internal[i]
-        for node in self.nodes_list:
+        
+        # Populate all nodes' pressures and edges' flows (including pruned ones)
+        gs = getattr(self.network, 'global_settings', None)
+        atm_p = getattr(gs, 'atmospheric_pressure', 101325.0) if gs else 101325.0
+        p_in_all = np.full(len(self.all_nodes_list), atm_p)
+        
+        # 1. Populate fixed pressure boundaries
+        for i, node in enumerate(self.all_nodes_list):
+            if getattr(node, 'is_pressure_boundary', False):
+                p_in_all[i] = node.calculate()
+                
+        # 2. Populate active solved internal node pressures
+        for i, idx in enumerate(self.internal_node_indices):
+            active_node_id = self.node_ids[idx]
+            all_idx = self.all_node_id_to_idx[active_node_id]
+            p_in_all[all_idx] = p_in_internal[i]
+            
+        # 4. Clear all flows to 0.0 initially
+        for node in self.all_nodes_list:
             for port in node.inlets: port.flow_rate = 0.0
             for port in node.outlets: port.flow_rate = 0.0
+
+        # 5. Populate active flows
         for j, edge in enumerate(self.edges_list):
             q = q_edges[j]
             src_node = self.network.nodes[edge['source']]
@@ -638,27 +814,53 @@ class NetworkSolver:
             tgt_port_idx = self._parse_port_idx(edge.get('target_port', 'inlet-0'))
             if tgt_port_idx < len(tgt_node.inlets):
                 tgt_node.inlets[tgt_port_idx].flow_rate += q
-        for i, node in enumerate(self.nodes_list):
-            p_in = p_in_all[i]
-            for port in node.inlets: port.pressure = p_in
-            q_in_total = sum(p.flow_rate for p in node.inlets)
-            q_out_total = sum(p.flow_rate for p in node.outlets)
-            p_out = self._get_node_p_out(node, p_in, q_in_total, q_out_total, update_state=True)
-            for port in node.outlets: port.pressure = p_out
-            if isinstance(node, ThreeWayTCV):
-                node.calculate()
 
-        # Special handling for closed relief nodes (PSV & Rupture Disc)
-        for i, node in enumerate(self.nodes_list):
+        # 6. First pass: Populate active node pressures and update active node states
+        for node in self.all_nodes_list:
+            node_key = self.node_to_key[id(node)]
+            if node_key in self.active_node_ids:
+                all_idx = self.all_node_id_to_idx[node_key]
+                p_in = p_in_all[all_idx]
+                for port in node.inlets: port.pressure = p_in
+                q_in_total = sum(p.flow_rate for p in node.inlets)
+                q_out_total = sum(p.flow_rate for p in node.outlets)
+                p_out = self._get_node_p_out(node, p_in, q_in_total, q_out_total, update_state=True)
+                for port in node.outlets: port.pressure = p_out
+                if isinstance(node, ThreeWayTCV):
+                    node.calculate()
+
+        # 6b. Downstream pressure propagation to pruned/inactive components
+        for _ in range(5):
+            for edge in self.all_edges_list:
+                src_node = self.network.nodes[edge['source']]
+                tgt_node = self.network.nodes[edge['target']]
+                
+                src_key = self.node_to_key[id(src_node)]
+                tgt_key = self.node_to_key[id(tgt_node)]
+                
+                if tgt_key in self.pruned_node_ids:
+                    src_port_idx = self._parse_port_idx(edge.get('source_port', 'outlet-0'))
+                    if src_port_idx < len(src_node.outlets):
+                        p_src_out = src_node.outlets[src_port_idx].pressure
+                        tgt_idx = self.all_node_id_to_idx[tgt_key]
+                        p_in_all[tgt_idx] = p_src_out
+                        
+                        # Update target node's inlet and outlet pressures
+                        for port in tgt_node.inlets: port.pressure = p_src_out
+                        p_out = self._get_node_p_out(tgt_node, p_src_out, 0.0, 0.0, update_state=True)
+                        for port in tgt_node.outlets: port.pressure = p_out
+
+        # 7. Special handling for closed/pruned relief nodes (PSV & Rupture Disc)
+        for node in self.all_nodes_list:
             if getattr(node, 'node_type', '') in ['pressure_safety_valve', 'rupture_disc']:
                 is_closed = getattr(node, 'status', '') in ['closed', 'intact'] or getattr(node, 'forced_state', '') == 'forced_closed'
                 if is_closed:
-                    node_id = self.node_ids[i]
+                    node_id = self.node_to_key[id(node)]
                     ds_p = node.inlets[0].pressure if node.inlets else 101325.0
-                    for edge in self.edges_list:
+                    for edge in self.all_edges_list:
                         if edge['source'] == node_id:
                             tgt_id = edge['target']
-                            tgt_idx = self.node_id_to_idx[tgt_id]
+                            tgt_idx = self.all_node_id_to_idx[tgt_id]
                             ds_p = p_in_all[tgt_idx]
                             break
                     for port in node.inlets: port.flow_rate = 0.0
@@ -666,11 +868,15 @@ class NetworkSolver:
                         port.flow_rate = 0.0
                         port.pressure = ds_p
 
-        for j, edge in enumerate(self.edges_list):
+        # 8. Populate all edges' pipe flows and pressures
+        for edge in self.all_edges_list:
             pipe = edge['pipe']
-            q = q_edges[j]
-            src_node = self.nodes_list[self.node_id_to_idx[edge['source']]]
-            tgt_node = self.nodes_list[self.node_id_to_idx[edge['target']]]
+            src_node = self.network.nodes[edge['source']]
+            tgt_node = self.network.nodes[edge['target']]
+            
+            is_active = (edge in self.edges_list)
+            q = q_edges[self.edges_list.index(edge)] if is_active else 0.0
+            
             src_is_closed_relief = getattr(src_node, 'node_type', '') in ['pressure_safety_valve', 'rupture_disc'] and \
                                    (getattr(src_node, 'status', '') in ['closed', 'intact'] or getattr(src_node, 'forced_state', '') == 'forced_closed')
             tgt_is_closed_relief = getattr(tgt_node, 'node_type', '') in ['pressure_safety_valve', 'rupture_disc'] and \

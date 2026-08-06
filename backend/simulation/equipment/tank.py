@@ -9,6 +9,7 @@ class Tank(HydraulicNode):
     def __init__(self, name: str, elevation: float = 0.0, fluid_level: float = 1.0, temperature: float = 293.15, fluid_type: str = "water"):
         # Call the parent class constructor to set up the ID and lists
         super().__init__(name, node_type="tank")
+        self.is_pressure_boundary = True
         
         self.elevation = elevation      # Height of the tank bottom from ground (meters)
         self.fluid_level = fluid_level  # Height of the liquid inside the tank (meters)

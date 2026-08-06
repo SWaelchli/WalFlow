@@ -49,18 +49,22 @@ class PressureSafetyValve(HydraulicNode):
         dp_bar = max(0.0, p_inlet_bar - p_outlet_bar)
 
         if self.action_mode == "rupture_disc":
-            burst = bool(self.is_burst or (p_inlet_bar >= self.set_pressure_bar))
             if update_state:
+                burst = bool(self.is_burst or (p_inlet_bar >= self.set_pressure_bar))
                 self.is_burst = burst
                 self.status = "cracked" if burst else "closed"
-            return self.cv if burst else 1e-4
+                return self.cv if burst else 1e-4
+            else:
+                return self.cv if self.is_burst else 1e-4
 
         elif self.action_mode == "pop_action":
-            is_open = bool(self._was_open or (p_inlet_bar >= self.set_pressure_bar))
             if update_state:
+                is_open = bool(self._was_open or (p_inlet_bar >= self.set_pressure_bar))
                 self._was_open = is_open
                 self.status = "cracked" if is_open else "closed"
-            return self.cv if is_open else 1e-4
+                return self.cv if is_open else 1e-4
+            else:
+                return self.cv if self._was_open else 1e-4
 
         elif self.action_mode == "modulating":
             overpressure_bar = p_inlet_bar - self.set_pressure_bar
@@ -79,14 +83,31 @@ class PressureSafetyValve(HydraulicNode):
 
         return 1e-4
 
-    def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001, p_in_pa: float = None, update_state: bool = True) -> float:
+    def calculate_open_friction_and_deriv(self, flow_rate: float, density: float, viscosity: float = 0.001) -> tuple:
+        """
+        Computes safety valve open friction pressure drop and its derivative.
+        """
+        K_CV_SI = 1.732e9
+        eff_cv = self.cv
+
+        d_v = max(0.002, 0.01 * math.sqrt(eff_cv))
+        v_v = flow_rate / (0.25 * math.pi * d_v**2) if d_v > 0 else 0.0
+        re_v = (density * abs(v_v) * d_v) / max(1e-7, viscosity)
+        fr = FluidProperties.get_valve_fr(re_v)
+        cv_adj = max(0.001, eff_cv * fr)
+
+        dp = (K_CV_SI * density * flow_rate * abs(flow_rate)) / (cv_adj ** 2)
+        deriv = (2.0 * K_CV_SI * density * abs(flow_rate)) / (cv_adj ** 2)
+        return dp, deriv
+
+    def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001, p_in_pa: float = None, p_out_pa: float = None, update_state: bool = True) -> float:
         """Calculates pressure drop across the PSV with viscosity correction."""
         inlet = self.inlets[0]
         outlet = self.outlets[0]
 
         p_in_actual = p_in_pa if p_in_pa is not None else inlet.pressure
         p_in_bar = p_in_actual / 100000.0
-        p_out_bar = outlet.pressure / 100000.0
+        p_out_bar = (p_out_pa / 100000.0) if p_out_pa is not None else (outlet.pressure / 100000.0)
 
         eff_cv = self.get_effective_cv(p_in_bar, p_out_bar, update_state=update_state)
 
@@ -96,16 +117,33 @@ class PressureSafetyValve(HydraulicNode):
         step_status = "closed"
         if self.forced_state != "forced_closed":
             if self.action_mode == "rupture_disc":
-                if self.is_burst or (p_in_bar >= self.set_pressure_bar):
+                is_open = bool(self.is_burst or (p_in_bar >= self.set_pressure_bar)) if update_state else self.is_burst
+                if is_open:
                     step_status = "cracked"
             elif self.action_mode == "pop_action":
-                if self._was_open or (p_in_bar >= self.set_pressure_bar):
+                is_open = bool(self._was_open or (p_in_bar >= self.set_pressure_bar)) if update_state else self._was_open
+                if is_open:
                     step_status = "cracked"
             elif self.action_mode == "modulating":
                 if p_in_bar > self.set_pressure_bar:
                     step_status = "cracked"
 
         if step_status == "closed":
+            if p_in_pa is not None and p_out_pa is not None:
+                p_scale = 100000.0
+                q_scale = 0.001
+                epsilon = 1e-4
+                
+                set_pa = self.set_pressure_bar * 100000.0
+                dp_valve = p_in_pa - p_out_pa
+                dp_friction, _ = self.calculate_open_friction_and_deriv(flow_rate, density, viscosity)
+                
+                a = flow_rate / q_scale
+                b = (set_pa + dp_friction - dp_valve) / p_scale
+                
+                phi = math.sqrt(a**2 + b**2 + epsilon**2) - (a + b)
+                return dp_valve - p_scale * phi
+
             # Closed PSV seat: smooth C1 linear resistance model
             if update_state:
                 self.capacity_utilization_pct = 0.0
@@ -151,10 +189,10 @@ class PressureSafetyValve(HydraulicNode):
         step_status = "closed"
         if self.forced_state != "forced_closed":
             if self.action_mode == "rupture_disc":
-                if self.is_burst or (p_in_bar >= self.set_pressure_bar):
+                if self.is_burst:
                     step_status = "cracked"
             elif self.action_mode == "pop_action":
-                if self._was_open or (p_in_bar >= self.set_pressure_bar):
+                if self._was_open:
                     step_status = "cracked"
             elif self.action_mode == "modulating":
                 if p_in_bar > self.set_pressure_bar:

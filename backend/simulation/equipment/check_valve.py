@@ -9,17 +9,50 @@ class CheckValve(HydraulicNode):
     """
     def __init__(self, name: str, cv: float = 10.0, cracking_pressure_bar: float = 0.05):
         super().__init__(name, node_type="check_valve")
+        self.use_mcp_formulation = True
         self.cv = max(0.001, cv)
         self.cracking_pressure_bar = max(0.0, cracking_pressure_bar)
         
         self.add_inlet()
         self.add_outlet()
 
-    def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
+    def calculate_open_friction_and_deriv(self, flow_rate: float, density: float, viscosity: float = 0.001) -> tuple:
+        """
+        Computes check valve open pressure drop and its analytical derivative w.r.t. flow rate.
+        """
+        K_CV_SI = 1.732e9
+        effective_cv = self.cv
+        d_v = max(0.002, 0.01 * math.sqrt(effective_cv))
+        v_v = flow_rate / (0.25 * math.pi * d_v**2) if d_v > 0 else 0.0
+        re_v = (density * abs(v_v) * d_v) / max(1e-7, viscosity)
+        fr = FluidProperties.get_valve_fr(re_v)
+        cv_adj = max(0.0001, effective_cv * fr)
+
+        dp_friction = (K_CV_SI * density * flow_rate * abs(flow_rate)) / (cv_adj ** 2)
+        deriv = (2.0 * K_CV_SI * density * abs(flow_rate)) / (cv_adj ** 2)
+        return dp_friction, deriv
+
+    def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001, p_in_pa: float = None, p_out_pa: float = None, update_state: bool = True) -> float:
         """
         Calculates pressure drop across the check valve with viscosity correction.
-        Uses hyperbolic tangent smoothing around Q = 0 to prevent jump discontinuities in derivatives.
+        If p_in_pa and p_out_pa are provided, evaluates using the Fischer-Burmeister MCP formulation.
+        Otherwise, falls back to hyperbolic tangent smoothing.
         """
+        if p_in_pa is not None and p_out_pa is not None:
+            p_scale = 100000.0
+            q_scale = 0.001
+            epsilon = 1e-4
+            
+            cracking_pa = self.cracking_pressure_bar * 100000.0
+            dp_valve = p_in_pa - p_out_pa
+            dp_friction, _ = self.calculate_open_friction_and_deriv(flow_rate, density, viscosity)
+            
+            a = flow_rate / q_scale
+            b = (cracking_pa + dp_friction - dp_valve) / p_scale
+            
+            phi = math.sqrt(a**2 + b**2 + epsilon**2) - (a + b)
+            return dp_valve - p_scale * phi
+
         K_CV_SI = 1.732e9
         cracking_pa = self.cracking_pressure_bar * 100000.0
 
