@@ -772,14 +772,19 @@ export default function PropertyEditor({
                 </select>
               </div>
               <div>
-                {renderLabel('Rated Cooling (kW)', 'rated_cooling_kw')}
-                <input 
-                  type="number" 
-                  style={{ width: '100%', fontSize: '12px' }} 
-                  value={localDrafts.rated_cooling_kw !== undefined ? localDrafts.rated_cooling_kw : (effectiveData.rated_cooling_kw || 300.0)} 
-                  onChange={(e) => handleDraftChange('rated_cooling_kw', e.target.value)}
-                  onBlur={(e) => validateAndCommit('rated_cooling_kw', e.target.value, true)}
-                />
+                {renderLabel('Rating Method', 'rating_method')}
+                <select 
+                  style={{ width: '100%', fontSize: '12px', padding: '4px' }} 
+                  value={effectiveData.rating_method || "rated_duty"} 
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (isNode) onUpdate(id, { rating_method: val });
+                  }}
+                >
+                  <option value="rated_duty">Specify Rated Duty</option>
+                  <option value="design_temps">Specify Design Temperatures</option>
+                  <option value="ua_direct">Specify Heat Transfer (UA)</option>
+                </select>
               </div>
               <div>
                 {renderLabel('Rated Flow (L/min)', 'rated_flow_lmin')}
@@ -791,6 +796,54 @@ export default function PropertyEditor({
                   onBlur={(e) => validateAndCommit('rated_flow_lmin', e.target.value, true)}
                 />
               </div>
+              {(effectiveData.rating_method || "rated_duty") === "rated_duty" && (
+                <div>
+                  {renderLabel('Rated Cooling (kW)', 'rated_cooling_kw')}
+                  <input 
+                    type="number" 
+                    style={{ width: '100%', fontSize: '12px' }} 
+                    value={localDrafts.rated_cooling_kw !== undefined ? localDrafts.rated_cooling_kw : (effectiveData.rated_cooling_kw || 300.0)} 
+                    onChange={(e) => handleDraftChange('rated_cooling_kw', e.target.value)}
+                    onBlur={(e) => validateAndCommit('rated_cooling_kw', e.target.value, true)}
+                  />
+                </div>
+              )}
+              {((effectiveData.rating_method || "rated_duty") === "rated_duty" || (effectiveData.rating_method || "rated_duty") === "design_temps") && (
+                <div>
+                  {renderLabel('Design Inlet Temp (°C)', 'design_inlet_temp_c')}
+                  <input 
+                    type="number" 
+                    style={{ width: '100%', fontSize: '12px' }} 
+                    value={localDrafts.design_inlet_temp_c !== undefined ? localDrafts.design_inlet_temp_c : (effectiveData.design_inlet_temp_c || 50.0)} 
+                    onChange={(e) => handleDraftChange('design_inlet_temp_c', e.target.value)}
+                    onBlur={(e) => validateAndCommit('design_inlet_temp_c', e.target.value)}
+                  />
+                </div>
+              )}
+              {(effectiveData.rating_method || "rated_duty") === "design_temps" && (
+                <div>
+                  {renderLabel('Design Outlet Temp (°C)', 'design_outlet_temp_c')}
+                  <input 
+                    type="number" 
+                    style={{ width: '100%', fontSize: '12px' }} 
+                    value={localDrafts.design_outlet_temp_c !== undefined ? localDrafts.design_outlet_temp_c : (effectiveData.design_outlet_temp_c || 40.0)} 
+                    onChange={(e) => handleDraftChange('design_outlet_temp_c', e.target.value)}
+                    onBlur={(e) => validateAndCommit('design_outlet_temp_c', e.target.value)}
+                  />
+                </div>
+              )}
+              {(effectiveData.rating_method || "rated_duty") === "ua_direct" && (
+                <div>
+                  {renderLabel('Heat Transfer Coeff (UA, W/K)', 'ua_direct_w_k')}
+                  <input 
+                    type="number" 
+                    style={{ width: '100%', fontSize: '12px' }} 
+                    value={localDrafts.ua_direct_w_k !== undefined ? localDrafts.ua_direct_w_k : (effectiveData.ua_direct_w_k || 1000.0)} 
+                    onChange={(e) => handleDraftChange('ua_direct_w_k', e.target.value)}
+                    onBlur={(e) => validateAndCommit('ua_direct_w_k', e.target.value, true)}
+                  />
+                </div>
+              )}
               <div>
                 {renderLabel('Cooler Type', 'cooler_type')}
                 <select 

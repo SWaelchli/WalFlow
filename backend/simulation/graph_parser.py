@@ -269,7 +269,10 @@ class GraphParser:
                 design_inlet_temp_c=float(d.get('design_inlet_temp_c', 50.0)),
                 medium_temp_c=float(d.get('medium_temp_c', 10.0)),
                 rated_dp_bar=rated_dp,
-                cooler_type=str(d.get('cooler_type', 'water_cooled'))
+                cooler_type=str(d.get('cooler_type', 'water_cooled')),
+                rating_method=str(d.get('rating_method', 'rated_duty')),
+                design_outlet_temp_c=float(d.get('design_outlet_temp_c', 40.0)),
+                ua_direct_w_k=float(d.get('ua_direct_w_k', 1000.0))
             )
         elif t == 'filter':
             node = Filter(

@@ -19,7 +19,10 @@ class HeatExchanger(HydraulicNode):
                  rated_dp_bar: float = 0.5,
                  heat_duty: float = None,
                  cooler_type: str = "water_cooled",
-                 pressure_drop_factor: float = None):
+                 pressure_drop_factor: float = None,
+                 rating_method: str = "rated_duty",
+                 design_outlet_temp_c: float = 40.0,
+                 ua_direct_w_k: float = 1000.0):
         
         super().__init__(name, node_type="heat_exchanger")
         
@@ -34,6 +37,9 @@ class HeatExchanger(HydraulicNode):
         self.medium_temp_c = medium_temp_c
         self.cooler_type = cooler_type      # "water_cooled" or "air_cooled"
         self.rated_dp_bar = rated_dp_bar
+        self.rating_method = rating_method  # "rated_duty", "design_temps", "ua_direct"
+        self.design_outlet_temp_c = design_outlet_temp_c
+        self.ua_direct_w_k = ua_direct_w_k
         
         # Calculate pressure drop factor from rated conditions or use explicit override
         if pressure_drop_factor is not None:
@@ -51,27 +57,53 @@ class HeatExchanger(HydraulicNode):
         self.add_inlet()
         self.add_outlet()
 
+    def _calculate_ua_from_temps(self, t_in, t_out, tm, m_dot, cp):
+        if abs(t_in - tm) <= 1e-5:
+            return 0.0
+        # For a single-phase utility medium with infinite capacity (C_max = inf):
+        # effectiveness = (t_in - t_out) / (t_in - tm)
+        effectiveness = (t_in - t_out) / (t_in - tm)
+        # Bounded between 0 and 1
+        effectiveness = max(1e-5, min(0.999, effectiveness))
+        ntu = -math.log(1.0 - effectiveness)
+        return ntu * m_dot * cp
+
     def _calculate_ua_rated(self, cp: float):
         """
-        Estimates the UA (Heat Transfer Coefficient * Area) from design point.
+        Estimates the UA (Heat Transfer Coefficient * Area) from design point depending on the rating method.
         """
-        q_rated_si = self.rated_cooling_kw * 1000.0
-        m_dot_rated = (self.rated_flow_lmin / 60000.0) * 850.0 # Approx oil density
+        rating_method = getattr(self, 'rating_method', 'rated_duty')
         
-        # 1. Find Rated Outlet Temp from energy balance: Q = m_dot * cp * (Ti - To)
-        # To = Ti - Q / (m_dot * cp)
-        t_in_rated = self.design_inlet_temp_c + 273.15
-        t_out_rated = t_in_rated - (q_rated_si / (m_dot_rated * cp))
+        # Determine medium temperature tm_rated for UA sizing calculations
+        if getattr(self, 'cooler_type', 'water_cooled') == 'air_cooled':
+            tm_rated = 20.0 + 273.15 # Design ambient standard
+        else:
+            tm_rated = self.medium_temp_c + 273.15
+            
+        fluid_type = getattr(self.global_settings, 'fluid_type', 'water')
+        design_temp_k = self.design_inlet_temp_c + 273.15
+        density_design = FluidProperties.get_density(fluid_type, design_temp_k)
         
-        # 2. Find UA using simplified LMTD or Average Temp Difference
-        t_avg_rated = (t_in_rated + t_out_rated) / 2.0
-        t_medium = self.medium_temp_c + 273.15
-        
-        # UA = Q / (T_avg - T_medium)
-        dt = t_avg_rated - t_medium
-        if dt <= 1.0: dt = 1.0 # Prevent div by zero
-        
-        return q_rated_si / dt
+        m_dot_rated = (self.rated_flow_lmin / 60000.0) * density_design
+        if m_dot_rated <= 0.0:
+            return 0.0
+            
+        if rating_method == 'ua_direct':
+            # Option C: Direct UA (W/K)
+            return getattr(self, 'ua_direct_w_k', 1000.0)
+            
+        elif rating_method == 'design_temps':
+            # Option A: Sizing from Design Temperatures (exact e-NTU inversion)
+            t_in = self.design_inlet_temp_c + 273.15
+            t_out = self.design_outlet_temp_c + 273.15
+            return self._calculate_ua_from_temps(t_in, t_out, tm_rated, m_dot_rated, cp)
+            
+        else: # 'rated_duty'
+            # Option B: Rated Sizing Duty (exact e-NTU inversion)
+            q_rated_si = self.rated_cooling_kw * 1000.0
+            t_in = self.design_inlet_temp_c + 273.15
+            t_out = t_in - (q_rated_si / (m_dot_rated * cp))
+            return self._calculate_ua_from_temps(t_in, t_out, tm_rated, m_dot_rated, cp)
 
     def calculate_delta_p(self, flow: float, density: float, viscosity: float) -> float:
         # Scale friction for heat exchanger tubes/channels at low Re
