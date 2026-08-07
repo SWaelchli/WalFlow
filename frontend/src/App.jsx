@@ -32,9 +32,8 @@ import CalibratedRestrictionNode from './nodes/CalibratedRestrictionNode';
 
 import Navbar from './components/layout/Navbar';
 import Sidebar from './components/panels/Sidebar';
-import PropertyEditor from './components/panels/PropertyEditor';
+import InspectorPanel from './components/panels/InspectorPanel';
 import DataList from './components/panels/DataList';
-import DetailPanel from './components/details/DetailPanel';
 
 import PipeEdge from './edges/PipeEdge';
 import SignalEdge from './edges/SignalEdge';
@@ -132,6 +131,7 @@ function WalFlowContent() {
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   
   const [selectedNode, setSelectedNode] = useState(null);
+  const [inspectorTab, setInspectorTab] = useState('setup');
   const [selectedEdge, setSelectedEdge] = useState(null);
 
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
@@ -1142,19 +1142,15 @@ function WalFlowContent() {
 
   // Calculate dynamic top positions to prevent panel overlap on the right side
   let caseManagerTop = '16px';
-  let propertyEditorTop = '16px';
 
   if (heatmapActive) {
     if (autoScale) {
       caseManagerTop = '164px';
-      propertyEditorTop = showCaseManager ? '420px' : '164px';
     } else {
       caseManagerTop = '188px';
-      propertyEditorTop = showCaseManager ? '444px' : '188px';
     }
   } else {
     caseManagerTop = '16px';
-    propertyEditorTop = showCaseManager ? '272px' : '16px';
   }
 
   return (
@@ -1211,9 +1207,10 @@ function WalFlowContent() {
         />
 
         <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-          <div 
-            style={{ flexGrow: 1, position: 'relative' }} 
-            ref={reactFlowWrapper}
+          <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'row', overflow: 'hidden', position: 'relative' }}>
+            <div 
+              style={{ flexGrow: 1, position: 'relative' }} 
+              ref={reactFlowWrapper}
             onDragEnter={onDragEnter}
             onDragLeave={onDragLeave}
           >
@@ -1253,32 +1250,7 @@ function WalFlowContent() {
               </p>
             </div>
           )}
-          <DetailPanel 
-            selectedNode={effectiveSelectedNode} 
-            selectedEdge={effectiveSelectedEdge}
-            allNodes={nodes}
-            allEdges={edges}
-            unmitigatedTelemetry={telemetryUnmitigated}
-          />
-          
-          <PropertyEditor 
-            key={selectedNode?.id || selectedEdge?.id || 'none'}
-            node={selectedNode} 
-            edge={selectedEdge}
-            onUpdate={updateNodeData} 
-            onUpdateEdge={updateEdgeData}
-            onDelete={onDeleteNode} 
-            onDeleteEdge={onDeleteEdge}
-            heatmapActive={heatmapActive}
-            cases={cases}
-            activeCaseId={activeCaseId}
-            onResetCaseOverride={handleResetCaseOverride}
-            style={{ 
-              top: propertyEditorTop,
-              maxHeight: `calc(100vh - ${parseInt(propertyEditorTop) + 120}px)`,
-              overflowY: 'auto'
-            }}
-          />
+
 
           <ReactFlow 
             nodes={interactiveNodes} 
@@ -1489,6 +1461,28 @@ function WalFlowContent() {
             })}
           />
         </div>
+
+        <InspectorPanel
+          key={selectedNode?.id || selectedEdge?.id || 'none'}
+          node={selectedNode}
+          edge={selectedEdge}
+          effectiveNode={effectiveSelectedNode}
+          effectiveEdge={effectiveSelectedEdge}
+          onUpdate={updateNodeData}
+          onUpdateEdge={updateEdgeData}
+          onDelete={onDeleteNode}
+          onDeleteEdge={onDeleteEdge}
+          heatmapActive={heatmapActive}
+          cases={cases}
+          activeCaseId={activeCaseId}
+          onResetCaseOverride={handleResetCaseOverride}
+          allNodes={nodes}
+          allEdges={edges}
+          unmitigatedTelemetry={telemetryUnmitigated}
+          activeTab={inspectorTab}
+          setActiveTab={setInspectorTab}
+        />
+      </div>
 
         <DataList 
           nodes={interactiveNodes} 

@@ -70,6 +70,7 @@ npm run lint
 
 1. The user will advice on what feature they want to change or implement. Before changing any code, make sure to clarify the exact requirements. Write a prompt and wait for confirmation from user before proceeding.
 2. Git commits should ONLY be performed upon explicit user request. Do not automatically create git commits after completing a task or phase unless requested.
+3. Always read and consult the `ui-ux-pro-max` skill whenever changing the user interface (UI) or user experience (UX) to ensure premium visual compliance.
 
 ## Versioning Policy
 

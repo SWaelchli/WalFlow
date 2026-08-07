@@ -8,7 +8,7 @@ import GenericDetails from './GenericDetails';
 import PressureSafetyValveDetails from './PressureSafetyValveDetails';
 import RuptureDiscDetails from './RuptureDiscDetails';
 
-export default function DetailPanel({ selectedNode, selectedEdge, allNodes, allEdges, unmitigatedTelemetry }) {
+export default function DetailPanel({ selectedNode, selectedEdge, allNodes, allEdges, unmitigatedTelemetry, inline = false }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   if (!selectedNode && !selectedEdge) return null;
@@ -53,6 +53,14 @@ export default function DetailPanel({ selectedNode, selectedEdge, allNodes, allE
         return <GenericDetails node={selectedNode} allNodes={allNodes} allEdges={allEdges} />;
     }
   };
+
+  if (inline) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+        {renderContent()}
+      </div>
+    );
+  }
 
   return (
     <div style={{

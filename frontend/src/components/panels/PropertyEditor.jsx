@@ -120,7 +120,8 @@ export default function PropertyEditor({
   cases = [],
   activeCaseId = 'case_base',
   onResetCaseOverride,
-  style = {}
+  style = {},
+  inline = false
 }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [localDrafts, setLocalDrafts] = useState({});
@@ -222,7 +223,12 @@ export default function PropertyEditor({
     <div 
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
-      style={{
+      style={inline ? {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '12px',
+        ...style
+      } : {
         position: 'absolute', top: heatmapActive ? '185px' : '16px', right: '16px', zIndex: 10,
         width: '280px', background: '#ffffff', padding: isCollapsed ? '12px 18px' : '20px',
         borderRadius: '12px', border: '1px solid #D8E2E1',
@@ -233,47 +239,48 @@ export default function PropertyEditor({
         overflowY: isCollapsed ? 'visible' : (style.overflowY || 'auto')
       }}
     >
-      <div 
-        onClick={() => setIsCollapsed(!isCollapsed)}
-        style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center', 
-          marginBottom: isCollapsed ? '0' : '14px',
-          cursor: 'pointer',
-          userSelect: 'none',
-          borderBottom: isCollapsed ? 'none' : '1px solid #EBF0EF',
-          paddingBottom: isCollapsed ? '0' : '10px'
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '11px', color: '#587071', transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▼</span>
-          <h3 style={{ margin: 0, fontSize: '13px', fontWeight: '700', color: '#395253', letterSpacing: '0.01em' }}>
-            {isNode ? `Equipment: ${type.toUpperCase()}` : `Connection: ${data.type || 'PIPE'}`}
-          </h3>
-        </div>
-        <button 
-          onClick={(e) => { e.stopPropagation(); handleDelete(); }} 
+      {!inline && (
+        <div 
+          onClick={() => setIsCollapsed(!isCollapsed)}
           style={{ 
-            background: 'rgba(239, 68, 68, 0.1)', 
-            color: '#ef4444', 
-            border: '1px solid rgba(239, 68, 68, 0.2)', 
-            borderRadius: '6px', 
-            padding: '4px 10px', 
-            fontSize: '11px', 
-            fontWeight: '600',
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
+            marginBottom: isCollapsed ? '0' : '14px',
             cursor: 'pointer',
-            transition: 'all 0.2s'
+            userSelect: 'none',
+            borderBottom: isCollapsed ? 'none' : '1px solid #EBF0EF',
+            paddingBottom: isCollapsed ? '0' : '10px'
           }}
-          onMouseEnter={(e) => e.currentTarget.style.background = '#ef4444'}
-          onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'; e.currentTarget.style.color = '#ef4444'; }}
         >
-          Delete
-        </button>
-      </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '11px', color: '#587071', transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▼</span>
+            <h3 style={{ margin: 0, fontSize: '13px', fontWeight: '700', color: '#395253', letterSpacing: '0.01em' }}>
+              {isNode ? `Equipment: ${type.toUpperCase()}` : `Connection: ${data.type || 'PIPE'}`}
+            </h3>
+          </div>
+          <button 
+            onClick={(e) => { e.stopPropagation(); handleDelete(); }} 
+            style={{ 
+              background: 'rgba(239, 68, 68, 0.1)', 
+              color: '#ef4444', 
+              border: '1px solid rgba(239, 68, 68, 0.2)', 
+              borderRadius: '6px', 
+              padding: '4px 10px', 
+              fontSize: '11px', 
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = '#ef4444'}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'; e.currentTarget.style.color = '#ef4444'; }}
+          >
+            Delete
+          </button>
+        </div>
+      )}
 
-      
-      {!isCollapsed && (
+      {(!isCollapsed || inline) && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {type !== 'text_bubble' && (
             <div key="label">

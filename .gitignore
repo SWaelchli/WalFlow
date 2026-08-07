@@ -6,3 +6,4 @@ __pycache__/
 walflow.db
 test_walflow.db
 performance_log.md
+.agents/

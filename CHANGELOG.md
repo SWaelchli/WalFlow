@@ -14,4 +14,7 @@ All notable changes to the WälFlow project will be documented in this file.
 - Updated the Property Editor UI for the Cooler to support dynamic conditional rendering of fields and intuitive rated pressure drop input specification.
 - Updated WälFlow UI pressure unit designations to explicitly show bar(a) (absolute pressure) and bar(d) (differential pressure) across the property editor, details panels, canvas node indicators, data list tabs, and exported reports.
 - Upgraded the generic node and pipe detail panels to show a compact engineering table with dynamic flow path visualization, Inlet/Outlet pressures, fluid velocities, Reynolds numbers, and pressure gradient in mbar(d)/m.
+- Implemented UI/UX modernization including a centralized custom SVG IconLibrary, index.css design tokens, a unified tabbed right-hand InspectorPanel, and horizontal layout positioning to prevent canvas compression.
+- Polished the Navbar and Sidebar to replace emojis with vector icons, migrated inline styling to standard CSS classes, and cleaned up JavaScript mouse hover event listeners.
+- Audited accessibility, verified focus outline states, and added full keyboard event and role support to collapsible panels.
 

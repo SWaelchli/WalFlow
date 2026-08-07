@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { EquipmentSymbol } from '../symbols/SymbolLibrary';
+import { InfoIcon, CheckIcon, CrossIcon } from '../symbols/IconLibrary';
 
 
 const categorizedEquipment = [
@@ -102,7 +103,9 @@ function DiagnosticsContent({ stats, batchStats, onSelectComponent }) {
   if (!stats && (!batchStats || batchStats.length === 0)) {
     return (
       <div style={{ textAlign: 'center', padding: '40px 20px', color: theme.slate500 }}>
-        <div style={{ fontSize: '32px', marginBottom: '12px' }}>📊</div>
+        <div style={{ marginBottom: '12px', display: 'flex', justifyContent: 'center' }}>
+          <InfoIcon size={32} color="var(--color-text-muted)" />
+        </div>
         <p style={{ fontSize: '13px', margin: 0 }}>No simulation data yet.</p>
         <p style={{ fontSize: '11px', marginTop: '4px' }}>Run a simulation or batch solve to see performance.</p>
       </div>
@@ -161,7 +164,7 @@ function DiagnosticsContent({ stats, batchStats, onSelectComponent }) {
             alignItems: 'center',
             gap: '12px'
           }}>
-            <div style={{ fontSize: '20px' }}>{success ? '✅' : '❌'}</div>
+            <div style={{ display: 'flex', alignItems: 'center' }}>{success ? <CheckIcon size={20} color="#166534" /> : <CrossIcon size={20} color="#991b1b" />}</div>
             <div>
               <div style={{ fontSize: '14px', fontWeight: '700', color: success ? '#166534' : '#991b1b' }}>
                 {success ? 'SOLVER CONVERGED' : 'SOLVER FAILED'}
@@ -175,28 +178,8 @@ function DiagnosticsContent({ stats, batchStats, onSelectComponent }) {
           {bottleneck && !success && (
             <div 
               onClick={() => bottleneck.id && onSelectComponent && onSelectComponent(bottleneck.id, bottleneck.type)}
-              style={{ 
-                padding: '16px', 
-                borderRadius: '8px', 
-                background: theme.slate800,
-                color: theme.white,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '8px',
-                cursor: bottleneck.id ? 'pointer' : 'default',
-                transition: 'all 0.2s ease',
-                border: '1px solid transparent'
-              }}
-              onMouseEnter={(e) => {
-                if (bottleneck.id) {
-                  e.currentTarget.style.borderColor = theme.primary;
-                  e.currentTarget.style.boxShadow = '0 0 8px rgba(250, 133, 7, 0.4)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = 'transparent';
-                e.currentTarget.style.boxShadow = 'none';
-              }}
+              className="sidebar-bottleneck-card"
+              style={{ cursor: bottleneck.id ? 'pointer' : 'default' }}
             >
               <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: '#94a3b8', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span>Critical Bottleneck</span>
@@ -257,11 +240,8 @@ function DiagnosticsContent({ stats, batchStats, onSelectComponent }) {
             <select
               value={selectedBatchCaseId}
               onChange={(e) => setSelectedBatchCaseId(e.target.value)}
-              style={{
-                width: '100%', padding: '10px 12px', borderRadius: '8px',
-                border: `1px solid ${theme.slate200}`, fontSize: '13px',
-                background: theme.white, outline: 'none'
-              }}
+              className="form-select"
+              style={{ width: '100%' }}
             >
               {batchStats.map(c => {
                 const caseSuccess = c.status === 'success' && !c.error_message;
@@ -290,7 +270,7 @@ function DiagnosticsContent({ stats, batchStats, onSelectComponent }) {
                       alignItems: 'center',
                       gap: '12px'
                     }}>
-                      <div style={{ fontSize: '20px' }}>{caseSuccess ? '✅' : '❌'}</div>
+                      <div style={{ display: 'flex', alignItems: 'center' }}>{caseSuccess ? <CheckIcon size={20} color="#166534" /> : <CrossIcon size={20} color="#991b1b" />}</div>
                       <div>
                         <div style={{ fontSize: '14px', fontWeight: '700', color: caseSuccess ? '#166534' : '#991b1b' }}>
                           {caseSuccess ? 'CASE CONVERGED' : 'CASE FAILED'}
@@ -304,28 +284,8 @@ function DiagnosticsContent({ stats, batchStats, onSelectComponent }) {
                     {selectedCase.bottleneck && !caseSuccess && (
                       <div 
                         onClick={() => selectedCase.bottleneck.id && onSelectComponent && onSelectComponent(selectedCase.bottleneck.id, selectedCase.bottleneck.type)}
-                        style={{ 
-                          padding: '16px', 
-                          borderRadius: '8px', 
-                          background: theme.slate800,
-                          color: theme.white,
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '8px',
-                          cursor: selectedCase.bottleneck.id ? 'pointer' : 'default',
-                          transition: 'all 0.2s ease',
-                          border: '1px solid transparent'
-                        }}
-                        onMouseEnter={(e) => {
-                          if (selectedCase.bottleneck.id) {
-                            e.currentTarget.style.borderColor = theme.primary;
-                            e.currentTarget.style.boxShadow = '0 0 8px rgba(250, 133, 7, 0.4)';
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.borderColor = 'transparent';
-                          e.currentTarget.style.boxShadow = 'none';
-                        }}
+                        className="sidebar-bottleneck-card"
+                        style={{ cursor: selectedCase.bottleneck.id ? 'pointer' : 'default' }}
                       >
                         <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: '#94a3b8', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <span>Critical Bottleneck</span>
@@ -383,6 +343,15 @@ function CollapsibleCategory({ name, items, onDragStart }) {
     <div style={{ marginBottom: '4px' }}>
       <div 
         onClick={() => setIsExpanded(!isExpanded)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setIsExpanded(!isExpanded);
+          }
+        }}
+        tabIndex="0"
+        role="button"
+        aria-expanded={isExpanded}
         style={{ 
           display: 'flex', 
           justifyContent: 'space-between', 
@@ -392,7 +361,8 @@ function CollapsibleCategory({ name, items, onDragStart }) {
           userSelect: 'none',
           borderRadius: '6px',
           backgroundColor: isExpanded ? theme.slate50 : 'transparent',
-          transition: 'background-color 0.2s'
+          transition: 'background-color 0.2s',
+          outline: 'none'
         }}
       >
         <h3 style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', color: theme.slate500, margin: 0, letterSpacing: '0.05em' }}>{name}</h3>
@@ -406,25 +376,7 @@ function CollapsibleCategory({ name, items, onDragStart }) {
               key={item.type}
               onDragStart={(event) => onDragStart(event, item.type)}
               draggable
-              style={{
-                padding: '12px 8px', background: theme.white, border: `1px solid ${theme.slate200}`,
-                borderRadius: '8px', cursor: 'grab', display: 'flex', flexDirection: 'column',
-                alignItems: 'center', justifyContent: 'center',
-                gap: '4px', transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                minHeight: '120px',
-                textAlign: 'center'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = theme.primary;
-                e.currentTarget.style.boxShadow = '0 4px 6px -1px rgb(0 0 0 / 0.1)';
-                e.currentTarget.style.transform = 'translateY(-1px)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = theme.slate200;
-                e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)';
-                e.currentTarget.style.transform = 'translateY(0)';
-              }}
+              className="sidebar-drag-card"
             >
               <div style={{ height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '4px' }}>
                 <EquipmentSymbol type={item.type} size={36} />
@@ -451,6 +403,15 @@ function CollapsibleScenarios({ templates, onLoad }) {
     <div style={{ marginBottom: '16px', borderRadius: '8px', overflow: 'hidden', border: `1px solid ${theme.slate200}` }}>
       <div 
         onClick={() => setIsExpanded(!isExpanded)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setIsExpanded(!isExpanded);
+          }
+        }}
+        tabIndex="0"
+        role="button"
+        aria-expanded={isExpanded}
         style={{ 
           display: 'flex', 
           justifyContent: 'space-between', 
@@ -458,7 +419,8 @@ function CollapsibleScenarios({ templates, onLoad }) {
           padding: '12px 16px', 
           cursor: 'pointer',
           background: theme.slate100,
-          userSelect: 'none'
+          userSelect: 'none',
+          outline: 'none'
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -480,19 +442,7 @@ function CollapsibleScenarios({ templates, onLoad }) {
                   <button 
                     key={name}
                     onClick={() => onLoad(data, name, { isTemplate: true })}
-                    style={{
-                      padding: '8px 10px', background: 'transparent', border: 'none',
-                      borderRadius: '6px', fontSize: '12px', textAlign: 'left', cursor: 'pointer',
-                      color: theme.slate800, transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '6px'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = theme.slate50;
-                      e.currentTarget.style.color = theme.primary;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'transparent';
-                      e.currentTarget.style.color = theme.slate800;
-                    }}
+                    className="sidebar-list-item"
                   >
                     <span style={{ fontSize: '10px', color: theme.primary }}>•</span>
                     <span>{name}</span>
@@ -505,19 +455,7 @@ function CollapsibleScenarios({ templates, onLoad }) {
               <button 
                 key={name}
                 onClick={() => onLoad(data, name, { isTemplate: true })}
-                style={{
-                  padding: '8px 10px', background: 'transparent', border: 'none',
-                  borderRadius: '6px', fontSize: '12px', textAlign: 'left', cursor: 'pointer',
-                  color: theme.slate800, transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '6px'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = theme.slate50;
-                  e.currentTarget.style.color = theme.primary;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.color = theme.slate800;
-                }}
+                className="sidebar-list-item"
               >
                 <span style={{ fontSize: '10px', color: theme.primary }}>•</span>
                 <span>{name}</span>
@@ -552,7 +490,7 @@ export default function Sidebar({ onLoad, globalSettings, onUpdateGlobalSettings
   };
 
   const labelStyle = { display: 'block', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', color: theme.slate500, marginBottom: '6px', letterSpacing: '0.04em' };
-  const inputStyle = { width: '100%', padding: '10px 12px', borderRadius: '8px', border: `1px solid ${theme.slate200}`, fontSize: '13px', background: theme.white, outline: 'none', transition: 'border-color 0.2s, box-shadow 0.2s' };
+  const inputStyle = { width: '100%' };
   const hintStyle = { fontSize: '10px', color: theme.slate500, marginTop: '4px' };
 
   return (
@@ -643,6 +581,7 @@ export default function Sidebar({ onLoad, globalSettings, onUpdateGlobalSettings
                 <select 
                   value={globalSettings.fluid_type}
                   onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, fluid_type: e.target.value })}
+                  className="form-select"
                   style={inputStyle}
                 >
                   <option value="water">Water (Standard)</option>
@@ -658,6 +597,7 @@ export default function Sidebar({ onLoad, globalSettings, onUpdateGlobalSettings
                   type="number"
                   value={(globalSettings.ambient_temperature - 273.15).toFixed(1)}
                   onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, ambient_temperature: parseFloat(e.target.value) + 273.15 })}
+                  className="form-input"
                   style={inputStyle}
                 />
                 <p style={hintStyle}>Baseline environment temperature affecting heat losses and fluid properties.</p>
@@ -669,6 +609,7 @@ export default function Sidebar({ onLoad, globalSettings, onUpdateGlobalSettings
                   type="number"
                   value={globalSettings.atmospheric_pressure}
                   onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, atmospheric_pressure: parseFloat(e.target.value) })}
+                  className="form-input"
                   style={inputStyle}
                 />
                 <p style={hintStyle}>Reference atmospheric pressure used for open reservoirs and absolute calculations.</p>
@@ -681,6 +622,7 @@ export default function Sidebar({ onLoad, globalSettings, onUpdateGlobalSettings
                   step="0.000001"
                   value={globalSettings.global_roughness}
                   onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, global_roughness: parseFloat(e.target.value) })}
+                  className="form-input"
                   style={inputStyle}
                 />
                 <p style={hintStyle}>Friction roughness inside pipes. Steel is typically 0.000045m (45 µm).</p>
@@ -695,6 +637,7 @@ export default function Sidebar({ onLoad, globalSettings, onUpdateGlobalSettings
                 <select 
                   value={globalSettings.solver_method || 'sparse_newton'}
                   onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, solver_method: e.target.value })}
+                  className="form-select"
                   style={inputStyle}
                 >
                   <option value="sparse_newton">Sparse Newton (Analytical)</option>
@@ -709,6 +652,7 @@ export default function Sidebar({ onLoad, globalSettings, onUpdateGlobalSettings
                 <select 
                   value={globalSettings.warm_start !== false ? 'true' : 'false'}
                   onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, warm_start: e.target.value === 'true' })}
+                  className="form-select"
                   style={inputStyle}
                 >
                   <option value="true">Enabled (Recommended)</option>
@@ -726,6 +670,7 @@ export default function Sidebar({ onLoad, globalSettings, onUpdateGlobalSettings
                   max="1.0"
                   value={globalSettings.damping_factor !== undefined ? globalSettings.damping_factor : 0.25}
                   onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, damping_factor: parseFloat(e.target.value) })}
+                  className="form-input"
                   style={inputStyle}
                 />
                 <p style={hintStyle}>Damping (0.05 to 1.0) for outer regulator updates. Lower prevents oscillations; higher speeds convergence.</p>
@@ -737,6 +682,7 @@ export default function Sidebar({ onLoad, globalSettings, onUpdateGlobalSettings
                   type="number"
                   value={globalSettings.control_iterations || 100}
                   onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, control_iterations: parseInt(e.target.value) })}
+                  className="form-input"
                   style={inputStyle}
                 />
                 <p style={hintStyle}>Max outer loop iterations for regulators and remote control valves to settle on their setpoints.</p>
@@ -748,6 +694,7 @@ export default function Sidebar({ onLoad, globalSettings, onUpdateGlobalSettings
                   type="number"
                   value={globalSettings.property_iterations}
                   onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, property_iterations: parseInt(e.target.value) })}
+                  className="form-input"
                   style={inputStyle}
                 />
                 <p style={hintStyle}>Max loops for propagating fluid temperature and thermal property updates across the network.</p>
@@ -760,6 +707,7 @@ export default function Sidebar({ onLoad, globalSettings, onUpdateGlobalSettings
                   step="0.000001"
                   value={globalSettings.tolerance}
                   onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, tolerance: parseFloat(e.target.value) })}
+                  className="form-input"
                   style={inputStyle}
                 />
                 <p style={hintStyle}>Target numerical residual precision (e.g., 1e-6). Lower values increase solve accuracy.</p>
@@ -771,6 +719,7 @@ export default function Sidebar({ onLoad, globalSettings, onUpdateGlobalSettings
                   type="number"
                   value={globalSettings.inner_iterations || 1000}
                   onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, inner_iterations: parseInt(e.target.value) })}
+                  className="form-input"
                   style={inputStyle}
                 />
                 <p style={hintStyle}>Max steps the core matrix solver is allowed to take to resolve hydraulic equations per iteration.</p>

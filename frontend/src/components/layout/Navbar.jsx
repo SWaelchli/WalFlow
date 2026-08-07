@@ -2,21 +2,17 @@ import React from 'react';
 import walflowLogo from '../../assets/Logo_WalFlow.svg';
 import { useAuth } from '../../hooks/useAuth';
 import { APP_VERSION, RELEASE_STAGE } from '../../constants';
-
-const theme = {
-  primary: '#FA8507',
-  primaryHover: '#E07600',
-  brandDark: '#395253',
-  slate50: '#F4F7F6',
-  slate100: '#EBF0EF',
-  slate200: '#D8E2E1',
-  slate500: '#587071',
-  slate800: '#1C2B2C',
-  white: '#ffffff',
-  danger: '#EF4444',
-  dangerBg: '#FEF2F2',
-  dangerBorder: '#FEE2E2'
-};
+import { 
+  PlusIcon, 
+  CloudIcon, 
+  ExportIcon, 
+  ImportIcon, 
+  TrashIcon, 
+  CrownIcon, 
+  SignOutIcon, 
+  SignInIcon, 
+  PlayIcon 
+} from '../symbols/IconLibrary';
 
 export default function Navbar({
   onCalculate,
@@ -46,35 +42,10 @@ export default function Navbar({
     }
   };
 
-  const btnBaseStyle = {
-    height: '34px',
-    padding: '0 14px',
-    borderRadius: '8px',
-    fontFamily: 'inherit',
-    fontSize: '12px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '6px',
-    userSelect: 'none',
-    whiteSpace: 'nowrap',
-    boxSizing: 'border-box'
-  };
-
-  const btnSecondaryStyle = {
-    ...btnBaseStyle,
-    background: theme.slate50,
-    border: `1px solid ${theme.slate200}`,
-    color: theme.slate800
-  };
-
   const dividerStyle = {
     height: '24px',
     width: '1px',
-    backgroundColor: theme.slate100,
+    backgroundColor: '#EBF0EF',
     margin: '0 4px'
   };
 
@@ -82,8 +53,8 @@ export default function Navbar({
     <header style={{
       height: '56px',
       minHeight: '56px',
-      backgroundColor: theme.white,
-      borderBottom: `1px solid ${theme.slate200}`,
+      backgroundColor: '#ffffff',
+      borderBottom: '1px solid #D8E2E1',
       padding: '0 20px',
       display: 'flex',
       alignItems: 'center',
@@ -108,7 +79,7 @@ export default function Navbar({
             style={{
               fontSize: '11px',
               fontWeight: '600',
-              color: theme.brandDark,
+              color: '#395253',
               cursor: 'pointer',
               userSelect: 'none',
               fontFamily: 'inherit',
@@ -126,20 +97,24 @@ export default function Navbar({
             onClick={onCalculate}
             disabled={isSimulating}
             title="Run hydraulic simulation for the active case (Ctrl + Enter)"
+            className="btn-primary"
             style={{
-              ...btnBaseStyle,
               padding: '0 18px',
-              background: isSimulating ? theme.slate200 : theme.primary,
-              color: theme.white,
-              border: 'none',
-              fontSize: '12px',
-              fontWeight: '700',
+              fontWeight: '750',
               boxShadow: isSimulating ? 'none' : '0 2px 6px rgba(250, 133, 7, 0.3)'
             }}
-            onMouseEnter={(e) => !isSimulating && (e.currentTarget.style.background = theme.primaryHover)}
-            onMouseLeave={(e) => !isSimulating && (e.currentTarget.style.background = theme.primary)}
           >
-            {isSimulating ? '⌛ Simulating...' : '▶ Run Simulation'}
+            {isSimulating ? (
+              <>
+                <span className="spinner-loader">⌛</span>
+                Simulating...
+              </>
+            ) : (
+              <>
+                <PlayIcon size={12} color="#ffffff" />
+                Run Simulation
+              </>
+            )}
           </button>
 
           {/* Operating Case Switcher Bar (No Lightning Emoji) */}
@@ -147,32 +122,25 @@ export default function Navbar({
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
-            background: theme.slate50,
+            background: '#F4F7F6',
             padding: '0 8px',
             height: '34px',
             borderRadius: '8px',
-            border: `1px solid ${theme.slate200}`,
+            border: '1px solid #D8E2E1',
             boxSizing: 'border-box'
           }}>
-            <span style={{ fontSize: '12px', fontWeight: '600', color: theme.slate800 }}>
+            <span style={{ fontSize: '12px', fontWeight: '600', color: '#1C2B2C' }}>
               Case:
             </span>
 
             <select
               value={activeCaseId}
               onChange={(e) => onSelectCase && onSelectCase(e.target.value)}
+              className="form-select"
               style={{
                 height: '24px',
                 padding: '0 8px',
-                fontFamily: 'inherit',
-                fontSize: '12px',
-                fontWeight: '600',
-                color: theme.slate800,
-                background: theme.white,
-                border: `1px solid ${theme.slate200}`,
-                borderRadius: '6px',
-                cursor: 'pointer',
-                outline: 'none'
+                minWidth: '80px'
               }}
             >
               {cases.map((c) => (
@@ -185,25 +153,15 @@ export default function Navbar({
             <button
               onClick={onAddCase}
               title="Duplicate Active Case to create a New Case"
+              className="btn-secondary"
               style={{
                 height: '24px',
                 padding: '0 8px',
-                borderRadius: '6px',
-                fontFamily: 'inherit',
-                fontSize: '12px',
-                fontWeight: '600',
-                background: theme.white,
-                border: `1px solid ${theme.slate200}`,
-                color: theme.slate800,
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px'
+                borderRadius: '6px'
               }}
-              onMouseEnter={(e) => e.currentTarget.style.background = theme.slate100}
-              onMouseLeave={(e) => e.currentTarget.style.background = theme.white}
             >
-              ➕ New Case
+              <PlusIcon size={10} />
+              New Case
             </button>
           </div>
         </div>
@@ -233,55 +191,48 @@ export default function Navbar({
               ? 'Saving draft to browser storage...'
               : 'Sync error. Click to retry manual save or open Cloud Projects.'
           }
+          className="btn-secondary"
           style={{
-            ...btnBaseStyle,
             backgroundColor:
               saveStatus === 'error'
                 ? '#FEF2F2'
                 : saveStatus.includes('saving')
                 ? '#FFFBEB'
-                : theme.slate50,
+                : '#F4F7F6',
             border:
               saveStatus === 'error'
                 ? '1px solid #FEE2E2'
                 : saveStatus.includes('saving')
                 ? '1px solid #FCD34D'
                 : activeProject
-                ? `1px solid ${theme.primary}`
-                : `1px solid ${theme.slate200}`,
+                ? '1px solid var(--color-primary)'
+                : '1px solid #D8E2E1',
             color:
-              saveStatus === 'error'
-                ? theme.danger
-                : saveStatus.includes('saving')
-                ? '#D97706'
-                : theme.slate800
-          }}
-          onMouseEnter={(e) => {
-            if (!saveStatus.includes('saving') && saveStatus !== 'error') {
-              e.currentTarget.style.background = theme.slate100;
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (!saveStatus.includes('saving') && saveStatus !== 'error') {
-              e.currentTarget.style.background = theme.slate50;
-            }
-          }}
-        >
-          <span style={{
-            width: '7px',
-            height: '7px',
-            borderRadius: '50%',
-            backgroundColor:
               saveStatus === 'error'
                 ? '#EF4444'
                 : saveStatus.includes('saving')
-                ? '#F59E0B'
-                : '#10B981',
-            boxShadow: saveStatus.includes('saving') ? '0 0 6px #F59E0B' : 'none',
-            display: 'inline-block'
-          }} />
-
-          <span>☁️</span>
+                ? '#D97706'
+                : '#1C2B2C'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+            <div style={{
+              width: '6px',
+              height: '6px',
+              minWidth: '6px',
+              minHeight: '6px',
+              borderRadius: '50%',
+              backgroundColor:
+                saveStatus === 'error'
+                  ? '#EF4444'
+                  : saveStatus.includes('saving')
+                  ? '#F59E0B'
+                  : '#10B981',
+              boxShadow: saveStatus.includes('saving') ? '0 0 6px #F59E0B' : 'none',
+              flexShrink: 0
+            }} />
+            <CloudIcon size={14} style={{ display: 'block' }} />
+          </div>
 
           {saveStatus === 'saved_cloud' ? (
             <span>Cloud: <strong>{activeProject?.title}</strong></span>
@@ -298,20 +249,18 @@ export default function Navbar({
 
         <button
           onClick={onSave}
-          style={btnSecondaryStyle}
-          onMouseEnter={(e) => e.currentTarget.style.background = theme.slate100}
-          onMouseLeave={(e) => e.currentTarget.style.background = theme.slate50}
+          className="btn-secondary"
         >
-          💾 Export
+          <ExportIcon size={12} />
+          Export
         </button>
 
         <button
           onClick={() => document.getElementById('navbar-file-upload').click()}
-          style={btnSecondaryStyle}
-          onMouseEnter={(e) => e.currentTarget.style.background = theme.slate100}
-          onMouseLeave={(e) => e.currentTarget.style.background = theme.slate50}
+          className="btn-secondary"
         >
-          📂 Import
+          <ImportIcon size={12} />
+          Import
         </button>
 
         <input
@@ -339,16 +288,10 @@ export default function Navbar({
 
         <button
           onClick={onClear}
-          style={{
-            ...btnBaseStyle,
-            background: 'transparent',
-            border: `1px solid ${theme.dangerBorder}`,
-            color: theme.danger
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.background = theme.dangerBg}
-          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+          className="btn-danger-ghost"
         >
-          🗑️ Clear Canvas
+          <TrashIcon size={12} />
+          Clear Canvas
         </button>
 
         <div style={dividerStyle} />
@@ -360,15 +303,14 @@ export default function Navbar({
         {isAdmin && (
           <button
             onClick={onOpenAdminHub}
-            style={btnSecondaryStyle}
-            onMouseEnter={(e) => e.currentTarget.style.background = theme.slate100}
-            onMouseLeave={(e) => e.currentTarget.style.background = theme.slate50}
+            className="btn-secondary"
           >
-            👑 Admin Hub
+            <CrownIcon size={12} />
+            Admin Hub
             {adminStatus?.pendingCount > 0 && (
               <span style={{
-                backgroundColor: theme.primary,
-                color: theme.white,
+                backgroundColor: 'var(--color-primary)',
+                color: '#ffffff',
                 borderRadius: '10px',
                 padding: '1px 6px',
                 fontSize: '10px',
@@ -385,8 +327,8 @@ export default function Navbar({
           height: '34px',
           padding: '0 12px',
           borderRadius: '8px',
-          background: theme.slate50,
-          border: `1px solid ${theme.slate200}`,
+          background: '#F4F7F6',
+          border: '1px solid #D8E2E1',
           display: 'inline-flex',
           alignItems: 'center',
           gap: '8px',
@@ -398,7 +340,7 @@ export default function Navbar({
                 fontSize: '12px',
                 fontWeight: '600',
                 fontFamily: 'inherit',
-                color: isAdmin ? theme.primary : theme.slate800,
+                color: isAdmin ? 'var(--color-primary)' : '#1C2B2C',
                 whiteSpace: 'nowrap'
               }}>
                 {currentUser?.username}
@@ -407,44 +349,34 @@ export default function Navbar({
               <button
                 onClick={handleUserLogout}
                 title="Sign Out"
+                className="btn-danger-ghost"
                 style={{
                   backgroundColor: 'transparent',
                   border: 'none',
-                  color: theme.danger,
-                  cursor: 'pointer',
-                  fontFamily: 'inherit',
-                  fontSize: '12px',
-                  fontWeight: '600',
-                  padding: '2px 4px',
+                  height: '24px',
+                  padding: '2px 6px',
                   borderRadius: '4px',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '2px',
-                  transition: 'background-color 0.15s ease'
+                  gap: '4px'
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = theme.dangerBg}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               >
-                <span>🔓</span> Sign Out
+                <SignOutIcon size={12} />
+                Sign Out
               </button>
             </>
           ) : (
             <button
               onClick={onOpenAuthModal}
+              className="btn-secondary"
               style={{
                 backgroundColor: 'transparent',
                 border: 'none',
-                color: theme.primary,
-                fontFamily: 'inherit',
-                fontSize: '12px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
+                color: 'var(--color-primary)',
+                padding: '0 6px',
                 gap: '4px'
               }}
             >
-              🔒 Sign In
+              <SignInIcon size={12} />
+              Sign In
             </button>
           )}
         </div>
