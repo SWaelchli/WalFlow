@@ -29,7 +29,7 @@ export default function CentrifugalPumpNode({ id, data, selected }) {
       footer={
         <>
           <div style={{ fontSize: '9px', color: '#334155', fontWeight: 'bold' }}>{data.label || 'C-PUMP'}</div>
-          <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#0369a1' }}>+{paToBar(dP)} bar</div>
+          <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#0369a1' }}>+{paToBar(dP)} bar(d)</div>
           <div style={{ fontSize: '9px', color: '#64748b' }}>{m3sToLmin(q)} L/min</div>
         </>
       }

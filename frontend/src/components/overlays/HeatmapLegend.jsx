@@ -20,7 +20,7 @@ export default function HeatmapLegend({
   const modeConfigs = {
     pressure: {
       title: 'Pressure Heatmap',
-      unit: 'bar',
+      unit: 'bar(a)',
       gradient: BLUE_TO_RED_GRADIENT
     },
     temperature: {

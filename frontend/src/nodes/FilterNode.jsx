@@ -27,7 +27,7 @@ export default function FilterNode({ id, data, selected }) {
       footer={
         <>
           <div style={{ fontSize: '9px', color: '#334155', fontWeight: 'bold' }}>{data.label || 'STRAINER'}</div>
-          <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#ef4444' }}>-{paToBar(dP)} bar</div>
+          <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#ef4444' }}>-{paToBar(dP)} bar(d)</div>
           <div style={{ fontSize: '8px', color: '#64748b' }}>Clogging: {clogging.toFixed(0)}%</div>
         </>
       }

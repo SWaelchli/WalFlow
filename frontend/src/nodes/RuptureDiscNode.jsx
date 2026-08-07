@@ -60,7 +60,7 @@ export default function RuptureDiscNode({ id, data, selected }) {
             {statusText}
           </div>
           <div style={{ fontSize: '9px', color: '#587071', marginTop: '1px' }}>
-            Burst: {burstPressureBar} bar | {flowLmin} L/min
+            Burst: {burstPressureBar} bar(a) | {flowLmin} L/min
           </div>
         </>
       }

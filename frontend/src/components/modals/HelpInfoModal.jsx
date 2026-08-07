@@ -449,7 +449,7 @@ export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts
                 </h4>
                 <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: '#D8E2E1', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <li><strong>Component Selection:</strong> Click any node or pipe on the canvas to inspect its parameters in the <strong>Property Editor</strong> on the right.</li>
-                  <li><strong>Parameter Customization:</strong> Adjust pump rated flow rate ($L/min$) & shutoff pressure ($bar$), valve $Cv$ capacity, setpoint pressures ($Pa$), filter clean/terminal pressure drops, or pipe diameter ($m$) and length ($m$).</li>
+                  <li><strong>Parameter Customization:</strong> Adjust pump rated flow rate ($L/min$) & shutoff pressure ($bar(d)$), valve $Cv$ capacity, setpoint pressures ($Pa$), filter clean/terminal pressure drops, or pipe diameter ($m$) and length ($m$).</li>
                   <li><strong>Live Valve Control:</strong> Drag opening % sliders on control valves to observe dynamic flow and pressure redistributions in real time!</li>
                 </ul>
               </div>
@@ -462,7 +462,7 @@ export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts
                 <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: '#D8E2E1', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <li><strong>Run Simulation:</strong> Click <strong>Calculate</strong> to send the PFD topology to the Python FastAPI physics solver via WebSocket.</li>
                   <li><strong>Solver Performance Stats:</strong> Inspect total iterations, solver convergence status, residual error, and overall mass/volume balance.</li>
-                  <li><strong>Live Telemetry:</strong> View calculated inlet/outlet pressures ($bar$), volumetric flow rates ($L/min$), temperatures ($^\circ C$), and flow velocities ($m/s$).</li>
+                  <li><strong>Live Telemetry:</strong> View calculated inlet/outlet pressures ($bar(a)$), volumetric flow rates ($L/min$), temperatures ($^\circ C$), and flow velocities ($m/s$).</li>
                   <li><strong>Detail Graphs:</strong> Inspect pump curves, valve characteristic curves, and pressure profile plots in the <strong>Detail Panel</strong>.</li>
                 </ul>
               </div>
@@ -474,7 +474,7 @@ export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts
                 </h4>
                 <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: '#D8E2E1', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <li><strong>Toggle Heatmaps:</strong> Click the 🎨 button in the canvas controls bar to overlay thermal gradients onto the pipes.</li>
-                  <li><strong>Modes:</strong> Switch between <strong>Pressure Gradient</strong> ($bar$), <strong>Temperature Profile</strong> ($^\circ C$), <strong>Volume Flow</strong> ($l/min$), and <strong>Velocity</strong> ($m/s$).</li>
+                  <li><strong>Modes:</strong> Switch between <strong>Pressure Gradient</strong> ($bar(a)$), <strong>Temperature Profile</strong> ($^\circ C$), <strong>Volume Flow</strong> ($l/min$), and <strong>Velocity</strong> ($m/s$).</li>
                   <li><strong>Custom Scale Ranges:</strong> Toggle auto-scaling or manually define custom min/max bounds via the floating Heatmap Legend.</li>
                 </ul>
               </div>

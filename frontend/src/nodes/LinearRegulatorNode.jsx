@@ -24,7 +24,7 @@ export default function LinearRegulatorNode({ id, data, selected }) {
       footer={
         <>
           <div style={{ fontSize: '9px', color: '#334155', fontWeight: 'bold' }}>{data.label || 'REGULATOR'}</div>
-          <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#0369a1' }}>Set: {(setP / 100000).toFixed(1)} bar</div>
+          <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#0369a1' }}>Set: {(setP / 100000).toFixed(1)} bar(a)</div>
           <div style={{ fontSize: '9px', color: '#64748b' }}>Pos: {opening.toFixed(1)} %</div>
         </>
       }

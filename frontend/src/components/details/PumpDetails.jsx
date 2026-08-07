@@ -116,7 +116,7 @@ const PumpDetails = memo(function PumpDetails({ node }) {
         </div>
         <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
           <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600', textTransform: 'uppercase', marginBottom: '4px' }}>Pressure Increase</div>
-          <div style={{ fontSize: '14px', fontWeight: '700', color: '#2563eb' }}>{currentDpBar.toFixed(2)} <span style={{ fontSize: '10px', fontWeight: '500' }}>bar</span></div>
+          <div style={{ fontSize: '14px', fontWeight: '700', color: '#2563eb' }}>{currentDpBar.toFixed(2)} <span style={{ fontSize: '10px', fontWeight: '500' }}>bar(d)</span></div>
         </div>
         <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
           <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600', textTransform: 'uppercase', marginBottom: '4px' }}>Hydraulic Power</div>

@@ -8,14 +8,21 @@ import GenericDetails from './GenericDetails';
 import PressureSafetyValveDetails from './PressureSafetyValveDetails';
 import RuptureDiscDetails from './RuptureDiscDetails';
 
-export default function DetailPanel({ selectedNode, allNodes, allEdges, unmitigatedTelemetry }) {
+export default function DetailPanel({ selectedNode, selectedEdge, allNodes, allEdges, unmitigatedTelemetry }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  if (!selectedNode) return null;
+  if (!selectedNode && !selectedEdge) return null;
 
-  const { type, data } = selectedNode;
+  const isEdge = !!selectedEdge;
+  const item = selectedNode || selectedEdge;
+  const type = isEdge ? 'pipe' : item.type;
+  const data = item.data || {};
 
   const renderContent = () => {
+    if (isEdge) {
+      return <GenericDetails edge={selectedEdge} allNodes={allNodes} allEdges={allEdges} />;
+    }
+
     switch (type) {
       case 'pump':
       case 'centrifugal_pump':
@@ -43,7 +50,7 @@ export default function DetailPanel({ selectedNode, allNodes, allEdges, unmitiga
           allEdges={allEdges} 
         />;
       default:
-        return <GenericDetails node={selectedNode} />;
+        return <GenericDetails node={selectedNode} allNodes={allNodes} allEdges={allEdges} />;
     }
   };
 
@@ -81,7 +88,7 @@ export default function DetailPanel({ selectedNode, allNodes, allEdges, unmitiga
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '11px', color: '#587071', transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▼</span>
           <h3 style={{ margin: 0, fontSize: '14px', color: '#395253', fontWeight: '700', letterSpacing: '0.01em' }}>
-            {data.label || type.toUpperCase()}
+            {data.label || (isEdge ? `PIPE (${item.id.replace('reactflow__edge-', '')})` : type.toUpperCase())}
           </h3>
         </div>
         {!isCollapsed && (

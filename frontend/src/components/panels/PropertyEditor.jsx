@@ -391,7 +391,7 @@ export default function PropertyEditor({
                 />
               </div>
               <div>
-                {renderLabel('Rated Pressure (bar)', 'pressure_rated_bar')}
+                {renderLabel('Rated Pressure (bar(d))', 'pressure_rated_bar')}
                 <input 
                   type="number" 
                   step="0.1"
@@ -490,7 +490,7 @@ export default function PropertyEditor({
                 </select>
               </div>
               <div>
-                {renderLabel('Set Point (bar)', 'set_pressure')}
+                {renderLabel('Set Point (bar(a))', 'set_pressure')}
                 <input 
                   type="number" 
                   style={{ width: '100%', fontSize: '12px' }} 
@@ -573,7 +573,7 @@ export default function PropertyEditor({
           {isNode && (type === 'pressure_safety_valve' || type === 'psv') && (
             <>
               <div>
-                {renderLabel('Cracking Set Pressure (bar)', 'set_pressure_bar')}
+                {renderLabel('Cracking Set Pressure (bar(a))', 'set_pressure_bar')}
                 <input 
                   type="number" step="0.1" min="0.01"
                   style={{ width: '100%', fontSize: '12px' }} 
@@ -633,7 +633,7 @@ export default function PropertyEditor({
           {isNode && type === 'rupture_disc' && (
             <>
               <div>
-                {renderLabel('Burst Pressure (bar)', 'burst_pressure_bar')}
+                {renderLabel('Burst Pressure (bar(a))', 'burst_pressure_bar')}
                 <input 
                   type="number" step="0.1" min="0.01"
                   style={{ width: '100%', fontSize: '12px' }} 
@@ -705,7 +705,7 @@ export default function PropertyEditor({
                 />
               </div>
               <div>
-                {renderLabel('Cracking Pressure (bar)', 'cracking_pressure_bar')}
+                {renderLabel('Cracking Pressure (bar(d))', 'cracking_pressure_bar')}
                 <input 
                   type="number" 
                   style={{ width: '100%', fontSize: '12px' }} 
@@ -732,7 +732,7 @@ export default function PropertyEditor({
                 />
               </div>
               <div>
-                {renderLabel('Cracking Pressure (bar)', 'cracking_pressure_bar')}
+                {renderLabel('Cracking Pressure (bar(d))', 'cracking_pressure_bar')}
                 <input 
                   type="number" 
                   style={{ width: '100%', fontSize: '12px' }} 
@@ -871,7 +871,7 @@ export default function PropertyEditor({
                 </div>
               )}
               <div>
-                {renderLabel('Rated Pressure Drop (bar)', 'rated_dp_bar')}
+                {renderLabel('Rated Pressure Drop (bar(d))', 'rated_dp_bar')}
                 <input 
                   type="number" step="0.01" 
                   style={{ width: '100%', fontSize: '12px' }} 
@@ -886,7 +886,7 @@ export default function PropertyEditor({
           {isNode && type === 'filter' && (
             <>
               <div>
-                {renderLabel('Clean ΔP (bar)', 'dp_clean')}
+                {renderLabel('Clean ΔP (bar(d))', 'dp_clean')}
                 <input 
                   type="number" step="0.01" 
                   style={{ width: '100%', fontSize: '12px' }} 
@@ -896,7 +896,7 @@ export default function PropertyEditor({
                 />
               </div>
               <div>
-                {renderLabel('Terminal ΔP (bar)', 'dp_terminal')}
+                {renderLabel('Terminal ΔP (bar(d))', 'dp_terminal')}
                 <input 
                   type="number" step="0.1" 
                   style={{ width: '100%', fontSize: '12px' }} 
@@ -995,7 +995,7 @@ export default function PropertyEditor({
                 />
               </div>
               <div>
-                {renderLabel('Baseline Inlet Pressure (bar)', 'inlet_pressure_base_bar')}
+                {renderLabel('Baseline Inlet Pressure (bar(a))', 'inlet_pressure_base_bar')}
                 <input 
                   type="number" 
                   step="0.05"
@@ -1006,7 +1006,7 @@ export default function PropertyEditor({
                 />
               </div>
               <div>
-                {renderLabel('Baseline Outlet Pressure (bar)', 'outlet_pressure_base_bar')}
+                {renderLabel('Baseline Outlet Pressure (bar(a))', 'outlet_pressure_base_bar')}
                 <input 
                   type="number" 
                   step="0.05"

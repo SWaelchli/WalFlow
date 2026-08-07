@@ -68,7 +68,7 @@ const FilterDetails = memo(function FilterDetails({ node }) {
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ color: '#64748b' }}>Current ΔP:</span>
-          <span style={{ fontWeight: 'bold' }}>{currentDpBar.toFixed(2)} bar</span>
+          <span style={{ fontWeight: 'bold' }}>{currentDpBar.toFixed(2)} bar(d)</span>
         </div>
       </div>
     </div>

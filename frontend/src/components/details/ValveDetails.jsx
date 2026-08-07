@@ -106,12 +106,12 @@ const ValveDetails = memo(function ValveDetails({ node }) {
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ color: '#64748b' }}>Sensed Pressure:</span>
-          <span style={{ fontWeight: 'bold', color: '#FA8507' }}>{sensedPBar.toFixed(2)} bar</span>
+          <span style={{ fontWeight: 'bold', color: '#FA8507' }}>{sensedPBar.toFixed(2)} bar(a)</span>
         </div>
         {isRegulator && (
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span style={{ color: '#64748b' }}>Target Setpoint:</span>
-            <span style={{ fontWeight: 'bold' }}>{setPBar.toFixed(2)} bar</span>
+            <span style={{ fontWeight: 'bold' }}>{setPBar.toFixed(2)} bar(a)</span>
           </div>
         )}
       </div>

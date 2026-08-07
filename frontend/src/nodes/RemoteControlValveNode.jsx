@@ -28,7 +28,7 @@ export default function RemoteControlValveNode({ id, data, selected }) {
           <div style={{ fontSize: '9px', color: '#334155', fontWeight: 'bold' }}>{data.label || 'RCV'}</div>
           <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#0369a1' }}>{opening.toFixed(1)} %</div>
           <div style={{ fontSize: '9px', color: '#64748b' }}>{flowLmin} L/min</div>
-          <div style={{ fontSize: '8px', color: '#854d0e', fontWeight: 'bold' }}>SET: {((data.set_pressure || 500000) / 100000).toFixed(1)} bar</div>
+          <div style={{ fontSize: '8px', color: '#854d0e', fontWeight: 'bold' }}>SET: {((data.set_pressure || 500000) / 100000).toFixed(1)} bar(a)</div>
         </>
       }
     >

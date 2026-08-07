@@ -359,7 +359,7 @@ export default function DataList({
   }, [manualOrder, nodes, edges, activeTab, filterText, sortConfig]);
 
   const exportCSV = useCallback(() => {
-    const headers = ["Type", "Name", "Flow (L/min)", "Velocity (m/s)", "dP (bar)", "P Start (bara)", "P End (bara)", "Temp (C)"];
+    const headers = ["Type", "Name", "Flow (L/min)", "Velocity (m/s)", "dP (bar(d))", "P Start (bar(a))", "P End (bar(a))", "Temp (C)"];
     if (activeTab === 'pipes') headers.push("Length (m)");
     const rows = processedItems.map(i => {
       const row = [i.displayType, i.label, m3sToLmin(i.flow), i.velocity.toFixed(2), i.dp.toFixed(3), i.pStart.toFixed(2), i.pEnd.toFixed(2), kToC(i.temp)];
@@ -632,15 +632,15 @@ export default function DataList({
                 <tbody>
                   {/* Max Pressure */}
                   <tr style={{ borderBottom: '1px solid #EBF0EF', height: '36px' }}>
-                    <td style={{ padding: '6px 12px', fontWeight: '700', color: '#1C2B2C', verticalAlign: 'middle', width: '200px', minWidth: '200px', maxWidth: '200px', whiteSpace: 'nowrap' }}>System Max Pressure (bar)</td>
+                    <td style={{ padding: '6px 12px', fontWeight: '700', color: '#1C2B2C', verticalAlign: 'middle', width: '200px', minWidth: '200px', maxWidth: '200px', whiteSpace: 'nowrap' }}>System Max Pressure (bar(a))</td>
                     {displayCases.map((c, colIdx) => {
                       const baseKpis = displayCases.find(b => b.is_base)?.kpis;
                       const kpis = c.kpis || {};
                       const val = kpis.max_pressure_bar;
-                      const deltaStr = !c.is_base && baseKpis ? formatDelta(val, baseKpis.max_pressure_bar, 'bar') : null;
+                      const deltaStr = !c.is_base && baseKpis ? formatDelta(val, baseKpis.max_pressure_bar, 'bar(a)') : null;
                       return (
                         <td key={c.case_id || c.id} style={{ padding: '6px 12px', borderLeft: caseDragOverIdx === colIdx ? '3px solid #FA8507' : '1px solid #D8E2E1', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-                          <span style={{ fontWeight: '700', color: '#1C2B2C' }}>{val !== undefined ? `${val} bar` : '—'}</span>
+                          <span style={{ fontWeight: '700', color: '#1C2B2C' }}>{val !== undefined ? `${val} bar(a)` : '—'}</span>
                           {deltaStr && <span style={{ fontSize: '10px', color: '#d97706', marginLeft: '8px' }}>{deltaStr}</span>}
                         </td>
                       );
@@ -648,15 +648,15 @@ export default function DataList({
                   </tr>
                   {/* Min Pressure */}
                   <tr style={{ borderBottom: '1px solid #EBF0EF', background: '#F8FAFA', height: '36px' }}>
-                    <td style={{ padding: '6px 12px', fontWeight: '700', color: '#1C2B2C', verticalAlign: 'middle', width: '200px', minWidth: '200px', maxWidth: '200px', whiteSpace: 'nowrap' }}>System Min Pressure (bar)</td>
+                    <td style={{ padding: '6px 12px', fontWeight: '700', color: '#1C2B2C', verticalAlign: 'middle', width: '200px', minWidth: '200px', maxWidth: '200px', whiteSpace: 'nowrap' }}>System Min Pressure (bar(a))</td>
                     {displayCases.map((c, colIdx) => {
                       const baseKpis = displayCases.find(b => b.is_base)?.kpis;
                       const kpis = c.kpis || {};
                       const val = kpis.min_pressure_bar;
-                      const deltaStr = !c.is_base && baseKpis ? formatDelta(val, baseKpis.min_pressure_bar, 'bar') : null;
+                      const deltaStr = !c.is_base && baseKpis ? formatDelta(val, baseKpis.min_pressure_bar, 'bar(a)') : null;
                       return (
                         <td key={c.case_id || c.id} style={{ padding: '6px 12px', borderLeft: caseDragOverIdx === colIdx ? '3px solid #FA8507' : '1px solid #D8E2E1', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-                          <span style={{ fontWeight: '700', color: '#1C2B2C' }}>{val !== undefined ? `${val} bar` : '—'}</span>
+                          <span style={{ fontWeight: '700', color: '#1C2B2C' }}>{val !== undefined ? `${val} bar(a)` : '—'}</span>
                           {deltaStr && <span style={{ fontSize: '10px', color: '#d97706', marginLeft: '8px' }}>{deltaStr}</span>}
                         </td>
                       );
@@ -760,8 +760,8 @@ export default function DataList({
                       ? 'Rupture Disc'
                       : (dev.data?.action_mode === 'modulating' ? 'PSV (Modulating)' : 'PSV (Pop Action)');
                     const ratingLabel = dev.type === 'rupture_disc'
-                      ? `${dev.data?.burst_pressure_bar || 30.0} bar`
-                      : `${dev.data?.set_pressure_bar || 20.0} bar`;
+                      ? `${dev.data?.burst_pressure_bar || 30.0} bar(a)`
+                      : `${dev.data?.set_pressure_bar || 20.0} bar(a)`;
 
                     return (
                       <tr key={dev.id} style={{ borderBottom: '1px solid #EBF0EF', background: idx % 2 === 0 ? '#FFFFFF' : '#F8FAFA', height: '36px' }}>
@@ -832,13 +832,13 @@ export default function DataList({
                    {/* Relieved System Pressure */}
                    <tr style={{ borderBottom: '1px solid #EBF0EF', height: '36px', background: telemetryMode === 'mitigated' ? '#ECFDF5' : '#ffffff' }}>
                      <td colSpan={3} style={{ padding: '6px 12px', fontWeight: '700', color: '#10B981', verticalAlign: 'middle' }}>
-                       Relieved system pressure (bara)
+                       Relieved system pressure (bar(a))
                      </td>
                      {displayCases.map(c => {
                        const pRelieved = c.kpis?.relieved_pressure_bara ?? c.kpis?.max_pressure_bar ?? calculateMaxPressureBar(c.telemetry);
                        return (
                          <td key={c.id || c.case_id} style={{ padding: '6px 12px', fontWeight: '700', color: '#10B981', borderLeft: '1px solid #D8E2E1', verticalAlign: 'middle' }}>
-                           {pRelieved !== undefined ? `${pRelieved.toFixed(2)} bara` : '—'}
+                           {pRelieved !== undefined ? `${pRelieved.toFixed(2)} bar(a)` : '—'}
                          </td>
                        );
                      })}
@@ -847,7 +847,7 @@ export default function DataList({
                    {/* Peak System Pressure */}
                    <tr style={{ borderBottom: '1px solid #EBF0EF', height: '36px', background: telemetryMode === 'peak' ? '#FFFBEB' : '#ffffff' }}>
                      <td colSpan={3} style={{ padding: '6px 12px', fontWeight: '700', color: '#D97706', verticalAlign: 'middle' }}>
-                       Peak system pressure (bara)
+                       Peak system pressure (bar(a))
                      </td>
                      {displayCases.map(c => {
                        const caseId = c.id || c.case_id;
@@ -856,7 +856,7 @@ export default function DataList({
                        const pPeak = c.kpis?.peak_pressure_bara ?? pUnmit ?? calculateMaxPressureBar(c.telemetry);
                        return (
                          <td key={caseId} style={{ padding: '6px 12px', fontWeight: '700', color: '#D97706', borderLeft: '1px solid #D8E2E1', verticalAlign: 'middle' }}>
-                           {pPeak !== undefined ? `${pPeak.toFixed(2)} bara` : '—'}
+                           {pPeak !== undefined ? `${pPeak.toFixed(2)} bar(a)` : '—'}
                          </td>
                        );
                      })}
@@ -865,7 +865,7 @@ export default function DataList({
                    {/* Unmitigated Peak Pressure */}
                    <tr style={{ borderBottom: '1px solid #EBF0EF', height: '36px', background: telemetryMode === 'unmitigated_global' ? '#FEF2F2' : '#ffffff' }}>
                      <td colSpan={3} style={{ padding: '6px 12px', fontWeight: '700', color: '#DC2626', verticalAlign: 'middle' }}>
-                       Unmitigated peak pressure (bara)
+                       Unmitigated peak pressure (bar(a))
                      </td>
                      {displayCases.map(c => {
                        const caseId = c.id || c.case_id;
@@ -873,7 +873,7 @@ export default function DataList({
                        const pMaxUnmit = c.kpis?.unmitigated_peak_pressure_bara ?? calculateMaxPressureBar(unmit);
                        return (
                          <td key={caseId} style={{ padding: '6px 12px', fontWeight: '700', color: '#DC2626', borderLeft: '1px solid #D8E2E1', verticalAlign: 'middle' }}>
-                           {pMaxUnmit !== undefined ? `${pMaxUnmit.toFixed(2)} bara` : '—'}
+                           {pMaxUnmit !== undefined ? `${pMaxUnmit.toFixed(2)} bar(a)` : '—'}
                          </td>
                        );
                      })}
@@ -910,9 +910,9 @@ export default function DataList({
               <SortHeader label="Name" sortKey="label" sortConfig={sortConfig} requestSort={requestSort} />
               <SortHeader label="Flow (L/min)" sortKey="flow" align="right" sortConfig={sortConfig} requestSort={requestSort} />
               <SortHeader label="Velocity (m/s)" sortKey="velocity" align="right" sortConfig={sortConfig} requestSort={requestSort} />
-              <SortHeader label="dP (bar)" sortKey="dp" align="right" sortConfig={sortConfig} requestSort={requestSort} />
-              <SortHeader label="P Start (bara)" sortKey="pStart" align="right" sortConfig={sortConfig} requestSort={requestSort} />
-              <SortHeader label="P End (bara)" sortKey="pEnd" align="right" sortConfig={sortConfig} requestSort={requestSort} />
+              <SortHeader label="dP (bar(d))" sortKey="dp" align="right" sortConfig={sortConfig} requestSort={requestSort} />
+              <SortHeader label="P Start (bar(a))" sortKey="pStart" align="right" sortConfig={sortConfig} requestSort={requestSort} />
+              <SortHeader label="P End (bar(a))" sortKey="pEnd" align="right" sortConfig={sortConfig} requestSort={requestSort} />
               <SortHeader label="Temp (°C)" sortKey="temp" align="right" sortConfig={sortConfig} requestSort={requestSort} />
               {activeTab === 'pipes' && <th style={{ padding: '8px' }}>NPS</th>}
               {activeTab === 'pipes' && <th style={{ padding: '8px' }}>Schedule</th>}

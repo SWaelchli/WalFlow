@@ -40,7 +40,7 @@ export default function CalibratedRestrictionNode({ id, data, selected }) {
             {modelName}
           </div>
           <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#ef4444', marginTop: '2px' }}>
-            -{paToBar(dP)} bar
+            -{paToBar(dP)} bar(d)
           </div>
         </>
       }

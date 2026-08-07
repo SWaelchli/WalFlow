@@ -67,7 +67,7 @@ const PressureSafetyValveDetails = memo(function PressureSafetyValveDetails({ no
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ color: '#64748B' }}>Cracking Set Pressure:</span>
-          <span style={{ fontWeight: '700', color: '#FA8507' }}>{setPressureBar.toFixed(2)} bar</span>
+          <span style={{ fontWeight: '700', color: '#FA8507' }}>{setPressureBar.toFixed(2)} bar(a)</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ color: '#64748B' }}>Rated Capacity (Cv):</span>
@@ -76,7 +76,7 @@ const PressureSafetyValveDetails = memo(function PressureSafetyValveDetails({ no
         {actionMode === 'pop_action' && (
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span style={{ color: '#64748B' }}>Blowdown Reset:</span>
-            <span style={{ fontWeight: '700', color: '#1C2B2C' }}>{(setPressureBar * (1 - blowdownPct / 100)).toFixed(2)} bar ({blowdownPct}%)</span>
+            <span style={{ fontWeight: '700', color: '#1C2B2C' }}>{(setPressureBar * (1 - blowdownPct / 100)).toFixed(2)} bar(a) ({blowdownPct}%)</span>
           </div>
         )}
       </div>
@@ -90,7 +90,7 @@ const PressureSafetyValveDetails = memo(function PressureSafetyValveDetails({ no
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ color: '#587071' }}>Mitigated Line Pressure:</span>
           <span style={{ fontWeight: '700', color: pInBar >= setPressureBar ? '#D97706' : '#166534' }}>
-            {pInBar.toFixed(2)} bar
+            {pInBar.toFixed(2)} bar(a)
           </span>
         </div>
 
@@ -104,7 +104,7 @@ const PressureSafetyValveDetails = memo(function PressureSafetyValveDetails({ no
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FEF2F2', padding: '6px 8px', borderRadius: '6px', border: '1px solid #FEE2E2' }}>
           <span style={{ color: '#991B1B', fontWeight: '600' }}>Unmitigated Peak Pressure:</span>
           <span style={{ fontWeight: '800', color: '#DC2626' }}>
-            {pUnmitigatedBar.toFixed(2)} bar
+            {pUnmitigatedBar.toFixed(2)} bar(a)
           </span>
         </div>
 

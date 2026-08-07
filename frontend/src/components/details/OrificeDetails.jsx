@@ -70,7 +70,7 @@ const OrificeDetails = memo(function OrificeDetails({ node }) {
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ color: '#64748b' }}>Current ΔP:</span>
-          <span style={{ fontWeight: 'bold' }}>{currentDpBar.toFixed(3)} bar</span>
+          <span style={{ fontWeight: 'bold' }}>{currentDpBar.toFixed(3)} bar(d)</span>
         </div>
       </div>
     </div>

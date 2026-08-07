@@ -21,11 +21,11 @@ This document outlines planned features, overlays, and enhancements for the WalF
   * **Scope**: Expand `frontend/src/utils/converters.js` to implement conversions for `psi`, `gpm`, `m³/h`, and `HP`, and update the UI controls (PropertyEditor, Sidebar, etc.) to display them correctly.
 - [ ] **🌐 Build global unit system selector (SI vs Imperial) in the top navbar** (R2 / UI)
   * **Scope**: Add a global unit switch toggler to the navbar that propagates selected system units (Metric SI vs Imperial US) across the application panels and tooltips.
-- [ ] **⚡ Implement analytical sparse Jacobian calculation in the backend solver** (R3 / Performance)
+- [x] **⚡ Implement analytical sparse Jacobian calculation in the backend solver** (R3 / Performance)
   * **Scope**: Derive and implement analytical derivatives for equipment equations to calculate the sparse Jacobian directly, instead of using finite differences.
-- [ ] **🏎️ Transition to `scipy.sparse` Newton-Krylov solver** (R3 / Performance)
+- [x] **🏎️ Transition to `scipy.sparse` Newton-Krylov solver** (R3 / Performance)
   * **Scope**: Integrate a sparse Newton-Krylov solver to scale calculations efficiently, reducing solver execution times for 100+ nodes to less than 200ms.
-- [ ] **🌡️ Implement Warm-Start Initial State Vector Caching** (R3 / Performance)
+- [x] **🌡️ Implement Warm-Start Initial State Vector Caching** (R3 / Performance)
   * **Scope**: Cache the converged solution vector $x_{conv}$ from the previous simulation run. When a user adjusts a valve slider or operating case, reuse $x_{conv}$ as the initial guess $x_0$ to reduce iteration count (targeting >80% reduction). Additionally, ensure the caching scheme is compatible with and optimized for batch solving (the operating cases matrix) by storing case-specific converged state vectors to seed consecutive batch sweeps.
 - [ ] **🔐 Enforce 8-character password policy & reduce JWT lifespan to 60 minutes** (SEC-03 / SEC-04)
   * **Scope**: Increase minimum password length validation to 8 characters and reduce JWT token expiration duration from 7 days to 60 minutes for higher account security.
@@ -93,9 +93,9 @@ This document outlines planned features, overlays, and enhancements for the WalF
 - [ ] **📍 In-Line Measurement Point & Instrumentation Bubble (`MeasurePoint`)**
   * **Concept:** Passive, zero-resistance pass-through sensor (1 Inlet, 1 Outlet) for monitoring local hydraulic process conditions without altering circuit physics ($P_{\text{in}} = P_{\text{out}}$, $Q_{\text{in}} = Q_{\text{out}}$).
   * **Selectable Measurements (Property Panel Checkboxes):**
-    * ☒ **Pressure ($P$):** Static line pressure (bar / PSI).
-    * ☒ **Flow Rate ($Q$):** Volumetric flow (L/min, m³/h, GPM).
-    * ☒ **Temperature ($T$):** Operating fluid temperature (°C / °F).
+    * ☐ **Pressure ($P$):** Static line pressure (bar / PSI).
+    * ☐ **Flow Rate ($Q$):** Volumetric flow (L/min, m³/h, GPM).
+    * ☐ **Temperature ($T$):** Operating fluid temperature (°C / °F).
     * ☐ **Fluid Velocity ($v$):** Velocity through sensor bore (m/s) for pipe erosion/sizing checks.
     * ☐ **Kinematic Viscosity ($\nu$):** Live viscosity (cSt) adjusted for operating temperature.
     * ☐ **Reynolds Number ($Re$):** Flow regime diagnostic (Laminar / Transition / Turbulent).

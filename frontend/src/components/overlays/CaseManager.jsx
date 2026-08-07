@@ -16,7 +16,7 @@ export default function CaseManager({
   const reliefModes = [
     {
       id: 'mitigated',
-      label: 'Relieved system pressure (bara)',
+      label: 'Relieved system pressure (bar(a))',
       desc: 'Steady-state max pressure with active relief',
       color: '#10B981',
       bgActive: '#ECFDF5',
@@ -25,7 +25,7 @@ export default function CaseManager({
     },
     {
       id: 'peak',
-      label: 'Peak system pressure (bara)',
+      label: 'Peak system pressure (bar(a))',
       desc: 'Max pressure at relief device activation',
       color: '#D97706',
       bgActive: '#FFFBEB',
@@ -34,7 +34,7 @@ export default function CaseManager({
     },
     {
       id: 'unmitigated_global',
-      label: 'Unmitigated peak pressure (bara)',
+      label: 'Unmitigated peak pressure (bar(a))',
       desc: 'Baseline peak pressure with all relief closed',
       color: '#DC2626',
       bgActive: '#FEF2F2',

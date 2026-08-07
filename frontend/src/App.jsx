@@ -1124,6 +1124,19 @@ function WalFlowContent() {
     };
   }, [selectedNode, nodes, cases, activeCaseId, telemetryMode, scalingInfo]);
 
+  const effectiveSelectedEdge = useMemo(() => {
+    if (!selectedEdge) return null;
+    const liveEdge = edges.find(e => e.id === selectedEdge.id) || selectedEdge;
+    const effectiveData = getEffectiveEdgeData(liveEdge, cases, activeCaseId, telemetryMode, scalingInfo);
+    return {
+      ...liveEdge,
+      data: {
+        ...liveEdge.data,
+        ...effectiveData
+      }
+    };
+  }, [selectedEdge, edges, cases, activeCaseId, telemetryMode, scalingInfo]);
+
   const heatmapActive = heatmapSettings.mode !== 'default';
   const autoScale = heatmapSettings.autoScale;
 
@@ -1242,6 +1255,7 @@ function WalFlowContent() {
           )}
           <DetailPanel 
             selectedNode={effectiveSelectedNode} 
+            selectedEdge={effectiveSelectedEdge}
             allNodes={nodes}
             allEdges={edges}
             unmitigatedTelemetry={telemetryUnmitigated}
