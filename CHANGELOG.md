@@ -18,4 +18,4 @@ All notable changes to the WälFlow project will be documented in this file.
 - Polished the Navbar and Sidebar to replace emojis with vector icons, migrated inline styling to standard CSS classes, and cleaned up JavaScript mouse hover event listeners.
 - Audited accessibility, verified focus outline states, and added full keyboard event and role support to collapsible panels.
 - Refactored system modals (Admin Setup, Login, Project Manager, Help & Info, and Admin Hub) and canvas overlays (Case Manager and Heatmap Legend) to replace structural emojis with custom SVG icons, map all style parameters to design system CSS variables, and eliminate custom JavaScript hover handlers.
-
+- Renamed the setup and results inspector sub-components to SetupPanel and ResultsPanel, refactored all 9 system detail panels and data tables to follow standard layout and typography sizes, and patched a runtime ReferenceError crash on the operating case matrix table.

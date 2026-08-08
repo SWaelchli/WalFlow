@@ -8,7 +8,7 @@ import GenericDetails from './GenericDetails';
 import PressureSafetyValveDetails from './PressureSafetyValveDetails';
 import RuptureDiscDetails from './RuptureDiscDetails';
 
-export default function DetailPanel({ selectedNode, selectedEdge, allNodes, allEdges, unmitigatedTelemetry, inline = false }) {
+export default function ResultsPanel({ selectedNode, selectedEdge, allNodes, allEdges, unmitigatedTelemetry, inline = false }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   if (!selectedNode && !selectedEdge) return null;
@@ -69,10 +69,10 @@ export default function DetailPanel({ selectedNode, selectedEdge, allNodes, allE
       top: '20px',
       width: '320px',
       maxHeight: isCollapsed ? 'auto' : 'calc(100vh - 360px)',
-      background: '#ffffff',
-      borderRadius: '12px',
-      border: '1px solid #D8E2E1',
-      boxShadow: '0 10px 25px -3px rgba(57, 82, 83, 0.15), 0 4px 6px -2px rgba(57, 82, 83, 0.05)',
+      background: 'var(--color-surface)',
+      borderRadius: 'var(--radius-lg)',
+      border: '1px solid var(--color-border)',
+      boxShadow: 'var(--shadow-lg)',
       zIndex: 10,
       padding: isCollapsed ? '12px 18px' : '20px',
       overflowY: 'auto',
@@ -87,20 +87,20 @@ export default function DetailPanel({ selectedNode, selectedEdge, allNodes, allE
           display: 'flex', 
           justifyContent: 'space-between', 
           alignItems: 'center', 
-          borderBottom: isCollapsed ? 'none' : '1px solid #EBF0EF', 
+          borderBottom: isCollapsed ? 'none' : '1px solid var(--color-border)', 
           paddingBottom: isCollapsed ? '0' : '10px',
           cursor: 'pointer',
           userSelect: 'none'
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '11px', color: '#587071', transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▼</span>
-          <h3 style={{ margin: 0, fontSize: '14px', color: '#395253', fontWeight: '700', letterSpacing: '0.01em' }}>
+          <span style={{ fontSize: '11px', color: 'var(--color-text-secondary)', transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▼</span>
+          <h3 style={{ margin: 0, fontSize: '14px', color: 'var(--color-brand-dark)', fontWeight: '700', letterSpacing: '0.01em' }}>
             {data.label || (isEdge ? `PIPE (${item.id.replace('reactflow__edge-', '')})` : type.toUpperCase())}
           </h3>
         </div>
         {!isCollapsed && (
-          <span style={{ fontSize: '10px', fontWeight: '700', color: '#FA8507', background: 'rgba(250, 133, 7, 0.12)', padding: '3px 8px', borderRadius: '12px' }}>
+          <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--color-primary)', background: 'var(--color-primary-tint)', padding: '3px 8px', borderRadius: '12px' }}>
             {type.toUpperCase()}
           </span>
         )}

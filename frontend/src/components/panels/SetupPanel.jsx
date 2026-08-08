@@ -80,7 +80,7 @@ const PipeSelector = ({ data, onChange }) => {
         <div style={{ flex: 1 }}>
           <label style={{ fontSize: '10px', color: '#64748b' }}>DN (mm)</label>
           <select 
-            style={{ width: '100%', fontSize: '12px' }}
+            className="form-select" style={{ width: '100%' }}
             value={currentDn}
             onChange={(e) => handleDnChange(e.target.value)}
           >
@@ -92,7 +92,7 @@ const PipeSelector = ({ data, onChange }) => {
         <div style={{ flex: 1 }}>
           <label style={{ fontSize: '10px', color: '#64748b' }}>Sch</label>
           <select 
-            style={{ width: '100%', fontSize: '12px' }}
+            className="form-select" style={{ width: '100%' }}
             value={currentSch}
             onChange={(e) => handleSchChange(e.target.value)}
           >
@@ -109,7 +109,7 @@ const PipeSelector = ({ data, onChange }) => {
   );
 };
 
-export default function PropertyEditor({
+export default function SetupPanel({
   node,
   edge,
   onUpdate,
@@ -286,7 +286,7 @@ export default function PropertyEditor({
             <div key="label">
               <label style={{ fontSize: '11px', color: '#64748b' }}>Name Tag</label>
               <input 
-                style={{ width: '100%', fontSize: '12px', padding: '4px' }} 
+                className="form-input" style={{ width: '100%' }} 
                 value={localDrafts.label !== undefined ? localDrafts.label : (data.label || '')} 
                 onChange={(e) => handleDraftChange('label', e.target.value)}
                 onBlur={(e) => validateAndCommit('label', e.target.value)}
@@ -304,9 +304,9 @@ export default function PropertyEditor({
                     onClick={() => handleSensingToggle(portId)}
                     style={{
                       fontSize: '10px', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer',
-                      background: data.sensing?.[portId] ? '#eab308' : '#f1f5f9',
-                      color: data.sensing?.[portId] ? '#fff' : '#475569',
-                      border: '1px solid #e2e8f0'
+                      background: data.sensing?.[portId] ? 'var(--color-warning)' : 'var(--color-bg-canvas)',
+                      color: data.sensing?.[portId] ? 'var(--color-text-inverse)' : 'var(--color-text-secondary)',
+                      border: '1px solid var(--color-border)'
                     }}
                   >
                     {portId.toUpperCase()}
@@ -322,7 +322,7 @@ export default function PropertyEditor({
                 {renderLabel('Pipe Length (m)', 'length')}
                 <input 
                   type="number" 
-                  style={{ width: '100%', fontSize: '12px' }} 
+                  className="form-input" style={{ width: '100%' }} 
                   value={localDrafts.length !== undefined ? localDrafts.length : (data.length || 25.0)} 
                   onChange={(e) => handleDraftChange('length', e.target.value)}
                   onBlur={(e) => validateAndCommit('length', e.target.value, true)}
@@ -341,7 +341,7 @@ export default function PropertyEditor({
                 {renderLabel('Fluid Level (m)', 'level')}
                 <input 
                   type="number" 
-                  style={{ width: '100%', fontSize: '12px' }} 
+                  className="form-input" style={{ width: '100%' }} 
                   value={localDrafts.level !== undefined ? localDrafts.level : (effectiveData.level || 0)} 
                   onChange={(e) => handleDraftChange('level', e.target.value)}
                   onBlur={(e) => validateAndCommit('level', e.target.value)}
@@ -351,7 +351,7 @@ export default function PropertyEditor({
                 {renderLabel('Elevation (m)', 'elevation')}
                 <input 
                   type="number" 
-                  style={{ width: '100%', fontSize: '12px' }} 
+                  className="form-input" style={{ width: '100%' }} 
                   value={localDrafts.elevation !== undefined ? localDrafts.elevation : (effectiveData.elevation || 0)} 
                   onChange={(e) => handleDraftChange('elevation', e.target.value)}
                   onBlur={(e) => validateAndCommit('elevation', e.target.value)}
@@ -361,7 +361,7 @@ export default function PropertyEditor({
                 {renderLabel('Temp (°C)', 'temperature')}
                 <input 
                   type="number" 
-                  style={{ width: '100%', fontSize: '12px' }} 
+                  className="form-input" style={{ width: '100%' }} 
                   step="0.1" 
                   value={localDrafts.temperature !== undefined ? localDrafts.temperature : (effectiveData.temperature - 273.15).toFixed(1)} 
                   onChange={(e) => handleDraftChange('temperature', e.target.value)}
@@ -391,7 +391,7 @@ export default function PropertyEditor({
                 {renderLabel('Rated Flow (L/min)', 'flow_rated_lmin')}
                 <input 
                   type="number" 
-                  style={{ width: '100%', fontSize: '12px' }} 
+                  className="form-input" style={{ width: '100%' }} 
                   value={localDrafts.flow_rated_lmin !== undefined ? localDrafts.flow_rated_lmin : (effectiveData.flow_rated_lmin || 100)} 
                   onChange={(e) => handleDraftChange('flow_rated_lmin', e.target.value)}
                   onBlur={(e) => validateAndCommit('flow_rated_lmin', e.target.value, true)}
@@ -402,7 +402,7 @@ export default function PropertyEditor({
                 <input 
                   type="number" 
                   step="0.1"
-                  style={{ width: '100%', fontSize: '12px' }} 
+                  className="form-input" style={{ width: '100%' }} 
                   value={localDrafts.pressure_rated_bar !== undefined ? localDrafts.pressure_rated_bar : (effectiveData.pressure_rated_bar || 5.0)} 
                   onChange={(e) => handleDraftChange('pressure_rated_bar', e.target.value)}
                   onBlur={(e) => validateAndCommit('pressure_rated_bar', e.target.value, true)}
@@ -412,7 +412,7 @@ export default function PropertyEditor({
                 {renderLabel('Rise to Shut-off (%)', 'rise_to_shutoff_pct')}
                 <input 
                   type="number" 
-                  style={{ width: '100%', fontSize: '12px' }} 
+                  className="form-input" style={{ width: '100%' }} 
                   value={localDrafts.rise_to_shutoff_pct !== undefined ? localDrafts.rise_to_shutoff_pct : (effectiveData.rise_to_shutoff_pct || 20.0)} 
                   onChange={(e) => handleDraftChange('rise_to_shutoff_pct', e.target.value)}
                   onBlur={(e) => validateAndCommit('rise_to_shutoff_pct', e.target.value)}
@@ -441,7 +441,7 @@ export default function PropertyEditor({
                 {renderLabel('Rated Flow (L/min)', 'flow_rated')}
                 <input 
                   type="number" 
-                  style={{ width: '100%', fontSize: '12px' }} 
+                  className="form-input" style={{ width: '100%' }} 
                   value={localDrafts.flow_rated !== undefined ? localDrafts.flow_rated : (effectiveData.flow_rated || 0)} 
                   onChange={(e) => handleDraftChange('flow_rated', e.target.value)}
                   onBlur={(e) => validateAndCommit('flow_rated', e.target.value, true)}
@@ -451,7 +451,7 @@ export default function PropertyEditor({
                 {renderLabel('Motor Power (kW)', 'motor_power')}
                 <input 
                   type="number" 
-                  style={{ width: '100%', fontSize: '12px' }} 
+                  className="form-input" style={{ width: '100%' }} 
                   value={localDrafts.motor_power !== undefined ? localDrafts.motor_power : (effectiveData.motor_power || 0)} 
                   onChange={(e) => handleDraftChange('motor_power', e.target.value)}
                   onBlur={(e) => validateAndCommit('motor_power', e.target.value, true)}
@@ -461,7 +461,7 @@ export default function PropertyEditor({
                 {renderLabel('Efficiency (%)', 'efficiency')}
                 <input 
                   type="number" 
-                  style={{ width: '100%', fontSize: '12px' }} 
+                  className="form-input" style={{ width: '100%' }} 
                   value={localDrafts.efficiency !== undefined ? localDrafts.efficiency : (effectiveData.efficiency || 0)} 
                   onChange={(e) => handleDraftChange('efficiency', e.target.value)}
                   onBlur={(e) => validateAndCommit('efficiency', e.target.value, true)}
@@ -476,7 +476,7 @@ export default function PropertyEditor({
                 {renderLabel('Max Cv', 'max_cv')}
                 <input 
                   type="number" 
-                  style={{ width: '100%', fontSize: '12px' }} 
+                  className="form-input" style={{ width: '100%' }} 
                   value={localDrafts.max_cv !== undefined ? localDrafts.max_cv : (effectiveData.max_cv || 0)} 
                   onChange={(e) => handleDraftChange('max_cv', e.target.value)}
                   onBlur={(e) => validateAndCommit('max_cv', e.target.value, true)}
@@ -500,7 +500,7 @@ export default function PropertyEditor({
                 {renderLabel('Set Point (bar(a))', 'set_pressure')}
                 <input 
                   type="number" 
-                  style={{ width: '100%', fontSize: '12px' }} 
+                  className="form-input" style={{ width: '100%' }} 
                   step="0.1" 
                   value={localDrafts.set_pressure !== undefined ? localDrafts.set_pressure : (effectiveData.set_pressure / 100000).toFixed(1)} 
                   onChange={(e) => handleDraftChange('set_pressure', e.target.value)}
@@ -516,7 +516,7 @@ export default function PropertyEditor({
                 {renderLabel('Max Cv', 'max_cv')}
                 <input 
                   type="number" 
-                  style={{ width: '100%', fontSize: '12px' }} 
+                  className="form-input" style={{ width: '100%' }} 
                   value={localDrafts.max_cv !== undefined ? localDrafts.max_cv : (effectiveData.max_cv || 0)} 
                   onChange={(e) => handleDraftChange('max_cv', e.target.value)}
                   onBlur={(e) => validateAndCommit('max_cv', e.target.value, true)}
@@ -526,7 +526,7 @@ export default function PropertyEditor({
                 {renderLabel('Set Temperature (°C)', 'set_temperature_c')}
                 <input 
                   type="number" 
-                  style={{ width: '100%', fontSize: '12px' }} 
+                  className="form-input" style={{ width: '100%' }} 
                   step="0.1" 
                   value={localDrafts.set_temperature_c !== undefined ? localDrafts.set_temperature_c : (effectiveData.set_temperature_c || 40.0)} 
                   onChange={(e) => handleDraftChange('set_temperature_c', e.target.value)}
@@ -553,7 +553,7 @@ export default function PropertyEditor({
                 {renderLabel('Max Cv', 'max_cv')}
                 <input 
                   type="number" 
-                  style={{ width: '100%', fontSize: '12px' }} 
+                  className="form-input" style={{ width: '100%' }} 
                   value={localDrafts.max_cv !== undefined ? localDrafts.max_cv : (effectiveData.max_cv || 0)} 
                   onChange={(e) => handleDraftChange('max_cv', e.target.value)}
                   onBlur={(e) => validateAndCommit('max_cv', e.target.value, true)}
@@ -563,7 +563,7 @@ export default function PropertyEditor({
                 {renderLabel('Opening (%)', 'opening')}
                 <input 
                   type="number" 
-                  style={{ width: '100%', fontSize: '12px' }} 
+                  className="form-input" style={{ width: '100%' }} 
                   min="0" max="100" step="0.1" 
                   value={localDrafts.opening !== undefined ? localDrafts.opening : (effectiveData.opening ?? 50.0)} 
                   onChange={(e) => {
@@ -583,7 +583,7 @@ export default function PropertyEditor({
                 {renderLabel('Cracking Set Pressure (bar(a))', 'set_pressure_bar')}
                 <input 
                   type="number" step="0.1" min="0.01"
-                  style={{ width: '100%', fontSize: '12px' }} 
+                  className="form-input" style={{ width: '100%' }} 
                   value={localDrafts.set_pressure_bar !== undefined ? localDrafts.set_pressure_bar : (effectiveData.set_pressure_bar ?? 20.0)} 
                   onChange={(e) => handleDraftChange('set_pressure_bar', e.target.value)}
                   onBlur={(e) => validateAndCommit('set_pressure_bar', e.target.value, true)}
@@ -593,7 +593,7 @@ export default function PropertyEditor({
                 {renderLabel('Flow Coefficient (Cv)', 'cv')}
                 <input 
                   type="number" step="0.1" min="0.001"
-                  style={{ width: '100%', fontSize: '12px' }} 
+                  className="form-input" style={{ width: '100%' }} 
                   value={localDrafts.cv !== undefined ? localDrafts.cv : (effectiveData.cv ?? 10.0)} 
                   onChange={(e) => handleDraftChange('cv', e.target.value)}
                   onBlur={(e) => validateAndCommit('cv', e.target.value, true)}
@@ -615,7 +615,7 @@ export default function PropertyEditor({
                   {renderLabel('Blowdown Reset (%)', 'blowdown_pct')}
                   <input 
                     type="number" step="0.5" min="0" max="50"
-                    style={{ width: '100%', fontSize: '12px' }} 
+                    className="form-input" style={{ width: '100%' }} 
                     value={localDrafts.blowdown_pct !== undefined ? localDrafts.blowdown_pct : (effectiveData.blowdown_pct ?? 7.0)} 
                     onChange={(e) => handleDraftChange('blowdown_pct', e.target.value)}
                     onBlur={(e) => validateAndCommit('blowdown_pct', e.target.value)}
@@ -643,7 +643,7 @@ export default function PropertyEditor({
                 {renderLabel('Burst Pressure (bar(a))', 'burst_pressure_bar')}
                 <input 
                   type="number" step="0.1" min="0.01"
-                  style={{ width: '100%', fontSize: '12px' }} 
+                  className="form-input" style={{ width: '100%' }} 
                   value={localDrafts.burst_pressure_bar !== undefined ? localDrafts.burst_pressure_bar : (effectiveData.burst_pressure_bar ?? 25.0)} 
                   onChange={(e) => handleDraftChange('burst_pressure_bar', e.target.value)}
                   onBlur={(e) => validateAndCommit('burst_pressure_bar', e.target.value, true)}
@@ -665,7 +665,7 @@ export default function PropertyEditor({
                   {renderLabel('Orifice Restriction Diameter (mm)', 'orifice_diameter')}
                   <input 
                     type="number" 
-                    style={{ width: '100%', fontSize: '12px' }} 
+                    className="form-input" style={{ width: '100%' }} 
                     value={localDrafts.orifice_diameter !== undefined ? localDrafts.orifice_diameter : mToMm(effectiveData.orifice_diameter || 0.01)} 
                     onChange={(e) => handleDraftChange('orifice_diameter', e.target.value)}
                     onBlur={(e) => validateAndCommit('orifice_diameter', mmToM(parseFloat(e.target.value) || 0), true)}
@@ -676,7 +676,7 @@ export default function PropertyEditor({
                   {renderLabel('Flow Coefficient (Cv)', 'cv')}
                   <input 
                     type="number" step="0.1" min="0.001"
-                    style={{ width: '100%', fontSize: '12px' }} 
+                    className="form-input" style={{ width: '100%' }} 
                     value={localDrafts.cv !== undefined ? localDrafts.cv : (effectiveData.cv ?? 10.0)} 
                     onChange={(e) => handleDraftChange('cv', e.target.value)}
                     onBlur={(e) => validateAndCommit('cv', e.target.value, true)}
@@ -704,7 +704,7 @@ export default function PropertyEditor({
                 {renderLabel('Flow Coefficient (Cv)', 'cv')}
                 <input 
                   type="number" 
-                  style={{ width: '100%', fontSize: '12px' }} 
+                  className="form-input" style={{ width: '100%' }} 
                   step="0.1"
                   value={localDrafts.cv !== undefined ? localDrafts.cv : (effectiveData.cv ?? 10.0)} 
                   onChange={(e) => handleDraftChange('cv', e.target.value)}
@@ -715,7 +715,7 @@ export default function PropertyEditor({
                 {renderLabel('Cracking Pressure (bar(d))', 'cracking_pressure_bar')}
                 <input 
                   type="number" 
-                  style={{ width: '100%', fontSize: '12px' }} 
+                  className="form-input" style={{ width: '100%' }} 
                   step="0.01" min="0"
                   value={localDrafts.cracking_pressure_bar !== undefined ? localDrafts.cracking_pressure_bar : (effectiveData.cracking_pressure_bar ?? 0.05)} 
                   onChange={(e) => handleDraftChange('cracking_pressure_bar', e.target.value)}
@@ -731,7 +731,7 @@ export default function PropertyEditor({
                 {renderLabel('Flow Coefficient (Cv)', 'cv')}
                 <input 
                   type="number" 
-                  style={{ width: '100%', fontSize: '12px' }} 
+                  className="form-input" style={{ width: '100%' }} 
                   step="0.1"
                   value={localDrafts.cv !== undefined ? localDrafts.cv : (effectiveData.cv ?? 10.0)} 
                   onChange={(e) => handleDraftChange('cv', e.target.value)}
@@ -742,7 +742,7 @@ export default function PropertyEditor({
                 {renderLabel('Cracking Pressure (bar(d))', 'cracking_pressure_bar')}
                 <input 
                   type="number" 
-                  style={{ width: '100%', fontSize: '12px' }} 
+                  className="form-input" style={{ width: '100%' }} 
                   step="0.01" min="0"
                   value={localDrafts.cracking_pressure_bar !== undefined ? localDrafts.cracking_pressure_bar : (effectiveData.cracking_pressure_bar ?? 0.05)} 
                   onChange={(e) => handleDraftChange('cracking_pressure_bar', e.target.value)}
@@ -753,7 +753,7 @@ export default function PropertyEditor({
                 {renderLabel('Orifice Diameter (mm)', 'orifice_diameter')}
                 <input 
                   type="number" 
-                  style={{ width: '100%', fontSize: '12px' }} 
+                  className="form-input" style={{ width: '100%' }} 
                   value={localDrafts.orifice_diameter !== undefined ? localDrafts.orifice_diameter : mToMm(effectiveData.orifice_diameter || 0.01)} 
                   onChange={(e) => handleDraftChange('orifice_diameter', e.target.value)}
                   onBlur={(e) => validateAndCommit('orifice_diameter', mmToM(parseFloat(e.target.value) || 0), true)}
@@ -797,7 +797,7 @@ export default function PropertyEditor({
                 {renderLabel('Rated Flow (L/min)', 'rated_flow_lmin')}
                 <input 
                   type="number" 
-                  style={{ width: '100%', fontSize: '12px' }} 
+                  className="form-input" style={{ width: '100%' }} 
                   value={localDrafts.rated_flow_lmin !== undefined ? localDrafts.rated_flow_lmin : (effectiveData.rated_flow_lmin || 500.0)} 
                   onChange={(e) => handleDraftChange('rated_flow_lmin', e.target.value)}
                   onBlur={(e) => validateAndCommit('rated_flow_lmin', e.target.value, true)}
@@ -808,7 +808,7 @@ export default function PropertyEditor({
                   {renderLabel('Rated Cooling (kW)', 'rated_cooling_kw')}
                   <input 
                     type="number" 
-                    style={{ width: '100%', fontSize: '12px' }} 
+                    className="form-input" style={{ width: '100%' }} 
                     value={localDrafts.rated_cooling_kw !== undefined ? localDrafts.rated_cooling_kw : (effectiveData.rated_cooling_kw || 300.0)} 
                     onChange={(e) => handleDraftChange('rated_cooling_kw', e.target.value)}
                     onBlur={(e) => validateAndCommit('rated_cooling_kw', e.target.value, true)}
@@ -820,7 +820,7 @@ export default function PropertyEditor({
                   {renderLabel('Design Inlet Temp (°C)', 'design_inlet_temp_c')}
                   <input 
                     type="number" 
-                    style={{ width: '100%', fontSize: '12px' }} 
+                    className="form-input" style={{ width: '100%' }} 
                     value={localDrafts.design_inlet_temp_c !== undefined ? localDrafts.design_inlet_temp_c : (effectiveData.design_inlet_temp_c || 50.0)} 
                     onChange={(e) => handleDraftChange('design_inlet_temp_c', e.target.value)}
                     onBlur={(e) => validateAndCommit('design_inlet_temp_c', e.target.value)}
@@ -832,7 +832,7 @@ export default function PropertyEditor({
                   {renderLabel('Design Outlet Temp (°C)', 'design_outlet_temp_c')}
                   <input 
                     type="number" 
-                    style={{ width: '100%', fontSize: '12px' }} 
+                    className="form-input" style={{ width: '100%' }} 
                     value={localDrafts.design_outlet_temp_c !== undefined ? localDrafts.design_outlet_temp_c : (effectiveData.design_outlet_temp_c || 40.0)} 
                     onChange={(e) => handleDraftChange('design_outlet_temp_c', e.target.value)}
                     onBlur={(e) => validateAndCommit('design_outlet_temp_c', e.target.value)}
@@ -844,7 +844,7 @@ export default function PropertyEditor({
                   {renderLabel('Heat Transfer Coeff (UA, W/K)', 'ua_direct_w_k')}
                   <input 
                     type="number" 
-                    style={{ width: '100%', fontSize: '12px' }} 
+                    className="form-input" style={{ width: '100%' }} 
                     value={localDrafts.ua_direct_w_k !== undefined ? localDrafts.ua_direct_w_k : (effectiveData.ua_direct_w_k || 1000.0)} 
                     onChange={(e) => handleDraftChange('ua_direct_w_k', e.target.value)}
                     onBlur={(e) => validateAndCommit('ua_direct_w_k', e.target.value, true)}
@@ -870,7 +870,7 @@ export default function PropertyEditor({
                   {renderLabel('Cooling Medium Temp (°C)', 'medium_temp_c')}
                   <input 
                     type="number" 
-                    style={{ width: '100%', fontSize: '12px' }} 
+                    className="form-input" style={{ width: '100%' }} 
                     value={localDrafts.medium_temp_c !== undefined ? localDrafts.medium_temp_c : (effectiveData.medium_temp_c || 10.0)} 
                     onChange={(e) => handleDraftChange('medium_temp_c', e.target.value)}
                     onBlur={(e) => validateAndCommit('medium_temp_c', e.target.value)}
@@ -881,7 +881,7 @@ export default function PropertyEditor({
                 {renderLabel('Rated Pressure Drop (bar(d))', 'rated_dp_bar')}
                 <input 
                   type="number" step="0.01" 
-                  style={{ width: '100%', fontSize: '12px' }} 
+                  className="form-input" style={{ width: '100%' }} 
                   value={localDrafts.rated_dp_bar !== undefined ? localDrafts.rated_dp_bar : (effectiveData.rated_dp_bar || 0.5)} 
                   onChange={(e) => handleDraftChange('rated_dp_bar', e.target.value)}
                   onBlur={(e) => validateAndCommit('rated_dp_bar', e.target.value, true)}
@@ -896,7 +896,7 @@ export default function PropertyEditor({
                 {renderLabel('Clean ΔP (bar(d))', 'dp_clean')}
                 <input 
                   type="number" step="0.01" 
-                  style={{ width: '100%', fontSize: '12px' }} 
+                  className="form-input" style={{ width: '100%' }} 
                   value={localDrafts.dp_clean !== undefined ? localDrafts.dp_clean : (effectiveData.dp_clean || 0.2)} 
                   onChange={(e) => handleDraftChange('dp_clean', e.target.value)}
                   onBlur={(e) => validateAndCommit('dp_clean', e.target.value, true)}
@@ -906,7 +906,7 @@ export default function PropertyEditor({
                 {renderLabel('Terminal ΔP (bar(d))', 'dp_terminal')}
                 <input 
                   type="number" step="0.1" 
-                  style={{ width: '100%', fontSize: '12px' }} 
+                  className="form-input" style={{ width: '100%' }} 
                   value={localDrafts.dp_terminal !== undefined ? localDrafts.dp_terminal : (effectiveData.dp_terminal || 1.0)} 
                   onChange={(e) => handleDraftChange('dp_terminal', e.target.value)}
                   onBlur={(e) => validateAndCommit('dp_terminal', e.target.value, true)}
@@ -916,7 +916,7 @@ export default function PropertyEditor({
                 {renderLabel('Rated Flow (L/min)', 'flow_ref')}
                 <input 
                   type="number" 
-                  style={{ width: '100%', fontSize: '12px' }} 
+                  className="form-input" style={{ width: '100%' }} 
                   value={localDrafts.flow_ref !== undefined ? localDrafts.flow_ref : (effectiveData.flow_ref || 100.0)} 
                   onChange={(e) => handleDraftChange('flow_ref', e.target.value)}
                   onBlur={(e) => validateAndCommit('flow_ref', e.target.value, true)}
@@ -926,7 +926,7 @@ export default function PropertyEditor({
                 {renderLabel('Clogging Level (%)', 'clogging')}
                 <input 
                   type="number" 
-                  style={{ width: '100%', fontSize: '12px' }} 
+                  className="form-input" style={{ width: '100%' }} 
                   value={localDrafts.clogging !== undefined ? localDrafts.clogging : (effectiveData.clogging || 0.0)} 
                   onChange={(e) => handleDraftChange('clogging', e.target.value)}
                   onBlur={(e) => validateAndCommit('clogging', e.target.value)}
@@ -941,7 +941,7 @@ export default function PropertyEditor({
                 {renderLabel('Orifice Restriction Diameter (mm)', 'orifice_diameter')}
                 <input 
                   type="number" 
-                  style={{ width: '100%', fontSize: '12px' }} 
+                  className="form-input" style={{ width: '100%' }} 
                   value={localDrafts.orifice_diameter !== undefined ? localDrafts.orifice_diameter : mToMm(effectiveData.orifice_diameter || 0.07)} 
                   onChange={(e) => handleDraftChange('orifice_diameter', e.target.value)}
                   onBlur={(e) => validateAndCommit('orifice_diameter', mmToM(parseFloat(e.target.value) || 0), true)}
@@ -995,7 +995,7 @@ export default function PropertyEditor({
                 <input 
                   type="number" 
                   step="0.1"
-                  style={{ width: '100%', fontSize: '12px' }} 
+                  className="form-input" style={{ width: '100%' }} 
                   value={localDrafts.flow_base_lmin !== undefined ? localDrafts.flow_base_lmin : (effectiveData.flow_base_lmin || 10.0)} 
                   onChange={(e) => handleDraftChange('flow_base_lmin', e.target.value)}
                   onBlur={(e) => validateAndCommit('flow_base_lmin', parseFloat(e.target.value) || 0.0, true)}
@@ -1006,7 +1006,7 @@ export default function PropertyEditor({
                 <input 
                   type="number" 
                   step="0.05"
-                  style={{ width: '100%', fontSize: '12px' }} 
+                  className="form-input" style={{ width: '100%' }} 
                   value={localDrafts.inlet_pressure_base_bar !== undefined ? localDrafts.inlet_pressure_base_bar : (effectiveData.inlet_pressure_base_bar || 3.5)} 
                   onChange={(e) => handleDraftChange('inlet_pressure_base_bar', e.target.value)}
                   onBlur={(e) => validateAndCommit('inlet_pressure_base_bar', parseFloat(e.target.value) || 0.0, true)}
@@ -1017,7 +1017,7 @@ export default function PropertyEditor({
                 <input 
                   type="number" 
                   step="0.05"
-                  style={{ width: '100%', fontSize: '12px' }} 
+                  className="form-input" style={{ width: '100%' }} 
                   value={localDrafts.outlet_pressure_base_bar !== undefined ? localDrafts.outlet_pressure_base_bar : (effectiveData.outlet_pressure_base_bar || 1.0)} 
                   onChange={(e) => handleDraftChange('outlet_pressure_base_bar', e.target.value)}
                   onBlur={(e) => validateAndCommit('outlet_pressure_base_bar', parseFloat(e.target.value) || 0.0, true)}
@@ -1028,7 +1028,7 @@ export default function PropertyEditor({
                 <input 
                   type="number" 
                   step="0.5"
-                  style={{ width: '100%', fontSize: '12px' }} 
+                  className="form-input" style={{ width: '100%' }} 
                   value={localDrafts.temp_base_c !== undefined ? localDrafts.temp_base_c : (effectiveData.temp_base_c || 45.0)} 
                   onChange={(e) => handleDraftChange('temp_base_c', e.target.value)}
                   onBlur={(e) => validateAndCommit('temp_base_c', parseFloat(e.target.value) || 0.0, true)}
@@ -1042,7 +1042,7 @@ export default function PropertyEditor({
               <div>
                 <label style={{ fontSize: '11px', color: '#64748b' }}>Title</label>
                 <input 
-                  style={{ width: '100%', fontSize: '12px', padding: '4px' }} 
+                  className="form-input" style={{ width: '100%' }} 
                   value={localDrafts.title !== undefined ? localDrafts.title : (data.title || 'NOTE')} 
                   onChange={(e) => handleDraftChange('title', e.target.value)}
                   onBlur={(e) => validateAndCommit('title', e.target.value)}
@@ -1052,7 +1052,8 @@ export default function PropertyEditor({
                 <label style={{ fontSize: '11px', color: '#64748b' }}>Note Content</label>
                 <textarea 
                   rows={4}
-                  style={{ width: '100%', fontSize: '12px', padding: '6px', fontFamily: 'inherit', resize: 'vertical' }} 
+                  className="form-input"
+                  style={{ width: '100%', height: 'auto', padding: '6px', resize: 'vertical' }} 
                   value={localDrafts.text !== undefined ? localDrafts.text : (data.text || '')} 
                   onChange={(e) => handleDraftChange('text', e.target.value)}
                   onBlur={(e) => validateAndCommit('text', e.target.value)}
@@ -1061,7 +1062,8 @@ export default function PropertyEditor({
               <div>
                 <label style={{ fontSize: '11px', color: '#64748b' }}>Font Size</label>
                 <select
-                  style={{ width: '100%', fontSize: '12px', padding: '4px' }}
+                  className="form-select"
+                  style={{ width: '100%' }}
                   value={data.fontSize || 'md'}
                   onChange={(e) => onUpdate(id, { fontSize: e.target.value })}
                 >

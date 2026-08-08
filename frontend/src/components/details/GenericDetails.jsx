@@ -81,25 +81,25 @@ export default function GenericDetails({ node, edge, allNodes = [], allEdges = [
 
   const flowPathCard = (
     <div style={{
-      background: '#f4f7f6',
-      border: '1px solid #d8e2e1',
-      borderRadius: '6px',
+      background: 'var(--color-surface-hover)',
+      border: '1px solid var(--color-border)',
+      borderRadius: 'var(--radius-sm)',
       padding: '8px 12px',
-      fontSize: '11px',
+      fontSize: '11.5px',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
       gap: '6px',
-      color: '#1c2b2c',
+      color: 'var(--color-text-primary)',
       marginBottom: '10px'
     }}>
-      <div style={{ flex: 1, textAlign: 'left', fontWeight: '500' }}>
+      <div style={{ flex: 1, textAlign: 'left', fontWeight: '600' }}>
         {upLabel}
       </div>
-      <div style={{ fontSize: '12px', color: '#1c2b2c', fontWeight: '500' }}>
+      <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', fontWeight: '500' }}>
         ➔
       </div>
-      <div style={{ flex: 1, textAlign: 'right', fontWeight: '500' }}>
+      <div style={{ flex: 1, textAlign: 'right', fontWeight: '600' }}>
         {downLabel}
       </div>
     </div>
@@ -126,53 +126,56 @@ export default function GenericDetails({ node, edge, allNodes = [], allEdges = [
 
     pipeRows = (
       <>
-        <tr style={{ borderBottom: '1px solid #EBF0EF' }}>
-          <td style={{ padding: '6px 0', color: '#587071' }}>Fluid Velocity</td>
-          <td style={{ padding: '6px 0', textAlign: 'right', color: '#1c2b2c', fontWeight: '500' }}>{velocity.toFixed(2)} m/s</td>
+        <tr>
+          <td className="details-label">Fluid Velocity</td>
+          <td className="details-value" style={{ textAlign: 'right' }}>{velocity.toFixed(2)} m/s</td>
         </tr>
-        <tr style={{ borderBottom: '1px solid #EBF0EF' }}>
-          <td style={{ padding: '6px 0', color: '#587071' }}>Reynolds Number</td>
-          <td style={{ padding: '6px 0', textAlign: 'right', color: '#1c2b2c', fontWeight: '500' }}>
+        <tr>
+          <td className="details-label">Reynolds Number</td>
+          <td className="details-value" style={{ textAlign: 'right' }}>
             {re.toFixed(0)} ({regime})
           </td>
         </tr>
-        <tr style={{ borderBottom: '1px solid #EBF0EF' }}>
-          <td style={{ padding: '6px 0', color: '#587071' }}>Pressure Gradient</td>
-          <td style={{ padding: '6px 0', textAlign: 'right', color: '#1c2b2c', fontWeight: '500' }}>{dpPerMeterMbar.toFixed(2)} mbar(d)/m</td>
+        <tr>
+          <td className="details-label">Pressure Gradient</td>
+          <td className="details-value" style={{ textAlign: 'right' }}>{dpPerMeterMbar.toFixed(2)} mbar(d)/m</td>
         </tr>
       </>
     );
   }
 
-  // Row styles: regular weight, consistent brand black #1c2b2c for values, secondary label #587071
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
       
+      <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-brand-dark)', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '3px solid var(--color-primary)', paddingLeft: '8px', marginBottom: '8px' }}>
+        Operational Telemetry
+      </div>
+
       {/* Flow Path Card */}
       {flowPathCard}
 
       {/* Structured Key-Value Table */}
-      <table style={{ width: '100%', fontSize: '11.5px', borderCollapse: 'collapse' }}>
+      <table className="details-table">
         <tbody>
-          <tr style={{ borderBottom: '1px solid #EBF0EF' }}>
-            <td style={{ padding: '6px 0', color: '#587071' }}>Upstream Pressure</td>
-            <td style={{ padding: '6px 0', textAlign: 'right', color: '#1c2b2c', fontWeight: '500' }}>{pUpBar.toFixed(2)} bar(a)</td>
+          <tr>
+            <td className="details-label">Upstream Pressure</td>
+            <td className="details-value" style={{ textAlign: 'right' }}>{pUpBar.toFixed(2)} bar(a)</td>
           </tr>
-          <tr style={{ borderBottom: '1px solid #EBF0EF' }}>
-            <td style={{ padding: '6px 0', color: '#587071' }}>Downstream Pressure</td>
-            <td style={{ padding: '6px 0', textAlign: 'right', color: '#1c2b2c', fontWeight: '500' }}>{pDownBar.toFixed(2)} bar(a)</td>
+          <tr>
+            <td className="details-label">Downstream Pressure</td>
+            <td className="details-value" style={{ textAlign: 'right' }}>{pDownBar.toFixed(2)} bar(a)</td>
           </tr>
-          <tr style={{ borderBottom: '1px solid #EBF0EF' }}>
-            <td style={{ padding: '6px 0', color: '#587071' }}>Pressure Drop (ΔP)</td>
-            <td style={{ padding: '6px 0', textAlign: 'right', color: '#1c2b2c', fontWeight: '500' }}>{dpBar.toFixed(3)} bar(d)</td>
+          <tr>
+            <td className="details-label">Pressure Drop (ΔP)</td>
+            <td className="details-value" style={{ textAlign: 'right' }}>{dpBar.toFixed(3)} bar(d)</td>
           </tr>
-          <tr style={{ borderBottom: '1px solid #EBF0EF' }}>
-            <td style={{ padding: '6px 0', color: '#587071' }}>Flow Rate</td>
-            <td style={{ padding: '6px 0', textAlign: 'right', color: '#1c2b2c', fontWeight: '500' }}>{absFlowLmin.toFixed(1)} L/min</td>
+          <tr>
+            <td className="details-label">Flow Rate</td>
+            <td className="details-value" style={{ textAlign: 'right' }}>{absFlowLmin.toFixed(1)} L/min</td>
           </tr>
-          <tr style={{ borderBottom: isEdge ? '1px solid #EBF0EF' : 'none' }}>
-            <td style={{ padding: '6px 0', color: '#587071' }}>Temperature</td>
-            <td style={{ padding: '6px 0', textAlign: 'right', color: '#1c2b2c', fontWeight: '500' }}>{tempC.toFixed(1)} °C</td>
+          <tr>
+            <td className="details-label">Temperature</td>
+            <td className="details-value" style={{ textAlign: 'right' }}>{tempC.toFixed(1)} °C</td>
           </tr>
           {pipeRows}
         </tbody>

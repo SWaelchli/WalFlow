@@ -8,18 +8,18 @@ const CavitationWarning = () => (
   <div style={{
     background: '#fff1f2',
     padding: '10px',
-    borderRadius: '6px',
-    border: '1px solid #ffdde0',
+    borderRadius: 'var(--radius-sm)',
+    border: '1px solid var(--color-danger)',
     display: 'flex',
     flexDirection: 'column', gap: '4px', marginBottom: '10px'
   }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#be123c', fontWeight: 'bold' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: 'var(--color-danger)', fontWeight: 'bold' }}>
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 9v4m0 4h.01M2.75 12A9.25 9.25 0 0 1 12 2.75 9.25 9.25 0 0 1 21.25 12 9.25 9.25 0 0 1 12 21.25 9.25 9.25 0 0 1 2.75 12Z"/>
       </svg>
       CAVITATION RISK
     </div>
-    <p style={{ fontSize: '11px', color: '#be123c', margin: 0, paddingLeft: '24px' }}>
+    <p style={{ fontSize: '11px', color: 'var(--color-danger)', margin: 0, paddingLeft: '24px' }}>
       Suction pressure is critically low. Pump may be cavitating, leading to damage.
     </p>
   </div>
@@ -91,41 +91,42 @@ const PumpDetails = memo(function PumpDetails({ node }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', fontFamily: 'inherit' }}>
       {showCavitationWarning && <CavitationWarning />}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <div style={{ width: '3px', height: '14px', background: '#2563eb', borderRadius: '2px' }} />
-        <span style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b', textTransform: 'uppercase' }}>Performance Curve</span>
+        <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-brand-dark)', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '3px solid var(--color-primary)', paddingLeft: '8px' }}>
+          Performance Curve
+        </span>
       </div>
       
-      <div style={{ width: '100%', height: '240px', background: '#fff', borderRadius: '8px' }}>
+      <div style={{ width: '100%', height: '240px', background: 'var(--color-surface)', borderRadius: 'var(--radius-md)' }}>
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: -20, bottom: 10 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
             <XAxis dataKey="q" type="number" domain={[0, maxX]} fontSize={10} tickCount={6} />
             <YAxis type="number" domain={[0, maxY]} fontSize={10} tickCount={6} />
             <Legend verticalAlign="top" align="right" height={40} iconType="plainline" wrapperStyle={{ fontSize: '11px' }} />
-            <Line dataKey="pump" stroke="#2563eb" strokeWidth={2.5} dot={false} name="Pump Curve" isAnimationActive={false} />
-            <Line dataKey="system" stroke="#10b981" strokeWidth={2} dot={false} name="System" isAnimationActive={false} />
-            {telemetry && <Scatter name="Operating Point" dataKey="p" data={[{q: actualFlowLmin, p: currentDpBar}]} fill="#000" isAnimationActive={false} shape="cross" />}
+            <Line dataKey="pump" stroke="var(--color-primary)" strokeWidth={2.5} dot={false} name="Pump Curve" isAnimationActive={false} />
+            <Line dataKey="system" stroke="var(--color-success)" strokeWidth={2} dot={false} name="System" isAnimationActive={false} />
+            {telemetry && <Scatter name="Operating Point" dataKey="p" data={[{q: actualFlowLmin, p: currentDpBar}]} fill="var(--color-brand-dark)" isAnimationActive={false} shape="cross" />}
           </ComposedChart>
         </ResponsiveContainer>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-        <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-          <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600', textTransform: 'uppercase', marginBottom: '4px' }}>Flow</div>
-          <div style={{ fontSize: '14px', fontWeight: '700', color: '#1e293b' }}>{actualFlowLmin.toFixed(1)} <span style={{ fontSize: '10px', fontWeight: '500' }}>L/min</span></div>
+        <div style={{ background: 'var(--color-surface-hover)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
+          <div style={{ fontSize: '10.5px', color: 'var(--color-text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: '2px' }}>Flow</div>
+          <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--color-text-primary)', fontFamily: 'var(--font-mono)' }}>{actualFlowLmin.toFixed(1)} <span style={{ fontSize: '9px', fontWeight: '500' }}>L/min</span></div>
         </div>
-        <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-          <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600', textTransform: 'uppercase', marginBottom: '4px' }}>Pressure Increase</div>
-          <div style={{ fontSize: '14px', fontWeight: '700', color: '#2563eb' }}>{currentDpBar.toFixed(2)} <span style={{ fontSize: '10px', fontWeight: '500' }}>bar(d)</span></div>
+        <div style={{ background: 'var(--color-surface-hover)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
+          <div style={{ fontSize: '10.5px', color: 'var(--color-text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: '2px' }}>Pressure Increase</div>
+          <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--color-primary)', fontFamily: 'var(--font-mono)' }}>{currentDpBar.toFixed(2)} <span style={{ fontSize: '9px', fontWeight: '500' }}>bar(d)</span></div>
         </div>
-        <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-          <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600', textTransform: 'uppercase', marginBottom: '4px' }}>Hydraulic Power</div>
-          <div style={{ fontSize: '14px', fontWeight: '700', color: '#1e293b' }}>{Math.max(0, hydraulicPowerKW).toFixed(2)} <span style={{ fontSize: '10px', fontWeight: '500' }}>kW</span></div>
+        <div style={{ background: 'var(--color-surface-hover)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
+          <div style={{ fontSize: '10.5px', color: 'var(--color-text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: '2px' }}>Hydraulic Power</div>
+          <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--color-text-primary)', fontFamily: 'var(--font-mono)' }}>{Math.max(0, hydraulicPowerKW).toFixed(2)} <span style={{ fontSize: '9px', fontWeight: '500' }}>kW</span></div>
         </div>
-        <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-          <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600', textTransform: 'uppercase', marginBottom: '4px' }}>Load Factor</div>
-          <div style={{ fontSize: '14px', fontWeight: '700', color: isVolumetric && hydraulicPowerKW > motorLimitKW * 0.95 ? '#ef4444' : '#10b981' }}>
-            {isVolumetric ? ((Math.max(0, hydraulicPowerKW) / motorLimitKW) * 100).toFixed(0) : '—'} <span style={{ fontSize: '10px', fontWeight: '500' }}>%</span>
+        <div style={{ background: 'var(--color-surface-hover)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
+          <div style={{ fontSize: '10.5px', color: 'var(--color-text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: '2px' }}>Load Factor</div>
+          <div style={{ fontSize: '12px', fontWeight: '700', color: isVolumetric && hydraulicPowerKW > motorLimitKW * 0.95 ? 'var(--color-danger)' : 'var(--color-success)', fontFamily: 'var(--font-mono)' }}>
+            {isVolumetric ? ((Math.max(0, hydraulicPowerKW) / motorLimitKW) * 100).toFixed(0) : '—'} <span style={{ fontSize: '9px', fontWeight: '500' }}>%</span>
           </div>
         </div>
       </div>

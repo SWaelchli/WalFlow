@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { PlusIcon, PlayIcon, ExportIcon, CaseIcon, TrashIcon } from '../symbols/IconLibrary';
 import { m3sToLmin, kToC } from '../../utils/converters';
 import { findClosestPipeMatch, ASME_PIPE_STANDARDS, calculatePipeId } from '../../utils/standards_library';
 import { updateCaseOverride } from '../../utils/case_resolver';
@@ -373,16 +374,16 @@ export default function DataList({
   }, [processedItems, activeTab]);
 
   return (
-    <div style={{ height: '350px', background: '#ffffff', borderTop: '1px solid #D8E2E1', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 -4px 16px rgba(57, 82, 83, 0.05)' }}>
-      <div style={{ display: 'flex', background: '#F4F7F6', borderBottom: '1px solid #D8E2E1', justifyContent: 'space-between', alignItems: 'center', padding: '0 16px' }}>
+    <div style={{ height: '350px', background: '#ffffff', borderTop: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 -4px 16px rgba(57, 82, 83, 0.05)' }}>
+      <div style={{ display: 'flex', background: 'var(--color-surface-hover)', borderBottom: '1px solid var(--color-border)', justifyContent: 'space-between', alignItems: 'center', padding: '0 16px' }}>
         <div style={{ display: 'flex', gap: '4px' }}>
           <button onClick={() => { setActiveTab('pipes'); setSortConfig({key:null, direction:'asc'}); }}
             style={{ 
               padding: '12px 20px', border: 'none', 
               background: activeTab === 'pipes' ? '#ffffff' : 'transparent', 
-              borderBottom: activeTab === 'pipes' ? '3px solid #FA8507' : '3px solid transparent', 
+              borderBottom: activeTab === 'pipes' ? '3px solid var(--color-primary)' : '3px solid transparent', 
               fontWeight: '700', cursor: 'pointer', fontSize: '12px', 
-              color: activeTab === 'pipes' ? '#FA8507' : '#587071',
+              color: activeTab === 'pipes' ? 'var(--color-primary)' : 'var(--color-text-secondary)',
               transition: 'all 0.2s'
             }}>
             Pipe Network List
@@ -391,9 +392,9 @@ export default function DataList({
             style={{ 
               padding: '12px 20px', border: 'none', 
               background: activeTab === 'all' ? '#ffffff' : 'transparent', 
-              borderBottom: activeTab === 'all' ? '3px solid #FA8507' : '3px solid transparent', 
+              borderBottom: activeTab === 'all' ? '3px solid var(--color-primary)' : '3px solid transparent', 
               fontWeight: '700', cursor: 'pointer', fontSize: '12px', 
-              color: activeTab === 'all' ? '#FA8507' : '#587071',
+              color: activeTab === 'all' ? 'var(--color-primary)' : 'var(--color-text-secondary)',
               transition: 'all 0.2s'
             }}>
             Full Equipment & Pipeline Data
@@ -402,9 +403,9 @@ export default function DataList({
             style={{ 
               padding: '12px 20px', border: 'none', 
               background: activeTab === 'cases' ? '#ffffff' : 'transparent', 
-              borderBottom: activeTab === 'cases' ? '3px solid #FA8507' : '3px solid transparent', 
+              borderBottom: activeTab === 'cases' ? '3px solid var(--color-primary)' : '3px solid transparent', 
               fontWeight: '700', cursor: 'pointer', fontSize: '12px', 
-              color: activeTab === 'cases' ? '#FA8507' : '#587071',
+              color: activeTab === 'cases' ? 'var(--color-primary)' : 'var(--color-text-secondary)',
               transition: 'all 0.2s',
               display: 'flex', alignItems: 'center', gap: '6px'
             }}>
@@ -414,9 +415,9 @@ export default function DataList({
             style={{ 
               padding: '12px 20px', border: 'none', 
               background: activeTab === 'relief' ? '#ffffff' : 'transparent', 
-              borderBottom: activeTab === 'relief' ? '3px solid #FA8507' : '3px solid transparent', 
+              borderBottom: activeTab === 'relief' ? '3px solid var(--color-primary)' : '3px solid transparent', 
               fontWeight: '700', cursor: 'pointer', fontSize: '12px', 
-              color: activeTab === 'relief' ? '#FA8507' : '#587071',
+              color: activeTab === 'relief' ? 'var(--color-primary)' : 'var(--color-text-secondary)',
               transition: 'all 0.2s',
               display: 'flex', alignItems: 'center', gap: '6px'
             }}>
@@ -430,106 +431,68 @@ export default function DataList({
               {onAddCase && (
                 <button
                   onClick={onAddCase}
-                  style={{
-                    padding: '6px 12px',
-                    background: '#395253',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    fontSize: '11px',
-                    fontWeight: '700'
-                  }}
+                  className="btn-primary"
+                  style={{ height: '30px', padding: '0 12px' }}
                 >
-                  ➕ New Case
+                  <PlusIcon size={14} style={{ marginRight: '6px' }} /> New Case
                 </button>
               )}
               <button
                 onClick={onToggleCaseManager}
-                style={{
-                  padding: '6px 14px',
-                  background: showCaseManager ? '#395253' : '#FFFFFF',
-                  color: showCaseManager ? '#ffffff' : '#1C2B2C',
-                  border: '1px solid #D8E2E1',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '11px',
-                  fontWeight: '700',
-                  transition: 'all 0.2s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px'
-                }}
-                onMouseEnter={(e) => {
-                  if (!showCaseManager) e.currentTarget.style.background = '#F4F7F6';
-                  else e.currentTarget.style.background = '#253637';
-                }}
-                onMouseLeave={(e) => {
-                  if (!showCaseManager) e.currentTarget.style.background = '#FFFFFF';
-                  else e.currentTarget.style.background = '#395253';
-                }}
+                className={showCaseManager ? "btn-primary" : "btn-secondary"}
+                style={{ height: '30px', padding: '0 14px' }}
               >
-                💼 {showCaseManager ? 'Hide Case Manager' : 'Show Case Manager'}
+                <CaseIcon size={14} style={{ marginRight: '6px' }} /> {showCaseManager ? 'Hide Case Manager' : 'Show Case Manager'}
               </button>
               <button
                 onClick={fetchBatchSimulations}
                 disabled={isBatchLoading}
+                className="btn-primary"
                 style={{
-                  padding: '6px 14px',
-                  background: isBatchLoading ? '#cbd5e1' : '#FA8507',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: isBatchLoading ? 'default' : 'pointer',
-                  fontSize: '11px',
-                  fontWeight: '700'
+                  height: '30px',
+                  padding: '0 14px',
+                  background: isBatchLoading ? 'var(--color-border)' : 'var(--color-primary)'
                 }}
               >
-                {isBatchLoading ? '⌛ Solving Cases...' : '▶ Batch Solve Matrix'}
+                <PlayIcon size={14} style={{ marginRight: '6px' }} /> {isBatchLoading ? 'Solving Cases...' : 'Batch Solve Matrix'}
               </button>
             </div>
           ) : activeTab === 'relief' ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '6px 0' }}>
               <button
                 onClick={onToggleCaseManager}
-                style={{
-                  padding: '6px 14px',
-                  background: showCaseManager ? '#395253' : '#FFFFFF',
-                  color: showCaseManager ? '#ffffff' : '#1C2B2C',
-                  border: '1px solid #D8E2E1',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '11px',
-                  fontWeight: '700',
-                  transition: 'all 0.2s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px'
-                }}
-                onMouseEnter={(e) => {
-                  if (!showCaseManager) e.currentTarget.style.background = '#F4F7F6';
-                  else e.currentTarget.style.background = '#253637';
-                }}
-                onMouseLeave={(e) => {
-                  if (!showCaseManager) e.currentTarget.style.background = '#FFFFFF';
-                  else e.currentTarget.style.background = '#395253';
-                }}
+                className={showCaseManager ? "btn-primary" : "btn-secondary"}
+                style={{ height: '30px', padding: '0 14px' }}
               >
-                💼 {showCaseManager ? 'Hide Case Manager' : 'Show Case Manager'}
+                <CaseIcon size={14} style={{ marginRight: '6px' }} /> {showCaseManager ? 'Hide Case Manager' : 'Show Case Manager'}
               </button>
             </div>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ position: 'relative' }}>
-                <input type="text" placeholder="🔍 Filter list..." value={filterText} onChange={(e) => setFilterText(e.target.value)}
-                  style={{ padding: '6px 10px', fontSize: '11px', border: '1px solid #D8E2E1', borderRadius: '6px', width: '160px', outline: 'none' }} />
-                {filterText && <button onClick={() => setFilterText("")} style={{ position:'absolute', right:5, top:'50%', transform:'translateY(-50%)', border:'none', background:'none', cursor:'pointer', color:'#587071' }}>×</button>}
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <input 
+                  type="text" 
+                  placeholder="Filter list..." 
+                  value={filterText} 
+                  onChange={(e) => setFilterText(e.target.value)}
+                  className="form-input"
+                  style={{ width: '160px' }} 
+                />
+                {filterText && <button onClick={() => setFilterText("")} style={{ position:'absolute', right:5, top:'50%', transform:'translateY(-50%)', border:'none', background:'none', cursor:'pointer', color:'var(--color-text-secondary)' }}>×</button>}
               </div>
-              <button onClick={handleAutoSortClick} style={{ padding: '6px 14px', background: '#395253', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '11px', fontWeight: '700', transition: 'background 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.background = '#253637'} onMouseLeave={(e) => e.currentTarget.style.background = '#395253'}>
-                🪄 Auto Sort
+              <button 
+                onClick={handleAutoSortClick} 
+                className="btn-secondary"
+                style={{ height: '30px', padding: '0 14px' }}
+              >
+                Auto Sort
               </button>
-              <button onClick={exportCSV} style={{ padding: '6px 14px', background: '#FA8507', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '11px', fontWeight: '700', transition: 'background 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.background = '#E07600'} onMouseLeave={(e) => e.currentTarget.style.background = '#FA8507'}>
-                ⬇ Export CSV
+              <button 
+                onClick={exportCSV} 
+                className="btn-primary"
+                style={{ height: '30px', padding: '0 14px' }}
+              >
+                <ExportIcon size={14} style={{ marginRight: '6px' }} /> Export CSV
               </button>
             </div>
           )}
@@ -540,17 +503,17 @@ export default function DataList({
         {activeTab === 'cases' ? (
           <div style={{ display: 'inline-block', minWidth: '100%', boxSizing: 'border-box', verticalAlign: 'top' }}>
             {isBatchLoading ? (
-              <div style={{ textAlign: 'center', padding: '40px 0', color: '#587071', fontSize: '13px', fontWeight: '600' }}>
+              <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--color-text-secondary)', fontSize: '13px', fontWeight: '600' }}>
                 ⌛ Running batch simulations across all operating cases...
               </div>
             ) : batchError ? (
-              <div style={{ padding: '16px', color: '#ef4444', background: '#fef2f2', borderRadius: '8px', border: '1px solid #fee2e2' }}>
+              <div style={{ padding: '16px', color: 'var(--color-danger)', background: '#fef2f2', borderRadius: '8px', border: '1px solid #fee2e2' }}>
                 <strong>Batch Simulation Error:</strong> {batchError}
               </div>
             ) : (
               <table style={{ width: '100%', height: 'max-content', borderCollapse: 'collapse', fontSize: '11px', textAlign: 'left', tableLayout: 'auto' }}>
                 <thead>
-                  <tr style={{ background: '#EBF0EF', borderBottom: '2px solid #D8E2E1', color: '#395253', fontWeight: '700', height: '40px' }}>
+                  <tr style={{ background: 'var(--color-border-hover)', borderBottom: '2px solid var(--color-border)', color: 'var(--color-brand-dark)', fontWeight: '700', height: '40px' }}>
                     <th style={{ padding: '6px 12px', verticalAlign: 'middle', width: '200px', minWidth: '200px', maxWidth: '200px', whiteSpace: 'nowrap' }}>Performance Metric</th>
                     {displayCases.map((c, colIdx) => {
                       const caseId = c.case_id || c.id;
@@ -569,7 +532,7 @@ export default function DataList({
                           style={{ 
                             padding: '6px 12px', 
                             background: isActive ? '#fff7ed' : 'inherit', 
-                            borderLeft: caseDragOverIdx === colIdx ? '3px solid #FA8507' : '1px solid #D8E2E1',
+                            borderLeft: caseDragOverIdx === colIdx ? '3px solid var(--color-primary)' : '1px solid var(--color-border)',
                             opacity: caseDragIdx === colIdx ? 0.5 : 1,
                             cursor: isBase ? 'default' : 'grab',
                             verticalAlign: 'middle',
@@ -586,11 +549,11 @@ export default function DataList({
                               style={{ 
                                 width: `${inputWidth}px`, 
                                 fontSize: '11px', 
-                                border: '1px solid #D8E2E1', 
+                                border: '1px solid var(--color-border)', 
                                 padding: '3px 6px', 
                                 borderRadius: '5px', 
                                 fontWeight: '700', 
-                                color: isActive ? '#FA8507' : '#1C2B2C', 
+                                color: isActive ? 'var(--color-primary)' : 'var(--color-text-primary)', 
                                 outline: 'none', 
                                 background: '#ffffff',
                                 transition: 'width 0.15s ease'
@@ -600,13 +563,13 @@ export default function DataList({
                               onPointerDown={(e) => e.stopPropagation()} 
                               onMouseDown={(e) => e.stopPropagation()}
                             />
-                            {isBase && <span style={{ fontSize: '10px', fontWeight: '800', color: '#395253' }}>(Base)</span>}
+                            {isBase && <span style={{ fontSize: '10px', fontWeight: '800', color: 'var(--color-brand-dark)' }}>(Base)</span>}
                             {!isActive && onSelectCase && (
                               <button
                                 onClick={() => onSelectCase(caseId)}
-                                style={{ padding: '2px 6px', fontSize: '10px', borderRadius: '4px', border: '1px solid #D8E2E1', background: '#ffffff', cursor: 'pointer', color: '#395253', fontWeight: '600', whiteSpace: 'nowrap' }}
+                                style={{ padding: '2px 6px', fontSize: '10px', borderRadius: '4px', border: '1px solid var(--color-border)', background: '#ffffff', cursor: 'pointer', color: 'var(--color-brand-dark)', fontWeight: '600', whiteSpace: 'nowrap' }}
                               >
-                                ⚡ Switch
+                                Switch
                               </button>
                             )}
                             {!isBase && onDeleteCase && (
@@ -617,12 +580,12 @@ export default function DataList({
                                   }
                                 }}
                                 title="Delete this operating case"
-                                style={{ padding: '2px 6px', fontSize: '10px', borderRadius: '4px', border: '1px solid #fee2e2', background: '#fef2f2', cursor: 'pointer', color: '#ef4444', fontWeight: '600', whiteSpace: 'nowrap' }}
+                                style={{ padding: '2px 6px', fontSize: '10px', borderRadius: '4px', border: '1px solid #fee2e2', background: '#fef2f2', cursor: 'pointer', color: 'var(--color-danger)', fontWeight: '600', whiteSpace: 'nowrap' }}
                               >
-                                🗑️
+                                <TrashIcon size={12} style={{ color: 'var(--color-danger)' }} />
                               </button>
                             )}
-                            {isActive && <span style={{ fontSize: '10px', color: '#FA8507', fontWeight: 'bold' }}>Active</span>}
+                            {isActive && <span style={{ fontSize: '10px', color: 'var(--color-primary)', fontWeight: 'bold' }}>Active</span>}
                           </div>
                         </th>
                       );
@@ -631,79 +594,79 @@ export default function DataList({
                 </thead>
                 <tbody>
                   {/* Max Pressure */}
-                  <tr style={{ borderBottom: '1px solid #EBF0EF', height: '36px' }}>
-                    <td style={{ padding: '6px 12px', fontWeight: '700', color: '#1C2B2C', verticalAlign: 'middle', width: '200px', minWidth: '200px', maxWidth: '200px', whiteSpace: 'nowrap' }}>System Max Pressure (bar(a))</td>
+                  <tr style={{ borderBottom: '1px solid var(--color-border-hover)', height: '36px' }}>
+                    <td style={{ padding: '6px 12px', fontWeight: '700', color: 'var(--color-text-primary)', verticalAlign: 'middle', width: '200px', minWidth: '200px', maxWidth: '200px', whiteSpace: 'nowrap' }}>System Max Pressure (bar(a))</td>
                     {displayCases.map((c, colIdx) => {
                       const baseKpis = displayCases.find(b => b.is_base)?.kpis;
                       const kpis = c.kpis || {};
                       const val = kpis.max_pressure_bar;
                       const deltaStr = !c.is_base && baseKpis ? formatDelta(val, baseKpis.max_pressure_bar, 'bar(a)') : null;
                       return (
-                        <td key={c.case_id || c.id} style={{ padding: '6px 12px', borderLeft: caseDragOverIdx === colIdx ? '3px solid #FA8507' : '1px solid #D8E2E1', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-                          <span style={{ fontWeight: '700', color: '#1C2B2C' }}>{val !== undefined ? `${val} bar(a)` : '—'}</span>
+                        <td key={c.case_id || c.id} style={{ padding: '6px 12px', borderLeft: caseDragOverIdx === colIdx ? '3px solid var(--color-primary)' : '1px solid var(--color-border)', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                          <span style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>{val !== undefined ? `${val} bar(a)` : '—'}</span>
                           {deltaStr && <span style={{ fontSize: '10px', color: '#d97706', marginLeft: '8px' }}>{deltaStr}</span>}
                         </td>
                       );
                     })}
                   </tr>
                   {/* Min Pressure */}
-                  <tr style={{ borderBottom: '1px solid #EBF0EF', background: '#F8FAFA', height: '36px' }}>
-                    <td style={{ padding: '6px 12px', fontWeight: '700', color: '#1C2B2C', verticalAlign: 'middle', width: '200px', minWidth: '200px', maxWidth: '200px', whiteSpace: 'nowrap' }}>System Min Pressure (bar(a))</td>
+                  <tr style={{ borderBottom: '1px solid var(--color-border-hover)', background: '#F8FAFA', height: '36px' }}>
+                    <td style={{ padding: '6px 12px', fontWeight: '700', color: 'var(--color-text-primary)', verticalAlign: 'middle', width: '200px', minWidth: '200px', maxWidth: '200px', whiteSpace: 'nowrap' }}>System Min Pressure (bar(a))</td>
                     {displayCases.map((c, colIdx) => {
                       const baseKpis = displayCases.find(b => b.is_base)?.kpis;
                       const kpis = c.kpis || {};
                       const val = kpis.min_pressure_bar;
                       const deltaStr = !c.is_base && baseKpis ? formatDelta(val, baseKpis.min_pressure_bar, 'bar(a)') : null;
                       return (
-                        <td key={c.case_id || c.id} style={{ padding: '6px 12px', borderLeft: caseDragOverIdx === colIdx ? '3px solid #FA8507' : '1px solid #D8E2E1', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-                          <span style={{ fontWeight: '700', color: '#1C2B2C' }}>{val !== undefined ? `${val} bar(a)` : '—'}</span>
+                        <td key={c.case_id || c.id} style={{ padding: '6px 12px', borderLeft: caseDragOverIdx === colIdx ? '3px solid var(--color-primary)' : '1px solid var(--color-border)', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                          <span style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>{val !== undefined ? `${val} bar(a)` : '—'}</span>
                           {deltaStr && <span style={{ fontSize: '10px', color: '#d97706', marginLeft: '8px' }}>{deltaStr}</span>}
                         </td>
                       );
                     })}
                   </tr>
                   {/* Total Pump Flow */}
-                  <tr style={{ borderBottom: '1px solid #EBF0EF', height: '36px' }}>
-                    <td style={{ padding: '6px 12px', fontWeight: '700', color: '#1C2B2C', verticalAlign: 'middle', width: '200px', minWidth: '200px', maxWidth: '200px', whiteSpace: 'nowrap' }}>Total Pump Flow (L/min)</td>
+                  <tr style={{ borderBottom: '1px solid var(--color-border-hover)', height: '36px' }}>
+                    <td style={{ padding: '6px 12px', fontWeight: '700', color: 'var(--color-text-primary)', verticalAlign: 'middle', width: '200px', minWidth: '200px', maxWidth: '200px', whiteSpace: 'nowrap' }}>Total Pump Flow (L/min)</td>
                     {displayCases.map((c, colIdx) => {
                       const baseKpis = displayCases.find(b => b.is_base)?.kpis;
                       const kpis = c.kpis || {};
                       const val = kpis.total_flow_lmin;
                       const deltaStr = !c.is_base && baseKpis ? formatDelta(val, baseKpis.total_flow_lmin, 'L/min') : null;
                       return (
-                        <td key={c.case_id || c.id} style={{ padding: '6px 12px', borderLeft: caseDragOverIdx === colIdx ? '3px solid #FA8507' : '1px solid #D8E2E1', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-                          <span style={{ fontWeight: '700', color: '#1C2B2C' }}>{val !== undefined ? `${val} L/min` : '—'}</span>
+                        <td key={c.case_id || c.id} style={{ padding: '6px 12px', borderLeft: caseDragOverIdx === colIdx ? '3px solid var(--color-primary)' : '1px solid var(--color-border)', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                          <span style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>{val !== undefined ? `${val} L/min` : '—'}</span>
                           {deltaStr && <span style={{ fontSize: '10px', color: '#d97706', marginLeft: '8px' }}>{deltaStr}</span>}
                         </td>
                       );
                     })}
                   </tr>
                   {/* Total Pump Power */}
-                  <tr style={{ borderBottom: '1px solid #EBF0EF', background: '#F8FAFA', height: '36px' }}>
-                    <td style={{ padding: '6px 12px', fontWeight: '700', color: '#1C2B2C', verticalAlign: 'middle', width: '200px', minWidth: '200px', maxWidth: '200px', whiteSpace: 'nowrap' }}>Total Pump Power (kW)</td>
+                  <tr style={{ borderBottom: '1px solid var(--color-border-hover)', background: '#F8FAFA', height: '36px' }}>
+                    <td style={{ padding: '6px 12px', fontWeight: '700', color: 'var(--color-text-primary)', verticalAlign: 'middle', width: '200px', minWidth: '200px', maxWidth: '200px', whiteSpace: 'nowrap' }}>Total Pump Power (kW)</td>
                     {displayCases.map((c, colIdx) => {
                       const baseKpis = displayCases.find(b => b.is_base)?.kpis;
                       const kpis = c.kpis || {};
                       const val = kpis.total_pump_power_kw;
                       const deltaStr = !c.is_base && baseKpis ? formatDelta(val, baseKpis.total_pump_power_kw, 'kW') : null;
                       return (
-                        <td key={c.case_id || c.id} style={{ padding: '6px 12px', borderLeft: caseDragOverIdx === colIdx ? '3px solid #FA8507' : '1px solid #D8E2E1', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-                          <span style={{ fontWeight: '700', color: '#1C2B2C' }}>{val !== undefined ? `${val} kW` : '—'}</span>
+                        <td key={c.case_id || c.id} style={{ padding: '6px 12px', borderLeft: caseDragOverIdx === colIdx ? '3px solid var(--color-primary)' : '1px solid var(--color-border)', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                          <span style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>{val !== undefined ? `${val} kW` : '—'}</span>
                           {deltaStr && <span style={{ fontSize: '10px', color: '#d97706', marginLeft: '8px' }}>{deltaStr}</span>}
                         </td>
                       );
                     })}
                   </tr>
                   {/* Cavitation Warning */}
-                  <tr style={{ borderBottom: '1px solid #EBF0EF', height: '36px' }}>
-                    <td style={{ padding: '6px 12px', fontWeight: '700', color: '#1C2B2C', verticalAlign: 'middle', width: '200px', minWidth: '200px', maxWidth: '200px', whiteSpace: 'nowrap' }}>Cavitation Risk Status</td>
+                  <tr style={{ borderBottom: '1px solid var(--color-border-hover)', height: '36px' }}>
+                    <td style={{ padding: '6px 12px', fontWeight: '700', color: 'var(--color-text-primary)', verticalAlign: 'middle', width: '200px', minWidth: '200px', maxWidth: '200px', whiteSpace: 'nowrap' }}>Cavitation Risk Status</td>
                     {displayCases.map((c, colIdx) => {
                       const kpis = c.kpis || {};
                       const hasCav = kpis.has_cavitation_warning;
                       return (
-                        <td key={c.case_id || c.id} style={{ padding: '6px 12px', borderLeft: caseDragOverIdx === colIdx ? '3px solid #FA8507' : '1px solid #D8E2E1', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                        <td key={c.case_id || c.id} style={{ padding: '6px 12px', borderLeft: caseDragOverIdx === colIdx ? '3px solid var(--color-primary)' : '1px solid var(--color-border)', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                           {hasCav ? (
-                            <span style={{ fontSize: '10px', fontWeight: '700', color: '#ef4444', background: '#fef2f2', padding: '2px 8px', borderRadius: '10px', border: '1px solid #fee2e2' }}>
+                            <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--color-danger)', background: '#fef2f2', padding: '2px 8px', borderRadius: '10px', border: '1px solid #fee2e2' }}>
                               ⚠️ Cavitation Risk
                             </span>
                           ) : (
@@ -722,13 +685,13 @@ export default function DataList({
         ) : activeTab === 'relief' ? (
           <div style={{ display: 'inline-block', minWidth: '100%', boxSizing: 'border-box', verticalAlign: 'top' }}>
             {reliefDevices.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px 0', color: '#587071', fontSize: '13px', fontWeight: '600' }}>
+              <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--color-text-secondary)', fontSize: '13px', fontWeight: '600' }}>
                 ℹ No Pressure Safety Valves or Rupture Discs in the current diagram. Drag a PSV or Rupture Disc from the sidebar onto the canvas to enable relief contingency analysis.
               </div>
             ) : (
               <table style={{ width: '100%', height: 'max-content', borderCollapse: 'collapse', fontSize: '11px', textAlign: 'left', tableLayout: 'auto' }}>
                 <thead>
-                  <tr style={{ background: '#EBF0EF', borderBottom: '2px solid #D8E2E1', color: '#395253', fontWeight: '700', height: '40px' }}>
+                  <tr style={{ background: 'var(--color-border-hover)', borderBottom: '2px solid var(--color-border)', color: 'var(--color-brand-dark)', fontWeight: '700', height: '40px' }}>
                     <th style={{ padding: '6px 12px', verticalAlign: 'middle', width: '180px', minWidth: '180px', whiteSpace: 'nowrap' }}>Relief Equipment Tag</th>
                     <th style={{ padding: '6px 12px', verticalAlign: 'middle', width: '140px', minWidth: '140px', whiteSpace: 'nowrap' }}>Equipment Type</th>
                     <th style={{ padding: '6px 12px', verticalAlign: 'middle', width: '120px', minWidth: '120px', whiteSpace: 'nowrap' }}>Set / Burst Rating</th>
@@ -736,18 +699,18 @@ export default function DataList({
                       const caseId = c.id || c.case_id;
                       const isActive = caseId === activeCaseId;
                       return (
-                        <th key={caseId} style={{ padding: '6px 12px', verticalAlign: 'middle', minWidth: '160px', background: isActive ? '#fff7ed' : 'inherit', borderLeft: '1px solid #D8E2E1', whiteSpace: 'nowrap' }}>
+                        <th key={caseId} style={{ padding: '6px 12px', verticalAlign: 'middle', minWidth: '160px', background: isActive ? '#fff7ed' : 'inherit', borderLeft: '1px solid var(--color-border)', whiteSpace: 'nowrap' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'nowrap', whiteSpace: 'nowrap' }}>
                             <span>{c.name || c.case_name} {c.is_base ? '(Base)' : ''}</span>
                             {!isActive && onSelectCase && (
                               <button
                                 onClick={() => onSelectCase(caseId)}
-                                style={{ padding: '2px 6px', fontSize: '10px', borderRadius: '4px', border: '1px solid #D8E2E1', background: '#ffffff', cursor: 'pointer', color: '#395253', fontWeight: '600', whiteSpace: 'nowrap' }}
+                                style={{ padding: '2px 6px', fontSize: '10px', borderRadius: '4px', border: '1px solid var(--color-border)', background: '#ffffff', cursor: 'pointer', color: 'var(--color-brand-dark)', fontWeight: '600', whiteSpace: 'nowrap' }}
                               >
-                                ⚡ Switch
+                                Switch
                               </button>
                             )}
-                            {isActive && <span style={{ fontSize: '10px', color: '#FA8507', fontWeight: 'bold' }}>Active</span>}
+                            {isActive && <span style={{ fontSize: '10px', color: 'var(--color-primary)', fontWeight: 'bold' }}>Active</span>}
                           </div>
                         </th>
                       );
@@ -764,16 +727,16 @@ export default function DataList({
                       : `${dev.data?.set_pressure_bar || 20.0} bar(a)`;
 
                     return (
-                      <tr key={dev.id} style={{ borderBottom: '1px solid #EBF0EF', background: idx % 2 === 0 ? '#FFFFFF' : '#F8FAFA', height: '36px' }}>
+                      <tr key={dev.id} style={{ borderBottom: '1px solid var(--color-border-hover)', background: idx % 2 === 0 ? '#FFFFFF' : '#F8FAFA', height: '36px' }}>
                         <td 
                           onClick={() => onSelectNode && onSelectNode(dev.id)} 
-                          style={{ padding: '6px 12px', fontWeight: '700', color: '#FA8507', cursor: 'pointer', verticalAlign: 'middle' }}
+                          style={{ padding: '6px 12px', fontWeight: '700', color: 'var(--color-primary)', cursor: 'pointer', verticalAlign: 'middle' }}
                           title="Click to locate on canvas"
                         >
                           {dev.data?.label || dev.id}
                         </td>
-                        <td style={{ padding: '6px 12px', color: '#587071', verticalAlign: 'middle' }}>{devTypeLabel}</td>
-                        <td style={{ padding: '6px 12px', fontWeight: '600', color: '#1C2B2C', verticalAlign: 'middle' }}>{ratingLabel}</td>
+                        <td style={{ padding: '6px 12px', color: 'var(--color-text-secondary)', verticalAlign: 'middle' }}>{devTypeLabel}</td>
+                        <td style={{ padding: '6px 12px', fontWeight: '600', color: 'var(--color-text-primary)', verticalAlign: 'middle' }}>{ratingLabel}</td>
                         
                         {displayCases.map(c => {
                           const caseId = c.id || c.case_id;
@@ -781,7 +744,7 @@ export default function DataList({
                           const effectiveForcedState = caseOverride || dev.data?.forced_state || 'auto';
 
                           return (
-                            <td key={caseId} style={{ padding: '4px 12px', background: caseId === activeCaseId ? '#fff7ed' : 'inherit', borderLeft: '1px solid #D8E2E1', verticalAlign: 'middle' }}>
+                            <td key={caseId} style={{ padding: '4px 12px', background: caseId === activeCaseId ? '#fff7ed' : 'inherit', borderLeft: '1px solid var(--color-border)', verticalAlign: 'middle' }}>
                               <select
                                 value={effectiveForcedState}
                                 onChange={(e) => handleMatrixForcedStateChange(caseId, dev.id, e.target.value)}
@@ -791,18 +754,18 @@ export default function DataList({
                                   fontWeight: '700',
                                   borderRadius: '6px',
                                   border: `1px solid ${
-                                    effectiveForcedState === 'forced_closed' ? '#FEE2E2' : (effectiveForcedState === 'forced_open' ? '#FEF3C7' : '#D8E2E1')
+                                    effectiveForcedState === 'forced_closed' ? '#FEE2E2' : (effectiveForcedState === 'forced_open' ? '#FEF3C7' : 'var(--color-border)')
                                   }`,
                                   background: effectiveForcedState === 'forced_closed' ? '#FEF2F2' : (effectiveForcedState === 'forced_open' ? '#FFFBEB' : '#FFFFFF'),
-                                  color: effectiveForcedState === 'forced_closed' ? '#EF4444' : (effectiveForcedState === 'forced_open' ? '#D97706' : '#1C2B2C'),
+                                  color: effectiveForcedState === 'forced_closed' ? '#EF4444' : (effectiveForcedState === 'forced_open' ? '#D97706' : 'var(--color-text-primary)'),
                                   cursor: 'pointer',
                                   outline: 'none',
                                   width: '100%'
                                 }}
                               >
                                 <option value="auto">Auto (Normal Relief)</option>
-                                <option value="forced_closed">🔒 Forced Closed</option>
-                                <option value="forced_open">🔓 Forced Open</option>
+                                <option value="forced_closed">Forced Closed</option>
+                                <option value="forced_open">Forced Open</option>
                               </select>
                             </td>
                           );
@@ -812,12 +775,12 @@ export default function DataList({
                   })}
 
                   {/* Summary Section Header */}
-                  <tr style={{ background: '#EBF0EF', borderTop: '2px solid #D8E2E1', borderBottom: '2px solid #D8E2E1', color: '#395253', fontWeight: '700', height: '36px' }}>
+                  <tr style={{ background: 'var(--color-border-hover)', borderTop: '2px solid var(--color-border)', borderBottom: '2px solid var(--color-border)', color: 'var(--color-brand-dark)', fontWeight: '700', height: '36px' }}>
                     <td colSpan={3} style={{ padding: '6px 12px', fontWeight: '800', verticalAlign: 'middle' }}>
                       Overpressure & Relief Telemetry Summary
                     </td>
                     {displayCases.map(c => (
-                      <td key={c.id || c.case_id} style={{ padding: '6px 12px', fontWeight: '700', background: (c.id || c.case_id) === activeCaseId ? '#fff7ed' : 'inherit', borderLeft: '1px solid #D8E2E1', verticalAlign: 'middle' }}>
+                      <td key={c.id || c.case_id} style={{ padding: '6px 12px', fontWeight: '700', background: (c.id || c.case_id) === activeCaseId ? '#fff7ed' : 'inherit', borderLeft: '1px solid var(--color-border)', verticalAlign: 'middle' }}>
                         {c.name || c.case_name}
                       </td>
                     ))}
@@ -830,14 +793,14 @@ export default function DataList({
                     3. Unmitigated peak pressure: Maximum baseline pressure if all relief devices remain closed.
                   */}
                    {/* Relieved System Pressure */}
-                   <tr style={{ borderBottom: '1px solid #EBF0EF', height: '36px', background: telemetryMode === 'mitigated' ? '#ECFDF5' : '#ffffff' }}>
+                   <tr style={{ borderBottom: '1px solid var(--color-border-hover)', height: '36px', background: telemetryMode === 'mitigated' ? '#ECFDF5' : '#ffffff' }}>
                      <td colSpan={3} style={{ padding: '6px 12px', fontWeight: '700', color: '#10B981', verticalAlign: 'middle' }}>
                        Relieved system pressure (bar(a))
                      </td>
                      {displayCases.map(c => {
                        const pRelieved = c.kpis?.relieved_pressure_bara ?? c.kpis?.max_pressure_bar ?? calculateMaxPressureBar(c.telemetry);
                        return (
-                         <td key={c.id || c.case_id} style={{ padding: '6px 12px', fontWeight: '700', color: '#10B981', borderLeft: '1px solid #D8E2E1', verticalAlign: 'middle' }}>
+                         <td key={c.id || c.case_id} style={{ padding: '6px 12px', fontWeight: '700', color: '#10B981', borderLeft: '1px solid var(--color-border)', verticalAlign: 'middle' }}>
                            {pRelieved !== undefined ? `${pRelieved.toFixed(2)} bar(a)` : '—'}
                          </td>
                        );
@@ -845,7 +808,7 @@ export default function DataList({
                    </tr>
  
                    {/* Peak System Pressure */}
-                   <tr style={{ borderBottom: '1px solid #EBF0EF', height: '36px', background: telemetryMode === 'peak' ? '#FFFBEB' : '#ffffff' }}>
+                   <tr style={{ borderBottom: '1px solid var(--color-border-hover)', height: '36px', background: telemetryMode === 'peak' ? '#FFFBEB' : '#ffffff' }}>
                      <td colSpan={3} style={{ padding: '6px 12px', fontWeight: '700', color: '#D97706', verticalAlign: 'middle' }}>
                        Peak system pressure (bar(a))
                      </td>
@@ -855,7 +818,7 @@ export default function DataList({
                        const pUnmit = calculateMaxPressureBar(unmit);
                        const pPeak = c.kpis?.peak_pressure_bara ?? pUnmit ?? calculateMaxPressureBar(c.telemetry);
                        return (
-                         <td key={caseId} style={{ padding: '6px 12px', fontWeight: '700', color: '#D97706', borderLeft: '1px solid #D8E2E1', verticalAlign: 'middle' }}>
+                         <td key={caseId} style={{ padding: '6px 12px', fontWeight: '700', color: '#D97706', borderLeft: '1px solid var(--color-border)', verticalAlign: 'middle' }}>
                            {pPeak !== undefined ? `${pPeak.toFixed(2)} bar(a)` : '—'}
                          </td>
                        );
@@ -863,7 +826,7 @@ export default function DataList({
                    </tr>
  
                    {/* Unmitigated Peak Pressure */}
-                   <tr style={{ borderBottom: '1px solid #EBF0EF', height: '36px', background: telemetryMode === 'unmitigated_global' ? '#FEF2F2' : '#ffffff' }}>
+                   <tr style={{ borderBottom: '1px solid var(--color-border-hover)', height: '36px', background: telemetryMode === 'unmitigated_global' ? '#FEF2F2' : '#ffffff' }}>
                      <td colSpan={3} style={{ padding: '6px 12px', fontWeight: '700', color: '#DC2626', verticalAlign: 'middle' }}>
                        Unmitigated peak pressure (bar(a))
                      </td>
@@ -872,7 +835,7 @@ export default function DataList({
                        const unmit = caseId === activeCaseId ? (telemetryUnmitigated || c.telemetry_unmitigated) : c.telemetry_unmitigated;
                        const pMaxUnmit = c.kpis?.unmitigated_peak_pressure_bara ?? calculateMaxPressureBar(unmit);
                        return (
-                         <td key={caseId} style={{ padding: '6px 12px', fontWeight: '700', color: '#DC2626', borderLeft: '1px solid #D8E2E1', verticalAlign: 'middle' }}>
+                         <td key={caseId} style={{ padding: '6px 12px', fontWeight: '700', color: '#DC2626', borderLeft: '1px solid var(--color-border)', verticalAlign: 'middle' }}>
                            {pMaxUnmit !== undefined ? `${pMaxUnmit.toFixed(2)} bar(a)` : '—'}
                          </td>
                        );
@@ -880,8 +843,8 @@ export default function DataList({
                    </tr>
 
                   {/* Total Relief Flow */}
-                  <tr style={{ borderBottom: '1px solid #EBF0EF', background: '#F8FAFA', height: '36px' }}>
-                    <td colSpan={3} style={{ padding: '6px 12px', fontWeight: '700', color: '#1C2B2C', verticalAlign: 'middle' }}>Total Relief Flow (L/min)</td>
+                  <tr style={{ borderBottom: '1px solid var(--color-border-hover)', background: '#F8FAFA', height: '36px' }}>
+                    <td colSpan={3} style={{ padding: '6px 12px', fontWeight: '700', color: 'var(--color-text-primary)', verticalAlign: 'middle' }}>Total Relief Flow (L/min)</td>
                     {displayCases.map(c => {
                       const totalReliefFlow = reliefDevices.reduce((sum, dev) => {
                         const devTel = c.telemetry?.nodes?.[dev.id];
@@ -889,7 +852,7 @@ export default function DataList({
                         return sum + Math.abs(qOut);
                       }, 0) * 60000;
                       return (
-                        <td key={c.id || c.case_id} style={{ padding: '6px 12px', fontWeight: '600', color: '#1C2B2C', borderLeft: '1px solid #D8E2E1', verticalAlign: 'middle' }}>
+                        <td key={c.id || c.case_id} style={{ padding: '6px 12px', fontWeight: '600', color: 'var(--color-text-primary)', borderLeft: '1px solid var(--color-border)', verticalAlign: 'middle' }}>
                           {totalReliefFlow.toFixed(1)} L/min
                         </td>
                       );
@@ -903,7 +866,7 @@ export default function DataList({
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', textAlign: 'left' }}>
           <thead>
-            <tr style={{ background: '#EBF0EF', borderBottom: '2px solid #D8E2E1', color: '#395253', fontWeight: '700', position: 'sticky', top: 0, zIndex: 1 }}>
+            <tr style={{ background: 'var(--color-border-hover)', borderBottom: '2px solid var(--color-border)', color: 'var(--color-brand-dark)', fontWeight: '700', position: 'sticky', top: 0, zIndex: 1 }}>
 
               <th style={{ padding: '8px', width: '40px' }}></th>
               <SortHeader label="Type" sortKey="displayType" sortConfig={sortConfig} requestSort={requestSort} />
@@ -968,18 +931,18 @@ export default function DataList({
                   onDragOver={(e) => onDragOver(e, entry.originalIndex)} onDrop={(e) => onDrop(e, entry.originalIndex)}
                   onClick={() => handleRowClick(entry)}
                   style={{ 
-                    borderBottom: '1px solid #EBF0EF', cursor: sortConfig.key ? 'pointer' : (isEditing ? 'text' : 'grab'), transition: 'background 0.15s ease',
-                    backgroundColor: draggedIdx === entry.originalIndex ? '#EBF0EF' : baseBg,
-                    borderTop: dragOverIdx === entry.originalIndex ? '2px solid #FA8507' : 'none', opacity: draggedIdx === entry.originalIndex ? 0.5 : 1
+                    borderBottom: '1px solid var(--color-border-hover)', cursor: sortConfig.key ? 'pointer' : (isEditing ? 'text' : 'grab'), transition: 'background 0.15s ease',
+                    backgroundColor: draggedIdx === entry.originalIndex ? 'var(--color-border-hover)' : baseBg,
+                    borderTop: dragOverIdx === entry.originalIndex ? '2px solid var(--color-primary)' : 'none', opacity: draggedIdx === entry.originalIndex ? 0.5 : 1
                   }}
                   onMouseEnter={(e) => e.currentTarget.style.background = hoverBg}
                   onMouseLeave={(e) => e.currentTarget.style.background = baseBg}
                 >
                   <td style={{ padding: '8px', color: '#849A9B', fontSize: '10px' }}>{sortConfig.key ? "—" : "☰"}</td>
-                  <td style={{ padding: '8px', color: '#587071', fontWeight: '600' }}>{entry.displayType}</td>
+                  <td style={{ padding: '8px', color: 'var(--color-text-secondary)', fontWeight: '600' }}>{entry.displayType}</td>
                   <td style={{ padding: '8px' }}>
                     <input 
-                      style={{ width: '110px', fontSize: '11px', border: '1px solid #D8E2E1', padding: '3px 6px', borderRadius: '5px', fontWeight: '700', color: '#1C2B2C', outline: 'none' }}
+                      style={{ width: '110px', fontSize: '11px', border: '1px solid var(--color-border)', padding: '3px 6px', borderRadius: '5px', fontWeight: '700', color: 'var(--color-text-primary)', outline: 'none' }}
                       value={item.data.label || item.id} 
                       onChange={(e) => handleNameChange(e.target.value)} 
                       onFocus={() => { handleRowClick(entry); setIsEditing(true); }}
@@ -1000,7 +963,7 @@ export default function DataList({
                     <td style={{ padding: '8px' }} onClick={(e) => e.stopPropagation()}>
                       {!isNode ? (
                         <select 
-                          style={{ fontSize: '11px', padding: '3px 6px', border: '1px solid #D8E2E1', borderRadius: '5px', color: '#395253', fontWeight: '600', background: '#ffffff', outline: 'none' }}
+                          style={{ fontSize: '11px', padding: '3px 6px', border: '1px solid var(--color-border)', borderRadius: '5px', color: 'var(--color-brand-dark)', fontWeight: '600', background: '#ffffff', outline: 'none' }}
                           value={currentDn} 
                           onChange={(e) => { handleDnChange(e.target.value); }} 
                           onFocus={() => { handleRowClick(entry); setIsEditing(true); }}
@@ -1017,7 +980,7 @@ export default function DataList({
                     <td style={{ padding: '8px' }} onClick={(e) => e.stopPropagation()}>
                       {!isNode ? (
                         <select 
-                          style={{ fontSize: '11px', padding: '3px 6px', border: '1px solid #D8E2E1', borderRadius: '5px', color: '#395253', fontWeight: '600', background: '#ffffff', outline: 'none' }}
+                          style={{ fontSize: '11px', padding: '3px 6px', border: '1px solid var(--color-border)', borderRadius: '5px', color: 'var(--color-brand-dark)', fontWeight: '600', background: '#ffffff', outline: 'none' }}
                           value={currentSch} 
                           onChange={(e) => handleSchChange(e.target.value)} 
                           onFocus={() => { handleRowClick(entry); setIsEditing(true); }}
@@ -1035,7 +998,7 @@ export default function DataList({
                       {!isNode && (
                         <input 
                           type="number" step="0.1"
-                          style={{ width: '55px', fontSize: '11px', border: '1px solid #D8E2E1', padding: '3px 6px', borderRadius: '5px', textAlign: 'right', fontWeight: '600', color: '#395253', outline: 'none' }}
+                          style={{ width: '55px', fontSize: '11px', border: '1px solid var(--color-border)', padding: '3px 6px', borderRadius: '5px', textAlign: 'right', fontWeight: '600', color: 'var(--color-brand-dark)', outline: 'none' }}
                           value={item.data.length}
                           onChange={(e) => handleLengthChange(e.target.value)}
                           onFocus={() => { handleRowClick(entry); setIsEditing(true); }}

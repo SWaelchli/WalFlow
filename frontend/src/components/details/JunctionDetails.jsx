@@ -3,14 +3,14 @@ import { Sankey, ResponsiveContainer, Tooltip, Layer, Rectangle } from 'recharts
 import { m3sToLmin } from '../../utils/converters';
 
 const theme = {
-  primary: '#2563eb',
-  slate50: '#f8fafc',
-  slate100: '#f1f5f9',
-  slate200: '#e2e8f0',
-  slate500: '#64748b',
-  slate800: '#1e293b',
-  white: '#ffffff',
-  flow: '#3b82f6',
+  primary: 'var(--color-primary)',
+  slate50: 'var(--color-surface-hover)',
+  slate100: 'var(--color-bg-canvas)',
+  slate200: 'var(--color-border)',
+  slate500: 'var(--color-text-secondary)',
+  slate800: 'var(--color-brand-dark)',
+  white: 'var(--color-surface)',
+  flow: 'var(--color-primary)',
 };
 
 /**
@@ -36,8 +36,8 @@ function TelemetryList({ title, total, items }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
       <div style={{ borderBottom: `1px solid ${theme.slate200}`, paddingBottom: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-        <span style={{ fontSize: '10px', fontWeight: '800', color: theme.slate500, textTransform: 'uppercase' }}>{title}</span>
-        <span style={{ fontSize: '11px', fontWeight: '700', color: theme.slate800 }}>{m3sToLmin(total)} <span style={{ fontSize: '9px', fontWeight: '500' }}>L/min</span></span>
+        <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{title}</span>
+        <span style={{ fontSize: '11.5px', fontWeight: '700', color: 'var(--color-text-primary)', fontFamily: 'var(--font-mono)' }}>{m3sToLmin(total)} <span style={{ fontSize: '9px', fontWeight: '500' }}>L/min</span></span>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
         {items.map((item, i) => (
@@ -48,12 +48,13 @@ function TelemetryList({ title, total, items }) {
             fontSize: '10px', 
             background: theme.slate50, 
             padding: '6px 8px', 
-            borderRadius: '4px',
+            borderRadius: 'var(--radius-sm)',
+            border: '1px solid var(--color-border)',
             gap: '8px'
           }}>
             <span style={{ 
               fontWeight: '600', 
-              color: theme.slate800, 
+              color: 'var(--color-text-primary)', 
               flex: 1, 
               whiteSpace: 'normal', 
               lineHeight: '1.2',
@@ -62,8 +63,8 @@ function TelemetryList({ title, total, items }) {
               {item.name}
             </span>
             <div style={{ textAlign: 'right', flexShrink: 0 }}>
-              <div style={{ fontWeight: '700', color: theme.primary }}>{m3sToLmin(item.flow)} <span style={{ fontSize: '8px', fontWeight: '500' }}>L/min</span></div>
-              <div style={{ fontSize: '9px', color: theme.slate500 }}>{(item.temp - 273.15).toFixed(1)}°C</div>
+              <div style={{ fontWeight: '700', color: 'var(--color-primary)' }}>{m3sToLmin(item.flow)} <span style={{ fontSize: '8px', fontWeight: '500' }}>L/min</span></div>
+              <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)' }}>{(item.temp - 273.15).toFixed(1)}°C</div>
             </div>
           </div>
         ))}
@@ -123,7 +124,7 @@ export default function JunctionDetails({ node, allNodes, allEdges }) {
 
   if (sankeyData.links.length === 0) {
     return (
-      <div style={{ textAlign: 'center', padding: '40px 20px', color: theme.slate500 }}>
+      <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--color-text-secondary)' }}>
         <p style={{ fontSize: '12px' }}>No active flow through this junction.</p>
       </div>
     );
@@ -135,13 +136,13 @@ export default function JunctionDetails({ node, allNodes, allEdges }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <span style={{ fontSize: '12px', color: '#395253', fontWeight: '700', borderLeft: '3px solid #FA8507', paddingLeft: '8px' }}>
+        <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-brand-dark)', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '3px solid var(--color-primary)', paddingLeft: '8px' }}>
           Flow Balance
         </span>
       </div>
 
       {/* Reduced height diagram (150px) with no labels */}
-      <div style={{ width: '100%', height: '150px', background: theme.slate50, borderRadius: '8px', border: `1px solid ${theme.slate200}` }}>
+      <div style={{ width: '100%', height: '150px', background: theme.slate50, borderRadius: 'var(--radius-sm)', border: `1px solid var(--color-border)` }}>
         <ResponsiveContainer width="100%" height="100%">
           <Sankey
             data={sankeyData}
@@ -152,7 +153,7 @@ export default function JunctionDetails({ node, allNodes, allEdges }) {
           >
             <Tooltip 
               formatter={(value) => [`${value.toFixed(1)} L/min`, 'Flow']}
-              contentStyle={{ fontSize: '11px', borderRadius: '8px', border: `1px solid ${theme.slate200}` }}
+              contentStyle={{ fontSize: '11px', borderRadius: 'var(--radius-sm)', border: `1px solid var(--color-border)` }}
             />
           </Sankey>
         </ResponsiveContainer>
@@ -165,21 +166,21 @@ export default function JunctionDetails({ node, allNodes, allEdges }) {
 
       {isTCV && (
         <div style={{ 
-          background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0',
+          background: 'var(--color-surface-hover)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)',
           display: 'flex', flexDirection: 'column', gap: '12px'
         }}>
-          <div style={{ fontSize: '10px', fontWeight: '800', color: theme.slate500, textTransform: 'uppercase' }}>Mixing Balance</div>
+          <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Mixing Balance</div>
           
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-            <span style={{ fontSize: '20px', fontWeight: '800', color: theme.primary }}>{(data.telemetry?.outlets?.[0]?.temperature - 273.15).toFixed(1)}°C</span>
-            <span style={{ fontSize: '11px', color: theme.slate500 }}>Target: {parseFloat(data.set_temperature_c).toFixed(1)}°C</span>
+            <span style={{ fontSize: '20px', fontWeight: '800', color: 'var(--color-primary)' }}>{(data.telemetry?.outlets?.[0]?.temperature - 273.15).toFixed(1)}°C</span>
+            <span style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>Target: {parseFloat(data.set_temperature_c).toFixed(1)}°C</span>
           </div>
 
-          <div style={{ width: '100%', height: '8px', background: theme.slate200, borderRadius: '4px', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ width: '100%', height: '8px', background: 'var(--color-border)', borderRadius: '4px', position: 'relative', overflow: 'hidden' }}>
             <div style={{ 
               position: 'absolute', left: 0, top: 0, height: '100%', 
               width: `${(data.telemetry?.opening_pct || 50)}%`, 
-              background: theme.primary, transition: 'width 0.3s' 
+              background: 'var(--color-primary)', transition: 'width 0.3s' 
             }} />
           </div>
           
@@ -191,7 +192,7 @@ export default function JunctionDetails({ node, allNodes, allEdges }) {
       )}
 
       {hasError && (
-        <div style={{ fontSize: '10px', color: '#991b1b', background: '#fef2f2', padding: '10px', borderRadius: '6px', border: '1px solid #fecaca' }}>
+        <div style={{ fontSize: '10px', color: 'var(--color-danger)', background: '#FEF2F2', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid #FEE2E2' }}>
           ⚠️ <strong>Imbalance:</strong> {m3sToLmin(imbalance)} L/min difference.
         </div>
       )}

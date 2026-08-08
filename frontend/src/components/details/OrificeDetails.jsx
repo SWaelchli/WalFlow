@@ -46,31 +46,31 @@ const OrificeDetails = memo(function OrificeDetails({ node }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-      <div style={{ fontSize: '12px', color: '#395253', fontWeight: '700', borderLeft: '3px solid #FA8507', paddingLeft: '8px' }}>
+      <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-brand-dark)', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '3px solid var(--color-primary)', paddingLeft: '8px' }}>
         Orifice Restriction Curve
       </div>
       
-      <div style={{ width: '100%', height: '240px', background: '#fff' }}>
+      <div style={{ width: '100%', height: '240px', background: 'var(--color-surface)' }}>
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: -20, bottom: 10 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
             <XAxis dataKey="q" type="number" domain={[0, maxX]} fontSize={10} tickCount={6} />
             <YAxis type="number" fontSize={10} tickCount={6} />
             <Legend verticalAlign="top" align="right" height={40} iconType="plainline" wrapperStyle={{ fontSize: '11px' }} />
-            <Line dataKey="dp" stroke="#FA8507" strokeWidth={2.5} dot={false} name="Pressure Loss" isAnimationActive={false} />
-            {telemetry && <Scatter name="Operating Point" dataKey="dp" data={[{q: actualFlowLmin, dp: currentDpBar}]} fill="#395253" isAnimationActive={false} shape="cross" />}
+            <Line dataKey="dp" stroke="var(--color-primary)" strokeWidth={2.5} dot={false} name="Pressure Loss" isAnimationActive={false} />
+            {telemetry && <Scatter name="Operating Point" dataKey="dp" data={[{q: actualFlowLmin, dp: currentDpBar}]} fill="var(--color-brand-dark)" isAnimationActive={false} shape="cross" />}
           </ComposedChart>
         </ResponsiveContainer>
       </div>
 
-      <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span style={{ color: '#64748b' }}>Beta Ratio:</span>
-          <span style={{ fontWeight: 'bold' }}>{beta.toFixed(3)}</span>
+      <div style={{ background: 'var(--color-surface-hover)', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: '11.5px', color: 'var(--color-text-secondary)', fontWeight: '500' }}>Beta Ratio:</span>
+          <span style={{ fontSize: '11.5px', color: 'var(--color-text-primary)', fontWeight: '700', fontFamily: 'var(--font-mono)' }}>{beta.toFixed(3)}</span>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span style={{ color: '#64748b' }}>Current ΔP:</span>
-          <span style={{ fontWeight: 'bold' }}>{currentDpBar.toFixed(3)} bar(d)</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: '11.5px', color: 'var(--color-text-secondary)', fontWeight: '500' }}>Current ΔP:</span>
+          <span style={{ fontSize: '11.5px', color: 'var(--color-text-primary)', fontWeight: '700', fontFamily: 'var(--font-mono)' }}>{currentDpBar.toFixed(3)} bar(d)</span>
         </div>
       </div>
     </div>

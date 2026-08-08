@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import PropertyEditor from './PropertyEditor';
-import DetailPanel from '../details/DetailPanel';
+import SetupPanel from './SetupPanel';
+import ResultsPanel from '../details/ResultsPanel';
 import { TrashIcon, CaseIcon } from '../symbols/IconLibrary';
 
 export default function InspectorPanel({
@@ -154,15 +154,14 @@ export default function InspectorPanel({
                 gap: '4px'
               }}
             >
-              {/* Using native Unicode char since Phosphor chart icon is not in IconLibrary */}
-              📊 Results
+              Results
             </button>
           </div>
 
           {/* Tab Content Box */}
           <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
             {activeTab === 'setup' ? (
-              <PropertyEditor
+              <SetupPanel
                 node={node}
                 edge={edge}
                 onUpdate={onUpdate}
@@ -176,7 +175,7 @@ export default function InspectorPanel({
                 inline={true}
               />
             ) : (
-              <DetailPanel
+              <ResultsPanel
                 selectedNode={effectiveNode}
                 selectedEdge={effectiveEdge}
                 allNodes={allNodes}
