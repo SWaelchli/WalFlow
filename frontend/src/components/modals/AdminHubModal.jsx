@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
+import { CrownIcon, CrossIcon, TrashIcon, ExportIcon, InfoIcon, UserIcon, CloudIcon } from '../symbols/IconLibrary';
 
 const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
   const {
@@ -215,9 +216,9 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
       fontFamily: "var(--font-sans, 'Inter', sans-serif)"
     }}>
       <div style={{
-        backgroundColor: '#1A2829',
+        backgroundColor: 'var(--color-brand-darkest)',
         color: '#ffffff',
-        border: '1px solid #395253',
+        border: '1px solid var(--color-brand-dark)',
         borderRadius: '16px',
         width: '100%',
         maxWidth: '1080px',
@@ -237,7 +238,7 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
             .admin-tab-btn {
               background: transparent;
               border: none;
-              color: #B8C9C8;
+              color: var(--color-text-muted);
               font-size: 13px;
               font-weight: 600;
               padding: 10px 16px;
@@ -247,15 +248,32 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
               display: flex;
               align-items: center;
               gap: 8px;
+              outline: none;
             }
             .admin-tab-btn:hover {
-              color: #ffffff;
+              color: var(--color-text-inverse);
               background: rgba(255, 255, 255, 0.05);
             }
             .admin-tab-btn.active {
-              color: #ffffff;
-              background: #FA8507;
-              box-shadow: 0 4px 12px rgba(250, 133, 7, 0.3);
+              color: var(--color-text-inverse);
+              background: var(--color-primary);
+              box-shadow: 0 4px 12px var(--color-primary-glow);
+            }
+            .modal-close-btn {
+              background: transparent;
+              border: none;
+              color: var(--color-text-muted);
+              cursor: pointer;
+              padding: 4px 10px;
+              border-radius: 8px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              transition: all 0.15s ease;
+            }
+            .modal-close-btn:hover {
+              background-color: var(--color-brand-darker);
+              color: var(--color-text-inverse);
             }
           `}
         </style>
@@ -263,8 +281,8 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
         {/* Modal Header */}
         <div style={{
           padding: '24px 28px 16px 28px',
-          borderBottom: '1px solid #263839',
-          backgroundColor: '#223233',
+          borderBottom: '1px solid var(--color-brand-darker)',
+          backgroundColor: 'var(--color-surface-dark)',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center'
@@ -274,48 +292,37 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
               width: '44px',
               height: '44px',
               borderRadius: '12px',
-              background: 'linear-gradient(135deg, #FA8507 0%, #E07600 100%)',
+              background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '22px',
-              boxShadow: '0 4px 12px rgba(250, 133, 7, 0.3)'
+              boxShadow: '0 4px 12px var(--color-primary-glow)'
             }}>
-              👑
+              <CrownIcon size={22} color="#ffffff" />
             </div>
             <div>
               <h2 style={{ margin: 0, color: '#ffffff', fontSize: '20px', fontWeight: '700' }}>
                 Admin Hub Panel
               </h2>
-              <p style={{ margin: '3px 0 0 0', color: '#B8C9C8', fontSize: '13px' }}>
+              <p style={{ margin: '3px 0 0 0', color: 'var(--color-text-muted)', fontSize: '13px' }}>
                 System User Management, Registration Backlog, & Database Content Inspector
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: '#B8C9C8',
-              fontSize: '24px',
-              cursor: 'pointer',
-              padding: '4px 10px',
-              borderRadius: '8px',
-              transition: 'all 0.15s ease'
-            }}
-            onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#263839'; e.currentTarget.style.color = '#ffffff'; }}
-            onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#B8C9C8'; }}
+            className="modal-close-btn"
+            title="Close"
           >
-            ✕
+            <CrossIcon size={18} />
           </button>
         </div>
 
         {/* Tab Navigation Bar */}
         <div style={{
           display: 'flex',
-          borderBottom: '1px solid #263839',
-          backgroundColor: '#1A2829',
+          borderBottom: '1px solid var(--color-brand-darker)',
+          backgroundColor: 'var(--color-brand-darkest)',
           padding: '12px 28px',
           gap: '8px'
         }}>
@@ -323,10 +330,10 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
             className={`admin-tab-btn ${activeTab === 'backlog' ? 'active' : ''}`}
             onClick={() => setActiveTab('backlog')}
           >
-            <span>📋</span> Registration Backlog
+            <InfoIcon size={14} /> Registration Backlog
             {pendingUsers.length > 0 && (
               <span style={{
-                backgroundColor: '#EF4444',
+                backgroundColor: 'var(--color-danger)',
                 color: '#FFFFFF',
                 borderRadius: '12px',
                 padding: '2px 8px',
@@ -342,14 +349,14 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
             className={`admin-tab-btn ${activeTab === 'users' ? 'active' : ''}`}
             onClick={() => setActiveTab('users')}
           >
-            <span>👥</span> User Management
+            <UserIcon size={14} /> User Management
           </button>
 
           <button
             className={`admin-tab-btn ${activeTab === 'db_inspector' ? 'active' : ''}`}
             onClick={() => setActiveTab('db_inspector')}
           >
-            <span>🛠️</span> Database Inspector
+            <CloudIcon size={14} /> Database Inspector
           </button>
         </div>
 
@@ -361,7 +368,7 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
             color: statusMessage.type === 'error' ? '#FCA5A5' : statusMessage.type === 'warning' ? '#FCD34D' : '#86EFAC',
             fontSize: '13px',
             fontWeight: '600',
-            borderBottom: '1px solid #263839'
+            borderBottom: '1px solid var(--color-brand-darker)'
           }}>
             {statusMessage.text}
           </div>

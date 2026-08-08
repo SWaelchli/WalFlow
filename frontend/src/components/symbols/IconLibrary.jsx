@@ -123,3 +123,32 @@ export const InfoIcon = ({ size = 16, color = 'currentColor', ...props }) => (
     <line x1="12" y1="8" x2="12.01" y2="8" />
   </svg>
 );
+
+export const UserIcon = ({ size = 16, color = 'currentColor', ...props }) => (
+  <svg {...baseSvgProps(size, color)} {...props}>
+    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+    <circle cx="12" cy="7" r="4" />
+  </svg>
+);
+
+export const BookIcon = ({ size = 16, color = 'currentColor', ...props }) => (
+  <svg {...baseSvgProps(size, color)} {...props}>
+    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+  </svg>
+);
+
+export const KeyboardIcon = ({ size = 16, color = 'currentColor', ...props }) => (
+  <svg {...baseSvgProps(size, color)} {...props}>
+    <rect x="2" y="4" width="20" height="16" rx="2" ry="2" />
+    <line x1="6" y1="8" x2="6.01" y2="8" />
+    <line x1="10" y1="8" x2="10.01" y2="8" />
+    <line x1="14" y1="8" x2="14.01" y2="8" />
+    <line x1="18" y1="8" x2="18.01" y2="8" />
+    <line x1="6" y1="12" x2="6.01" y2="12" />
+    <line x1="10" y1="12" x2="10.01" y2="12" />
+    <line x1="14" y1="12" x2="14.01" y2="12" />
+    <line x1="18" y1="12" x2="18.01" y2="12" />
+    <line x1="7" y1="16" x2="17" y2="16" />
+  </svg>
+);

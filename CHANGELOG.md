@@ -17,4 +17,5 @@ All notable changes to the WälFlow project will be documented in this file.
 - Implemented UI/UX modernization including a centralized custom SVG IconLibrary, index.css design tokens, a unified tabbed right-hand InspectorPanel, and horizontal layout positioning to prevent canvas compression.
 - Polished the Navbar and Sidebar to replace emojis with vector icons, migrated inline styling to standard CSS classes, and cleaned up JavaScript mouse hover event listeners.
 - Audited accessibility, verified focus outline states, and added full keyboard event and role support to collapsible panels.
+- Refactored system modals (Admin Setup, Login, Project Manager, Help & Info, and Admin Hub) and canvas overlays (Case Manager and Heatmap Legend) to replace structural emojis with custom SVG icons, map all style parameters to design system CSS variables, and eliminate custom JavaScript hover handlers.
 

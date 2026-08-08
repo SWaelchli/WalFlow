@@ -1,4 +1,5 @@
 import React from 'react';
+import { CrossIcon } from '../symbols/IconLibrary';
 
 /**
  * CaseManager component provides a floating dashboard panel on the canvas
@@ -29,7 +30,7 @@ export default function CaseManager({
       desc: 'Max pressure at relief device activation',
       color: '#D97706',
       bgActive: '#FFFBEB',
-      borderActive: '#FA8507',
+      borderActive: 'var(--color-primary)',
       textActive: '#92400E'
     },
     {
@@ -50,10 +51,10 @@ export default function CaseManager({
       right: '16px',
       backgroundColor: 'rgba(255, 255, 255, 0.96)',
       backdropFilter: 'blur(10px)',
-      border: '1px solid #D8E2E1',
+      border: '1px solid var(--color-border)',
       borderRadius: '14px',
       padding: '14px 18px',
-      boxShadow: '0 10px 25px -5px rgba(57, 82, 83, 0.15), 0 4px 6px -2px rgba(57, 82, 83, 0.05)',
+      boxShadow: 'var(--shadow-lg)',
       zIndex: 1000,
       width: '330px',
       maxWidth: 'calc(100vw - 32px)',
@@ -63,59 +64,88 @@ export default function CaseManager({
       transition: 'top 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
       ...style
     }}>
+      <style>
+        {`
+          .case-manager-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            border-radius: 8px;
+            border: 1px solid var(--color-border);
+            background-color: var(--color-surface);
+            cursor: pointer;
+            text-align: left;
+            font-family: inherit;
+            transition: all 0.15s ease;
+            outline: none;
+          }
+          .case-manager-btn:hover {
+            background-color: var(--color-surface-hover);
+            border-color: var(--color-border-hover);
+          }
+          .case-manager-btn:focus-visible {
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 2px var(--color-primary-glow);
+          }
+          .case-manager-close {
+            position: absolute;
+            top: 10px;
+            right: 12px;
+            background: none;
+            border: none;
+            color: var(--color-text-secondary);
+            cursor: pointer;
+            padding: 2px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease;
+            outline: none;
+          }
+          .case-manager-close:hover {
+            background-color: var(--color-surface-hover);
+            color: var(--color-text-primary);
+          }
+          .case-manager-close:focus-visible {
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 2px var(--color-primary-glow);
+          }
+        `}
+      </style>
+
       {/* Top-Right Close Button */}
       {onClose && (
         <button 
           onClick={onClose} 
+          className="case-manager-close"
           title="Close Case Manager"
-          style={{
-            position: 'absolute',
-            top: '10px',
-            right: '12px',
-            background: 'none',
-            border: 'none',
-            color: '#587071',
-            cursor: 'pointer',
-            fontSize: '14px',
-            fontWeight: 700,
-            padding: '2px 6px',
-            borderRadius: '4px',
-            lineHeight: 1,
-            zIndex: 10
-          }}
         >
-          ✕
+          <CrossIcon size={14} />
         </button>
       )}
 
       {/* Panel Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: '13px', fontWeight: 700, color: '#395253' }}>
+        <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--color-brand-dark)' }}>
           Scenario & Case Manager
         </span>
       </div>
 
       {/* Operating Case Selection */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-        <label style={{ fontSize: '10px', fontWeight: 700, color: '#587071', letterSpacing: '0.04em' }}>
+        <label style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-text-secondary)', letterSpacing: '0.04em' }}>
           Operating Case
         </label>
         <select
           value={activeCaseId}
           onChange={(e) => onSelectCase && onSelectCase(e.target.value)}
+          className="form-select"
           style={{
-            padding: '6px 10px',
-            borderRadius: '8px',
-            border: '1px solid #D8E2E1',
-            backgroundColor: '#F4F7F6',
-            color: '#1C2B2C',
-            fontFamily: 'inherit',
-            fontSize: '11px',
+            width: '100%',
             fontWeight: '700',
-            cursor: 'pointer',
-            outline: 'none',
-            transition: 'border-color 0.2s',
-            width: '100%'
+            fontSize: '11px'
           }}
         >
           {cases.map((c) => (
@@ -128,7 +158,7 @@ export default function CaseManager({
 
       {/* Relief contingency selection */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-        <label style={{ fontSize: '10px', fontWeight: 700, color: '#587071', letterSpacing: '0.04em' }}>
+        <label style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-text-secondary)', letterSpacing: '0.04em' }}>
           Relief Case View
         </label>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -139,32 +169,11 @@ export default function CaseManager({
                 key={mode.id}
                 onClick={() => onToggleTelemetryMode && onToggleTelemetryMode(mode.id)}
                 title={mode.desc}
+                className="case-manager-btn"
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '6px 10px',
-                  borderRadius: '8px',
-                  border: '1px solid',
-                  borderColor: isActive ? mode.borderActive : '#D8E2E1',
-                  backgroundColor: isActive ? mode.bgActive : '#ffffff',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  fontFamily: 'inherit',
-                  transition: 'all 0.15s ease',
+                  borderColor: isActive ? mode.borderActive : 'var(--color-border)',
+                  backgroundColor: isActive ? mode.bgActive : 'var(--color-surface)',
                   boxShadow: isActive ? `0 2px 8px rgba(0, 0, 0, 0.04)` : 'none'
-                }}
-                onMouseEnter={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.backgroundColor = '#F4F7F6';
-                    e.currentTarget.style.borderColor = '#B8C9C8';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.backgroundColor = '#ffffff';
-                    e.currentTarget.style.borderColor = '#D8E2E1';
-                  }
                 }}
               >
                 {/* Status Dot */}
@@ -179,7 +188,7 @@ export default function CaseManager({
                 <span style={{ 
                   fontSize: '11px', 
                   fontWeight: '700', 
-                  color: isActive ? mode.textActive : '#1C2B2C' 
+                  color: isActive ? mode.textActive : 'var(--color-text-primary)' 
                 }}>
                   {mode.label}
                 </span>

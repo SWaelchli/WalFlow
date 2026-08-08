@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
+import { CrownIcon } from '../symbols/IconLibrary';
 
 const AdminSetupModal = ({ isOpen, onClose }) => {
   const { setupFirstAdmin } = useAuth();
@@ -57,9 +58,9 @@ const AdminSetupModal = ({ isOpen, onClose }) => {
       fontFamily: "var(--font-sans, 'Inter', sans-serif)"
     }}>
       <div style={{
-        backgroundColor: '#1A2829',
+        backgroundColor: 'var(--color-brand-darkest)',
         color: '#ffffff',
-        border: '1px solid #395253',
+        border: '1px solid var(--color-brand-dark)',
         borderRadius: '16px',
         width: '100%',
         maxWidth: '460px',
@@ -79,22 +80,21 @@ const AdminSetupModal = ({ isOpen, onClose }) => {
         {/* Header */}
         <div style={{
           padding: '24px 28px 18px 28px',
-          borderBottom: '1px solid #263839',
-          backgroundColor: '#223233'
+          borderBottom: '1px solid var(--color-brand-darker)',
+          backgroundColor: 'var(--color-surface-dark)'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '8px' }}>
             <div style={{
               width: '44px',
               height: '44px',
               borderRadius: '12px',
-              background: 'linear-gradient(135deg, #FA8507 0%, #E07600 100%)',
+              background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '22px',
-              boxShadow: '0 4px 12px rgba(250, 133, 7, 0.3)'
+              boxShadow: '0 4px 12px var(--color-primary-glow)'
             }}>
-              👑
+              <CrownIcon size={22} color="#ffffff" />
             </div>
             <div>
               <h3 style={{ margin: 0, color: '#ffffff', fontSize: '18px', fontWeight: '700' }}>
@@ -115,7 +115,7 @@ const AdminSetupModal = ({ isOpen, onClose }) => {
           {error && (
             <div style={{
               backgroundColor: 'rgba(239, 68, 68, 0.15)',
-              border: '1px solid #EF4444',
+              border: '1px solid var(--color-danger)',
               borderRadius: '10px',
               padding: '12px 14px',
               color: '#FCA5A5',
@@ -128,7 +128,7 @@ const AdminSetupModal = ({ isOpen, onClose }) => {
           )}
 
           <div style={{ marginBottom: '18px' }}>
-            <label style={{ display: 'block', color: '#FA8507', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
+            <label style={{ display: 'block', color: 'var(--color-primary)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
               Admin Username
             </label>
             <input
@@ -136,26 +136,21 @@ const AdminSetupModal = ({ isOpen, onClose }) => {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="admin"
+              className="form-input"
               style={{
                 width: '100%',
-                padding: '11px 14px',
-                borderRadius: '10px',
-                border: '1px solid #395253',
-                backgroundColor: '#223233',
-                color: '#FFFFFF',
-                fontSize: '14px',
-                outline: 'none',
-                boxSizing: 'border-box',
-                transition: 'border-color 0.15s ease'
+                backgroundColor: 'var(--color-surface-dark)',
+                borderColor: 'var(--color-brand-dark)',
+                color: 'var(--color-text-inverse)',
+                height: '38px',
+                fontSize: '14px'
               }}
-              onFocus={(e) => e.target.style.borderColor = '#FA8507'}
-              onBlur={(e) => e.target.style.borderColor = '#395253'}
               required
             />
           </div>
 
           <div style={{ marginBottom: '18px' }}>
-            <label style={{ display: 'block', color: '#FA8507', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
+            <label style={{ display: 'block', color: 'var(--color-primary)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
               Admin Password
             </label>
             <input
@@ -163,26 +158,21 @@ const AdminSetupModal = ({ isOpen, onClose }) => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
+              className="form-input"
               style={{
                 width: '100%',
-                padding: '11px 14px',
-                borderRadius: '10px',
-                border: '1px solid #395253',
-                backgroundColor: '#223233',
-                color: '#FFFFFF',
-                fontSize: '14px',
-                outline: 'none',
-                boxSizing: 'border-box',
-                transition: 'border-color 0.15s ease'
+                backgroundColor: 'var(--color-surface-dark)',
+                borderColor: 'var(--color-brand-dark)',
+                color: 'var(--color-text-inverse)',
+                height: '38px',
+                fontSize: '14px'
               }}
-              onFocus={(e) => e.target.style.borderColor = '#FA8507'}
-              onBlur={(e) => e.target.style.borderColor = '#395253'}
               required
             />
           </div>
 
           <div style={{ marginBottom: '24px' }}>
-            <label style={{ display: 'block', color: '#FA8507', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
+            <label style={{ display: 'block', color: 'var(--color-primary)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
               Confirm Admin Password
             </label>
             <input
@@ -190,20 +180,15 @@ const AdminSetupModal = ({ isOpen, onClose }) => {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="••••••••"
+              className="form-input"
               style={{
                 width: '100%',
-                padding: '11px 14px',
-                borderRadius: '10px',
-                border: '1px solid #395253',
-                backgroundColor: '#223233',
-                color: '#FFFFFF',
-                fontSize: '14px',
-                outline: 'none',
-                boxSizing: 'border-box',
-                transition: 'border-color 0.15s ease'
+                backgroundColor: 'var(--color-surface-dark)',
+                borderColor: 'var(--color-brand-dark)',
+                color: 'var(--color-text-inverse)',
+                height: '38px',
+                fontSize: '14px'
               }}
-              onFocus={(e) => e.target.style.borderColor = '#FA8507'}
-              onBlur={(e) => e.target.style.borderColor = '#395253'}
               required
             />
           </div>
@@ -211,22 +196,17 @@ const AdminSetupModal = ({ isOpen, onClose }) => {
           <button
             type="submit"
             disabled={submitting}
+            className="btn-primary"
             style={{
               width: '100%',
-              padding: '12px',
+              height: '42px',
               borderRadius: '10px',
-              border: 'none',
-              background: 'linear-gradient(135deg, #FA8507 0%, #E07600 100%)',
-              color: '#FFFFFF',
               fontSize: '14px',
               fontWeight: '700',
-              cursor: submitting ? 'not-allowed' : 'pointer',
-              opacity: submitting ? 0.7 : 1,
-              boxShadow: '0 4px 14px rgba(250, 133, 7, 0.35)',
-              transition: 'all 0.15s ease'
+              boxShadow: '0 4px 14px var(--color-primary-glow)'
             }}
           >
-            {submitting ? '⌛ Initializing Setup...' : '🚀 Create Admin Account & Continue'}
+            {submitting ? 'Initializing Setup...' : 'Create Admin Account & Continue'}
           </button>
         </form>
       </div>

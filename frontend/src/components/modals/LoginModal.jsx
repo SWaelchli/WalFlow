@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
+import { SignInIcon, UserIcon, CrossIcon } from '../symbols/IconLibrary';
 
 const LoginModal = ({ isOpen, onClose }) => {
   const { login, register } = useAuth();
@@ -73,9 +74,9 @@ const LoginModal = ({ isOpen, onClose }) => {
       fontFamily: "var(--font-sans, 'Inter', sans-serif)"
     }}>
       <div style={{
-        backgroundColor: '#1A2829',
+        backgroundColor: 'var(--color-brand-darkest)',
         color: '#ffffff',
-        border: '1px solid #395253',
+        border: '1px solid var(--color-brand-dark)',
         borderRadius: '16px',
         width: '100%',
         maxWidth: '440px',
@@ -89,14 +90,55 @@ const LoginModal = ({ isOpen, onClose }) => {
               from { opacity: 0; transform: scale(0.97); }
               to { opacity: 1; transform: scale(1); }
             }
+            .mode-switch-btn {
+              flex: 1;
+              padding: 10px;
+              border-radius: 10px;
+              font-size: 13px;
+              font-weight: 700;
+              cursor: pointer;
+              transition: all 0.15s ease;
+              outline: none;
+            }
+            .mode-switch-btn-active {
+              border: none;
+              background-color: var(--color-primary);
+              color: var(--color-text-inverse);
+              box-shadow: 0 4px 12px var(--color-primary-glow);
+            }
+            .mode-switch-btn-inactive {
+              border: 1px solid var(--color-brand-light);
+              background-color: var(--color-brand-darker);
+              color: var(--color-text-muted);
+            }
+            .mode-switch-btn-inactive:hover {
+              background-color: var(--color-brand-light);
+              color: var(--color-text-inverse);
+            }
+            .modal-close-btn {
+              background: transparent;
+              border: none;
+              color: var(--color-text-muted);
+              cursor: pointer;
+              padding: 4px 8px;
+              border-radius: 6px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              transition: all 0.15s ease;
+            }
+            .modal-close-btn:hover {
+              background-color: var(--color-brand-darker);
+              color: var(--color-text-inverse);
+            }
           `}
         </style>
 
         {/* Header */}
         <div style={{
           padding: '24px 28px 16px 28px',
-          borderBottom: '1px solid #263839',
-          backgroundColor: '#223233',
+          borderBottom: '1px solid var(--color-brand-darker)',
+          backgroundColor: 'var(--color-surface-dark)',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center'
@@ -106,14 +148,13 @@ const LoginModal = ({ isOpen, onClose }) => {
               width: '42px',
               height: '42px',
               borderRadius: '12px',
-              background: 'linear-gradient(135deg, #FA8507 0%, #E07600 100%)',
+              background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '20px',
-              boxShadow: '0 4px 12px rgba(250, 133, 7, 0.3)'
+              boxShadow: '0 4px 12px var(--color-primary-glow)'
             }}>
-              {mode === 'login' ? '🔑' : '👤'}
+              {mode === 'login' ? <SignInIcon size={20} color="#ffffff" /> : <UserIcon size={20} color="#ffffff" /> }
             </div>
             <div>
               <h3 style={{ margin: 0, color: '#ffffff', fontSize: '18px', fontWeight: '700' }}>
@@ -126,20 +167,10 @@ const LoginModal = ({ isOpen, onClose }) => {
           </div>
           <button
             onClick={onClose}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: '#B8C9C8',
-              fontSize: '22px',
-              cursor: 'pointer',
-              padding: '4px 8px',
-              borderRadius: '6px',
-              transition: 'all 0.15s ease'
-            }}
-            onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#263839'; e.currentTarget.style.color = '#ffffff'; }}
-            onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#B8C9C8'; }}
+            className="modal-close-btn"
+            title="Close"
           >
-            ✕
+            <CrossIcon size={18} />
           </button>
         </div>
 
@@ -148,38 +179,14 @@ const LoginModal = ({ isOpen, onClose }) => {
           <button
             type="button"
             onClick={() => { setMode('login'); setError(''); }}
-            style={{
-              flex: 1,
-              padding: '10px',
-              border: mode === 'login' ? 'none' : '1px solid #4A6768',
-              borderRadius: '10px',
-              fontSize: '13px',
-              fontWeight: '700',
-              cursor: 'pointer',
-              backgroundColor: mode === 'login' ? '#FA8507' : '#263839',
-              color: mode === 'login' ? '#FFFFFF' : '#B8C9C8',
-              boxShadow: mode === 'login' ? '0 4px 12px rgba(250, 133, 7, 0.3)' : 'none',
-              transition: 'all 0.15s ease'
-            }}
+            className={`mode-switch-btn ${mode === 'login' ? 'mode-switch-btn-active' : 'mode-switch-btn-inactive'}`}
           >
             Sign In
           </button>
           <button
             type="button"
             onClick={() => { setMode('register'); setError(''); }}
-            style={{
-              flex: 1,
-              padding: '10px',
-              border: mode === 'register' ? 'none' : '1px solid #4A6768',
-              borderRadius: '10px',
-              fontSize: '13px',
-              fontWeight: '700',
-              cursor: 'pointer',
-              backgroundColor: mode === 'register' ? '#FA8507' : '#263839',
-              color: mode === 'register' ? '#FFFFFF' : '#B8C9C8',
-              boxShadow: mode === 'register' ? '0 4px 12px rgba(250, 133, 7, 0.3)' : 'none',
-              transition: 'all 0.15s ease'
-            }}
+            className={`mode-switch-btn ${mode === 'register' ? 'mode-switch-btn-active' : 'mode-switch-btn-inactive'}`}
           >
             Register
           </button>
@@ -190,7 +197,7 @@ const LoginModal = ({ isOpen, onClose }) => {
           {infoMessage && (
             <div style={{
               backgroundColor: 'rgba(34, 197, 94, 0.15)',
-              border: '1px solid #22C55E',
+              border: '1px solid var(--color-success)',
               borderRadius: '10px',
               padding: '12px 14px',
               color: '#86EFAC',
@@ -205,7 +212,7 @@ const LoginModal = ({ isOpen, onClose }) => {
           {error && (
             <div style={{
               backgroundColor: 'rgba(239, 68, 68, 0.15)',
-              border: '1px solid #EF4444',
+              border: '1px solid var(--color-danger)',
               borderRadius: '10px',
               padding: '12px 14px',
               color: '#FCA5A5',
@@ -218,7 +225,7 @@ const LoginModal = ({ isOpen, onClose }) => {
           )}
 
           <div style={{ marginBottom: '18px' }}>
-            <label style={{ display: 'block', color: '#FA8507', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
+            <label style={{ display: 'block', color: 'var(--color-primary)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
               Username
             </label>
             <input
@@ -226,26 +233,21 @@ const LoginModal = ({ isOpen, onClose }) => {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="e.g. engineer_alex"
+              className="form-input"
               style={{
                 width: '100%',
-                padding: '11px 14px',
-                borderRadius: '10px',
-                border: '1px solid #395253',
-                backgroundColor: '#223233',
-                color: '#FFFFFF',
-                fontSize: '14px',
-                outline: 'none',
-                boxSizing: 'border-box',
-                transition: 'border-color 0.15s ease'
+                backgroundColor: 'var(--color-surface-dark)',
+                borderColor: 'var(--color-brand-dark)',
+                color: 'var(--color-text-inverse)',
+                height: '38px',
+                fontSize: '14px'
               }}
-              onFocus={(e) => e.target.style.borderColor = '#FA8507'}
-              onBlur={(e) => e.target.style.borderColor = '#395253'}
               required
             />
           </div>
 
           <div style={{ marginBottom: mode === 'register' ? '18px' : '24px' }}>
-            <label style={{ display: 'block', color: '#FA8507', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
+            <label style={{ display: 'block', color: 'var(--color-primary)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
               Password
             </label>
             <input
@@ -253,27 +255,22 @@ const LoginModal = ({ isOpen, onClose }) => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
+              className="form-input"
               style={{
                 width: '100%',
-                padding: '11px 14px',
-                borderRadius: '10px',
-                border: '1px solid #395253',
-                backgroundColor: '#223233',
-                color: '#FFFFFF',
-                fontSize: '14px',
-                outline: 'none',
-                boxSizing: 'border-box',
-                transition: 'border-color 0.15s ease'
+                backgroundColor: 'var(--color-surface-dark)',
+                borderColor: 'var(--color-brand-dark)',
+                color: 'var(--color-text-inverse)',
+                height: '38px',
+                fontSize: '14px'
               }}
-              onFocus={(e) => e.target.style.borderColor = '#FA8507'}
-              onBlur={(e) => e.target.style.borderColor = '#395253'}
               required
             />
           </div>
 
           {mode === 'register' && (
             <div style={{ marginBottom: '24px' }}>
-              <label style={{ display: 'block', color: '#FA8507', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
+              <label style={{ display: 'block', color: 'var(--color-primary)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
                 Confirm Password
               </label>
               <input
@@ -281,20 +278,15 @@ const LoginModal = ({ isOpen, onClose }) => {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="••••••••"
+                className="form-input"
                 style={{
                   width: '100%',
-                  padding: '11px 14px',
-                  borderRadius: '10px',
-                  border: '1px solid #395253',
-                  backgroundColor: '#223233',
-                  color: '#FFFFFF',
-                  fontSize: '14px',
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                  transition: 'border-color 0.15s ease'
+                  backgroundColor: 'var(--color-surface-dark)',
+                  borderColor: 'var(--color-brand-dark)',
+                  color: 'var(--color-text-inverse)',
+                  height: '38px',
+                  fontSize: '14px'
                 }}
-                onFocus={(e) => e.target.style.borderColor = '#FA8507'}
-                onBlur={(e) => e.target.style.borderColor = '#395253'}
                 required
               />
             </div>
@@ -303,22 +295,17 @@ const LoginModal = ({ isOpen, onClose }) => {
           <button
             type="submit"
             disabled={submitting}
+            className="btn-primary"
             style={{
               width: '100%',
-              padding: '12px',
+              height: '42px',
               borderRadius: '10px',
-              border: 'none',
-              background: 'linear-gradient(135deg, #FA8507 0%, #E07600 100%)',
-              color: '#FFFFFF',
               fontSize: '14px',
               fontWeight: '700',
-              cursor: submitting ? 'not-allowed' : 'pointer',
-              opacity: submitting ? 0.7 : 1,
-              boxShadow: '0 4px 14px rgba(250, 133, 7, 0.35)',
-              transition: 'all 0.15s ease'
+              boxShadow: '0 4px 14px var(--color-primary-glow)'
             }}
           >
-            {submitting ? '⌛ Processing...' : mode === 'login' ? 'Sign In' : 'Create Account'}
+            {submitting ? 'Processing...' : mode === 'login' ? 'Sign In' : 'Create Account'}
           </button>
         </form>
       </div>
