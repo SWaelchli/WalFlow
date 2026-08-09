@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { PlusIcon, PlayIcon, ExportIcon, CaseIcon, TrashIcon } from '../symbols/IconLibrary';
+import { PlusIcon, PlayIcon, ExportIcon, CaseIcon, TrashIcon, SpinnerIcon } from '../symbols/IconLibrary';
 import { m3sToLmin, kToC } from '../../utils/converters';
 import { findClosestPipeMatch, ASME_PIPE_STANDARDS, calculatePipeId } from '../../utils/standards_library';
 import { updateCaseOverride } from '../../utils/case_resolver';
@@ -378,49 +378,23 @@ export default function DataList({
       <div style={{ display: 'flex', background: 'var(--color-surface-hover)', borderBottom: '1px solid var(--color-border)', justifyContent: 'space-between', alignItems: 'center', padding: '0 16px' }}>
         <div style={{ display: 'flex', gap: '4px' }}>
           <button onClick={() => { setActiveTab('pipes'); setSortConfig({key:null, direction:'asc'}); }}
-            style={{ 
-              padding: '12px 20px', border: 'none', 
-              background: activeTab === 'pipes' ? '#ffffff' : 'transparent', 
-              borderBottom: activeTab === 'pipes' ? '3px solid var(--color-primary)' : '3px solid transparent', 
-              fontWeight: '700', cursor: 'pointer', fontSize: '12px', 
-              color: activeTab === 'pipes' ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-              transition: 'all 0.2s'
-            }}>
+            className={`datalist-tab ${activeTab === 'pipes' ? 'active' : ''}`}
+          >
             Pipe Network List
           </button>
           <button onClick={() => { setActiveTab('all'); setSortConfig({key:null, direction:'asc'}); }}
-            style={{ 
-              padding: '12px 20px', border: 'none', 
-              background: activeTab === 'all' ? '#ffffff' : 'transparent', 
-              borderBottom: activeTab === 'all' ? '3px solid var(--color-primary)' : '3px solid transparent', 
-              fontWeight: '700', cursor: 'pointer', fontSize: '12px', 
-              color: activeTab === 'all' ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-              transition: 'all 0.2s'
-            }}>
+            className={`datalist-tab ${activeTab === 'all' ? 'active' : ''}`}
+          >
             Full Equipment & Pipeline Data
           </button>
           <button onClick={() => { setActiveTab('cases'); setSortConfig({key:null, direction:'asc'}); }}
-            style={{ 
-              padding: '12px 20px', border: 'none', 
-              background: activeTab === 'cases' ? '#ffffff' : 'transparent', 
-              borderBottom: activeTab === 'cases' ? '3px solid var(--color-primary)' : '3px solid transparent', 
-              fontWeight: '700', cursor: 'pointer', fontSize: '12px', 
-              color: activeTab === 'cases' ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-              transition: 'all 0.2s',
-              display: 'flex', alignItems: 'center', gap: '6px'
-            }}>
+            className={`datalist-tab ${activeTab === 'cases' ? 'active' : ''}`}
+          >
             Operating Cases Matrix
           </button>
           <button onClick={() => { setActiveTab('relief'); setSortConfig({key:null, direction:'asc'}); }}
-            style={{ 
-              padding: '12px 20px', border: 'none', 
-              background: activeTab === 'relief' ? '#ffffff' : 'transparent', 
-              borderBottom: activeTab === 'relief' ? '3px solid var(--color-primary)' : '3px solid transparent', 
-              fontWeight: '700', cursor: 'pointer', fontSize: '12px', 
-              color: activeTab === 'relief' ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-              transition: 'all 0.2s',
-              display: 'flex', alignItems: 'center', gap: '6px'
-            }}>
+            className={`datalist-tab ${activeTab === 'relief' ? 'active' : ''}`}
+          >
             Relief Analysis Matrix
           </button>
         </div>
@@ -431,28 +405,21 @@ export default function DataList({
               {onAddCase && (
                 <button
                   onClick={onAddCase}
-                  className="btn-primary"
-                  style={{ height: '30px', padding: '0 12px' }}
+                  className="btn-primary btn-compact"
                 >
                   <PlusIcon size={14} style={{ marginRight: '6px' }} /> New Case
                 </button>
               )}
               <button
                 onClick={onToggleCaseManager}
-                className={showCaseManager ? "btn-primary" : "btn-secondary"}
-                style={{ height: '30px', padding: '0 14px' }}
+                className={showCaseManager ? "btn-primary btn-compact" : "btn-secondary btn-compact"}
               >
                 <CaseIcon size={14} style={{ marginRight: '6px' }} /> {showCaseManager ? 'Hide Case Manager' : 'Show Case Manager'}
               </button>
               <button
                 onClick={fetchBatchSimulations}
                 disabled={isBatchLoading}
-                className="btn-primary"
-                style={{
-                  height: '30px',
-                  padding: '0 14px',
-                  background: isBatchLoading ? 'var(--color-border)' : 'var(--color-primary)'
-                }}
+                className="btn-primary btn-compact"
               >
                 <PlayIcon size={14} style={{ marginRight: '6px' }} /> {isBatchLoading ? 'Solving Cases...' : 'Batch Solve Matrix'}
               </button>
@@ -461,8 +428,7 @@ export default function DataList({
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '6px 0' }}>
               <button
                 onClick={onToggleCaseManager}
-                className={showCaseManager ? "btn-primary" : "btn-secondary"}
-                style={{ height: '30px', padding: '0 14px' }}
+                className={showCaseManager ? "btn-primary btn-compact" : "btn-secondary btn-compact"}
               >
                 <CaseIcon size={14} style={{ marginRight: '6px' }} /> {showCaseManager ? 'Hide Case Manager' : 'Show Case Manager'}
               </button>
@@ -482,15 +448,13 @@ export default function DataList({
               </div>
               <button 
                 onClick={handleAutoSortClick} 
-                className="btn-secondary"
-                style={{ height: '30px', padding: '0 14px' }}
+                className="btn-secondary btn-compact"
               >
                 Auto Sort
               </button>
               <button 
                 onClick={exportCSV} 
-                className="btn-primary"
-                style={{ height: '30px', padding: '0 14px' }}
+                className="btn-primary btn-compact"
               >
                 <ExportIcon size={14} style={{ marginRight: '6px' }} /> Export CSV
               </button>
@@ -503,8 +467,8 @@ export default function DataList({
         {activeTab === 'cases' ? (
           <div style={{ display: 'inline-block', minWidth: '100%', boxSizing: 'border-box', verticalAlign: 'top' }}>
             {isBatchLoading ? (
-              <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--color-text-secondary)', fontSize: '13px', fontWeight: '600' }}>
-                ⌛ Running batch simulations across all operating cases...
+              <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--color-text-secondary)', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                <SpinnerIcon size={14} color="var(--color-text-secondary)" /> Running batch simulations across all operating cases...
               </div>
             ) : batchError ? (
               <div style={{ padding: '16px', color: 'var(--color-danger)', background: '#fef2f2', borderRadius: '8px', border: '1px solid #fee2e2' }}>

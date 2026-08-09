@@ -3,6 +3,7 @@ import { mToMm, mmToM } from '../../utils/converters';
 import { ASME_PIPE_STANDARDS, calculatePipeId, findClosestPipeMatch } from '../../utils/standards_library';
 import { isCaseVariableProperty } from '../../constants/case_constants';
 import { isPropertyOverridden, getEffectiveNodeData } from '../../utils/case_resolver';
+import { GlobeIcon, BoltIcon } from '../symbols/IconLibrary';
 
 function PropertyBadge({ propKey, nodeId, cases = [], activeCaseId = 'case_base', onResetOverride }) {
   const isCaseVar = isCaseVariableProperty(propKey);
@@ -12,16 +13,19 @@ function PropertyBadge({ propKey, nodeId, cases = [], activeCaseId = 'case_base'
 
   if (!isCaseVar) {
     return (
-      <span style={{ fontSize: '9px', fontWeight: '600', color: '#64748b', background: '#f1f5f9', padding: '1px 5px', borderRadius: '4px', border: '1px solid #cbd5e1' }} title="Global hardware specification fixed across all operating cases">
-        🌐 Global
+      <span className="badge-global" title="Global hardware specification fixed across all operating cases">
+        <GlobeIcon size={10} color="var(--color-text-secondary)" /> Global
       </span>
     );
   }
 
   return (
     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-      <span style={{ fontSize: '9px', fontWeight: '700', color: isOverridden ? '#d97706' : '#FA8507', background: isOverridden ? '#fef3c7' : '#fff7ed', padding: '1px 5px', borderRadius: '4px', border: `1px solid ${isOverridden ? '#fde68a' : '#ffedd5'}` }} title="Case-specific operating variable">
-        ⚡ Case Variable
+      <span 
+        className={`badge-case ${isOverridden ? '' : 'not-overridden'}`} 
+        title="Case-specific operating variable"
+      >
+        <BoltIcon size={10} color={isOverridden ? '#d97706' : 'var(--color-primary)'} /> Case Variable
       </span>
       {isOverridden && (
         <span style={{ fontSize: '9px', color: '#d97706', fontWeight: '700' }} title={`Overridden in current case`}>
@@ -32,7 +36,7 @@ function PropertyBadge({ propKey, nodeId, cases = [], activeCaseId = 'case_base'
         <button
           onClick={(e) => { e.preventDefault(); onResetOverride(nodeId, propKey); }}
           title="Reset to Base Case value"
-          style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '10px', color: '#64748b', padding: 0 }}
+          style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '10px', color: 'var(--color-text-secondary)', padding: 0 }}
         >
           ↺ Reset
         </button>
@@ -255,7 +259,7 @@ export default function SetupPanel({
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ fontSize: '11px', color: '#587071', transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▼</span>
-            <h3 style={{ margin: 0, fontSize: '13px', fontWeight: '700', color: '#395253', letterSpacing: '0.01em' }}>
+            <h3 style={{ margin: 0, fontSize: '13px', fontWeight: '700', color: 'var(--color-brand-dark)', letterSpacing: '0.01em' }}>
               {isNode ? `Equipment: ${type.toUpperCase()}` : `Connection: ${data.type || 'PIPE'}`}
             </h3>
           </div>

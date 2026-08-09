@@ -406,7 +406,7 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
               ) : pendingUsers.length === 0 ? (
                 <div style={{
                   backgroundColor: '#223233',
-                  border: '1px dashed #395253',
+                  border: '1px dashed var(--color-brand-dark)',
                   borderRadius: '12px',
                   padding: '40px',
                   textAlign: 'center',
@@ -532,7 +532,7 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
                       {allUsers.map((user) => (
                         <tr key={user.id} style={{ borderBottom: '1px solid #263839' }}>
                           <td style={{ padding: '12px', fontWeight: '700' }}>
-                            {user.username} {user.id === currentUser?.id && <span style={{ color: '#FA8507', fontSize: '11px' }}>(You)</span>}
+                            {user.username} {user.id === currentUser?.id && <span style={{ color: 'var(--color-primary)', fontSize: '11px' }}>(You)</span>}
                           </td>
                           <td style={{ padding: '12px' }}>
                             <select
@@ -541,8 +541,8 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
                               disabled={user.id === currentUser?.id}
                               style={{
                                 backgroundColor: '#223233',
-                                color: user.role === 'admin' ? '#FA8507' : '#B8C9C8',
-                                border: '1px solid #395253',
+                                color: user.role === 'admin' ? 'var(--color-primary)' : '#B8C9C8',
+                                border: '1px solid var(--color-brand-dark)',
                                 borderRadius: '6px',
                                 padding: '4px 8px',
                                 fontSize: '12px',
@@ -602,19 +602,19 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
               {/* Metric Cards */}
               {dbData?.stats && (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px', marginBottom: '20px' }}>
-                  <div style={{ backgroundColor: '#223233', border: '1px solid #395253', borderRadius: '12px', padding: '14px' }}>
+                  <div style={{ backgroundColor: '#223233', border: '1px solid var(--color-brand-dark)', borderRadius: '12px', padding: '14px' }}>
                     <div style={{ color: '#B8C9C8', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>TOTAL USERS</div>
                     <div style={{ color: '#ffffff', fontSize: '22px', fontWeight: '800', marginTop: '4px' }}>{dbData.stats.total_users}</div>
                   </div>
-                  <div style={{ backgroundColor: '#223233', border: '1px solid #395253', borderRadius: '12px', padding: '14px' }}>
+                  <div style={{ backgroundColor: '#223233', border: '1px solid var(--color-brand-dark)', borderRadius: '12px', padding: '14px' }}>
                     <div style={{ color: '#FCD34D', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>PENDING APPROVAL</div>
                     <div style={{ color: '#FCD34D', fontSize: '22px', fontWeight: '800', marginTop: '4px' }}>{dbData.stats.pending_users}</div>
                   </div>
-                  <div style={{ backgroundColor: '#223233', border: '1px solid #395253', borderRadius: '12px', padding: '14px' }}>
-                    <div style={{ color: '#FA8507', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>ADMIN USERS</div>
-                    <div style={{ color: '#FA8507', fontSize: '22px', fontWeight: '800', marginTop: '4px' }}>{dbData.stats.admin_users}</div>
+                  <div style={{ backgroundColor: '#223233', border: '1px solid var(--color-brand-dark)', borderRadius: '12px', padding: '14px' }}>
+                    <div style={{ color: 'var(--color-primary)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>ADMIN USERS</div>
+                    <div style={{ color: 'var(--color-primary)', fontSize: '22px', fontWeight: '800', marginTop: '4px' }}>{dbData.stats.admin_users}</div>
                   </div>
-                  <div style={{ backgroundColor: '#223233', border: '1px solid #395253', borderRadius: '12px', padding: '14px' }}>
+                  <div style={{ backgroundColor: '#223233', border: '1px solid var(--color-brand-dark)', borderRadius: '12px', padding: '14px' }}>
                     <div style={{ color: '#60A5FA', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>STORED PFD DIAGRAMS</div>
                     <div style={{ color: '#60A5FA', fontSize: '22px', fontWeight: '800', marginTop: '4px' }}>{dbData.stats.total_diagrams}</div>
                   </div>
@@ -634,7 +634,7 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
                       width: '100%',
                       padding: '10px 14px 10px 36px',
                       borderRadius: '10px',
-                      border: '1px solid #395253',
+                      border: '1px solid var(--color-brand-dark)',
                       backgroundColor: '#223233',
                       color: '#ffffff',
                       fontSize: '13px',
@@ -666,7 +666,7 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
               ) : filteredDiagrams.length === 0 ? (
                 <div style={{
                   backgroundColor: '#223233',
-                  border: '1px dashed #395253',
+                  border: '1px dashed var(--color-brand-dark)',
                   borderRadius: '12px',
                   padding: '30px',
                   textAlign: 'center',
@@ -707,7 +707,7 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
                                 style={{
                                   backgroundColor: '#223233',
                                   color: '#60A5FA',
-                                  border: '1px solid #395253',
+                                  border: '1px solid var(--color-brand-dark)',
                                   borderRadius: '6px',
                                   padding: '4px 8px',
                                   fontSize: '11px',
@@ -731,7 +731,7 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
                                   onClick={() => handleOpenDiagram(diagram)}
                                   title="Load onto canvas"
                                   style={{
-                                    background: 'linear-gradient(135deg, #FA8507 0%, #E07600 100%)',
+                                    background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%)',
                                     color: '#FFFFFF',
                                     border: 'none',
                                     borderRadius: '6px',
@@ -848,7 +848,7 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
               </h3>
             </div>
             <p style={{ color: '#B8C9C8', fontSize: '14px', lineHeight: '1.5', margin: '0 0 24px 0' }}>
-              Are you sure you want to permanently delete the diagram <strong style={{ color: '#FA8507' }}>'{diagramToDelete.title}'</strong>? This action cannot be undone.
+              Are you sure you want to permanently delete the diagram <strong style={{ color: 'var(--color-primary)' }}>'{diagramToDelete.title}'</strong>? This action cannot be undone.
             </p>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
               <button
@@ -901,7 +901,7 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
         }}>
           <form onSubmit={handleSaveMetadata} style={{
             backgroundColor: '#1A2829',
-            border: '1px solid #395253',
+            border: '1px solid var(--color-brand-dark)',
             borderRadius: '16px',
             width: '100%',
             maxWidth: '460px',
@@ -914,7 +914,7 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
             </h3>
             
             <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', color: '#FA8507', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
+              <label style={{ display: 'block', color: 'var(--color-primary)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
                 Diagram Title
               </label>
               <input
@@ -925,7 +925,7 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
                   width: '100%',
                   padding: '10px 14px',
                   borderRadius: '10px',
-                  border: '1px solid #395253',
+                  border: '1px solid var(--color-brand-dark)',
                   backgroundColor: '#223233',
                   color: '#ffffff',
                   fontSize: '13px',
@@ -937,7 +937,7 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
             </div>
 
             <div style={{ marginBottom: '24px' }}>
-              <label style={{ display: 'block', color: '#FA8507', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
+              <label style={{ display: 'block', color: 'var(--color-primary)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
                 Description
               </label>
               <textarea
@@ -948,7 +948,7 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
                   width: '100%',
                   padding: '10px 14px',
                   borderRadius: '10px',
-                  border: '1px solid #395253',
+                  border: '1px solid var(--color-brand-dark)',
                   backgroundColor: '#223233',
                   color: '#ffffff',
                   fontSize: '13px',
@@ -979,7 +979,7 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
               <button
                 type="submit"
                 style={{
-                  background: 'linear-gradient(135deg, #FA8507 0%, #E07600 100%)',
+                  background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%)',
                   color: '#FFFFFF',
                   border: 'none',
                   borderRadius: '10px',

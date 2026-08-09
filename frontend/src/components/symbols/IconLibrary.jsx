@@ -152,3 +152,53 @@ export const KeyboardIcon = ({ size = 16, color = 'currentColor', ...props }) =>
     <line x1="7" y1="16" x2="17" y2="16" />
   </svg>
 );
+
+export const FolderIcon = ({ size = 16, color = 'currentColor', ...props }) => (
+  <svg {...baseSvgProps(size, color)} {...props}>
+    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+  </svg>
+);
+
+export const SearchIcon = ({ size = 16, color = 'currentColor', ...props }) => (
+  <svg {...baseSvgProps(size, color)} {...props}>
+    <circle cx="11" cy="11" r="8" />
+    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+  </svg>
+);
+
+export const GlobeIcon = ({ size = 16, color = 'currentColor', ...props }) => (
+  <svg {...baseSvgProps(size, color)} {...props}>
+    <circle cx="12" cy="12" r="10" />
+    <line x1="2" y1="12" x2="22" y2="12" />
+    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+  </svg>
+);
+
+export const BoltIcon = ({ size = 16, color = 'currentColor', ...props }) => (
+  <svg {...baseSvgProps(size, color)} {...props}>
+    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+  </svg>
+);
+
+export const SpinnerIcon = ({ size = 16, color = 'currentColor', ...props }) => (
+  <svg 
+    {...baseSvgProps(size, color)} 
+    className="spinner-loader" 
+    {...props}
+  >
+    <line x1="12" y1="2" x2="12" y2="6" />
+    <line x1="12" y1="18" x2="12" y2="22" />
+    <line x1="4.93" y1="4.93" x2="7.76" y2="7.76" />
+    <line x1="16.24" y1="16.24" x2="19.07" y2="19.07" />
+    <line x1="2" y1="12" x2="6" y2="12" />
+    <line x1="18" y1="12" x2="22" y2="12" />
+    <line x1="4.93" y1="19.07" x2="7.76" y2="16.24" />
+    <line x1="16.24" y1="7.76" x2="19.07" y2="4.93" />
+  </svg>
+);
+
+export const FlameIcon = ({ size = 16, color = 'currentColor', ...props }) => (
+  <svg {...baseSvgProps(size, color)} {...props}>
+    <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+  </svg>
+);

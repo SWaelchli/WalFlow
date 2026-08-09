@@ -73,8 +73,8 @@ export default function PressureSafetyValveNode({ id, data, selected }) {
         <line x1="45" y1="35" x2="60" y2="35" stroke="var(--color-brand-dark)" strokeWidth="2.5" strokeLinecap="round" />
 
         {/* Opposite Triangles (Valve Seat) */}
-        <polygon points="25,23 25,47 35,35" fill={status !== 'closed' ? '#FA8507' : '#FFFFFF'} stroke="var(--color-brand-dark)" strokeWidth="2" />
-        <polygon points="45,23 45,47 35,35" fill={status !== 'closed' ? '#FA8507' : '#FFFFFF'} stroke="var(--color-brand-dark)" strokeWidth="2" />
+        <polygon points="25,23 25,47 35,35" fill={status !== 'closed' ? 'var(--color-primary)' : '#FFFFFF'} stroke="var(--color-brand-dark)" strokeWidth="2" />
+        <polygon points="45,23 45,47 35,35" fill={status !== 'closed' ? 'var(--color-primary)' : '#FFFFFF'} stroke="var(--color-brand-dark)" strokeWidth="2" />
 
         {/* Top Bonnet / Spring Box */}
         <line x1="35" y1="35" x2="35" y2="12" stroke="var(--color-brand-dark)" strokeWidth="2" />

@@ -11,7 +11,8 @@ import {
   CrownIcon, 
   SignOutIcon, 
   SignInIcon, 
-  PlayIcon 
+  PlayIcon,
+  SpinnerIcon
 } from '../symbols/IconLibrary';
 
 export default function Navbar({
@@ -79,7 +80,7 @@ export default function Navbar({
             style={{
               fontSize: '11px',
               fontWeight: '600',
-              color: '#395253',
+              color: 'var(--color-brand-dark)',
               cursor: 'pointer',
               userSelect: 'none',
               fontFamily: 'inherit',
@@ -101,12 +102,12 @@ export default function Navbar({
             style={{
               padding: '0 18px',
               fontWeight: '750',
-              boxShadow: isSimulating ? 'none' : '0 2px 6px rgba(250, 133, 7, 0.3)'
+              boxShadow: isSimulating ? 'none' : '0 2px 6px var(--color-primary-glow)'
             }}
           >
             {isSimulating ? (
               <>
-                <span className="spinner-loader">⌛</span>
+                <SpinnerIcon size={12} color="var(--color-text-inverse)" />
                 Simulating...
               </>
             ) : (

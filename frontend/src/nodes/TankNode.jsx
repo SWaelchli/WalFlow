@@ -30,7 +30,7 @@ export default function TankNode({ id, data, selected }) {
     >
       <svg width="60" height="100" viewBox="0 0 60 100">
         <path d="M 10 20 L 10 80 Q 10 95 30 95 Q 50 95 50 80 L 50 20 Q 50 5 30 5 Q 10 5 10 20 Z" fill="var(--color-surface)" stroke="var(--color-brand-dark)" strokeWidth="2.5" />
-        <rect x="10" y={80 - Math.min(60, (level/5)*60)} width="40" height={Math.min(60, (level/5)*60)} fill="#FA850733" />
+        <rect x="10" y={80 - Math.min(60, (level/5)*60)} width="40" height={Math.min(60, (level/5)*60)} fill="var(--color-primary)33" />
       </svg>
 
       <Handle 

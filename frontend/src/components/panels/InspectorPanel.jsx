@@ -112,47 +112,47 @@ export default function InspectorPanel({
           </div>
 
           {/* Tabs */}
-          <div style={{ display: 'flex', borderBottom: '1px solid #EBF0EF', backgroundColor: '#F4F7F6', padding: '0 8px' }}>
+          <div style={{ display: 'flex', borderBottom: '1px solid var(--color-border)', backgroundColor: 'var(--color-surface-hover)', padding: '0 8px' }}>
             <button
-              onClick={() => setActiveTab('setup')}
-              style={{
-                flex: 1,
-                padding: '10px 0',
-                border: 'none',
-                background: 'none',
-                fontSize: '12px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                color: activeTab === 'setup' ? '#FA8507' : '#587071',
-                borderBottom: activeTab === 'setup' ? '2px solid #FA8507' : '2px solid transparent',
-                transition: 'all 0.15s ease',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '4px'
-              }}
+               onClick={() => setActiveTab('setup')}
+               style={{
+                 flex: 1,
+                 padding: '10px 0',
+                 border: 'none',
+                 background: 'none',
+                 fontSize: '12px',
+                 fontWeight: '600',
+                 cursor: 'pointer',
+                 color: activeTab === 'setup' ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+                 borderBottom: activeTab === 'setup' ? '2px solid var(--color-primary)' : '2px solid transparent',
+                 transition: 'all 0.15s ease',
+                 display: 'inline-flex',
+                 alignItems: 'center',
+                 justifyContent: 'center',
+                 gap: '4px'
+               }}
             >
               <CaseIcon size={12} />
               Setup
             </button>
             <button
-              onClick={() => setActiveTab('results')}
-              style={{
-                flex: 1,
-                padding: '10px 0',
-                border: 'none',
-                background: 'none',
-                fontSize: '12px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                color: activeTab === 'results' ? '#FA8507' : '#587071',
-                borderBottom: activeTab === 'results' ? '2px solid #FA8507' : '2px solid transparent',
-                transition: 'all 0.15s ease',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '4px'
-              }}
+               onClick={() => setActiveTab('results')}
+               style={{
+                 flex: 1,
+                 padding: '10px 0',
+                 border: 'none',
+                 background: 'none',
+                 fontSize: '12px',
+                 fontWeight: '600',
+                 cursor: 'pointer',
+                 color: activeTab === 'results' ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+                 borderBottom: activeTab === 'results' ? '2px solid var(--color-primary)' : '2px solid transparent',
+                 transition: 'all 0.15s ease',
+                 display: 'inline-flex',
+                 alignItems: 'center',
+                 justifyContent: 'center',
+                 gap: '4px'
+               }}
             >
               Results
             </button>

@@ -133,7 +133,7 @@ export const EquipmentSymbol = ({ type, size = 40, style = {} }) => {
             <line x1="42" y1="35" x2="60" y2="35" stroke="#334155" strokeWidth="2.5" />
             <rect x="26" y="22" width="3" height="26" fill="#334155" rx="1" />
             <rect x="41" y="22" width="3" height="26" fill="#334155" rx="1" />
-            <path d="M 29,24 Q 35,35 29,46" fill="none" stroke="#FA8507" strokeWidth="3" />
+            <path d="M 29,24 Q 35,35 29,46" fill="none" stroke="var(--color-primary)" strokeWidth="3" />
           </svg>
         );
       case 'orifice':
@@ -150,8 +150,8 @@ export const EquipmentSymbol = ({ type, size = 40, style = {} }) => {
             <line x1="20" y1="10" x2="20" y2="22" stroke="#334155" strokeWidth="2.5" />
             <line x1="20" y1="38" x2="20" y2="50" stroke="#334155" strokeWidth="2.5" />
             <line x1="0" y1="30" x2="40" y2="30" stroke="#334155" strokeWidth="1.5" strokeDasharray="3,3" />
-            <circle cx="20" cy="30" r="6" fill="white" stroke="#FA8507" strokeWidth="2" />
-            <circle cx="20" cy="30" r="2.5" fill="#395253" />
+            <circle cx="20" cy="30" r="6" fill="white" stroke="var(--color-primary)" strokeWidth="2" />
+            <circle cx="20" cy="30" r="2.5" fill="var(--color-brand-dark)" />
           </svg>
         );
       case 'filter':
@@ -190,10 +190,10 @@ export const EquipmentSymbol = ({ type, size = 40, style = {} }) => {
         return (
           <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
             <rect x="5" y="10" width="50" height="40" rx="6" fill="#FFFFFF" stroke="#D8E2E1" strokeWidth="2" />
-            <line x1="12" y1="20" x2="40" y2="20" stroke="#395253" strokeWidth="2" strokeLinecap="round" />
+            <line x1="12" y1="20" x2="40" y2="20" stroke="var(--color-brand-dark)" strokeWidth="2" strokeLinecap="round" />
             <line x1="12" y1="28" x2="48" y2="28" stroke="#587071" strokeWidth="1.5" strokeLinecap="round" />
             <line x1="12" y1="36" x2="32" y2="36" stroke="#587071" strokeWidth="1.5" strokeLinecap="round" />
-            <circle cx="45" cy="18" r="2.5" fill="#FA8507" />
+            <circle cx="45" cy="18" r="2.5" fill="var(--color-primary)" />
           </svg>
         );
       default:

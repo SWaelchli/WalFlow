@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { APP_VERSION, RELEASE_STAGE, FILE_FORMAT_VERSION } from '../../constants';
+import { InfoIcon, CrossIcon, KeyboardIcon, BookIcon } from '../symbols/IconLibrary';
 
 const SHORTCUT_GROUPS = [
   {
@@ -353,15 +354,15 @@ export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts
                     rel="noopener noreferrer"
                     className="walflow-link-btn"
                   >
-                    🐙 GitHub Profile
+                    GitHub Profile
                   </a>
                   <a
-                    href="https://www.linkedin.com/in/sebastian-w%C3%A4lchli-405603227/"
+                    href="https://www.linkedin.com/in/sebastiangruenwald/"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="walflow-link-btn"
                   >
-                    💼 LinkedIn Profile
+                    LinkedIn Profile
                   </a>
                   <a
                     href="https://swaelchli.com"
@@ -369,7 +370,7 @@ export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts
                     rel="noopener noreferrer"
                     className="walflow-link-btn"
                   >
-                    🌐 Personal Website
+                    Personal Website
                   </a>
                 </div>
               </div>
@@ -408,7 +409,7 @@ export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts
               {/* 1. Canvas & Diagram Construction */}
               <div style={{ backgroundColor: 'var(--color-surface-dark)', borderRadius: '12px', padding: '18px 20px', border: '1px solid var(--color-brand-dark)' }}>
                 <h4 style={{ margin: '0 0 8px 0', fontSize: '15px', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span>🏗️</span> 1. Canvas & Diagram Construction
+                  1. Canvas & Diagram Construction
                 </h4>
                 <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--color-border)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <li><strong>Drag & Drop Equipment:</strong> Drag pumps (Centrifugal & Volumetric), tanks, control valves, pressure regulators, orifices, filters, heat exchangers, or 3-way TCVs from the left sidebar onto the canvas.</li>
@@ -420,7 +421,7 @@ export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts
               {/* 2. Global Fluid & Solver Settings */}
               <div style={{ backgroundColor: 'var(--color-surface-dark)', borderRadius: '12px', padding: '18px 20px', border: '1px solid var(--color-brand-dark)' }}>
                 <h4 style={{ margin: '0 0 8px 0', fontSize: '15px', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span>⚙️</span> 2. Global Fluid & System Settings
+                  2. Global Fluid & System Settings
                 </h4>
                 <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: 'var(--color-border)' }}>
                   Expand the <strong>Global Settings</strong> accordion in the left sidebar to configure simulation physical parameters:
@@ -435,7 +436,7 @@ export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts
               {/* 3. Property Editor & Live Tuning */}
               <div style={{ backgroundColor: 'var(--color-surface-dark)', borderRadius: '12px', padding: '18px 20px', border: '1px solid var(--color-brand-dark)' }}>
                 <h4 style={{ margin: '0 0 8px 0', fontSize: '15px', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span>📝</span> 3. Property Editor & Equipment Parameters
+                  3. Property Editor & Equipment Parameters
                 </h4>
                 <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--color-border)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <li><strong>Component Selection:</strong> Click any node or pipe on the canvas to inspect its parameters in the <strong>Property Editor</strong> on the right.</li>
@@ -447,7 +448,7 @@ export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts
               {/* 4. Real-Time Telemetry & Performance Stats */}
               <div style={{ backgroundColor: 'var(--color-surface-dark)', borderRadius: '12px', padding: '18px 20px', border: '1px solid var(--color-brand-dark)' }}>
                 <h4 style={{ margin: '0 0 8px 0', fontSize: '15px', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span>📊</span> 4. Simulation Engine, Telemetry & Stats
+                  4. Simulation Engine, Telemetry & Stats
                 </h4>
                 <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--color-border)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <li><strong>Run Simulation:</strong> Click <strong>Calculate</strong> to send the PFD topology to the Python FastAPI physics solver via WebSocket.</li>
@@ -460,7 +461,7 @@ export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts
               {/* 5. Heatmap Visualizations */}
               <div style={{ backgroundColor: 'var(--color-surface-dark)', borderRadius: '12px', padding: '18px 20px', border: '1px solid var(--color-brand-dark)' }}>
                 <h4 style={{ margin: '0 0 8px 0', fontSize: '15px', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span>🎨</span> 5. Heatmap Visualizations
+                  5. Heatmap Visualizations
                 </h4>
                 <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--color-border)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <li><strong>Toggle Heatmaps:</strong> Click the 🎨 button in the canvas controls bar to overlay thermal gradients onto the pipes.</li>
@@ -472,7 +473,7 @@ export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts
               {/* 6. Save, Load & PFD Preset Templates */}
               <div style={{ backgroundColor: 'var(--color-surface-dark)', borderRadius: '12px', padding: '18px 20px', border: '1px solid var(--color-brand-dark)' }}>
                 <h4 style={{ margin: '0 0 8px 0', fontSize: '15px', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span>📁</span> 6. Save, Load & Preset PFD Templates
+                  6. Save, Load & Preset PFD Templates
                 </h4>
                 <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--color-border)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <li><strong>Save & Load .wlf:</strong> Export your PFD model configuration to `walflow-diagram.wlf` or restore previously saved project files (`.wlf` or legacy `.json`). You can also drag and drop `.wlf` files directly onto the canvas.</li>

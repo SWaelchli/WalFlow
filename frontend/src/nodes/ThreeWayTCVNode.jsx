@@ -44,10 +44,10 @@ export default function ThreeWayTCVNode({ id, data, selected }) {
         <line x1="30" y1="17" x2="30" y2="35" stroke="var(--color-brand-dark)" strokeWidth="1.5" />
         <text x="30" y="14" textAnchor="middle" style={{ fontSize: '8px', fontWeight: '800', fill: '#334155' }}>T</text>
 
-        <text x="20" y="37" textAnchor="middle" style={{ fontSize: '7px', fontWeight: 'bold', fill: hotIdx === 0 ? '#ef4444' : '#FA8507' }}>
+        <text x="20" y="37" textAnchor="middle" style={{ fontSize: '7px', fontWeight: 'bold', fill: hotIdx === 0 ? '#ef4444' : 'var(--color-primary)' }}>
           {hotIdx === 0 ? 'H' : 'C'}
         </text>
-        <text x="30" y="50" textAnchor="middle" style={{ fontSize: '7px', fontWeight: 'bold', fill: hotIdx === 1 ? '#ef4444' : '#FA8507' }}>
+        <text x="30" y="50" textAnchor="middle" style={{ fontSize: '7px', fontWeight: 'bold', fill: hotIdx === 1 ? '#ef4444' : 'var(--color-primary)' }}>
           {hotIdx === 1 ? 'H' : 'C'}
         </text>
       </svg>

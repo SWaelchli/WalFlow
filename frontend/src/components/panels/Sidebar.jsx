@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { EquipmentSymbol } from '../symbols/SymbolLibrary';
-import { InfoIcon, CheckIcon, CrossIcon } from '../symbols/IconLibrary';
+import { InfoIcon, CheckIcon, CrossIcon, FolderIcon, SearchIcon } from '../symbols/IconLibrary';
 
 
 const categorizedEquipment = [
@@ -55,17 +55,17 @@ const categorizedEquipment = [
 ];
 
 const theme = {
-  primary: '#FA8507',
-  primaryHover: '#E07600',
-  brandDark: '#395253',
-  brandDarker: '#253637',
-  slate50: '#F4F7F6',
+  primary: 'var(--color-primary)',
+  primaryHover: 'var(--color-primary-hover)',
+  brandDark: 'var(--color-brand-dark)',
+  brandDarker: 'var(--color-brand-darker)',
+  slate50: 'var(--color-surface-hover)',
   slate100: '#EBF0EF',
-  slate200: '#D8E2E1',
-  slate500: '#587071',
-  slate800: '#1C2B2C',
-  white: '#ffffff',
-  shadow: '0 4px 12px -2px rgba(57, 82, 83, 0.1)'
+  slate200: 'var(--color-border)',
+  slate500: 'var(--color-text-secondary)',
+  slate800: 'var(--color-text-primary)',
+  white: 'var(--color-surface)',
+  shadow: 'var(--shadow-md)'
 };
 
 
@@ -424,7 +424,7 @@ function CollapsibleScenarios({ templates, onLoad }) {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{ fontSize: '16px' }}>📁</span>
+          <FolderIcon size={16} color="var(--color-brand-dark)" />
           <h3 style={{ fontSize: '12px', fontWeight: '600', color: theme.slate800, margin: 0 }}>Library & Examples</h3>
         </div>
         <span style={{ fontSize: '10px', color: theme.slate500, transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }}>▼</span>
@@ -514,7 +514,7 @@ export default function Sidebar({ onLoad, globalSettings, onUpdateGlobalSettings
               transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
             }}
           >
-            {tab === 'diagnostics' ? '📊 Stats' : tab}
+            {tab === 'diagnostics' ? 'stats' : tab}
           </button>
         ))}
       </div>
@@ -540,12 +540,15 @@ export default function Sidebar({ onLoad, globalSettings, onUpdateGlobalSettings
               zIndex: 5
             }}>
               <div style={{ position: 'relative' }}>
-                <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: theme.slate500, fontSize: '14px' }}>🔍</span>
+                <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center' }}>
+                  <SearchIcon size={14} />
+                </span>
                 <input 
                   type="text" 
                   placeholder="Search equipment..." 
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  className="form-input"
                   style={{ ...inputStyle, paddingLeft: '36px' }}
                 />
                 {searchQuery && (

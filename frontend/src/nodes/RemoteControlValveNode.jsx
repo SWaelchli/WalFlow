@@ -49,10 +49,10 @@ export default function RemoteControlValveNode({ id, data, selected }) {
           top: '5px', 
           left: '30px', 
           transform: 'translate(-50%, -50%)',
-          background: '#FA8507', 
+          background: 'var(--color-primary)', 
           width: '8px', 
           height: '8px',
-          border: '1.5px solid #E07600',
+          border: '1.5px solid var(--color-primary-hover)',
           boxShadow: '0 1px 2px rgba(0,0,0,0.2)'
         }} 
       />

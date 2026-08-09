@@ -38,6 +38,7 @@ import DataList from './components/panels/DataList';
 import PipeEdge from './edges/PipeEdge';
 import SignalEdge from './edges/SignalEdge';
 import HeatmapLegend from './components/overlays/HeatmapLegend';
+import { FlameIcon, CaseIcon, HelpIcon } from './components/symbols/IconLibrary';
 import CaseManager from './components/overlays/CaseManager';
 import HelpInfoModal from './components/modals/HelpInfoModal';
 import LoginModal from './components/modals/LoginModal';
@@ -1086,7 +1087,7 @@ function WalFlowContent() {
         },
         style: isSignal ? edge.style : {
           ...edge.style,
-          stroke: heatmapSettings.mode !== 'default' ? undefined : (hasFlow ? '#FA8507' : '#395253'),
+          stroke: heatmapSettings.mode !== 'default' ? undefined : (hasFlow ? 'var(--color-primary)' : 'var(--color-brand-dark)'),
           strokeWidth: hasFlow ? 3.5 : 2.5,
         }
       };
@@ -1229,7 +1230,7 @@ function WalFlowContent() {
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              border: '3px dashed #FA8507',
+              border: '3px dashed var(--color-primary)',
               borderRadius: '16px',
               boxShadow: '0 20px 40px rgba(0, 0, 0, 0.4)',
               pointerEvents: 'none',
@@ -1280,47 +1281,22 @@ function WalFlowContent() {
               <ControlButton 
                 onClick={() => setHeatmapSettings(prev => ({ ...prev, mode: prev.mode === 'default' ? 'pressure' : 'default' }))}
                 title={heatmapSettings.mode === 'default' ? "Turn On Heatmap" : "Turn Off Heatmap"}
-                style={{
-                  backgroundColor: heatmapSettings.mode !== 'default' ? '#FA8507' : '#ffffff',
-                  color: heatmapSettings.mode !== 'default' ? '#ffffff' : '#395253',
-                  fontSize: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: 'all 0.15s ease'
-                }}
+                className={heatmapSettings.mode !== 'default' ? 'active' : ''}
               >
-                🎨
+                <FlameIcon size={14} />
               </ControlButton>
               <ControlButton 
                 onClick={() => setShowCaseManager(prev => !prev)}
                 title={showCaseManager ? "Hide Case Manager" : "Show Case Manager"}
-                style={{
-                  backgroundColor: showCaseManager ? '#FA8507' : '#ffffff',
-                  color: showCaseManager ? '#ffffff' : '#395253',
-                  fontSize: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: 'all 0.15s ease'
-                }}
+                className={showCaseManager ? 'active' : ''}
               >
-                💼
+                <CaseIcon size={14} />
               </ControlButton>
               <ControlButton 
                 onClick={() => handleOpenHelpModal('shortcuts')}
                 title="Help & Information (?)"
-                style={{
-                  backgroundColor: '#ffffff',
-                  color: '#395253',
-                  fontSize: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: 'all 0.15s ease'
-                }}
               >
-                ❓
+                <HelpIcon size={14} />
               </ControlButton>
             </Controls>
           </ReactFlow>
@@ -1347,23 +1323,23 @@ function WalFlowContent() {
 
           {showRestoredToast && (
             <div style={{
-              position: 'fixed',
-              bottom: '24px',
-              right: '24px',
-              backgroundColor: '#1C2B2C',
-              color: '#ffffff',
-              border: '1px solid #395253',
-              borderRadius: '12px',
-              padding: '12px 18px',
-              fontSize: '13px',
-              fontWeight: '600',
-              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(250, 133, 7, 0.2)',
-              zIndex: 99999,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              animation: 'walflowToastFadeIn 0.3s ease-out'
-            }}>
+                position: 'fixed',
+                bottom: '24px',
+                right: '24px',
+                backgroundColor: 'var(--color-brand-darkest)',
+                color: 'var(--color-text-inverse)',
+                border: '1px solid var(--color-brand-dark)',
+                borderRadius: '12px',
+                padding: '12px 18px',
+                fontSize: '13px',
+                fontWeight: '600',
+                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--color-primary-tint)',
+                zIndex: 99999,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                animation: 'walflowToastFadeIn 0.3s ease-out'
+              }}>
               <style>
                 {`
                   @keyframes walflowToastFadeIn {
@@ -1372,10 +1348,10 @@ function WalFlowContent() {
                   }
                 `}
               </style>
-              <span style={{ fontSize: '18px' }}>🟢</span>
+              <div style={{ width: '8px', height: '8px', minWidth: '8px', borderRadius: '50%', backgroundColor: 'var(--color-success)', display: 'inline-block' }} />
               <div>
-                <div style={{ fontWeight: '700', color: '#FA8507' }}>Restored Session Draft</div>
-                <div style={{ fontSize: '11px', color: '#B8C9C8', fontWeight: '400', marginTop: '1px' }}>
+                <div style={{ fontWeight: '700', color: 'var(--color-primary)' }}>Restored Session Draft</div>
+                <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontWeight: '400', marginTop: '1px' }}>
                   {restoredDraftTime ? `Restored workspace saved at ${restoredDraftTime}` : 'Restored previous unsaved workspace'}
                 </div>
               </div>

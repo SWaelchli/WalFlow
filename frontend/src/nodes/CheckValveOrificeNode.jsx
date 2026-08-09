@@ -24,7 +24,7 @@ export default function CheckValveOrificeNode({ id, data, selected }) {
     statusColor = '#16a34a';
   } else if (isBypass || flow < -1e-6) {
     statusText = 'BYPASS';
-    statusColor = '#FA8507';
+    statusColor = 'var(--color-primary)';
   }
 
   return (
