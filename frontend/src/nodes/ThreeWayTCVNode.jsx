@@ -27,21 +27,21 @@ export default function ThreeWayTCVNode({ id, data, selected }) {
       height={60}
       footer={
         <>
-          <div style={{ fontSize: '9px', color: '#334155', fontWeight: 'bold' }}>{data.label || '3-WAY TCV'}</div>
-          <div style={{ fontSize: '9px', color: '#64748b' }}>{qLmin} L/min</div>
-          <div style={{ fontSize: '9px', color: '#ef4444', fontWeight: 'bold' }}>{tOut} °C</div>
+          <div style={{ fontSize: '9px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>{data.label || '3-WAY TCV'}</div>
+          <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)' }}>{qLmin} L/min</div>
+          <div style={{ fontSize: '9px', color: 'var(--color-danger)', fontWeight: 'bold' }}>{tOut} °C</div>
         </>
       }
     >
       <svg width="60" height="60" viewBox="0 0 60 60">
-        <path d="M 10 20 L 30 35 L 10 50 Z" fill="white" stroke="#334155" strokeWidth="2.5" />
-        <path d="M 20 60 L 30 35 L 40 60 Z" fill="white" stroke="#334155" strokeWidth="2.5" />
-        <path d="M 50 20 L 30 35 L 50 50 Z" fill="white" stroke="#334155" strokeWidth="2.5" />
+        <path d="M 10 20 L 30 35 L 10 50 Z" fill="var(--color-surface)" stroke="var(--color-brand-dark)" strokeWidth="2.5" />
+        <path d="M 20 60 L 30 35 L 40 60 Z" fill="var(--color-surface)" stroke="var(--color-brand-dark)" strokeWidth="2.5" />
+        <path d="M 50 20 L 30 35 L 50 50 Z" fill="var(--color-surface)" stroke="var(--color-brand-dark)" strokeWidth="2.5" />
         
-        <circle cx="30" cy="35" r="2.5" fill="#334155" />
+        <circle cx="30" cy="35" r="2.5" fill="var(--color-brand-dark)" />
         
-        <rect x="24" y="5" width="12" height="12" fill="#f8fafc" stroke="#334155" strokeWidth="1.5" />
-        <line x1="30" y1="17" x2="30" y2="35" stroke="#334155" strokeWidth="1.5" />
+        <rect x="24" y="5" width="12" height="12" fill="#f8fafc" stroke="var(--color-brand-dark)" strokeWidth="1.5" />
+        <line x1="30" y1="17" x2="30" y2="35" stroke="var(--color-brand-dark)" strokeWidth="1.5" />
         <text x="30" y="14" textAnchor="middle" style={{ fontSize: '8px', fontWeight: '800', fill: '#334155' }}>T</text>
 
         <text x="20" y="37" textAnchor="middle" style={{ fontSize: '7px', fontWeight: 'bold', fill: hotIdx === 0 ? '#ef4444' : '#FA8507' }}>
@@ -61,7 +61,7 @@ export default function ThreeWayTCVNode({ id, data, selected }) {
           top: '35px', left: '10px', 
           marginTop: '-4px', marginLeft: '-4px',
           right: 'auto', bottom: 'auto', transform: 'none',
-          background: '#0284C7', width: '8px', height: '8px' 
+          background: 'var(--color-inlet)', width: '8px', height: '8px' 
         }} 
       />
       {sensing['inlet-0'] && <SensingPin portId="inlet-0" offset={{ x: -20, y: 0 }} />}
@@ -75,7 +75,7 @@ export default function ThreeWayTCVNode({ id, data, selected }) {
           top: '60px', left: '30px', 
           marginTop: '-4px', marginLeft: '-4px',
           right: 'auto', bottom: 'auto', transform: 'none',
-          background: '#0284C7', width: '8px', height: '8px' 
+          background: 'var(--color-inlet)', width: '8px', height: '8px' 
         }} 
       />
       {sensing['inlet-1'] && <SensingPin portId="inlet-1" offset={{ x: 0, y: 25 }} />}
@@ -89,7 +89,7 @@ export default function ThreeWayTCVNode({ id, data, selected }) {
           top: '35px', left: '50px', 
           marginTop: '-4px', marginLeft: '-4px',
           right: 'auto', bottom: 'auto', transform: 'none',
-          background: '#E11D48', width: '8px', height: '8px' 
+          background: 'var(--color-outlet)', width: '8px', height: '8px' 
         }} 
       />
       {sensing['outlet-0'] && <SensingPin portId="outlet-0" offset={{ x: 20, y: 0 }} />}

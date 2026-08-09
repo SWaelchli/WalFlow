@@ -7,7 +7,7 @@ import { getSmoothStepPath } from 'reactflow';
 /* eslint-disable-next-line react-refresh/only-export-components */
 export function getHeatmapColor(edgeData, heatmapMode = 'default', activeRange) {
   if (!heatmapMode || heatmapMode === 'default') {
-    return edgeData?.selected ? '#FA8507' : '#395253';
+    return edgeData?.selected ? 'var(--color-primary)' : 'var(--color-brand-dark)';
   }
 
   const telemetry = edgeData?.telemetry || {};
@@ -97,9 +97,9 @@ export default function PipeEdge({
         <path
           d={edgePath}
           fill="none"
-          stroke="#3b82f6"
+          stroke="var(--color-primary)"
           strokeWidth={9}
-          strokeOpacity={0.4}
+          strokeOpacity={0.25}
           strokeLinecap="round"
         />
       )}

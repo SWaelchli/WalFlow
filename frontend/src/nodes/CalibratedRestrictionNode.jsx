@@ -33,13 +33,13 @@ export default function CalibratedRestrictionNode({ id, data, selected }) {
       height={60}
       footer={
         <>
-          <div style={{ fontSize: '9px', color: '#1c2b2c', fontWeight: 'bold' }}>
+          <div style={{ fontSize: '9px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>
             {data.label || 'CAL. RESTRICTION'}
           </div>
-          <div style={{ fontSize: '8px', color: '#587071', fontStyle: 'italic', marginTop: '1px' }}>
+          <div style={{ fontSize: '8px', color: 'var(--color-text-secondary)', fontStyle: 'italic', marginTop: '1px' }}>
             {modelName}
           </div>
-          <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#ef4444', marginTop: '2px' }}>
+          <div style={{ fontSize: '10px', fontWeight: 'bold', color: 'var(--color-danger)', marginTop: '2px' }}>
             -{paToBar(dP)} bar(d)
           </div>
         </>
@@ -47,12 +47,12 @@ export default function CalibratedRestrictionNode({ id, data, selected }) {
     >
       <svg width="40" height="60" viewBox="0 0 40 60">
         {/* Stylized calibrated orifice restriction symbol */}
-        <line x1="20" y1="10" x2="20" y2="22" stroke="#334155" strokeWidth="2.5" />
-        <line x1="20" y1="38" x2="20" y2="50" stroke="#334155" strokeWidth="2.5" />
-        <line x1="0" y1="30" x2="40" y2="30" stroke="#334155" strokeWidth="1.5" strokeDasharray="3,3" />
+        <line x1="20" y1="10" x2="20" y2="22" stroke="var(--color-brand-dark)" strokeWidth="2.5" />
+        <line x1="20" y1="38" x2="20" y2="50" stroke="var(--color-brand-dark)" strokeWidth="2.5" />
+        <line x1="0" y1="30" x2="40" y2="30" stroke="var(--color-brand-dark)" strokeWidth="1.5" strokeDasharray="3,3" />
         {/* Calibrated dial indicator representing calibration */}
-        <circle cx="20" cy="30" r="6" fill="white" stroke="#FA8507" strokeWidth="2" />
-        <circle cx="20" cy="30" r="2.5" fill="#395253" />
+        <circle cx="20" cy="30" r="6" fill="var(--color-surface)" stroke="var(--color-primary)" strokeWidth="2" />
+        <circle cx="20" cy="30" r="2.5" fill="var(--color-brand-dark)" />
       </svg>
 
       <Handle 
@@ -64,7 +64,7 @@ export default function CalibratedRestrictionNode({ id, data, selected }) {
           top: '30px', left: '0px', 
           marginTop: '-4px', marginLeft: '-4px',
           right: 'auto', bottom: 'auto', transform: 'none',
-          background: '#0284C7', width: '8px', height: '8px' 
+          background: 'var(--color-inlet)', width: '8px', height: '8px' 
         }} 
       />
       {sensing['inlet-0'] && <SensingPin portId="inlet-0" offset={{ x: -20, y: 0 }} />}
@@ -78,7 +78,7 @@ export default function CalibratedRestrictionNode({ id, data, selected }) {
           top: '30px', left: '40px', 
           marginTop: '-4px', marginLeft: '-4px',
           right: 'auto', bottom: 'auto', transform: 'none',
-          background: '#E11D48', width: '8px', height: '8px' 
+          background: 'var(--color-outlet)', width: '8px', height: '8px' 
         }} 
       />
       {sensing['outlet-0'] && <SensingPin portId="outlet-0" offset={{ x: 20, y: 0 }} />}

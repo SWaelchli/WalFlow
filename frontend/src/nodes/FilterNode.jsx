@@ -26,15 +26,15 @@ export default function FilterNode({ id, data, selected }) {
       height={40}
       footer={
         <>
-          <div style={{ fontSize: '9px', color: '#334155', fontWeight: 'bold' }}>{data.label || 'STRAINER'}</div>
-          <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#ef4444' }}>-{paToBar(dP)} bar(d)</div>
-          <div style={{ fontSize: '8px', color: '#64748b' }}>Clogging: {clogging.toFixed(0)}%</div>
+          <div style={{ fontSize: '9px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>{data.label || 'STRAINER'}</div>
+          <div style={{ fontSize: '10px', fontWeight: 'bold', color: 'var(--color-danger)' }}>-{paToBar(dP)} bar(d)</div>
+          <div style={{ fontSize: '8px', color: 'var(--color-text-secondary)' }}>Clogging: {clogging.toFixed(0)}%</div>
         </>
       }
     >
       <svg width="60" height="40" viewBox="0 0 60 40">
-        <rect x="5" y="5" width="50" height="30" fill="white" stroke="#334155" strokeWidth="2.5" />
-        <line x1="5" y1="35" x2="55" y2="5" stroke="#334155" strokeWidth="2.5" />
+        <rect x="5" y="5" width="50" height="30" fill="var(--color-surface)" stroke="var(--color-brand-dark)" strokeWidth="2.5" />
+        <line x1="5" y1="35" x2="55" y2="5" stroke="var(--color-brand-dark)" strokeWidth="2.5" />
       </svg>
 
       <Handle 
@@ -46,7 +46,7 @@ export default function FilterNode({ id, data, selected }) {
           top: '20px', left: '5px', 
           marginTop: '-4px', marginLeft: '-4px',
           right: 'auto', bottom: 'auto', transform: 'none',
-          background: '#0284C7', width: '8px', height: '8px' 
+          background: 'var(--color-inlet)', width: '8px', height: '8px' 
         }} 
       />
       {sensing['inlet-0'] && <SensingPin portId="inlet-0" offset={{ x: -25, y: 0 }} />}
@@ -60,7 +60,7 @@ export default function FilterNode({ id, data, selected }) {
           top: '20px', left: '55px', 
           marginTop: '-4px', marginLeft: '-4px',
           right: 'auto', bottom: 'auto', transform: 'none',
-          background: '#E11D48', width: '8px', height: '8px' 
+          background: 'var(--color-outlet)', width: '8px', height: '8px' 
         }} 
       />
       {sensing['outlet-0'] && <SensingPin portId="outlet-0" offset={{ x: 25, y: 0 }} />}

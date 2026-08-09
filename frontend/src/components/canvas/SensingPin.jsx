@@ -24,10 +24,10 @@ export const SensingPin = ({ portId, offset = { x: 0, y: 0 } }) => {
     <div style={pinStyle}>
       <svg width="30" height="40" viewBox="0 0 30 40" style={{ display: 'block' }}>
         {/* Needle Body - Ends at the handle center (15, 12) */}
-        <line x1="15" y1="12" x2="15" y2="38" stroke="#64748b" strokeWidth="2.5" strokeLinecap="round" />
+        <line x1="15" y1="12" x2="15" y2="38" stroke="var(--color-text-secondary)" strokeWidth="2.5" strokeLinecap="round" />
       </svg>
       
-      {/* The Signal Source Handle (Yellow) - Acts as the visual "head" */}
+      {/* The Signal Source Handle (Yellow/Warning) - Acts as the visual "head" */}
       <Handle 
         type="source" 
         position={Position.Top} 
@@ -36,10 +36,10 @@ export const SensingPin = ({ portId, offset = { x: 0, y: 0 } }) => {
           top: '12px',
           left: '15px',
           transform: 'translate(-50%, -50%)', 
-          background: '#fde047', 
+          background: 'var(--color-warning)', 
           width: '8px', 
           height: '8px',
-          border: '1.5px solid #854d0e',
+          border: '1.5px solid var(--color-brand-dark)',
           pointerEvents: 'all',
           boxShadow: '0 1px 2px rgba(0,0,0,0.2)'
         }} 

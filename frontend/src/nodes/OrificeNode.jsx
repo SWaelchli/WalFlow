@@ -25,15 +25,15 @@ export default function OrificeNode({ id, data, selected }) {
       height={60}
       footer={
         <>
-          <div style={{ fontSize: '9px', color: '#334155', fontWeight: 'bold' }}>{data.label || 'ORIFICE'}</div>
-          <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#ef4444' }}>-{paToBar(dP)} bar(d)</div>
+          <div style={{ fontSize: '9px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>{data.label || 'ORIFICE'}</div>
+          <div style={{ fontSize: '10px', fontWeight: 'bold', color: 'var(--color-danger)' }}>-{paToBar(dP)} bar(d)</div>
         </>
       }
     >
       <svg width="40" height="60" viewBox="0 0 40 60">
-        <line x1="20" y1="10" x2="20" y2="25" stroke="#334155" strokeWidth="2.5" />
-        <line x1="20" y1="35" x2="20" y2="50" stroke="#334155" strokeWidth="2.5" />
-        <line x1="0" y1="30" x2="40" y2="30" stroke="#334155" strokeWidth="1.5" strokeDasharray="4,4" />
+        <line x1="20" y1="10" x2="20" y2="25" stroke="var(--color-brand-dark)" strokeWidth="2.5" />
+        <line x1="20" y1="35" x2="20" y2="50" stroke="var(--color-brand-dark)" strokeWidth="2.5" />
+        <line x1="0" y1="30" x2="40" y2="30" stroke="var(--color-brand-dark)" strokeWidth="1.5" strokeDasharray="4,4" />
       </svg>
 
       <Handle 
@@ -45,7 +45,7 @@ export default function OrificeNode({ id, data, selected }) {
           top: '30px', left: '0px', 
           marginTop: '-4px', marginLeft: '-4px',
           right: 'auto', bottom: 'auto', transform: 'none',
-          background: '#0284C7', width: '8px', height: '8px' 
+          background: 'var(--color-inlet)', width: '8px', height: '8px' 
         }} 
       />
       {sensing['inlet-0'] && <SensingPin portId="inlet-0" offset={{ x: -20, y: 0 }} />}
@@ -59,7 +59,7 @@ export default function OrificeNode({ id, data, selected }) {
           top: '30px', left: '40px', 
           marginTop: '-4px', marginLeft: '-4px',
           right: 'auto', bottom: 'auto', transform: 'none',
-          background: '#E11D48', width: '8px', height: '8px' 
+          background: 'var(--color-outlet)', width: '8px', height: '8px' 
         }} 
       />
       {sensing['outlet-0'] && <SensingPin portId="outlet-0" offset={{ x: 20, y: 0 }} />}

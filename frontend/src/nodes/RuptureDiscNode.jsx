@@ -20,17 +20,17 @@ export default function RuptureDiscNode({ id, data, selected }) {
   const burstPressureBar = data.burst_pressure_bar || 25.0;
 
   let statusText = 'INTACT';
-  let statusColor = '#166534'; // Green
-  let badgeBg = '#DCFCE7';
+  let statusColor = 'var(--color-success)'; // Green
+  let badgeBg = 'rgba(16, 185, 129, 0.12)';
 
   if (status === 'burst') {
     statusText = 'BURST';
-    statusColor = '#DC2626'; // Red
-    badgeBg = '#FEE2E2';
+    statusColor = 'var(--color-danger)'; // Red
+    badgeBg = 'rgba(239, 68, 68, 0.12)';
   } else if (status === 'overcapacity') {
     statusText = 'OVERCAPACITY';
-    statusColor = '#DC2626';
-    badgeBg = '#FEE2E2';
+    statusColor = 'var(--color-danger)';
+    badgeBg = 'rgba(239, 68, 68, 0.12)';
   }
 
   return (
@@ -42,7 +42,7 @@ export default function RuptureDiscNode({ id, data, selected }) {
       height={70}
       footer={
         <>
-          <div style={{ fontSize: '9px', color: '#1C2B2C', fontWeight: 'bold' }}>{data.label || 'RD'}</div>
+          <div style={{ fontSize: '9px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>{data.label || 'RD'}</div>
           <div
             style={{
               fontSize: '8.5px',
@@ -59,7 +59,7 @@ export default function RuptureDiscNode({ id, data, selected }) {
           >
             {statusText}
           </div>
-          <div style={{ fontSize: '9px', color: '#587071', marginTop: '1px' }}>
+          <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)', marginTop: '1px' }}>
             Burst: {burstPressureBar} bar(a) | {flowLmin} L/min
           </div>
         </>
@@ -67,13 +67,13 @@ export default function RuptureDiscNode({ id, data, selected }) {
     >
       <svg width="70" height="70" viewBox="0 0 70 70">
         {/* Inlet Stem (Left) */}
-        <line x1="10" y1="35" x2="28" y2="35" stroke="#395253" strokeWidth="2.5" strokeLinecap="round" />
+        <line x1="10" y1="35" x2="28" y2="35" stroke="var(--color-brand-dark)" strokeWidth="2.5" strokeLinecap="round" />
         {/* Outlet Stem (Right) */}
-        <line x1="42" y1="35" x2="60" y2="35" stroke="#395253" strokeWidth="2.5" strokeLinecap="round" />
+        <line x1="42" y1="35" x2="60" y2="35" stroke="var(--color-brand-dark)" strokeWidth="2.5" strokeLinecap="round" />
 
         {/* Flange Plates (Left & Right) */}
-        <rect x="26" y="22" width="3" height="26" fill="#395253" rx="1" />
-        <rect x="41" y="22" width="3" height="26" fill="#395253" rx="1" />
+        <rect x="26" y="22" width="3" height="26" fill="var(--color-brand-dark)" rx="1" />
+        <rect x="41" y="22" width="3" height="26" fill="var(--color-brand-dark)" rx="1" />
 
         {/* Rupture Diaphragm Dome */}
         {status === 'intact' ? (
@@ -81,7 +81,7 @@ export default function RuptureDiscNode({ id, data, selected }) {
           <path
             d="M 29,24 Q 35,35 29,46"
             fill="none"
-            stroke="#FA8507"
+            stroke="var(--color-primary)"
             strokeWidth="3.5"
             strokeLinecap="round"
           />
@@ -106,7 +106,7 @@ export default function RuptureDiscNode({ id, data, selected }) {
           top: '35px', left: '10px',
           marginTop: '-4px', marginLeft: '-4px',
           right: 'auto', bottom: 'auto', transform: 'none',
-          background: '#0284C7', width: '8px', height: '8px'
+          background: 'var(--color-inlet)', width: '8px', height: '8px'
         }}
       />
       {sensing['inlet-0'] && <SensingPin portId="inlet-0" offset={{ x: -20, y: 5 }} />}
@@ -120,7 +120,7 @@ export default function RuptureDiscNode({ id, data, selected }) {
           top: '35px', left: '60px',
           marginTop: '-4px', marginLeft: '-4px',
           right: 'auto', bottom: 'auto', transform: 'none',
-          background: '#E11D48', width: '8px', height: '8px'
+          background: 'var(--color-outlet)', width: '8px', height: '8px'
         }}
       />
       {sensing['outlet-0'] && <SensingPin portId="outlet-0" offset={{ x: 20, y: 5 }} />}

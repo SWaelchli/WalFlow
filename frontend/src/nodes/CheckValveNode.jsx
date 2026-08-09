@@ -25,20 +25,20 @@ export default function CheckValveNode({ id, data, selected }) {
       height={60}
       footer={
         <>
-          <div style={{ fontSize: '9px', color: '#334155', fontWeight: 'bold' }}>{data.label || 'CHECK VALVE'}</div>
+          <div style={{ fontSize: '9px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>{data.label || 'CHECK VALVE'}</div>
           <div style={{ fontSize: '10px', fontWeight: 'bold', color: isOpen ? '#16a34a' : '#64748b' }}>
             {isOpen ? 'OPEN' : 'CLOSED'}
           </div>
-          <div style={{ fontSize: '9px', color: '#64748b' }}>{flowLmin} L/min</div>
+          <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)' }}>{flowLmin} L/min</div>
         </>
       }
     >
       <svg width="60" height="60" viewBox="0 0 60 60">
-        <line x1="10" y1="20" x2="10" y2="50" stroke="#334155" strokeWidth="2.5" strokeLinecap="round" />
-        <circle cx="10" cy="20" r="3.5" fill="#334155" />
-        <line x1="50" y1="20" x2="50" y2="50" stroke="#334155" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="10" y1="20" x2="48" y2="46" stroke="#334155" strokeWidth="2.5" strokeLinecap="round" />
-        <polygon points="50,48 39,44 45,37" fill="#334155" stroke="#334155" strokeWidth="0.5" />
+        <line x1="10" y1="20" x2="10" y2="50" stroke="var(--color-brand-dark)" strokeWidth="2.5" strokeLinecap="round" />
+        <circle cx="10" cy="20" r="3.5" fill="var(--color-brand-dark)" />
+        <line x1="50" y1="20" x2="50" y2="50" stroke="var(--color-brand-dark)" strokeWidth="2.5" strokeLinecap="round" />
+        <line x1="10" y1="20" x2="48" y2="46" stroke="var(--color-brand-dark)" strokeWidth="2.5" strokeLinecap="round" />
+        <polygon points="50,48 39,44 45,37" fill="var(--color-brand-dark)" stroke="var(--color-brand-dark)" strokeWidth="0.5" />
       </svg>
 
       <Handle 
@@ -50,7 +50,7 @@ export default function CheckValveNode({ id, data, selected }) {
           top: '35px', left: '10px', 
           marginTop: '-4px', marginLeft: '-4px',
           right: 'auto', bottom: 'auto', transform: 'none',
-          background: '#0284C7', width: '8px', height: '8px' 
+          background: 'var(--color-inlet)', width: '8px', height: '8px' 
         }} 
       />
       {sensing['inlet-0'] && <SensingPin portId="inlet-0" offset={{ x: -20, y: 5 }} />}
@@ -64,7 +64,7 @@ export default function CheckValveNode({ id, data, selected }) {
           top: '35px', left: '50px', 
           marginTop: '-4px', marginLeft: '-4px',
           right: 'auto', bottom: 'auto', transform: 'none',
-          background: '#E11D48', width: '8px', height: '8px' 
+          background: 'var(--color-outlet)', width: '8px', height: '8px' 
         }} 
       />
       {sensing['outlet-0'] && <SensingPin portId="outlet-0" offset={{ x: 20, y: 5 }} />}

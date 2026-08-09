@@ -41,17 +41,17 @@ export default function HeatExchangerNode({ id, data, selected }) {
       height={60}
       footer={
         <>
-          <div style={{ fontSize: '9px', color: '#334155', fontWeight: 'bold' }}>{data.label || 'HEAT EXCH'}</div>
+          <div style={{ fontSize: '9px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>{data.label || 'HEAT EXCH'}</div>
           <div style={{ fontSize: '10px', fontWeight: 'bold', color: dutyVal > 0.01 ? '#ef4444' : dutyVal < -0.01 ? '#3b82f6' : '#64748b' }}>
             {dutyFormatted} kW
           </div>
-          <div style={{ fontSize: '9px', color: '#64748b' }}>ΔT: {deltaT} K</div>
+          <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)' }}>ΔT: {deltaT} K</div>
         </>
       }
     >
       <svg width="60" height="60" viewBox="0 0 60 60">
-        <circle cx="30" cy="30" r="25" fill="white" stroke="#334155" strokeWidth="2.5" />
-        <path d="M 10 30 L 20 20 L 30 40 L 40 20 L 50 30" fill="none" stroke="#334155" strokeWidth="2" />
+        <circle cx="30" cy="30" r="25" fill="var(--color-surface)" stroke="var(--color-brand-dark)" strokeWidth="2.5" />
+        <path d="M 10 30 L 20 20 L 30 40 L 40 20 L 50 30" fill="none" stroke="var(--color-brand-dark)" strokeWidth="2" />
       </svg>
 
       <Handle 
@@ -63,7 +63,7 @@ export default function HeatExchangerNode({ id, data, selected }) {
           top: '30px', left: '5px', 
           marginTop: '-4px', marginLeft: '-4px',
           right: 'auto', bottom: 'auto', transform: 'none',
-          background: '#0284C7', width: '8px', height: '8px' 
+          background: 'var(--color-inlet)', width: '8px', height: '8px' 
         }} 
       />
       {sensing['inlet-0'] && <SensingPin portId="inlet-0" offset={{ x: -25, y: 0 }} />}
@@ -77,7 +77,7 @@ export default function HeatExchangerNode({ id, data, selected }) {
           top: '30px', left: '55px', 
           marginTop: '-4px', marginLeft: '-4px',
           right: 'auto', bottom: 'auto', transform: 'none',
-          background: '#E11D48', width: '8px', height: '8px' 
+          background: 'var(--color-outlet)', width: '8px', height: '8px' 
         }} 
       />
       {sensing['outlet-0'] && <SensingPin portId="outlet-0" offset={{ x: 25, y: 0 }} />}

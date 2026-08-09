@@ -29,6 +29,8 @@
   --color-warning: #F59E0B;
   --color-danger: #EF4444;
   --color-info: #0284C7;
+  --color-inlet: #0284C7;
+  --color-outlet: #E11D48;
 
   --shadow-sm: 0 1px 2px 0 rgba(57, 82, 83, 0.05);
   --shadow-md: 0 4px 12px -2px rgba(57, 82, 83, 0.1), 0 2px 4px -2px rgba(57, 82, 83, 0.06);
@@ -158,30 +160,30 @@ body {
 }
 
 .react-flow__handle.handle-inlet {
-  border-color: #0284C7 !important;
+  border-color: var(--color-inlet) !important;
 }
 .react-flow__handle.handle-inlet:hover {
-  background-color: #0284C7 !important;
+  background-color: var(--color-inlet) !important;
   transform: scale(1.3);
   box-shadow: 0 0 8px rgba(2, 132, 199, 0.4);
 }
 
 .react-flow__handle.handle-outlet {
-  border-color: #E11D48 !important;
+  border-color: var(--color-outlet) !important;
 }
 .react-flow__handle.handle-outlet:hover {
-  background-color: #E11D48 !important;
+  background-color: var(--color-outlet) !important;
   transform: scale(1.3);
   box-shadow: 0 0 8px rgba(225, 29, 72, 0.4);
 }
 
 .react-flow__handle.handle-signal {
-  border-color: #FA8507 !important;
+  border-color: var(--color-primary) !important;
 }
 .react-flow__handle.handle-signal:hover {
-  background-color: #FA8507 !important;
+  background-color: var(--color-primary) !important;
   transform: scale(1.3);
-  box-shadow: 0 0 8px rgba(250, 133, 7, 0.4);
+  box-shadow: var(--color-primary-glow);
 }
 
 .react-flow__handle:hover {
@@ -579,6 +581,35 @@ textarea:focus-visible,
   border-bottom: 2px solid var(--color-primary);
   color: var(--color-primary) !important;
   font-weight: 700;
+}
+
+/* Canvas Rotate Button Class Styling */
+.rotate-btn {
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: var(--color-surface);
+  border: 1.5px solid var(--color-primary);
+  color: var(--color-primary);
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(250, 133, 7, 0.25);
+  z-index: 1000;
+  padding: 0;
+  transition: transform 0.2s, background-color 0.2s, color 0.2s;
+}
+
+.rotate-btn:hover {
+  background-color: var(--color-primary);
+  color: var(--color-text-inverse);
 }
 
 

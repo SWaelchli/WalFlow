@@ -28,16 +28,6 @@ export default function BaseNode({
 
   return (
     <div style={{ position: 'relative', cursor: selected ? 'move' : 'pointer' }}>
-      {selected && (
-        <div style={{
-          position: 'absolute',
-          top: -5, left: -5, right: -5, bottom: -5,
-          border: '2px solid #FA8507',
-          borderRadius: '6px',
-          boxShadow: '0 0 10px rgba(59, 130, 246, 0.3)',
-          pointerEvents: 'none'
-        }} />
-      )}
 
       {warningMessage && (
         <div 
@@ -47,7 +37,7 @@ export default function BaseNode({
             top: -15,
             left: '50%',
             transform: 'translateX(-50%)',
-            color: '#ef4444',
+            color: 'var(--color-danger)',
             fontSize: '20px',
             fontWeight: 'bold',
             textShadow: '0 0 5px rgba(239, 68, 68, 0.5)',
@@ -66,7 +56,7 @@ export default function BaseNode({
             top: -6,
             right: -6,
             background: 'transparent',
-            border: '1.5px solid #FA8507',
+            border: '1.5px solid var(--color-primary)',
             width: '16px',
             height: '16px',
             borderRadius: '50%',
@@ -78,7 +68,7 @@ export default function BaseNode({
           }}
           title="Contains active operating case overrides"
         >
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="#FA8507">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="var(--color-primary)">
             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
           </svg>
         </div>
@@ -92,7 +82,7 @@ export default function BaseNode({
             position: 'absolute',
             top: height - 12,
             left: width - 15,
-            background: '#ef4444',
+            background: 'var(--color-danger)',
             color: 'white',
             fontSize: '9px',
             fontWeight: 'bold',

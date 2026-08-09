@@ -27,7 +27,7 @@ export default function SignalEdge({
         id={id}
         d={edgePath}
         fill="none"
-        stroke="#FA8507"
+        stroke="var(--color-primary)"
         strokeWidth={selected ? 2.8 : 2.0}
         strokeDasharray="5 5"
         style={{
@@ -38,7 +38,7 @@ export default function SignalEdge({
       <path
         d={edgePath}
         fill="none"
-        stroke="#FFE5CA"
+        stroke="rgba(250, 133, 7, 0.5)"
         strokeWidth={1.5}
         strokeDasharray="3 9"
         style={{

@@ -28,17 +28,17 @@ export default function CentrifugalPumpNode({ id, data, selected }) {
       warningTitle="CAVITATION RISK: Low Suction Pressure"
       footer={
         <>
-          <div style={{ fontSize: '9px', color: '#334155', fontWeight: 'bold' }}>{data.label || 'C-PUMP'}</div>
-          <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#0369a1' }}>+{paToBar(dP)} bar(d)</div>
-          <div style={{ fontSize: '9px', color: '#64748b' }}>{m3sToLmin(q)} L/min</div>
+          <div style={{ fontSize: '9px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>{data.label || 'C-PUMP'}</div>
+          <div style={{ fontSize: '10px', fontWeight: 'bold', color: 'var(--color-brand-dark)' }}>+{paToBar(dP)} bar(d)</div>
+          <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)' }}>{m3sToLmin(q)} L/min</div>
         </>
       }
     >
       <svg width="60" height="60" viewBox="0 0 60 60">
-        <circle cx="30" cy="35" r="20" fill="white" stroke="#334155" strokeWidth="2.5" />
-        <line x1="30" y1="15" x2="30" y2="55" stroke="#334155" strokeWidth="1" strokeDasharray="2,2" />
-        <line x1="10" y1="35" x2="50" y2="35" stroke="#334155" strokeWidth="1" strokeDasharray="2,2" />
-        <line x1="30" y1="15" x2="60" y2="15" stroke="#334155" strokeWidth="2.5" />
+        <circle cx="30" cy="35" r="20" fill="var(--color-surface)" stroke="var(--color-brand-dark)" strokeWidth="2.5" />
+        <line x1="30" y1="15" x2="30" y2="55" stroke="var(--color-brand-dark)" strokeWidth="1" strokeDasharray="2,2" />
+        <line x1="10" y1="35" x2="50" y2="35" stroke="var(--color-brand-dark)" strokeWidth="1" strokeDasharray="2,2" />
+        <line x1="30" y1="15" x2="60" y2="15" stroke="var(--color-brand-dark)" strokeWidth="2.5" />
       </svg>
 
       <Handle 
@@ -50,7 +50,7 @@ export default function CentrifugalPumpNode({ id, data, selected }) {
           top: '35px', left: '10px', 
           marginTop: '-4px', marginLeft: '-4px',
           right: 'auto', bottom: 'auto', transform: 'none',
-          background: '#0284C7', width: '8px', height: '8px' 
+          background: 'var(--color-inlet)', width: '8px', height: '8px' 
         }} 
       />
       {sensing['inlet-0'] && <SensingPin portId="inlet-0" offset={{ x: -20, y: 5 }} />}
@@ -64,7 +64,7 @@ export default function CentrifugalPumpNode({ id, data, selected }) {
           top: '15px', left: '60px', 
           marginTop: '-4px', marginLeft: '-4px',
           right: 'auto', bottom: 'auto', transform: 'none',
-          background: '#E11D48', width: '8px', height: '8px' 
+          background: 'var(--color-outlet)', width: '8px', height: '8px' 
         }} 
       />
       {sensing['outlet-0'] && <SensingPin portId="outlet-0" offset={{ x: 30, y: -15 }} />}
