@@ -12,7 +12,9 @@ from simulation.equipment.linear_control_valve import LinearControlValve
 
 from db.database import init_db
 from routers.auth import router as auth_router
-from routers.diagrams import router as diagrams_router
+from routers.diagrams import router as diagrams_router, collab_manager
+from routers.projects import router as projects_router
+from routers.invitations import router as invitations_router
 from routers.admin import router as admin_router
 from routers.simulation import router as simulation_router, calculate_case_kpis
 
@@ -40,6 +42,8 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(diagrams_router)
+app.include_router(projects_router)
+app.include_router(invitations_router)
 app.include_router(admin_router)
 app.include_router(simulation_router)
 
@@ -85,7 +89,7 @@ def extract_telemetry(network):
 
 @app.get("/")
 async def read_root():
-    return {"status": "online", "message": "WalFlow Engine is ready.", "version": "0.1.6"}
+    return {"status": "online", "message": "WalFlow Engine is ready.", "version": "0.2.0"}
 
 @app.websocket("/ws/simulate")
 async def websocket_endpoint(websocket: WebSocket):
@@ -118,7 +122,13 @@ async def websocket_endpoint(websocket: WebSocket):
             
             action = data.get("action")
             
-            if action == "update_graph":
+            if action == "join_diagram":
+                diagram_id = data.get("diagram_id")
+                if diagram_id:
+                    await collab_manager.connect(websocket, diagram_id)
+                    print(f"WS client joined diagram collab channel: {diagram_id}")
+
+            elif action == "update_graph":
                 graph_data = data.get("graph")
                 if graph_data:
                     try:
@@ -188,6 +198,8 @@ async def websocket_endpoint(websocket: WebSocket):
             
     except WebSocketDisconnect:
         print("Frontend client disconnected.")
+    finally:
+        collab_manager.disconnect(websocket)
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

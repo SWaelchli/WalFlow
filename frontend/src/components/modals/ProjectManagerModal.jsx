@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../hooks/useAuth';
 import { FILE_FORMAT_VERSION, APP_VERSION, FILE_EXTENSION } from '../../constants';
-import { CloudIcon, ExportIcon, ImportIcon, TrashIcon, CrossIcon } from '../symbols/IconLibrary';
+import { CloudIcon, ExportIcon, ImportIcon, TrashIcon, CrossIcon, PlusIcon } from '../symbols/IconLibrary';
 
 const ProjectManagerModal = ({
   isOpen,
@@ -10,51 +10,155 @@ const ProjectManagerModal = ({
   currentFlowData,
   onLoadDiagram,
   activeProject,
-  setActiveProject
+  setActiveProject,
+  activeDiagram,
+  setActiveDiagram,
+  initialProjectId
 }) => {
-  const { isAuthenticated } = useAuth();
-  const [diagrams, setDiagrams] = useState([]);
+  const { isAuthenticated, currentUser } = useAuth();
+  
+  // Navigation: "projects" | "project_detail"
+  const [currentView, setCurrentView] = useState("projects");
+  
+  // Data loading states
+  const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
-  // Save active canvas state
-  const [saveTitle, setSaveTitle] = useState('My Hydraulic System');
-  const [saveDescription, setSaveDescription] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
+  // Target active project details (with member list and diagrams)
+  const [projectDetail, setProjectDetail] = useState(null);
 
-  const fetchDiagrams = useCallback(async () => {
+  // New item creation fields
+  const [newProjectTitle, setNewProjectTitle] = useState("");
+  const [newProjectDesc, setNewProjectDesc] = useState("");
+  const [isCreatingProject, setIsCreatingProject] = useState(false);
+
+  const [newDiagramTitle, setNewDiagramTitle] = useState("");
+  const [newDiagramDesc, setNewDiagramDesc] = useState("");
+  const [isCreatingDiagram, setIsCreatingDiagram] = useState(false);
+
+  // Collaboration/Sharing Form Fields
+  const [inviteUsername, setInviteUsername] = useState("");
+  const [inviteRole, setInviteRole] = useState("member");
+  const [isAddingMember, setIsAddingMember] = useState(false);
+
+  // Share invitation link fields
+  const [sharePassword, setSharePassword] = useState("");
+  const [inviteDuration, setInviteDuration] = useState(24);
+  const [inviteTokenLink, setInviteTokenLink] = useState("");
+  const [isGeneratingLink, setIsGeneratingLink] = useState(false);
+
+  // Lock status mapping for diagrams: diagram_id -> lockInfo
+  const [diagramLocks, setDiagramLocks] = useState({});
+
+  const fetchProjects = useCallback(async () => {
     if (!isAuthenticated) return;
     setLoading(true);
-    setError('');
+    setError("");
     try {
-      const response = await axios.get('/api/diagrams');
-      setDiagrams(response.data);
+      const response = await axios.get('/api/projects');
+      setProjects(response.data);
     } catch {
-      setError('Failed to fetch cloud diagrams from server.');
+      setError("Failed to fetch cloud projects from server.");
     } finally {
       setLoading(false);
     }
   }, [isAuthenticated]);
 
+  const fetchProjectDetail = useCallback(async (projectId) => {
+    setLoading(true);
+    setError("");
+    try {
+      const response = await axios.get(`/api/projects/${projectId}`);
+      setProjectDetail(response.data);
+      
+      // Fetch lock status for each diagram in this project
+      const locksMap = {};
+      await Promise.all(
+        response.data.diagrams.map(async (diag) => {
+          try {
+            const lockRes = await axios.get(`/api/diagrams/${diag.id}/lock-status`);
+            if (lockRes.data.is_locked) {
+              locksMap[diag.id] = lockRes.data.lock;
+            }
+          } catch {
+            console.warn("Failed to get lock status for diagram:", diag.id);
+          }
+        })
+      );
+      setDiagramLocks(locksMap);
+      setCurrentView("project_detail");
+    } catch {
+      setError("Failed to fetch project details from server.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Reset local state when modal toggled or load initial project view
+  useEffect(() => {
+    if (isOpen) {
+      if (initialProjectId) {
+        fetchProjectDetail(initialProjectId);
+        setCurrentView("project_detail");
+      } else {
+        setCurrentView("projects");
+        setProjectDetail(null);
+      }
+      setInviteTokenLink("");
+      setSharePassword("");
+    }
+  }, [isOpen, initialProjectId, fetchProjectDetail]);
+
   useEffect(() => {
     if (isOpen && isAuthenticated) {
-      fetchDiagrams();
+      fetchProjects();
     }
-  }, [isOpen, isAuthenticated, fetchDiagrams]);
+  }, [isOpen, isAuthenticated, fetchProjects]);
 
   if (!isOpen) return null;
 
-  const handleSaveCurrentDiagram = async (e) => {
+  const handleCreateProject = async (e) => {
     e.preventDefault();
-    const cleanTitle = typeof saveTitle === 'string' ? saveTitle.trim() : '';
-    if (!cleanTitle) {
-      alert('Please enter a project title.');
-      return;
-    }
-
-    setIsSaving(true);
+    if (!newProjectTitle.trim()) return;
+    setIsCreatingProject(true);
     try {
-      const formattedData = {
+      const response = await axios.post('/api/projects', {
+        title: newProjectTitle.trim(),
+        description: newProjectDesc.trim()
+      });
+      setNewProjectTitle("");
+      setNewProjectDesc("");
+      fetchProjects();
+      // Auto open the new project detail view
+      fetchProjectDetail(response.data.id);
+    } catch {
+      alert("Failed to create project.");
+    } finally {
+      setIsCreatingProject(false);
+    }
+  };
+
+  const handleDeleteProject = async (projectId, title) => {
+    if (!window.confirm(`Are you sure you want to delete '${title}'? This will permanently delete all diagrams inside it.`)) return;
+    try {
+      await axios.delete(`/api/projects/${projectId}`);
+      if (activeProject && activeProject.id === projectId) {
+        setActiveProject(null);
+        setActiveDiagram(null);
+      }
+      fetchProjects();
+    } catch {
+      alert("Failed to delete project. You must be an Owner of this project.");
+    }
+  };
+
+  const handleCreateDiagram = async (e) => {
+    e.preventDefault();
+    if (!newDiagramTitle.trim() || !projectDetail) return;
+    setIsCreatingDiagram(true);
+    try {
+      const emptyPayload = {
         version: FILE_FORMAT_VERSION,
         app_version: APP_VERSION,
         format: 'walflow',
@@ -67,28 +171,20 @@ const ProjectManagerModal = ({
       };
 
       const response = await axios.post('/api/diagrams', {
-        title: cleanTitle,
-        description: saveDescription.trim(),
-        diagram_data: JSON.stringify(formattedData)
+        title: newDiagramTitle.trim(),
+        description: newDiagramDesc.trim(),
+        diagram_data: JSON.stringify(emptyPayload),
+        project_id: projectDetail.id
       });
 
-      if (setActiveProject) {
-        setActiveProject({
-          id: response.data.id,
-          title: response.data.title,
-          description: response.data.description,
-          updated_at: response.data.updated_at
-        });
-      }
-
-      setSaveTitle('My Hydraulic System');
-      setSaveDescription('');
-      fetchDiagrams();
-      alert(`Project '${response.data.title}' saved to cloud DB & active project auto-sync enabled!`);
+      setNewDiagramTitle("");
+      setNewDiagramDesc("");
+      fetchProjectDetail(projectDetail.id);
+      alert(`New PFD diagram '${response.data.title}' created inside project.`);
     } catch {
-      alert('Failed to save diagram to server.');
+      alert("Failed to create diagram inside project.");
     } finally {
-      setIsSaving(false);
+      setIsCreatingDiagram(false);
     }
   };
 
@@ -97,74 +193,149 @@ const ProjectManagerModal = ({
       const response = await axios.get(`/api/diagrams/${diagramId}`);
       const parsedData = JSON.parse(response.data.diagram_data);
       
-      // Auto-upgrade diagram version in cloud DB if it differs
-      if (parsedData.app_version !== APP_VERSION) {
-        parsedData.app_version = APP_VERSION;
-        try {
-          await axios.put(`/api/diagrams/${diagramId}`, {
-            title: response.data.title,
-            description: response.data.description || '',
-            diagram_data: JSON.stringify(parsedData)
-          });
-        } catch (err) {
-          console.warn('Failed to auto-upgrade diagram version in DB:', err);
-        }
+      // Auto-validate schema format
+      if (parsedData.version !== FILE_FORMAT_VERSION) {
+        alert(`Cannot load: File format version '${parsedData.version}' is incompatible with version '${FILE_FORMAT_VERSION}'.`);
+        return;
       }
 
+      // Link Active contexts
       if (setActiveProject) {
         setActiveProject({
+          id: projectDetail.id,
+          title: projectDetail.title,
+          description: projectDetail.description
+        });
+      }
+      if (setActiveDiagram) {
+        setActiveDiagram({
           id: response.data.id,
           title: response.data.title,
-          description: response.data.description,
-          updated_at: response.data.updated_at
+          description: response.data.description
         });
       }
       onLoadDiagram(parsedData);
       onClose();
     } catch {
-      alert('Failed to load diagram from server.');
-    }
-  };
-
-  const handleUnlinkProject = () => {
-    if (setActiveProject) {
-      setActiveProject(null);
+      alert("Failed to load diagram from server.");
     }
   };
 
   const handleDeleteDiagram = async (diagramId, title) => {
-    if (!window.confirm(`Are you sure you want to delete '${title}' from the server?`)) return;
+    if (!window.confirm(`Are you sure you want to delete PFD diagram '${title}'?`)) return;
     try {
       await axios.delete(`/api/diagrams/${diagramId}`);
-      if (activeProject && activeProject.id === diagramId && setActiveProject) {
-        setActiveProject(null);
+      if (activeDiagram && activeDiagram.id === diagramId) {
+        setActiveDiagram(null);
       }
-      setDiagrams(prev => prev.filter(d => d.id !== diagramId));
+      fetchProjectDetail(projectDetail.id);
     } catch {
-      alert('Failed to delete diagram.');
+      alert("Failed to delete diagram. Project Owners or the diagram creator only.");
+    }
+  };
+
+  // Add Member
+  const handleAddMember = async (e) => {
+    e.preventDefault();
+    if (!inviteUsername.trim() || !projectDetail) return;
+    setIsAddingMember(true);
+    try {
+      await axios.post(`/api/projects/${projectDetail.id}/members`, {
+        username: inviteUsername.trim(),
+        role: inviteRole
+      });
+      setInviteUsername("");
+      fetchProjectDetail(projectDetail.id);
+      alert(`User '${inviteUsername}' successfully added to the project.`);
+    } catch (err) {
+      if (err.response && err.response.data && err.response.data.detail) {
+        alert(err.response.data.detail);
+      } else {
+        alert("Failed to add project member.");
+      }
+    } finally {
+      setIsAddingMember(false);
+    }
+  };
+
+  // Remove Member
+  const handleRemoveMember = async (memberId, username) => {
+    if (!projectDetail) return;
+    const msg = username === currentUser?.username 
+      ? "Are you sure you want to leave this project?"
+      : `Remove team member '${username}' from project?`;
+    if (!window.confirm(msg)) return;
+
+    try {
+      await axios.delete(`/api/projects/${projectDetail.id}/members/${memberId}`);
+      if (username === currentUser?.username) {
+        setActiveProject(null);
+        setActiveDiagram(null);
+        onClose();
+      } else {
+        fetchProjectDetail(projectDetail.id);
+      }
+    } catch (err) {
+      if (err.response && err.response.data && err.response.data.detail) {
+        alert(err.response.data.detail);
+      } else {
+        alert("Failed to remove member.");
+      }
+    }
+  };
+
+  // Promote/Demote roles
+  const handleToggleMemberRole = async (memberId, currentRole) => {
+    if (!projectDetail) return;
+    const targetRole = currentRole === "owner" ? "member" : "owner";
+    try {
+      await axios.put(`/api/projects/${projectDetail.id}/members/${memberId}`, {
+        role: targetRole
+      });
+      fetchProjectDetail(projectDetail.id);
+    } catch (err) {
+      if (err.response && err.response.data && err.response.data.detail) {
+        alert(err.response.data.detail);
+      } else {
+        alert("Failed to change user role.");
+      }
+    }
+  };
+
+  // Create invite link token
+  const handleGenerateShareToken = async () => {
+    if (!projectDetail) return;
+    setIsGeneratingLink(true);
+    try {
+      const response = await axios.post("/api/invitations", {
+        project_id: projectDetail.id,
+        password: sharePassword ? sharePassword.trim() : null,
+        expires_in_hours: parseInt(inviteDuration)
+      });
+      const link = `${window.location.origin}/invite/${response.data.token}`;
+      setInviteTokenLink(link);
+    } catch {
+      alert("Failed to generate invite token.");
+    } finally {
+      setIsGeneratingLink(false);
+    }
+  };
+
+  const handleForceReleaseLock = async (diagramId) => {
+    if (!window.confirm("Force release edit lock? Unsaved modifications by the current editor will be lost.")) return;
+    try {
+      await axios.post(`/api/diagrams/${diagramId}/force-checkin`);
+      fetchProjectDetail(projectDetail.id);
+    } catch {
+      alert("Failed to release lock. Only project owners can force release locks.");
     }
   };
 
   const handleExportDiagramAsFile = async (diagram) => {
     try {
-      let dataStr = diagram.diagram_data;
-      if (!dataStr) {
-        const response = await axios.get(`/api/diagrams/${diagram.id}`);
-        dataStr = response.data.diagram_data;
-      }
-      if (!dataStr) {
-        alert('Diagram data is empty or unavailable.');
-        return;
-      }
-
-      // Pretty-print JSON with 2-space indentation to match Navbar Export
-      try {
-        const parsed = typeof dataStr === 'string' ? JSON.parse(dataStr) : dataStr;
-        dataStr = JSON.stringify(parsed, null, 2);
-      } catch {
-        // Keep raw string if parsing fails
-      }
-
+      const response = await axios.get(`/api/diagrams/${diagram.id}`);
+      const dataStr = JSON.stringify(JSON.parse(response.data.diagram_data), null, 2);
+      
       const blob = new Blob([dataStr], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -174,9 +345,14 @@ const ProjectManagerModal = ({
       link.click();
       URL.revokeObjectURL(url);
     } catch {
-      alert('Failed to export diagram file.');
+      alert("Failed to export diagram.");
     }
   };
+
+  // Check if current user is owner of active project detail
+  const isOwnerOfActiveProject = projectDetail?.members?.some(
+    m => m.user_id === currentUser?.id && m.role === "owner"
+  );
 
   return (
     <div style={{
@@ -198,8 +374,8 @@ const ProjectManagerModal = ({
         border: '1px solid var(--color-brand-dark)',
         borderRadius: '16px',
         width: '100%',
-        maxWidth: '680px',
-        maxHeight: '85vh',
+        maxWidth: '820px',
+        maxHeight: '90vh',
         display: 'flex',
         flexDirection: 'column',
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(250, 133, 7, 0.15)',
@@ -221,19 +397,27 @@ const ProjectManagerModal = ({
               border-radius: 6px;
               display: flex;
               align-items: center;
-              justifyContent: center;
+              justify-content: center;
               transition: all 0.15s ease;
             }
             .modal-close-btn:hover {
               background-color: var(--color-brand-darker);
               color: var(--color-text-inverse);
             }
+            .breadcrumb-link {
+              color: var(--color-text-muted);
+              cursor: pointer;
+              transition: color 0.15s ease;
+            }
+            .breadcrumb-link:hover {
+              color: var(--color-primary);
+            }
           `}
         </style>
 
-        {/* Header */}
+        {/* Modal Header */}
         <div style={{
-          padding: '24px 28px 16px 28px',
+          padding: '20px 28px',
           borderBottom: '1px solid var(--color-brand-darker)',
           backgroundColor: 'var(--color-surface-dark)',
           display: 'flex',
@@ -254,213 +438,366 @@ const ProjectManagerModal = ({
               <CloudIcon size={20} color="#ffffff" />
             </div>
             <div>
-              <h3 style={{ margin: 0, color: '#ffffff', fontSize: '18px', fontWeight: '700' }}>
-                Cloud PFD Manager
+              <h3 style={{ margin: 0, color: '#ffffff', fontSize: '18px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {currentView === "projects" ? (
+                  <span>Projects Manager</span>
+                ) : (
+                  <span style={{ fontSize: '16px' }}>
+                    <span onClick={() => setCurrentView("projects")} className="breadcrumb-link">Projects</span>
+                    <span style={{ margin: '0 6px', color: 'var(--color-text-muted)' }}>/</span>
+                    <span style={{ color: '#ffffff' }}>{projectDetail?.title}</span>
+                  </span>
+                )}
               </h3>
               <p style={{ margin: '2px 0 0 0', color: 'var(--color-text-muted)', fontSize: '12px' }}>
-                Save & load diagrams from database server
+                {currentView === "projects" ? "Select a project to view its diagrams and share options" : "Manage project drawings, members, and lock states"}
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="modal-close-btn"
-            title="Close"
-          >
+          <button onClick={onClose} className="modal-close-btn" title="Close">
             <CrossIcon size={18} />
           </button>
         </div>
 
-        {/* Content Body */}
-        <div style={{ padding: '24px 28px', overflowY: 'auto', flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        {/* Modal Body */}
+        <div style={{ padding: '24px 28px', overflowY: 'auto', flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '20px' }}>
           
-          {/* Active Project Callout (if linked) */}
-          {activeProject ? (
-            <div style={{
-              backgroundColor: 'var(--color-brand-darker)',
-              border: '1px solid var(--color-primary)',
-              borderRadius: '12px',
-              padding: '14px 18px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center'
-            }}>
+          {loading && (
+            <div style={{ color: 'var(--color-text-muted)', fontSize: '13px', textAlign: 'center', padding: '20px' }}>Loading...</div>
+          )}
+
+          {error && (
+            <div style={{ color: '#FCA5A5', fontSize: '13px', padding: '12px', backgroundColor: 'rgba(239,68,68,0.15)', borderRadius: '10px', border: '1px solid var(--color-danger)' }}>{error}</div>
+          )}
+
+          {/* VIEW 1: PROJECTS LIST */}
+          {!loading && currentView === "projects" && (
+            <>
+              {/* Project Creation Form */}
+              <div style={{ backgroundColor: 'var(--color-surface-dark)', border: '1px solid var(--color-brand-dark)', borderRadius: '12px', padding: '18px 20px' }}>
+                <h4 style={{ margin: '0 0 14px 0', color: 'var(--color-primary)', fontSize: '13px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <PlusIcon size={14} color="var(--color-primary)" /> Create New Project
+                </h4>
+                <form onSubmit={handleCreateProject} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '14px' }}>
+                    <div>
+                      <label style={{ display: 'block', color: 'var(--color-text-muted)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '6px' }}>Project Title</label>
+                      <input
+                        type="text"
+                        value={newProjectTitle}
+                        onChange={(e) => setNewProjectTitle(e.target.value)}
+                        placeholder="e.g. Refinery Loop A"
+                        className="form-input"
+                        style={{ width: '100%', backgroundColor: 'var(--color-brand-darkest)', borderColor: 'var(--color-brand-dark)', color: '#ffffff', height: '38px', fontSize: '13px' }}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', color: 'var(--color-text-muted)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '6px' }}>Description</label>
+                      <input
+                        type="text"
+                        value={newProjectDesc}
+                        onChange={(e) => setNewProjectDesc(e.target.value)}
+                        placeholder="Project overview or system purpose"
+                        className="form-input"
+                        style={{ width: '100%', backgroundColor: 'var(--color-brand-darkest)', borderColor: 'var(--color-brand-dark)', color: '#ffffff', height: '38px', fontSize: '13px' }}
+                      />
+                    </div>
+                  </div>
+                  <button type="submit" disabled={isCreatingProject} className="btn-primary" style={{ alignSelf: 'flex-end', height: '36px', padding: '0 18px', borderRadius: '10px', fontSize: '12px', fontWeight: '700', boxShadow: '0 4px 12px var(--color-primary-glow)' }}>
+                    {isCreatingProject ? 'Creating...' : 'Create Project'}
+                  </button>
+                </form>
+              </div>
+
+              {/* Projects List display */}
               <div>
-                <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '2px' }}>
-                  🟢 Active Cloud Project Auto-Sync Enabled
-                </div>
-                <div style={{ color: '#ffffff', fontSize: '15px', fontWeight: '700' }}>
-                  {activeProject.title}
-                </div>
-                {activeProject.description && (
-                  <div style={{ color: 'var(--color-text-muted)', fontSize: '12px', marginTop: '2px' }}>
-                    {activeProject.description}
+                <h4 style={{ margin: '0 0 14px 0', color: 'var(--color-primary)', fontSize: '13px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Your Projects</h4>
+                {projects.length === 0 ? (
+                  <div style={{ color: 'var(--color-text-muted)', fontSize: '13px', textAlign: 'center', padding: '28px', backgroundColor: 'var(--color-surface-dark)', borderRadius: '12px', border: '1px dashed var(--color-brand-dark)' }}>
+                    No projects found. Create your first project using the form above.
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {projects.map(p => (
+                      <div key={p.id} style={{
+                        backgroundColor: 'var(--color-surface-dark)',
+                        border: '1px solid var(--color-brand-dark)',
+                        borderRadius: '12px',
+                        padding: '14px 18px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        transition: 'border-color 0.15s ease',
+                        margin: '0'
+                      }}>
+                        <div>
+                          <h5 style={{ margin: '0 0 4px 0', color: '#ffffff', fontSize: '14px', fontWeight: '700' }}>
+                            {p.title}
+                          </h5>
+                          <div style={{ color: 'var(--color-text-muted)', fontSize: '12px' }}>
+                            {p.description || 'No description'} • Role: <strong style={{ color: p.role === 'owner' ? 'var(--color-primary)' : '#ffffff' }}>{p.role}</strong>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <button onClick={() => fetchProjectDetail(p.id)} className="btn-primary" style={{ height: '30px', padding: '0 14px', borderRadius: '8px', fontSize: '12px', fontWeight: '700', boxShadow: '0 2px 8px var(--color-primary-glow)' }}>
+                            Open
+                          </button>
+                          {p.role === "owner" && (
+                            <button onClick={() => handleDeleteProject(p.id, p.title)} className="btn-danger-ghost" style={{ height: '30px', width: '30px', padding: 0, borderRadius: '8px' }} title="Delete Project">
+                              <TrashIcon size={14} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
-              <button
-                onClick={handleUnlinkProject}
-                className="btn-danger-ghost"
-                style={{
-                  height: '32px',
-                  padding: '0 12px',
-                  fontSize: '12px'
-                }}
-              >
-                Detach Cloud Sync
-              </button>
-            </div>
-          ) : null}
+            </>
+          )}
 
-          {/* Section 1: Save Active Canvas to DB */}
-          <div style={{ backgroundColor: 'var(--color-surface-dark)', border: '1px solid var(--color-brand-dark)', borderRadius: '12px', padding: '18px 20px' }}>
-            <h4 style={{ margin: '0 0 14px 0', color: 'var(--color-primary)', fontSize: '13px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <ExportIcon size={14} color="var(--color-primary)" /> Save Active Canvas to Server Database
-            </h4>
-            <form onSubmit={handleSaveCurrentDiagram} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-                <div>
-                  <label style={{ display: 'block', color: 'var(--color-text-muted)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '6px' }}>Title</label>
-                  <input
-                    type="text"
-                    value={saveTitle}
-                    onChange={(e) => setSaveTitle(e.target.value)}
-                    className="form-input"
-                    style={{
-                      width: '100%',
-                      backgroundColor: 'var(--color-brand-darkest)',
-                      borderColor: 'var(--color-brand-dark)',
-                      color: '#ffffff',
-                      height: '38px',
-                      fontSize: '13px'
-                    }}
-                    required
-                  />
+          {/* VIEW 2: PROJECT DETAIL (DIAGRAMS & MEMBERS) */}
+          {!loading && currentView === "project_detail" && projectDetail && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '20px' }}>
+              
+              {/* Left Column: Drawings inside Project */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                
+                {/* Diagram Creation Form */}
+                <div style={{ backgroundColor: 'var(--color-surface-dark)', border: '1px solid var(--color-brand-dark)', borderRadius: '12px', padding: '16px 18px' }}>
+                  <h4 style={{ margin: '0 0 12px 0', color: 'var(--color-primary)', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Create New Drawing</h4>
+                  <form onSubmit={handleCreateDiagram} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <input
+                      type="text"
+                      value={newDiagramTitle}
+                      onChange={(e) => setNewDiagramTitle(e.target.value)}
+                      placeholder="PFD Title (e.g. Cooling Loop)"
+                      className="form-input"
+                      style={{ width: '100%', backgroundColor: 'var(--color-brand-darkest)', borderColor: 'var(--color-brand-dark)', color: '#ffffff', height: '34px', fontSize: '12px' }}
+                      required
+                    />
+                    <input
+                      type="text"
+                      value={newDiagramDesc}
+                      onChange={(e) => setNewDiagramDesc(e.target.value)}
+                      placeholder="Description (optional)"
+                      className="form-input"
+                      style={{ width: '100%', backgroundColor: 'var(--color-brand-darkest)', borderColor: 'var(--color-brand-dark)', color: '#ffffff', height: '34px', fontSize: '12px' }}
+                    />
+                    <button type="submit" disabled={isCreatingDiagram} className="btn-primary" style={{ height: '32px', padding: '0 12px', borderRadius: '8px', fontSize: '11px', fontWeight: '700', alignSelf: 'flex-end' }}>
+                      {isCreatingDiagram ? 'Creating...' : 'Create PFD'}
+                    </button>
+                  </form>
                 </div>
-                <div>
-                  <label style={{ display: 'block', color: 'var(--color-text-muted)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '6px' }}>Description (optional)</label>
-                  <input
-                    type="text"
-                    value={saveDescription}
-                    onChange={(e) => setSaveDescription(e.target.value)}
-                    placeholder="e.g. 2-pump high pressure loop"
-                    className="form-input"
-                    style={{
-                      width: '100%',
-                      backgroundColor: 'var(--color-brand-darkest)',
-                      borderColor: 'var(--color-brand-dark)',
-                      color: '#ffffff',
-                      height: '38px',
-                      fontSize: '13px'
-                    }}
-                  />
-                </div>
-              </div>
-              <button
-                type="submit"
-                disabled={isSaving}
-                className="btn-primary"
-                style={{
-                  alignSelf: 'flex-end',
-                  height: '36px',
-                  padding: '0 18px',
-                  borderRadius: '10px',
-                  fontSize: '12px',
-                  fontWeight: '700',
-                  boxShadow: '0 4px 12px var(--color-primary-glow)'
-                }}
-              >
-                {isSaving ? 'Saving...' : 'Save to Cloud DB'}
-              </button>
-            </form>
-          </div>
 
-          {/* Section 2: Saved Projects List */}
-          <div>
-            <h4 style={{ margin: '0 0 14px 0', color: 'var(--color-primary)', fontSize: '13px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <CloudIcon size={14} color="var(--color-primary)" /> Saved Projects on Server
-            </h4>
-            
-            {loading ? (
-              <div style={{ color: 'var(--color-text-muted)', fontSize: '13px', textAlign: 'center', padding: '20px' }}>Loading cloud projects...</div>
-            ) : error ? (
-              <div style={{ color: '#FCA5A5', fontSize: '13px', padding: '12px', backgroundColor: 'rgba(239,68,68,0.15)', borderRadius: '10px', border: '1px solid var(--color-danger)' }}>{error}</div>
-            ) : diagrams.length === 0 ? (
-              <div style={{ color: 'var(--color-text-muted)', fontSize: '13px', textAlign: 'center', padding: '28px', backgroundColor: 'var(--color-surface-dark)', borderRadius: '12px', border: '1px dashed var(--color-brand-dark)' }}>
-                No saved cloud projects yet. Use the form above to save your first PFD diagram.
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {diagrams.map(diagram => (
-                  <div key={diagram.id} style={{
-                    backgroundColor: 'var(--color-surface-dark)',
-                    border: '1px solid var(--color-brand-dark)',
-                    borderRadius: '12px',
-                    padding: '14px 18px',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                  }}>
-                    <div>
-                      <h5 style={{ margin: '0 0 4px 0', color: '#ffffff', fontSize: '14px', fontWeight: '700' }}>
-                        {diagram.title}
-                      </h5>
-                      <div style={{ color: 'var(--color-text-muted)', fontSize: '12px' }}>
-                        {diagram.description || 'No description'} • Updated {new Date(diagram.updated_at).toLocaleDateString()}
-                      </div>
+                {/* Diagrams List */}
+                <div>
+                  <h4 style={{ margin: '0 0 12px 0', color: 'var(--color-primary)', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Drawing List</h4>
+                  {projectDetail.diagrams.length === 0 ? (
+                    <div style={{ color: 'var(--color-text-muted)', fontSize: '12px', textAlign: 'center', padding: '24px', backgroundColor: 'var(--color-surface-dark)', borderRadius: '12px', border: '1px dashed var(--color-brand-dark)' }}>
+                      No drawings inside this project. Create one above to get started.
                     </div>
-                    
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <button
-                        onClick={() => handleLoadDiagram(diagram.id)}
-                        className="btn-primary"
-                        style={{
-                          height: '30px',
-                          padding: '0 14px',
-                          borderRadius: '8px',
-                          fontSize: '12px',
-                          fontWeight: '700',
-                          boxShadow: '0 2px 8px var(--color-primary-glow)'
-                        }}
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      {projectDetail.diagrams.map(d => {
+                        const lock = diagramLocks[d.id];
+                        const isLockedByMe = lock && lock.user_id === currentUser?.id;
+                        const isLockedByOther = lock && lock.user_id !== currentUser?.id;
+                        
+                        return (
+                          <div key={d.id} style={{
+                            backgroundColor: 'var(--color-surface-dark)',
+                            border: '1px solid var(--color-brand-dark)',
+                            borderRadius: '12px',
+                            padding: '12px 14px',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            margin: '0'
+                          }}>
+                            <div style={{ flexGrow: 1, marginRight: '10px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <h5 style={{ margin: 0, color: '#ffffff', fontSize: '13px', fontWeight: '700' }}>{d.title}</h5>
+                                {lock ? (
+                                  <span style={{
+                                    fontSize: '9px',
+                                    fontWeight: '700',
+                                    padding: '2px 6px',
+                                    borderRadius: '10px',
+                                    backgroundColor: isLockedByMe ? '#ECFDF5' : '#FFFBEB',
+                                    color: isLockedByMe ? '#10B981' : '#D97706',
+                                    border: isLockedByMe ? '1px solid #A7F3D0' : '1px solid #FDE68A'
+                                  }}>
+                                    {isLockedByMe ? '🟢 Editing' : `🔒 Locked: ${lock.username}`}
+                                  </span>
+                                ) : (
+                                  <span style={{
+                                    fontSize: '9px',
+                                    fontWeight: '750',
+                                    padding: '2px 6px',
+                                    borderRadius: '10px',
+                                    backgroundColor: '#F4F7F6',
+                                    color: '#587071',
+                                    border: '1px solid #D8E2E1'
+                                  }}>
+                                    Available
+                                  </span>
+                                )}
+                              </div>
+                              <p style={{ margin: '4px 0 0 0', color: 'var(--color-text-muted)', fontSize: '11px' }}>
+                                {d.description || 'No description'}
+                              </p>
+                            </div>
+                            
+                            <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
+                              <button onClick={() => handleLoadDiagram(d.id)} className="btn-primary" style={{ height: '28px', padding: '0 10px', borderRadius: '6px', fontSize: '11px', fontWeight: '700' }}>
+                                Open
+                              </button>
+                              
+                              {/* Override lock release button */}
+                              {isLockedByOther && isOwnerOfActiveProject && (
+                                <button onClick={() => handleForceReleaseLock(d.id)} className="btn-secondary" style={{ height: '28px', padding: '0 8px', borderRadius: '6px', fontSize: '11px', color: '#EF4444', backgroundColor: '#FEF2F2', borderColor: '#FEE2E2' }} title="Force release user edit lock">
+                                  Release Lock
+                                </button>
+                              )}
+
+                              <button onClick={() => handleExportDiagramAsFile(d)} className="btn-secondary" style={{ height: '28px', padding: '0 8px', borderRadius: '6px', fontSize: '11px', color: '#ffffff', backgroundColor: 'var(--color-brand-darker)' }} title="Download .wlf">
+                                <ExportIcon size={10} />
+                              </button>
+
+                              {(isOwnerOfActiveProject || d.user_id === currentUser?.id) && (
+                                <button onClick={() => handleDeleteDiagram(d.id, d.title)} className="btn-danger-ghost" style={{ height: '28px', width: '28px', padding: 0, borderRadius: '6px' }}>
+                                  <TrashIcon size={12} />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Right Column: Members & Sharing Links */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                
+                {/* Project Members List */}
+                <div style={{ backgroundColor: 'var(--color-surface-dark)', border: '1px solid var(--color-brand-dark)', borderRadius: '12px', padding: '16px 18px' }}>
+                  <h4 style={{ margin: '0 0 12px 0', color: 'var(--color-primary)', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Project Team</h4>
+                  
+                  {/* Add Member Form (Owners only) */}
+                  {isOwnerOfActiveProject && (
+                    <form onSubmit={handleAddMember} style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
+                      <input
+                        type="text"
+                        value={inviteUsername}
+                        onChange={(e) => setInviteUsername(e.target.value)}
+                        placeholder="Add member by username"
+                        className="form-input"
+                        style={{ flexGrow: 1, backgroundColor: 'var(--color-brand-darkest)', borderColor: 'var(--color-brand-dark)', color: '#ffffff', height: '32px', fontSize: '12px' }}
+                        required
+                      />
+                      <select
+                        value={inviteRole}
+                        onChange={(e) => setInviteRole(e.target.value)}
+                        className="form-select"
+                        style={{ height: '32px', padding: '0 4px', fontSize: '12px', backgroundColor: 'var(--color-brand-darkest)', color: '#ffffff', borderColor: 'var(--color-brand-dark)' }}
                       >
-                        Open
+                        <option value="member">Member</option>
+                        <option value="owner">Owner</option>
+                      </select>
+                      <button type="submit" disabled={isAddingMember} className="btn-primary" style={{ height: '32px', padding: '0 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '700' }}>
+                        {isAddingMember ? 'Adding...' : 'Add'}
                       </button>
-                      <button
-                        onClick={() => handleExportDiagramAsFile(diagram)}
-                        className="btn-secondary"
-                        style={{
-                          height: '30px',
-                          padding: '0 12px',
-                          borderRadius: '8px',
-                          borderColor: 'var(--color-brand-light)',
-                          backgroundColor: 'var(--color-brand-darker)',
-                          color: '#ffffff',
-                          fontSize: '12px',
-                          fontWeight: '600'
-                        }}
-                        title="Download as .wlf"
-                      >
-                        <ExportIcon size={12} style={{ marginRight: '4px' }} /> .wlf
+                    </form>
+                  )}
+
+                  {/* Team Members List */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {projectDetail.members.map(m => (
+                      <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 8px', borderRadius: '6px', backgroundColor: 'var(--color-brand-darkest)' }}>
+                        <div>
+                          <span style={{ fontSize: '12px', fontWeight: '600', color: m.user_id === currentUser?.id ? 'var(--color-primary)' : '#ffffff' }}>
+                            {m.username} {m.user_id === currentUser?.id && "(You)"}
+                          </span>
+                          <span style={{ fontSize: '10px', color: 'var(--color-text-muted)', marginLeft: '6px', textTransform: 'uppercase', fontWeight: '700' }}>
+                            ({m.role})
+                          </span>
+                        </div>
+
+                        {/* Owner actions (promote role, remove member) */}
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          {isOwnerOfActiveProject && m.user_id !== currentUser?.id && (
+                            <button onClick={() => handleToggleMemberRole(m.id, m.role)} className="btn-secondary" style={{ height: '22px', fontSize: '9px', padding: '0 6px', borderRadius: '4px' }}>
+                              {m.role === 'owner' ? 'Demote' : 'Promote'}
+                            </button>
+                          )}
+                          {(isOwnerOfActiveProject || m.user_id === currentUser?.id) && (
+                            <button onClick={() => handleRemoveMember(m.id, m.username)} className="btn-danger-ghost" style={{ height: '22px', padding: '0 6px', borderRadius: '4px', fontSize: '9px' }}>
+                              {m.user_id === currentUser?.id ? 'Leave' : 'Remove'}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Share Token Link Generator */}
+                {isOwnerOfActiveProject && (
+                  <div style={{ backgroundColor: 'var(--color-surface-dark)', border: '1px solid var(--color-brand-dark)', borderRadius: '12px', padding: '16px 18px' }}>
+                    <h4 style={{ margin: '0 0 12px 0', color: 'var(--color-primary)', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Generate Invitation Token</h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <div>
+                        <label style={{ display: 'block', color: 'var(--color-text-muted)', fontSize: '10px', fontWeight: '700', marginBottom: '4px' }}>Link Password (optional)</label>
+                        <input
+                          type="password"
+                          value={sharePassword}
+                          onChange={(e) => setSharePassword(e.target.value)}
+                          placeholder="Leave empty for public link"
+                          className="form-input"
+                          style={{ width: '100%', backgroundColor: 'var(--color-brand-darkest)', borderColor: 'var(--color-brand-dark)', color: '#ffffff', height: '32px', fontSize: '12px' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', color: 'var(--color-text-muted)', fontSize: '10px', fontWeight: '700', marginBottom: '4px' }}>Expiry Duration</label>
+                        <select
+                          value={inviteDuration}
+                          onChange={(e) => setInviteDuration(e.target.value)}
+                          className="form-select"
+                          style={{ width: '100%', height: '32px', fontSize: '12px', backgroundColor: 'var(--color-brand-darkest)', color: '#ffffff', borderColor: 'var(--color-brand-dark)' }}
+                        >
+                          <option value={1}>1 Hour</option>
+                          <option value={12}>12 Hours</option>
+                          <option value={24}>24 Hours (1 Day)</option>
+                          <option value={168}>168 Hours (1 Week)</option>
+                        </select>
+                      </div>
+                      <button onClick={handleGenerateShareToken} disabled={isGeneratingLink} className="btn-primary" style={{ height: '32px', borderRadius: '8px', fontSize: '11px', fontWeight: '700', width: '100%' }}>
+                        {isGeneratingLink ? 'Generating...' : 'Generate Token Link'}
                       </button>
-                      <button
-                        onClick={() => handleDeleteDiagram(diagram.id, diagram.title)}
-                        className="btn-danger-ghost"
-                        style={{
-                          height: '30px',
-                          width: '30px',
-                          padding: 0,
-                          borderRadius: '8px'
-                        }}
-                        title="Delete Project"
-                      >
-                        <TrashIcon size={14} />
-                      </button>
+
+                      {inviteTokenLink && (
+                        <div style={{ marginTop: '8px' }}>
+                          <label style={{ display: 'block', color: 'var(--color-primary)', fontSize: '10px', fontWeight: '750', marginBottom: '4px' }}>Copy Shareable Link:</label>
+                          <textarea
+                            readOnly
+                            value={inviteTokenLink}
+                            onClick={(e) => e.target.select()}
+                            style={{ width: '100%', height: '54px', fontSize: '11px', backgroundColor: 'var(--color-brand-darkest)', border: '1px solid var(--color-brand-dark)', borderRadius: '6px', color: '#ffffff', padding: '6px', resize: 'none', fontFamily: 'monospace' }}
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
-                ))}
+                )}
+
               </div>
-            )}
-          </div>
+
+            </div>
+          )}
 
         </div>
       </div>

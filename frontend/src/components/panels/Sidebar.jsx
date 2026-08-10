@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import axios from 'axios';
 import { EquipmentSymbol } from '../symbols/SymbolLibrary';
-import { InfoIcon, CheckIcon, CrossIcon, FolderIcon, SearchIcon } from '../symbols/IconLibrary';
+import { InfoIcon, CheckIcon, CrossIcon, FolderIcon, SearchIcon, TrashIcon } from '../symbols/IconLibrary';
 
 
 const categorizedEquipment = [
@@ -467,9 +468,262 @@ function CollapsibleScenarios({ templates, onLoad }) {
   );
 }
 
-export default function Sidebar({ onLoad, globalSettings, onUpdateGlobalSettings, templates, lastStats, batchStats, onSelectComponent }) {
+function ProjectFolderRow({ project, isExpanded, onToggle, onManage }) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <div 
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '6px 8px',
+        borderRadius: '6px',
+        cursor: 'pointer',
+        backgroundColor: hovered ? '#EBF0EF' : 'transparent',
+        transition: 'background-color 0.15s ease',
+        fontSize: '12px',
+        fontWeight: '600',
+        color: '#1C2B2C'
+      }}
+    >
+      <div onClick={onToggle} style={{ display: 'flex', alignItems: 'center', gap: '6px', flexGrow: 1, overflow: 'hidden' }}>
+        <span style={{ fontSize: '9px', color: '#587071', width: '10px' }}>{isExpanded ? '▼' : '▶'}</span>
+        <span style={{ color: '#FA8507' }}>📁</span>
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{project.title}</span>
+      </div>
+      {hovered && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onManage(project.id);
+          }}
+          title="Manage project members and sharing"
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: '#395253',
+            cursor: 'pointer',
+            padding: '2px 4px',
+            fontSize: '13px',
+            display: 'flex',
+            alignItems: 'center',
+            borderRadius: '4px'
+          }}
+        >
+          ⚙️
+        </button>
+      )}
+    </div>
+  );
+}
+
+function DiagramRow({ diagram, isActive, onLoad, onDelete }) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '5px 8px',
+        borderRadius: '4px',
+        cursor: 'pointer',
+        fontSize: '11px',
+        backgroundColor: isActive ? '#395253' : hovered ? '#F4F7F6' : 'transparent',
+        color: isActive ? '#ffffff' : '#1C2B2C',
+        fontWeight: isActive ? '700' : '500',
+        transition: 'all 0.15s ease'
+      }}
+    >
+      <div onClick={onLoad} style={{ display: 'flex', alignItems: 'center', gap: '6px', flexGrow: 1, overflow: 'hidden' }}>
+        <span style={{ color: isActive ? '#ffffff' : '#FA8507' }}>📄</span>
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{diagram.title}</span>
+      </div>
+      {hovered && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(e);
+          }}
+          title="Delete drawing"
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: isActive ? '#ffffff' : '#EF4444',
+            cursor: 'pointer',
+            padding: '2px 4px',
+            display: 'flex',
+            alignItems: 'center',
+            borderRadius: '4px'
+          }}
+        >
+          <TrashIcon size={12} color={isActive ? '#ffffff' : '#EF4444'} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+export default function Sidebar({
+  onLoad,
+  globalSettings,
+  onUpdateGlobalSettings,
+  templates,
+  lastStats,
+  batchStats,
+  onSelectComponent,
+  isAuthenticated,
+  activeProject,
+  setActiveProject,
+  activeDiagram,
+  setActiveDiagram,
+  saveStatus,
+  lastSavedTimestamp,
+  hasLock,
+  isLockedByOther,
+  lockInfo,
+  onCheckout,
+  onCheckin,
+  onSaveAsClick,
+  onNewDrawingClick,
+  onImportClick,
+  onExportClick,
+  onOpenProjectsModal
+}) {
   const [activeTab, setActiveTab] = useState('library');
   const [searchQuery, setSearchQuery] = useState('');
+
+  const [projectsList, setProjectsList] = useState([]);
+  const [standaloneList, setStandaloneList] = useState([]);
+  const [expandedProjects, setExpandedProjects] = useState({});
+  const [projectDiagrams, setProjectDiagrams] = useState({});
+  const [loadingFiles, setLoadingFiles] = useState(false);
+
+  const fetchWorkspaceFiles = useCallback(async () => {
+    if (!isAuthenticated) return;
+    setLoadingFiles(true);
+    try {
+      const projRes = await axios.get('/api/projects');
+      setProjectsList(projRes.data);
+      const diagRes = await axios.get('/api/diagrams');
+      setStandaloneList(diagRes.data);
+    } catch {
+      console.warn("Failed to load workspace files");
+    } finally {
+      setLoadingFiles(false);
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (activeTab === 'workspace' && isAuthenticated) {
+      fetchWorkspaceFiles();
+    }
+  }, [activeTab, isAuthenticated, fetchWorkspaceFiles, activeDiagram]);
+
+  const toggleProjectExpand = async (projectId) => {
+    const isExpanded = !!expandedProjects[projectId];
+    setExpandedProjects(prev => ({ ...prev, [projectId]: !isExpanded }));
+
+    if (!isExpanded && !projectDiagrams[projectId]) {
+      try {
+        const res = await axios.get(`/api/diagrams?project_id=${projectId}`);
+        setProjectDiagrams(prev => ({ ...prev, [projectId]: res.data }));
+      } catch {
+        console.warn("Failed to fetch project diagrams");
+      }
+    }
+  };
+
+  const handleLoadCloudDiagram = async (diagramId, project) => {
+    try {
+      const response = await axios.get(`/api/diagrams/${diagramId}`);
+      const parsedData = JSON.parse(response.data.diagram_data);
+      
+      if (parsedData.version !== '0.2') {
+        alert(`Cannot load: File format version '${parsedData.version}' is incompatible with version '0.2'.`);
+        return;
+      }
+
+      if (setActiveProject) {
+        setActiveProject(project ? {
+          id: project.id,
+          title: project.title,
+          description: project.description
+        } : null);
+      }
+      if (setActiveDiagram) {
+        setActiveDiagram({
+          id: response.data.id,
+          title: response.data.title,
+          description: response.data.description
+        });
+      }
+      onLoad(parsedData);
+    } catch {
+      alert("Failed to load drawing from cloud.");
+    }
+  };
+
+  const handleDeleteDiagram = async (e, diagramId, title) => {
+    e.stopPropagation();
+    if (!window.confirm(`Are you sure you want to delete drawing '${title}'? This action cannot be undone.`)) return;
+    try {
+      await axios.delete(`/api/diagrams/${diagramId}`);
+      alert(`Drawing '${title}' deleted successfully.`);
+      
+      if (activeDiagram && activeDiagram.id === diagramId) {
+        if (setActiveDiagram) setActiveDiagram(null);
+        if (setActiveProject) setActiveProject(null);
+        onLoad({
+          version: '0.2',
+          app_version: '0.2.1',
+          format: 'walflow',
+          created_at: new Date().toISOString(),
+          nodes: [],
+          edges: [],
+          globalSettings: {
+            fluid_type: 'water',
+            ambient_temperature: 293.15,
+            atmospheric_pressure: 101325.0,
+            global_roughness: 0.000045,
+            tolerance: 0.000001,
+            inner_iterations: 1000,
+            control_iterations: 100,
+            solver_method: 'sparse_newton',
+            warm_start: true,
+            damping_factor: 0.25
+          },
+          cases: [
+            {
+              id: 'case_base',
+              name: 'Base Case',
+              is_base: true,
+              variable_properties: {}
+            }
+          ],
+          active_case_id: 'case_base'
+        });
+      }
+      
+      fetchWorkspaceFiles();
+      
+      setProjectDiagrams(prev => {
+        const next = { ...prev };
+        Object.keys(next).forEach(pid => {
+          next[pid] = next[pid].filter(d => d.id !== diagramId);
+        });
+        return next;
+      });
+    } catch {
+      alert("Failed to delete drawing. You must be the owner of the project or drawing creator.");
+    }
+  };
 
   const filteredEquipment = useMemo(() => {
     const query = searchQuery.toLowerCase();
@@ -499,13 +753,13 @@ export default function Sidebar({ onLoad, globalSettings, onUpdateGlobalSettings
       overflowY: 'auto', zIndex: 10, position: 'relative', boxShadow: '2px 0 12px rgba(57,82,83,0.03)'
     }}>
       <div style={{ display: 'flex', background: theme.slate50, padding: '4px', borderRadius: '10px', border: `1px solid ${theme.slate200}` }}>
-        {['library', 'settings', 'diagnostics'].map((tab) => (
+        {['library', 'settings', 'diagnostics', 'workspace'].map((tab) => (
           <button 
             key={tab}
             onClick={() => setActiveTab(tab)}
             style={{
-              flex: 1, padding: '8px', border: 'none', borderRadius: '7px',
-              fontSize: '11px', fontWeight: '700', cursor: 'pointer',
+              flex: 1, padding: '6px 2px', border: 'none', borderRadius: '7px',
+              fontSize: '10px', fontWeight: '700', cursor: 'pointer',
               textTransform: 'capitalize',
               background: activeTab === tab ? theme.brandDark : 'transparent',
               color: activeTab === tab ? theme.white : theme.slate500,
@@ -731,6 +985,192 @@ export default function Sidebar({ onLoad, globalSettings, onUpdateGlobalSettings
 
         {activeTab === 'diagnostics' && (
           <DiagnosticsContent stats={lastStats} batchStats={batchStats} onSelectComponent={onSelectComponent} />
+        )}
+
+        {activeTab === 'workspace' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', height: '100%' }}>
+            {/* Active Drawing Card */}
+            <div style={{
+              backgroundColor: theme.slate50,
+              border: `1px solid ${theme.slate200}`,
+              borderRadius: '8px',
+              padding: '12px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px'
+            }}>
+              <div style={{ display: 'block', fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: theme.brandDark }}>
+                Active Drawing
+              </div>
+              {activeDiagram ? (
+                <>
+                  <div style={{ fontSize: '13px', fontWeight: '700', color: theme.slate800, wordBreak: 'break-all' }}>
+                    📄 {activeDiagram.title}
+                  </div>
+                  <div style={{ fontSize: '11px', color: theme.slate500 }}>
+                    {activeProject ? `Folder: Project "${activeProject.title}"` : 'Folder: Standalone Drawing'}
+                  </div>
+                  <div style={{ fontSize: '11px', color: theme.slate500, marginTop: '2px' }}>
+                    {saveStatus === 'saving_cloud' ? 'Saving changes...' :
+                     saveStatus === 'error' ? 'Sync error!' :
+                     lastSavedTimestamp ? `Last saved: ${lastSavedTimestamp}` : 'Saved to Cloud'}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
+                    {isLockedByOther ? (
+                      <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '10px', backgroundColor: '#FFFBEB', color: '#D97706', border: '1px solid #FDE68A', fontWeight: '700' }}>
+                        🔒 Locked: {lockInfo?.username}
+                      </span>
+                    ) : hasLock ? (
+                      <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '10px', backgroundColor: '#ECFDF5', color: '#10B981', border: '1px solid #A7F3D0', fontWeight: '700' }}>
+                        🟢 Checked Out
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '10px', backgroundColor: '#F4F7F6', color: '#587071', border: '1px solid #D8E2E1', fontWeight: '750' }}>
+                        Available (Read-Only)
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ marginTop: '6px' }}>
+                    {isLockedByOther ? (
+                      <p style={{ margin: 0, fontSize: '10px', color: '#D97706' }}>Drawing is read-only. Lock held by another user.</p>
+                    ) : hasLock ? (
+                      <button onClick={onCheckin} className="btn-secondary" style={{ width: '100%', borderColor: '#10B981', color: '#10B981', fontWeight: '700', backgroundColor: 'transparent' }}>
+                        🔓 Release Edit Lock
+                      </button>
+                    ) : (
+                      <button onClick={onCheckout} className="btn-secondary" style={{ width: '100%', color: theme.brandDark, borderColor: theme.brandDark, fontWeight: '700', backgroundColor: 'transparent' }}>
+                        📝 Check Out to Edit
+                      </button>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ fontSize: '13px', fontWeight: '700', color: theme.slate800 }}>
+                    📝 Local Draft
+                  </div>
+                  <div style={{ fontSize: '11px', color: theme.slate500 }}>
+                    Cached in browser storage. Log in and save to cloud.
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Drawings Explorer */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flexGrow: 1, minHeight: '200px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', color: theme.slate500, letterSpacing: '0.04em' }}>Drawings Explorer</span>
+                {isAuthenticated && onOpenProjectsModal && (
+                  <button 
+                    onClick={() => onOpenProjectsModal(null)} 
+                    style={{ background: 'transparent', border: 'none', color: '#395253', fontSize: '11px', fontWeight: '600', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '3px' }}
+                  >
+                    ⚙️ Manage Projects
+                  </button>
+                )}
+              </div>
+              
+              {!isAuthenticated ? (
+                <div style={{ padding: '16px', border: `1px dashed ${theme.slate200}`, borderRadius: '8px', textAlign: 'center', fontSize: '12px', color: theme.slate500, backgroundColor: theme.slate50 }}>
+                  Please log in to browse your cloud projects and drawings.
+                </div>
+              ) : (
+                <div className="matrix-scroll-container" style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '300px', overflowY: 'auto', paddingRight: '4px' }}>
+                  {/* Project Folders */}
+                  {projectsList.map(p => {
+                    const isExpanded = !!expandedProjects[p.id];
+                    const diags = projectDiagrams[p.id] || [];
+                    return (
+                      <div key={p.id} style={{ display: 'flex', flexDirection: 'column' }}>
+                        <ProjectFolderRow 
+                          project={p}
+                          isExpanded={isExpanded}
+                          onToggle={() => toggleProjectExpand(p.id)}
+                          onManage={(projId) => onOpenProjectsModal(projId)}
+                        />
+
+                        {isExpanded && (
+                          <div style={{ paddingLeft: '14px', borderLeft: `1px solid ${theme.slate200}`, marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            {diags.length === 0 ? (
+                              <div style={{ padding: '4px 8px', fontSize: '11px', color: theme.slate500 }}>
+                                No drawings
+                              </div>
+                            ) : (
+                              diags.map(d => {
+                                const isActive = activeDiagram?.id === d.id;
+                                return (
+                                  <DiagramRow 
+                                    key={d.id}
+                                    diagram={d}
+                                    isActive={isActive}
+                                    onLoad={() => handleLoadCloudDiagram(d.id, p)}
+                                    onDelete={(e) => handleDeleteDiagram(e, d.id, d.title)}
+                                  />
+                                );
+                              })
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* Standalone Drawings */}
+                  {standaloneList.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', marginTop: '10px', gap: '4px' }}>
+                      <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: theme.slate500, marginBottom: '2px', letterSpacing: '0.04em' }}>
+                        Standalone Drawings
+                      </div>
+                      {standaloneList.map(d => {
+                        const isActive = activeDiagram?.id === d.id;
+                        return (
+                          <DiagramRow 
+                            key={d.id}
+                            diagram={d}
+                            isActive={isActive}
+                            onLoad={() => handleLoadCloudDiagram(d.id, null)}
+                            onDelete={(e) => handleDeleteDiagram(e, d.id, d.title)}
+                          />
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {projectsList.length === 0 && standaloneList.length === 0 && !loadingFiles && (
+                    <div style={{ padding: '12px', textAlign: 'center', fontSize: '11px', color: theme.slate500 }}>
+                      No cloud drawings found.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Quick Actions Panel */}
+            <div style={{
+              borderTop: `1px solid ${theme.slate200}`,
+              paddingTop: '12px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px'
+            }}>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button onClick={onNewDrawingClick} className="btn-secondary" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                  <span>+</span> New Drawing
+                </button>
+                <button onClick={onSaveAsClick} className="btn-secondary" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                  <span>💾</span> Save As...
+                </button>
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button onClick={onImportClick} className="btn-secondary" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                  <span>📥</span> Import File
+                </button>
+                <button onClick={onExportClick} className="btn-secondary" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                  <span>📤</span> Export File
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </aside>

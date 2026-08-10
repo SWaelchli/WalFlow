@@ -1,6 +1,6 @@
 {
-  "version": "0.1",
-  "app_version": "0.1.1",
+  "version": "0.2",
+  "app_version": "0.2.0",
   "format": "walflow",
   "created_at": "2026-07-26T13:38:38.490Z",
   "active_case_id": "case_base",

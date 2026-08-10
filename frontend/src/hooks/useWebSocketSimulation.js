@@ -116,6 +116,13 @@ export function useWebSocketSimulation({ nodes, edges, setNodes, setEdges, globa
     socket.onmessage = (event) => {
       try {
         const response = JSON.parse(event.data);
+        
+        // Collaboration state sync handler
+        if (response.action && ['lock_acquired', 'lock_released', 'diagram_updated'].includes(response.action)) {
+          window.dispatchEvent(new CustomEvent('walflow_collab_event', { detail: response }));
+          return;
+        }
+
         if (response.status === 'success') {
           setIsSimulating(false);
           const mitData = response.telemetry || response.data || {};

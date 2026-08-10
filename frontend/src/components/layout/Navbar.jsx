@@ -18,11 +18,7 @@ import {
 export default function Navbar({
   onCalculate,
   isSimulating,
-  onSave,
-  onLoad,
-  onClear,
   onOpenAuthModal,
-  onOpenProjectsModal,
   onOpenAdminHub,
   onOpenHelpModal,
   onLogoutClear,
@@ -31,8 +27,7 @@ export default function Navbar({
   onSelectCase,
   onAddCase,
   activeProject,
-  saveStatus = 'saved_local',
-  lastSavedTimestamp
+  activeDiagram
 }) {
   const { currentUser, isAuthenticated, isAdmin, adminStatus, logout } = useAuth();
 
@@ -43,12 +38,7 @@ export default function Navbar({
     }
   };
 
-  const dividerStyle = {
-    height: '24px',
-    width: '1px',
-    backgroundColor: '#EBF0EF',
-    margin: '0 4px'
-  };
+
 
   return (
     <header style={{
@@ -168,134 +158,25 @@ export default function Navbar({
         </div>
       </div>
 
-      {/* Center: Main Canvas & Cloud Project Controls */}
+      {/* Center: Active PFD Information Label */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <div style={dividerStyle} />
-
-        {/* Unified Cloud Projects & Auto-Save Control */}
-        <button
-          onClick={() => {
-            if (isAuthenticated) {
-              onOpenProjectsModal();
-            } else {
-              onOpenAuthModal();
-            }
-          }}
-          title={
-            saveStatus === 'saved_cloud'
-              ? `Auto-saved to Cloud DB project "${activeProject?.title}". Click to open Cloud Projects manager.`
-              : saveStatus === 'saving_cloud'
-              ? 'Syncing changes to Cloud DB project...'
-              : saveStatus === 'saved_local'
-              ? `Cached in local browser storage (${lastSavedTimestamp ? `Saved ${lastSavedTimestamp}` : 'Up to date'}). Click to save or manage Cloud Projects.`
-              : saveStatus === 'saving_local'
-              ? 'Saving draft to browser storage...'
-              : 'Sync error. Click to retry manual save or open Cloud Projects.'
-          }
-          className="btn-secondary"
-          style={{
-            backgroundColor:
-              saveStatus === 'error'
-                ? '#FEF2F2'
-                : saveStatus.includes('saving')
-                ? '#FFFBEB'
-                : '#F4F7F6',
-            border:
-              saveStatus === 'error'
-                ? '1px solid #FEE2E2'
-                : saveStatus.includes('saving')
-                ? '1px solid #FCD34D'
-                : activeProject
-                ? '1px solid var(--color-primary)'
-                : '1px solid #D8E2E1',
-            color:
-              saveStatus === 'error'
-                ? '#EF4444'
-                : saveStatus.includes('saving')
-                ? '#D97706'
-                : '#1C2B2C'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-            <div style={{
-              width: '6px',
-              height: '6px',
-              minWidth: '6px',
-              minHeight: '6px',
-              borderRadius: '50%',
-              backgroundColor:
-                saveStatus === 'error'
-                  ? '#EF4444'
-                  : saveStatus.includes('saving')
-                  ? '#F59E0B'
-                  : '#10B981',
-              boxShadow: saveStatus.includes('saving') ? '0 0 6px #F59E0B' : 'none',
-              flexShrink: 0
-            }} />
-            <CloudIcon size={14} style={{ display: 'block' }} />
-          </div>
-
-          {saveStatus === 'saved_cloud' ? (
-            <span>Cloud: <strong>{activeProject?.title}</strong></span>
-          ) : saveStatus === 'saving_cloud' ? (
-            <span>Saving to cloud...</span>
-          ) : saveStatus === 'saving_local' ? (
-            <span>Saving draft...</span>
-          ) : saveStatus === 'error' ? (
-            <span>Sync Error</span>
-          ) : (
-            <span>Cloud Projects {isAuthenticated ? '' : '(Login)'}</span>
-          )}
-        </button>
-
-        <button
-          onClick={onSave}
-          className="btn-secondary"
-        >
-          <ExportIcon size={12} />
-          Export
-        </button>
-
-        <button
-          onClick={() => document.getElementById('navbar-file-upload').click()}
-          className="btn-secondary"
-        >
-          <ImportIcon size={12} />
-          Import
-        </button>
-
-        <input
-          id="navbar-file-upload"
-          type="file"
-          style={{ display: 'none' }}
-          accept=".wlf,.json"
-          onChange={(e) => {
-            const file = e.target.files[0];
-            if (file) {
-              const reader = new FileReader();
-              reader.onload = (event) => {
-                try {
-                  const parsed = JSON.parse(event.target.result);
-                  onLoad(parsed, file.name);
-                } catch {
-                  alert('Failed to load project file. Please ensure it is a valid .wlf or .json file.');
-                }
-              };
-              reader.readAsText(file);
-            }
-            e.target.value = '';
-          }}
-        />
-
-        <button
-          onClick={onClear}
-          className="btn-danger-ghost"
-        >
-          <TrashIcon size={12} />
-          Clear Canvas
-        </button>
-
-        <div style={dividerStyle} />
+        {activeDiagram && (
+          <span style={{
+            fontSize: '12px',
+            fontWeight: '600',
+            color: 'var(--color-brand-dark)',
+            backgroundColor: '#F4F7F6',
+            padding: '6px 14px',
+            borderRadius: '8px',
+            border: '1px solid #D8E2E1',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px'
+          }}>
+            <CloudIcon size={12} color="var(--color-primary)" />
+            {activeProject ? `${activeProject.title} / ` : ''}<strong>{activeDiagram.title}</strong>
+          </span>
+        )}
       </div>
 
       {/* Right: Admin Hub & User Auth */}

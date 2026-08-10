@@ -10,6 +10,7 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css'; 
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import axios from 'axios';
 
 import TankNode from './nodes/TankNode';
 import CentrifugalPumpNode from './nodes/CentrifugalPumpNode';
@@ -45,6 +46,8 @@ import LoginModal from './components/modals/LoginModal';
 import ProjectManagerModal from './components/modals/ProjectManagerModal';
 import AdminSetupModal from './components/modals/AdminSetupModal';
 import AdminHubModal from './components/modals/AdminHubModal';
+import SaveAsModal from './components/modals/SaveAsModal';
+import NewDrawingModal from './components/modals/NewDrawingModal';
 import { AuthProvider } from './context/AuthProvider';
 import { useAuth } from './hooks/useAuth';
 
@@ -142,9 +145,13 @@ function WalFlowContent() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isProjectManagerModalOpen, setIsProjectManagerModalOpen] = useState(false);
   const [isAdminHubOpen, setIsAdminHubOpen] = useState(false);
+  const [isSaveAsModalOpen, setIsSaveAsModalOpen] = useState(false);
+  const [isNewDrawingModalOpen, setIsNewDrawingModalOpen] = useState(false);
+  const [projectManagerProjectId, setProjectManagerProjectId] = useState(null);
 
   // Active Cloud Project & Auto-Save Session Hook
   const [activeProject, setActiveProject] = useState(null);
+  const [activeDiagram, setActiveDiagram] = useState(null);
   const [showRestoredToast, setShowRestoredToast] = useState(false);
 
   // Reset active cloud project when user switches accounts or logs out
@@ -153,6 +160,7 @@ function WalFlowContent() {
     if (prevUserIdRef.current !== currentUser?.id) {
       prevUserIdRef.current = currentUser?.id;
       setActiveProject(null);
+      setActiveDiagram(null);
     }
   }, [currentUser?.id]);
 
@@ -233,7 +241,12 @@ function WalFlowContent() {
     restoredDraftTime,
     clearLocalDraft,
     loadLocalDraftOnBoot,
-    triggerManualCloudSave
+    triggerManualCloudSave,
+    lockInfo,
+    isLockedByOther,
+    hasLock,
+    checkoutDiagram,
+    checkinDiagram
   } = useAutoSaveSession({
     nodes,
     edges,
@@ -243,7 +256,9 @@ function WalFlowContent() {
     reactFlowInstance,
     isAuthenticated,
     activeProject,
-    setActiveProject
+    setActiveProject,
+    activeDiagram,
+    setActiveDiagram
   });
 
   // Global UI Body Fix
@@ -306,7 +321,6 @@ function WalFlowContent() {
     handleValveChange,
     telemetryMode,
     setTelemetryMode,
-    hasPsv,
     telemetryUnmitigated
   } = useWebSocketSimulation({
     nodes,
@@ -652,6 +666,10 @@ function WalFlowContent() {
   }, []);
 
   const onConnect = useCallback((params) => {
+    if (activeDiagram && !hasLock) {
+      alert("This drawing is read-only. Please check out the drawing to edit.");
+      return;
+    }
     setEdges((eds) => {
       const isSourceSignal = params.sourceHandle?.startsWith('signal-');
       const isTargetSignal = params.targetHandle?.startsWith('signal-');
@@ -684,7 +702,7 @@ function WalFlowContent() {
       };
       return addEdge(newEdge, eds);
     });
-  }, [setEdges]);
+  }, [setEdges, activeDiagram, hasLock]);
 
   const onNodeClick = useCallback((event, node) => {
     setSelectedNode(node);
@@ -702,6 +720,10 @@ function WalFlowContent() {
   }, []);
 
   const updateNodeData = useCallback((nodeId, newData, targetCaseId = null) => {
+    if (activeDiagram && !hasLock) {
+      alert("This drawing is read-only. Please check out the drawing to edit.");
+      return;
+    }
     const effectiveCaseId = targetCaseId || activeCaseId;
     const targetCaseObj = cases.find(c => c.id === effectiveCaseId) || DEFAULT_BASE_CASE;
     const isBase = targetCaseObj.is_base;
@@ -758,9 +780,13 @@ function WalFlowContent() {
         );
       }
     }
-  }, [activeCaseId, cases, selectedNode, setNodes, nodes]);
+  }, [activeCaseId, cases, selectedNode, setNodes, nodes, activeDiagram, hasLock]);
 
   const updateEdgeData = useCallback((edgeId, newData) => {
+    if (activeDiagram && !hasLock) {
+      alert("This drawing is read-only. Please check out the drawing to edit.");
+      return;
+    }
     setEdges((eds) =>
       eds.map((edge) => {
         if (edge.id === edgeId) {
@@ -777,7 +803,7 @@ function WalFlowContent() {
         return edge;
       })
     );
-  }, [selectedEdge, setEdges]);
+  }, [selectedEdge, setEdges, activeDiagram, hasLock]);
 
   const onDragEnter = useCallback((event) => {
     event.preventDefault();
@@ -808,6 +834,12 @@ function WalFlowContent() {
       dragCounter.current = 0;
       setIsFileDragging(false);
       
+      const type = event.dataTransfer.getData('application/reactflow');
+      if (type && activeDiagram && !hasLock) {
+        alert("This drawing is read-only. Please check out the drawing to edit.");
+        return;
+      }
+
       // Check if user dropped a .wlf or .json file onto the canvas
       if (event.dataTransfer.files && event.dataTransfer.files.length > 0) {
         const file = event.dataTransfer.files[0];
@@ -826,7 +858,6 @@ function WalFlowContent() {
         }
       }
 
-      const type = event.dataTransfer.getData('application/reactflow');
       if (!type || !reactFlowInstance) return;
 
       const position = reactFlowInstance.screenToFlowPosition({
@@ -863,7 +894,7 @@ function WalFlowContent() {
 
       setNodes((nds) => nds.concat(newNode));
     },
-    [reactFlowInstance, handleValveChange, handleRotation, setNodes, handleLoadDiagramWithCheck]
+    [reactFlowInstance, handleValveChange, handleRotation, setNodes, handleLoadDiagramWithCheck, activeDiagram, hasLock]
   );
 
   const onSave = useCallback(() => {
@@ -888,15 +919,23 @@ function WalFlowContent() {
   }, [nodes, edges, globalSettings, cases, activeCaseId]);
 
   const onDeleteNode = useCallback((nodeId) => {
+    if (activeDiagram && !hasLock) {
+      alert("This drawing is read-only. Please check out the drawing to edit.");
+      return;
+    }
     setNodes((nds) => nds.filter((node) => node.id !== nodeId));
     setEdges((eds) => eds.filter((edge) => edge.source !== nodeId && edge.target !== nodeId));
     setSelectedNode(null);
-  }, [setNodes, setEdges]);
+  }, [setNodes, setEdges, activeDiagram, hasLock]);
 
   const onDeleteEdge = useCallback((edgeId) => {
+    if (activeDiagram && !hasLock) {
+      alert("This drawing is read-only. Please check out the drawing to edit.");
+      return;
+    }
     setEdges((eds) => eds.filter((edge) => edge.id !== edgeId));
     setSelectedEdge(null);
-  }, [setEdges]);
+  }, [setEdges, activeDiagram, hasLock]);
 
   const resetCanvas = useCallback(() => {
     setNodes([]);
@@ -907,13 +946,114 @@ function WalFlowContent() {
     setActiveCaseId('case_base');
   }, [setNodes, setEdges]);
 
-  const onClearCanvas = useCallback(() => {
-    if (window.confirm('Are you sure you want to clear the entire canvas and purge the cached session draft?')) {
+  const handleSaveAs = useCallback(async ({ title, description, project_id }) => {
+    try {
+      const flowData = {
+        version: FILE_FORMAT_VERSION,
+        app_version: APP_VERSION,
+        format: 'walflow',
+        created_at: new Date().toISOString(),
+        nodes,
+        edges,
+        globalSettings,
+        cases,
+        active_case_id: activeCaseId
+      };
+
+      const response = await axios.post('/api/diagrams', {
+        title,
+        description,
+        diagram_data: JSON.stringify(flowData),
+        project_id
+      });
+
+      setActiveDiagram({
+        id: response.data.id,
+        title: response.data.title,
+        description: response.data.description
+      });
+
+      if (project_id) {
+        const projRes = await axios.get(`/api/projects/${project_id}`);
+        setActiveProject({
+          id: projRes.data.id,
+          title: projRes.data.title,
+          description: projRes.data.description
+        });
+      } else {
+        setActiveProject(null);
+      }
+
+      alert("Drawing copy saved successfully.");
+    } catch {
+      alert("Failed to perform Save As.");
+    }
+  }, [nodes, edges, globalSettings, cases, activeCaseId, setActiveDiagram, setActiveProject]);
+
+  const handleCreateNewDrawing = useCallback(async ({ title, description, project_id, isDraft }) => {
+    if (isDraft) {
       resetCanvas();
       setActiveProject(null);
+      setActiveDiagram(null);
       clearLocalDraft();
+      alert("New local draft initialized.");
+      return;
     }
-  }, [resetCanvas, clearLocalDraft]);
+
+    try {
+      const blankPayload = {
+        version: FILE_FORMAT_VERSION,
+        app_version: APP_VERSION,
+        format: 'walflow',
+        created_at: new Date().toISOString(),
+        nodes: [],
+        edges: [],
+        globalSettings: {
+          fluid_type: 'water',
+          ambient_temperature: 293.15,
+          atmospheric_pressure: 101325.0,
+          global_roughness: 0.000045,
+          tolerance: 0.000001,
+          inner_iterations: 1000,
+          control_iterations: 100,
+          solver_method: 'sparse_newton',
+          warm_start: true,
+          damping_factor: 0.25
+        },
+        cases: [DEFAULT_BASE_CASE],
+        active_case_id: 'case_base'
+      };
+
+      const response = await axios.post('/api/diagrams', {
+        title,
+        description,
+        diagram_data: JSON.stringify(blankPayload),
+        project_id
+      });
+
+      setActiveDiagram({
+        id: response.data.id,
+        title: response.data.title,
+        description: response.data.description
+      });
+
+      if (project_id) {
+        const projRes = await axios.get(`/api/projects/${project_id}`);
+        setActiveProject({
+          id: projRes.data.id,
+          title: projRes.data.title,
+          description: projRes.data.description
+        });
+      } else {
+        setActiveProject(null);
+      }
+
+      loadData(blankPayload);
+      alert("New cloud drawing created successfully.");
+    } catch {
+      alert("Failed to create new cloud drawing.");
+    }
+  }, [resetCanvas, clearLocalDraft, setActiveDiagram, setActiveProject, loadData]);
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -933,6 +1073,15 @@ function WalFlowContent() {
 
     return () => clearTimeout(handler);
   }, [nodes, edges, isConnected, globalSettings, cases, activeCaseId, ws]);
+
+  useEffect(() => {
+    if (isConnected && ws.current && ws.current.readyState === WebSocket.OPEN && activeDiagram?.id) {
+      ws.current.send(JSON.stringify({ 
+        action: 'join_diagram', 
+        diagram_id: activeDiagram.id 
+      }));
+    }
+  }, [isConnected, activeDiagram?.id, ws]);
 
   useEffect(() => {
     if (selectedNode) {
@@ -1157,13 +1306,9 @@ function WalFlowContent() {
   return (
     <div style={{ width: '100%', height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#F0F4F4', overflow: 'hidden' }}>
       <Navbar 
-        onSave={onSave} 
-        onLoad={handleLoadDiagramWithCheck} 
-        onClear={onClearCanvas} 
         onCalculate={runSimulation}
         isSimulating={isSimulating}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
-        onOpenProjectsModal={() => setIsProjectManagerModalOpen(true)}
         onOpenAdminHub={() => setIsAdminHubOpen(true)}
         onOpenHelpModal={(tab) => handleOpenHelpModal(tab || 'about')}
         onLogoutClear={resetCanvas}
@@ -1171,15 +1316,8 @@ function WalFlowContent() {
         activeCaseId={activeCaseId}
         onSelectCase={setActiveCaseId}
         onAddCase={handleAddCase}
-        onRenameCase={handleRenameCase}
-        onDeleteCase={handleDeleteCase}
         activeProject={activeProject}
-        saveStatus={saveStatus}
-        lastSavedTimestamp={lastSavedTimestamp}
-        onTriggerManualSave={triggerManualCloudSave}
-        telemetryMode={telemetryMode}
-        onToggleTelemetryMode={setTelemetryMode}
-        hasPsv={hasPsv || nodes.some(n => n.type === 'pressure_safety_valve' || n.type === 'psv' || n.type === 'rupture_disc')}
+        activeDiagram={activeDiagram}
       />
 
       <div style={{ flexGrow: 1, display: 'flex', height: 'calc(100vh - 56px)', overflow: 'hidden' }}>
@@ -1204,6 +1342,49 @@ function WalFlowContent() {
               "Parallel Pumping & Min-Flow": exampleParallelPumps,
               "Multi-PSV & Rupture Disc Protection": exampleMultiPsv
             }
+          }}
+          isAuthenticated={isAuthenticated}
+          activeProject={activeProject}
+          setActiveProject={setActiveProject}
+          activeDiagram={activeDiagram}
+          setActiveDiagram={setActiveDiagram}
+          saveStatus={saveStatus}
+          lastSavedTimestamp={lastSavedTimestamp}
+          hasLock={hasLock}
+          isLockedByOther={isLockedByOther}
+          lockInfo={lockInfo}
+          onCheckout={checkoutDiagram}
+          onCheckin={checkinDiagram}
+          onSaveAsClick={() => setIsSaveAsModalOpen(true)}
+          onNewDrawingClick={() => setIsNewDrawingModalOpen(true)}
+          onImportClick={() => document.getElementById('sidebar-file-upload').click()}
+          onExportClick={onSave}
+          onOpenProjectsModal={(projId) => {
+            setProjectManagerProjectId(projId || null);
+            setIsProjectManagerModalOpen(true);
+          }}
+        />
+
+        <input
+          id="sidebar-file-upload"
+          type="file"
+          style={{ display: 'none' }}
+          accept=".wlf,.json"
+          onChange={(e) => {
+            const file = e.target.files[0];
+            if (file) {
+              const reader = new FileReader();
+              reader.onload = (event) => {
+                try {
+                  const parsed = JSON.parse(event.target.result);
+                  handleLoadDiagramWithCheck(parsed, file.name);
+                } catch {
+                  alert('Failed to load project file. Please ensure it is a valid .wlf or .json file.');
+                }
+              };
+              reader.readAsText(file);
+            }
+            e.target.value = '';
           }}
         />
 
@@ -1274,6 +1455,9 @@ function WalFlowContent() {
             onDrop={onDrop}
             onDragOver={onDragOver}
             onNodeDragStop={() => pushHistorySnapshot(nodes, edges)}
+            nodesDraggable={!activeDiagram || hasLock}
+            nodesConnectable={!activeDiagram || hasLock}
+            elementsSelectable={true}
             fitView
           >
             <Background color="#B8C9C8" gap={16} size={1} />
@@ -1314,11 +1498,30 @@ function WalFlowContent() {
 
           <ProjectManagerModal
             isOpen={isProjectManagerModalOpen}
-            onClose={() => setIsProjectManagerModalOpen(false)}
+            onClose={() => {
+              setIsProjectManagerModalOpen(false);
+              setProjectManagerProjectId(null);
+            }}
             currentFlowData={{ nodes, edges, globalSettings, cases, activeCaseId }}
             onLoadDiagram={loadData}
             activeProject={activeProject}
             setActiveProject={setActiveProject}
+            activeDiagram={activeDiagram}
+            setActiveDiagram={setActiveDiagram}
+            initialProjectId={projectManagerProjectId}
+          />
+
+          <SaveAsModal
+            isOpen={isSaveAsModalOpen}
+            onClose={() => setIsSaveAsModalOpen(false)}
+            onSaveAs={handleSaveAs}
+            currentTitle={activeDiagram?.title || "Untitled Drawing"}
+          />
+
+          <NewDrawingModal
+            isOpen={isNewDrawingModalOpen}
+            onClose={() => setIsNewDrawingModalOpen(false)}
+            onCreateNew={handleCreateNewDrawing}
           />
 
           {showRestoredToast && (

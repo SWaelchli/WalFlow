@@ -4,6 +4,49 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      window.addEventListener('error', function(event) {
+        var errorDiv = document.createElement('div');
+        errorDiv.id = 'vite-runtime-error-overlay';
+        errorDiv.style.position = 'fixed';
+        errorDiv.style.top = '0';
+        errorDiv.style.left = '0';
+        errorDiv.style.width = '100vw';
+        errorDiv.style.height = '100vh';
+        errorDiv.style.backgroundColor = '#FEF2F2';
+        errorDiv.style.color = '#EF4444';
+        errorDiv.style.padding = '24px';
+        errorDiv.style.boxSizing = 'border-box';
+        errorDiv.style.fontFamily = 'monospace';
+        errorDiv.style.zIndex = '999999';
+        errorDiv.style.overflowY = 'auto';
+        errorDiv.innerHTML = '<h2>🚨 Runtime Crash Detected</h2>' +
+          '<p><strong>Message:</strong> ' + event.message + '</p>' +
+          '<p><strong>File:</strong> ' + event.filename + ':' + event.lineno + ':' + event.colno + '</p>' +
+          '<pre style="background:#FEE2E2; padding:12px; border-radius:6px; border:1px solid #FCA5A5; color:#EF4444; overflow:auto;">' + (event.error ? event.error.stack : 'No stack trace available') + '</pre>';
+        document.body.appendChild(errorDiv);
+      });
+      window.addEventListener('unhandledrejection', function(event) {
+        var errorDiv = document.createElement('div');
+        errorDiv.id = 'vite-promise-error-overlay';
+        errorDiv.style.position = 'fixed';
+        errorDiv.style.top = '0';
+        errorDiv.style.left = '0';
+        errorDiv.style.width = '100vw';
+        errorDiv.style.height = '100vh';
+        errorDiv.style.backgroundColor = '#FEF2F2';
+        errorDiv.style.color = '#EF4444';
+        errorDiv.style.padding = '24px';
+        errorDiv.style.boxSizing = 'border-box';
+        errorDiv.style.fontFamily = 'monospace';
+        errorDiv.style.zIndex = '999999';
+        errorDiv.style.overflowY = 'auto';
+        errorDiv.innerHTML = '<h2>🚨 Unhandled Promise Rejection Detected</h2>' +
+          '<p><strong>Reason:</strong> ' + event.reason + '</p>' +
+          '<pre style="background:#FEE2E2; padding:12px; border-radius:6px; border:1px solid #FCA5A5; color:#EF4444; overflow:auto;">' + (event.reason && event.reason.stack ? event.reason.stack : 'No stack trace available') + '</pre>';
+        document.body.appendChild(errorDiv);
+      });
+    </script>
     <title>WalFlow | Hydraulic Simulator</title>
     <style>
       body {

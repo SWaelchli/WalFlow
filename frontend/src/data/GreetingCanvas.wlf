@@ -1,6 +1,6 @@
 {
-  "version": "0.1",
-  "app_version": "0.1.1",
+  "version": "0.2",
+  "app_version": "0.2.0",
   "format": "walflow",
   "active_case_id": "case_base",
   "cases": [
@@ -57,7 +57,7 @@
       "data": {
         "label": "Note",
         "title": "WELCOME TO WALFLOW",
-        "text": "WalFlow is a web-based hydraulic process simulator for designing and modeling hydraulic flow networks.\n\n• Drag components from the sidebar onto the canvas to construct your P&ID.\n• Select components or pipes to view and edit operating parameters.\n• Click \"Run Simulation\" in the top bar to solve system pressures, flow rates, and fluid states.\n\nBelow is a simple starter circuit—press Run Simulation to see it in action!",
+        "text": "WalFlow is a web-based hydraulic process simulator for designing and modeling hydraulic flow networks.\n\n\u2022 Drag components from the sidebar onto the canvas to construct your P&ID.\n\u2022 Select components or pipes to view and edit operating parameters.\n\u2022 Click \"Run Simulation\" in the top bar to solve system pressures, flow rates, and fluid states.\n\nBelow is a simple starter circuit\u2014press Run Simulation to see it in action!",
         "fontSize": "md"
       }
     },
@@ -171,9 +171,9 @@
     "fluid_type": "water",
     "ambient_temperature": 293.15,
     "atmospheric_pressure": 101325.0,
-    "global_roughness": 0.000045,
+    "global_roughness": 4.5e-05,
     "property_iterations": 5,
-    "tolerance": 1e-6,
+    "tolerance": 1e-06,
     "inner_iterations": 1000,
     "control_iterations": 100,
     "solver_method": "hybr"
