@@ -155,28 +155,31 @@ export default function Navbar({
               New Case
             </button>
           </div>
+
+          {activeDiagram && (
+            <span style={{
+              fontSize: '12px',
+              fontWeight: '600',
+              color: 'var(--color-brand-dark)',
+              backgroundColor: '#F4F7F6',
+              padding: '0 14px',
+              height: '34px',
+              boxSizing: 'border-box',
+              borderRadius: '8px',
+              border: '1px solid #D8E2E1',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}>
+              <CloudIcon size={12} color="var(--color-primary)" />
+              {activeProject ? `${activeProject.title} / ` : ''}<strong>{activeDiagram.title}</strong>
+            </span>
+          )}
         </div>
       </div>
 
-      {/* Center: Active PFD Information Label */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        {activeDiagram && (
-          <span style={{
-            fontSize: '12px',
-            fontWeight: '600',
-            color: 'var(--color-brand-dark)',
-            backgroundColor: '#F4F7F6',
-            padding: '6px 14px',
-            borderRadius: '8px',
-            border: '1px solid #D8E2E1',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px'
-          }}>
-            <CloudIcon size={12} color="var(--color-primary)" />
-            {activeProject ? `${activeProject.title} / ` : ''}<strong>{activeDiagram.title}</strong>
-          </span>
-        )}
+      {/* Center: Empty (Moved to Left) */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
       </div>
 
       {/* Right: Admin Hub & User Auth */}

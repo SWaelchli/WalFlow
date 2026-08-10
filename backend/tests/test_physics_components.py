@@ -3,7 +3,7 @@ import os
 import unittest
 
 # Add backend to path
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 from simulation.equipment.tank import Tank
 from simulation.equipment.pipe import Pipe

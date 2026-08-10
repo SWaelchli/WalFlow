@@ -8,7 +8,7 @@ TEST_DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test_wa
 os.environ["DATABASE_PATH"] = TEST_DB_PATH
 
 # Add backend directory to sys.path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 from fastapi.testclient import TestClient
 from main import app

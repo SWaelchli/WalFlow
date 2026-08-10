@@ -1,5 +1,9 @@
+import sys
+import os
 import numpy as np
 import math
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+
 from simulation.equipment.volumetric_pump import VolumetricPump
 from simulation.equipment.tank import Tank
 from simulation.equipment.pipe import Pipe

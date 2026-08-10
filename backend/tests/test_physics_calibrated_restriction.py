@@ -3,7 +3,7 @@ import os
 import math
 
 # Add backend directory to sys.path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 from simulation.equipment.calibrated_restriction import CalibratedRestriction
 from simulation.fluid_utils import FluidProperties

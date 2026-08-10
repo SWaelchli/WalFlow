@@ -4,7 +4,7 @@ import pytest
 import numpy as np
 
 # Add backend directory to sys.path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 from simulation.equipment.tank import Tank
 from simulation.equipment.pipe import Pipe

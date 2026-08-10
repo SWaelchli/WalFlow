@@ -4,7 +4,7 @@ import sys
 from datetime import datetime
 
 # Add backend to path
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 from simulation.schemas import ReactFlowGraph
 from simulation.graph_parser import GraphParser

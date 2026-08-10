@@ -1,4 +1,8 @@
+import sys
+import os
 import pytest
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+
 from simulation.schemas import ReactFlowGraph, ReactFlowNode, ReactFlowEdge, GlobalSettings, OperatingCase, OperatingCaseOverrides
 from simulation.graph_parser import GraphParser
 from simulation.solver import NetworkSolver
