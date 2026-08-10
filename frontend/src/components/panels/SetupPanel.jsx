@@ -4,6 +4,7 @@ import { ASME_PIPE_STANDARDS, calculatePipeId, findClosestPipeMatch } from '../.
 import { isCaseVariableProperty } from '../../constants/case_constants';
 import { isPropertyOverridden, getEffectiveNodeData } from '../../utils/case_resolver';
 import { GlobeIcon, BoltIcon } from '../symbols/IconLibrary';
+import { FLUID_CATEGORIES, FLUID_LIBRARY } from '../../constants/fluid_library';
 
 function PropertyBadge({ propKey, nodeId, cases = [], activeCaseId = 'case_base', onResetOverride }) {
   const isCaseVar = isCaseVariableProperty(propKey);

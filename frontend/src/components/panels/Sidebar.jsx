@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { EquipmentSymbol } from '../symbols/SymbolLibrary';
 import { InfoIcon, CheckIcon, CrossIcon, FolderIcon, SearchIcon, TrashIcon, LockIcon, UnlockIcon, FolderOpenIcon } from '../symbols/IconLibrary';
+import { FLUID_CATEGORIES, FLUID_LIBRARY } from '../../constants/fluid_library';
 
 
 const categorizedEquipment = [
@@ -974,9 +975,13 @@ export default function Sidebar({
                   className="form-select"
                   style={inputStyle}
                 >
-                  <option value="water">Water (Standard)</option>
-                  <option value="iso_vg_32">ISO VG 32 Oil</option>
-                  <option value="iso_vg_46">ISO VG 46 Oil</option>
+                  {FLUID_CATEGORIES.map((category) => (
+                    <optgroup key={category} label={category}>
+                      {FLUID_LIBRARY.filter((f) => f.category === category).map((f) => (
+                        <option key={f.id} value={f.id}>{f.label}</option>
+                      ))}
+                    </optgroup>
+                  ))}
                 </select>
                 <p style={hintStyle}>Sets fluid properties (density, viscosity, thermal capacity) circulating through the network.</p>
               </div>

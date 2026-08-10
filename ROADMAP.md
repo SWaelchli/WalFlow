@@ -138,3 +138,8 @@ This document outlines planned features, overlays, and enhancements for the WalF
 - [x] **🐛 Three-Way Temperature Control Valve (TCV) Hot-Side Bias Fix**
   * **Issue**: When the outlet temperature is below the setpoint, the TCV adjusts flow from the cold side to the outlet if the cold side is hotter than the hot side. This is incorrect behavior for a TCV.
   * **Expected Behavior**: The TCV must always open the hot side to the outlet when the outlet temperature is below the setpoint, regardless of the relative temperatures of the hot and cold inlets.
+
+
+## Quality of Life improvements
+
+- [ ] ** Add shortcuts to all Modals to allow to exit this modal with "ESC". Except for the Admin setup modal. This cannot be skipped.

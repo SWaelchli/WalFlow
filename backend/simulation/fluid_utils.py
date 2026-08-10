@@ -1,30 +1,237 @@
 import math
 
+
 class FluidProperties:
     """
-    Utility to calculate fluid properties based on temperature.
-    Currently supports:
-    - "water": Simple linear model
-    - "iso_vg_46": Standard lube oil model
+    Data-driven fluid property library used by the solver.
+
+    Each fluid entry defines:
+      - name:      Display label shown in the UI dropdowns.
+      - category:  Group label used to organise the UI dropdowns.
+      - density:   {"ref": rho0 (kg/m3) at t_ref_c, "alpha": expansion coeff (1/C)}.
+                   rho(t) = ref * (1 - alpha * (t_c - t_ref_c))
+      - viscosity: {"model": "water"} -> built-in water correlation,
+                   or {"model": "vogel", "a", "b", "c"} -> nu(cSt) = exp(a + b / (t_c + c))
+      - specific_heat: {"base": J/kgK, "slope": J/kgK per C} -> cp = base + slope * t_c
+      - vapor_pressure:
+                   {"model": "water_antoine", "scale"} -> water Antoine x scale,
+                   {"model": "fuel_antoine"}           -> naphtha/gasoline Antoine,
+                   {"model": "negligible"}             -> ~1 Pa for oils and heavy fuels
     """
-    
+
+    FLUIDS = {
+        # --------------------------- Water & Aqueous ---------------------------
+        "water": {
+            "name": "Water (Standard)",
+            "category": "Water & Aqueous",
+            "density": {"ref": 1000.0, "t_ref_c": 20.0, "alpha": 0.0002},
+            "viscosity": {"model": "water"},
+            "specific_heat": {"base": 4184.0, "slope": 0.0},
+            "vapor_pressure": {"model": "water_antoine", "scale": 1.0},
+        },
+        "seawater": {
+            "name": "Seawater (3.5% Salinity)",
+            "category": "Water & Aqueous",
+            "density": {"ref": 1025.0, "t_ref_c": 15.0, "alpha": 0.00021},
+            "viscosity": {"model": "vogel", "a": -1.6205, "b": 233.28, "c": 120.0},
+            "specific_heat": {"base": 3990.0, "slope": 0.0},
+            "vapor_pressure": {"model": "water_antoine", "scale": 0.98},
+        },
+        "glycol_30": {
+            "name": "Ethylene Glycol 30%",
+            "category": "Water & Aqueous",
+            "density": {"ref": 1040.0, "t_ref_c": 20.0, "alpha": 0.00055},
+            "viscosity": {"model": "vogel", "a": -3.0592, "b": 548.90, "c": 120.0},
+            "specific_heat": {"base": 3650.0, "slope": 0.0},
+            "vapor_pressure": {"model": "water_antoine", "scale": 0.9},
+        },
+        "glycol_50": {
+            "name": "Ethylene Glycol 50%",
+            "category": "Water & Aqueous",
+            "density": {"ref": 1072.0, "t_ref_c": 20.0, "alpha": 0.00055},
+            "viscosity": {"model": "vogel", "a": -3.1883, "b": 628.80, "c": 120.0},
+            "specific_heat": {"base": 3300.0, "slope": 0.0},
+            "vapor_pressure": {"model": "water_antoine", "scale": 0.7},
+        },
+        "propylene_glycol_50": {
+            "name": "Propylene Glycol 50%",
+            "category": "Water & Aqueous",
+            "density": {"ref": 1038.0, "t_ref_c": 20.0, "alpha": 0.00055},
+            "viscosity": {"model": "vogel", "a": -3.9872, "b": 796.87, "c": 120.0},
+            "specific_heat": {"base": 3450.0, "slope": 0.0},
+            "vapor_pressure": {"model": "water_antoine", "scale": 0.6},
+        },
+
+        # ---------------------- Hydraulic & Lube Oils (ISO VG) ----------------------
+        "iso_vg_15": {
+            "name": "ISO VG 15 Oil",
+            "category": "Hydraulic & Lube Oils (ISO VG)",
+            "density": {"ref": 860.0, "t_ref_c": 15.0, "alpha": 0.0007},
+            "viscosity": {"model": "vogel", "a": -2.7343, "b": 870.77, "c": 120.0},
+            "specific_heat": {"base": 1860.0, "slope": 4.0},
+            "vapor_pressure": {"model": "negligible"},
+        },
+        "iso_vg_22": {
+            "name": "ISO VG 22 Oil",
+            "category": "Hydraulic & Lube Oils (ISO VG)",
+            "density": {"ref": 865.0, "t_ref_c": 15.0, "alpha": 0.0007},
+            "viscosity": {"model": "vogel", "a": -2.9802, "b": 971.40, "c": 120.0},
+            "specific_heat": {"base": 1860.0, "slope": 4.0},
+            "vapor_pressure": {"model": "negligible"},
+        },
+        "iso_vg_32": {
+            "name": "ISO VG 32 Oil",
+            "category": "Hydraulic & Lube Oils (ISO VG)",
+            "density": {"ref": 870.0, "t_ref_c": 15.0, "alpha": 0.0007},
+            "viscosity": {"model": "vogel", "a": -3.7, "b": 1130.0, "c": 120.0},
+            "specific_heat": {"base": 1860.0, "slope": 4.0},
+            "vapor_pressure": {"model": "negligible"},
+        },
+        "iso_vg_46": {
+            "name": "ISO VG 46 Oil",
+            "category": "Hydraulic & Lube Oils (ISO VG)",
+            "density": {"ref": 875.0, "t_ref_c": 15.0, "alpha": 0.0007},
+            "viscosity": {"model": "vogel", "a": -3.5, "b": 1170.0, "c": 120.0},
+            "specific_heat": {"base": 1860.0, "slope": 4.0},
+            "vapor_pressure": {"model": "negligible"},
+        },
+        "iso_vg_68": {
+            "name": "ISO VG 68 Oil",
+            "category": "Hydraulic & Lube Oils (ISO VG)",
+            "density": {"ref": 875.0, "t_ref_c": 15.0, "alpha": 0.0007},
+            "viscosity": {"model": "vogel", "a": -3.2780, "b": 1199.6, "c": 120.0},
+            "specific_heat": {"base": 1860.0, "slope": 4.0},
+            "vapor_pressure": {"model": "negligible"},
+        },
+        "iso_vg_100": {
+            "name": "ISO VG 100 Oil",
+            "category": "Hydraulic & Lube Oils (ISO VG)",
+            "density": {"ref": 880.0, "t_ref_c": 15.0, "alpha": 0.0007},
+            "viscosity": {"model": "vogel", "a": -3.3561, "b": 1273.8, "c": 120.0},
+            "specific_heat": {"base": 1860.0, "slope": 4.0},
+            "vapor_pressure": {"model": "negligible"},
+        },
+        "iso_vg_150": {
+            "name": "ISO VG 150 Oil",
+            "category": "Hydraulic & Lube Oils (ISO VG)",
+            "density": {"ref": 880.0, "t_ref_c": 15.0, "alpha": 0.0007},
+            "viscosity": {"model": "vogel", "a": -3.4325, "b": 1350.9, "c": 120.0},
+            "specific_heat": {"base": 1860.0, "slope": 4.0},
+            "vapor_pressure": {"model": "negligible"},
+        },
+        "iso_vg_220": {
+            "name": "ISO VG 220 Oil",
+            "category": "Hydraulic & Lube Oils (ISO VG)",
+            "density": {"ref": 885.0, "t_ref_c": 15.0, "alpha": 0.0007},
+            "viscosity": {"model": "vogel", "a": -3.5852, "b": 1436.6, "c": 120.0},
+            "specific_heat": {"base": 1860.0, "slope": 4.0},
+            "vapor_pressure": {"model": "negligible"},
+        },
+
+        # ------------------------- Engine & Specialty Oils -------------------------
+        "sae_10w30": {
+            "name": "SAE 10W-30 Engine Oil",
+            "category": "Engine & Specialty Oils",
+            "density": {"ref": 870.0, "t_ref_c": 15.0, "alpha": 0.0007},
+            "viscosity": {"model": "vogel", "a": -2.8134, "b": 1129.9, "c": 120.0},
+            "specific_heat": {"base": 1900.0, "slope": 4.0},
+            "vapor_pressure": {"model": "negligible"},
+        },
+        "sae_15w40": {
+            "name": "SAE 15W-40 Engine Oil",
+            "category": "Engine & Specialty Oils",
+            "density": {"ref": 875.0, "t_ref_c": 15.0, "alpha": 0.0007},
+            "viscosity": {"model": "vogel", "a": -2.7295, "b": 1188.8, "c": 120.0},
+            "specific_heat": {"base": 1900.0, "slope": 4.0},
+            "vapor_pressure": {"model": "negligible"},
+        },
+        "transformer_oil": {
+            "name": "Transformer / Insulating Oil",
+            "category": "Engine & Specialty Oils",
+            "density": {"ref": 870.0, "t_ref_c": 15.0, "alpha": 0.0007},
+            "viscosity": {"model": "vogel", "a": -2.6437, "b": 783.2, "c": 120.0},
+            "specific_heat": {"base": 1880.0, "slope": 4.0},
+            "vapor_pressure": {"model": "negligible"},
+        },
+        "thermal_oil": {
+            "name": "Mineral Heat Transfer Oil",
+            "category": "Engine & Specialty Oils",
+            "density": {"ref": 880.0, "t_ref_c": 15.0, "alpha": 0.0007},
+            "viscosity": {"model": "vogel", "a": -3.3703, "b": 1072.4, "c": 120.0},
+            "specific_heat": {"base": 1900.0, "slope": 4.0},
+            "vapor_pressure": {"model": "negligible"},
+        },
+
+        # ---------------------------------- Fuels ----------------------------------
+        "diesel": {
+            "name": "Diesel Fuel (No. 2)",
+            "category": "Fuels",
+            "density": {"ref": 840.0, "t_ref_c": 15.0, "alpha": 0.0008},
+            "viscosity": {"model": "vogel", "a": -1.6661, "b": 406.65, "c": 120.0},
+            "specific_heat": {"base": 2000.0, "slope": 0.0},
+            "vapor_pressure": {"model": "negligible"},
+        },
+        "jet_a": {
+            "name": "Jet Fuel (Jet A-1)",
+            "category": "Fuels",
+            "density": {"ref": 800.0, "t_ref_c": 15.0, "alpha": 0.0008},
+            "viscosity": {"model": "vogel", "a": -1.6093, "b": 286.65, "c": 120.0},
+            "specific_heat": {"base": 2000.0, "slope": 0.0},
+            "vapor_pressure": {"model": "negligible"},
+        },
+        "kerosene": {
+            "name": "Kerosene",
+            "category": "Fuels",
+            "density": {"ref": 800.0, "t_ref_c": 15.0, "alpha": 0.0008},
+            "viscosity": {"model": "vogel", "a": -1.3797, "b": 249.92, "c": 120.0},
+            "specific_heat": {"base": 2000.0, "slope": 0.0},
+            "vapor_pressure": {"model": "negligible"},
+        },
+        "gasoline": {
+            "name": "Gasoline",
+            "category": "Fuels",
+            "density": {"ref": 745.0, "t_ref_c": 15.0, "alpha": 0.00095},
+            "viscosity": {"model": "vogel", "a": -2.1989, "b": 240.92, "c": 120.0},
+            "specific_heat": {"base": 2100.0, "slope": 0.0},
+            "vapor_pressure": {"model": "fuel_antoine"},
+        },
+        "crude_light": {
+            "name": "Crude Oil (Light ~35°API)",
+            "category": "Fuels",
+            "density": {"ref": 850.0, "t_ref_c": 15.0, "alpha": 0.0008},
+            "viscosity": {"model": "vogel", "a": -1.7503, "b": 537.56, "c": 120.0},
+            "specific_heat": {"base": 2100.0, "slope": 0.0},
+            "vapor_pressure": {"model": "negligible"},
+        },
+        "crude_heavy": {
+            "name": "Crude Oil (Heavy ~20°API)",
+            "category": "Fuels",
+            "density": {"ref": 930.0, "t_ref_c": 15.0, "alpha": 0.0008},
+            "viscosity": {"model": "vogel", "a": -2.5741, "b": 1112.98, "c": 120.0},
+            "specific_heat": {"base": 1900.0, "slope": 0.0},
+            "vapor_pressure": {"model": "negligible"},
+        },
+    }
+
+    @staticmethod
+    def get_fluid_catalog():
+        """
+        Returns the ordered fluid catalog (id, display name, category)
+        used to populate the UI dropdowns.
+        """
+        return [
+            {"id": fid, "name": fluid["name"], "category": fluid["category"]}
+            for fid, fluid in FluidProperties.FLUIDS.items()
+        ]
+
     @staticmethod
     def get_density(fluid_type: str, temp_k: float) -> float:
+        fluid = FluidProperties.FLUIDS.get(fluid_type)
+        if fluid is None:
+            return 1000.0
         t_c = temp_k - 273.15
-        
-        if fluid_type == "water":
-            # Very simple linear approximation for water near 20-80°C
-            return 1000.0 * (1 - 0.0002 * (t_c - 20))
-        
-        elif fluid_type == "iso_vg_46":
-            # Typical lube oil density: 875 kg/m³ @ 15°C, alpha ~ 0.0007 /°C
-            return 875.0 * (1 - 0.0007 * (t_c - 15))
-        
-        elif fluid_type == "iso_vg_32":
-            # Typical lube oil density: 870 kg/m³ @ 15°C, alpha ~ 0.0007 /°C
-            return 870.0 * (1 - 0.0007 * (t_c - 15))
-        
-        return 1000.0
+        d = fluid["density"]
+        return d["ref"] * (1 - d["alpha"] * (t_c - d["t_ref_c"]))
 
     @staticmethod
     def get_viscosity(fluid_type: str, temp_k: float) -> float:
@@ -32,32 +239,24 @@ class FluidProperties:
         Returns dynamic viscosity (Pa*s or kg/(m*s)).
         Note: 1 cP = 0.001 Pa*s
         """
-        t_c = temp_k - 273.15
-        
-        if fluid_type == "water":
-            # Simple approximation for water viscosity
-            # mu = 0.00179 * exp(-0.025 * t_c) -- very rough
-            # More accurate: mu = 2.414e-5 * 10^(247.8 / (T - 140))
+        fluid = FluidProperties.FLUIDS.get(fluid_type)
+        if fluid is None:
+            return 0.001  # Default to water @ 20°C
+
+        v = fluid["viscosity"]
+
+        if v["model"] == "water":
+            # mu = 2.414e-5 * 10^(247.8 / (T - 140)) [T in Kelvin]
             return 2.414e-5 * 10**(247.8 / (temp_k - 140))
-        
-        elif fluid_type in ["iso_vg_46", "iso_vg_32"]:
-            # Vogel Equation for Lubricating Oils: ln(nu) = A + B / (T_c + C)
-            # T_c is in °C, nu is in cSt (mm^2/s)
-            if fluid_type == "iso_vg_46":
-                # ISO VG 46: 46 cSt @ 40°C, ~6.5 cSt @ 100°C, ~300 cSt @ 10°C
-                A, B, C = -3.5, 1170.0, 120.0
-            else:
-                # ISO VG 32: 32 cSt @ 40°C, ~5.4 cSt @ 100°C, ~180 cSt @ 10°C
-                A, B, C = -3.7, 1130.0, 120.0
-            
-            # nu in cSt (mm^2/s)
-            nu_cst = math.exp(A + B / (t_c + C))
-            
-            # Convert to Pa*s: (cSt * 1e-6) * density
-            density = FluidProperties.get_density(fluid_type, temp_k)
-            return (nu_cst * 1e-6) * density
-            
-        return 0.001 # Default to water @ 20°C
+
+        # Vogel Equation for Oils: ln(nu) = A + B / (T_c + C)
+        # nu in cSt (mm^2/s), T_c in °C
+        t_c = temp_k - 273.15
+        nu_cst = math.exp(v["a"] + v["b"] / (t_c + v["c"]))
+
+        # Convert to Pa*s: (cSt * 1e-6) * density
+        density = FluidProperties.get_density(fluid_type, temp_k)
+        return (nu_cst * 1e-6) * density
 
     @staticmethod
     def get_orifice_cd(reynolds_number: float) -> float:
@@ -103,44 +302,49 @@ class FluidProperties:
         """
         Calculates vapor pressure in Pascals (Pa) using Antoine equation.
         """
+        fluid = FluidProperties.FLUIDS.get(fluid_type)
+        if fluid is None:
+            # Legacy default: dynamic water calculation
+            fluid = FluidProperties.FLUIDS["water"]
+
         t_c = temp_k - 273.15
-        
-        if fluid_type == "water" or fluid_type not in ["iso_vg_46", "iso_vg_32"]:
-            # For unknown fluids, default to dynamic water calculation
+        model = fluid["vapor_pressure"]
+
+        if model["model"] == "water_antoine":
             # Antoine equation for water: log10(P) = A - (B / (C + T))
             # P is in mmHg, T is in °C
             if t_c < 100.0:
-                # Constants valid for 1°C to 100°C
                 A, B, C = 8.07131, 1730.63, 233.426
             else:
-                # Constants valid for 99°C to 374°C
                 A, B, C = 8.14019, 1810.94, 244.485
-            
-            # Avoid singularity at T = -C
+
             if t_c <= -C:
                 return 0.0
-                
+
             pressure_mmhg = 10**(A - (B / (C + t_c)))
-            
-            # Convert mmHg to Pascals (1 mmHg = 133.322387 Pa)
+            return pressure_mmhg * 133.322387 * model.get("scale", 1.0)
+
+        elif model["model"] == "fuel_antoine":
+            # n-Heptane Antoine constants (mmHg, 10-80°C) as a
+            # representative light-naphtha / gasoline model.
+            A, B, C = 6.89677, 1264.9, 216.636
+            if t_c <= -C:
+                return 0.0
+            pressure_mmhg = 10**(A - (B / (C + t_c)))
             return pressure_mmhg * 133.322387
-            
-        elif fluid_type in ["iso_vg_46", "iso_vg_32"]:
-            # Lube oils have very low vapor pressure, ~0 for this simulation
-            return 1.0
+
+        # Oils and heavy fuels have negligible vapor pressure in this range
+        return 1.0
 
     @staticmethod
     def get_specific_heat(fluid_type: str, temp_k: float) -> float:
         """
         Returns specific heat capacity (J/kg*K).
         """
-        if fluid_type == "water":
-            return 4184.0  # Constant for water
-        
-        elif fluid_type in ["iso_vg_46", "iso_vg_32"]:
-            # Typical lube oil: 1800-2200 J/kg*K depending on temp
-            # Linear approximation: Cp = 1800 + 4.0 * (T_c - 20)
-            t_c = temp_k - 273.15
-            return 1860.0 + 4.0 * t_c
-            
-        return 2000.0 # Generic default
+        fluid = FluidProperties.FLUIDS.get(fluid_type)
+        if fluid is None:
+            return 2000.0  # Generic default
+
+        cp = fluid["specific_heat"]
+        t_c = temp_k - 273.15
+        return cp["base"] + cp["slope"] * t_c

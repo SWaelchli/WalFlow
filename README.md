@@ -1,19 +1,21 @@
-Copyright (c) 2026 Sebastian Waelchli (https://swaelchli.com). All rights reserved. Licensed under the PolyForm Noncommercial License.
+*Copyright (c) 2026 Sebastian Waelchli (https://swaelchli.com). All rights reserved. Licensed under the PolyForm Noncommercial License.*
 
 <img width="1264" height="215" alt="Logo_WalFlow" src="https://github.com/user-attachments/assets/914e105e-2a84-4a10-85c1-22be7a99d3e4" />
 
-**WalFlow** is a modern, web-based hydraulic process simulator. Build, modify, and analyze Process Flow Diagrams (PFDs) directly in your browser with real-time steady-state solver telemetry.
+
+**WalFlow** is a web-based hydraulic process simulator. Build, modify, and analyze Process Flow Diagrams (PFDs) directly in your browser with real-time steady-state solver telemetry.
 
 ---
 
 ## ✨ Features
 
-* **Interactive Drag-and-Drop Canvas:** Build network diagrams effortlessly using a component library built on ReactFlow.
+* **Interactive Drag-and-Drop Canvas:** Build Process Flow Diagrams effortlessly using a component library built on ReactFlow.
 * **Real-Time Physics Engine:** Fast Python-based steady-state static solver calculating algebraic pressure distributions, flow rates, and fluid temperatures over WebSocket connections.
-* **Rich Hydraulic Component Library:** Includes pumps, control valves, shut-off valves, orifices, pressure relief valves, heat exchangers, oil coolers, strainers, reservoirs, and pipe branching (T-pieces).
+* **Hydraulic Component Library:** Includes pumps, control valves, shut-off valves, orifices, pressure relief valves, heat exchangers, oil coolers, strainers, reservoirs, and pipe branching.
 * **Live Telemetry & Component Inspection:** Instant visual readout of pressure drops, flow rates, temperature profiles, and operating curves.
 * **Custom Fluids & Solver Control:** Select standard fluids (ISO VG oils, water, etc.) or configure custom fluid properties (density, viscosity) and ambient conditions.
 * **Scenario Templates & Cloud Storage:** Quickly load benchmark PFD scenarios or save, export, and import customized simulation models.
+* **Colaborative Project Structure:** Create Projects and invite your team to work on your PFDs together .
 
 ---
 <img width="1033" height="667" alt="Untitled" src="https://github.com/user-attachments/assets/5839d719-bae1-4ee6-9179-d06644e6875b" />
@@ -21,8 +23,9 @@ Copyright (c) 2026 Sebastian Waelchli (https://swaelchli.com). All rights reserv
 
 ## 🐳 Production Deployment (Docker Compose)
 
-Deploy WalFlow on a homelab server, Proxmox VM, or cloud host using container images from GitHub Container Registry:
+Deploy WalFlow using container images from GitHub Container Registry:
 
+*Example Docker-Compose.yaml:*
 ```yaml
 services:
   walflow-backend:
@@ -47,7 +50,7 @@ services:
       - walflow-backend
 ```
 
-Run `docker compose up -d` and navigate to `http://localhost:5173` (or route through a reverse proxy like Nginx or Cloudflare Tunnel).
+Run `docker compose up -d` and navigate to `http://localhost:5173` in order to access the web UI.
 
 ### Environment Variables Configuration
 

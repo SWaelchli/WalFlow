@@ -7,6 +7,7 @@ from simulation.graph_parser import GraphParser
 from simulation.solver import NetworkSolver, run_sequential_relief_simulation
 from simulation.equipment.volumetric_pump import VolumetricPump
 from simulation.equipment.centrifugal_pump import CentrifugalPump
+from simulation.fluid_utils import FluidProperties
 
 router = APIRouter(prefix="/api/simulation", tags=["simulation"])
 
@@ -97,6 +98,14 @@ def extract_telemetry_dict(network) -> Dict[str, Any]:
             "outlets": [p.dict() for p in pipe.outlets]
         }
     return telemetry
+
+@router.get("/fluids")
+def list_fluids():
+    """
+    Returns the catalog of supported fluids (id, name, category)
+    used to populate the System Fluid and Calibration Fluid dropdowns.
+    """
+    return FluidProperties.get_fluid_catalog()
 
 @router.post("/batch", response_model=BatchSimulationResponse)
 def run_batch_simulation(graph: ReactFlowGraph):

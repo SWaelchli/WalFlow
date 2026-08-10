@@ -1,0 +1,32 @@
+export const FLUID_CATEGORIES = [
+  'Water & Aqueous',
+  'Hydraulic & Lube Oils (ISO VG)',
+  'Engine & Specialty Oils',
+  'Fuels',
+];
+
+export const FLUID_LIBRARY = [
+  { id: 'water', label: 'Water (Standard)', category: 'Water & Aqueous' },
+  { id: 'seawater', label: 'Seawater (3.5% Salinity)', category: 'Water & Aqueous' },
+  { id: 'glycol_30', label: 'Ethylene Glycol 30%', category: 'Water & Aqueous' },
+  { id: 'glycol_50', label: 'Ethylene Glycol 50%', category: 'Water & Aqueous' },
+  { id: 'propylene_glycol_50', label: 'Propylene Glycol 50%', category: 'Water & Aqueous' },
+  { id: 'iso_vg_15', label: 'ISO VG 15 Oil', category: 'Hydraulic & Lube Oils (ISO VG)' },
+  { id: 'iso_vg_22', label: 'ISO VG 22 Oil', category: 'Hydraulic & Lube Oils (ISO VG)' },
+  { id: 'iso_vg_32', label: 'ISO VG 32 Oil', category: 'Hydraulic & Lube Oils (ISO VG)' },
+  { id: 'iso_vg_46', label: 'ISO VG 46 Oil', category: 'Hydraulic & Lube Oils (ISO VG)' },
+  { id: 'iso_vg_68', label: 'ISO VG 68 Oil', category: 'Hydraulic & Lube Oils (ISO VG)' },
+  { id: 'iso_vg_100', label: 'ISO VG 100 Oil', category: 'Hydraulic & Lube Oils (ISO VG)' },
+  { id: 'iso_vg_150', label: 'ISO VG 150 Oil', category: 'Hydraulic & Lube Oils (ISO VG)' },
+  { id: 'iso_vg_220', label: 'ISO VG 220 Oil', category: 'Hydraulic & Lube Oils (ISO VG)' },
+  { id: 'sae_10w30', label: 'SAE 10W-30 Engine Oil', category: 'Engine & Specialty Oils' },
+  { id: 'sae_15w40', label: 'SAE 15W-40 Engine Oil', category: 'Engine & Specialty Oils' },
+  { id: 'transformer_oil', label: 'Transformer / Insulating Oil', category: 'Engine & Specialty Oils' },
+  { id: 'thermal_oil', label: 'Mineral Heat Transfer Oil', category: 'Engine & Specialty Oils' },
+  { id: 'diesel', label: 'Diesel Fuel (No. 2)', category: 'Fuels' },
+  { id: 'jet_a', label: 'Jet Fuel (Jet A-1)', category: 'Fuels' },
+  { id: 'kerosene', label: 'Kerosene', category: 'Fuels' },
+  { id: 'gasoline', label: 'Gasoline', category: 'Fuels' },
+  { id: 'crude_light', label: 'Crude Oil (Light ~35°API)', category: 'Fuels' },
+  { id: 'crude_heavy', label: 'Crude Oil (Heavy ~20°API)', category: 'Fuels' },
+];
