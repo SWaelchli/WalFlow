@@ -22,3 +22,5 @@ All notable changes to the WälFlow project will be documented in this file.
 - Realigned canvas nodes, handles, sensing pins, and pipe/signal edges to inherit unified styling color tokens, eliminated hardcoded visual hex colors, replaced annotations pushpin emoji with clean vector SVG representation, and eliminated duplicate selection border outlines by removing custom wrappers in favor of ReactFlow standards.
 - Removed the legacy HYBR (Powell Hybrid) solver, kept LM (Least-Squares) as a secondary solver option, and configured LM as the automatic fallback for the Sparse Newton solver.
 - Refined the solver telemetry to propagate pressures bidirectionally through pruned dead-end branches under zero flow, correctly isolating closed pressure safety valve and rupture disc seats and ensuring a zero pressure drop profile in return headers.
+- Fixed Three-Way Temperature Control Valve (TCV) hot-side bias under temperature inversion to always respect physical control direction (opening the hot port when outlet temperature is below setpoint).
+

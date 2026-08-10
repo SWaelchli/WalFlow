@@ -256,36 +256,42 @@ class NetworkSolver:
                 
                 # Check if we have positive flow on both ports and a valid temperature diff
                 if q_hot > 1e-9 and q_cold > 1e-9 and abs(t_diff) > 0.5:
-                    # Check if target is physically within the range of inlet temperatures
-                    t_min = min(t_hot_port, t_cold_port)
-                    t_max = max(t_hot_port, t_cold_port)
-                    if node.set_temperature >= t_max:
-                        # Target is hotter than or equal to both inlets, open hot port fully
-                        target_mix = 1.0 if t_hot_port >= t_cold_port else 0.0
-                        node.mix_ratio = node.mix_ratio + damping_factor * (target_mix - node.mix_ratio)
-                    elif node.set_temperature <= t_min:
-                        # Target is colder than or equal to both inlets, open cold port fully
-                        target_mix = 0.0 if t_hot_port >= t_cold_port else 1.0
-                        node.mix_ratio = node.mix_ratio + damping_factor * (target_mix - node.mix_ratio)
-                    else:
-                        num = node.set_temperature - t_cold_port
-                        den = t_hot_port - node.set_temperature
-                        if abs(den) > 0.01:
-                            # R_target = (T_set - T_cold) / (T_hot - T_set)
-                            R_target = num / den
-                            # R_actual = Q_hot / Q_cold
-                            R_actual = q_hot / q_cold
-                            r_curr = node.mix_ratio
-                            X = (r_curr / max(0.0001, 1.0 - r_curr)) * (R_target / max(1e-10, R_actual))
-                            target_mix = X / (1.0 + X)
-                            target_mix = max(0.001, min(0.999, target_mix))
-                            # Damped update for stability
-                            node.mix_ratio = node.mix_ratio + damping_factor * (target_mix - node.mix_ratio)
+                    if t_hot_port >= t_cold_port:
+                        # Standard case: Hot port is warmer than cold port
+                        t_min = min(t_hot_port, t_cold_port)
+                        t_max = max(t_hot_port, t_cold_port)
+                        if node.set_temperature >= t_max:
+                            # Target is hotter than or equal to both inlets, open hot port fully
+                            target_mix = 1.0
+                        elif node.set_temperature <= t_min:
+                            # Target is colder than or equal to both inlets, open cold port fully
+                            target_mix = 0.0
                         else:
-                            node.mix_ratio = 0.5
+                            num = node.set_temperature - t_cold_port
+                            den = t_hot_port - node.set_temperature
+                            if abs(den) > 0.01:
+                                # R_target = (T_set - T_cold) / (T_hot - T_set)
+                                R_target = num / den
+                                # R_actual = Q_hot / Q_cold
+                                R_actual = q_hot / q_cold
+                                r_curr = node.mix_ratio
+                                X = (r_curr / max(0.0001, 1.0 - r_curr)) * (R_target / max(1e-10, R_actual))
+                                target_mix = X / (1.0 + X)
+                            else:
+                                target_mix = 0.5
+                    else:
+                        # Inversion case: Hot port is colder than cold port
+                        # Sensed temperature below setpoint -> open hot port fully (mix_ratio -> 1.0)
+                        # Sensed temperature above setpoint -> open cold port fully (mix_ratio -> 0.0)
+                        target_mix = 1.0 if t_out < node.set_temperature else 0.0
+                        
+                    target_mix = max(0.001, min(0.999, target_mix))
+                    # Damped update for stability
+                    node.mix_ratio = node.mix_ratio + damping_factor * (target_mix - node.mix_ratio)
                 else:
-                    # Fallback to incremental adjustment if temperatures are close or negative flow is active
-                    direction = -1.0 if t_hot_port >= t_cold_port else 1.0
+                    # Fallback to incremental adjustment if temperatures are close or negative flow is active.
+                    # Always direct action feedback: sensed temp below setpoint -> open hot port (increase mix_ratio).
+                    direction = -1.0
                     adjustment = direction * 0.05 * t_err
                     node.mix_ratio = max(0.001, min(0.999, node.mix_ratio + adjustment))
                 node.mix_ratio = max(0.001, min(0.999, node.mix_ratio))
