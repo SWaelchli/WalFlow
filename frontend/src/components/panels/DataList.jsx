@@ -141,7 +141,7 @@ export default function DataList({
         cases: cases,
         active_case_id: activeCaseId
       };
-      const response = await fetch('http://localhost:8000/api/simulation/batch', {
+      const response = await fetch('/api/simulation/batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
