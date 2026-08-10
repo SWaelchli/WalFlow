@@ -202,91 +202,10 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
   });
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0, left: 0, right: 0, bottom: 0,
-      backgroundColor: 'rgba(26, 40, 41, 0.75)',
-      backdropFilter: 'blur(8px)',
-      WebkitBackdropFilter: 'blur(8px)',
-      zIndex: 9999,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '24px',
-      fontFamily: "var(--font-sans, 'Inter', sans-serif)"
-    }}>
-      <div style={{
-        backgroundColor: 'var(--color-brand-darkest)',
-        color: '#ffffff',
-        border: '1px solid var(--color-brand-dark)',
-        borderRadius: '16px',
-        width: '100%',
-        maxWidth: '1080px',
-        maxHeight: '88vh',
-        display: 'flex',
-        flexDirection: 'column',
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(250, 133, 7, 0.15)',
-        overflow: 'hidden',
-        animation: 'walflowFadeIn 0.2s ease-out'
-      }}>
-        <style>
-          {`
-            @keyframes walflowFadeIn {
-              from { opacity: 0; transform: scale(0.97); }
-              to { opacity: 1; transform: scale(1); }
-            }
-            .admin-tab-btn {
-              background: transparent;
-              border: none;
-              color: var(--color-text-muted);
-              font-size: 13px;
-              font-weight: 600;
-              padding: 10px 16px;
-              cursor: pointer;
-              border-radius: 8px;
-              transition: all 0.15s ease;
-              display: flex;
-              align-items: center;
-              gap: 8px;
-              outline: none;
-            }
-            .admin-tab-btn:hover {
-              color: var(--color-text-inverse);
-              background: rgba(255, 255, 255, 0.05);
-            }
-            .admin-tab-btn.active {
-              color: var(--color-text-inverse);
-              background: var(--color-primary);
-              box-shadow: 0 4px 12px var(--color-primary-glow);
-            }
-            .modal-close-btn {
-              background: transparent;
-              border: none;
-              color: var(--color-text-muted);
-              cursor: pointer;
-              padding: 4px 10px;
-              border-radius: 8px;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              transition: all 0.15s ease;
-            }
-            .modal-close-btn:hover {
-              background-color: var(--color-brand-darker);
-              color: var(--color-text-inverse);
-            }
-          `}
-        </style>
-
+    <div className="modal-overlay">
+      <div className="modal-container" style={{ maxWidth: '1080px', maxHeight: '88vh' }}>
         {/* Modal Header */}
-        <div style={{
-          padding: '24px 28px 16px 28px',
-          borderBottom: '1px solid var(--color-brand-darker)',
-          backgroundColor: 'var(--color-surface-dark)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
+        <div className="modal-header" style={{ padding: '24px 28px 16px 28px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
             <div style={{
               width: '44px',
@@ -301,10 +220,10 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
               <CrownIcon size={22} color="#ffffff" />
             </div>
             <div>
-              <h2 style={{ margin: 0, color: '#ffffff', fontSize: '20px', fontWeight: '700' }}>
+              <h2 className="modal-title" style={{ fontSize: '20px' }}>
                 Admin Hub Panel
               </h2>
-              <p style={{ margin: '3px 0 0 0', color: 'var(--color-text-muted)', fontSize: '13px' }}>
+              <p style={{ margin: '3px 0 0 0', color: 'var(--color-text-secondary)', fontSize: '13px' }}>
                 System User Management, Registration Backlog, & Database Content Inspector
               </p>
             </div>
@@ -321,13 +240,12 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
         {/* Tab Navigation Bar */}
         <div style={{
           display: 'flex',
-          borderBottom: '1px solid var(--color-brand-darker)',
-          backgroundColor: 'var(--color-brand-darkest)',
+          borderBottom: '1px solid var(--color-border)',
           padding: '12px 28px',
           gap: '8px'
         }}>
           <button
-            className={`admin-tab-btn ${activeTab === 'backlog' ? 'active' : ''}`}
+            className={`modal-tab-btn ${activeTab === 'backlog' ? 'active' : ''}`}
             onClick={() => setActiveTab('backlog')}
           >
             <InfoIcon size={14} /> Registration Backlog
@@ -346,14 +264,14 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
           </button>
 
           <button
-            className={`admin-tab-btn ${activeTab === 'users' ? 'active' : ''}`}
+            className={`modal-tab-btn ${activeTab === 'users' ? 'active' : ''}`}
             onClick={() => setActiveTab('users')}
           >
             <UserIcon size={14} /> User Management
           </button>
 
           <button
-            className={`admin-tab-btn ${activeTab === 'db_inspector' ? 'active' : ''}`}
+            className={`modal-tab-btn ${activeTab === 'db_inspector' ? 'active' : ''}`}
             onClick={() => setActiveTab('db_inspector')}
           >
             <CloudIcon size={14} /> Database Inspector
@@ -364,82 +282,74 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
         {statusMessage.text && (
           <div style={{
             padding: '10px 28px',
-            backgroundColor: statusMessage.type === 'error' ? 'rgba(239, 68, 68, 0.2)' : statusMessage.type === 'warning' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(34, 197, 94, 0.2)',
-            color: statusMessage.type === 'error' ? '#FCA5A5' : statusMessage.type === 'warning' ? '#FCD34D' : '#86EFAC',
+            backgroundColor: 'var(--color-surface-hover)',
+            color: statusMessage.type === 'error' ? 'var(--color-danger)' : statusMessage.type === 'warning' ? 'var(--color-warning)' : 'var(--color-success)',
             fontSize: '13px',
             fontWeight: '600',
-            borderBottom: '1px solid var(--color-brand-darker)'
+            borderBottom: '1px solid var(--color-border)'
           }}>
             {statusMessage.text}
           </div>
         )}
 
         {/* Tab Content Container */}
-        <div style={{ padding: '24px 28px', overflowY: 'auto', flex: 1 }}>
+        <div className="modal-body">
 
           {/* TAB 1: REGISTRATION BACKLOG */}
           {activeTab === 'backlog' && (
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <h3 style={{ margin: 0, color: '#ffffff', fontSize: '16px', fontWeight: '700' }}>
+                <h3 style={{ margin: 0, color: 'var(--color-text-primary)', fontSize: '16px', fontWeight: '700' }}>
                   Pending User Registrations
                 </h3>
                 <button
                   onClick={loadData}
-                  style={{
-                    backgroundColor: '#263839',
-                    border: '1px solid #4A6768',
-                    borderRadius: '8px',
-                    color: '#B8C9C8',
-                    padding: '6px 14px',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    cursor: 'pointer'
-                  }}
+                  className="btn-secondary"
+                  style={{ padding: '6px 14px' }}
                 >
                   🔄 Refresh
                 </button>
               </div>
 
               {loading ? (
-                <div style={{ color: '#B8C9C8', textAlign: 'center', padding: '40px' }}>Loading backlog...</div>
+                <div style={{ color: 'var(--color-text-secondary)', textAlign: 'center', padding: '40px' }}>Loading backlog...</div>
               ) : pendingUsers.length === 0 ? (
                 <div style={{
-                  backgroundColor: '#223233',
-                  border: '1px dashed var(--color-brand-dark)',
+                  backgroundColor: 'var(--color-surface-hover)',
+                  border: '1px dashed var(--color-border)',
                   borderRadius: '12px',
                   padding: '40px',
                   textAlign: 'center',
-                  color: '#B8C9C8'
+                  color: 'var(--color-text-secondary)'
                 }}>
                   <span style={{ fontSize: '32px', display: 'block', marginBottom: '8px' }}>🎉</span>
                   No pending user registrations in the queue.
                 </div>
               ) : (
                 <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', color: '#ffffff', fontSize: '13px' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', color: 'var(--color-text-primary)', fontSize: '13px' }}>
                     <thead>
-                      <tr style={{ borderBottom: '1px solid #263839', textAlign: 'left' }}>
-                        <th style={{ padding: '12px', color: '#B8C9C8' }}>Username</th>
-                        <th style={{ padding: '12px', color: '#B8C9C8' }}>Registration Date</th>
-                        <th style={{ padding: '12px', color: '#B8C9C8' }}>Status</th>
-                        <th style={{ padding: '12px', color: '#B8C9C8', textAlign: 'right' }}>Actions</th>
+                      <tr style={{ borderBottom: '1px solid var(--color-border)', textAlign: 'left' }}>
+                        <th style={{ padding: '12px', color: 'var(--color-text-secondary)' }}>Username</th>
+                        <th style={{ padding: '12px', color: 'var(--color-text-secondary)' }}>Registration Date</th>
+                        <th style={{ padding: '12px', color: 'var(--color-text-secondary)' }}>Status</th>
+                        <th style={{ padding: '12px', color: 'var(--color-text-secondary)', textAlign: 'right' }}>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {pendingUsers.map((user) => (
-                        <tr key={user.id} style={{ borderBottom: '1px solid #263839' }}>
-                          <td style={{ padding: '12px', fontWeight: '700', color: '#ffffff' }}>
+                        <tr key={user.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                          <td style={{ padding: '12px', fontWeight: '700', color: 'var(--color-text-primary)' }}>
                             👤 {user.username}
                           </td>
-                          <td style={{ padding: '12px', color: '#B8C9C8' }}>
+                          <td style={{ padding: '12px', color: 'var(--color-text-secondary)' }}>
                             {user.created_at ? new Date(user.created_at).toLocaleString() : 'N/A'}
                           </td>
                           <td style={{ padding: '12px' }}>
                             <span style={{
-                              backgroundColor: 'rgba(245, 158, 11, 0.2)',
-                              color: '#FCD34D',
-                              border: '1px solid #F59E0B',
+                              backgroundColor: 'rgba(245, 158, 11, 0.12)',
+                              color: 'var(--color-warning)',
+                              border: '1px solid var(--color-warning)',
                               padding: '3px 10px',
                               borderRadius: '12px',
                               fontSize: '11px',
@@ -494,43 +404,35 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
           {activeTab === 'users' && (
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <h3 style={{ margin: 0, color: '#ffffff', fontSize: '16px', fontWeight: '700' }}>
+                <h3 style={{ margin: 0, color: 'var(--color-text-primary)', fontSize: '16px', fontWeight: '700' }}>
                   All Registered Users
                 </h3>
                 <button
                   onClick={loadData}
-                  style={{
-                    backgroundColor: '#263839',
-                    border: '1px solid #4A6768',
-                    borderRadius: '8px',
-                    color: '#B8C9C8',
-                    padding: '6px 14px',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    cursor: 'pointer'
-                  }}
+                  className="btn-secondary"
+                  style={{ padding: '6px 14px' }}
                 >
                   🔄 Refresh
                 </button>
               </div>
 
               {loading ? (
-                <div style={{ color: '#B8C9C8', textAlign: 'center', padding: '40px' }}>Loading users...</div>
+                <div style={{ color: 'var(--color-text-secondary)', textAlign: 'center', padding: '40px' }}>Loading users...</div>
               ) : (
                 <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', color: '#ffffff', fontSize: '13px' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', color: 'var(--color-text-primary)', fontSize: '13px' }}>
                     <thead>
-                      <tr style={{ borderBottom: '1px solid #263839', textAlign: 'left' }}>
-                        <th style={{ padding: '12px', color: '#B8C9C8' }}>Username</th>
-                        <th style={{ padding: '12px', color: '#B8C9C8' }}>Role</th>
-                        <th style={{ padding: '12px', color: '#B8C9C8' }}>Status</th>
-                        <th style={{ padding: '12px', color: '#B8C9C8' }}>Diagrams</th>
-                        <th style={{ padding: '12px', color: '#B8C9C8', textAlign: 'right' }}>Actions</th>
+                      <tr style={{ borderBottom: '1px solid var(--color-border)', textAlign: 'left' }}>
+                        <th style={{ padding: '12px', color: 'var(--color-text-secondary)' }}>Username</th>
+                        <th style={{ padding: '12px', color: 'var(--color-text-secondary)' }}>Role</th>
+                        <th style={{ padding: '12px', color: 'var(--color-text-secondary)' }}>Status</th>
+                        <th style={{ padding: '12px', color: 'var(--color-text-secondary)' }}>Diagrams</th>
+                        <th style={{ padding: '12px', color: 'var(--color-text-secondary)', textAlign: 'right' }}>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {allUsers.map((user) => (
-                        <tr key={user.id} style={{ borderBottom: '1px solid #263839' }}>
+                        <tr key={user.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
                           <td style={{ padding: '12px', fontWeight: '700' }}>
                             {user.username} {user.id === currentUser?.id && <span style={{ color: 'var(--color-primary)', fontSize: '11px' }}>(You)</span>}
                           </td>
@@ -539,12 +441,11 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
                               value={user.role}
                               onChange={(e) => handleRoleChange(user.id, e.target.value)}
                               disabled={user.id === currentUser?.id}
+                              className="form-select"
                               style={{
-                                backgroundColor: '#223233',
-                                color: user.role === 'admin' ? 'var(--color-primary)' : '#B8C9C8',
-                                border: '1px solid var(--color-brand-dark)',
-                                borderRadius: '6px',
-                                padding: '4px 8px',
+                                color: user.role === 'admin' ? 'var(--color-primary)' : 'var(--color-text-primary)',
+                                height: '28px',
+                                padding: '0 8px',
                                 fontSize: '12px',
                                 fontWeight: '700'
                               }}
@@ -555,9 +456,9 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
                           </td>
                           <td style={{ padding: '12px' }}>
                             <span style={{
-                              backgroundColor: user.status === 'approved' ? 'rgba(34, 197, 94, 0.2)' : user.status === 'rejected' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(245, 158, 11, 0.2)',
-                              color: user.status === 'approved' ? '#86EFAC' : user.status === 'rejected' ? '#FCA5A5' : '#FCD34D',
-                              border: `1px solid ${user.status === 'approved' ? '#22C55E' : user.status === 'rejected' ? '#EF4444' : '#F59E0B'}`,
+                              backgroundColor: user.status === 'approved' ? 'rgba(16, 185, 129, 0.12)' : user.status === 'rejected' ? 'rgba(239, 68, 68, 0.12)' : 'rgba(245, 158, 11, 0.12)',
+                              color: user.status === 'approved' ? 'var(--color-success)' : user.status === 'rejected' ? 'var(--color-danger)' : 'var(--color-warning)',
+                              border: `1px solid ${user.status === 'approved' ? 'var(--color-success)' : user.status === 'rejected' ? 'var(--color-danger)' : 'var(--color-warning)'}`,
                               padding: '3px 10px',
                               borderRadius: '12px',
                               fontSize: '11px',
@@ -566,7 +467,7 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
                               {user.status}
                             </span>
                           </td>
-                          <td style={{ padding: '12px', color: '#B8C9C8' }}>
+                          <td style={{ padding: '12px', color: 'var(--color-text-secondary)' }}>
                             {user.diagram_count} diagrams
                           </td>
                           <td style={{ padding: '12px', textAlign: 'right' }}>
@@ -602,21 +503,21 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
               {/* Metric Cards */}
               {dbData?.stats && (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px', marginBottom: '20px' }}>
-                  <div style={{ backgroundColor: '#223233', border: '1px solid var(--color-brand-dark)', borderRadius: '12px', padding: '14px' }}>
-                    <div style={{ color: '#B8C9C8', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>TOTAL USERS</div>
-                    <div style={{ color: '#ffffff', fontSize: '22px', fontWeight: '800', marginTop: '4px' }}>{dbData.stats.total_users}</div>
+                  <div className="modal-metric-card">
+                    <div style={{ color: 'var(--color-text-secondary)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>TOTAL USERS</div>
+                    <div style={{ color: 'var(--color-text-primary)', fontSize: '22px', fontWeight: '800', marginTop: '4px' }}>{dbData.stats.total_users}</div>
                   </div>
-                  <div style={{ backgroundColor: '#223233', border: '1px solid var(--color-brand-dark)', borderRadius: '12px', padding: '14px' }}>
-                    <div style={{ color: '#FCD34D', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>PENDING APPROVAL</div>
-                    <div style={{ color: '#FCD34D', fontSize: '22px', fontWeight: '800', marginTop: '4px' }}>{dbData.stats.pending_users}</div>
+                  <div className="modal-metric-card">
+                    <div style={{ color: 'var(--color-warning)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>PENDING APPROVAL</div>
+                    <div style={{ color: 'var(--color-warning)', fontSize: '22px', fontWeight: '800', marginTop: '4px' }}>{dbData.stats.pending_users}</div>
                   </div>
-                  <div style={{ backgroundColor: '#223233', border: '1px solid var(--color-brand-dark)', borderRadius: '12px', padding: '14px' }}>
+                  <div className="modal-metric-card">
                     <div style={{ color: 'var(--color-primary)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>ADMIN USERS</div>
                     <div style={{ color: 'var(--color-primary)', fontSize: '22px', fontWeight: '800', marginTop: '4px' }}>{dbData.stats.admin_users}</div>
                   </div>
-                  <div style={{ backgroundColor: '#223233', border: '1px solid var(--color-brand-dark)', borderRadius: '12px', padding: '14px' }}>
-                    <div style={{ color: '#60A5FA', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>STORED PFD DIAGRAMS</div>
-                    <div style={{ color: '#60A5FA', fontSize: '22px', fontWeight: '800', marginTop: '4px' }}>{dbData.stats.total_diagrams}</div>
+                  <div className="modal-metric-card">
+                    <div style={{ color: '#0284C7', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>STORED PFD DIAGRAMS</div>
+                    <div style={{ color: '#0284C7', fontSize: '22px', fontWeight: '800', marginTop: '4px' }}>{dbData.stats.total_diagrams}</div>
                   </div>
                 </div>
               )}
@@ -624,37 +525,26 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
               {/* Toolbar & Search Bar */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', gap: '16px' }}>
                 <div style={{ flex: 1, position: 'relative' }}>
-                  <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#B8C9C8' }}>🔍</span>
+                  <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-secondary)' }}>🔍</span>
                   <input
                     type="text"
                     value={diagramSearchQuery}
                     onChange={(e) => setDiagramSearchQuery(e.target.value)}
                     placeholder="Search stored diagrams by title, description, or owner..."
+                    className="form-input"
                     style={{
                       width: '100%',
                       padding: '10px 14px 10px 36px',
-                      borderRadius: '10px',
-                      border: '1px solid var(--color-brand-dark)',
-                      backgroundColor: '#223233',
-                      color: '#ffffff',
+                      height: '38px',
                       fontSize: '13px',
-                      outline: 'none',
                       boxSizing: 'border-box'
                     }}
                   />
                 </div>
                 <button
                   onClick={loadData}
-                  style={{
-                    backgroundColor: '#263839',
-                    border: '1px solid #4A6768',
-                    borderRadius: '10px',
-                    color: '#ffffff',
-                    padding: '10px 16px',
-                    fontSize: '12px',
-                    fontWeight: '700',
-                    cursor: 'pointer'
-                  }}
+                  className="btn-secondary"
+                  style={{ padding: '10px 16px', height: '38px' }}
                 >
                   🔄 Refresh DB
                 </button>
@@ -662,40 +552,40 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
 
               {/* Diagrams Table */}
               {loading ? (
-                <div style={{ color: '#B8C9C8', textAlign: 'center', padding: '30px' }}>Loading diagrams...</div>
+                <div style={{ color: 'var(--color-text-secondary)', textAlign: 'center', padding: '30px' }}>Loading diagrams...</div>
               ) : filteredDiagrams.length === 0 ? (
                 <div style={{
-                  backgroundColor: '#223233',
-                  border: '1px dashed var(--color-brand-dark)',
+                  backgroundColor: 'var(--color-surface-hover)',
+                  border: '1px dashed var(--color-border)',
                   borderRadius: '12px',
                   padding: '30px',
                   textAlign: 'center',
-                  color: '#B8C9C8'
+                  color: 'var(--color-text-secondary)'
                 }}>
                   No matching diagrams found in database.
                 </div>
               ) : (
                 <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', color: '#ffffff', fontSize: '12px' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', color: 'var(--color-text-primary)', fontSize: '12px' }}>
                     <thead>
-                      <tr style={{ borderBottom: '1px solid #263839', textAlign: 'left' }}>
-                        <th style={{ padding: '10px', color: '#B8C9C8' }}>Diagram Title</th>
-                        <th style={{ padding: '10px', color: '#B8C9C8' }}>Reassign Owner</th>
-                        <th style={{ padding: '10px', color: '#B8C9C8' }}>Last Updated</th>
-                        <th style={{ padding: '10px', color: '#B8C9C8', textAlign: 'right' }}>Management Actions</th>
+                      <tr style={{ borderBottom: '1px solid var(--color-border)', textAlign: 'left' }}>
+                        <th style={{ padding: '10px', color: 'var(--color-text-secondary)' }}>Diagram Title</th>
+                        <th style={{ padding: '10px', color: 'var(--color-text-secondary)' }}>Reassign Owner</th>
+                        <th style={{ padding: '10px', color: 'var(--color-text-secondary)' }}>Last Updated</th>
+                        <th style={{ padding: '10px', color: 'var(--color-text-secondary)', textAlign: 'right' }}>Management Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {filteredDiagrams.map((diagram) => {
                         const ownerUser = allUsers.find(u => u.username === diagram.owner_username);
                         return (
-                          <tr key={diagram.id} style={{ borderBottom: '1px solid #263839' }}>
+                          <tr key={diagram.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
                             <td style={{ padding: '10px' }}>
-                              <div style={{ fontWeight: '700', color: '#ffffff', fontSize: '13px' }}>
+                              <div style={{ fontWeight: '700', color: 'var(--color-text-primary)', fontSize: '13px' }}>
                                 {diagram.title}
                               </div>
                               {diagram.description && (
-                                <div style={{ color: '#B8C9C8', fontSize: '11px', marginTop: '2px' }}>
+                                <div style={{ color: 'var(--color-text-secondary)', fontSize: '11px', marginTop: '2px' }}>
                                   {diagram.description}
                                 </div>
                               )}
@@ -704,11 +594,10 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
                               <select
                                 value={ownerUser ? ownerUser.id : ''}
                                 onChange={(e) => handleReassignOwner(diagram.id, e.target.value)}
+                                className="form-select"
                                 style={{
-                                  backgroundColor: '#223233',
-                                  color: '#60A5FA',
-                                  border: '1px solid var(--color-brand-dark)',
-                                  borderRadius: '6px',
+                                  color: 'var(--color-info)',
+                                  height: '28px',
                                   padding: '4px 8px',
                                   fontSize: '11px',
                                   fontWeight: '700',
@@ -722,7 +611,7 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
                                 ))}
                               </select>
                             </td>
-                            <td style={{ padding: '10px', color: '#B8C9C8' }}>
+                            <td style={{ padding: '10px', color: 'var(--color-text-secondary)' }}>
                               {diagram.updated_at ? new Date(diagram.updated_at).toLocaleDateString() : 'N/A'}
                             </td>
                             <td style={{ padding: '10px', textAlign: 'right' }}>
@@ -747,45 +636,24 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
                                 <button
                                   onClick={() => setEditingDiagram({ id: diagram.id, title: diagram.title, description: diagram.description || '' })}
                                   title="Edit Title & Description"
-                                  style={{
-                                    backgroundColor: '#263839',
-                                    color: '#ffffff',
-                                    border: '1px solid #4A6768',
-                                    borderRadius: '6px',
-                                    padding: '5px 8px',
-                                    fontSize: '11px',
-                                    cursor: 'pointer'
-                                  }}
+                                  className="btn-secondary"
+                                  style={{ height: '28px', padding: '5px 8px', fontSize: '11px' }}
                                 >
                                   ✏️
                                 </button>
                                 <button
                                   onClick={() => handleDuplicateDiagram(diagram.id)}
                                   title="Duplicate Diagram"
-                                  style={{
-                                    backgroundColor: '#263839',
-                                    color: '#ffffff',
-                                    border: '1px solid #4A6768',
-                                    borderRadius: '6px',
-                                    padding: '5px 8px',
-                                    fontSize: '11px',
-                                    cursor: 'pointer'
-                                  }}
+                                  className="btn-secondary"
+                                  style={{ height: '28px', padding: '5px 8px', fontSize: '11px' }}
                                 >
                                   📋
                                 </button>
                                 <button
                                   onClick={() => handleExportDiagram(diagram)}
                                   title="Export .wlf"
-                                  style={{
-                                    backgroundColor: '#263839',
-                                    color: '#ffffff',
-                                    border: '1px solid #4A6768',
-                                    borderRadius: '6px',
-                                    padding: '5px 8px',
-                                    fontSize: '11px',
-                                    cursor: 'pointer'
-                                  }}
+                                  className="btn-secondary"
+                                  style={{ height: '28px', padding: '5px 8px', fontSize: '11px' }}
                                 >
                                   ⬇️
                                 </button>
@@ -820,56 +688,34 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
 
       {/* Delete Confirmation Modal Popup */}
       {diagramToDelete && (
-        <div style={{
-          position: 'fixed',
-          top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(26, 40, 41, 0.85)',
-          backdropFilter: 'blur(8px)',
-          zIndex: 10000,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '20px'
-        }}>
-          <div style={{
-            backgroundColor: '#1A2829',
-            border: '1px solid #EF4444',
-            borderRadius: '16px',
-            width: '100%',
+        <div className="modal-overlay" style={{ zIndex: 10000 }}>
+          <div className="modal-container" style={{
             maxWidth: '440px',
             padding: '24px',
-            boxShadow: '0 25px 50px -12px rgba(239, 68, 68, 0.3)',
-            animation: 'walflowFadeIn 0.15s ease-out'
+            border: '1px solid var(--color-danger)',
+            boxShadow: '0 25px 50px -12px rgba(239, 68, 68, 0.15)',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
               <span style={{ fontSize: '26px' }}>🗑️</span>
-              <h3 style={{ margin: 0, color: '#ffffff', fontSize: '18px', fontWeight: '800' }}>
+              <h3 className="modal-title" style={{ fontSize: '18px', fontWeight: '800' }}>
                 Delete Diagram Confirmation
               </h3>
             </div>
-            <p style={{ color: '#B8C9C8', fontSize: '14px', lineHeight: '1.5', margin: '0 0 24px 0' }}>
+            <p style={{ color: 'var(--color-text-secondary)', fontSize: '14px', lineHeight: '1.5', margin: '0 0 24px 0' }}>
               Are you sure you want to permanently delete the diagram <strong style={{ color: 'var(--color-primary)' }}>'{diagramToDelete.title}'</strong>? This action cannot be undone.
             </p>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
               <button
                 onClick={() => setDiagramToDelete(null)}
-                style={{
-                  backgroundColor: '#263839',
-                  color: '#ffffff',
-                  border: '1px solid #4A6768',
-                  borderRadius: '10px',
-                  padding: '9px 16px',
-                  fontSize: '13px',
-                  fontWeight: '600',
-                  cursor: 'pointer'
-                }}
+                className="btn-secondary"
+                style={{ height: '36px', borderRadius: '10px', padding: '0 16px', fontSize: '13px', fontWeight: '600' }}
               >
                 Cancel
               </button>
               <button
                 onClick={confirmDeleteDiagramAction}
                 style={{
-                  backgroundColor: '#EF4444',
+                  backgroundColor: 'var(--color-danger)',
                   color: '#FFFFFF',
                   border: 'none',
                   borderRadius: '10px',
@@ -888,48 +734,28 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
 
       {/* Edit Metadata Modal Popup */}
       {editingDiagram && (
-        <div style={{
-          position: 'fixed',
-          top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(26, 40, 41, 0.85)',
-          backdropFilter: 'blur(8px)',
-          zIndex: 10000,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '20px'
-        }}>
-          <form onSubmit={handleSaveMetadata} style={{
-            backgroundColor: '#1A2829',
-            border: '1px solid var(--color-brand-dark)',
-            borderRadius: '16px',
-            width: '100%',
+        <div className="modal-overlay" style={{ zIndex: 10000 }}>
+          <form onSubmit={handleSaveMetadata} className="modal-container" style={{
             maxWidth: '460px',
-            padding: '24px',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(250, 133, 7, 0.15)',
-            animation: 'walflowFadeIn 0.15s ease-out'
+            padding: '24px'
           }}>
-            <h3 style={{ margin: '0 0 16px 0', color: '#ffffff', fontSize: '18px', fontWeight: '800' }}>
+            <h3 className="modal-title" style={{ margin: '0 0 16px 0', fontSize: '18px', fontWeight: '800' }}>
               ✏️ Edit Diagram Details
             </h3>
             
             <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', color: 'var(--color-primary)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
+              <label style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
                 Diagram Title
               </label>
               <input
                 type="text"
                 value={editingDiagram.title}
                 onChange={(e) => setEditingDiagram({ ...editingDiagram, title: e.target.value })}
+                className="form-input"
                 style={{
                   width: '100%',
-                  padding: '10px 14px',
-                  borderRadius: '10px',
-                  border: '1px solid var(--color-brand-dark)',
-                  backgroundColor: '#223233',
-                  color: '#ffffff',
+                  height: '38px',
                   fontSize: '13px',
-                  outline: 'none',
                   boxSizing: 'border-box'
                 }}
                 required
@@ -937,24 +763,21 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
             </div>
 
             <div style={{ marginBottom: '24px' }}>
-              <label style={{ display: 'block', color: 'var(--color-primary)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
+              <label style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
                 Description
               </label>
               <textarea
                 value={editingDiagram.description}
                 onChange={(e) => setEditingDiagram({ ...editingDiagram, description: e.target.value })}
                 rows={3}
+                className="form-input"
                 style={{
                   width: '100%',
-                  padding: '10px 14px',
-                  borderRadius: '10px',
-                  border: '1px solid var(--color-brand-dark)',
-                  backgroundColor: '#223233',
-                  color: '#ffffff',
                   fontSize: '13px',
-                  outline: 'none',
                   boxSizing: 'border-box',
-                  resize: 'vertical'
+                  resize: 'vertical',
+                  height: 'auto',
+                  padding: '10px 14px'
                 }}
               />
             </div>
@@ -963,16 +786,8 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
               <button
                 type="button"
                 onClick={() => setEditingDiagram(null)}
-                style={{
-                  backgroundColor: '#263839',
-                  color: '#ffffff',
-                  border: '1px solid #4A6768',
-                  borderRadius: '10px',
-                  padding: '9px 16px',
-                  fontSize: '13px',
-                  fontWeight: '600',
-                  cursor: 'pointer'
-                }}
+                className="btn-secondary"
+                style={{ height: '36px', borderRadius: '10px', padding: '0 16px', fontSize: '13px', fontWeight: '600' }}
               >
                 Cancel
               </button>

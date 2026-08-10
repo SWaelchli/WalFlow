@@ -34,6 +34,7 @@ class DiagramSummarySchema(BaseModel):
     description: Optional[str]
     created_at: datetime
     updated_at: datetime
+    lock_info: Optional[dict] = None
 
     class Config:
         from_attributes = True
@@ -178,13 +179,15 @@ def get_project_detail(
             ))
             
     # Format diagrams list
+    from routers.diagrams import get_lock_status_info
     diagrams_formatted = [
         DiagramSummarySchema(
             id=d.id,
             title=d.title,
             description=d.description,
             created_at=d.created_at,
-            updated_at=d.updated_at
+            updated_at=d.updated_at,
+            lock_info=get_lock_status_info(d.id)
         )
         for d in project.diagrams
     ]

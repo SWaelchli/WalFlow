@@ -263,7 +263,87 @@
 }
 ```
 
+### 4. Modals & Dialogs
+
+```css
+/* Modal Overlay / Backdrop Scrim */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(28, 43, 44, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* Modal Content Container */
+.modal-container {
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: walflowFadeIn 0.2s ease-out;
+  box-sizing: border-box;
+}
+
+/* Modal Header Area */
+.modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-surface-hover);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Modal Title */
+.modal-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+/* Modal Body area */
+.modal-body {
+  padding: 20px;
+  overflow-y: auto;
+}
+
+/* Modal Footer / Actions Row */
+.modal-footer {
+  padding: 12px 20px;
+  border-top: 1px solid var(--color-border);
+  background-color: var(--color-surface-hover);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Keyboard Shortcut KBD element style */
+.modal-kbd {
+  background-color: var(--color-surface-hover);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 1px 0 var(--color-border-hover);
+  border-radius: var(--radius-sm);
+  padding: 2px 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+```
+
 ---
+
 
 ## Style Guidelines
 

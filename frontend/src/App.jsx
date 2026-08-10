@@ -657,6 +657,13 @@ function WalFlowContent() {
           updated_at: draft.timestamp || new Date().toISOString()
         });
       }
+      if (draft.active_diagram_id && draft.active_diagram_title) {
+        setActiveDiagram({
+          id: draft.active_diagram_id,
+          title: draft.active_diagram_title,
+          description: draft.active_diagram_description || ''
+        });
+      }
       setShowRestoredToast(true);
       setTimeout(() => setShowRestoredToast(false), 5000);
     } else {
@@ -1344,6 +1351,7 @@ function WalFlowContent() {
             }
           }}
           isAuthenticated={isAuthenticated}
+          currentUser={currentUser}
           activeProject={activeProject}
           setActiveProject={setActiveProject}
           activeDiagram={activeDiagram}

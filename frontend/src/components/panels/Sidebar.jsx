@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { EquipmentSymbol } from '../symbols/SymbolLibrary';
-import { InfoIcon, CheckIcon, CrossIcon, FolderIcon, SearchIcon, TrashIcon } from '../symbols/IconLibrary';
+import { InfoIcon, CheckIcon, CrossIcon, FolderIcon, SearchIcon, TrashIcon, LockIcon, UnlockIcon, FolderOpenIcon } from '../symbols/IconLibrary';
 
 
 const categorizedEquipment = [
@@ -520,8 +520,12 @@ function ProjectFolderRow({ project, isExpanded, onToggle, onManage }) {
   );
 }
 
-function DiagramRow({ diagram, isActive, onLoad, onDelete }) {
+function DiagramRow({ diagram, isActive, isHighlighted, onClick, onOpen, onToggleLock, onDelete, currentUser }) {
   const [hovered, setHovered] = useState(false);
+
+  const lock = diagram.lock_info;
+  const isLocked = !!lock;
+  const isLockedByMe = lock && currentUser && lock.user_id === currentUser.id;
 
   return (
     <div
@@ -535,36 +539,93 @@ function DiagramRow({ diagram, isActive, onLoad, onDelete }) {
         borderRadius: '4px',
         cursor: 'pointer',
         fontSize: '11px',
-        backgroundColor: isActive ? '#395253' : hovered ? '#F4F7F6' : 'transparent',
+        backgroundColor: isActive ? '#395253' : isHighlighted ? '#EBF0EF' : hovered ? '#F4F7F6' : 'transparent',
         color: isActive ? '#ffffff' : '#1C2B2C',
-        fontWeight: isActive ? '700' : '500',
+        fontWeight: isActive ? '700' : isHighlighted ? '600' : '500',
         transition: 'all 0.15s ease'
       }}
     >
-      <div onClick={onLoad} style={{ display: 'flex', alignItems: 'center', gap: '6px', flexGrow: 1, overflow: 'hidden' }}>
-        <span style={{ color: isActive ? '#ffffff' : '#FA8507' }}>📄</span>
-        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{diagram.title}</span>
-      </div>
-      {hovered && (
+      <div 
+        onClick={onClick}
+        onDoubleClick={onOpen}
+        style={{ display: 'flex', alignItems: 'center', gap: '6px', flexGrow: 1, overflow: 'hidden' }}
+      >
+        <span style={{ color: isActive ? '#ffffff' : '#FA8507', display: 'flex', alignItems: 'center' }}>📄</span>
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexGrow: 1 }}>{diagram.title}</span>
         <button
           onClick={(e) => {
             e.stopPropagation();
-            onDelete(e);
+            if (isLocked && !isLockedByMe) return;
+            onToggleLock();
           }}
-          title="Delete drawing"
+          disabled={isLocked && !isLockedByMe}
+          title={isLocked ? (isLockedByMe ? 'Release Edit Lock (Check in)' : `Locked by ${lock.username}`) : 'Acquire Edit Lock (Check out)'}
           style={{
             background: 'transparent',
             border: 'none',
-            color: isActive ? '#ffffff' : '#EF4444',
-            cursor: 'pointer',
-            padding: '2px 4px',
-            display: 'flex',
+            padding: '2px',
+            cursor: (isLocked && !isLockedByMe) ? 'not-allowed' : 'pointer',
+            display: 'inline-flex',
             alignItems: 'center',
-            borderRadius: '4px'
+            marginLeft: '4px',
+            borderRadius: '4px',
+            transition: 'opacity 0.15s'
           }}
         >
-          <TrashIcon size={12} color={isActive ? '#ffffff' : '#EF4444'} />
+          {isLocked ? (
+            <LockIcon 
+              size={12} 
+              color={isActive ? '#ffffff' : isLockedByMe ? '#10B981' : '#EF4444'} 
+            />
+          ) : (
+            <UnlockIcon 
+              size={12} 
+              color={isActive ? 'rgba(255,255,255,0.6)' : '#587071'} 
+            />
+          )}
         </button>
+      </div>
+      {(hovered || isHighlighted) && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpen();
+            }}
+            title="Open drawing"
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: isActive ? '#ffffff' : '#395253',
+              cursor: 'pointer',
+              padding: '2px 4px',
+              display: 'flex',
+              alignItems: 'center',
+              borderRadius: '4px'
+            }}
+          >
+            <FolderOpenIcon size={12} color={isActive ? '#ffffff' : '#395253'} />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(e);
+            }}
+            title="Delete drawing"
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: isActive ? '#ffffff' : '#EF4444',
+              cursor: 'pointer',
+              padding: '2px 4px',
+              display: 'flex',
+              alignItems: 'center',
+              borderRadius: '4px'
+            }}
+          >
+            <TrashIcon size={12} color={isActive ? '#ffffff' : '#EF4444'} />
+          </button>
+        </div>
       )}
     </div>
   );
@@ -579,6 +640,7 @@ export default function Sidebar({
   batchStats,
   onSelectComponent,
   isAuthenticated,
+  currentUser,
   activeProject,
   setActiveProject,
   activeDiagram,
@@ -604,6 +666,7 @@ export default function Sidebar({
   const [expandedProjects, setExpandedProjects] = useState({});
   const [projectDiagrams, setProjectDiagrams] = useState({});
   const [loadingFiles, setLoadingFiles] = useState(false);
+  const [highlightedDiagramId, setHighlightedDiagramId] = useState(null);
 
   const fetchWorkspaceFiles = useCallback(async () => {
     if (!isAuthenticated) return;
@@ -625,6 +688,77 @@ export default function Sidebar({
       fetchWorkspaceFiles();
     }
   }, [activeTab, isAuthenticated, fetchWorkspaceFiles, activeDiagram]);
+
+  const updateDiagramLockState = useCallback((diagramId, newLock) => {
+    setStandaloneList(prev => prev.map(d => {
+      if (d.id === diagramId) {
+        return { ...d, lock_info: newLock };
+      }
+      return d;
+    }));
+
+    setProjectDiagrams(prev => {
+      const updated = { ...prev };
+      let changed = false;
+      for (const projId in updated) {
+        const list = updated[projId];
+        if (list && list.some(d => d.id === diagramId)) {
+          updated[projId] = list.map(d => {
+            if (d.id === diagramId) {
+              return { ...d, lock_info: newLock };
+            }
+            return d;
+          });
+          changed = true;
+        }
+      }
+      return changed ? updated : prev;
+    });
+  }, []);
+
+  // Keep explorer tree padlocks instantly synchronized with active drawing lock status changes
+  useEffect(() => {
+    if (!activeDiagram) return;
+    updateDiagramLockState(activeDiagram.id, lockInfo);
+  }, [activeDiagram, lockInfo, updateDiagramLockState]);
+
+  const handleToggleLock = useCallback(async (diagram) => {
+    if (!isAuthenticated) return;
+    const lock = diagram.lock_info;
+    const isLocked = !!lock;
+    const isLockedByMe = lock && currentUser && lock.user_id === currentUser.id;
+
+    if (isLocked) {
+      if (!isLockedByMe) return; // Safeguard: locked by someone else
+      try {
+        await axios.post(`/api/diagrams/${diagram.id}/checkin`);
+        updateDiagramLockState(diagram.id, null);
+        if (activeDiagram?.id === diagram.id && onCheckin) {
+          onCheckin();
+        }
+      } catch (err) {
+        console.error("Failed to release lock from explorer:", err);
+      }
+    } else {
+      try {
+        const res = await axios.post(`/api/diagrams/${diagram.id}/checkout`);
+        if (res.data.status === 'success') {
+          const newLock = res.data.lock;
+          updateDiagramLockState(diagram.id, newLock);
+          if (activeDiagram?.id === diagram.id && onCheckout) {
+            onCheckout();
+          }
+        }
+      } catch (err) {
+        console.error("Failed to acquire lock from explorer:", err);
+        if (err.response && err.response.data && err.response.data.detail) {
+          alert(err.response.data.detail);
+        } else {
+          alert('Could not check out diagram. It may be locked by another user.');
+        }
+      }
+    }
+  }, [isAuthenticated, currentUser, activeDiagram, onCheckout, onCheckin, updateDiagramLockState]);
 
   const toggleProjectExpand = async (projectId) => {
     const isExpanded = !!expandedProjects[projectId];
@@ -1098,13 +1232,18 @@ export default function Sidebar({
                             ) : (
                               diags.map(d => {
                                 const isActive = activeDiagram?.id === d.id;
+                                const isHighlighted = highlightedDiagramId === d.id;
                                 return (
                                   <DiagramRow 
                                     key={d.id}
                                     diagram={d}
                                     isActive={isActive}
-                                    onLoad={() => handleLoadCloudDiagram(d.id, p)}
+                                    isHighlighted={isHighlighted}
+                                    onClick={() => setHighlightedDiagramId(d.id)}
+                                    onOpen={() => handleLoadCloudDiagram(d.id, p)}
+                                    onToggleLock={() => handleToggleLock(d)}
                                     onDelete={(e) => handleDeleteDiagram(e, d.id, d.title)}
+                                    currentUser={currentUser}
                                   />
                                 );
                               })
@@ -1123,13 +1262,18 @@ export default function Sidebar({
                       </div>
                       {standaloneList.map(d => {
                         const isActive = activeDiagram?.id === d.id;
+                        const isHighlighted = highlightedDiagramId === d.id;
                         return (
                           <DiagramRow 
                             key={d.id}
                             diagram={d}
                             isActive={isActive}
-                            onLoad={() => handleLoadCloudDiagram(d.id, null)}
+                            isHighlighted={isHighlighted}
+                            onClick={() => setHighlightedDiagramId(d.id)}
+                            onOpen={() => handleLoadCloudDiagram(d.id, null)}
+                            onToggleLock={() => handleToggleLock(d)}
                             onDelete={(e) => handleDeleteDiagram(e, d.id, d.title)}
+                            currentUser={currentUser}
                           />
                         );
                       })}

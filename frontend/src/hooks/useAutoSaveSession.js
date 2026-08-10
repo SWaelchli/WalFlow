@@ -67,6 +67,7 @@ export function useAutoSaveSession({
       active_project_title: activeProject?.title || null,
       active_diagram_id: activeDiagram?.id || null,
       active_diagram_title: activeDiagram?.title || null,
+      active_diagram_description: activeDiagram?.description || null,
       viewport,
       active_case_id: activeCaseId,
       cases: cases || [],

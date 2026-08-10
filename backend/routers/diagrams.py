@@ -179,6 +179,7 @@ class DiagramSummarySchema(BaseModel):
     description: Optional[str]
     created_at: datetime
     updated_at: datetime
+    lock_info: Optional[dict] = None
 
     class Config:
         from_attributes = True
@@ -206,6 +207,9 @@ def list_user_diagrams(
             Diagram.user_id == current_user.id,
             Diagram.project_id.is_(None)
         ).order_by(Diagram.updated_at.desc()).all()
+    
+    for d in diagrams:
+        d.lock_info = get_lock_status_info(d.id)
     return diagrams
 
 @router.get("/{diagram_id}", response_model=DiagramDetailSchema)
@@ -232,6 +236,7 @@ def get_diagram_detail(
                 detail="You do not have permission to view this standalone diagram."
             )
             
+    diagram.lock_info = get_lock_status_info(diagram.id)
     return diagram
 
 @router.post("", response_model=DiagramDetailSchema, status_code=status.HTTP_201_CREATED)

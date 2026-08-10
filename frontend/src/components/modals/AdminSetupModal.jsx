@@ -44,45 +44,10 @@ const AdminSetupModal = ({ isOpen, onClose }) => {
   };
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0, left: 0, right: 0, bottom: 0,
-      backgroundColor: 'rgba(26, 40, 41, 0.75)',
-      backdropFilter: 'blur(8px)',
-      WebkitBackdropFilter: 'blur(8px)',
-      zIndex: 10000,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '20px',
-      fontFamily: "var(--font-sans, 'Inter', sans-serif)"
-    }}>
-      <div style={{
-        backgroundColor: 'var(--color-brand-darkest)',
-        color: '#ffffff',
-        border: '1px solid var(--color-brand-dark)',
-        borderRadius: '16px',
-        width: '100%',
-        maxWidth: '460px',
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(250, 133, 7, 0.15)',
-        overflow: 'hidden',
-        animation: 'walflowFadeIn 0.2s ease-out'
-      }}>
-        <style>
-          {`
-            @keyframes walflowFadeIn {
-              from { opacity: 0; transform: scale(0.97); }
-              to { opacity: 1; transform: scale(1); }
-            }
-          `}
-        </style>
-
+    <div className="modal-overlay">
+      <div className="modal-container" style={{ maxWidth: '460px' }}>
         {/* Header */}
-        <div style={{
-          padding: '24px 28px 18px 28px',
-          borderBottom: '1px solid var(--color-brand-darker)',
-          backgroundColor: 'var(--color-surface-dark)'
-        }}>
+        <div className="modal-header" style={{ padding: '24px 28px 18px 28px', flexDirection: 'column', alignItems: 'stretch' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '8px' }}>
             <div style={{
               width: '44px',
@@ -97,15 +62,15 @@ const AdminSetupModal = ({ isOpen, onClose }) => {
               <CrownIcon size={22} color="#ffffff" />
             </div>
             <div>
-              <h3 style={{ margin: 0, color: '#ffffff', fontSize: '18px', fontWeight: '700' }}>
+              <h3 className="modal-title" style={{ fontSize: '18px' }}>
                 First-Time Admin Setup
               </h3>
-              <p style={{ margin: '2px 0 0 0', color: '#B8C9C8', fontSize: '12px' }}>
+              <p style={{ margin: '2px 0 0 0', color: 'var(--color-text-secondary)', fontSize: '12px' }}>
                 Initialize system administrator account
               </p>
             </div>
           </div>
-          <p style={{ margin: '8px 0 0 0', color: '#D8E2E1', fontSize: '13px', lineHeight: '1.5' }}>
+          <p style={{ margin: '8px 0 0 0', color: 'var(--color-text-primary)', fontSize: '13px', lineHeight: '1.5' }}>
             No administrator user was found in the WalFlow database. Please create the initial Administrator account to secure system access.
           </p>
         </div>
@@ -114,11 +79,11 @@ const AdminSetupModal = ({ isOpen, onClose }) => {
         <form onSubmit={handleSubmit} style={{ padding: '24px 28px' }}>
           {error && (
             <div style={{
-              backgroundColor: 'rgba(239, 68, 68, 0.15)',
+              backgroundColor: 'rgba(239, 68, 68, 0.12)',
               border: '1px solid var(--color-danger)',
               borderRadius: '10px',
               padding: '12px 14px',
-              color: '#FCA5A5',
+              color: 'var(--color-danger)',
               fontSize: '13px',
               marginBottom: '18px',
               lineHeight: '1.4'
@@ -128,7 +93,7 @@ const AdminSetupModal = ({ isOpen, onClose }) => {
           )}
 
           <div style={{ marginBottom: '18px' }}>
-            <label style={{ display: 'block', color: 'var(--color-primary)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
+            <label style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
               Admin Username
             </label>
             <input
@@ -139,9 +104,6 @@ const AdminSetupModal = ({ isOpen, onClose }) => {
               className="form-input"
               style={{
                 width: '100%',
-                backgroundColor: 'var(--color-surface-dark)',
-                borderColor: 'var(--color-brand-dark)',
-                color: 'var(--color-text-inverse)',
                 height: '38px',
                 fontSize: '14px'
               }}
@@ -150,7 +112,7 @@ const AdminSetupModal = ({ isOpen, onClose }) => {
           </div>
 
           <div style={{ marginBottom: '18px' }}>
-            <label style={{ display: 'block', color: 'var(--color-primary)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
+            <label style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
               Admin Password
             </label>
             <input
@@ -161,9 +123,6 @@ const AdminSetupModal = ({ isOpen, onClose }) => {
               className="form-input"
               style={{
                 width: '100%',
-                backgroundColor: 'var(--color-surface-dark)',
-                borderColor: 'var(--color-brand-dark)',
-                color: 'var(--color-text-inverse)',
                 height: '38px',
                 fontSize: '14px'
               }}
@@ -172,7 +131,7 @@ const AdminSetupModal = ({ isOpen, onClose }) => {
           </div>
 
           <div style={{ marginBottom: '24px' }}>
-            <label style={{ display: 'block', color: 'var(--color-primary)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
+            <label style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
               Confirm Admin Password
             </label>
             <input
@@ -183,9 +142,6 @@ const AdminSetupModal = ({ isOpen, onClose }) => {
               className="form-input"
               style={{
                 width: '100%',
-                backgroundColor: 'var(--color-surface-dark)',
-                borderColor: 'var(--color-brand-dark)',
-                color: 'var(--color-text-inverse)',
                 height: '38px',
                 fontSize: '14px'
               }}
