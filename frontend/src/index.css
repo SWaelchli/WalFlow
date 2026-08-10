@@ -481,6 +481,61 @@ textarea:focus-visible,
   display: inline-block;
 }
 
+/* Flow Drop Loading Mark */
+@keyframes flow-dash {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -40;
+  }
+}
+
+@keyframes drop-pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.04);
+  }
+}
+
+.flow-line,
+.flow-line-static {
+  fill: none;
+  stroke: #FA8507;
+  stroke-width: 9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 26 14;
+}
+
+.flow-line {
+  animation: flow-dash 1.2s linear infinite;
+}
+
+.flow-glow,
+.flow-glow-static {
+  fill: none;
+  stroke: rgba(250, 133, 7, 0.25);
+  stroke-width: 16;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.drop-group {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: drop-pulse 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flow-line,
+  .drop-group {
+    animation: none !important;
+  }
+}
+
 /* Sidebar Redesign Classes */
 .sidebar-drag-card {
   padding: 12px 8px;

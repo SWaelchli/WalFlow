@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <style>
+    @keyframes flowDash {
+      from { stroke-dashoffset: 0; }
+      to { stroke-dashoffset: -40; }
+    }
+    @keyframes dropPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.04); }
+    }
+    .flow-line {
+      fill: none;
+      stroke: #FA8507;
+      stroke-width: 9;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 26 14;
+      animation: flowDash 1.2s linear infinite;
+    }
+    .flow-glow {
+      fill: none;
+      stroke: rgba(250, 133, 7, 0.25);
+      stroke-width: 16;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .drop-group {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: dropPulse 2s ease-in-out infinite;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; }
+    }
+  </style>
+  <g class="drop-group">
+    <path d="M64 14 C 88 44, 106 62, 106 82 A 42 42 0 1 1 22 82 C 22 62, 40 44, 64 14 Z" fill="#395253" />
+    <path class="flow-glow" d="M28 80 C 44 58, 54 100, 68 80 C 80 62, 88 92, 100 72" />
+    <path class="flow-line" d="M28 80 C 44 58, 54 100, 68 80 C 80 62, 88 92, 100 72" />
+  </g>
+</svg>

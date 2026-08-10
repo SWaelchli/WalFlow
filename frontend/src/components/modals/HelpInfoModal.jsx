@@ -256,7 +256,7 @@ export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts
                     GitHub Profile
                   </a>
                   <a
-                    href="https://www.linkedin.com/in/sebastiangruenwald/"
+                    href="https://www.linkedin.com/in/sebastian-w%C3%A4lchli-405603227/"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="modal-link-btn"

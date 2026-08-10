@@ -553,6 +553,48 @@ function DiagramRow({ diagram, isActive, isHighlighted, onClick, onOpen, onToggl
       >
         <span style={{ color: isActive ? '#ffffff' : '#FA8507', display: 'flex', alignItems: 'center' }}>📄</span>
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexGrow: 1 }}>{diagram.title}</span>
+        {(hovered || isHighlighted) && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpen();
+              }}
+              title="Open drawing"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: isActive ? '#ffffff' : '#395253',
+                cursor: 'pointer',
+                padding: '2px 4px',
+                display: 'flex',
+                alignItems: 'center',
+                borderRadius: '4px'
+              }}
+            >
+              <FolderOpenIcon size={12} color={isActive ? '#ffffff' : '#395253'} />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(e);
+              }}
+              title="Delete drawing"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: isActive ? '#ffffff' : '#EF4444',
+                cursor: 'pointer',
+                padding: '2px 4px',
+                display: 'flex',
+                alignItems: 'center',
+                borderRadius: '4px'
+              }}
+            >
+              <TrashIcon size={12} color={isActive ? '#ffffff' : '#EF4444'} />
+            </button>
+          </div>
+        )}
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -586,48 +628,6 @@ function DiagramRow({ diagram, isActive, isHighlighted, onClick, onOpen, onToggl
           )}
         </button>
       </div>
-      {(hovered || isHighlighted) && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onOpen();
-            }}
-            title="Open drawing"
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: isActive ? '#ffffff' : '#395253',
-              cursor: 'pointer',
-              padding: '2px 4px',
-              display: 'flex',
-              alignItems: 'center',
-              borderRadius: '4px'
-            }}
-          >
-            <FolderOpenIcon size={12} color={isActive ? '#ffffff' : '#395253'} />
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(e);
-            }}
-            title="Delete drawing"
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: isActive ? '#ffffff' : '#EF4444',
-              cursor: 'pointer',
-              padding: '2px 4px',
-              display: 'flex',
-              alignItems: 'center',
-              borderRadius: '4px'
-            }}
-          >
-            <TrashIcon size={12} color={isActive ? '#ffffff' : '#EF4444'} />
-          </button>
-        </div>
-      )}
     </div>
   );
 }

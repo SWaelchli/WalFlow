@@ -13,7 +13,9 @@ const ProjectManagerModal = ({
   setActiveProject,
   activeDiagram,
   setActiveDiagram,
-  initialProjectId
+  initialProjectId,
+  showCanvasLoading,
+  hideCanvasLoading
 }) => {
   const { isAuthenticated, currentUser } = useAuth();
   
@@ -190,12 +192,20 @@ const ProjectManagerModal = ({
 
   const handleLoadDiagram = async (diagramId) => {
     try {
+      if (showCanvasLoading) {
+        showCanvasLoading("Opening drawing from workspace…");
+      }
+      onClose();
+
       const response = await axios.get(`/api/diagrams/${diagramId}`);
       const parsedData = JSON.parse(response.data.diagram_data);
       
       // Auto-validate schema format
       if (parsedData.version !== FILE_FORMAT_VERSION) {
         alert(`Cannot load: File format version '${parsedData.version}' is incompatible with version '${FILE_FORMAT_VERSION}'.`);
+        if (hideCanvasLoading) {
+          hideCanvasLoading();
+        }
         return;
       }
 
@@ -215,9 +225,11 @@ const ProjectManagerModal = ({
         });
       }
       onLoadDiagram(parsedData);
-      onClose();
     } catch {
       alert("Failed to load diagram from server.");
+      if (hideCanvasLoading) {
+        hideCanvasLoading();
+      }
     }
   };
 

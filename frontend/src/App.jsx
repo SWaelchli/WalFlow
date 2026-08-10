@@ -39,6 +39,7 @@ import DataList from './components/panels/DataList';
 import PipeEdge from './edges/PipeEdge';
 import SignalEdge from './edges/SignalEdge';
 import HeatmapLegend from './components/overlays/HeatmapLegend';
+import CanvasLoadingOverlay from './components/overlays/CanvasLoadingOverlay';
 import { FlameIcon, CaseIcon, HelpIcon } from './components/symbols/IconLibrary';
 import CaseManager from './components/overlays/CaseManager';
 import HelpInfoModal from './components/modals/HelpInfoModal';
@@ -114,6 +115,9 @@ const edgeTypes = {
 const getId = () => `node_${crypto.randomUUID().split('-')[0]}`;
 const getEdgeId = () => `edge_${crypto.randomUUID().split('-')[0]}`;
 
+const MIN_VISIBLE_MS = 400;
+const SAFETY_TIMEOUT_MS = 5000;
+
 const getNextLabelNumber = (edges) => {
   let maxNum = 99; // Default starting from 100
   edges.forEach(edge => {
@@ -153,6 +157,77 @@ function WalFlowContent() {
   const [activeProject, setActiveProject] = useState(null);
   const [activeDiagram, setActiveDiagram] = useState(null);
   const [showRestoredToast, setShowRestoredToast] = useState(false);
+
+  // Canvas loading overlay state
+  const [isCanvasLoading, setIsCanvasLoading] = useState(false);
+  const [canvasLoadingLabel, setCanvasLoadingLabel] = useState('Opening drawing…');
+  const pendingLoadRef = useRef(false);
+  const loadStartedAtRef = useRef(0);
+  const hideTimerRef = useRef(null);
+  const paintFrameRef = useRef(null);
+  const loadTimeoutRef = useRef(null);
+
+  const showCanvasLoading = useCallback((label = 'Opening drawing…') => {
+    if (hideTimerRef.current) {
+      clearTimeout(hideTimerRef.current);
+    }
+    if (paintFrameRef.current) {
+      cancelAnimationFrame(paintFrameRef.current);
+    }
+    if (loadTimeoutRef.current) {
+      clearTimeout(loadTimeoutRef.current);
+    }
+    pendingLoadRef.current = true;
+    loadStartedAtRef.current = Date.now();
+    setCanvasLoadingLabel(label);
+    setIsCanvasLoading(true);
+    hideTimerRef.current = setTimeout(() => {
+      pendingLoadRef.current = false;
+      setIsCanvasLoading(false);
+    }, SAFETY_TIMEOUT_MS);
+  }, []);
+
+  const hideCanvasLoading = useCallback(() => {
+    if (hideTimerRef.current) {
+      clearTimeout(hideTimerRef.current);
+    }
+    if (paintFrameRef.current) {
+      cancelAnimationFrame(paintFrameRef.current);
+    }
+    if (loadTimeoutRef.current) {
+      clearTimeout(loadTimeoutRef.current);
+    }
+    pendingLoadRef.current = false;
+    setIsCanvasLoading(false);
+  }, []);
+
+  useEffect(() => () => {
+    if (hideTimerRef.current) {
+      clearTimeout(hideTimerRef.current);
+    }
+    if (paintFrameRef.current) {
+      cancelAnimationFrame(paintFrameRef.current);
+    }
+    if (loadTimeoutRef.current) {
+      clearTimeout(loadTimeoutRef.current);
+    }
+  }, []);
+
+  // Hide the loader once the loaded canvas commits (completion-driven, not a fixed timer).
+  // The requestAnimationFrame gate guarantees the loader is included in at least one painted
+  // frame before the hide timer starts, so heavy synchronous loads still flash it.
+  useEffect(() => {
+    if (!pendingLoadRef.current) return;
+    pendingLoadRef.current = false;
+    if (hideTimerRef.current) {
+      clearTimeout(hideTimerRef.current);
+    }
+    paintFrameRef.current = requestAnimationFrame(() => {
+      const elapsed = Date.now() - loadStartedAtRef.current;
+      const remaining = Math.max(0, MIN_VISIBLE_MS - elapsed);
+      hideTimerRef.current = setTimeout(() => setIsCanvasLoading(false), remaining === 0 ? 50 : remaining);
+    });
+  }, [nodes, edges]);
 
   // Reset active cloud project when user switches accounts or logs out
   const prevUserIdRef = useRef(currentUser?.id);
@@ -571,53 +646,59 @@ function WalFlowContent() {
   );
 
   const loadData = useCallback((data) => {
-    if (data.nodes && data.edges) {
-      const seenNodeIds = new Set();
-      const restoredNodes = data.nodes.map((node, idx) => {
-        let uniqueId = node.id || `node_${idx}`;
-        while (seenNodeIds.has(uniqueId)) {
-          uniqueId = `node_${Math.random().toString(36).substring(2, 9)}`;
-        }
-        seenNodeIds.add(uniqueId);
-        return {
-          ...node,
-          id: uniqueId,
-          data: {
-            ...node.data,
-            rotation: node.data?.rotation || 0,
-            onRotate: handleRotation,
-            onChange: (node.type === 'linear_control_valve' || node.type === 'remote_control_valve') ? handleValveChange : undefined
-          }
-        };
-      });
-
-      const seenEdgeIds = new Set();
-      const restoredEdges = data.edges.map((edge, idx) => {
-        let uniqueId = edge.id || `edge_${idx}`;
-        while (seenEdgeIds.has(uniqueId)) {
-          uniqueId = `edge_${Math.random().toString(36).substring(2, 9)}`;
-        }
-        seenEdgeIds.add(uniqueId);
-        return {
-          ...edge,
-          id: uniqueId,
-          label: edge.data?.label || uniqueId
-        };
-      });
-      setNodes(restoredNodes);
-      setEdges(restoredEdges);
-      if (data.globalSettings) {
-        setGlobalSettings(prev => ({ ...prev, ...data.globalSettings }));
-      }
-      if (data.cases && Array.isArray(data.cases) && data.cases.length > 0) {
-        setCases(data.cases);
-        setActiveCaseId(data.active_case_id || data.cases[0].id);
-      } else {
-        setCases([DEFAULT_BASE_CASE]);
-        setActiveCaseId('case_base');
-      }
+    showCanvasLoading();
+    if (loadTimeoutRef.current) {
+      clearTimeout(loadTimeoutRef.current);
     }
-  }, [handleValveChange, handleRotation, setNodes, setEdges]);
+    loadTimeoutRef.current = setTimeout(() => {
+      if (data.nodes && data.edges) {
+        const seenNodeIds = new Set();
+        const restoredNodes = data.nodes.map((node, idx) => {
+          let uniqueId = node.id || `node_${idx}`;
+          while (seenNodeIds.has(uniqueId)) {
+            uniqueId = `node_${Math.random().toString(36).substring(2, 9)}`;
+          }
+          seenNodeIds.add(uniqueId);
+          return {
+            ...node,
+            id: uniqueId,
+            data: {
+              ...node.data,
+              rotation: node.data?.rotation || 0,
+              onRotate: handleRotation,
+              onChange: (node.type === 'linear_control_valve' || node.type === 'remote_control_valve') ? handleValveChange : undefined
+            }
+          };
+        });
+
+        const seenEdgeIds = new Set();
+        const restoredEdges = data.edges.map((edge, idx) => {
+          let uniqueId = edge.id || `edge_${idx}`;
+          while (seenEdgeIds.has(uniqueId)) {
+            uniqueId = `edge_${Math.random().toString(36).substring(2, 9)}`;
+          }
+          seenEdgeIds.add(uniqueId);
+          return {
+            ...edge,
+            id: uniqueId,
+            label: edge.data?.label || uniqueId
+          };
+        });
+        setNodes(restoredNodes);
+        setEdges(restoredEdges);
+        if (data.globalSettings) {
+          setGlobalSettings(prev => ({ ...prev, ...data.globalSettings }));
+        }
+        if (data.cases && Array.isArray(data.cases) && data.cases.length > 0) {
+          setCases(data.cases);
+          setActiveCaseId(data.active_case_id || data.cases[0].id);
+        } else {
+          setCases([DEFAULT_BASE_CASE]);
+          setActiveCaseId('case_base');
+        }
+      }
+    }, 50);
+  }, [handleValveChange, handleRotation, setNodes, setEdges, showCanvasLoading]);
 
   const handleLoadDiagramWithCheck = useCallback((data, diagramTitle = '', options = {}) => {
     if (activeProject && !options.skipProjectCheck) {
@@ -999,6 +1080,7 @@ function WalFlowContent() {
 
   const handleCreateNewDrawing = useCallback(async ({ title, description, project_id, isDraft }) => {
     if (isDraft) {
+      showCanvasLoading('Creating new drawing…');
       resetCanvas();
       setActiveProject(null);
       setActiveDiagram(null);
@@ -1060,7 +1142,7 @@ function WalFlowContent() {
     } catch {
       alert("Failed to create new cloud drawing.");
     }
-  }, [resetCanvas, clearLocalDraft, setActiveDiagram, setActiveProject, loadData]);
+  }, [resetCanvas, clearLocalDraft, setActiveDiagram, setActiveProject, loadData, showCanvasLoading]);
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -1517,6 +1599,8 @@ function WalFlowContent() {
             activeDiagram={activeDiagram}
             setActiveDiagram={setActiveDiagram}
             initialProjectId={projectManagerProjectId}
+            showCanvasLoading={showCanvasLoading}
+            hideCanvasLoading={hideCanvasLoading}
           />
 
           <SaveAsModal
@@ -1647,6 +1731,8 @@ function WalFlowContent() {
               };
             })}
           />
+
+          <CanvasLoadingOverlay visible={isCanvasLoading} label={canvasLoadingLabel} />
         </div>
 
         <InspectorPanel
