@@ -75,7 +75,6 @@ function formatSolverName(method, fallbackUsed = false) {
   }
   if (!method) return 'N/A';
   if (method === 'sparse_newton') return 'Sparse Newton';
-  if (method === 'hybr') return 'Powell HYBR';
   if (method === 'lm') return 'Levenberg-Marq';
   return method;
 }
@@ -644,10 +643,9 @@ export default function Sidebar({ onLoad, globalSettings, onUpdateGlobalSettings
                   style={inputStyle}
                 >
                   <option value="sparse_newton">Sparse Newton (Analytical)</option>
-                  <option value="hybr">HYBR (Powell Hybrid)</option>
                   <option value="lm">LM (Least-Squares)</option>
                 </select>
-                <p style={hintStyle}>Sparse Newton is fast and scalable; HYBR/LM are legacy dense solvers.</p>
+                <p style={hintStyle}>Sparse Newton is fast and scalable; LM is a legacy dense solver.</p>
               </div>
 
               <div>

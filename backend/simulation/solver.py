@@ -149,6 +149,8 @@ class NetworkSolver:
         
         if method is None:
             method = getattr(gs, 'solver_method', 'sparse_newton') if gs else 'sparse_newton'
+        if method == 'hybr':
+            method = 'sparse_newton'
 
         final_sol_x = None
         num_int = 0
@@ -327,7 +329,9 @@ class NetworkSolver:
             if (max_err_bar < tolerance_bar and max_err_temp < tolerance_temp and properties_converged) or control_settled:
                 break
 
-
+        if solve_error is None and final_sol_x is not None:
+            num_int = len(self.internal_node_indices)
+            self._update_telemetry(final_sol_x[:num_int], final_sol_x[num_int:])
 
         bottleneck = self._identify_bottleneck(last_residuals) if last_residuals is not None else None
         max_hydraulic_residual = float(np.max(np.abs(last_residuals))) if (last_residuals is not None and len(last_residuals) > 0) else 0.0
@@ -715,10 +719,8 @@ class NetworkSolver:
                 fallback_used = True
                 sol = root(objective, x0, method='lm', jac=dense_jacobian, tol=residual_tolerance, options={'maxiter': inner_max_steps})
         else:
-            sol = root(objective, x0, method=method, jac=dense_jacobian, tol=residual_tolerance, options={'maxfev': inner_max_steps})
-            if method == 'hybr' and (not sol.success or not is_physical(sol.x)):
-                fallback_used = True
-                sol = root(objective, x0, method='lm', jac=dense_jacobian, tol=residual_tolerance, options={'maxiter': inner_max_steps})
+            # Explicitly selected LM least-squares solver
+            sol = root(objective, x0, method='lm', jac=dense_jacobian, tol=residual_tolerance, options={'maxiter': inner_max_steps})
 
                 
         final_residuals = objective(sol.x)
@@ -829,7 +831,11 @@ class NetworkSolver:
                 if isinstance(node, ThreeWayTCV):
                     node.calculate()
 
-        # 6b. Downstream pressure propagation to pruned/inactive components
+        # 6b. Bidirectional pressure propagation to pruned/inactive components
+        def is_closed_relief_node(n):
+            return getattr(n, 'node_type', '') in ['pressure_safety_valve', 'rupture_disc'] and \
+                   (getattr(n, 'status', '') in ['closed', 'intact'] or getattr(n, 'forced_state', '') == 'forced_closed')
+
         for _ in range(5):
             for edge in self.all_edges_list:
                 src_node = self.network.nodes[edge['source']]
@@ -838,17 +844,63 @@ class NetworkSolver:
                 src_key = self.node_to_key[id(src_node)]
                 tgt_key = self.node_to_key[id(tgt_node)]
                 
-                if tgt_key in self.pruned_node_ids:
+                # Case 1: Propagate downstream (src is active, tgt is pruned)
+                if src_key not in self.pruned_node_ids and tgt_key in self.pruned_node_ids:
+                    # Closed relief nodes block pressure propagation from inlet to outlet
+                    if is_closed_relief_node(src_node):
+                        continue
                     src_port_idx = self._parse_port_idx(edge.get('source_port', 'outlet-0'))
                     if src_port_idx < len(src_node.outlets):
                         p_src_out = src_node.outlets[src_port_idx].pressure
                         tgt_idx = self.all_node_id_to_idx[tgt_key]
                         p_in_all[tgt_idx] = p_src_out
-                        
-                        # Update target node's inlet and outlet pressures
                         for port in tgt_node.inlets: port.pressure = p_src_out
-                        p_out = self._get_node_p_out(tgt_node, p_src_out, 0.0, 0.0, update_state=True)
-                        for port in tgt_node.outlets: port.pressure = p_out
+                        if not is_closed_relief_node(tgt_node):
+                            p_out = self._get_node_p_out(tgt_node, p_src_out, 0.0, 0.0, update_state=True)
+                            for port in tgt_node.outlets: port.pressure = p_out
+
+                # Case 2: Propagate upstream (tgt is active, src is pruned)
+                elif tgt_key not in self.pruned_node_ids and src_key in self.pruned_node_ids:
+                    # Closed relief nodes block pressure propagation from outlet to inlet
+                    if is_closed_relief_node(tgt_node):
+                        continue
+                    tgt_port_idx = self._parse_port_idx(edge.get('target_port', 'inlet-0'))
+                    if tgt_port_idx < len(tgt_node.inlets):
+                        p_tgt_in = tgt_node.inlets[tgt_port_idx].pressure
+                        src_idx = self.all_node_id_to_idx[src_key]
+                        p_in_all[src_idx] = p_tgt_in
+                        for port in src_node.outlets: port.pressure = p_tgt_in
+                        if not is_closed_relief_node(src_node):
+                            for port in src_node.inlets: port.pressure = p_tgt_in
+
+                # Case 3: Both pruned -> propagate from updated node to unupdated node (relative to atmospheric pressure)
+                elif src_key in self.pruned_node_ids and tgt_key in self.pruned_node_ids:
+                    src_idx = self.all_node_id_to_idx[src_key]
+                    tgt_idx = self.all_node_id_to_idx[tgt_key]
+                    p_src = p_in_all[src_idx]
+                    p_tgt = p_in_all[tgt_idx]
+                    
+                    if abs(p_src - atm_p) > abs(p_tgt - atm_p):
+                        if is_closed_relief_node(src_node):
+                            continue
+                        src_port_idx = self._parse_port_idx(edge.get('source_port', 'outlet-0'))
+                        if src_port_idx < len(src_node.outlets):
+                            p_src_out = src_node.outlets[src_port_idx].pressure
+                            p_in_all[tgt_idx] = p_src_out
+                            for port in tgt_node.inlets: port.pressure = p_src_out
+                            if not is_closed_relief_node(tgt_node):
+                                p_out = self._get_node_p_out(tgt_node, p_src_out, 0.0, 0.0, update_state=True)
+                                for port in tgt_node.outlets: port.pressure = p_out
+                    elif abs(p_tgt - atm_p) > abs(p_src - atm_p):
+                        if is_closed_relief_node(tgt_node):
+                            continue
+                        tgt_port_idx = self._parse_port_idx(edge.get('target_port', 'inlet-0'))
+                        if tgt_port_idx < len(tgt_node.inlets):
+                            p_tgt_in = tgt_node.inlets[tgt_port_idx].pressure
+                            p_in_all[src_idx] = p_tgt_in
+                            for port in src_node.outlets: port.pressure = p_tgt_in
+                            if not is_closed_relief_node(src_node):
+                                for port in src_node.inlets: port.pressure = p_tgt_in
 
         # 7. Special handling for closed/pruned relief nodes (PSV & Rupture Disc)
         for node in self.all_nodes_list:
@@ -907,6 +959,14 @@ class NetworkSolver:
             return 0
 
     def _propagate_properties(self, q_edges):
+        # Save all port pressures to prevent property calculations from corrupting solved pressures
+        saved_pressures = {}
+        for node in self.network.nodes.values():
+            saved_pressures[node] = (
+                [port.pressure for port in node.inlets],
+                [port.pressure for port in node.outlets]
+            )
+
         max_iterations = 5
         if self.nodes_list and self.nodes_list[0].global_settings:
             max_iterations = getattr(self.nodes_list[0].global_settings, 'property_iterations', 5)
@@ -963,6 +1023,13 @@ class NetworkSolver:
             if max_temp_change < 0.01:
                 break
         self.last_prop_iters = actual_iters
+
+        # Restore all port pressures
+        for node, (in_pressures, out_pressures) in saved_pressures.items():
+            for port, p in zip(node.inlets, in_pressures):
+                port.pressure = p
+            for port, p in zip(node.outlets, out_pressures):
+                port.pressure = p
 
 
 def run_sequential_relief_simulation(network, solver, extract_telemetry_fn):

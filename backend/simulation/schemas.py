@@ -32,7 +32,7 @@ class GlobalSettings(BaseModel):
     tolerance: float = 1e-6
     inner_iterations: int = 1000 # Max steps for the hydraulic solver (HYBR/LM)
     control_iterations: int = 100 # Max steps for the regulator control loop
-    solver_method: str = "sparse_newton" # "sparse_newton", "hybr" or "lm"
+    solver_method: str = "sparse_newton" # "sparse_newton" or "lm"
     warm_start: bool = True
     damping_factor: float = 0.25
 

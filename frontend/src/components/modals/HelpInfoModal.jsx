@@ -429,7 +429,7 @@ export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts
                 <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--color-border)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <li><strong>Fluid Properties:</strong> Select working fluid (Water, ISO VG 46 Oil, Glycol) to automatically apply density and dynamic viscosity models.</li>
                   <li><strong>Environment:</strong> Set ambient temperature (K) and atmospheric reference pressure (Pa).</li>
-                  <li><strong>Solver Configuration:</strong> Tune numerical solver method (`hybr`), inner iteration limits, control iterations, and convergence tolerance ($10^{-6}$).</li>
+                  <li><strong>Solver Configuration:</strong> Tune numerical solver method (`sparse_newton` or `lm`), inner iteration limits, control iterations, and convergence tolerance ($10^{-6}$).</li>
                 </ul>
               </div>
 
