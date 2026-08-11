@@ -964,7 +964,7 @@ export default function SetupPanel({
                   <option value="classic_cd" title="Legacy Reynolds-corrected discharge coefficient model.">Classic Cd (legacy)</option>
                 </select>
                 <div style={{ fontSize: '10px', color: '#587071', marginTop: '4px', background: '#f4f7f6', padding: '6px', borderRadius: '4px', border: '1px solid #d8e2e1' }}>
-                  <span><strong>ISO 5167:</strong> Reader-Harris/Gallagher meter coefficient with ISO 5167-2 permanent pressure loss. <strong>Simplified Cd:</strong> turbulent discharge coefficient with (1 − β²) loss.</span>
+                  <span><strong>ISO 5167:</strong> Reader-Harris/Gallagher meter coefficient with ISO 5167-2 permanent pressure loss. <strong>Classic Cd:</strong> turbulent discharge coefficient with (1 − β²) loss.</span>
                 </div>
               </div>
             </>

@@ -14,9 +14,11 @@ All notable changes to the WälFlow project will be documented in this file.
 - Implemented immediate modal closure and canvas loading overlay display during database fetches, enabling smooth wave animations on the compositor during network idle times.
 - Realigned `FlowDropMark` SVG structure to nest flow lines within the pulsating container, and toggled SVG animations when hidden to save CPU.
 - Configured correct `pointerEvents` on `CanvasLoadingOverlay` to block mouse clicks during canvas loads.
+- Implemented ISO 5167-2:2022 orifice pressure-drop calculation with a selectable calculation standard (Reader-Harris/Gallagher meter coefficient with §5.4 Formula (7) permanent pressure loss, plus the legacy `classic_cd` model), including a standard selector in the setup panel and a matching physics preview in the orifice detail panel.
 
 ### Fixed
 
+- Orifice detail-panel pressure-loss curve now matches the solver by reporting the solver-effective connected-pipe diameter and calculation standard in simulation telemetry, so the chart curve, beta ratio, and operating point all use the same geometry.
 - Resolved canvas state recovery loss and database synchronization detachment on page refresh.
 - Resolved development-only empty canvas bug where React StrictMode unmount cleared the hydration timeout without rescheduling it.
 - Refactored local session draft validation to use the dynamic `FILE_FORMAT_VERSION` constant rather than a hardcoded string.
