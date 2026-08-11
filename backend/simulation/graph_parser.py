@@ -243,7 +243,8 @@ class GraphParser:
             node = Orifice(
                 name=name,
                 pipe_diameter=float(d.get('pipe_diameter', 0.1)),
-                orifice_diameter=float(d.get('orifice_diameter', 0.07))
+                orifice_diameter=float(d.get('orifice_diameter', 0.07)),
+                standard=str(d.get('standard', 'iso_5167'))
             )
         elif t == 'calibrated_restriction':
             node = CalibratedRestriction(

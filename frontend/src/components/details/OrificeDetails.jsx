@@ -4,15 +4,56 @@ import {
 } from 'recharts';
 import { m3sToLmin } from '../../utils/converters';
 
-const calculateDp = (qM3s, density, D, d, beta) => {
+const smoothstep = (t) => {
+  const x = Math.max(0, Math.min(1, t));
+  return x * x * (3 - 2 * x);
+};
+
+const reValid = (beta) => {
+  return beta <= 0.56 ? 5000 : 16000;
+};
+
+const rgCoefficient = (beta, pipeD, rePipe) => {
+  const reSafe = Math.max(1e-9, rePipe);
+  const a = (19000 * beta / reSafe) ** 0.8;
+  let c = 0.5961
+    + 0.0261 * beta ** 2
+    - 0.216 * beta ** 8
+    + 0.000521 * (1e6 * beta / reSafe) ** 0.7
+    + (0.0188 + 0.0063 * a) * beta ** 3.5 * (1e6 / reSafe) ** 0.3;
+  if (pipeD < 0.07112) c += 0.011 * (0.75 - beta) * (2.8 - pipeD / 0.0254);
+  return c;
+};
+
+const calculateDp = (qM3s, density, viscosity, D, d, beta, standard) => {
   if (D <= 0 || d <= 0) return 0;
-  const area = Math.PI * (D / 2) ** 2;
-  const velocity = qM3s / area;
-  const dynamicP = 0.5 * density * velocity ** 2;
-  const Cd = 0.6;
-  const geometryFactor = (1 - beta ** 4) / (Cd ** 2 * beta ** 4);
-  const recDp = dynamicP * geometryFactor;
-  return recDp * (1 - beta ** 2);
+  const betaEff = Math.min(0.75, Math.max(0.1, beta));
+  const areaPipe = Math.PI * (D / 2) ** 2;
+  const areaOrifice = Math.PI * (d / 2) ** 2;
+  const rePipe = density * Math.abs(qM3s) * D / (areaPipe * viscosity);
+
+  let cMeter;
+  let r;
+  if (standard === 'classic_cd') {
+    const betaLegacy = Math.min(0.99, beta);
+    const reOrifice = Math.max(1e-6, rePipe / betaLegacy);
+    const cd = Math.max(0.05, 0.6 / Math.sqrt(1 + 250 / reOrifice));
+    cMeter = cd / Math.sqrt(1 - betaLegacy ** 4);
+    r = 1 - betaLegacy ** 2;
+  } else {
+    const rv = reValid(betaEff);
+    const reLo = 0.4 * rv;
+    const cRg = rgCoefficient(betaEff, D, rePipe);
+    const reO = Math.max(1e-6, rePipe / betaEff);
+    const cLow = (0.6 / Math.sqrt(1 + 250 / reO)) / Math.sqrt(1 - betaEff ** 4);
+    const w = smoothstep((rePipe - reLo) / (rv - reLo));
+    cMeter = (1 - w) * cLow + w * cRg;
+    const s = Math.sqrt(1 - betaEff ** 4 * (1 - cMeter ** 2));
+    r = (s - cMeter * betaEff ** 2) / (s + cMeter * betaEff ** 2);
+  }
+
+  const tapDp = 0.5 * density * qM3s * Math.abs(qM3s) / (areaOrifice ** 2 * cMeter ** 2);
+  return r * tapDp;
 };
 
 const OrificeDetails = memo(function OrificeDetails({ node }) {
@@ -21,10 +62,12 @@ const OrificeDetails = memo(function OrificeDetails({ node }) {
   const currentQ = telemetry?.inlets?.[0]?.flow_rate || 0;
   const actualFlowLmin = parseFloat(m3sToLmin(Math.abs(currentQ)));
   const rho = telemetry?.inlets?.[0]?.density || 1000;
+  const mu = telemetry?.inlets?.[0]?.viscosity || 0.001;
   
-  const D = pipe_diameter || 0.1;
+  const D = (telemetry?.pipe_diameter ?? pipe_diameter) || 0.1;
   const d = orifice_diameter || 0.07;
   const beta = d / D;
+  const standard = telemetry?.standard ?? (node.data.standard || 'iso_5167');
 
   const maxX = Math.max(300, actualFlowLmin * 2);
 
@@ -36,11 +79,11 @@ const OrificeDetails = memo(function OrificeDetails({ node }) {
       const qM3s = qLmin / 60000;
       data.push({
         q: qLmin,
-        dp: calculateDp(qM3s, rho, D, d, beta) / 100000
+        dp: calculateDp(qM3s, rho, mu, D, d, beta, standard) / 100000
       });
     }
     return data;
-  }, [D, d, beta, rho, maxX]);
+  }, [D, d, beta, rho, mu, standard, maxX]);
 
   const currentDpBar = (Math.abs(telemetry?.inlets?.[0]?.pressure - telemetry?.outlets?.[0]?.pressure) / 100000) || 0;
 

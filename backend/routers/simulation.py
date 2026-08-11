@@ -88,6 +88,8 @@ def extract_telemetry_dict(network) -> Dict[str, Any]:
         if hasattr(node, 'cavitation_warning'): node_tel["cavitation_warning"] = node.cavitation_warning
         if hasattr(node, 'actual_duty_kw'): node_tel["actual_duty_kw"] = node.actual_duty_kw
         if hasattr(node, 'status'): node_tel["status"] = node.status
+        if hasattr(node, 'pipe_diameter'): node_tel["pipe_diameter"] = node.pipe_diameter
+        if hasattr(node, 'standard'): node_tel["standard"] = node.standard
         telemetry["nodes"][node_id] = node_tel
 
     for edge in network.edges:

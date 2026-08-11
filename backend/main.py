@@ -76,6 +76,12 @@ def extract_telemetry(network):
             node_tel["forced_state"] = node.forced_state
         if hasattr(node, 'cv'):
             node_tel["cv"] = node.cv
+        # Effective geometry as used by the solver (graph_parser overrides pipe_diameter
+        # from the connected pipe), so the frontend chart uses the same values as the solve.
+        if hasattr(node, 'pipe_diameter'):
+            node_tel["pipe_diameter"] = node.pipe_diameter
+        if hasattr(node, 'standard'):
+            node_tel["standard"] = node.standard
         telemetry["nodes"][node_id] = node_tel
 
     for edge in network.edges:

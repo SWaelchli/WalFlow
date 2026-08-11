@@ -952,6 +952,21 @@ export default function SetupPanel({
                   onBlur={(e) => validateAndCommit('orifice_diameter', mmToM(parseFloat(e.target.value) || 0), true)}
                 />
               </div>
+              <div>
+                {renderLabel('Standard', 'standard')}
+                <select 
+                  style={{ width: '100%', fontSize: '12px', padding: '4px' }} 
+                  value={effectiveData.standard || 'iso_5167'} 
+                  onChange={(e) => onUpdate(id, { standard: e.target.value })}
+                  title="ISO 5167-2:2022 (Reader-Harris/Gallagher) or the legacy classic Cd model."
+                >
+                  <option value="iso_5167" title="ISO 5167-2:2022 Reader-Harris/Gallagher discharge coefficient with §5.4 Formula (7) permanent pressure loss.">ISO 5167 (Reader-Harris/Gallagher)</option>
+                  <option value="classic_cd" title="Legacy Reynolds-corrected discharge coefficient model.">Classic Cd (legacy)</option>
+                </select>
+                <div style={{ fontSize: '10px', color: '#587071', marginTop: '4px', background: '#f4f7f6', padding: '6px', borderRadius: '4px', border: '1px solid #d8e2e1' }}>
+                  <span><strong>ISO 5167:</strong> Reader-Harris/Gallagher meter coefficient with ISO 5167-2 permanent pressure loss. <strong>Simplified Cd:</strong> turbulent discharge coefficient with (1 − β²) loss.</span>
+                </div>
+              </div>
             </>
           )}
 
