@@ -6,5 +6,15 @@ __pycache__/
 walflow.db
 test_walflow.db
 performance_log.md
-.agents/
+
 .kilo/
+
+#Skills
+
+.agents/skills/banner-design
+.agents/skills/brand
+.agents/skills/design
+.agents/skills/design-system
+.agents/skills/slides
+.agents/skills/ui-styling
+.agents/skills/ui-ux-pro-max
