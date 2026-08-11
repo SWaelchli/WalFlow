@@ -232,11 +232,13 @@ function WalFlowContent() {
   // Reset active cloud project when user switches accounts or logs out
   const prevUserIdRef = useRef(currentUser?.id);
   useEffect(() => {
-    if (prevUserIdRef.current !== currentUser?.id) {
-      prevUserIdRef.current = currentUser?.id;
+    // Only reset if we transition from a valid user to a different user, or to logged out.
+    // This prevents resetting activeProject and activeDiagram on initial boot when the user session hydrates.
+    if (prevUserIdRef.current && prevUserIdRef.current !== currentUser?.id) {
       setActiveProject(null);
       setActiveDiagram(null);
     }
+    prevUserIdRef.current = currentUser?.id;
   }, [currentUser?.id]);
 
   // Operating Case Manager State
@@ -721,12 +723,7 @@ function WalFlowContent() {
     return true;
   }, [activeProject, loadData]);
 
-  const hasAttemptedHydration = useRef(false);
-
   useEffect(() => {
-    if (hasAttemptedHydration.current) return;
-    hasAttemptedHydration.current = true;
-
     const draft = loadLocalDraftOnBoot();
     if (draft) {
       loadData(draft);

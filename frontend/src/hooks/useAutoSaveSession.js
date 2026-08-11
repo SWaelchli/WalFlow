@@ -363,8 +363,8 @@ export function useAutoSaveSession({
       }
 
       // Safeguard: Purge old incompatible local drafts
-      if (parsed.version !== '0.2') {
-        console.warn(`Local draft version '${parsed.version || '0.1'}' is incompatible with version '0.2'. Purging draft.`);
+      if (parsed.version !== FILE_FORMAT_VERSION) {
+        console.warn(`Local draft version '${parsed.version || '0.1'}' is incompatible with version '${FILE_FORMAT_VERSION}'. Purging draft.`);
         localStorage.removeItem(LOCAL_DRAFT_KEY);
         return null;
       }

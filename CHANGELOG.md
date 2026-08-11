@@ -15,4 +15,10 @@ All notable changes to the WälFlow project will be documented in this file.
 - Realigned `FlowDropMark` SVG structure to nest flow lines within the pulsating container, and toggled SVG animations when hidden to save CPU.
 - Configured correct `pointerEvents` on `CanvasLoadingOverlay` to block mouse clicks during canvas loads.
 
+### Fixed
+
+- Resolved canvas state recovery loss and database synchronization detachment on page refresh.
+- Resolved development-only empty canvas bug where React StrictMode unmount cleared the hydration timeout without rescheduling it.
+- Refactored local session draft validation to use the dynamic `FILE_FORMAT_VERSION` constant rather than a hardcoded string.
+
 ---
