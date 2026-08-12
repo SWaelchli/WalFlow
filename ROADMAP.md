@@ -57,11 +57,11 @@ This document outlines planned features, overlays, and enhancements for the WalF
     * `3. App Default`: Else fall back to system built-in application default value.
   * **Engineering Value:** Streamlines model building by eliminating repetitive property adjustments for standard project or user engineering conventions.
 
-- [ ] **📁 Multi-PFD Diagrams per Project Container**
+- [x] **📁 Multi-PFD Diagrams per Project Container**
   * **Concept:** Expand `ProjectManagerModal` and workspace model so a single Project container can store multiple PFD diagrams (e.g. Main Loop, Pilot System, Lube Subsystem).
   * **Architecture:** Projects will act as top-level parent entities containing an array of PFD diagrams, accessible via tabbed navigation within the workspace.
 
-- [ ] **👥 Shared Project Access & Multi-User Collaboration**
+- [x] **👥 Shared Project Access & Multi-User Collaboration**
   * **Concept:** Project owners can share project access with other registered WalFlow users via email/username invites with role-based access control.
   * **Permissions Matrix:**
     * **Owner:** Full management, deletion, and sharing permissions.
@@ -109,6 +109,11 @@ This document outlines planned features, overlays, and enhancements for the WalF
     * Configurable live numerical callout badge under the symbol displaying all active checked measurements.
     * Real-time visual alarm state: badge dynamically highlights in **Orange** (H/L Warning) or **Red** (HH/LL Critical Trip) when thresholds are breached.
   * **Engineering Value:** Enables clean P&ID telemetry tapping, custom monitoring locations, and standard industrial alarm indication across complex circuits (e.g. API 614 lube oil supply headers and filter differential monitoring).
+
+- [ ] **🔀 Reducer / Expander (Area Transition w/ ASME B16.9 Database)**
+  * **Concept:** Piping fitting that transitions the fluid stream between two different pipe diameters, integrating a standardized database of ASME B16.9 factory-made wrought buttwelding concentric and eccentric reducers.
+  * **Physics:** Computes form friction losses using geometry-dependent $K$-factors based on the exact diameter ratios ($D_2/D_1$) retrieved from the database and expected transition angles. Solves for pressure changes due to velocity shifts via the steady-state Bernoulli equation.
+  * **Engineering Value:** Vital for accurate pressure drop accounting and pump suction sizing (NPSH), allowing engineers to simulate real-world, commercially available fitting geometries (Nominal Pipe Sizes and Schedules) directly from the standard rather than relying on theoretical internal diameters.
 
 ---
 

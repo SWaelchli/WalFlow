@@ -15,6 +15,7 @@ All notable changes to the WälFlow project will be documented in this file.
 - Realigned `FlowDropMark` SVG structure to nest flow lines within the pulsating container, and toggled SVG animations when hidden to save CPU.
 - Configured correct `pointerEvents` on `CanvasLoadingOverlay` to block mouse clicks during canvas loads.
 - Implemented ISO 5167-2:2022 orifice pressure-drop calculation with a selectable calculation standard (Reader-Harris/Gallagher meter coefficient with §5.4 Formula (7) permanent pressure loss, plus the legacy `classic_cd` model), including a standard selector in the setup panel and a matching physics preview in the orifice detail panel.
+- Improved orifice detail-panel chart to use dynamic axis scaling for both X and Y axes, ensuring the chart remains usable for small values.
 
 ### Fixed
 

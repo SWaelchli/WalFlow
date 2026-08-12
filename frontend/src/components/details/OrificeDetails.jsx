@@ -76,13 +76,15 @@ const OrificeDetails = memo(function OrificeDetails({ node }) {
   const actualFlowLmin = parseFloat(m3sToLmin(Math.abs(currentQ)));
   const rho = telemetry?.inlets?.[0]?.density || 1000;
   const mu = telemetry?.inlets?.[0]?.viscosity || 0.001;
-  
+
   const D = (telemetry?.pipe_diameter ?? pipe_diameter) || 0.1;
   const d = orifice_diameter || 0.07;
   const beta = d / D;
   const standard = telemetry?.standard ?? (node.data.standard || 'iso_5167');
 
-  const maxX = Math.max(300, actualFlowLmin * 2);
+  const currentDpBar = (Math.abs(telemetry?.inlets?.[0]?.pressure - telemetry?.outlets?.[0]?.pressure) / 100000) || 0;
+  const maxX = Math.max(actualFlowLmin * 1.2, actualFlowLmin + 10);
+  const maxY = useMemo(() => Math.max(Math.abs(currentDpBar) * 1.5, Math.abs(currentDpBar) + 0.5), [currentDpBar]);
 
   const chartData = useMemo(() => {
     const data = [];
@@ -98,8 +100,6 @@ const OrificeDetails = memo(function OrificeDetails({ node }) {
     return data;
   }, [D, d, beta, rho, mu, standard, maxX]);
 
-  const currentDpBar = (Math.abs(telemetry?.inlets?.[0]?.pressure - telemetry?.outlets?.[0]?.pressure) / 100000) || 0;
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
       <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-brand-dark)', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '3px solid var(--color-primary)', paddingLeft: '8px' }}>
@@ -110,8 +110,8 @@ const OrificeDetails = memo(function OrificeDetails({ node }) {
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: -20, bottom: 10 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
-            <XAxis dataKey="q" type="number" domain={[0, maxX]} fontSize={10} tickCount={6} />
-            <YAxis type="number" fontSize={10} tickCount={6} />
+            <XAxis dataKey="q" type="number" domain={[0, maxX]} fontSize={10} tickCount={6} unit="l/min" />
+            <YAxis type="number" domain={[0, maxY]} fontSize={10} tickCount={6} unit="bar" />
             <Legend verticalAlign="top" align="right" height={40} iconType="plainline" wrapperStyle={{ fontSize: '11px' }} />
             <Line dataKey="dp" stroke="var(--color-primary)" strokeWidth={2.5} dot={false} name="Pressure Loss" isAnimationActive={false} />
             {telemetry && <Scatter name="Operating Point" dataKey="dp" data={[{q: actualFlowLmin, dp: currentDpBar}]} fill="var(--color-brand-dark)" isAnimationActive={false} shape="cross" />}
