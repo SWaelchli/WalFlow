@@ -32,12 +32,12 @@ $$\beta = \frac{d}{D}, \qquad A_{\mathrm{pipe}} = \frac{\pi D^2}{4}, \qquad A_{\
 
 For the RG computation the inputs are clamped to the correlation's validity range: $\beta_{\mathrm{eff}} = \min(0.75, \max(0.1, \beta))$ and $d_{\mathrm{eff}} = \max(0.0125, d)$.
 
-### 3.2 Reader-Harris/Gallagher meter coefficient (ISO 5167-2:2022 Formula (4), corner taps)
+### 3.2 Reader-Harris/Gallagher discharge coefficient (ISO 5167-2:2022 Formula (4), corner taps)
 
-The RG equation returns the **meter coefficient $C = C_d / \sqrt{1 - \beta^4}$** directly. For corner taps the tap-location terms of Formula (4) vanish ($L_1 = L_2' = 0$), leaving:
+`_cd_rg_iso5167` computes and returns the **discharge coefficient $C_d$** (the same $C$ that appears in the standard's Formula (1) flow equation). For corner taps the tap-location terms vanish ($L_1 = L_2' = 0$), leaving:
 
 $$
-C = 0.5961 + 0.0261\beta^2 - 0.216\beta^8 + 0.000521\left(\frac{10^6\beta}{\mathrm{Re}_D}\right)^{0.7}
+C_d = 0.5961 + 0.0261\beta^2 - 0.216\beta^8 + 0.000521\left(\frac{10^6\beta}{\mathrm{Re}_D}\right)^{0.7}
 + (0.0188 + 0.0063 A)\beta^{3.5}\left(\frac{10^6}{\mathrm{Re}_D}\right)^{0.3}
 $$
 
@@ -47,6 +47,8 @@ $$A = \left(\frac{19000\beta}{\mathrm{Re}_D}\right)^{0.8}, \qquad \mathrm{Re}_D 
 
 A small-diameter correction term $+0.011(0.75 - \beta_{\mathrm{eff}})(2.8 - D/0.0254)$ is applied **only when $D < 71.12$ mm**.
 
+For the tap-dP denominator the blending logic uses the **meter coefficient** $C_m = C_d / \sqrt{1-\beta^4}$, computed in `_c_meter_from_re`. This absorbs the velocity-of-approach factor and allows the simpler tap-dP form $0.5\rho Q^2/(A_o^2 C_m^2)$.
+
 ### 3.3 Tap differential pressure
 
 $$\Delta p_{\mathrm{tap}} = \frac{0.5\, \rho\, q\, |q|}{A_{\mathrm{orifice}}^2\, C^2}$$
@@ -55,9 +57,15 @@ Direction-aware through $q|q|$.
 
 ### 3.4 Permanent pressure loss (ISO 5167-2:2022 §5.4 Formula (7))
 
-The network $\Delta P$ is the non-recoverable permanent loss. **$C$ is used directly** (do not convert to $C_d$ first):
+The network $\Delta P$ is the non-recoverable permanent loss. Formula (7) is defined in terms of **$C_d$ (discharge coefficient)**, not $C_m$:
 
-$$r = \frac{\sqrt{1 - \beta^4(1 - C^2)} - C\beta^2}{\sqrt{1 - \beta^4(1 - C^2)} + C\beta^2}, \qquad \Delta p = r \cdot \Delta p_{\mathrm{tap}}$$
+$$r = \frac{\sqrt{1 - \beta^4(1 - C_d^2)} - C_d\beta^2}{\sqrt{1 - \beta^4(1 - C_d^2)} + C_d\beta^2}, \qquad \Delta p = r \cdot \Delta p_{\mathrm{tap}}$$
+
+Since the blending logic works in $C_m$ space, $C_d$ is recovered just before the Formula (7) call:
+
+$$C_d = C_m \cdot \sqrt{1 - \beta_{\mathrm{eff}}^4}$$
+
+Passing $C_m$ to Formula (7) uncorrected would underestimate the permanent loss by 1–9% for $\beta \in [0.5, 0.75]$.
 
 A simpler, less accurate approximation $\Delta\omega/\Delta p \approx 1 - \beta^{1.9}$ (ISO 5167-2:2022 §5.4.2) is documented for reference only and is not used in code.
 

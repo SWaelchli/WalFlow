@@ -25,6 +25,14 @@ const rgCoefficient = (beta, pipeD, rePipe) => {
   return c;
 };
 
+/**
+ * Preview-chart pressure-loss calculation.
+ * SYNC NOTE: This mirrors backend/simulation/equipment/orifice.py calculate_delta_p().
+ * If the backend physics change, update this function to match.
+ *
+ * Key framing: blending works in C_m = C_d/sqrt(1-beta^4) space for the tap-dP
+ * denominator, but Formula (7) requires C_d. Recover C_d just before the ratio call.
+ */
 const calculateDp = (qM3s, density, viscosity, D, d, beta, standard) => {
   if (D <= 0 || d <= 0) return 0;
   const betaEff = Math.min(0.75, Math.max(0.1, beta));
@@ -32,7 +40,7 @@ const calculateDp = (qM3s, density, viscosity, D, d, beta, standard) => {
   const areaOrifice = Math.PI * (d / 2) ** 2;
   const rePipe = density * Math.abs(qM3s) * D / (areaPipe * viscosity);
 
-  let cMeter;
+  let cMeter;  // meter coefficient C_m = C_d / sqrt(1 - beta^4)
   let r;
   if (standard === 'classic_cd') {
     const betaLegacy = Math.min(0.99, beta);
@@ -43,15 +51,20 @@ const calculateDp = (qM3s, density, viscosity, D, d, beta, standard) => {
   } else {
     const rv = reValid(betaEff);
     const reLo = 0.4 * rv;
-    const cRg = rgCoefficient(betaEff, D, rePipe);
+    // rgCoefficient returns C_d (ISO 5167-2:2022 Formula (4)); convert to C_m for blending
+    const cdRg = rgCoefficient(betaEff, D, rePipe);
+    const cRg = cdRg / Math.sqrt(1 - betaEff ** 4);
     const reO = Math.max(1e-6, rePipe / betaEff);
     const cLow = (0.6 / Math.sqrt(1 + 250 / reO)) / Math.sqrt(1 - betaEff ** 4);
     const w = smoothstep((rePipe - reLo) / (rv - reLo));
     cMeter = (1 - w) * cLow + w * cRg;
-    const s = Math.sqrt(1 - betaEff ** 4 * (1 - cMeter ** 2));
-    r = (s - cMeter * betaEff ** 2) / (s + cMeter * betaEff ** 2);
+    // Recover C_d from C_m for Formula (7) — Formula (7) is defined in C_d terms
+    const cd = cMeter * Math.sqrt(1 - betaEff ** 4);
+    const s = Math.sqrt(1 - betaEff ** 4 * (1 - cd ** 2));
+    r = (s - cd * betaEff ** 2) / (s + cd * betaEff ** 2);
   }
 
+  // tap dP: 0.5*rho*Q^2 / (Ao^2 * C_m^2) == 0.5*rho*Q^2*(1-beta^4) / (Ao^2 * C_d^2)
   const tapDp = 0.5 * density * qM3s * Math.abs(qM3s) / (areaOrifice ** 2 * cMeter ** 2);
   return r * tapDp;
 };
