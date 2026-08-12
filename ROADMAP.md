@@ -57,11 +57,11 @@ This document outlines planned features, overlays, and enhancements for the WalF
     * `3. App Default`: Else fall back to system built-in application default value.
   * **Engineering Value:** Streamlines model building by eliminating repetitive property adjustments for standard project or user engineering conventions.
 
-- [ ] **📁 Multi-PFD Diagrams per Project Container**
+- [x] **📁 Multi-PFD Diagrams per Project Container**
   * **Concept:** Expand `ProjectManagerModal` and workspace model so a single Project container can store multiple PFD diagrams (e.g. Main Loop, Pilot System, Lube Subsystem).
   * **Architecture:** Projects will act as top-level parent entities containing an array of PFD diagrams, accessible via tabbed navigation within the workspace.
 
-- [ ] **👥 Shared Project Access & Multi-User Collaboration**
+- [x] **👥 Shared Project Access & Multi-User Collaboration**
   * **Concept:** Project owners can share project access with other registered WalFlow users via email/username invites with role-based access control.
   * **Permissions Matrix:**
     * **Owner:** Full management, deletion, and sharing permissions.
