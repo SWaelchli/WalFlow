@@ -28,6 +28,11 @@ const SHORTCUT_GROUPS = [
 
 export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts' }) {
   const [activeTab, setActiveTab] = useState(initialTab);
+  const [expandedSections, setExpandedSections] = useState({
+    simulation: true,
+    solver: false,
+    diagnostics: false,
+  });
 
   // Sync activeTab when modal transitions from closed to open or initialTab changes
   const [prevIsOpen, setPrevIsOpen] = useState(false);

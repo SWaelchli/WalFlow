@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { SignInIcon, UserIcon, CrossIcon } from '../symbols/IconLibrary';
 
@@ -12,6 +12,8 @@ const LoginModal = ({ isOpen, onClose }) => {
   const [submitting, setSubmitting] = useState(false);
 
   const [infoMessage, setInfoMessage] = useState('');
+
+
 
   if (!isOpen) return null;
 

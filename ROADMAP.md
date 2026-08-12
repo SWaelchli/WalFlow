@@ -152,4 +152,4 @@ This document outlines planned features, overlays, and enhancements for the WalF
 
 ## Quality of Life improvements
 
-- [ ] ** Add shortcuts to all Modals to allow to exit this modal with "ESC". Except for the Admin setup modal. This cannot be skipped.
+- [x] ** Add shortcuts to all Modals to allow to exit this modal with "ESC". Except for the Admin setup modal. This cannot be skipped.

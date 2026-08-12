@@ -151,6 +151,7 @@ function WalFlowContent() {
   const [isAdminHubOpen, setIsAdminHubOpen] = useState(false);
   const [isSaveAsModalOpen, setIsSaveAsModalOpen] = useState(false);
   const [isNewDrawingModalOpen, setIsNewDrawingModalOpen] = useState(false);
+  const [activeModal, setActiveModal] = useState(null);
   const [projectManagerProjectId, setProjectManagerProjectId] = useState(null);
 
   // Active Cloud Project & Auto-Save Session Hook
@@ -291,7 +292,58 @@ function WalFlowContent() {
   const handleOpenHelpModal = (tab = 'shortcuts') => {
     setHelpModalInitialTab(tab);
     setIsHelpModalOpen(true);
+    setActiveModal('help');
   };
+
+  const handleCloseModal = () => {
+    setIsHelpModalOpen(false);
+    setIsAuthModalOpen(false);
+    setIsProjectManagerModalOpen(false);
+    setIsAdminHubOpen(false);
+    setIsSaveAsModalOpen(false);
+    setIsNewDrawingModalOpen(false);
+    setActiveModal(null);
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && activeModal) {
+        handleCloseModal();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [activeModal]);
+
+  const handleOpenAdminHub = () => {
+    setIsAdminHubOpen(true);
+    setActiveModal('adminHub');
+  };
+
+  const handleOpenAuthModal = () => {
+    setIsAuthModalOpen(true);
+    setActiveModal('auth');
+  };
+
+  const handleOpenSaveAsModal = () => {
+    setIsSaveAsModalOpen(true);
+    setActiveModal('saveAs');
+  };
+
+  const handleOpenNewDrawingModal = () => {
+    setIsNewDrawingModalOpen(true);
+    setActiveModal('newDrawing');
+  };
+
+  const handleOpenProjectManagerModal = (projectId = null) => {
+    setProjectManagerProjectId(projectId);
+    setIsProjectManagerModalOpen(true);
+    setActiveModal('projectManager');
+  };
+
   const dragCounter = useRef(0);
   const [isFileDragging, setIsFileDragging] = useState(false);
 
@@ -1394,8 +1446,8 @@ function WalFlowContent() {
       <Navbar 
         onCalculate={runSimulation}
         isSimulating={isSimulating}
-        onOpenAuthModal={() => setIsAuthModalOpen(true)}
-        onOpenAdminHub={() => setIsAdminHubOpen(true)}
+           onOpenAuthModal={handleOpenAuthModal}
+           onOpenAdminHub={handleOpenAdminHub}
         onOpenHelpModal={(tab) => handleOpenHelpModal(tab || 'about')}
         onLogoutClear={resetCanvas}
         cases={cases}
@@ -1442,13 +1494,13 @@ function WalFlowContent() {
           lockInfo={lockInfo}
           onCheckout={checkoutDiagram}
           onCheckin={checkinDiagram}
-          onSaveAsClick={() => setIsSaveAsModalOpen(true)}
-          onNewDrawingClick={() => setIsNewDrawingModalOpen(true)}
+           onSaveAsClick={handleOpenSaveAsModal}
+           onNewDrawingClick={handleOpenNewDrawingModal}
           onImportClick={() => document.getElementById('sidebar-file-upload').click()}
           onExportClick={onSave}
           onOpenProjectsModal={(projId) => {
             setProjectManagerProjectId(projId || null);
-            setIsProjectManagerModalOpen(true);
+             handleOpenProjectManagerModal();
           }}
         />
 
@@ -1572,46 +1624,43 @@ function WalFlowContent() {
             </Controls>
           </ReactFlow>
 
-          <HelpInfoModal 
-            isOpen={isHelpModalOpen} 
-            onClose={() => setIsHelpModalOpen(false)} 
-            initialTab={helpModalInitialTab}
-          />
+  <HelpInfoModal
+    isOpen={isHelpModalOpen}
+    onClose={handleCloseModal}
+    initialTab={helpModalInitialTab}
+  />
 
-          <LoginModal 
-            isOpen={isAuthModalOpen}
-            onClose={() => setIsAuthModalOpen(false)}
-          />
+  <LoginModal
+    isOpen={isAuthModalOpen}
+    onClose={handleCloseModal}
+  />
 
-          <ProjectManagerModal
-            isOpen={isProjectManagerModalOpen}
-            onClose={() => {
-              setIsProjectManagerModalOpen(false);
-              setProjectManagerProjectId(null);
-            }}
-            currentFlowData={{ nodes, edges, globalSettings, cases, activeCaseId }}
-            onLoadDiagram={loadData}
-            activeProject={activeProject}
-            setActiveProject={setActiveProject}
-            activeDiagram={activeDiagram}
-            setActiveDiagram={setActiveDiagram}
-            initialProjectId={projectManagerProjectId}
-            showCanvasLoading={showCanvasLoading}
-            hideCanvasLoading={hideCanvasLoading}
-          />
+  <ProjectManagerModal
+    isOpen={isProjectManagerModalOpen}
+    onClose={handleCloseModal}
+    currentFlowData={{ nodes, edges, globalSettings, cases, activeCaseId }}
+    onLoadDiagram={loadData}
+    activeProject={activeProject}
+    setActiveProject={setActiveProject}
+    activeDiagram={activeDiagram}
+    setActiveDiagram={setActiveDiagram}
+    initialProjectId={projectManagerProjectId}
+    showCanvasLoading={showCanvasLoading}
+    hideCanvasLoading={hideCanvasLoading}
+  />
 
-          <SaveAsModal
-            isOpen={isSaveAsModalOpen}
-            onClose={() => setIsSaveAsModalOpen(false)}
-            onSaveAs={handleSaveAs}
-            currentTitle={activeDiagram?.title || "Untitled Drawing"}
-          />
+  <SaveAsModal
+    isOpen={isSaveAsModalOpen}
+    onClose={handleCloseModal}
+    onSaveAs={handleSaveAs}
+    currentTitle={activeDiagram?.title || "Untitled Drawing"}
+  />
 
-          <NewDrawingModal
-            isOpen={isNewDrawingModalOpen}
-            onClose={() => setIsNewDrawingModalOpen(false)}
-            onCreateNew={handleCreateNewDrawing}
-          />
+  <NewDrawingModal
+    isOpen={isNewDrawingModalOpen}
+    onClose={handleCloseModal}
+    onCreateNew={handleCreateNewDrawing}
+  />
 
           {showRestoredToast && (
             <div style={{
@@ -1669,11 +1718,11 @@ function WalFlowContent() {
             onClose={() => {}}
           />
 
-          <AdminHubModal
-            isOpen={isAdminHubOpen}
-            onClose={() => setIsAdminHubOpen(false)}
-            onLoadDiagram={loadData}
-          />
+  <AdminHubModal
+    isOpen={isAdminHubOpen}
+    onClose={handleCloseModal}
+    onLoadDiagram={loadData}
+  />
 
           {showCaseManager && (
             <CaseManager

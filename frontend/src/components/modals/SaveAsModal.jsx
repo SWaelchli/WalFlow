@@ -42,6 +42,8 @@ const SaveAsModal = ({ isOpen, onClose, onSaveAs, currentTitle = "" }) => {
     }
   }, [isOpen, currentTitle, isAuthenticated]);
 
+
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e) => {

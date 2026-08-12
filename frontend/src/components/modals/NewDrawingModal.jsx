@@ -42,6 +42,8 @@ const NewDrawingModal = ({ isOpen, onClose, onCreateNew }) => {
     }
   }, [isOpen, isAuthenticated]);
 
+
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e) => {

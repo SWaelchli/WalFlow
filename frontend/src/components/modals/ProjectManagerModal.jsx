@@ -118,6 +118,8 @@ const ProjectManagerModal = ({
     }
   }, [isOpen, isAuthenticated, fetchProjects]);
 
+
+
   if (!isOpen) return null;
 
   const handleCreateProject = async (e) => {
