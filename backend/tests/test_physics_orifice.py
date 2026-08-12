@@ -47,7 +47,8 @@ def flow_from_re(re_pipe, rho, mu, pipe_d):
 
 
 def test_rg_formula_roundtrip():
-    """The RG implementation matches an independent reimplementation to rel 1e-9."""
+    """The RG implementation matches an independent reimplementation to rel 1e-9.
+    _cd_rg_iso5167 returns C_d (discharge coefficient), not the meter coefficient."""
     for beta in (0.2, 0.5, 0.7):
         for re_pipe in (1e4, 1e5, 1e6):
             for pipe_d in (0.05, 0.1):
@@ -68,41 +69,83 @@ def test_high_re_analytic_limit():
 
 
 def test_tap_dp_against_iso_flow_equation():
-    """q_m = C * A_o * sqrt(2 * rho * dP_tap) holds for the implemented tap dP."""
+    """Tap dP satisfies the ISO 5167 flow equation: dp_tap = 0.5*rho*Q^2*(1-beta^4) / (Ao^2*Cd^2).
+
+    The implementation uses C_m = Cd/sqrt(1-beta^4) in the tap-dP denominator, which is
+    mathematically equivalent. This test validates against the standard's form using C_d.
+    """
     rho, mu = WATER_RHO, WATER_MU
     pipe_d, orif_d = 0.05248, 0.02
     beta = orif_d / pipe_d
+    beta_eff = min(0.75, max(0.1, beta))
     area_orifice = math.pi * (orif_d / 2.0) ** 2
     ori = Orifice("Tap", pipe_diameter=pipe_d, orifice_diameter=orif_d)
 
     re_pipe = 1e5  # fully turbulent, w = 1
     q = flow_from_re(re_pipe, rho, mu, pipe_d)
-    c_rg = Orifice._cd_rg_iso5167(beta, pipe_d, re_pipe)
+    # _cd_rg_iso5167 returns C_d (discharge coefficient)
+    c_d = Orifice._cd_rg_iso5167(beta_eff, pipe_d, re_pipe)
     dp = ori.calculate_delta_p(q, rho, mu)
 
-    r = rg_loss_ratio(c_rg, beta)
+    r = rg_loss_ratio(c_d, beta_eff)
     dp_tap_impl = dp / r
-    dp_tap_expected = 0.5 * rho * q * abs(q) / (area_orifice ** 2 * c_rg ** 2)
+    # ISO standard form: dp_tap = 0.5*rho*Q^2*(1-beta^4) / (Ao^2 * Cd^2)
+    dp_tap_expected = 0.5 * rho * q * abs(q) * (1 - beta_eff**4) / (area_orifice ** 2 * c_d ** 2)
     assert math.isclose(dp_tap_impl, dp_tap_expected, rel_tol=1e-4), \
         f"tap dP {dp_tap_impl} != ISO flow equation {dp_tap_expected}"
 
 
 def test_formula7_loss_ratio():
-    """Permanent loss ratio matches the Formula (7) recomputation using C directly."""
+    """Permanent loss ratio matches the Formula (7) recomputation using C_d directly."""
     rho, mu = WATER_RHO, WATER_MU
     pipe_d, orif_d = 0.05248, 0.036736  # beta ~ 0.7
     beta = orif_d / pipe_d
+    beta_eff = min(0.75, max(0.1, beta))
     area_orifice = math.pi * (orif_d / 2.0) ** 2
     ori = Orifice("Loss", pipe_diameter=pipe_d, orifice_diameter=orif_d)
 
     re_pipe = 1e5
     q = flow_from_re(re_pipe, rho, mu, pipe_d)
-    c_rg = Orifice._cd_rg_iso5167(beta, pipe_d, re_pipe)
+    c_d = Orifice._cd_rg_iso5167(beta_eff, pipe_d, re_pipe)
     dp = ori.calculate_delta_p(q, rho, mu)
 
-    r_impl = dp / (0.5 * rho * q * abs(q) / (area_orifice ** 2 * c_rg ** 2))
-    r_ref = rg_loss_ratio(c_rg, beta)
+    r_impl = dp / (0.5 * rho * q * abs(q) * (1 - beta_eff**4) / (area_orifice ** 2 * c_d ** 2))
+    r_ref = rg_loss_ratio(c_d, beta_eff)
     assert math.isclose(r_impl, r_ref, rel_tol=1e-4), f"loss ratio {r_impl} != {r_ref}"
+
+
+def test_formula7_uses_discharge_coefficient():
+    """Regression: Formula (7) must use C_d, not the meter coefficient C_m.
+
+    At beta ~ 0.7, r(C_d) and r(C_m) differ by ~9%. This test explicitly confirms
+    that the implementation uses C_d and pins the correct permanent-loss value.
+    """
+    rho, mu = WATER_RHO, WATER_MU
+    pipe_d, orif_d = 0.05248, 0.036736  # beta ~ 0.7
+    beta_eff = min(0.75, max(0.1, orif_d / pipe_d))
+    area_orifice = math.pi * (orif_d / 2.0) ** 2
+    ori = Orifice("F7", pipe_diameter=pipe_d, orifice_diameter=orif_d)
+
+    re_pipe = 1e5
+    q = flow_from_re(re_pipe, rho, mu, pipe_d)
+    c_d = Orifice._cd_rg_iso5167(beta_eff, pipe_d, re_pipe)  # C_d (correct for Formula (7))
+    c_m = c_d / math.sqrt(1.0 - beta_eff ** 4)               # C_m (incorrect if passed to Formula (7))
+
+    r_correct = rg_loss_ratio(c_d, beta_eff)
+    r_wrong   = rg_loss_ratio(c_m, beta_eff)
+
+    # Confirm the two values differ by more than 5% so the test is meaningful
+    assert abs(r_correct - r_wrong) / r_correct > 0.05, \
+        f"r(Cd)={r_correct} and r(Cm)={r_wrong} must differ by >5% at beta~0.7"
+
+    dp = ori.calculate_delta_p(q, rho, mu)
+    # Recover tap dP using the ISO standard form (C_d in denominator)
+    dp_tap = 0.5 * rho * q * abs(q) * (1 - beta_eff**4) / (area_orifice ** 2 * c_d ** 2)
+    r_impl = dp / dp_tap
+    assert math.isclose(r_impl, r_correct, rel_tol=1e-4), (
+        f"Formula (7) uses wrong coefficient: impl r={r_impl:.6f}, "
+        f"correct (C_d) r={r_correct:.6f}, wrong (C_m) r={r_wrong:.6f}"
+    )
 
 
 def _numerical_derivative(ori, q, rho, mu, h_rel=1e-6):
@@ -345,6 +388,7 @@ if __name__ == "__main__":
     test_high_re_analytic_limit()
     test_tap_dp_against_iso_flow_equation()
     test_formula7_loss_ratio()
+    test_formula7_uses_discharge_coefficient()
     test_derivative_vs_numerical()
     test_continuity_across_blend_bands()
     test_bidirectional_symmetry()

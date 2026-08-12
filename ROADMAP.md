@@ -139,6 +139,16 @@ This document outlines planned features, overlays, and enhancements for the WalF
   * **Issue**: When the outlet temperature is below the setpoint, the TCV adjusts flow from the cold side to the outlet if the cold side is hotter than the hot side. This is incorrect behavior for a TCV.
   * **Expected Behavior**: The TCV must always open the hot side to the outlet when the outlet temperature is below the setpoint, regardless of the relative temperatures of the hot and cold inlets.
 
+- [ ] **🔥 Extend Equipment Classes to Model Temperature Changes Due to Pressure Drop**
+  * **Scope**: Add or extend `calculate_temperature()` in equipment classes (e.g., `Pipe`, `Orifice`, `Filter`) to model temperature changes due to pressure drop using the formula `ΔT = ΔP / (ρ * Cp)`.
+  * **Considerations**:
+    - Ensure numerical stability (e.g., handle small flow rates, zero pressure drop).
+    - Avoid redundancy (e.g., do not override existing `calculate_temperature()` implementations).
+    - Handle bidirectional (or tridirectional for `Mixer`, `ThreeWayTCV`) flow correctly.
+    - Always use the correct fluid properties (density, specific heat) for the current temperature and pressure.
+    - Minimize performance impact by avoiding expensive calculations in iterative methods.
+  * **Important**: The above methodology is only a suggestion and needs to be properly evaluated and adjusted as necessary. Do not implement blindly.
+
 
 ## Quality of Life improvements
 

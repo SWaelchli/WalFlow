@@ -940,35 +940,102 @@ export default function SetupPanel({
             </>
           )}
 
-          {isNode && type === 'orifice' && (
-            <>
-              <div>
-                {renderLabel('Orifice Restriction Diameter (mm)', 'orifice_diameter')}
-                <input 
-                  type="number" 
-                  className="form-input" style={{ width: '100%' }} 
-                  value={localDrafts.orifice_diameter !== undefined ? localDrafts.orifice_diameter : mToMm(effectiveData.orifice_diameter || 0.07)} 
-                  onChange={(e) => handleDraftChange('orifice_diameter', e.target.value)}
-                  onBlur={(e) => validateAndCommit('orifice_diameter', mmToM(parseFloat(e.target.value) || 0), true)}
-                />
-              </div>
-              <div>
-                {renderLabel('Standard', 'standard')}
-                <select 
-                  style={{ width: '100%', fontSize: '12px', padding: '4px' }} 
-                  value={effectiveData.standard || 'iso_5167'} 
-                  onChange={(e) => onUpdate(id, { standard: e.target.value })}
-                  title="ISO 5167-2:2022 (Reader-Harris/Gallagher) or the legacy classic Cd model."
-                >
-                  <option value="iso_5167" title="ISO 5167-2:2022 Reader-Harris/Gallagher discharge coefficient with §5.4 Formula (7) permanent pressure loss.">ISO 5167 (Reader-Harris/Gallagher)</option>
-                  <option value="classic_cd" title="Legacy Reynolds-corrected discharge coefficient model.">Classic Cd (legacy)</option>
-                </select>
-                <div style={{ fontSize: '10px', color: '#587071', marginTop: '4px', background: '#f4f7f6', padding: '6px', borderRadius: '4px', border: '1px solid #d8e2e1' }}>
-                  <span><strong>ISO 5167:</strong> Reader-Harris/Gallagher meter coefficient with ISO 5167-2 permanent pressure loss. <strong>Classic Cd:</strong> turbulent discharge coefficient with (1 − β²) loss.</span>
+          {isNode && type === 'orifice' && (() => {
+            // Pipe diameter: telemetry value is solver-assigned from the connected pipe edge.
+            // node.data.pipe_diameter is the default stored on the node (may be stale).
+            const telemetryPipeD = node?.data?.telemetry?.pipe_diameter;
+            const activePipeD = telemetryPipeD ?? effectiveData.pipe_diameter ?? 0.05248;
+            const activePipeDmm = (activePipeD * 1000).toFixed(2);
+            const isTelemetryPipe = telemetryPipeD != null;
+
+            const _orifDm = effectiveData.orifice_diameter || 0.07;
+            const _beta = _orifDm / activePipeD;
+            const _standard = effectiveData.standard || 'iso_5167';
+
+            return (
+              <>
+                {/* Read-only: pipe diameter is auto-detected from the connected pipe edge at solve time */}
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                    <label style={{ fontSize: '11px', color: '#64748b' }}>Connected Pipe Diameter (mm)</label>
+                    {isTelemetryPipe && (
+                      <span style={{ fontSize: '9.5px', color: '#395253', background: '#EBF0EF', border: '1px solid #D8E2E1', borderRadius: '3px', padding: '1px 5px', fontWeight: '600' }}>
+                        AUTO
+                      </span>
+                    )}
+                  </div>
+                  <div style={{
+                    width: '100%',
+                    padding: '5px 8px',
+                    borderRadius: '4px',
+                    background: '#F4F7F6',
+                    border: '1px solid #D8E2E1',
+                    fontSize: '12px',
+                    color: isTelemetryPipe ? '#1C2B2C' : '#94a3b8',
+                    fontFamily: 'var(--font-mono, monospace)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    boxSizing: 'border-box',
+                  }}>
+                    <span>{activePipeDmm} mm</span>
+                    {!isTelemetryPipe && (
+                      <span style={{ fontSize: '9.5px', color: '#94a3b8', fontFamily: 'inherit' }}>no pipe connected</span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: '10px', color: '#587071', marginTop: '3px' }}>
+                    Auto-detected from the inlet pipe edge. Run simulation to update.
+                  </div>
                 </div>
-              </div>
-            </>
-          )}
+
+                <div>
+                  {renderLabel('Orifice Restriction Diameter (mm)', 'orifice_diameter')}
+                  <input 
+                    type="number" 
+                    className="form-input" style={{ width: '100%' }} 
+                    value={localDrafts.orifice_diameter !== undefined ? localDrafts.orifice_diameter : mToMm(effectiveData.orifice_diameter || 0.07)} 
+                    onChange={(e) => handleDraftChange('orifice_diameter', e.target.value)}
+                    onBlur={(e) => validateAndCommit('orifice_diameter', mmToM(parseFloat(e.target.value) || 0), true)}
+                  />
+                  {_standard === 'iso_5167' && _beta > 0.75 && (
+                    <div style={{
+                      marginTop: '5px',
+                      padding: '5px 8px',
+                      borderRadius: '4px',
+                      background: '#FFFBEB',
+                      border: '1px solid #FCD34D',
+                      fontSize: '10px',
+                      color: '#92400E',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '5px',
+                    }}>
+                      <span style={{ fontSize: '12px', lineHeight: 1 }}>⚠</span>
+                      <span>
+                        <strong>β = {_beta.toFixed(3)}</strong> — outside ISO 5167&#8209;2 range [0.10–0.75]. Results are extrapolated.
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  {renderLabel('Standard', 'standard')}
+                  <select 
+                    style={{ width: '100%', fontSize: '12px', padding: '4px' }} 
+                    value={_standard} 
+                    onChange={(e) => onUpdate(id, { standard: e.target.value })}
+                    title="ISO 5167-2:2022 (Reader-Harris/Gallagher) or the legacy classic Cd model."
+                  >
+                    <option value="iso_5167" title="ISO 5167-2:2022 Reader-Harris/Gallagher discharge coefficient with §5.4 Formula (7) permanent pressure loss.">ISO 5167 (Reader-Harris/Gallagher)</option>
+                    <option value="classic_cd" title="Legacy Reynolds-corrected discharge coefficient model.">Classic Cd (legacy)</option>
+                  </select>
+                  <div style={{ fontSize: '10px', color: '#587071', marginTop: '4px', background: '#f4f7f6', padding: '6px', borderRadius: '4px', border: '1px solid #d8e2e1' }}>
+                    <span><strong>ISO 5167:</strong> Reader-Harris/Gallagher meter coefficient with ISO 5167-2 permanent pressure loss. <strong>Classic Cd:</strong> turbulent discharge coefficient with (1 − β²) loss.</span>
+                  </div>
+                </div>
+              </>
+            );
+          })()}
 
           {isNode && type === 'calibrated_restriction' && (
             <>
