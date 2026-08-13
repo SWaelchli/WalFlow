@@ -196,6 +196,24 @@ export const EquipmentSymbol = ({ type, size = 40, style = {} }) => {
             <circle cx="45" cy="18" r="2.5" fill="var(--color-primary)" />
           </svg>
         );
+      case 'fluid_source':
+        return (
+          <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+            {/* Instrument bubble body */}
+            <circle cx="30" cy="30" r="26" fill="white" stroke="#395253" strokeWidth="2.5" />
+            {/* Water wave — primary */}
+            <path
+              d="M 10 31 Q 15 24 20 31 Q 25 38 30 31 Q 35 24 40 31 Q 45 38 50 31"
+              fill="none" stroke="#FA8507" strokeWidth="2.2" strokeLinecap="round"
+            />
+            {/* Water wave — secondary (lighter) */}
+            <path
+              d="M 12 37 Q 17 30 22 37 Q 27 44 32 37 Q 37 30 42 37 Q 46 42 48 37"
+              fill="none" stroke="#FA8507" strokeWidth="1.3" strokeLinecap="round"
+              opacity="0.45"
+            />
+          </svg>
+        );
       default:
         return (
           <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>

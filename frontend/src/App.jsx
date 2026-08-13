@@ -30,6 +30,7 @@ import PressureSafetyValveNode from './nodes/PressureSafetyValveNode';
 import RuptureDiscNode from './nodes/RuptureDiscNode';
 import TextBubbleNode from './nodes/TextBubbleNode';
 import CalibratedRestrictionNode from './nodes/CalibratedRestrictionNode';
+import FluidSourceNode from './nodes/FluidSourceNode';
 
 import Navbar from './components/layout/Navbar';
 import Sidebar from './components/panels/Sidebar';
@@ -104,6 +105,7 @@ const nodeTypes = {
   three_way_tcv: ThreeWayTCVNode,
   text_bubble: TextBubbleNode,
   calibrated_restriction: CalibratedRestrictionNode,
+  fluid_source: FluidSourceNode,
 };
 
 const edgeTypes = {
@@ -1019,6 +1021,7 @@ function WalFlowContent() {
           ...(type === 'linear_regulator' && { max_cv: 0.05, set_pressure: 500000.0, backpressure: false }),
           ...(type === 'orifice' && { pipe_diameter: 0.05248, orifice_diameter: 0.02, standard: 'iso_5167', standardDn: 50, standardSch: '40' }),
           ...(type === 'calibrated_restriction' && { flow_base_lmin: 10.0, inlet_pressure_base_bar: 3.5, outlet_pressure_base_bar: 1.0, temp_base_c: 45.0, restriction_model: 'orifice', fluid_type: 'system' }),
+          ...(type === 'fluid_source' && { source_type: 'pressure', source_pressure_bara: 6.0, source_flow_lmin: 50.0, temperature: 293.15 }),
           ...(type === 'filter' && { dp_clean: 0.2, dp_terminal: 1.0, flow_ref: 100.0, clogging: 0.0 }),
           ...(type === 'heat_exchanger' && { heat_duty_kw: -10.0, active: true }),
           ...(type === 'remote_control_valve' && { max_cv: 0.05, set_pressure: 500000.0 }),

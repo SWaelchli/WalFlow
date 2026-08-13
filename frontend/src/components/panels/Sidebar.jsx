@@ -10,6 +10,7 @@ const categorizedEquipment = [
     name: 'Fluid Sources',
     items: [
       { type: 'tank', label: 'Tank', description: '' },
+      { type: 'fluid_source', label: 'Fluid Source', description: 'Constant Pressure or Flow BC' },
     ]
   },
   {

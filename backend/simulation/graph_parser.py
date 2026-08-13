@@ -18,6 +18,7 @@ from simulation.equipment.check_valve_orifice import CheckValveOrifice
 from simulation.equipment.pressure_safety_valve import PressureSafetyValve
 from simulation.equipment.rupture_disc import RuptureDisc
 from simulation.equipment.calibrated_restriction import CalibratedRestriction
+from simulation.equipment.fluid_source import FluidSource
 from simulation.equipment.base_node import HydraulicNode
 
 class GraphParser:
@@ -328,6 +329,22 @@ class GraphParser:
                 pipe_diameter=float(d.get('pipe_diameter', 0.05248)),
                 orifice_diameter=float(d.get('orifice_diameter', 0.01)),
                 forced_state=str(d.get('forced_state', 'auto'))
+            )
+        elif t == 'fluid_source':
+            # source_pressure_bara → Pa: × 100 000
+            # source_flow_lmin   → m³/s: / 60 000
+            # temperature        → K (stored directly)
+            source_type = str(d.get('source_type', 'pressure'))
+            source_pressure_pa = float(d.get('source_pressure_bara', 6.0)) * 100_000.0
+            source_flow_m3s = float(d.get('source_flow_lmin', 50.0)) / 60_000.0
+            temperature_k = float(d.get('temperature', 293.15))
+
+            node = FluidSource(
+                name=name,
+                source_type=source_type,
+                source_pressure=source_pressure_pa,
+                source_flow=source_flow_m3s,
+                temperature=temperature_k,
             )
         else:
             node = HydraulicNode(name=name, node_type=t)

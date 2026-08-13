@@ -4,7 +4,11 @@ All notable changes to the WälFlow project will be documented in this file.
 
 ---
 
-## [Unreleased]
+## [0.2.0]
+
+### Added
+
+- **Universal Fluid Source** (`FluidSource`): new boundary-condition component supporting two modes — *Constant Pressure* (Dirichlet pressure BC, stamped in bara) and *Constant Flow* (high-stiffness spring formulation in L/min). Includes injected fluid temperature, live telemetry footer on canvas, P/Q mode badge, and per-scenario case variable overrides for `source_pressure_bara` and `source_flow_lmin`.
 
 ### Changed
 
@@ -23,5 +27,9 @@ All notable changes to the WälFlow project will be documented in this file.
 - Resolved canvas state recovery loss and database synchronization detachment on page refresh.
 - Resolved development-only empty canvas bug where React StrictMode unmount cleared the hydration timeout without rescheduling it.
 - Refactored local session draft validation to use the dynamic `FILE_FORMAT_VERSION` constant rather than a hardcoded string.
+- Fixed `FluidSource` constant pressure mode where target pressure was not stamped correctly in solver boundary conditions.
+- Fixed solver dead-end leaf pruning and DFS reachability to correctly handle flow-mode boundary sources with a degree of 1.
+- Fixed solver warm-start cache lookup collisions by incorporating active node pressure-boundary states into the topology key.
+- Fixed solver pressure drop evaluation and mass-balance constraints for 2-port inline nodes (such as fluid sources and pumps) when their inlet ports are unconnected.
 
 ---
