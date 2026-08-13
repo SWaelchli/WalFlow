@@ -475,6 +475,70 @@ export default function SetupPanel({
             </>
           )}
 
+          {isNode && type === 'pressure_source' && (
+            <>
+              <div>
+                {renderLabel('Set Pressure (bara)', 'source_pressure_bara')}
+                <input
+                  type="number"
+                  className="form-input" style={{ width: '100%' }}
+                  step="0.1"
+                  value={localDrafts.source_pressure_bara !== undefined
+                    ? localDrafts.source_pressure_bara
+                    : (effectiveData.source_pressure_bara ?? 6.0)}
+                  onChange={(e) => handleDraftChange('source_pressure_bara', e.target.value)}
+                  onBlur={(e) => validateAndCommit('source_pressure_bara', e.target.value, true)}
+                />
+              </div>
+
+              <div>
+                {renderLabel('Injected Temp (°C)', 'temperature')}
+                <input
+                  type="number"
+                  className="form-input" style={{ width: '100%' }}
+                  step="0.1"
+                  value={localDrafts.temperature !== undefined
+                    ? localDrafts.temperature
+                    : ((effectiveData.temperature ?? 293.15) - 273.15).toFixed(1)}
+                  onChange={(e) => handleDraftChange('temperature', e.target.value)}
+                  onBlur={(e) => validateAndCommit('temperature', parseFloat(e.target.value) + 273.15)}
+                />
+              </div>
+            </>
+          )}
+
+          {isNode && type === 'flow_source' && (
+            <>
+              <div>
+                {renderLabel('Set Flow (L/min)', 'source_flow_lmin')}
+                <input
+                  type="number"
+                  className="form-input" style={{ width: '100%' }}
+                  step="1"
+                  value={localDrafts.source_flow_lmin !== undefined
+                    ? localDrafts.source_flow_lmin
+                    : (effectiveData.source_flow_lmin ?? 50.0)}
+                  onChange={(e) => handleDraftChange('source_flow_lmin', e.target.value)}
+                  onBlur={(e) => validateAndCommit('source_flow_lmin', e.target.value, true)}
+                />
+              </div>
+
+              <div>
+                {renderLabel('Injected Temp (°C)', 'temperature')}
+                <input
+                  type="number"
+                  className="form-input" style={{ width: '100%' }}
+                  step="0.1"
+                  value={localDrafts.temperature !== undefined
+                    ? localDrafts.temperature
+                    : ((effectiveData.temperature ?? 293.15) - 273.15).toFixed(1)}
+                  onChange={(e) => handleDraftChange('temperature', e.target.value)}
+                  onBlur={(e) => validateAndCommit('temperature', parseFloat(e.target.value) + 273.15)}
+                />
+              </div>
+            </>
+          )}
+
           {isNode && (type === 'linear_regulator' || type === 'remote_control_valve') && (
             <>
               <div>

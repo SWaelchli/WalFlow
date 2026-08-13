@@ -21,6 +21,8 @@ export const CASE_VARIABLE_FIELDS = new Set([
   'set_temperature_c', // Three-way TCV set temperature (°C)
   'flow_demand',       // External flow demand
   'forced_state',      // Contingency Test Mode (auto / forced_closed per case)
+  'source_pressure_bara', // FluidSource: set pressure (bara), case-overridable per scenario
+  'source_flow_lmin',     // FluidSource: set flow rate (L/min), case-overridable per scenario
 ]);
 
 /**

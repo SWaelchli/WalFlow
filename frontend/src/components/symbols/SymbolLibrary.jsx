@@ -3,7 +3,7 @@ import React from 'react';
 export const EquipmentSymbol = ({ type, size = 40, style = {} }) => {
   const baseWidth = 60;
   const baseHeight = 60;
-  
+
   // Custom dimensions for specific types
   const dimensions = {
     tank: { w: 60, h: 100 },
@@ -15,7 +15,7 @@ export const EquipmentSymbol = ({ type, size = 40, style = {} }) => {
   };
 
   const { w: width, h: height } = dimensions[type] || { w: baseWidth, h: baseHeight };
-  
+
   // Scale factor to fit the 'size' prop while maintaining aspect ratio
   const scale = size / Math.max(width, height);
 
@@ -196,6 +196,38 @@ export const EquipmentSymbol = ({ type, size = 40, style = {} }) => {
             <circle cx="45" cy="18" r="2.5" fill="var(--color-primary)" />
           </svg>
         );
+      case 'pressure_source':
+        return (
+          <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+            {/* Outer bubble */}
+            <circle cx="30" cy="30" r="26" fill="white" stroke="#395253" strokeWidth="2.5" />
+            {/* Solid inner concentric circle */}
+            <circle cx="30" cy="30" r="8" fill="#395253" />
+          </svg>
+        );
+      case 'flow_source':
+        return (
+          <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+            {/* Outer bubble */}
+            <circle cx="30" cy="30" r="26" fill="white" stroke="#395253" strokeWidth="2.5" />
+            {/* Waves — styled using dark theme color, not orange */}
+            <path
+              d="M 10 25 Q 15 18 20 25 Q 25 32 30 25 Q 35 18 40 25 Q 45 32 50 25"
+              fill="none" stroke="#395253" strokeWidth="2.2" strokeLinecap="round"
+            />
+            
+            <path
+              d="M 10 37 Q 15 30 20 37 Q 25 44 30 37 Q 35 30 40 37 Q 45 44 50 37"
+              fill="none" stroke="#395253" strokeWidth="2.2" strokeLinecap="round"
+            />
+            
+            <path
+              d="M 10 31 Q 15 24 20 31 Q 25 38 30 31 Q 35 24 40 31 Q 45 38 50 31"
+              fill="none" stroke="#395253" strokeWidth="2.2" strokeLinecap="round"
+            />
+
+          </svg>
+        );
       default:
         return (
           <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
@@ -206,17 +238,17 @@ export const EquipmentSymbol = ({ type, size = 40, style = {} }) => {
   };
 
   return (
-    <div style={{ 
-      width: size, 
-      height: size, 
-      display: 'flex', 
-      alignItems: 'center', 
+    <div style={{
+      width: size,
+      height: size,
+      display: 'flex',
+      alignItems: 'center',
       justifyContent: 'center',
       overflow: 'visible',
-      ...style 
+      ...style
     }}>
-      <div style={{ 
-        transform: `scale(${scale})`, 
+      <div style={{
+        transform: `scale(${scale})`,
         transformOrigin: 'center center',
         width: width,
         height: height,

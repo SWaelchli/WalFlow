@@ -10,6 +10,8 @@ const categorizedEquipment = [
     name: 'Fluid Sources',
     items: [
       { type: 'tank', label: 'Tank', description: '' },
+      { type: 'pressure_source', label: 'Pressure Source', description: 'Constant Pressure Boundary' },
+      { type: 'flow_source', label: 'Flow Source', description: 'Constant Flow Boundary' },
     ]
   },
   {

@@ -17,6 +17,18 @@ export function useKeyboardShortcuts({
 }) {
   useEffect(() => {
     const handleKeyDown = (e) => {
+      if (e.key === 'Enter') {
+        const activeEl = document.activeElement;
+        if (
+          activeEl &&
+          activeEl.tagName === 'INPUT' &&
+          !['checkbox', 'radio', 'button', 'submit', 'image', 'reset', 'file', 'range', 'color'].includes(activeEl.type)
+        ) {
+          activeEl.blur();
+          return;
+        }
+      }
+
       const activeEl = document.activeElement;
       const isInputActive =
         activeEl &&
