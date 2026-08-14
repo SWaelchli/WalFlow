@@ -3,6 +3,8 @@ import axios from 'axios';
 import { EquipmentSymbol } from '../symbols/SymbolLibrary';
 import { InfoIcon, CheckIcon, CrossIcon, FolderIcon, SearchIcon, TrashIcon, LockIcon, UnlockIcon, FolderOpenIcon } from '../symbols/IconLibrary';
 import { FLUID_CATEGORIES, FLUID_LIBRARY } from '../../constants/fluid_library';
+import { useUnits } from '../../context/UnitContext';
+
 
 
 const categorizedEquipment = [
@@ -661,6 +663,7 @@ export default function Sidebar({
   onExportClick,
   onOpenProjectsModal
 }) {
+  const { unitSystem, setUnitSystem, isImperial } = useUnits();
   const [activeTab, setActiveTab] = useState('library');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -967,6 +970,65 @@ export default function Sidebar({
         {activeTab === 'settings' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <h4 style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', color: theme.slate500, margin: 0, letterSpacing: '0.05em' }}>Unit System</h4>
+              
+              <div>
+                <label style={labelStyle}>Engineering Units</label>
+                <div style={{ display: 'flex', gap: '6px', background: '#F4F7F6', padding: '4px', borderRadius: '8px', border: '1px solid #D8E2E1' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUnitSystem('metric');
+                      onUpdateGlobalSettings({ ...globalSettings, unit_system: 'metric' });
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '6px 8px',
+                      fontSize: '11.5px',
+                      fontWeight: '600',
+                      borderRadius: '6px',
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      backgroundColor: unitSystem === 'metric' ? 'var(--color-brand-dark)' : 'transparent',
+                      color: unitSystem === 'metric' ? '#ffffff' : 'var(--color-text-secondary)',
+                      boxShadow: unitSystem === 'metric' ? '0 1px 3px rgba(57, 82, 83, 0.15)' : 'none'
+                    }}
+                  >
+                    Metric (SI)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUnitSystem('imperial');
+                      onUpdateGlobalSettings({ ...globalSettings, unit_system: 'imperial' });
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '6px 8px',
+                      fontSize: '11.5px',
+                      fontWeight: '600',
+                      borderRadius: '6px',
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      backgroundColor: unitSystem === 'imperial' ? 'var(--color-brand-dark)' : 'transparent',
+                      color: unitSystem === 'imperial' ? '#ffffff' : 'var(--color-text-secondary)',
+                      boxShadow: unitSystem === 'imperial' ? '0 1px 3px rgba(57, 82, 83, 0.15)' : 'none'
+                    }}
+                  >
+                    Imperial (US)
+                  </button>
+                </div>
+                <p style={hintStyle}>
+                  {unitSystem === 'metric' 
+                    ? 'Displaying pressure in bar, flow in L/min, temp in °C, pipe in m/mm.'
+                    : 'Displaying pressure in psi, flow in GPM, temp in °F, pipe in ft/in.'}
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', borderTop: `1px solid ${theme.slate100}`, paddingTop: '20px' }}>
               <h4 style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', color: theme.slate500, margin: 0, letterSpacing: '0.05em' }}>Fluid Dynamics</h4>
               
               <div>
@@ -989,11 +1051,21 @@ export default function Sidebar({
               </div>
 
               <div>
-                <label style={labelStyle}>Ambient Temp (°C)</label>
+                <label style={labelStyle}>Ambient Temp ({isImperial ? '°F' : '°C'})</label>
                 <input 
                   type="number"
-                  value={(globalSettings.ambient_temperature - 273.15).toFixed(1)}
-                  onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, ambient_temperature: parseFloat(e.target.value) + 273.15 })}
+                  step="0.1"
+                  value={
+                    isImperial
+                      ? ((globalSettings.ambient_temperature - 273.15) * 1.8 + 32).toFixed(1)
+                      : (globalSettings.ambient_temperature - 273.15).toFixed(1)
+                  }
+                  onChange={(e) => {
+                    const rawVal = parseFloat(e.target.value);
+                    if (isNaN(rawVal)) return;
+                    const kelvin = isImperial ? ((rawVal - 32) / 1.8) + 273.15 : rawVal + 273.15;
+                    onUpdateGlobalSettings({ ...globalSettings, ambient_temperature: kelvin });
+                  }}
                   className="form-input"
                   style={inputStyle}
                 />
@@ -1001,11 +1073,21 @@ export default function Sidebar({
               </div>
 
               <div>
-                <label style={labelStyle}>Atmospheric Pressure (Pa)</label>
+                <label style={labelStyle}>Atmospheric Pressure ({isImperial ? 'psi(a)' : 'Pa'})</label>
                 <input 
                   type="number"
-                  value={globalSettings.atmospheric_pressure}
-                  onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, atmospheric_pressure: parseFloat(e.target.value) })}
+                  step={isImperial ? "0.01" : "1"}
+                  value={
+                    isImperial
+                      ? (globalSettings.atmospheric_pressure * 0.00014503773773).toFixed(2)
+                      : globalSettings.atmospheric_pressure
+                  }
+                  onChange={(e) => {
+                    const rawVal = parseFloat(e.target.value);
+                    if (isNaN(rawVal)) return;
+                    const pa = isImperial ? rawVal * 6894.757293 : rawVal;
+                    onUpdateGlobalSettings({ ...globalSettings, atmospheric_pressure: pa });
+                  }}
                   className="form-input"
                   style={inputStyle}
                 />
@@ -1013,18 +1095,32 @@ export default function Sidebar({
               </div>
 
               <div>
-                <label style={labelStyle}>Global Pipe Roughness (m)</label>
+                <label style={labelStyle}>Global Pipe Roughness ({isImperial ? 'in' : 'm'})</label>
                 <input 
                   type="number"
-                  step="0.000001"
-                  value={globalSettings.global_roughness}
-                  onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, global_roughness: parseFloat(e.target.value) })}
+                  step={isImperial ? "0.00001" : "0.000001"}
+                  value={
+                    isImperial
+                      ? (globalSettings.global_roughness * 39.37007874).toFixed(6)
+                      : globalSettings.global_roughness
+                  }
+                  onChange={(e) => {
+                    const rawVal = parseFloat(e.target.value);
+                    if (isNaN(rawVal)) return;
+                    const m = isImperial ? rawVal / 39.37007874 : rawVal;
+                    onUpdateGlobalSettings({ ...globalSettings, global_roughness: m });
+                  }}
                   className="form-input"
                   style={inputStyle}
                 />
-                <p style={hintStyle}>Friction roughness inside pipes. Steel is typically 0.000045m (45 µm).</p>
+                <p style={hintStyle}>
+                  {isImperial
+                    ? 'Friction roughness inside pipes. Steel is typically 0.00177 in (45 µm).'
+                    : 'Friction roughness inside pipes. Steel is typically 0.000045m (45 µm).'}
+                </p>
               </div>
             </div>
+
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', borderTop: `1px solid ${theme.slate100}`, paddingTop: '20px' }}>
               <h4 style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', color: theme.slate500, margin: 0, letterSpacing: '0.05em' }}>Numerical Solver</h4>

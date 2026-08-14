@@ -3,18 +3,21 @@ import { useMemo } from 'react';
 import { getRotatedPosition } from '../components/canvas/NodeRotationHandle';
 import { SensingPin } from '../components/canvas/SensingPin';
 import BaseNode from './BaseNode';
+import { useUnits } from '../context/UnitContext';
 
 /**
  * Remote Control Valve (RCV)
  * Similar to Linear Control Valve, but controls to a remote sensing signal.
  */
 export default function RemoteControlValveNode({ id, data, selected }) {
+  const { formatFlowM3s, formatPressurePa, labels } = useUnits();
   const telemetry = data.telemetry;
   const rotation = data.rotation || 0;
   const sensing = useMemo(() => data.sensing || {}, [data.sensing]);
   const opening = telemetry?.opening_pct ?? (data.opening ?? 50.0);
   const flow = telemetry?.outlets?.[0]?.flow_rate || 0;
-  const flowLmin = (flow * 60000).toFixed(1);
+  const flowFormatted = formatFlowM3s(flow);
+  const setPressureFormatted = formatPressurePa(data.set_pressure || 500000);
 
   return (
     <BaseNode
@@ -27,8 +30,8 @@ export default function RemoteControlValveNode({ id, data, selected }) {
         <>
           <div style={{ fontSize: '9px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>{data.label || 'RCV'}</div>
           <div style={{ fontSize: '10px', fontWeight: 'bold', color: 'var(--color-brand-dark)' }}>{opening.toFixed(1)} %</div>
-          <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)' }}>{flowLmin} L/min</div>
-          <div style={{ fontSize: '8px', color: '#854d0e', fontWeight: 'bold' }}>SET: {((data.set_pressure || 500000) / 100000).toFixed(1)} bar(a)</div>
+          <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)' }}>{flowFormatted} {labels.flow}</div>
+          <div style={{ fontSize: '8px', color: '#854d0e', fontWeight: 'bold' }}>SET: {setPressureFormatted} {labels.pressureAbs}</div>
         </>
       }
     >

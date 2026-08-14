@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { PlusIcon, PlayIcon, ExportIcon, CaseIcon, TrashIcon, SpinnerIcon } from '../symbols/IconLibrary';
-import { m3sToLmin, kToC } from '../../utils/converters';
 import { findClosestPipeMatch, ASME_PIPE_STANDARDS, calculatePipeId } from '../../utils/standards_library';
 import { updateCaseOverride } from '../../utils/case_resolver';
+import { useUnits } from '../../context/UnitContext';
 
 const autoSortLogic = (nodes, edges) => {
   const ordered = [];
@@ -109,6 +109,7 @@ export default function DataList({
   showCaseManager = true,
   onToggleCaseManager
 }) {
+  const { labels, isImperial, formatPressure, formatFlow, formatFlowM3s, formatPower, formatTemperatureK, formatVelocity } = useUnits();
 
   const [activeTab, setActiveTab] = useState('pipes');
   const [manualOrder, setManualOrder] = useState([]);
@@ -360,18 +361,19 @@ export default function DataList({
   }, [manualOrder, nodes, edges, activeTab, filterText, sortConfig]);
 
   const exportCSV = useCallback(() => {
-    const headers = ["Type", "Name", "Flow (L/min)", "Velocity (m/s)", "dP (bar(d))", "P Start (bar(a))", "P End (bar(a))", "Temp (C)"];
-    if (activeTab === 'pipes') headers.push("Length (m)");
+    const headers = ["Type", "Name", `Flow (${labels.flow})`, `Velocity (${labels.velocity})`, `dP (${labels.pressureDiff})`, `P Start (${labels.pressureAbs})`, `P End (${labels.pressureAbs})`, `Temp (${labels.temperature})`];
+    if (activeTab === 'pipes') headers.push(`Length (${labels.length})`);
     const rows = processedItems.map(i => {
-      const row = [i.displayType, i.label, m3sToLmin(i.flow), i.velocity.toFixed(2), i.dp.toFixed(3), i.pStart.toFixed(2), i.pEnd.toFixed(2), kToC(i.temp)];
-      if (activeTab === 'pipes') row.push(i.length);
+      const lenDisplay = isImperial ? (i.length * 3.280839895).toFixed(2) : i.length;
+      const row = [i.displayType, i.label, formatFlowM3s(i.flow), formatVelocity(i.velocity), formatPressure(i.dp, 3), formatPressure(i.pStart), formatPressure(i.pEnd), formatTemperatureK(i.temp)];
+      if (activeTab === 'pipes') row.push(lenDisplay);
       return row.join(",");
     });
     const blob = new Blob([[headers.join(","), ...rows].join("\n")], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url); link.setAttribute("download", `walflow_export_${activeTab}.csv`); link.click();
-  }, [processedItems, activeTab]);
+  }, [processedItems, activeTab, labels, isImperial, formatFlowM3s, formatVelocity, formatPressure, formatTemperatureK]);
 
   return (
     <div style={{ height: '350px', background: '#ffffff', borderTop: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 -4px 16px rgba(57, 82, 83, 0.05)' }}>
@@ -559,15 +561,15 @@ export default function DataList({
                 <tbody>
                   {/* Max Pressure */}
                   <tr style={{ borderBottom: '1px solid var(--color-border-hover)', height: '36px' }}>
-                    <td style={{ padding: '6px 12px', fontWeight: '700', color: 'var(--color-text-primary)', verticalAlign: 'middle', width: '200px', minWidth: '200px', maxWidth: '200px', whiteSpace: 'nowrap' }}>System Max Pressure (bar(a))</td>
+                    <td style={{ padding: '6px 12px', fontWeight: '700', color: 'var(--color-text-primary)', verticalAlign: 'middle', width: '200px', minWidth: '200px', maxWidth: '200px', whiteSpace: 'nowrap' }}>System Max Pressure ({labels.pressureAbs})</td>
                     {displayCases.map((c, colIdx) => {
                       const baseKpis = displayCases.find(b => b.is_base)?.kpis;
                       const kpis = c.kpis || {};
                       const val = kpis.max_pressure_bar;
-                      const deltaStr = !c.is_base && baseKpis ? formatDelta(val, baseKpis.max_pressure_bar, 'bar(a)') : null;
+                      const deltaStr = !c.is_base && baseKpis ? formatDelta(isImperial ? val * 14.5037738 : val, isImperial ? baseKpis.max_pressure_bar * 14.5037738 : baseKpis.max_pressure_bar, labels.pressureAbs) : null;
                       return (
                         <td key={c.case_id || c.id} style={{ padding: '6px 12px', borderLeft: caseDragOverIdx === colIdx ? '3px solid var(--color-primary)' : '1px solid var(--color-border)', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-                          <span style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>{val !== undefined ? `${val} bar(a)` : '—'}</span>
+                          <span style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>{val !== undefined ? `${formatPressure(val)} ${labels.pressureAbs}` : '—'}</span>
                           {deltaStr && <span style={{ fontSize: '10px', color: '#d97706', marginLeft: '8px' }}>{deltaStr}</span>}
                         </td>
                       );
@@ -575,15 +577,15 @@ export default function DataList({
                   </tr>
                   {/* Min Pressure */}
                   <tr style={{ borderBottom: '1px solid var(--color-border-hover)', background: '#F8FAFA', height: '36px' }}>
-                    <td style={{ padding: '6px 12px', fontWeight: '700', color: 'var(--color-text-primary)', verticalAlign: 'middle', width: '200px', minWidth: '200px', maxWidth: '200px', whiteSpace: 'nowrap' }}>System Min Pressure (bar(a))</td>
+                    <td style={{ padding: '6px 12px', fontWeight: '700', color: 'var(--color-text-primary)', verticalAlign: 'middle', width: '200px', minWidth: '200px', maxWidth: '200px', whiteSpace: 'nowrap' }}>System Min Pressure ({labels.pressureAbs})</td>
                     {displayCases.map((c, colIdx) => {
                       const baseKpis = displayCases.find(b => b.is_base)?.kpis;
                       const kpis = c.kpis || {};
                       const val = kpis.min_pressure_bar;
-                      const deltaStr = !c.is_base && baseKpis ? formatDelta(val, baseKpis.min_pressure_bar, 'bar(a)') : null;
+                      const deltaStr = !c.is_base && baseKpis ? formatDelta(isImperial ? val * 14.5037738 : val, isImperial ? baseKpis.min_pressure_bar * 14.5037738 : baseKpis.min_pressure_bar, labels.pressureAbs) : null;
                       return (
                         <td key={c.case_id || c.id} style={{ padding: '6px 12px', borderLeft: caseDragOverIdx === colIdx ? '3px solid var(--color-primary)' : '1px solid var(--color-border)', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-                          <span style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>{val !== undefined ? `${val} bar(a)` : '—'}</span>
+                          <span style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>{val !== undefined ? `${formatPressure(val)} ${labels.pressureAbs}` : '—'}</span>
                           {deltaStr && <span style={{ fontSize: '10px', color: '#d97706', marginLeft: '8px' }}>{deltaStr}</span>}
                         </td>
                       );
@@ -591,15 +593,15 @@ export default function DataList({
                   </tr>
                   {/* Total Pump Flow */}
                   <tr style={{ borderBottom: '1px solid var(--color-border-hover)', height: '36px' }}>
-                    <td style={{ padding: '6px 12px', fontWeight: '700', color: 'var(--color-text-primary)', verticalAlign: 'middle', width: '200px', minWidth: '200px', maxWidth: '200px', whiteSpace: 'nowrap' }}>Total Pump Flow (L/min)</td>
+                    <td style={{ padding: '6px 12px', fontWeight: '700', color: 'var(--color-text-primary)', verticalAlign: 'middle', width: '200px', minWidth: '200px', maxWidth: '200px', whiteSpace: 'nowrap' }}>Total Pump Flow ({labels.flow})</td>
                     {displayCases.map((c, colIdx) => {
                       const baseKpis = displayCases.find(b => b.is_base)?.kpis;
                       const kpis = c.kpis || {};
                       const val = kpis.total_flow_lmin;
-                      const deltaStr = !c.is_base && baseKpis ? formatDelta(val, baseKpis.total_flow_lmin, 'L/min') : null;
+                      const deltaStr = !c.is_base && baseKpis ? formatDelta(isImperial ? val * 0.264172052 : val, isImperial ? baseKpis.total_flow_lmin * 0.264172052 : baseKpis.total_flow_lmin, labels.flow) : null;
                       return (
                         <td key={c.case_id || c.id} style={{ padding: '6px 12px', borderLeft: caseDragOverIdx === colIdx ? '3px solid var(--color-primary)' : '1px solid var(--color-border)', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-                          <span style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>{val !== undefined ? `${val} L/min` : '—'}</span>
+                          <span style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>{val !== undefined ? `${formatFlow(val)} ${labels.flow}` : '—'}</span>
                           {deltaStr && <span style={{ fontSize: '10px', color: '#d97706', marginLeft: '8px' }}>{deltaStr}</span>}
                         </td>
                       );
@@ -607,15 +609,15 @@ export default function DataList({
                   </tr>
                   {/* Total Pump Power */}
                   <tr style={{ borderBottom: '1px solid var(--color-border-hover)', background: '#F8FAFA', height: '36px' }}>
-                    <td style={{ padding: '6px 12px', fontWeight: '700', color: 'var(--color-text-primary)', verticalAlign: 'middle', width: '200px', minWidth: '200px', maxWidth: '200px', whiteSpace: 'nowrap' }}>Total Pump Power (kW)</td>
+                    <td style={{ padding: '6px 12px', fontWeight: '700', color: 'var(--color-text-primary)', verticalAlign: 'middle', width: '200px', minWidth: '200px', maxWidth: '200px', whiteSpace: 'nowrap' }}>Total Pump Power ({labels.power})</td>
                     {displayCases.map((c, colIdx) => {
                       const baseKpis = displayCases.find(b => b.is_base)?.kpis;
                       const kpis = c.kpis || {};
                       const val = kpis.total_pump_power_kw;
-                      const deltaStr = !c.is_base && baseKpis ? formatDelta(val, baseKpis.total_pump_power_kw, 'kW') : null;
+                      const deltaStr = !c.is_base && baseKpis ? formatDelta(isImperial ? val * 1.34102209 : val, isImperial ? baseKpis.total_pump_power_kw * 1.34102209 : baseKpis.total_pump_power_kw, labels.power) : null;
                       return (
                         <td key={c.case_id || c.id} style={{ padding: '6px 12px', borderLeft: caseDragOverIdx === colIdx ? '3px solid var(--color-primary)' : '1px solid var(--color-border)', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-                          <span style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>{val !== undefined ? `${val} kW` : '—'}</span>
+                          <span style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>{val !== undefined ? `${formatPower(val)} ${labels.power}` : '—'}</span>
                           {deltaStr && <span style={{ fontSize: '10px', color: '#d97706', marginLeft: '8px' }}>{deltaStr}</span>}
                         </td>
                       );
@@ -792,7 +794,7 @@ export default function DataList({
                    {/* Unmitigated Peak Pressure */}
                    <tr style={{ borderBottom: '1px solid var(--color-border-hover)', height: '36px', background: telemetryMode === 'unmitigated_global' ? '#FEF2F2' : '#ffffff' }}>
                      <td colSpan={3} style={{ padding: '6px 12px', fontWeight: '700', color: '#DC2626', verticalAlign: 'middle' }}>
-                       Unmitigated peak pressure (bar(a))
+                       Unmitigated peak pressure ({labels.pressureAbs})
                      </td>
                      {displayCases.map(c => {
                        const caseId = c.id || c.case_id;
@@ -800,7 +802,7 @@ export default function DataList({
                        const pMaxUnmit = c.kpis?.unmitigated_peak_pressure_bara ?? calculateMaxPressureBar(unmit);
                        return (
                          <td key={caseId} style={{ padding: '6px 12px', fontWeight: '700', color: '#DC2626', borderLeft: '1px solid var(--color-border)', verticalAlign: 'middle' }}>
-                           {pMaxUnmit !== undefined ? `${pMaxUnmit.toFixed(2)} bar(a)` : '—'}
+                           {pMaxUnmit !== undefined ? `${formatPressure(pMaxUnmit)} ${labels.pressureAbs}` : '—'}
                          </td>
                        );
                      })}
@@ -808,7 +810,7 @@ export default function DataList({
 
                   {/* Total Relief Flow */}
                   <tr style={{ borderBottom: '1px solid var(--color-border-hover)', background: '#F8FAFA', height: '36px' }}>
-                    <td colSpan={3} style={{ padding: '6px 12px', fontWeight: '700', color: 'var(--color-text-primary)', verticalAlign: 'middle' }}>Total Relief Flow (L/min)</td>
+                    <td colSpan={3} style={{ padding: '6px 12px', fontWeight: '700', color: 'var(--color-text-primary)', verticalAlign: 'middle' }}>Total Relief Flow ({labels.flow})</td>
                     {displayCases.map(c => {
                       const totalReliefFlow = reliefDevices.reduce((sum, dev) => {
                         const devTel = c.telemetry?.nodes?.[dev.id];
@@ -817,7 +819,7 @@ export default function DataList({
                       }, 0) * 60000;
                       return (
                         <td key={c.id || c.case_id} style={{ padding: '6px 12px', fontWeight: '600', color: 'var(--color-text-primary)', borderLeft: '1px solid var(--color-border)', verticalAlign: 'middle' }}>
-                          {totalReliefFlow.toFixed(1)} L/min
+                          {formatFlow(totalReliefFlow)} {labels.flow}
                         </td>
                       );
                     })}
@@ -835,15 +837,15 @@ export default function DataList({
               <th style={{ padding: '8px', width: '40px' }}></th>
               <SortHeader label="Type" sortKey="displayType" sortConfig={sortConfig} requestSort={requestSort} />
               <SortHeader label="Name" sortKey="label" sortConfig={sortConfig} requestSort={requestSort} />
-              <SortHeader label="Flow (L/min)" sortKey="flow" align="right" sortConfig={sortConfig} requestSort={requestSort} />
-              <SortHeader label="Velocity (m/s)" sortKey="velocity" align="right" sortConfig={sortConfig} requestSort={requestSort} />
-              <SortHeader label="dP (bar(d))" sortKey="dp" align="right" sortConfig={sortConfig} requestSort={requestSort} />
-              <SortHeader label="P Start (bar(a))" sortKey="pStart" align="right" sortConfig={sortConfig} requestSort={requestSort} />
-              <SortHeader label="P End (bar(a))" sortKey="pEnd" align="right" sortConfig={sortConfig} requestSort={requestSort} />
-              <SortHeader label="Temp (°C)" sortKey="temp" align="right" sortConfig={sortConfig} requestSort={requestSort} />
+              <SortHeader label={`Flow (${labels.flow})`} sortKey="flow" align="right" sortConfig={sortConfig} requestSort={requestSort} />
+              <SortHeader label={`Velocity (${labels.velocity})`} sortKey="velocity" align="right" sortConfig={sortConfig} requestSort={requestSort} />
+              <SortHeader label={`dP (${labels.pressureDiff})`} sortKey="dp" align="right" sortConfig={sortConfig} requestSort={requestSort} />
+              <SortHeader label={`P Start (${labels.pressureAbs})`} sortKey="pStart" align="right" sortConfig={sortConfig} requestSort={requestSort} />
+              <SortHeader label={`P End (${labels.pressureAbs})`} sortKey="pEnd" align="right" sortConfig={sortConfig} requestSort={requestSort} />
+              <SortHeader label={`Temp (${labels.temperature})`} sortKey="temp" align="right" sortConfig={sortConfig} requestSort={requestSort} />
               {activeTab === 'pipes' && <th style={{ padding: '8px' }}>NPS</th>}
               {activeTab === 'pipes' && <th style={{ padding: '8px' }}>Schedule</th>}
-              {activeTab === 'pipes' && <SortHeader label="Length (m)" sortKey="length" align="right" sortConfig={sortConfig} requestSort={requestSort} />}
+              {activeTab === 'pipes' && <SortHeader label={`Length (${labels.length})`} sortKey="length" align="right" sortConfig={sortConfig} requestSort={requestSort} />}
             </tr>
           </thead>
           <tbody>
@@ -917,12 +919,12 @@ export default function DataList({
                       draggable={false}
                     />
                   </td>
-                  <td style={{ padding: '8px', textAlign: 'right', fontWeight: '600' }}>{m3sToLmin(entry.flow)}</td>
-                  <td style={{ padding: '8px', textAlign: 'right' }}>{entry.velocity?.toFixed(2)}</td>
-                  <td style={{ padding: '8px', textAlign: 'right' }}>{entry.dp.toFixed(3)}</td>
-                  <td style={{ padding: '8px', textAlign: 'right' }}>{entry.pStart.toFixed(2)}</td>
-                  <td style={{ padding: '8px', textAlign: 'right' }}>{entry.pEnd.toFixed(2)}</td>
-                  <td style={{ padding: '8px', textAlign: 'right' }}>{kToC(entry.temp)}</td>
+                  <td style={{ padding: '8px', textAlign: 'right', fontWeight: '600' }}>{formatFlowM3s(entry.flow)}</td>
+                  <td style={{ padding: '8px', textAlign: 'right' }}>{formatVelocity(entry.velocity)}</td>
+                  <td style={{ padding: '8px', textAlign: 'right' }}>{formatPressure(entry.dp, 3)}</td>
+                  <td style={{ padding: '8px', textAlign: 'right' }}>{formatPressure(entry.pStart)}</td>
+                  <td style={{ padding: '8px', textAlign: 'right' }}>{formatPressure(entry.pEnd)}</td>
+                  <td style={{ padding: '8px', textAlign: 'right' }}>{formatTemperatureK(entry.temp)}</td>
                   {activeTab === 'pipes' && (
                     <td style={{ padding: '8px' }} onClick={(e) => e.stopPropagation()}>
                       {!isNode ? (
@@ -963,8 +965,8 @@ export default function DataList({
                         <input 
                           type="number" step="0.1"
                           style={{ width: '55px', fontSize: '11px', border: '1px solid var(--color-border)', padding: '3px 6px', borderRadius: '5px', textAlign: 'right', fontWeight: '600', color: 'var(--color-brand-dark)', outline: 'none' }}
-                          value={item.data.length}
-                          onChange={(e) => handleLengthChange(e.target.value)}
+                          value={isImperial ? (item.data.length * 3.280839895).toFixed(1) : item.data.length}
+                          onChange={(e) => handleLengthChange(isImperial ? (parseFloat(e.target.value) || 0) / 3.280839895 : (parseFloat(e.target.value) || 0))}
                           onFocus={() => { handleRowClick(entry); setIsEditing(true); }}
                           onBlur={() => setIsEditing(false)}
                           onPointerDown={(e) => e.stopPropagation()}

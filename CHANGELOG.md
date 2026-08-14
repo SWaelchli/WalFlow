@@ -8,6 +8,8 @@ All notable changes to the WälFlow project will be documented in this file.
 
 ### Added
 
+- **Imperial / US Customary Unit System**: Full bidirectional unit conversions across the entire application supporting standard engineering units (Pressure: `psi(a)` / `psi(d)`, Flow: `gpm`, Temperature: `°F`, Power: `HP`, Length: `ft`, Pipe Roughness & Diameter: `in`, Velocity: `ft/s`).
+- **Global Unit System Selector**: Modern toggle switch in Sidebar Settings allowing seamless switching between Metric (SI) and Imperial (US Customary) unit systems, with persistence to localStorage and saved diagram files.
 - **Pressure and Flow Sources** (`PressureSource` / `FlowSource`): Split the universal source into two separate components: a Constant Pressure Source (1 inlet + 1 outlet, solid concentric circle symbol) and a Constant Flow Source (1 outlet only, wave symbol), styled in dark theme colors.
 
 ### Changed

@@ -7,6 +7,8 @@ export const EquipmentSymbol = ({ type, size = 40, style = {} }) => {
   // Custom dimensions for specific types
   const dimensions = {
     tank: { w: 60, h: 100 },
+    pressure_source: { w: 70, h: 70 },
+    flow_source: { w: 70, h: 70 },
     orifice: { w: 40, h: 60 },
     calibrated_restriction: { w: 40, h: 60 },
     splitter: { w: 40, h: 40 },
@@ -27,6 +29,40 @@ export const EquipmentSymbol = ({ type, size = 40, style = {} }) => {
           <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
             <path d="M 10 20 L 10 80 Q 10 95 30 95 Q 50 95 50 80 L 50 20 Q 50 5 30 5 Q 10 5 10 20 Z" fill="white" stroke="#334155" strokeWidth="2.5" />
             <rect x="10" y="40" width="40" height="40" fill="#3b82f633" />
+          </svg>
+        );
+      case 'pressure_source':
+        return (
+          <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+            <circle cx="35" cy="35" r="28" fill="white" stroke="#334155" strokeWidth="2.5" />
+            <circle cx="35" cy="35" r="9" fill="#395253" />
+          </svg>
+        );
+      case 'flow_source':
+        return (
+          <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+            <circle cx="35" cy="35" r="28" fill="white" stroke="#334155" strokeWidth="2.5" />
+            <path
+              d="M 16 25 Q 21 18 26 25 Q 31 32 36 25 Q 41 18 46 25 Q 51 32 54 25"
+              fill="none"
+              stroke="#395253"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+            />
+            <path
+              d="M 16 35 Q 21 28 26 35 Q 31 42 36 35 Q 41 28 46 35 Q 51 42 54 35"
+              fill="none"
+              stroke="#395253"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+            />
+            <path
+              d="M 16 45 Q 21 38 26 45 Q 31 52 36 45 Q 41 38 46 45 Q 51 52 54 45"
+              fill="none"
+              stroke="#395253"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+            />
           </svg>
         );
       case 'centrifugal_pump':

@@ -3,17 +3,19 @@ import { useMemo } from 'react';
 import { getRotatedPosition } from '../components/canvas/NodeRotationHandle';
 import { SensingPin } from '../components/canvas/SensingPin';
 import BaseNode from './BaseNode';
+import { useUnits } from '../context/UnitContext';
 
 /**
  * Check Valve with Orifice Node (Non-Return Valve with Bypass Restriction)
  */
 export default function CheckValveOrificeNode({ id, data, selected }) {
+  const { formatFlowM3s, labels } = useUnits();
   const telemetry = data.telemetry;
   const rotation = data.rotation || 0;
   const sensing = useMemo(() => data.sensing || {}, [data.sensing]);
   
   const flow = telemetry?.outlets?.[0]?.flow_rate || 0;
-  const flowLmin = (flow * 60000).toFixed(1);
+  const flowFormatted = formatFlowM3s(flow);
   const isOpen = flow > 1e-4;
   const isBypass = Math.abs(flow) > 1e-6 && !isOpen;
 
@@ -40,7 +42,7 @@ export default function CheckValveOrificeNode({ id, data, selected }) {
           <div style={{ fontSize: '10px', fontWeight: 'bold', color: statusColor }}>
             {statusText}
           </div>
-          <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)' }}>{flowLmin} L/min</div>
+          <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)' }}>{flowFormatted} {labels.flow}</div>
         </>
       }
     >

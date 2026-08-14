@@ -1,7 +1,8 @@
 import React from 'react';
-import { m3sToLmin } from '../../utils/converters';
+import { useUnits } from '../../context/UnitContext';
 
 export default function GenericDetails({ node, edge, allNodes = [], allEdges = [] }) {
+  const { labels, isImperial, formatPressurePa, formatFlowM3s, formatTemperatureK, formatVelocity } = useUnits();
   const isEdge = !!edge;
   const item = node || edge;
   if (!item) return null;
@@ -23,8 +24,6 @@ export default function GenericDetails({ node, edge, allNodes = [], allEdges = [
 
   // Determine flow direction and rates
   const flowM3s = outlets[0]?.flow_rate ?? inlets[0]?.flow_rate ?? 0;
-  const flowLmin = parseFloat(m3sToLmin(flowM3s));
-  const absFlowLmin = Math.abs(flowLmin);
   const isReverse = flowM3s < 0;
 
   // Dynamic upstream/downstream based on flow direction
@@ -42,10 +41,7 @@ export default function GenericDetails({ node, edge, allNodes = [], allEdges = [
     temp = inlets[0]?.temperature ?? outlets[0]?.temperature ?? 293.15;
   }
 
-  const pUpBar = pUp / 100000;
-  const pDownBar = pDown / 100000;
-  const dpBar = Math.max(0, pUpBar - pDownBar);
-  const tempC = temp - 273.15;
+  const dpPa = Math.max(0, pUp - pDown);
 
   // Visual Flow Path for Node or Pipe (exactly 2 items, clean black text, no dynamic colors)
   let upLabel = "SOURCE";
@@ -122,13 +118,15 @@ export default function GenericDetails({ node, edge, allNodes = [], allEdges = [
     let regime = 'Laminar';
     if (re > 4000) regime = 'Turbulent';
     else if (re >= 2000) regime = 'Transition';
+    const dpBar = dpPa / 100000;
     const dpPerMeterMbar = length > 0 ? (dpBar * 1000) / length : 0;
+    const dpPerFtPsi = length > 0 ? (dpBar * 14.5037738) / (length * 3.280839895) : 0;
 
     pipeRows = (
       <>
         <tr>
           <td className="details-label">Fluid Velocity</td>
-          <td className="details-value" style={{ textAlign: 'right' }}>{velocity.toFixed(2)} m/s</td>
+          <td className="details-value" style={{ textAlign: 'right' }}>{formatVelocity(velocity)} {labels.velocity}</td>
         </tr>
         <tr>
           <td className="details-label">Reynolds Number</td>
@@ -138,7 +136,9 @@ export default function GenericDetails({ node, edge, allNodes = [], allEdges = [
         </tr>
         <tr>
           <td className="details-label">Pressure Gradient</td>
-          <td className="details-value" style={{ textAlign: 'right' }}>{dpPerMeterMbar.toFixed(2)} mbar(d)/m</td>
+          <td className="details-value" style={{ textAlign: 'right' }}>
+            {isImperial ? `${dpPerFtPsi.toFixed(4)} psi/ft` : `${dpPerMeterMbar.toFixed(2)} mbar(d)/m`}
+          </td>
         </tr>
       </>
     );
@@ -159,23 +159,23 @@ export default function GenericDetails({ node, edge, allNodes = [], allEdges = [
         <tbody>
           <tr>
             <td className="details-label">Upstream Pressure</td>
-            <td className="details-value" style={{ textAlign: 'right' }}>{pUpBar.toFixed(2)} bar(a)</td>
+            <td className="details-value" style={{ textAlign: 'right' }}>{formatPressurePa(pUp)} {labels.pressureAbs}</td>
           </tr>
           <tr>
             <td className="details-label">Downstream Pressure</td>
-            <td className="details-value" style={{ textAlign: 'right' }}>{pDownBar.toFixed(2)} bar(a)</td>
+            <td className="details-value" style={{ textAlign: 'right' }}>{formatPressurePa(pDown)} {labels.pressureAbs}</td>
           </tr>
           <tr>
             <td className="details-label">Pressure Drop (ΔP)</td>
-            <td className="details-value" style={{ textAlign: 'right' }}>{dpBar.toFixed(3)} bar(d)</td>
+            <td className="details-value" style={{ textAlign: 'right' }}>{formatPressurePa(dpPa)} {labels.pressureDiff}</td>
           </tr>
           <tr>
             <td className="details-label">Flow Rate</td>
-            <td className="details-value" style={{ textAlign: 'right' }}>{absFlowLmin.toFixed(1)} L/min</td>
+            <td className="details-value" style={{ textAlign: 'right' }}>{formatFlowM3s(Math.abs(flowM3s))} {labels.flow}</td>
           </tr>
           <tr>
             <td className="details-label">Temperature</td>
-            <td className="details-value" style={{ textAlign: 'right' }}>{tempC.toFixed(1)} °C</td>
+            <td className="details-value" style={{ textAlign: 'right' }}>{formatTemperatureK(temp)} {labels.temperature}</td>
           </tr>
           {pipeRows}
         </tbody>

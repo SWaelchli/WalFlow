@@ -1,9 +1,11 @@
 import React from 'react';
+import { useUnits } from '../../context/UnitContext';
 
 /**
  * Inspector detail card for Rupture Disc (Burst Diaphragm) equipment nodes.
  */
 export default function RuptureDiscDetails({ node, unmitigatedTelemetry }) {
+  const { labels, formatPressure, formatPressurePa, formatFlowM3s, formatDiameter } = useUnits();
   if (!node) return null;
 
   const data = node.data || {};
@@ -13,14 +15,14 @@ export default function RuptureDiscDetails({ node, unmitigatedTelemetry }) {
   const burstPressureBar = data.burst_pressure_bar || 25.0;
   const boreType = data.bore_type || 'full_bore';
   const cv = data.cv || 10.0;
-  const orificeDiameterMm = (data.orifice_diameter ? data.orifice_diameter * 1000 : 10.0).toFixed(1);
+  const orificeDiameterM = data.orifice_diameter || 0.01;
   const status = telemetry.status || 'intact';
   const capacityPct = telemetry.capacity_utilization_pct || 0.0;
 
-  const pInBar = (telemetry.inlets?.[0]?.pressure || 0) / 100000.0;
-  const pUnmitigatedBar = (unmitTelemetry.inlets?.[0]?.pressure || telemetry.inlets?.[0]?.pressure || 0) / 100000.0;
+  const pIn = telemetry.inlets?.[0]?.pressure || 0;
+  const pInBar = pIn / 100000.0;
+  const pUnmitigatedIn = unmitTelemetry.inlets?.[0]?.pressure || pIn;
   const actualFlow = telemetry.outlets?.[0]?.flow_rate || 0;
-  const actualFlowLmin = Math.abs(actualFlow) * 60000.0;
 
   let statusBadgeColor = 'var(--color-success)';
   let statusBadgeBg = '#DCFCE7';
@@ -35,6 +37,10 @@ export default function RuptureDiscDetails({ node, unmitigatedTelemetry }) {
     statusBadgeBg = '#FEE2E2';
     statusLabel = 'OVERCAPACITY (>100%)';
   }
+
+  const boreDisplay = boreType === 'reduced_bore' 
+    ? `Reduced Bore (${formatDiameter(orificeDiameterM)} ${labels.diameter} Orifice)`
+    : `Full Bore (Cv ${cv.toFixed(1)})`;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -51,12 +57,12 @@ export default function RuptureDiscDetails({ node, unmitigatedTelemetry }) {
       <div style={{ background: 'var(--color-surface-hover)', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontSize: '11.5px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ color: 'var(--color-text-secondary)', fontWeight: '500' }}>Burst Pressure:</span>
-          <span style={{ fontWeight: '700', color: 'var(--color-primary)', fontFamily: 'var(--font-mono)' }}>{burstPressureBar.toFixed(2)} bar(a)</span>
+          <span style={{ fontWeight: '700', color: 'var(--color-primary)', fontFamily: 'var(--font-mono)' }}>{formatPressure(burstPressureBar)} {labels.pressureAbs}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ color: 'var(--color-text-secondary)', fontWeight: '500' }}>Bore Configuration:</span>
           <span style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>
-            {boreType === 'reduced_bore' ? `Reduced Bore (${orificeDiameterMm} mm Orifice)` : `Full Bore (Cv ${cv.toFixed(1)})`}
+            {boreDisplay}
           </span>
         </div>
       </div>
@@ -70,21 +76,21 @@ export default function RuptureDiscDetails({ node, unmitigatedTelemetry }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ color: 'var(--color-text-secondary)', fontWeight: '500' }}>Mitigated Line Pressure:</span>
           <span style={{ fontWeight: '700', color: pInBar >= burstPressureBar ? 'var(--color-warning)' : 'var(--color-success)', fontFamily: 'var(--font-mono)' }}>
-            {pInBar.toFixed(2)} bar(a)
+            {formatPressurePa(pIn)} {labels.pressureAbs}
           </span>
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ color: 'var(--color-text-secondary)', fontWeight: '500' }}>Relief Flow (Q relief):</span>
-          <span style={{ fontWeight: '700', color: actualFlowLmin > 0 ? 'var(--color-warning)' : 'var(--color-text-secondary)', fontFamily: 'var(--font-mono)' }}>
-            {actualFlowLmin.toFixed(1)} L/min
+          <span style={{ fontWeight: '700', color: Math.abs(actualFlow) > 1e-6 ? 'var(--color-warning)' : 'var(--color-text-secondary)', fontFamily: 'var(--font-mono)' }}>
+            {formatFlowM3s(Math.abs(actualFlow))} {labels.flow}
           </span>
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FEF2F2', padding: '6px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid #FEE2E2' }}>
           <span style={{ color: 'var(--color-danger)', fontWeight: '600' }}>Unmitigated Peak Pressure:</span>
           <span style={{ fontWeight: '800', color: 'var(--color-danger)', fontFamily: 'var(--font-mono)' }}>
-            {pUnmitigatedBar.toFixed(2)} bar(a)
+            {formatPressurePa(pUnmitigatedIn)} {labels.pressureAbs}
           </span>
         </div>
 

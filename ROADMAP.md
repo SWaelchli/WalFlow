@@ -17,10 +17,10 @@ This document outlines planned features, overlays, and enhancements for the WalF
   * **Scope**: Change the default behavior of the backend WebSocket simulation authentication so that it requires authentication by default unless explicitly disabled, preventing unauthorized simulation triggers.
 - [x] **⚠️ [URGENT] Refactor `useWebSocketSimulation.js` with `useRef` to eliminate socket churn** (R3 / Performance)
   * **Scope**: Redesign the WebSocket hook connection lifecycle so that changing `telemetryMode` or `activeCaseId` updates refs rather than tearing down and recreating the WebSocket, eliminating socket connection churn.
-- [ ] **🇺🇸 Implement Imperial/US Customary unit conversions** (R2 / UI)
+- [x] **🇺🇸 Implement Imperial/US Customary unit conversions** (R2 / UI)
   * **Scope**: Expand `frontend/src/utils/converters.js` to implement conversions for `psi`, `gpm`, `m³/h`, and `HP`, and update the UI controls (PropertyEditor, Sidebar, etc.) to display them correctly.
-- [ ] **🌐 Build global unit system selector (SI vs Imperial) in the top navbar** (R2 / UI)
-  * **Scope**: Add a global unit switch toggler to the navbar that propagates selected system units (Metric SI vs Imperial US) across the application panels and tooltips.
+- [x] **🌐 Build global unit system selector (SI vs Imperial) in sidebar settings** (R2 / UI)
+  * **Scope**: Add a global unit switch toggler to the sidebar settings that propagates selected system units (Metric SI vs Imperial US) across the application panels and tooltips.
 - [x] **⚡ Implement analytical sparse Jacobian calculation in the backend solver** (R3 / Performance)
   * **Scope**: Derive and implement analytical derivatives for equipment equations to calculate the sparse Jacobian directly, instead of using finite differences.
 - [x] **🏎️ Transition to `scipy.sparse` Newton-Krylov solver** (R3 / Performance)
@@ -74,7 +74,7 @@ This document outlines planned features, overlays, and enhancements for the WalF
 
 ### 🧰 New Equipment & Component Additions
 
-- [ ] **🌊 Universal Fluid Source (`FluidSource`)**
+- [X] **🌊 Universal Fluid Source (`FluidSource`)**
   * **Concept:** Single fluid supply component featuring an active mode selector:
     * **Constant Pressure Mode (bar):** Fixed pressure Dirichlet boundary condition (e.g. plant water main, utility header).
     * **Constant Flow Mode (L/min):** Fixed flow rate Neumann boundary condition (e.g. dosing pump, regulated feed line).

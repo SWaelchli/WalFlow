@@ -3,26 +3,27 @@ import { useMemo } from 'react';
 import { getRotatedPosition } from '../components/canvas/NodeRotationHandle';
 import { SensingPin } from '../components/canvas/SensingPin';
 import BaseNode from './BaseNode';
+import { useUnits } from '../context/UnitContext';
 
 /**
  * FlowSource Node — Constant Flow Boundary (bubble with waves, outlet port only).
  */
 export default function FlowSourceNode({ id, data, selected }) {
+  const { formatFlow, formatFlowM3s, formatTemperatureK, labels } = useUnits();
   const rotation = data.rotation || 0;
   const sensing = useMemo(() => data.sensing || {}, [data.sensing]);
 
-  const flowLmin      = data.source_flow_lmin ?? 50.0;
-  const tempK          = data.temperature ?? 293.15;
-  const tempC          = (tempK - 273.15).toFixed(1);
+  const flowLmin = data.source_flow_lmin ?? 50.0;
+  const tempK = data.temperature ?? 293.15;
 
   // Live telemetry (post-simulation) — prefer outlet telemetry
   const telemetryOutlet = data.telemetry?.outlets?.[0];
-  const liveFlowLmin = telemetryOutlet?.flow_rate != null
-    ? (Math.abs(telemetryOutlet.flow_rate) * 60_000).toFixed(1)
-    : flowLmin.toFixed(1);
-  const liveTempC = telemetryOutlet?.temperature != null
-    ? (telemetryOutlet.temperature - 273.15).toFixed(1)
-    : tempC;
+  const liveFlowFormatted = telemetryOutlet?.flow_rate != null
+    ? formatFlowM3s(Math.abs(telemetryOutlet.flow_rate))
+    : formatFlow(flowLmin);
+  const liveTempFormatted = telemetryOutlet?.temperature != null
+    ? formatTemperatureK(telemetryOutlet.temperature)
+    : formatTemperatureK(tempK);
 
   return (
     <BaseNode
@@ -37,10 +38,10 @@ export default function FlowSourceNode({ id, data, selected }) {
             {data.label || 'FLOW SOURCE'}
           </div>
           <div style={{ fontSize: '10px', fontWeight: 'bold' }}>
-            {liveFlowLmin} L/min
+            {liveFlowFormatted} {labels.flow}
           </div>
           <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)' }}>
-            {liveTempC} °C
+            {liveTempFormatted} {labels.temperature}
           </div>
         </>
       }
@@ -54,8 +55,7 @@ export default function FlowSourceNode({ id, data, selected }) {
           strokeWidth="2.5"
         />
 
-        {/* Waves — */}
-
+        {/* Waves */}
         <path
           d="M 16 25 Q 21 18 26 25 Q 31 32 36 25 Q 41 18 46 25 Q 51 32 54 25"
           fill="none"
@@ -64,7 +64,6 @@ export default function FlowSourceNode({ id, data, selected }) {
           strokeLinecap="round"
         />
         
-
         <path
           d="M 16 45 Q 21 38 26 45 Q 31 52 36 45 Q 41 38 46 45 Q 51 52 54 45"
           fill="none"
@@ -80,7 +79,6 @@ export default function FlowSourceNode({ id, data, selected }) {
           strokeWidth="2.2"
           strokeLinecap="round"
         />
-
       </svg>
 
       {/* Outlet handle — Right only */}

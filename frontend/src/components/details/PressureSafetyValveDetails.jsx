@@ -1,7 +1,8 @@
 import React, { memo } from 'react';
-import { m3sToLmin } from '../../utils/converters';
+import { useUnits } from '../../context/UnitContext';
 
 const PressureSafetyValveDetails = memo(function PressureSafetyValveDetails({ node, unmitigatedTelemetry }) {
+  const { labels, formatPressure, formatPressurePa, formatFlowM3s } = useUnits();
   const data = node.data || {};
   const telemetry = data.telemetry || {};
 
@@ -20,9 +21,6 @@ const PressureSafetyValveDetails = memo(function PressureSafetyValveDetails({ no
   // Unmitigated telemetry for this node (if available)
   const unmitigatedNodeTel = unmitigatedTelemetry?.nodes?.[node.id];
   const pUnmitigatedIn = unmitigatedNodeTel?.inlets?.[0]?.pressure || pIn;
-  const pUnmitigatedBar = pUnmitigatedIn / 100000;
-
-  const actualFlowLmin = parseFloat(m3sToLmin(Math.abs(currentQ)));
 
   let statusBg = 'var(--color-bg-canvas)';
   let statusColor = 'var(--color-text-secondary)';
@@ -67,7 +65,7 @@ const PressureSafetyValveDetails = memo(function PressureSafetyValveDetails({ no
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ color: 'var(--color-text-secondary)', fontWeight: '500' }}>Cracking Set Pressure:</span>
-          <span style={{ fontWeight: '700', color: 'var(--color-primary)', fontFamily: 'var(--font-mono)' }}>{setPressureBar.toFixed(2)} bar(a)</span>
+          <span style={{ fontWeight: '700', color: 'var(--color-primary)', fontFamily: 'var(--font-mono)' }}>{formatPressure(setPressureBar)} {labels.pressureAbs}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ color: 'var(--color-text-secondary)', fontWeight: '500' }}>Rated Capacity (Cv):</span>
@@ -76,7 +74,7 @@ const PressureSafetyValveDetails = memo(function PressureSafetyValveDetails({ no
         {actionMode === 'pop_action' && (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ color: 'var(--color-text-secondary)', fontWeight: '500' }}>Blowdown Reset:</span>
-            <span style={{ fontWeight: '700', color: 'var(--color-text-primary)', fontFamily: 'var(--font-mono)' }}>{(setPressureBar * (1 - blowdownPct / 100)).toFixed(2)} bar(a) ({blowdownPct}%)</span>
+            <span style={{ fontWeight: '700', color: 'var(--color-text-primary)', fontFamily: 'var(--font-mono)' }}>{formatPressure(setPressureBar * (1 - blowdownPct / 100))} {labels.pressureAbs} ({blowdownPct}%)</span>
           </div>
         )}
       </div>
@@ -90,21 +88,21 @@ const PressureSafetyValveDetails = memo(function PressureSafetyValveDetails({ no
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ color: 'var(--color-text-secondary)', fontWeight: '500' }}>Mitigated Line Pressure:</span>
           <span style={{ fontWeight: '700', color: pInBar >= setPressureBar ? 'var(--color-warning)' : 'var(--color-success)', fontFamily: 'var(--font-mono)' }}>
-            {pInBar.toFixed(2)} bar(a)
+            {formatPressurePa(pIn)} {labels.pressureAbs}
           </span>
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ color: 'var(--color-text-secondary)', fontWeight: '500' }}>Active Relief Flow (Q relief):</span>
-          <span style={{ fontWeight: '700', color: actualFlowLmin > 0 ? 'var(--color-warning)' : 'var(--color-text-secondary)', fontFamily: 'var(--font-mono)' }}>
-            {actualFlowLmin.toFixed(1)} L/min
+          <span style={{ fontWeight: '700', color: Math.abs(currentQ) > 1e-6 ? 'var(--color-warning)' : 'var(--color-text-secondary)', fontFamily: 'var(--font-mono)' }}>
+            {formatFlowM3s(Math.abs(currentQ))} {labels.flow}
           </span>
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FEF2F2', padding: '6px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid #FEE2E2' }}>
           <span style={{ color: 'var(--color-danger)', fontWeight: '600' }}>Unmitigated Peak Pressure:</span>
           <span style={{ fontWeight: '800', color: 'var(--color-danger)', fontFamily: 'var(--font-mono)' }}>
-            {pUnmitigatedBar.toFixed(2)} bar(a)
+            {formatPressurePa(pUnmitigatedIn)} {labels.pressureAbs}
           </span>
         </div>
 

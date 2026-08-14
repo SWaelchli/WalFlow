@@ -1,14 +1,15 @@
 import { Handle, Position } from 'reactflow';
 import { useMemo } from 'react';
-import { paToBar, m3sToLmin } from '../utils/converters';
 import { getRotatedPosition } from '../components/canvas/NodeRotationHandle';
 import { SensingPin } from '../components/canvas/SensingPin';
 import BaseNode from './BaseNode';
+import { useUnits } from '../context/UnitContext';
 
 /**
  * Centrifugal Pump (ISA / PFD style)
  */
 export default function CentrifugalPumpNode({ id, data, selected }) {
+  const { formatPressurePa, formatFlowM3s, labels } = useUnits();
   const rotation = data.rotation || 0;
   const sensing = useMemo(() => data.sensing || {}, [data.sensing]);
   const pIn = data.telemetry?.inlets?.[0]?.pressure || 0;
@@ -29,8 +30,8 @@ export default function CentrifugalPumpNode({ id, data, selected }) {
       footer={
         <>
           <div style={{ fontSize: '9px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>{data.label || 'C-PUMP'}</div>
-          <div style={{ fontSize: '10px', fontWeight: 'bold', color: 'var(--color-brand-dark)' }}>+{paToBar(dP)} bar(d)</div>
-          <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)' }}>{m3sToLmin(q)} L/min</div>
+          <div style={{ fontSize: '10px', fontWeight: 'bold', color: 'var(--color-brand-dark)' }}>+{formatPressurePa(dP)} {labels.pressureDiff}</div>
+          <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)' }}>{formatFlowM3s(q)} {labels.flow}</div>
         </>
       }
     >

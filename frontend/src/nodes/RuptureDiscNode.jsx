@@ -3,21 +3,24 @@ import { useMemo } from 'react';
 import { getRotatedPosition } from '../components/canvas/NodeRotationHandle';
 import { SensingPin } from '../components/canvas/SensingPin';
 import BaseNode from './BaseNode';
+import { useUnits } from '../context/UnitContext';
 
 /**
  * Rupture Disc (Burst Diaphragm) Node
  * Represents an ISA standard rupture disc mechanical pressure relief diaphragm with live burst telemetry.
  */
 export default function RuptureDiscNode({ id, data, selected }) {
+  const { formatFlowM3s, formatPressure, labels } = useUnits();
   const telemetry = data.telemetry;
   const rotation = data.rotation || 0;
   const sensing = useMemo(() => data.sensing || {}, [data.sensing]);
 
   const flow = telemetry?.outlets?.[0]?.flow_rate || 0;
-  const flowLmin = (Math.abs(flow) * 60000).toFixed(1);
+  const flowFormatted = formatFlowM3s(Math.abs(flow));
   
   const status = telemetry?.status || 'intact'; // 'intact', 'burst', 'overcapacity'
   const burstPressureBar = data.burst_pressure_bar || 25.0;
+  const burstPressureFormatted = formatPressure(burstPressureBar);
 
   let statusText = 'INTACT';
   let statusColor = 'var(--color-success)'; // Green
@@ -60,7 +63,7 @@ export default function RuptureDiscNode({ id, data, selected }) {
             {statusText}
           </div>
           <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)', marginTop: '1px' }}>
-            Burst: {burstPressureBar} bar(a) | {flowLmin} L/min
+            Burst: {burstPressureFormatted} {labels.pressureAbs} | {flowFormatted} {labels.flow}
           </div>
         </>
       }

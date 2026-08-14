@@ -2,7 +2,7 @@ import React, { useMemo, memo } from 'react';
 import { 
   ComposedChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Scatter, Legend
 } from 'recharts';
-import { m3sToLmin } from '../../utils/converters';
+import { useUnits } from '../../context/UnitContext';
 
 const CavitationWarning = () => (
   <div style={{
@@ -26,6 +26,7 @@ const CavitationWarning = () => (
 );
 
 const PumpDetails = memo(function PumpDetails({ node }) {
+  const { labels, isImperial, formatPressurePa, formatFlowM3s, formatPower } = useUnits();
   const { type, data } = node;
   const { 
     flow_rated_lmin, pressure_rated_bar, rise_to_shutoff_pct, 
@@ -39,22 +40,25 @@ const PumpDetails = memo(function PumpDetails({ node }) {
   const currentDpPa = currentPout - currentPin;
   const currentDpBar = currentDpPa / 100000;
   
-  const actualFlowLmin = parseFloat(m3sToLmin(Math.abs(currentQ)));
+  const actualFlowLmin = Math.abs(currentQ) * 60000.0;
   const isVolumetric = type === 'volumetric_pump';
   
   const ratedFlow = isVolumetric ? parseFloat(flow_rated || 100) : parseFloat(flow_rated_lmin || 100);
-  const maxX = Math.max(200, ratedFlow * 1.5, actualFlowLmin * 1.2);
+  const maxX_lmin = Math.max(200, ratedFlow * 1.5, actualFlowLmin * 1.2);
 
-  const { chartData, maxY } = useMemo(() => {
+  const { chartData, maxX, maxY, opPoint } = useMemo(() => {
     const dataPoints = [];
     const absQ = Math.abs(currentQ);
     const K = (absQ > 1e-7) ? Math.max(0, currentDpBar) / (absQ ** 2) : 0;
 
     let localMaxY = 0;
-    const steps = 60; // Increased for smoothness
+    const steps = 60;
+
+    const flowMultiplier = isImperial ? 0.264172052 : 1.0;
+    const pressMultiplier = isImperial ? 14.5037738 : 1.0;
 
     for (let i = 0; i <= steps; i++) {
-      const qLmin = (maxX * i) / steps;
+      const qLmin = (maxX_lmin * i) / steps;
       const qM3s = qLmin / 60000;
       
       let pumpBar = 0;
@@ -77,12 +81,25 @@ const PumpDetails = memo(function PumpDetails({ node }) {
 
       const systemBar = K * (qM3s ** 2);
       if (pumpBar > localMaxY) localMaxY = pumpBar;
-      if (systemBar > localMaxY && qLmin <= maxX) localMaxY = systemBar;
+      if (systemBar > localMaxY && qLmin <= maxX_lmin) localMaxY = systemBar;
 
-      dataPoints.push({ q: qLmin, pump: pumpBar, system: systemBar });
+      dataPoints.push({ 
+        q: qLmin * flowMultiplier, 
+        pump: pumpBar * pressMultiplier, 
+        system: systemBar * pressMultiplier 
+      });
     }
-    return { chartData: dataPoints, maxY: localMaxY * 1.1 };
-  }, [isVolumetric, flow_rated_lmin, pressure_rated_bar, rise_to_shutoff_pct, flow_rated, motor_power, efficiency, currentQ, currentDpBar, maxX]);
+
+    const opQ = actualFlowLmin * flowMultiplier;
+    const opP = currentDpBar * pressMultiplier;
+
+    return { 
+      chartData: dataPoints, 
+      maxX: maxX_lmin * flowMultiplier, 
+      maxY: (localMaxY * pressMultiplier) * 1.1,
+      opPoint: [{ q: opQ, p: opP }]
+    };
+  }, [isVolumetric, flow_rated_lmin, pressure_rated_bar, rise_to_shutoff_pct, flow_rated, motor_power, efficiency, currentQ, currentDpBar, maxX_lmin, isImperial, actualFlowLmin]);
 
   const hydraulicPowerKW = (currentDpPa * Math.abs(currentQ)) / 1000;
   const motorLimitKW = isVolumetric ? (motor_power * (efficiency / 100)) : 0;
@@ -100,12 +117,12 @@ const PumpDetails = memo(function PumpDetails({ node }) {
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: -20, bottom: 10 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
-            <XAxis dataKey="q" type="number" domain={[0, maxX]} fontSize={10} tickCount={6} />
-            <YAxis type="number" domain={[0, maxY]} fontSize={10} tickCount={6} />
+            <XAxis dataKey="q" type="number" domain={[0, maxX]} fontSize={10} tickCount={6} unit={` ${labels.flow}`} />
+            <YAxis type="number" domain={[0, maxY]} fontSize={10} tickCount={6} unit={` ${labels.pressureDiff}`} />
             <Legend verticalAlign="top" align="right" height={40} iconType="plainline" wrapperStyle={{ fontSize: '11px' }} />
             <Line dataKey="pump" stroke="var(--color-primary)" strokeWidth={2.5} dot={false} name="Pump Curve" isAnimationActive={false} />
             <Line dataKey="system" stroke="var(--color-success)" strokeWidth={2} dot={false} name="System" isAnimationActive={false} />
-            {telemetry && <Scatter name="Operating Point" dataKey="p" data={[{q: actualFlowLmin, p: currentDpBar}]} fill="var(--color-brand-dark)" isAnimationActive={false} shape="cross" />}
+            {telemetry && <Scatter name="Operating Point" dataKey="p" data={opPoint} fill="var(--color-brand-dark)" isAnimationActive={false} shape="cross" />}
           </ComposedChart>
         </ResponsiveContainer>
       </div>
@@ -113,15 +130,15 @@ const PumpDetails = memo(function PumpDetails({ node }) {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
         <div style={{ background: 'var(--color-surface-hover)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
           <div style={{ fontSize: '10.5px', color: 'var(--color-text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: '2px' }}>Flow</div>
-          <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--color-text-primary)', fontFamily: 'var(--font-mono)' }}>{actualFlowLmin.toFixed(1)} <span style={{ fontSize: '9px', fontWeight: '500' }}>L/min</span></div>
+          <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--color-text-primary)', fontFamily: 'var(--font-mono)' }}>{formatFlowM3s(Math.abs(currentQ))} <span style={{ fontSize: '9px', fontWeight: '500' }}>{labels.flow}</span></div>
         </div>
         <div style={{ background: 'var(--color-surface-hover)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
           <div style={{ fontSize: '10.5px', color: 'var(--color-text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: '2px' }}>Pressure Increase</div>
-          <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--color-primary)', fontFamily: 'var(--font-mono)' }}>{currentDpBar.toFixed(2)} <span style={{ fontSize: '9px', fontWeight: '500' }}>bar(d)</span></div>
+          <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--color-primary)', fontFamily: 'var(--font-mono)' }}>{formatPressurePa(currentDpPa)} <span style={{ fontSize: '9px', fontWeight: '500' }}>{labels.pressureDiff}</span></div>
         </div>
         <div style={{ background: 'var(--color-surface-hover)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
           <div style={{ fontSize: '10.5px', color: 'var(--color-text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: '2px' }}>Hydraulic Power</div>
-          <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--color-text-primary)', fontFamily: 'var(--font-mono)' }}>{Math.max(0, hydraulicPowerKW).toFixed(2)} <span style={{ fontSize: '9px', fontWeight: '500' }}>kW</span></div>
+          <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--color-text-primary)', fontFamily: 'var(--font-mono)' }}>{formatPower(Math.max(0, hydraulicPowerKW))} <span style={{ fontSize: '9px', fontWeight: '500' }}>{labels.power}</span></div>
         </div>
         <div style={{ background: 'var(--color-surface-hover)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
           <div style={{ fontSize: '10.5px', color: 'var(--color-text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: '2px' }}>Load Factor</div>

@@ -3,17 +3,19 @@ import { useMemo } from 'react';
 import { getRotatedPosition } from '../components/canvas/NodeRotationHandle';
 import { SensingPin } from '../components/canvas/SensingPin';
 import BaseNode from './BaseNode';
+import { useUnits } from '../context/UnitContext';
 
 /**
  * Linear Control Valve (ISA / PFD style)
  */
 export default function LinearControlValveNode({ id, data, selected }) {
+  const { formatFlowM3s, labels } = useUnits();
   const telemetry = data.telemetry;
   const rotation = data.rotation || 0;
   const sensing = useMemo(() => data.sensing || {}, [data.sensing]);
   const opening = data.opening ?? 50;
   const flow = telemetry?.outlets?.[0]?.flow_rate || 0;
-  const flowLmin = (flow * 60000).toFixed(1);
+  const flowFormatted = formatFlowM3s(flow);
 
   return (
     <BaseNode
@@ -39,7 +41,7 @@ export default function LinearControlValveNode({ id, data, selected }) {
           </div>
           <div style={{ fontSize: '9px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>{data.label || 'LIN VALVE'}</div>
           <div style={{ fontSize: '10px', fontWeight: 'bold', color: 'var(--color-brand-dark)' }}>{opening.toFixed(1)} %</div>
-          <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)' }}>{flowLmin} L/min</div>
+          <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)' }}>{flowFormatted} {labels.flow}</div>
         </>
       }
     >

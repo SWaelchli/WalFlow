@@ -3,21 +3,24 @@ import { useMemo } from 'react';
 import { getRotatedPosition } from '../components/canvas/NodeRotationHandle';
 import { SensingPin } from '../components/canvas/SensingPin';
 import BaseNode from './BaseNode';
+import { useUnits } from '../context/UnitContext';
 
 /**
  * Pressure Safety Relief Valve (PSV / PRV) Node
  * Represents an ISA standard 90-degree angle relief valve with live relief badging.
  */
 export default function PressureSafetyValveNode({ id, data, selected }) {
+  const { formatFlowM3s, formatPressure, labels } = useUnits();
   const telemetry = data.telemetry;
   const rotation = data.rotation || 0;
   const sensing = useMemo(() => data.sensing || {}, [data.sensing]);
 
   const flow = telemetry?.outlets?.[0]?.flow_rate || 0;
-  const flowLmin = (Math.abs(flow) * 60000).toFixed(1);
+  const flowFormatted = formatFlowM3s(Math.abs(flow));
   
   const status = telemetry?.status || 'closed'; // 'closed', 'cracked', 'overcapacity'
   const setPressureBar = data.set_pressure_bar || 20.0;
+  const setPressureFormatted = formatPressure(setPressureBar);
 
   let statusText = 'CLOSED';
   let statusColor = 'var(--color-text-secondary)'; // Muted Slate
@@ -60,7 +63,7 @@ export default function PressureSafetyValveNode({ id, data, selected }) {
             {statusText}
           </div>
           <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)', marginTop: '1px' }}>
-            Set: {setPressureBar} bar(a) | {flowLmin} L/min
+            Set: {setPressureFormatted} {labels.pressureAbs} | {flowFormatted} {labels.flow}
           </div>
         </>
       }

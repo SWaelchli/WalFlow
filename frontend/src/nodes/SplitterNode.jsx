@@ -1,15 +1,17 @@
 import { Handle, Position } from 'reactflow';
 import { getRotatedPosition } from '../components/canvas/NodeRotationHandle';
 import BaseNode from './BaseNode';
+import { useUnits } from '../context/UnitContext';
 
 /**
  * Splitter (ISA / PFD style)
  */
 export default function SplitterNode({ id, data, selected }) {
+  const { formatFlowM3s, labels } = useUnits();
   const telemetry = data.telemetry;
   const rotation = data.rotation || 0;
   const flow = telemetry?.inlets?.[0]?.flow_rate || 0;
-  const qLmin = (flow * 60000).toFixed(1);
+  const flowFormatted = formatFlowM3s(flow);
 
   return (
     <BaseNode
@@ -21,7 +23,7 @@ export default function SplitterNode({ id, data, selected }) {
       footer={
         <>
           <div style={{ fontSize: '9px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>{data.label || 'SPLITTER'}</div>
-          <div style={{ fontSize: '10px', fontWeight: 'bold', color: 'var(--color-brand-dark)' }}>{qLmin} L/min</div>
+          <div style={{ fontSize: '10px', fontWeight: 'bold', color: 'var(--color-brand-dark)' }}>{flowFormatted} {labels.flow}</div>
         </>
       }
     >

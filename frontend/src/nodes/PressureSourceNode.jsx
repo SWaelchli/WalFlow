@@ -3,26 +3,27 @@ import { useMemo } from 'react';
 import { getRotatedPosition } from '../components/canvas/NodeRotationHandle';
 import { SensingPin } from '../components/canvas/SensingPin';
 import BaseNode from './BaseNode';
+import { useUnits } from '../context/UnitContext';
 
 /**
  * PressureSource Node — Constant Pressure Boundary (bubble with inner solid circle).
  */
 export default function PressureSourceNode({ id, data, selected }) {
+  const { formatPressure, formatPressurePa, formatTemperatureK, labels } = useUnits();
   const rotation = data.rotation || 0;
   const sensing = useMemo(() => data.sensing || {}, [data.sensing]);
 
-  const pressureBara  = data.source_pressure_bara ?? 6.0;
-  const tempK          = data.temperature ?? 293.15;
-  const tempC          = (tempK - 273.15).toFixed(1);
+  const pressureBara = data.source_pressure_bara ?? 6.0;
+  const tempK = data.temperature ?? 293.15;
 
   // Live telemetry (post-simulation) — prefer outlet telemetry
   const telemetryOutlet = data.telemetry?.outlets?.[0];
-  const livePressureBara = telemetryOutlet?.pressure != null
-    ? (telemetryOutlet.pressure / 100_000).toFixed(2)
-    : pressureBara.toFixed(2);
-  const liveTempC = telemetryOutlet?.temperature != null
-    ? (telemetryOutlet.temperature - 273.15).toFixed(1)
-    : tempC;
+  const livePressureFormatted = telemetryOutlet?.pressure != null
+    ? formatPressurePa(telemetryOutlet.pressure)
+    : formatPressure(pressureBara);
+  const liveTempFormatted = telemetryOutlet?.temperature != null
+    ? formatTemperatureK(telemetryOutlet.temperature)
+    : formatTemperatureK(tempK);
 
   return (
     <BaseNode
@@ -37,10 +38,10 @@ export default function PressureSourceNode({ id, data, selected }) {
             {data.label || 'PRESSURE SOURCE'}
           </div>
           <div style={{ fontSize: '10px', fontWeight: 'bold' }}>
-            {livePressureBara} bara
+            {livePressureFormatted} {labels.pressureAbs}
           </div>
           <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)' }}>
-            {liveTempC} °C
+            {liveTempFormatted} {labels.temperature}
           </div>
         </>
       }

@@ -1,5 +1,6 @@
 import React from 'react';
 import { CrossIcon } from '../symbols/IconLibrary';
+import { useUnits } from '../../context/UnitContext';
 
 export default function HeatmapLegend({ 
   heatmapMode, 
@@ -14,6 +15,8 @@ export default function HeatmapLegend({
   onResetCustomRange,
   style = {}
 }) {
+  const { labels, isImperial } = useUnits();
+
   if (!heatmapMode || heatmapMode === 'default') return null;
 
   const BLUE_TO_RED_GRADIENT = 'linear-gradient(to right, hsl(210, 90%, 46%), hsl(140, 85%, 48%), hsl(45, 90%, 50%), hsl(0, 90%, 46%))';
@@ -21,22 +24,22 @@ export default function HeatmapLegend({
   const modeConfigs = {
     pressure: {
       title: 'Pressure Heatmap',
-      unit: 'bar(a)',
+      unit: labels.pressureAbs,
       gradient: BLUE_TO_RED_GRADIENT
     },
     temperature: {
       title: 'Temperature Heatmap',
-      unit: '°C',
+      unit: labels.temperature,
       gradient: BLUE_TO_RED_GRADIENT
     },
     volumeflow: {
       title: 'Volume Flow Heatmap',
-      unit: 'l/min',
+      unit: labels.flow,
       gradient: BLUE_TO_RED_GRADIENT
     },
     velocity: {
       title: 'Velocity Heatmap',
-      unit: 'm/s',
+      unit: labels.velocity,
       gradient: BLUE_TO_RED_GRADIENT
     }
   };
@@ -44,8 +47,25 @@ export default function HeatmapLegend({
   const config = modeConfigs[heatmapMode];
   if (!config) return null;
 
-  const minDisplay = (activeRange?.min ?? 0).toFixed(1);
-  const maxDisplay = (activeRange?.max ?? 10).toFixed(1);
+  const formatVal = (v) => {
+    if (v === null || v === undefined || isNaN(v)) return '0.0';
+    if (heatmapMode === 'pressure') {
+      return isImperial ? (v * 14.5037738).toFixed(1) : v.toFixed(1);
+    }
+    if (heatmapMode === 'temperature') {
+      return isImperial ? (v * 1.8 + 32).toFixed(1) : v.toFixed(1);
+    }
+    if (heatmapMode === 'volumeflow') {
+      return isImperial ? (v * 0.264172052).toFixed(1) : v.toFixed(1);
+    }
+    if (heatmapMode === 'velocity') {
+      return isImperial ? (v * 3.280839895).toFixed(2) : v.toFixed(2);
+    }
+    return v.toFixed(1);
+  };
+
+  const minDisplay = formatVal(activeRange?.min ?? 0);
+  const maxDisplay = formatVal(activeRange?.max ?? 10);
 
   return (
     <div style={{

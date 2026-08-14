@@ -1,20 +1,22 @@
 import { Handle, Position } from 'reactflow';
 import { useMemo } from 'react';
-import { paToBar } from '../utils/converters';
 import { getRotatedPosition } from '../components/canvas/NodeRotationHandle';
 import { SensingPin } from '../components/canvas/SensingPin';
 import BaseNode from './BaseNode';
+import { useUnits } from '../context/UnitContext';
 
 /**
  * Calibrated Restriction Node (Orifice, Laminar, or Quadratic)
  */
 export default function CalibratedRestrictionNode({ id, data, selected }) {
+  const { formatPressurePa, labels } = useUnits();
   const telemetry = data.telemetry;
   const rotation = data.rotation || 0;
   const sensing = useMemo(() => data.sensing || {}, [data.sensing]);
   const pIn = telemetry?.inlets?.[0]?.pressure || 0;
   const pOut = telemetry?.outlets?.[0]?.pressure || 0;
   const dP = pIn - pOut;
+  const dPFormatted = formatPressurePa(dP);
 
   // Pretty model badge name
   const modelLabels = {
@@ -40,7 +42,7 @@ export default function CalibratedRestrictionNode({ id, data, selected }) {
             {modelName}
           </div>
           <div style={{ fontSize: '10px', fontWeight: 'bold', color: 'var(--color-danger)', marginTop: '2px' }}>
-            -{paToBar(dP)} bar(d)
+            -{dPFormatted} {labels.pressureDiff}
           </div>
         </>
       }

@@ -3,20 +3,24 @@ import { useMemo } from 'react';
 import { getRotatedPosition } from '../components/canvas/NodeRotationHandle';
 import { SensingPin } from '../components/canvas/SensingPin';
 import BaseNode from './BaseNode';
+import { useUnits } from '../context/UnitContext';
 
 /**
  * 3-Way Temperature Control Valve (ISA PFD Style)
  * Standardized to match the look and feel of other equipment nodes.
  */
 export default function ThreeWayTCVNode({ id, data, selected }) {
+  const { formatFlowM3s, formatTemperature, formatTemperatureK, labels } = useUnits();
   const telemetry = data.telemetry;
   const rotation = data.rotation || 0;
   const sensing = useMemo(() => data.sensing || {}, [data.sensing]);
   const hotIdx = data.hot_port_idx || 0;
   
   const qOut = telemetry?.outlets?.[0]?.flow_rate || 0;
-  const qLmin = (qOut * 60000).toFixed(1);
-  const tOut = telemetry?.outlets?.[0]?.temperature ? (telemetry.outlets[0].temperature - 273.15).toFixed(1) : '20.0';
+  const flowFormatted = formatFlowM3s(qOut);
+  const tOutFormatted = telemetry?.outlets?.[0]?.temperature 
+    ? formatTemperatureK(telemetry.outlets[0].temperature) 
+    : formatTemperature(20.0);
 
   return (
     <BaseNode
@@ -28,8 +32,8 @@ export default function ThreeWayTCVNode({ id, data, selected }) {
       footer={
         <>
           <div style={{ fontSize: '9px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>{data.label || '3-WAY TCV'}</div>
-          <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)' }}>{qLmin} L/min</div>
-          <div style={{ fontSize: '9px', color: 'var(--color-danger)', fontWeight: 'bold' }}>{tOut} °C</div>
+          <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)' }}>{flowFormatted} {labels.flow}</div>
+          <div style={{ fontSize: '9px', color: 'var(--color-danger)', fontWeight: 'bold' }}>{tOutFormatted} {labels.temperature}</div>
         </>
       }
     >

@@ -4,7 +4,7 @@ import { ASME_PIPE_STANDARDS, calculatePipeId, findClosestPipeMatch } from '../.
 import { isCaseVariableProperty } from '../../constants/case_constants';
 import { isPropertyOverridden, getEffectiveNodeData } from '../../utils/case_resolver';
 import { GlobeIcon, BoltIcon } from '../symbols/IconLibrary';
-import { FLUID_CATEGORIES, FLUID_LIBRARY } from '../../constants/fluid_library';
+import { useUnits } from '../../context/UnitContext';
 
 function PropertyBadge({ propKey, nodeId, cases = [], activeCaseId = 'case_base', onResetOverride }) {
   const isCaseVar = isCaseVariableProperty(propKey);
@@ -50,6 +50,7 @@ function PropertyBadge({ propKey, nodeId, cases = [], activeCaseId = 'case_base'
  * PipeSelector component.
  */
 const PipeSelector = ({ data, onChange }) => {
+  const { isImperial } = useUnits();
   const value = data.diameter || 0.1;
   
   const match = useMemo(() => findClosestPipeMatch(value), [value]);
@@ -83,14 +84,16 @@ const PipeSelector = ({ data, onChange }) => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
       <div style={{ display: 'flex', gap: '4px' }}>
         <div style={{ flex: 1 }}>
-          <label style={{ fontSize: '10px', color: '#64748b' }}>DN (mm)</label>
+          <label style={{ fontSize: '10px', color: '#64748b' }}>DN ({isImperial ? 'in' : 'mm'})</label>
           <select 
             className="form-select" style={{ width: '100%' }}
             value={currentDn}
             onChange={(e) => handleDnChange(e.target.value)}
           >
             {ASME_PIPE_STANDARDS.map(p => (
-              <option key={p.dn} value={p.dn}>DN {p.dn} ({p.nps}")</option>
+              <option key={p.dn} value={p.dn}>
+                {isImperial ? `${p.nps}" (DN ${p.dn})` : `DN ${p.dn} (${p.nps}")`}
+              </option>
             ))}
           </select>
         </div>
@@ -108,7 +111,7 @@ const PipeSelector = ({ data, onChange }) => {
         </div>
       </div>
       <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>
-        ID: {(value * 1000).toFixed(2)} mm
+        ID: {isImperial ? `${(value * 39.37007874).toFixed(3)} in` : `${(value * 1000).toFixed(2)} mm`}
       </div>
     </div>
   );
@@ -128,6 +131,7 @@ export default function SetupPanel({
   style = {},
   inline = false
 }) {
+  const { isImperial, fromInputValue } = useUnits();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [localDrafts, setLocalDrafts] = useState({});
 
@@ -159,22 +163,21 @@ export default function SetupPanel({
     </div>
   );
 
-
   const validateAndCommit = (field, rawValue, isCritical = false) => {
     let finalValue = rawValue;
 
     // Handle empty string
-    if (finalValue === '') {
+    if (finalValue === '' || finalValue === undefined || finalValue === null) {
       if (isCritical) {
         alert(`${field} cannot be empty or zero. Reverting to previous value.`);
-        // Reset local draft to original data
         setLocalDrafts({}); 
         return;
       }
-      finalValue = "0";
+      finalValue = 0;
     }
 
-    const numericValue = parseFloat(finalValue);
+    const convertedVal = fromInputValue(field, finalValue);
+    const numericValue = typeof convertedVal === 'number' ? convertedVal : parseFloat(convertedVal);
 
     // Critical validation
     if (isCritical) {
@@ -191,7 +194,7 @@ export default function SetupPanel({
       }
     }
 
-    const processedValue = isNaN(numericValue) ? finalValue : numericValue;
+    const processedValue = isNaN(numericValue) ? convertedVal : numericValue;
 
     if (isNode) {
       onUpdate(id, { [field]: processedValue });
@@ -238,34 +241,38 @@ export default function SetupPanel({
         width: '280px', background: '#ffffff', padding: isCollapsed ? '12px 18px' : '20px',
         borderRadius: '12px', border: '1px solid #D8E2E1',
         boxShadow: '0 10px 25px -3px rgba(57, 82, 83, 0.15), 0 4px 6px -2px rgba(57, 82, 83, 0.05)',
-        transition: 'top 0.25s cubic-bezier(0.4, 0, 0.2, 1), padding 0.2s ease, box-shadow 0.2s ease',
-        ...style,
-        maxHeight: isCollapsed ? 'auto' : (style.maxHeight || 'calc(100vh - 120px)'),
-        overflowY: isCollapsed ? 'visible' : (style.overflowY || 'auto')
+        boxSizing: 'border-box',
+        transition: 'padding 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+        ...style
       }}
     >
       {!inline && (
-        <div 
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center', 
-            marginBottom: isCollapsed ? '0' : '14px',
-            cursor: 'pointer',
-            userSelect: 'none',
-            borderBottom: isCollapsed ? 'none' : '1px solid #EBF0EF',
-            paddingBottom: isCollapsed ? '0' : '10px'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '11px', color: '#587071', transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▼</span>
-            <h3 style={{ margin: 0, fontSize: '13px', fontWeight: '700', color: 'var(--color-brand-dark)', letterSpacing: '0.01em' }}>
-              {isNode ? `Equipment: ${type.toUpperCase()}` : `Connection: ${data.type || 'PIPE'}`}
-            </h3>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          marginBottom: isCollapsed ? '0px' : '16px',
+          borderBottom: isCollapsed ? 'none' : '1px solid #EBF0EF',
+          paddingBottom: isCollapsed ? '0px' : '12px'
+        }}>
+          <div 
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+            onClick={() => setIsCollapsed(!isCollapsed)}
+          >
+            <span style={{ fontSize: '10px', color: '#94a3b8', transform: isCollapsed ? 'rotate(-90deg)' : 'none', transition: 'transform 0.2s' }}>▼</span>
+            <span style={{ 
+              fontWeight: '700', 
+              fontSize: '13px', 
+              color: '#1C2B2C', 
+              letterSpacing: '-0.01em',
+              textTransform: 'capitalize'
+            }}>
+              {type?.replace(/_/g, ' ') || 'Connection'}
+            </span>
           </div>
+
           <button 
-            onClick={(e) => { e.stopPropagation(); handleDelete(); }} 
+            onClick={handleDelete}
             style={{ 
               background: 'rgba(239, 68, 68, 0.1)', 
               color: '#ef4444', 
@@ -324,11 +331,11 @@ export default function SetupPanel({
           {!isNode && data.type !== 'SIGNAL' && (
             <>
               <div>
-                {renderLabel('Pipe Length (m)', 'length')}
+                {renderLabel(`Pipe Length (${isImperial ? 'ft' : 'm'})`, 'length')}
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
-                  value={localDrafts.length !== undefined ? localDrafts.length : (data.length || 25.0)} 
+                  value={localDrafts.length !== undefined ? localDrafts.length : (isImperial ? (Number(data.length || 25.0) * 3.280839895).toFixed(2) : (data.length || 25.0))} 
                   onChange={(e) => handleDraftChange('length', e.target.value)}
                   onBlur={(e) => validateAndCommit('length', e.target.value, true)}
                 />
@@ -343,34 +350,34 @@ export default function SetupPanel({
           {isNode && type === 'tank' && (
             <>
               <div>
-                {renderLabel('Fluid Level (m)', 'level')}
+                {renderLabel(`Fluid Level (${isImperial ? 'ft' : 'm'})`, 'level')}
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
-                  value={localDrafts.level !== undefined ? localDrafts.level : (effectiveData.level || 0)} 
+                  value={localDrafts.level !== undefined ? localDrafts.level : (isImperial ? (Number(effectiveData.level || 0) * 3.280839895).toFixed(2) : (effectiveData.level || 0))} 
                   onChange={(e) => handleDraftChange('level', e.target.value)}
                   onBlur={(e) => validateAndCommit('level', e.target.value)}
                 />
               </div>
               <div>
-                {renderLabel('Elevation (m)', 'elevation')}
+                {renderLabel(`Elevation (${isImperial ? 'ft' : 'm'})`, 'elevation')}
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
-                  value={localDrafts.elevation !== undefined ? localDrafts.elevation : (effectiveData.elevation || 0)} 
+                  value={localDrafts.elevation !== undefined ? localDrafts.elevation : (isImperial ? (Number(effectiveData.elevation || 0) * 3.280839895).toFixed(2) : (effectiveData.elevation || 0))} 
                   onChange={(e) => handleDraftChange('elevation', e.target.value)}
                   onBlur={(e) => validateAndCommit('elevation', e.target.value)}
                 />
               </div>
               <div>
-                {renderLabel('Temp (°C)', 'temperature')}
+                {renderLabel(`Temp (${isImperial ? '°F' : '°C'})`, 'temperature')}
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
                   step="0.1" 
-                  value={localDrafts.temperature !== undefined ? localDrafts.temperature : (effectiveData.temperature - 273.15).toFixed(1)} 
+                  value={localDrafts.temperature !== undefined ? localDrafts.temperature : (isImperial ? (((Number(effectiveData.temperature ?? 293.15)) - 273.15) * 1.8 + 32).toFixed(1) : ((Number(effectiveData.temperature ?? 293.15)) - 273.15).toFixed(1))} 
                   onChange={(e) => handleDraftChange('temperature', e.target.value)}
-                  onBlur={(e) => validateAndCommit('temperature', parseFloat(e.target.value) + 273.15)}
+                  onBlur={(e) => validateAndCommit('temperature', e.target.value)}
                 />
               </div>
             </>
@@ -393,22 +400,22 @@ export default function SetupPanel({
                 </select>
               </div>
               <div>
-                {renderLabel('Rated Flow (L/min)', 'flow_rated_lmin')}
+                {renderLabel(`Rated Flow (${isImperial ? 'GPM' : 'L/min'})`, 'flow_rated_lmin')}
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
-                  value={localDrafts.flow_rated_lmin !== undefined ? localDrafts.flow_rated_lmin : (effectiveData.flow_rated_lmin || 100)} 
+                  value={localDrafts.flow_rated_lmin !== undefined ? localDrafts.flow_rated_lmin : (isImperial ? (Number(effectiveData.flow_rated_lmin || 100) * 0.264172052).toFixed(1) : (effectiveData.flow_rated_lmin || 100))} 
                   onChange={(e) => handleDraftChange('flow_rated_lmin', e.target.value)}
                   onBlur={(e) => validateAndCommit('flow_rated_lmin', e.target.value, true)}
                 />
               </div>
               <div>
-                {renderLabel('Rated Pressure (bar(d))', 'pressure_rated_bar')}
+                {renderLabel(`Rated Pressure (${isImperial ? 'psi(d)' : 'bar(d)'})`, 'pressure_rated_bar')}
                 <input 
                   type="number" 
                   step="0.1"
                   className="form-input" style={{ width: '100%' }} 
-                  value={localDrafts.pressure_rated_bar !== undefined ? localDrafts.pressure_rated_bar : (effectiveData.pressure_rated_bar || 5.0)} 
+                  value={localDrafts.pressure_rated_bar !== undefined ? localDrafts.pressure_rated_bar : (isImperial ? (Number(effectiveData.pressure_rated_bar || 5.0) * 14.5037738).toFixed(1) : (effectiveData.pressure_rated_bar || 5.0))} 
                   onChange={(e) => handleDraftChange('pressure_rated_bar', e.target.value)}
                   onBlur={(e) => validateAndCommit('pressure_rated_bar', e.target.value, true)}
                 />
@@ -443,21 +450,22 @@ export default function SetupPanel({
                 </select>
               </div>
               <div>
-                {renderLabel('Rated Flow (L/min)', 'flow_rated')}
+                {renderLabel(`Rated Flow (${isImperial ? 'GPM' : 'L/min'})`, 'flow_rated')}
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
-                  value={localDrafts.flow_rated !== undefined ? localDrafts.flow_rated : (effectiveData.flow_rated || 0)} 
+                  value={localDrafts.flow_rated !== undefined ? localDrafts.flow_rated : (isImperial ? (Number(effectiveData.flow_rated || 0) * 0.264172052).toFixed(1) : (effectiveData.flow_rated || 0))} 
                   onChange={(e) => handleDraftChange('flow_rated', e.target.value)}
                   onBlur={(e) => validateAndCommit('flow_rated', e.target.value, true)}
                 />
               </div>
               <div>
-                {renderLabel('Motor Power (kW)', 'motor_power')}
+                {renderLabel(`Motor Power (${isImperial ? 'HP' : 'kW'})`, 'motor_power')}
                 <input 
                   type="number" 
+                  step="0.1"
                   className="form-input" style={{ width: '100%' }} 
-                  value={localDrafts.motor_power !== undefined ? localDrafts.motor_power : (effectiveData.motor_power || 0)} 
+                  value={localDrafts.motor_power !== undefined ? localDrafts.motor_power : (isImperial ? (Number(effectiveData.motor_power || 0) * 1.34102209).toFixed(2) : (effectiveData.motor_power || 0))} 
                   onChange={(e) => handleDraftChange('motor_power', e.target.value)}
                   onBlur={(e) => validateAndCommit('motor_power', e.target.value, true)}
                 />
@@ -469,7 +477,7 @@ export default function SetupPanel({
                   className="form-input" style={{ width: '100%' }} 
                   value={localDrafts.efficiency !== undefined ? localDrafts.efficiency : (effectiveData.efficiency || 0)} 
                   onChange={(e) => handleDraftChange('efficiency', e.target.value)}
-                  onBlur={(e) => validateAndCommit('efficiency', e.target.value, true)}
+                  onBlur={(e) => validateAndCommit('efficiency', e.target.value)}
                 />
               </div>
             </>
@@ -478,30 +486,30 @@ export default function SetupPanel({
           {isNode && type === 'pressure_source' && (
             <>
               <div>
-                {renderLabel('Set Pressure (bara)', 'source_pressure_bara')}
+                {renderLabel(`Set Pressure (${isImperial ? 'psi(a)' : 'bar(a)'})`, 'source_pressure_bara')}
                 <input
                   type="number"
                   className="form-input" style={{ width: '100%' }}
                   step="0.1"
                   value={localDrafts.source_pressure_bara !== undefined
                     ? localDrafts.source_pressure_bara
-                    : (effectiveData.source_pressure_bara ?? 6.0)}
+                    : (isImperial ? (Number(effectiveData.source_pressure_bara ?? 6.0) * 14.5037738).toFixed(1) : (effectiveData.source_pressure_bara ?? 6.0))}
                   onChange={(e) => handleDraftChange('source_pressure_bara', e.target.value)}
                   onBlur={(e) => validateAndCommit('source_pressure_bara', e.target.value, true)}
                 />
               </div>
 
               <div>
-                {renderLabel('Injected Temp (°C)', 'temperature')}
+                {renderLabel(`Injected Temp (${isImperial ? '°F' : '°C'})`, 'temperature')}
                 <input
                   type="number"
                   className="form-input" style={{ width: '100%' }}
                   step="0.1"
                   value={localDrafts.temperature !== undefined
                     ? localDrafts.temperature
-                    : ((effectiveData.temperature ?? 293.15) - 273.15).toFixed(1)}
+                    : (isImperial ? (((Number(effectiveData.temperature ?? 293.15)) - 273.15) * 1.8 + 32).toFixed(1) : ((Number(effectiveData.temperature ?? 293.15)) - 273.15).toFixed(1))}
                   onChange={(e) => handleDraftChange('temperature', e.target.value)}
-                  onBlur={(e) => validateAndCommit('temperature', parseFloat(e.target.value) + 273.15)}
+                  onBlur={(e) => validateAndCommit('temperature', e.target.value)}
                 />
               </div>
             </>
@@ -510,30 +518,30 @@ export default function SetupPanel({
           {isNode && type === 'flow_source' && (
             <>
               <div>
-                {renderLabel('Set Flow (L/min)', 'source_flow_lmin')}
+                {renderLabel(`Set Flow (${isImperial ? 'GPM' : 'L/min'})`, 'source_flow_lmin')}
                 <input
                   type="number"
                   className="form-input" style={{ width: '100%' }}
-                  step="1"
+                  step={isImperial ? "0.1" : "1"}
                   value={localDrafts.source_flow_lmin !== undefined
                     ? localDrafts.source_flow_lmin
-                    : (effectiveData.source_flow_lmin ?? 50.0)}
+                    : (isImperial ? (Number(effectiveData.source_flow_lmin ?? 50.0) * 0.264172052).toFixed(1) : (effectiveData.source_flow_lmin ?? 50.0))}
                   onChange={(e) => handleDraftChange('source_flow_lmin', e.target.value)}
                   onBlur={(e) => validateAndCommit('source_flow_lmin', e.target.value, true)}
                 />
               </div>
 
               <div>
-                {renderLabel('Injected Temp (°C)', 'temperature')}
+                {renderLabel(`Injected Temp (${isImperial ? '°F' : '°C'})`, 'temperature')}
                 <input
                   type="number"
                   className="form-input" style={{ width: '100%' }}
                   step="0.1"
                   value={localDrafts.temperature !== undefined
                     ? localDrafts.temperature
-                    : ((effectiveData.temperature ?? 293.15) - 273.15).toFixed(1)}
+                    : (isImperial ? (((Number(effectiveData.temperature ?? 293.15)) - 273.15) * 1.8 + 32).toFixed(1) : ((Number(effectiveData.temperature ?? 293.15)) - 273.15).toFixed(1))}
                   onChange={(e) => handleDraftChange('temperature', e.target.value)}
-                  onBlur={(e) => validateAndCommit('temperature', parseFloat(e.target.value) + 273.15)}
+                  onBlur={(e) => validateAndCommit('temperature', e.target.value)}
                 />
               </div>
             </>
@@ -566,14 +574,19 @@ export default function SetupPanel({
                 </select>
               </div>
               <div>
-                {renderLabel('Set Point (bar(a))', 'set_pressure')}
+                {renderLabel(`Set Point (${isImperial ? 'psi(a)' : 'bar(a)'})`, 'set_pressure')}
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
                   step="0.1" 
-                  value={localDrafts.set_pressure !== undefined ? localDrafts.set_pressure : (effectiveData.set_pressure / 100000).toFixed(1)} 
+                  value={localDrafts.set_pressure !== undefined ? localDrafts.set_pressure : (isImperial ? ((Number(effectiveData.set_pressure || 100000) / 100000) * 14.5037738).toFixed(1) : (Number(effectiveData.set_pressure || 100000) / 100000).toFixed(1))} 
                   onChange={(e) => handleDraftChange('set_pressure', e.target.value)}
-                  onBlur={(e) => validateAndCommit('set_pressure', parseFloat(e.target.value) * 100000)}
+                  onBlur={(e) => {
+                    const rawVal = parseFloat(e.target.value);
+                    if (isNaN(rawVal)) return;
+                    const pa = isImperial ? rawVal * 6894.757293 : rawVal * 100000;
+                    validateAndCommit('set_pressure', pa);
+                  }}
                 />
               </div>
             </>
@@ -592,12 +605,12 @@ export default function SetupPanel({
                 />
               </div>
               <div>
-                {renderLabel('Set Temperature (°C)', 'set_temperature_c')}
+                {renderLabel(`Set Temperature (${isImperial ? '°F' : '°C'})`, 'set_temperature_c')}
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
                   step="0.1" 
-                  value={localDrafts.set_temperature_c !== undefined ? localDrafts.set_temperature_c : (effectiveData.set_temperature_c || 40.0)} 
+                  value={localDrafts.set_temperature_c !== undefined ? localDrafts.set_temperature_c : (isImperial ? (Number(effectiveData.set_temperature_c || 40.0) * 1.8 + 32).toFixed(1) : (effectiveData.set_temperature_c || 40.0))} 
                   onChange={(e) => handleDraftChange('set_temperature_c', e.target.value)}
                   onBlur={(e) => validateAndCommit('set_temperature_c', e.target.value)}
                 />
@@ -649,11 +662,11 @@ export default function SetupPanel({
           {isNode && (type === 'pressure_safety_valve' || type === 'psv') && (
             <>
               <div>
-                {renderLabel('Cracking Set Pressure (bar(a))', 'set_pressure_bar')}
+                {renderLabel(`Cracking Set Pressure (${isImperial ? 'psi(a)' : 'bar(a)'})`, 'set_pressure_bar')}
                 <input 
                   type="number" step="0.1" min="0.01"
                   className="form-input" style={{ width: '100%' }} 
-                  value={localDrafts.set_pressure_bar !== undefined ? localDrafts.set_pressure_bar : (effectiveData.set_pressure_bar ?? 20.0)} 
+                  value={localDrafts.set_pressure_bar !== undefined ? localDrafts.set_pressure_bar : (isImperial ? (Number(effectiveData.set_pressure_bar ?? 20.0) * 14.5037738).toFixed(1) : (effectiveData.set_pressure_bar ?? 20.0))} 
                   onChange={(e) => handleDraftChange('set_pressure_bar', e.target.value)}
                   onBlur={(e) => validateAndCommit('set_pressure_bar', e.target.value, true)}
                 />
@@ -709,11 +722,11 @@ export default function SetupPanel({
           {isNode && type === 'rupture_disc' && (
             <>
               <div>
-                {renderLabel('Burst Pressure (bar(a))', 'burst_pressure_bar')}
+                {renderLabel(`Burst Pressure (${isImperial ? 'psi(a)' : 'bar(a)'})`, 'burst_pressure_bar')}
                 <input 
                   type="number" step="0.1" min="0.01"
                   className="form-input" style={{ width: '100%' }} 
-                  value={localDrafts.burst_pressure_bar !== undefined ? localDrafts.burst_pressure_bar : (effectiveData.burst_pressure_bar ?? 25.0)} 
+                  value={localDrafts.burst_pressure_bar !== undefined ? localDrafts.burst_pressure_bar : (isImperial ? (Number(effectiveData.burst_pressure_bar ?? 25.0) * 14.5037738).toFixed(1) : (effectiveData.burst_pressure_bar ?? 25.0))} 
                   onChange={(e) => handleDraftChange('burst_pressure_bar', e.target.value)}
                   onBlur={(e) => validateAndCommit('burst_pressure_bar', e.target.value, true)}
                 />
@@ -731,13 +744,18 @@ export default function SetupPanel({
               </div>
               {effectiveData.bore_type === 'reduced_bore' ? (
                 <div>
-                  {renderLabel('Orifice Restriction Diameter (mm)', 'orifice_diameter')}
+                  {renderLabel(`Orifice Restriction Diameter (${isImperial ? 'in' : 'mm'})`, 'orifice_diameter')}
                   <input 
                     type="number" 
                     className="form-input" style={{ width: '100%' }} 
-                    value={localDrafts.orifice_diameter !== undefined ? localDrafts.orifice_diameter : mToMm(effectiveData.orifice_diameter || 0.01)} 
+                    value={localDrafts.orifice_diameter !== undefined ? localDrafts.orifice_diameter : (isImperial ? (Number(effectiveData.orifice_diameter || 0.01) * 39.37007874).toFixed(3) : mToMm(effectiveData.orifice_diameter || 0.01))} 
                     onChange={(e) => handleDraftChange('orifice_diameter', e.target.value)}
-                    onBlur={(e) => validateAndCommit('orifice_diameter', mmToM(parseFloat(e.target.value) || 0), true)}
+                    onBlur={(e) => {
+                      const rawVal = parseFloat(e.target.value);
+                      if (isNaN(rawVal)) return;
+                      const m = isImperial ? rawVal / 39.37007874 : mmToM(rawVal);
+                      validateAndCommit('orifice_diameter', m, true);
+                    }}
                   />
                 </div>
               ) : (
@@ -781,12 +799,12 @@ export default function SetupPanel({
                 />
               </div>
               <div>
-                {renderLabel('Cracking Pressure (bar(d))', 'cracking_pressure_bar')}
+                {renderLabel(`Cracking Pressure (${isImperial ? 'psi(d)' : 'bar(d)'})`, 'cracking_pressure_bar')}
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
                   step="0.01" min="0"
-                  value={localDrafts.cracking_pressure_bar !== undefined ? localDrafts.cracking_pressure_bar : (effectiveData.cracking_pressure_bar ?? 0.05)} 
+                  value={localDrafts.cracking_pressure_bar !== undefined ? localDrafts.cracking_pressure_bar : (isImperial ? (Number(effectiveData.cracking_pressure_bar ?? 0.05) * 14.5037738).toFixed(2) : (effectiveData.cracking_pressure_bar ?? 0.05))} 
                   onChange={(e) => handleDraftChange('cracking_pressure_bar', e.target.value)}
                   onBlur={(e) => validateAndCommit('cracking_pressure_bar', e.target.value, true)}
                 />
@@ -808,24 +826,29 @@ export default function SetupPanel({
                 />
               </div>
               <div>
-                {renderLabel('Cracking Pressure (bar(d))', 'cracking_pressure_bar')}
+                {renderLabel(`Cracking Pressure (${isImperial ? 'psi(d)' : 'bar(d)'})`, 'cracking_pressure_bar')}
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
                   step="0.01" min="0"
-                  value={localDrafts.cracking_pressure_bar !== undefined ? localDrafts.cracking_pressure_bar : (effectiveData.cracking_pressure_bar ?? 0.05)} 
+                  value={localDrafts.cracking_pressure_bar !== undefined ? localDrafts.cracking_pressure_bar : (isImperial ? (Number(effectiveData.cracking_pressure_bar ?? 0.05) * 14.5037738).toFixed(2) : (effectiveData.cracking_pressure_bar ?? 0.05))} 
                   onChange={(e) => handleDraftChange('cracking_pressure_bar', e.target.value)}
                   onBlur={(e) => validateAndCommit('cracking_pressure_bar', e.target.value, true)}
                 />
               </div>
               <div>
-                {renderLabel('Orifice Diameter (mm)', 'orifice_diameter')}
+                {renderLabel(`Orifice Diameter (${isImperial ? 'in' : 'mm'})`, 'orifice_diameter')}
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
-                  value={localDrafts.orifice_diameter !== undefined ? localDrafts.orifice_diameter : mToMm(effectiveData.orifice_diameter || 0.01)} 
+                  value={localDrafts.orifice_diameter !== undefined ? localDrafts.orifice_diameter : (isImperial ? (Number(effectiveData.orifice_diameter || 0.01) * 39.37007874).toFixed(3) : mToMm(effectiveData.orifice_diameter || 0.01))} 
                   onChange={(e) => handleDraftChange('orifice_diameter', e.target.value)}
-                  onBlur={(e) => validateAndCommit('orifice_diameter', mmToM(parseFloat(e.target.value) || 0), true)}
+                  onBlur={(e) => {
+                    const rawVal = parseFloat(e.target.value);
+                    if (isNaN(rawVal)) return;
+                    const m = isImperial ? rawVal / 39.37007874 : mmToM(rawVal);
+                    validateAndCommit('orifice_diameter', m, true);
+                  }}
                 />
               </div>
             </>
@@ -863,22 +886,22 @@ export default function SetupPanel({
                 </select>
               </div>
               <div>
-                {renderLabel('Rated Flow (L/min)', 'rated_flow_lmin')}
+                {renderLabel(`Rated Flow (${isImperial ? 'GPM' : 'L/min'})`, 'rated_flow_lmin')}
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
-                  value={localDrafts.rated_flow_lmin !== undefined ? localDrafts.rated_flow_lmin : (effectiveData.rated_flow_lmin || 500.0)} 
+                  value={localDrafts.rated_flow_lmin !== undefined ? localDrafts.rated_flow_lmin : (isImperial ? (Number(effectiveData.rated_flow_lmin || 500.0) * 0.264172052).toFixed(1) : (effectiveData.rated_flow_lmin || 500.0))} 
                   onChange={(e) => handleDraftChange('rated_flow_lmin', e.target.value)}
                   onBlur={(e) => validateAndCommit('rated_flow_lmin', e.target.value, true)}
                 />
               </div>
               {(effectiveData.rating_method || "rated_duty") === "rated_duty" && (
                 <div>
-                  {renderLabel('Rated Cooling (kW)', 'rated_cooling_kw')}
+                  {renderLabel(`Rated Cooling (${isImperial ? 'HP' : 'kW'})`, 'rated_cooling_kw')}
                   <input 
                     type="number" 
                     className="form-input" style={{ width: '100%' }} 
-                    value={localDrafts.rated_cooling_kw !== undefined ? localDrafts.rated_cooling_kw : (effectiveData.rated_cooling_kw || 300.0)} 
+                    value={localDrafts.rated_cooling_kw !== undefined ? localDrafts.rated_cooling_kw : (isImperial ? (Number(effectiveData.rated_cooling_kw || 300.0) * 1.34102209).toFixed(2) : (effectiveData.rated_cooling_kw || 300.0))} 
                     onChange={(e) => handleDraftChange('rated_cooling_kw', e.target.value)}
                     onBlur={(e) => validateAndCommit('rated_cooling_kw', e.target.value, true)}
                   />
@@ -886,11 +909,11 @@ export default function SetupPanel({
               )}
               {((effectiveData.rating_method || "rated_duty") === "rated_duty" || (effectiveData.rating_method || "rated_duty") === "design_temps") && (
                 <div>
-                  {renderLabel('Design Inlet Temp (°C)', 'design_inlet_temp_c')}
+                  {renderLabel(`Design Inlet Temp (${isImperial ? '°F' : '°C'})`, 'design_inlet_temp_c')}
                   <input 
                     type="number" 
                     className="form-input" style={{ width: '100%' }} 
-                    value={localDrafts.design_inlet_temp_c !== undefined ? localDrafts.design_inlet_temp_c : (effectiveData.design_inlet_temp_c || 50.0)} 
+                    value={localDrafts.design_inlet_temp_c !== undefined ? localDrafts.design_inlet_temp_c : (isImperial ? (Number(effectiveData.design_inlet_temp_c || 50.0) * 1.8 + 32).toFixed(1) : (effectiveData.design_inlet_temp_c || 50.0))} 
                     onChange={(e) => handleDraftChange('design_inlet_temp_c', e.target.value)}
                     onBlur={(e) => validateAndCommit('design_inlet_temp_c', e.target.value)}
                   />
@@ -898,11 +921,11 @@ export default function SetupPanel({
               )}
               {(effectiveData.rating_method || "rated_duty") === "design_temps" && (
                 <div>
-                  {renderLabel('Design Outlet Temp (°C)', 'design_outlet_temp_c')}
+                  {renderLabel(`Design Outlet Temp (${isImperial ? '°F' : '°C'})`, 'design_outlet_temp_c')}
                   <input 
                     type="number" 
                     className="form-input" style={{ width: '100%' }} 
-                    value={localDrafts.design_outlet_temp_c !== undefined ? localDrafts.design_outlet_temp_c : (effectiveData.design_outlet_temp_c || 40.0)} 
+                    value={localDrafts.design_outlet_temp_c !== undefined ? localDrafts.design_outlet_temp_c : (isImperial ? (Number(effectiveData.design_outlet_temp_c || 40.0) * 1.8 + 32).toFixed(1) : (effectiveData.design_outlet_temp_c || 40.0))} 
                     onChange={(e) => handleDraftChange('design_outlet_temp_c', e.target.value)}
                     onBlur={(e) => validateAndCommit('design_outlet_temp_c', e.target.value)}
                   />
@@ -936,22 +959,22 @@ export default function SetupPanel({
               </div>
               {(effectiveData.cooler_type || "water_cooled") === "water_cooled" && (
                 <div>
-                  {renderLabel('Cooling Medium Temp (°C)', 'medium_temp_c')}
+                  {renderLabel(`Cooling Medium Temp (${isImperial ? '°F' : '°C'})`, 'medium_temp_c')}
                   <input 
                     type="number" 
                     className="form-input" style={{ width: '100%' }} 
-                    value={localDrafts.medium_temp_c !== undefined ? localDrafts.medium_temp_c : (effectiveData.medium_temp_c || 10.0)} 
+                    value={localDrafts.medium_temp_c !== undefined ? localDrafts.medium_temp_c : (isImperial ? (Number(effectiveData.medium_temp_c || 10.0) * 1.8 + 32).toFixed(1) : (effectiveData.medium_temp_c || 10.0))} 
                     onChange={(e) => handleDraftChange('medium_temp_c', e.target.value)}
                     onBlur={(e) => validateAndCommit('medium_temp_c', e.target.value)}
                   />
                 </div>
               )}
               <div>
-                {renderLabel('Rated Pressure Drop (bar(d))', 'rated_dp_bar')}
+                {renderLabel(`Rated Pressure Drop (${isImperial ? 'psi(d)' : 'bar(d)'})`, 'rated_dp_bar')}
                 <input 
                   type="number" step="0.01" 
                   className="form-input" style={{ width: '100%' }} 
-                  value={localDrafts.rated_dp_bar !== undefined ? localDrafts.rated_dp_bar : (effectiveData.rated_dp_bar || 0.5)} 
+                  value={localDrafts.rated_dp_bar !== undefined ? localDrafts.rated_dp_bar : (isImperial ? (Number(effectiveData.rated_dp_bar || 0.5) * 14.5037738).toFixed(2) : (effectiveData.rated_dp_bar || 0.5))} 
                   onChange={(e) => handleDraftChange('rated_dp_bar', e.target.value)}
                   onBlur={(e) => validateAndCommit('rated_dp_bar', e.target.value, true)}
                 />
@@ -962,31 +985,31 @@ export default function SetupPanel({
           {isNode && type === 'filter' && (
             <>
               <div>
-                {renderLabel('Clean ΔP (bar(d))', 'dp_clean')}
+                {renderLabel(`Clean ΔP (${isImperial ? 'psi(d)' : 'bar(d)'})`, 'dp_clean')}
                 <input 
                   type="number" step="0.01" 
                   className="form-input" style={{ width: '100%' }} 
-                  value={localDrafts.dp_clean !== undefined ? localDrafts.dp_clean : (effectiveData.dp_clean || 0.2)} 
+                  value={localDrafts.dp_clean !== undefined ? localDrafts.dp_clean : (isImperial ? (Number(effectiveData.dp_clean || 0.2) * 14.5037738).toFixed(2) : (effectiveData.dp_clean || 0.2))} 
                   onChange={(e) => handleDraftChange('dp_clean', e.target.value)}
                   onBlur={(e) => validateAndCommit('dp_clean', e.target.value, true)}
                 />
               </div>
               <div>
-                {renderLabel('Terminal ΔP (bar(d))', 'dp_terminal')}
+                {renderLabel(`Terminal ΔP (${isImperial ? 'psi(d)' : 'bar(d)'})`, 'dp_terminal')}
                 <input 
                   type="number" step="0.1" 
                   className="form-input" style={{ width: '100%' }} 
-                  value={localDrafts.dp_terminal !== undefined ? localDrafts.dp_terminal : (effectiveData.dp_terminal || 1.0)} 
+                  value={localDrafts.dp_terminal !== undefined ? localDrafts.dp_terminal : (isImperial ? (Number(effectiveData.dp_terminal || 1.0) * 14.5037738).toFixed(2) : (effectiveData.dp_terminal || 1.0))} 
                   onChange={(e) => handleDraftChange('dp_terminal', e.target.value)}
                   onBlur={(e) => validateAndCommit('dp_terminal', e.target.value, true)}
                 />
               </div>
               <div>
-                {renderLabel('Rated Flow (L/min)', 'flow_ref')}
+                {renderLabel(`Rated Flow (${isImperial ? 'GPM' : 'L/min'})`, 'flow_ref')}
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
-                  value={localDrafts.flow_ref !== undefined ? localDrafts.flow_ref : (effectiveData.flow_ref || 100.0)} 
+                  value={localDrafts.flow_ref !== undefined ? localDrafts.flow_ref : (isImperial ? (Number(effectiveData.flow_ref || 100.0) * 0.264172052).toFixed(1) : (effectiveData.flow_ref || 100.0))} 
                   onChange={(e) => handleDraftChange('flow_ref', e.target.value)}
                   onBlur={(e) => validateAndCommit('flow_ref', e.target.value, true)}
                 />
@@ -1005,11 +1028,10 @@ export default function SetupPanel({
           )}
 
           {isNode && type === 'orifice' && (() => {
-            // Pipe diameter: telemetry value is solver-assigned from the connected pipe edge.
-            // node.data.pipe_diameter is the default stored on the node (may be stale).
             const telemetryPipeD = node?.data?.telemetry?.pipe_diameter;
             const activePipeD = telemetryPipeD ?? effectiveData.pipe_diameter ?? 0.05248;
             const activePipeDmm = (activePipeD * 1000).toFixed(2);
+            const activePipeDin = (activePipeD * 39.37007874).toFixed(3);
             const isTelemetryPipe = telemetryPipeD != null;
 
             const _orifDm = effectiveData.orifice_diameter || 0.07;
@@ -1018,10 +1040,9 @@ export default function SetupPanel({
 
             return (
               <>
-                {/* Read-only: pipe diameter is auto-detected from the connected pipe edge at solve time */}
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                    <label style={{ fontSize: '11px', color: '#64748b' }}>Connected Pipe Diameter (mm)</label>
+                    <label style={{ fontSize: '11px', color: '#64748b' }}>Connected Pipe Diameter ({isImperial ? 'in' : 'mm'})</label>
                     {isTelemetryPipe && (
                       <span style={{ fontSize: '9.5px', color: '#395253', background: '#EBF0EF', border: '1px solid #D8E2E1', borderRadius: '3px', padding: '1px 5px', fontWeight: '600' }}>
                         AUTO
@@ -1042,7 +1063,7 @@ export default function SetupPanel({
                     alignItems: 'center',
                     boxSizing: 'border-box',
                   }}>
-                    <span>{activePipeDmm} mm</span>
+                    <span>{isImperial ? `${activePipeDin} in` : `${activePipeDmm} mm`}</span>
                     {!isTelemetryPipe && (
                       <span style={{ fontSize: '9.5px', color: '#94a3b8', fontFamily: 'inherit' }}>no pipe connected</span>
                     )}
@@ -1053,13 +1074,18 @@ export default function SetupPanel({
                 </div>
 
                 <div>
-                  {renderLabel('Orifice Restriction Diameter (mm)', 'orifice_diameter')}
+                  {renderLabel(`Orifice Restriction Diameter (${isImperial ? 'in' : 'mm'})`, 'orifice_diameter')}
                   <input 
                     type="number" 
                     className="form-input" style={{ width: '100%' }} 
-                    value={localDrafts.orifice_diameter !== undefined ? localDrafts.orifice_diameter : mToMm(effectiveData.orifice_diameter || 0.07)} 
+                    value={localDrafts.orifice_diameter !== undefined ? localDrafts.orifice_diameter : (isImperial ? (Number(effectiveData.orifice_diameter || 0.07) * 39.37007874).toFixed(3) : mToMm(effectiveData.orifice_diameter || 0.07))} 
                     onChange={(e) => handleDraftChange('orifice_diameter', e.target.value)}
-                    onBlur={(e) => validateAndCommit('orifice_diameter', mmToM(parseFloat(e.target.value) || 0), true)}
+                    onBlur={(e) => {
+                      const rawVal = parseFloat(e.target.value);
+                      if (isNaN(rawVal)) return;
+                      const m = isImperial ? rawVal / 39.37007874 : mmToM(rawVal);
+                      validateAndCommit('orifice_diameter', m, true);
+                    }}
                   />
                   {_standard === 'iso_5167' && _beta > 0.75 && (
                     <div style={{
@@ -1142,47 +1168,47 @@ export default function SetupPanel({
                 </select>
               </div>
               <div>
-                {renderLabel('Baseline Flow (L/min)', 'flow_base_lmin')}
+                {renderLabel(`Baseline Flow (${isImperial ? 'GPM' : 'L/min'})`, 'flow_base_lmin')}
                 <input 
                   type="number" 
                   step="0.1"
                   className="form-input" style={{ width: '100%' }} 
-                  value={localDrafts.flow_base_lmin !== undefined ? localDrafts.flow_base_lmin : (effectiveData.flow_base_lmin || 10.0)} 
+                  value={localDrafts.flow_base_lmin !== undefined ? localDrafts.flow_base_lmin : (isImperial ? (Number(effectiveData.flow_base_lmin || 10.0) * 0.264172052).toFixed(1) : (effectiveData.flow_base_lmin || 10.0))} 
                   onChange={(e) => handleDraftChange('flow_base_lmin', e.target.value)}
-                  onBlur={(e) => validateAndCommit('flow_base_lmin', parseFloat(e.target.value) || 0.0, true)}
+                  onBlur={(e) => validateAndCommit('flow_base_lmin', e.target.value, true)}
                 />
               </div>
               <div>
-                {renderLabel('Baseline Inlet Pressure (bar(a))', 'inlet_pressure_base_bar')}
+                {renderLabel(`Baseline Inlet Pressure (${isImperial ? 'psi(a)' : 'bar(a)'})`, 'inlet_pressure_base_bar')}
                 <input 
                   type="number" 
                   step="0.05"
                   className="form-input" style={{ width: '100%' }} 
-                  value={localDrafts.inlet_pressure_base_bar !== undefined ? localDrafts.inlet_pressure_base_bar : (effectiveData.inlet_pressure_base_bar || 3.5)} 
+                  value={localDrafts.inlet_pressure_base_bar !== undefined ? localDrafts.inlet_pressure_base_bar : (isImperial ? (Number(effectiveData.inlet_pressure_base_bar || 3.5) * 14.5037738).toFixed(2) : (effectiveData.inlet_pressure_base_bar || 3.5))} 
                   onChange={(e) => handleDraftChange('inlet_pressure_base_bar', e.target.value)}
-                  onBlur={(e) => validateAndCommit('inlet_pressure_base_bar', parseFloat(e.target.value) || 0.0, true)}
+                  onBlur={(e) => validateAndCommit('inlet_pressure_base_bar', e.target.value, true)}
                 />
               </div>
               <div>
-                {renderLabel('Baseline Outlet Pressure (bar(a))', 'outlet_pressure_base_bar')}
+                {renderLabel(`Baseline Outlet Pressure (${isImperial ? 'psi(a)' : 'bar(a)'})`, 'outlet_pressure_base_bar')}
                 <input 
                   type="number" 
                   step="0.05"
                   className="form-input" style={{ width: '100%' }} 
-                  value={localDrafts.outlet_pressure_base_bar !== undefined ? localDrafts.outlet_pressure_base_bar : (effectiveData.outlet_pressure_base_bar || 1.0)} 
+                  value={localDrafts.outlet_pressure_base_bar !== undefined ? localDrafts.outlet_pressure_base_bar : (isImperial ? (Number(effectiveData.outlet_pressure_base_bar || 1.0) * 14.5037738).toFixed(2) : (effectiveData.outlet_pressure_base_bar || 1.0))} 
                   onChange={(e) => handleDraftChange('outlet_pressure_base_bar', e.target.value)}
-                  onBlur={(e) => validateAndCommit('outlet_pressure_base_bar', parseFloat(e.target.value) || 0.0, true)}
+                  onBlur={(e) => validateAndCommit('outlet_pressure_base_bar', e.target.value, true)}
                 />
               </div>
               <div>
-                {renderLabel('Baseline Temp (°C)', 'temp_base_c')}
+                {renderLabel(`Baseline Temp (${isImperial ? '°F' : '°C'})`, 'temp_base_c')}
                 <input 
                   type="number" 
                   step="0.5"
                   className="form-input" style={{ width: '100%' }} 
-                  value={localDrafts.temp_base_c !== undefined ? localDrafts.temp_base_c : (effectiveData.temp_base_c || 45.0)} 
+                  value={localDrafts.temp_base_c !== undefined ? localDrafts.temp_base_c : (isImperial ? (Number(effectiveData.temp_base_c || 45.0) * 1.8 + 32).toFixed(1) : (effectiveData.temp_base_c || 45.0))} 
                   onChange={(e) => handleDraftChange('temp_base_c', e.target.value)}
-                  onBlur={(e) => validateAndCommit('temp_base_c', parseFloat(e.target.value) || 0.0, true)}
+                  onBlur={(e) => validateAndCommit('temp_base_c', e.target.value, true)}
                 />
               </div>
             </>

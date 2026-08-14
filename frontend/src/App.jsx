@@ -53,6 +53,7 @@ import SaveAsModal from './components/modals/SaveAsModal';
 import NewDrawingModal from './components/modals/NewDrawingModal';
 import { AuthProvider } from './context/AuthProvider';
 import { useAuth } from './hooks/useAuth';
+import { UnitProvider, useUnits } from './context/UnitContext';
 
 import { useWebSocketSimulation } from './hooks/useWebSocketSimulation';
 import { useCanvasHistory } from './hooks/useCanvasHistory';
@@ -348,11 +349,13 @@ function WalFlowContent() {
     setActiveModal('projectManager');
   };
 
+  const { unitSystem, setUnitSystem } = useUnits();
   const dragCounter = useRef(0);
   const [isFileDragging, setIsFileDragging] = useState(false);
 
   const clipboardRef = useRef({ nodes: [], edges: [] });
   const [globalSettings, setGlobalSettings] = useState({
+    unit_system: unitSystem || 'metric',
     fluid_type: 'water',
     ambient_temperature: 293.15,
     atmospheric_pressure: 101325.0,
@@ -366,6 +369,10 @@ function WalFlowContent() {
     damping_factor: 0.25
   });
   const [batchStats, setBatchStats] = useState(null);
+
+  useEffect(() => {
+    setGlobalSettings(prev => prev.unit_system !== unitSystem ? { ...prev, unit_system: unitSystem } : prev);
+  }, [unitSystem]);
 
 
   const {
@@ -746,6 +753,9 @@ function WalFlowContent() {
         setEdges(restoredEdges);
         if (data.globalSettings) {
           setGlobalSettings(prev => ({ ...prev, ...data.globalSettings }));
+          if (data.globalSettings.unit_system) {
+            setUnitSystem(data.globalSettings.unit_system);
+          }
         }
         if (data.cases && Array.isArray(data.cases) && data.cases.length > 0) {
           setCases(data.cases);
@@ -756,7 +766,7 @@ function WalFlowContent() {
         }
       }
     }, 50);
-  }, [handleValveChange, handleRotation, setNodes, setEdges, showCanvasLoading]);
+  }, [handleValveChange, handleRotation, setNodes, setEdges, showCanvasLoading, setUnitSystem]);
 
   const handleLoadDiagramWithCheck = useCallback((data, diagramTitle = '', options = {}) => {
     if (activeProject && !options.skipProjectCheck) {
@@ -1843,9 +1853,11 @@ function WalFlowContent() {
 export default function App() {
   return (
     <AuthProvider>
-      <ReactFlowProvider>
-        <WalFlowContent />
-      </ReactFlowProvider>
+      <UnitProvider>
+        <ReactFlowProvider>
+          <WalFlowContent />
+        </ReactFlowProvider>
+      </UnitProvider>
     </AuthProvider>
   );
 }
