@@ -1,11 +1,15 @@
 import os
 import json
-import redis
 from typing import List, Optional
 from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+
+try:
+    import redis
+except ImportError:
+    redis = None
 
 from db.database import get_db
 from db.models import User, Diagram, ProjectMember, Project
@@ -16,13 +20,16 @@ router = APIRouter(prefix="/api/diagrams", tags=["diagrams"])
 
 # Redis Connection setup
 REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
-try:
-    redis_client = redis.Redis.from_url(REDIS_URL, decode_responses=True)
-    redis_client.ping()
-    print("Redis connected successfully for lock management.")
-except Exception as e:
-    print(f"Redis connection failed ({e}). Falling back to local in-memory lock store.")
-    redis_client = None
+redis_client = None
+if redis:
+    try:
+        redis_client = redis.Redis.from_url(REDIS_URL, decode_responses=True)
+        redis_client.ping()
+        print("Redis connected successfully for lock management.")
+    except Exception as e:
+        print(f"Redis connection failed ({e}). Falling back to local in-memory lock store.")
+        redis_client = None
+
 
 # Local Fallback Lock Store
 LOCAL_LOCKS = {}  # diagram_id -> lock details dict

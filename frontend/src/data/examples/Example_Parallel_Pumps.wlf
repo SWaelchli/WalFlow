@@ -1,6 +1,6 @@
 {
-  "version": "0.2",
-  "app_version": "0.2.0",
+  "version": "0.1",
+  "app_version": "0.1.6",
   "format": "walflow",
   "nodes": [
     {
@@ -164,7 +164,15 @@
       "data": {
         "label": "Suction A",
         "length": 2,
-        "diameter": 0.04
+        "diameter": 0.04094,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 40,
+        "standardSch": "STD",
+        "outer_diameter_mm": 48.3,
+        "wall_thickness_mm": 3.68,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -176,7 +184,15 @@
       "data": {
         "label": "Suction B",
         "length": 2,
-        "diameter": 0.04
+        "diameter": 0.04094,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 40,
+        "standardSch": "STD",
+        "outer_diameter_mm": 48.3,
+        "wall_thickness_mm": 3.68,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -188,7 +204,15 @@
       "data": {
         "label": "Discharge A",
         "length": 1,
-        "diameter": 0.032
+        "diameter": 0.03528,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 32,
+        "standardSch": "STD",
+        "outer_diameter_mm": 42.4,
+        "wall_thickness_mm": 3.56,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -200,7 +224,15 @@
       "data": {
         "label": "Discharge B",
         "length": 1,
-        "diameter": 0.032
+        "diameter": 0.03528,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 32,
+        "standardSch": "STD",
+        "outer_diameter_mm": 42.4,
+        "wall_thickness_mm": 3.56,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -212,7 +244,15 @@
       "data": {
         "label": "Header Feed A",
         "length": 3,
-        "diameter": 0.04
+        "diameter": 0.04094,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 40,
+        "standardSch": "STD",
+        "outer_diameter_mm": 48.3,
+        "wall_thickness_mm": 3.68,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -224,7 +264,15 @@
       "data": {
         "label": "Header Feed B",
         "length": 3,
-        "diameter": 0.04
+        "diameter": 0.04094,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 40,
+        "standardSch": "STD",
+        "outer_diameter_mm": 48.3,
+        "wall_thickness_mm": 3.68,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -236,7 +284,15 @@
       "data": {
         "label": "Main Header",
         "length": 4,
-        "diameter": 0.05
+        "diameter": 0.05248,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 50,
+        "standardSch": "STD",
+        "outer_diameter_mm": 60.3,
+        "wall_thickness_mm": 3.91,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -248,7 +304,15 @@
       "data": {
         "label": "Branch 1",
         "length": 3,
-        "diameter": 0.032
+        "diameter": 0.03528,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 32,
+        "standardSch": "STD",
+        "outer_diameter_mm": 42.4,
+        "wall_thickness_mm": 3.56,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -260,7 +324,15 @@
       "data": {
         "label": "Branch 2",
         "length": 3,
-        "diameter": 0.032
+        "diameter": 0.03528,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 32,
+        "standardSch": "STD",
+        "outer_diameter_mm": 42.4,
+        "wall_thickness_mm": 3.56,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -272,7 +344,15 @@
       "data": {
         "label": "Return 1",
         "length": 3,
-        "diameter": 0.032
+        "diameter": 0.03528,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 32,
+        "standardSch": "STD",
+        "outer_diameter_mm": 42.4,
+        "wall_thickness_mm": 3.56,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -284,7 +364,15 @@
       "data": {
         "label": "Return 2",
         "length": 3,
-        "diameter": 0.032
+        "diameter": 0.03528,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 32,
+        "standardSch": "STD",
+        "outer_diameter_mm": 42.4,
+        "wall_thickness_mm": 3.56,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     }
   ],

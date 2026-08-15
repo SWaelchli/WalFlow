@@ -40,7 +40,9 @@ import DataList from './components/panels/DataList';
 
 import PipeEdge from './edges/PipeEdge';
 import SignalEdge from './edges/SignalEdge';
+import PipeClassesPage from './pages/PipeClassesPage';
 import HeatmapLegend from './components/overlays/HeatmapLegend';
+
 import CanvasLoadingOverlay from './components/overlays/CanvasLoadingOverlay';
 import { FlameIcon, CaseIcon, HelpIcon } from './components/symbols/IconLibrary';
 import CaseManager from './components/overlays/CaseManager';
@@ -163,6 +165,56 @@ function WalFlowContent() {
   const [activeProject, setActiveProject] = useState(null);
   const [activeDiagram, setActiveDiagram] = useState(null);
   const [showRestoredToast, setShowRestoredToast] = useState(false);
+
+  // Routing State (/ vs /pipes)
+  const [currentPath, setCurrentPath] = useState(window.location.pathname);
+
+  useEffect(() => {
+    const handlePopState = () => setCurrentPath(window.location.pathname);
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const navigateTo = useCallback((path) => {
+    window.history.pushState({}, '', path);
+    setCurrentPath(path);
+  }, []);
+
+  // System Pipe Classes Catalog
+  const [pipeClasses, setPipeClasses] = useState([]);
+
+  const fetchPipeClasses = useCallback(async () => {
+    try {
+      const res = await axios.get('/api/pipe-classes');
+      setPipeClasses(res.data);
+    } catch {
+      console.warn("Failed to load pipe classes catalog in App.");
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchPipeClasses();
+  }, [fetchPipeClasses]);
+
+  const availablePipeClasses = useMemo(() => {
+    if (!pipeClasses || pipeClasses.length === 0) return [];
+    if (activeProject && Array.isArray(activeProject.allowed_pipe_classes)) {
+      return pipeClasses.filter(c => 
+        activeProject.allowed_pipe_classes.includes(c.id) || 
+        activeProject.allowed_pipe_classes.includes(c.code)
+      );
+    }
+    return pipeClasses;
+  }, [pipeClasses, activeProject]);
+
+
+  const allowCustomPipes = useMemo(() => {
+    if (!activeProject) return true;
+    return activeProject.allow_custom_pipes !== false;
+  }, [activeProject]);
+
+
+
 
   // Canvas loading overlay state
   const [isCanvasLoading, setIsCanvasLoading] = useState(false);
@@ -1131,7 +1183,9 @@ function WalFlowContent() {
         setActiveProject({
           id: projRes.data.id,
           title: projRes.data.title,
-          description: projRes.data.description
+          description: projRes.data.description,
+          allowed_pipe_classes: projRes.data.allowed_pipe_classes,
+          allow_custom_pipes: projRes.data.allow_custom_pipes !== false
         });
       } else {
         setActiveProject(null);
@@ -1196,11 +1250,15 @@ function WalFlowContent() {
         setActiveProject({
           id: projRes.data.id,
           title: projRes.data.title,
-          description: projRes.data.description
+          description: projRes.data.description,
+          allowed_pipe_classes: projRes.data.allowed_pipe_classes,
+          allow_custom_pipes: projRes.data.allow_custom_pipes !== false
         });
       } else {
         setActiveProject(null);
       }
+
+
 
       loadData(blankPayload);
       alert("New cloud drawing created successfully.");
@@ -1457,15 +1515,49 @@ function WalFlowContent() {
     caseManagerTop = '16px';
   }
 
+  if (currentPath === '/pipes') {
+
+    return (
+      <>
+        <PipeClassesPage 
+          onNavigateToCanvas={() => { fetchPipeClasses(); navigateTo('/'); }}
+          onOpenAuthModal={handleOpenAuthModal}
+          onOpenAdminHub={handleOpenAdminHub}
+          onOpenHelpModal={(tab) => handleOpenHelpModal(tab || 'about')}
+        />
+        <LoginModal
+          isOpen={isAuthModalOpen}
+          onClose={handleCloseModal}
+          adminExists={adminStatus.adminExists}
+        />
+        <AdminHubModal
+          isOpen={isAdminHubOpen}
+          onClose={handleCloseModal}
+          onLoadDiagram={loadData}
+        />
+        <HelpInfoModal
+          isOpen={isHelpModalOpen}
+          onClose={handleCloseModal}
+          initialTab={helpModalInitialTab}
+        />
+
+
+      </>
+    );
+  }
+
+
   return (
     <div style={{ width: '100%', height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#F0F4F4', overflow: 'hidden' }}>
       <Navbar 
         onCalculate={runSimulation}
         isSimulating={isSimulating}
-           onOpenAuthModal={handleOpenAuthModal}
-           onOpenAdminHub={handleOpenAdminHub}
+        onOpenAuthModal={handleOpenAuthModal}
+        onOpenAdminHub={handleOpenAdminHub}
         onOpenHelpModal={(tab) => handleOpenHelpModal(tab || 'about')}
         onLogoutClear={resetCanvas}
+        onNavigateToPipes={() => navigateTo('/pipes')}
+        currentRoute={currentPath === '/pipes' ? 'pipes' : 'canvas'}
         cases={cases}
         activeCaseId={activeCaseId}
         onSelectCase={setActiveCaseId}
@@ -1473,6 +1565,7 @@ function WalFlowContent() {
         activeProject={activeProject}
         activeDiagram={activeDiagram}
       />
+
 
       <div style={{ flexGrow: 1, display: 'flex', height: 'calc(100vh - 56px)', overflow: 'hidden' }}>
         <Sidebar 
@@ -1515,9 +1608,9 @@ function WalFlowContent() {
           onImportClick={() => document.getElementById('sidebar-file-upload').click()}
           onExportClick={onSave}
           onOpenProjectsModal={(projId) => {
-            setProjectManagerProjectId(projId || null);
-             handleOpenProjectManagerModal();
+            handleOpenProjectManagerModal(projId || null);
           }}
+
         />
 
         <input
@@ -1814,9 +1907,12 @@ function WalFlowContent() {
           allNodes={nodes}
           allEdges={edges}
           unmitigatedTelemetry={telemetryUnmitigated}
+          availablePipeClasses={availablePipeClasses}
+          allowCustomPipes={allowCustomPipes}
           activeTab={inspectorTab}
           setActiveTab={setInspectorTab}
         />
+
       </div>
 
         <DataList 
@@ -1843,7 +1939,11 @@ function WalFlowContent() {
           runSimulation={runSimulation}
           showCaseManager={showCaseManager}
           onToggleCaseManager={() => setShowCaseManager(prev => !prev)}
+          availablePipeClasses={availablePipeClasses}
+          allowCustomPipes={allowCustomPipes}
         />
+
+
       </div>
     </div>
   </div>

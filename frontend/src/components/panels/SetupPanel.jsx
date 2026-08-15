@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
+
 import { mToMm, mmToM } from '../../utils/converters';
-import { ASME_PIPE_STANDARDS, calculatePipeId, findClosestPipeMatch } from '../../utils/standards_library';
 import { isCaseVariableProperty } from '../../constants/case_constants';
 import { isPropertyOverridden, getEffectiveNodeData } from '../../utils/case_resolver';
 import { GlobeIcon, BoltIcon } from '../symbols/IconLibrary';
@@ -47,75 +47,218 @@ function PropertyBadge({ propKey, nodeId, cases = [], activeCaseId = 'case_base'
 }
 
 /**
- * PipeSelector component.
+ * PipeSelector component supporting Pipe Specifications catalog.
  */
-const PipeSelector = ({ data, onChange }) => {
+const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPipes = true }) => {
   const { isImperial } = useUnits();
-  const value = data.diameter || 0.1;
-  
-  const match = useMemo(() => findClosestPipeMatch(value), [value]);
-  const currentDn = data.standardDn || (match ? match.dn : 50);
-  const currentSch = data.standardSch || (match ? match.sch : "40");
+  const classList = availablePipeClasses || [];
 
-  const handleDnChange = (newDn) => {
-    const dnInt = parseInt(newDn, 10);
-    const pipe = ASME_PIPE_STANDARDS.find(p => p.dn === dnInt);
-    if (pipe) {
-      const sch = pipe.schedules[currentSch] ? currentSch : Object.keys(pipe.schedules)[0];
-      const newId = calculatePipeId(pipe.od, pipe.schedules[sch]);
+  const rawClassId = data.pipe_class_id || (classList.length > 0 ? classList[0].id : (allowCustomPipes ? 'manual' : ''));
+  // If custom dimensions are forbidden but pipe was manual, fallback to first available class
+  const currentClassId = (!allowCustomPipes && rawClassId === 'manual' && classList.length > 0)
+    ? classList[0].id
+    : rawClassId;
+  const isManual = currentClassId === 'manual';
+  const selectedClass = classList.find(c => c.id === currentClassId);
+
+  const value = data.diameter || 0.05248; // default ~2" STD
+  const currentDn = data.standardDn || (selectedClass?.sizes?.[0]?.dn || 50);
+
+  const handleClassChange = (newClassId) => {
+    if (newClassId === 'manual') {
+      onChange('pipe_class_id', 'manual');
+      onChange('pipe_class_code', 'CUSTOM');
+      return;
+    }
+    const pc = classList.find(c => c.id === newClassId);
+    if (pc && pc.sizes && pc.sizes.length > 0) {
+      const targetSize = pc.sizes.find(s => s.dn === currentDn) || pc.sizes[0];
+      const idMeters = (targetSize.od_mm - 2 * targetSize.wt_mm) / 1000.0;
       
-      onChange('diameter', newId);
-      onChange('standardDn', dnInt);
-      onChange('standardSch', sch);
+      onChange('pipe_class_id', pc.id);
+      onChange('pipe_class_code', pc.code);
+      onChange('roughness_mm', pc.roughness_mm);
+      onChange('roughness', pc.roughness_mm / 1000.0);
+      onChange('standardDn', targetSize.dn);
+      onChange('standardSch', targetSize.sch || 'STD');
+      onChange('outer_diameter_mm', targetSize.od_mm);
+      onChange('wall_thickness_mm', targetSize.wt_mm);
+      onChange('diameter', idMeters);
     }
   };
 
-  const handleSchChange = (newSch) => {
-    const pipe = ASME_PIPE_STANDARDS.find(p => p.dn === currentDn);
-    if (pipe && pipe.schedules[newSch]) {
-      const newId = calculatePipeId(pipe.od, pipe.schedules[newSch]);
-      
-      onChange('diameter', newId);
-      onChange('standardSch', newSch);
+  const handleSizeChange = (newDnStr) => {
+    const dnInt = parseInt(newDnStr, 10);
+    if (!selectedClass) return;
+    const targetSize = selectedClass.sizes.find(s => s.dn === dnInt);
+    if (targetSize) {
+      const idMeters = (targetSize.od_mm - 2 * targetSize.wt_mm) / 1000.0;
+      onChange('standardDn', targetSize.dn);
+      onChange('standardSch', targetSize.sch || 'STD');
+      onChange('outer_diameter_mm', targetSize.od_mm);
+      onChange('wall_thickness_mm', targetSize.wt_mm);
+      onChange('diameter', idMeters);
     }
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-      <div style={{ display: 'flex', gap: '4px' }}>
-        <div style={{ flex: 1 }}>
-          <label style={{ fontSize: '10px', color: '#64748b' }}>DN ({isImperial ? 'in' : 'mm'})</label>
-          <select 
-            className="form-select" style={{ width: '100%' }}
-            value={currentDn}
-            onChange={(e) => handleDnChange(e.target.value)}
-          >
-            {ASME_PIPE_STANDARDS.map(p => (
-              <option key={p.dn} value={p.dn}>
-                {isImperial ? `${p.nps}" (DN ${p.dn})` : `DN ${p.dn} (${p.nps}")`}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div style={{ flex: 1 }}>
-          <label style={{ fontSize: '10px', color: '#64748b' }}>Sch</label>
-          <select 
-            className="form-select" style={{ width: '100%' }}
-            value={currentSch}
-            onChange={(e) => handleSchChange(e.target.value)}
-          >
-            {Object.keys(ASME_PIPE_STANDARDS.find(p => p.dn === currentDn).schedules).map(sch => (
-              <option key={sch} value={sch}>{sch}</option>
-            ))}
-          </select>
-        </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      {/* Pipe Class Selection */}
+      <div>
+        <label style={{ fontSize: '10px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase' }}>Piping Spec</label>
+        <select
+          className="form-select"
+          style={{ width: '100%', height: '30px', fontSize: '11px' }}
+          value={currentClassId}
+          onChange={(e) => handleClassChange(e.target.value)}
+        >
+          {classList.map(c => (
+            <option key={c.id} value={c.id}>
+              [{c.code}] {c.name}
+            </option>
+          ))}
+          {allowCustomPipes && (
+            <option value="manual">Manual / Custom Dimensions</option>
+          )}
+        </select>
       </div>
-      <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>
-        ID: {isImperial ? `${(value * 39.37007874).toFixed(3)} in` : `${(value * 1000).toFixed(2)} mm`}
-      </div>
+
+      {!isManual && selectedClass && (
+        <>
+          <div style={{ display: 'flex', gap: '6px' }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ fontSize: '10px', color: '#64748b', fontWeight: '700' }}>Nominal Size</label>
+              <select
+                className="form-select"
+                style={{ width: '100%', height: '30px', fontSize: '11px' }}
+                value={currentDn}
+                onChange={(e) => handleSizeChange(e.target.value)}
+              >
+                {selectedClass.sizes.map(s => (
+                  <option key={s.dn} value={s.dn}>
+                    DN {s.dn} ({s.nps}") - {s.sch || 'STD'}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div style={{
+            fontSize: '11px',
+            backgroundColor: 'var(--color-surface-light)',
+            padding: '8px',
+            borderRadius: '6px',
+            border: '1px solid var(--color-border)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '2px'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: 'var(--color-text-secondary)' }}>Internal Diam (ID):</span>
+              <strong style={{ color: 'var(--color-text-primary)' }}>
+                {isImperial ? `${(value * 39.37007874).toFixed(3)} in` : `${(value * 1000).toFixed(2)} mm`}
+              </strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--color-text-secondary)' }}>
+              <span>Material / Roughness:</span>
+              <span style={{ color: 'var(--color-text-primary)' }}>{selectedClass.material_grade} (ε={selectedClass.roughness_mm}mm)</span>
+            </div>
+          </div>
+        </>
+      )}
+
+      {isManual && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div>
+            <label style={{ fontSize: '10px', color: '#64748b', fontWeight: '600' }}>Inner Diameter ({isImperial ? 'in' : 'mm'})</label>
+            <input
+              type="number"
+              step="0.1"
+              className="form-input"
+              style={{ width: '100%' }}
+              value={isImperial ? (value * 39.37007874).toFixed(3) : (value * 1000).toFixed(2)}
+              onChange={(e) => {
+                const raw = parseFloat(e.target.value);
+                if (!isNaN(raw) && raw > 0) {
+                  const idM = isImperial ? raw / 39.37007874 : raw / 1000.0;
+                  onChange('diameter', idM);
+                }
+              }}
+            />
+          </div>
+          <div>
+            <label style={{ fontSize: '10px', color: '#64748b', fontWeight: '600' }}>Surface Roughness ε (mm)</label>
+            <input
+              type="number"
+              step="0.001"
+              className="form-input"
+              style={{ width: '100%' }}
+              value={data.roughness_mm !== undefined ? data.roughness_mm : 0.045}
+              onChange={(e) => {
+                const raw = parseFloat(e.target.value);
+                if (!isNaN(raw) && raw >= 0) {
+                  onChange('roughness_mm', raw);
+                  onChange('roughness', raw / 1000.0);
+                }
+              }}
+            />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+            <div>
+              <label style={{ fontSize: '10px', color: '#64748b', fontWeight: '600' }}>Design Temp ({isImperial ? '°F' : '°C'})</label>
+              <input
+                type="number"
+                step="0.5"
+                className="form-input"
+                style={{ width: '100%' }}
+                value={
+                  data.design_temperature_c !== undefined
+                    ? (isImperial ? ((data.design_temperature_c * 1.8) + 32).toFixed(1) : data.design_temperature_c)
+                    : ''
+                }
+                placeholder={isImperial ? '122.0' : '50.0'}
+                onChange={(e) => {
+                  const raw = parseFloat(e.target.value);
+                  if (!isNaN(raw)) {
+                    const tempC = isImperial ? (raw - 32) / 1.8 : raw;
+                    onChange('design_temperature_c', tempC);
+                  } else {
+                    onChange('design_temperature_c', undefined);
+                  }
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: '10px', color: '#64748b', fontWeight: '600' }}>Design Press ({isImperial ? 'psi' : 'bar(g)'})</label>
+              <input
+                type="number"
+                step="0.1"
+                className="form-input"
+                style={{ width: '100%' }}
+                value={
+                  data.design_pressure_bar !== undefined
+                    ? (isImperial ? (data.design_pressure_bar * 14.50377).toFixed(1) : data.design_pressure_bar)
+                    : ''
+                }
+                placeholder={isImperial ? '150.0' : '10.0'}
+                onChange={(e) => {
+                  const raw = parseFloat(e.target.value);
+                  if (!isNaN(raw)) {
+                    const pBar = isImperial ? raw / 14.50377 : raw;
+                    onChange('design_pressure_bar', pBar);
+                  } else {
+                    onChange('design_pressure_bar', undefined);
+                  }
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+
 
 export default function SetupPanel({
   node,
@@ -128,9 +271,13 @@ export default function SetupPanel({
   cases = [],
   activeCaseId = 'case_base',
   onResetCaseOverride,
+  availablePipeClasses = [],
+  allowCustomPipes = true,
   style = {},
   inline = false
 }) {
+
+
   const { isImperial, fromInputValue } = useUnits();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [localDrafts, setLocalDrafts] = useState({});
@@ -341,11 +488,18 @@ export default function SetupPanel({
                 />
               </div>
               <div>
-                {renderLabel('Pipe Diameter', 'diameter')}
-                <PipeSelector data={data} onChange={(field, val) => validateAndCommit(field, val, field === 'diameter')} />
+                {renderLabel('Pipe Specification & Dimensions', 'diameter')}
+                <PipeSelector 
+                  data={data} 
+                  availablePipeClasses={availablePipeClasses} 
+                  allowCustomPipes={allowCustomPipes} 
+                  onChange={(field, val) => validateAndCommit(field, val, field === 'diameter')} 
+                />
               </div>
+
             </>
           )}
+
 
           {isNode && type === 'tank' && (
             <>

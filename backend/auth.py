@@ -100,3 +100,14 @@ def get_current_admin_user(
         )
     return current_user
 
+def get_current_pipe_manager_user(
+    current_user: User = Depends(get_current_user)
+) -> User:
+    if current_user.role not in ("admin", "pipe_manager"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access forbidden: Administrator or Pipe Manager privileges required.",
+        )
+    return current_user
+
+

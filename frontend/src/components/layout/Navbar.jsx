@@ -22,6 +22,7 @@ export default function Navbar({
   onOpenAdminHub,
   onOpenHelpModal,
   onLogoutClear,
+  onNavigateToPipes,
   cases = [],
   activeCaseId = 'case_base',
   onSelectCase,
@@ -29,6 +30,7 @@ export default function Navbar({
   activeProject,
   activeDiagram
 }) {
+
   const { currentUser, isAuthenticated, isAdmin, adminStatus, logout } = useAuth();
 
   const handleUserLogout = () => {
@@ -185,6 +187,21 @@ export default function Navbar({
       {/* Right: Admin Hub & User Auth */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
 
+        <button
+          onClick={onNavigateToPipes}
+          className="btn-secondary"
+          style={{
+            height: '34px',
+            padding: '0 12px',
+            borderRadius: '8px',
+            fontSize: '12px',
+            fontWeight: '700'
+          }}
+          title="Open Piping Specifications Catalog (/pipes)"
+        >
+          Piping Classes
+        </button>
+
         {isAdmin && (
           <button
             onClick={onOpenAdminHub}
@@ -207,6 +224,7 @@ export default function Navbar({
             )}
           </button>
         )}
+
 
         <div style={{
           height: '34px',

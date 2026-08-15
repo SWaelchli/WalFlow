@@ -59,12 +59,15 @@ The project has a clear process for adding new hydraulic components, which invol
 3.  Create a corresponding React component for the equipment in the frontend.
 4.  Register the new component in the frontend's `App.jsx` and `Sidebar.jsx`.
 
-### Linting
+### Frontend Quality & Build Verification
 
-The frontend uses ESLint for code quality. To run the linter, use the following command from the `frontend` directory:
+The frontend uses ESLint and Vite build checks. To verify code quality and ensure all routes (`/`, `/pipes`, modals) compile with valid references:
 ```bash
+cd frontend
 npm run lint
+npm run build
 ```
+
 
 ## Interaction with User
 

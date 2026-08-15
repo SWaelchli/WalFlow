@@ -10,14 +10,20 @@ from auth import get_current_user
 
 router = APIRouter(prefix="/api/projects", tags=["projects"])
 
+import json
+
 # Pydantic Schemas
 class ProjectCreateSchema(BaseModel):
     title: str = "Untitled Project"
     description: Optional[str] = ""
+    allowed_pipe_classes: Optional[List[str]] = None
+    allow_custom_pipes: Optional[bool] = True
 
 class ProjectUpdateSchema(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
+    allowed_pipe_classes: Optional[List[str]] = None
+    allow_custom_pipes: Optional[bool] = None
 
 class MemberSummarySchema(BaseModel):
     id: str
@@ -43,6 +49,8 @@ class ProjectDetailSchema(BaseModel):
     id: str
     title: str
     description: Optional[str]
+    allowed_pipe_classes: Optional[List[str]] = None
+    allow_custom_pipes: bool = True
     created_at: datetime
     updated_at: datetime
     members: List[MemberSummarySchema]
@@ -55,12 +63,15 @@ class ProjectSummarySchema(BaseModel):
     id: str
     title: str
     description: Optional[str]
+    allowed_pipe_classes: Optional[List[str]] = None
+    allow_custom_pipes: bool = True
     created_at: datetime
     updated_at: datetime
     role: str  # Current user's role in this project
 
     class Config:
         from_attributes = True
+
 
 class MemberAddSchema(BaseModel):
     username: str
@@ -77,6 +88,15 @@ def get_user_project_role(db: Session, project_id: str, user_id: str) -> Optiona
     ).first()
     return membership.role if membership else None
 
+def _parse_allowed_pipe_classes(raw_val: Optional[str]) -> Optional[List[str]]:
+    if not raw_val:
+        return None
+    try:
+        parsed = json.loads(raw_val)
+        return parsed if isinstance(parsed, list) else None
+    except Exception:
+        return None
+
 @router.post("", response_model=ProjectDetailSchema, status_code=status.HTTP_201_CREATED)
 def create_project(
     payload: ProjectCreateSchema,
@@ -84,9 +104,12 @@ def create_project(
     db: Session = Depends(get_db)
 ):
     # 1. Create the project
+    allowed_classes_json = json.dumps(payload.allowed_pipe_classes) if payload.allowed_pipe_classes is not None else None
     new_project = Project(
         title=payload.title,
-        description=payload.description or ""
+        description=payload.description or "",
+        allowed_pipe_classes=allowed_classes_json,
+        allow_custom_pipes=payload.allow_custom_pipes if payload.allow_custom_pipes is not None else True
     )
     db.add(new_project)
     db.commit()
@@ -118,6 +141,8 @@ def create_project(
         id=new_project.id,
         title=new_project.title,
         description=new_project.description,
+        allowed_pipe_classes=_parse_allowed_pipe_classes(new_project.allowed_pipe_classes),
+        allow_custom_pipes=new_project.allow_custom_pipes if new_project.allow_custom_pipes is not None else True,
         created_at=new_project.created_at,
         updated_at=new_project.updated_at,
         members=members_list,
@@ -138,6 +163,8 @@ def list_user_projects(
                 id=p.id,
                 title=p.title,
                 description=p.description,
+                allowed_pipe_classes=_parse_allowed_pipe_classes(p.allowed_pipe_classes),
+                allow_custom_pipes=p.allow_custom_pipes if p.allow_custom_pipes is not None else True,
                 created_at=p.created_at,
                 updated_at=p.updated_at,
                 role=m.role
@@ -196,6 +223,8 @@ def get_project_detail(
         id=project.id,
         title=project.title,
         description=project.description,
+        allowed_pipe_classes=_parse_allowed_pipe_classes(project.allowed_pipe_classes),
+        allow_custom_pipes=project.allow_custom_pipes if project.allow_custom_pipes is not None else True,
         created_at=project.created_at,
         updated_at=project.updated_at,
         members=members_formatted,
@@ -220,16 +249,25 @@ def update_project(
     if not project:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found.")
 
-    if payload.title is not None:
+    fields_set = getattr(payload, 'model_fields_set', getattr(payload, '__fields_set__', set()))
+
+    if "title" in fields_set and payload.title is not None:
         project.title = payload.title
-    if payload.description is not None:
+    if "description" in fields_set and payload.description is not None:
         project.description = payload.description
+    if "allowed_pipe_classes" in fields_set:
+        project.allowed_pipe_classes = json.dumps(payload.allowed_pipe_classes) if payload.allowed_pipe_classes is not None else None
+    if "allow_custom_pipes" in fields_set and payload.allow_custom_pipes is not None:
+        project.allow_custom_pipes = payload.allow_custom_pipes
 
     project.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(project)
     
     return get_project_detail(project_id, current_user, db)
+
+
+
 
 @router.delete("/{project_id}", status_code=status.HTTP_200_OK)
 def delete_project(

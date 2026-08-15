@@ -1,6 +1,6 @@
 {
-  "version": "0.2",
-  "app_version": "0.2.0",
+  "version": "0.1",
+  "app_version": "0.1.6",
   "format": "walflow",
   "created_at": "2026-07-25T19:04:47.983Z",
   "nodes": [
@@ -337,7 +337,7 @@
       "data": {
         "label": "Suction",
         "length": 1.5,
-        "diameter": 0.025,
+        "diameter": 0.02664,
         "telemetry": {
           "inlets": [
             {
@@ -361,7 +361,15 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 25,
+        "standardSch": "STD",
+        "outer_diameter_mm": 33.4,
+        "wall_thickness_mm": 3.38,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       },
       "label": "Suction"
     },
@@ -374,7 +382,7 @@
       "data": {
         "label": "Pump Discharge",
         "length": 2,
-        "diameter": 0.02,
+        "diameter": 0.02116,
         "telemetry": {
           "inlets": [
             {
@@ -398,7 +406,15 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 20,
+        "standardSch": "STD",
+        "outer_diameter_mm": 26.9,
+        "wall_thickness_mm": 2.87,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       },
       "label": "Pump Discharge"
     },
@@ -411,7 +427,7 @@
       "data": {
         "label": "Filtered Flush",
         "length": 3,
-        "diameter": 0.02,
+        "diameter": 0.02116,
         "telemetry": {
           "inlets": [
             {
@@ -435,7 +451,15 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 20,
+        "standardSch": "STD",
+        "outer_diameter_mm": 26.9,
+        "wall_thickness_mm": 2.87,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       },
       "label": "Filtered Flush"
     },
@@ -448,7 +472,7 @@
       "data": {
         "label": "Seal Feed",
         "length": 2,
-        "diameter": 0.015,
+        "diameter": 0.01576,
         "telemetry": {
           "inlets": [
             {
@@ -472,7 +496,15 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 15,
+        "standardSch": "STD",
+        "outer_diameter_mm": 21.3,
+        "wall_thickness_mm": 2.77,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       },
       "label": "Seal Feed"
     },
@@ -485,7 +517,7 @@
       "data": {
         "label": "Seal Cavity Outlet",
         "length": 1.5,
-        "diameter": 0.015,
+        "diameter": 0.01576,
         "telemetry": {
           "inlets": [
             {
@@ -509,7 +541,15 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 15,
+        "standardSch": "STD",
+        "outer_diameter_mm": 21.3,
+        "wall_thickness_mm": 2.77,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       },
       "label": "Seal Cavity Outlet"
     },
@@ -522,7 +562,7 @@
       "data": {
         "label": "Barrier Return Line",
         "length": 4,
-        "diameter": 0.02,
+        "diameter": 0.02116,
         "telemetry": {
           "inlets": [
             {
@@ -546,7 +586,15 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 20,
+        "standardSch": "STD",
+        "outer_diameter_mm": 26.9,
+        "wall_thickness_mm": 2.87,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       },
       "label": "Barrier Return Line"
     }

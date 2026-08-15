@@ -19,9 +19,13 @@ export default function InspectorPanel({
   allNodes,
   allEdges,
   unmitigatedTelemetry,
+  availablePipeClasses = [],
+  allowCustomPipes = true,
   activeTab = 'setup',
   setActiveTab
 }) {
+
+
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const isNode = !!node;
@@ -172,8 +176,12 @@ export default function InspectorPanel({
                 cases={cases}
                 activeCaseId={activeCaseId}
                 onResetCaseOverride={onResetCaseOverride}
+                availablePipeClasses={availablePipeClasses}
+                allowCustomPipes={allowCustomPipes}
                 inline={true}
               />
+
+
             ) : (
               <ResultsPanel
                 selectedNode={effectiveNode}

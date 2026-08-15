@@ -1,6 +1,6 @@
 {
-  "version": "0.2",
-  "app_version": "0.2.0",
+  "version": "0.1",
+  "app_version": "0.1.6",
   "format": "walflow",
   "active_case_id": "case_base",
   "cases": [
@@ -131,7 +131,15 @@
         "label": "Suction Line",
         "type": "PIPE",
         "length": 3.0,
-        "diameter": 0.05
+        "diameter": 0.05248,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 50,
+        "standardSch": "STD",
+        "outer_diameter_mm": 60.3,
+        "wall_thickness_mm": 3.91,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -147,7 +155,15 @@
         "label": "Pump Discharge",
         "type": "PIPE",
         "length": 5.0,
-        "diameter": 0.04
+        "diameter": 0.04094,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 40,
+        "standardSch": "STD",
+        "outer_diameter_mm": 48.3,
+        "wall_thickness_mm": 3.68,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -163,7 +179,15 @@
         "label": "Return Line",
         "type": "PIPE",
         "length": 4.0,
-        "diameter": 0.04
+        "diameter": 0.04094,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 40,
+        "standardSch": "STD",
+        "outer_diameter_mm": 48.3,
+        "wall_thickness_mm": 3.68,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     }
   ],

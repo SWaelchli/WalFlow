@@ -1,6 +1,6 @@
 {
-  "version": "0.2",
-  "app_version": "0.2.0",
+  "version": "0.1",
+  "app_version": "0.1.6",
   "format": "walflow",
   "nodes": [
     {
@@ -131,7 +131,15 @@
       "data": {
         "label": "Centrifugal Suction",
         "length": 2,
-        "diameter": 0.032
+        "diameter": 0.03528,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 32,
+        "standardSch": "STD",
+        "outer_diameter_mm": 42.4,
+        "wall_thickness_mm": 3.56,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -143,7 +151,15 @@
       "data": {
         "label": "Centrifugal Line",
         "length": 2,
-        "diameter": 0.025
+        "diameter": 0.02664,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 25,
+        "standardSch": "STD",
+        "outer_diameter_mm": 33.4,
+        "wall_thickness_mm": 3.38,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -155,7 +171,15 @@
       "data": {
         "label": "Delivery 1",
         "length": 2,
-        "diameter": 0.025
+        "diameter": 0.02664,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 25,
+        "standardSch": "STD",
+        "outer_diameter_mm": 33.4,
+        "wall_thickness_mm": 3.38,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -167,7 +191,15 @@
       "data": {
         "label": "Volumetric Suction",
         "length": 2,
-        "diameter": 0.032
+        "diameter": 0.03528,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 32,
+        "standardSch": "STD",
+        "outer_diameter_mm": 42.4,
+        "wall_thickness_mm": 3.56,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -179,7 +211,15 @@
       "data": {
         "label": "PD Line",
         "length": 2,
-        "diameter": 0.025
+        "diameter": 0.02664,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 25,
+        "standardSch": "STD",
+        "outer_diameter_mm": 33.4,
+        "wall_thickness_mm": 3.38,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -191,7 +231,15 @@
       "data": {
         "label": "Delivery 2",
         "length": 2,
-        "diameter": 0.025
+        "diameter": 0.02664,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 25,
+        "standardSch": "STD",
+        "outer_diameter_mm": 33.4,
+        "wall_thickness_mm": 3.38,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     }
   ],

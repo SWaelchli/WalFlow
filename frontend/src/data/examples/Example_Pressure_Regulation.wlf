@@ -1,6 +1,6 @@
 {
-  "version": "0.2",
-  "app_version": "0.2.0",
+  "version": "0.1",
+  "app_version": "0.1.6",
   "format": "walflow",
   "nodes": [
     {
@@ -141,7 +141,15 @@
       "data": {
         "label": "Suction",
         "length": 2,
-        "diameter": 0.032
+        "diameter": 0.03528,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 32,
+        "standardSch": "STD",
+        "outer_diameter_mm": 42.4,
+        "wall_thickness_mm": 3.56,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -153,7 +161,15 @@
       "data": {
         "label": "Discharge",
         "length": 2,
-        "diameter": 0.025
+        "diameter": 0.02664,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 25,
+        "standardSch": "STD",
+        "outer_diameter_mm": 33.4,
+        "wall_thickness_mm": 3.38,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -165,7 +181,15 @@
       "data": {
         "label": "BPR Branch",
         "length": 2,
-        "diameter": 0.025
+        "diameter": 0.02664,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 25,
+        "standardSch": "STD",
+        "outer_diameter_mm": 33.4,
+        "wall_thickness_mm": 3.38,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -177,7 +201,15 @@
       "data": {
         "label": "Bypass Return",
         "length": 3,
-        "diameter": 0.025
+        "diameter": 0.02664,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 25,
+        "standardSch": "STD",
+        "outer_diameter_mm": 33.4,
+        "wall_thickness_mm": 3.38,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -189,7 +221,15 @@
       "data": {
         "label": "PRV Branch",
         "length": 2,
-        "diameter": 0.025
+        "diameter": 0.02664,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 25,
+        "standardSch": "STD",
+        "outer_diameter_mm": 33.4,
+        "wall_thickness_mm": 3.38,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -201,7 +241,15 @@
       "data": {
         "label": "Regulated Supply",
         "length": 2,
-        "diameter": 0.025
+        "diameter": 0.02664,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 25,
+        "standardSch": "STD",
+        "outer_diameter_mm": 33.4,
+        "wall_thickness_mm": 3.38,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -213,7 +261,15 @@
       "data": {
         "label": "Sink Return",
         "length": 2,
-        "diameter": 0.025
+        "diameter": 0.02664,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 25,
+        "standardSch": "STD",
+        "outer_diameter_mm": 33.4,
+        "wall_thickness_mm": 3.38,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     }
   ],

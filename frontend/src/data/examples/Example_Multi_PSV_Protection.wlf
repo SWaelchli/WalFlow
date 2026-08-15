@@ -1,6 +1,6 @@
 {
-  "version": "0.2",
-  "app_version": "0.2.0",
+  "version": "0.1",
+  "app_version": "0.1.6",
   "format": "walflow",
   "created_at": "2026-07-26T22:55:00.000Z",
   "active_case_id": "case_base",
@@ -198,7 +198,15 @@
         "label": "Suction Line",
         "type": "PIPE",
         "length": 10.0,
-        "diameter": 0.05248
+        "diameter": 0.05248,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 50,
+        "standardSch": "STD",
+        "outer_diameter_mm": 60.3,
+        "wall_thickness_mm": 3.91,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -212,7 +220,15 @@
         "label": "Discharge Line",
         "type": "PIPE",
         "length": 15.0,
-        "diameter": 0.05248
+        "diameter": 0.05248,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 50,
+        "standardSch": "STD",
+        "outer_diameter_mm": 60.3,
+        "wall_thickness_mm": 3.91,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -226,7 +242,15 @@
         "label": "Process Line",
         "type": "PIPE",
         "length": 20.0,
-        "diameter": 0.05248
+        "diameter": 0.05248,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 50,
+        "standardSch": "STD",
+        "outer_diameter_mm": 60.3,
+        "wall_thickness_mm": 3.91,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -240,7 +264,15 @@
         "label": "Process Return",
         "type": "PIPE",
         "length": 15.0,
-        "diameter": 0.05248
+        "diameter": 0.05248,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 50,
+        "standardSch": "STD",
+        "outer_diameter_mm": 60.3,
+        "wall_thickness_mm": 3.91,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -254,7 +286,15 @@
         "label": "Relief Header 1",
         "type": "PIPE",
         "length": 10.0,
-        "diameter": 0.05248
+        "diameter": 0.05248,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 50,
+        "standardSch": "STD",
+        "outer_diameter_mm": 60.3,
+        "wall_thickness_mm": 3.91,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -268,7 +308,15 @@
         "label": "PSV-101 Inlet",
         "type": "PIPE",
         "length": 5.0,
-        "diameter": 0.05248
+        "diameter": 0.05248,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 50,
+        "standardSch": "STD",
+        "outer_diameter_mm": 60.3,
+        "wall_thickness_mm": 3.91,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -282,7 +330,15 @@
         "label": "Relief Header 2",
         "type": "PIPE",
         "length": 10.0,
-        "diameter": 0.05248
+        "diameter": 0.05248,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 50,
+        "standardSch": "STD",
+        "outer_diameter_mm": 60.3,
+        "wall_thickness_mm": 3.91,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -296,7 +352,15 @@
         "label": "PSV-102 Inlet",
         "type": "PIPE",
         "length": 5.0,
-        "diameter": 0.05248
+        "diameter": 0.05248,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 50,
+        "standardSch": "STD",
+        "outer_diameter_mm": 60.3,
+        "wall_thickness_mm": 3.91,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -310,7 +374,15 @@
         "label": "RD-101 Inlet",
         "type": "PIPE",
         "length": 5.0,
-        "diameter": 0.05248
+        "diameter": 0.05248,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 50,
+        "standardSch": "STD",
+        "outer_diameter_mm": 60.3,
+        "wall_thickness_mm": 3.91,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -324,7 +396,15 @@
         "label": "RD-101 Relief Line",
         "type": "PIPE",
         "length": 15.0,
-        "diameter": 0.05248
+        "diameter": 0.05248,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 50,
+        "standardSch": "STD",
+        "outer_diameter_mm": 60.3,
+        "wall_thickness_mm": 3.91,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -338,7 +418,15 @@
         "label": "PSV-102 Relief Line",
         "type": "PIPE",
         "length": 15.0,
-        "diameter": 0.05248
+        "diameter": 0.05248,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 50,
+        "standardSch": "STD",
+        "outer_diameter_mm": 60.3,
+        "wall_thickness_mm": 3.91,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -352,7 +440,15 @@
         "label": "PSV-101 Relief Line",
         "type": "PIPE",
         "length": 15.0,
-        "diameter": 0.05248
+        "diameter": 0.05248,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 50,
+        "standardSch": "STD",
+        "outer_diameter_mm": 60.3,
+        "wall_thickness_mm": 3.91,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -366,7 +462,15 @@
         "label": "Relief Return Header",
         "type": "PIPE",
         "length": 10.0,
-        "diameter": 0.05248
+        "diameter": 0.05248,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 50,
+        "standardSch": "STD",
+        "outer_diameter_mm": 60.3,
+        "wall_thickness_mm": 3.91,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -380,7 +484,15 @@
         "label": "Common Relief Discharge",
         "type": "PIPE",
         "length": 20.0,
-        "diameter": 0.05248
+        "diameter": 0.05248,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 50,
+        "standardSch": "STD",
+        "outer_diameter_mm": 60.3,
+        "wall_thickness_mm": 3.91,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     }
   ],

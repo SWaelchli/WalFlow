@@ -1,6 +1,6 @@
 {
-  "version": "0.2",
-  "app_version": "0.2.0",
+  "version": "0.1",
+  "app_version": "0.1.6",
   "format": "walflow",
   "created_at": "2026-08-06T19:43:02.154Z",
   "active_case_id": "case_base",
@@ -22947,7 +22947,7 @@
         "length": 0.1,
         "diameter": 0.07792,
         "standardDn": 80,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -22971,7 +22971,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 88.9,
+        "wall_thickness_mm": 5.49,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -22991,7 +22997,7 @@
         "length": 0.4,
         "diameter": 0.07792,
         "standardDn": 80,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -23015,7 +23021,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 88.9,
+        "wall_thickness_mm": 5.49,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -23035,7 +23047,7 @@
         "length": 0.5,
         "diameter": 0.07792,
         "standardDn": 80,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -23059,7 +23071,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 88.9,
+        "wall_thickness_mm": 5.49,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -23079,7 +23097,7 @@
         "length": 0.5,
         "diameter": 0.07792,
         "standardDn": 80,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -23103,7 +23121,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 88.9,
+        "wall_thickness_mm": 5.49,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -23123,7 +23147,7 @@
         "length": 0.5,
         "diameter": 0.07792,
         "standardDn": 80,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -23147,7 +23171,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 88.9,
+        "wall_thickness_mm": 5.49,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -23167,7 +23197,7 @@
         "length": 0.5,
         "diameter": 0.07792,
         "standardDn": 80,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -23191,7 +23221,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 88.9,
+        "wall_thickness_mm": 5.49,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -23211,7 +23247,7 @@
         "length": 0.2,
         "diameter": 0.07792,
         "standardDn": 80,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -23235,7 +23271,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 88.9,
+        "wall_thickness_mm": 5.49,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -23255,7 +23297,7 @@
         "length": 0.3,
         "diameter": 0.07792,
         "standardDn": 80,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -23279,7 +23321,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 88.9,
+        "wall_thickness_mm": 5.49,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -23299,7 +23347,7 @@
         "length": 0.5,
         "diameter": 0.07792,
         "standardDn": 80,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -23323,7 +23371,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 88.9,
+        "wall_thickness_mm": 5.49,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -23343,7 +23397,7 @@
         "length": 0.4,
         "diameter": 0.07792,
         "standardDn": 80,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -23367,7 +23421,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 88.9,
+        "wall_thickness_mm": 5.49,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -23387,7 +23447,7 @@
         "length": 0.2,
         "diameter": 0.07792,
         "standardDn": 80,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -23411,7 +23471,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 88.9,
+        "wall_thickness_mm": 5.49,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -23431,7 +23497,7 @@
         "length": 0.4,
         "diameter": 0.07792,
         "standardDn": 80,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -23455,7 +23521,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 88.9,
+        "wall_thickness_mm": 5.49,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -23475,7 +23547,7 @@
         "length": 0.5,
         "diameter": 0.07792,
         "standardDn": 80,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -23499,7 +23571,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 88.9,
+        "wall_thickness_mm": 5.49,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -23519,7 +23597,7 @@
         "length": 0.5,
         "diameter": 0.07792,
         "standardDn": 80,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -23543,7 +23621,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 88.9,
+        "wall_thickness_mm": 5.49,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -23563,7 +23647,7 @@
         "length": 8,
         "diameter": 0.07792,
         "standardDn": 80,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -23587,7 +23671,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 88.9,
+        "wall_thickness_mm": 5.49,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -23607,7 +23697,7 @@
         "length": 1,
         "diameter": 0.07792,
         "standardDn": 80,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -23631,7 +23721,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 88.9,
+        "wall_thickness_mm": 5.49,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -23651,7 +23747,7 @@
         "length": 8,
         "diameter": 0.07792,
         "standardDn": 80,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -23675,7 +23771,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 88.9,
+        "wall_thickness_mm": 5.49,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -23695,7 +23797,7 @@
         "length": 0.3,
         "diameter": 0.07792,
         "standardDn": 80,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -23719,7 +23821,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 88.9,
+        "wall_thickness_mm": 5.49,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -23739,7 +23847,7 @@
         "length": 0.5,
         "diameter": 0.07792,
         "standardDn": 80,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -23763,7 +23871,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 88.9,
+        "wall_thickness_mm": 5.49,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -23783,7 +23897,7 @@
         "length": 0.5,
         "diameter": 0.07792,
         "standardDn": 80,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -23807,7 +23921,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 88.9,
+        "wall_thickness_mm": 5.49,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -23825,9 +23945,9 @@
         "label": "Pipe 122",
         "type": "PIPE",
         "length": 2,
-        "diameter": 0.018879999999999997,
+        "diameter": 0.02116,
         "standardDn": 20,
-        "standardSch": "80s",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -23851,7 +23971,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 26.9,
+        "wall_thickness_mm": 2.87,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -23869,9 +23995,9 @@
         "label": "Pipe 123",
         "type": "PIPE",
         "length": 1,
-        "diameter": 0.018879999999999997,
+        "diameter": 0.02116,
         "standardDn": 20,
-        "standardSch": "80s",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -23895,7 +24021,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 26.9,
+        "wall_thickness_mm": 2.87,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -23915,7 +24047,7 @@
         "length": 1,
         "diameter": 0.07792,
         "standardDn": 80,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -23939,7 +24071,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 88.9,
+        "wall_thickness_mm": 5.49,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -23957,9 +24095,9 @@
         "label": "Pipe 125",
         "type": "PIPE",
         "length": 2,
-        "diameter": 0.02096,
+        "diameter": 0.02116,
         "standardDn": 20,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -23983,7 +24121,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 26.9,
+        "wall_thickness_mm": 2.87,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -24001,9 +24145,9 @@
         "label": "Pipe 126",
         "type": "PIPE",
         "length": 1,
-        "diameter": 0.02096,
+        "diameter": 0.02116,
         "standardDn": 20,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -24027,7 +24171,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 26.9,
+        "wall_thickness_mm": 2.87,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -24045,9 +24195,9 @@
         "label": "Pipe 127",
         "type": "PIPE",
         "length": 0.3,
-        "diameter": 0.02096,
+        "diameter": 0.02116,
         "standardDn": 20,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -24071,7 +24221,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 26.9,
+        "wall_thickness_mm": 2.87,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -24091,7 +24247,7 @@
         "length": 0.1,
         "diameter": 0.07792,
         "standardDn": 80,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -24115,7 +24271,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 88.9,
+        "wall_thickness_mm": 5.49,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -24133,9 +24295,9 @@
         "label": "Pipe 129",
         "type": "PIPE",
         "length": 1,
-        "diameter": 0.02096,
+        "diameter": 0.02116,
         "standardDn": 20,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -24159,7 +24321,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 26.9,
+        "wall_thickness_mm": 2.87,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -24177,9 +24345,9 @@
         "label": "Pipe 130",
         "type": "PIPE",
         "length": 0.3,
-        "diameter": 0.02096,
+        "diameter": 0.02116,
         "standardDn": 20,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -24203,7 +24371,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 26.9,
+        "wall_thickness_mm": 2.87,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -24223,7 +24397,7 @@
         "length": 0.1,
         "diameter": 0.07792,
         "standardDn": 80,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -24247,7 +24421,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 88.9,
+        "wall_thickness_mm": 5.49,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -24267,7 +24447,7 @@
         "length": 1,
         "diameter": 0.07792,
         "standardDn": 80,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -24291,7 +24471,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 88.9,
+        "wall_thickness_mm": 5.49,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -24311,7 +24497,7 @@
         "length": 0.3,
         "diameter": 0.07792,
         "standardDn": 80,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -24335,7 +24521,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 88.9,
+        "wall_thickness_mm": 5.49,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -24355,7 +24547,7 @@
         "length": 0.3,
         "diameter": 0.07792,
         "standardDn": 80,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -24379,7 +24571,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 88.9,
+        "wall_thickness_mm": 5.49,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -24399,7 +24597,7 @@
         "length": 0.1,
         "diameter": 0.07792,
         "standardDn": 80,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -24423,7 +24621,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 88.9,
+        "wall_thickness_mm": 5.49,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -24443,7 +24647,7 @@
         "length": 0.3,
         "diameter": 0.04094,
         "standardDn": 40,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -24467,7 +24671,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 48.3,
+        "wall_thickness_mm": 3.68,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -24487,7 +24697,7 @@
         "length": 0.5,
         "diameter": 0.04094,
         "standardDn": 40,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -24511,7 +24721,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 48.3,
+        "wall_thickness_mm": 3.68,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -24531,7 +24747,7 @@
         "length": 0.8,
         "diameter": 0.04094,
         "standardDn": 40,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -24555,7 +24771,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 48.3,
+        "wall_thickness_mm": 3.68,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -24575,7 +24797,7 @@
         "length": 0.5,
         "diameter": 0.04094,
         "standardDn": 40,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -24599,7 +24821,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 48.3,
+        "wall_thickness_mm": 3.68,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -24619,7 +24847,7 @@
         "length": 0.3,
         "diameter": 0.04094,
         "standardDn": 40,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -24643,7 +24871,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 48.3,
+        "wall_thickness_mm": 3.68,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -24663,7 +24897,7 @@
         "length": 0.5,
         "diameter": 0.04094,
         "standardDn": 40,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -24687,7 +24921,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 48.3,
+        "wall_thickness_mm": 3.68,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -24707,7 +24947,7 @@
         "length": 0.3,
         "diameter": 0.04094,
         "standardDn": 40,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -24731,7 +24971,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 48.3,
+        "wall_thickness_mm": 3.68,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -24749,9 +24995,9 @@
         "label": "Pipe 143",
         "type": "PIPE",
         "length": 0.6,
-        "diameter": 0.02096,
+        "diameter": 0.02116,
         "standardDn": 20,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -24775,7 +25021,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 26.9,
+        "wall_thickness_mm": 2.87,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -24793,9 +25045,9 @@
         "label": "Pipe 144",
         "type": "PIPE",
         "length": 0.3,
-        "diameter": 0.02096,
+        "diameter": 0.02116,
         "standardDn": 20,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -24819,7 +25071,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 26.9,
+        "wall_thickness_mm": 2.87,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -24837,9 +25095,9 @@
         "label": "Pipe 145",
         "type": "PIPE",
         "length": 0.8,
-        "diameter": 0.02096,
+        "diameter": 0.02116,
         "standardDn": 20,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -24863,7 +25121,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 26.9,
+        "wall_thickness_mm": 2.87,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -24881,9 +25145,9 @@
         "label": "Pipe 146",
         "type": "PIPE",
         "length": 0.3,
-        "diameter": 0.02096,
+        "diameter": 0.02116,
         "standardDn": 20,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -24907,7 +25171,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 26.9,
+        "wall_thickness_mm": 2.87,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -24925,9 +25195,9 @@
         "label": "Pipe 147",
         "type": "PIPE",
         "length": 0.1,
-        "diameter": 0.10225999999999999,
+        "diameter": 0.10226,
         "standardDn": 100,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -24951,7 +25221,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 114.3,
+        "wall_thickness_mm": 6.02,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -24969,9 +25245,9 @@
         "label": "Pipe 148",
         "type": "PIPE",
         "length": 0.1,
-        "diameter": 0.10225999999999999,
+        "diameter": 0.10226,
         "standardDn": 100,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -24995,7 +25271,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 114.3,
+        "wall_thickness_mm": 6.02,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -25013,9 +25295,9 @@
         "label": "Pipe 149",
         "type": "PIPE",
         "length": 0.1,
-        "diameter": 0.10225999999999999,
+        "diameter": 0.10226,
         "standardDn": 100,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -25039,7 +25321,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 114.3,
+        "wall_thickness_mm": 6.02,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -25057,9 +25345,9 @@
         "label": "Pipe 150",
         "type": "PIPE",
         "length": 0.1,
-        "diameter": 0.10225999999999999,
+        "diameter": 0.10226,
         "standardDn": 100,
-        "standardSch": "40",
+        "standardSch": "STD",
         "telemetry": {
           "inlets": [
             {
@@ -25083,7 +25371,13 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 114.3,
+        "wall_thickness_mm": 6.02,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     },
     {
@@ -25124,7 +25418,15 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 50,
+        "standardSch": "STD",
+        "outer_diameter_mm": 60.3,
+        "wall_thickness_mm": 3.91,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       },
       "selected": false
     },
@@ -25166,7 +25468,15 @@
               "connected_to_port_id": null
             }
           ]
-        }
+        },
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 50,
+        "standardSch": "STD",
+        "outer_diameter_mm": 60.3,
+        "wall_thickness_mm": 3.91,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       },
       "selected": false
     },
@@ -25188,7 +25498,15 @@
         "label": "Signal 153",
         "type": "SIGNAL",
         "length": 25,
-        "diameter": 0.05248
+        "diameter": 0.05248,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 50,
+        "standardSch": "STD",
+        "outer_diameter_mm": 60.3,
+        "wall_thickness_mm": 3.91,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
       }
     }
   ],

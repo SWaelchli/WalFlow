@@ -107,11 +107,18 @@ export default function DataList({
   onSetCaseOverride,
   runSimulation,
   showCaseManager = true,
-  onToggleCaseManager
+  onToggleCaseManager,
+  availablePipeClasses = [],
+  allowCustomPipes = true
 }) {
   const { labels, isImperial, formatPressure, formatFlow, formatFlowM3s, formatPower, formatTemperatureK, formatVelocity } = useUnits();
 
+  const classList = availablePipeClasses || [];
+
+
+
   const [activeTab, setActiveTab] = useState('pipes');
+
   const [manualOrder, setManualOrder] = useState([]);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [filterText, setFilterText] = useState("");
@@ -843,8 +850,8 @@ export default function DataList({
               <SortHeader label={`P Start (${labels.pressureAbs})`} sortKey="pStart" align="right" sortConfig={sortConfig} requestSort={requestSort} />
               <SortHeader label={`P End (${labels.pressureAbs})`} sortKey="pEnd" align="right" sortConfig={sortConfig} requestSort={requestSort} />
               <SortHeader label={`Temp (${labels.temperature})`} sortKey="temp" align="right" sortConfig={sortConfig} requestSort={requestSort} />
-              {activeTab === 'pipes' && <th style={{ padding: '8px' }}>NPS</th>}
-              {activeTab === 'pipes' && <th style={{ padding: '8px' }}>Schedule</th>}
+              {activeTab === 'pipes' && <th style={{ padding: '8px' }}>NPS / Size</th>}
+              {activeTab === 'pipes' && <th style={{ padding: '8px' }}>Pipe Class</th>}
               {activeTab === 'pipes' && <SortHeader label={`Length (${labels.length})`} sortKey="length" align="right" sortConfig={sortConfig} requestSort={requestSort} />}
             </tr>
           </thead>
@@ -852,29 +859,66 @@ export default function DataList({
             {processedItems.map((entry, idx) => {
               const isNode = entry.type === 'node';
               const item = entry.item;
-              const diaValue = isNode ? (item.data.orifice_diameter || item.data.pipe_diameter || 0) : (item.data.diameter || 0.1);
+              const diaValue = isNode ? (item.data.orifice_diameter || item.data.pipe_diameter || 0) : (item.data.diameter || 0.05248);
               const match = findClosestPipeMatch(diaValue);
-              const currentDn = item.data.standardDn || (match ? match.dn : 50);
-              const currentSch = item.data.standardSch || (match ? match.sch : "40");
+              
+              const currentClassId = item.data.pipe_class_id || (classList.length > 0 ? classList[0].id : 'manual');
+              const selectedClass = classList.find(c => c.id === currentClassId);
+              const supportedSizes = selectedClass?.sizes || [];
+
+              const currentDn = item.data.standardDn || (supportedSizes.length > 0 ? supportedSizes[0].dn : (match ? match.dn : 50));
               const pipeInfo = ASME_PIPE_STANDARDS.find(p => p.dn === currentDn);
               const npsDisplay = pipeInfo ? `${pipeInfo.nps}"` : `${currentDn}mm`;
-              const schDisplay = currentSch;
 
-              const handleDnChange = (newDn) => {
-                const dnInt = parseInt(newDn);
-                const pipe = ASME_PIPE_STANDARDS.find(p => p.dn === dnInt);
-                if (pipe && !isNode) {
-                  const sch = pipe.schedules[currentSch] ? currentSch : Object.keys(pipe.schedules)[0];
-                  const newId = calculatePipeId(pipe.od, pipe.schedules[sch]);
-                  onUpdateEdge(item.id, { diameter: newId, standardDn: dnInt, standardSch: sch });
+              const handleClassChange = (newClassId) => {
+                if (newClassId === 'manual') {
+                  onUpdateEdge(item.id, {
+                    pipe_class_id: 'manual',
+                    pipe_class_code: 'CUSTOM'
+                  });
+                  return;
+                }
+                const pc = classList.find(c => c.id === newClassId);
+                if (!pc) return;
+                const sizes = pc.sizes || [];
+                const matchedSize = sizes.find(s => s.dn === currentDn) || sizes[0];
+                if (matchedSize) {
+                  const calcId = (matchedSize.od_mm - 2.0 * matchedSize.wt_mm) / 1000.0;
+                  onUpdateEdge(item.id, {
+                    pipe_class_id: pc.id,
+                    pipe_class_code: pc.code,
+                    diameter: calcId,
+                    standardDn: matchedSize.dn,
+                    standardSch: matchedSize.sch,
+                    roughness_mm: pc.roughness_mm,
+                    roughness: pc.roughness_mm / 1000.0,
+                    outer_diameter_mm: matchedSize.od_mm,
+                    wall_thickness_mm: matchedSize.wt_mm
+                  });
                 }
               };
 
-              const handleSchChange = (newSch) => {
-                const pipe = ASME_PIPE_STANDARDS.find(p => p.dn === currentDn);
-                if (pipe && pipe.schedules[newSch] && !isNode) {
-                  const newId = calculatePipeId(pipe.od, pipe.schedules[newSch]);
-                  onUpdateEdge(item.id, { diameter: newId, standardSch: newSch });
+              const handleDnChange = (newDn) => {
+                const dnInt = parseInt(newDn, 10);
+                if (selectedClass && selectedClass.sizes) {
+                  const sizeObj = selectedClass.sizes.find(s => s.dn === dnInt);
+                  if (sizeObj) {
+                    const calcId = (sizeObj.od_mm - 2.0 * sizeObj.wt_mm) / 1000.0;
+                    onUpdateEdge(item.id, {
+                      diameter: calcId,
+                      standardDn: dnInt,
+                      standardSch: sizeObj.sch,
+                      outer_diameter_mm: sizeObj.od_mm,
+                      wall_thickness_mm: sizeObj.wt_mm
+                    });
+                    return;
+                  }
+                }
+                const pipe = ASME_PIPE_STANDARDS.find(p => p.dn === dnInt);
+                if (pipe && !isNode) {
+                  const sch = Object.keys(pipe.schedules)[0] || "STD";
+                  const newId = calculatePipeId(pipe.od, pipe.schedules[sch]);
+                  onUpdateEdge(item.id, { diameter: newId, standardDn: dnInt, standardSch: sch });
                 }
               };
 
@@ -937,7 +981,15 @@ export default function DataList({
                           onPointerDown={(e) => e.stopPropagation()}
                           onMouseDown={(e) => e.stopPropagation()}
                         >
-                          {ASME_PIPE_STANDARDS.map(p => <option key={p.dn} value={p.dn}>DN {p.dn} ({p.nps}")</option>)}
+                          {supportedSizes.length > 0 ? (
+                            supportedSizes.map(s => (
+                              <option key={s.dn} value={s.dn}>
+                                DN {s.dn} ({s.nps}") {s.sch ? `- ${s.sch}` : ''}
+                              </option>
+                            ))
+                          ) : (
+                            ASME_PIPE_STANDARDS.map(p => <option key={p.dn} value={p.dn}>DN {p.dn} ({p.nps}")</option>)
+                          )}
                         </select>
                       ) : npsDisplay}
                     </td>
@@ -946,17 +998,25 @@ export default function DataList({
                     <td style={{ padding: '8px' }} onClick={(e) => e.stopPropagation()}>
                       {!isNode ? (
                         <select 
-                          style={{ fontSize: '11px', padding: '3px 6px', border: '1px solid var(--color-border)', borderRadius: '5px', color: 'var(--color-brand-dark)', fontWeight: '600', background: '#ffffff', outline: 'none' }}
-                          value={currentSch} 
-                          onChange={(e) => handleSchChange(e.target.value)} 
+                          style={{ fontSize: '11px', padding: '3px 6px', border: '1px solid var(--color-border)', borderRadius: '5px', color: 'var(--color-brand-dark)', fontWeight: '700', background: '#ffffff', outline: 'none', maxWidth: '140px' }}
+                          value={currentClassId} 
+                          onChange={(e) => handleClassChange(e.target.value)} 
                           onFocus={() => { handleRowClick(entry); setIsEditing(true); }}
                           onBlur={() => setIsEditing(false)}
                           onPointerDown={(e) => e.stopPropagation()}
                           onMouseDown={(e) => e.stopPropagation()}
                         >
-                          {pipeInfo && Object.keys(pipeInfo.schedules).map(sch => <option key={sch} value={sch}>{sch}</option>)}
+                          {classList.map(c => (
+                            <option key={c.id} value={c.id}>
+                              [{c.code}] {c.name}
+                            </option>
+                          ))}
+                          {allowCustomPipes && (
+                            <option value="manual">Custom / Manual</option>
+                          )}
                         </select>
-                      ) : schDisplay}
+
+                      ) : (item.data.pipe_class_code || '—')}
                     </td>
                   )}
                   {activeTab === 'pipes' && (
@@ -981,6 +1041,7 @@ export default function DataList({
               );
             })}
           </tbody>
+
         </table>
         )}
       </div>

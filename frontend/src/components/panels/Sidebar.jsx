@@ -4,6 +4,7 @@ import { EquipmentSymbol } from '../symbols/SymbolLibrary';
 import { InfoIcon, CheckIcon, CrossIcon, FolderIcon, SearchIcon, TrashIcon, LockIcon, UnlockIcon, FolderOpenIcon } from '../symbols/IconLibrary';
 import { FLUID_CATEGORIES, FLUID_LIBRARY } from '../../constants/fluid_library';
 import { useUnits } from '../../context/UnitContext';
+import { FILE_FORMAT_VERSION, APP_VERSION } from '../../constants';
 
 
 
@@ -665,6 +666,7 @@ export default function Sidebar({
 }) {
   const { unitSystem, setUnitSystem, isImperial } = useUnits();
   const [activeTab, setActiveTab] = useState('library');
+  const [settingsSubTab, setSettingsSubTab] = useState('drawing'); // 'drawing' | 'project' | 'global'
   const [searchQuery, setSearchQuery] = useState('');
 
   const [projectsList, setProjectsList] = useState([]);
@@ -673,6 +675,147 @@ export default function Sidebar({
   const [projectDiagrams, setProjectDiagrams] = useState({});
   const [loadingFiles, setLoadingFiles] = useState(false);
   const [highlightedDiagramId, setHighlightedDiagramId] = useState(null);
+
+  // Pipe classes catalog & Project Settings state
+  const [pipeClasses, setPipeClasses] = useState([]);
+  const [savingPipeSpecs, setSavingPipeSpecs] = useState(false);
+  const [pipeSpecSearch, setPipeSpecSearch] = useState('');
+
+  // Drawing metadata state
+  const [drawingTitle, setDrawingTitle] = useState(activeDiagram?.title || 'Local Draft');
+  const [drawingDesc, setDrawingDesc] = useState(activeDiagram?.description || '');
+  const [isSavingDrawingMeta, setIsSavingDrawingMeta] = useState(false);
+
+  useEffect(() => {
+    if (activeDiagram) {
+      setDrawingTitle(activeDiagram.title || 'Untitled Drawing');
+      setDrawingDesc(activeDiagram.description || '');
+    } else {
+      setDrawingTitle('Local Draft');
+      setDrawingDesc('');
+    }
+  }, [activeDiagram]);
+
+  const fetchPipeClasses = useCallback(async () => {
+    try {
+      const res = await axios.get('/api/pipe-classes');
+      setPipeClasses(res.data);
+    } catch {
+      console.warn("Failed to load pipe classes catalog in sidebar.");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'settings' && settingsSubTab === 'project') {
+      fetchPipeClasses();
+    }
+  }, [activeTab, settingsSubTab, fetchPipeClasses]);
+
+  const isOwnerOfActiveProject = Boolean(
+    activeProject?.members
+      ? activeProject.members.some(m => m.user_id === currentUser?.id && m.role === 'owner')
+      : true
+  );
+
+  const handleTogglePipeClass = async (classId) => {
+    if (!activeProject) return;
+    setSavingPipeSpecs(true);
+    try {
+      let currentAllowed = activeProject.allowed_pipe_classes;
+      if (!currentAllowed) {
+        currentAllowed = pipeClasses.map(c => c.id);
+      }
+      let nextAllowed;
+      if (currentAllowed.includes(classId)) {
+        nextAllowed = currentAllowed.filter(id => id !== classId);
+      } else {
+        nextAllowed = [...currentAllowed, classId];
+      }
+      const isAllSelected = pipeClasses.length > 0 && nextAllowed.length === pipeClasses.length;
+      const finalAllowed = isAllSelected ? null : nextAllowed;
+
+      const res = await axios.put(`/api/projects/${activeProject.id}`, {
+        allowed_pipe_classes: finalAllowed
+      });
+
+      if (setActiveProject) {
+        setActiveProject(prev => ({
+          ...prev,
+          allowed_pipe_classes: res.data.allowed_pipe_classes
+        }));
+      }
+    } catch {
+      alert("Failed to update project pipe specifications.");
+    } finally {
+      setSavingPipeSpecs(false);
+    }
+  };
+
+  const handleSetAllPipeClasses = async (enableAll) => {
+    if (!activeProject) return;
+    setSavingPipeSpecs(true);
+    try {
+      const finalAllowed = enableAll ? null : [];
+      const res = await axios.put(`/api/projects/${activeProject.id}`, {
+        allowed_pipe_classes: finalAllowed
+      });
+      if (setActiveProject) {
+        setActiveProject(prev => ({
+          ...prev,
+          allowed_pipe_classes: res.data.allowed_pipe_classes
+        }));
+      }
+    } catch {
+      alert("Failed to update project pipe specifications.");
+    } finally {
+      setSavingPipeSpecs(false);
+    }
+  };
+
+  const handleSetAllowCustomPipes = async (allow) => {
+    if (!activeProject) return;
+    if ((activeProject.allow_custom_pipes !== false) === allow) return;
+    setSavingPipeSpecs(true);
+    try {
+      const res = await axios.put(`/api/projects/${activeProject.id}`, {
+        allow_custom_pipes: allow
+      });
+      if (setActiveProject) {
+        setActiveProject(prev => ({
+          ...prev,
+          allow_custom_pipes: res.data.allow_custom_pipes !== false
+        }));
+      }
+    } catch {
+      alert("Failed to update custom dimensions setting.");
+    } finally {
+      setSavingPipeSpecs(false);
+    }
+  };
+
+  const handleSaveDrawingMetadata = async () => {
+    if (!activeDiagram || !activeDiagram.id || !isAuthenticated) return;
+    if (!drawingTitle.trim()) return;
+    setIsSavingDrawingMeta(true);
+    try {
+      const res = await axios.put(`/api/diagrams/${activeDiagram.id}`, {
+        title: drawingTitle.trim(),
+        description: drawingDesc.trim()
+      });
+      if (setActiveDiagram) {
+        setActiveDiagram(prev => ({
+          ...prev,
+          title: res.data.title,
+          description: res.data.description
+        }));
+      }
+      fetchWorkspaceFiles();
+    } catch {
+      console.warn("Failed to update drawing metadata");
+    } finally {
+      setIsSavingDrawingMeta(false);
+    }
+  };
 
   const fetchWorkspaceFiles = useCallback(async () => {
     if (!isAuthenticated) return;
@@ -785,18 +928,36 @@ export default function Sidebar({
       const response = await axios.get(`/api/diagrams/${diagramId}`);
       const parsedData = JSON.parse(response.data.diagram_data);
       
-      if (parsedData.version !== '0.2') {
-        alert(`Cannot load: File format version '${parsedData.version}' is incompatible with version '0.2'.`);
+      if (parsedData.version !== FILE_FORMAT_VERSION) {
+        alert(`Cannot load: File format version '${parsedData.version}' is incompatible with version '${FILE_FORMAT_VERSION}'.`);
         return;
       }
 
       if (setActiveProject) {
-        setActiveProject(project ? {
-          id: project.id,
-          title: project.title,
-          description: project.description
-        } : null);
+        if (project) {
+          try {
+            const freshProj = await axios.get(`/api/projects/${project.id}`);
+            setActiveProject({
+              id: freshProj.data.id,
+              title: freshProj.data.title,
+              description: freshProj.data.description,
+              allowed_pipe_classes: freshProj.data.allowed_pipe_classes,
+              allow_custom_pipes: freshProj.data.allow_custom_pipes !== false
+            });
+          } catch {
+            setActiveProject({
+              id: project.id,
+              title: project.title,
+              description: project.description,
+              allowed_pipe_classes: project.allowed_pipe_classes,
+              allow_custom_pipes: project.allow_custom_pipes !== false
+            });
+          }
+        } else {
+          setActiveProject(null);
+        }
       }
+
       if (setActiveDiagram) {
         setActiveDiagram({
           id: response.data.id,
@@ -809,6 +970,7 @@ export default function Sidebar({
       alert("Failed to load drawing from cloud.");
     }
   };
+
 
   const handleDeleteDiagram = async (e, diagramId, title) => {
     e.stopPropagation();
@@ -968,255 +1130,653 @@ export default function Sidebar({
         )}
 
         {activeTab === 'settings' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <h4 style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', color: theme.slate500, margin: 0, letterSpacing: '0.05em' }}>Unit System</h4>
-              
-              <div>
-                <label style={labelStyle}>Engineering Units</label>
-                <div style={{ display: 'flex', gap: '6px', background: '#F4F7F6', padding: '4px', borderRadius: '8px', border: '1px solid #D8E2E1' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {/* 3-Tier Segmented Sub-Tab Switcher */}
+            <div style={{
+              display: 'flex',
+              background: '#F4F7F6',
+              padding: '3px',
+              borderRadius: '8px',
+              border: '1px solid #D8E2E1'
+            }}>
+              {[
+                { id: 'drawing', label: 'Drawing' },
+                { id: 'project', label: 'Project' },
+                { id: 'global', label: 'Global' }
+              ].map((sub) => {
+                const isActive = settingsSubTab === sub.id;
+                return (
                   <button
+                    key={sub.id}
                     type="button"
-                    onClick={() => {
-                      setUnitSystem('metric');
-                      onUpdateGlobalSettings({ ...globalSettings, unit_system: 'metric' });
-                    }}
+                    onClick={() => setSettingsSubTab(sub.id)}
                     style={{
                       flex: 1,
-                      padding: '6px 8px',
-                      fontSize: '11.5px',
-                      fontWeight: '600',
-                      borderRadius: '6px',
+                      padding: '5px 8px',
                       border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '11px',
+                      fontWeight: '700',
                       cursor: 'pointer',
                       transition: 'all 0.15s ease',
-                      backgroundColor: unitSystem === 'metric' ? 'var(--color-brand-dark)' : 'transparent',
-                      color: unitSystem === 'metric' ? '#ffffff' : 'var(--color-text-secondary)',
-                      boxShadow: unitSystem === 'metric' ? '0 1px 3px rgba(57, 82, 83, 0.15)' : 'none'
+                      backgroundColor: isActive ? 'var(--color-brand-dark)' : 'transparent',
+                      color: isActive ? '#ffffff' : 'var(--color-text-secondary)',
+                      boxShadow: isActive ? '0 1px 3px rgba(57, 82, 83, 0.18)' : 'none'
                     }}
                   >
-                    Metric (SI)
+                    {sub.label}
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setUnitSystem('imperial');
-                      onUpdateGlobalSettings({ ...globalSettings, unit_system: 'imperial' });
-                    }}
-                    style={{
-                      flex: 1,
-                      padding: '6px 8px',
-                      fontSize: '11.5px',
-                      fontWeight: '600',
-                      borderRadius: '6px',
-                      border: 'none',
-                      cursor: 'pointer',
-                      transition: 'all 0.15s ease',
-                      backgroundColor: unitSystem === 'imperial' ? 'var(--color-brand-dark)' : 'transparent',
-                      color: unitSystem === 'imperial' ? '#ffffff' : 'var(--color-text-secondary)',
-                      boxShadow: unitSystem === 'imperial' ? '0 1px 3px rgba(57, 82, 83, 0.15)' : 'none'
-                    }}
-                  >
-                    Imperial (US)
-                  </button>
+                );
+              })}
+            </div>
+
+            {/* SUB-TAB 1: DRAWING SETTINGS */}
+            {settingsSubTab === 'drawing' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {/* Drawing Info & Metadata Card */}
+                <div style={{
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #D8E2E1',
+                  borderRadius: '8px',
+                  padding: '14px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '10.5px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--color-text-secondary)', letterSpacing: '0.04em' }}>
+                      Drawing Info
+                    </span>
+                    <span style={{
+                      fontSize: '9px',
+                      fontWeight: '700',
+                      padding: '2px 6px',
+                      borderRadius: '10px',
+                      backgroundColor: '#F4F7F6',
+                      color: 'var(--color-brand-dark)',
+                      border: '1px solid #D8E2E1'
+                    }}>
+                      Format v{FILE_FORMAT_VERSION}
+                    </span>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--color-text-secondary)', marginBottom: '4px' }}>
+                      Title
+                    </label>
+                    <input
+                      type="text"
+                      value={drawingTitle}
+                      onChange={(e) => setDrawingTitle(e.target.value)}
+                      onBlur={handleSaveDrawingMetadata}
+                      disabled={!activeDiagram || isLockedByOther}
+                      placeholder="Drawing Title"
+                      className="form-input"
+                      style={{ width: '100%', height: '32px', fontSize: '12px' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--color-text-secondary)', marginBottom: '4px' }}>
+                      Description
+                    </label>
+                    <input
+                      type="text"
+                      value={drawingDesc}
+                      onChange={(e) => setDrawingDesc(e.target.value)}
+                      onBlur={handleSaveDrawingMetadata}
+                      disabled={!activeDiagram || isLockedByOther}
+                      placeholder="Optional notes or system description"
+                      className="form-input"
+                      style={{ width: '100%', height: '32px', fontSize: '11.5px' }}
+                    />
+                  </div>
+
+                  {activeDiagram && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px' }}>
+                      <span style={{ fontSize: '10px', color: 'var(--color-text-secondary)' }}>
+                        {isLockedByOther ? '🔒 Locked by another user' : hasLock ? '🟢 Checked out (editing)' : 'Available (read-only)'}
+                      </span>
+                      {hasLock && (
+                        <button
+                          type="button"
+                          onClick={handleSaveDrawingMetadata}
+                          disabled={isSavingDrawingMeta}
+                          className="btn-secondary"
+                          style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '4px', height: '24px' }}
+                        >
+                          {isSavingDrawingMeta ? 'Saving...' : 'Save Info'}
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <p style={hintStyle}>
-                  {unitSystem === 'metric' 
-                    ? 'Displaying pressure in bar, flow in L/min, temp in °C, pipe in m/mm.'
-                    : 'Displaying pressure in psi, flow in GPM, temp in °F, pipe in ft/in.'}
-                </p>
-              </div>
-            </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', borderTop: `1px solid ${theme.slate100}`, paddingTop: '20px' }}>
-              <h4 style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', color: theme.slate500, margin: 0, letterSpacing: '0.05em' }}>Fluid Dynamics</h4>
-              
-              <div>
-                <label style={labelStyle}>System Fluid</label>
-                <select 
-                  value={globalSettings.fluid_type}
-                  onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, fluid_type: e.target.value })}
-                  className="form-select"
-                  style={inputStyle}
-                >
-                  {FLUID_CATEGORIES.map((category) => (
-                    <optgroup key={category} label={category}>
-                      {FLUID_LIBRARY.filter((f) => f.category === category).map((f) => (
-                        <option key={f.id} value={f.id}>{f.label}</option>
+                {/* Fluid Dynamics */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <h4 style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', color: theme.slate500, margin: 0, letterSpacing: '0.05em' }}>
+                    Fluid Dynamics
+                  </h4>
+                  
+                  <div>
+                    <label style={labelStyle}>System Fluid</label>
+                    <select 
+                      value={globalSettings.fluid_type}
+                      onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, fluid_type: e.target.value })}
+                      className="form-select"
+                      style={inputStyle}
+                    >
+                      {FLUID_CATEGORIES.map((category) => (
+                        <optgroup key={category} label={category}>
+                          {FLUID_LIBRARY.filter((f) => f.category === category).map((f) => (
+                            <option key={f.id} value={f.id}>{f.label}</option>
+                          ))}
+                        </optgroup>
                       ))}
-                    </optgroup>
-                  ))}
-                </select>
-                <p style={hintStyle}>Sets fluid properties (density, viscosity, thermal capacity) circulating through the network.</p>
-              </div>
+                    </select>
+                    <p style={hintStyle}>Sets fluid properties (density, viscosity, thermal capacity) circulating through the network.</p>
+                  </div>
 
-              <div>
-                <label style={labelStyle}>Ambient Temp ({isImperial ? '°F' : '°C'})</label>
-                <input 
-                  type="number"
-                  step="0.1"
-                  value={
-                    isImperial
-                      ? ((globalSettings.ambient_temperature - 273.15) * 1.8 + 32).toFixed(1)
-                      : (globalSettings.ambient_temperature - 273.15).toFixed(1)
-                  }
-                  onChange={(e) => {
-                    const rawVal = parseFloat(e.target.value);
-                    if (isNaN(rawVal)) return;
-                    const kelvin = isImperial ? ((rawVal - 32) / 1.8) + 273.15 : rawVal + 273.15;
-                    onUpdateGlobalSettings({ ...globalSettings, ambient_temperature: kelvin });
-                  }}
-                  className="form-input"
-                  style={inputStyle}
-                />
-                <p style={hintStyle}>Baseline environment temperature affecting heat losses and fluid properties.</p>
-              </div>
+                  <div>
+                    <label style={labelStyle}>Ambient Temp ({isImperial ? '°F' : '°C'})</label>
+                    <input 
+                      type="number"
+                      step="0.1"
+                      value={
+                        isImperial
+                          ? ((globalSettings.ambient_temperature - 273.15) * 1.8 + 32).toFixed(1)
+                          : (globalSettings.ambient_temperature - 273.15).toFixed(1)
+                      }
+                      onChange={(e) => {
+                        const rawVal = parseFloat(e.target.value);
+                        if (isNaN(rawVal)) return;
+                        const kelvin = isImperial ? ((rawVal - 32) / 1.8) + 273.15 : rawVal + 273.15;
+                        onUpdateGlobalSettings({ ...globalSettings, ambient_temperature: kelvin });
+                      }}
+                      className="form-input"
+                      style={inputStyle}
+                    />
+                    <p style={hintStyle}>Baseline environment temperature affecting heat losses and fluid properties.</p>
+                  </div>
 
-              <div>
-                <label style={labelStyle}>Atmospheric Pressure ({isImperial ? 'psi(a)' : 'Pa'})</label>
-                <input 
-                  type="number"
-                  step={isImperial ? "0.01" : "1"}
-                  value={
-                    isImperial
-                      ? (globalSettings.atmospheric_pressure * 0.00014503773773).toFixed(2)
-                      : globalSettings.atmospheric_pressure
-                  }
-                  onChange={(e) => {
-                    const rawVal = parseFloat(e.target.value);
-                    if (isNaN(rawVal)) return;
-                    const pa = isImperial ? rawVal * 6894.757293 : rawVal;
-                    onUpdateGlobalSettings({ ...globalSettings, atmospheric_pressure: pa });
-                  }}
-                  className="form-input"
-                  style={inputStyle}
-                />
-                <p style={hintStyle}>Reference atmospheric pressure used for open reservoirs and absolute calculations.</p>
-              </div>
+                  <div>
+                    <label style={labelStyle}>Atmospheric Pressure ({isImperial ? 'psi(a)' : 'Pa'})</label>
+                    <input 
+                      type="number"
+                      step={isImperial ? "0.01" : "1"}
+                      value={
+                        isImperial
+                          ? (globalSettings.atmospheric_pressure * 0.00014503773773).toFixed(2)
+                          : globalSettings.atmospheric_pressure
+                      }
+                      onChange={(e) => {
+                        const rawVal = parseFloat(e.target.value);
+                        if (isNaN(rawVal)) return;
+                        const pa = isImperial ? rawVal * 6894.757293 : rawVal;
+                        onUpdateGlobalSettings({ ...globalSettings, atmospheric_pressure: pa });
+                      }}
+                      className="form-input"
+                      style={inputStyle}
+                    />
+                    <p style={hintStyle}>Reference atmospheric pressure used for open reservoirs and absolute calculations.</p>
+                  </div>
+                </div>
 
-              <div>
-                <label style={labelStyle}>Global Pipe Roughness ({isImperial ? 'in' : 'm'})</label>
-                <input 
-                  type="number"
-                  step={isImperial ? "0.00001" : "0.000001"}
-                  value={
-                    isImperial
-                      ? (globalSettings.global_roughness * 39.37007874).toFixed(6)
-                      : globalSettings.global_roughness
-                  }
-                  onChange={(e) => {
-                    const rawVal = parseFloat(e.target.value);
-                    if (isNaN(rawVal)) return;
-                    const m = isImperial ? rawVal / 39.37007874 : rawVal;
-                    onUpdateGlobalSettings({ ...globalSettings, global_roughness: m });
-                  }}
-                  className="form-input"
-                  style={inputStyle}
-                />
-                <p style={hintStyle}>
-                  {isImperial
-                    ? 'Friction roughness inside pipes. Steel is typically 0.00177 in (45 µm).'
-                    : 'Friction roughness inside pipes. Steel is typically 0.000045m (45 µm).'}
-                </p>
-              </div>
-            </div>
+                {/* Numerical Solver Settings */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', borderTop: `1px solid ${theme.slate100}`, paddingTop: '16px' }}>
+                  <h4 style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', color: theme.slate500, margin: 0, letterSpacing: '0.05em' }}>
+                    Numerical Solver
+                  </h4>
+                  
+                  <div>
+                    <label style={labelStyle}>Solver Method</label>
+                    <select 
+                      value={globalSettings.solver_method || 'sparse_newton'}
+                      onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, solver_method: e.target.value })}
+                      className="form-select"
+                      style={inputStyle}
+                    >
+                      <option value="sparse_newton">Sparse Newton (Analytical)</option>
+                      <option value="lm">LM (Least-Squares)</option>
+                    </select>
+                    <p style={hintStyle}>Sparse Newton is fast and scalable; LM is a legacy dense solver.</p>
+                  </div>
 
+                  <div>
+                    <label style={labelStyle}>Warm-Start Cache</label>
+                    <select 
+                      value={globalSettings.warm_start !== false ? 'true' : 'false'}
+                      onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, warm_start: e.target.value === 'true' })}
+                      className="form-select"
+                      style={inputStyle}
+                    >
+                      <option value="true">Enabled (Recommended)</option>
+                      <option value="false">Disabled (Force Cold Starts)</option>
+                    </select>
+                    <p style={hintStyle}>Reuses the last solved state as an initial guess. Speeds up real-time slider updates.</p>
+                  </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', borderTop: `1px solid ${theme.slate100}`, paddingTop: '20px' }}>
-              <h4 style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', color: theme.slate500, margin: 0, letterSpacing: '0.05em' }}>Numerical Solver</h4>
-              
-              <div>
-                <label style={labelStyle}>Solver Method</label>
-                <select 
-                  value={globalSettings.solver_method || 'sparse_newton'}
-                  onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, solver_method: e.target.value })}
-                  className="form-select"
-                  style={inputStyle}
-                >
-                  <option value="sparse_newton">Sparse Newton (Analytical)</option>
-                  <option value="lm">LM (Least-Squares)</option>
-                </select>
-                <p style={hintStyle}>Sparse Newton is fast and scalable; LM is a legacy dense solver.</p>
-              </div>
+                  <div>
+                    <label style={labelStyle}>Damping Factor</label>
+                    <input 
+                      type="number"
+                      step="0.05"
+                      min="0.05"
+                      max="1.0"
+                      value={globalSettings.damping_factor !== undefined ? globalSettings.damping_factor : 0.25}
+                      onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, damping_factor: parseFloat(e.target.value) })}
+                      className="form-input"
+                      style={inputStyle}
+                    />
+                    <p style={hintStyle}>Damping (0.05 to 1.0) for outer regulator updates. Lower prevents oscillations; higher speeds convergence.</p>
+                  </div>
 
-              <div>
-                <label style={labelStyle}>Warm-Start Cache</label>
-                <select 
-                  value={globalSettings.warm_start !== false ? 'true' : 'false'}
-                  onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, warm_start: e.target.value === 'true' })}
-                  className="form-select"
-                  style={inputStyle}
-                >
-                  <option value="true">Enabled (Recommended)</option>
-                  <option value="false">Disabled (Force Cold Starts)</option>
-                </select>
-                <p style={hintStyle}>Reuses the last solved state as an initial guess. Speeds up real-time slider and operating case updates.</p>
-              </div>
+                  <div>
+                    <label style={labelStyle}>Control Iterations</label>
+                    <input 
+                      type="number"
+                      value={globalSettings.control_iterations || 100}
+                      onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, control_iterations: parseInt(e.target.value) })}
+                      className="form-input"
+                      style={inputStyle}
+                    />
+                    <p style={hintStyle}>Max outer loop iterations for regulators and control valves.</p>
+                  </div>
 
-              <div>
-                <label style={labelStyle}>Damping Factor</label>
-                <input 
-                  type="number"
-                  step="0.05"
-                  min="0.05"
-                  max="1.0"
-                  value={globalSettings.damping_factor !== undefined ? globalSettings.damping_factor : 0.25}
-                  onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, damping_factor: parseFloat(e.target.value) })}
-                  className="form-input"
-                  style={inputStyle}
-                />
-                <p style={hintStyle}>Damping (0.05 to 1.0) for outer regulator updates. Lower prevents oscillations; higher speeds convergence.</p>
-              </div>
+                  <div>
+                    <label style={labelStyle}>Property Iterations</label>
+                    <input 
+                      type="number"
+                      value={globalSettings.property_iterations}
+                      onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, property_iterations: parseInt(e.target.value) })}
+                      className="form-input"
+                      style={inputStyle}
+                    />
+                    <p style={hintStyle}>Max loops for propagating fluid temperature and thermal properties.</p>
+                  </div>
 
-              <div>
-                <label style={labelStyle}>Control Iterations</label>
-                <input 
-                  type="number"
-                  value={globalSettings.control_iterations || 100}
-                  onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, control_iterations: parseInt(e.target.value) })}
-                  className="form-input"
-                  style={inputStyle}
-                />
-                <p style={hintStyle}>Max outer loop iterations for regulators and remote control valves to settle on their setpoints.</p>
-              </div>
+                  <div>
+                    <label style={labelStyle}>Convergence Tolerance</label>
+                    <input 
+                      type="number"
+                      step="0.000001"
+                      value={globalSettings.tolerance}
+                      onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, tolerance: parseFloat(e.target.value) })}
+                      className="form-input"
+                      style={inputStyle}
+                    />
+                    <p style={hintStyle}>Target numerical residual precision (e.g., 1e-6).</p>
+                  </div>
 
-              <div>
-                <label style={labelStyle}>Property Iterations</label>
-                <input 
-                  type="number"
-                  value={globalSettings.property_iterations}
-                  onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, property_iterations: parseInt(e.target.value) })}
-                  className="form-input"
-                  style={inputStyle}
-                />
-                <p style={hintStyle}>Max loops for propagating fluid temperature and thermal property updates across the network.</p>
+                  <div>
+                    <label style={labelStyle}>Inner Solver Iterations</label>
+                    <input 
+                      type="number"
+                      value={globalSettings.inner_iterations || 1000}
+                      onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, inner_iterations: parseInt(e.target.value) })}
+                      className="form-input"
+                      style={inputStyle}
+                    />
+                    <p style={hintStyle}>Max steps for the core matrix solver per iteration.</p>
+                  </div>
+                </div>
               </div>
+            )}
 
-              <div>
-                <label style={labelStyle}>Convergence Tolerance</label>
-                <input 
-                  type="number"
-                  step="0.000001"
-                  value={globalSettings.tolerance}
-                  onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, tolerance: parseFloat(e.target.value) })}
-                  className="form-input"
-                  style={inputStyle}
-                />
-                <p style={hintStyle}>Target numerical residual precision (e.g., 1e-6). Lower values increase solve accuracy.</p>
-              </div>
+            {/* SUB-TAB 2: PROJECT SETTINGS */}
+            {settingsSubTab === 'project' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {activeProject ? (
+                  <>
+                    {/* Active Project Card */}
+                    <div style={{
+                      backgroundColor: '#FFFFFF',
+                      border: '1px solid #D8E2E1',
+                      borderRadius: '8px',
+                      padding: '12px 14px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ color: '#FA8507' }}>📁</span>
+                          <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--color-text-primary)' }}>
+                            {activeProject.title}
+                          </span>
+                        </div>
+                        {onOpenProjectsModal && (
+                          <button
+                            type="button"
+                            onClick={() => onOpenProjectsModal(activeProject.id)}
+                            className="btn-secondary"
+                            style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '4px', height: '24px' }}
+                            title="Manage project members and sharing"
+                          >
+                            ⚙️ Team
+                          </button>
+                        )}
+                      </div>
+                      {activeProject.description && (
+                        <p style={{ margin: 0, fontSize: '11px', color: 'var(--color-text-secondary)' }}>
+                          {activeProject.description}
+                        </p>
+                      )}
+                    </div>
 
-              <div>
-                <label style={labelStyle}>Inner Solver Iterations</label>
-                <input 
-                  type="number"
-                  value={globalSettings.inner_iterations || 1000}
-                  onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, inner_iterations: parseInt(e.target.value) })}
-                  className="form-input"
-                  style={inputStyle}
-                />
-                <p style={hintStyle}>Max steps the core matrix solver is allowed to take to resolve hydraulic equations per iteration.</p>
+                    {/* Available Pipe Specifications */}
+                    <div style={{
+                      backgroundColor: '#FFFFFF',
+                      border: '1px solid #D8E2E1',
+                      borderRadius: '8px',
+                      padding: '14px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '10px'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h4 style={{ margin: 0, color: 'var(--color-primary)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                          Available Pipe Specs
+                        </h4>
+                        {isOwnerOfActiveProject && (
+                          <div style={{ display: 'flex', gap: '4px' }}>
+                            <button
+                              type="button"
+                              onClick={() => handleSetAllPipeClasses(true)}
+                              disabled={savingPipeSpecs}
+                              className="btn-secondary"
+                              style={{ height: '20px', fontSize: '9px', padding: '0 6px', borderRadius: '4px', backgroundColor: '#F4F7F6', border: '1px solid #D8E2E1' }}
+                            >
+                              All
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleSetAllPipeClasses(false)}
+                              disabled={savingPipeSpecs}
+                              className="btn-secondary"
+                              style={{ height: '20px', fontSize: '9px', padding: '0 6px', borderRadius: '4px', backgroundColor: '#F4F7F6', border: '1px solid #D8E2E1' }}
+                            >
+                              None
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      <p style={{ margin: 0, fontSize: '11px', color: 'var(--color-text-secondary)' }}>
+                        {!activeProject.allowed_pipe_classes
+                          ? "All system pipe specifications are active for this project."
+                          : `${activeProject.allowed_pipe_classes.length} of ${pipeClasses.length} specifications enabled.`}
+                      </p>
+
+                      {/* Specification Search Filter */}
+                      <div>
+                        <input
+                          type="text"
+                          value={pipeSpecSearch}
+                          onChange={(e) => setPipeSpecSearch(e.target.value)}
+                          placeholder="Filter specs by code or name..."
+                          className="form-input"
+                          style={{ width: '100%', height: '28px', fontSize: '11px', padding: '0 8px' }}
+                        />
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '200px', overflowY: 'auto', paddingRight: '4px' }}>
+                        {pipeClasses.length === 0 ? (
+                          <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', textAlign: 'center', padding: '12px' }}>
+                            Loading pipe specifications...
+                          </div>
+                        ) : (
+                          pipeClasses
+                            .filter(pc => {
+                              if (!pipeSpecSearch.trim()) return true;
+                              const q = pipeSpecSearch.toLowerCase();
+                              return (
+                                pc.code.toLowerCase().includes(q) ||
+                                pc.name.toLowerCase().includes(q) ||
+                                (pc.material_grade && pc.material_grade.toLowerCase().includes(q))
+                              );
+                            })
+                            .map(pc => {
+                              const isAllowed = !activeProject.allowed_pipe_classes || activeProject.allowed_pipe_classes.includes(pc.id);
+                              return (
+                                <label
+                                  key={pc.id}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    padding: '6px 8px',
+                                    borderRadius: '6px',
+                                    backgroundColor: isAllowed ? '#F4F7F6' : 'transparent',
+                                    border: `1px solid ${isAllowed ? '#D8E2E1' : 'transparent'}`,
+                                    fontSize: '11px',
+                                    color: isAllowed ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
+                                    cursor: isOwnerOfActiveProject ? 'pointer' : 'default',
+                                    opacity: isAllowed ? 1 : 0.6
+                                  }}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={isAllowed}
+                                    disabled={!isOwnerOfActiveProject || savingPipeSpecs}
+                                    onChange={() => handleTogglePipeClass(pc.id)}
+                                    style={{ cursor: isOwnerOfActiveProject ? 'pointer' : 'default' }}
+                                  />
+                                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                    <span style={{ fontWeight: '600' }}>
+                                      <span style={{ color: 'var(--color-primary)', marginRight: '4px' }}>[{pc.code}]</span>
+                                      {pc.name}
+                                    </span>
+                                    <span style={{ fontSize: '9px', color: 'var(--color-text-secondary)' }}>
+                                      {pc.rating_class} • {pc.material_grade} • ε={pc.roughness_mm}mm
+                                    </span>
+                                  </div>
+                                </label>
+                              );
+                            })
+                        )}
+                      </div>
+
+                      {/* Allow Manual / Custom Dimensions Toggle */}
+                      <div style={{
+                        marginTop: '6px',
+                        paddingTop: '10px',
+                        borderTop: '1px solid #D8E2E1',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                      }}>
+                        <div>
+                          <span style={{ fontSize: '11px', fontWeight: '600', color: 'var(--color-text-primary)', display: 'block' }}>
+                            Custom Dimensions
+                          </span>
+                          <span style={{ fontSize: '9.5px', color: 'var(--color-text-secondary)' }}>
+                            Allow manual pipe diameters
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', gap: '4px', backgroundColor: '#F4F7F6', padding: '2px', borderRadius: '6px', border: '1px solid #D8E2E1' }}>
+                          <button
+                            type="button"
+                            onClick={() => handleSetAllowCustomPipes(true)}
+                            disabled={!isOwnerOfActiveProject || savingPipeSpecs}
+                            style={{
+                              padding: '2px 10px',
+                              fontSize: '10.5px',
+                              fontWeight: '700',
+                              borderRadius: '4px',
+                              border: 'none',
+                              cursor: isOwnerOfActiveProject ? 'pointer' : 'default',
+                              backgroundColor: activeProject.allow_custom_pipes !== false ? 'var(--color-brand-dark)' : 'transparent',
+                              color: activeProject.allow_custom_pipes !== false ? '#ffffff' : 'var(--color-text-secondary)',
+                              boxShadow: activeProject.allow_custom_pipes !== false ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
+                              transition: 'all 0.15s ease'
+                            }}
+                          >
+                            Yes
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSetAllowCustomPipes(false)}
+                            disabled={!isOwnerOfActiveProject || savingPipeSpecs}
+                            style={{
+                              padding: '2px 10px',
+                              fontSize: '10.5px',
+                              fontWeight: '700',
+                              borderRadius: '4px',
+                              border: 'none',
+                              cursor: isOwnerOfActiveProject ? 'pointer' : 'default',
+                              backgroundColor: activeProject.allow_custom_pipes === false ? 'var(--color-brand-dark)' : 'transparent',
+                              color: activeProject.allow_custom_pipes === false ? '#ffffff' : 'var(--color-text-secondary)',
+                              boxShadow: activeProject.allow_custom_pipes === false ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
+                              transition: 'all 0.15s ease'
+                            }}
+                          >
+                            No
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  /* Standalone Mode Banner */
+                  <div style={{
+                    backgroundColor: '#FFFFFF',
+                    border: '1px solid #D8E2E1',
+                    borderRadius: '8px',
+                    padding: '20px 16px',
+                    textAlign: 'center',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '12px'
+                  }}>
+                    <div style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '10px',
+                      backgroundColor: '#F4F7F6',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <FolderIcon size={20} color="var(--color-brand-dark)" />
+                    </div>
+                    <div>
+                      <h4 style={{ margin: '0 0 4px 0', fontSize: '13px', fontWeight: '700', color: 'var(--color-text-primary)' }}>
+                        Standalone Drawing
+                      </h4>
+                      <p style={{ margin: 0, fontSize: '11px', color: 'var(--color-text-secondary)', lineHeight: '1.4' }}>
+                        This drawing is not part of a cloud project. All standard pipe specifications and manual pipe dimensions are available.
+                      </p>
+                    </div>
+                    {isAuthenticated && onSaveAsClick && (
+                      <button
+                        type="button"
+                        onClick={onSaveAsClick}
+                        className="btn-primary"
+                        style={{ height: '30px', padding: '0 14px', fontSize: '11px', fontWeight: '700', borderRadius: '6px' }}
+                      >
+                        📁 Save into Cloud Project
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
-            </div>
+            )}
+
+            {/* SUB-TAB 3: GLOBAL SETTINGS */}
+            {settingsSubTab === 'global' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {/* Engineering Unit System */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <h4 style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', color: theme.slate500, margin: 0, letterSpacing: '0.05em' }}>
+                    Unit System
+                  </h4>
+                  
+                  <div>
+                    <label style={labelStyle}>Engineering Units</label>
+                    <div style={{ display: 'flex', gap: '6px', background: '#F4F7F6', padding: '4px', borderRadius: '8px', border: '1px solid #D8E2E1' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUnitSystem('metric');
+                          onUpdateGlobalSettings({ ...globalSettings, unit_system: 'metric' });
+                        }}
+                        style={{
+                          flex: 1,
+                          padding: '6px 8px',
+                          fontSize: '11.5px',
+                          fontWeight: '600',
+                          borderRadius: '6px',
+                          border: 'none',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                          backgroundColor: unitSystem === 'metric' ? 'var(--color-brand-dark)' : 'transparent',
+                          color: unitSystem === 'metric' ? '#ffffff' : 'var(--color-text-secondary)',
+                          boxShadow: unitSystem === 'metric' ? '0 1px 3px rgba(57, 82, 83, 0.15)' : 'none'
+                        }}
+                      >
+                        Metric (SI)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUnitSystem('imperial');
+                          onUpdateGlobalSettings({ ...globalSettings, unit_system: 'imperial' });
+                        }}
+                        style={{
+                          flex: 1,
+                          padding: '6px 8px',
+                          fontSize: '11.5px',
+                          fontWeight: '600',
+                          borderRadius: '6px',
+                          border: 'none',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                          backgroundColor: unitSystem === 'imperial' ? 'var(--color-brand-dark)' : 'transparent',
+                          color: unitSystem === 'imperial' ? '#ffffff' : 'var(--color-text-secondary)',
+                          boxShadow: unitSystem === 'imperial' ? '0 1px 3px rgba(57, 82, 83, 0.15)' : 'none'
+                        }}
+                      >
+                        Imperial (US)
+                      </button>
+                    </div>
+                    <p style={hintStyle}>
+                      {unitSystem === 'metric' 
+                        ? 'Displaying pressure in bar, flow in L/min, temp in °C, pipe in m/mm.'
+                        : 'Displaying pressure in psi, flow in GPM, temp in °F, pipe in ft/in.'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* System Specs & Version Info */}
+                <div style={{
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #D8E2E1',
+                  borderRadius: '8px',
+                  padding: '14px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px'
+                }}>
+                  <h4 style={{ margin: 0, fontSize: '10.5px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--color-text-secondary)', letterSpacing: '0.04em' }}>
+                    System Specifications
+                  </h4>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px' }}>
+                    <span style={{ color: 'var(--color-text-secondary)' }}>App Version:</span>
+                    <span style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>v{APP_VERSION}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px' }}>
+                    <span style={{ color: 'var(--color-text-secondary)' }}>File Format:</span>
+                    <span style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>v{FILE_FORMAT_VERSION}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px' }}>
+                    <span style={{ color: 'var(--color-text-secondary)' }}>Physics Engine:</span>
+                    <span style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>Steady-State (Δt=0)</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

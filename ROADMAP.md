@@ -115,6 +115,35 @@ This document outlines planned features, overlays, and enhancements for the WalF
   * **Physics:** Computes form friction losses using geometry-dependent $K$-factors based on the exact diameter ratios ($D_2/D_1$) retrieved from the database and expected transition angles. Solves for pressure changes due to velocity shifts via the steady-state Bernoulli equation.
   * **Engineering Value:** Vital for accurate pressure drop accounting and pump suction sizing (NPSH), allowing engineers to simulate real-world, commercially available fitting geometries (Nominal Pipe Sizes and Schedules) directly from the standard rather than relying on theoretical internal diameters.
 
+- [ ] **📏 Pipe Classes & Equinor TR2000 REST API Integration (`/pipes`)**
+  * **Concept:** Transition WalFlow from generic ad-hoc pipes (manual diameter + schedule + global canvas roughness) to an industrial **Piping Class (Piping Specification)** system.
+  * **TR2000 REST API Integration & Sync:**
+    * Direct connection to the Equinor TR2000 REST API (`https://equinor.pipespec-api.presight.com` / `https://tr2000api.equinor.com`).
+    * Use European PCS Library (`PlantID=82` or configurable plant catalog) to query PCS specifications (`/pcs`), exact pipe size schedules (`/pipe-sizes`), temperature-pressure ratings (`/temp-pressures`), and element specifications (`/pipe-elements`).
+    * **Test Case & Initial Baseline:** Start with `AC140` / `AC111` (Carbon Steel Low Temp - CSLT, ASME 150#) as the primary validation test case.
+    * **Standard Seed & Dynamic Sync:** Pre-bundle standard TR2000 classes (`AC111`, `AC131`, `AC211`, `AD100` 22Cr Duplex, `AS300` 316L SS, `AT100` Titanium) in the local database, while providing automated REST API syncing to pull new classes or update existing ones upon new revision releases.
+  * **Dedicated Pipe Class Manager Subpage (`/pipes`):**
+    * Standalone engineering management route at `http://localhost:5173/pipes` matching WalFlow design standards (`#FA8507` orange CTA, `#395253` brand teal headers, `#F4F7F6` surfaces).
+    * Searchable catalog sidebar distinguishing between standard TR2000 specifications and user-defined custom classes.
+    * Live TR2000 Importer modal to pull any PCS code from Equinor's API with live preview.
+    * **⚖️ Legal & Terms of Use Compliance:** When users trigger a download/sync from the TR2000 REST API, an explicit agreement modal / checkbox prompt must be accepted requiring users to agree to [Equinor's Terms and Conditions](https://www.equinor.com/about-us/terms-and-conditions) before standard specifications are retrieved or stored locally.
+    * Interactive Data Grid displaying Nominal Size ($DN / NPS$), Outer Diameter ($OD$), Wall Thickness ($WT$), calculated Internal Diameter ($ID = OD - 2 \cdot WT$), Schedule, and Corrosion Allowance ($CA$).
+    * Pressure-Temperature rating table and curves.
+    * Full CRUD capabilities (create custom, clone standard, export JSON, delete custom).
+  * **Physics Solver & Removal of Global Canvas Roughness:**
+    * Each pipe class explicitly defines its absolute roughness ($\epsilon$) based on material grade (e.g. Carbon Steel $\epsilon = 0.045\text{ mm}$, Stainless Steel $\epsilon = 0.015\text{ mm}$, Duplex $\epsilon = 0.015\text{ mm}$, Titanium $\epsilon = 0.005\text{ mm}$).
+    * Roughness is localized directly to each individual pipe node in the solver.
+    * **Global Canvas Roughness is completely removed** from canvas settings once pipe classes are active.
+  * **Canvas UI & Property Editor Integration:**
+    * Update `SetupPanel`, `PipeEdge`, and `DataList` to select Pipe Class first, followed by dynamically filtered Nominal Sizes ($DN/NPS$).
+    * Include a "Manual / Generic" toggle for quick unstandardized sketches.
+  * **🤖 Pipe Class Skill for LLM Agents (`.agents/skills/pipe-classes`):**
+    * Develop a specialized Antigravity skill for LLM agents to make them fully aware of:
+      1. How pipe classes, line specs, and TR2000 standards are structured and retrieved.
+      2. The mapping between Nominal Diameter ($DN / NPS$), Wall Thickness ($WT$), Outer Diameter ($OD$), and calculated Internal Diameter ($ID$).
+      3. Material group mapping to physical roughness ($\epsilon$), corrosion allowances ($CA$), and temperature/pressure limits.
+      4. How to inspect, query, and programmatically assign pipe classes across WalFlow backend models and frontend components.
+
 ---
 
 ## 📊 Analytics & Telemetry

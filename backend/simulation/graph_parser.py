@@ -121,13 +121,23 @@ class GraphParser:
 
             # Create a Pipe node for this hydraulic edge
             pipe_name = edge.label or edge_data.get('label') or f"Pipe {edge.id}"
+            
+            # Determine roughness in meters: check roughness_mm or roughness (in m) or default to 0.000045
+            roughness_m = 0.000045
+            if 'roughness_mm' in edge_data and edge_data['roughness_mm'] is not None:
+                roughness_m = float(edge_data['roughness_mm']) / 1000.0
+            elif 'roughness' in edge_data and edge_data['roughness'] is not None:
+                roughness_m = float(edge_data['roughness'])
+
             pipe = Pipe(
                 name=pipe_name,
                 length=float(edge_data.get('length', 25.0)),
                 diameter=float(edge_data.get('diameter', 0.1)),
+                roughness=roughness_m,
                 friction_factor=float(edge_data.get('friction_factor', 0.02))
             )
             pipe.global_settings = resolved_graph.global_settings
+
             
             source_node = nodes_dict.get(edge.source)
             target_node = nodes_dict.get(edge.target)

@@ -7,12 +7,20 @@ class Pipe(HydraulicNode):
     A Pipe connects two nodes and calculates the pressure drop caused by fluid friction.
     It also calculates temperature rise due to viscous dissipation.
     """
-    def __init__(self, name: str, length: float, diameter: float, friction_factor: float = 0.02):
+    def __init__(
+        self,
+        name: str,
+        length: float,
+        diameter: float,
+        roughness: float = 0.000045,
+        friction_factor: float = 0.02
+    ):
         # Call the parent class constructor to set up the ID and lists        
         super().__init__(name, node_type="pipe")
         
         self.length = length                    # Pipe length (meters)
         self.diameter = diameter                # Internal diameter (meters)
+        self.roughness = roughness              # Absolute surface roughness (meters)
         self.friction_factor = friction_factor  # Darcy friction factor (f)
         
         # A pipe requires exactly one inlet and one outlet
@@ -35,12 +43,10 @@ class Pipe(HydraulicNode):
         if viscosity > 0 and abs_v > 0:
             re = (density * abs_v * self.diameter) / viscosity
             
-            # Helper for Swamee-Jain turbulent friction factor
+            # Helper for Swamee-Jain turbulent friction factor using localized pipe roughness
             def get_f_turb(re_val):
-                roughness = 0.000045
-                if self.global_settings:
-                    roughness = getattr(self.global_settings, 'global_roughness', 0.000045)
-                return 0.25 / (math.log10(roughness / (3.7 * self.diameter) + 5.74 / re_val**0.9))**2
+                eps = self.roughness if (self.roughness is not None and self.roughness > 0) else 0.000045
+                return 0.25 / (math.log10(eps / (3.7 * self.diameter) + 5.74 / re_val**0.9))**2
 
             if re < 2000.0:
                 f = 64.0 / re
@@ -97,10 +103,8 @@ class Pipe(HydraulicNode):
             re = (density * abs_v * self.diameter) / viscosity
             
             def get_dp_deriv_turb(q_val, re_val):
-                roughness = 0.000045
-                if self.global_settings:
-                    roughness = getattr(self.global_settings, 'global_roughness', 0.000045)
-                f = 0.25 / (math.log10(roughness / (3.7 * self.diameter) + 5.74 / re_val**0.9))**2
+                eps = self.roughness if (self.roughness is not None and self.roughness > 0) else 0.000045
+                f = 0.25 / (math.log10(eps / (3.7 * self.diameter) + 5.74 / re_val**0.9))**2
                 return f * (self.length / self.diameter) * density * abs(q_val) / (area ** 2)
 
             if re < 2000.0:
@@ -115,4 +119,5 @@ class Pipe(HydraulicNode):
                 return (1.0 - w) * deriv_lam + w * deriv_turb
         else:
             return 0.0
+
 

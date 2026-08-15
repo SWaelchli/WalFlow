@@ -17,6 +17,7 @@ from routers.projects import router as projects_router
 from routers.invitations import router as invitations_router
 from routers.admin import router as admin_router
 from routers.simulation import router as simulation_router, calculate_case_kpis
+from routers.pipe_classes import router as pipe_classes_router
 
 from contextlib import asynccontextmanager
 
@@ -46,6 +47,8 @@ app.include_router(projects_router)
 app.include_router(invitations_router)
 app.include_router(admin_router)
 app.include_router(simulation_router)
+app.include_router(pipe_classes_router)
+
 
 # Per-connection simulation state is managed locally inside websocket_endpoint
 

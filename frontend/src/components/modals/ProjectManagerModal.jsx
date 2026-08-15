@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+
 import axios from 'axios';
 import { useAuth } from '../../hooks/useAuth';
 import { FILE_FORMAT_VERSION, APP_VERSION, FILE_EXTENSION } from '../../constants';
@@ -49,6 +50,11 @@ const ProjectManagerModal = ({
   const [inviteDuration, setInviteDuration] = useState(24);
   const [inviteTokenLink, setInviteTokenLink] = useState("");
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
+
+  const activeProjectRef = useRef(activeProject);
+  useEffect(() => {
+    activeProjectRef.current = activeProject;
+  }, [activeProject]);
 
   // Lock status mapping for diagrams: diagram_id -> lockInfo
   const [diagramLocks, setDiagramLocks] = useState({});
@@ -112,11 +118,13 @@ const ProjectManagerModal = ({
     }
   }, [isOpen, initialProjectId, fetchProjectDetail]);
 
+
   useEffect(() => {
     if (isOpen && isAuthenticated) {
       fetchProjects();
     }
   }, [isOpen, isAuthenticated, fetchProjects]);
+
 
 
 
@@ -216,9 +224,12 @@ const ProjectManagerModal = ({
         setActiveProject({
           id: projectDetail.id,
           title: projectDetail.title,
-          description: projectDetail.description
+          description: projectDetail.description,
+          allowed_pipe_classes: projectDetail.allowed_pipe_classes,
+          allow_custom_pipes: projectDetail.allow_custom_pipes !== false
         });
       }
+
       if (setActiveDiagram) {
         setActiveDiagram({
           id: response.data.id,
@@ -234,6 +245,13 @@ const ProjectManagerModal = ({
       }
     }
   };
+
+
+
+
+
+
+
 
   const handleDeleteDiagram = async (diagramId, title) => {
     if (!window.confirm(`Are you sure you want to delete PFD diagram '${title}'?`)) return;
@@ -696,12 +714,15 @@ const ProjectManagerModal = ({
                       </div>
                     ))}
                   </div>
-                </div>
- 
+                       </div>
+
+
+
                 {/* Share Token Link Generator */}
                 {isOwnerOfActiveProject && (
                   <div className="modal-metric-card" style={{ padding: '16px 18px' }}>
                     <h4 style={{ margin: '0 0 12px 0', color: 'var(--color-primary)', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Generate Invitation Token</h4>
+
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       <div>
                         <label style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: '10px', fontWeight: '700', marginBottom: '4px' }}>Link Password (optional)</label>
