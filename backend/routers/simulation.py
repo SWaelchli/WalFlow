@@ -77,20 +77,40 @@ def calculate_case_kpis(network, telemetry: Dict[str, Any], stats: Dict[str, Any
 
     return kpi_res
 
-def extract_telemetry_dict(network) -> Dict[str, Any]:
+def extract_telemetry(network) -> Dict[str, Any]:
+    """Canonical telemetry extraction function for both REST and WebSocket simulation runs."""
     telemetry = {"nodes": {}, "edges": {}}
     for node_id, node in network.nodes.items():
         node_tel = {
             "inlets": [p.dict() for p in node.inlets],
             "outlets": [p.dict() for p in node.outlets]
         }
-        if hasattr(node, 'opening_pct'): node_tel["opening_pct"] = node.opening_pct
-        if hasattr(node, 'sensed_pressure'): node_tel["sensed_pressure"] = node.sensed_pressure
-        if hasattr(node, 'cavitation_warning'): node_tel["cavitation_warning"] = node.cavitation_warning
-        if hasattr(node, 'actual_duty_kw'): node_tel["actual_duty_kw"] = node.actual_duty_kw
-        if hasattr(node, 'status'): node_tel["status"] = node.status
-        if hasattr(node, 'pipe_diameter'): node_tel["pipe_diameter"] = node.pipe_diameter
-        if hasattr(node, 'standard'): node_tel["standard"] = node.standard
+        if hasattr(node, 'opening_pct'):
+            node_tel["opening_pct"] = node.opening_pct
+        if hasattr(node, 'sensed_pressure'):
+            node_tel["sensed_pressure"] = node.sensed_pressure
+        if hasattr(node, 'cavitation_warning'):
+            node_tel["cavitation_warning"] = node.cavitation_warning
+        if hasattr(node, 'actual_duty_kw'):
+            node_tel["actual_duty_kw"] = node.actual_duty_kw
+        if hasattr(node, 'status'):
+            node_tel["status"] = node.status
+        if hasattr(node, 'capacity_utilization_pct'):
+            node_tel["capacity_utilization_pct"] = node.capacity_utilization_pct
+        if hasattr(node, 'action_mode'):
+            node_tel["action_mode"] = node.action_mode
+        if hasattr(node, 'set_pressure_bar'):
+            node_tel["set_pressure_bar"] = node.set_pressure_bar
+        if hasattr(node, 'forced_state'):
+            node_tel["forced_state"] = node.forced_state
+        if hasattr(node, 'cv'):
+            node_tel["cv"] = node.cv
+        # Effective geometry as used by the solver (graph_parser overrides pipe_diameter
+        # from the connected pipe), so the frontend chart uses the same values as the solve.
+        if hasattr(node, 'pipe_diameter'):
+            node_tel["pipe_diameter"] = node.pipe_diameter
+        if hasattr(node, 'standard'):
+            node_tel["standard"] = node.standard
         telemetry["nodes"][node_id] = node_tel
 
     for edge in network.edges:
@@ -101,6 +121,9 @@ def extract_telemetry_dict(network) -> Dict[str, Any]:
             "outlets": [p.dict() for p in pipe.outlets]
         }
     return telemetry
+
+# Backward-compatibility alias
+extract_telemetry_dict = extract_telemetry
 
 def sanitize_error_message(e: Exception) -> str:
     """Sanitizes exception messages to prevent stack trace and file path leakage (SEC-06)."""

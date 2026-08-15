@@ -66,7 +66,6 @@ class RemoteControlValve(HydraulicNode):
         
         # Throttling Heat: dT = abs(dP) / (rho * Cp)
         fluid_type = getattr(self.global_settings, 'fluid_type', 'water')
-        from simulation.fluid_utils import FluidProperties
         
         if inlet.flow_rate >= 0:
             cp = FluidProperties.get_specific_heat(fluid_type, inlet.temperature)

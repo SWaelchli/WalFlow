@@ -56,6 +56,12 @@ All notable changes to the WälFlow project will be documented in this file.
 - Fixed solver dead-end leaf pruning and DFS reachability to correctly handle `FlowSource` boundary nodes.
 - Fixed solver warm-start cache lookup collisions by incorporating active node pressure-boundary states into the topology key.
 - Fixed solver pressure drop evaluation and mass-balance constraints for 2-port inline nodes (such as flow sources and pumps) when their inlet ports are unconnected.
-
+- **Backend Concurrency & Solver Hardening**:
+  - Offloaded CPU-heavy simulation solver from FastAPI's asyncio event loop using `asyncio.to_thread`.
+  - Enabled SQLite Write-Ahead Logging (`WAL`), `PRAGMA busy_timeout = 10000`, and transaction rollback guards to prevent database locking errors.
+  - Extracted collaborative locking service with room switching cleanup, concurrent broadcasting via `asyncio.gather`, and dead socket eviction.
+  - Optimized solver Newton-Raphson residual mass balance evaluations to $O(N)$ with bounded warm-start cache.
+  - Precomputed invariant pipe geometric terms and parallelized TR2000 sub-queries.
+  - Added unit test suites for `RemoteControlValve` and isolated subgraph / zero-flow topologies.
 
 ---

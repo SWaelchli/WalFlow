@@ -26,7 +26,7 @@ from routers.diagrams import router as diagrams_router, collab_manager
 from routers.projects import router as projects_router
 from routers.invitations import router as invitations_router
 from routers.admin import router as admin_router
-from routers.simulation import router as simulation_router, calculate_case_kpis
+from routers.simulation import router as simulation_router, calculate_case_kpis, extract_telemetry
 from routers.pipe_classes import router as pipe_classes_router
 
 from contextlib import asynccontextmanager
@@ -80,52 +80,6 @@ app.include_router(simulation_router)
 app.include_router(pipe_classes_router)
 
 
-# Per-connection simulation state is managed locally inside websocket_endpoint
-
-def extract_telemetry(network):
-    telemetry = {"nodes": {}, "edges": {}}
-    for node_id, node in network.nodes.items():
-        node_tel = {
-            "inlets": [p.dict() for p in node.inlets],
-            "outlets": [p.dict() for p in node.outlets]
-        }
-        if hasattr(node, 'opening_pct'):
-            node_tel["opening_pct"] = node.opening_pct
-        if hasattr(node, 'sensed_pressure'):
-            node_tel["sensed_pressure"] = node.sensed_pressure
-        if hasattr(node, 'cavitation_warning'):
-            node_tel["cavitation_warning"] = node.cavitation_warning
-        if hasattr(node, 'actual_duty_kw'):
-            node_tel["actual_duty_kw"] = node.actual_duty_kw
-        if hasattr(node, 'status'):
-            node_tel["status"] = node.status
-        if hasattr(node, 'capacity_utilization_pct'):
-            node_tel["capacity_utilization_pct"] = node.capacity_utilization_pct
-        if hasattr(node, 'action_mode'):
-            node_tel["action_mode"] = node.action_mode
-        if hasattr(node, 'set_pressure_bar'):
-            node_tel["set_pressure_bar"] = node.set_pressure_bar
-        if hasattr(node, 'forced_state'):
-            node_tel["forced_state"] = node.forced_state
-        if hasattr(node, 'cv'):
-            node_tel["cv"] = node.cv
-        # Effective geometry as used by the solver (graph_parser overrides pipe_diameter
-        # from the connected pipe), so the frontend chart uses the same values as the solve.
-        if hasattr(node, 'pipe_diameter'):
-            node_tel["pipe_diameter"] = node.pipe_diameter
-        if hasattr(node, 'standard'):
-            node_tel["standard"] = node.standard
-        telemetry["nodes"][node_id] = node_tel
-
-    for edge in network.edges:
-        edge_id = edge["id"]
-        pipe = edge["pipe"]
-        telemetry["edges"][edge_id] = {
-            "inlets": [p.dict() for p in pipe.inlets],
-            "outlets": [p.dict() for p in pipe.outlets]
-        }
-    return telemetry
-
 @app.get("/")
 async def read_root():
     return {"status": "online", "message": "WalFlow Engine is ready.", "version": "0.2.0"}
@@ -157,7 +111,21 @@ async def websocket_endpoint(websocket: WebSocket):
     try:
         while True:
             data_str = await websocket.receive_text()
-            data = json.loads(data_str)
+            try:
+                data = json.loads(data_str)
+            except (json.JSONDecodeError, TypeError) as e:
+                await websocket.send_text(json.dumps({
+                    "status": "error",
+                    "message": "Invalid JSON frame received."
+                }))
+                continue
+
+            if not isinstance(data, dict):
+                await websocket.send_text(json.dumps({
+                    "status": "error",
+                    "message": "WebSocket payload must be a JSON object."
+                }))
+                continue
             
             action = data.get("action")
             
@@ -187,7 +155,10 @@ async def websocket_endpoint(websocket: WebSocket):
             elif action == "update_valve":
                 if network_instance:
                     valve_id = data.get("node_id")
-                    new_pct = float(data.get("value", 50.0))
+                    try:
+                        new_pct = float(data.get("value", 50.0))
+                    except (ValueError, TypeError):
+                        new_pct = 50.0
                     
                     # Update specific valve if ID provided, else update all (for legacy support)
                     for node_id, node in network_instance.nodes.items():
@@ -213,8 +184,13 @@ async def websocket_endpoint(websocket: WebSocket):
 
                 if solver_instance:
                     try:
-                        stats, telemetry_mitigated, telemetry_unmitigated, has_psv = run_sequential_relief_simulation(
-                            network_instance, solver_instance, extract_telemetry
+                        # Offload CPU-heavy matrix solver to thread pool to prevent event loop starvation
+                        import asyncio
+                        stats, telemetry_mitigated, telemetry_unmitigated, has_psv = await asyncio.to_thread(
+                            run_sequential_relief_simulation,
+                            network_instance,
+                            solver_instance,
+                            extract_telemetry
                         )
 
                         print(f"Simulation Run: success={stats.get('success')}, error={stats.get('error')}, time={stats.get('time_ms', 0):.2f}ms, fallback={stats.get('fallback_used')}")

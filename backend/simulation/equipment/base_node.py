@@ -87,10 +87,8 @@ class HydraulicNode:
         Numerical derivative fallback of pressure drop with respect to flow rate.
         Can be overridden by subclasses for analytical derivatives.
         """
-        import inspect
         dq = 1e-6
-        sig = inspect.signature(self.calculate_delta_p)
-        has_update_state = 'update_state' in sig.parameters
+        has_update_state = getattr(self, 'has_update_state_param', False) or (self.node_type in ['pressure_safety_valve', 'rupture_disc', 'check_valve'])
 
         if has_update_state:
             dp_plus = self.calculate_delta_p(flow_rate + dq, density, viscosity, update_state=False)

@@ -4,22 +4,6 @@ This document outlines planned features, overlays, and enhancements for the WalF
 
 ---
 
-## 🚀 Production Readiness & QA Audit Actions
-
-> [!NOTE]
-> All actionable items identified in the Master QA Synthesis & Audit Report (App version `0.1.3`) have been fully implemented and verified. The temporary `qa_report/` directory has been retired and deleted.
-
-- [x] **🔐 Enforce 8-character password policy & reduce JWT lifespan to 60 minutes with sliding session renewal** (SEC-03 / SEC-04)
-  * **Scope**: Increase minimum password length validation to 8 characters and reduce JWT token expiration duration from 7 days to 60 minutes with background sliding refresh during active use for higher account security.
-- [x] **🚫 Implement in-memory/Redis JWT revocation blacklist on logout** (SEC-03)
-  * **Scope**: Keep track of logged-out token identifiers in an in-memory storage (with Redis support) to invalidate JWT sessions immediately upon logout.
-- [x] **🧹 Sanitize backend exception handlers to strip stack traces from client payloads** (SEC-06)
-  * **Scope**: Catch raw backend exceptions and format standard user-friendly messages for client payloads, stripping internal code stack traces and database paths to prevent data leakage.
-- [x] **🛑 Add rate-limiting middleware (slowapi) to endpoints** (R4 / Security)
-  * **Scope**: Add rate limit restrictions to authentication (`/login`, `/register`, `/setup-admin`) and simulation endpoints to prevent automated brute-force attacks and CPU-exhaustion DoS.
-
----
-
 ## 🎨 Canvas & Overlays
 
 - [ ] **🛡️ Overpressure Safety Zone Overlay (`SafetyBoundsOverlay`)**
@@ -42,36 +26,6 @@ This document outlines planned features, overlays, and enhancements for the WalF
 ---
 
 ## ⚙️ Physics & Simulation
-
-### 💧 Multi-Fluid Simulation & Boundary Fluid Selection
-
-- [ ] **💧 Per-Boundary Fluid Selection, Multi-Fluid Topological Domain Propagation & Fluid Mixing Abort**
-  * **Concept:** Transition from a single drawing-wide system fluid to per-boundary fluid assignment, allowing complex P&IDs with multiple independent hydraulic circuits (e.g. an ISO VG 46 lube oil lubrication loop and a chilled water cooling loop) to solve simultaneously on a single canvas.
-  * **Core Engineering & Physics Architecture:**
-    * **Boundary Fluid Selection**: Boundary components (`Tank`, `PressureSource`, `FlowSource`) can explicitly assign a fluid (e.g. Water, Seawater, Glycol 30%/50%, ISO VG 15/22/32/46/68, Diesel) or choose `Inherit Primary Fluid` (`system`).
-    * **Primary System Fluid Fallback**: Canvas-level Global Settings dropdown renamed from "System Fluid" to "Primary System Fluid", acting as the default fallback for newly placed boundaries and closed circuits lacking explicit boundary sources.
-    * **Topological Domain Propagation**: A pre-simulation graph analysis traces hydraulic fluid domains across connected nodes and pipes. Heat Exchangers maintain isolated internal passages (channel 1 vs. channel 2) to permit separate fluids (e.g. oil on tube side, water on shell side) without cross-contamination.
-    * **Fluid Mixing Detection & Abort**: Because the static solver does not model dynamic miscible fluid blending, if streams carrying different fluids intersect or meet at any node/junction, the pre-solve checker immediately halts the simulation and returns a descriptive error naming the conflicting components, pipe IDs, and fluid names, triggering an actionable UI warning modal.
-    * **Multi-Domain Steady-State Physics**: When multiple independent loops coexist, each equipment node and pipe evaluates its physical equations ($\rho, \mu, C_p$, vapor pressure, $\Delta P$, friction factor, pump curves, cavitation margins) using its domain's assigned fluid properties.
-  * **UI & Visual Representation:**
-    * **Fluid Heatmap Mode**: Adds a dedicated "Fluid Type" heatmap mode (`fluid`) assigning high-contrast, distinct colors per fluid (e.g., Electric Blue for Water, Warm Amber for ISO VG oils, Bright Teal for Glycols, Coral for Fuels).
-    * **Active Fluids Heatmap Legend**: In Fluid heatmap mode, the overlay legend displays discrete swatches showing only the fluids actively present on the canvas.
-    * **DataList Tables**: Adds a dedicated **Fluid** column to both the **Pipe Network List** and **Full Equipment & Pipeline Data** tables (with filter, sort, and CSV export support).
-    * **Component Panels**:
-      - **Sidebar**: Renames "System Fluid" to "Primary System Fluid".
-      - **SetupPanel**: Adds fluid dropdown to `Tank`, `PressureSource`, and `FlowSource` with `Inherit Primary Fluid ([Current Fluid])` as the default option.
-      - **InspectorPanel & Telemetry**: Displays assigned fluid type and localized physical properties for selected pipes and nodes.
-  * **Target Files & Key Modifications:**
-    * `backend/simulation/equipment/tank.py`, `pressure_source.py`, `flow_source.py`: Support `fluid_type` parameter and port property assignment.
-    * `backend/simulation/graph_parser.py`: Multi-domain graph propagation, Heat Exchanger channel isolation, and `FluidMixingError` detection.
-    * `backend/simulation/solver.py`: Domain-aware property propagation and telemetry enrichment (`fluid_type`, `fluid_name`).
-    * `backend/simulation/fluid_utils.py`: Color token definitions and catalog metadata.
-    * `backend/tests/test_physics_multi_fluid.py`: Unit tests for multi-loop solves, boundary inheritance, and mixing aborts.
-    * `frontend/src/App.jsx`: State management, mixing abort handling, and heatmap mode registration.
-    * `frontend/src/edges/PipeEdge.jsx`: Fluid color-mapping logic in `getHeatmapColor`.
-    * `frontend/src/components/overlays/HeatmapLegend.jsx`: Fluid mode tab and active-fluids legend swatches.
-    * `frontend/src/components/panels/DataList.jsx`: Fluid column addition in Pipe Network and Equipment lists.
-    * `frontend/src/components/panels/Sidebar.jsx` & `SetupPanel.jsx`: Dropdown selectors and labels.
 
 ### 🧰 New Equipment & Component Additions
 

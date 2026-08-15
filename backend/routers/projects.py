@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from db.database import get_db
 from db.models import User, Project, ProjectMember, Diagram
 from auth import get_current_user
+from services.lock_service import get_lock_status_info
 
 router = APIRouter(prefix="/api/projects", tags=["projects"])
 
@@ -206,7 +207,6 @@ def get_project_detail(
             ))
             
     # Format diagrams list
-    from routers.diagrams import get_lock_status_info
     diagrams_formatted = [
         DiagramSummarySchema(
             id=d.id,

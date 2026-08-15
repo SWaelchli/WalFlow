@@ -23,6 +23,11 @@ class Pipe(HydraulicNode):
         self.roughness = roughness              # Absolute surface roughness (meters)
         self.friction_factor = friction_factor  # Darcy friction factor (f)
         
+        # Precalculate invariant geometric terms
+        self.area = math.pi * (self.diameter / 2.0)**2 if self.diameter > 0 else 1e-6
+        eps = self.roughness if (self.roughness is not None and self.roughness > 0) else 0.000045
+        self.rel_roughness_term = eps / (3.7 * self.diameter) if self.diameter > 0 else 0.0
+        
         # A pipe requires exactly one inlet and one outlet
         self.add_inlet()
         self.add_outlet()
@@ -36,26 +41,20 @@ class Pipe(HydraulicNode):
         if self.diameter <= 0:
             raise ValueError("Pipe diameter must be strictly positive.")
             
-        area = math.pi * (self.diameter / 2.0)**2
-        velocity = flow_rate / area
+        velocity = flow_rate / self.area
         abs_v = abs(velocity)
         
         if viscosity > 0 and abs_v > 0:
             re = (density * abs_v * self.diameter) / viscosity
-            
-            # Helper for Swamee-Jain turbulent friction factor using localized pipe roughness
-            def get_f_turb(re_val):
-                eps = self.roughness if (self.roughness is not None and self.roughness > 0) else 0.000045
-                return 0.25 / (math.log10(eps / (3.7 * self.diameter) + 5.74 / re_val**0.9))**2
 
             if re < 2000.0:
                 f = 64.0 / re
             elif re > 4000.0:
-                f = get_f_turb(re)
+                f = 0.25 / (math.log10(self.rel_roughness_term + 5.74 / re**0.9))**2
             else:
                 # Smooth blending between 2000 and 4000
                 f_lam = 64.0 / re
-                f_turb = get_f_turb(re)
+                f_turb = 0.25 / (math.log10(self.rel_roughness_term + 5.74 / re**0.9))**2
                 w = (re - 2000.0) / 2000.0
                 f = (1.0 - w) * f_lam + w * f_turb
         else:
@@ -95,26 +94,22 @@ class Pipe(HydraulicNode):
         if self.diameter <= 0:
             raise ValueError("Pipe diameter must be strictly positive.")
             
-        area = math.pi * (self.diameter / 2.0)**2
-        velocity = flow_rate / area
+        velocity = flow_rate / self.area
         abs_v = abs(velocity)
         
         if viscosity > 0 and abs_v > 0:
             re = (density * abs_v * self.diameter) / viscosity
-            
-            def get_dp_deriv_turb(q_val, re_val):
-                eps = self.roughness if (self.roughness is not None and self.roughness > 0) else 0.000045
-                f = 0.25 / (math.log10(eps / (3.7 * self.diameter) + 5.74 / re_val**0.9))**2
-                return f * (self.length / self.diameter) * density * abs(q_val) / (area ** 2)
 
             if re < 2000.0:
-                return 32.0 * viscosity * self.length / ((self.diameter ** 2) * area)
+                return 32.0 * viscosity * self.length / ((self.diameter ** 2) * self.area)
             elif re > 4000.0:
-                return get_dp_deriv_turb(flow_rate, re)
+                f = 0.25 / (math.log10(self.rel_roughness_term + 5.74 / re**0.9))**2
+                return f * (self.length / self.diameter) * density * abs(flow_rate) / (self.area ** 2)
             else:
                 # Blended derivative
-                deriv_lam = 32.0 * viscosity * self.length / ((self.diameter ** 2) * area)
-                deriv_turb = get_dp_deriv_turb(flow_rate, re)
+                deriv_lam = 32.0 * viscosity * self.length / ((self.diameter ** 2) * self.area)
+                f_turb = 0.25 / (math.log10(self.rel_roughness_term + 5.74 / re**0.9))**2
+                deriv_turb = f_turb * (self.length / self.diameter) * density * abs(flow_rate) / (self.area ** 2)
                 w = (re - 2000.0) / 2000.0
                 return (1.0 - w) * deriv_lam + w * deriv_turb
         else:

@@ -25,7 +25,13 @@ class NetworkSolver:
     Sparse Newton-Raphson Solver, and Warm-Start caching.
     """
     # Class-level cache: (topology_key, active_case_id) -> np.ndarray (converged state vector)
-    _warm_start_cache = {}
+    _warm_start_cache: Dict[Tuple, np.ndarray] = {}
+    _MAX_WARM_START_ENTRIES: int = 128
+
+    @classmethod
+    def clear_warm_start_cache(cls):
+        """Clears the class-level warm-start cache to release memory."""
+        cls._warm_start_cache.clear()
 
     def __init__(self, network: HydraulicNetwork):
         self.network = network
@@ -140,6 +146,15 @@ class NetworkSolver:
                     self.control_node_indices.append(i)
                 if isinstance(node, ThreeWayTCV):
                     self.tcv_node_indices.append(i)
+
+        # Precompute fast incidence lookup tables for residual mass balance evaluation O(N)
+        self.node_incoming_edge_indices = {nid: [] for nid in self.node_ids}
+        self.node_outgoing_edge_indices = {nid: [] for nid in self.node_ids}
+        for j, edge in enumerate(self.edges_list):
+            if edge['target'] in self.node_incoming_edge_indices:
+                self.node_incoming_edge_indices[edge['target']].append(j)
+            if edge['source'] in self.node_outgoing_edge_indices:
+                self.node_outgoing_edge_indices[edge['source']].append(j)
 
     def solve(self, method=None):
         self.prune_topology()
@@ -443,12 +458,6 @@ class NetworkSolver:
         for i, idx in enumerate(self.internal_node_indices):
             p_in_all[idx] = p_in_internal[i]
 
-        # Precompute q_in_node for all nodes
-        q_in_node_all = np.zeros(len(self.nodes_list))
-        for j, edge in enumerate(self.edges_list):
-            tgt_idx = self.node_id_to_idx[edge['target']]
-            q_in_node_all[tgt_idx] += q_edges[j]
-
         # 1. Mass Balance Rows (a < num_internal)
         for a, node_idx in enumerate(self.internal_node_indices):
             node_id = self.node_ids[node_idx]
@@ -682,8 +691,8 @@ class NetworkSolver:
                     residuals.append((p_in_internal[i] - atm_p) / p_scale)
                     continue
 
-                q_in = sum(q_edges[j] for j, e in enumerate(self.edges_list) if e['target'] == node_id)
-                q_out = sum(q_edges[j] for j, e in enumerate(self.edges_list) if e['source'] == node_id)
+                q_in = sum(q_edges[j] for j in self.node_incoming_edge_indices.get(node_id, []))
+                q_out = sum(q_edges[j] for j in self.node_outgoing_edge_indices.get(node_id, []))
                 residuals.append(5.0 * (q_in - q_out) / q_scale + 1e-9 * x_scaled[i])
             
             # 2. Pressure Balance
@@ -767,6 +776,8 @@ class NetworkSolver:
             warm_start_enabled = getattr(gs, 'warm_start', True) if gs else True
             converged_x = np.concatenate([final_p, final_q])
             if warm_start_enabled:
+                if len(NetworkSolver._warm_start_cache) >= NetworkSolver._MAX_WARM_START_ENTRIES:
+                    NetworkSolver._warm_start_cache.pop(next(iter(NetworkSolver._warm_start_cache)))
                 NetworkSolver._warm_start_cache[(self.topology_key, self.active_case_id)] = converged_x
             
             return converged_x, num_internal, getattr(sol, 'nfev', 0), fallback_used, final_residuals

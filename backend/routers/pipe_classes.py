@@ -1,4 +1,5 @@
 import json
+import logging
 from typing import List, Optional, Any, Dict
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from pydantic import BaseModel, Field
@@ -190,7 +191,6 @@ async def search_tr2000_pipe_classes(
 @router.post("/tr2000/sync", response_model=PipeClassResponse)
 async def sync_tr2000_pipe_class(
     payload: TR2000SyncRequest,
-    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_pipe_manager_user)
 ):
     """
@@ -220,68 +220,72 @@ async def sync_tr2000_pipe_class(
             detail=f"Failed to retrieve specification '{payload.pcs_code}' from TR2000 API: {str(err)}"
         )
 
+    from db.database import SessionLocal
+    db = SessionLocal()
+    try:
+        target_code = payload.custom_code.upper().strip() if payload.custom_code else normalized["code"]
+        
+        # Check if this class code already exists in local DB
+        existing = db.query(PipeClass).filter(PipeClass.code == target_code).first()
+        
+        if existing:
+            if payload.conflict_action == "skip":
+                return _serialize_pipe_class(existing)
+            elif payload.conflict_action == "copy" and not payload.custom_code:
+                # Generate next available copy code e.g. AC140_1, AC140_2
+                base_code = normalized["code"]
+                counter = 1
+                while db.query(PipeClass).filter(PipeClass.code == f"{base_code}_{counter}").first():
+                    counter += 1
+                target_code = f"{base_code}_{counter}"
+                normalized["name"] = f"{normalized['name']} ({counter})"
+                existing = None  # Proceed to create new class below
 
-    target_code = payload.custom_code.upper().strip() if payload.custom_code else normalized["code"]
-    
-    # Check if this class code already exists in local DB
-    existing = db.query(PipeClass).filter(PipeClass.code == target_code).first()
-    
-    if existing:
-        if payload.conflict_action == "skip":
+        if existing:
+            # Update existing class in place
+            existing.name = normalized["name"]
+            existing.standard = "TR2000"
+            existing.material_group = normalized["material_group"]
+            existing.material_grade = normalized["material_grade"]
+            existing.rating_class = normalized["rating_class"]
+            existing.design_code = normalized["design_code"]
+            existing.roughness_mm = normalized["roughness_mm"]
+            existing.corrosion_allowance_mm = normalized["corrosion_allowance_mm"]
+            existing.min_temp_c = normalized["min_temp_c"]
+            existing.max_temp_c = normalized["max_temp_c"]
+            existing.revision = normalized["revision"]
+            existing.source_plant_id = normalized["source_plant_id"]
+            existing.sizes_json = json.dumps(normalized["sizes"])
+            existing.temp_pressures_json = json.dumps(normalized["temp_pressures"])
+            db.commit()
+            db.refresh(existing)
             return _serialize_pipe_class(existing)
-        elif payload.conflict_action == "copy" and not payload.custom_code:
-            # Generate next available copy code e.g. AC140_1, AC140_2
-            base_code = normalized["code"]
-            counter = 1
-            while db.query(PipeClass).filter(PipeClass.code == f"{base_code}_{counter}").first():
-                counter += 1
-            target_code = f"{base_code}_{counter}"
-            normalized["name"] = f"{normalized['name']} ({counter})"
-            existing = None  # Proceed to create new class below
-
-    if existing:
-        # Update existing class in place
-        existing.name = normalized["name"]
-        existing.standard = "TR2000"
-        existing.material_group = normalized["material_group"]
-        existing.material_grade = normalized["material_grade"]
-        existing.rating_class = normalized["rating_class"]
-        existing.design_code = normalized["design_code"]
-        existing.roughness_mm = normalized["roughness_mm"]
-        existing.corrosion_allowance_mm = normalized["corrosion_allowance_mm"]
-        existing.min_temp_c = normalized["min_temp_c"]
-        existing.max_temp_c = normalized["max_temp_c"]
-        existing.revision = normalized["revision"]
-        existing.source_plant_id = normalized["source_plant_id"]
-        existing.sizes_json = json.dumps(normalized["sizes"])
-        existing.temp_pressures_json = json.dumps(normalized["temp_pressures"])
-        db.commit()
-        db.refresh(existing)
-        return _serialize_pipe_class(existing)
-    else:
-        # Create new class
-        new_class = PipeClass(
-            code=target_code,
-            name=normalized["name"],
-            standard="TR2000",
-            material_group=normalized["material_group"],
-            material_grade=normalized["material_grade"],
-            rating_class=normalized["rating_class"],
-            design_code=normalized["design_code"],
-            roughness_mm=normalized["roughness_mm"],
-            corrosion_allowance_mm=normalized["corrosion_allowance_mm"],
-            min_temp_c=normalized["min_temp_c"],
-            max_temp_c=normalized["max_temp_c"],
-            revision=normalized["revision"],
-            source_plant_id=normalized["source_plant_id"],
-            is_builtin=False,
-            sizes_json=json.dumps(normalized["sizes"]),
-            temp_pressures_json=json.dumps(normalized["temp_pressures"])
-        )
-        db.add(new_class)
-        db.commit()
-        db.refresh(new_class)
-        return _serialize_pipe_class(new_class)
+        else:
+            # Create new class
+            new_class = PipeClass(
+                code=target_code,
+                name=normalized["name"],
+                standard="TR2000",
+                material_group=normalized["material_group"],
+                material_grade=normalized["material_grade"],
+                rating_class=normalized["rating_class"],
+                design_code=normalized["design_code"],
+                roughness_mm=normalized["roughness_mm"],
+                corrosion_allowance_mm=normalized["corrosion_allowance_mm"],
+                min_temp_c=normalized["min_temp_c"],
+                max_temp_c=normalized["max_temp_c"],
+                revision=normalized["revision"],
+                source_plant_id=normalized["source_plant_id"],
+                is_builtin=False,
+                sizes_json=json.dumps(normalized["sizes"]),
+                temp_pressures_json=json.dumps(normalized["temp_pressures"])
+            )
+            db.add(new_class)
+            db.commit()
+            db.refresh(new_class)
+            return _serialize_pipe_class(new_class)
+    finally:
+        db.close()
 
 
 

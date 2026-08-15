@@ -85,7 +85,7 @@ def get_material_roughness_mm(material_group: Optional[str], material_desc: Opti
     return 0.045  # Standard commercial steel default
 
 
-async def _fetch_get(path: str) -> Any:
+async def _fetch_get(path: str, client: Optional[httpx.AsyncClient] = None) -> Any:
     """Performs an async GET request trying primary URL then fallback URL, bypassing SSL proxy barriers if needed."""
     headers = {"User-Agent": "WalFlow/1.0", "Accept": "application/json"}
     last_err = None
@@ -93,7 +93,7 @@ async def _fetch_get(path: str) -> Any:
     for base_url in [TR2000_PRIMARY_URL, TR2000_FALLBACK_URL]:
         url = f"{base_url}{path}"
         try:
-            async with httpx.AsyncClient(timeout=15.0, verify=False, headers=headers) as client:
+            if client is not None:
                 resp = await client.get(url)
                 if resp.status_code == 200:
                     return resp.json()
@@ -101,6 +101,15 @@ async def _fetch_get(path: str) -> Any:
                     return None
                 else:
                     resp.raise_for_status()
+            else:
+                async with httpx.AsyncClient(timeout=15.0, verify=False, headers=headers) as new_client:
+                    resp = await new_client.get(url)
+                    if resp.status_code == 200:
+                        return resp.json()
+                    elif resp.status_code == 404:
+                        return None
+                    else:
+                        resp.raise_for_status()
         except Exception as e:
             last_err = e
             logging.warning(f"TR2000 request failed for {url}: {e}")
@@ -221,12 +230,14 @@ async def fetch_and_normalize_tr2000_pcs(
 
     actual_rev = str(pcs_header.get("Revision") or pcs_header.get("RevID") or rev_id or "0")
 
-    # 2. Fetch Size Schedules
-    sizes_json = await _fetch_get(f"/plants/{plant_id}/pcs/{pcs_code}/rev/{actual_rev}/pipe-sizes")
-    sizes_data = (sizes_json.get("getPipeSize", []) if isinstance(sizes_json, dict) else sizes_json) or []
+    # 2 & 3. Fetch Pipe Sizes and Temp-Pressure tables concurrently
+    headers = {"User-Agent": "WalFlow/1.0", "Accept": "application/json"}
+    async with httpx.AsyncClient(timeout=15.0, verify=False, headers=headers) as client:
+        sizes_task = _fetch_get(f"/plants/{plant_id}/pcs/{pcs_code}/rev/{actual_rev}/pipe-sizes", client=client)
+        pt_task = _fetch_get(f"/plants/{plant_id}/pcs/{pcs_code}/rev/{actual_rev}/temp-pressures", client=client)
+        sizes_json, pt_json = await asyncio.gather(sizes_task, pt_task)
 
-    # 3. Fetch Pressure-Temperature Ratings
-    pt_json = await _fetch_get(f"/plants/{plant_id}/pcs/{pcs_code}/rev/{actual_rev}/temp-pressures")
+    sizes_data = (sizes_json.get("getPipeSize", []) if isinstance(sizes_json, dict) else sizes_json) or []
     pt_data = (pt_json.get("getTempPressure", []) if isinstance(pt_json, dict) else pt_json) or []
 
     # 4. Normalize Sizes Schedule
