@@ -7,21 +7,46 @@ import sys
 TEST_DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test_walflow.db")
 os.environ["DATABASE_PATH"] = TEST_DB_PATH
 
-# Add backend directory to sys.path
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
+import uuid
 from fastapi.testclient import TestClient
 from main import app
 from db.database import init_db, engine, Base
 
-import uuid
-
 class TestAuthAndDiagrams(unittest.TestCase):
+    admin_headers = None
+
     @classmethod
     def setUpClass(cls):
         Base.metadata.drop_all(bind=engine)
         init_db()
         cls.client = TestClient(app)
+
+    def _get_admin_headers(self):
+        if TestAuthAndDiagrams.admin_headers is not None:
+            return TestAuthAndDiagrams.admin_headers
+        from db.database import SessionLocal
+        from db.models import User
+        from auth import hash_password, create_access_token
+        db = SessionLocal()
+        try:
+            admin_user = db.query(User).filter(User.role == "admin").first()
+            if not admin_user:
+                admin_user = User(
+                    username=f"admin_{uuid.uuid4().hex[:8]}",
+                    password_hash=hash_password("admin_secret_pass"),
+                    role="admin",
+                    status="approved"
+                )
+                db.add(admin_user)
+                db.commit()
+                db.refresh(admin_user)
+            token = create_access_token(data={"sub": admin_user.id, "username": admin_user.username, "role": admin_user.role})
+            TestAuthAndDiagrams.admin_headers = {"Authorization": f"Bearer {token}"}
+            return TestAuthAndDiagrams.admin_headers
+        finally:
+            db.close()
 
     @classmethod
     def tearDownClass(cls):
@@ -59,9 +84,10 @@ class TestAuthAndDiagrams(unittest.TestCase):
         # 3. Second setup call should fail
         fail_reg = self.client.post("/api/auth/setup-admin", json={
             "username": "another_admin",
-            "password": "pass"
+            "password": "another_admin_password"
         })
         self.assertEqual(fail_reg.status_code, 400)
+        self.assertIn("already exists", fail_reg.json()["detail"].lower())
 
         # 4. Admin login
         admin_login = self.client.post("/api/auth/login", json={
@@ -93,13 +119,13 @@ class TestAuthAndDiagrams(unittest.TestCase):
         self.assertIn("pending", user_login_fail.json()["detail"].lower())
 
         # 3. Admin inspects pending users backlog
-        pending_list = self.client.get("/api/admin/pending-users", headers=self.admin_headers)
+        pending_list = self.client.get("/api/admin/pending-users", headers=self._get_admin_headers())
         self.assertEqual(pending_list.status_code, 200)
         pending_ids = [u["id"] for u in pending_list.json()]
         self.assertIn(pending_user_id, pending_ids)
 
         # 4. Admin approves pending user
-        approve_resp = self.client.post(f"/api/admin/users/{pending_user_id}/approve", headers=self.admin_headers)
+        approve_resp = self.client.post(f"/api/admin/users/{pending_user_id}/approve", headers=self._get_admin_headers())
         self.assertEqual(approve_resp.status_code, 200)
 
         # 5. Now user can login
@@ -110,7 +136,7 @@ class TestAuthAndDiagrams(unittest.TestCase):
         self.assertEqual(user_login_success.status_code, 200)
 
         # 6. Test Database Inspector endpoint
-        inspect_resp = self.client.get("/api/admin/database/inspect", headers=self.admin_headers)
+        inspect_resp = self.client.get("/api/admin/database/inspect", headers=self._get_admin_headers())
         self.assertEqual(inspect_resp.status_code, 200)
         stats = inspect_resp.json()["stats"]
         self.assertGreaterEqual(stats["total_users"], 2)
@@ -127,7 +153,7 @@ class TestAuthAndDiagrams(unittest.TestCase):
         user_id = reg_response.json()["id"]
 
         # Approve user via admin
-        self.client.post(f"/api/admin/users/{user_id}/approve", headers=self.admin_headers)
+        self.client.post(f"/api/admin/users/{user_id}/approve", headers=self._get_admin_headers())
 
         # Login user
         login_response = self.client.post("/api/auth/login", json={
@@ -168,9 +194,9 @@ class TestAuthAndDiagrams(unittest.TestCase):
         import os
         import auth
 
-        # Back up existing environment variables
         old_env = os.environ.get("ENVIRONMENT")
         old_key = os.environ.get("WALFLOW_SECRET_KEY")
+        original_secret = auth.SECRET_KEY
 
         try:
             # Case 1: ENVIRONMENT=production, WALFLOW_SECRET_KEY is empty/unset
@@ -207,8 +233,8 @@ class TestAuthAndDiagrams(unittest.TestCase):
             elif "WALFLOW_SECRET_KEY" in os.environ:
                 del os.environ["WALFLOW_SECRET_KEY"]
 
-            # Reload auth one last time to restore normal state for other tests/modules
-            importlib.reload(auth)
+            # Restore original secret key
+            auth.SECRET_KEY = original_secret
 
     def test_06_websocket_authentication_enforcement(self):
         import os
@@ -223,23 +249,109 @@ class TestAuthAndDiagrams(unittest.TestCase):
                 del os.environ["WALFLOW_REQUIRE_WS_AUTH"]
 
             # Unauthenticated connection should fail with close code 1008
+            unauth_client = TestClient(app)
             with self.assertRaises(WebSocketDisconnect) as context:
-                with self.client.websocket_connect("/ws/simulate") as ws:
+                with unauth_client.websocket_connect("/ws/simulate") as ws:
                     pass
             self.assertEqual(context.exception.code, 1008)
 
             # Case 2: WALFLOW_REQUIRE_WS_AUTH = "false" (explicitly disabled)
             os.environ["WALFLOW_REQUIRE_WS_AUTH"] = "false"
-            with self.client.websocket_connect("/ws/simulate") as ws:
+            with unauth_client.websocket_connect("/ws/simulate") as ws:
                 # Successfully connected and did not raise exception
                 pass
-
         finally:
             # Restore environment
             if old_auth_req is not None:
                 os.environ["WALFLOW_REQUIRE_WS_AUTH"] = old_auth_req
             elif "WALFLOW_REQUIRE_WS_AUTH" in os.environ:
                 del os.environ["WALFLOW_REQUIRE_WS_AUTH"]
+
+    def test_07_password_minimum_length_policy(self):
+        # Passwords shorter than 8 characters must be rejected (SEC-04)
+        short_pass_resp = self.client.post("/api/auth/register", json={
+            "username": f"user_{uuid.uuid4().hex[:8]}",
+            "password": "short"
+        })
+        self.assertEqual(short_pass_resp.status_code, 400)
+        self.assertIn("8 characters", short_pass_resp.json()["detail"])
+
+        valid_pass_resp = self.client.post("/api/auth/register", json={
+            "username": f"user_{uuid.uuid4().hex[:8]}",
+            "password": "valid_password_8chars"
+        })
+        self.assertEqual(valid_pass_resp.status_code, 201)
+
+    def test_08_token_revocation_on_logout(self):
+        # Create and approve a user
+        uname = f"user_{uuid.uuid4().hex[:8]}"
+        upass = "secure_password_123"
+        reg = self.client.post("/api/auth/register", json={"username": uname, "password": upass})
+        uid = reg.json()["id"]
+        self.client.post(f"/api/admin/users/{uid}/approve", headers=self._get_admin_headers())
+
+        # Login
+        login_resp = self.client.post("/api/auth/login", json={"username": uname, "password": upass})
+        self.assertEqual(login_resp.status_code, 200, f"Login failed: {login_resp.text}")
+        token = login_resp.json()["access_token"]
+        user_headers = {"Authorization": f"Bearer {token}"}
+
+        # Verify access
+        me_resp = self.client.get("/api/auth/me", headers=user_headers)
+        self.assertEqual(me_resp.status_code, 200)
+
+        # Logout with token
+        logout_resp = self.client.post("/api/auth/logout", headers=user_headers)
+        self.assertEqual(logout_resp.status_code, 200)
+
+        # Subsequent call with the same token must be rejected (SEC-03)
+        me_after_logout = self.client.get("/api/auth/me", headers=user_headers)
+        self.assertEqual(me_after_logout.status_code, 401)
+
+    def test_09_sliding_token_refresh(self):
+        # Create and approve user
+        uname = f"user_{uuid.uuid4().hex[:8]}"
+        upass = "secure_refresh_pass"
+        reg = self.client.post("/api/auth/register", json={"username": uname, "password": upass})
+        uid = reg.json()["id"]
+        self.client.post(f"/api/admin/users/{uid}/approve", headers=self._get_admin_headers())
+
+        # Login
+        login_resp = self.client.post("/api/auth/login", json={"username": uname, "password": upass})
+        self.assertEqual(login_resp.status_code, 200, f"Login failed: {login_resp.text}")
+        old_token = login_resp.json()["access_token"]
+
+        # Refresh
+        refresh_resp = self.client.post("/api/auth/refresh", headers={"Authorization": f"Bearer {old_token}"})
+        self.assertEqual(refresh_resp.status_code, 200)
+        new_token = refresh_resp.json()["access_token"]
+        self.assertNotEqual(old_token, new_token)
+
+        # Old token is revoked
+        old_check = self.client.get("/api/auth/me", headers={"Authorization": f"Bearer {old_token}"})
+        self.assertEqual(old_check.status_code, 401)
+
+        # New token works
+        new_check = self.client.get("/api/auth/me", headers={"Authorization": f"Bearer {new_token}"})
+        self.assertEqual(new_check.status_code, 200)
+        self.assertEqual(new_check.json()["username"], uname)
+
+    def test_10_rate_limiting_enforcement(self):
+        from limiter import limiter
+        # Temporarily enable rate limiter for this specific test
+        old_enabled = limiter.enabled
+        limiter.enabled = True
+        try:
+            # Send requests exceeding 10/min
+            statuses = []
+            for _ in range(12):
+                r = self.client.post("/api/auth/login", json={"username": "nonexistent_rate_test", "password": "wrong_password_123"})
+                statuses.append(r.status_code)
+            
+            # At least one request should be throttled with 429 Too Many Requests
+            self.assertIn(429, statuses)
+        finally:
+            limiter.enabled = old_enabled
 
 if __name__ == "__main__":
     unittest.main()

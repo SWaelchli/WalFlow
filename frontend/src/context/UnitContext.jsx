@@ -19,6 +19,8 @@ import {
   gpmToLmin,
   cToF,
   fToC,
+  cToK,
+  fToK,
   kwToHp,
   hpToKw,
   mToFt,
@@ -129,6 +131,12 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
   const toDisplayValue = useCallback((propKey, baseValue) => {
     if (baseValue === undefined || baseValue === null || isNaN(baseValue)) return '';
     const num = Number(baseValue);
+    
+    // Handle Kelvin temperature conversion (base is Kelvin, display is always Celsius or Fahrenheit)
+    if (propKey === 'temperature') {
+      return isImperial ? Number(((num - 273.15) * 1.8 + 32).toFixed(1)) : Number((num - 273.15).toFixed(1));
+    }
+    
     if (!isImperial) return num;
 
     // Convert based on property name pattern
@@ -153,7 +161,11 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
       case 'rated_dp_bar':
       case 'inlet_pressure_base_bar':
       case 'outlet_pressure_base_bar':
-      case 'set_pressure':
+      case 'source_pressure_bara':
+      case 'cracking_pressure_bar':
+      case 'cracking_pressure':
+      case 'dp_clean':
+      case 'dp_terminal':
         return Number(barToPsi(num, 2));
 
       // Pressure in Pa (base: Pa)
@@ -162,18 +174,29 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
         return Number(paToPsi(num, 2));
 
       // Temperature (base: °C)
-      case 'temperature':
       case 'temp_setpoint_c':
       case 'inlet_temp_c':
+      case 'set_temperature_c':
+      case 'design_inlet_temp_c':
+      case 'design_outlet_temp_c':
+      case 'medium_temp_c':
+      case 'temp_base_c':
         return Number(cToF(num, 1));
 
       // Power (base: kW)
       case 'motor_power':
       case 'heat_duty_kw':
+      case 'rated_cooling_kw':
+      case 'rated_heating_kw':
         return Number(kwToHp(num, 2));
 
-      // Pipe Length (base: m)
+      // Pipe Length, Level, Elevation (base: m)
       case 'length':
+      case 'level':
+      case 'elevation':
+      case 'inlet_elevation':
+      case 'outlet_elevation':
+      case 'equivalent_length':
         return Number(mToFt(num, 2));
 
       // Pipe Diameter (base: m)
@@ -195,9 +218,23 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
    * back to the base Metric unit before saving into node/edge state.
    */
   const fromInputValue = useCallback((propKey, inputValue) => {
-    if (inputValue === undefined || inputValue === null || inputValue === '') return 0;
+    if (inputValue === undefined || inputValue === null) return 0;
+    if (typeof inputValue === 'boolean' || typeof inputValue === 'object') return inputValue;
+
+    const stringKeys = ['label', 'pipe_class_id', 'pipe_class_code', 'standardSch', 'material_grade'];
+    if (stringKeys.includes(propKey)) {
+      return inputValue !== undefined && inputValue !== null ? inputValue : '';
+    }
+
+    if (inputValue === '') return 0;
     const num = parseFloat(inputValue);
     if (isNaN(num)) return 0;
+
+    // Handle Kelvin temperature conversion (input is always Celsius or Fahrenheit, base is Kelvin)
+    if (propKey === 'temperature') {
+      return isImperial ? fToK(num) : cToK(num);
+    }
+
     if (!isImperial) return num;
 
     switch (propKey) {
@@ -221,7 +258,11 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
       case 'rated_dp_bar':
       case 'inlet_pressure_base_bar':
       case 'outlet_pressure_base_bar':
-      case 'set_pressure':
+      case 'source_pressure_bara':
+      case 'cracking_pressure_bar':
+      case 'cracking_pressure':
+      case 'dp_clean':
+      case 'dp_terminal':
         return psiToBar(num);
 
       // Pressure in Pa (input: psi -> base: Pa)
@@ -230,18 +271,29 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
         return psiToPa(num);
 
       // Temperature (input: °F -> base: °C)
-      case 'temperature':
       case 'temp_setpoint_c':
       case 'inlet_temp_c':
+      case 'set_temperature_c':
+      case 'design_inlet_temp_c':
+      case 'design_outlet_temp_c':
+      case 'medium_temp_c':
+      case 'temp_base_c':
         return fToC(num);
 
       // Power (input: HP -> base: kW)
       case 'motor_power':
       case 'heat_duty_kw':
+      case 'rated_cooling_kw':
+      case 'rated_heating_kw':
         return hpToKw(num);
 
-      // Pipe Length (input: ft -> base: m)
+      // Pipe Length, Level, Elevation (input: ft -> base: m)
       case 'length':
+      case 'level':
+      case 'elevation':
+      case 'inlet_elevation':
+      case 'outlet_elevation':
+      case 'equivalent_length':
         return ftToM(num);
 
       // Pipe Diameter (input: in -> base: m)

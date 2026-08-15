@@ -66,8 +66,10 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
 
   const handleClassChange = (newClassId) => {
     if (newClassId === 'manual') {
-      onChange('pipe_class_id', 'manual');
-      onChange('pipe_class_code', 'CUSTOM');
+      onChange({
+        pipe_class_id: 'manual',
+        pipe_class_code: 'CUSTOM'
+      });
       return;
     }
     const pc = classList.find(c => c.id === newClassId);
@@ -75,15 +77,17 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
       const targetSize = pc.sizes.find(s => s.dn === currentDn) || pc.sizes[0];
       const idMeters = (targetSize.od_mm - 2 * targetSize.wt_mm) / 1000.0;
       
-      onChange('pipe_class_id', pc.id);
-      onChange('pipe_class_code', pc.code);
-      onChange('roughness_mm', pc.roughness_mm);
-      onChange('roughness', pc.roughness_mm / 1000.0);
-      onChange('standardDn', targetSize.dn);
-      onChange('standardSch', targetSize.sch || 'STD');
-      onChange('outer_diameter_mm', targetSize.od_mm);
-      onChange('wall_thickness_mm', targetSize.wt_mm);
-      onChange('diameter', idMeters);
+      onChange({
+        pipe_class_id: pc.id,
+        pipe_class_code: pc.code,
+        roughness_mm: pc.roughness_mm,
+        roughness: pc.roughness_mm / 1000.0,
+        standardDn: targetSize.dn,
+        standardSch: targetSize.sch || 'STD',
+        outer_diameter_mm: targetSize.od_mm,
+        wall_thickness_mm: targetSize.wt_mm,
+        diameter: idMeters
+      });
     }
   };
 
@@ -93,11 +97,13 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
     const targetSize = selectedClass.sizes.find(s => s.dn === dnInt);
     if (targetSize) {
       const idMeters = (targetSize.od_mm - 2 * targetSize.wt_mm) / 1000.0;
-      onChange('standardDn', targetSize.dn);
-      onChange('standardSch', targetSize.sch || 'STD');
-      onChange('outer_diameter_mm', targetSize.od_mm);
-      onChange('wall_thickness_mm', targetSize.wt_mm);
-      onChange('diameter', idMeters);
+      onChange({
+        standardDn: targetSize.dn,
+        standardSch: targetSize.sch || 'STD',
+        outer_diameter_mm: targetSize.od_mm,
+        wall_thickness_mm: targetSize.wt_mm,
+        diameter: idMeters
+      });
     }
   };
 
@@ -181,7 +187,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
                 const raw = parseFloat(e.target.value);
                 if (!isNaN(raw) && raw > 0) {
                   const idM = isImperial ? raw / 39.37007874 : raw / 1000.0;
-                  onChange('diameter', idM);
+                  onChange({ diameter: idM });
                 }
               }}
             />
@@ -197,8 +203,10 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
               onChange={(e) => {
                 const raw = parseFloat(e.target.value);
                 if (!isNaN(raw) && raw >= 0) {
-                  onChange('roughness_mm', raw);
-                  onChange('roughness', raw / 1000.0);
+                  onChange({
+                    roughness_mm: raw,
+                    roughness: raw / 1000.0
+                  });
                 }
               }}
             />
@@ -221,9 +229,9 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
                   const raw = parseFloat(e.target.value);
                   if (!isNaN(raw)) {
                     const tempC = isImperial ? (raw - 32) / 1.8 : raw;
-                    onChange('design_temperature_c', tempC);
+                    onChange({ design_temperature_c: tempC });
                   } else {
-                    onChange('design_temperature_c', undefined);
+                    onChange({ design_temperature_c: undefined });
                   }
                 }}
               />
@@ -245,9 +253,9 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
                   const raw = parseFloat(e.target.value);
                   if (!isNaN(raw)) {
                     const pBar = isImperial ? raw / 14.50377 : raw;
-                    onChange('design_pressure_bar', pBar);
+                    onChange({ design_pressure_bar: pBar });
                   } else {
-                    onChange('design_pressure_bar', undefined);
+                    onChange({ design_pressure_bar: undefined });
                   }
                 }}
               />
@@ -310,51 +318,82 @@ export default function SetupPanel({
     </div>
   );
 
-  const validateAndCommit = (field, rawValue, isCritical = false) => {
-    let finalValue = rawValue;
+  const validateAndCommit = (fieldOrUpdates, rawValue, isCritical = false) => {
+    let updates = {};
 
-    // Handle empty string
-    if (finalValue === '' || finalValue === undefined || finalValue === null) {
-      if (isCritical) {
-        alert(`${field} cannot be empty or zero. Reverting to previous value.`);
-        setLocalDrafts({}); 
-        return;
+    if (typeof fieldOrUpdates === 'string') {
+      const field = fieldOrUpdates;
+      let finalValue = rawValue;
+
+      // Handle empty string
+      if (finalValue === '' || finalValue === undefined || finalValue === null) {
+        if (isCritical) {
+          alert(`${field} cannot be empty or zero. Reverting to previous value.`);
+          setLocalDrafts({}); 
+          return;
+        }
+        finalValue = 0;
       }
-      finalValue = 0;
-    }
 
-    const convertedVal = fromInputValue(field, finalValue);
-    const numericValue = typeof convertedVal === 'number' ? convertedVal : parseFloat(convertedVal);
+      const convertedVal = fromInputValue(field, finalValue);
+      const numericValue = typeof convertedVal === 'number' ? convertedVal : parseFloat(convertedVal);
 
-    // Critical validation
-    if (isCritical) {
-      if (field === 'opening') {
-        if (isNaN(numericValue) || numericValue < 0 || numericValue > 100) {
-          alert('Opening must be a number between 0 and 100.');
+      // Critical validation
+      if (isCritical) {
+        if (field === 'opening') {
+          if (isNaN(numericValue) || numericValue < 0 || numericValue > 100) {
+            alert('Opening must be a number between 0 and 100.');
+            setLocalDrafts({});
+            return;
+          }
+        } else if (isNaN(numericValue) || numericValue <= 0) {
+          alert(`${field} must be a positive number greater than zero.`);
           setLocalDrafts({});
           return;
         }
-      } else if (isNaN(numericValue) || numericValue <= 0) {
-        alert(`${field} must be a positive number greater than zero.`);
-        setLocalDrafts({});
-        return;
+      }
+
+      const processedValue = isNaN(numericValue) ? convertedVal : numericValue;
+      updates = { [field]: processedValue };
+
+      // Clear local draft for this field once committed
+      setLocalDrafts(prev => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    } else {
+      // It's an object of updates
+      const updatesObj = fieldOrUpdates;
+      for (const [f, v] of Object.entries(updatesObj)) {
+        let finalVal = v;
+        const isFieldCritical = (f === 'diameter' || f === 'length');
+
+        if (finalVal === '' || finalVal === undefined || finalVal === null) {
+          if (isFieldCritical) {
+            alert(`${f} cannot be empty or zero. Reverting to previous value.`);
+            return;
+          }
+          finalVal = 0;
+        }
+
+        const convertedVal = fromInputValue(f, finalVal);
+        const numericValue = typeof convertedVal === 'number' ? convertedVal : parseFloat(convertedVal);
+
+        if (isFieldCritical && (isNaN(numericValue) || numericValue <= 0)) {
+          alert(`${f} must be a positive number greater than zero.`);
+          return;
+        }
+
+        updates[f] = isNaN(numericValue) ? convertedVal : numericValue;
       }
     }
 
-    const processedValue = isNaN(numericValue) ? convertedVal : numericValue;
-
     if (isNode) {
-      onUpdate(id, { [field]: processedValue });
+      onUpdate(id, updates);
     } else {
-      onUpdateEdge(id, { [field]: processedValue });
+      onUpdateEdge(id, updates);
     }
-    
-    // Clear local draft for this field once committed
-    setLocalDrafts(prev => {
-      const next = { ...prev };
-      delete next[field];
-      return next;
-    });
   };
 
   const handleDraftChange = (field, val) => {
@@ -493,7 +532,7 @@ export default function SetupPanel({
                   data={data} 
                   availablePipeClasses={availablePipeClasses} 
                   allowCustomPipes={allowCustomPipes} 
-                  onChange={(field, val) => validateAndCommit(field, val, field === 'diameter')} 
+                  onChange={(updates) => validateAndCommit(updates)} 
                 />
               </div>
 

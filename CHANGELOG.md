@@ -19,6 +19,12 @@ All notable changes to the WälFlow project will be documented in this file.
 - **Equinor TR2000 Multi-Spec Batch Importer**: Checkbox selection, Select All/Unselect All quick actions, solid sticky table header, live batch progress, and interactive duplicate conflict resolution dialog (Update, Import as Copy `(1)`, Skip, or Abort).
 - **Localized Surface Roughness**: Removed global canvas roughness; pipe friction factor is now calculated from localized roughness auto-mapped from material groups.
 - **AI Agent Skill (`.agents/skills/pipe-classes`)**: Added dedicated skill documentation for AI pair programmers and LLM agents.
+- **Production Readiness & Security Hardening**:
+  - **8-Character Password Policy**: Enforced minimum 8-character password length on registration and setup in both frontend modals and backend schemas (SEC-04).
+  - **60-Minute Sliding Session Renewal**: Reduced static token lifespan to 60 minutes with seamless background sliding renewal during active usage (SEC-03).
+  - **Token Revocation Blacklist**: Server-side in-memory and Redis-supported JWT blacklist to immediately invalidate sessions upon user logout (SEC-03).
+  - **Sanitized Exception Handling**: Stripped internal stack traces and database paths from client HTTP and WebSocket error payloads (SEC-06).
+  - **SlowAPI Rate Limiting Middleware**: Configured client IP rate limiting on authentication and simulation routes to mitigate brute-force and DoS risks (R4).
 
 
 
@@ -37,6 +43,8 @@ All notable changes to the WälFlow project will be documented in this file.
 - Improved orifice detail-panel chart to use dynamic axis scaling for both X and Y axes, ensuring the chart remains usable for small values.
 
 - Fixed Equinor TR2000 REST API client response parsing to properly unwrap dictionary envelopes (`getPlant`, `getPCS`, `getPipeSize`, `getTempPressure`), restoring live plant querying, spec search, and specification synchronization.
+- Fixed Piping Spec selection bug in the setup panel by batching field updates from `PipeSelector` and updating `fromInputValue` to preserve non-numeric strings (like `'manual'` or `'CUSTOM'`).
+- Fixed Imperial unit conversion bugs in the setup panel for tank level, elevation, source pressure/temperature, check valve cracking pressure, filter DP, and cooler/heater properties.
 - Fixed project specification filter reset bug where re-enabling all specifications failed to clear restrictions in the database.
 
 - Fixed active project context synchronization ensuring project-level specification restrictions immediately take effect on the canvas edge inspector and DataList matrix table.

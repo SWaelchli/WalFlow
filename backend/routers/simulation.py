@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, status
 from typing import List, Dict, Any
 import traceback
 
@@ -8,6 +8,7 @@ from simulation.solver import NetworkSolver, run_sequential_relief_simulation
 from simulation.equipment.volumetric_pump import VolumetricPump
 from simulation.equipment.centrifugal_pump import CentrifugalPump
 from simulation.fluid_utils import FluidProperties
+from limiter import limiter
 
 router = APIRouter(prefix="/api/simulation", tags=["simulation"])
 
@@ -101,6 +102,15 @@ def extract_telemetry_dict(network) -> Dict[str, Any]:
         }
     return telemetry
 
+def sanitize_error_message(e: Exception) -> str:
+    """Sanitizes exception messages to prevent stack trace and file path leakage (SEC-06)."""
+    msg = str(e)
+    sensitive_markers = ["traceback", "file \"", "c:\\", "/home/", "line ", "sqlite3", "syntax error in"]
+    lower_msg = msg.lower()
+    if any(marker in lower_msg for marker in sensitive_markers):
+        return "Simulation calculation error. Please verify diagram parameters and connectivity."
+    return msg if len(msg) < 150 else "Simulation failed due to numerical instability or invalid parameters."
+
 @router.get("/fluids")
 def list_fluids():
     """
@@ -110,7 +120,8 @@ def list_fluids():
     return FluidProperties.get_fluid_catalog()
 
 @router.post("/batch", response_model=BatchSimulationResponse)
-def run_batch_simulation(graph: ReactFlowGraph):
+@limiter.limit("30/minute")
+def run_batch_simulation(request: Request, graph: ReactFlowGraph):
     """
     Executes hydraulic simulations for all operating cases in the diagram graph.
     Returns side-by-side telemetry and KPI comparisons for the matrix dashboard.
@@ -139,7 +150,6 @@ def run_batch_simulation(graph: ReactFlowGraph):
             kpis = calculate_case_kpis(network, telemetry, stats)
 
             results.append(BatchCaseResult(
-
                 case_id=case.id,
                 case_name=case.name,
                 is_base=case.is_base,
@@ -156,7 +166,7 @@ def run_batch_simulation(graph: ReactFlowGraph):
                 case_name=case.name,
                 is_base=case.is_base,
                 status="error",
-                error_message=str(e)
+                error_message=sanitize_error_message(e)
             ))
 
     return BatchSimulationResponse(status="success", results=results)

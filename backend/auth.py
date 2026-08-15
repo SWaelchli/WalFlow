@@ -1,7 +1,8 @@
 import os
+import time
 import hashlib
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import jwt
 from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
@@ -19,9 +20,83 @@ if not SECRET_KEY:
     logger.warning("WARNING: WALFLOW_SECRET_KEY environment variable is not set. Falling back to an auto-generated random secret key for development.")
     SECRET_KEY = secrets.token_hex(32)
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
+ACCESS_TOKEN_EXPIRE_MINUTES = 60  # Reduced to 60 minutes for security (SEC-03 / SEC-04)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
+
+# Token Revocation Store (SEC-03)
+# Supports Redis if configured, falls back to in-memory TTL dictionary with automatic cleanup
+class TokenRevocationBlacklist:
+    def __init__(self):
+        self._memory_blacklist = {}  # {token_hash: expiry_timestamp}
+        self._redis_client = None
+        redis_url = os.getenv("WALFLOW_REDIS_URL") or os.getenv("REDIS_URL")
+        if redis_url:
+            try:
+                import redis
+                self._redis_client = redis.Redis.from_url(redis_url, decode_responses=True)
+                self._redis_client.ping()
+            except Exception as e:
+                import logging
+                logging.getLogger("uvicorn").warning(f"Redis connection failed ({e}), falling back to in-memory JWT blacklist.")
+                self._redis_client = None
+
+    def _hash_token(self, token: str) -> str:
+        return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+    def _cleanup_memory(self):
+        now = time.time()
+        expired_keys = [k for k, exp in self._memory_blacklist.items() if exp < now]
+        for k in expired_keys:
+            self._memory_blacklist.pop(k, None)
+
+    def revoke(self, token: str, expires_in_seconds: int = None):
+        """Add a token to the blacklist until its expiration."""
+        if not token:
+            return
+        if expires_in_seconds is None:
+            expires_in_seconds = ACCESS_TOKEN_EXPIRE_MINUTES * 60
+
+        token_hash = self._hash_token(token)
+        now = time.time()
+        expiry = now + max(1, expires_in_seconds)
+
+        if self._redis_client:
+            try:
+                self._redis_client.setex(f"walflow:revoked:{token_hash}", int(expires_in_seconds), "1")
+                return
+            except Exception:
+                pass
+
+        self._cleanup_memory()
+        self._memory_blacklist[token_hash] = expiry
+
+    def is_revoked(self, token: str) -> bool:
+        """Check if a token has been revoked."""
+        if not token:
+            return False
+        token_hash = self._hash_token(token)
+
+        if self._redis_client:
+            try:
+                if self._redis_client.exists(f"walflow:revoked:{token_hash}"):
+                    return True
+            except Exception:
+                pass
+
+        self._cleanup_memory()
+        expiry = self._memory_blacklist.get(token_hash)
+        if expiry and expiry > time.time():
+            return True
+        return False
+
+token_blacklist = TokenRevocationBlacklist()
+
+def revoke_token(token: str, expires_in_seconds: int = None):
+    token_blacklist.revoke(token, expires_in_seconds)
+
+def is_token_revoked(token: str) -> bool:
+    return token_blacklist.is_revoked(token)
 
 def hash_password(password: str) -> str:
     salt = secrets.token_hex(16)
@@ -36,15 +111,20 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     except Exception:
         return False
 
-from datetime import datetime, timedelta, timezone
-
 def create_access_token(data: dict, expires_delta: timedelta = None) -> str:
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
-    to_encode.update({"exp": expire})
+    to_encode.update({
+        "exp": expire,
+        "jti": secrets.token_hex(16)
+    })
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
-def decode_access_token(token: str) -> dict:
+def decode_access_token(token: str, check_revocation: bool = True) -> dict:
+    if not token:
+        return None
+    if check_revocation and is_token_revoked(token):
+        return None
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload
@@ -70,7 +150,7 @@ def get_current_user(
     if not payload:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
+            detail="Invalid, expired, or revoked token",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
@@ -109,5 +189,3 @@ def get_current_pipe_manager_user(
             detail="Access forbidden: Administrator or Pipe Manager privileges required.",
         )
     return current_user
-
-

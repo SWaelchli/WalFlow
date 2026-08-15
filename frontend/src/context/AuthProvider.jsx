@@ -14,6 +14,22 @@ export const AuthProvider = ({ children }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Sliding session renewal: automatically refresh token every 20 minutes if active (SEC-03 / Option 1)
+  useEffect(() => {
+    if (!currentUser) return;
+    const interval = setInterval(async () => {
+      try {
+        await axios.post('/api/auth/refresh');
+      } catch (err) {
+        if (err.response?.status === 401) {
+          setCurrentUser(null);
+        }
+      }
+    }, 20 * 60 * 1000); // 20 minutes
+
+    return () => clearInterval(interval);
+  }, [currentUser]);
+
   const checkAdminStatus = async (retries = 5, delayMs = 1200) => {
     for (let attempt = 0; attempt < retries; attempt++) {
       try {

@@ -1,9 +1,19 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, status
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 import uvicorn
 import json
 import traceback
+import logging
+
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+from slowapi import _rate_limit_exceeded_handler
+
 from auth import decode_access_token
+from limiter import limiter
 
 from simulation.solver import NetworkSolver, run_sequential_relief_simulation
 from simulation.graph_parser import GraphParser
@@ -21,12 +31,19 @@ from routers.pipe_classes import router as pipe_classes_router
 
 from contextlib import asynccontextmanager
 
+logger = logging.getLogger("uvicorn")
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
     yield
 
 app = FastAPI(title="WalFlow Engine", description="Hydraulic Simulation Backend", lifespan=lifespan)
+
+# Attach slowapi rate limiter state & middleware (R4 / Security)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
@@ -40,6 +57,19 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Global sanitized exception handler to prevent stack trace data leakage (SEC-06)
+@app.exception_handler(Exception)
+async def global_unhandled_exception_handler(request: Request, exc: Exception):
+    # Pass through standard HTTPExceptions and validation errors
+    if isinstance(exc, (StarletteHTTPException, RequestValidationError, RateLimitExceeded)):
+        raise exc
+    logger.error(f"Unhandled server exception on {request.url.path}: {exc}")
+    traceback.print_exc()
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "An internal server error occurred. Please try again later."}
+    )
 
 app.include_router(auth_router)
 app.include_router(diagrams_router)
@@ -113,10 +143,10 @@ async def websocket_endpoint(websocket: WebSocket):
     require_auth = os.getenv("WALFLOW_REQUIRE_WS_AUTH", "true").lower() in ("true", "1")
 
     if require_auth:
-      if not token or not decode_access_token(token):
-        # Reject connection if token is missing or invalid
-        await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Not authenticated")
-        return
+        if not token or not decode_access_token(token):
+            # Reject connection if token is missing, expired, or revoked (SEC-03)
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Not authenticated")
+            return
 
     network_instance = None
     solver_instance = None
@@ -149,7 +179,9 @@ async def websocket_endpoint(websocket: WebSocket):
                     except Exception as e:
                         print(f"Graph Parse Error: {e}")
                         traceback.print_exc()
-                        await websocket.send_text(json.dumps({"status": "error", "message": str(e)}))
+                        # SEC-06: Sanitize error payload
+                        safe_msg = "Invalid diagram graph format. Please verify component connections."
+                        await websocket.send_text(json.dumps({"status": "error", "message": safe_msg}))
                         continue
 
             elif action == "update_valve":
@@ -174,7 +206,9 @@ async def websocket_endpoint(websocket: WebSocket):
                         solver_instance = NetworkSolver(network_instance)
                     except Exception as e:
                         print(f"Graph Parse Error during Simulation: {e}")
-                        await websocket.send_text(json.dumps({"status": "error", "message": f"Parse Error: {str(e)}"}))
+                        traceback.print_exc()
+                        safe_msg = "Graph configuration error during simulation initialization."
+                        await websocket.send_text(json.dumps({"status": "error", "message": safe_msg}))
                         continue
 
                 if solver_instance:
@@ -189,7 +223,6 @@ async def websocket_endpoint(websocket: WebSocket):
 
                         kpis = calculate_case_kpis(network_instance, telemetry_mitigated, stats)
 
-
                         await websocket.send_text(json.dumps({
                             "status": "success",
                             "stats": stats,
@@ -201,7 +234,9 @@ async def websocket_endpoint(websocket: WebSocket):
                     except Exception as e:
                         print(f"Solver Error: {e}")
                         traceback.print_exc()
-                        await websocket.send_text(json.dumps({"status": "error", "message": str(e)}))
+                        # SEC-06: Sanitize error payload
+                        safe_msg = "Hydraulic network solver calculation error. Please check boundary conditions."
+                        await websocket.send_text(json.dumps({"status": "error", "message": safe_msg}))
                 else:
                     await websocket.send_text(json.dumps({"status": "waiting", "message": "Graph required before simulation."}))
             

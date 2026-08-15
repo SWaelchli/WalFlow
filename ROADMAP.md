@@ -7,34 +7,16 @@ This document outlines planned features, overlays, and enhancements for the WalF
 ## 🚀 Production Readiness & QA Audit Actions
 
 > [!NOTE]
-> This section tracks actionable items identified in the [Master QA Synthesis & Audit Report](file:///c:/Users/c563871/Coding/WalFlow/qa_report/QA_SUMMARY_REPORT.md) (App version `0.1.3`).
-> Future AI agents and developers should refer directly to the detailed reports in `qa_report/` (including `engineering`, `ui`, `performance`, and `security` sub-folders) to implement these changes correctly and efficiently.
-> Once all of these changes are implemented, the `qa_report/` directory can be deleted.
+> All actionable items identified in the Master QA Synthesis & Audit Report (App version `0.1.3`) have been fully implemented and verified. The temporary `qa_report/` directory has been retired and deleted.
 
-- [x] **⚠️ [URGENT] Block application start if `WALFLOW_SECRET_KEY` is missing in production** (SEC-01)
-  * **Scope**: Modify `backend/main.py` or initialization scripts to detect if the environment is production and abort starting the application if the default development fallback secret key is in use.
-- [x] **⚠️ [URGENT] Enforce `WALFLOW_REQUIRE_WS_AUTH=true` by default** (SEC-02)
-  * **Scope**: Change the default behavior of the backend WebSocket simulation authentication so that it requires authentication by default unless explicitly disabled, preventing unauthorized simulation triggers.
-- [x] **⚠️ [URGENT] Refactor `useWebSocketSimulation.js` with `useRef` to eliminate socket churn** (R3 / Performance)
-  * **Scope**: Redesign the WebSocket hook connection lifecycle so that changing `telemetryMode` or `activeCaseId` updates refs rather than tearing down and recreating the WebSocket, eliminating socket connection churn.
-- [x] **🇺🇸 Implement Imperial/US Customary unit conversions** (R2 / UI)
-  * **Scope**: Expand `frontend/src/utils/converters.js` to implement conversions for `psi`, `gpm`, `m³/h`, and `HP`, and update the UI controls (PropertyEditor, Sidebar, etc.) to display them correctly.
-- [x] **🌐 Build global unit system selector (SI vs Imperial) in sidebar settings** (R2 / UI)
-  * **Scope**: Add a global unit switch toggler to the sidebar settings that propagates selected system units (Metric SI vs Imperial US) across the application panels and tooltips.
-- [x] **⚡ Implement analytical sparse Jacobian calculation in the backend solver** (R3 / Performance)
-  * **Scope**: Derive and implement analytical derivatives for equipment equations to calculate the sparse Jacobian directly, instead of using finite differences.
-- [x] **🏎️ Transition to `scipy.sparse` Newton-Krylov solver** (R3 / Performance)
-  * **Scope**: Integrate a sparse Newton-Krylov solver to scale calculations efficiently, reducing solver execution times for 100+ nodes to less than 200ms.
-- [x] **🌡️ Implement Warm-Start Initial State Vector Caching** (R3 / Performance)
-  * **Scope**: Cache the converged solution vector $x_{conv}$ from the previous simulation run. When a user adjusts a valve slider or operating case, reuse $x_{conv}$ as the initial guess $x_0$ to reduce iteration count (targeting >80% reduction). Additionally, ensure the caching scheme is compatible with and optimized for batch solving (the operating cases matrix) by storing case-specific converged state vectors to seed consecutive batch sweeps.
-- [ ] **🔐 Enforce 8-character password policy & reduce JWT lifespan to 60 minutes** (SEC-03 / SEC-04)
-  * **Scope**: Increase minimum password length validation to 8 characters and reduce JWT token expiration duration from 7 days to 60 minutes for higher account security.
-- [ ] **🚫 Implement in-memory/Redis JWT revocation blacklist on logout** (SEC-03)
-  * **Scope**: Keep track of logged-out token identifiers in an in-memory storage (e.g. Redis) to invalidate stateless JWT sessions immediately upon logout.
-- [ ] **🧹 Sanitize backend exception handlers to strip stack traces from client payloads** (SEC-06)
+- [x] **🔐 Enforce 8-character password policy & reduce JWT lifespan to 60 minutes with sliding session renewal** (SEC-03 / SEC-04)
+  * **Scope**: Increase minimum password length validation to 8 characters and reduce JWT token expiration duration from 7 days to 60 minutes with background sliding refresh during active use for higher account security.
+- [x] **🚫 Implement in-memory/Redis JWT revocation blacklist on logout** (SEC-03)
+  * **Scope**: Keep track of logged-out token identifiers in an in-memory storage (with Redis support) to invalidate JWT sessions immediately upon logout.
+- [x] **🧹 Sanitize backend exception handlers to strip stack traces from client payloads** (SEC-06)
   * **Scope**: Catch raw backend exceptions and format standard user-friendly messages for client payloads, stripping internal code stack traces and database paths to prevent data leakage.
-- [ ] **🛑 Add rate-limiting middleware (slowapi) to endpoints** (R4 / Security)
-  * **Scope**: Add rate limit restrictions to authentication (`/login`, `/register`) and simulation endpoints to prevent automated brute-force attacks and CPU-exhaustion DoS.
+- [x] **🛑 Add rate-limiting middleware (slowapi) to endpoints** (R4 / Security)
+  * **Scope**: Add rate limit restrictions to authentication (`/login`, `/register`, `/setup-admin`) and simulation endpoints to prevent automated brute-force attacks and CPU-exhaustion DoS.
 
 ---
 
@@ -57,29 +39,41 @@ This document outlines planned features, overlays, and enhancements for the WalF
     * `3. App Default`: Else fall back to system built-in application default value.
   * **Engineering Value:** Streamlines model building by eliminating repetitive property adjustments for standard project or user engineering conventions.
 
-- [x] **📁 Multi-PFD Diagrams per Project Container**
-  * **Concept:** Expand `ProjectManagerModal` and workspace model so a single Project container can store multiple PFD diagrams (e.g. Main Loop, Pilot System, Lube Subsystem).
-  * **Architecture:** Projects will act as top-level parent entities containing an array of PFD diagrams, accessible via tabbed navigation within the workspace.
-
-- [x] **👥 Shared Project Access & Multi-User Collaboration**
-  * **Concept:** Project owners can share project access with other registered WalFlow users via email/username invites with role-based access control.
-  * **Permissions Matrix:**
-    * **Owner:** Full management, deletion, and sharing permissions.
-    * **Editor:** Real-time editing and auto-sync to project PFDs.
-    * **Viewer:** Read-only canvas access and simulation execution.
-
 ---
 
 ## ⚙️ Physics & Simulation
 
-### 🧰 New Equipment & Component Additions
+### 💧 Multi-Fluid Simulation & Boundary Fluid Selection
 
-- [X] **🌊 Universal Fluid Source (`FluidSource`)**
-  * **Concept:** Single fluid supply component featuring an active mode selector:
-    * **Constant Pressure Mode (bar):** Fixed pressure Dirichlet boundary condition (e.g. plant water main, utility header).
-    * **Constant Flow Mode (L/min):** Fixed flow rate Neumann boundary condition (e.g. dosing pump, regulated feed line).
-  * **Physics:** Backend graph parser inspects `source_type` property and dynamically registers either a pressure or flow constraint in the SciPy linear solver matrix.
-  * **Engineering Value:** Compact component palette and seamless toggling between pressure-driven and flow-driven supply scenarios without re-piping.
+- [ ] **💧 Per-Boundary Fluid Selection, Multi-Fluid Topological Domain Propagation & Fluid Mixing Abort**
+  * **Concept:** Transition from a single drawing-wide system fluid to per-boundary fluid assignment, allowing complex P&IDs with multiple independent hydraulic circuits (e.g. an ISO VG 46 lube oil lubrication loop and a chilled water cooling loop) to solve simultaneously on a single canvas.
+  * **Core Engineering & Physics Architecture:**
+    * **Boundary Fluid Selection**: Boundary components (`Tank`, `PressureSource`, `FlowSource`) can explicitly assign a fluid (e.g. Water, Seawater, Glycol 30%/50%, ISO VG 15/22/32/46/68, Diesel) or choose `Inherit Primary Fluid` (`system`).
+    * **Primary System Fluid Fallback**: Canvas-level Global Settings dropdown renamed from "System Fluid" to "Primary System Fluid", acting as the default fallback for newly placed boundaries and closed circuits lacking explicit boundary sources.
+    * **Topological Domain Propagation**: A pre-simulation graph analysis traces hydraulic fluid domains across connected nodes and pipes. Heat Exchangers maintain isolated internal passages (channel 1 vs. channel 2) to permit separate fluids (e.g. oil on tube side, water on shell side) without cross-contamination.
+    * **Fluid Mixing Detection & Abort**: Because the static solver does not model dynamic miscible fluid blending, if streams carrying different fluids intersect or meet at any node/junction, the pre-solve checker immediately halts the simulation and returns a descriptive error naming the conflicting components, pipe IDs, and fluid names, triggering an actionable UI warning modal.
+    * **Multi-Domain Steady-State Physics**: When multiple independent loops coexist, each equipment node and pipe evaluates its physical equations ($\rho, \mu, C_p$, vapor pressure, $\Delta P$, friction factor, pump curves, cavitation margins) using its domain's assigned fluid properties.
+  * **UI & Visual Representation:**
+    * **Fluid Heatmap Mode**: Adds a dedicated "Fluid Type" heatmap mode (`fluid`) assigning high-contrast, distinct colors per fluid (e.g., Electric Blue for Water, Warm Amber for ISO VG oils, Bright Teal for Glycols, Coral for Fuels).
+    * **Active Fluids Heatmap Legend**: In Fluid heatmap mode, the overlay legend displays discrete swatches showing only the fluids actively present on the canvas.
+    * **DataList Tables**: Adds a dedicated **Fluid** column to both the **Pipe Network List** and **Full Equipment & Pipeline Data** tables (with filter, sort, and CSV export support).
+    * **Component Panels**:
+      - **Sidebar**: Renames "System Fluid" to "Primary System Fluid".
+      - **SetupPanel**: Adds fluid dropdown to `Tank`, `PressureSource`, and `FlowSource` with `Inherit Primary Fluid ([Current Fluid])` as the default option.
+      - **InspectorPanel & Telemetry**: Displays assigned fluid type and localized physical properties for selected pipes and nodes.
+  * **Target Files & Key Modifications:**
+    * `backend/simulation/equipment/tank.py`, `pressure_source.py`, `flow_source.py`: Support `fluid_type` parameter and port property assignment.
+    * `backend/simulation/graph_parser.py`: Multi-domain graph propagation, Heat Exchanger channel isolation, and `FluidMixingError` detection.
+    * `backend/simulation/solver.py`: Domain-aware property propagation and telemetry enrichment (`fluid_type`, `fluid_name`).
+    * `backend/simulation/fluid_utils.py`: Color token definitions and catalog metadata.
+    * `backend/tests/test_physics_multi_fluid.py`: Unit tests for multi-loop solves, boundary inheritance, and mixing aborts.
+    * `frontend/src/App.jsx`: State management, mixing abort handling, and heatmap mode registration.
+    * `frontend/src/edges/PipeEdge.jsx`: Fluid color-mapping logic in `getHeatmapColor`.
+    * `frontend/src/components/overlays/HeatmapLegend.jsx`: Fluid mode tab and active-fluids legend swatches.
+    * `frontend/src/components/panels/DataList.jsx`: Fluid column addition in Pipe Network and Equipment lists.
+    * `frontend/src/components/panels/Sidebar.jsx` & `SetupPanel.jsx`: Dropdown selectors and labels.
+
+### 🧰 New Equipment & Component Additions
 
 - [ ] 🔬 **Relief Device Capacity Sizing Investigation (PSVs & Rupture Discs)**
   * **Concept:** Detailed technical investigation into industry standard methodologies (e.g. API 520/526, ISO 4126, ASME Section VIII) for determining rated relief capacity ($Q_{\text{rated}}$), allowable overpressure accumulation (e.g., 10% for non-fire, 21% for fire case), and liquid vs. gas $C_v$ / coefficient of discharge ($K_d$) orifice sizing models across relief valves and burst diaphragms.
@@ -115,35 +109,6 @@ This document outlines planned features, overlays, and enhancements for the WalF
   * **Physics:** Computes form friction losses using geometry-dependent $K$-factors based on the exact diameter ratios ($D_2/D_1$) retrieved from the database and expected transition angles. Solves for pressure changes due to velocity shifts via the steady-state Bernoulli equation.
   * **Engineering Value:** Vital for accurate pressure drop accounting and pump suction sizing (NPSH), allowing engineers to simulate real-world, commercially available fitting geometries (Nominal Pipe Sizes and Schedules) directly from the standard rather than relying on theoretical internal diameters.
 
-- [ ] **📏 Pipe Classes & Equinor TR2000 REST API Integration (`/pipes`)**
-  * **Concept:** Transition WalFlow from generic ad-hoc pipes (manual diameter + schedule + global canvas roughness) to an industrial **Piping Class (Piping Specification)** system.
-  * **TR2000 REST API Integration & Sync:**
-    * Direct connection to the Equinor TR2000 REST API (`https://equinor.pipespec-api.presight.com` / `https://tr2000api.equinor.com`).
-    * Use European PCS Library (`PlantID=82` or configurable plant catalog) to query PCS specifications (`/pcs`), exact pipe size schedules (`/pipe-sizes`), temperature-pressure ratings (`/temp-pressures`), and element specifications (`/pipe-elements`).
-    * **Test Case & Initial Baseline:** Start with `AC140` / `AC111` (Carbon Steel Low Temp - CSLT, ASME 150#) as the primary validation test case.
-    * **Standard Seed & Dynamic Sync:** Pre-bundle standard TR2000 classes (`AC111`, `AC131`, `AC211`, `AD100` 22Cr Duplex, `AS300` 316L SS, `AT100` Titanium) in the local database, while providing automated REST API syncing to pull new classes or update existing ones upon new revision releases.
-  * **Dedicated Pipe Class Manager Subpage (`/pipes`):**
-    * Standalone engineering management route at `http://localhost:5173/pipes` matching WalFlow design standards (`#FA8507` orange CTA, `#395253` brand teal headers, `#F4F7F6` surfaces).
-    * Searchable catalog sidebar distinguishing between standard TR2000 specifications and user-defined custom classes.
-    * Live TR2000 Importer modal to pull any PCS code from Equinor's API with live preview.
-    * **⚖️ Legal & Terms of Use Compliance:** When users trigger a download/sync from the TR2000 REST API, an explicit agreement modal / checkbox prompt must be accepted requiring users to agree to [Equinor's Terms and Conditions](https://www.equinor.com/about-us/terms-and-conditions) before standard specifications are retrieved or stored locally.
-    * Interactive Data Grid displaying Nominal Size ($DN / NPS$), Outer Diameter ($OD$), Wall Thickness ($WT$), calculated Internal Diameter ($ID = OD - 2 \cdot WT$), Schedule, and Corrosion Allowance ($CA$).
-    * Pressure-Temperature rating table and curves.
-    * Full CRUD capabilities (create custom, clone standard, export JSON, delete custom).
-  * **Physics Solver & Removal of Global Canvas Roughness:**
-    * Each pipe class explicitly defines its absolute roughness ($\epsilon$) based on material grade (e.g. Carbon Steel $\epsilon = 0.045\text{ mm}$, Stainless Steel $\epsilon = 0.015\text{ mm}$, Duplex $\epsilon = 0.015\text{ mm}$, Titanium $\epsilon = 0.005\text{ mm}$).
-    * Roughness is localized directly to each individual pipe node in the solver.
-    * **Global Canvas Roughness is completely removed** from canvas settings once pipe classes are active.
-  * **Canvas UI & Property Editor Integration:**
-    * Update `SetupPanel`, `PipeEdge`, and `DataList` to select Pipe Class first, followed by dynamically filtered Nominal Sizes ($DN/NPS$).
-    * Include a "Manual / Generic" toggle for quick unstandardized sketches.
-  * **🤖 Pipe Class Skill for LLM Agents (`.agents/skills/pipe-classes`):**
-    * Develop a specialized Antigravity skill for LLM agents to make them fully aware of:
-      1. How pipe classes, line specs, and TR2000 standards are structured and retrieved.
-      2. The mapping between Nominal Diameter ($DN / NPS$), Wall Thickness ($WT$), Outer Diameter ($OD$), and calculated Internal Diameter ($ID$).
-      3. Material group mapping to physical roughness ($\epsilon$), corrosion allowances ($CA$), and temperature/pressure limits.
-      4. How to inspect, query, and programmatically assign pipe classes across WalFlow backend models and frontend components.
-
 ---
 
 ## 📊 Analytics & Telemetry
@@ -169,10 +134,6 @@ This document outlines planned features, overlays, and enhancements for the WalF
 
 ## 🐛 Bug Fixes & Refactoring Backlog
 
-- [x] **🐛 Three-Way Temperature Control Valve (TCV) Hot-Side Bias Fix**
-  * **Issue**: When the outlet temperature is below the setpoint, the TCV adjusts flow from the cold side to the outlet if the cold side is hotter than the hot side. This is incorrect behavior for a TCV.
-  * **Expected Behavior**: The TCV must always open the hot side to the outlet when the outlet temperature is below the setpoint, regardless of the relative temperatures of the hot and cold inlets.
-
 - [ ] **🔥 Extend Equipment Classes to Model Temperature Changes Due to Pressure Drop**
   * **Scope**: Add or extend `calculate_temperature()` in equipment classes (e.g., `Pipe`, `Orifice`, `Filter`) to model temperature changes due to pressure drop using the formula `ΔT = ΔP / (ρ * Cp)`.
   * **Considerations**:
@@ -182,8 +143,3 @@ This document outlines planned features, overlays, and enhancements for the WalF
     - Always use the correct fluid properties (density, specific heat) for the current temperature and pressure.
     - Minimize performance impact by avoiding expensive calculations in iterative methods.
   * **Important**: The above methodology is only a suggestion and needs to be properly evaluated and adjusted as necessary. Do not implement blindly.
-
-
-## Quality of Life improvements
-
-- [x] ** Add shortcuts to all Modals to allow to exit this modal with "ESC". Except for the Admin setup modal. This cannot be skipped.
