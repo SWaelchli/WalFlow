@@ -114,3 +114,25 @@ class PipeClass(Base):
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
 
+class FittingStandard(Base):
+    __tablename__ = "fitting_standards"
+    __table_args__ = (
+        Index("idx_fitting_standards_code", "code", unique=True),
+        Index("idx_fitting_standards_fitting_type", "fitting_type"),
+        Index("idx_fitting_standards_standard", "standard"),
+    )
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    code = Column(String, unique=True, nullable=False, index=True)
+    name = Column(String, nullable=False)
+    standard = Column(String, nullable=False, default="ASME")  # "ASME" | "DIN_EN" | "ISO" | "CUSTOM"
+    fitting_type = Column(String, nullable=False)  # "reducer" | "pipe_schedule" | "elbow" | "tee"
+    subtype = Column(String, nullable=True)  # "concentric_eccentric", "carbon_stainless_schedules", etc.
+    description = Column(String, nullable=True)
+    is_builtin = Column(Boolean, default=False, nullable=False)
+    dimensions_json = Column(Text, nullable=False)  # JSON array of dimensions
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
+
+
+

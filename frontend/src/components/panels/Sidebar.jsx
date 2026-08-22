@@ -44,8 +44,10 @@ const categorizedEquipment = [
     items: [
       { type: 'splitter', label: 'Splitter', description: '' },
       { type: 'mixer', label: 'Mixer', description: '' },
+      { type: 'reducer', label: 'Reducer / Expander', description: 'ASME B16.9 Area Transition' },
     ]
   },
+
   {
     name: 'Auxiliary',
     items: [

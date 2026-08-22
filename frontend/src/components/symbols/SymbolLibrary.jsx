@@ -11,7 +11,9 @@ export const EquipmentSymbol = ({ type, size = 40, style = {} }) => {
     flow_source: { w: 70, h: 70 },
     orifice: { w: 40, h: 60 },
     calibrated_restriction: { w: 40, h: 60 },
+    reducer: { w: 50, h: 40 },
     splitter: { w: 40, h: 40 },
+
     mixer: { w: 40, h: 40 },
     filter: { w: 60, h: 40 },
   };
@@ -190,7 +192,18 @@ export const EquipmentSymbol = ({ type, size = 40, style = {} }) => {
             <circle cx="20" cy="30" r="2.5" fill="var(--color-brand-dark)" />
           </svg>
         );
+      case 'reducer':
+        return (
+          <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+            {/* Concentric trapezoid */}
+            <polygon points="10,6 40,14 40,26 10,34" fill="#FFFFFF" stroke="#334155" strokeWidth="2.2" strokeLinejoin="round" />
+            <line x1="5" y1="20" x2="10" y2="20" stroke="#334155" strokeWidth="2" />
+            <line x1="40" y1="20" x2="45" y2="20" stroke="#334155" strokeWidth="2" />
+            <line x1="10" y1="20" x2="40" y2="20" stroke="#94a3b8" strokeWidth="1" strokeDasharray="2,2" />
+          </svg>
+        );
       case 'filter':
+
         return (
           <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
             <rect x="5" y="5" width="50" height="30" fill="white" stroke="#334155" strokeWidth="2.5" />

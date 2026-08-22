@@ -14,14 +14,17 @@ import {
   SignOutIcon, 
   SignInIcon 
 } from '../components/symbols/IconLibrary';
+import FittingStandardsTab from '../components/piping/FittingStandardsTab';
 
 const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, onOpenHelpModal }) => {
   const { currentUser, isAuthenticated, isAdmin, adminStatus, logout } = useAuth();
   const { isImperial } = useUnits();
 
+  const [activeTab, setActiveTab] = useState('pipe_classes'); // 'pipe_classes' | 'fitting_standards'
   const [pipeClasses, setPipeClasses] = useState([]);
   const [selectedClassId, setSelectedClassId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+
   const [standardFilter, setStandardFilter] = useState('ALL');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -657,80 +660,136 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
             ← Back to Diagram
           </button>
 
-          <span style={{ fontSize: '13px', color: 'var(--color-text-secondary)', fontWeight: '600' }}>
-            / Piping Specifications Catalog
-          </span>
+          {/* Navigation Tabs */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            backgroundColor: '#F1F5F9',
+            padding: '2px',
+            borderRadius: '8px',
+            border: '1px solid var(--color-border)',
+            marginLeft: '8px'
+          }}>
+            <button
+              onClick={() => {
+                if (isEditing && !window.confirm("You have unsaved changes. Discard?")) return;
+                setIsEditing(false);
+                setActiveTab('pipe_classes');
+              }}
+              style={{
+                height: '28px',
+                padding: '0 12px',
+                fontSize: '11px',
+                fontWeight: '700',
+                borderRadius: '6px',
+                border: 'none',
+                cursor: 'pointer',
+                backgroundColor: activeTab === 'pipe_classes' ? '#FFFFFF' : 'transparent',
+                color: activeTab === 'pipe_classes' ? 'var(--color-brand-dark)' : 'var(--color-text-secondary)',
+                boxShadow: activeTab === 'pipe_classes' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              Pipe Specifications
+            </button>
+            <button
+              onClick={() => {
+                if (isEditing && !window.confirm("You have unsaved changes. Discard?")) return;
+                setIsEditing(false);
+                setActiveTab('fitting_standards');
+              }}
+              style={{
+                height: '28px',
+                padding: '0 12px',
+                fontSize: '11px',
+                fontWeight: '700',
+                borderRadius: '6px',
+                border: 'none',
+                cursor: 'pointer',
+                backgroundColor: activeTab === 'fitting_standards' ? '#FFFFFF' : 'transparent',
+                color: activeTab === 'fitting_standards' ? 'var(--color-brand-dark)' : 'var(--color-text-secondary)',
+                boxShadow: activeTab === 'fitting_standards' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              Fitting Standards & Schedules
+            </button>
+          </div>
         </div>
 
         {/* Right Side: Catalog Actions, Admin Hub, and User Profile */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {canManage && (
-            <button
-              onClick={handleSeedExamples}
-              disabled={isSeedingExamples || isEditing}
-              className="btn-secondary"
-              style={{ height: '32px', padding: '0 10px', fontSize: '11px', fontWeight: '700' }}
-              title="Restore standard default example classes (CS01, SS01, LT01, DX01)"
-            >
-              {isSeedingExamples ? 'Creating...' : 'Create Examples'}
-            </button>
-          )}
-
-          <button
-            onClick={handleExportLibrary}
-            className="btn-secondary"
-            style={{ height: '32px', padding: '0 10px', fontSize: '11px', fontWeight: '700', gap: '4px' }}
-            title="Export catalog as JSON file"
-          >
-            <ExportIcon size={12} />
-            Export Library
-          </button>
-
-          {canManage && (
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isEditing}
-              className="btn-secondary"
-              style={{ height: '32px', padding: '0 10px', fontSize: '11px', fontWeight: '700', gap: '4px' }}
-              title="Import specifications from JSON file"
-            >
-              <ImportIcon size={12} />
-              Import Library
-            </button>
-          )}
-
-          {canManage && (
+          {activeTab === 'pipe_classes' && (
             <>
-              <button
-                onClick={handleOpenTr2000Modal}
-                className="btn-secondary"
-                style={{
-                  height: '32px',
-                  padding: '0 12px',
-                  fontSize: '11px',
-                  fontWeight: '700',
-                  gap: '4px'
-                }}
-                title="Search and import specs from Equinor TR2000 standard"
-              >
-                🌐 Import from TR2000
-              </button>
+              {canManage && (
+                <button
+                  onClick={handleSeedExamples}
+                  disabled={isSeedingExamples || isEditing}
+                  className="btn-secondary"
+                  style={{ height: '32px', padding: '0 10px', fontSize: '11px', fontWeight: '700' }}
+                  title="Restore standard default example classes (CS01, SS01, LT01, DX01)"
+                >
+                  {isSeedingExamples ? 'Creating...' : 'Create Examples'}
+                </button>
+              )}
 
               <button
-                onClick={handleStartNewClass}
-                className="btn-primary"
-                style={{
-                  height: '32px',
-                  padding: '0 14px',
-                  borderRadius: '8px',
-                  fontSize: '11px',
-                  fontWeight: '700',
-                  gap: '6px'
-                }}
+                onClick={handleExportLibrary}
+                className="btn-secondary"
+                style={{ height: '32px', padding: '0 10px', fontSize: '11px', fontWeight: '700', gap: '4px' }}
+                title="Export catalog as JSON file"
               >
-                <PlusIcon size={12} color="#FFFFFF" />
-                New Pipe Class
+                <ExportIcon size={12} />
+                Export Library
               </button>
+
+              {canManage && (
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isEditing}
+                  className="btn-secondary"
+                  style={{ height: '32px', padding: '0 10px', fontSize: '11px', fontWeight: '700', gap: '4px' }}
+                  title="Import specifications from JSON file"
+                >
+                  <ImportIcon size={12} />
+                  Import Library
+                </button>
+              )}
+
+              {canManage && (
+                <>
+                  <button
+                    onClick={handleOpenTr2000Modal}
+                    className="btn-secondary"
+                    style={{
+                      height: '32px',
+                      padding: '0 12px',
+                      fontSize: '11px',
+                      fontWeight: '700',
+                      gap: '4px'
+                    }}
+                    title="Search and import specs from Equinor TR2000 standard"
+                  >
+                    🌐 Import from TR2000
+                  </button>
+
+                  <button
+                    onClick={handleStartNewClass}
+                    className="btn-primary"
+                    style={{
+                      height: '32px',
+                      padding: '0 14px',
+                      borderRadius: '8px',
+                      fontSize: '11px',
+                      fontWeight: '700',
+                      gap: '6px'
+                    }}
+                  >
+                    <PlusIcon size={12} color="#FFFFFF" />
+                    New Pipe Class
+                  </button>
+                </>
+              )}
             </>
           )}
 
@@ -819,8 +878,12 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
         </div>
       </header>
 
-      {/* Main Catalog View Container */}
-      <div style={{ display: 'flex', flexGrow: 1, overflow: 'hidden' }}>
+      {/* Main Content Area: Pipe Classes Catalog vs Fitting Standards & Schedules */}
+      {activeTab === 'fitting_standards' ? (
+        <FittingStandardsTab currentUser={currentUser} canManage={canManage} />
+      ) : (
+        <div style={{ display: 'flex', flexGrow: 1, overflow: 'hidden' }}>
+
         
         {/* Left Sidebar: Catalog Listing */}
         <aside style={{
@@ -1445,6 +1508,8 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
           )}
         </main>
       </div>
+      )}
+
 
       {/* NEW PIPE CLASS MINI-DIALOG */}
       {isNewClassModalOpen && (

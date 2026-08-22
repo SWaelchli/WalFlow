@@ -4,7 +4,16 @@ import { mToMm, mmToM } from '../../utils/converters';
 import { isCaseVariableProperty } from '../../constants/case_constants';
 import { isPropertyOverridden, getEffectiveNodeData } from '../../utils/case_resolver';
 import { GlobeIcon, BoltIcon } from '../symbols/IconLibrary';
+
 import { useUnits } from '../../context/UnitContext';
+import { 
+  ASME_B16_9_REDUCERS, 
+  ASME_B36_10M_SCHEDULES, 
+  getReducerCombinations, 
+  getReducerEntry, 
+  getPipeScheduleDetails 
+} from '../../constants/asme_b16_9_data';
+
 
 function PropertyBadge({ propKey, nodeId, cases = [], activeCaseId = 'case_base', onResetOverride }) {
   const isCaseVar = isCaseVariableProperty(propKey);
@@ -1406,6 +1415,299 @@ export default function SetupPanel({
               </div>
             </>
           )}
+
+          {isNode && (type === 'reducer' || type === 'expander') && (() => {
+            const isCustom = effectiveData.standard === 'CUSTOM';
+            const reducerType = effectiveData.reducer_type || 'concentric';
+            const dnLarge = Number(effectiveData.dn_large || 80);
+            const dnSmall = Number(effectiveData.dn_small || 50);
+            const schLarge = effectiveData.sch_large || 'STD';
+            const schSmall = effectiveData.sch_small || 'STD';
+            const isExpanding = effectiveData.orientation === 'expanding'; // Small -> Large
+
+            // Available distinct large end sizes
+            const availableLargeDNs = Array.from(new Set(ASME_B16_9_REDUCERS.map(r => r.dn_large))).sort((a, b) => a - b);
+            
+            // Available small end sizes for current large end
+            const currentCombos = getReducerCombinations(dnLarge);
+            const availableSmallDNs = currentCombos.map(c => c.dn_small);
+
+            const activeCombo = getReducerEntry(dnLarge, dnSmall) || currentCombos[0];
+            const lengthMm = activeCombo ? activeCombo.length_mm : Number(effectiveData.length_mm || 89.0);
+            const coneAngleDeg = activeCombo ? activeCombo.cone_angle_deg : Number(effectiveData.cone_angle_deg || 18.2);
+
+            const largeSchDetails = getPipeScheduleDetails(dnLarge, schLarge);
+            const smallSchDetails = getPipeScheduleDetails(dnSmall, schSmall);
+
+            const idLargeMm = largeSchDetails ? largeSchDetails.id_mm : 77.92;
+            const idSmallMm = smallSchDetails ? smallSchDetails.id_mm : 52.48;
+
+            const dInMeters = isExpanding ? (idSmallMm / 1000.0) : (idLargeMm / 1000.0);
+            const dOutMeters = isExpanding ? (idLargeMm / 1000.0) : (idSmallMm / 1000.0);
+
+            const handleLargeDnChange = (newDnLarge) => {
+              const dl = Number(newDnLarge);
+              const combos = getReducerCombinations(dl);
+              const ds = combos.length > 0 ? combos[0].dn_small : Math.round(dl * 0.6);
+              const combo = getReducerEntry(dl, ds) || combos[0];
+              const lSch = getPipeScheduleDetails(dl, schLarge);
+              const sSch = getPipeScheduleDetails(ds, schSmall);
+              const idLMm = lSch ? lSch.id_mm : 77.92;
+              const idSMm = sSch ? sSch.id_mm : 52.48;
+
+              onUpdate(id, {
+                dn_large: dl,
+                nps_large: lSch ? lSch.nps : '',
+                dn_small: ds,
+                nps_small: sSch ? sSch.nps : '',
+                length: (combo ? combo.length_mm : 89.0) / 1000.0,
+                length_mm: combo ? combo.length_mm : 89.0,
+                cone_angle_deg: combo ? combo.cone_angle_deg : 18.2,
+                diameter_in: isExpanding ? (idSMm / 1000.0) : (idLMm / 1000.0),
+                diameter_out: isExpanding ? (idLMm / 1000.0) : (idSMm / 1000.0),
+              });
+            };
+
+            const handleSmallDnChange = (newDnSmall) => {
+              const ds = Number(newDnSmall);
+              const combo = getReducerEntry(dnLarge, ds);
+              const sSch = getPipeScheduleDetails(ds, schSmall);
+              const idSMm = sSch ? sSch.id_mm : 52.48;
+              const idLMm = largeSchDetails ? largeSchDetails.id_mm : 77.92;
+
+              onUpdate(id, {
+                dn_small: ds,
+                nps_small: sSch ? sSch.nps : '',
+                length: (combo ? combo.length_mm : 89.0) / 1000.0,
+                length_mm: combo ? combo.length_mm : 89.0,
+                cone_angle_deg: combo ? combo.cone_angle_deg : 18.2,
+                diameter_in: isExpanding ? (idSMm / 1000.0) : (idLMm / 1000.0),
+                diameter_out: isExpanding ? (idLMm / 1000.0) : (idSMm / 1000.0),
+              });
+            };
+
+            const handleOrientationToggle = () => {
+              const nextExpanding = !isExpanding;
+              onUpdate(id, {
+                orientation: nextExpanding ? 'expanding' : 'reducing',
+                diameter_in: nextExpanding ? (idSmallMm / 1000.0) : (idLargeMm / 1000.0),
+                diameter_out: nextExpanding ? (idLargeMm / 1000.0) : (idSmallMm / 1000.0),
+              });
+            };
+
+            const betaRatio = Math.min(dInMeters, dOutMeters) / Math.max(1e-6, Math.max(dInMeters, dOutMeters));
+
+            return (
+              <>
+                <div>
+                  {renderLabel('Dimensional Standard', 'standard')}
+                  <select
+                    style={{ width: '100%', fontSize: '12px', padding: '4px' }}
+                    value={effectiveData.standard || 'ASME_B16_9'}
+                    onChange={(e) => onUpdate(id, { standard: e.target.value })}
+                  >
+                    <option value="ASME_B16_9">ASME B16.9 Standard Catalog</option>
+                    <option value="CUSTOM">Custom / Manual Dimensions</option>
+                  </select>
+                </div>
+
+                <div>
+                  {renderLabel('Reducer Type', 'reducer_type')}
+                  <select
+                    style={{ width: '100%', fontSize: '12px', padding: '4px' }}
+                    value={reducerType}
+                    onChange={(e) => onUpdate(id, { reducer_type: e.target.value })}
+                  >
+                    <option value="concentric">Concentric (Symmetrical)</option>
+                    <option value="eccentric">Eccentric (Flat-on-Top / Suction)</option>
+                  </select>
+                </div>
+
+                {!isCustom ? (
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc', padding: '6px 8px', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
+                      <span style={{ fontSize: '11px', fontWeight: '600', color: '#334155' }}>
+                        Flow: {isExpanding ? 'Expander (Small → Large)' : 'Reducer (Large → Small)'}
+                      </span>
+                      <button
+                        onClick={handleOrientationToggle}
+                        style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', background: '#ffffff', cursor: 'pointer' }}
+                        title="Flip flow orientation between reducing and expanding"
+                      >
+                        ⇄ Invert
+                      </button>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      <div>
+                        <label style={{ fontSize: '10px', color: '#64748b', fontWeight: '700' }}>Large End (NPS)</label>
+                        <select
+                          className="form-select"
+                          style={{ width: '100%', height: '30px', fontSize: '11px' }}
+                          value={dnLarge}
+                          onChange={(e) => handleLargeDnChange(e.target.value)}
+                        >
+                          {availableLargeDNs.map(dn => {
+                            const sch = getPipeScheduleDetails(dn, 'STD');
+                            return (
+                              <option key={dn} value={dn}>
+                                {sch ? `${sch.nps}" (DN${dn})` : `DN${dn}`}
+                              </option>
+                            );
+                          })}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '10px', color: '#64748b', fontWeight: '700' }}>Small End (NPS)</label>
+                        <select
+                          className="form-select"
+                          style={{ width: '100%', height: '30px', fontSize: '11px' }}
+                          value={dnSmall}
+                          onChange={(e) => handleSmallDnChange(e.target.value)}
+                        >
+                          {availableSmallDNs.map(dn => {
+                            const sch = getPipeScheduleDetails(dn, 'STD');
+                            return (
+                              <option key={dn} value={dn}>
+                                {sch ? `${sch.nps}" (DN${dn})` : `DN${dn}`}
+                              </option>
+                            );
+                          })}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      <div>
+                        <label style={{ fontSize: '10px', color: '#64748b', fontWeight: '700' }}>Large Schedule</label>
+                        <select
+                          className="form-select"
+                          style={{ width: '100%', height: '30px', fontSize: '11px' }}
+                          value={schLarge}
+                          onChange={(e) => {
+                            const sl = e.target.value;
+                            const lSch = getPipeScheduleDetails(dnLarge, sl);
+                            const idLMm = lSch ? lSch.id_mm : 77.92;
+                            onUpdate(id, {
+                              sch_large: sl,
+                              diameter_in: isExpanding ? dInMeters : (idLMm / 1000.0),
+                              diameter_out: isExpanding ? (idLMm / 1000.0) : dOutMeters
+                            });
+                          }}
+                        >
+                          {['STD', '40', '80', 'XS', '160'].map(s => (
+                            <option key={s} value={s}>{s}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '10px', color: '#64748b', fontWeight: '700' }}>Small Schedule</label>
+                        <select
+                          className="form-select"
+                          style={{ width: '100%', height: '30px', fontSize: '11px' }}
+                          value={schSmall}
+                          onChange={(e) => {
+                            const ss = e.target.value;
+                            const sSch = getPipeScheduleDetails(dnSmall, ss);
+                            const idSMm = sSch ? sSch.id_mm : 52.48;
+                            onUpdate(id, {
+                              sch_small: ss,
+                              diameter_in: isExpanding ? (idSMm / 1000.0) : dInMeters,
+                              diameter_out: isExpanding ? dOutMeters : (idSMm / 1000.0)
+                            });
+                          }}
+                        >
+                          {['STD', '40', '80', 'XS', '160'].map(s => (
+                            <option key={s} value={s}>{s}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div style={{ background: '#f4f7f6', padding: '8px', borderRadius: '4px', border: '1px solid #d8e2e1', fontSize: '10px', color: '#334155' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+                        <span>Fitting Length (H):</span>
+                        <strong>{isImperial ? `${(lengthMm / 25.4).toFixed(2)} in` : `${lengthMm.toFixed(1)} mm`}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+                        <span>Cone Angle (θ):</span>
+                        <strong>{coneAngleDeg.toFixed(1)}°</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+                        <span>Inlet ID (D₁):</span>
+                        <strong>{isImperial ? `${(dInMeters * 39.3701).toFixed(3)} in` : `${(dInMeters * 1000).toFixed(2)} mm`}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span>Outlet ID (D₂):</span>
+                        <strong>{isImperial ? `${(dOutMeters * 39.3701).toFixed(3)} in` : `${(dOutMeters * 1000).toFixed(2)} mm`}</strong>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      {renderLabel(`Inlet Diameter (${isImperial ? 'in' : 'mm'})`, 'diameter_in')}
+                      <input
+                        type="number"
+                        step="0.1"
+                        className="form-input"
+                        style={{ width: '100%' }}
+                        value={localDrafts.diameter_in !== undefined ? localDrafts.diameter_in : (isImperial ? (Number(effectiveData.diameter_in || 0.07792) * 39.3701).toFixed(3) : (Number(effectiveData.diameter_in || 0.07792) * 1000).toFixed(2))}
+                        onChange={(e) => handleDraftChange('diameter_in', e.target.value)}
+                        onBlur={(e) => validateAndCommit('diameter_in', isImperial ? (Number(e.target.value) / 39.3701) : (Number(e.target.value) / 1000.0))}
+                      />
+                    </div>
+
+                    <div>
+                      {renderLabel(`Outlet Diameter (${isImperial ? 'in' : 'mm'})`, 'diameter_out')}
+                      <input
+                        type="number"
+                        step="0.1"
+                        className="form-input"
+                        style={{ width: '100%' }}
+                        value={localDrafts.diameter_out !== undefined ? localDrafts.diameter_out : (isImperial ? (Number(effectiveData.diameter_out || 0.05248) * 39.3701).toFixed(3) : (Number(effectiveData.diameter_out || 0.05248) * 1000).toFixed(2))}
+                        onChange={(e) => handleDraftChange('diameter_out', e.target.value)}
+                        onBlur={(e) => validateAndCommit('diameter_out', isImperial ? (Number(e.target.value) / 39.3701) : (Number(e.target.value) / 1000.0))}
+                      />
+                    </div>
+
+                    <div>
+                      {renderLabel(`Transition Length (${isImperial ? 'in' : 'mm'})`, 'length')}
+                      <input
+                        type="number"
+                        step="1.0"
+                        className="form-input"
+                        style={{ width: '100%' }}
+                        value={localDrafts.length !== undefined ? localDrafts.length : (isImperial ? (Number(effectiveData.length || 0.089) * 39.3701).toFixed(2) : (Number(effectiveData.length || 0.089) * 1000).toFixed(1))}
+                        onChange={(e) => handleDraftChange('length', e.target.value)}
+                        onBlur={(e) => validateAndCommit('length', isImperial ? (Number(e.target.value) / 39.3701) : (Number(e.target.value) / 1000.0))}
+                      />
+                    </div>
+
+                    <div>
+                      {renderLabel('Included Angle (deg)', 'cone_angle_deg')}
+                      <input
+                        type="number"
+                        step="0.5"
+                        className="form-input"
+                        style={{ width: '100%' }}
+                        value={localDrafts.cone_angle_deg !== undefined ? localDrafts.cone_angle_deg : Number(effectiveData.cone_angle_deg || 18.2).toFixed(1)}
+                        onChange={(e) => handleDraftChange('cone_angle_deg', e.target.value)}
+                        onBlur={(e) => validateAndCommit('cone_angle_deg', Number(e.target.value))}
+                      />
+                    </div>
+                  </>
+                )}
+
+                <div style={{ fontSize: '10px', color: '#587071', background: '#f8fafc', padding: '6px', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
+                  <span><strong>Hydraulic Ratio (β):</strong> {betaRatio.toFixed(3)} | <strong>Loss Standard:</strong> Crane TP 410 conical transition with Bernoulli static pressure shift.</span>
+                </div>
+              </>
+            );
+          })()}
+
 
           {isNode && type === 'text_bubble' && (
             <>

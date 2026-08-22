@@ -30,8 +30,10 @@ import PressureSafetyValveNode from './nodes/PressureSafetyValveNode';
 import RuptureDiscNode from './nodes/RuptureDiscNode';
 import TextBubbleNode from './nodes/TextBubbleNode';
 import CalibratedRestrictionNode from './nodes/CalibratedRestrictionNode';
+import ReducerNode from './nodes/ReducerNode';
 import PressureSourceNode from './nodes/PressureSourceNode';
 import FlowSourceNode from './nodes/FlowSourceNode';
+
 
 import Navbar from './components/layout/Navbar';
 import Sidebar from './components/panels/Sidebar';
@@ -109,8 +111,11 @@ const nodeTypes = {
   three_way_tcv: ThreeWayTCVNode,
   text_bubble: TextBubbleNode,
   calibrated_restriction: CalibratedRestrictionNode,
+  reducer: ReducerNode,
+  expander: ReducerNode,
   pressure_source: PressureSourceNode,
   flow_source: FlowSourceNode,
+
 };
 
 const edgeTypes = {
@@ -1085,7 +1090,9 @@ function WalFlowContent() {
           ...(type === 'linear_regulator' && { max_cv: 0.05, set_pressure: 500000.0, backpressure: false }),
           ...(type === 'orifice' && { pipe_diameter: 0.05248, orifice_diameter: 0.02, standard: 'iso_5167', standardDn: 50, standardSch: '40' }),
           ...(type === 'calibrated_restriction' && { flow_base_lmin: 10.0, inlet_pressure_base_bar: 3.5, outlet_pressure_base_bar: 1.0, temp_base_c: 45.0, restriction_model: 'orifice', fluid_type: 'system' }),
+          ...(type === 'reducer' && { standard: 'ASME_B16_9', reducer_type: 'concentric', dn_large: 80, nps_large: '3', dn_small: 50, nps_small: '2', sch_large: 'STD', sch_small: 'STD', length: 0.089, length_mm: 89.0, cone_angle_deg: 18.2, diameter_in: 0.07792, diameter_out: 0.05248, orientation: 'reducing' }),
           ...(type === 'pressure_source' && { source_pressure_bara: 6.0, temperature: 293.15 }),
+
           ...(type === 'flow_source' && { source_flow_lmin: 50.0, temperature: 293.15 }),
           ...(type === 'filter' && { dp_clean: 0.2, dp_terminal: 1.0, flow_ref: 100.0, clogging: 0.0 }),
           ...(type === 'heat_exchanger' && { heat_duty_kw: -10.0, active: true }),

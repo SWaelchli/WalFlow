@@ -18,7 +18,9 @@ from simulation.equipment.check_valve_orifice import CheckValveOrifice
 from simulation.equipment.pressure_safety_valve import PressureSafetyValve
 from simulation.equipment.rupture_disc import RuptureDisc
 from simulation.equipment.calibrated_restriction import CalibratedRestriction
+from simulation.equipment.reducer import Reducer
 from simulation.equipment.pressure_source import PressureSource
+
 from simulation.equipment.flow_source import FlowSource
 from simulation.equipment.base_node import HydraulicNode
 
@@ -268,7 +270,36 @@ class GraphParser:
                 restriction_model=str(d.get('restriction_model', 'orifice')),
                 fluid_type=str(d.get('fluid_type', 'system'))
             )
+        elif t == 'reducer' or t == 'expander':
+            # Handle diameter resolution: diameter_in / diameter_out in meters
+            d_in = float(d.get('diameter_in', 0.07792))
+            d_out = float(d.get('diameter_out', 0.05248))
+            length_m = float(d.get('length', 0.089))
+            cone_ang = float(d.get('cone_angle_deg', 18.2)) if d.get('cone_angle_deg') is not None else 18.2
+            r_type = str(d.get('reducer_type', 'concentric'))
+            std_code = str(d.get('standard', 'ASME_B16_9'))
+            dn_l = int(d.get('dn_large', 80))
+            dn_s = int(d.get('dn_small', 50))
+            sch_l = str(d.get('sch_large', 'STD'))
+            sch_s = str(d.get('sch_small', 'STD'))
+            roughness_m = float(d.get('roughness', 0.000045))
+
+            node = Reducer(
+                name=name,
+                diameter_in=d_in,
+                diameter_out=d_out,
+                length=length_m,
+                cone_angle_deg=cone_ang,
+                reducer_type=r_type,
+                standard=std_code,
+                dn_large=dn_l,
+                dn_small=dn_s,
+                sch_large=sch_l,
+                sch_small=sch_s,
+                roughness=roughness_m
+            )
         elif t == 'heat_exchanger':
+
             # Backwards compatibility: calculate rated_dp_bar from k_factor if not present
             rated_flow = float(d.get('rated_flow_lmin', 500.0))
             k_fac = float(d.get('k_factor', 10.0))

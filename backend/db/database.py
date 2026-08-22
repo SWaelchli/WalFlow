@@ -79,6 +79,8 @@ def init_db():
 
     # Seed default example pipe classes
     _seed_example_pipe_classes()
+    # Seed default fitting standards
+    _seed_example_fitting_standards()
 
 
 
@@ -119,5 +121,36 @@ def _seed_example_pipe_classes():
         print(f"[Warning] Failed to seed example pipe classes: {e}")
     finally:
         db.close()
+
+
+def _seed_example_fitting_standards():
+    """Seeds default built-in fitting standards (e.g. ASME B16.9 Reducers, ASME B36.10M Schedules)."""
+    from .models import FittingStandard
+    from services.fitting_defaults import EXAMPLE_FITTING_STANDARDS
+
+    db = SessionLocal()
+    try:
+        for ex in EXAMPLE_FITTING_STANDARDS:
+            existing = db.query(FittingStandard).filter(FittingStandard.code == ex["code"]).first()
+            if not existing:
+                standard = FittingStandard(
+                    id=ex["id"],
+                    code=ex["code"],
+                    name=ex["name"],
+                    standard=ex["standard"],
+                    fitting_type=ex["fitting_type"],
+                    subtype=ex.get("subtype"),
+                    description=ex.get("description"),
+                    is_builtin=ex.get("is_builtin", False),
+                    dimensions_json=json.dumps(ex["dimensions"]),
+                )
+                db.add(standard)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        print(f"[Warning] Failed to seed example fitting standards: {e}")
+    finally:
+        db.close()
+
 
 
