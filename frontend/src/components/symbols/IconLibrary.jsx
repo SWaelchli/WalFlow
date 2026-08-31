@@ -223,3 +223,33 @@ export const FolderOpenIcon = ({ size = 16, color = 'currentColor', ...props }) 
     <path d="M2 10h20" />
   </svg>
 );
+
+export const CopyIcon = ({ size = 16, color = 'currentColor', ...props }) => (
+  <svg {...baseSvgProps(size, color)} {...props}>
+    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+  </svg>
+);
+
+export const EditIcon = ({ size = 16, color = 'currentColor', ...props }) => (
+  <svg {...baseSvgProps(size, color)} {...props}>
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+  </svg>
+);
+
+export const WarningIcon = ({ size = 16, color = 'currentColor', ...props }) => (
+  <svg {...baseSvgProps(size, color)} {...props}>
+    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+    <line x1="12" y1="9" x2="12" y2="13" />
+    <line x1="12" y1="17" x2="12.01" y2="17" />
+  </svg>
+);
+
+export const CheckCircleIcon = ({ size = 16, color = 'currentColor', ...props }) => (
+  <svg {...baseSvgProps(size, color)} {...props}>
+    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+    <polyline points="22 4 12 14.01 9 11.01" />
+  </svg>
+);
+

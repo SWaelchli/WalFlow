@@ -1,4 +1,4 @@
-import { Handle, Position } from 'reactflow';
+import { Handle, Position, useReactFlow } from 'reactflow';
 import { useMemo } from 'react';
 import { getRotatedPosition } from '../components/canvas/NodeRotationHandle';
 import { SensingPin } from '../components/canvas/SensingPin';
@@ -10,6 +10,8 @@ import { useUnits } from '../context/UnitContext';
  */
 export default function ReducerNode({ id, data, selected }) {
   const { formatPressurePa, labels, isImperial } = useUnits();
+  const { getEdges } = useReactFlow();
+
   const telemetry = data.telemetry;
   const rotation = data.rotation || 0;
   const sensing = useMemo(() => data.sensing || {}, [data.sensing]);
@@ -31,6 +33,18 @@ export default function ReducerNode({ id, data, selected }) {
     ? (isImperial ? `${data.nps_large || '3"' } × ${data.nps_small || '2"'}` : `DN${dnLarge} → DN${dnSmall}`)
     : (isImperial ? `${(dIn * 39.3701).toFixed(1)}" → ${(dOut * 39.3701).toFixed(1)}"` : `${(dIn * 1000).toFixed(0)}mm → ${(dOut * 1000).toFixed(0)}mm`);
 
+  // Detect connected edges and check for size mismatches
+  const edges = getEdges() || [];
+  const edgeIn = edges.find(e => e.target === id && (e.targetHandle === 'inlet-0' || !e.targetHandle));
+  const edgeOut = edges.find(e => e.source === id && (e.sourceHandle === 'outlet-0' || !e.sourceHandle));
+
+  const pipeInletDia = edgeIn?.data?.diameter;
+  const pipeOutletDia = edgeOut?.data?.diameter;
+
+  const hasInletMismatch = pipeInletDia && Math.abs(pipeInletDia - dIn) > 0.0015;
+  const hasOutletMismatch = pipeOutletDia && Math.abs(pipeOutletDia - dOut) > 0.0015;
+  const hasMismatch = hasInletMismatch || hasOutletMismatch;
+
   return (
     <BaseNode
       id={id}
@@ -46,6 +60,20 @@ export default function ReducerNode({ id, data, selected }) {
           <div style={{ fontSize: '8px', color: 'var(--color-text-secondary)', fontStyle: 'italic', marginTop: '1px' }}>
             {isEccentric ? 'ECCENTRIC' : 'CONCENTRIC'}
           </div>
+          {hasMismatch && (
+            <div style={{
+              fontSize: '8px',
+              fontWeight: '700',
+              color: '#B45309',
+              backgroundColor: '#FEF3C7',
+              padding: '1px 4px',
+              borderRadius: '3px',
+              marginTop: '2px',
+              border: '1px solid #FCD34D'
+            }}>
+              ⚠️ Line Mismatch
+            </div>
+          )}
           {telemetry && (
             <div style={{ fontSize: '10px', fontWeight: 'bold', color: dP >= 0 ? 'var(--color-danger)' : 'var(--color-primary)', marginTop: '2px' }}>
               {dP >= 0 ? `-${dPFormatted}` : `+${formatPressurePa(Math.abs(dP))}`} {labels.pressureDiff}
@@ -59,16 +87,16 @@ export default function ReducerNode({ id, data, selected }) {
         {isEccentric ? (
           // Eccentric Flat-on-Top trapezoid
           isReducing ? (
-            <polygon points="10,10 44,10 44,28 10,36" fill="#FFFFFF" stroke="var(--color-brand-dark)" strokeWidth="2.2" strokeLinejoin="round" />
+            <polygon points="10,10 44,10 44,28 10,36" fill="#FFFFFF" stroke={hasMismatch ? '#D97706' : 'var(--color-brand-dark)'} strokeWidth="2.2" strokeLinejoin="round" />
           ) : (
-            <polygon points="10,10 44,10 44,36 10,28" fill="#FFFFFF" stroke="var(--color-brand-dark)" strokeWidth="2.2" strokeLinejoin="round" />
+            <polygon points="10,10 44,10 44,36 10,28" fill="#FFFFFF" stroke={hasMismatch ? '#D97706' : 'var(--color-brand-dark)'} strokeWidth="2.2" strokeLinejoin="round" />
           )
         ) : (
           // Concentric symmetrical trapezoid
           isReducing ? (
-            <polygon points="10,8 44,14 44,30 10,36" fill="#FFFFFF" stroke="var(--color-brand-dark)" strokeWidth="2.2" strokeLinejoin="round" />
+            <polygon points="10,8 44,14 44,30 10,36" fill="#FFFFFF" stroke={hasMismatch ? '#D97706' : 'var(--color-brand-dark)'} strokeWidth="2.2" strokeLinejoin="round" />
           ) : (
-            <polygon points="10,14 44,8 44,36 10,30" fill="#FFFFFF" stroke="var(--color-brand-dark)" strokeWidth="2.2" strokeLinejoin="round" />
+            <polygon points="10,14 44,8 44,36 10,30" fill="#FFFFFF" stroke={hasMismatch ? '#D97706' : 'var(--color-brand-dark)'} strokeWidth="2.2" strokeLinejoin="round" />
           )
         )}
 
@@ -89,7 +117,7 @@ export default function ReducerNode({ id, data, selected }) {
           top: '22px', left: '0px',
           marginTop: '-4px', marginLeft: '-4px',
           right: 'auto', bottom: 'auto', transform: 'none',
-          background: 'var(--color-inlet)', width: '8px', height: '8px'
+          background: hasInletMismatch ? '#D97706' : 'var(--color-inlet)', width: '8px', height: '8px'
         }}
       />
       {sensing['inlet-0'] && <SensingPin portId="inlet-0" offset={{ x: -20, y: 0 }} />}
@@ -103,7 +131,7 @@ export default function ReducerNode({ id, data, selected }) {
           top: '22px', left: '54px',
           marginTop: '-4px', marginLeft: '-4px',
           right: 'auto', bottom: 'auto', transform: 'none',
-          background: 'var(--color-outlet)', width: '8px', height: '8px'
+          background: hasOutletMismatch ? '#D97706' : 'var(--color-outlet)', width: '8px', height: '8px'
         }}
       />
       {sensing['outlet-0'] && <SensingPin portId="outlet-0" offset={{ x: 20, y: 0 }} />}

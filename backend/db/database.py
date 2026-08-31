@@ -74,6 +74,13 @@ def init_db():
             if "allow_custom_pipes" not in proj_cols:
                 conn.execute(text("ALTER TABLE projects ADD COLUMN allow_custom_pipes BOOLEAN DEFAULT 1"))
 
+        if "pipe_classes" in inspector.get_table_names():
+            pc_cols = [c["name"] for c in inspector.get_columns("pipe_classes")]
+            if "reducer_standard_code" not in pc_cols:
+                conn.execute(text("ALTER TABLE pipe_classes ADD COLUMN reducer_standard_code VARCHAR DEFAULT 'ASME_B16_9_REDUCERS'"))
+            if "schedule_standard_code" not in pc_cols:
+                conn.execute(text("ALTER TABLE pipe_classes ADD COLUMN schedule_standard_code VARCHAR DEFAULT 'ASME_B36_10M_SCHEDULES'"))
+
         conn.commit()
 
 
@@ -103,6 +110,8 @@ def _seed_example_pipe_classes():
                     material_grade=ex["material_grade"],
                     rating_class=ex["rating_class"],
                     design_code=ex["design_code"],
+                    reducer_standard_code=ex.get("reducer_standard_code", "ASME_B16_9_REDUCERS"),
+                    schedule_standard_code=ex.get("schedule_standard_code", "ASME_B36_10M_SCHEDULES"),
                     roughness_mm=ex["roughness_mm"],
                     corrosion_allowance_mm=ex["corrosion_allowance_mm"],
                     min_temp_c=ex["min_temp_c"],
@@ -118,6 +127,7 @@ def _seed_example_pipe_classes():
         db.commit()
     except Exception as e:
         db.rollback()
+
         print(f"[Warning] Failed to seed example pipe classes: {e}")
     finally:
         db.close()

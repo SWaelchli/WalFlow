@@ -35,18 +35,24 @@ const categorizedEquipment = [
       { type: 'remote_control_valve', label: 'Remote Valve', description: 'Pilot Signal Control' },
       { type: 'linear_regulator', label: 'Pressure Regulator', description: '' },
       { type: 'three_way_tcv', label: '3-Way Temp Valve', description: 'Thermal Mixing' },
-      { type: 'orifice', label: 'Orifice', description: '' },
+    ]
+  },
+  {
+    name: 'Piping & Fittings',
+    items: [
+      { type: 'reducer', label: 'Reducer / Expander', description: 'ASME B16.9 Area Transition' },
+      { type: 'orifice', label: 'Orifice', description: 'Flow Restriction Element' },
       { type: 'calibrated_restriction', label: 'Calibrated Restriction', description: 'Flow/dP-calibrated clearance' },
     ]
   },
   {
-    name: 'Distribution',
+    name: 'Distribution & Manifolds',
     items: [
-      { type: 'splitter', label: 'Splitter', description: '' },
-      { type: 'mixer', label: 'Mixer', description: '' },
-      { type: 'reducer', label: 'Reducer / Expander', description: 'ASME B16.9 Area Transition' },
+      { type: 'splitter', label: 'Splitter', description: 'Flow Dividing Manifold' },
+      { type: 'mixer', label: 'Mixer', description: 'Flow Combining Manifold' },
     ]
   },
+
 
   {
     name: 'Auxiliary',

@@ -21,7 +21,13 @@ All notable changes to the WälFlow project will be documented in this file.
 - **Fitting Standards & Pipe Schedules Catalog Database (`FittingStandard`)**: Implemented database model and REST API for ASME B16.9 factory-made wrought reducers (DN 20 to DN 600) and ASME B36.10M / B36.19M pipe schedules (STD, 40, 80, XS, 160).
 - **Tabbed Catalog Interface (`/pipes`)**: Added subpage navigation tabs for **Piping Specifications** and **Fitting Standards & Schedules** with full catalog search, filtering, inline size editing, standard cloning, JSON library import/export, and default re-seeding.
 - **Localized Surface Roughness**: Removed global canvas roughness; pipe friction factor is now calculated from localized roughness auto-mapped from material groups.
+- **Pipe Class & Fitting Library Harmonization**: Full UI/UX harmonization between Piping Specifications and Fitting Standards tabs on `/pipes` (elevated white cards, segmented pills, standardized top bar buttons, SVG icons, animated feedback toasts).
+- **Pipe Schedule Presets for Custom Lines**: Integrated standard nominal size (DN15–DN600) and schedule (STD, 40, 80, XS, 160) quick-pick selectors with live outer diameter, wall thickness, inner diameter, and flow area previews in both inspector and DataList table.
+- **Smart Reducer Connected-Line Auto-Inheritance & Mismatch Detection**: Added 1-click auto-detection of connected pipe sizes and schedules on Reducer nodes, plus real-time mismatch warning alerts in the inspector and on canvas nodes.
+- **Multi-Standard Support**: Seeded European DIN EN 10253-2 buttweld reducers alongside ASME B16.9 and mapped TR2000 specifications to their authorized default fitting standard.
+- **Enhanced Equipment Categorization**: Reorganized sidebar into dedicated *Piping & Fittings* and *Distribution & Manifolds* sections, and added velocity color-coding in DataList.
 - **AI Agent Skill (`.agents/skills/pipe-classes`)**: Added dedicated skill documentation for AI pair programmers and LLM agents.
+
 
 
 

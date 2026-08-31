@@ -12,7 +12,11 @@ import {
   ImportIcon, 
   CrownIcon, 
   SignOutIcon, 
-  SignInIcon 
+  SignInIcon,
+  GlobeIcon,
+  WarningIcon,
+  CheckCircleIcon,
+  SpinnerIcon
 } from '../components/symbols/IconLibrary';
 import FittingStandardsTab from '../components/piping/FittingStandardsTab';
 
@@ -21,7 +25,9 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
   const { isImperial } = useUnits();
 
   const [activeTab, setActiveTab] = useState('pipe_classes'); // 'pipe_classes' | 'fitting_standards'
+  const fittingTabRef = useRef(null);
   const [pipeClasses, setPipeClasses] = useState([]);
+
   const [selectedClassId, setSelectedClassId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -401,6 +407,8 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
       material_grade: 'ASTM A106 Gr. B',
       rating_class: 'CL150',
       design_code: 'ASME B31.3',
+      reducer_standard_code: 'ASME_B16_9_REDUCERS',
+      schedule_standard_code: 'ASME_B36_10M_SCHEDULES',
       revision: '1.0',
       roughness_mm: 0.045,
       corrosion_allowance_mm: 3.0,
@@ -430,6 +438,8 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
       material_grade: source.material_grade,
       rating_class: source.rating_class,
       design_code: source.design_code || 'ASME B31.3',
+      reducer_standard_code: source.reducer_standard_code || 'ASME_B16_9_REDUCERS',
+      schedule_standard_code: source.schedule_standard_code || 'ASME_B36_10M_SCHEDULES',
       revision: '1.0',
       roughness_mm: source.roughness_mm,
       corrosion_allowance_mm: source.corrosion_allowance_mm,
@@ -466,6 +476,8 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
         material_grade: formData.material_grade.trim(),
         rating_class: formData.rating_class.trim(),
         design_code: formData.design_code.trim(),
+        reducer_standard_code: formData.reducer_standard_code || 'ASME_B16_9_REDUCERS',
+        schedule_standard_code: formData.schedule_standard_code || 'ASME_B36_10M_SCHEDULES',
         revision: formData.revision.trim(),
         roughness_mm: parseFloat(formData.roughness_mm) || 0.045,
         corrosion_allowance_mm: parseFloat(formData.corrosion_allowance_mm) || 0.0,
@@ -484,6 +496,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
           press_bar: parseFloat(tp.press_bar)
         }))
       };
+
 
       if (isNewDraft) {
         const res = await axios.post('/api/pipe-classes', payload);
@@ -729,7 +742,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                   style={{ height: '32px', padding: '0 10px', fontSize: '11px', fontWeight: '700' }}
                   title="Restore standard default example classes (CS01, SS01, LT01, DX01)"
                 >
-                  {isSeedingExamples ? 'Creating...' : 'Create Examples'}
+                  {isSeedingExamples ? 'Restoring...' : 'Restore Defaults'}
                 </button>
               )}
 
@@ -770,7 +783,8 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                     }}
                     title="Search and import specs from Equinor TR2000 standard"
                   >
-                    🌐 Import from TR2000
+                    <GlobeIcon size={12} />
+                    Import from TR2000
                   </button>
 
                   <button
@@ -789,6 +803,61 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                     New Pipe Class
                   </button>
                 </>
+              )}
+            </>
+          )}
+
+          {activeTab === 'fitting_standards' && (
+            <>
+              {canManage && (
+                <button
+                  onClick={() => fittingTabRef.current?.seedDefaults()}
+                  className="btn-secondary"
+                  style={{ height: '32px', padding: '0 10px', fontSize: '11px', fontWeight: '700' }}
+                  title="Restore standard default fitting standards (ASME B16.9, ASME B36.10M)"
+                >
+                  Restore Defaults
+                </button>
+              )}
+
+              <button
+                onClick={() => fittingTabRef.current?.exportLibrary()}
+                className="btn-secondary"
+                style={{ height: '32px', padding: '0 10px', fontSize: '11px', fontWeight: '700', gap: '4px' }}
+                title="Export fitting standards catalog as JSON file"
+              >
+                <ExportIcon size={12} />
+                Export Library
+              </button>
+
+              {canManage && (
+                <button
+                  onClick={() => fittingTabRef.current?.triggerImport()}
+                  className="btn-secondary"
+                  style={{ height: '32px', padding: '0 10px', fontSize: '11px', fontWeight: '700', gap: '4px' }}
+                  title="Import fitting standards from JSON file"
+                >
+                  <ImportIcon size={12} />
+                  Import Library
+                </button>
+              )}
+
+              {canManage && (
+                <button
+                  onClick={() => fittingTabRef.current?.openNewModal()}
+                  className="btn-primary"
+                  style={{
+                    height: '32px',
+                    padding: '0 14px',
+                    borderRadius: '8px',
+                    fontSize: '11px',
+                    fontWeight: '700',
+                    gap: '6px'
+                  }}
+                >
+                  <PlusIcon size={12} color="#FFFFFF" />
+                  New Fitting Standard
+                </button>
               )}
             </>
           )}
@@ -880,8 +949,9 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
 
       {/* Main Content Area: Pipe Classes Catalog vs Fitting Standards & Schedules */}
       {activeTab === 'fitting_standards' ? (
-        <FittingStandardsTab currentUser={currentUser} canManage={canManage} />
+        <FittingStandardsTab ref={fittingTabRef} currentUser={currentUser} canManage={canManage} />
       ) : (
+
         <div style={{ display: 'flex', flexGrow: 1, overflow: 'hidden' }}>
 
         
@@ -1175,86 +1245,143 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                 {/* Key Properties Grid */}
                 {isEditing ? (
                   /* Editable Properties Grid */
-                  <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr 1fr 1fr', gap: '12px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--color-border)' }}>
-                    <div>
-                      <label className="form-label" style={{ fontSize: '10px', fontWeight: '700' }}>Material Grade *</label>
-                      <input
-                        type="text"
-                        value={formData.material_grade}
-                        onChange={(e) => updateFormField('material_grade', e.target.value)}
-                        placeholder="ASTM A106 Gr. B"
-                        className="form-input"
-                        style={{ height: '30px', fontSize: '12px' }}
-                      />
+                  <>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr 1fr 1fr', gap: '12px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--color-border)' }}>
+                      <div>
+                        <label className="form-label" style={{ fontSize: '10px', fontWeight: '700' }}>Material Grade *</label>
+                        <input
+                          type="text"
+                          value={formData.material_grade}
+                          onChange={(e) => updateFormField('material_grade', e.target.value)}
+                          placeholder="ASTM A106 Gr. B"
+                          className="form-input"
+                          style={{ height: '30px', fontSize: '12px' }}
+                        />
+                      </div>
+                      <div>
+                        <label className="form-label" style={{ fontSize: '10px', fontWeight: '700' }}>Material Group</label>
+                        <input
+                          type="text"
+                          value={formData.material_group}
+                          onChange={(e) => updateFormField('material_group', e.target.value)}
+                          placeholder="CS / SS / DX"
+                          className="form-input"
+                          style={{ height: '30px', fontSize: '12px' }}
+                        />
+                      </div>
+                      <div>
+                        <label className="form-label" style={{ fontSize: '10px', fontWeight: '700' }}>Pressure Rating</label>
+                        <input
+                          type="text"
+                          value={formData.rating_class}
+                          onChange={(e) => updateFormField('rating_class', e.target.value)}
+                          placeholder="CL150 / PN16"
+                          className="form-input"
+                          style={{ height: '30px', fontSize: '12px' }}
+                        />
+                      </div>
+                      <div>
+                        <label className="form-label" style={{ fontSize: '10px', fontWeight: '700' }}>Roughness (ε mm)</label>
+                        <input
+                          type="number"
+                          step="0.001"
+                          value={formData.roughness_mm}
+                          onChange={(e) => updateFormField('roughness_mm', e.target.value)}
+                          className="form-input"
+                          style={{ height: '30px', fontSize: '12px' }}
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="form-label" style={{ fontSize: '10px', fontWeight: '700' }}>Material Group</label>
-                      <input
-                        type="text"
-                        value={formData.material_group}
-                        onChange={(e) => updateFormField('material_group', e.target.value)}
-                        placeholder="CS / SS / DX"
-                        className="form-input"
-                        style={{ height: '30px', fontSize: '12px' }}
-                      />
+
+                    {/* Standard Catalog References Selectors */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '12px', paddingTop: '12px', borderTop: '1px dashed var(--color-border)' }}>
+                      <div>
+                        <label className="form-label" style={{ fontSize: '10px', fontWeight: '700' }}>Authorized Reducer Standard</label>
+                        <select
+                          value={formData.reducer_standard_code || 'ASME_B16_9_REDUCERS'}
+                          onChange={(e) => updateFormField('reducer_standard_code', e.target.value)}
+                          className="form-select"
+                          style={{ height: '32px', fontSize: '12px', width: '100%' }}
+                        >
+                          <option value="ASME_B16_9_REDUCERS">ASME B16.9 Buttweld Reducers</option>
+                          <option value="DIN_EN_10253_2_REDUCERS">DIN EN 10253-2 Buttweld Reducers</option>
+                          <option value="CUSTOM">Custom / Project Reducers</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="form-label" style={{ fontSize: '10px', fontWeight: '700' }}>Referenced Pipe Schedule Standard</label>
+                        <select
+                          value={formData.schedule_standard_code || 'ASME_B36_10M_SCHEDULES'}
+                          onChange={(e) => updateFormField('schedule_standard_code', e.target.value)}
+                          className="form-select"
+                          style={{ height: '32px', fontSize: '12px', width: '100%' }}
+                        >
+                          <option value="ASME_B36_10M_SCHEDULES">ASME B36.10M / B36.19M Pipe Schedules</option>
+                          <option value="DIN_EN_PIPE_SCHEDULES">DIN EN Standard Pipe Schedules</option>
+                          <option value="CUSTOM">Custom Sizing Schedule</option>
+                        </select>
+                      </div>
                     </div>
-                    <div>
-                      <label className="form-label" style={{ fontSize: '10px', fontWeight: '700' }}>Pressure Rating</label>
-                      <input
-                        type="text"
-                        value={formData.rating_class}
-                        onChange={(e) => updateFormField('rating_class', e.target.value)}
-                        placeholder="CL150 / PN16"
-                        className="form-input"
-                        style={{ height: '30px', fontSize: '12px' }}
-                      />
-                    </div>
-                    <div>
-                      <label className="form-label" style={{ fontSize: '10px', fontWeight: '700' }}>Roughness (ε mm)</label>
-                      <input
-                        type="number"
-                        step="0.001"
-                        value={formData.roughness_mm}
-                        onChange={(e) => updateFormField('roughness_mm', e.target.value)}
-                        className="form-input"
-                        style={{ height: '30px', fontSize: '12px' }}
-                      />
-                    </div>
-                  </div>
+                  </>
                 ) : (
                   /* Read-Only Properties Grid */
-                  <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr 1fr', gap: '14px', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--color-border)' }}>
-                    <div>
-                      <span style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--color-text-secondary)', fontWeight: '700' }}>Material Group & Grade</span>
-                      <div style={{ fontSize: '13px', fontWeight: '700', marginTop: '2px' }}>
-                        {activeClass.material_group ? (
-                          <span>
-                            <span style={{ color: 'var(--color-brand-dark)', fontWeight: '800' }}>{activeClass.material_group}</span>
-                            {activeClass.material_grade && (
-                              <span style={{ color: 'var(--color-text-primary)' }}> • {activeClass.material_grade}</span>
-                            )}
-                          </span>
-                        ) : (
-                          activeClass.material_grade || '—'
-                        )}
+                  <>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr 1fr', gap: '14px', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--color-border)' }}>
+                      <div>
+                        <span style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--color-text-secondary)', fontWeight: '700' }}>Material Group & Grade</span>
+                        <div style={{ fontSize: '13px', fontWeight: '700', marginTop: '2px' }}>
+                          {activeClass.material_group ? (
+                            <span>
+                              <span style={{ color: 'var(--color-brand-dark)', fontWeight: '800' }}>{activeClass.material_group}</span>
+                              {activeClass.material_grade && (
+                                <span style={{ color: 'var(--color-text-primary)' }}> • {activeClass.material_grade}</span>
+                              )}
+                            </span>
+                          ) : (
+                            activeClass.material_grade || '—'
+                          )}
+                        </div>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--color-text-secondary)', fontWeight: '700' }}>Pressure Rating</span>
+                        <div style={{ fontSize: '13px', fontWeight: '700', marginTop: '2px' }}>{activeClass.rating_class}</div>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--color-text-secondary)', fontWeight: '700' }}>Surface Roughness (ε)</span>
+                        <div style={{ fontSize: '13px', fontWeight: '700', marginTop: '2px', color: 'var(--color-brand-dark)' }}>{activeClass.roughness_mm} mm</div>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--color-text-secondary)', fontWeight: '700' }}>Design Temp Range</span>
+                        <div style={{ fontSize: '13px', fontWeight: '700', marginTop: '2px' }}>
+                          {activeClass.min_temp_c !== null ? activeClass.min_temp_c : '—'}°C to {activeClass.max_temp_c !== null ? activeClass.max_temp_c : '—'}°C
+                        </div>
                       </div>
                     </div>
-                    <div>
-                      <span style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--color-text-secondary)', fontWeight: '700' }}>Pressure Rating</span>
-                      <div style={{ fontSize: '13px', fontWeight: '700', marginTop: '2px' }}>{activeClass.rating_class}</div>
-                    </div>
-                    <div>
-                      <span style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--color-text-secondary)', fontWeight: '700' }}>Surface Roughness (ε)</span>
-                      <div style={{ fontSize: '13px', fontWeight: '700', marginTop: '2px', color: 'var(--color-brand-dark)' }}>{activeClass.roughness_mm} mm</div>
-                    </div>
-                    <div>
-                      <span style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--color-text-secondary)', fontWeight: '700' }}>Design Temp Range</span>
-                      <div style={{ fontSize: '13px', fontWeight: '700', marginTop: '2px' }}>
-                        {activeClass.min_temp_c !== null ? activeClass.min_temp_c : '—'}°C to {activeClass.max_temp_c !== null ? activeClass.max_temp_c : '—'}°C
+
+                    {/* Standard Catalog References Info Row */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginTop: '14px', paddingTop: '14px', borderTop: '1px dashed var(--color-border)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', backgroundColor: 'var(--color-surface-light)', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                        <span style={{ fontSize: '16px' }}>📐</span>
+                        <div>
+                          <span style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--color-text-secondary)', fontWeight: '700', display: 'block' }}>Authorized Reducer Standard</span>
+                          <strong style={{ fontSize: '12px', color: 'var(--color-brand-dark)' }}>
+                            {activeClass.reducer_standard_code || 'ASME_B16_9_REDUCERS'}
+                          </strong>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', backgroundColor: 'var(--color-surface-light)', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                        <span style={{ fontSize: '16px' }}>📋</span>
+                        <div>
+                          <span style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--color-text-secondary)', fontWeight: '700', display: 'block' }}>Referenced Pipe Schedule Standard</span>
+                          <strong style={{ fontSize: '12px', color: 'var(--color-brand-dark)' }}>
+                            {activeClass.schedule_standard_code || 'ASME_B36_10M_SCHEDULES'}
+                          </strong>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  </>
                 )}
+
 
 
               </div>
@@ -1596,10 +1723,11 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '18px'
+                  color: 'var(--color-primary)'
                 }}>
-                  🌐
+                  <GlobeIcon size={20} />
                 </div>
+
                 <div>
                   <h3 className="modal-title" style={{ margin: 0, fontSize: '16px' }}>Import Equinor TR2000 Specification</h3>
                   <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: 'var(--color-text-secondary)' }}>
@@ -1864,8 +1992,8 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '8px', borderTop: '1px solid var(--color-border)' }}>
                 <div>
                   {batchSyncProgress ? (
-                    <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--color-primary)' }}>
-                      ⏳ Importing {batchSyncProgress.current} of {batchSyncProgress.total}: [{batchSyncProgress.currentCode}]...
+                    <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--color-primary)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                      <SpinnerIcon size={12} /> Importing {batchSyncProgress.current} of {batchSyncProgress.total}: [{batchSyncProgress.currentCode}]...
                     </span>
                   ) : (
                     <span style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>
@@ -1923,11 +2051,11 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                   color: 'var(--color-primary)',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '16px'
+                  justifyContent: 'center'
                 }}>
-                  ⚠️
+                  <WarningIcon size={18} color="var(--color-primary)" />
                 </div>
+
                 <div>
                   <h3 className="modal-title" style={{ margin: 0, fontSize: '15px' }}>Duplicate Specifications Detected</h3>
                   <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: 'var(--color-text-secondary)' }}>
@@ -2112,7 +2240,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                 alignItems: 'center',
                 gap: '10px'
               }}>
-                <span style={{ fontSize: '18px' }}>✅</span>
+                <CheckCircleIcon size={20} color="#059669" />
                 <div>
                   <div style={{ fontWeight: '700', fontSize: '12px', color: '#065F46' }}>
                     {importReport.imported_count} specifications successfully imported
@@ -2137,7 +2265,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                   gap: '6px'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '16px' }}>⚠️</span>
+                    <WarningIcon size={16} color="#92400E" />
                     <strong style={{ fontSize: '12px', color: '#92400E' }}>
                       {importReport.skipped_duplicates.length} duplicate specifications were skipped (not imported):
                     </strong>
@@ -2146,6 +2274,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                     {importReport.skipped_duplicates.map((code, idx) => (
                       <span
                         key={idx}
+
                         style={{
                           padding: '2px 8px',
                           borderRadius: '4px',

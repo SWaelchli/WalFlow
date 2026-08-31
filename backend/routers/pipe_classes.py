@@ -38,6 +38,8 @@ class PipeClassCreate(BaseModel):
     material_grade: str = Field(..., description="Material grade description (e.g. ASTM A106 Gr. B)")
     rating_class: str = Field(..., description="Rating class (e.g. CL150, CL300, PN16)")
     design_code: str = Field("ASME B31.3", description="Design code")
+    reducer_standard_code: Optional[str] = Field("ASME_B16_9_REDUCERS", description="Code of referenced Reducer fitting standard")
+    schedule_standard_code: Optional[str] = Field("ASME_B36_10M_SCHEDULES", description="Code of referenced Pipe Schedule standard")
     roughness_mm: float = Field(0.045, gt=0, description="Absolute surface roughness in mm")
     corrosion_allowance_mm: float = Field(0.0, ge=0, description="Base corrosion allowance in mm")
     min_temp_c: Optional[float] = Field(None, description="Minimum allowable design temperature in °C")
@@ -55,6 +57,8 @@ class PipeClassUpdate(BaseModel):
     material_grade: Optional[str] = None
     rating_class: Optional[str] = None
     design_code: Optional[str] = None
+    reducer_standard_code: Optional[str] = None
+    schedule_standard_code: Optional[str] = None
     roughness_mm: Optional[float] = Field(None, gt=0)
     corrosion_allowance_mm: Optional[float] = Field(None, ge=0)
     min_temp_c: Optional[float] = None
@@ -74,6 +78,8 @@ class PipeClassResponse(BaseModel):
     material_grade: str
     rating_class: str
     design_code: str
+    reducer_standard_code: Optional[str] = "ASME_B16_9_REDUCERS"
+    schedule_standard_code: Optional[str] = "ASME_B36_10M_SCHEDULES"
     roughness_mm: float
     corrosion_allowance_mm: float
     min_temp_c: Optional[float] = None
@@ -111,6 +117,8 @@ def _serialize_pipe_class(item: PipeClass) -> Dict[str, Any]:
         "material_grade": item.material_grade,
         "rating_class": item.rating_class,
         "design_code": item.design_code,
+        "reducer_standard_code": getattr(item, 'reducer_standard_code', 'ASME_B16_9_REDUCERS') or 'ASME_B16_9_REDUCERS',
+        "schedule_standard_code": getattr(item, 'schedule_standard_code', 'ASME_B36_10M_SCHEDULES') or 'ASME_B36_10M_SCHEDULES',
         "roughness_mm": item.roughness_mm,
         "corrosion_allowance_mm": item.corrosion_allowance_mm,
         "min_temp_c": item.min_temp_c,
@@ -124,6 +132,7 @@ def _serialize_pipe_class(item: PipeClass) -> Dict[str, Any]:
         "created_at": item.created_at.isoformat() if item.created_at else None,
         "updated_at": item.updated_at.isoformat() if item.updated_at else None,
     }
+
 
 
 from services.tr2000_service import (
@@ -249,6 +258,8 @@ async def sync_tr2000_pipe_class(
             existing.material_grade = normalized["material_grade"]
             existing.rating_class = normalized["rating_class"]
             existing.design_code = normalized["design_code"]
+            existing.reducer_standard_code = normalized.get("reducer_standard_code", "ASME_B16_9_REDUCERS")
+            existing.schedule_standard_code = normalized.get("schedule_standard_code", "ASME_B36_10M_SCHEDULES")
             existing.roughness_mm = normalized["roughness_mm"]
             existing.corrosion_allowance_mm = normalized["corrosion_allowance_mm"]
             existing.min_temp_c = normalized["min_temp_c"]
@@ -270,6 +281,8 @@ async def sync_tr2000_pipe_class(
                 material_grade=normalized["material_grade"],
                 rating_class=normalized["rating_class"],
                 design_code=normalized["design_code"],
+                reducer_standard_code=normalized.get("reducer_standard_code", "ASME_B16_9_REDUCERS"),
+                schedule_standard_code=normalized.get("schedule_standard_code", "ASME_B36_10M_SCHEDULES"),
                 roughness_mm=normalized["roughness_mm"],
                 corrosion_allowance_mm=normalized["corrosion_allowance_mm"],
                 min_temp_c=normalized["min_temp_c"],
@@ -284,6 +297,7 @@ async def sync_tr2000_pipe_class(
             db.commit()
             db.refresh(new_class)
             return _serialize_pipe_class(new_class)
+
     finally:
         db.close()
 
@@ -367,6 +381,8 @@ def create_pipe_class(
         material_grade=payload.material_grade.strip(),
         rating_class=payload.rating_class.strip(),
         design_code=payload.design_code.strip(),
+        reducer_standard_code=payload.reducer_standard_code or "ASME_B16_9_REDUCERS",
+        schedule_standard_code=payload.schedule_standard_code or "ASME_B36_10M_SCHEDULES",
         roughness_mm=payload.roughness_mm,
         corrosion_allowance_mm=payload.corrosion_allowance_mm,
         min_temp_c=payload.min_temp_c,
@@ -378,6 +394,7 @@ def create_pipe_class(
         sizes_json=json.dumps(size_dicts),
         temp_pressures_json=json.dumps(tp_dicts),
     )
+
 
     db.add(new_class)
     db.commit()

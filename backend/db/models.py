@@ -107,11 +107,14 @@ class PipeClass(Base):
     revision = Column(String, nullable=False, default="1.0")
     rev_date = Column(String, nullable=True)
     source_plant_id = Column(Integer, nullable=True)
+    reducer_standard_code = Column(String, nullable=True, default="ASME_B16_9_REDUCERS")
+    schedule_standard_code = Column(String, nullable=True, default="ASME_B36_10M_SCHEDULES")
     is_builtin = Column(Boolean, default=False, nullable=False)
     sizes_json = Column(Text, nullable=False)  # JSON array of sizes
     temp_pressures_json = Column(Text, nullable=True)  # JSON array of P-T rating points
     created_at = Column(DateTime, default=utc_now)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
+
 
 
 class FittingStandard(Base):

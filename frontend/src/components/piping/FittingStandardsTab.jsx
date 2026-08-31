@@ -1,9 +1,17 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
 import axios from 'axios';
-import { ExportIcon, ImportIcon } from '../symbols/IconLibrary';
+import { 
+  PlusIcon, 
+  TrashIcon, 
+  CrossIcon, 
+  CopyIcon, 
+  EditIcon,
+  CheckCircleIcon,
+  WarningIcon
+} from '../symbols/IconLibrary';
 import { useUnits } from '../../context/UnitContext';
 
-export default function FittingStandardsTab({ canManage }) {
+const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage }, ref) {
   const { isImperial } = useUnits();
 
   const [standards, setStandards] = useState([]);
@@ -16,7 +24,6 @@ export default function FittingStandardsTab({ canManage }) {
   const [standardFilter, setStandardFilter] = useState('ALL'); // ALL | ASME | DIN_EN | CUSTOM
 
   // Action states
-  const [isSeeding, setIsSeeding] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editFormData, setEditFormData] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -37,7 +44,15 @@ export default function FittingStandardsTab({ canManage }) {
     description: ''
   });
 
+  // Notification Toast state
+  const [toastMessage, setToastMessage] = useState(null); // { type: 'success'|'error', text: '' }
+
   const fileInputRef = useRef(null);
+
+  const showToast = (text, type = 'success') => {
+    setToastMessage({ text, type });
+    setTimeout(() => setToastMessage(null), 4000);
+  };
 
   // Fetch standards catalog
   const fetchStandards = useCallback(async () => {
@@ -78,15 +93,12 @@ export default function FittingStandardsTab({ canManage }) {
 
   // Re-seed defaults
   const handleSeedDefaults = async () => {
-    setIsSeeding(true);
     try {
       const res = await axios.post('/api/fitting-standards/seed-defaults');
-      alert(`Default standards successfully synchronized (${res.data.seeded_count || 0} restored).`);
+      showToast(`Default standards synchronized (${res.data.seeded_count || 0} restored).`);
       fetchStandards();
     } catch {
-      alert('Failed to re-seed default fitting standards.');
-    } finally {
-      setIsSeeding(false);
+      showToast('Failed to restore default fitting standards.', 'error');
     }
   };
 
@@ -101,8 +113,9 @@ export default function FittingStandardsTab({ canManage }) {
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       downloadAnchor.remove();
+      showToast('Fitting standards catalog exported successfully.');
     } catch {
-      alert('Failed to export fitting standards library.');
+      showToast('Failed to export fitting standards library.', 'error');
     }
   };
 
@@ -117,16 +130,24 @@ export default function FittingStandardsTab({ canManage }) {
         const parsed = JSON.parse(event.target.result);
         const payload = Array.isArray(parsed) ? parsed : [parsed];
         const res = await axios.post('/api/fitting-standards/import-library', payload);
-        alert(`Import completed! Imported: ${res.data.imported || 0}, Updated: ${res.data.updated || 0}, Skipped: ${res.data.skipped || 0}`);
+        showToast(`Import completed! Imported: ${res.data.imported || 0}, Updated: ${res.data.updated || 0}, Skipped: ${res.data.skipped || 0}`);
         fetchStandards();
       } catch (err) {
-        alert(`Failed to import JSON library: ${err?.response?.data?.detail || err.message}`);
+        showToast(`Failed to import JSON library: ${err?.response?.data?.detail || err.message}`, 'error');
       } finally {
         if (fileInputRef.current) fileInputRef.current.value = '';
       }
     };
     reader.readAsText(file);
   };
+
+  // Expose header actions to parent via Ref
+  useImperativeHandle(ref, () => ({
+    seedDefaults: handleSeedDefaults,
+    exportLibrary: handleExportLibrary,
+    triggerImport: () => fileInputRef.current?.click(),
+    openNewModal: () => setIsNewModalOpen(true)
+  }));
 
   // Start Clone
   const handleOpenCloneModal = () => {
@@ -138,7 +159,7 @@ export default function FittingStandardsTab({ canManage }) {
 
   const handleConfirmClone = async () => {
     if (!cloneCode.trim() || !cloneName.trim()) {
-      alert('Please enter a valid unique code and descriptive name.');
+      showToast('Please enter a valid unique code and descriptive name.', 'error');
       return;
     }
     try {
@@ -146,19 +167,19 @@ export default function FittingStandardsTab({ canManage }) {
         new_code: cloneCode.trim().toUpperCase(),
         new_name: cloneName.trim()
       });
-      alert(`Cloned standard '${res.data.code}' created successfully.`);
+      showToast(`Cloned standard '${res.data.code}' created successfully.`);
       setIsCloneModalOpen(false);
       await fetchStandards();
       setSelectedId(res.data.id);
     } catch (err) {
-      alert(`Clone failed: ${err?.response?.data?.detail || err.message}`);
+      showToast(`Clone failed: ${err?.response?.data?.detail || err.message}`, 'error');
     }
   };
 
   // Start Create New Standard
   const handleCreateNewStandard = async () => {
     if (!newStandardData.code.trim() || !newStandardData.name.trim()) {
-      alert('Please provide both standard code and name.');
+      showToast('Please provide both standard code and name.', 'error');
       return;
     }
     try {
@@ -171,19 +192,19 @@ export default function FittingStandardsTab({ canManage }) {
         description: newStandardData.description,
         dimensions: []
       });
-      alert(`Created custom standard '${res.data.code}'.`);
+      showToast(`Created custom standard '${res.data.code}'.`);
       setIsNewModalOpen(false);
       await fetchStandards();
       setSelectedId(res.data.id);
     } catch (err) {
-      alert(`Creation failed: ${err?.response?.data?.detail || err.message}`);
+      showToast(`Creation failed: ${err?.response?.data?.detail || err.message}`, 'error');
     }
   };
 
   // Delete Custom Standard
   const handleDeleteStandard = async (item) => {
     if (item.is_builtin) {
-      alert('Built-in standard library components cannot be deleted.');
+      showToast('Built-in standard library components cannot be deleted.', 'error');
       return;
     }
     if (!window.confirm(`Are you sure you want to permanently delete custom standard '${item.code}'?`)) {
@@ -191,11 +212,11 @@ export default function FittingStandardsTab({ canManage }) {
     }
     try {
       await axios.delete(`/api/fitting-standards/${item.id}`);
-      alert(`Standard '${item.code}' deleted.`);
+      showToast(`Standard '${item.code}' deleted.`);
       await fetchStandards();
       setSelectedId(null);
     } catch (err) {
-      alert(`Delete failed: ${err?.response?.data?.detail || err.message}`);
+      showToast(`Delete failed: ${err?.response?.data?.detail || err.message}`, 'error');
     }
   };
 
@@ -218,13 +239,13 @@ export default function FittingStandardsTab({ canManage }) {
         description: editFormData.description,
         dimensions: editFormData.dimensions
       });
-      alert('Standard updated successfully.');
+      showToast('Standard updated successfully.');
       setIsEditing(false);
       setEditFormData(null);
       await fetchStandards();
       setSelectedId(res.data.id);
     } catch (err) {
-      alert(`Save failed: ${err?.response?.data?.detail || err.message}`);
+      showToast(`Save failed: ${err?.response?.data?.detail || err.message}`, 'error');
     } finally {
       setIsSaving(false);
     }
@@ -258,513 +279,613 @@ export default function FittingStandardsTab({ canManage }) {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflow: 'hidden' }}>
-      {/* Sub-header Controls Bar */}
-      <div style={{
-        height: '48px',
-        padding: '0 20px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        borderBottom: '1px solid var(--color-border)',
-        backgroundColor: '#FFFFFF'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--color-brand-dark)' }}>
-            Fitting Standards & Pipe Schedules Catalog
-          </span>
-          <span style={{ fontSize: '11px', color: 'var(--color-text-secondary)', background: '#f1f5f9', padding: '2px 8px', borderRadius: '12px' }}>
-            {standards.length} Standards Available
-          </span>
-        </div>
+    <div style={{ display: 'flex', flexGrow: 1, overflow: 'hidden', position: 'relative' }}>
+      {/* Hidden File Input for Import */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        style={{ display: 'none' }}
+        accept=".json"
+        onChange={handleFileImport}
+      />
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {canManage && (
-            <button
-              onClick={handleSeedDefaults}
-              disabled={isSeeding || isEditing}
-              className="btn-secondary"
-              style={{ height: '32px', padding: '0 10px', fontSize: '11px', fontWeight: '700' }}
-              title="Restore standard default built-ins (ASME B16.9, ASME B36.10M)"
-            >
-              {isSeeding ? 'Restoring...' : 'Restore Defaults'}
-            </button>
-          )}
-
-          <button
-            onClick={handleExportLibrary}
-            className="btn-secondary"
-            style={{ height: '32px', padding: '0 10px', fontSize: '11px', fontWeight: '700', gap: '4px' }}
-            title="Export fitting standards catalog as JSON file"
-          >
-            <ExportIcon size={12} />
-            Export Fittings JSON
-          </button>
-
-          {canManage && (
-            <>
-              <input
-                type="file"
-                ref={fileInputRef}
-                style={{ display: 'none' }}
-                accept=".json"
-                onChange={handleFileImport}
-              />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isEditing}
-                className="btn-secondary"
-                style={{ height: '32px', padding: '0 10px', fontSize: '11px', fontWeight: '700', gap: '4px' }}
-                title="Import fitting standards from JSON file"
-              >
-                <ImportIcon size={12} />
-                Import Fittings JSON
-              </button>
-
-              <button
-                onClick={() => setIsNewModalOpen(true)}
-                disabled={isEditing}
-                className="btn-primary"
-                style={{ height: '32px', padding: '0 12px', borderRadius: '8px', fontSize: '11px', fontWeight: '700' }}
-              >
-                + New Standard
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Main Two-Column Layout */}
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        {/* Left Sidebar: Standards List & Search */}
+      {/* Floating Toast Feedback */}
+      {toastMessage && (
         <div style={{
-          width: '320px',
-          borderRight: '1px solid var(--color-border)',
-          backgroundColor: '#FAFCFC',
+          position: 'absolute',
+          top: '16px',
+          right: '24px',
+          zIndex: 1100,
           display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden'
+          alignItems: 'center',
+          gap: '8px',
+          padding: '10px 16px',
+          borderRadius: '8px',
+          backgroundColor: toastMessage.type === 'error' ? '#FEF2F2' : '#F0FDF4',
+          border: `1px solid ${toastMessage.type === 'error' ? '#FEE2E2' : '#DCFCE7'}`,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+          animation: 'walflowFadeIn 0.2s ease-out'
         }}>
-          {/* Search and Filters */}
-          <div style={{ padding: '12px', borderBottom: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <input
-              type="text"
-              className="form-input"
-              style={{ width: '100%', height: '30px', fontSize: '12px' }}
-              placeholder="Search standards & schedules..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+          {toastMessage.type === 'error' ? (
+            <WarningIcon size={16} color="#DC2626" />
+          ) : (
+            <CheckCircleIcon size={16} color="#16A34A" />
+          )}
+          <span style={{
+            fontSize: '12px',
+            fontWeight: '600',
+            color: toastMessage.type === 'error' ? '#DC2626' : '#16A34A'
+          }}>
+            {toastMessage.text}
+          </span>
+        </div>
+      )}
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
-              <select
-                className="form-select"
-                style={{ height: '28px', fontSize: '11px' }}
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
-              >
-                <option value="ALL">All Types</option>
-                <option value="reducer">Reducers</option>
-                <option value="pipe_schedule">Schedules</option>
-              </select>
+      {/* Left Sidebar: Catalog Listing & Segmented Filter Pills */}
+      <aside style={{
+        width: '320px',
+        borderRight: '1px solid var(--color-border)',
+        backgroundColor: '#FFFFFF',
+        display: 'flex',
+        flexDirection: 'column',
+        flexShrink: 0
+      }}>
+        {/* Search & Filter Header */}
+        <div style={{ padding: '16px', borderBottom: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <input
+            type="text"
+            className="form-input"
+            style={{ width: '100%', height: '34px', fontSize: '12px' }}
+            placeholder="Search standards & schedules..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
 
-              <select
-                className="form-select"
-                style={{ height: '28px', fontSize: '11px' }}
-                value={standardFilter}
-                onChange={(e) => setStandardFilter(e.target.value)}
+          {/* Type Filter Pills */}
+          <div style={{ display: 'flex', gap: '6px' }}>
+            {[
+              { key: 'ALL', label: 'All' },
+              { key: 'reducer', label: 'Reducers' },
+              { key: 'pipe_schedule', label: 'Schedules' }
+            ].map(item => (
+              <button
+                key={item.key}
+                onClick={() => setTypeFilter(item.key)}
+                style={{
+                  flex: 1,
+                  padding: '4px 6px',
+                  fontSize: '10px',
+                  fontWeight: '700',
+                  borderRadius: '6px',
+                  border: '1px solid var(--color-border)',
+                  backgroundColor: typeFilter === item.key ? 'var(--color-brand-dark)' : 'var(--color-surface-light)',
+                  color: typeFilter === item.key ? '#FFFFFF' : 'var(--color-text-secondary)',
+                  cursor: 'pointer'
+                }}
               >
-                <option value="ALL">All Standards</option>
-                <option value="ASME">ASME</option>
-                <option value="DIN_EN">DIN EN</option>
-                <option value="CUSTOM">Custom</option>
-              </select>
-            </div>
+                {item.label}
+              </button>
+            ))}
           </div>
 
-          {/* List items */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
-            {error && (
-              <div style={{ padding: '8px 12px', marginBottom: '8px', background: '#fef2f2', color: '#dc2626', borderRadius: '6px', fontSize: '11px' }}>
-                {error}
-              </div>
-            )}
-            {loading ? (
-
-              <div style={{ padding: '20px', textAlign: 'center', fontSize: '12px', color: '#64748b' }}>
-                Loading standards...
-              </div>
-            ) : filteredStandards.length === 0 ? (
-              <div style={{ padding: '20px', textAlign: 'center', fontSize: '12px', color: '#64748b' }}>
-                No standards match filter.
-              </div>
-            ) : (
-              filteredStandards.map(item => {
-                const isSelected = item.id === selectedId;
-                const dimCount = Array.isArray(item.dimensions) ? item.dimensions.length : 0;
-                return (
-                  <div
-                    key={item.id}
-                    onClick={() => {
-                      if (isEditing) {
-                        if (!window.confirm("You have unsaved changes. Discard and switch?")) return;
-                        setIsEditing(false);
-                      }
-                      setSelectedId(item.id);
-                    }}
-                    style={{
-                      padding: '10px 12px',
-                      marginBottom: '6px',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      border: isSelected ? '1.5px solid var(--color-primary)' : '1px solid var(--color-border)',
-                      backgroundColor: isSelected ? '#FFFFFF' : '#FFFFFF',
-                      boxShadow: isSelected ? '0 2px 6px rgba(250,133,7,0.12)' : 'none',
-                      transition: 'all 0.15s ease'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                      <span style={{ fontSize: '12px', fontWeight: '700', color: isSelected ? 'var(--color-primary)' : 'var(--color-brand-dark)' }}>
-                        {item.code}
-                      </span>
-                      <div style={{ display: 'flex', gap: '4px' }}>
-                        {item.is_builtin ? (
-                          <span style={{ fontSize: '9px', fontWeight: '700', padding: '1px 5px', borderRadius: '4px', background: '#e0f2fe', color: '#0369a1' }}>
-                            BUILT-IN
-                          </span>
-                        ) : (
-                          <span style={{ fontSize: '9px', fontWeight: '700', padding: '1px 5px', borderRadius: '4px', background: '#fef3c7', color: '#b45309' }}>
-                            CUSTOM
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div style={{ fontSize: '11px', color: '#334155', fontWeight: '500', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {item.name}
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '10px', color: '#64748b' }}>
-                      <span>Type: {item.fitting_type === 'reducer' ? 'Reducer / Expander' : 'Pipe Schedules'}</span>
-                      <span>{dimCount} {item.fitting_type === 'reducer' ? 'sizes' : 'DN entries'}</span>
-                    </div>
-                  </div>
-                );
-              })
-            )}
+          {/* Standard Filter Pills */}
+          <div style={{ display: 'flex', gap: '6px' }}>
+            {[
+              { key: 'ALL', label: 'All' },
+              { key: 'ASME', label: 'ASME' },
+              { key: 'DIN_EN', label: 'DIN EN' },
+              { key: 'CUSTOM', label: 'Custom' }
+            ].map(item => (
+              <button
+                key={item.key}
+                onClick={() => setStandardFilter(item.key)}
+                style={{
+                  flex: 1,
+                  padding: '4px 6px',
+                  fontSize: '10px',
+                  fontWeight: '700',
+                  borderRadius: '6px',
+                  border: '1px solid var(--color-border)',
+                  backgroundColor: standardFilter === item.key ? 'var(--color-brand-dark)' : 'var(--color-surface-light)',
+                  color: standardFilter === item.key ? '#FFFFFF' : 'var(--color-text-secondary)',
+                  cursor: 'pointer'
+                }}
+              >
+                {item.label}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Right Main Panel: Detail View & Table Editor */}
-        <div style={{ flex: 1, backgroundColor: '#FFFFFF', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          {selectedStandard ? (
-            <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-              {/* Standard Header Banner */}
-              <div style={{
-                padding: '16px 24px',
-                borderBottom: '1px solid var(--color-border)',
-                backgroundColor: '#F8FAFC',
-                display: 'flex',
-                alignItems: 'flex-start',
-                justifyContent: 'space-between'
-              }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-                    <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: 'var(--color-brand-dark)' }}>
-                      {isEditing ? (
-                        <input
-                          type="text"
-                          className="form-input"
-                          style={{ fontSize: '16px', fontWeight: '700', height: '32px' }}
-                          value={editFormData?.name || ''}
-                          onChange={(e) => setEditFormData(prev => ({ ...prev, name: e.target.value }))}
-                        />
+        {/* List of Standards */}
+        <div style={{ flexGrow: 1, overflowY: 'auto', padding: '10px' }}>
+          {error && (
+            <div style={{ color: 'var(--color-danger)', fontSize: '12px', padding: '10px' }}>
+              {error}
+            </div>
+          )}
+
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '20px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+              Loading catalog...
+            </div>
+          ) : filteredStandards.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '20px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+              No fitting standards match criteria.
+            </div>
+          ) : (
+            filteredStandards.map(item => {
+              const isSelected = item.id === selectedId;
+              const dimCount = Array.isArray(item.dimensions) ? item.dimensions.length : 0;
+              return (
+                <div
+                  key={item.id}
+                  onClick={() => {
+                    if (isEditing) {
+                      if (!window.confirm("You have unsaved changes. Discard and switch?")) return;
+                      setIsEditing(false);
+                    }
+                    setSelectedId(item.id);
+                  }}
+                  style={{
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    marginBottom: '6px',
+                    backgroundColor: isSelected ? 'rgba(250, 133, 7, 0.08)' : 'transparent',
+                    border: isSelected ? '1px solid var(--color-primary)' : '1px solid transparent',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <span style={{
+                      fontWeight: '800',
+                      fontSize: '13px',
+                      color: isSelected ? 'var(--color-primary)' : 'var(--color-text-primary)'
+                    }}>
+                      {item.code}
+                    </span>
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      {item.is_builtin ? (
+                        <span style={{
+                          fontSize: '9px',
+                          fontWeight: '700',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          backgroundColor: '#E2E8F0',
+                          color: '#475569'
+                        }}>
+                          BUILT-IN
+                        </span>
                       ) : (
-                        selectedStandard.name
+                        <span style={{
+                          fontSize: '9px',
+                          fontWeight: '700',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          backgroundColor: 'rgba(250, 133, 7, 0.15)',
+                          color: 'var(--color-primary)'
+                        }}>
+                          CUSTOM
+                        </span>
                       )}
-                    </h2>
-                    <span style={{ fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '4px', background: '#395253', color: '#ffffff' }}>
-                      {selectedStandard.code}
-                    </span>
-                    <span style={{ fontSize: '11px', fontWeight: '600', padding: '2px 8px', borderRadius: '4px', background: '#e2e8f0', color: '#334155' }}>
-                      {selectedStandard.standard}
-                    </span>
+                    </div>
                   </div>
 
-                  <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>
+                  <div style={{
+                    fontSize: '11px',
+                    color: 'var(--color-text-secondary)',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    marginBottom: '4px'
+                  }}>
+                    {item.name}
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--color-text-secondary)' }}>
+                    <span>{item.fitting_type === 'reducer' ? 'Reducer / Expander' : 'Pipe Schedules'}</span>
+                    <span>{dimCount} {item.fitting_type === 'reducer' ? 'sizes' : 'DN entries'}</span>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </aside>
+
+      {/* Main Panel: Elevated Card-Based Detail View */}
+      <main style={{
+        flexGrow: 1,
+        backgroundColor: 'var(--color-bg-canvas)',
+        overflowY: 'auto',
+        padding: '24px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '20px'
+      }}>
+        {selectedStandard ? (
+          <>
+            {/* Card 1: Standard Header Banner */}
+            <div style={{
+              borderRadius: '12px',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid var(--color-border)',
+              padding: '20px 24px',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start'
+            }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                  <h2 style={{
+                    margin: 0,
+                    fontSize: '22px',
+                    fontWeight: '800',
+                    color: 'var(--color-brand-dark)',
+                    fontFamily: 'inherit'
+                  }}>
                     {isEditing ? (
                       <input
                         type="text"
                         className="form-input"
-                        style={{ fontSize: '12px', width: '450px' }}
-                        value={editFormData?.description || ''}
-                        onChange={(e) => setEditFormData(prev => ({ ...prev, description: e.target.value }))}
-                        placeholder="Description..."
+                        style={{ fontSize: '18px', fontWeight: '800', height: '36px' }}
+                        value={editFormData?.name || ''}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, name: e.target.value }))}
                       />
                     ) : (
-                      selectedStandard.description || 'Standard engineering fitting dimensions table.'
+                      selectedStandard.name
                     )}
-                  </p>
+                  </h2>
+                  <span style={{
+                    fontSize: '11px',
+                    fontWeight: '700',
+                    padding: '3px 8px',
+                    borderRadius: '6px',
+                    backgroundColor: 'var(--color-brand-dark)',
+                    color: '#FFFFFF'
+                  }}>
+                    {selectedStandard.code}
+                  </span>
+                  <span style={{
+                    fontSize: '11px',
+                    fontWeight: '600',
+                    padding: '3px 8px',
+                    borderRadius: '6px',
+                    backgroundColor: 'var(--color-surface-light)',
+                    color: 'var(--color-text-secondary)',
+                    border: '1px solid var(--color-border)'
+                  }}>
+                    {selectedStandard.standard}
+                  </span>
                 </div>
 
-                {/* Header Action Buttons */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <p style={{
+                  margin: 0,
+                  fontSize: '12px',
+                  color: 'var(--color-text-secondary)',
+                  maxWidth: '700px'
+                }}>
                   {isEditing ? (
-                    <>
-                      <button
-                        onClick={() => { setIsEditing(false); setEditFormData(null); }}
-                        className="btn-secondary"
-                        style={{ height: '32px', padding: '0 12px', fontSize: '11px', fontWeight: '700' }}
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={handleSaveEdit}
-                        disabled={isSaving}
-                        className="btn-primary"
-                        style={{ height: '32px', padding: '0 16px', borderRadius: '8px', fontSize: '11px', fontWeight: '700' }}
-                      >
-                        {isSaving ? 'Saving...' : 'Save Changes'}
-                      </button>
-                    </>
+                    <input
+                      type="text"
+                      className="form-input"
+                      style={{ fontSize: '12px', width: '500px' }}
+                      value={editFormData?.description || ''}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Description of standard..."
+                    />
                   ) : (
-                    <>
-                      <button
-                        onClick={handleOpenCloneModal}
-                        className="btn-secondary"
-                        style={{ height: '32px', padding: '0 12px', fontSize: '11px', fontWeight: '700' }}
-                        title="Clone this standard into an editable custom version"
-                      >
-                        ⎘ Clone to Custom
-                      </button>
-
-                      {!selectedStandard.is_builtin && canManage && (
-                        <>
-                          <button
-                            onClick={handleStartEdit}
-                            className="btn-secondary"
-                            style={{ height: '32px', padding: '0 12px', fontSize: '11px', fontWeight: '700' }}
-                          >
-                            ✎ Edit Table
-                          </button>
-                          <button
-                            onClick={() => handleDeleteStandard(selectedStandard)}
-                            className="btn-destructive"
-                            style={{ height: '32px', padding: '0 12px', fontSize: '11px', fontWeight: '700' }}
-                          >
-                            Delete
-                          </button>
-                        </>
-                      )}
-                    </>
+                    selectedStandard.description || 'Standard engineering fitting dimensions table.'
                   )}
-                </div>
+                </p>
               </div>
 
-              {/* Table Data Area */}
-              <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
-                {selectedStandard.fitting_type === 'reducer' ? (
-                  /* Reducer Dimensions Table */
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                      <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--color-brand-dark)' }}>
-                        Standard Reducer Size Combinations (ASME B16.9 / Custom)
-                      </span>
-                      {isEditing && (
-                        <button
-                          onClick={handleAddReducerRow}
-                          className="btn-secondary"
-                          style={{ height: '28px', padding: '0 10px', fontSize: '11px', fontWeight: '700' }}
-                        >
-                          + Add Size Entry
-                        </button>
-                      )}
-                    </div>
-
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
-                      <thead>
-                        <tr style={{ background: '#f1f5f9', color: '#475569', textAlign: 'left', borderBottom: '2px solid #cbd5e1' }}>
-                          <th style={{ padding: '8px 12px' }}>Large End (DN)</th>
-                          <th style={{ padding: '8px 12px' }}>Large NPS</th>
-                          <th style={{ padding: '8px 12px' }}>Large OD ({isImperial ? 'in' : 'mm'})</th>
-                          <th style={{ padding: '8px 12px' }}>Small End (DN)</th>
-                          <th style={{ padding: '8px 12px' }}>Small NPS</th>
-                          <th style={{ padding: '8px 12px' }}>Small OD ({isImperial ? 'in' : 'mm'})</th>
-                          <th style={{ padding: '8px 12px' }}>Length H ({isImperial ? 'in' : 'mm'})</th>
-                          <th style={{ padding: '8px 12px' }}>Cone Angle (θ)</th>
-                          {isEditing && <th style={{ padding: '8px 12px', textAlign: 'center' }}>Actions</th>}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(isEditing ? editFormData.dimensions : selectedStandard.dimensions || []).map((row, idx) => {
-                          const odLarge = isImperial ? (row.od_large_mm / 25.4).toFixed(3) : row.od_large_mm;
-                          const odSmall = isImperial ? (row.od_small_mm / 25.4).toFixed(3) : row.od_small_mm;
-                          const length = isImperial ? (row.length_mm / 25.4).toFixed(2) : row.length_mm;
-
-                          return (
-                            <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                              <td style={{ padding: '8px 12px', fontWeight: '600', color: '#1e293b' }}>
-                                {isEditing ? (
-                                  <input
-                                    type="number"
-                                    className="form-input"
-                                    style={{ width: '60px', height: '24px' }}
-                                    value={row.dn_large}
-                                    onChange={(e) => {
-                                      const val = Number(e.target.value);
-                                      setEditFormData(prev => {
-                                        const dims = [...prev.dimensions];
-                                        dims[idx] = { ...dims[idx], dn_large: val };
-                                        return { ...prev, dimensions: dims };
-                                      });
-                                    }}
-                                  />
-                                ) : (
-                                  `DN${row.dn_large}`
-                                )}
-                              </td>
-                              <td style={{ padding: '8px 12px', color: '#475569' }}>
-                                {row.nps_large ? `${row.nps_large}"` : '-'}
-                              </td>
-                              <td style={{ padding: '8px 12px', color: '#334155' }}>{odLarge}</td>
-                              <td style={{ padding: '8px 12px', fontWeight: '600', color: '#1e293b' }}>
-                                {isEditing ? (
-                                  <input
-                                    type="number"
-                                    className="form-input"
-                                    style={{ width: '60px', height: '24px' }}
-                                    value={row.dn_small}
-                                    onChange={(e) => {
-                                      const val = Number(e.target.value);
-                                      setEditFormData(prev => {
-                                        const dims = [...prev.dimensions];
-                                        dims[idx] = { ...dims[idx], dn_small: val };
-                                        return { ...prev, dimensions: dims };
-                                      });
-                                    }}
-                                  />
-                                ) : (
-                                  `DN${row.dn_small}`
-                                )}
-                              </td>
-                              <td style={{ padding: '8px 12px', color: '#475569' }}>
-                                {row.nps_small ? `${row.nps_small}"` : '-'}
-                              </td>
-                              <td style={{ padding: '8px 12px', color: '#334155' }}>{odSmall}</td>
-                              <td style={{ padding: '8px 12px', fontWeight: '600', color: '#0f766e' }}>
-                                {isEditing ? (
-                                  <input
-                                    type="number"
-                                    className="form-input"
-                                    style={{ width: '70px', height: '24px' }}
-                                    value={row.length_mm}
-                                    onChange={(e) => {
-                                      const val = Number(e.target.value);
-                                      setEditFormData(prev => {
-                                        const dims = [...prev.dimensions];
-                                        dims[idx] = { ...dims[idx], length_mm: val };
-                                        return { ...prev, dimensions: dims };
-                                      });
-                                    }}
-                                  />
-                                ) : (
-                                  length
-                                )}
-                              </td>
-                              <td style={{ padding: '8px 12px', color: '#334155' }}>
-                                {row.cone_angle_deg ? `${row.cone_angle_deg.toFixed(1)}°` : '-'}
-                              </td>
-                              {isEditing && (
-                                <td style={{ padding: '8px 12px', textAlign: 'center' }}>
-                                  <button
-                                    onClick={() => handleRemoveDimensionRow(idx)}
-                                    style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 'bold' }}
-                                  >
-                                    ✕
-                                  </button>
-                                </td>
-                              )}
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {isEditing ? (
+                  <>
+                    <button
+                      onClick={() => { setIsEditing(false); setEditFormData(null); }}
+                      className="btn-secondary"
+                      style={{ height: '32px', padding: '0 12px', fontSize: '11px', fontWeight: '700' }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSaveEdit}
+                      disabled={isSaving}
+                      className="btn-primary"
+                      style={{ height: '32px', padding: '0 16px', borderRadius: '8px', fontSize: '11px', fontWeight: '700' }}
+                    >
+                      {isSaving ? 'Saving...' : 'Save Changes'}
+                    </button>
+                  </>
                 ) : (
-                  /* Pipe Schedule Table */
-                  <div>
-                    <div style={{ marginBottom: '12px' }}>
-                      <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--color-brand-dark)' }}>
-                        Nominal Pipe Dimensions & Schedule Matrix (ASME B36.10M / B36.19M)
-                      </span>
-                    </div>
+                  <>
+                    <button
+                      onClick={handleOpenCloneModal}
+                      className="btn-secondary"
+                      style={{ height: '32px', padding: '0 12px', fontSize: '11px', fontWeight: '700', gap: '6px' }}
+                      title="Clone standard into an editable custom version"
+                    >
+                      <CopyIcon size={12} />
+                      Clone Standard
+                    </button>
 
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
-                      <thead>
-                        <tr style={{ background: '#f1f5f9', color: '#475569', textAlign: 'left', borderBottom: '2px solid #cbd5e1' }}>
-                          <th style={{ padding: '8px 12px' }}>Nominal Size</th>
-                          <th style={{ padding: '8px 12px' }}>NPS</th>
-                          <th style={{ padding: '8px 12px' }}>OD ({isImperial ? 'in' : 'mm'})</th>
-                          <th style={{ padding: '8px 12px' }}>STD (WT / ID)</th>
-                          <th style={{ padding: '8px 12px' }}>Sch 40 (WT / ID)</th>
-                          <th style={{ padding: '8px 12px' }}>Sch 80 (WT / ID)</th>
-                          <th style={{ padding: '8px 12px' }}>XS (WT / ID)</th>
-                          <th style={{ padding: '8px 12px' }}>Sch 160 (WT / ID)</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(selectedStandard.dimensions || []).map((row, idx) => {
-                          const od = isImperial ? (row.od_mm / 25.4).toFixed(3) : row.od_mm;
-                          const schs = row.schedules || {};
-
-                          const formatSch = (schKey) => {
-                            const entry = schs[schKey];
-                            if (!entry) return <span style={{ color: '#cbd5e1' }}>—</span>;
-                            const wt = isImperial ? (entry.wt_mm / 25.4).toFixed(3) : entry.wt_mm.toFixed(2);
-                            const id = isImperial ? (entry.id_mm / 25.4).toFixed(3) : entry.id_mm.toFixed(2);
-                            return <span>{wt} / <strong>{id}</strong></span>;
-                          };
-
-                          return (
-                            <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                              <td style={{ padding: '8px 12px', fontWeight: '700', color: '#1e293b' }}>DN{row.dn}</td>
-                              <td style={{ padding: '8px 12px', color: '#475569' }}>{row.nps}"</td>
-                              <td style={{ padding: '8px 12px', color: '#334155' }}>{od}</td>
-                              <td style={{ padding: '8px 12px' }}>{formatSch('STD')}</td>
-                              <td style={{ padding: '8px 12px' }}>{formatSch('40')}</td>
-                              <td style={{ padding: '8px 12px' }}>{formatSch('80')}</td>
-                              <td style={{ padding: '8px 12px' }}>{formatSch('XS')}</td>
-                              <td style={{ padding: '8px 12px' }}>{formatSch('160')}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+                    {!selectedStandard.is_builtin && canManage && (
+                      <>
+                        <button
+                          onClick={handleStartEdit}
+                          className="btn-secondary"
+                          style={{ height: '32px', padding: '0 12px', fontSize: '11px', fontWeight: '700', gap: '6px' }}
+                        >
+                          <EditIcon size={12} />
+                          Edit Table
+                        </button>
+                        <button
+                          onClick={() => handleDeleteStandard(selectedStandard)}
+                          className="btn-danger-ghost"
+                          style={{ height: '32px', padding: '0 12px', fontSize: '11px', fontWeight: '700', gap: '6px' }}
+                        >
+                          <TrashIcon size={12} />
+                          Delete
+                        </button>
+                      </>
+                    )}
+                  </>
                 )}
               </div>
             </div>
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#64748b' }}>
-              Select a standard from the left sidebar to view specifications.
-            </div>
-          )}
-        </div>
-      </div>
 
-      {/* Clone Standard Modal */}
+            {/* Card 2: Dimensional Table Card */}
+            <div style={{
+              borderRadius: '12px',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid var(--color-border)',
+              padding: '20px 24px',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3 style={{
+                  margin: 0,
+                  fontSize: '15px',
+                  fontWeight: '800',
+                  color: 'var(--color-brand-dark)',
+                  fontFamily: 'inherit'
+                }}>
+                  {selectedStandard.fitting_type === 'reducer' 
+                    ? 'Standard Reducer Size Combinations (ASME B16.9 / Custom)'
+                    : 'Nominal Pipe Dimensions & Schedule Matrix (ASME B36.10M / B36.19M)'}
+                </h3>
+                {isEditing && selectedStandard.fitting_type === 'reducer' && (
+                  <button
+                    onClick={handleAddReducerRow}
+                    className="btn-secondary"
+                    style={{ height: '28px', padding: '0 10px', fontSize: '11px', fontWeight: '700', gap: '4px' }}
+                  >
+                    <PlusIcon size={12} />
+                    Add Size Row
+                  </button>
+                )}
+              </div>
+
+              {selectedStandard.fitting_type === 'reducer' ? (
+                /* Reducer Dimensions Table */
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                  <thead>
+                    <tr style={{
+                      borderBottom: '2px solid var(--color-border)',
+                      textAlign: 'left',
+                      color: 'var(--color-text-secondary)',
+                      fontSize: '11px',
+                      fontWeight: '700'
+                    }}>
+                      <th style={{ padding: '8px 12px' }}>Large End (DN)</th>
+                      <th style={{ padding: '8px 12px' }}>Large NPS</th>
+                      <th style={{ padding: '8px 12px' }}>Large OD ({isImperial ? 'in' : 'mm'})</th>
+                      <th style={{ padding: '8px 12px' }}>Small End (DN)</th>
+                      <th style={{ padding: '8px 12px' }}>Small NPS</th>
+                      <th style={{ padding: '8px 12px' }}>Small OD ({isImperial ? 'in' : 'mm'})</th>
+                      <th style={{ padding: '8px 12px' }}>Length H ({isImperial ? 'in' : 'mm'})</th>
+                      <th style={{ padding: '8px 12px' }}>Cone Angle (θ)</th>
+                      {isEditing && <th style={{ padding: '8px 12px', textAlign: 'center' }}>Action</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(isEditing ? editFormData.dimensions : selectedStandard.dimensions || []).map((row, idx) => {
+                      const odLarge = isImperial ? (row.od_large_mm / 25.4).toFixed(3) : row.od_large_mm;
+                      const odSmall = isImperial ? (row.od_small_mm / 25.4).toFixed(3) : row.od_small_mm;
+                      const length = isImperial ? (row.length_mm / 25.4).toFixed(2) : row.length_mm;
+
+                      return (
+                        <tr key={idx} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                          <td style={{ padding: '8px 12px', fontWeight: '700', color: 'var(--color-text-primary)' }}>
+                            {isEditing ? (
+                              <input
+                                type="number"
+                                className="form-input"
+                                style={{ width: '60px', height: '26px' }}
+                                value={row.dn_large}
+                                onChange={(e) => {
+                                  const val = Number(e.target.value);
+                                  setEditFormData(prev => {
+                                    const dims = [...prev.dimensions];
+                                    dims[idx] = { ...dims[idx], dn_large: val };
+                                    return { ...prev, dimensions: dims };
+                                  });
+                                }}
+                              />
+                            ) : (
+                              `DN${row.dn_large}`
+                            )}
+                          </td>
+                          <td style={{ padding: '8px 12px', color: 'var(--color-text-secondary)' }}>
+                            {row.nps_large ? `${row.nps_large}"` : '-'}
+                          </td>
+                          <td style={{ padding: '8px 12px', color: 'var(--color-text-primary)' }}>{odLarge}</td>
+                          <td style={{ padding: '8px 12px', fontWeight: '700', color: 'var(--color-text-primary)' }}>
+                            {isEditing ? (
+                              <input
+                                type="number"
+                                className="form-input"
+                                style={{ width: '60px', height: '26px' }}
+                                value={row.dn_small}
+                                onChange={(e) => {
+                                  const val = Number(e.target.value);
+                                  setEditFormData(prev => {
+                                    const dims = [...prev.dimensions];
+                                    dims[idx] = { ...dims[idx], dn_small: val };
+                                    return { ...prev, dimensions: dims };
+                                  });
+                                }}
+                              />
+                            ) : (
+                              `DN${row.dn_small}`
+                            )}
+                          </td>
+                          <td style={{ padding: '8px 12px', color: 'var(--color-text-secondary)' }}>
+                            {row.nps_small ? `${row.nps_small}"` : '-'}
+                          </td>
+                          <td style={{ padding: '8px 12px', color: 'var(--color-text-primary)' }}>{odSmall}</td>
+                          <td style={{ padding: '8px 12px', fontWeight: '700', color: 'var(--color-brand-dark)' }}>
+                            {isEditing ? (
+                              <input
+                                type="number"
+                                className="form-input"
+                                style={{ width: '70px', height: '26px' }}
+                                value={row.length_mm}
+                                onChange={(e) => {
+                                  const val = Number(e.target.value);
+                                  setEditFormData(prev => {
+                                    const dims = [...prev.dimensions];
+                                    dims[idx] = { ...dims[idx], length_mm: val };
+                                    return { ...prev, dimensions: dims };
+                                  });
+                                }}
+                              />
+                            ) : (
+                              length
+                            )}
+                          </td>
+                          <td style={{ padding: '8px 12px', color: 'var(--color-text-secondary)' }}>
+                            {row.cone_angle_deg ? `${row.cone_angle_deg.toFixed(1)}°` : '-'}
+                          </td>
+                          {isEditing && (
+                            <td style={{ padding: '8px 12px', textAlign: 'center' }}>
+                              <button
+                                onClick={() => handleRemoveDimensionRow(idx)}
+                                className="btn-danger-ghost"
+                                style={{ height: '24px', padding: '0 6px' }}
+                                title="Remove size row"
+                              >
+                                <TrashIcon size={12} />
+                              </button>
+                            </td>
+                          )}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              ) : (
+                /* Pipe Schedule Matrix */
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                  <thead>
+                    <tr style={{
+                      borderBottom: '2px solid var(--color-border)',
+                      textAlign: 'left',
+                      color: 'var(--color-text-secondary)',
+                      fontSize: '11px',
+                      fontWeight: '700'
+                    }}>
+                      <th style={{ padding: '8px 12px' }}>Nominal Size</th>
+                      <th style={{ padding: '8px 12px' }}>NPS</th>
+                      <th style={{ padding: '8px 12px' }}>OD ({isImperial ? 'in' : 'mm'})</th>
+                      <th style={{ padding: '8px 12px' }}>STD (WT / ID)</th>
+                      <th style={{ padding: '8px 12px' }}>Sch 40 (WT / ID)</th>
+                      <th style={{ padding: '8px 12px' }}>Sch 80 (WT / ID)</th>
+                      <th style={{ padding: '8px 12px' }}>XS (WT / ID)</th>
+                      <th style={{ padding: '8px 12px' }}>Sch 160 (WT / ID)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(selectedStandard.dimensions || []).map((row, idx) => {
+                      const od = isImperial ? (row.od_mm / 25.4).toFixed(3) : row.od_mm;
+                      const schs = row.schedules || {};
+
+                      const formatSch = (schKey) => {
+                        const entry = schs[schKey];
+                        if (!entry) return <span style={{ color: 'var(--color-border)' }}>—</span>;
+                        const wt = isImperial ? (entry.wt_mm / 25.4).toFixed(3) : entry.wt_mm.toFixed(2);
+                        const id = isImperial ? (entry.id_mm / 25.4).toFixed(3) : entry.id_mm.toFixed(2);
+                        return <span>{wt} / <strong>{id}</strong></span>;
+                      };
+
+                      return (
+                        <tr key={idx} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                          <td style={{ padding: '8px 12px', fontWeight: '700', color: 'var(--color-text-primary)' }}>DN{row.dn}</td>
+                          <td style={{ padding: '8px 12px', color: 'var(--color-text-secondary)' }}>{row.nps}"</td>
+                          <td style={{ padding: '8px 12px', color: 'var(--color-text-primary)' }}>{od}</td>
+                          <td style={{ padding: '8px 12px' }}>{formatSch('STD')}</td>
+                          <td style={{ padding: '8px 12px' }}>{formatSch('40')}</td>
+                          <td style={{ padding: '8px 12px' }}>{formatSch('80')}</td>
+                          <td style={{ padding: '8px 12px' }}>{formatSch('XS')}</td>
+                          <td style={{ padding: '8px 12px' }}>{formatSch('160')}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </>
+        ) : (
+          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-text-secondary)' }}>
+            Select a fitting standard from the left sidebar to view details.
+          </div>
+        )}
+      </main>
+
+      {/* CLONE STANDARD MODAL */}
       {isCloneModalOpen && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
-        }}>
-          <div style={{ background: '#FFFFFF', padding: '24px', borderRadius: '12px', width: '440px', boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}>
-            <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', color: 'var(--color-brand-dark)' }}>
-              Clone Standard to Editable Copy
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
+        <div className="modal-overlay">
+          <div className="modal-container" style={{ maxWidth: '440px' }}>
+            <div className="modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '8px',
+                  backgroundColor: 'rgba(250, 133, 7, 0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--color-primary)'
+                }}>
+                  <CopyIcon size={16} />
+                </div>
+                <div>
+                  <h3 className="modal-title">Clone Fitting Standard</h3>
+                  <p style={{ margin: 0, fontSize: '11px', color: 'var(--color-text-secondary)' }}>
+                    Create an editable custom copy of {selectedStandard?.code}
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setIsCloneModalOpen(false)} className="modal-close-btn">
+                <CrossIcon size={16} />
+              </button>
+            </div>
+
+            <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
-                <label style={{ fontSize: '11px', fontWeight: '700', color: '#475569' }}>New Unique Code</label>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--color-brand-dark)', marginBottom: '4px' }}>
+                  New Standard Code
+                </label>
                 <input
                   type="text"
                   className="form-input"
@@ -774,7 +895,9 @@ export default function FittingStandardsTab({ canManage }) {
                 />
               </div>
               <div>
-                <label style={{ fontSize: '11px', fontWeight: '700', color: '#475569' }}>New Name</label>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--color-brand-dark)', marginBottom: '4px' }}>
+                  New Standard Name
+                </label>
                 <input
                   type="text"
                   className="form-input"
@@ -784,11 +907,12 @@ export default function FittingStandardsTab({ canManage }) {
                 />
               </div>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-              <button onClick={() => setIsCloneModalOpen(false)} className="btn-secondary" style={{ height: '32px', padding: '0 12px' }}>
+
+            <div className="modal-footer">
+              <button onClick={() => setIsCloneModalOpen(false)} className="btn-secondary">
                 Cancel
               </button>
-              <button onClick={handleConfirmClone} className="btn-primary" style={{ height: '32px', padding: '0 16px', borderRadius: '8px' }}>
+              <button onClick={handleConfirmClone} className="btn-primary">
                 Create Clone
               </button>
             </div>
@@ -796,19 +920,41 @@ export default function FittingStandardsTab({ canManage }) {
         </div>
       )}
 
-      {/* Create New Standard Modal */}
+      {/* CREATE NEW STANDARD MODAL */}
       {isNewModalOpen && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
-        }}>
-          <div style={{ background: '#FFFFFF', padding: '24px', borderRadius: '12px', width: '480px', boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}>
-            <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', color: 'var(--color-brand-dark)' }}>
-              Create Custom Fitting Standard
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
+        <div className="modal-overlay">
+          <div className="modal-container" style={{ maxWidth: '480px' }}>
+            <div className="modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '8px',
+                  backgroundColor: 'rgba(250, 133, 7, 0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--color-primary)'
+                }}>
+                  <PlusIcon size={16} />
+                </div>
+                <div>
+                  <h3 className="modal-title">Create Custom Fitting Standard</h3>
+                  <p style={{ margin: 0, fontSize: '11px', color: 'var(--color-text-secondary)' }}>
+                    Add a new standard catalog or schedule matrix
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setIsNewModalOpen(false)} className="modal-close-btn">
+                <CrossIcon size={16} />
+              </button>
+            </div>
+
+            <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
-                <label style={{ fontSize: '11px', fontWeight: '700', color: '#475569' }}>Standard Code (e.g. ISO_PIPE_REDUCERS)</label>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--color-brand-dark)', marginBottom: '4px' }}>
+                  Standard Code (e.g. ISO_5251_REDUCERS)
+                </label>
                 <input
                   type="text"
                   className="form-input"
@@ -818,7 +964,9 @@ export default function FittingStandardsTab({ canManage }) {
                 />
               </div>
               <div>
-                <label style={{ fontSize: '11px', fontWeight: '700', color: '#475569' }}>Name</label>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--color-brand-dark)', marginBottom: '4px' }}>
+                  Standard Name
+                </label>
                 <input
                   type="text"
                   className="form-input"
@@ -827,12 +975,14 @@ export default function FittingStandardsTab({ canManage }) {
                   onChange={(e) => setNewStandardData(prev => ({ ...prev, name: e.target.value }))}
                 />
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <div>
-                  <label style={{ fontSize: '11px', fontWeight: '700', color: '#475569' }}>Fitting Type</label>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--color-brand-dark)', marginBottom: '4px' }}>
+                    Fitting Type
+                  </label>
                   <select
                     className="form-select"
-                    style={{ width: '100%' }}
+                    style={{ width: '100%', height: '34px' }}
                     value={newStandardData.fitting_type}
                     onChange={(e) => setNewStandardData(prev => ({ ...prev, fitting_type: e.target.value }))}
                   >
@@ -841,7 +991,9 @@ export default function FittingStandardsTab({ canManage }) {
                   </select>
                 </div>
                 <div>
-                  <label style={{ fontSize: '11px', fontWeight: '700', color: '#475569' }}>Standard Group</label>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--color-brand-dark)', marginBottom: '4px' }}>
+                    Standard Group
+                  </label>
                   <input
                     type="text"
                     className="form-input"
@@ -852,7 +1004,9 @@ export default function FittingStandardsTab({ canManage }) {
                 </div>
               </div>
               <div>
-                <label style={{ fontSize: '11px', fontWeight: '700', color: '#475569' }}>Description</label>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--color-brand-dark)', marginBottom: '4px' }}>
+                  Description
+                </label>
                 <input
                   type="text"
                   className="form-input"
@@ -862,11 +1016,12 @@ export default function FittingStandardsTab({ canManage }) {
                 />
               </div>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-              <button onClick={() => setIsNewModalOpen(false)} className="btn-secondary" style={{ height: '32px', padding: '0 12px' }}>
+
+            <div className="modal-footer">
+              <button onClick={() => setIsNewModalOpen(false)} className="btn-secondary">
                 Cancel
               </button>
-              <button onClick={handleCreateNewStandard} className="btn-primary" style={{ height: '32px', padding: '0 16px', borderRadius: '8px' }}>
+              <button onClick={handleCreateNewStandard} className="btn-primary">
                 Create Standard
               </button>
             </div>
@@ -875,4 +1030,6 @@ export default function FittingStandardsTab({ canManage }) {
       )}
     </div>
   );
-}
+});
+
+export default FittingStandardsTab;

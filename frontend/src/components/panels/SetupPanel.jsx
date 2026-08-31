@@ -57,27 +57,37 @@ function PropertyBadge({ propKey, nodeId, cases = [], activeCaseId = 'case_base'
 
 /**
  * PipeSelector component supporting Pipe Specifications catalog.
+/**
+ * PipeSelector component supporting Pipe Specifications catalog and ASME B36.10M Schedule presets.
  */
 const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPipes = true }) => {
   const { isImperial } = useUnits();
   const classList = availablePipeClasses || [];
 
   const rawClassId = data.pipe_class_id || (classList.length > 0 ? classList[0].id : (allowCustomPipes ? 'manual' : ''));
-  // If custom dimensions are forbidden but pipe was manual, fallback to first available class
   const currentClassId = (!allowCustomPipes && rawClassId === 'manual' && classList.length > 0)
     ? classList[0].id
     : rawClassId;
   const isManual = currentClassId === 'manual';
   const selectedClass = classList.find(c => c.id === currentClassId);
 
+  const [manualMode, setManualMode] = useState('preset'); // 'preset' | 'free'
+
   const value = data.diameter || 0.05248; // default ~2" STD
-  const currentDn = data.standardDn || (selectedClass?.sizes?.[0]?.dn || 50);
+  const currentDn = Number(data.standardDn || (selectedClass?.sizes?.[0]?.dn || 50));
+  const currentSch = data.standardSch || 'STD';
 
   const handleClassChange = (newClassId) => {
     if (newClassId === 'manual') {
+      const schDetails = getPipeScheduleDetails(currentDn || 50, currentSch || 'STD') || getPipeScheduleDetails(50, 'STD');
       onChange({
         pipe_class_id: 'manual',
-        pipe_class_code: 'CUSTOM'
+        pipe_class_code: 'CUSTOM',
+        standardDn: schDetails.dn,
+        standardSch: schDetails.sch,
+        outer_diameter_mm: schDetails.od_mm,
+        wall_thickness_mm: schDetails.wt_mm,
+        diameter: schDetails.id_mm / 1000.0
       });
       return;
     }
@@ -100,7 +110,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
     }
   };
 
-  const handleSizeChange = (newDnStr) => {
+  const handleSpecSizeChange = (newDnStr) => {
     const dnInt = parseInt(newDnStr, 10);
     if (!selectedClass) return;
     const targetSize = selectedClass.sizes.find(s => s.dn === dnInt);
@@ -116,14 +126,35 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
     }
   };
 
+  const handleManualPresetChange = (newDn, newSch) => {
+    const targetDn = Number(newDn !== undefined ? newDn : currentDn);
+    const targetSch = newSch !== undefined ? newSch : currentSch;
+    const schDetails = getPipeScheduleDetails(targetDn, targetSch);
+    if (schDetails) {
+      onChange({
+        standardDn: schDetails.dn,
+        standardSch: schDetails.sch,
+        outer_diameter_mm: schDetails.od_mm,
+        wall_thickness_mm: schDetails.wt_mm,
+        diameter: schDetails.id_mm / 1000.0
+      });
+    }
+  };
+
+  // Dimensions & Area calculation
+  const currentOdMm = data.outer_diameter_mm || (value * 1000 * 1.15);
+  const currentWtMm = data.wall_thickness_mm || ((currentOdMm - value * 1000) / 2);
+  const flowAreaCm2 = (Math.PI / 4) * Math.pow(value * 100, 2);
+  const flowAreaIn2 = flowAreaCm2 * 0.15500031;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
       {/* Pipe Class Selection */}
       <div>
-        <label style={{ fontSize: '10px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase' }}>Piping Spec</label>
+        <label style={{ fontSize: '10px', color: 'var(--color-text-secondary)', fontWeight: '700', textTransform: 'uppercase' }}>Piping Spec</label>
         <select
           className="form-select"
-          style={{ width: '100%', height: '30px', fontSize: '11px' }}
+          style={{ width: '100%', height: '32px', fontSize: '11px' }}
           value={currentClassId}
           onChange={(e) => handleClassChange(e.target.value)}
         >
@@ -138,71 +169,210 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
         </select>
       </div>
 
+      {/* Selected Project Pipe Class Mode */}
       {!isManual && selectedClass && (
         <>
-          <div style={{ display: 'flex', gap: '6px' }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ fontSize: '10px', color: '#64748b', fontWeight: '700' }}>Nominal Size</label>
-              <select
-                className="form-select"
-                style={{ width: '100%', height: '30px', fontSize: '11px' }}
-                value={currentDn}
-                onChange={(e) => handleSizeChange(e.target.value)}
-              >
-                {selectedClass.sizes.map(s => (
-                  <option key={s.dn} value={s.dn}>
-                    DN {s.dn} ({s.nps}") - {s.sch || 'STD'}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <div>
+            <label style={{ fontSize: '10px', color: 'var(--color-text-secondary)', fontWeight: '700' }}>Nominal Size</label>
+            <select
+              className="form-select"
+              style={{ width: '100%', height: '32px', fontSize: '11px' }}
+              value={currentDn}
+              onChange={(e) => handleSpecSizeChange(e.target.value)}
+            >
+              {selectedClass.sizes.map(s => (
+                <option key={s.dn} value={s.dn}>
+                  DN {s.dn} ({s.nps}") - {s.sch || 'STD'}
+                </option>
+              ))}
+            </select>
           </div>
 
+          {/* Enhanced Spec Dimensional Summary Card */}
           <div style={{
             fontSize: '11px',
             backgroundColor: 'var(--color-surface-light)',
-            padding: '8px',
-            borderRadius: '6px',
+            padding: '10px 12px',
+            borderRadius: '8px',
             border: '1px solid var(--color-border)',
             display: 'flex',
             flexDirection: 'column',
-            gap: '2px'
+            gap: '4px'
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: 'var(--color-text-secondary)' }}>Internal Diam (ID):</span>
-              <strong style={{ color: 'var(--color-text-primary)' }}>
-                {isImperial ? `${(value * 39.37007874).toFixed(3)} in` : `${(value * 1000).toFixed(2)} mm`}
-              </strong>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border)', paddingBottom: '4px' }}>
+              <span style={{ fontWeight: '700', color: 'var(--color-brand-dark)' }}>
+                DN{currentDn} ({selectedClass.sizes.find(s => s.dn === currentDn)?.nps || ''}") • {data.standardSch || 'STD'}
+              </span>
+              <span style={{ fontSize: '10px', color: 'var(--color-text-secondary)' }}>
+                {selectedClass.code}
+              </span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--color-text-secondary)' }}>
-              <span>Material / Roughness:</span>
-              <span style={{ color: 'var(--color-text-primary)' }}>{selectedClass.material_grade} (ε={selectedClass.roughness_mm}mm)</span>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', fontSize: '10px', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+              <div>OD: <strong style={{ color: 'var(--color-text-primary)' }}>{isImperial ? `${(currentOdMm / 25.4).toFixed(3)} in` : `${currentOdMm.toFixed(1)} mm`}</strong></div>
+              <div>WT: <strong style={{ color: 'var(--color-text-primary)' }}>{isImperial ? `${(currentWtMm / 25.4).toFixed(3)} in` : `${currentWtMm.toFixed(2)} mm`}</strong></div>
+              <div>ID: <strong style={{ color: 'var(--color-primary)' }}>{isImperial ? `${(value * 39.3701).toFixed(3)} in` : `${(value * 1000).toFixed(2)} mm`}</strong></div>
+              <div>Area: <strong style={{ color: 'var(--color-text-primary)' }}>{isImperial ? `${flowAreaIn2.toFixed(2)} in²` : `${flowAreaCm2.toFixed(2)} cm²`}</strong></div>
+            </div>
+            <div style={{ fontSize: '10px', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+              Mat: <span style={{ color: 'var(--color-text-primary)' }}>{selectedClass.material_grade} (ε={selectedClass.roughness_mm}mm)</span>
+            </div>
+            <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)', marginTop: '4px', paddingTop: '4px', borderTop: '1px dashed var(--color-border)', display: 'flex', justifyContent: 'space-between' }}>
+              <span>Reducers: <strong style={{ color: 'var(--color-brand-dark)' }}>{selectedClass.reducer_standard_code || 'ASME_B16_9'}</strong></span>
+              <span>Sch: <strong style={{ color: 'var(--color-brand-dark)' }}>{selectedClass.schedule_standard_code || 'ASME_B36_10M'}</strong></span>
             </div>
           </div>
         </>
       )}
 
+
+      {/* Manual / Custom Sizing Mode */}
       {isManual && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          <div>
-            <label style={{ fontSize: '10px', color: '#64748b', fontWeight: '600' }}>Inner Diameter ({isImperial ? 'in' : 'mm'})</label>
-            <input
-              type="number"
-              step="0.1"
-              className="form-input"
-              style={{ width: '100%' }}
-              value={isImperial ? (value * 39.37007874).toFixed(3) : (value * 1000).toFixed(2)}
-              onChange={(e) => {
-                const raw = parseFloat(e.target.value);
-                if (!isNaN(raw) && raw > 0) {
-                  const idM = isImperial ? raw / 39.37007874 : raw / 1000.0;
-                  onChange({ diameter: idM });
-                }
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {/* Sizing Mode Toggle */}
+          <div style={{ display: 'flex', gap: '4px', backgroundColor: 'var(--color-surface-light)', padding: '2px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+            <button
+              type="button"
+              onClick={() => setManualMode('preset')}
+              style={{
+                flex: 1,
+                padding: '4px 6px',
+                fontSize: '10px',
+                fontWeight: '700',
+                borderRadius: '4px',
+                border: 'none',
+                backgroundColor: manualMode === 'preset' ? 'var(--color-brand-dark)' : 'transparent',
+                color: manualMode === 'preset' ? '#FFFFFF' : 'var(--color-text-secondary)',
+                cursor: 'pointer'
               }}
-            />
+            >
+              Schedule Presets
+            </button>
+            <button
+              type="button"
+              onClick={() => setManualMode('free')}
+              style={{
+                flex: 1,
+                padding: '4px 6px',
+                fontSize: '10px',
+                fontWeight: '700',
+                borderRadius: '4px',
+                border: 'none',
+                backgroundColor: manualMode === 'free' ? 'var(--color-brand-dark)' : 'transparent',
+                color: manualMode === 'free' ? '#FFFFFF' : 'var(--color-text-secondary)',
+                cursor: 'pointer'
+              }}
+            >
+              Free Dimensions
+            </button>
           </div>
+
+          {manualMode === 'preset' ? (
+            <>
+              {/* Preset Selectors */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '6px' }}>
+                <div>
+                  <label style={{ fontSize: '10px', color: 'var(--color-text-secondary)', fontWeight: '700' }}>Nominal Size (NPS)</label>
+                  <select
+                    className="form-select"
+                    style={{ width: '100%', height: '30px', fontSize: '11px' }}
+                    value={currentDn}
+                    onChange={(e) => handleManualPresetChange(e.target.value, currentSch)}
+                  >
+                    {ASME_B36_10M_SCHEDULES.map(s => (
+                      <option key={s.dn} value={s.dn}>
+                        DN {s.dn} ({s.nps}")
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: '10px', color: 'var(--color-text-secondary)', fontWeight: '700' }}>Schedule</label>
+                  <select
+                    className="form-select"
+                    style={{ width: '100%', height: '30px', fontSize: '11px' }}
+                    value={currentSch}
+                    onChange={(e) => handleManualPresetChange(currentDn, e.target.value)}
+                  >
+                    {Object.keys(ASME_B36_10M_SCHEDULES.find(s => s.dn === currentDn)?.schedules || { 'STD': true, '40': true, '80': true }).map(schKey => (
+                      <option key={schKey} value={schKey}>
+                        {schKey}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Quick-Pick Schedule Buttons */}
+              <div style={{ display: 'flex', gap: '4px' }}>
+                {['STD', '40', '80', 'XS', '160'].map(schKey => {
+                  const isAvailable = !!(ASME_B36_10M_SCHEDULES.find(s => s.dn === currentDn)?.schedules?.[schKey]);
+                  const isCurrent = currentSch === schKey;
+                  if (!isAvailable) return null;
+                  return (
+                    <button
+                      key={schKey}
+                      type="button"
+                      onClick={() => handleManualPresetChange(currentDn, schKey)}
+                      style={{
+                        flex: 1,
+                        padding: '2px 4px',
+                        fontSize: '9px',
+                        fontWeight: '700',
+                        borderRadius: '4px',
+                        border: isCurrent ? '1px solid var(--color-primary)' : '1px solid var(--color-border)',
+                        backgroundColor: isCurrent ? 'rgba(250, 133, 7, 0.12)' : 'var(--color-surface-light)',
+                        color: isCurrent ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {schKey}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Dimensional Preview Card */}
+              <div style={{
+                fontSize: '10px',
+                backgroundColor: 'var(--color-surface-light)',
+                padding: '8px 10px',
+                borderRadius: '8px',
+                border: '1px solid var(--color-border)',
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '4px',
+                color: 'var(--color-text-secondary)'
+              }}>
+                <div>OD: <strong style={{ color: 'var(--color-text-primary)' }}>{isImperial ? `${(currentOdMm / 25.4).toFixed(3)} in` : `${currentOdMm.toFixed(1)} mm`}</strong></div>
+                <div>WT: <strong style={{ color: 'var(--color-text-primary)' }}>{isImperial ? `${(currentWtMm / 25.4).toFixed(3)} in` : `${currentWtMm.toFixed(2)} mm`}</strong></div>
+                <div>ID: <strong style={{ color: 'var(--color-primary)' }}>{isImperial ? `${(value * 39.3701).toFixed(3)} in` : `${(value * 1000).toFixed(2)} mm`}</strong></div>
+                <div>Area: <strong style={{ color: 'var(--color-text-primary)' }}>{isImperial ? `${flowAreaIn2.toFixed(2)} in²` : `${flowAreaCm2.toFixed(2)} cm²`}</strong></div>
+              </div>
+            </>
+          ) : (
+            /* Free Manual Numeric Inputs */
+            <div>
+              <label style={{ fontSize: '10px', color: 'var(--color-text-secondary)', fontWeight: '600' }}>Inner Diameter ({isImperial ? 'in' : 'mm'})</label>
+              <input
+                type="number"
+                step="0.1"
+                className="form-input"
+                style={{ width: '100%' }}
+                value={isImperial ? (value * 39.37007874).toFixed(3) : (value * 1000).toFixed(2)}
+                onChange={(e) => {
+                  const raw = parseFloat(e.target.value);
+                  if (!isNaN(raw) && raw > 0) {
+                    const idM = isImperial ? raw / 39.37007874 : raw / 1000.0;
+                    onChange({ diameter: idM });
+                  }
+                }}
+              />
+            </div>
+          )}
+
+          {/* Roughness & Design Ratings */}
           <div>
-            <label style={{ fontSize: '10px', color: '#64748b', fontWeight: '600' }}>Surface Roughness ε (mm)</label>
+            <label style={{ fontSize: '10px', color: 'var(--color-text-secondary)', fontWeight: '600' }}>Surface Roughness ε (mm)</label>
             <input
               type="number"
               step="0.001"
@@ -222,7 +392,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
             <div>
-              <label style={{ fontSize: '10px', color: '#64748b', fontWeight: '600' }}>Design Temp ({isImperial ? '°F' : '°C'})</label>
+              <label style={{ fontSize: '10px', color: 'var(--color-text-secondary)', fontWeight: '600' }}>Design Temp ({isImperial ? '°F' : '°C'})</label>
               <input
                 type="number"
                 step="0.5"
@@ -246,7 +416,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
               />
             </div>
             <div>
-              <label style={{ fontSize: '10px', color: '#64748b', fontWeight: '600' }}>Design Press ({isImperial ? 'psi' : 'bar(g)'})</label>
+              <label style={{ fontSize: '10px', color: 'var(--color-text-secondary)', fontWeight: '600' }}>Design Press ({isImperial ? 'psi' : 'bar(g)'})</label>
               <input
                 type="number"
                 step="0.1"
@@ -290,12 +460,14 @@ export default function SetupPanel({
   onResetCaseOverride,
   availablePipeClasses = [],
   allowCustomPipes = true,
+  allEdges = [],
   style = {},
+
   inline = false
 }) {
 
-
   const { isImperial, fromInputValue } = useUnits();
+
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [localDrafts, setLocalDrafts] = useState({});
 
@@ -1425,6 +1597,16 @@ export default function SetupPanel({
             const schSmall = effectiveData.sch_small || 'STD';
             const isExpanding = effectiveData.orientation === 'expanding'; // Small -> Large
 
+            // Find connected inlet and outlet pipe edges
+            const connectedInletEdge = allEdges.find(e => e.target === id && (e.targetHandle === 'inlet-0' || !e.targetHandle));
+            const connectedOutletEdge = allEdges.find(e => e.source === id && (e.sourceHandle === 'outlet-0' || !e.sourceHandle));
+
+            const pipeInletDn = connectedInletEdge?.data?.standardDn || (connectedInletEdge?.data?.diameter ? Math.round(connectedInletEdge.data.diameter * 1000) : null);
+            const pipeOutletDn = connectedOutletEdge?.data?.standardDn || (connectedOutletEdge?.data?.diameter ? Math.round(connectedOutletEdge.data.diameter * 1000) : null);
+
+            const pipeInletDiameterM = connectedInletEdge?.data?.diameter;
+            const pipeOutletDiameterM = connectedOutletEdge?.data?.diameter;
+
             // Available distinct large end sizes
             const availableLargeDNs = Array.from(new Set(ASME_B16_9_REDUCERS.map(r => r.dn_large))).sort((a, b) => a - b);
             
@@ -1444,6 +1626,47 @@ export default function SetupPanel({
 
             const dInMeters = isExpanding ? (idSmallMm / 1000.0) : (idLargeMm / 1000.0);
             const dOutMeters = isExpanding ? (idLargeMm / 1000.0) : (idSmallMm / 1000.0);
+
+            const hasInletMismatch = pipeInletDiameterM && Math.abs(pipeInletDiameterM - dInMeters) > 0.0015;
+            const hasOutletMismatch = pipeOutletDiameterM && Math.abs(pipeOutletDiameterM - dOutMeters) > 0.0015;
+
+            const handleAutoInheritFromLines = () => {
+              if (!connectedInletEdge && !connectedOutletEdge) {
+                alert("No connected pipe lines detected on inlet or outlet ports.");
+                return;
+              }
+              const rawDnIn = connectedInletEdge?.data?.standardDn || 80;
+              const rawDnOut = connectedOutletEdge?.data?.standardDn || 50;
+              const schIn = connectedInletEdge?.data?.standardSch || 'STD';
+              const schOut = connectedOutletEdge?.data?.standardSch || 'STD';
+
+              const isExp = rawDnIn < rawDnOut;
+              const dl = isExp ? rawDnOut : rawDnIn;
+              const ds = isExp ? rawDnIn : rawDnOut;
+              const lSchName = isExp ? schOut : schIn;
+              const sSchName = isExp ? schIn : schOut;
+
+              const combo = getReducerEntry(dl, ds) || getReducerCombinations(dl)[0] || { length_mm: 89.0, cone_angle_deg: 18.2 };
+              const lSch = getPipeScheduleDetails(dl, lSchName);
+              const sSch = getPipeScheduleDetails(ds, sSchName);
+              const idLMm = lSch ? lSch.id_mm : (dl * 0.95);
+              const idSMm = sSch ? sSch.id_mm : (ds * 0.95);
+
+              onUpdate(id, {
+                dn_large: dl,
+                nps_large: lSch ? lSch.nps : '',
+                dn_small: ds,
+                nps_small: sSch ? sSch.nps : '',
+                sch_large: lSchName,
+                sch_small: sSchName,
+                orientation: isExp ? 'expanding' : 'reducing',
+                length: combo.length_mm / 1000.0,
+                length_mm: combo.length_mm,
+                cone_angle_deg: combo.cone_angle_deg,
+                diameter_in: isExp ? (idSMm / 1000.0) : (idLMm / 1000.0),
+                diameter_out: isExp ? (idLMm / 1000.0) : (idSMm / 1000.0),
+              });
+            };
 
             const handleLargeDnChange = (newDnLarge) => {
               const dl = Number(newDnLarge);
@@ -1499,10 +1722,82 @@ export default function SetupPanel({
 
             return (
               <>
+                {/* Auto-Detect from Lines Action Card */}
+                {(connectedInletEdge || connectedOutletEdge) && (
+                  <div style={{
+                    padding: '8px 10px',
+                    borderRadius: '8px',
+                    backgroundColor: 'rgba(57, 82, 83, 0.08)',
+                    border: '1px solid var(--color-border)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '6px'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--color-brand-dark)' }}>
+                        Connected Lines Spec
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleAutoInheritFromLines}
+                        className="btn-secondary"
+                        style={{ height: '22px', padding: '0 8px', fontSize: '9px', fontWeight: '700', gap: '4px' }}
+                        title="Auto-match reducer sizes from connected lines"
+                      >
+                        ⚡ Auto-Detect Sizes
+                      </button>
+                    </div>
+                    <div style={{ fontSize: '10px', color: 'var(--color-text-secondary)', display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Inlet: {connectedInletEdge ? `DN${pipeInletDn || '?'} (${connectedInletEdge.data.pipe_class_code || 'Spec'})` : 'Open'}</span>
+                      <span>Outlet: {connectedOutletEdge ? `DN${pipeOutletDn || '?'} (${connectedOutletEdge.data.pipe_class_code || 'Spec'})` : 'Open'}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Size Mismatch Warning Alert */}
+                {(hasInletMismatch || hasOutletMismatch) && (
+                  <div style={{
+                    padding: '8px 10px',
+                    borderRadius: '8px',
+                    backgroundColor: '#FEF3C7',
+                    border: '1px solid #FCD34D',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontSize: '12px' }}>⚠️</span>
+                      <strong style={{ fontSize: '11px', color: '#92400E' }}>Pipe Size Mismatch Detected</strong>
+                    </div>
+                    <div style={{ fontSize: '10px', color: '#B45309' }}>
+                      {hasInletMismatch && <div>• Inlet: Pipe is {(pipeInletDiameterM * 1000).toFixed(1)}mm vs Reducer {(dInMeters * 1000).toFixed(1)}mm</div>}
+                      {hasOutletMismatch && <div>• Outlet: Pipe is {(pipeOutletDiameterM * 1000).toFixed(1)}mm vs Reducer {(dOutMeters * 1000).toFixed(1)}mm</div>}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAutoInheritFromLines}
+                      style={{
+                        marginTop: '4px',
+                        padding: '3px 8px',
+                        borderRadius: '4px',
+                        border: '1px solid #D97706',
+                        backgroundColor: '#D97706',
+                        color: '#FFFFFF',
+                        fontSize: '10px',
+                        fontWeight: '700',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Fix to Connected Line Sizes
+                    </button>
+                  </div>
+                )}
+
                 <div>
                   {renderLabel('Dimensional Standard', 'standard')}
                   <select
-                    style={{ width: '100%', fontSize: '12px', padding: '4px' }}
+                    className="form-select"
+                    style={{ width: '100%', height: '32px', fontSize: '11px' }}
                     value={effectiveData.standard || 'ASME_B16_9'}
                     onChange={(e) => onUpdate(id, { standard: e.target.value })}
                   >
@@ -1514,7 +1809,8 @@ export default function SetupPanel({
                 <div>
                   {renderLabel('Reducer Type', 'reducer_type')}
                   <select
-                    style={{ width: '100%', fontSize: '12px', padding: '4px' }}
+                    className="form-select"
+                    style={{ width: '100%', height: '32px', fontSize: '11px' }}
                     value={reducerType}
                     onChange={(e) => onUpdate(id, { reducer_type: e.target.value })}
                   >
@@ -1522,6 +1818,7 @@ export default function SetupPanel({
                     <option value="eccentric">Eccentric (Flat-on-Top / Suction)</option>
                   </select>
                 </div>
+
 
                 {!isCustom ? (
                   <>

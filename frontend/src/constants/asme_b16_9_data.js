@@ -298,13 +298,41 @@ export const ASME_B16_9_REDUCERS = [
   { dn_large: 600, nps_large: "24", od_large_mm: 610.0, dn_small: 350, nps_small: "14", od_small_mm: 355.6, length_mm: 508.0, cone_angle_deg: 28.11 }
 ];
 
-export function getReducerCombinations(dnLarge) {
-  if (!dnLarge) return ASME_B16_9_REDUCERS;
-  return ASME_B16_9_REDUCERS.filter(r => r.dn_large === Number(dnLarge));
+export function getReducerCombinations(dnLarge, standard = 'ASME_B16_9') {
+  const dataset = standard === 'DIN_EN_10253_2' ? DIN_EN_10253_2_REDUCERS : ASME_B16_9_REDUCERS;
+  if (!dnLarge) return dataset;
+  return dataset.filter(r => r.dn_large === Number(dnLarge));
 }
 
-export function getReducerEntry(dnLarge, dnSmall) {
-  return ASME_B16_9_REDUCERS.find(
+export function getReducerEntry(dnLarge, dnSmall, standard = 'ASME_B16_9') {
+  const dataset = standard === 'DIN_EN_10253_2' ? DIN_EN_10253_2_REDUCERS : ASME_B16_9_REDUCERS;
+  return dataset.find(
     r => r.dn_large === Number(dnLarge) && r.dn_small === Number(dnSmall)
   ) || null;
 }
+
+export const DIN_EN_10253_2_REDUCERS = [
+  { dn_large: 25, nps_large: "DN25", od_large_mm: 33.7, dn_small: 20, nps_small: "DN20", od_small_mm: 26.9, length_mm: 50.0, cone_angle_deg: 7.78 },
+  { dn_large: 32, nps_large: "DN32", od_large_mm: 42.4, dn_small: 25, nps_small: "DN25", od_small_mm: 33.7, length_mm: 50.0, cone_angle_deg: 9.92 },
+  { dn_large: 32, nps_large: "DN32", od_large_mm: 42.4, dn_small: 20, nps_small: "DN20", od_small_mm: 26.9, length_mm: 50.0, cone_angle_deg: 17.59 },
+  { dn_large: 40, nps_large: "DN40", od_large_mm: 48.3, dn_small: 32, nps_small: "DN32", od_small_mm: 42.4, length_mm: 64.0, cone_angle_deg: 5.27 },
+  { dn_large: 40, nps_large: "DN40", od_large_mm: 48.3, dn_small: 25, nps_small: "DN25", od_small_mm: 33.7, length_mm: 64.0, cone_angle_deg: 12.98 },
+  { dn_large: 50, nps_large: "DN50", od_large_mm: 60.3, dn_small: 40, nps_small: "DN40", od_small_mm: 48.3, length_mm: 76.0, cone_angle_deg: 9.03 },
+  { dn_large: 50, nps_large: "DN50", od_large_mm: 60.3, dn_small: 32, nps_small: "DN32", od_small_mm: 42.4, length_mm: 76.0, cone_angle_deg: 13.44 },
+  { dn_large: 65, nps_large: "DN65", od_large_mm: 76.1, dn_small: 50, nps_small: "DN50", od_small_mm: 60.3, length_mm: 89.0, cone_angle_deg: 10.12 },
+  { dn_large: 80, nps_large: "DN80", od_large_mm: 88.9, dn_small: 65, nps_small: "DN65", od_small_mm: 76.1, length_mm: 89.0, cone_angle_deg: 8.21 },
+  { dn_large: 80, nps_large: "DN80", od_large_mm: 88.9, dn_small: 50, nps_small: "DN50", od_small_mm: 60.3, length_mm: 89.0, cone_angle_deg: 18.20 },
+  { dn_large: 100, nps_large: "DN100", od_large_mm: 114.3, dn_small: 80, nps_small: "DN80", od_small_mm: 88.9, length_mm: 102.0, cone_angle_deg: 14.19 },
+  { dn_large: 100, nps_large: "DN100", od_large_mm: 114.3, dn_small: 65, nps_small: "DN65", od_small_mm: 76.1, length_mm: 102.0, cone_angle_deg: 21.23 },
+  { dn_large: 125, nps_large: "DN125", od_large_mm: 139.7, dn_small: 100, nps_small: "DN100", od_small_mm: 114.3, length_mm: 127.0, cone_angle_deg: 11.42 },
+  { dn_large: 150, nps_large: "DN150", od_large_mm: 168.3, dn_small: 125, nps_small: "DN125", od_small_mm: 139.7, length_mm: 140.0, cone_angle_deg: 11.66 },
+  { dn_large: 150, nps_large: "DN150", od_large_mm: 168.3, dn_small: 100, nps_small: "DN100", od_small_mm: 114.3, length_mm: 140.0, cone_angle_deg: 21.80 },
+  { dn_large: 200, nps_large: "DN200", od_large_mm: 219.1, dn_small: 150, nps_small: "DN150", od_small_mm: 168.3, length_mm: 152.0, cone_angle_deg: 18.94 },
+  { dn_large: 250, nps_large: "DN250", od_large_mm: 273.0, dn_small: 200, nps_small: "DN200", od_small_mm: 219.1, length_mm: 178.0, cone_angle_deg: 17.20 },
+  { dn_large: 300, nps_large: "DN300", od_large_mm: 323.9, dn_small: 250, nps_small: "DN250", od_small_mm: 273.0, length_mm: 203.0, cone_angle_deg: 14.28 },
+  { dn_large: 350, nps_large: "DN350", od_large_mm: 355.6, dn_small: 300, nps_small: "DN300", od_small_mm: 323.9, length_mm: 330.0, cone_angle_deg: 5.50 },
+  { dn_large: 400, nps_large: "DN400", od_large_mm: 406.4, dn_small: 350, nps_small: "DN350", od_small_mm: 355.6, length_mm: 356.0, cone_angle_deg: 8.16 },
+  { dn_large: 500, nps_large: "DN500", od_large_mm: 508.0, dn_small: 400, nps_small: "DN400", od_small_mm: 406.4, length_mm: 508.0, cone_angle_deg: 11.42 },
+  { dn_large: 600, nps_large: "DN600", od_large_mm: 610.0, dn_small: 500, nps_small: "DN500", od_small_mm: 508.0, length_mm: 508.0, cone_angle_deg: 11.47 }
+];
+

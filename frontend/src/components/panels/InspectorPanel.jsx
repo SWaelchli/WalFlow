@@ -178,8 +178,11 @@ export default function InspectorPanel({
                 onResetCaseOverride={onResetCaseOverride}
                 availablePipeClasses={availablePipeClasses}
                 allowCustomPipes={allowCustomPipes}
+                allNodes={allNodes}
+                allEdges={allEdges}
                 inline={true}
               />
+
 
 
             ) : (

@@ -26,7 +26,10 @@ EXAMPLE_PIPE_CLASSES = [
         "revision": "1.0",
         "rev_date": "2026-08-14",
         "source_plant_id": None,
+        "reducer_standard_code": "ASME_B16_9_REDUCERS",
+        "schedule_standard_code": "ASME_B36_10M_SCHEDULES",
         "is_builtin": True,
+
         "sizes": [
             {"dn": 15,  "nps": "1/2",   "od_mm": 21.3,  "wt_mm": 2.77, "id_mm": 15.76, "sch": "STD", "ca_mm": 1.5},
             {"dn": 20,  "nps": "3/4",   "od_mm": 26.7,  "wt_mm": 2.87, "id_mm": 20.96, "sch": "STD", "ca_mm": 1.5},
@@ -70,6 +73,8 @@ EXAMPLE_PIPE_CLASSES = [
         "revision": "1.0",
         "rev_date": "2026-08-14",
         "source_plant_id": None,
+        "reducer_standard_code": "ASME_B16_9_REDUCERS",
+        "schedule_standard_code": "ASME_B36_10M_SCHEDULES",
         "is_builtin": True,
         "sizes": [
             {"dn": 15,  "nps": "1/2",   "od_mm": 21.3,  "wt_mm": 1.65, "id_mm": 18.00, "sch": "10S", "ca_mm": 0.0},
@@ -111,6 +116,8 @@ EXAMPLE_PIPE_CLASSES = [
         "revision": "1.0",
         "rev_date": "2026-08-14",
         "source_plant_id": None,
+        "reducer_standard_code": "ASME_B16_9_REDUCERS",
+        "schedule_standard_code": "ASME_B36_10M_SCHEDULES",
         "is_builtin": True,
         "sizes": [
             {"dn": 15,  "nps": "1/2",   "od_mm": 21.3,  "wt_mm": 3.73, "id_mm": 13.84, "sch": "80",  "ca_mm": 1.5},
@@ -152,7 +159,10 @@ EXAMPLE_PIPE_CLASSES = [
         "revision": "1.0",
         "rev_date": "2026-08-14",
         "source_plant_id": None,
+        "reducer_standard_code": "ASME_B16_9_REDUCERS",
+        "schedule_standard_code": "ASME_B36_10M_SCHEDULES",
         "is_builtin": True,
+
         "sizes": [
             {"dn": 15,  "nps": "1/2",   "od_mm": 21.3,  "wt_mm": 1.65, "id_mm": 18.00, "sch": "10S", "ca_mm": 0.0},
             {"dn": 20,  "nps": "3/4",   "od_mm": 26.7,  "wt_mm": 1.65, "id_mm": 23.40, "sch": "10S", "ca_mm": 0.0},

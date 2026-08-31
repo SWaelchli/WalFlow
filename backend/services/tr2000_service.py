@@ -5,9 +5,11 @@ Reference Documentation: https://tr2000api.equinor.com/Home/Help
 Terms & Conditions: https://www.equinor.com/about-us/terms-and-conditions
 """
 
+import asyncio
 import httpx
 import logging
 from typing import List, Dict, Any, Optional
+
 
 TR2000_PRIMARY_URL = "https://tr2000api.equinor.com"
 TR2000_FALLBACK_URL = "https://equinor.pipespec-api.presight.com"
@@ -311,6 +313,9 @@ async def fetch_and_normalize_tr2000_pcs(
         max_temp = 200.0
 
     description = pcs_header.get("Description") or f"{mat_group} {pcs_header.get('RatingClass', '')}".strip() or f"Equinor TR2000 {pcs_code}"
+    design_code = pcs_header.get("DesignCode") or "ASME B31.3"
+    reducer_standard = "DIN_EN_10253_2_REDUCERS" if ("13480" in design_code or "EN" in design_code) else "ASME_B16_9_REDUCERS"
+    schedule_standard = "ASME_B36_10M_SCHEDULES"
 
     return {
         "code": pcs_code.upper().strip(),
@@ -319,7 +324,10 @@ async def fetch_and_normalize_tr2000_pcs(
         "material_group": mat_group,
         "material_grade": mat_grade,
         "rating_class": pcs_header.get("RatingClass") or "CL150",
-        "design_code": pcs_header.get("DesignCode") or "ASME B31.3",
+        "design_code": design_code,
+        "reducer_standard_code": reducer_standard,
+        "schedule_standard_code": schedule_standard,
+        "default_fitting_standard": reducer_standard,
         "roughness_mm": roughness_mm,
         "corrosion_allowance_mm": ca_overall,
         "min_temp_c": min_temp,
@@ -329,3 +337,5 @@ async def fetch_and_normalize_tr2000_pcs(
         "sizes": normalized_sizes,
         "temp_pressures": normalized_pt
     }
+
+

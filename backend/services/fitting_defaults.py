@@ -326,6 +326,60 @@ for dn_l, nps_l, dn_s, nps_s, len_h in _REDUCER_RAW_TABLE:
         "cone_angle_deg": cone_ang
     })
 
+DIN_EN_10253_2_REDUCERS_RAW = [
+    (25, 20, 33.7, 26.9, 50.0),
+    (32, 25, 42.4, 33.7, 50.0),
+    (32, 20, 42.4, 26.9, 50.0),
+    (40, 32, 48.3, 42.4, 64.0),
+    (40, 25, 48.3, 33.7, 64.0),
+    (40, 20, 48.3, 26.9, 64.0),
+    (50, 40, 60.3, 48.3, 76.0),
+    (50, 32, 60.3, 42.4, 76.0),
+    (50, 25, 60.3, 33.7, 76.0),
+    (65, 50, 76.1, 60.3, 89.0),
+    (65, 40, 76.1, 48.3, 89.0),
+    (80, 65, 88.9, 76.1, 89.0),
+    (80, 50, 88.9, 60.3, 89.0),
+    (80, 40, 88.9, 48.3, 89.0),
+    (100, 80, 114.3, 88.9, 102.0),
+    (100, 65, 114.3, 76.1, 102.0),
+    (100, 50, 114.3, 60.3, 102.0),
+    (125, 100, 139.7, 114.3, 127.0),
+    (125, 80, 139.7, 88.9, 127.0),
+    (150, 125, 168.3, 139.7, 140.0),
+    (150, 100, 168.3, 114.3, 140.0),
+    (150, 80, 168.3, 88.9, 140.0),
+    (200, 150, 219.1, 168.3, 152.0),
+    (200, 125, 219.1, 139.7, 152.0),
+    (200, 100, 219.1, 114.3, 152.0),
+    (250, 200, 273.0, 219.1, 178.0),
+    (250, 150, 273.0, 168.3, 178.0),
+    (300, 250, 323.9, 273.0, 203.0),
+    (300, 200, 323.9, 219.1, 203.0),
+    (350, 300, 355.6, 323.9, 330.0),
+    (350, 250, 355.6, 273.0, 330.0),
+    (400, 350, 406.4, 355.6, 356.0),
+    (400, 300, 406.4, 323.9, 356.0),
+    (450, 400, 457.0, 406.4, 381.0),
+    (500, 450, 508.0, 457.0, 508.0),
+    (500, 400, 508.0, 406.4, 508.0),
+    (600, 500, 610.0, 508.0, 508.0),
+]
+
+DIN_EN_10253_2_REDUCERS_DATA = []
+for dn_l, dn_s, od_l, od_s, len_h in DIN_EN_10253_2_REDUCERS_RAW:
+    cone_ang = _calc_cone_angle(od_l, od_s, len_h)
+    DIN_EN_10253_2_REDUCERS_DATA.append({
+        "dn_large": dn_l,
+        "nps_large": f"DN{dn_l}",
+        "od_large_mm": od_l,
+        "dn_small": dn_s,
+        "nps_small": f"DN{dn_s}",
+        "od_small_mm": od_s,
+        "length_mm": len_h,
+        "cone_angle_deg": cone_ang
+    })
+
 EXAMPLE_FITTING_STANDARDS = [
     {
         "id": "walflow-asme-b16-9-reducers",
@@ -348,5 +402,17 @@ EXAMPLE_FITTING_STANDARDS = [
         "description": "Welded and Seamless Wrought Steel and Stainless Steel Pipe Schedules (ASME B36.10M / B36.19M)",
         "is_builtin": True,
         "dimensions": PIPE_SCHEDULES_DATA
+    },
+    {
+        "id": "walflow-din-en-10253-2-reducers",
+        "code": "DIN_EN_10253_2_REDUCERS",
+        "name": "DIN EN 10253-2 Buttweld Reducers",
+        "standard": "DIN_EN",
+        "fitting_type": "reducer",
+        "subtype": "concentric_eccentric",
+        "description": "Butt-welding pipe fittings - Non-alloy and ferritic alloy steels with specific inspection requirements (DIN EN 10253-2)",
+        "is_builtin": True,
+        "dimensions": DIN_EN_10253_2_REDUCERS_DATA
     }
 ]
+
