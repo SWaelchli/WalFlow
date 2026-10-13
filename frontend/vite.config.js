@@ -16,6 +16,10 @@ const wlfPlugin = () => ({
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), wlfPlugin()],
+  test: {
+    environment: 'jsdom',
+    include: ['src/**/*.test.{js,jsx}'],
+  },
   server: {
     proxy: {
       '/api': {

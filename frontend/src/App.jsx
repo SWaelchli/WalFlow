@@ -61,6 +61,7 @@ import { UnitProvider, useUnits } from './context/UnitContext';
 
 import { useWebSocketSimulation } from './hooks/useWebSocketSimulation';
 import { useCanvasHistory } from './hooks/useCanvasHistory';
+import { getDefaultPipeData, DEFAULT_PIPE_LENGTH_M } from './utils/pipeDefaults';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useAutoSaveSession } from './hooks/useAutoSaveSession';
 
@@ -531,7 +532,18 @@ function WalFlowContent() {
   });
 
   // History stack hook
-  const { pushHistorySnapshot, undo, redo } = useCanvasHistory({
+  // A cloud drawing that is open but not checked out by this user
+  const isReadOnly = !!activeDiagram && !hasLock;
+  const blockIfReadOnly = useCallback(() => {
+    if (!isReadOnly) return false;
+    alert("This drawing is read-only. Please check out the drawing to edit.");
+    return true;
+  }, [isReadOnly]);
+
+  const { requestSnapshot, resetHistory, undo, redo } = useCanvasHistory({
+    nodes,
+    edges,
+    isReadOnly,
     setNodes,
     setEdges,
     setSelectedNode,
@@ -568,6 +580,7 @@ function WalFlowContent() {
     const copiedNodes = clipboardRef.current.nodes;
     const copiedEdges = clipboardRef.current.edges;
     if (!copiedNodes || copiedNodes.length === 0) return;
+    if (blockIfReadOnly()) return;
 
     const idMap = {};
     const offset = 40;
@@ -615,22 +628,15 @@ function WalFlowContent() {
         };
       });
 
-    setNodes((nds) => {
-      const updated = nds.map((n) => ({ ...n, selected: false })).concat(newNodes);
-      pushHistorySnapshot(updated, edges);
-      return updated;
-    });
-
-    setEdges((eds) => {
-      const updated = eds.map((e) => ({ ...e, selected: false })).concat(newEdges);
-      return updated;
-    });
+    setNodes((nds) => nds.map((n) => ({ ...n, selected: false })).concat(newNodes));
+    setEdges((eds) => eds.map((e) => ({ ...e, selected: false })).concat(newEdges));
+    requestSnapshot();
 
     if (newNodes.length === 1) {
       setSelectedNode(newNodes[0]);
       setSelectedEdge(null);
     }
-  }, [handleRotation, handleValveChange, setNodes, setEdges, edges, pushHistorySnapshot]);
+  }, [handleRotation, handleValveChange, setNodes, setEdges, edges, requestSnapshot, blockIfReadOnly]);
 
   const duplicateSelected = useCallback(() => {
     copySelected();
@@ -644,6 +650,7 @@ function WalFlowContent() {
     const selectedEdgesList = edges.filter((e) => e.selected || (selectedEdge && e.id === selectedEdge.id));
 
     if (selectedNodesList.length === 0 && selectedEdgesList.length === 0) return;
+    if (blockIfReadOnly()) return;
 
     const nodeIdsToDelete = new Set(selectedNodesList.map((n) => n.id));
     const edgeIdsToDelete = new Set(selectedEdgesList.map((e) => e.id));
@@ -657,9 +664,8 @@ function WalFlowContent() {
     setEdges(nextEdges);
     setSelectedNode(null);
     setSelectedEdge(null);
-
-    pushHistorySnapshot(nextNodes, nextEdges);
-  }, [nodes, edges, selectedNode, selectedEdge, setNodes, setEdges, pushHistorySnapshot]);
+    requestSnapshot();
+  }, [nodes, edges, selectedNode, selectedEdge, setNodes, setEdges, requestSnapshot, blockIfReadOnly]);
 
   const selectAllNodes = useCallback(() => {
     setNodes((nds) => nds.map((n) => ({ ...n, selected: true })));
@@ -669,10 +675,18 @@ function WalFlowContent() {
   const rotateSelectedNode = useCallback(() => {
     const selectedNodesList = nodes.filter((n) => n.selected || (selectedNode && n.id === selectedNode.id));
     if (selectedNodesList.length > 0) {
+      if (blockIfReadOnly()) return;
       selectedNodesList.forEach((n) => handleRotation(n.id));
-      pushHistorySnapshot(nodes, edges);
+      requestSnapshot(); // recorded after the rotation is applied
     }
-  }, [nodes, edges, selectedNode, handleRotation, pushHistorySnapshot]);
+  }, [nodes, selectedNode, handleRotation, requestSnapshot, blockIfReadOnly]);
+
+  // Rotate button on the node itself: same lock check and undo step as the R shortcut
+  const rotateNode = useCallback((nodeId) => {
+    if (blockIfReadOnly()) return;
+    handleRotation(nodeId);
+    requestSnapshot();
+  }, [handleRotation, requestSnapshot, blockIfReadOnly]);
 
   const deselectAll = useCallback(() => {
     setNodes((nds) => nds.map((n) => ({ ...n, selected: false })));
@@ -808,6 +822,7 @@ function WalFlowContent() {
         });
         setNodes(restoredNodes);
         setEdges(restoredEdges);
+        resetHistory(restoredNodes, restoredEdges);
         if (data.globalSettings) {
           setGlobalSettings(prev => ({ ...prev, ...data.globalSettings }));
           if (data.globalSettings.unit_system) {
@@ -823,18 +838,25 @@ function WalFlowContent() {
         }
       }
     }, 50);
-  }, [handleValveChange, handleRotation, setNodes, setEdges, showCanvasLoading, setUnitSystem]);
+  }, [handleValveChange, handleRotation, setNodes, setEdges, showCanvasLoading, setUnitSystem, resetHistory]);
 
   const handleLoadDiagramWithCheck = useCallback((data, diagramTitle = '', options = {}) => {
-    if (activeProject && !options.skipProjectCheck) {
+    const hasCloudDiagram = !!activeDiagram?.id;
+    if ((activeProject || hasCloudDiagram) && !options.skipProjectCheck) {
       const displayTitle = diagramTitle ? `"${diagramTitle}"` : 'this diagram';
-      const confirmText = `Are you sure you want to load ${displayTitle}?\n\nNote: Loading this example or diagram will detach cloud sync for project "${activeProject.title}" to prevent overwriting your cloud project.`;
+      const cloudTarget = hasCloudDiagram ? `drawing "${activeDiagram.title}"` : `project "${activeProject.title}"`;
+      const confirmText = `Are you sure you want to load ${displayTitle}?\n\nNote: This closes the cloud ${cloudTarget} and detaches cloud sync, so the cloud copy is not overwritten.`;
 
       if (!window.confirm(confirmText)) {
         return false;
       }
 
-      // Detach cloud sync FIRST
+      // Detach cloud sync FIRST (F2-29): save pending edits of the open drawing
+      // (serialized now, before the new content loads), then release its lock.
+      if (hasCloudDiagram && hasLock) {
+        triggerManualCloudSave().finally(() => checkinDiagram());
+      }
+      setActiveDiagram(null);
       setActiveProject(null);
     } else if (diagramTitle && (options.isTemplate || options.promptConfirmation)) {
       if (!window.confirm(`Load "${diagramTitle}"?`)) {
@@ -844,7 +866,7 @@ function WalFlowContent() {
 
     loadData(data);
     return true;
-  }, [activeProject, loadData]);
+  }, [activeProject, activeDiagram, hasLock, triggerManualCloudSave, checkinDiagram, setActiveDiagram, loadData]);
 
   useEffect(() => {
     const draft = loadLocalDraftOnBoot();
@@ -878,16 +900,16 @@ function WalFlowContent() {
       alert("This drawing is read-only. Please check out the drawing to edit.");
       return;
     }
-    setEdges((eds) => {
-      const isSourceSignal = params.sourceHandle?.startsWith('signal-');
-      const isTargetSignal = params.targetHandle?.startsWith('signal-');
-      
-      if (isSourceSignal !== isTargetSignal) {
-        alert("Cannot connect a signal handle to a hydraulic port.");
-        return eds;
-      }
+    const isSourceSignal = !!params.sourceHandle?.startsWith('signal-');
+    const isTargetSignal = !!params.targetHandle?.startsWith('signal-');
+    if (isSourceSignal !== isTargetSignal) {
+      alert("Cannot connect a signal handle to a hydraulic port.");
+      return;
+    }
+    const isSignal = isSourceSignal && isTargetSignal;
+    const pipeData = isSignal ? {} : getDefaultPipeData(availablePipeClasses, allowCustomPipes);
 
-      const isSignal = isSourceSignal && isTargetSignal;
+    setEdges((eds) => {
       const nextNum = getNextLabelNumber(eds);
       const label = isSignal ? `Signal ${nextNum}` : `Pipe ${nextNum}`;
       const newId = getEdgeId();
@@ -901,16 +923,17 @@ function WalFlowContent() {
         style: isSignal 
           ? { stroke: '#fde047', strokeWidth: 3, strokeDasharray: '5,5' }
           : {},
-        data: { 
-          label: label, 
+        data: {
+          label: label,
           type: isSignal ? 'SIGNAL' : 'PIPE',
-          length: 25.0, 
-          diameter: 0.05248 
-        } 
+          length: DEFAULT_PIPE_LENGTH_M,
+          ...pipeData
+        }
       };
       return addEdge(newEdge, eds);
     });
-  }, [setEdges, activeDiagram, hasLock]);
+    requestSnapshot();
+  }, [setEdges, activeDiagram, hasLock, availablePipeClasses, allowCustomPipes, requestSnapshot]);
 
   const onNodeClick = useCallback((event, node) => {
     setSelectedNode(node);
@@ -1105,8 +1128,9 @@ function WalFlowContent() {
       };
 
       setNodes((nds) => nds.concat(newNode));
+      requestSnapshot();
     },
-    [reactFlowInstance, handleValveChange, handleRotation, setNodes, handleLoadDiagramWithCheck, activeDiagram, hasLock]
+    [reactFlowInstance, handleValveChange, handleRotation, setNodes, handleLoadDiagramWithCheck, activeDiagram, hasLock, requestSnapshot]
   );
 
   const onSave = useCallback(() => {
@@ -1138,7 +1162,8 @@ function WalFlowContent() {
     setNodes((nds) => nds.filter((node) => node.id !== nodeId));
     setEdges((eds) => eds.filter((edge) => edge.source !== nodeId && edge.target !== nodeId));
     setSelectedNode(null);
-  }, [setNodes, setEdges, activeDiagram, hasLock]);
+    requestSnapshot();
+  }, [setNodes, setEdges, activeDiagram, hasLock, requestSnapshot]);
 
   const onDeleteEdge = useCallback((edgeId) => {
     if (activeDiagram && !hasLock) {
@@ -1147,16 +1172,18 @@ function WalFlowContent() {
     }
     setEdges((eds) => eds.filter((edge) => edge.id !== edgeId));
     setSelectedEdge(null);
-  }, [setEdges, activeDiagram, hasLock]);
+    requestSnapshot();
+  }, [setEdges, activeDiagram, hasLock, requestSnapshot]);
 
   const resetCanvas = useCallback(() => {
     setNodes([]);
     setEdges([]);
+    resetHistory([], []);
     setSelectedNode(null);
     setSelectedEdge(null);
     setCases([DEFAULT_BASE_CASE]);
     setActiveCaseId('case_base');
-  }, [setNodes, setEdges]);
+  }, [setNodes, setEdges, resetHistory]);
 
   const handleSaveAs = useCallback(async ({ title, description, project_id }) => {
     try {
@@ -1473,12 +1500,12 @@ function WalFlowContent() {
           ...node.data,
           ...effectiveData,
           hasCaseOverrides: hasOverrides,
-          onRotate: handleRotation,
+          onRotate: rotateNode,
           onChange: (node.type === 'linear_control_valve' || node.type === 'remote_control_valve') ? handleValveChange : undefined,
         }
       };
     });
-  }, [nodes, cases, activeCaseId, telemetryMode, handleRotation, handleValveChange, scalingInfo]);
+  }, [nodes, cases, activeCaseId, telemetryMode, rotateNode, handleValveChange, scalingInfo]);
 
   const effectiveSelectedNode = useMemo(() => {
     if (!selectedNode) return null;
@@ -1701,17 +1728,20 @@ function WalFlowContent() {
             onEdgeClick={onEdgeClick}
             onNodesDelete={(deleted) => {
               if (selectedNode && deleted.some(n => n.id === selectedNode.id)) setSelectedNode(null);
+              requestSnapshot();
             }}
             onEdgesDelete={(deleted) => {
               if (selectedEdge && deleted.some(e => e.id === selectedEdge.id)) setSelectedEdge(null);
+              requestSnapshot();
             }}
             onPaneClick={onPaneClick}
             onInit={setReactFlowInstance}
             onDrop={onDrop}
             onDragOver={onDragOver}
-            onNodeDragStop={() => pushHistorySnapshot(nodes, edges)}
+            onNodeDragStop={requestSnapshot}
             nodesDraggable={!activeDiagram || hasLock}
             nodesConnectable={!activeDiagram || hasLock}
+            deleteKeyCode={isReadOnly ? null : 'Backspace'}
             elementsSelectable={true}
             fitView
           >

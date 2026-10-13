@@ -25,6 +25,8 @@ import {
   resolveBore,
   formatDnOption
 } from '../../utils/reducer_catalog';
+import { resolvePipeSelection, matchScheduleByInnerDiameter } from '../../utils/pipeDefaults';
+import DraftNumberInput from '../common/DraftNumberInput';
 
 
 function PropertyBadge({ propKey, nodeId, cases = [], activeCaseId = 'case_base', onResetOverride }) {
@@ -68,26 +70,24 @@ function PropertyBadge({ propKey, nodeId, cases = [], activeCaseId = 'case_base'
 }
 
 /**
- * PipeSelector component supporting Pipe Specifications catalog.
-/**
  * PipeSelector component supporting Pipe Specifications catalog and ASME B36.10M Schedule presets.
+ * Emits SI values (diameter in m, roughness_mm in mm).
  */
 const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPipes = true }) => {
   const { isImperial } = useUnits();
   const classList = availablePipeClasses || [];
 
-  const rawClassId = data.pipe_class_id || (classList.length > 0 ? classList[0].id : (allowCustomPipes ? 'manual' : ''));
-  const currentClassId = (!allowCustomPipes && rawClassId === 'manual' && classList.length > 0)
-    ? classList[0].id
-    : rawClassId;
+  // Pipes without a class reference (older files) show as Manual; display never rewrites data
+  const selection = resolvePipeSelection(data);
+  const currentClassId = selection.classId;
   const isManual = currentClassId === 'manual';
   const selectedClass = classList.find(c => c.id === currentClassId);
 
-  const [manualMode, setManualMode] = useState('preset'); // 'preset' | 'free'
+  const [manualMode, setManualMode] = useState(selection.isCustomId ? 'free' : 'preset'); // 'preset' | 'free'
 
-  const value = data.diameter || 0.05248; // default ~2" STD
-  const currentDn = Number(data.standardDn || (selectedClass?.sizes?.[0]?.dn || 50));
-  const currentSch = data.standardSch || 'STD';
+  const value = data.diameter || 0;
+  const currentDn = selection.dn;
+  const currentSch = selection.sch || 'STD';
 
   const handleClassChange = (newClassId) => {
     if (newClassId === 'manual') {
@@ -175,8 +175,10 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
               [{c.code}] {c.name}
             </option>
           ))}
-          {allowCustomPipes && (
-            <option value="manual">Manual / Custom Dimensions</option>
+          {(allowCustomPipes || isManual) && (
+            <option value="manual" disabled={!allowCustomPipes}>
+              Manual / Custom Dimensions{allowCustomPipes ? '' : ' (not allowed in this project)'}
+            </option>
           )}
         </select>
       </div>
@@ -365,18 +367,25 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
             /* Free Manual Numeric Inputs */
             <div>
               <label style={{ fontSize: '10px', color: 'var(--color-text-secondary)', fontWeight: '600' }}>Inner Diameter ({isImperial ? 'in' : 'mm'})</label>
-              <input
-                type="number"
+              <DraftNumberInput
                 step="0.1"
                 className="form-input"
                 style={{ width: '100%' }}
-                value={isImperial ? (value * 39.37007874).toFixed(3) : (value * 1000).toFixed(2)}
-                onChange={(e) => {
-                  const raw = parseFloat(e.target.value);
-                  if (!isNaN(raw) && raw > 0) {
-                    const idM = isImperial ? raw / 39.37007874 : raw / 1000.0;
-                    onChange({ diameter: idM });
-                  }
+                displayValue={value > 0 ? (isImperial ? (value * 39.37007874).toFixed(3) : (value * 1000).toFixed(2)) : ''}
+                onCommit={(text) => {
+                  const raw = parseFloat(text);
+                  if (isNaN(raw) || raw <= 0) return; // reverts to the stored value
+                  const idM = isImperial ? raw / 39.37007874 : raw / 1000.0;
+                  // A free ID keeps DN/schedule/OD/WT only if it equals a B36.10M schedule
+                  const match = matchScheduleByInnerDiameter(idM);
+                  const sch = match ? getPipeScheduleDetails(match.dn, match.sch) : null;
+                  onChange({
+                    diameter: idM,
+                    standardDn: sch ? sch.dn : null,
+                    standardSch: sch ? sch.sch : null,
+                    outer_diameter_mm: sch ? sch.od_mm : null,
+                    wall_thickness_mm: sch ? sch.wt_mm : null
+                  });
                 }}
               />
             </div>
@@ -727,7 +736,7 @@ export default function SetupPanel({
                   data={data} 
                   availablePipeClasses={availablePipeClasses} 
                   allowCustomPipes={allowCustomPipes} 
-                  onChange={(updates) => validateAndCommit(updates)} 
+                  onChange={(updates) => onUpdateEdge(id, updates)} // already SI, bypass fromInputValue
                 />
               </div>
 

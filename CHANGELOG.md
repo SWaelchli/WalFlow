@@ -22,6 +22,7 @@ All notable changes to the WälFlow project will be documented in this file.
 - **Tabbed Catalog Interface (`/pipes`)**: Added subpage navigation tabs for **Piping Specifications** and **Fitting Standards & Schedules** with full catalog search, filtering, inline size editing, standard cloning, JSON library import/export, and default re-seeding.
 - **Localized Surface Roughness**: Removed global canvas roughness; pipe friction factor is now calculated from localized roughness auto-mapped from material groups.
 - **Pipe Class & Fitting Library Harmonization**: Full UI/UX harmonization between Piping Specifications and Fitting Standards tabs on `/pipes` (elevated white cards, segmented pills, standardized top bar buttons, SVG icons, animated feedback toasts).
+- **Frontend Unit Tests**: Vitest + jsdom + React Testing Library (`npm test`).
 - **Pipe Schedule Presets for Custom Lines**: Integrated standard nominal size (DN15–DN600) and schedule (STD, 40, 80, XS, 160) quick-pick selectors with live outer diameter, wall thickness, inner diameter, and flow area previews in both inspector and DataList table.
 - **Smart Reducer Connected-Line Auto-Inheritance & Mismatch Detection**: Added 1-click auto-detection of connected pipe sizes and schedules on Reducer nodes, plus real-time mismatch warning alerts in the inspector and on canvas nodes.
 - **Multi-Standard Support**: Seeded European DIN EN 10253-2 buttweld reducers alongside ASME B16.9 and mapped TR2000 specifications to their authorized default fitting standard.
@@ -58,6 +59,8 @@ All notable changes to the WälFlow project will be documented in this file.
 - Fixed reducer gradual-contraction loss coefficients (Crane TP 410 angle ranges were swapped, overstating losses ~57% for standard reducers) and the reducer Jacobian sign under static pressure recovery.
 - Pipe classes now reject unknown fitting standard references, and pipe class library import keeps reducer / schedule standard codes.
 - TR2000 design-code mapping to DIN EN reducers now matches whole words only; reducer nodes with null geometry no longer crash the graph parser.
+- Fixed imperial pipe sizes stored 39× too small, misaligned DataList columns (added sortable Name column), numeric inputs reformatting while typing (now commit on blur/Enter, Esc reverts), cloud-load cancel leaving the wrong diagram active, and examples/files loaded over an open cloud drawing overwriting it.
+- New pipes default to DN50 STD; pipes from older files show as Manual with their matching size or custom inner diameter. Undo history resets on load, covers add/connect/delete/paste/rotate, and is blocked on read-only drawings, which also block delete, paste and rotate.
 
 
 ---

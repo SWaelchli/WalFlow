@@ -5,6 +5,7 @@ import { InfoIcon, CheckIcon, CrossIcon, FolderIcon, SearchIcon, TrashIcon, Lock
 import { FLUID_CATEGORIES, FLUID_LIBRARY } from '../../constants/fluid_library';
 import { useUnits } from '../../context/UnitContext';
 import { FILE_FORMAT_VERSION, APP_VERSION } from '../../constants';
+import DraftNumberInput from '../common/DraftNumberInput';
 
 
 
@@ -941,6 +942,19 @@ export default function Sidebar({
         return;
       }
 
+      // Load first; switch project/diagram only if the load was accepted.
+      // Cloud diagrams carry their own project, so no "detach cloud sync" prompt.
+      const accepted = onLoad(parsedData, response.data.title, { skipProjectCheck: true });
+      if (accepted === false) return;
+
+      if (setActiveDiagram) {
+        setActiveDiagram({
+          id: response.data.id,
+          title: response.data.title,
+          description: response.data.description
+        });
+      }
+
       if (setActiveProject) {
         if (project) {
           try {
@@ -965,15 +979,6 @@ export default function Sidebar({
           setActiveProject(null);
         }
       }
-
-      if (setActiveDiagram) {
-        setActiveDiagram({
-          id: response.data.id,
-          title: response.data.title,
-          description: response.data.description
-        });
-      }
-      onLoad(parsedData);
     } catch {
       alert("Failed to load drawing from cloud.");
     }
@@ -1287,18 +1292,18 @@ export default function Sidebar({
 
                   <div>
                     <label style={labelStyle}>Ambient Temp ({isImperial ? '°F' : '°C'})</label>
-                    <input 
-                      type="number"
+                    <DraftNumberInput
                       step="0.1"
-                      value={
+                      displayValue={
                         isImperial
                           ? ((globalSettings.ambient_temperature - 273.15) * 1.8 + 32).toFixed(1)
                           : (globalSettings.ambient_temperature - 273.15).toFixed(1)
                       }
-                      onChange={(e) => {
-                        const rawVal = parseFloat(e.target.value);
+                      onCommit={(text) => {
+                        const rawVal = parseFloat(text);
                         if (isNaN(rawVal)) return;
                         const kelvin = isImperial ? ((rawVal - 32) / 1.8) + 273.15 : rawVal + 273.15;
+                        if (kelvin <= 0) return;
                         onUpdateGlobalSettings({ ...globalSettings, ambient_temperature: kelvin });
                       }}
                       className="form-input"
@@ -1309,17 +1314,16 @@ export default function Sidebar({
 
                   <div>
                     <label style={labelStyle}>Atmospheric Pressure ({isImperial ? 'psi(a)' : 'Pa'})</label>
-                    <input 
-                      type="number"
+                    <DraftNumberInput
                       step={isImperial ? "0.01" : "1"}
-                      value={
+                      displayValue={
                         isImperial
                           ? (globalSettings.atmospheric_pressure * 0.00014503773773).toFixed(2)
                           : globalSettings.atmospheric_pressure
                       }
-                      onChange={(e) => {
-                        const rawVal = parseFloat(e.target.value);
-                        if (isNaN(rawVal)) return;
+                      onCommit={(text) => {
+                        const rawVal = parseFloat(text);
+                        if (isNaN(rawVal) || rawVal <= 0) return;
                         const pa = isImperial ? rawVal * 6894.757293 : rawVal;
                         onUpdateGlobalSettings({ ...globalSettings, atmospheric_pressure: pa });
                       }}

@@ -5,6 +5,8 @@ import { getPipeScheduleDetails } from '../../constants/asme_b16_9_data';
 
 import { updateCaseOverride } from '../../utils/case_resolver';
 import { useUnits } from '../../context/UnitContext';
+import { resolvePipeSelection } from '../../utils/pipeDefaults';
+import DraftNumberInput from '../common/DraftNumberInput';
 
 
 const autoSortLogic = (nodes, edges) => {
@@ -361,9 +363,15 @@ export default function DataList({
       items = items.filter(i => i.label.toLowerCase().includes(lower) || i.displayType.toLowerCase().includes(lower));
     }
     if (sortConfig.key) {
+      const dir = sortConfig.direction === 'asc' ? 1 : -1;
       items.sort((a, b) => {
-        if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === 'asc' ? -1 : 1;
-        if (a[sortConfig.key] > b[sortConfig.key]) return sortConfig.direction === 'asc' ? 1 : -1;
+        const av = a[sortConfig.key];
+        const bv = b[sortConfig.key];
+        if (typeof av === 'string' && typeof bv === 'string') {
+          return dir * av.localeCompare(bv, undefined, { numeric: true, sensitivity: 'base' });
+        }
+        if (av < bv) return -dir;
+        if (av > bv) return dir;
         return 0;
       });
     }
@@ -846,6 +854,7 @@ export default function DataList({
 
               <th style={{ padding: '8px', width: '40px' }}></th>
               <SortHeader label="Type" sortKey="displayType" sortConfig={sortConfig} requestSort={requestSort} />
+              <SortHeader label="Name" sortKey="label" sortConfig={sortConfig} requestSort={requestSort} />
               <SortHeader label={`Flow (${labels.flow})`} sortKey="flow" align="right" sortConfig={sortConfig} requestSort={requestSort} />
               <SortHeader label={`Velocity (${labels.velocity})`} sortKey="velocity" align="right" sortConfig={sortConfig} requestSort={requestSort} />
 
@@ -863,21 +872,27 @@ export default function DataList({
             {processedItems.map((entry, idx) => {
               const isNode = entry.type === 'node';
               const item = entry.item;
-              const diaValue = isNode ? (item.data.orifice_diameter || item.data.pipe_diameter || 0) : (item.data.diameter || 0.05248);
-              const match = findClosestPipeMatch(diaValue);
-              
-              const currentClassId = item.data.pipe_class_id || (classList.length > 0 ? classList[0].id : 'manual');
+              const diaValue = isNode ? (item.data.orifice_diameter || item.data.pipe_diameter || 0) : (item.data.diameter || 0);
+              // Pipes without a class reference (older files) show as Manual; display never rewrites data
+              const pipeSel = isNode ? null : resolvePipeSelection(item.data);
+              const match = isNode ? findClosestPipeMatch(diaValue) : null;
+
+              const currentClassId = isNode ? (item.data.pipe_class_id || 'manual') : pipeSel.classId;
               const selectedClass = classList.find(c => c.id === currentClassId);
               const supportedSizes = selectedClass?.sizes || [];
 
-              const currentDn = Number(item.data.standardDn || (supportedSizes.length > 0 ? supportedSizes[0].dn : (match ? match.dn : 50)));
-              const currentSch = item.data.standardSch || (selectedClass?.sizes?.find(s => s.dn === currentDn)?.sch || 'STD');
+              const currentDn = isNode ? Number(item.data.standardDn || (match ? match.dn : 50)) : pipeSel.dn;
+              const isCustomId = !isNode && pipeSel.isCustomId;
+              const currentSch = isNode ? (item.data.standardSch || 'STD') : (pipeSel.sch || '');
+              const customIdLabel = diaValue > 0
+                ? `Custom ID ${isImperial ? `${(diaValue * 39.37007874).toFixed(3)} in` : `${(diaValue * 1000).toFixed(2)} mm`}`
+                : 'Custom ID (not set)';
               const pipeInfo = ASME_PIPE_STANDARDS.find(p => p.dn === currentDn);
               const npsDisplay = pipeInfo ? `${pipeInfo.nps}"` : `${currentDn}mm`;
 
               const handleClassChange = (newClassId) => {
                 if (newClassId === 'manual') {
-                  const schDetails = getPipeScheduleDetails(currentDn, currentSch) || getPipeScheduleDetails(50, 'STD');
+                  const schDetails = getPipeScheduleDetails(currentDn, currentSch || 'STD') || getPipeScheduleDetails(50, 'STD');
                   onUpdateEdge(item.id, {
                     pipe_class_id: 'manual',
                     pipe_class_code: 'CUSTOM',
@@ -925,7 +940,7 @@ export default function DataList({
                     return;
                   }
                 }
-                const schDetails = getPipeScheduleDetails(dnInt, currentSch) || getPipeScheduleDetails(dnInt, 'STD');
+                const schDetails = getPipeScheduleDetails(dnInt, currentSch || 'STD') || getPipeScheduleDetails(dnInt, 'STD');
                 if (schDetails && !isNode) {
                   onUpdateEdge(item.id, {
                     diameter: schDetails.id_mm / 1000.0,
@@ -955,10 +970,10 @@ export default function DataList({
                 else { if (onUpdateEdge) onUpdateEdge(item.id, { label: newName }); }
               };
 
-              const handleLengthChange = (newLen) => {
-                if (!isNode && onUpdateEdge) {
-                  onUpdateEdge(item.id, { length: parseFloat(newLen) || 0 });
-                }
+              const handleLengthCommit = (text) => {
+                const raw = parseFloat(text);
+                if (isNode || !onUpdateEdge || isNaN(raw) || raw <= 0) return; // reverts to the stored length
+                onUpdateEdge(item.id, { length: isImperial ? raw / 3.280839895 : raw });
               };
 
               const baseBg = item.selected ? '#FFF4E5' : (idx % 2 === 0 ? '#ffffff' : '#F8FAFA');
@@ -1009,13 +1024,14 @@ export default function DataList({
                         <select 
                           className="form-select"
                           style={{ fontSize: '11px', padding: '2px 6px', height: '26px' }}
-                          value={currentDn} 
-                          onChange={(e) => { handleDnChange(e.target.value); }} 
+                          value={isCustomId ? '' : currentDn}
+                          onChange={(e) => { handleDnChange(e.target.value); }}
                           onFocus={() => { handleRowClick(entry); setIsEditing(true); }}
                           onBlur={() => setIsEditing(false)}
                           onPointerDown={(e) => e.stopPropagation()}
                           onMouseDown={(e) => e.stopPropagation()}
                         >
+                          {isCustomId && <option value="" disabled>{customIdLabel}</option>}
                           {supportedSizes.length > 0 ? (
                             supportedSizes.map(s => (
                               <option key={s.dn} value={s.dn}>
@@ -1042,6 +1058,7 @@ export default function DataList({
                           onPointerDown={(e) => e.stopPropagation()}
                           onMouseDown={(e) => e.stopPropagation()}
                         >
+                          {isCustomId && <option value="" disabled>—</option>}
                           {['STD', '40', '80', 'XS', '160'].map(s => (
                             <option key={s} value={s}>{s}</option>
                           ))}
@@ -1067,8 +1084,10 @@ export default function DataList({
                               [{c.code}] {c.name}
                             </option>
                           ))}
-                          {allowCustomPipes && (
-                            <option value="manual">Custom / Manual</option>
+                          {(allowCustomPipes || currentClassId === 'manual') && (
+                            <option value="manual" disabled={!allowCustomPipes}>
+                              Custom / Manual{allowCustomPipes ? '' : ' (not allowed)'}
+                            </option>
                           )}
                         </select>
                       ) : (item.data.pipe_class_code || '—')}
@@ -1077,12 +1096,11 @@ export default function DataList({
                   {activeTab === 'pipes' && (
                     <td style={{ padding: '8px', textAlign: 'right' }} onClick={(e) => e.stopPropagation()}>
                       {!isNode && (
-                        <input 
-                          type="number" step="0.1"
+                        <DraftNumberInput
+                          step="0.1"
                           style={{ width: '55px', fontSize: '11px', border: '1px solid var(--color-border)', padding: '3px 6px', borderRadius: '5px', textAlign: 'right', fontWeight: '600', color: 'var(--color-brand-dark)', outline: 'none' }}
-                          value={isImperial ? (item.data.length * 3.280839895).toFixed(1) : item.data.length}
-                          onChange={(e) => handleLengthChange(isImperial ? (parseFloat(e.target.value) || 0) / 3.280839895 : (parseFloat(e.target.value) || 0))}
-
+                          displayValue={isImperial ? (item.data.length * 3.280839895).toFixed(1) : item.data.length}
+                          onCommit={handleLengthCommit}
                           onFocus={() => { handleRowClick(entry); setIsEditing(true); }}
                           onBlur={() => setIsEditing(false)}
                           onPointerDown={(e) => e.stopPropagation()}

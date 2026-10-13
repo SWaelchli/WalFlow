@@ -186,7 +186,7 @@ Each batch becomes one requirement prompt (4.3). Every physics fix gets a regres
 
 ## 4.3 Batch prompts
 
-### B0: S1 frontend hotfixes (awaiting confirmation)
+### B0: S1 frontend hotfixes (implemented 2026-10-13, uncommitted)
 
 Anchors re-resolved at `HEAD` = `3e46a3b` (no code changed since the audit).
 
@@ -216,5 +216,12 @@ Anchors re-resolved at `HEAD` = `3e46a3b` (no code changed since the audit).
 **Verification:**
 - `npm run lint` and `npm run build`.
 - Manual browser check: header alignment; new pipe = DN50 STD in metric and imperial; inspector DN pick in imperial gives ID 2.067 in; typing 25.5 °C gives 25.5; undo right after loading an example does nothing; cancelling the load prompt leaves the title unchanged.
-- There is no frontend test runner in the repo. Adding Vitest for unit tests (unit round trip, history reset) is optional; say if you want it.
+- Vitest is set up (user request, 2026-10-13: `npm test`; jsdom 26 because Node 22.11 cannot load jsdom 27). B0 adds unit tests for the PipeSelector SI pass-through, the default DN50 STD pipe data, and `useCanvasHistory` reset/undo.
 - CHANGELOG: one short "Fixed" entry. No version change.
+
+**B0 result (2026-10-13).**
+- Done as described. Shared helpers: `utils/pipeDefaults.js` (default pipe, older-pipe display), `components/common/DraftNumberInput.jsx` (draft/commit-on-blur/Esc). History: `useCanvasHistory › requestSnapshot` records after React applies the change; `resetHistory` on load/clear.
+- Small additions: the Name column sorts naturally ("Pipe 9" before "Pipe 10"); a free inner diameter that matches no schedule clears the stale DN/schedule/OD/WT; a Manual pipe in a project that disallows custom pipes shows "Manual (not allowed)" instead of pretending to be the first class; paste now records the pasted edges in undo.
+- Tests (regression references): `pipeDefaults.test.js`, `useCanvasHistory.test.jsx`, `SetupPanel.test.jsx`, `DataList.test.jsx`.
+- Follow-ups (user request, same day): the node's rotate handle now creates an undo step; keyboard/ReactFlow delete, paste/duplicate and rotate respect the read-only lock (`App.jsx › blockIfReadOnly`, `deleteKeyCode` off when read-only).
+- **New finding F2-29 (S1)** (see 02-frontend.md), fixed on user approval: `App.jsx › handleLoadDiagramWithCheck` prompts whenever a cloud drawing or project is open; on confirm it saves pending edits to that drawing, releases its lock, and clears drawing and project before loading.

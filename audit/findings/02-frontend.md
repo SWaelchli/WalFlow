@@ -364,3 +364,9 @@ All 21 hydraulic types are registered everywhere. `HelpInfoModal` does not descr
   - `reactflow` 11 (legacy package, peer range React 17/18) runs on React 19.2. Upgrading to `@xyflow/react` 12 is the supported path.
   - `interactiveNodes`/`styledEdges` rebuild every node's and edge's `data` object on every `nodes` change (each drag frame, each selection). The heatmap range loops over edges × cases, and the WS/autosave pipeline (F2-22) runs after each change. Expect lag with 100+ nodes; measure in Phase 3.
 - Suggested fix: memoise per node, keep results out of `nodes`, and debounce the save/send pipeline on real edits only.
+
+#### F2-29  Loading an example or file while a cloud diagram is open keeps that diagram as the autosave target
+- **Severity: S1** (data loss; found while implementing B0, 2026-10-13, at `671b36e`)
+- Location: `App.jsx › handleLoadDiagramWithCheck`. With an active project it asks to "detach cloud sync" but only calls `setActiveProject(null)`; `activeDiagram` and the lock stay. Without an active project (diagram not in a project) there is no prompt at all.
+- Effect: if the user holds the lock, autosave PUTs the example/file content into the open cloud diagram ~2 s later, overwriting it.
+- Suggested fix: when a non-cloud load replaces an open cloud diagram, prompt in both cases and clear `activeDiagram` (and check the lock in) on confirm.

@@ -28,7 +28,7 @@ Severity: **S1** wrong physics or data loss · **S2** wrong or misleading result
 | 3 | User friendliness | DONE | 2/8/9 | audit/findings/03-ux.md |
 | 4 | Triage and fix roadmap | IN PROGRESS | 89 unique (9/40/40) | audit/findings/04-triage.md |
 
-**Last updated:** 2026-10-13 (decisions recorded; B0 prompt awaiting user confirmation)
+**Last updated:** 2026-10-13 (B0 + F2-29 + read-only/rotate follow-ups implemented, uncommitted)
 
 ---
 
@@ -213,7 +213,7 @@ Method: act as a new user (a hydraulic/process engineer who has never seen the a
 |---|---|---|
 | 4.1 | Consolidate all findings into `audit/findings/04-triage.md`, sorted by severity, then effort | DONE: 95 → 89 unique (6 merged); effort S/M/L; anchors (file › symbol) |
 | 4.2 | Group fixes into batches (physics S1/S2 first, then contract bugs, then UX quick wins, then refactors) | DONE: B0 hotfixes, B1a–d physics, B2 contract, B3 security, B4 UX, B5 refactor, B6 scope; decisions listed per batch |
-| 4.3 | For each batch write a requirement prompt and **wait for user confirmation** before editing code (AGENTS.md rule 1) | IN PROGRESS: decisions recorded in 04-triage.md; B0 prompt written, awaiting confirmation |
+| 4.3 | For each batch write a requirement prompt and **wait for user confirmation** before editing code (AGENTS.md rule 1) | IN PROGRESS: B0 incl. F2-29 implemented (uncommitted); next: B1a prompt |
 | 4.4 | For each physics fix, add a regression test with an independent reference value | TODO |
 | 4.5 | Update CHANGELOG.md for each shipped fix (no version bump without user confirmation) | TODO |
 
@@ -273,14 +273,14 @@ Add one row per finding; details live in the phase findings file. **Locations ar
 | F1-39 | 1C | S3 | ISO 5167 orifice β silently clamped to 0.1–0.75 (ΔP 2.4–9× at β 0.88–0.96) | orifice.py:186 | open |
 | F1-40 | 1C | S3 | Heat exchanger accepts infeasible rated duty silently | heat_exchanger.py:101 | open |
 | F1-41 | 1C | S2 | Six physics test files have no assertions | backend/tests | open |
-| F2-01 | 2 | S1 | Imperial: pipe diameter/roughness from inspector divided by 39.37 twice | SetupPanel.jsx:575,730; UnitContext.jsx:300 | open |
-| F2-02 | 2 | S1 | Cancel on cloud-diagram load leaves old canvas labelled as new diagram (overwrite risk; to confirm 3.7) | Sidebar.jsx:934-976; App.jsx:828 | open |
-| F2-03 | 2 | S1 | Undo history survives loading another diagram; Ctrl+Z restores the previous diagram; coverage gaps | useCanvasHistory.js; App.jsx:770 | open |
+| F2-01 | 2 | S1 | Imperial: pipe diameter/roughness from inspector divided by 39.37 twice | SetupPanel.jsx:575,730; UnitContext.jsx:300 | fixed (B0, uncommitted) |
+| F2-02 | 2 | S1 | Cancel on cloud-diagram load leaves old canvas labelled as new diagram (overwrite risk; to confirm 3.7) | Sidebar.jsx:934-976; App.jsx:828 | fixed (B0, uncommitted) |
+| F2-03 | 2 | S1 | Undo history survives loading another diagram; Ctrl+Z restores the previous diagram; coverage gaps | useCanvasHistory.js; App.jsx:770 | fixed (B0, uncommitted) |
 | F2-04 | 2 | S2 | Heat exchanger rated dP shown 0.5 bar, solved ~0 (new nodes and all 5 example HXs) | App.jsx:1098; graph_parser.py:292 | open |
 | F2-05 | 2 | S2 | Blur rewrites values with display rounding; spurious case overrides | SetupPanel.jsx:970 and others | open |
 | F2-06 | 2 | S2 | Valve opening edits (slider/inspector) write base case, ignore active case | useWebSocketSimulation.js:188; SetupPanel.jsx:1039 | open |
 | F2-07 | 2 | S2 | Results of another case / pre-edit shown as current; no stale marking | case_resolver.js:141,167 | open |
-| F2-08 | 2 | S2 | Inputs reformat per keystroke (free ID, ambient temp, imperial length); to confirm 3.x | SetupPanel.jsx:373; Sidebar.jsx:1293; DataList.jsx:1083 | open |
+| F2-08 | 2 | S2 | Inputs reformat per keystroke (free ID, ambient temp, imperial length); to confirm 3.x | SetupPanel.jsx:373; Sidebar.jsx:1293; DataList.jsx:1083 | fixed (B0, uncommitted) |
 | F2-09 | 2 | S2 | Relief matrix re-solves with previous forced state (stale closure) | DataList.jsx:255 | open |
 | F2-10 | 2 | S2 | No error boundary, no import validation: bad file blanks app | App.jsx:770 | open |
 | F2-11 | 2 | S2 | Every autosave broadcasts diagram_updated: reload prompt spam for co-viewers | diagrams.py:184; useAutoSaveSession.js:185 | open |
@@ -301,8 +301,9 @@ Add one row per finding; details live in the phase findings file. **Locations ar
 | F2-26 | 2 | S3 | Code health: monoliths, duplicated logic, side effects in updaters, dead code | App.jsx, SetupPanel.jsx, Sidebar.jsx | open |
 | F2-27 | 2 | S3 | Accessibility basics missing (labels, dialog roles, focus) | frontend/src | open |
 | F2-28 | 2 | S3 | reactflow 11 on React 19; full re-render per drag frame | package.json; App.jsx:1438-1481 | open |
-| F3-01 | 3 | S1 | Pipe Network List: name column has no header, every value under the wrong label | DataList.jsx:847-856 | open |
-| F3-02 | 3 | S1 | New pipes displayed as DN15/first class but simulated at DN50 (52.5 mm) | App.jsx:907; DataList.jsx:869-873 | open |
+| F2-29 | 2 | S1 | Loading an example/file over an open cloud diagram keeps it as autosave target (found in B0) | App.jsx › handleLoadDiagramWithCheck | fixed (B0, uncommitted) |
+| F3-01 | 3 | S1 | Pipe Network List: name column has no header, every value under the wrong label | DataList.jsx:847-856 | fixed (B0, uncommitted) |
+| F3-02 | 3 | S1 | New pipes displayed as DN15/first class but simulated at DN50 (52.5 mm) | App.jsx:907; DataList.jsx:869-873 | fixed (B0, uncommitted) |
 | F3-03 | 3 | S2 | Simulation needs login by default; anonymous user invited to run, gets native alert | main.py:101; GreetingCanvas.wlf | open |
 | F3-04 | 3 | S2 | "Converged" for degenerate network (open port, 0 eq.); no topology validation; status only in Stats | Sidebar Stats; solver | open |
 | F3-05 | 3 | S2 | No plausibility warnings (pump run-out, velocity, class rating/temp, fluid range) | DataList.jsx:968; PumpDetails.jsx | open |
@@ -337,6 +338,8 @@ Add one row per finding; details live in the phase findings file. **Locations ar
 | 2026-10-13 | Phase 3 UX (live in Chrome, WS auth off) | 3.1–3.30 done (3.7 cloud and 3.10 admin from code only); 19 findings (F3-01 to F3-19); F2-01, F2-07, F2-08 confirmed live; F2-02 still unconfirmed; top-10 list in 03-ux.md | Phase 4 triage and fix roadmap (needs user priorities) |
 | 2026-10-13 | Phase 4.1/4.2 triage | 04-triage.md: 89 unique findings with effort and anchors, 10 batches (B0–B6), reference-stability policy | 4.3: commit audit baseline (on request), decisions for B0, then B0 prompt |
 | 2026-10-13 | Phase 4.3 start | User decisions: new pipes DN50 STD; relief set pressure barg (examples only, no .wlf migration); anonymous simulation allowed; version 0.2.0. B0 prompt in 04-triage.md | User confirms B0, then implement B0 |
+| 2026-10-13 | B0 implemented | F2-01, F2-02, F2-03, F2-08, F3-01, F3-02 fixed; 20 Vitest tests; lint/build OK; live check of header alignment and undo-after-load. New S1 F2-29 recorded | User reviews B0, decides F2-29, commit on request; then B1a prompt |
+| 2026-10-13 | F2-29 + B0 follow-ups | F2-29 fixed (prompt whenever a cloud drawing is open; save pending edits, release lock, detach). Read-only lock now blocks keyboard/ReactFlow delete, paste/duplicate and rotate; rotate handle creates an undo step (verified live) | Commit on request; B1a prompt |
 
 ---
 
