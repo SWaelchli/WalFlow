@@ -4,6 +4,7 @@ import os
 # Add backend to path
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
+from physics_refs import water_head
 from simulation.equipment.tank import Tank
 from simulation.equipment.pipe import Pipe
 from simulation.equipment.centrifugal_pump import CentrifugalPump
@@ -19,7 +20,7 @@ def test_pump_heat():
     t1 = Tank("Source", elevation=0.0, fluid_level=1.0, fluid_type="iso_vg_46", temperature=293.15)
     t2 = Tank("Sink", elevation=10.0, fluid_level=0.0, fluid_type="iso_vg_46", temperature=293.15)
     
-    pump = CentrifugalPump("Pump", flow_rated=0.01, pressure_rated=1000000.0, efficiency=0.5)
+    pump = CentrifugalPump("Pump", flow_rated=0.01, head_rated=water_head(1000000.0), efficiency=0.5)
     
     nodes = {"t1": t1, "t2": t2, "p1": pump}
     edges = [

@@ -3,6 +3,7 @@ import os
 import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
+from physics_refs import water_head
 from simulation.equipment.tank import Tank
 from simulation.equipment.pipe import Pipe
 from simulation.equipment.centrifugal_pump import CentrifugalPump
@@ -18,7 +19,7 @@ def test_inactive_centrifugal_pump():
     gs = GlobalSettings(fluid_type="water")
     
     t1 = Tank("Source", fluid_level=2.0, elevation=0.0, temperature=293.15, fluid_type="water")
-    p1 = CentrifugalPump("Pump", flow_rated=100.0/60000.0, pressure_rated=5.0*100000.0, rise_to_shutoff_pct=20.0)
+    p1 = CentrifugalPump("Pump", flow_rated=100.0/60000.0, head_rated=water_head(5.0*100000.0), rise_to_shutoff_pct=20.0)
     p1.active = False  # Set to inactive
     t2 = Tank("Sink", fluid_level=1.0, elevation=0.0, temperature=293.15, fluid_type="water")
 
@@ -40,8 +41,30 @@ def test_inactive_centrifugal_pump():
     dp_pump = p1.outlets[0].pressure - p1.inlets[0].pressure
     
     assert q > 0
-    # Boost should be exactly 0
-    assert abs(dp_pump) < 1e-6
+    # D2: a stopped pump is a locked-rotor resistance, rated head lost at rated flow
+    q_r = 100.0 / 60000.0
+    rho = p1.inlets[0].density
+    x = q / q_r
+    assert dp_pump == pytest.approx(-rho * 9.81 * water_head(5.0e5) * (0.95 * x * abs(x) + 0.05 * x), rel=1e-3)
+    assert dp_pump < 0
+
+
+def test_f3_16_stopped_pump_between_equal_heads_passes_no_flow():
+    gs = GlobalSettings(fluid_type="water")
+    t1 = Tank("Source", fluid_level=1.0, temperature=293.15)
+    p1 = CentrifugalPump("Pump", flow_rated=100.0/60000.0, head_rated=water_head(5.0e5), rise_to_shutoff_pct=20.0)
+    p1.active = False
+    t2 = Tank("Sink", fluid_level=1.0, temperature=293.15)
+    nodes = {"t1": t1, "p1": p1, "t2": t2}
+    edges = [
+        {"source": "t1", "target": "p1", "pipe": Pipe("p1", 1.0, 0.05)},
+        {"source": "p1", "target": "t2", "pipe": Pipe("p2", 1.0, 0.05)}
+    ]
+    for n in nodes.values(): n.global_settings = gs
+    for e in edges: e['pipe'].global_settings = gs
+    NetworkSolver(HydraulicNetwork(nodes=nodes, edges=edges)).solve()
+    # < 0.1 % of rated flow; the remainder is the solver's residual tolerance (~5 Pa, B1b)
+    assert abs(p1.inlets[0].flow_rate) * 60000.0 < 0.05  # L/min
 
 def test_inactive_volumetric_pump():
     """

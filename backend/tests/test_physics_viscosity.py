@@ -1,74 +1,43 @@
-import sys
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+"""F1-41: pipe friction against an independent Darcy–Weisbach / Colebrook calculation, for oil at two temperatures."""
+import pytest
 
+from physics_refs import pipe_dp, pipe_flow, solve
 from simulation.equipment.tank import Tank
 from simulation.equipment.pipe import Pipe
-from simulation.equipment.centrifugal_pump import CentrifugalPump
-from simulation.schemas import HydraulicNetwork, GlobalSettings
-from simulation.solver import NetworkSolver
+from simulation.fluid_utils import FluidProperties
 
-def test_viscosity_impact():
-    print("\n--- Phase 9: Temperature/Viscosity Impact Test ---")
-    gs = GlobalSettings()
-    
-    # We'll use ISO VG 46 Oil
-    # At 20°C (293.15 K), viscosity is high.
-    # At 80°C (353.15 K), viscosity is low.
-    
-    def solve_for_temp(temp_c):
-        temp_k = temp_c + 273.15
-        
-        # Setup: Tank -> Pump -> Pipe -> Tank
-        tank_source = Tank("Oil Tank", fluid_level=2.0, temperature=temp_k, fluid_type="iso_vg_46")
-        pump = CentrifugalPump("Main Pump", flow_rated=100.0/60000.0, pressure_rated=10.0*100000.0, rise_to_shutoff_pct=20.0)
-        pipe = Pipe("Long Pipe", length=100.0, diameter=0.05)
-        tank_sink = Tank("Return Tank", fluid_level=1.0, temperature=temp_k, fluid_type="iso_vg_46")
-        
-        nodes = {
-            "t1": tank_source,
-            "p1": pump,
-            "pipe1": pipe,
-            "t2": tank_sink
-        }
-        for node in nodes.values():
-            node.global_settings = gs
-        
-        edges = [
-            {"source": "t1", "target": "p1", "pipe": Pipe("p0", 1, 0.05)},
-            {"source": "p1", "target": "t2", "pipe": pipe}
-        ]
-        for edge in edges:
-            edge['pipe'].global_settings = gs
-        
-        network = HydraulicNetwork(nodes=nodes, edges=edges)
-        solver = NetworkSolver(network)
-        
-        stats = solver.solve()
-        q = pump.inlets[0].flow_rate
-        
-        # Check source tank viscosity
-        tank_mu = tank_source.outlets[0].viscosity
-        print(f"Tank Viscosity: {tank_mu*1000:.2f} mPa.s")
-        
-        # Get pipe viscosity and pressure drop
-        mu = pipe.inlets[0].viscosity
-        dp = pipe.calculate()
-        
-        print(f"Temp: {temp_c}C | Viscosity: {mu*1000:.2f} mPa.s | Flow: {q*60000:.2f} L/min | Pipe dP: {dp/1000:.2f} kPa")
-        return q, dp
+FLUID = "iso_vg_46"
+D, L, ROUGH = 0.05, 100.0, 0.000045
 
-    print("Running simulation at 20C (Cold Oil)...")
-    q_cold, dp_cold = solve_for_temp(20)
-    
-    print("\nRunning simulation at 60C (Warm Oil)...")
-    q_warm, dp_warm = solve_for_temp(60)
-    
-    print("\nResults Analysis:")
-    if q_warm > q_cold:
-        print("SUCCESS: Flow rate increased as oil warmed up (lower viscosity).")
-    else:
-        print("FAILURE: Flow rate did not increase with temperature.")
 
-if __name__ == "__main__":
-    test_viscosity_impact()
+def _gravity_flow(temp_c):
+    t_k = temp_c + 273.15
+    nodes = {
+        "t1": Tank("Oil Tank", fluid_level=12.0, temperature=t_k, fluid_type=FLUID),
+        "t2": Tank("Return Tank", fluid_level=2.0, temperature=t_k, fluid_type=FLUID),
+    }
+    pipe = Pipe("Long Pipe", length=L, diameter=D, roughness=ROUGH)
+    stats = solve(nodes, [{"source": "t1", "target": "t2", "pipe": pipe}], fluid=FLUID)
+    assert stats["success"]
+    return pipe, t_k
+
+
+@pytest.mark.parametrize("temp_c", [20.0, 60.0])
+def test_pipe_flow_matches_darcy_colebrook(temp_c):
+    pipe, t_k = _gravity_flow(temp_c)
+    rho = FluidProperties.get_density(FLUID, t_k)
+    mu = FluidProperties.get_viscosity(FLUID, t_k)
+    # Oil properties must reach the pipe (the old test silently ran with water)
+    assert pipe.inlets[0].viscosity == pytest.approx(mu, rel=1e-3)
+
+    dp_static = rho * 9.81 * (12.0 - 2.0)
+    q_ref = pipe_flow(dp_static, L, D, ROUGH, rho, mu)
+    q = pipe.inlets[0].flow_rate
+    assert q == pytest.approx(q_ref, rel=0.01)
+    assert pipe.inlets[0].pressure - pipe.outlets[0].pressure == pytest.approx(pipe_dp(q, L, D, ROUGH, rho, mu), rel=0.01)
+
+
+def test_warm_oil_flows_more():
+    q_cold = _gravity_flow(20.0)[0].inlets[0].flow_rate
+    q_warm = _gravity_flow(60.0)[0].inlets[0].flow_rate
+    assert q_warm > 1.5 * q_cold  # VG46: ~6.6x lower viscosity at 60 °C, laminar regime

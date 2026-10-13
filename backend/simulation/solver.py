@@ -357,6 +357,12 @@ class NetworkSolver:
                 break
 
         if solve_error is None and final_sol_x is not None:
+            # F1-02: report the last hydraulic solution together with the control positions it
+            # was solved with; the outer loop may have moved them afterwards (e.g. at the limit).
+            for idx in self.control_node_indices:
+                self.nodes_list[idx].opening_pct = curr_control_states[idx]
+            for idx in self.tcv_node_indices:
+                self.nodes_list[idx].mix_ratio = curr_control_states[f"tcv_{idx}"]
             num_int = len(self.internal_node_indices)
             self._update_telemetry(final_sol_x[:num_int], final_sol_x[num_int:])
 
@@ -721,7 +727,7 @@ class NetworkSolver:
                 if isinstance(self.network.nodes[tgt_id], ThreeWayTCV):
                     tgt_node = self.network.nodes[tgt_id]
                     port_idx = self._parse_port_idx(edge.get('target_port', 'inlet-0'))
-                    dp_tcv = tgt_node.calculate_path_dp(q_edges[j], tgt_node.inlets[port_idx].density, port_idx)
+                    dp_tcv = tgt_node.calculate_path_dp(q_edges[j], tgt_node.inlets[port_idx].density, port_idx, tgt_node.inlets[port_idx].viscosity)
                     dp_pipe = edge['pipe'].calculate_delta_p(q_edges[j], edge['pipe'].inlets[0].density, edge['pipe'].inlets[0].viscosity)
                     residuals.append(((p_src_out - p_in_all[tgt_idx]) - (dp_pipe + dp_tcv)) / p_scale)
                 else:
@@ -807,8 +813,9 @@ class NetworkSolver:
         elif hasattr(node, 'calculate_delta_p'):
             if self._use_mcp_for_node(node):
                 p_out_est = p_in
+                node_key = self.node_to_key.get(id(node), node.id)
                 for edge in self.all_edges_list:
-                    if edge['source'] == node.id:
+                    if edge['source'] == node_key:
                         tgt_id = edge['target']
                         tgt_idx = self.all_node_id_to_idx[tgt_id]
                         tgt_node = self.network.nodes[tgt_id]

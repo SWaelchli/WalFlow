@@ -84,6 +84,14 @@ class ThreeWayTCV(HydraulicNode):
             if outlet.flow_rate < 0:
                 inward_temps.append((m_out_rev, outlet.temperature))
             mix_temp = sum(m * t for m, t in inward_temps) / m_tot
+            # Throttling heat of both forward paths (F1-16): power Q·ΔP ends up in the mixed stream
+            heat_w = 0.0
+            for port, idx in ((inlet_0, 0), (inlet_1, 1)):
+                if port.flow_rate > 0:
+                    heat_w += port.flow_rate * max(0.0, self.calculate_path_dp(port.flow_rate, port.density, idx, port.viscosity))
+            if heat_w > 0.0 and outlet.flow_rate >= 0:
+                fluid = getattr(self.global_settings, 'fluid_type', 'water')
+                mix_temp += heat_w / (m_tot * FluidProperties.get_specific_heat(fluid, mix_temp))
         else:
             mix_temp = inlet_0.temperature
             

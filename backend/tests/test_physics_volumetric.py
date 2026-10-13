@@ -36,8 +36,8 @@ def test_volumetric_physics_isolation():
     # So 1 L/min drop SHOULD be 100 bar (1e7 Pa).
     assert approx(dp_99, 100e5, rel=0.01)
 
-    # 3. Power Limit Hit (Now create a power-limited pump)
-    pump_lim = VolumetricPump("LimPump", flow_rated=q_rated_m3s, motor_power=5000.0, efficiency=0.8)
+    # 3. Power Limit Hit (VFD with power limit; a fixed-speed drive keeps its flow, see below)
+    pump_lim = VolumetricPump("LimPump", flow_rated=q_rated_m3s, motor_power=5000.0, efficiency=0.8, drive_type="vfd_power_limit")
     q_50 = 50.0 / 60000.0
     dp_50 = pump_lim.calculate_delta_p(q_50, 1000.0)
     # Usable = 4000W. P = 4000 / (50/60000) = 4,800,000 Pa (48 bar)
@@ -50,15 +50,18 @@ def test_volumetric_physics_isolation():
     assert dp_1 == 20_000_000.0
 
     # 5. Efficiency Scaling
-    pump_low_eff = VolumetricPump("LowEff", flow_rated=q_rated_m3s, motor_power=5000.0, efficiency=0.4)
+    pump_low_eff = VolumetricPump("LowEff", flow_rated=q_rated_m3s, motor_power=5000.0, efficiency=0.4, drive_type="vfd_power_limit")
     dp_50_low = pump_low_eff.calculate_delta_p(q_50, 1000.0)
     assert approx(dp_50_low * 2, dp_50, rel=0.05)
 
-    # 6. Aiding Flow
-    # Q > Q_rated. Pump should not add pressure.
-    q_110 = 110.0 / 60000.0
-    dp_110 = pump.calculate_delta_p(q_110, 1000.0)
-    assert dp_110 == 0.0
+    # 6. Aiding Flow (F1-35): Q > Q_rated, the pump brakes (negative ΔP) instead of passing freely
+    q_101 = 101.0 / 60000.0
+    dp_101 = pump.calculate_delta_p(q_101, 1000.0)
+    assert approx(dp_101, -100e5, rel=0.01)
+
+    # 3b. Fixed-speed drive (default) ignores the motor rating for the flow
+    pump_fixed = VolumetricPump("Fixed", flow_rated=q_rated_m3s, motor_power=5000.0, efficiency=0.8)
+    assert pump_fixed.calculate_delta_p(q_50, 1000.0) == 20_000_000.0
 
 def create_simple_network(pump_node, valve_opening=100.0):
     """Helper to build Tank -> Pump -> Valve -> Tank"""
@@ -155,7 +158,7 @@ def test_volumetric_network_scenarios():
     # Small motor (500W). Usable = 450W.
     # At 100 L/min, max dP = 450 / (100/60000) = 2.7e5 Pa (2.7 bar)
     # If we restrict the valve, flow MUST drop below 100 L/min to balance.
-    p_small = VolumetricPump("Small", flow_rated=q_rated_m3s, motor_power=500, efficiency=0.9)
+    p_small = VolumetricPump("Small", flow_rated=q_rated_m3s, motor_power=500, efficiency=0.9, drive_type="vfd_power_limit")
     net_small = create_simple_network(p_small, valve_opening=5.0) # Highly restricted
     solver_small = NetworkSolver(net_small)
     stats_small = solver_small.solve()
@@ -166,6 +169,21 @@ def test_volumetric_network_scenarios():
     dp = p_small.outlets[0].pressure - p_small.inlets[0].pressure
     actual_power = dp * q_res
     assert actual_power <= 500 * 0.9 * 1.05 # Allow 5% tolerance for numerical convergence
+    p_small.refresh_warnings()
+    assert p_small.power_limited and not p_small.motor_overload
+
+    # 9b. Same network, fixed-speed drive (D3): flow stays at displacement, motor overload flagged
+    #     Valve sized for ~10 bar at 100 L/min (well below the 200 bar guard), shaft power ~1.85 kW
+    p_fixed = VolumetricPump("SmallFixed", flow_rated=q_rated_m3s, motor_power=500, efficiency=0.9)
+    net_fixed = create_simple_network(p_fixed, valve_opening=100.0)
+    net_fixed.nodes["v1"].max_cv = 2.2
+    NetworkSolver(net_fixed).solve()
+    assert not p_fixed.pressure_cap_reached
+    assert approx(p_fixed.inlets[0].flow_rate, q_rated_m3s, rel=0.01)
+    p_fixed.refresh_warnings()
+    assert p_fixed.motor_overload and not p_fixed.power_limited
+    dp_fixed = p_fixed.outlets[0].pressure - p_fixed.inlets[0].pressure
+    assert approx(p_fixed.motor_load_pct, 100.0 * q_rated_m3s * dp_fixed / 0.9 / 500.0, rel=0.01)
 
     # 10. Series Stability
     # Two pumps in series. This is often unstable for solvers.

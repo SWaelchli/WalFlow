@@ -47,7 +47,7 @@
       "data": {
         "label": "Centrifugal Pump (Dynamic H-Q)",
         "flow_rated_lmin": 100.0,
-        "pressure_rated_bar": 5.0,
+        "head_rated_m": 50.97,
         "rise_to_shutoff_pct": 25.0
       }
     },

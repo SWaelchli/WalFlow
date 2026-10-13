@@ -48,7 +48,7 @@
       "data": {
         "label": "Primary Chiller Pump A",
         "flow_rated_lmin": 300.0,
-        "pressure_rated_bar": 4.5,
+        "head_rated_m": 45.74,
         "rise_to_shutoff_pct": 15.0
       }
     },
@@ -62,7 +62,7 @@
       "data": {
         "label": "Primary Chiller Pump B",
         "flow_rated_lmin": 300.0,
-        "pressure_rated_bar": 4.5,
+        "head_rated_m": 45.74,
         "rise_to_shutoff_pct": 15.0
       }
     },

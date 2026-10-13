@@ -24,6 +24,11 @@ from simulation.equipment.pressure_source import PressureSource
 from simulation.equipment.flow_source import FlowSource
 from simulation.equipment.base_node import HydraulicNode
 
+
+class ModelInputError(ValueError):
+    """Invalid or missing user input in the diagram. The message names the component and is
+    safe to show to the user unchanged."""
+
 class GraphParser:
     @staticmethod
     def resolve_graph_for_case(graph: ReactFlowGraph, target_case_id: Optional[str] = None) -> ReactFlowGraph:
@@ -205,14 +210,22 @@ class GraphParser:
             )
         elif t == 'centrifugal_pump' or t == 'pump':
             flow_rated_lmin = float(d.get('flow_rated_lmin', 100.0))
-            pressure_rated_bar = float(d.get('pressure_rated_bar', 5.0))
             rise_pct = float(d.get('rise_to_shutoff_pct', 20.0))
+            # D1 (B1a): pumps are rated in head. Older files only have pressure_rated_bar and
+            # are deliberately not converted; the user enters the head once.
+            head_m = d.get('head_rated_m')
+            if head_m is None or float(head_m) <= 0:
+                raise ModelInputError(f"Pump '{name}': rated head missing. Enter the rated head (m) in the pump inspector.")
+            eff_pct = float(d.get('efficiency', 75.0))
+            if not 1.0 <= eff_pct <= 100.0:
+                raise ModelInputError(f"Pump '{name}': efficiency must be between 1 and 100 %.")
 
             node = CentrifugalPump(
                 name=name,
                 flow_rated=flow_rated_lmin / 60000.0,
-                pressure_rated=pressure_rated_bar * 100000.0,
-                rise_to_shutoff_pct=rise_pct
+                head_rated=float(head_m),
+                rise_to_shutoff_pct=rise_pct,
+                efficiency=eff_pct / 100.0
             )
         elif t == 'volumetric_pump':
             # flow_rated in L/min -> convert to m3/s
@@ -231,7 +244,8 @@ class GraphParser:
                 name=name,
                 flow_rated=flow_m3s,
                 motor_power=power_w,
-                efficiency=eff_dec
+                efficiency=eff_dec,
+                drive_type=str(d.get('drive_type', 'fixed_speed'))
             )
         elif t == 'linear_control_valve':
             node = LinearControlValve(

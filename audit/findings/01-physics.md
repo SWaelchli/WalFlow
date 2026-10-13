@@ -555,3 +555,9 @@ Density and α (0.0007 /K) are typical for mineral oils ✔. cp is +4 to +5 % vs
 
 - 1.8 Bottleneck: only computed from the last residual vector; meaningful only on failure. OK for now; UX review in 3.4.
 - 1.11 Multiplicity beyond controllers/PSV latch (parallel check valves, parallel centrifugal pumps near shut-off) → revisit in 1.23 / 1.28.
+
+#### F1-42  Mixing assumes constant cp: mixed temperature slightly off for large temperature differences
+- **Severity: S3** (found in B1a while turning `test_physics_mixing.py` into assertions, 2026-10-13)
+- Location: `base_node.py › HydraulicNode.calculate_temperature` weights port temperatures by mass flow only.
+- Evidence: VG46, 810 L/min at 80 °C + 1097 L/min at 20 °C → 44.88 °C; the enthalpy balance with cp(T) gives 45.74 °C (0.86 K, 1.4 % of the span). Water and small ΔT are hardly affected.
+- Suggested fix: weight by m·cp, or solve the enthalpy balance (cp is linear in T for the oil correlations). Guarded by the strict-xfail test `test_f1_42_…` in `test_physics_mixing.py`. Batch: B1d.

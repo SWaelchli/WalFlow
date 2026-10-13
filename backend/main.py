@@ -16,7 +16,7 @@ from auth import decode_access_token
 from limiter import limiter
 
 from simulation.solver import NetworkSolver, run_sequential_relief_simulation
-from simulation.graph_parser import GraphParser
+from simulation.graph_parser import GraphParser, ModelInputError
 from simulation.schemas import ReactFlowGraph
 from simulation.equipment.linear_control_valve import LinearControlValve
 
@@ -148,6 +148,11 @@ async def websocket_endpoint(websocket: WebSocket):
                         network_instance = GraphParser.parse_graph(rf_graph)
                         solver_instance = NetworkSolver(network_instance)
                         print(f"Graph updated: {len(network_instance.nodes)} nodes, {len(network_instance.edges)} edges.")
+                    except ModelInputError:
+                        # User input problem (e.g. missing pump head). Sent 250 ms after every edit,
+                        # so stay silent here; the message is shown when the user runs a simulation.
+                        network_instance, solver_instance = None, None
+                        continue
                     except Exception as e:
                         print(f"Graph Parse Error: {e}")
                         traceback.print_exc()
@@ -179,6 +184,10 @@ async def websocket_endpoint(websocket: WebSocket):
                         rf_graph = ReactFlowGraph(**graph_data)
                         network_instance = GraphParser.parse_graph(rf_graph)
                         solver_instance = NetworkSolver(network_instance)
+                    except ModelInputError as e:
+                        network_instance, solver_instance = None, None
+                        await websocket.send_text(json.dumps({"status": "error", "message": str(e)}))
+                        continue
                     except Exception as e:
                         print(f"Graph Parse Error during Simulation: {e}")
                         traceback.print_exc()

@@ -3,6 +3,7 @@ import os
 import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
+from physics_refs import water_head
 from simulation.equipment.tank import Tank
 from simulation.equipment.centrifugal_pump import CentrifugalPump
 from simulation.equipment.pressure_safety_valve import PressureSafetyValve
@@ -12,7 +13,7 @@ from simulation.solver import NetworkSolver
 
 def test_psv_pop_action_cracking():
     tank_in = Tank(name="Supply Tank", elevation=0.0, fluid_level=2.0)
-    pump = CentrifugalPump(name="Feed Pump", flow_rated=0.002, pressure_rated=500000.0) # 5 bar
+    pump = CentrifugalPump(name="Feed Pump", flow_rated=0.002, head_rated=water_head(500000.0)) # 5 bar
     psv = PressureSafetyValve(name="PSV-101", set_pressure_bar=2.0, cv=10.0, action_mode="pop_action")
     tank_out = Tank(name="Drain Tank", elevation=0.0, fluid_level=0.0)
 
@@ -38,7 +39,7 @@ def test_psv_pop_action_cracking():
 
 def test_psv_unmitigated_higher_pressure():
     tank_in = Tank(name="Supply Tank", elevation=0.0, fluid_level=2.0)
-    pump = CentrifugalPump(name="Feed Pump", flow_rated=0.002, pressure_rated=600000.0) # 6 bar
+    pump = CentrifugalPump(name="Feed Pump", flow_rated=0.002, head_rated=water_head(600000.0)) # 6 bar
     psv = PressureSafetyValve(name="PSV-101", set_pressure_bar=3.0, cv=15.0, action_mode="pop_action")
     tank_out = Tank(name="Drain Tank", elevation=0.0, fluid_level=0.0)
 
@@ -70,7 +71,7 @@ def test_psv_unmitigated_higher_pressure():
 
 def test_psv_modulating_and_rupture_disc():
     tank_in = Tank(name="Supply Tank", elevation=0.0, fluid_level=2.0)
-    pump = CentrifugalPump(name="Feed Pump", flow_rated=0.002, pressure_rated=400000.0) # 4 bar
+    pump = CentrifugalPump(name="Feed Pump", flow_rated=0.002, head_rated=water_head(400000.0)) # 4 bar
     psv = PressureSafetyValve(name="PSV-102", set_pressure_bar=2.5, cv=10.0, action_mode="modulating")
     tank_out = Tank(name="Drain Tank", elevation=0.0, fluid_level=0.0)
 

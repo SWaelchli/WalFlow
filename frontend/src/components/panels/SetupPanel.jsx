@@ -550,6 +550,12 @@ export default function SetupPanel({
             setLocalDrafts({});
             return;
           }
+        } else if (field === 'efficiency') {
+          if (isNaN(numericValue) || numericValue < 1 || numericValue > 100) {
+            alert('Efficiency must be a number between 1 and 100 %.');
+            setLocalDrafts({});
+            return;
+          }
         } else if (isNaN(numericValue) || numericValue <= 0) {
           alert(`${field} must be a positive number greater than zero.`);
           setLocalDrafts({});
@@ -807,26 +813,59 @@ export default function SetupPanel({
                 />
               </div>
               <div>
-                {renderLabel(`Rated Pressure (${isImperial ? 'psi(d)' : 'bar(d)'})`, 'pressure_rated_bar')}
-                <input 
-                  type="number" 
+                {renderLabel(`Rated Head (${isImperial ? 'ft' : 'm'})`, 'head_rated_m')}
+                <input
+                  type="number"
                   step="0.1"
-                  className="form-input" style={{ width: '100%' }} 
-                  value={localDrafts.pressure_rated_bar !== undefined ? localDrafts.pressure_rated_bar : (isImperial ? (Number(effectiveData.pressure_rated_bar || 5.0) * 14.5037738).toFixed(1) : (effectiveData.pressure_rated_bar || 5.0))} 
-                  onChange={(e) => handleDraftChange('pressure_rated_bar', e.target.value)}
-                  onBlur={(e) => validateAndCommit('pressure_rated_bar', e.target.value, true)}
+                  className="form-input" style={{ width: '100%' }}
+                  placeholder={effectiveData.head_rated_m ? undefined : 'Enter rated head'}
+                  value={localDrafts.head_rated_m !== undefined ? localDrafts.head_rated_m : (effectiveData.head_rated_m ? (isImperial ? (Number(effectiveData.head_rated_m) * 3.280839895).toFixed(1) : effectiveData.head_rated_m) : '')}
+                  onChange={(e) => handleDraftChange('head_rated_m', e.target.value)}
+                  onBlur={(e) => { if (e.target.value !== '' || effectiveData.head_rated_m) validateAndCommit('head_rated_m', e.target.value, true); }}
                 />
+                {!effectiveData.head_rated_m ? (
+                  <div role="alert" style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', marginTop: '6px', padding: '6px 8px', borderRadius: '6px', backgroundColor: '#FEF3C7', border: '1px solid #FCD34D', fontSize: '10px', color: '#92400E' }}>
+                    <WarningIcon size={12} color="#92400E" style={{ flexShrink: 0, marginTop: '1px' }} />
+                    <span>
+                      Rated head missing. Pumps are rated in head since v0.2; this pump{effectiveData.pressure_rated_bar ? ` had a rated pressure of ${effectiveData.pressure_rated_bar} bar(d)` : ''}. Enter the head from the pump datasheet; the simulation will not run until then.
+                    </span>
+                  </div>
+                ) : (
+                  <p style={{ fontSize: '10px', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
+                    Pressure rise = ρ·g·head, so it follows the fluid density.
+                    {data.telemetry?.inlets?.[0]?.density ? ` At the last result (ρ = ${data.telemetry.inlets[0].density.toFixed(0)} kg/m³) the rated head equals ${isImperial ? `${(data.telemetry.inlets[0].density * 9.81 * effectiveData.head_rated_m / 6894.757).toFixed(1)} psi(d)` : `${(data.telemetry.inlets[0].density * 9.81 * effectiveData.head_rated_m / 1e5).toFixed(2)} bar(d)`}.` : ''}
+                  </p>
+                )}
               </div>
               <div>
                 {renderLabel('Rise to Shut-off (%)', 'rise_to_shutoff_pct')}
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
-                  value={localDrafts.rise_to_shutoff_pct !== undefined ? localDrafts.rise_to_shutoff_pct : (effectiveData.rise_to_shutoff_pct || 20.0)} 
+                  value={localDrafts.rise_to_shutoff_pct !== undefined ? localDrafts.rise_to_shutoff_pct : (effectiveData.rise_to_shutoff_pct || 20.0)}
                   onChange={(e) => handleDraftChange('rise_to_shutoff_pct', e.target.value)}
                   onBlur={(e) => validateAndCommit('rise_to_shutoff_pct', e.target.value)}
                 />
               </div>
+              <div>
+                {renderLabel('Pump Efficiency (%)', 'efficiency')}
+                <input
+                  type="number"
+                  min="1" max="100" step="1"
+                  className="form-input" style={{ width: '100%' }}
+                  value={localDrafts.efficiency !== undefined ? localDrafts.efficiency : (effectiveData.efficiency ?? 75)}
+                  onChange={(e) => handleDraftChange('efficiency', e.target.value)}
+                  onBlur={(e) => validateAndCommit('efficiency', e.target.value, true)}
+                />
+                <p style={{ fontSize: '10px', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
+                  Hydraulic pump efficiency only, excluding the motor. Used for pump heat and shaft power.
+                </p>
+              </div>
+              {effectiveData.active === false && (
+                <p style={{ fontSize: '10px', color: 'var(--color-text-secondary)', margin: 0 }}>
+                  Stopped pump: modelled as a flow resistance in both directions (rated head lost at rated flow). Add a check valve to block backflow.
+                </p>
+              )}
             </>
           )}
 
@@ -857,7 +896,24 @@ export default function SetupPanel({
                 />
               </div>
               <div>
-                {renderLabel(`Motor Power (${isImperial ? 'HP' : 'kW'})`, 'motor_power')}
+                {renderLabel('Drive', 'drive_type')}
+                <select
+                  className="form-select"
+                  style={{ width: '100%', height: '32px', fontSize: '11px' }}
+                  value={effectiveData.drive_type || 'fixed_speed'}
+                  onChange={(e) => { if (isNode) onUpdate(id, { drive_type: e.target.value }); }}
+                >
+                  <option value="fixed_speed">Fixed speed (motor overload flagged)</option>
+                  <option value="vfd_power_limit">VFD with power limit (flow reduced)</option>
+                </select>
+                <p style={{ fontSize: '10px', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
+                  {(effectiveData.drive_type || 'fixed_speed') === 'fixed_speed'
+                    ? 'Flow stays at displacement; above the motor rating the motor would overheat and trip.'
+                    : 'Above the motor rating the drive slows the pump, so the flow drops to the power limit.'}
+                </p>
+              </div>
+              <div>
+                {renderLabel(`Motor Rating (${isImperial ? 'HP' : 'kW'})`, 'motor_power')}
                 <input 
                   type="number" 
                   step="0.1"
@@ -868,14 +924,17 @@ export default function SetupPanel({
                 />
               </div>
               <div>
-                {renderLabel('Efficiency (%)', 'efficiency')}
-                <input 
-                  type="number" 
-                  className="form-input" style={{ width: '100%' }} 
-                  value={localDrafts.efficiency !== undefined ? localDrafts.efficiency : (effectiveData.efficiency || 0)} 
+                {renderLabel('Pump Efficiency (%)', 'efficiency')}
+                <input
+                  type="number"
+                  className="form-input" style={{ width: '100%' }}
+                  value={localDrafts.efficiency !== undefined ? localDrafts.efficiency : (effectiveData.efficiency || 0)}
                   onChange={(e) => handleDraftChange('efficiency', e.target.value)}
                   onBlur={(e) => validateAndCommit('efficiency', e.target.value)}
                 />
+                <p style={{ fontSize: '10px', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
+                  Pump efficiency only, excluding the motor. Shaft power = flow × ΔP ÷ efficiency.
+                </p>
               </div>
             </>
           )}

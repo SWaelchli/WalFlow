@@ -25,13 +25,31 @@ const CavitationWarning = () => (
   </div>
 );
 
+const PumpWarning = ({ title, text, tone = 'warning' }) => (
+  <div role="alert" style={{
+    background: tone === 'danger' ? '#fff1f2' : '#FEF3C7',
+    padding: '10px',
+    borderRadius: 'var(--radius-sm)',
+    border: `1px solid ${tone === 'danger' ? 'var(--color-danger)' : '#FCD34D'}`,
+    display: 'flex', flexDirection: 'column', gap: '4px'
+  }}>
+    <div style={{ fontSize: '12px', fontWeight: 'bold', color: tone === 'danger' ? 'var(--color-danger)' : '#92400E' }}>{title}</div>
+    <p style={{ fontSize: '11px', color: tone === 'danger' ? 'var(--color-danger)' : '#92400E', margin: 0 }}>{text}</p>
+  </div>
+);
+
+const GRAVITY = 9.81;
+
 const PumpDetails = memo(function PumpDetails({ node }) {
   const { labels, isImperial, formatPressurePa, formatFlowM3s, formatPower } = useUnits();
   const { type, data } = node;
   const { 
-    flow_rated_lmin, pressure_rated_bar, rise_to_shutoff_pct, 
-    flow_rated, motor_power, efficiency, telemetry 
+    flow_rated_lmin, head_rated_m, rise_to_shutoff_pct, 
+    flow_rated, motor_power, efficiency, drive_type, telemetry 
   } = data;
+  const isFixedSpeed = (drive_type || 'fixed_speed') === 'fixed_speed';
+  // Density of the last result; the curve is in head, so ΔP follows ρ
+  const rho = telemetry?.inlets?.[0]?.density || 1000;
   
   const showCavitationWarning = telemetry?.cavitation_warning === true;
   const currentQ = telemetry?.inlets?.[0]?.flow_rate || 0;
@@ -68,15 +86,15 @@ const PumpDetails = memo(function PumpDetails({ node }) {
           const eff_dec = (parseFloat(efficiency) || 85) / 100;
           const stiffness = 10_000_000.0 / (0.01 * flow_rated_m3s);
           const dp_displacement = Math.max(0, stiffness * (flow_rated_m3s - qM3s));
-          const dp_power = (power_w * eff_dec) / Math.sqrt(qM3s**2 + 1e-10);
+          const dp_power = isFixedSpeed ? Infinity : (power_w * eff_dec) / Math.sqrt(qM3s**2 + 1e-10);
           pumpBar = Math.min(dp_displacement, dp_power, 20_000_000.0) / 100000;
       } else {
           const q_rated_m3s = (parseFloat(flow_rated_lmin) || 100) / 60000;
-          const p_rated_pa = (parseFloat(pressure_rated_bar) || 5.0) * 100000;
+          const h_rated = parseFloat(head_rated_m) || 0;
           const rise = parseFloat(rise_to_shutoff_pct) || 20.0;
-          const p_shutoff = p_rated_pa * (1.0 + rise / 100.0);
-          let c_coeff = (q_rated_m3s > 0) ? (p_rated_pa - p_shutoff) / (q_rated_m3s ** 2) : 0;
-          pumpBar = Math.max(0, p_shutoff + c_coeff * (qM3s ** 2)) / 100000;
+          const h_shutoff = h_rated * (1.0 + rise / 100.0);
+          const c_coeff = (q_rated_m3s > 0) ? (h_rated - h_shutoff) / (q_rated_m3s ** 2) : 0;
+          pumpBar = Math.max(0, rho * GRAVITY * (h_shutoff + c_coeff * (qM3s ** 2))) / 100000;
       }
 
       const systemBar = K * (qM3s ** 2);
@@ -99,14 +117,27 @@ const PumpDetails = memo(function PumpDetails({ node }) {
       maxY: (localMaxY * pressMultiplier) * 1.1,
       opPoint: [{ q: opQ, p: opP }]
     };
-  }, [isVolumetric, flow_rated_lmin, pressure_rated_bar, rise_to_shutoff_pct, flow_rated, motor_power, efficiency, currentQ, currentDpBar, maxX_lmin, isImperial, actualFlowLmin]);
+  }, [isVolumetric, isFixedSpeed, rho, flow_rated_lmin, head_rated_m, rise_to_shutoff_pct, flow_rated, motor_power, efficiency, currentQ, currentDpBar, maxX_lmin, isImperial, actualFlowLmin]);
 
   const hydraulicPowerKW = (currentDpPa * Math.abs(currentQ)) / 1000;
-  const motorLimitKW = isVolumetric ? (motor_power * (efficiency / 100)) : 0;
+  const motorLoadPct = telemetry?.motor_load_pct;
+  const shaftPowerKW = telemetry?.shaft_power_kw;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', fontFamily: 'inherit' }}>
       {showCavitationWarning && <CavitationWarning />}
+      {telemetry?.motor_overload && (
+        <PumpWarning tone="danger" title={`MOTOR OVERLOADED (${Math.round(motorLoadPct || 0)} % OF RATING)`}
+          text="Shaft power exceeds the motor rating. A fixed-speed motor keeps the flow but would overheat and trip; reduce the discharge pressure or use a larger motor." />
+      )}
+      {telemetry?.power_limited && (
+        <PumpWarning title="POWER-LIMITED"
+          text="The drive has reduced the speed to stay within the motor rating, so the flow is below displacement." />
+      )}
+      {telemetry?.pressure_cap_reached && (
+        <PumpWarning tone="danger" title="PRESSURE LIMIT REACHED (200 BAR)"
+          text="The PD pump is dead-headed or nearly so. In reality pressure rises until something fails; add a relief valve." />
+      )}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-brand-dark)', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '3px solid var(--color-primary)', paddingLeft: '8px' }}>
           Performance Curve
@@ -141,10 +172,21 @@ const PumpDetails = memo(function PumpDetails({ node }) {
           <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--color-text-primary)', fontFamily: 'var(--font-mono)' }}>{formatPower(Math.max(0, hydraulicPowerKW))} <span style={{ fontSize: '9px', fontWeight: '500' }}>{labels.power}</span></div>
         </div>
         <div style={{ background: 'var(--color-surface-hover)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
-          <div style={{ fontSize: '10.5px', color: 'var(--color-text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: '2px' }}>Load Factor</div>
-          <div style={{ fontSize: '12px', fontWeight: '700', color: isVolumetric && hydraulicPowerKW > motorLimitKW * 0.95 ? 'var(--color-danger)' : 'var(--color-success)', fontFamily: 'var(--font-mono)' }}>
-            {isVolumetric ? ((Math.max(0, hydraulicPowerKW) / motorLimitKW) * 100).toFixed(0) : '—'} <span style={{ fontSize: '9px', fontWeight: '500' }}>%</span>
-          </div>
+          {isVolumetric ? (
+            <>
+              <div style={{ fontSize: '10.5px', color: 'var(--color-text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: '2px' }}>Motor Load</div>
+              <div style={{ fontSize: '12px', fontWeight: '700', color: (motorLoadPct || 0) > 100 ? 'var(--color-danger)' : 'var(--color-success)', fontFamily: 'var(--font-mono)' }}>
+                {motorLoadPct !== undefined ? motorLoadPct.toFixed(0) : '—'} <span style={{ fontSize: '9px', fontWeight: '500' }}>%</span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ fontSize: '10.5px', color: 'var(--color-text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: '2px' }}>Shaft Power</div>
+              <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--color-text-primary)', fontFamily: 'var(--font-mono)' }}>
+                {shaftPowerKW !== undefined ? formatPower(shaftPowerKW) : '—'} <span style={{ fontSize: '9px', fontWeight: '500' }}>{labels.power}</span>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

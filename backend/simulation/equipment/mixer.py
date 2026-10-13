@@ -1,4 +1,5 @@
 from simulation.equipment.base_node import HydraulicNode
+from simulation.fluid_utils import FluidProperties
 
 class Mixer(HydraulicNode):
     """
@@ -31,5 +32,11 @@ class Mixer(HydraulicNode):
         outlet.viscosity = self.inlets[0].viscosity
         
         self.calculate_temperature()
+
+        # Report outlet properties at the mixed temperature (not inlet 0's)
+        if outlet.flow_rate >= 0 and self.global_settings:
+            fluid_type = self.global_settings.fluid_type
+            outlet.density = FluidProperties.get_density(fluid_type, outlet.temperature)
+            outlet.viscosity = FluidProperties.get_viscosity(fluid_type, outlet.temperature)
         
         return 0.0

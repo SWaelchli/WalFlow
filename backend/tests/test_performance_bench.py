@@ -17,7 +17,7 @@ def generate_stress_network(size=10):
     """
     nodes = [
         {"id": "t_start", "type": "tank", "data": {"label": "Source", "level": 10.0}, "position": {"x":0,"y":0}},
-        {"id": "p_main", "type": "centrifugal_pump", "data": {"A": 100, "B": 0, "C": -1000}, "position": {"x":100,"y":0}},
+        {"id": "p_main", "type": "centrifugal_pump", "data": {"label": "Main Pump", "head_rated_m": 51.0}, "position": {"x":100,"y":0}},
     ]
     edges = [
         {"id": "e_start", "source": "t_start", "target": "p_main", "data": {"length": 1, "diameter": 0.1}}

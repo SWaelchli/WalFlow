@@ -1,59 +1,36 @@
-import sys
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+"""F1-41: filter – the user's rating point is reproduced, and colder oil gives a higher ΔP."""
+import pytest
 
+from physics_refs import solve
 from simulation.equipment.tank import Tank
 from simulation.equipment.pipe import Pipe
-from simulation.equipment.centrifugal_pump import CentrifugalPump
+from simulation.equipment.flow_source import FlowSource
 from simulation.equipment.filter import Filter
-from simulation.schemas import HydraulicNetwork, GlobalSettings
-from simulation.solver import NetworkSolver
 
-def test_filter_viscosity():
-    print("\n--- Phase 9: Filter Viscosity Impact Test ---")
-    
-    def solve_with_filter(temp_c):
-        temp_k = temp_c + 273.15
-        gs = GlobalSettings()
-        
-        tank_source = Tank("Oil Tank", fluid_level=2.0, temperature=temp_k, fluid_type="iso_vg_46")
-        pump = CentrifugalPump("Main Pump", flow_rated=100.0/60000.0, pressure_rated=10.0*100000.0, rise_to_shutoff_pct=20.0)
-        # Filter with high resistance to make it dominant
-        filt = Filter("Oil Filter", dp_clean_bar=1.0, flow_ref_lmin=100.0)
-        tank_sink = Tank("Return Tank", fluid_level=1.0, temperature=temp_k, fluid_type="iso_vg_46")
-        
-        nodes = {"t1": tank_source, "p1": pump, "f1": filt, "t2": tank_sink}
-        for node in nodes.values():
-            node.global_settings = gs
+Q_REF_LMIN = 100.0
 
-        edges = [
-            {"source": "t1", "target": "p1", "pipe": Pipe("p1", 1, 0.05)},
-            {"source": "p1", "target": "f1", "pipe": Pipe("p2", 1, 0.05)},
-            {"source": "f1", "target": "t2", "pipe": Pipe("p3", 1, 0.05)}
-        ]
-        for edge in edges:
-            edge['pipe'].global_settings = gs
-        
-        network = HydraulicNetwork(nodes=nodes, edges=edges)
-        solver = NetworkSolver(network)
-        q = solver.solve()
-        
-        mu = filt.inlets[0].viscosity
-        dp = filt.calculate()
-        
-        print(f"Temp: {temp_c}C | Viscosity: {mu*1000:.2f} mPa.s | Filter dP: {dp/1000:.2f} kPa")
-        return dp
 
-    print("Cold Oil (20C):")
-    dp_cold = solve_with_filter(20)
-    
-    print("\nWarm Oil (60C):")
-    dp_warm = solve_with_filter(60)
-    
-    if dp_warm < dp_cold:
-        print("\nSUCCESS: Filter pressure drop decreased as oil warmed up.")
-    else:
-        print("\nFAILURE: Filter pressure drop did not decrease.")
+def _filter_dp(fluid, temp_c):
+    t_k = temp_c + 273.15
+    src = FlowSource("Feed", source_flow=Q_REF_LMIN / 60000.0, temperature=t_k)
+    filt = Filter("Oil Filter", dp_clean_bar=1.0, flow_ref_lmin=Q_REF_LMIN)
+    sink = Tank("Return Tank", fluid_level=1.0, temperature=t_k, fluid_type=fluid)
+    edges = [
+        {"source": "src", "target": "f1", "pipe": Pipe("p1", 1, 0.05)},
+        {"source": "f1", "target": "t2", "pipe": Pipe("p2", 1, 0.05)},
+    ]
+    stats = solve({"src": src, "f1": filt, "t2": sink}, edges, fluid=fluid)
+    assert stats["success"]
+    assert filt.inlets[0].flow_rate == pytest.approx(Q_REF_LMIN / 60000.0, rel=1e-3)
+    return filt.inlets[0].pressure - filt.outlets[0].pressure
 
-if __name__ == "__main__":
-    test_filter_viscosity()
+
+def test_clean_filter_reproduces_rating_point_with_water():
+    # dp_clean is defined at the reference flow with water (filter.py docstring)
+    assert _filter_dp("water", 20.0) == pytest.approx(1.0e5, rel=0.05)
+
+
+def test_cold_oil_gives_higher_filter_dp():
+    dp_cold = _filter_dp("iso_vg_46", 20.0)
+    dp_warm = _filter_dp("iso_vg_46", 60.0)
+    assert dp_cold > dp_warm

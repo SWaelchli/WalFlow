@@ -191,6 +191,7 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
         return Number(kwToHp(num, 2));
 
       // Pipe Length, Level, Elevation (base: m)
+      case 'head_rated_m':
       case 'length':
       case 'level':
       case 'elevation':
@@ -288,6 +289,7 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
         return hpToKw(num);
 
       // Pipe Length, Level, Elevation (input: ft -> base: m)
+      case 'head_rated_m':
       case 'length':
       case 'level':
       case 'elevation':

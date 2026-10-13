@@ -181,6 +181,8 @@ Each batch becomes one requirement prompt (4.3). Every physics fix gets a regres
 | F0-02 file format | Implied by the above: 0.1 files are intentionally incompatible, with no migration | B2: apply the version check consistently on **every** load path (import, examples, drafts, cloud) with one clear message instead of silent purge; re-save examples and the greeting canvas as 0.2 |
 | F3-03 anonymous simulation | **Anonymous users may run simulations** | B3: WS default allows `simulate`; collaboration messages (`join_diagram`, lock events) still need a login (F2-25); `/batch` stays open but gets a solver timeout and size limit (F2-13) |
 | F3-19 / F0-03 version | Current version is **0.2.0** (release outstanding, next release number) | B5: AGENTS.md → app 0.2.0 / format 0.2; remove the hard-coded `0.2.1` in Sidebar; GreetingCanvas `app_version`; backend version read from one place |
+| F1-18 / F3-16 centrifugal pump (B1a) | Input is **rated head (m)**; older files are **not converted**: pump blocked with "rated head missing"; examples converted. Stopped pump = locked-rotor resistance (rated head at rated flow). Efficiency input, default 75 %, pump only (excl. motor) | B1a |
+| F1-36 PD pump overload (B1a) | **Drive-type field**: fixed speed (default, keeps flow, "motor overloaded, would trip") or VFD power limit (flow reduced, "power-limited") | B1a |
 
 ---
 
@@ -225,3 +227,38 @@ Anchors re-resolved at `HEAD` = `3e46a3b` (no code changed since the audit).
 - Tests (regression references): `pipeDefaults.test.js`, `useCanvasHistory.test.jsx`, `SetupPanel.test.jsx`, `DataList.test.jsx`.
 - Follow-ups (user request, same day): the node's rotate handle now creates an undo step; keyboard/ReactFlow delete, paste/duplicate and rotate respect the read-only lock (`App.jsx › blockIfReadOnly`, `deleteKeyCode` off when read-only).
 - **New finding F2-29 (S1)** (see 02-frontend.md), fixed on user approval: `App.jsx › handleLoadDiagramWithCheck` prompts whenever a cloud drawing or project is open; on confirm it saves pending edits to that drawing, releases its lock, and clears drawing and project before loading.
+
+### B1a: physics quick wins and honest tests (implemented 2026-10-13, uncommitted)
+
+Anchors re-resolved at `HEAD` = `d9bb345` (backend unchanged since the audit, so baseline line numbers still apply).
+
+**Goal.** The physics tests fail when the physics is wrong. Pumps, valves and the iteration limit report physically consistent numbers.
+
+1. **F1-41 (+F0-05), tests first.** Turn the six print-only files (`test_physics_regulator.py`, `…_regulator_scenarios.py`, `…_filters.py`, `…_mixing.py`, `…_reverse_flow.py`, `…_viscosity.py`) into assertions against independent references (Crane TP-410, ISO 5167, fluid tables; the audit's `benchmarks.py` / `props_check.py` values), plus an "at setpoint" check per regulator scenario. Tests that currently encode a B1a bug are marked `xfail` with the finding ID and turned green by its fix.
+2. **F1-05.** TCV path ΔP in the solver residual uses the real viscosity (`solver.py › objective`, grep `calculate_path_dp`).
+3. **F1-16, throttling heat.** Control valve, regulator, RCV, check valve, check valve + orifice, PSV, rupture disc (and both TCV paths) keep their outlet temperature ΔT = ΔP/(ρ·cp). Components stay adiabatic (no heat loss to ambient), as orifice/filter already are. Magnitude test per restriction type (≈138 mK at 5.79 bar, water).
+4. **F1-02, iteration limit.** Reported telemetry is always the last hydraulic solution with the openings that solution used; openings are not updated after the final solve. (Flagging "not converged" in the UI is B1b, F1-07.)
+5. **F1-35 / F1-36, volumetric pump.**
+   - Displacement spring acts both ways (a pushed pump brakes and passes ≈ its displacement).
+   - **D3: new "Drive" field.** `fixed_speed` (default): flow stays ≈ displacement; if shaft power Q·ΔP/η exceeds the motor rating, warning "Motor overloaded (X % of rating), would trip". `vfd_power_limit`: flow is reduced to the power limit (today's behaviour) with warning "Power-limited". Warnings appear in the pump detail panel.
+   - KPI pump power from the actual operating point (Q·ΔP/η) for both pump types; inactive pumps count 0. The 200 bar hard cap stays as a numerical guard.
+6. **F1-18 (+F3-16) / F1-34, centrifugal pump.**
+   - **D1: input is rated head (m)**, not rated pressure. Solver: H(Q) = H₀ + C·Q², ΔP = ρ(T)·g·H; "rise to shut-off" applies to head. Inspector shows the equivalent ΔP as information. New pumps default to 50 m.
+   - **D1: no conversion of older files.** A pump with only `pressure_rated_bar` shows "Rated head missing" in the inspector, and the simulation refuses to run with a message naming the pump. The shipped examples and the greeting canvas are converted (head = rated pressure ÷ (ρ·g) at each example's fluid and operating temperature, so their results stay the same).
+   - **D4: "Pump efficiency (%)" input**, default 75 %, labelled as hydraulic pump efficiency **excluding the motor** (used for pump heat and shaft power). The PD pump's existing efficiency field gets the same wording.
+   - **D2: stopped pump = locked-rotor resistance**, ΔP = −ρ·g·H_rated·(Q/Q_rated)·|Q/Q_rated| in both directions, with an inspector note when the pump is Off.
+   - Running pump in reverse flow: ΔP rises again (C_rev = −C), so a weaker parallel pump dead-heads instead of passing reverse flow at near shut-off pressure.
+
+**Effect on existing diagrams.** Temperatures downstream of valves rise slightly; PD pumps fed from a pressurised header and stopped centrifugal pumps change most; with D1 = head-based, oil-system pump ΔP shifts ~1–2 % per 30 K away from the rating temperature. Stored results in the examples stay stale until the example re-save at the end of B2. Pumps in users' own 0.2 files need their rated head entered once (D1).
+
+**Out of scope:** convergence/status flags (B1b), relief devices (B1c), fluid properties incl. NPSH (B1d), warning UI beyond the pump detail panel (B4, F3-05).
+
+**Verification:** `pytest backend/tests`, every fix with a test named after its finding against an independent value; solve all 11 shipped diagrams before/after and list the changed KPIs; frontend lint/build/test for the new fields (head, efficiency, drive; consult `ui-ux-pro-max`); one CHANGELOG line.
+
+**B1a result (2026-10-13).**
+- Done as described. Regression tests (lasting references): `test_physics_{regulator,regulator_scenarios,filters,mixing,reverse_flow,viscosity}.py` (now asserting against `tests/physics_refs.py`: Darcy–Weisbach/Colebrook, adiabatic throttling, enthalpy balance), `test_f1_16_throttling_heat.py`, `test_f1_05_tcv_viscosity.py`, `test_f1_02_iteration_limit.py`, `test_b1a_pumps.py`, `test_physics_active_inactive.py › test_f3_16_…`; frontend `PumpInspector.test.jsx`.
+- Found and fixed on the way: the old filter/viscosity tests never used oil (system fluid stayed water); mixer outlet reported inlet 0's density; `_get_node_p_out` matched edges by `node.id` instead of the network key (wrong check-valve outlet pressure in hand-built networks; the app was unaffected).
+- Model details: stopped centrifugal pump = locked-rotor loss with 5 % linear share (keeps zero flow well defined; loss at rated flow = rated head); PD pump `pressure_cap_reached` flag at the 200 bar guard; `ModelInputError` passes input errors (missing head) to the user on explicit runs only (graph updates every 250 ms stay silent).
+- Shipped diagrams (21 cases): all solve. Expected changes only: valve outlets 0.05–0.5 K warmer (F1-16); API 682 min pressure −2.22 → 1.09 bar(a) (F1-02); API 614 cold-start peak 9.81 → 7.86 bar(a), the old peak was a TCV-inlet artifact (F1-05); TCV flows ±1 % (F1-05); pump power KPI = shaft power (e.g. 37 → 3.2–8.6 kW). Converted pumps: results unchanged.
+- **New finding F1-42 (S3)**, mixing with constant cp; strict-xfail test; proposed for B1d.
+- **Notes for B1b:** solver residual tolerance leaves ~5 Pa (≈0.02 L/min at a stopped pump); outer loop at its limit leaves a property lag of up to ~3 % in laminar-oil pipe ΔP (F1-15); `test_f1_02_…` allows 5 % until then.

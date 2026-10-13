@@ -61,6 +61,9 @@ All notable changes to the WälFlow project will be documented in this file.
 - TR2000 design-code mapping to DIN EN reducers now matches whole words only; reducer nodes with null geometry no longer crash the graph parser.
 - Fixed imperial pipe sizes stored 39× too small, misaligned DataList columns (added sortable Name column), numeric inputs reformatting while typing (now commit on blur/Enter, Esc reverts), cloud-load cancel leaving the wrong diagram active, and examples/files loaded over an open cloud drawing overwriting it.
 - New pipes default to DN50 STD; pipes from older files show as Manual with their matching size or custom inner diameter. Undo history resets on load, covers add/connect/delete/paste/rotate, and is blocked on read-only drawings, which also block delete, paste and rotate.
+- Centrifugal pumps are rated in head (m) with an efficiency input (pump only, excl. motor); a stopped pump acts as a flow resistance and a running pump resists reverse flow. Older files need the rated head entered once; examples are converted.
+- PD pumps get a drive type (fixed speed with motor-overload warning, or VFD power limit) and no longer pass unlimited flow when fed from a pressurised header; pump power KPI now uses actual shaft power.
+- Fixed throttling heat missing in valves, check valves and relief devices, TCV pressure drop using water viscosity, and inconsistent results when the control loop hits its iteration limit; physics tests now assert against independent references.
 
 
 ---

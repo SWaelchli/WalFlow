@@ -94,6 +94,6 @@ class LinearControlValve(HydraulicNode):
         inlet.density = FluidProperties.get_density(fluid_type, inlet.temperature)
         inlet.viscosity = FluidProperties.get_viscosity(fluid_type, inlet.temperature)
         
-        self.calculate_temperature()
+        # Outlet temperature already includes the throttling heat (F1-16); do not overwrite it
         
         return dp

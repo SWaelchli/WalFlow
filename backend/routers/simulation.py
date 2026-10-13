@@ -41,18 +41,10 @@ def calculate_case_kpis(network, telemetry: Dict[str, Any], stats: Dict[str, Any
         if node_tel.get("cavitation_warning", False):
             has_cavitation = True
 
-        # Aggregate pump power & flow
+        # Aggregate pump power & flow: shaft power Q·ΔP/η at the actual operating point,
+        # stopped pumps count 0 (F1-36)
         if isinstance(node, (VolumetricPump, CentrifugalPump)):
-            if isinstance(node, CentrifugalPump):
-                inlet_flow = node.inlets[0].flow_rate if node.inlets else 0.0
-                inlet_p = node.inlets[0].pressure if node.inlets else 101325.0
-                outlet_p = node.outlets[0].pressure if node.outlets else 101325.0
-                dp = max(0.0, outlet_p - inlet_p)
-                eta = getattr(node, 'efficiency', 0.75)
-                eta = max(0.05, eta)
-                total_pump_power_w += abs(inlet_flow * dp) / eta
-            else:
-                total_pump_power_w += getattr(node, 'motor_power', 0.0)
+            total_pump_power_w += node.shaft_power()
             for outlet in node.outlets:
                 total_flow_m3s += abs(outlet.flow_rate)
 
@@ -91,6 +83,15 @@ def extract_telemetry(network) -> Dict[str, Any]:
             node_tel["sensed_pressure"] = node.sensed_pressure
         if hasattr(node, 'cavitation_warning'):
             node_tel["cavitation_warning"] = node.cavitation_warning
+        if isinstance(node, (VolumetricPump, CentrifugalPump)):
+            node_tel["shaft_power_kw"] = node.shaft_power() / 1000.0
+        if isinstance(node, VolumetricPump):
+            node.refresh_warnings()
+            node_tel["drive_type"] = node.drive_type
+            node_tel["motor_load_pct"] = node.motor_load_pct
+            node_tel["motor_overload"] = node.motor_overload
+            node_tel["power_limited"] = node.power_limited
+            node_tel["pressure_cap_reached"] = node.pressure_cap_reached
         if hasattr(node, 'actual_duty_kw'):
             node_tel["actual_duty_kw"] = node.actual_duty_kw
         if hasattr(node, 'status'):

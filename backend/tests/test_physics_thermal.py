@@ -2,6 +2,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
+from physics_refs import water_head
 from simulation.equipment.tank import Tank
 from simulation.equipment.pipe import Pipe
 from simulation.equipment.centrifugal_pump import CentrifugalPump
@@ -18,7 +19,7 @@ def test_thermal_balance():
     temp_initial_k = temp_initial_c + 273.15
     
     tank_source = Tank("Hot Oil Tank", fluid_level=2.0, temperature=temp_initial_k, fluid_type="iso_vg_46")
-    pump = CentrifugalPump("Main Pump", flow_rated=100.0/60000.0, pressure_rated=10.0*100000.0, rise_to_shutoff_pct=20.0)
+    pump = CentrifugalPump("Main Pump", flow_rated=100.0/60000.0, head_rated=water_head(10.0*100000.0), rise_to_shutoff_pct=20.0)
     # Cooling duty: -1,000,000 Watts (1 MW)
     hx = HeatExchanger("Oil Cooler", heat_duty=-1000000.0, rated_dp_bar=0.01)
     tank_sink = Tank("Return Tank", fluid_level=1.0, temperature=temp_initial_k, fluid_type="iso_vg_46")

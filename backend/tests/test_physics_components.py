@@ -5,6 +5,7 @@ import unittest
 # Add backend to path
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
+from physics_refs import water_head
 from simulation.equipment.tank import Tank
 from simulation.equipment.pipe import Pipe
 from simulation.equipment.centrifugal_pump import CentrifugalPump
@@ -62,7 +63,7 @@ def test_pump_curve():
     
     # 100 L/min at 5 bar duty point
     t1 = Tank("Source", fluid_level=1.0, elevation=0, temperature=293.15, fluid_type="iso_vg_46")
-    p1 = CentrifugalPump("Pump", flow_rated=100.0/60000.0, pressure_rated=5.0*100000.0, rise_to_shutoff_pct=20.0)
+    p1 = CentrifugalPump("Pump", flow_rated=100.0/60000.0, head_rated=water_head(5.0*100000.0), rise_to_shutoff_pct=20.0)
     v1 = LinearControlValve("LinearControlValve", max_cv=50.0, opening_pct=100.0)
     t2 = Tank("Sink", fluid_level=1.0, elevation=0, temperature=293.15, fluid_type="iso_vg_46")
 
@@ -102,7 +103,7 @@ def test_heat_exchanger():
     t1 = Tank("Source", fluid_level=5.0, elevation=0, temperature=333.15, fluid_type="iso_vg_46")
     # Low flow to see temperature change clearly
     v1 = LinearControlValve("Restriction", max_cv=0.001, opening_pct=100.0)
-    p1 = CentrifugalPump("Pump", flow_rated=100.0/60000.0, pressure_rated=2.0*100000.0, rise_to_shutoff_pct=20.0)
+    p1 = CentrifugalPump("Pump", flow_rated=100.0/60000.0, head_rated=water_head(2.0*100000.0), rise_to_shutoff_pct=20.0)
     hx = HeatExchanger("Cooler", heat_duty=duty_kw * 1000.0)
     t2 = Tank("Sink", fluid_level=1.0, elevation=0, temperature=293.15, fluid_type="iso_vg_46")
 
