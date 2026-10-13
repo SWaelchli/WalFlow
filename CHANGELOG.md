@@ -27,11 +27,8 @@ All notable changes to the WälFlow project will be documented in this file.
 - **Multi-Standard Support**: Seeded European DIN EN 10253-2 buttweld reducers alongside ASME B16.9 and mapped TR2000 specifications to their authorized default fitting standard.
 - **Enhanced Equipment Categorization**: Reorganized sidebar into dedicated *Piping & Fittings* and *Distribution & Manifolds* sections, and added velocity color-coding in DataList.
 - **AI Agent Skill (`.agents/skills/pipe-classes`)**: Added dedicated skill documentation for AI pair programmers and LLM agents.
-
-
-
-
-
+- **Catalog-Driven Reducer Inspector**: Reducer sizes now come from the fitting standards catalog (incl. DIN EN 10253-2 and custom standards), follow the connected line's pipe class standard and wall thickness, and report missing data inline instead of guessing.
+- **Fitting Standard Validation & Restore**: Fitting standard create/update/import is validated (atomic import), deletion is blocked while pipe classes reference a standard, and admins can restore edited built-in standards to factory data.
 
 ### Changed
 
@@ -58,6 +55,9 @@ All notable changes to the WälFlow project will be documented in this file.
 - Fixed solver dead-end leaf pruning and DFS reachability to correctly handle `FlowSource` boundary nodes.
 - Fixed solver warm-start cache lookup collisions by incorporating active node pressure-boundary states into the topology key.
 - Fixed solver pressure drop evaluation and mass-balance constraints for 2-port inline nodes (such as flow sources and pumps) when their inlet ports are unconnected.
+- Fixed reducer gradual-contraction loss coefficients (Crane TP 410 angle ranges were swapped, overstating losses ~57% for standard reducers) and the reducer Jacobian sign under static pressure recovery.
+- Pipe classes now reject unknown fitting standard references, and pipe class library import keeps reducer / schedule standard codes.
+- TR2000 design-code mapping to DIN EN reducers now matches whole words only; reducer nodes with null geometry no longer crash the graph parser.
 
 
 ---

@@ -61,53 +61,36 @@ class Reducer(HydraulicNode):
             half_rad = math.atan(abs(self.d1 - self.d2) / (2.0 * self.length))
             self.cone_angle_deg = math.degrees(2.0 * half_rad)
 
+    def _crane_contraction_k(self, beta: float) -> float:
+        """Crane TP 410 (A-26) gradual contraction, K2 referenced to the small bore."""
+        theta_rad = math.radians(max(1.0, min(180.0, self.cone_angle_deg)))
+        if self.cone_angle_deg <= 45.0:
+            return 0.8 * math.sin(theta_rad / 2.0) * (1.0 - beta ** 2)
+        return 0.5 * (1.0 - beta ** 2) * math.sqrt(math.sin(theta_rad / 2.0))
+
+    def _crane_expansion_k(self, beta: float) -> float:
+        """Crane TP 410 (A-26) gradual enlargement, K2 referenced to the small bore."""
+        theta_rad = math.radians(max(1.0, min(180.0, self.cone_angle_deg)))
+        if self.cone_angle_deg <= 45.0:
+            return 2.6 * math.sin(theta_rad / 2.0) * ((1.0 - beta ** 2) ** 2)
+        return (1.0 - beta ** 2) ** 2
+
     def _get_form_loss_k(self, flow_rate: float) -> tuple[float, float]:
         """
         Calculates the form loss coefficient K and returns (K, ref_area).
-        Applies Crane TP 410 conical contraction / diffuser formulas.
+        K is always referenced to the small-bore velocity (Crane TP 410 K2 basis).
         """
-        theta_rad = math.radians(max(1.0, min(180.0, self.cone_angle_deg)))
+        if self.d1 == self.d2:
+            return 0.0, self.area_in
 
-        if flow_rate >= 0:
-            # Flow from 1 (inlet) to 2 (outlet)
-            if self.d1 > self.d2:
-                # Contraction: smaller diameter is d2
-                beta = self.d2 / self.d1
-                if self.cone_angle_deg <= 45.0:
-                    k = 0.5 * (1.0 - beta ** 2) * math.sqrt(math.sin(theta_rad / 2.0))
-                else:
-                    k = 0.8 * math.sin(theta_rad / 2.0) * (1.0 - beta ** 2)
-                return k, self.area_out
-            elif self.d1 < self.d2:
-                # Expansion / Diffuser: smaller diameter is d1
-                beta = self.d1 / self.d2
-                if self.cone_angle_deg <= 45.0:
-                    k = 2.6 * math.sin(theta_rad / 2.0) * ((1.0 - beta ** 2) ** 2)
-                else:
-                    k = 1.0 * ((1.0 - beta ** 2) ** 2)
-                return k, self.area_in
-            else:
-                return 0.0, self.area_in
-        else:
-            # Reverse flow: from 2 (outlet) to 1 (inlet)
-            if self.d1 > self.d2:
-                # Reverse of contraction is an expansion (from d2 to d1, smaller is d2)
-                beta = self.d2 / self.d1
-                if self.cone_angle_deg <= 45.0:
-                    k = 2.6 * math.sin(theta_rad / 2.0) * ((1.0 - beta ** 2) ** 2)
-                else:
-                    k = 1.0 * ((1.0 - beta ** 2) ** 2)
-                return k, self.area_out
-            elif self.d1 < self.d2:
-                # Reverse of expansion is a contraction (from d2 to d1, smaller is d1)
-                beta = self.d1 / self.d2
-                if self.cone_angle_deg <= 45.0:
-                    k = 0.5 * (1.0 - beta ** 2) * math.sqrt(math.sin(theta_rad / 2.0))
-                else:
-                    k = 0.8 * math.sin(theta_rad / 2.0) * (1.0 - beta ** 2)
-                return k, self.area_in
-            else:
-                return 0.0, self.area_in
+        small_area = min(self.area_in, self.area_out)
+        beta = min(self.d1, self.d2) / max(self.d1, self.d2)
+        # Flow decelerates (expansion) when it travels from the small towards the large bore
+        flow_into_larger = (self.d1 < self.d2) == (flow_rate >= 0)
+
+        if flow_into_larger:
+            return self._crane_expansion_k(beta), small_area
+        return self._crane_contraction_k(beta), small_area
 
     def _get_friction_factor(self, flow_rate: float, density: float, viscosity: float) -> float:
         """Calculates Darcy friction factor over average diameter."""
@@ -184,9 +167,12 @@ class Reducer(HydraulicNode):
         deriv_bern = density * flow_rate * c_bern
         deriv = deriv_loss + deriv_bern
 
+        # Static pressure model: Bernoulli recovery can make dP/dQ negative (expander
+        # forward flow, reducer reverse flow). Keep the true sign so Newton steps point
+        # the right way; only regularize the near-zero-flow singularity.
         min_deriv = 100.0  # Pa / (m^3/s)
-        if deriv < min_deriv:
-            deriv = max(min_deriv, abs(deriv))
+        if abs(deriv) < min_deriv:
+            deriv = min_deriv
 
         return deriv
 

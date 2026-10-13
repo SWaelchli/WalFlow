@@ -3,16 +3,28 @@ import React, { useMemo, useState } from 'react';
 import { mToMm, mmToM } from '../../utils/converters';
 import { isCaseVariableProperty } from '../../constants/case_constants';
 import { isPropertyOverridden, getEffectiveNodeData } from '../../utils/case_resolver';
-import { GlobeIcon, BoltIcon } from '../symbols/IconLibrary';
+import { GlobeIcon, BoltIcon, WarningIcon, CrossIcon } from '../symbols/IconLibrary';
 
 import { useUnits } from '../../context/UnitContext';
-import { 
-  ASME_B16_9_REDUCERS, 
-  ASME_B36_10M_SCHEDULES, 
-  getReducerCombinations, 
-  getReducerEntry, 
-  getPipeScheduleDetails 
+import { useFittingStandards } from '../../hooks/useFittingStandards';
+import {
+  ASME_B36_10M_SCHEDULES,
+  getPipeScheduleDetails
 } from '../../constants/asme_b16_9_data';
+import {
+  DEFAULT_REDUCER_STANDARD,
+  CUSTOM_REDUCER_STANDARD,
+  normalizeReducerStandard,
+  getReducerStandardOptions,
+  getReducerDataset,
+  getLargeEndDns,
+  getSmallEndDns,
+  findReducerEntry,
+  coneAngleFromGeometry,
+  getEdgePipeClass,
+  resolveBore,
+  formatDnOption
+} from '../../utils/reducer_catalog';
 
 
 function PropertyBadge({ propKey, nodeId, cases = [], activeCaseId = 'case_base', onResetOverride }) {
@@ -470,6 +482,8 @@ export default function SetupPanel({
 
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [localDrafts, setLocalDrafts] = useState({});
+  const [reducerNotice, setReducerNotice] = useState(null); // { nodeId, kind: 'error' | 'warning', text }
+  const reducerStandards = useFittingStandards('reducer');
 
   const isNode = !!node;
   const item = isNode ? node : edge;
@@ -1589,7 +1603,7 @@ export default function SetupPanel({
           )}
 
           {isNode && (type === 'reducer' || type === 'expander') && (() => {
-            const isCustom = effectiveData.standard === 'CUSTOM';
+            const isCustom = effectiveData.standard === CUSTOM_REDUCER_STANDARD;
             const reducerType = effectiveData.reducer_type || 'concentric';
             const dnLarge = Number(effectiveData.dn_large || 80);
             const dnSmall = Number(effectiveData.dn_small || 50);
@@ -1597,126 +1611,165 @@ export default function SetupPanel({
             const schSmall = effectiveData.sch_small || 'STD';
             const isExpanding = effectiveData.orientation === 'expanding'; // Small -> Large
 
-            // Find connected inlet and outlet pipe edges
+            // Catalog standard (API-backed, bundled fallback)
+            const standardOptions = getReducerStandardOptions(reducerStandards);
+            const standardCode = isCustom ? DEFAULT_REDUCER_STANDARD : normalizeReducerStandard(effectiveData.standard);
+            const standardName = standardOptions.find(o => o.code === standardCode)?.name || standardCode;
+            const dataset = getReducerDataset(standardCode, standardOptions);
+
+            // Find connected inlet and outlet pipe edges and their pipe classes
             const connectedInletEdge = allEdges.find(e => e.target === id && (e.targetHandle === 'inlet-0' || !e.targetHandle));
             const connectedOutletEdge = allEdges.find(e => e.source === id && (e.sourceHandle === 'outlet-0' || !e.sourceHandle));
+            const inletClass = getEdgePipeClass(connectedInletEdge, availablePipeClasses);
+            const outletClass = getEdgePipeClass(connectedOutletEdge, availablePipeClasses);
+            const lineClass = inletClass || outletClass;
+            const classReducerStandard = lineClass?.reducer_standard_code ? normalizeReducerStandard(lineClass.reducer_standard_code) : null;
+            const classStandardMismatch = !isCustom && classReducerStandard && classReducerStandard !== standardCode;
+            const classStandardName = standardOptions.find(o => o.code === classReducerStandard)?.name || classReducerStandard;
 
-            const pipeInletDn = connectedInletEdge?.data?.standardDn || (connectedInletEdge?.data?.diameter ? Math.round(connectedInletEdge.data.diameter * 1000) : null);
-            const pipeOutletDn = connectedOutletEdge?.data?.standardDn || (connectedOutletEdge?.data?.diameter ? Math.round(connectedOutletEdge.data.diameter * 1000) : null);
-
+            const pipeInletDn = Number(connectedInletEdge?.data?.standardDn) || null;
+            const pipeOutletDn = Number(connectedOutletEdge?.data?.standardDn) || null;
             const pipeInletDiameterM = connectedInletEdge?.data?.diameter;
             const pipeOutletDiameterM = connectedOutletEdge?.data?.diameter;
 
-            // Available distinct large end sizes
-            const availableLargeDNs = Array.from(new Set(ASME_B16_9_REDUCERS.map(r => r.dn_large))).sort((a, b) => a - b);
-            
-            // Available small end sizes for current large end
-            const currentCombos = getReducerCombinations(dnLarge);
-            const availableSmallDNs = currentCombos.map(c => c.dn_small);
+            // Large end sits on the inlet when reducing, on the outlet when expanding
+            const largeClass = isExpanding ? outletClass : inletClass;
+            const smallClass = isExpanding ? inletClass : outletClass;
+            const largeBore = resolveBore(dnLarge, schLarge, largeClass);
+            const smallBore = resolveBore(dnSmall, schSmall, smallClass);
+            const largeSchFromClass = !!(largeBore && largeClass && largeBore.source === largeClass.code);
+            const smallSchFromClass = !!(smallBore && smallClass && smallBore.source === smallClass.code);
 
-            const activeCombo = getReducerEntry(dnLarge, dnSmall) || currentCombos[0];
-            const lengthMm = activeCombo ? activeCombo.length_mm : Number(effectiveData.length_mm || 89.0);
-            const coneAngleDeg = activeCombo ? activeCombo.cone_angle_deg : Number(effectiveData.cone_angle_deg || 18.2);
+            const activeEntry = findReducerEntry(dataset, dnLarge, dnSmall);
+            const lengthMm = Number(effectiveData.length_mm || (effectiveData.length ? effectiveData.length * 1000 : 89.0));
+            const coneAngleDeg = Number(effectiveData.cone_angle_deg || 18.2);
 
-            const largeSchDetails = getPipeScheduleDetails(dnLarge, schLarge);
-            const smallSchDetails = getPipeScheduleDetails(dnSmall, schSmall);
-
-            const idLargeMm = largeSchDetails ? largeSchDetails.id_mm : 77.92;
-            const idSmallMm = smallSchDetails ? smallSchDetails.id_mm : 52.48;
-
-            const dInMeters = isExpanding ? (idSmallMm / 1000.0) : (idLargeMm / 1000.0);
-            const dOutMeters = isExpanding ? (idLargeMm / 1000.0) : (idSmallMm / 1000.0);
+            // The bores the solver actually uses
+            const dInMeters = Number(effectiveData.diameter_in || 0.07792);
+            const dOutMeters = Number(effectiveData.diameter_out || 0.05248);
 
             const hasInletMismatch = pipeInletDiameterM && Math.abs(pipeInletDiameterM - dInMeters) > 0.0015;
             const hasOutletMismatch = pipeOutletDiameterM && Math.abs(pipeOutletDiameterM - dOutMeters) > 0.0015;
 
-            const handleAutoInheritFromLines = () => {
-              if (!connectedInletEdge && !connectedOutletEdge) {
-                alert("No connected pipe lines detected on inlet or outlet ports.");
+            const showNotice = (kind, text) => setReducerNotice({ nodeId: id, kind, text });
+
+            // Builds a consistent geometry update; refuses to guess when a bore is unknown.
+            const applySizes = ({ dl, ds, sl = schLarge, ss = schSmall, expanding = isExpanding, std = standardCode }) => {
+              const lClass = expanding ? outletClass : inletClass;
+              const sClass = expanding ? inletClass : outletClass;
+              const stdDataset = getReducerDataset(std, standardOptions);
+              const stdName = standardOptions.find(o => o.code === std)?.name || std;
+              const entry = findReducerEntry(stdDataset, dl, ds);
+              const lBore = resolveBore(dl, sl, lClass);
+              const sBore = resolveBore(ds, ss, sClass);
+
+              const missing = [];
+              if (!lBore) missing.push(`DN${dl} Sch ${sl}`);
+              if (!sBore) missing.push(`DN${ds} Sch ${ss}`);
+              if (missing.length > 0) {
+                showNotice('error', `No bore data for ${missing.join(' and ')}. Choose a listed schedule, assign a pipe class to the line, or switch to Custom dimensions.`);
                 return;
               }
-              const rawDnIn = connectedInletEdge?.data?.standardDn || 80;
-              const rawDnOut = connectedOutletEdge?.data?.standardDn || 50;
-              const schIn = connectedInletEdge?.data?.standardSch || 'STD';
-              const schOut = connectedOutletEdge?.data?.standardSch || 'STD';
 
-              const isExp = rawDnIn < rawDnOut;
-              const dl = isExp ? rawDnOut : rawDnIn;
-              const ds = isExp ? rawDnIn : rawDnOut;
-              const lSchName = isExp ? schOut : schIn;
-              const sSchName = isExp ? schIn : schOut;
-
-              const combo = getReducerEntry(dl, ds) || getReducerCombinations(dl)[0] || { length_mm: 89.0, cone_angle_deg: 18.2 };
-              const lSch = getPipeScheduleDetails(dl, lSchName);
-              const sSch = getPipeScheduleDetails(ds, sSchName);
-              const idLMm = lSch ? lSch.id_mm : (dl * 0.95);
-              const idSMm = sSch ? sSch.id_mm : (ds * 0.95);
+              const newLengthMm = entry ? Number(entry.length_mm) : lengthMm;
+              const newCone = entry ? Number(entry.cone_angle_deg) : coneAngleFromGeometry(lBore.id_mm, sBore.id_mm, newLengthMm);
 
               onUpdate(id, {
+                standard: std,
                 dn_large: dl,
-                nps_large: lSch ? lSch.nps : '',
+                nps_large: lBore.nps || '',
                 dn_small: ds,
-                nps_small: sSch ? sSch.nps : '',
-                sch_large: lSchName,
-                sch_small: sSchName,
-                orientation: isExp ? 'expanding' : 'reducing',
-                length: combo.length_mm / 1000.0,
-                length_mm: combo.length_mm,
-                cone_angle_deg: combo.cone_angle_deg,
-                diameter_in: isExp ? (idSMm / 1000.0) : (idLMm / 1000.0),
-                diameter_out: isExp ? (idLMm / 1000.0) : (idSMm / 1000.0),
+                nps_small: sBore.nps || '',
+                sch_large: lBore.sch,
+                sch_small: sBore.sch,
+                orientation: expanding ? 'expanding' : 'reducing',
+                length: newLengthMm / 1000.0,
+                length_mm: newLengthMm,
+                cone_angle_deg: Number(newCone.toFixed(2)),
+                diameter_in: (expanding ? sBore.id_mm : lBore.id_mm) / 1000.0,
+                diameter_out: (expanding ? lBore.id_mm : sBore.id_mm) / 1000.0,
+              });
+
+              if (entry) {
+                setReducerNotice(null);
+              } else {
+                showNotice('warning', `DN${dl} × DN${ds} is not listed in ${stdName}. Length kept at ${newLengthMm.toFixed(0)} mm; cone angle derived from the bores.`);
+              }
+            };
+
+            const handleAutoInheritFromLines = () => {
+              if (!connectedInletEdge && !connectedOutletEdge) {
+                showNotice('error', 'No pipe lines are connected to the inlet or outlet port.');
+                return;
+              }
+              const missingDn = [];
+              if (connectedInletEdge && !pipeInletDn) missingDn.push('inlet');
+              if (connectedOutletEdge && !pipeOutletDn) missingDn.push('outlet');
+              if (missingDn.length > 0) {
+                showNotice('error', missingDn.length > 1
+                ? 'The inlet and outlet lines have no nominal size (DN). Select a pipe class size or schedule preset on each line first.'
+                : `The ${missingDn[0]} line has no nominal size (DN). Select a pipe class size or schedule preset on the line first.`);
+                return;
+              }
+
+              // An open port keeps the reducer's current size on that side
+              const dnIn = pipeInletDn || (isExpanding ? dnSmall : dnLarge);
+              const dnOut = pipeOutletDn || (isExpanding ? dnLarge : dnSmall);
+              if (dnIn === dnOut) {
+                showNotice('error', `Both ends resolve to DN${dnIn}; a reducer needs two different sizes.`);
+                return;
+              }
+              const schIn = connectedInletEdge?.data?.standardSch || (isExpanding ? schSmall : schLarge);
+              const schOut = connectedOutletEdge?.data?.standardSch || (isExpanding ? schLarge : schSmall);
+              const expanding = dnIn < dnOut;
+
+              applySizes({
+                dl: expanding ? dnOut : dnIn,
+                ds: expanding ? dnIn : dnOut,
+                sl: expanding ? schOut : schIn,
+                ss: expanding ? schIn : schOut,
+                expanding,
+                std: classReducerStandard || standardCode,
               });
             };
 
             const handleLargeDnChange = (newDnLarge) => {
               const dl = Number(newDnLarge);
-              const combos = getReducerCombinations(dl);
-              const ds = combos.length > 0 ? combos[0].dn_small : Math.round(dl * 0.6);
-              const combo = getReducerEntry(dl, ds) || combos[0];
-              const lSch = getPipeScheduleDetails(dl, schLarge);
-              const sSch = getPipeScheduleDetails(ds, schSmall);
-              const idLMm = lSch ? lSch.id_mm : 77.92;
-              const idSMm = sSch ? sSch.id_mm : 52.48;
-
-              onUpdate(id, {
-                dn_large: dl,
-                nps_large: lSch ? lSch.nps : '',
-                dn_small: ds,
-                nps_small: sSch ? sSch.nps : '',
-                length: (combo ? combo.length_mm : 89.0) / 1000.0,
-                length_mm: combo ? combo.length_mm : 89.0,
-                cone_angle_deg: combo ? combo.cone_angle_deg : 18.2,
-                diameter_in: isExpanding ? (idSMm / 1000.0) : (idLMm / 1000.0),
-                diameter_out: isExpanding ? (idLMm / 1000.0) : (idSMm / 1000.0),
-              });
+              const smalls = getSmallEndDns(dataset, dl);
+              const ds = smalls.includes(dnSmall) ? dnSmall : (smalls[0] || dnSmall);
+              applySizes({ dl, ds });
             };
 
-            const handleSmallDnChange = (newDnSmall) => {
-              const ds = Number(newDnSmall);
-              const combo = getReducerEntry(dnLarge, ds);
-              const sSch = getPipeScheduleDetails(ds, schSmall);
-              const idSMm = sSch ? sSch.id_mm : 52.48;
-              const idLMm = largeSchDetails ? largeSchDetails.id_mm : 77.92;
-
-              onUpdate(id, {
-                dn_small: ds,
-                nps_small: sSch ? sSch.nps : '',
-                length: (combo ? combo.length_mm : 89.0) / 1000.0,
-                length_mm: combo ? combo.length_mm : 89.0,
-                cone_angle_deg: combo ? combo.cone_angle_deg : 18.2,
-                diameter_in: isExpanding ? (idSMm / 1000.0) : (idLMm / 1000.0),
-                diameter_out: isExpanding ? (idLMm / 1000.0) : (idSMm / 1000.0),
-              });
+            const handleStandardChange = (newStandard) => {
+              if (newStandard === CUSTOM_REDUCER_STANDARD) {
+                setReducerNotice(null);
+                onUpdate(id, { standard: CUSTOM_REDUCER_STANDARD });
+                return;
+              }
+              const newDataset = getReducerDataset(newStandard, standardOptions);
+              let dl = dnLarge;
+              let ds = dnSmall;
+              if (!findReducerEntry(newDataset, dl, ds)) {
+                const larges = getLargeEndDns(newDataset);
+                dl = larges.includes(dnLarge) ? dnLarge : (larges.find(d => d >= dnLarge) || larges[larges.length - 1]);
+                const smalls = getSmallEndDns(newDataset, dl);
+                ds = smalls.includes(dnSmall) ? dnSmall : smalls[0];
+              }
+              applySizes({ dl, ds, std: newStandard });
             };
 
-            const handleOrientationToggle = () => {
-              const nextExpanding = !isExpanding;
-              onUpdate(id, {
-                orientation: nextExpanding ? 'expanding' : 'reducing',
-                diameter_in: nextExpanding ? (idSmallMm / 1000.0) : (idLargeMm / 1000.0),
-                diameter_out: nextExpanding ? (idLargeMm / 1000.0) : (idSmallMm / 1000.0),
-              });
+            const availableLargeDNs = getLargeEndDns(dataset);
+            if (!availableLargeDNs.includes(dnLarge)) availableLargeDNs.push(dnLarge);
+            const availableSmallDNs = getSmallEndDns(dataset, dnLarge);
+            if (!availableSmallDNs.includes(dnSmall)) availableSmallDNs.push(dnSmall);
+            const dnLabel = (dn, end) => {
+              const entry = dataset.find(r => Number(r[`dn_${end}`]) === dn);
+              return formatDnOption(dn, entry?.[`nps_${end}`]);
             };
+            const scheduleOptions = (current) => (
+              ['STD', '40', '80', 'XS', '160'].includes(current) ? ['STD', '40', '80', 'XS', '160'] : [current, 'STD', '40', '80', 'XS', '160']
+            );
+            const notice = reducerNotice?.nodeId === id ? reducerNotice : null;
 
             const betaRatio = Math.min(dInMeters, dOutMeters) / Math.max(1e-6, Math.max(dInMeters, dOutMeters));
 
@@ -1742,15 +1795,71 @@ export default function SetupPanel({
                         onClick={handleAutoInheritFromLines}
                         className="btn-secondary"
                         style={{ height: '22px', padding: '0 8px', fontSize: '9px', fontWeight: '700', gap: '4px' }}
-                        title="Auto-match reducer sizes from connected lines"
+                        title="Match reducer sizes, schedules and fitting standard to the connected lines"
                       >
-                        ⚡ Auto-Detect Sizes
+                        <BoltIcon size={10} /> Auto-Detect Sizes
                       </button>
                     </div>
                     <div style={{ fontSize: '10px', color: 'var(--color-text-secondary)', display: 'flex', justifyContent: 'space-between' }}>
-                      <span>Inlet: {connectedInletEdge ? `DN${pipeInletDn || '?'} (${connectedInletEdge.data.pipe_class_code || 'Spec'})` : 'Open'}</span>
-                      <span>Outlet: {connectedOutletEdge ? `DN${pipeOutletDn || '?'} (${connectedOutletEdge.data.pipe_class_code || 'Spec'})` : 'Open'}</span>
+                      <span>Inlet: {connectedInletEdge ? `${pipeInletDn ? `DN${pipeInletDn}` : 'No DN'} (${connectedInletEdge.data?.pipe_class_code || 'Custom'})` : 'Open'}</span>
+                      <span>Outlet: {connectedOutletEdge ? `${pipeOutletDn ? `DN${pipeOutletDn}` : 'No DN'} (${connectedOutletEdge.data?.pipe_class_code || 'Custom'})` : 'Open'}</span>
                     </div>
+                  </div>
+                )}
+
+                {/* Inline result of the last size action (replaces blocking alerts) */}
+                {notice && (
+                  <div
+                    role={notice.kind === 'error' ? 'alert' : 'status'}
+                    style={{
+                      padding: '8px 10px',
+                      borderRadius: '8px',
+                      backgroundColor: notice.kind === 'error' ? '#FEF2F2' : '#FEF3C7',
+                      border: `1px solid ${notice.kind === 'error' ? '#FEE2E2' : '#FCD34D'}`,
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '6px',
+                      fontSize: '10px',
+                      color: notice.kind === 'error' ? '#B91C1C' : '#92400E'
+                    }}
+                  >
+                    <WarningIcon size={12} style={{ flexShrink: 0, marginTop: '1px' }} />
+                    <span style={{ flex: 1 }}>{notice.text}</span>
+                    <button
+                      type="button"
+                      onClick={() => setReducerNotice(null)}
+                      aria-label="Dismiss message"
+                      style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'inherit', padding: 0, display: 'inline-flex' }}
+                    >
+                      <CrossIcon size={10} />
+                    </button>
+                  </div>
+                )}
+
+                {/* Pipe class prescribes a different fitting standard */}
+                {classStandardMismatch && (
+                  <div style={{
+                    padding: '8px 10px',
+                    borderRadius: '8px',
+                    backgroundColor: '#F4F7F6',
+                    border: '1px solid #D8E2E1',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '6px',
+                    fontSize: '10px',
+                    color: '#1C2B2C'
+                  }}>
+                    <span>
+                      Pipe class <strong>{lineClass.code}</strong> specifies <strong>{classStandardName}</strong>; this reducer uses <strong>{standardName}</strong>.
+                    </span>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={() => handleStandardChange(classReducerStandard)}
+                      style={{ alignSelf: 'flex-start', height: '22px', padding: '0 8px', fontSize: '9px', fontWeight: '700' }}
+                    >
+                      Use {classStandardName}
+                    </button>
                   </div>
                 )}
 
@@ -1766,7 +1875,7 @@ export default function SetupPanel({
                     gap: '4px'
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ fontSize: '12px' }}>⚠️</span>
+                      <WarningIcon size={12} color="#92400E" />
                       <strong style={{ fontSize: '11px', color: '#92400E' }}>Pipe Size Mismatch Detected</strong>
                     </div>
                     <div style={{ fontSize: '10px', color: '#B45309' }}>
@@ -1798,11 +1907,18 @@ export default function SetupPanel({
                   <select
                     className="form-select"
                     style={{ width: '100%', height: '32px', fontSize: '11px' }}
-                    value={effectiveData.standard || 'ASME_B16_9'}
-                    onChange={(e) => onUpdate(id, { standard: e.target.value })}
+                    value={isCustom ? CUSTOM_REDUCER_STANDARD : standardCode}
+                    onChange={(e) => handleStandardChange(e.target.value)}
                   >
-                    <option value="ASME_B16_9">ASME B16.9 Standard Catalog</option>
-                    <option value="CUSTOM">Custom / Manual Dimensions</option>
+                    {standardOptions.map(o => (
+                      <option key={o.code} value={o.code}>
+                        {o.name}{o.code === classReducerStandard ? ' (pipe class)' : ''}
+                      </option>
+                    ))}
+                    {!isCustom && !standardOptions.some(o => o.code === standardCode) && (
+                      <option value={standardCode}>{standardCode} (not in catalog)</option>
+                    )}
+                    <option value={CUSTOM_REDUCER_STANDARD}>Custom / Manual Dimensions</option>
                   </select>
                 </div>
 
@@ -1827,7 +1943,8 @@ export default function SetupPanel({
                         Flow: {isExpanding ? 'Expander (Small → Large)' : 'Reducer (Large → Small)'}
                       </span>
                       <button
-                        onClick={handleOrientationToggle}
+                        type="button"
+                        onClick={() => applySizes({ dl: dnLarge, ds: dnSmall, expanding: !isExpanding })}
                         style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', background: '#ffffff', cursor: 'pointer' }}
                         title="Flip flow orientation between reducing and expanding"
                       >
@@ -1844,14 +1961,9 @@ export default function SetupPanel({
                           value={dnLarge}
                           onChange={(e) => handleLargeDnChange(e.target.value)}
                         >
-                          {availableLargeDNs.map(dn => {
-                            const sch = getPipeScheduleDetails(dn, 'STD');
-                            return (
-                              <option key={dn} value={dn}>
-                                {sch ? `${sch.nps}" (DN${dn})` : `DN${dn}`}
-                              </option>
-                            );
-                          })}
+                          {availableLargeDNs.map(dn => (
+                            <option key={dn} value={dn}>{dnLabel(dn, 'large')}</option>
+                          ))}
                         </select>
                       </div>
 
@@ -1861,16 +1973,11 @@ export default function SetupPanel({
                           className="form-select"
                           style={{ width: '100%', height: '30px', fontSize: '11px' }}
                           value={dnSmall}
-                          onChange={(e) => handleSmallDnChange(e.target.value)}
+                          onChange={(e) => applySizes({ dl: dnLarge, ds: Number(e.target.value) })}
                         >
-                          {availableSmallDNs.map(dn => {
-                            const sch = getPipeScheduleDetails(dn, 'STD');
-                            return (
-                              <option key={dn} value={dn}>
-                                {sch ? `${sch.nps}" (DN${dn})` : `DN${dn}`}
-                              </option>
-                            );
-                          })}
+                          {availableSmallDNs.map(dn => (
+                            <option key={dn} value={dn}>{dnLabel(dn, 'small')}</option>
+                          ))}
                         </select>
                       </div>
                     </div>
@@ -1882,21 +1989,17 @@ export default function SetupPanel({
                           className="form-select"
                           style={{ width: '100%', height: '30px', fontSize: '11px' }}
                           value={schLarge}
-                          onChange={(e) => {
-                            const sl = e.target.value;
-                            const lSch = getPipeScheduleDetails(dnLarge, sl);
-                            const idLMm = lSch ? lSch.id_mm : 77.92;
-                            onUpdate(id, {
-                              sch_large: sl,
-                              diameter_in: isExpanding ? dInMeters : (idLMm / 1000.0),
-                              diameter_out: isExpanding ? (idLMm / 1000.0) : dOutMeters
-                            });
-                          }}
+                          disabled={largeSchFromClass}
+                          title={largeSchFromClass ? `Wall thickness taken from pipe class ${largeClass.code}` : undefined}
+                          onChange={(e) => applySizes({ dl: dnLarge, ds: dnSmall, sl: e.target.value })}
                         >
-                          {['STD', '40', '80', 'XS', '160'].map(s => (
+                          {scheduleOptions(schLarge).map(s => (
                             <option key={s} value={s}>{s}</option>
                           ))}
                         </select>
+                        {largeSchFromClass && (
+                          <div style={{ fontSize: '9px', color: '#587071', marginTop: '2px' }}>From {largeClass.code}</div>
+                        )}
                       </div>
 
                       <div>
@@ -1905,25 +2008,33 @@ export default function SetupPanel({
                           className="form-select"
                           style={{ width: '100%', height: '30px', fontSize: '11px' }}
                           value={schSmall}
-                          onChange={(e) => {
-                            const ss = e.target.value;
-                            const sSch = getPipeScheduleDetails(dnSmall, ss);
-                            const idSMm = sSch ? sSch.id_mm : 52.48;
-                            onUpdate(id, {
-                              sch_small: ss,
-                              diameter_in: isExpanding ? (idSMm / 1000.0) : dInMeters,
-                              diameter_out: isExpanding ? dOutMeters : (idSMm / 1000.0)
-                            });
-                          }}
+                          disabled={smallSchFromClass}
+                          title={smallSchFromClass ? `Wall thickness taken from pipe class ${smallClass.code}` : undefined}
+                          onChange={(e) => applySizes({ dl: dnLarge, ds: dnSmall, ss: e.target.value })}
                         >
-                          {['STD', '40', '80', 'XS', '160'].map(s => (
+                          {scheduleOptions(schSmall).map(s => (
                             <option key={s} value={s}>{s}</option>
                           ))}
                         </select>
+                        {smallSchFromClass && (
+                          <div style={{ fontSize: '9px', color: '#587071', marginTop: '2px' }}>From {smallClass.code}</div>
+                        )}
                       </div>
                     </div>
 
                     <div style={{ background: '#f4f7f6', padding: '8px', borderRadius: '4px', border: '1px solid #d8e2e1', fontSize: '10px', color: '#334155' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+                        <span>Catalog:</span>
+                        <strong style={{ color: activeEntry ? 'inherit' : '#B45309' }}>
+                          {activeEntry ? standardName : `Not listed in ${standardName}`}
+                        </strong>
+                      </div>
+                      {(!largeBore || !smallBore) && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#B91C1C', marginBottom: '3px' }}>
+                          <WarningIcon size={10} />
+                          <span>No bore data for {[!largeBore && `DN${dnLarge} Sch ${schLarge}`, !smallBore && `DN${dnSmall} Sch ${schSmall}`].filter(Boolean).join(' and ')}; diameters below are the last valid values.</span>
+                        </div>
+                      )}
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
                         <span>Fitting Length (H):</span>
                         <strong>{isImperial ? `${(lengthMm / 25.4).toFixed(2)} in` : `${lengthMm.toFixed(1)} mm`}</strong>

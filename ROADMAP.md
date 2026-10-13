@@ -89,6 +89,18 @@ This document outlines planned features, overlays, and enhancements for the WalF
 
 ## 🐛 Bug Fixes & Refactoring Backlog
 
+- [ ] **🔀 Expander Solvability Near Reservoirs (Static Pressure Model)**
+  * **Problem**: With the static pressure model, only the Reducer node accounts for velocity head. An expander (e.g. DN50 → DN80) with a short pipe (< ~1.5 m) to a tank or pressure source recovers more static pressure than the system loses, so no steady-state solution exists and the solver reports non-convergence. Reducing flow (contraction) is unaffected.
+  * **Fix to evaluate**: Add entry / exit losses and velocity-head handling at tanks and pressure sources (or an equivalent total-pressure formulation), then re-verify expander cases against hand calculations. Needs evaluation before implementing.
+
+- [ ] **🔓 Public Read Access for Pipe Class Catalog**
+  * **Problem**: `GET /api/pipe-classes` requires login, while the fitting standards catalog (`GET /api/fitting-standards`) does not.
+  * **Fix**: Make all catalog reads (pipe classes, fitting standards) public; keep create / update / delete / import restricted to `admin` and `pipe_manager`. Add tests for anonymous read and for write rejection.
+
+- [ ] **📐 DIN Pipe Schedule Standard**
+  * **Problem**: Only ASME B36.10M / B36.19M pipe schedules exist, so DIN EN pipe classes (and DIN reducers) fall back to ASME schedule data for lines without a pipe class.
+  * **Fix**: Seed a DIN / EN pipe dimension standard (e.g. DIN EN 10220 / ISO 4200 series) as a `pipe_schedule` fitting standard, and use the pipe class's `schedule_standard_code` in the pipe and reducer inspectors instead of the hard-coded ASME table.
+
 - [ ] **🔥 Extend Equipment Classes to Model Temperature Changes Due to Pressure Drop**
   * **Scope**: Add or extend `calculate_temperature()` in equipment classes (e.g., `Pipe`, `Orifice`, `Filter`) to model temperature changes due to pressure drop using the formula `ΔT = ΔP / (ρ * Cp)`.
   * **Considerations**:

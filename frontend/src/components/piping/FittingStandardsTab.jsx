@@ -10,6 +10,7 @@ import {
   WarningIcon
 } from '../symbols/IconLibrary';
 import { useUnits } from '../../context/UnitContext';
+import { invalidateFittingStandards } from '../../hooks/useFittingStandards';
 
 const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage }, ref) {
   const { isImperial } = useUnits();
@@ -61,6 +62,8 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
     try {
       const res = await axios.get('/api/fitting-standards');
       setStandards(res.data);
+      // Canvas inspectors re-read the catalog after any create / edit / import here
+      invalidateFittingStandards();
       if (res.data.length > 0 && !selectedId) {
         setSelectedId(res.data[0].id);
       }

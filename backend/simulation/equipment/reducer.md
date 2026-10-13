@@ -32,9 +32,9 @@ $$\Delta P_{\text{Bernoulli}} = \frac{1}{2} \rho (v_2^2 - v_1^2) = \frac{1}{2} \
 #### 1. Gradual Conical Contraction ($D_{\text{large}} \to D_{\text{small}}$, $\beta = D_{\text{small}} / D_{\text{large}} < 1$)
 Referenced to the smaller diameter outlet velocity $v_2$:
 * For total included cone angle $\theta \le 45^\circ$:
-  $$K_{\text{form}, 2} = 0.5 (1 - \beta^2) \sqrt{\sin\left(\frac{\theta}{2}\right)}$$
-* For $45^\circ < \theta \le 180^\circ$:
   $$K_{\text{form}, 2} = 0.8 \sin\left(\frac{\theta}{2}\right) (1 - \beta^2)$$
+* For $45^\circ < \theta \le 180^\circ$:
+  $$K_{\text{form}, 2} = 0.5 (1 - \beta^2) \sqrt{\sin\left(\frac{\theta}{2}\right)}$$
 
 #### 2. Gradual Conical Diffuser / Expansion ($D_{\text{small}} \to D_{\text{large}}$, $\beta = D_{\text{small}} / D_{\text{large}} < 1$)
 Referenced to the smaller diameter inlet velocity $v_1$:

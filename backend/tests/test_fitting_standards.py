@@ -159,3 +159,164 @@ class TestFittingStandardsDatabase(unittest.TestCase):
         imp_res = self.client.post("/api/fitting-standards/import-library", json=catalog, headers=headers)
         self.assertEqual(imp_res.status_code, 200)
         self.assertIn("status", imp_res.json())
+
+    def test_07_din_en_reducers_seeded(self):
+        """DIN EN 10253-2 reducers are seeded as a built-in reducer standard."""
+        res = self.client.get("/api/fitting-standards/DIN_EN_10253_2_REDUCERS")
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertTrue(data["is_builtin"])
+        self.assertEqual(data["fitting_type"], "reducer")
+        entry = next(d for d in data["dimensions"] if d["dn_large"] == 80 and d["dn_small"] == 50)
+        self.assertEqual(entry["od_large_mm"], 88.9)
+        self.assertAlmostEqual(entry["cone_angle_deg"], 18.2, delta=0.1)
+
+    def test_08_lookup_by_code_is_case_insensitive(self):
+        res = self.client.get("/api/fitting-standards/asme_b16_9_reducers")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()["code"], "ASME_B16_9_REDUCERS")
+
+    def test_09_create_rejects_invalid_dimensions_and_type(self):
+        headers = {"Authorization": f"Bearer {self.pipemgr_token}"}
+        bad_dims = {
+            "code": "BAD_RED", "name": "Bad", "fitting_type": "reducer",
+            "dimensions": [{"dn_large": 50, "dn_small": 80, "length_mm": 76}, {"dn_large": 80}]
+        }
+        res = self.client.post("/api/fitting-standards", json=bad_dims, headers=headers)
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("must exceed dn_small", res.json()["detail"])
+        self.assertIn("dimensions[1]", res.json()["detail"])
+
+        bad_type = {"code": "BAD_TYPE", "name": "Bad", "fitting_type": "flange", "dimensions": []}
+        res = self.client.post("/api/fitting-standards", json=bad_type, headers=headers)
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("fitting_type", res.json()["detail"])
+
+    def test_10_import_is_validated_atomically(self):
+        headers = {"Authorization": f"Bearer {self.admin_token}"}
+        payload = [
+            {"code": "IMPORT_OK", "name": "Ok", "fitting_type": "reducer",
+             "dimensions": [{"dn_large": 80, "dn_small": 50, "length_mm": 89}]},
+            {"code": "X" * 60, "name": "Too long", "fitting_type": "reducer", "dimensions": []},
+            {"code": "IMPORT_BAD_DIMS", "fitting_type": "reducer", "dimensions": "not a list"},
+        ]
+        res = self.client.post("/api/fitting-standards/import-library", json=payload, headers=headers)
+        self.assertEqual(res.status_code, 400)
+        detail = res.json()["detail"]
+        self.assertIn("Entry 1", detail)
+        self.assertIn("Entry 2", detail)
+        # Nothing was imported, including the valid entry
+        self.assertEqual(self.client.get("/api/fitting-standards/IMPORT_OK").status_code, 404)
+
+        too_many = [{"code": f"C{i}", "fitting_type": "reducer", "dimensions": []} for i in range(201)]
+        res = self.client.post("/api/fitting-standards/import-library", json=too_many, headers=headers)
+        self.assertEqual(res.status_code, 400)
+
+    def test_11_delete_blocked_while_referenced_by_pipe_class(self):
+        headers = {"Authorization": f"Bearer {self.admin_token}"}
+        std = self.client.post("/api/fitting-standards", json={
+            "code": "REF_RED", "name": "Referenced", "fitting_type": "reducer",
+            "dimensions": [{"dn_large": 80, "dn_small": 50, "length_mm": 89}]
+        }, headers=headers)
+        self.assertEqual(std.status_code, 201)
+
+        pc = self.client.post("/api/pipe-classes", json={
+            "code": "REF_PC", "name": "Ref class", "standard": "CUSTOM",
+            "material_group": "CS", "material_grade": "A106 B", "rating_class": "CL150",
+            "reducer_standard_code": "ref_red",
+            "sizes": [{"dn": 50, "nps": "2", "od_mm": 60.3, "wt_mm": 3.91, "sch": "40"}]
+        }, headers=headers)
+        self.assertEqual(pc.status_code, 201, pc.text)
+        self.assertEqual(pc.json()["reducer_standard_code"], "REF_RED")
+
+        blocked = self.client.delete("/api/fitting-standards/REF_RED", headers=headers)
+        self.assertEqual(blocked.status_code, 409)
+        self.assertIn("REF_PC", blocked.json()["detail"])
+
+        self.client.delete(f"/api/pipe-classes/{pc.json()['id']}", headers=headers)
+        self.assertEqual(self.client.delete("/api/fitting-standards/REF_RED", headers=headers).status_code, 200)
+
+    def test_12_pipe_class_rejects_unknown_or_wrong_type_standard(self):
+        headers = {"Authorization": f"Bearer {self.admin_token}"}
+        base = {
+            "code": "BADREF_PC", "name": "Bad ref", "standard": "CUSTOM",
+            "material_group": "CS", "material_grade": "A106 B", "rating_class": "CL150",
+            "sizes": [{"dn": 50, "nps": "2", "od_mm": 60.3, "wt_mm": 3.91, "sch": "40"}]
+        }
+        res = self.client.post("/api/pipe-classes", json={**base, "reducer_standard_code": "NOPE"}, headers=headers)
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("does not exist", res.json()["detail"])
+
+        # A schedule standard is not a valid reducer standard
+        res = self.client.post("/api/pipe-classes", json={**base, "reducer_standard_code": "ASME_B36_10M_SCHEDULES"}, headers=headers)
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("expected 'reducer'", res.json()["detail"])
+
+        ok = self.client.post("/api/pipe-classes", json={**base, "reducer_standard_code": "DIN_EN_10253_2_REDUCERS"}, headers=headers)
+        self.assertEqual(ok.status_code, 201, ok.text)
+        upd = self.client.put(f"/api/pipe-classes/{ok.json()['id']}", json={"reducer_standard_code": "NOPE"}, headers=headers)
+        self.assertEqual(upd.status_code, 400)
+        self.client.delete(f"/api/pipe-classes/{ok.json()['id']}", headers=headers)
+
+    def test_13_pipe_class_library_import_keeps_standard_codes(self):
+        headers = {"Authorization": f"Bearer {self.admin_token}"}
+        size = [{"dn": 50, "nps": "2", "od_mm": 60.3, "wt_mm": 3.91, "sch": "40"}]
+        res = self.client.post("/api/pipe-classes/import/library", json={"classes": [
+            {"code": "IMP_DIN", "sizes": size, "reducer_standard_code": "DIN_EN_10253_2_REDUCERS"},
+            {"code": "IMP_BAD", "sizes": size, "reducer_standard_code": "NOPE"},
+        ]}, headers=headers)
+        self.assertEqual(res.status_code, 200)
+        body = res.json()
+        self.assertEqual(body["imported"], ["IMP_DIN"])
+        self.assertEqual(len(body["invalid_entries"]), 1)
+
+        listed = self.client.get("/api/pipe-classes", headers=headers).json()
+        imp = next(c for c in listed if c["code"] == "IMP_DIN")
+        self.assertEqual(imp["reducer_standard_code"], "DIN_EN_10253_2_REDUCERS")
+        self.client.delete(f"/api/pipe-classes/{imp['id']}", headers=headers)
+
+    def test_14_restore_builtins(self):
+        admin = {"Authorization": f"Bearer {self.admin_token}"}
+        mgr = {"Authorization": f"Bearer {self.pipemgr_token}"}
+        original = self.client.get("/api/fitting-standards/ASME_B16_9_REDUCERS").json()
+
+        # Admin edits a built-in; a plain re-seed does not touch it
+        res = self.client.put("/api/fitting-standards/ASME_B16_9_REDUCERS", json={"name": "Edited"}, headers=admin)
+        self.assertEqual(res.status_code, 200)
+        self.client.post("/api/fitting-standards/seed-defaults", headers=admin)
+        self.assertEqual(self.client.get("/api/fitting-standards/ASME_B16_9_REDUCERS").json()["name"], "Edited")
+
+        # Only admins may restore
+        self.assertEqual(self.client.post("/api/fitting-standards/seed-defaults?restore_builtins=true", headers=mgr).status_code, 403)
+
+        res = self.client.post("/api/fitting-standards/seed-defaults?restore_builtins=true", headers=admin)
+        self.assertEqual(res.status_code, 200)
+        self.assertGreaterEqual(res.json()["restored_count"], 3)
+        restored = self.client.get("/api/fitting-standards/ASME_B16_9_REDUCERS").json()
+        self.assertEqual(restored["name"], original["name"])
+        self.assertEqual(restored["dimensions"], original["dimensions"])
+
+    def test_20_migration_adds_standard_columns_idempotently(self):
+        """A pre-fitting-library pipe_classes table gains both columns with ASME defaults."""
+        from sqlalchemy import text, inspect
+        with engine.begin() as conn:
+            conn.execute(text("DELETE FROM pipe_classes"))
+            conn.execute(text("ALTER TABLE pipe_classes DROP COLUMN reducer_standard_code"))
+            conn.execute(text("ALTER TABLE pipe_classes DROP COLUMN schedule_standard_code"))
+            conn.execute(text(
+                "INSERT INTO pipe_classes (id, code, name, standard, material_group, material_grade, rating_class, "
+                "design_code, roughness_mm, corrosion_allowance_mm, revision, is_builtin, sizes_json) VALUES "
+                "('legacy-id', 'LEGACY', 'Legacy', 'CUSTOM', 'CS', 'A106', 'CL150', 'ASME B31.3', 0.045, 0, '1.0', 0, '[]')"
+            ))
+
+        init_db()
+        init_db()  # second run must be a no-op
+
+        cols = [c["name"] for c in inspect(engine).get_columns("pipe_classes")]
+        self.assertIn("reducer_standard_code", cols)
+        self.assertIn("schedule_standard_code", cols)
+        with engine.connect() as conn:
+            row = conn.execute(text(
+                "SELECT reducer_standard_code, schedule_standard_code FROM pipe_classes WHERE code = 'LEGACY'"
+            )).one()
+        self.assertEqual(tuple(row), ("ASME_B16_9_REDUCERS", "ASME_B36_10M_SCHEDULES"))

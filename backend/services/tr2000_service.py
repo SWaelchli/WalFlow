@@ -8,6 +8,7 @@ Terms & Conditions: https://www.equinor.com/about-us/terms-and-conditions
 import asyncio
 import httpx
 import logging
+import re
 from typing import List, Dict, Any, Optional
 
 
@@ -206,6 +207,15 @@ async def search_tr2000_pcs(plant_id: int = DEFAULT_PLANT_ID, query: str = "") -
     return normalized_list
 
 
+# European design codes (EN 13480, "EN ...", "DIN EN ...") use EN 10253-2 buttweld fittings.
+_EN_DESIGN_CODE = re.compile(r"\b(?:DIN\s+)?EN\b|\b13480\b", re.IGNORECASE)
+
+
+def _map_reducer_standard(design_code: str) -> str:
+    """Maps a TR2000 design code to the default reducer fitting standard."""
+    return "DIN_EN_10253_2_REDUCERS" if _EN_DESIGN_CODE.search(design_code or "") else "ASME_B16_9_REDUCERS"
+
+
 async def fetch_and_normalize_tr2000_pcs(
     plant_id: int,
     pcs_code: str,
@@ -314,7 +324,7 @@ async def fetch_and_normalize_tr2000_pcs(
 
     description = pcs_header.get("Description") or f"{mat_group} {pcs_header.get('RatingClass', '')}".strip() or f"Equinor TR2000 {pcs_code}"
     design_code = pcs_header.get("DesignCode") or "ASME B31.3"
-    reducer_standard = "DIN_EN_10253_2_REDUCERS" if ("13480" in design_code or "EN" in design_code) else "ASME_B16_9_REDUCERS"
+    reducer_standard = _map_reducer_standard(design_code)
     schedule_standard = "ASME_B36_10M_SCHEDULES"
 
     return {

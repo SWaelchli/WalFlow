@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from db.database import get_db
-from db.models import PipeClass, User
+from db.models import PipeClass, FittingStandard, User
 from auth import get_current_user, get_current_pipe_manager_user
 
 router = APIRouter(prefix="/api/pipe-classes", tags=["pipe-classes"])
@@ -344,6 +344,23 @@ def get_pipe_class(class_id: str, db: Session = Depends(get_db)):
     return _serialize_pipe_class(item)
 
 
+def _fitting_reference_errors(db: Session, reducer_code: Optional[str], schedule_code: Optional[str]) -> List[str]:
+    """Checks that referenced fitting standards exist in the catalog with the right fitting type."""
+    errors = []
+    for code, expected_type, field in (
+        (reducer_code, "reducer", "reducer_standard_code"),
+        (schedule_code, "pipe_schedule", "schedule_standard_code"),
+    ):
+        if code is None:
+            continue
+        std = db.query(FittingStandard).filter(FittingStandard.code == code.strip().upper()).first()
+        if not std:
+            errors.append(f"{field} '{code}' does not exist in the fitting standards catalog.")
+        elif std.fitting_type != expected_type:
+            errors.append(f"{field} '{code}' is a '{std.fitting_type}' standard, expected '{expected_type}'.")
+    return errors
+
+
 @router.post("", response_model=PipeClassResponse, status_code=status.HTTP_201_CREATED)
 def create_pipe_class(
     payload: PipeClassCreate,
@@ -351,6 +368,10 @@ def create_pipe_class(
     current_user: User = Depends(get_current_pipe_manager_user)
 ):
     """Create a new custom pipe class (Requires admin or pipe_manager role)."""
+    ref_errors = _fitting_reference_errors(db, payload.reducer_standard_code, payload.schedule_standard_code)
+    if ref_errors:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="; ".join(ref_errors))
+
     existing = db.query(PipeClass).filter(PipeClass.code == payload.code.upper().strip()).first()
     if existing:
         raise HTTPException(
@@ -381,8 +402,8 @@ def create_pipe_class(
         material_grade=payload.material_grade.strip(),
         rating_class=payload.rating_class.strip(),
         design_code=payload.design_code.strip(),
-        reducer_standard_code=payload.reducer_standard_code or "ASME_B16_9_REDUCERS",
-        schedule_standard_code=payload.schedule_standard_code or "ASME_B36_10M_SCHEDULES",
+        reducer_standard_code=(payload.reducer_standard_code or "ASME_B16_9_REDUCERS").strip().upper(),
+        schedule_standard_code=(payload.schedule_standard_code or "ASME_B36_10M_SCHEDULES").strip().upper(),
         roughness_mm=payload.roughness_mm,
         corrosion_allowance_mm=payload.corrosion_allowance_mm,
         min_temp_c=payload.min_temp_c,
@@ -420,6 +441,13 @@ def update_pipe_class(
         )
 
     update_data = payload.model_dump(exclude_unset=True)
+    for field in ("reducer_standard_code", "schedule_standard_code"):
+        if update_data.get(field) is not None:
+            update_data[field] = update_data[field].strip().upper()
+    ref_errors = _fitting_reference_errors(db, update_data.get("reducer_standard_code"), update_data.get("schedule_standard_code"))
+    if ref_errors:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="; ".join(ref_errors))
+
     if "sizes" in update_data and update_data["sizes"] is not None:
         size_dicts = []
         for s in update_data["sizes"]:
@@ -541,6 +569,13 @@ def import_pipe_classes_library(
 
         raw_tp = item_data.get("temp_pressures") or []
 
+        reducer_code = str(item_data.get("reducer_standard_code") or "ASME_B16_9_REDUCERS").strip().upper()
+        schedule_code = str(item_data.get("schedule_standard_code") or "ASME_B36_10M_SCHEDULES").strip().upper()
+        ref_errors = _fitting_reference_errors(db, reducer_code, schedule_code)
+        if ref_errors:
+            invalid_entries.append({"reason": f"Class '{code}': " + "; ".join(ref_errors), "item": item_data})
+            continue
+
         new_class = PipeClass(
             code=code,
             name=str(item_data.get("name") or f"Imported {code}").strip(),
@@ -549,6 +584,8 @@ def import_pipe_classes_library(
             material_grade=str(item_data.get("material_grade") or "Generic").strip(),
             rating_class=str(item_data.get("rating_class") or "CL150").strip(),
             design_code=str(item_data.get("design_code") or "ASME B31.3").strip(),
+            reducer_standard_code=reducer_code,
+            schedule_standard_code=schedule_code,
             roughness_mm=float(item_data.get("roughness_mm") or 0.045),
             corrosion_allowance_mm=float(item_data.get("corrosion_allowance_mm") or 0.0),
             min_temp_c=float(item_data["min_temp_c"]) if item_data.get("min_temp_c") is not None else None,

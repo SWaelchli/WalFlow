@@ -271,32 +271,21 @@ class GraphParser:
                 fluid_type=str(d.get('fluid_type', 'system'))
             )
         elif t == 'reducer' or t == 'expander':
-            # Handle diameter resolution: diameter_in / diameter_out in meters
-            d_in = float(d.get('diameter_in', 0.07792))
-            d_out = float(d.get('diameter_out', 0.05248))
-            length_m = float(d.get('length', 0.089))
-            cone_ang = float(d.get('cone_angle_deg', 18.2)) if d.get('cone_angle_deg') is not None else 18.2
-            r_type = str(d.get('reducer_type', 'concentric'))
-            std_code = str(d.get('standard', 'ASME_B16_9'))
-            dn_l = int(d.get('dn_large', 80))
-            dn_s = int(d.get('dn_small', 50))
-            sch_l = str(d.get('sch_large', 'STD'))
-            sch_s = str(d.get('sch_small', 'STD'))
-            roughness_m = float(d.get('roughness', 0.000045))
-
+            # Diameters / length in meters. Missing or null values fall back to the
+            # Reducer defaults (DN80 x DN50 STD), which coerces each field itself.
             node = Reducer(
                 name=name,
-                diameter_in=d_in,
-                diameter_out=d_out,
-                length=length_m,
-                cone_angle_deg=cone_ang,
-                reducer_type=r_type,
-                standard=std_code,
-                dn_large=dn_l,
-                dn_small=dn_s,
-                sch_large=sch_l,
-                sch_small=sch_s,
-                roughness=roughness_m
+                diameter_in=d.get('diameter_in'),
+                diameter_out=d.get('diameter_out'),
+                length=d.get('length'),
+                cone_angle_deg=d.get('cone_angle_deg'),
+                reducer_type=d.get('reducer_type'),
+                standard=d.get('standard'),
+                dn_large=d.get('dn_large'),
+                dn_small=d.get('dn_small'),
+                sch_large=d.get('sch_large'),
+                sch_small=d.get('sch_small'),
+                roughness=d.get('roughness')
             )
         elif t == 'heat_exchanger':
 

@@ -29,8 +29,9 @@ export default function ReducerNode({ id, data, selected }) {
   // Pretty size label
   const dnLarge = data.dn_large || 80;
   const dnSmall = data.dn_small || 50;
-  const sizeLabel = data.standard === 'ASME_B16_9'
-    ? (isImperial ? `${data.nps_large || '3"' } × ${data.nps_small || '2"'}` : `DN${dnLarge} → DN${dnSmall}`)
+  const isMetricCatalog = String(data.nps_large || '').toUpperCase().startsWith('DN');
+  const sizeLabel = data.standard !== 'CUSTOM'
+    ? (isImperial && !isMetricCatalog ? `${data.nps_large || '3"' } × ${data.nps_small || '2"'}` : `DN${dnLarge} → DN${dnSmall}`)
     : (isImperial ? `${(dIn * 39.3701).toFixed(1)}" → ${(dOut * 39.3701).toFixed(1)}"` : `${(dIn * 1000).toFixed(0)}mm → ${(dOut * 1000).toFixed(0)}mm`);
 
   // Detect connected edges and check for size mismatches
@@ -71,7 +72,7 @@ export default function ReducerNode({ id, data, selected }) {
               marginTop: '2px',
               border: '1px solid #FCD34D'
             }}>
-              ⚠️ Line Mismatch
+              Line Mismatch
             </div>
           )}
           {telemetry && (
