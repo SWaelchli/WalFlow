@@ -103,7 +103,8 @@ def run_performance_comparison():
     reduction_hybr = (1.0 - (iters_adj / 177.0)) * 100.0
     print(f"Iteration Reduction (vs Legacy HYBR): {reduction_hybr:.2f}%")
     
-    assert iters_adj <= 5, f"Warm-start required too many iterations: {iters_adj} (expected <= 5)"
+    # F1-06: convergence now also needs a small Newton step, which costs ~2 more evaluations than the old residual-only test
+    assert iters_adj <= 8 and iters_adj < iters_cold, f"Warm-start required too many iterations: {iters_adj} (cold {iters_cold}, expected <= 8)"
     print("Warm-Start Iteration Reduction Verification: PASS")
     print("======================================================================")
 

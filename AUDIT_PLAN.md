@@ -213,7 +213,7 @@ Method: act as a new user (a hydraulic/process engineer who has never seen the a
 |---|---|---|
 | 4.1 | Consolidate all findings into `audit/findings/04-triage.md`, sorted by severity, then effort | DONE: 95 → 89 unique (6 merged); effort S/M/L; anchors (file › symbol) |
 | 4.2 | Group fixes into batches (physics S1/S2 first, then contract bugs, then UX quick wins, then refactors) | DONE: B0 hotfixes, B1a–d physics, B2 contract, B3 security, B4 UX, B5 refactor, B6 scope; decisions listed per batch |
-| 4.3 | For each batch write a requirement prompt and **wait for user confirmation** before editing code (AGENTS.md rule 1) | IN PROGRESS: B0 done (d9bb345); B1a implemented (uncommitted); next: B1b prompt |
+| 4.3 | For each batch write a requirement prompt and **wait for user confirmation** before editing code (AGENTS.md rule 1) | IN PROGRESS: B0 done (d9bb345); B1a done (b8eccb4); B1b implemented (uncommitted); next: B1c prompt |
 | 4.4 | For each physics fix, add a regression test with an independent reference value | TODO |
 | 4.5 | Update CHANGELOG.md for each shipped fix (no version bump without user confirmation) | TODO |
 
@@ -225,31 +225,31 @@ Add one row per finding; details live in the phase findings file. **Locations ar
 
 | ID | Phase | Severity | Title | Location | Status (open / fixed / wontfix) |
 |---|---|---|---|---|---|
-| F0-01 | 0 | S1 | Regulator control loop does not converge, answer depends on iteration limit, still reported as success (root cause: F1-01) | backend/simulation/solver.py:196-366 | open |
+| F0-01 | 0 | S1 | Regulator control loop does not converge, answer depends on iteration limit, still reported as success (root cause: F1-01) | backend/simulation/solver.py:196-366 | fixed (B1b, uncommitted) |
 | F0-02 | 0 | S2 | File format 0.1 diagrams blocked (cloud) or silently purged (drafts); examples and local import bypass the check; no migration | constants.js, Sidebar.jsx:939, ProjectManagerModal.jsx:214, useAutoSaveSession.js:366 | open |
 | F0-03 | 0 | S3 | Version drift: AGENTS.md 0.1.6/0.1 vs code 0.2.0/0.2; backend version hardcoded | AGENTS.md, constants.js, main.py:89 | open |
 | F0-04 | 0 | S3 | Stray `walflow-diagram (8).wlf` in examples, not registered | frontend/src/data/examples/ | open |
-| F0-05 | 0 | S2 | Earlier QA and some physics tests are self-referential (formula checked against itself) | qa_report (deleted), backend/tests | fixed (B1a, uncommitted) |
-| F0-06 | 0 | S3 | `warm_start_status` reports "Exact Hit" after a cache clear (last internal solve, not the request) | solver.py:1076 | to confirm |
+| F0-05 | 0 | S2 | Earlier QA and some physics tests are self-referential (formula checked against itself) | qa_report (deleted), backend/tests | fixed (b8eccb4) |
+| F0-06 | 0 | S3 | `warm_start_status` reports "Exact Hit" after a cache clear (last internal solve, not the request) | solver.py:1076 | fixed (B1b, uncommitted) |
 | F0-07 | 0 | S3 | Hygiene: Pydantic v2 deprecations, 1.5 MB bundle, Node < 22.12, stale `qa_report/` | various | open |
-| F1-01 | 1A | S1 | Pressure-control outer loop unstable (fixed gain); results depend on damping, iteration limit, history | solver.py:226-357 | open |
-| F1-02 | 1A | S1 | At iteration limit, telemetry is not a hydraulic solution (negative abs. pressure, uphill flow) | solver.py:359-361 | fixed (B1a, uncommitted) |
+| F1-01 | 1A | S1 | Pressure-control outer loop unstable (fixed gain); results depend on damping, iteration limit, history | solver.py:226-357 | fixed (B1b, uncommitted) |
+| F1-02 | 1A | S1 | At iteration limit, telemetry is not a hydraulic solution (negative abs. pressure, uphill flow) | solver.py:359-361 | fixed (b8eccb4) |
 | F1-03 | 1A | S1 | "Forced Open" PSV/rupture disc offered in UI, solved as closed | pressure_safety_valve.py:24, rupture_disc.py:27, solver.py:1118 | open |
 | F1-04 | 1A | S1 | Pop-action PSV latches open at any pressure, blowdown unused; relieved-pressure KPI non-physical | pressure_safety_valve.py:60-67 | open |
-| F1-05 | 1A | S2 | TCV path ΔP in residual ignores viscosity (up to 3× too low); telemetry inconsistent | solver.py:724 | fixed (B1a, uncommitted) |
-| F1-06 | 1A | S2 | Absolute 10 Pa tolerance → phantom flows (150 L/min DN200 between equal tanks); user tolerance ignored < 1e-5 | solver.py:750 | open |
-| F1-07 | 1A | S2 | Negative absolute pressures (−23 bar(a)) reported as converged; no global P < P_vap check | solver.py:732-740 | open |
+| F1-05 | 1A | S2 | TCV path ΔP in residual ignores viscosity (up to 3× too low); telemetry inconsistent | solver.py:724 | fixed (b8eccb4) |
+| F1-06 | 1A | S2 | Absolute 10 Pa tolerance → phantom flows (150 L/min DN200 between equal tanks); user tolerance ignored < 1e-5 | solver.py:750 | fixed (B1b, uncommitted) |
+| F1-07 | 1A | S2 | Negative absolute pressures (−23 bar(a)) reported as converged; no global P < P_vap check | solver.py:732-740 | fixed (B1b, uncommitted) |
 | F1-08 | 1A | S2 | "Peak pressure" KPI is an ad-hoc pseudo-transient interpolation, mixes abs/diff pressure | solver.py:1185-1245 | open |
 | F1-09 | 1A | S2 | Relief set pressure: absolute vs differential inconsistent; bar(a) instead of industry barg | pressure_safety_valve.py:62,137; SetupPanel.jsx:1053 | open |
-| F1-10 | 1A | S2 | Islands without pressure reference silently dropped, reported as success | solver.py:53-119 | open |
-| F1-11 | 1A | S3 | LM solver option fails on 3/10 examples; fallback not checked for physicality | solver.py:752-760 | open |
-| F1-12 | 1A | S3 | Analytical Jacobian inaccurate for TCV, valves, PSV (robustness only) | solver.py:433-592 | open |
+| F1-10 | 1A | S2 | Islands without pressure reference silently dropped, reported as success | solver.py:53-119 | fixed (B1b, uncommitted) |
+| F1-11 | 1A | S3 | LM solver option fails on 3/10 examples; fallback not checked for physicality | solver.py:752-760 | fixed (B1b, uncommitted) |
+| F1-12 | 1A | S3 | Analytical Jacobian inaccurate for TCV, valves, PSV (robustness only) | solver.py:433-592 | partly fixed (B1b: complementarity rows); rest B5 |
 | F1-13 | 1A | S3 | Telemetry/temperature transport assume port 0 (latent multi-port bug) | solver.py:991,993,1026,1030 | open |
-| F1-14 | 1A | S2 | Global warm-start cache shared across users, unsynchronised across threads, history-dependent | solver.py:28,410,780 | open |
-| F1-15 | 1A | S3 | Success reported when property iteration hits the limit | solver.py:356-366 | open |
-| F1-16 | 1D | S2 | Throttling heat erased in control valve, regulator, RCV, check valves, PSV, rupture disc | base_node.py:40-75 + 7 equipment files | fixed (B1a, uncommitted) |
+| F1-14 | 1A | S2 | Global warm-start cache shared across users, unsynchronised across threads, history-dependent | solver.py:28,410,780 | fixed (B1b, uncommitted) |
+| F1-15 | 1A | S3 | Success reported when property iteration hits the limit | solver.py:356-366 | fixed (B1b, uncommitted) |
+| F1-16 | 1D | S2 | Throttling heat erased in control valve, regulator, RCV, check valves, PSV, rupture disc | base_node.py:40-75 + 7 equipment files | fixed (b8eccb4) |
 | F1-17 | 1D | S2 | No elevation except tanks; no fittings ΣK / entrance losses | pipe.py, graph_parser.py | open |
-| F1-18 | 1D | S2 | Centrifugal pump: pressure (not head) curve, η fixed 0.75, stopped pump frictionless | centrifugal_pump.py, graph_parser.py:211 | fixed (B1a, uncommitted) |
+| F1-18 | 1D | S2 | Centrifugal pump: pressure (not head) curve, η fixed 0.75, stopped pump frictionless | centrifugal_pump.py, graph_parser.py:211 | fixed (b8eccb4) |
 | F1-19 | 1D | S2 | Filter ΔP_clean water-referenced: 125–159 % of entered value in oil at design temp | filter.py | open |
 | F1-20 | 1D | S3 | Inconsistent unit conventions in node data (Pa vs bar, K vs °C, field names) | graph_parser.py | open |
 | F1-21 | 1D | S3 | Transition zone linear blend: +11–14 % flow vs Colebrook/Churchill | pipe.py | open |
@@ -265,14 +265,14 @@ Add one row per finding; details live in the phase findings file. **Locations ar
 | F1-31 | 1B | S3 | No validity ranges; silent fallback for unknown fluid; properties not shown in UI | fluid_utils.py | open |
 | F1-32 | 1B | S3 | Valve Fr simplified vs IEC 60534-2-1 (0.7–1.7× ΔP in viscous flow) | fluid_utils.py:275 | open |
 | F1-33 | 1C | S3 | Tank: all ports at bottom pressure; no nozzle height | tank.py:39 | open |
-| F1-34 | 1C | S3 | Centrifugal curve symmetric for reverse flow (running pump) | centrifugal_pump.py:31 | fixed (B1a, uncommitted) |
-| F1-35 | 1C | S2 | Volumetric pump passes unlimited flow when pushed (19× rated) | volumetric_pump.py:46 | fixed (B1a, uncommitted) |
-| F1-36 | 1C | S2 | Volumetric pump power limit silently cuts flow; KPI power = nameplate even when off | volumetric_pump.py:48, routers/simulation.py:54 | fixed (B1a, uncommitted) |
-| F1-37 | 1C | S2 | Regulator cannot lock up; zero demand → downstream = inlet pressure | linear_regulator.py:25, remote_control_valve.py:30 | open |
+| F1-34 | 1C | S3 | Centrifugal curve symmetric for reverse flow (running pump) | centrifugal_pump.py:31 | fixed (b8eccb4) |
+| F1-35 | 1C | S2 | Volumetric pump passes unlimited flow when pushed (19× rated) | volumetric_pump.py:46 | fixed (b8eccb4) |
+| F1-36 | 1C | S2 | Volumetric pump power limit silently cuts flow; KPI power = nameplate even when off | volumetric_pump.py:48, routers/simulation.py:54 | fixed (b8eccb4) |
+| F1-37 | 1C | S2 | Regulator cannot lock up; zero demand → downstream = inlet pressure | linear_regulator.py:25, remote_control_valve.py:30 | fixed (B1b, uncommitted) |
 | F1-38 | 1C | S2 | PSV / rupture disc capacity % referenced to 1 bar → always "overcapacity" | pressure_safety_valve.py:165, rupture_disc.py:133 | open |
 | F1-39 | 1C | S3 | ISO 5167 orifice β silently clamped to 0.1–0.75 (ΔP 2.4–9× at β 0.88–0.96) | orifice.py:186 | open |
 | F1-40 | 1C | S3 | Heat exchanger accepts infeasible rated duty silently | heat_exchanger.py:101 | open |
-| F1-41 | 1C | S2 | Six physics test files have no assertions | backend/tests | fixed (B1a, uncommitted) |
+| F1-41 | 1C | S2 | Six physics test files have no assertions | backend/tests | fixed (b8eccb4) |
 | F1-42 | 1 | S3 | Mixing assumes constant cp (0.86 K low for VG46 80/20 °C mix); found in B1a | base_node.py › calculate_temperature | open (B1d; strict xfail test) |
 | F2-01 | 2 | S1 | Imperial: pipe diameter/roughness from inspector divided by 39.37 twice | SetupPanel.jsx:575,730; UnitContext.jsx:300 | fixed (d9bb345) |
 | F2-02 | 2 | S1 | Cancel on cloud-diagram load leaves old canvas labelled as new diagram (overwrite risk; to confirm 3.7) | Sidebar.jsx:934-976; App.jsx:828 | fixed (d9bb345) |
@@ -318,7 +318,7 @@ Add one row per finding; details live in the phase findings file. **Locations ar
 | F3-13 | 3 | S3 | Defaults/labels: tank 40 C, auto tags, edge id in inspector title | App.jsx:1076-1104 | open |
 | F3-14 | 3 | S3 | Pump chart raw-float ticks, clipped labels, "Load Factor — %" | PumpDetails.jsx | open |
 | F3-15 | 3 | S3 | Examples: greeting not reopenable, Multi-PSV no note, 7-8 m/s, stray walflow-diagram (8).wlf | frontend/src/data/examples | open |
-| F3-16 | 3 | S3 | Pump Off still passes 0.3 L/min at equal heads | centrifugal pump model | fixed (B1a, uncommitted) |
+| F3-16 | 3 | S3 | Pump Off still passes 0.3 L/min at equal heads | centrifugal pump model | fixed (b8eccb4) |
 | F3-17 | 3 | S3 | Pipe class concept unexplained; rating/temp/CA unused; schedule dropdown limited | PipeClassesPage.jsx; DataList.jsx | open |
 | F3-18 | 3 | S3 | Discoverability: no empty-canvas hint, no context menus | App.jsx | open |
 | F3-19 | 3 | S3 | Version labels: UI v0.2.0/format 0.2 vs AGENTS.md 0.1.6/0.1 | Sidebar.jsx; AGENTS.md; GreetingCanvas.wlf | open |
@@ -342,6 +342,7 @@ Add one row per finding; details live in the phase findings file. **Locations ar
 | 2026-10-13 | B0 implemented | F2-01, F2-02, F2-03, F2-08, F3-01, F3-02 fixed; 20 Vitest tests; lint/build OK; live check of header alignment and undo-after-load. New S1 F2-29 recorded | User reviews B0, decides F2-29, commit on request; then B1a prompt |
 | 2026-10-13 | F2-29 + B0 follow-ups | F2-29 fixed (prompt whenever a cloud drawing is open; save pending edits, release lock, detach). Read-only lock now blocks keyboard/ReactFlow delete, paste/duplicate and rotate; rotate handle creates an undo step (verified live) | Commit on request; B1a prompt |
 | 2026-10-13 | B1a implemented | F1-41/F0-05, F1-05, F1-16, F1-02, F1-35, F1-36, F1-18/F3-16, F1-34 fixed with D1–D4; pumps rated in head (examples converted, older files blocked); backend 166 tests + 1 strict xfail (new F1-42); 11 diagrams compared before/after | Commit on request; B1b prompt (incl. solver tolerance and property-lag notes from B1a) |
+| 2026-10-14 | B1b implemented | F1-01/F0-01, F1-37, F1-06, F1-07, F1-10, F1-11, F1-14/F0-06, F1-15 fixed with D1–D4; controller loop is Newton on ln(opening) with finite-difference Jacobian (secant for one controller); backend 217 tests + 1 strict xfail; 21 diagram cases compared before/after; second-pass review of the control loop and convergence criterion done (5 fixes, results unchanged) | Commit on request; B1c prompt |
 
 ---
 

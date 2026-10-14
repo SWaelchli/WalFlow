@@ -68,16 +68,16 @@
     },
     {
       "id": "barrier-pump",
-      "type": "volumetric_pump",
+      "type": "centrifugal_pump",
       "position": {
         "x": 260,
         "y": 250
       },
       "data": {
         "label": "Flush Circulation Pump",
-        "flow_rated": 35,
-        "motor_power": 3,
-        "efficiency": 85,
+        "flow_rated_lmin": 35,
+        "head_rated_m": 130,
+        "rise_to_shutoff_pct": 20,
         "rotation": 0,
         "telemetry": {
           "inlets": [

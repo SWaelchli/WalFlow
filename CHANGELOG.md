@@ -64,6 +64,8 @@ All notable changes to the WälFlow project will be documented in this file.
 - Centrifugal pumps are rated in head (m) with an efficiency input (pump only, excl. motor); a stopped pump acts as a flow resistance and a running pump resists reverse flow. Older files need the rated head entered once; examples are converted.
 - PD pumps get a drive type (fixed speed with motor-overload warning, or VFD power limit) and no longer pass unlimited flow when fed from a pressurised header; pump power KPI now uses actual shaft power.
 - Fixed throttling heat missing in valves, check valves and relief devices, TCV pressure drop using water viscosity, and inconsistent results when the control loop hits its iteration limit; physics tests now assert against independent references.
+- Pressure regulators and back-pressure valves now settle on their setpoints (also PRV + BPR in series) regardless of settings or run history, close tight (lock-up) when nothing draws flow, and the solver reports unreachable setpoints, non-converged runs, impossible pressures (vacuum) and circuits without a tank or pressure source instead of showing a clean result.
+- Solver accuracy: no more phantom flow in low-loss pipes (tolerance setting now takes effect), safe shared warm-start cache, Levenberg–Marquardt option solves all examples. API 682 example uses a centrifugal pump so both regulators work.
 
 
 ---

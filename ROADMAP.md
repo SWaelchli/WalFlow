@@ -110,3 +110,18 @@ This document outlines planned features, overlays, and enhancements for the WalF
     - Always use the correct fluid properties (density, specific heat) for the current temperature and pressure.
     - Minimize performance impact by avoiding expensive calculations in iterative methods.
   * **Important**: The above methodology is only a suggestion and needs to be properly evaluated and adjusted as necessary. Do not implement blindly.
+- [ ] **⚖️ Parallel Controllers at the Same Setpoint (Non-Unique Flow Split)**
+  * **Problem**: Two identical pressure regulators (PRV or BPR) in parallel with the same setpoint have no unique flow split. The controller solve picks one split (least squares), so the result for the two valves is arbitrary although the total is correct.
+  * **Fix to evaluate**: Report the pair as "shared control" with an equal split, or add a proportional band (droop) to the regulator model so the split is determined. Needs evaluation before implementing.
+
+- [ ] **🌡️ Controller Sensitivity With Temperature-Coupled Loops**
+  * **Problem**: The pressure-controller Jacobian is measured with fluid properties frozen. In strongly temperature-coupled loops (large throttling heat in oil systems) the loop converges linearly and needs a few extra iterations, and the solve is slower on the largest diagrams (about 2 s for `walflow-diagram (8)`).
+  * **Fix to evaluate**: Include the property update in the perturbed solves only when the previous iteration shows temperature coupling, or reuse the Jacobian between iterations (Broyden update). Measure first; do not trade away robustness.
+
+- [ ] **🔁 Thermal Control Valve Loop Stops Within 0.1 K of Its Setpoint**
+  * **Problem**: The 3-way thermal valve loop still uses damped substitution and stops once the outlet is within 0.1 K of the setpoint, so results shift by up to that much (and the minority-branch flow of the valve by tens of percent) depending on iteration history.
+  * **Fix to evaluate**: Solve the thermal valve together with the pressure controllers (same Newton step) with a tighter tolerance, or lower the stop tolerance.
+
+- [ ] **💤 Undefined Pressure in Stagnant Branches**
+  * **Problem**: The pressure of a branch with no flow behind a closed pump or relief device is not defined by the equations. It differs between solver methods (Newton vs LM) and previous runs.
+  * **Fix to evaluate**: Define it explicitly (for example equal to the upstream connection) and mark such ports as "stagnant" in telemetry.

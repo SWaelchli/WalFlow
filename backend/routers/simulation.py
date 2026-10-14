@@ -171,6 +171,11 @@ def run_batch_simulation(request: Request, graph: ReactFlowGraph):
 
             print(f"Batch Case '{case.name}': success={stats.get('success')}, error={stats.get('error')}, time={stats.get('time_ms', 0):.2f}ms, fallback={stats.get('fallback_used')}")
 
+            if stats.get("error_kind"):
+                results.append(BatchCaseResult(case_id=case.id, case_name=case.name, is_base=case.is_base,
+                                               status="error", error_message=stats["error"]))
+                continue
+
             kpis = calculate_case_kpis(network, telemetry, stats)
 
             results.append(BatchCaseResult(

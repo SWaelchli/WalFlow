@@ -29,9 +29,9 @@ def test_f1_02_reported_state_is_consistent(control_iterations):
         q = pipe.inlets[0].flow_rate
         dp_reported = pipe.inlets[0].pressure - pipe.outlets[0].pressure
         dp_model = pipe.calculate_delta_p(q, pipe.inlets[0].density, pipe.inlets[0].viscosity)
-        # 5 %: properties lag one pass when the property iteration is not converged (F1-15, B1b
-        # tightens this to 1 %). The F1-02 defect gave 15-28 % here.
-        assert dp_reported == pytest.approx(dp_model, rel=0.05, abs=50.0), f"pipe {pipe.name}"
+        # 1 %: since F1-15 the fluid properties are iterated to consistency even when the control
+        # loop stops at its limit. The F1-02 defect gave 15-28 % here.
+        assert dp_reported == pytest.approx(dp_model, rel=0.01, abs=50.0), f"pipe {pipe.name}"
         # Pipe ends carry the pressures of the components they connect
         src, tgt = net.nodes[edge["source"]], net.nodes[edge["target"]]
         assert pipe.inlets[0].pressure == pytest.approx(src.outlets[0].pressure, abs=50.0)

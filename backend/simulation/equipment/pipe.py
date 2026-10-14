@@ -112,7 +112,8 @@ class Pipe(HydraulicNode):
                 deriv_turb = f_turb * (self.length / self.diameter) * density * abs(flow_rate) / (self.area ** 2)
                 w = (re - 2000.0) / 2000.0
                 return (1.0 - w) * deriv_lam + w * deriv_turb
+        elif viscosity > 0:
+            # Zero flow: laminar limit instead of a zero slope, so a dead leg keeps a usable Jacobian
+            return 32.0 * viscosity * self.length / ((self.diameter ** 2) * self.area)
         else:
             return 0.0
-
-

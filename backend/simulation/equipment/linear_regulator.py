@@ -15,6 +15,7 @@ class LinearRegulator(HydraulicNode):
         
         # Current physical opening (adjusted by solver)
         self.opening_pct = 100.0
+        self.locked_up = False  # closed PRV holding its setpoint downstream (F1-37), set by the solver
         
         self.add_inlet()
         self.add_outlet()

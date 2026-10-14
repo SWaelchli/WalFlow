@@ -206,6 +206,11 @@ async def websocket_endpoint(websocket: WebSocket):
                             extract_telemetry
                         )
 
+                        if stats.get("error_kind"):
+                            # Model problem the user can fix (e.g. a circuit without a tank): show it, not stale results
+                            await websocket.send_text(json.dumps({"status": "error", "message": stats["error"]}))
+                            continue
+
                         print(f"Simulation Run: success={stats.get('success')}, error={stats.get('error')}, time={stats.get('time_ms', 0):.2f}ms, fallback={stats.get('fallback_used')}")
                         if not stats.get("success"):
                             print(f"  Solver stats: {stats}")

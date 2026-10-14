@@ -73,3 +73,26 @@ def water_head(dp_pa: float, temp_k: float = 293.15) -> float:
     """Head (m) that gives dp_pa with water at temp_k (pumps are rated in head since B1a, D1)."""
     from simulation.fluid_utils import FluidProperties
     return dp_pa / (FluidProperties.get_density("water", temp_k) * 9.81)
+
+
+def solve_example(name: str, case_prefix: str = None, **settings):
+    """Solve a shipped example diagram (optionally one operating case) with extra global settings; returns (network, stats)."""
+    import contextlib
+    import io
+    import json
+    from simulation.schemas import ReactFlowGraph
+    from simulation.graph_parser import GraphParser
+
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "frontend", "src", "data", "examples", f"{name}.wlf")
+    data = json.load(open(path, encoding="utf-8"))
+    data["globalSettings"] = {**data.get("globalSettings", {}), **settings}
+    if case_prefix:
+        data["active_case_id"] = next(c["id"] for c in data["cases"] if c["name"].startswith(case_prefix))
+    with contextlib.redirect_stdout(io.StringIO()):
+        network = GraphParser.parse_graph(ReactFlowGraph(**data))
+        stats = NetworkSolver(network).solve()
+    return network, stats
+
+
+def node_named(network, name: str):
+    return next(n for n in network.nodes.values() if n.name == name)
