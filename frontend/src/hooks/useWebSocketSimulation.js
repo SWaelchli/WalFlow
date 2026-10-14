@@ -1,6 +1,12 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth';
 
+const selectTelemetrySet = (mode, mitigated, unmitigated, peak) => {
+  if (mode === 'unmitigated_global') return unmitigated;
+  if (mode === 'peak') return peak || mitigated;
+  return mitigated;
+};
+
 /**
  * Custom hook managing WebSocket connection to FastAPI backend
  * and simulation message dispatches with Dual-Pass Telemetry support.
@@ -14,10 +20,11 @@ export function useWebSocketSimulation({ nodes, edges, setNodes, setEdges, globa
   const [reconnectTrigger, setReconnectTrigger] = useState(0);
 
   // Dual-Pass Telemetry States
-  const [telemetryMode, setTelemetryMode] = useState('mitigated'); // 'mitigated' | 'unmitigated_global'
+  const [telemetryMode, setTelemetryMode] = useState('mitigated'); // 'mitigated' | 'peak' | 'unmitigated_global'
   const [hasPsv, setHasPsv] = useState(false);
   const [telemetryMitigated, setTelemetryMitigated] = useState(null);
   const [telemetryUnmitigated, setTelemetryUnmitigated] = useState(null);
+  const [telemetryPeak, setTelemetryPeak] = useState(null); // null: peak is the relieved state (F1-08)
 
   const applyTelemetryToGraph = useCallback((telemetryData) => {
     if (!telemetryData) return;
@@ -70,11 +77,11 @@ export function useWebSocketSimulation({ nodes, edges, setNodes, setEdges, globa
 
   // Re-apply active telemetry dataset when telemetryMode changes
   useEffect(() => {
-    const activeDataset = telemetryMode === 'unmitigated_global' ? telemetryUnmitigated : telemetryMitigated;
+    const activeDataset = selectTelemetrySet(telemetryMode, telemetryMitigated, telemetryUnmitigated, telemetryPeak);
     if (activeDataset) {
       applyTelemetryToGraph(activeDataset);
     }
-  }, [telemetryMode, telemetryMitigated, telemetryUnmitigated, applyTelemetryToGraph]);
+  }, [telemetryMode, telemetryMitigated, telemetryUnmitigated, telemetryPeak, applyTelemetryToGraph]);
 
   useEffect(() => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -127,6 +134,7 @@ export function useWebSocketSimulation({ nodes, edges, setNodes, setEdges, globa
           setIsSimulating(false);
           const mitData = response.telemetry || response.data || {};
           const unmitData = response.telemetry_unmitigated || mitData;
+          const peakData = response.telemetry_peak || null;
           const psvPresent = Boolean(response.has_psv);
           const kpisData = response.kpis || null;
 
@@ -134,12 +142,13 @@ export function useWebSocketSimulation({ nodes, edges, setNodes, setEdges, globa
           setHasPsv(psvPresent);
           setTelemetryMitigated(mitData);
           setTelemetryUnmitigated(unmitData);
+          setTelemetryPeak(peakData);
 
           if (onUpdateCaseTelemetryRef.current && activeCaseIdRef.current) {
-            onUpdateCaseTelemetryRef.current(activeCaseIdRef.current, mitData, kpisData, unmitData);
+            onUpdateCaseTelemetryRef.current(activeCaseIdRef.current, mitData, kpisData, unmitData, peakData);
           }
 
-          const activeDataset = telemetryModeRef.current === 'unmitigated_global' ? unmitData : mitData;
+          const activeDataset = selectTelemetrySet(telemetryModeRef.current, mitData, unmitData, peakData);
           applyTelemetryToGraphRef.current(activeDataset);
 
         } else if (response.status === 'error') {

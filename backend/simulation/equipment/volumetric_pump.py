@@ -38,12 +38,30 @@ class VolumetricPump(HydraulicNode):
         self.power_limited = False
         self.pressure_cap_reached = False
 
+        self.is_relief_driver = True
+        self._ramp_nominal_flow = None
+
         self.add_inlet()
         self.add_outlet()
 
+    def apply_relief_ramp(self, lam: float) -> None:
+        """Speed ramp: displacement flow ∝ speed."""
+        if not getattr(self, 'active', True):
+            return
+        if self._ramp_nominal_flow is None:
+            self._ramp_nominal_flow = self.flow_rated
+        self.flow_rated = self._ramp_nominal_flow * lam
+
+    def reset_relief_ramp(self) -> None:
+        if self._ramp_nominal_flow is not None:
+            self.flow_rated = self._ramp_nominal_flow
+            self._ramp_nominal_flow = None
+
     def _stiffness(self) -> float:
-        # 100 bar per 1 % flow error: behaves like a true PD pump
-        return 10_000_000.0 / (0.01 * self.flow_rated) if self.flow_rated > 0 else 1e12
+        # 100 bar per 1 % flow error: behaves like a true PD pump. Referenced to the case flow,
+        # so a relief ramp does not make the spring arbitrarily stiff at low speed.
+        q_ref = self._ramp_nominal_flow if self._ramp_nominal_flow is not None else self.flow_rated
+        return 10_000_000.0 / (0.01 * q_ref) if q_ref > 0 else 1e12
 
     def _power_limit_dp(self, flow_rate: float) -> float:
         available_power = self.motor_power * self.efficiency

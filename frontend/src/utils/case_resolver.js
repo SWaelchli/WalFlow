@@ -9,116 +9,23 @@ export const getActiveCase = (cases = [], activeCaseId = 'case_base') => {
 };
 
 /**
- * Helper to scale telemetry items (nodes or edges) to the peak pressure state.
+ * Telemetry dataset of a case for the relief case view (F1-08):
+ * - 'unmitigated_global': all relief devices held closed
+ * - 'peak': solved steady state at the relief opening that sets the peak pressure; the backend
+ *   sends no separate snapshot when the peak is the relieved state itself (or is unavailable)
+ * - otherwise: relieved (final) state
  */
-const scaleTelemetryItem = (item, S, pMinBar) => {
-  if (!item) return item;
-  const scalePort = (port) => {
-    if (!port || typeof port.pressure !== 'number') return port;
-    const pBar = port.pressure / 100000.0;
-    const pPeakBar = pMinBar + S * (pBar - pMinBar);
-    return {
-      ...port,
-      pressure: pPeakBar * 100000.0
-    };
-  };
-
-  const inlets = item.inlets ? item.inlets.map(scalePort) : item.inlets;
-  const outlets = item.outlets ? item.outlets.map(scalePort) : item.outlets;
-
-  return {
-    ...item,
-    inlets,
-    outlets
-  };
-};
-
-/**
- * Computes scaling factor S and minimum pressure reference in unmitigated telemetry.
- */
-export const getActiveCaseScalingInfo = (activeCase) => {
-  if (!activeCase) return { S: 1.0, pMinBar: 1.01325 };
-  if (activeCase._scalingInfo) return activeCase._scalingInfo;
-
-  // Helper to extract maximum pressure from a telemetry dataset (in bar)
-  const getMaxPressure = (tele) => {
-    if (!tele) return null;
-    let maxPa = -Infinity;
-    if (tele.nodes) {
-      for (const n of Object.values(tele.nodes)) {
-        for (const p of [...(n.inlets || []), ...(n.outlets || [])]) {
-          if (typeof p.pressure === 'number' && p.pressure > maxPa) {
-            maxPa = p.pressure;
-          }
-        }
-      }
-    }
-    if (tele.edges) {
-      for (const e of Object.values(tele.edges)) {
-        for (const p of [...(e.inlets || []), ...(e.outlets || [])]) {
-          if (typeof p.pressure === 'number' && p.pressure > maxPa) {
-            maxPa = p.pressure;
-          }
-        }
-      }
-    }
-    return maxPa !== -Infinity ? maxPa / 100000.0 : null;
-  };
-
-  const pPeak = activeCase.kpis?.peak_pressure_bara ?? getMaxPressure(activeCase.telemetry);
-  const pUnmit = activeCase.kpis?.unmitigated_peak_pressure_bara ?? getMaxPressure(activeCase.telemetry_unmitigated);
-
-  if (pPeak == null || pUnmit == null) {
-    return { S: 1.0, pMinBar: 1.01325 };
-  }
-  if (Math.abs(pUnmit - pPeak) < 1e-4) {
-    activeCase._scalingInfo = { S: 1.0, pMinBar: 1.01325 };
-    return activeCase._scalingInfo;
-  }
-
-  const telemetryUnmit = activeCase.telemetry_unmitigated;
-  if (!telemetryUnmit) {
-    return { S: 1.0, pMinBar: 1.01325 };
-  }
-
-  let minPa = Infinity;
-  if (telemetryUnmit.nodes) {
-    for (const n of Object.values(telemetryUnmit.nodes)) {
-      for (const p of [...(n.inlets || []), ...(n.outlets || [])]) {
-        if (typeof p.pressure === 'number' && p.pressure < minPa) {
-          minPa = p.pressure;
-        }
-      }
-    }
-  }
-  if (telemetryUnmit.edges) {
-    for (const e of Object.values(telemetryUnmit.edges)) {
-      for (const p of [...(e.inlets || []), ...(e.outlets || [])]) {
-        if (typeof p.pressure === 'number' && p.pressure < minPa) {
-          minPa = p.pressure;
-        }
-      }
-    }
-  }
-  const pMinBar = minPa !== Infinity ? minPa / 100000.0 : 1.01325;
-  const denominator = pUnmit - pMinBar;
-  const S = denominator <= 1e-4 ? 1.0 : Math.min(1.0, Math.max(0.0, (pPeak - pMinBar) / denominator));
-  
-  activeCase._scalingInfo = { S, pMinBar };
-  console.log("getActiveCaseScalingInfo debug details:", {
-    caseId: activeCase.id,
-    pPeak,
-    pUnmit,
-    pMinBar,
-    S
-  });
-  return activeCase._scalingInfo;
+export const getCaseTelemetrySet = (activeCase, telemetryMode = 'mitigated') => {
+  if (!activeCase) return null;
+  if (telemetryMode === 'unmitigated_global') return activeCase.telemetry_unmitigated || null;
+  if (telemetryMode === 'peak') return activeCase.telemetry_peak || activeCase.telemetry || null;
+  return activeCase.telemetry || null;
 };
 
 /**
  * Computes effective node data by layering active case node overrides and telemetry over baseline node data.
  */
-export const getEffectiveNodeData = (node, cases = [], activeCaseId = 'case_base', telemetryMode = 'mitigated', scalingInfo = null) => {
+export const getEffectiveNodeData = (node, cases = [], activeCaseId = 'case_base', telemetryMode = 'mitigated') => {
   if (!node) return {};
   const activeCase = getActiveCase(cases, activeCaseId);
   let effective = { ...(node.data || {}) };
@@ -130,16 +37,7 @@ export const getEffectiveNodeData = (node, cases = [], activeCaseId = 'case_base
     };
   }
 
-  let caseTelemetry;
-  if (telemetryMode === 'unmitigated_global') {
-    caseTelemetry = activeCase?.telemetry_unmitigated?.nodes?.[node.id] || node.data?.telemetry;
-  } else if (telemetryMode === 'peak') {
-    const unmitNode = activeCase?.telemetry_unmitigated?.nodes?.[node.id] || node.data?.telemetry;
-    const { S, pMinBar } = scalingInfo || getActiveCaseScalingInfo(activeCase);
-    caseTelemetry = scaleTelemetryItem(unmitNode, S, pMinBar);
-  } else {
-    caseTelemetry = activeCase?.telemetry?.nodes?.[node.id] || node.data?.telemetry;
-  }
+  const caseTelemetry = getCaseTelemetrySet(activeCase, telemetryMode)?.nodes?.[node.id] || node.data?.telemetry;
 
   if (caseTelemetry) {
     effective.telemetry = caseTelemetry;
@@ -151,21 +49,12 @@ export const getEffectiveNodeData = (node, cases = [], activeCaseId = 'case_base
 /**
  * Computes effective edge data by layering active case edge telemetry over baseline edge data.
  */
-export const getEffectiveEdgeData = (edge, cases = [], activeCaseId = 'case_base', telemetryMode = 'mitigated', scalingInfo = null) => {
+export const getEffectiveEdgeData = (edge, cases = [], activeCaseId = 'case_base', telemetryMode = 'mitigated') => {
   if (!edge) return {};
   const activeCase = getActiveCase(cases, activeCaseId);
   let effective = { ...(edge.data || {}) };
 
-  let caseTelemetry;
-  if (telemetryMode === 'unmitigated_global') {
-    caseTelemetry = activeCase?.telemetry_unmitigated?.edges?.[edge.id] || edge.data?.telemetry;
-  } else if (telemetryMode === 'peak') {
-    const unmitEdge = activeCase?.telemetry_unmitigated?.edges?.[edge.id] || edge.data?.telemetry;
-    const { S, pMinBar } = scalingInfo || getActiveCaseScalingInfo(activeCase);
-    caseTelemetry = scaleTelemetryItem(unmitEdge, S, pMinBar);
-  } else {
-    caseTelemetry = activeCase?.telemetry?.edges?.[edge.id] || edge.data?.telemetry;
-  }
+  const caseTelemetry = getCaseTelemetrySet(activeCase, telemetryMode)?.edges?.[edge.id] || edge.data?.telemetry;
 
   if (caseTelemetry) {
     effective.telemetry = caseTelemetry;
@@ -175,15 +64,17 @@ export const getEffectiveEdgeData = (edge, cases = [], activeCaseId = 'case_base
 };
 
 /**
- * Updates the calculated telemetry for a specific operating case (both Mitigated and Unmitigated passes).
+ * Updates the calculated telemetry for a specific operating case (relieved, unmitigated and peak).
+ * telemetryPeak is null when the peak is the relieved state, so a new run always replaces it.
  */
-export const updateCaseTelemetry = (cases = [], targetCaseId, telemetry, kpis, telemetryUnmitigated) => {
+export const updateCaseTelemetry = (cases = [], targetCaseId, telemetry, kpis, telemetryUnmitigated, telemetryPeak = null) => {
   return cases.map(c => {
     if (c.id !== targetCaseId) return c;
     return {
       ...c,
       telemetry: telemetry || c.telemetry,
       telemetry_unmitigated: telemetryUnmitigated || c.telemetry_unmitigated || telemetry || c.telemetry,
+      telemetry_peak: telemetry ? telemetryPeak : (c.telemetry_peak ?? null),
       kpis: kpis || c.kpis
     };
   });
@@ -228,6 +119,7 @@ export const areValuesEquivalent = (val1, val2, propKey) => {
 
   const getFallback = (k) => {
     if (k === 'active') return true;
+    if (k === 'relief_ramp_enabled') return true;
     if (k === 'forced_state') return 'auto';
     if (k === 'clogging') return 0.0;
     if (k === 'opening') return 50.0;

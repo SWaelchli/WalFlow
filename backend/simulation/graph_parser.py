@@ -398,4 +398,6 @@ class GraphParser:
             node.global_settings = global_settings
             if 'active' in d:
                 node.active = bool(d['active'])
+            if 'relief_ramp_enabled' in d:
+                node.relief_ramp_enabled = bool(d['relief_ramp_enabled'])
         return node

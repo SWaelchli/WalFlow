@@ -31,8 +31,29 @@ class FlowSource(HydraulicNode):
         self.is_flow_boundary = False
         self.blocks_flow_on_shutdown = False
 
+        self.is_relief_driver = True
+        self._ramp_nominal_flow = None
+
         # 0 inlets + 1 outlet
         self.add_outlet()
+
+    def apply_relief_ramp(self, lam: float) -> None:
+        """Flow ramp: source flow ∝ lam."""
+        if self._ramp_nominal_flow is None:
+            self._ramp_nominal_flow = self.source_flow
+        self.source_flow = self._ramp_nominal_flow * lam
+
+    def reset_relief_ramp(self) -> None:
+        if self._ramp_nominal_flow is not None:
+            self.source_flow = self._ramp_nominal_flow
+            self._ramp_nominal_flow = None
+
+    def _stiffness(self) -> float:
+        # 10 MPa per 1 % flow deviation, referenced to the case flow (unchanged by a relief ramp)
+        q_ref = self._ramp_nominal_flow if self._ramp_nominal_flow is not None else self.source_flow
+        if abs(q_ref) < 1e-6:
+            return self._BASE_STIFFNESS_PA_PER_M3S
+        return 1.0e7 / (0.01 * abs(q_ref))
 
     def _get_fluid_type(self) -> str:
         return getattr(self.global_settings, 'fluid_type', 'water')
@@ -50,13 +71,10 @@ class FlowSource(HydraulicNode):
         We define a high stiffness (10 MPa per 1% flow deviation).
         """
         target_flow = self.source_flow
-        if abs(target_flow) < 1e-6:
-            stiffness = self._BASE_STIFFNESS_PA_PER_M3S
-        else:
-            stiffness = 1.0e7 / (0.01 * abs(target_flow))
+        stiffness = self._stiffness()
 
         dp = stiffness * (flow_rate - target_flow)
-        
+
         # Clamp delta pressure to avoid extreme values during solver search
         dp = max(-self._HARD_CAP_PA, min(self._HARD_CAP_PA, dp))
         return dp
@@ -66,10 +84,7 @@ class FlowSource(HydraulicNode):
         Analytical derivative of the spring curve pressure drop w.r.t flow rate.
         """
         target_flow = self.source_flow
-        if abs(target_flow) < 1e-6:
-            stiffness = self._BASE_STIFFNESS_PA_PER_M3S
-        else:
-            stiffness = 1.0e7 / (0.01 * abs(target_flow))
+        stiffness = self._stiffness()
 
         # Check if clamped; if so, derivative is zero
         dp = stiffness * (flow_rate - target_flow)

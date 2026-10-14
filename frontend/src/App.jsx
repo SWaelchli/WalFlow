@@ -74,9 +74,7 @@ import {
   hasActiveOverrides,
   updateCaseOverride,
   removeCaseOverride,
-  duplicateCase,
-  getActiveCaseScalingInfo,
-  getActiveCase
+  duplicateCase
 } from './utils/case_resolver';
 
 // Import Examples
@@ -482,8 +480,8 @@ function WalFlowContent() {
   }, [setNodes]);
 
   // WebSocket custom hook
-  const handleUpdateCaseTelemetry = useCallback((targetCaseId, telemetry, kpis, telemetryUnmitigated) => {
-    setCases(prev => updateCaseTelemetry(prev, targetCaseId, telemetry, kpis, telemetryUnmitigated));
+  const handleUpdateCaseTelemetry = useCallback((targetCaseId, telemetry, kpis, telemetryUnmitigated, telemetryPeak) => {
+    setCases(prev => updateCaseTelemetry(prev, targetCaseId, telemetry, kpis, telemetryUnmitigated, telemetryPeak));
   }, []);
 
   const handleBatchResultsTelemetry = useCallback((batchResults) => {
@@ -494,6 +492,7 @@ function WalFlowContent() {
             ...c, 
             telemetry: match.telemetry || c.telemetry, 
             telemetry_unmitigated: match.telemetry_unmitigated || c.telemetry_unmitigated,
+            telemetry_peak: match.telemetry ? (match.telemetry_peak ?? null) : (c.telemetry_peak ?? null),
             kpis: match.kpis || c.kpis 
           } 
         : c;
@@ -1457,14 +1456,9 @@ function WalFlowContent() {
     return { min: Math.max(0, minVal), max: maxVal };
   }, [edges, cases, activeCaseId, telemetryMode, heatmapSettings.mode, heatmapSettings.autoScale, heatmapSettings.globalAutoScale, heatmapSettings.customRanges]);
 
-  const scalingInfo = useMemo(() => {
-    const activeCase = getActiveCase(cases, activeCaseId);
-    return getActiveCaseScalingInfo(activeCase);
-  }, [cases, activeCaseId]);
-
   const styledEdges = useMemo(() => {
     return edges.map(edge => {
-      const effectiveData = getEffectiveEdgeData(edge, cases, activeCaseId, telemetryMode, scalingInfo);
+      const effectiveData = getEffectiveEdgeData(edge, cases, activeCaseId, telemetryMode);
       const isSignal = edge.data?.type === 'SIGNAL';
       const tele = effectiveData.telemetry || edge.data?.telemetry || {};
       const hasFlow = isSimulating || (tele.inlets?.[0]?.flow_rate && Math.abs(tele.inlets[0].flow_rate) > 1e-5);
@@ -1487,11 +1481,11 @@ function WalFlowContent() {
         }
       };
     });
-  }, [edges, cases, activeCaseId, telemetryMode, isSimulating, heatmapSettings.mode, computedHeatmapRange, scalingInfo]);
+  }, [edges, cases, activeCaseId, telemetryMode, isSimulating, heatmapSettings.mode, computedHeatmapRange]);
 
   const interactiveNodes = useMemo(() => {
     return nodes.map(node => {
-      const effectiveData = getEffectiveNodeData(node, cases, activeCaseId, telemetryMode, scalingInfo);
+      const effectiveData = getEffectiveNodeData(node, cases, activeCaseId, telemetryMode);
       const hasOverrides = hasActiveOverrides(node.id, cases, activeCaseId);
       return {
         ...node,
@@ -1505,12 +1499,12 @@ function WalFlowContent() {
         }
       };
     });
-  }, [nodes, cases, activeCaseId, telemetryMode, rotateNode, handleValveChange, scalingInfo]);
+  }, [nodes, cases, activeCaseId, telemetryMode, rotateNode, handleValveChange]);
 
   const effectiveSelectedNode = useMemo(() => {
     if (!selectedNode) return null;
     const liveNode = nodes.find(n => n.id === selectedNode.id) || selectedNode;
-    const effectiveData = getEffectiveNodeData(liveNode, cases, activeCaseId, telemetryMode, scalingInfo);
+    const effectiveData = getEffectiveNodeData(liveNode, cases, activeCaseId, telemetryMode);
     return {
       ...liveNode,
       data: {
@@ -1518,12 +1512,12 @@ function WalFlowContent() {
         ...effectiveData
       }
     };
-  }, [selectedNode, nodes, cases, activeCaseId, telemetryMode, scalingInfo]);
+  }, [selectedNode, nodes, cases, activeCaseId, telemetryMode]);
 
   const effectiveSelectedEdge = useMemo(() => {
     if (!selectedEdge) return null;
     const liveEdge = edges.find(e => e.id === selectedEdge.id) || selectedEdge;
-    const effectiveData = getEffectiveEdgeData(liveEdge, cases, activeCaseId, telemetryMode, scalingInfo);
+    const effectiveData = getEffectiveEdgeData(liveEdge, cases, activeCaseId, telemetryMode);
     return {
       ...liveEdge,
       data: {
@@ -1531,7 +1525,7 @@ function WalFlowContent() {
         ...effectiveData
       }
     };
-  }, [selectedEdge, edges, cases, activeCaseId, telemetryMode, scalingInfo]);
+  }, [selectedEdge, edges, cases, activeCaseId, telemetryMode]);
 
   const heatmapActive = heatmapSettings.mode !== 'default';
   const autoScale = heatmapSettings.autoScale;

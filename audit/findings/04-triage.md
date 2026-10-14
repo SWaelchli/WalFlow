@@ -311,3 +311,37 @@ Anchors at `HEAD` = `5b3fe27`. Decisions (user, 2026-10-14): D1 bracketed secant
 - *Convergence criterion (checked, capped).* Over all 343 hydraulic solves of the shipped diagrams the flow-step test costs 0.18 extra Newton iterations on average (max 2), and every solve ends as a clean convergence. A cap of 50 iterations once the residual is within tolerance stops a non-settling step from running to the iteration limit. The numerical Jacobian of complementarity rows now includes the TCV path loss when such an edge feeds a 3-way TCV (it matched the objective otherwise).
 - Results of all shipped diagrams unchanged by the review fixes; total solve time 6.7 s (8.9 s before the review, 7.8 s before B1b). New regression tests: parallel PRVs, report consistency at iteration limits 1–8, wrong-acting RCV (217 tests pass).
 - Known limits, unchanged: identical controllers in parallel at the same setpoint have no unique split (least-squares picks one); controller sensitivity is measured with properties frozen, so strongly temperature-coupled loops converge linearly over a few extra iterations.
+
+### B1c: relief devices (in progress)
+
+Done so far: F1-08 (2026-10-14, not yet committed). Open: F1-03, F1-04, F1-09, F1-38, F2-09.
+
+**F1-08 result (2026-10-14).** Decision (user, 2026-10-14): replace the KPI, not remove it. "Peak system pressure" means the system pressures at the moment a PSV or rupture disc opens; after opening they may fall again.
+- *Removed:* the interpolation `P_min + S·(P_max − P_min)` in `solver.py › run_sequential_relief_simulation`, and the matching frontend scaling of the unmitigated telemetry (`case_resolver.js › scaleTelemetryItem`, `getActiveCaseScalingInfo`).
+- *Replaced by a solved steady state (quasi-static ramp, no time-stepping).* Each case is analysed from its own final configuration: auto devices open or stay closed as the relieved simulation says, and there is no separate "normal" case. The case's pressure drivers are scaled by a load factor λ from 0 (at rest) to 1 (case values). For each opening group, in the existing order (lowest set pressure first), λ is bisected until the device inlet equals its set or burst pressure: at most 24 solves, tolerance 100 Pa or 1e-4 in λ. Earlier groups stay on auto and later ones are held closed. The peak is the highest system pressure over these opening snapshots and the relieved state.
+- *Driver flag (opt-in for future equipment).* `HydraulicNode.is_relief_driver` plus `apply_relief_ramp(lam)` / `reset_relief_ramp()` (`base_node.py`):
+  - centrifugal pump: affinity laws, Q ∝ λ and H ∝ λ²; skipped when off;
+  - volumetric pump and flow source: flow ∝ λ, stiffness referenced to the nominal flow;
+  - pressure source: P_atm + λ·(P − P_atm);
+  - tank: not a driver.
+
+  A per-instance, per-case field `relief_ramp_enabled` ("Ramp during relief analysis", default on for all drivers including pressure sources) lets the user hold a receiver at its set value. The solver reads only the flag; documented in DEVELOPMENT.md (classification attributes) and `RELIEF_DRIVER_TYPES` in `case_constants.js`.
+- *Isolation.* The ramp runs on `copy.deepcopy(network)` with its own solver (`persist_warm_start = False`), so the relieved results, the pump-power KPIs and the warm-start cache are unchanged.
+- *Honest status.* Without an enabled driver the peak is reported "Not available" with the reason. If no device opens, the peak equals the relieved state.
+- *Results contract.* `run_sequential_relief_simulation` returns a 5-tuple with a new `telemetry_peak` (None when the peak equals the relieved state or is unavailable). It is sent by the WebSocket and by `/batch` (`BatchCaseResult.telemetry_peak`). `telemetry.relief` carries:
+  - `peak {available, reason, pressure_bara, source, device_ids, ramp_pct}`;
+  - per device: `status`, `opening_order`, `opening_ramp_pct`, inlet pressure at opening, relieved and unmitigated, and relief flow.
+- *UI.*
+  - The Peak view in the Scenario & Case Manager shows the solved snapshot (fallback: the relieved state, with a note).
+  - The Relief Analysis Matrix shows per-device badges with text (Open/Burst/Overcapacity/Closed/Forced closed + order), load % and inlet pressures; a Peak row with "At opening of X · N % load"; and a new "First relief opening" row.
+  - Results from before this change show "Re-run the simulation".
+  - File format unchanged (0.1); old stored peak values are ignored until the case is re-run.
+- *Shipped diagrams.* Multi_PSV peak 21.18 → **20.00 bar(a)**, which is exactly PSV-101's set pressure, reached at 23.6 % load (relieved 1.77, unmitigated 201.2 bar(a)); about 60 ms extra. walflow-diagram (8): no device opens, so peak = relieved.
+- *Tests (lasting references).*
+  - `test_f1_08_relief_peak.py` (8 tests). The key analytic check: a dead-headed pump opens its PSV at λ² = (P_set − P_tank)/(P_unmit − P_tank). The others cover a rupture disc on a pressure source (linear λ), staggered PSVs opening in order, no driver, no opening, and the network left untouched.
+  - Frontend: `case_resolver.test.js` and the relief cases in `DataList.test.jsx`.
+  - Totals: 225 backend tests pass, 1 xfailed; frontend lint, build and Vitest (33) are clean. Not yet checked in the browser.
+- *Still open in B1c.*
+  - F1-03: the matrix option "Forced Open" still maps to auto in the backend.
+  - F1-09: set pressures stay in bar(a) for now, and the opening criterion uses the absolute inlet pressure, consistent with the breach check. The barg switch will move the opening points.
+  - The PSV status flips inside Newton noted under B1b.

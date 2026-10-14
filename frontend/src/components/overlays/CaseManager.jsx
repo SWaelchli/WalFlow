@@ -18,7 +18,7 @@ export default function CaseManager({
     {
       id: 'mitigated',
       label: 'Relieved system pressure (bar(a))',
-      desc: 'Steady-state max pressure with active relief',
+      desc: 'Steady state with the relief devices in their final state',
       color: '#10B981',
       bgActive: '#ECFDF5',
       borderActive: '#10B981',
@@ -27,7 +27,7 @@ export default function CaseManager({
     {
       id: 'peak',
       label: 'Peak system pressure (bar(a))',
-      desc: 'Max pressure at relief device activation',
+      desc: 'Steady state at the moment the governing relief device reaches its set pressure (pumps and sources ramped up)',
       color: '#D97706',
       bgActive: '#FFFBEB',
       borderActive: 'var(--color-primary)',
@@ -36,13 +36,21 @@ export default function CaseManager({
     {
       id: 'unmitigated_global',
       label: 'Unmitigated peak pressure (bar(a))',
-      desc: 'Baseline peak pressure with all relief closed',
+      desc: 'Steady state with all relief devices held closed',
       color: '#DC2626',
       bgActive: '#FEF2F2',
       borderActive: '#DC2626',
       textActive: '#991B1B'
     }
   ];
+
+  // F1-08: explain the Peak view when it has no separate snapshot
+  const activePeak = cases.find(c => c.id === activeCaseId)?.telemetry?.relief?.peak;
+  let peakNote = null;
+  if (telemetryMode === 'peak' && activePeak) {
+    if (!activePeak.available) peakNote = `Peak not available: ${activePeak.reason} Showing the relieved state.`;
+    else if (activePeak.source !== 'opening') peakNote = 'The peak equals the relieved state, so the relieved results are shown.';
+  }
 
   return (
     <div style={{
@@ -196,6 +204,11 @@ export default function CaseManager({
             );
           })}
         </div>
+        {peakNote && (
+          <p role="status" style={{ fontSize: '10px', color: 'var(--color-text-secondary)', margin: '2px 0 0' }}>
+            {peakNote}
+          </p>
+        )}
       </div>
     </div>
   );

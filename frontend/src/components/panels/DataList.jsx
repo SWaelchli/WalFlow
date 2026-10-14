@@ -89,6 +89,46 @@ const calculateMaxPressureBar = (telemetry) => {
   return maxPa > 0 ? maxPa / 100000.0 : undefined;
 };
 
+// Relief device result badge (status as text, colour is secondary)
+const RELIEF_BADGES = {
+  open: { color: '#B45309', bg: '#FFFBEB', border: '#FDE68A' },
+  overcapacity: { color: '#EF4444', bg: '#FEF2F2', border: '#FEE2E2' },
+  closed: { color: '#587071', bg: '#F4F7F6', border: '#D8E2E1' },
+};
+
+const reliefBadge = (result) => {
+  if (result.forced_state === 'forced_closed') return { label: 'Forced closed', ...RELIEF_BADGES.closed };
+  if (result.status === 'overcapacity') return { label: 'Overcapacity', ...RELIEF_BADGES.overcapacity };
+  if (result.status === 'burst') return { label: 'Burst', ...RELIEF_BADGES.open };
+  if (result.status === 'cracked') return { label: 'Open', ...RELIEF_BADGES.open };
+  return { label: 'Closed', ...RELIEF_BADGES.closed };
+};
+
+function ReliefDeviceResult({ result, hasResults, formatPressure, unit }) {
+  const muted = { fontSize: '10px', color: 'var(--color-text-secondary)' };
+  if (!hasResults) return <div style={{ ...muted, marginTop: '4px' }}>Run the simulation for results</div>;
+  if (!result) return null;
+  const badge = reliefBadge(result);
+  const opens = result.inlet_at_opening_bara != null;
+  const title = opens
+    ? `Opening #${result.opening_order}: inlet reaches the set pressure at ${result.opening_ramp_pct} % driver load. Final (relieved) inlet pressure and relief flow are at 100 % load.`
+    : 'Inlet pressure in the final (relieved) state.';
+  return (
+    <div title={title} style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '4px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+        <span style={{ fontSize: '10px', fontWeight: '700', color: badge.color, background: badge.bg, border: `1px solid ${badge.border}`, padding: '1px 6px', borderRadius: '10px' }}>
+          {badge.label}{result.opening_order ? ` #${result.opening_order}` : ''}
+        </span>
+        {opens && <span style={muted}>at {result.opening_ramp_pct} % load</span>}
+      </div>
+      <span style={{ ...muted, whiteSpace: 'nowrap' }}>
+        {opens && `Opens ${formatPressure(result.inlet_at_opening_bara)} · `}
+        Final {result.inlet_relieved_bara != null ? formatPressure(result.inlet_relieved_bara) : '—'} {unit}
+      </span>
+    </div>
+  );
+}
+
 export default function DataList({
   nodes,
   edges,
@@ -187,6 +227,7 @@ export default function DataList({
         case_name: c.name,
         telemetry: c.telemetry || batchMatch?.telemetry,
         telemetry_unmitigated: c.telemetry_unmitigated || batchMatch?.telemetry_unmitigated,
+        telemetry_peak: c.telemetry ? c.telemetry_peak : batchMatch?.telemetry_peak,
         kpis: c.kpis || batchMatch?.kpis
       };
     });
@@ -232,6 +273,11 @@ export default function DataList({
       n => n.type === 'pressure_safety_valve' || n.type === 'psv' || n.type === 'rupture_disc'
     );
   }, [rawNodes, nodes]);
+
+  const reliefDeviceLabel = useCallback(
+    (id) => reliefDevices.find(d => d.id === id)?.data?.label || id,
+    [reliefDevices]
+  );
 
   const handleMatrixForcedStateChange = useCallback((caseId, nodeId, value) => {
     const targetCase = displayCases.find(c => (c.id || c.case_id) === caseId);
@@ -751,6 +797,12 @@ export default function DataList({
                                 <option value="forced_closed">Forced Closed</option>
                                 <option value="forced_open">Forced Open</option>
                               </select>
+                              <ReliefDeviceResult
+                                result={c.telemetry?.relief?.devices?.[dev.id]}
+                                hasResults={Boolean(c.telemetry?.relief)}
+                                formatPressure={formatPressure}
+                                unit={labels.pressureAbs}
+                              />
                             </td>
                           );
                         })}
@@ -770,48 +822,60 @@ export default function DataList({
                     ))}
                   </tr>
 
-                  {/* 
-                    RELIEF CONTINGENCY PRESSURE METRICS (ALL DISPLAYED IN BARA):
-                    1. Relieved system pressure: Steady-state max system pressure after relief devices open.
-                    2. Peak system pressure: Maximum pressure occurring during overpressure build-up at relief activation.
-                    3. Unmitigated peak pressure: Maximum baseline pressure if all relief devices remain closed.
+                  {/*
+                    RELIEF CONTINGENCY PRESSURE METRICS (steady states, bar(a)), F1-08:
+                    1. Relieved: relief devices in their final state.
+                    2. Peak: highest of the relief opening snapshots (each device exactly at its set pressure,
+                       found on a ramp of the pumps and sources) and the relieved state.
+                    3. Unmitigated: all relief devices held closed.
                   */}
                    {/* Relieved System Pressure */}
                    <tr style={{ borderBottom: '1px solid var(--color-border-hover)', height: '36px', background: telemetryMode === 'mitigated' ? '#ECFDF5' : '#ffffff' }}>
-                     <td colSpan={3} style={{ padding: '6px 12px', fontWeight: '700', color: '#10B981', verticalAlign: 'middle' }}>
-                       Relieved system pressure (bar(a))
+                     <td colSpan={3} title="Steady-state maximum pressure with the relief devices in their final state" style={{ padding: '6px 12px', fontWeight: '700', color: '#047857', verticalAlign: 'middle' }}>
+                       Relieved system pressure ({labels.pressureAbs})
                      </td>
                      {displayCases.map(c => {
                        const pRelieved = c.kpis?.relieved_pressure_bara ?? c.kpis?.max_pressure_bar ?? calculateMaxPressureBar(c.telemetry);
                        return (
-                         <td key={c.id || c.case_id} style={{ padding: '6px 12px', fontWeight: '700', color: '#10B981', borderLeft: '1px solid var(--color-border)', verticalAlign: 'middle' }}>
-                           {pRelieved !== undefined ? `${pRelieved.toFixed(2)} bar(a)` : '—'}
+                         <td key={c.id || c.case_id} style={{ padding: '6px 12px', fontWeight: '700', color: '#047857', borderLeft: '1px solid var(--color-border)', verticalAlign: 'middle' }}>
+                           {pRelieved !== undefined ? `${formatPressure(pRelieved)} ${labels.pressureAbs}` : '—'}
                          </td>
                        );
                      })}
                    </tr>
- 
+
                    {/* Peak System Pressure */}
                    <tr style={{ borderBottom: '1px solid var(--color-border-hover)', height: '36px', background: telemetryMode === 'peak' ? '#FFFBEB' : '#ffffff' }}>
-                     <td colSpan={3} style={{ padding: '6px 12px', fontWeight: '700', color: '#D97706', verticalAlign: 'middle' }}>
-                       Peak system pressure (bar(a))
+                     <td colSpan={3} title="Highest steady-state pressure at the moment a relief device reaches its set pressure (pumps and sources ramped up), or the relieved pressure if higher" style={{ padding: '6px 12px', fontWeight: '700', color: '#B45309', verticalAlign: 'middle' }}>
+                       Peak system pressure ({labels.pressureAbs})
                      </td>
                      {displayCases.map(c => {
                        const caseId = c.id || c.case_id;
-                       const unmit = caseId === activeCaseId ? (telemetryUnmitigated || c.telemetry_unmitigated) : c.telemetry_unmitigated;
-                       const pUnmit = calculateMaxPressureBar(unmit);
-                       const pPeak = c.kpis?.peak_pressure_bara ?? pUnmit ?? calculateMaxPressureBar(c.telemetry);
+                       const peak = c.telemetry?.relief?.peak;
+                       let value = '—';
+                       let note = c.telemetry ? 'Re-run the simulation' : null;
+                       let title;
+                       if (peak && !peak.available) {
+                         note = 'Not available';
+                         title = peak.reason;
+                       } else if (peak) {
+                         value = `${formatPressure(peak.pressure_bara)} ${labels.pressureAbs}`;
+                         note = peak.source === 'opening'
+                           ? `At opening of ${peak.device_ids.map(reliefDeviceLabel).join(', ')} · ${peak.ramp_pct} % load`
+                           : 'Equals the relieved state';
+                       }
                        return (
-                         <td key={caseId} style={{ padding: '6px 12px', fontWeight: '700', color: '#D97706', borderLeft: '1px solid var(--color-border)', verticalAlign: 'middle' }}>
-                           {pPeak !== undefined ? `${pPeak.toFixed(2)} bar(a)` : '—'}
+                         <td key={caseId} title={title} style={{ padding: '6px 12px', borderLeft: '1px solid var(--color-border)', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                           <div style={{ fontWeight: '700', color: '#B45309' }}>{value}</div>
+                           {note && <div style={{ fontSize: '10px', color: 'var(--color-text-secondary)' }}>{note}</div>}
                          </td>
                        );
                      })}
                    </tr>
- 
+
                    {/* Unmitigated Peak Pressure */}
                    <tr style={{ borderBottom: '1px solid var(--color-border-hover)', height: '36px', background: telemetryMode === 'unmitigated_global' ? '#FEF2F2' : '#ffffff' }}>
-                     <td colSpan={3} style={{ padding: '6px 12px', fontWeight: '700', color: '#DC2626', verticalAlign: 'middle' }}>
+                     <td colSpan={3} title="Steady-state maximum pressure with all relief devices held closed" style={{ padding: '6px 12px', fontWeight: '700', color: '#DC2626', verticalAlign: 'middle' }}>
                        Unmitigated peak pressure ({labels.pressureAbs})
                      </td>
                      {displayCases.map(c => {
@@ -825,6 +889,30 @@ export default function DataList({
                        );
                      })}
                    </tr>
+
+                  {/* First Relief Opening (F1-08) */}
+                  <tr style={{ borderBottom: '1px solid var(--color-border-hover)', height: '36px' }}>
+                    <td colSpan={3} title="Relief device that reaches its set pressure first, and the driver load (pumps and sources, % of their case value) at which it does" style={{ padding: '6px 12px', fontWeight: '700', color: 'var(--color-text-primary)', verticalAlign: 'middle' }}>
+                      First relief opening
+                    </td>
+                    {displayCases.map(c => {
+                      const devices = c.telemetry?.relief?.devices;
+                      const first = devices ? Object.entries(devices).filter(([, d]) => d.opening_order === 1) : [];
+                      let text = '—';
+                      if (c.telemetry?.relief?.peak?.available === false) {
+                        text = 'Not available';
+                      } else if (devices) {
+                        text = first.length
+                          ? `${first.map(([id]) => reliefDeviceLabel(id)).join(', ')} · ${first[0][1].opening_ramp_pct} % load`
+                          : 'None (no device reaches its set pressure)';
+                      }
+                      return (
+                        <td key={c.id || c.case_id} style={{ padding: '6px 12px', fontWeight: '600', color: 'var(--color-text-primary)', borderLeft: '1px solid var(--color-border)', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                          {text}
+                        </td>
+                      );
+                    })}
+                  </tr>
 
                   {/* Total Relief Flow */}
                   <tr style={{ borderBottom: '1px solid var(--color-border-hover)', background: '#F8FAFA', height: '36px' }}>

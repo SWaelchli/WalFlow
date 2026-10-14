@@ -29,9 +29,24 @@ class PressureSource(HydraulicNode):
         self.is_flow_boundary = False
         self.blocks_flow_on_shutdown = False
 
+        self.is_relief_driver = True
+        self._ramp_nominal_pressure = None
+
         # 1 inlet + 1 outlet
         self.add_inlet()
         self.add_outlet()
+
+    def apply_relief_ramp(self, lam: float) -> None:
+        """Pressure ramp from atmospheric pressure (lam = 0) to the case value (lam = 1)."""
+        if self._ramp_nominal_pressure is None:
+            self._ramp_nominal_pressure = self.source_pressure
+        p_atm = getattr(self.global_settings, 'atmospheric_pressure', 101325.0) if self.global_settings else 101325.0
+        self.source_pressure = p_atm + lam * (self._ramp_nominal_pressure - p_atm)
+
+    def reset_relief_ramp(self) -> None:
+        if self._ramp_nominal_pressure is not None:
+            self.source_pressure = self._ramp_nominal_pressure
+            self._ramp_nominal_pressure = None
 
     def _get_fluid_type(self) -> str:
         return getattr(self.global_settings, 'fluid_type', 'water')

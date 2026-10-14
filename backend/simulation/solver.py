@@ -1,3 +1,4 @@
+import copy
 import numpy as np
 import math
 import threading
@@ -50,7 +51,8 @@ class NetworkSolver:
         self.last_prop_iters = 0
         self.active_case_id = getattr(network, 'active_case_id', None) or 'default'
         self.warm_start_status = "Cold Start"
-        
+        self.persist_warm_start = True   # False for auxiliary solves (relief ramp) that must not overwrite the cache
+
         # Initial topology pruning
         self.prune_topology()
 
@@ -637,7 +639,7 @@ class NetworkSolver:
     def _store_warm_start(self, x) -> None:
         """Remember the final state of a solve as the next start (F1-14: never intermediate control iterations)."""
         gs = getattr(self.network, 'global_settings', None)
-        if x is None or not (getattr(gs, 'warm_start', True) if gs else True):
+        if x is None or not self.persist_warm_start or not (getattr(gs, 'warm_start', True) if gs else True):
             return
         with NetworkSolver._warm_start_lock:
             if len(NetworkSolver._warm_start_cache) >= NetworkSolver._MAX_WARM_START_ENTRIES:
@@ -1440,6 +1442,115 @@ class NetworkSolver:
             for port, p in zip(node.outlets, out_pressures):
                 port.pressure = p
 
+RELIEF_NODE_TYPES = ('pressure_safety_valve', 'rupture_disc')
+RELIEF_RAMP_MAX_SOLVES = 24     # bisection steps per opening (λ resolution 2⁻²⁴)
+RELIEF_RAMP_TOL_PA = 100.0      # 1 mbar: inlet pressure at the opening snapshot vs set pressure
+RELIEF_RAMP_TOL_LAM = 1e-4
+
+
+def _relief_set_pressure_bar(node) -> float:
+    if hasattr(node, 'set_pressure_bar'):
+        return float(node.set_pressure_bar)
+    if hasattr(node, 'burst_pressure_bar'):
+        return float(node.burst_pressure_bar)
+    return 0.0
+
+
+def _telemetry_max_pressure_bara(tel) -> float:
+    """Maximum pressure (bar(a)) over all node and edge ports of a telemetry dict."""
+    max_pa = 0.0
+    for group in ("nodes", "edges"):
+        for item in (tel or {}).get(group, {}).values():
+            for p in item.get("inlets", []) + item.get("outlets", []):
+                p_val = p.get("pressure")
+                if isinstance(p_val, (int, float)) and p_val > max_pa:
+                    max_pa = p_val
+    return max_pa / 100000.0 if max_pa > 0 else 1.01325
+
+
+def _inlet_pressure_bara(tel, node_id):
+    inlets = (tel or {}).get("nodes", {}).get(node_id, {}).get("inlets") or []
+    p = inlets[0].get("pressure") if inlets else None
+    return round(p / 100000.0, 3) if isinstance(p, (int, float)) else None
+
+
+def _find_relief_openings(network, opening_groups, auto_ids, original_states, extract_telemetry_fn):
+    """
+    F1-08: steady state at the moment each relief device opens.
+
+    The case's relief drivers (is_relief_driver and relief_ramp_enabled: pumps, sources) are
+    scaled with a ramp factor λ from 0 to their case value (λ = 1). For each group of devices
+    that opened in the sequential relief passes (lowest set pressure first), λ is bisected until
+    the group's highest margin P_inlet − P_set is zero: the devices that opened before are free
+    to relieve, the group and every later auto device are held closed. Each snapshot is a
+    converged steady-state solution (no time integration).
+
+    Runs on a copy of the network, so the reported relieved state and the warm-start cache stay
+    untouched. Returns (openings, error); openings lists one dict per group in opening order.
+    """
+    net = copy.deepcopy(network)
+    drivers = [n for n in net.nodes.values()
+               if getattr(n, 'is_relief_driver', False) and getattr(n, 'relief_ramp_enabled', True)]
+    if not drivers:
+        return [], "No ramped driver: enable 'Ramp during relief analysis' on a pump or source."
+
+    ramp_solver = NetworkSolver(net)
+    ramp_solver.persist_warm_start = False
+    openings = []
+    try:
+        for g_idx, group_ids in enumerate(opening_groups):
+            earlier = {k for grp in opening_groups[:g_idx] for k in grp}
+            for k in auto_ids:
+                net.nodes[k].forced_state = "auto" if k in earlier else "forced_closed"
+            group_nodes = [(k, net.nodes[k]) for k in group_ids]
+
+            best = None   # (|margin|, λ, telemetry)
+
+            def margin_at(lam):
+                for d in drivers:
+                    d.apply_relief_ramp(lam)
+                for k in auto_ids:
+                    net.nodes[k].reset_run_state()
+                stats = ramp_solver.solve()
+                if not stats.get("success"):
+                    return None, None
+                margin = max(node.inlets[0].pressure - _relief_set_pressure_bar(node) * 100000.0
+                             for _, node in group_nodes)
+                return margin, extract_telemetry_fn(net)
+
+            # The group breached its set pressure at λ = 1 (that is why it opened); below its
+            # set pressure at λ = 0 (drivers at rest).
+            lo, hi = 0.0, 1.0
+            for _ in range(RELIEF_RAMP_MAX_SOLVES):
+                lam = 0.5 * (lo + hi)
+                margin, tel = margin_at(lam)
+                if margin is None:
+                    return openings, f"Relief ramp did not converge at {lam * 100:.1f} % driver load."
+                if best is None or abs(margin) < best[0]:
+                    best = (abs(margin), lam, tel)
+                if margin >= 0.0:
+                    hi = lam
+                else:
+                    lo = lam
+                if abs(margin) < RELIEF_RAMP_TOL_PA or hi - lo < RELIEF_RAMP_TOL_LAM:
+                    break
+
+            _, lam, tel = best
+            # The snapshot holds the auto devices closed by the method, not by the user
+            for k in auto_ids:
+                if k in tel.get("nodes", {}):
+                    tel["nodes"][k]["forced_state"] = original_states[k]
+            openings.append({
+                "device_ids": list(group_ids),
+                "ramp": lam,
+                "telemetry": tel,
+                "max_pressure_bara": _telemetry_max_pressure_bara(tel),
+            })
+    finally:
+        for d in drivers:
+            d.reset_relief_ramp()
+    return openings, None
+
 
 def run_sequential_relief_simulation(network, solver, extract_telemetry_fn):
     """
@@ -1447,41 +1558,23 @@ def run_sequential_relief_simulation(network, solver, extract_telemetry_fn):
     Pass 1: Lock all relief valves forced_closed to calculate unmitigated baseline.
     Passes 2+: Sequentially unlock relief devices starting with the lowest setpoint first.
              Only unlock higher setpoint devices if lower setpoint devices fail to suppress overpressure.
+    Then the opening of each device is located on a ramp of the relief drivers (F1-08).
+
+    Returns (stats, telemetry_mitigated, telemetry_unmitigated, has_psv, telemetry_peak);
+    telemetry_peak is None when the peak is the relieved state itself or is unavailable.
     """
-    psv_nodes = [node for node in network.nodes.values() if getattr(node, 'node_type', '') in ['pressure_safety_valve', 'rupture_disc']]
+    psv_items = [(k, node) for k, node in network.nodes.items() if getattr(node, 'node_type', '') in RELIEF_NODE_TYPES]
+    psv_nodes = [node for _, node in psv_items]
     has_psv = len(psv_nodes) > 0
 
     if not psv_nodes:
         stats = solver.solve()
         telemetry = extract_telemetry_fn(network)
-        return stats, telemetry, telemetry, False
+        return stats, telemetry, telemetry, False, None
 
+    key_of = {id(node): k for k, node in psv_items}
     # Save original forced_state configured by user
-    original_states = {node.name: node.forced_state for node in psv_nodes}
-
-    def get_set_pressure_bar(node):
-        if hasattr(node, 'set_pressure_bar'):
-            return float(node.set_pressure_bar)
-        elif hasattr(node, 'burst_pressure_bar'):
-            return float(node.burst_pressure_bar)
-        return 0.0
-
-    def calc_max_pressure_bara(tel):
-        """Helper to compute maximum system pressure across all nodes and edges in bara (bar absolute)."""
-        max_pa = 0.0
-        if tel and "nodes" in tel:
-            for n in tel["nodes"].values():
-                for p in n.get("inlets", []) + n.get("outlets", []):
-                    p_val = p.get("pressure")
-                    if isinstance(p_val, (int, float)) and p_val > max_pa:
-                        max_pa = p_val
-        if tel and "edges" in tel:
-            for e in tel["edges"].values():
-                for p in e.get("inlets", []) + e.get("outlets", []):
-                    p_val = p.get("pressure")
-                    if isinstance(p_val, (int, float)) and p_val > max_pa:
-                        max_pa = p_val
-        return max_pa / 100000.0 if max_pa > 0 else 1.01325
+    original_states = {k: node.forced_state for k, node in psv_items}
 
     # Pass 1: Unmitigated (All relief nodes forced closed to establish overpressure baseline)
     for node in psv_nodes:
@@ -1493,7 +1586,7 @@ def run_sequential_relief_simulation(network, solver, extract_telemetry_fn):
     telemetry_unmitigated = extract_telemetry_fn(network)
 
     # Initialize sequential states for Mitigated passes
-    auto_psv_nodes = [node for node in psv_nodes if original_states[node.name] == "auto"]
+    auto_psv_nodes = [node for node in psv_nodes if original_states[key_of[id(node)]] == "auto"]
 
     for node in auto_psv_nodes:
         node.forced_state = "forced_closed"
@@ -1501,20 +1594,18 @@ def run_sequential_relief_simulation(network, solver, extract_telemetry_fn):
 
     stats = None
     max_passes = len(auto_psv_nodes) + 1
-    pass_max_pressures = []
+    opening_groups = []   # device ids unlocked per pass, in opening order
 
     for pass_idx in range(max_passes):
         # 1. Solve current state
         stats = solver.solve()
-        tel_pass = extract_telemetry_fn(network)
-        pass_max_pressures.append(calc_max_pressure_bara(tel_pass))
 
         # 2. Check inlet pressures of closed auto relief nodes
         breached_nodes = []
         for node in auto_psv_nodes:
             if node.forced_state == "forced_closed":
                 p_in_bar = (node.inlets[0].pressure / 100000.0) if node.inlets else 0.0
-                set_p = get_set_pressure_bar(node)
+                set_p = _relief_set_pressure_bar(node)
                 if p_in_bar >= set_p:
                     breached_nodes.append((set_p, node))
 
@@ -1526,15 +1617,16 @@ def run_sequential_relief_simulation(network, solver, extract_telemetry_fn):
         min_set_p = min(item[0] for item in breached_nodes)
 
         # 5. Unlock all breached closed devices sharing this minimum set pressure
-        unlocked_any = False
+        group = []
         for set_p, node in breached_nodes:
             if abs(set_p - min_set_p) < 1e-4:
                 node.forced_state = "auto"
                 node.reset_run_state()
-                unlocked_any = True
+                group.append(key_of[id(node)])
 
-        if not unlocked_any:
+        if not group:
             break
+        opening_groups.append(group)
 
     telemetry_mitigated = extract_telemetry_fn(network)
     if stats is not None and first_warm_start_status is not None:
@@ -1543,91 +1635,63 @@ def run_sequential_relief_simulation(network, solver, extract_telemetry_fn):
     # =========================================================================
     # RELIEF CONTINGENCY PRESSURE METRICS (ALL IN BARA / BAR ABSOLUTE)
     # -------------------------------------------------------------------------
-    # 1. Relieved System Pressure: Post-mitigation steady-state max pressure
-    #    after relief devices have opened to suppress overpressure.
-    # 2. Peak System Pressure: Maximum system pressure recorded during the
-    #    overpressure transient at the moment of opening relief devices.
-    # 3. Unmitigated Peak Pressure: Maximum system pressure if ALL relief
-    #    devices remain locked closed (Pass 1 baseline).
+    # 1. Relieved: steady-state max pressure with the relief devices in their final state.
+    # 2. Peak: highest max pressure over the opening snapshots (each device exactly at its
+    #    set pressure, found on the driver ramp) and the relieved state (F1-08).
+    # 3. Unmitigated: steady-state max pressure with ALL relief devices held closed.
     # =========================================================================
-    relieved_pressure_bara = calc_max_pressure_bara(telemetry_mitigated)
-    unmitigated_peak_pressure_bara = calc_max_pressure_bara(telemetry_unmitigated)
-    
-    # Calculate peak pressure at the moment the first relief device popped:
-    # 1. Identify all relief devices that popped open.
-    # 2. Pick the one that opened first (the one with the lowest set/burst rating).
-    # 3. Scale down the system pressure drop from the unmitigated baseline (Pass 0)
-    #    to the exact moment when the differential pressure across that first device
-    #    reached its cracking setpoint.
-    # 4. If no relief devices popped, the peak pressure equals the relieved operating pressure.
-    popped_nodes = [
-        node for node in psv_nodes
-        if telemetry_mitigated.get("nodes", {}).get(node.id, {}).get("status") in ["cracked", "burst", "overcapacity"]
-    ]
-    if popped_nodes:
-        # Identify the highest setpoint relief device that actually opened in the simulation.
-        # - If the highest opened device is a modulating valve, the pressure does not drop
-        #   abruptly upon opening; therefore, the peak pressure equals the final steady-state
-        #   relieved operating pressure.
-        # - If the highest opened device is a pop-action PSV or a rupture disc, the pressure
-        #   drops once it opens. Thus, the peak pressure is the scaled transient cracking pressure.
-        highest_popped_node = max(popped_nodes, key=get_set_pressure_bar)
-        is_modulating = (getattr(highest_popped_node, 'action_mode', '') == 'modulating')
-        
-        if is_modulating:
-            peak_pressure_bara = relieved_pressure_bara
-        else:
-            node_id = highest_popped_node.id
-            unmit_node = telemetry_unmitigated.get("nodes", {}).get(node_id)
-            if unmit_node and unmit_node.get("inlets") and unmit_node.get("outlets"):
-                p_in = unmit_node["inlets"][0]["pressure"]
-                p_out = unmit_node["outlets"][0]["pressure"]
-                dp_unmit = max(1.0, p_in - p_out)
-                dp_cracking = get_set_pressure_bar(highest_popped_node) * 100000.0
-                
-                # Scaling factor (S <= 1.0)
-                S = min(1.0, dp_cracking / dp_unmit)
-                
-                # Find max/min pressure in unmitigated pass
-                unmit_max_pa = 0.0
-                unmit_min_pa = float('inf')
-                for n in telemetry_unmitigated["nodes"].values():
-                    for p in n.get("inlets", []) + n.get("outlets", []):
-                        p_val = p.get("pressure")
-                        if isinstance(p_val, (int, float)):
-                            if p_val > unmit_max_pa: unmit_max_pa = p_val
-                            if p_val < unmit_min_pa: unmit_min_pa = p_val
-                for e in telemetry_unmitigated["edges"].values():
-                    for p in e.get("inlets", []) + e.get("outlets", []):
-                        p_val = p.get("pressure")
-                        if isinstance(p_val, (int, float)):
-                            if p_val > unmit_max_pa: unmit_max_pa = p_val
-                            if p_val < unmit_min_pa: unmit_min_pa = p_val
-                
-                if unmit_min_pa == float('inf'):
-                    unmit_min_pa = 101325.0
-                
-                # Scale the absolute pressure from reference min pressure
-                peak_pressure_pa = unmit_min_pa + S * (unmit_max_pa - unmit_min_pa)
-                peak_pressure_bara = peak_pressure_pa / 100000.0
-            else:
-                peak_pressure_bara = relieved_pressure_bara
+    relieved_pressure_bara = _telemetry_max_pressure_bara(telemetry_mitigated)
+    unmitigated_peak_pressure_bara = _telemetry_max_pressure_bara(telemetry_unmitigated)
+
+    auto_ids = [key_of[id(node)] for node in auto_psv_nodes]
+    openings, ramp_error = ([], None)
+    if opening_groups and stats is not None and stats.get("success"):
+        openings, ramp_error = _find_relief_openings(network, opening_groups, auto_ids, original_states, extract_telemetry_fn)
+
+    peak = {"available": True, "reason": None, "pressure_bara": round(relieved_pressure_bara, 2),
+            "source": "relieved", "device_ids": [], "ramp_pct": None}
+    telemetry_peak = None
+    if ramp_error:
+        peak.update(available=False, reason=ramp_error, pressure_bara=None)
     else:
-        peak_pressure_bara = relieved_pressure_bara
+        for op in openings:
+            if op["max_pressure_bara"] > relieved_pressure_bara and \
+                    (peak["source"] == "relieved" or op["max_pressure_bara"] > peak["pressure_bara"]):
+                peak.update(pressure_bara=round(op["max_pressure_bara"], 2), source="opening",
+                            device_ids=op["device_ids"], ramp_pct=round(op["ramp"] * 100.0, 1))
+                telemetry_peak = op["telemetry"]
 
-    if "kpis" not in telemetry_mitigated or not isinstance(telemetry_mitigated["kpis"], dict):
-        telemetry_mitigated["kpis"] = {}
-    if "kpis" not in telemetry_unmitigated or not isinstance(telemetry_unmitigated["kpis"], dict):
-        telemetry_unmitigated["kpis"] = {}
+    # Per-device results for the Relief Analysis Matrix
+    opening_by_id = {}
+    for order, op in enumerate(openings, start=1):
+        for k in op["device_ids"]:
+            opening_by_id[k] = (order, op)
+    devices = {}
+    for k, node in psv_items:
+        node_tel = telemetry_mitigated.get("nodes", {}).get(k, {})
+        outlets = node_tel.get("outlets") or []
+        flow = outlets[0].get("flow_rate", 0.0) if outlets else 0.0
+        order, op = opening_by_id.get(k, (None, None))
+        devices[k] = {
+            "set_pressure_bar": _relief_set_pressure_bar(node),
+            "forced_state": original_states[k],
+            "status": node_tel.get("status"),
+            "opening_order": order,
+            "opening_ramp_pct": round(op["ramp"] * 100.0, 1) if op else None,
+            "inlet_at_opening_bara": _inlet_pressure_bara(op["telemetry"], k) if op else None,
+            "inlet_relieved_bara": _inlet_pressure_bara(telemetry_mitigated, k),
+            "inlet_unmitigated_bara": _inlet_pressure_bara(telemetry_unmitigated, k),
+            "relief_flow_lmin": round(abs(flow) * 60000.0, 2),
+        }
+    telemetry_mitigated["relief"] = {"peak": peak, "devices": devices}
 
-    telemetry_mitigated["kpis"]["relieved_pressure_bara"] = round(relieved_pressure_bara, 2)
-    telemetry_mitigated["kpis"]["peak_pressure_bara"] = round(peak_pressure_bara, 2)
-    telemetry_mitigated["kpis"]["unmitigated_peak_pressure_bara"] = round(unmitigated_peak_pressure_bara, 2)
+    for tel in (telemetry_mitigated, telemetry_unmitigated):
+        if "kpis" not in tel or not isinstance(tel["kpis"], dict):
+            tel["kpis"] = {}
+        tel["kpis"]["relieved_pressure_bara"] = round(relieved_pressure_bara, 2)
+        tel["kpis"]["peak_pressure_bara"] = peak["pressure_bara"]
+        tel["kpis"]["unmitigated_peak_pressure_bara"] = round(unmitigated_peak_pressure_bara, 2)
     telemetry_mitigated["kpis"]["max_pressure_bar"] = round(relieved_pressure_bara, 2)
-
-    telemetry_unmitigated["kpis"]["relieved_pressure_bara"] = round(relieved_pressure_bara, 2)
-    telemetry_unmitigated["kpis"]["peak_pressure_bara"] = round(peak_pressure_bara, 2)
-    telemetry_unmitigated["kpis"]["unmitigated_peak_pressure_bara"] = round(unmitigated_peak_pressure_bara, 2)
     telemetry_unmitigated["kpis"]["max_pressure_bar"] = round(unmitigated_peak_pressure_bara, 2)
 
-    return stats, telemetry_mitigated, telemetry_unmitigated, has_psv
+    return stats, telemetry_mitigated, telemetry_unmitigated, has_psv, telemetry_peak

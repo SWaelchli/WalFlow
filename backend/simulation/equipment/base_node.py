@@ -22,7 +22,13 @@ class HydraulicNode:
         self.is_flow_boundary = False
         self.blocks_flow_on_shutdown = False
         self.use_mcp_formulation = False
-        
+
+        # Relief analysis (F1-08): drivers (pumps, sources) scale with a ramp factor to find the
+        # steady state at which a relief device reaches its set pressure. Subclasses that drive
+        # the system set is_relief_driver and override apply_relief_ramp / reset_relief_ramp.
+        self.is_relief_driver = False
+        self.relief_ramp_enabled = True  # user switch "Ramp during relief analysis"
+
         # Every node can have multiple inlets and outlets
         self.inlets: List[Port] = []
         self.outlets: List[Port] = []
@@ -73,6 +79,15 @@ class HydraulicNode:
         
         for port in outward_ports:
             port.temperature = mix_temp
+
+    def apply_relief_ramp(self, lam: float) -> None:
+        """Scales the driving parameters to the fraction lam (0..1) of their case value.
+        Overridden by relief drivers; reset_relief_ramp() restores the case value."""
+        pass
+
+    def reset_relief_ramp(self) -> None:
+        """Restores the case values changed by apply_relief_ramp()."""
+        pass
 
     def calculate(self):
         """

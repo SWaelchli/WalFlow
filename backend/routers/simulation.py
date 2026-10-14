@@ -165,7 +165,7 @@ def run_batch_simulation(request: Request, graph: ReactFlowGraph):
             network = GraphParser.parse_graph(graph, case_id=case.id)
             solver = NetworkSolver(network)
 
-            stats, telemetry, telemetry_unmitigated, has_psv = run_sequential_relief_simulation(
+            stats, telemetry, telemetry_unmitigated, has_psv, telemetry_peak = run_sequential_relief_simulation(
                 network, solver, extract_telemetry_dict
             )
 
@@ -186,6 +186,7 @@ def run_batch_simulation(request: Request, graph: ReactFlowGraph):
                 stats=stats,
                 telemetry=telemetry,
                 telemetry_unmitigated=telemetry_unmitigated,
+                telemetry_peak=telemetry_peak,
                 kpis=kpis
             ))
         except Exception as e:

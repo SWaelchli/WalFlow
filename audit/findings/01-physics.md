@@ -107,6 +107,7 @@ Scratch scripts (not in repo): `solve_examples.py`, `jac_check.py` in the sessio
 - Location: [solver.py:1185-1245](../../backend/simulation/solver.py#L1185-L1245)
 - `peak = P_min + S·(P_max − P_min)` with `S = set_pressure(absolute) / (P_in − P_out)(differential)`. There is no physical basis, and AGENTS.md says the solver is steady-state only. Example: Multi_PSV `peak_pressure_bara = 21.18`.
 - Suggested fix: remove it, or replace it with clearly defined steady-state quantities (P at each relief device inlet at set and at relieving conditions).
+- **Status: fixed 2026-10-14 (B1c).** Replaced by a solved steady state: the pressure drivers are ramped until each device reaches its set pressure. Multi_PSV peak is now 20.00 bar(a). See 04-triage.md › B1c.
 
 #### F1-09  Relief-device set pressure: absolute vs differential used inconsistently; the bar(a) convention is unusual
 - **Severity: S2** (to quantify in 1.29)

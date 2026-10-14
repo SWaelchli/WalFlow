@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 
 import { mToMm, mmToM } from '../../utils/converters';
-import { isCaseVariableProperty } from '../../constants/case_constants';
+import { isCaseVariableProperty, RELIEF_DRIVER_TYPES } from '../../constants/case_constants';
 import { isPropertyOverridden, getEffectiveNodeData } from '../../utils/case_resolver';
 import { GlobeIcon, BoltIcon, WarningIcon, CrossIcon } from '../symbols/IconLibrary';
 
@@ -1001,6 +1001,24 @@ export default function SetupPanel({
                 />
               </div>
             </>
+          )}
+
+          {isNode && RELIEF_DRIVER_TYPES.includes(type) && (
+            <div>
+              {renderLabel('Ramp during relief analysis', 'relief_ramp_enabled')}
+              <select
+                className="form-select"
+                style={{ width: '100%', height: '32px', fontSize: '11px' }}
+                value={effectiveData.relief_ramp_enabled !== false ? 'true' : 'false'}
+                onChange={(e) => onUpdate(id, { relief_ramp_enabled: e.target.value === 'true' })}
+              >
+                <option value="true">Ramp (drives the relief scenario)</option>
+                <option value="false">Hold at set value</option>
+              </select>
+              <p style={{ fontSize: '10px', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
+                The relief analysis ramps every enabled driver from rest to its set value to find the state at which each relief device opens. Hold receivers, such as a downstream header, at their set value.
+              </p>
+            </div>
           )}
 
           {isNode && (type === 'linear_regulator' || type === 'remote_control_valve') && (

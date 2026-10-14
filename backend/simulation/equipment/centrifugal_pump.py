@@ -37,8 +37,27 @@ class CentrifugalPump(HydraulicNode):
         else:
             self.C_coeff = 0.0
 
+        self.is_relief_driver = True
+        self._ramp_nominal = None
+
         self.add_inlet()
         self.add_outlet()
+
+    def apply_relief_ramp(self, lam: float) -> None:
+        """Speed ramp by the affinity laws: Q ∝ n, H ∝ n² (C_coeff stays the same)."""
+        if not getattr(self, 'active', True):
+            return  # a stopped pump is a resistance, not a driver
+        if self._ramp_nominal is None:
+            self._ramp_nominal = (self.flow_rated, self.head_rated, self.head_shutoff)
+        q, h, h0 = self._ramp_nominal
+        self.flow_rated = q * lam
+        self.head_rated = h * lam * lam
+        self.head_shutoff = h0 * lam * lam
+
+    def reset_relief_ramp(self) -> None:
+        if self._ramp_nominal is not None:
+            self.flow_rated, self.head_rated, self.head_shutoff = self._ramp_nominal
+            self._ramp_nominal = None
 
     def _locked_rotor_head(self, flow_rate: float) -> float:
         """Head loss (m, signed with the flow) of the stopped pump."""

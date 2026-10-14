@@ -199,7 +199,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     try:
                         # Offload CPU-heavy matrix solver to thread pool to prevent event loop starvation
                         import asyncio
-                        stats, telemetry_mitigated, telemetry_unmitigated, has_psv = await asyncio.to_thread(
+                        stats, telemetry_mitigated, telemetry_unmitigated, has_psv, telemetry_peak = await asyncio.to_thread(
                             run_sequential_relief_simulation,
                             network_instance,
                             solver_instance,
@@ -222,6 +222,7 @@ async def websocket_endpoint(websocket: WebSocket):
                             "stats": stats,
                             "telemetry": telemetry_mitigated,
                             "telemetry_unmitigated": telemetry_unmitigated,
+                            "telemetry_peak": telemetry_peak,
                             "has_psv": has_psv,
                             "kpis": kpis
                         }))
