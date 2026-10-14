@@ -31,6 +31,15 @@ class ModelInputError(ValueError):
 
 class GraphParser:
     @staticmethod
+    def _max_discharge_pa(d: dict, name: str) -> float:
+        """Outlet pressure limit of a PD pump / flow source: bar(a) in the file, Pa(a) in the model (50 bar(a) default)."""
+        bara = d.get('max_discharge_pressure_bara')
+        bara = 50.0 if bara is None else float(bara)
+        if bara <= 1.0:
+            raise ModelInputError(f"'{name}': max. discharge pressure must be above 1 bar(a).")
+        return bara * 100000.0
+
+    @staticmethod
     def resolve_graph_for_case(graph: ReactFlowGraph, target_case_id: Optional[str] = None) -> ReactFlowGraph:
         """
         Creates a new ReactFlowGraph instance where the active case (or target_case_id) overrides
@@ -245,7 +254,8 @@ class GraphParser:
                 flow_rated=flow_m3s,
                 motor_power=power_w,
                 efficiency=eff_dec,
-                drive_type=str(d.get('drive_type', 'fixed_speed'))
+                drive_type=str(d.get('drive_type', 'fixed_speed')),
+                max_discharge_pressure=GraphParser._max_discharge_pa(d, name)
             )
         elif t == 'linear_control_valve':
             node = LinearControlValve(
@@ -390,6 +400,7 @@ class GraphParser:
                 name=name,
                 source_flow=source_flow_m3s,
                 temperature=temperature_k,
+                max_discharge_pressure=GraphParser._max_discharge_pa(d, name),
             )
         else:
             node = HydraulicNode(name=name, node_type=t)

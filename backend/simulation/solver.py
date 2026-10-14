@@ -873,10 +873,15 @@ class NetworkSolver:
                 data.append((row_residual(p_src0, p_tgt0, q0 + h_q) - row_residual(p_src0, p_tgt0, q0 - h_q)) / (2 * h_q) * q_scale)
             else:
                 src_locked = getattr(src_node, 'locked_up', False)
+                # PD pump: on its discharge pressure limit the outlet barely follows p_in and the flow
+                pd_derivs = None
+                if isinstance(src_node, VolumetricPump) and not src_locked:
+                    pd_inlet = src_node.inlets[0]
+                    pd_derivs = src_node.outlet_derivatives(q_edges[j], p_in_all[src_idx], pd_inlet.density, pd_inlet.viscosity)
                 if src_internal_idx != -1 and not src_locked:
                     rows.append(a_row)
                     cols.append(src_internal_idx)
-                    data.append(1.0)
+                    data.append(pd_derivs[0] if pd_derivs else 1.0)
 
                 if tgt_internal_idx != -1:
                     rows.append(a_row)
@@ -884,7 +889,11 @@ class NetworkSolver:
                     data.append(-1.0)
 
                 # Term 1: d(P_src_out)/dq_j
-                if not src_locked and not isinstance(src_node, ThreeWayTCV) and hasattr(src_node, 'calculate_delta_p'):
+                if pd_derivs:
+                    rows.append(a_row)
+                    cols.append(num_internal + j)
+                    data.append((q_scale / p_scale) * pd_derivs[1])
+                elif not src_locked and not isinstance(src_node, ThreeWayTCV) and hasattr(src_node, 'calculate_delta_p'):
                     inlet = src_node.inlets[0] if src_node.inlets else None
                     density = inlet.density if inlet else 1000.0
                     viscosity = inlet.viscosity if inlet else 0.001
@@ -1171,7 +1180,9 @@ class NetworkSolver:
         if isinstance(node, LinearRegulator) and not node.backpressure and                 self.node_to_key.get(id(node)) in self.pruned_node_ids:
             # F1-37: a regulator without any flow path (dead end) is locked up, not wide open
             return min(p_in, node.set_pressure)
-        if isinstance(node, (CentrifugalPump, VolumetricPump)):
+        if isinstance(node, VolumetricPump):
+            return p_in + node.calculate_delta_p(q_flow, density, viscosity, p_in_pa=p_in)
+        if isinstance(node, CentrifugalPump):
             return p_in + node.calculate_delta_p(q_flow, density, viscosity)
         elif hasattr(node, 'calculate_delta_p'):
             if self._use_mcp_for_node(node):

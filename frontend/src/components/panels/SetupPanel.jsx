@@ -556,6 +556,12 @@ export default function SetupPanel({
             setLocalDrafts({});
             return;
           }
+        } else if (field === 'max_discharge_pressure_bara') {
+          if (isNaN(numericValue) || numericValue <= 1.0) {
+            alert(`Max. discharge pressure must be above 1 bar(a)${isImperial ? ' (14.5 psi(a))' : ''}.`);
+            setLocalDrafts({});
+            return;
+          }
         } else if (isNaN(numericValue) || numericValue <= 0) {
           alert(`${field} must be a positive number greater than zero.`);
           setLocalDrafts({});
@@ -913,6 +919,22 @@ export default function SetupPanel({
                 </p>
               </div>
               <div>
+                {renderLabel(`Max. Discharge Pressure (${isImperial ? 'psi(a)' : 'bar(a)'})`, 'max_discharge_pressure_bara')}
+                <input
+                  type="number"
+                  step="1"
+                  className="form-input" style={{ width: '100%' }}
+                  value={localDrafts.max_discharge_pressure_bara !== undefined
+                    ? localDrafts.max_discharge_pressure_bara
+                    : (isImperial ? (Number(effectiveData.max_discharge_pressure_bara ?? 50.0) * 14.5037738).toFixed(1) : (effectiveData.max_discharge_pressure_bara ?? 50.0))}
+                  onChange={(e) => handleDraftChange('max_discharge_pressure_bara', e.target.value)}
+                  onBlur={(e) => validateAndCommit('max_discharge_pressure_bara', e.target.value, true)}
+                />
+                <p style={{ fontSize: '10px', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
+                  Internal relief: above this outlet pressure the excess flow recirculates to suction, so the delivered flow drops below displacement.
+                </p>
+              </div>
+              <div>
                 {renderLabel(`Motor Rating (${isImperial ? 'HP' : 'kW'})`, 'motor_power')}
                 <input 
                   type="number" 
@@ -985,6 +1007,23 @@ export default function SetupPanel({
                   onChange={(e) => handleDraftChange('source_flow_lmin', e.target.value)}
                   onBlur={(e) => validateAndCommit('source_flow_lmin', e.target.value, true)}
                 />
+              </div>
+
+              <div>
+                {renderLabel(`Max. Discharge Pressure (${isImperial ? 'psi(a)' : 'bar(a)'})`, 'max_discharge_pressure_bara')}
+                <input
+                  type="number"
+                  className="form-input" style={{ width: '100%' }}
+                  step="1"
+                  value={localDrafts.max_discharge_pressure_bara !== undefined
+                    ? localDrafts.max_discharge_pressure_bara
+                    : (isImperial ? (Number(effectiveData.max_discharge_pressure_bara ?? 50.0) * 14.5037738).toFixed(1) : (effectiveData.max_discharge_pressure_bara ?? 50.0))}
+                  onChange={(e) => handleDraftChange('max_discharge_pressure_bara', e.target.value)}
+                  onBlur={(e) => validateAndCommit('max_discharge_pressure_bara', e.target.value, true)}
+                />
+                <p style={{ fontSize: '10px', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
+                  Above this outlet pressure the delivered flow drops below the set flow.
+                </p>
               </div>
 
               <div>

@@ -14,18 +14,20 @@ class FlowSource(HydraulicNode):
     """
 
     _BASE_STIFFNESS_PA_PER_M3S = 1e10
-    _HARD_CAP_PA = 20_000_000.0           # 200 bar cap
+    _HARD_CAP_PA = 20_000_000.0           # 200 bar cap below the reference (flow above target)
 
     def __init__(
         self,
         name: str,
         source_flow: float = 8.333e-4,        # 50 L/min default
         temperature: float = 293.15,          # 20 °C default
+        max_discharge_pressure: float = 50e5, # Pa(a): outlet pressure limit, 50 bar(a) default
     ):
         super().__init__(name, node_type="flow_source")
 
         self.source_flow = float(source_flow)           # m³/s
         self.temperature = float(temperature)           # K
+        self.max_discharge_pressure = float(max_discharge_pressure)  # Pa(a)
 
         self.is_pressure_boundary = False
         self.is_flow_boundary = False
@@ -55,6 +57,11 @@ class FlowSource(HydraulicNode):
             return self._BASE_STIFFNESS_PA_PER_M3S
         return 1.0e7 / (0.01 * abs(q_ref))
 
+    def _max_rise_pa(self) -> float:
+        """Largest pressure rise over the reference (atmospheric, where the solver pins the source node)."""
+        atm = getattr(self.global_settings, 'atmospheric_pressure', 101325.0) if self.global_settings else 101325.0
+        return max(0.0, self.max_discharge_pressure - atm)
+
     def _get_fluid_type(self) -> str:
         return getattr(self.global_settings, 'fluid_type', 'water')
 
@@ -76,7 +83,8 @@ class FlowSource(HydraulicNode):
         dp = stiffness * (flow_rate - target_flow)
 
         # Clamp delta pressure to avoid extreme values during solver search
-        dp = max(-self._HARD_CAP_PA, min(self._HARD_CAP_PA, dp))
+        # Outlet limited to max_discharge_pressure (dp < 0 is a pressure rise)
+        dp = max(-self._max_rise_pa(), min(self._HARD_CAP_PA, dp))
         return dp
 
     def calculate_dp_derivative(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
@@ -88,7 +96,7 @@ class FlowSource(HydraulicNode):
 
         # Check if clamped; if so, derivative is zero
         dp = stiffness * (flow_rate - target_flow)
-        if dp <= -self._HARD_CAP_PA or dp >= self._HARD_CAP_PA:
+        if dp <= -self._max_rise_pa() or dp >= self._HARD_CAP_PA:
             return 0.0
 
         return stiffness

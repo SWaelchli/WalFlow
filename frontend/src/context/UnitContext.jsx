@@ -162,6 +162,7 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
       case 'inlet_pressure_base_bar':
       case 'outlet_pressure_base_bar':
       case 'source_pressure_bara':
+      case 'max_discharge_pressure_bara':
       case 'cracking_pressure_bar':
       case 'cracking_pressure':
       case 'dp_clean':
@@ -260,6 +261,7 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
       case 'inlet_pressure_base_bar':
       case 'outlet_pressure_base_bar':
       case 'source_pressure_bara':
+      case 'max_discharge_pressure_bara':
       case 'cracking_pressure_bar':
       case 'cracking_pressure':
       case 'dp_clean':

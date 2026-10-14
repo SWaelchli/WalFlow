@@ -45,8 +45,9 @@ const PumpDetails = memo(function PumpDetails({ node }) {
   const { type, data } = node;
   const { 
     flow_rated_lmin, head_rated_m, rise_to_shutoff_pct, 
-    flow_rated, motor_power, efficiency, drive_type, telemetry 
+    flow_rated, motor_power, efficiency, drive_type, max_discharge_pressure_bara, telemetry 
   } = data;
+  const maxDischargeBara = parseFloat(max_discharge_pressure_bara ?? 50) || 50;
   const isFixedSpeed = (drive_type || 'fixed_speed') === 'fixed_speed';
   // Density of the last result; the curve is in head, so ΔP follows ρ
   const rho = telemetry?.inlets?.[0]?.density || 1000;
@@ -87,7 +88,9 @@ const PumpDetails = memo(function PumpDetails({ node }) {
           const stiffness = 10_000_000.0 / (0.01 * flow_rated_m3s);
           const dp_displacement = Math.max(0, stiffness * (flow_rated_m3s - qM3s));
           const dp_power = isFixedSpeed ? Infinity : (power_w * eff_dec) / Math.sqrt(qM3s**2 + 1e-10);
-          pumpBar = Math.min(dp_displacement, dp_power, 20_000_000.0) / 100000;
+          // Discharge limit is absolute: the rise is capped at limit − suction pressure
+          const dp_limit = Math.max(0, maxDischargeBara * 100000 - (currentPin || 101325));
+          pumpBar = Math.min(dp_displacement, dp_power, dp_limit) / 100000;
       } else {
           const q_rated_m3s = (parseFloat(flow_rated_lmin) || 100) / 60000;
           const h_rated = parseFloat(head_rated_m) || 0;
@@ -117,7 +120,7 @@ const PumpDetails = memo(function PumpDetails({ node }) {
       maxY: (localMaxY * pressMultiplier) * 1.1,
       opPoint: [{ q: opQ, p: opP }]
     };
-  }, [isVolumetric, isFixedSpeed, rho, flow_rated_lmin, head_rated_m, rise_to_shutoff_pct, flow_rated, motor_power, efficiency, currentQ, currentDpBar, maxX_lmin, isImperial, actualFlowLmin]);
+  }, [isVolumetric, isFixedSpeed, maxDischargeBara, currentPin, rho, flow_rated_lmin, head_rated_m, rise_to_shutoff_pct, flow_rated, motor_power, efficiency, currentQ, currentDpBar, maxX_lmin, isImperial, actualFlowLmin]);
 
   const hydraulicPowerKW = (currentDpPa * Math.abs(currentQ)) / 1000;
   const motorLoadPct = telemetry?.motor_load_pct;
@@ -135,8 +138,8 @@ const PumpDetails = memo(function PumpDetails({ node }) {
           text="The drive has reduced the speed to stay within the motor rating, so the flow is below displacement." />
       )}
       {telemetry?.pressure_cap_reached && (
-        <PumpWarning tone="danger" title="PRESSURE LIMIT REACHED (200 BAR)"
-          text="The PD pump is dead-headed or nearly so. In reality pressure rises until something fails; add a relief valve." />
+        <PumpWarning tone="danger" title={`DISCHARGE PRESSURE LIMIT REACHED (${isImperial ? `${(maxDischargeBara * 14.5037738).toFixed(0)} PSI(A)` : `${maxDischargeBara} BAR(A)`})`}
+          text="The internal relief recirculates the excess flow to suction, so the delivered flow is below displacement. Check for a closed or undersized outlet path." />
       )}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-brand-dark)', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '3px solid var(--color-primary)', paddingLeft: '8px' }}>

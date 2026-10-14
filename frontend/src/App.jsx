@@ -1106,7 +1106,7 @@ function WalFlowContent() {
           onChange: type === 'linear_control_valve' ? handleValveChange : undefined,
           ...(type === 'centrifugal_pump' && { flow_rated_lmin: 100.0, head_rated_m: 50.0, rise_to_shutoff_pct: 20.0, efficiency: 75.0, active: true }),
           ...(type === 'pump' && { flow_rated_lmin: 100.0, head_rated_m: 50.0, rise_to_shutoff_pct: 20.0, efficiency: 75.0, active: true }),
-          ...(type === 'volumetric_pump' && { flow_rated: 100.0, motor_power: 5.0, efficiency: 85.0, drive_type: 'fixed_speed', active: true }),
+          ...(type === 'volumetric_pump' && { flow_rated: 100.0, motor_power: 5.0, efficiency: 85.0, drive_type: 'fixed_speed', max_discharge_pressure_bara: 50.0, active: true }),
           ...(type === 'tank' && { level: 2.0, elevation: 0.0, temperature: 313.15 }),
           ...(type === 'linear_control_valve' && { max_cv: 0.05, opening: 50.0 }),
           ...(type === 'linear_regulator' && { max_cv: 0.05, set_pressure: 500000.0, backpressure: false }),
@@ -1115,7 +1115,7 @@ function WalFlowContent() {
           ...(type === 'reducer' && { standard: 'ASME_B16_9', reducer_type: 'concentric', dn_large: 80, nps_large: '3', dn_small: 50, nps_small: '2', sch_large: 'STD', sch_small: 'STD', length: 0.089, length_mm: 89.0, cone_angle_deg: 18.2, diameter_in: 0.07792, diameter_out: 0.05248, orientation: 'reducing' }),
           ...(type === 'pressure_source' && { source_pressure_bara: 6.0, temperature: 293.15 }),
 
-          ...(type === 'flow_source' && { source_flow_lmin: 50.0, temperature: 293.15 }),
+          ...(type === 'flow_source' && { source_flow_lmin: 50.0, temperature: 293.15, max_discharge_pressure_bara: 50.0 }),
           ...(type === 'filter' && { dp_clean: 0.2, dp_terminal: 1.0, flow_ref: 100.0, clogging: 0.0 }),
           ...(type === 'heat_exchanger' && { heat_duty_kw: -10.0, active: true }),
           ...(type === 'remote_control_valve' && { max_cv: 0.05, set_pressure: 500000.0 }),

@@ -68,6 +68,7 @@ All notable changes to the WälFlow project will be documented in this file.
 - Solver accuracy: no more phantom flow in low-loss pipes (tolerance setting now takes effect), safe shared warm-start cache, Levenberg–Marquardt option solves all examples. API 682 example uses a centrifugal pump so both regulators work.
 - Peak system pressure is now a solved steady state: pumps and sources are ramped until each relief device reaches its set pressure, replacing the old interpolation. The Peak view shows that state, the Relief Analysis Matrix shows per-device status, opening order, load and inlet pressures, and pumps/sources get a "Ramp during relief analysis" option.
 - Fixed "Simulation Engine Error" on diagrams with a PD pump (e.g. Multi-PSV Protection example): pump warning flags broke the result payload.
+- PD pumps and flow sources get a "Max. Discharge Pressure" input (absolute, default 50 bar(a)), replacing the hidden 200 bar cap; above it the delivered flow drops (PD pump: internal relief to suction, flagged in the pump details).
 
 
 ---

@@ -43,11 +43,11 @@ def test_volumetric_physics_isolation():
     # Usable = 4000W. P = 4000 / (50/60000) = 4,800,000 Pa (48 bar)
     assert approx(dp_50, 48e5, rel=0.01)
 
-    # 4. Dead Head (Very low flow)
+    # 4. Dead Head (Very low flow): the outlet is held at the 50 bar(a) default limit (+ max. 1 % accumulation)
     q_1 = 1.0 / 60000.0
-    dp_1 = pump.calculate_delta_p(q_1, 1000.0)
-    # Now capped at 200 bar (20,000,000 Pa)
-    assert dp_1 == 20_000_000.0
+    p_in = 1e5
+    p_out_1 = p_in + pump.calculate_delta_p(q_1, 1000.0, p_in_pa=p_in)
+    assert 50e5 <= p_out_1 <= 50e5 * 1.01
 
     # 5. Efficiency Scaling
     pump_low_eff = VolumetricPump("LowEff", flow_rated=q_rated_m3s, motor_power=5000.0, efficiency=0.4, drive_type="vfd_power_limit")
@@ -61,7 +61,8 @@ def test_volumetric_physics_isolation():
 
     # 3b. Fixed-speed drive (default) ignores the motor rating for the flow
     pump_fixed = VolumetricPump("Fixed", flow_rated=q_rated_m3s, motor_power=5000.0, efficiency=0.8)
-    assert pump_fixed.calculate_delta_p(q_50, 1000.0) == 20_000_000.0
+    p_out_fixed = p_in + pump_fixed.calculate_delta_p(q_50, 1000.0, p_in_pa=p_in)
+    assert 50e5 <= p_out_fixed <= 50e5 * 1.01
 
 def create_simple_network(pump_node, valve_opening=100.0):
     """Helper to build Tank -> Pump -> Valve -> Tank"""
@@ -173,7 +174,7 @@ def test_volumetric_network_scenarios():
     assert p_small.power_limited and not p_small.motor_overload
 
     # 9b. Same network, fixed-speed drive (D3): flow stays at displacement, motor overload flagged
-    #     Valve sized for ~10 bar at 100 L/min (well below the 200 bar guard), shaft power ~1.85 kW
+    #     Valve sized for ~10 bar at 100 L/min (well below the 50 bar(a) limit), shaft power ~1.85 kW
     p_fixed = VolumetricPump("SmallFixed", flow_rated=q_rated_m3s, motor_power=500, efficiency=0.9)
     net_fixed = create_simple_network(p_fixed, valve_opening=100.0)
     net_fixed.nodes["v1"].max_cv = 2.2
