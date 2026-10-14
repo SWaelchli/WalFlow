@@ -1,4 +1,4 @@
-# Gemini Code-Context
+# WalFlow Agent Context
 
 This document provides context for the WalFlow project, a web-based hydraulic simulator.
 
