@@ -1,6 +1,6 @@
 # Phase 0: Setup and Baseline
 
-**Date:** 2026-10-13 · **Commit:** `3e46a3b` (main, clean) · **Env:** Windows 11, Python 3.13.14 (`.venv`), Node 22.11.0
+**Date:** 2026-10-13 · **Commit:** `8610e46` (main, clean) · **Env:** Windows 11, Python 3.13.14 (`.venv`), Node 22.11.0
 
 ## Finding template
 

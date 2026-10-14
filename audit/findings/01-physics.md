@@ -6,7 +6,7 @@ Scratch scripts (not in repo): `solve_examples.py`, `jac_check.py` in the sessio
 
 ## 1A. Solver core
 
-**Commit:** `3e46a3b` · **Date:** 2026-10-13
+**Commit:** `8610e46` · **Date:** 2026-10-13
 
 ### How the solver works (summary for later phases)
 
@@ -505,7 +505,7 @@ Density and α (0.0007 /K) are typical for mineral oils ✔. cp is +4 to +5 % vs
   - contraction 0.8·sin(θ/2)(1−β²) for θ ≤ 45° and 0.5(1−β²)√sin(θ/2) above;
   - expansion 2.6·sin(θ/2)(1−β²)² for θ ≤ 45° and (1−β²)² above (Borda-Carnot at 180°).
 - These are all small-bore referenced, which is Crane's K₁. The code comment calls them "K2", which is only cosmetic.
-- The Bernoulli static-pressure term is correct, viscous heat comes from the irreversible part only ✔, and the derivative is analytic ✔ (733481b).
+- The Bernoulli static-pressure term is correct, viscous heat comes from the irreversible part only ✔, and the derivative is analytic ✔ (dc73e3b).
 
 ### 1.34 base_node.py
 - The shared contract is consistent:

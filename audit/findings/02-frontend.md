@@ -1,6 +1,6 @@
 # Phase 2: Frontend Implementation (and supporting backend API)
 
-**Commit:** `3e46a3b` · **Date:** 2026-10-13
+**Commit:** `8610e46` · **Date:** 2026-10-13
 
 Method: code reading of `frontend/src` and the backend routers, plus throwaway scripts in the session scratchpad that run the real parser/solver with the inputs the UI produces:
 `catalog_check.py` (2.6), `edge_inputs.py` (2.3, 2.1 heat exchanger), `connect_check.py` (2.14). Run with `.venv/Scripts/python <script> <repo root>`.
@@ -366,7 +366,7 @@ All 21 hydraulic types are registered everywhere. `HelpInfoModal` does not descr
 - Suggested fix: memoise per node, keep results out of `nodes`, and debounce the save/send pipeline on real edits only.
 
 #### F2-29  Loading an example or file while a cloud diagram is open keeps that diagram as the autosave target
-- **Severity: S1** (data loss; found while implementing B0, 2026-10-13, at `671b36e`)
+- **Severity: S1** (data loss; found while implementing B0, 2026-10-13, at `8c09b2d`)
 - Location: `App.jsx › handleLoadDiagramWithCheck`. With an active project it asks to "detach cloud sync" but only calls `setActiveProject(null)`; `activeDiagram` and the lock stay. Without an active project (diagram not in a project) there is no prompt at all.
 - Effect: if the user holds the lock, autosave PUTs the example/file content into the open cloud diagram ~2 s later, overwriting it.
 - Suggested fix: when a non-cloud load replaces an open cloud diagram, prompt in both cases and clear `activeDiagram` (and check the lock in) on confirm.

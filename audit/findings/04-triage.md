@@ -1,17 +1,17 @@
 # Phase 4: Triage and Fix Roadmap
 
-**Baseline commit:** `3e46a3b` · **Date:** 2026-10-13
+**Baseline commit:** `8610e46` · **Date:** 2026-10-13
 **Scope:** 4.1 (consolidated list) and 4.2 (batches). No code has been changed. Each batch still needs a requirement prompt and user confirmation (4.3, AGENTS.md rule 1).
 
 ---
 
 ## How code references stay valid while fixing
 
-Every `file:line` in `00`–`03` and in the AUDIT_PLAN Findings Index points to the **baseline commit `3e46a3b`**. Those files are a historical record and are **not** renumbered as the code moves. Live navigation uses the **anchor** column below.
+Every `file:line` in `00`–`03` and in the AUDIT_PLAN Findings Index points to the **baseline commit `8610e46`**. Those files are a historical record and are **not** renumbered as the code moves. Live navigation uses the **anchor** column below.
 
 1. **Anchor = file › symbol (+ search string).** A function, component, class or constant name (for example `solver.py › NetworkSolver._update_telemetry`, or `DataList.jsx › grep "NPS / Size"`) survives inserted or removed lines. Line numbers are only a hint.
-2. **Re-resolve at the start of each batch.** Before a batch prompt is written (4.3), grep each anchor in that batch at the current `HEAD`. Write the current lines into the prompt. If an anchor no longer matches (renamed or moved), find it with `git log -S "<snippet>"` or compare with `git show 3e46a3b:<path>`.
-3. **Original context is always recoverable:** `git show 3e46a3b:<path>` shows the file exactly as audited. `git diff 3e46a3b -- <path>` shows what has moved since.
+2. **Re-resolve at the start of each batch.** Before a batch prompt is written (4.3), grep each anchor in that batch at the current `HEAD`. Write the current lines into the prompt. If an anchor no longer matches (renamed or moved), find it with `git log -S "<snippet>"` or compare with `git show 8610e46:<path>`.
+3. **Original context is always recoverable:** `git show 8610e46:<path>` shows the file exactly as audited. `git diff 8610e46 -- <path>` shows what has moved since.
 4. **Closing a finding:** set its Findings Index status to `fixed (<commit>)`. From then on, the regression test (4.4) is the lasting reference, not a line number. Name tests after the finding, for example `test_f1_05_tcv_viscous_path_dp`.
 5. **Prerequisite:** `AUDIT_PLAN.md` and `audit/` are untracked right now. They should be committed before the first fix, so that the baseline and the findings are versioned together. Per AGENTS.md this needs an explicit request from the user.
 
@@ -188,9 +188,9 @@ Each batch becomes one requirement prompt (4.3). Every physics fix gets a regres
 
 ## 4.3 Batch prompts
 
-### B0: S1 frontend hotfixes (implemented 2026-10-13, uncommitted)
+### B0: S1 frontend hotfixes (done 2026-10-13, 84ca2cc)
 
-Anchors re-resolved at `HEAD` = `3e46a3b` (no code changed since the audit).
+Anchors re-resolved at `HEAD` = `8610e46` (no code changed since the audit).
 
 **Goal.** The results table, pipe sizes and imperial inputs show and store correct values. Loading a diagram can no longer silently mix or overwrite diagrams.
 
@@ -228,9 +228,9 @@ Anchors re-resolved at `HEAD` = `3e46a3b` (no code changed since the audit).
 - Follow-ups (user request, same day): the node's rotate handle now creates an undo step; keyboard/ReactFlow delete, paste/duplicate and rotate respect the read-only lock (`App.jsx › blockIfReadOnly`, `deleteKeyCode` off when read-only).
 - **New finding F2-29 (S1)** (see 02-frontend.md), fixed on user approval: `App.jsx › handleLoadDiagramWithCheck` prompts whenever a cloud drawing or project is open; on confirm it saves pending edits to that drawing, releases its lock, and clears drawing and project before loading.
 
-### B1a: physics quick wins and honest tests (done 2026-10-13, b8eccb4)
+### B1a: physics quick wins and honest tests (done 2026-10-13, 5b3fe27)
 
-Anchors re-resolved at `HEAD` = `d9bb345` (backend unchanged since the audit, so baseline line numbers still apply).
+Anchors re-resolved at `HEAD` = `84ca2cc` (backend unchanged since the audit, so baseline line numbers still apply).
 
 **Goal.** The physics tests fail when the physics is wrong. Pumps, valves and the iteration limit report physically consistent numbers.
 
@@ -263,9 +263,9 @@ Anchors re-resolved at `HEAD` = `d9bb345` (backend unchanged since the audit, so
 - **New finding F1-42 (S3)**, mixing with constant cp; strict-xfail test; proposed for B1d.
 - **Notes for B1b:** solver residual tolerance leaves ~5 Pa (≈0.02 L/min at a stopped pump); outer loop at its limit leaves a property lag of up to ~3 % in laminar-oil pipe ΔP (F1-15); `test_f1_02_…` allows 5 % until then.
 
-### B1b: solver robustness and honest status (implemented 2026-10-14, uncommitted)
+### B1b: solver robustness and honest status (done 2026-10-14, 36de94b)
 
-Anchors at `HEAD` = `b8eccb4`. Decisions (user, 2026-10-14): D1 bracketed secant, D2 regulators may lock up, D3 results plus flags (hard error only for islands), D4 swap the API 682 PD pump for a centrifugal one.
+Anchors at `HEAD` = `5b3fe27`. Decisions (user, 2026-10-14): D1 bracketed secant, D2 regulators may lock up, D3 results plus flags (hard error only for islands), D4 swap the API 682 PD pump for a centrifugal one.
 
 **Goal.** The solver either returns a consistent answer that meets its own criteria, or says plainly what it could not do. No result depends on click history.
 
