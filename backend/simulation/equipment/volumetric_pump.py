@@ -109,11 +109,12 @@ class VolumetricPump(HydraulicNode):
         active = getattr(self, 'active', True)
         shaft_w = max(0.0, flow_rate * dp) / max(0.05, self.efficiency) if active else 0.0
         self.motor_load_pct = 100.0 * shaft_w / self.motor_power if self.motor_power > 0 else 0.0
-        self.motor_overload = active and self.drive_type == DRIVE_FIXED_SPEED and self.motor_power > 0 \
-            and shaft_w > self.motor_power * 1.001
-        self.power_limited = active and self._uses_power_limit() and flow_rate > 0 \
-            and self._power_limit_dp(flow_rate) < self._stiffness() * (self.flow_rated - flow_rate)
-        self.pressure_cap_reached = active and dp >= HARD_CAP_PA * 0.999
+        # bool(): flow_rate/dp are numpy floats, and numpy.bool_ is not JSON serializable
+        self.motor_overload = bool(active and self.drive_type == DRIVE_FIXED_SPEED and self.motor_power > 0
+                                   and shaft_w > self.motor_power * 1.001)
+        self.power_limited = bool(active and self._uses_power_limit() and flow_rate > 0
+                                  and self._power_limit_dp(flow_rate) < self._stiffness() * (self.flow_rated - flow_rate))
+        self.pressure_cap_reached = bool(active and dp >= HARD_CAP_PA * 0.999)
 
     def refresh_warnings(self):
         """Recompute the warnings from the final (reported) port state."""

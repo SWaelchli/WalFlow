@@ -2,6 +2,8 @@ from fastapi import APIRouter, HTTPException, Request, status
 from typing import List, Dict, Any
 import traceback
 
+import numpy as np
+
 from simulation.schemas import ReactFlowGraph, BatchSimulationResponse, BatchCaseResult, OperatingCase
 from simulation.graph_parser import GraphParser
 from simulation.solver import NetworkSolver, run_sequential_relief_simulation
@@ -11,6 +13,14 @@ from simulation.fluid_utils import FluidProperties
 from limiter import limiter
 
 router = APIRouter(prefix="/api/simulation", tags=["simulation"])
+
+def numpy_json_default(obj):
+    """json.dumps fallback: converts numpy scalars/arrays so a stray numpy value can't fail the response."""
+    if isinstance(obj, np.generic):
+        return obj.item()
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
 
 def calculate_case_kpis(network, telemetry: Dict[str, Any], stats: Dict[str, Any]) -> Dict[str, Any]:
     """

@@ -26,7 +26,7 @@ from routers.diagrams import router as diagrams_router, collab_manager
 from routers.projects import router as projects_router
 from routers.invitations import router as invitations_router
 from routers.admin import router as admin_router
-from routers.simulation import router as simulation_router, calculate_case_kpis, extract_telemetry
+from routers.simulation import router as simulation_router, calculate_case_kpis, extract_telemetry, numpy_json_default
 from routers.pipe_classes import router as pipe_classes_router
 from routers.fitting_standards import router as fitting_standards_router
 
@@ -225,7 +225,7 @@ async def websocket_endpoint(websocket: WebSocket):
                             "telemetry_peak": telemetry_peak,
                             "has_psv": has_psv,
                             "kpis": kpis
-                        }))
+                        }, default=numpy_json_default))
                     except Exception as e:
                         print(f"Solver Error: {e}")
                         traceback.print_exc()
