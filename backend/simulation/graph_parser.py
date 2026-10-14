@@ -352,13 +352,10 @@ class GraphParser:
                 roughness=d.get('roughness')
             )
         elif t == 'heat_exchanger':
-
-            # Backwards compatibility: calculate rated_dp_bar from k_factor if not present
+            # F2-04: a missing rated pressure drop means the inspector default (0.5 bar), not "no drop"
             rated_flow = float(d.get('rated_flow_lmin', 500.0))
-            k_fac = float(d.get('k_factor', 10.0))
-            default_dp = (k_fac * (rated_flow / 60000.0)**2) / 100000.0
-            rated_dp = float(d.get('rated_dp_bar', default_dp))
-            
+            rated_dp = float(d.get('rated_dp_bar', 0.5))
+
             node = HeatExchanger(
                 name=name,
                 rated_cooling_kw=float(d.get('rated_cooling_kw', 300.0)),

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { AuthContext } from './AuthContext';
 
@@ -8,6 +8,25 @@ export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [adminStatus, setAdminStatus] = useState({ adminExists: true, pendingCount: 0 });
+
+  // F2-10: an expired session (401 on any non-auth call while logged in) logs out once, with a clear message
+  const userRef = useRef(null);
+  useEffect(() => { userRef.current = currentUser; }, [currentUser]);
+  useEffect(() => {
+    const id = axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        const url = error.config?.url || '';
+        if (error.response?.status === 401 && userRef.current && !url.includes('/api/auth/')) {
+          userRef.current = null;
+          setCurrentUser(null);
+          alert('Your session has expired. Please log in again.');
+        }
+        return Promise.reject(error);
+      }
+    );
+    return () => axios.interceptors.response.eject(id);
+  }, []);
 
   useEffect(() => {
     initAuth();

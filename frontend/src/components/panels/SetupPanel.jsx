@@ -558,6 +558,9 @@ export default function SetupPanel({
       const field = fieldOrUpdates;
       let finalValue = rawValue;
 
+      // F2-05: leaving an untouched field must not rewrite it with its rounded display value
+      if (!Object.prototype.hasOwnProperty.call(localDrafts, field)) return;
+
       // Handle empty string
       if (finalValue === '' || finalValue === undefined || finalValue === null) {
         if (isCritical) {
@@ -588,6 +591,20 @@ export default function SetupPanel({
         } else if (field === 'max_discharge_pressure_bara') {
           if (isNaN(numericValue) || numericValue <= 1.0) {
             alert(`Max. discharge pressure must be above 1 bar(a)${isImperial ? ' (14.5 psi(a))' : ''}.`);
+            setLocalDrafts({});
+            return;
+          }
+        } else if (field === 'temp_base_c') {
+          // Calibration temperature: any physical temperature, including 0 °C and below
+          if (isNaN(numericValue) || numericValue <= -273.15) {
+            alert('Calibration temperature must be above absolute zero.');
+            setLocalDrafts({});
+            return;
+          }
+        } else if (field === 'cracking_pressure_bar') {
+          // Zero cracking pressure is a valid check valve
+          if (isNaN(numericValue) || numericValue < 0) {
+            alert('Cracking pressure must be zero or positive.');
             setLocalDrafts({});
             return;
           }
@@ -877,7 +894,7 @@ export default function SetupPanel({
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
-                  value={localDrafts.rise_to_shutoff_pct !== undefined ? localDrafts.rise_to_shutoff_pct : (effectiveData.rise_to_shutoff_pct || 20.0)}
+                  value={localDrafts.rise_to_shutoff_pct !== undefined ? localDrafts.rise_to_shutoff_pct : (effectiveData.rise_to_shutoff_pct ?? 20.0)}
                   onChange={(e) => handleDraftChange('rise_to_shutoff_pct', e.target.value)}
                   onBlur={(e) => validateAndCommit('rise_to_shutoff_pct', e.target.value)}
                 />
@@ -1128,7 +1145,7 @@ export default function SetupPanel({
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
                   step="0.1" 
-                  value={localDrafts.set_pressure !== undefined ? localDrafts.set_pressure : (isImperial ? ((Number(effectiveData.set_pressure || 100000) / 100000) * 14.5037738).toFixed(1) : (Number(effectiveData.set_pressure || 100000) / 100000).toFixed(1))} 
+                  value={localDrafts.set_pressure !== undefined ? localDrafts.set_pressure : (isImperial ? +((Number(effectiveData.set_pressure ?? 100000) / 100000) * 14.5037738).toFixed(2) : +(Number(effectiveData.set_pressure ?? 100000) / 100000).toFixed(3))} 
                   onChange={(e) => handleDraftChange('set_pressure', e.target.value)}
                   onBlur={(e) => {
                     const rawVal = parseFloat(e.target.value);
@@ -1159,7 +1176,7 @@ export default function SetupPanel({
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
                   step="0.1" 
-                  value={localDrafts.set_temperature_c !== undefined ? localDrafts.set_temperature_c : (isImperial ? (Number(effectiveData.set_temperature_c || 40.0) * 1.8 + 32).toFixed(1) : (effectiveData.set_temperature_c || 40.0))} 
+                  value={localDrafts.set_temperature_c !== undefined ? localDrafts.set_temperature_c : (isImperial ? (Number(effectiveData.set_temperature_c ?? 40.0) * 1.8 + 32).toFixed(1) : (effectiveData.set_temperature_c ?? 40.0))} 
                   onChange={(e) => handleDraftChange('set_temperature_c', e.target.value)}
                   onBlur={(e) => validateAndCommit('set_temperature_c', e.target.value)}
                 />
@@ -1484,11 +1501,11 @@ export default function SetupPanel({
               </div>
               {(effectiveData.rating_method || "rated_duty") === "rated_duty" && (
                 <div>
-                  {renderLabel(`Rated Cooling (${isImperial ? 'HP' : 'kW'})`, 'rated_cooling_kw')}
+                  {renderLabel(`Rated Cooling (${isImperial ? 'BTU/h' : 'kW'})`, 'rated_cooling_kw')}
                   <input 
                     type="number" 
                     className="form-input" style={{ width: '100%' }} 
-                    value={localDrafts.rated_cooling_kw !== undefined ? localDrafts.rated_cooling_kw : (isImperial ? (Number(effectiveData.rated_cooling_kw || 300.0) * 1.34102209).toFixed(2) : (effectiveData.rated_cooling_kw || 300.0))} 
+                    value={localDrafts.rated_cooling_kw !== undefined ? localDrafts.rated_cooling_kw : (isImperial ? (Number(effectiveData.rated_cooling_kw ?? 300.0) * 3412.141633).toFixed(0) : (effectiveData.rated_cooling_kw ?? 300.0))} 
                     onChange={(e) => handleDraftChange('rated_cooling_kw', e.target.value)}
                     onBlur={(e) => validateAndCommit('rated_cooling_kw', e.target.value, true)}
                   />
@@ -1500,7 +1517,7 @@ export default function SetupPanel({
                   <input 
                     type="number" 
                     className="form-input" style={{ width: '100%' }} 
-                    value={localDrafts.design_inlet_temp_c !== undefined ? localDrafts.design_inlet_temp_c : (isImperial ? (Number(effectiveData.design_inlet_temp_c || 50.0) * 1.8 + 32).toFixed(1) : (effectiveData.design_inlet_temp_c || 50.0))} 
+                    value={localDrafts.design_inlet_temp_c !== undefined ? localDrafts.design_inlet_temp_c : (isImperial ? (Number(effectiveData.design_inlet_temp_c ?? 50.0) * 1.8 + 32).toFixed(1) : (effectiveData.design_inlet_temp_c ?? 50.0))} 
                     onChange={(e) => handleDraftChange('design_inlet_temp_c', e.target.value)}
                     onBlur={(e) => validateAndCommit('design_inlet_temp_c', e.target.value)}
                   />
@@ -1512,7 +1529,7 @@ export default function SetupPanel({
                   <input 
                     type="number" 
                     className="form-input" style={{ width: '100%' }} 
-                    value={localDrafts.design_outlet_temp_c !== undefined ? localDrafts.design_outlet_temp_c : (isImperial ? (Number(effectiveData.design_outlet_temp_c || 40.0) * 1.8 + 32).toFixed(1) : (effectiveData.design_outlet_temp_c || 40.0))} 
+                    value={localDrafts.design_outlet_temp_c !== undefined ? localDrafts.design_outlet_temp_c : (isImperial ? (Number(effectiveData.design_outlet_temp_c ?? 40.0) * 1.8 + 32).toFixed(1) : (effectiveData.design_outlet_temp_c ?? 40.0))} 
                     onChange={(e) => handleDraftChange('design_outlet_temp_c', e.target.value)}
                     onBlur={(e) => validateAndCommit('design_outlet_temp_c', e.target.value)}
                   />
@@ -1550,7 +1567,7 @@ export default function SetupPanel({
                   <input 
                     type="number" 
                     className="form-input" style={{ width: '100%' }} 
-                    value={localDrafts.medium_temp_c !== undefined ? localDrafts.medium_temp_c : (isImperial ? (Number(effectiveData.medium_temp_c || 10.0) * 1.8 + 32).toFixed(1) : (effectiveData.medium_temp_c || 10.0))} 
+                    value={localDrafts.medium_temp_c !== undefined ? localDrafts.medium_temp_c : (isImperial ? (Number(effectiveData.medium_temp_c ?? 10.0) * 1.8 + 32).toFixed(1) : (effectiveData.medium_temp_c ?? 10.0))} 
                     onChange={(e) => handleDraftChange('medium_temp_c', e.target.value)}
                     onBlur={(e) => validateAndCommit('medium_temp_c', e.target.value)}
                   />
@@ -1561,7 +1578,7 @@ export default function SetupPanel({
                 <input 
                   type="number" step="0.01" 
                   className="form-input" style={{ width: '100%' }} 
-                  value={localDrafts.rated_dp_bar !== undefined ? localDrafts.rated_dp_bar : (isImperial ? (Number(effectiveData.rated_dp_bar || 0.5) * 14.5037738).toFixed(2) : (effectiveData.rated_dp_bar || 0.5))} 
+                  value={localDrafts.rated_dp_bar !== undefined ? localDrafts.rated_dp_bar : (isImperial ? (Number(effectiveData.rated_dp_bar ?? 0.5) * 14.5037738).toFixed(2) : (effectiveData.rated_dp_bar ?? 0.5))} 
                   onChange={(e) => handleDraftChange('rated_dp_bar', e.target.value)}
                   onBlur={(e) => validateAndCommit('rated_dp_bar', e.target.value, true)}
                 />
@@ -1606,7 +1623,7 @@ export default function SetupPanel({
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
-                  value={localDrafts.clogging !== undefined ? localDrafts.clogging : (effectiveData.clogging || 0.0)} 
+                  value={localDrafts.clogging !== undefined ? localDrafts.clogging : (effectiveData.clogging ?? 0.0)} 
                   onChange={(e) => handleDraftChange('clogging', e.target.value)}
                   onBlur={(e) => validateAndCommit('clogging', e.target.value)}
                 />
@@ -1804,7 +1821,7 @@ export default function SetupPanel({
                   type="number" 
                   step="0.5"
                   className="form-input" style={{ width: '100%' }} 
-                  value={localDrafts.temp_base_c !== undefined ? localDrafts.temp_base_c : (isImperial ? (Number(effectiveData.temp_base_c || 45.0) * 1.8 + 32).toFixed(1) : (effectiveData.temp_base_c || 45.0))} 
+                  value={localDrafts.temp_base_c !== undefined ? localDrafts.temp_base_c : (isImperial ? (Number(effectiveData.temp_base_c ?? 45.0) * 1.8 + 32).toFixed(1) : (effectiveData.temp_base_c ?? 45.0))} 
                   onChange={(e) => handleDraftChange('temp_base_c', e.target.value)}
                   onBlur={(e) => validateAndCommit('temp_base_c', e.target.value, true)}
                 />

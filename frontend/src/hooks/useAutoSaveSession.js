@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
-import { FILE_FORMAT_VERSION, APP_VERSION } from '../constants';
+import { serializeDiagram, checkFormatVersion } from '../utils/diagramFile';
 import { useAuth } from './useAuth';
 
 export const LOCAL_DRAFT_KEY = 'walflow_active_session_draft';
@@ -58,10 +58,10 @@ export function useAutoSaveSession({
     const { nodes, edges, globalSettings, cases, activeCaseId, activeProject, activeDiagram, reactFlowInstance } = stateRef.current;
     const viewport = reactFlowInstance ? reactFlowInstance.getViewport() : { x: 0, y: 0, zoom: 1 };
     
+    // Results are not part of a draft or cloud save (F2-22); the diagram is re-solved after loading
+    const { created_at: _createdAt, ...base } = serializeDiagram({ nodes, edges, globalSettings: globalSettings || {}, cases, activeCaseId });
     return {
-      version: FILE_FORMAT_VERSION,
-      app_version: APP_VERSION,
-      format: 'walflow',
+      ...base,
       timestamp: new Date().toISOString(),
       active_project_id: activeProject?.id || null,
       active_project_title: activeProject?.title || null,
@@ -69,11 +69,6 @@ export function useAutoSaveSession({
       active_diagram_title: activeDiagram?.title || null,
       active_diagram_description: activeDiagram?.description || null,
       viewport,
-      active_case_id: activeCaseId,
-      cases: cases || [],
-      nodes: nodes || [],
-      edges: edges || [],
-      globalSettings: globalSettings || {}
     };
   }, []);
 
@@ -274,8 +269,13 @@ export function useAutoSaveSession({
     const localTimer = setTimeout(() => {
       const ts = saveToLocalDraft();
       if (!isCloudSyncable) {
+        if (!ts) {
+          // Storage full or blocked: do not claim the draft is saved (F2-22)
+          setSaveStatus('error');
+          return;
+        }
         setSaveStatus(isLockedByOther ? 'locked' : 'saved_local');
-        setLastSavedTimestamp(ts ? new Date(ts).toLocaleTimeString() : new Date().toLocaleTimeString());
+        setLastSavedTimestamp(new Date(ts).toLocaleTimeString());
       }
     }, 1000);
 
@@ -362,10 +362,13 @@ export function useAutoSaveSession({
         return null;
       }
 
-      // Safeguard: Purge old incompatible local drafts
-      if (parsed.version !== FILE_FORMAT_VERSION) {
-        console.warn(`Local draft version '${parsed.version || '0.1'}' is incompatible with version '${FILE_FORMAT_VERSION}'. Purging draft.`);
+      // F0-02: a draft in another format cannot be opened. Say so once, then discard it.
+      const versionError = checkFormatVersion(parsed);
+      if (versionError) {
         localStorage.removeItem(LOCAL_DRAFT_KEY);
+        setTimeout(() => alert(`Your unsaved draft was discarded.
+
+${versionError}`), 0);
         return null;
       }
 

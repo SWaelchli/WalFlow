@@ -1,17 +1,13 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth';
-
-const selectTelemetrySet = (mode, mitigated, unmitigated, peak) => {
-  if (mode === 'unmitigated_global') return unmitigated;
-  if (mode === 'peak') return peak || mitigated;
-  return mitigated;
-};
+import { toSolverGraph } from '../utils/diagramFile';
+import { computeCaseInputHash } from '../utils/resultHash';
 
 /**
  * Custom hook managing WebSocket connection to FastAPI backend
  * and simulation message dispatches with Dual-Pass Telemetry support.
  */
-export function useWebSocketSimulation({ nodes, edges, setNodes, setEdges, globalSettings, cases = [], activeCaseId = 'case_base', onUpdateCaseTelemetry }) {
+export function useWebSocketSimulation({ nodes, edges, globalSettings, cases = [], activeCaseId = 'case_base', onUpdateCaseTelemetry }) {
   const { isAuthenticated } = useAuth();
   const ws = useRef(null);
   const [isSimulating, setIsSimulating] = useState(false);
@@ -22,66 +18,18 @@ export function useWebSocketSimulation({ nodes, edges, setNodes, setEdges, globa
   // Dual-Pass Telemetry States
   const [telemetryMode, setTelemetryMode] = useState('mitigated'); // 'mitigated' | 'peak' | 'unmitigated_global'
   const [hasPsv, setHasPsv] = useState(false);
-  const [telemetryMitigated, setTelemetryMitigated] = useState(null);
-  const [telemetryUnmitigated, setTelemetryUnmitigated] = useState(null);
-  const [telemetryPeak, setTelemetryPeak] = useState(null); // null: peak is the relieved state (F1-08)
-
-  const applyTelemetryToGraph = useCallback((telemetryData) => {
-    if (!telemetryData) return;
-
-    // Update nodes telemetry
-    setNodes((nds) =>
-      nds.map((node) => {
-        if (telemetryData.nodes && telemetryData.nodes[node.id]) {
-          return {
-            ...node,
-            data: {
-              ...node.data,
-              telemetry: telemetryData.nodes[node.id],
-            },
-          };
-        }
-        return node;
-      })
-    );
-
-    // Update edges telemetry
-    setEdges((eds) =>
-      eds.map((edge) => {
-        if (telemetryData.edges && telemetryData.edges[edge.id]) {
-          return {
-            ...edge,
-            data: {
-              ...edge.data,
-              telemetry: telemetryData.edges[edge.id],
-            },
-          };
-        }
-        return edge;
-      })
-    );
-  }, [setNodes, setEdges]);
+  const [graphError, setGraphError] = useState(null); // last rejected graph update (shown inline, not as a popup)
 
   // Refs to eliminate socket churn
   const activeCaseIdRef = useRef(activeCaseId);
-  const telemetryModeRef = useRef(telemetryMode);
   const onUpdateCaseTelemetryRef = useRef(onUpdateCaseTelemetry);
-  const applyTelemetryToGraphRef = useRef(applyTelemetryToGraph);
+  // The run in flight: which case it solves, the hash of the inputs it was sent with, and whether errors stay quiet
+  const pendingRunRef = useRef(null);
 
   useEffect(() => {
     activeCaseIdRef.current = activeCaseId;
-    telemetryModeRef.current = telemetryMode;
     onUpdateCaseTelemetryRef.current = onUpdateCaseTelemetry;
-    applyTelemetryToGraphRef.current = applyTelemetryToGraph;
-  }, [activeCaseId, telemetryMode, onUpdateCaseTelemetry, applyTelemetryToGraph]);
-
-  // Re-apply active telemetry dataset when telemetryMode changes
-  useEffect(() => {
-    const activeDataset = selectTelemetrySet(telemetryMode, telemetryMitigated, telemetryUnmitigated, telemetryPeak);
-    if (activeDataset) {
-      applyTelemetryToGraph(activeDataset);
-    }
-  }, [telemetryMode, telemetryMitigated, telemetryUnmitigated, telemetryPeak, applyTelemetryToGraph]);
+  }, [activeCaseId, onUpdateCaseTelemetry]);
 
   useEffect(() => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -130,6 +78,16 @@ export function useWebSocketSimulation({ nodes, edges, setNodes, setEdges, globa
           return;
         }
 
+        // Graph pushes (every edit) are answered separately from simulation runs (F2-17)
+        if (response.status === 'graph_accepted') {
+          setGraphError(null);
+          return;
+        }
+        if (response.status === 'error' && response.context === 'update_graph') {
+          setGraphError(response.message);
+          return;
+        }
+
         if (response.status === 'success') {
           setIsSimulating(false);
           const mitData = response.telemetry || response.data || {};
@@ -140,26 +98,37 @@ export function useWebSocketSimulation({ nodes, edges, setNodes, setEdges, globa
 
           setLastStats(response.stats);
           setHasPsv(psvPresent);
-          setTelemetryMitigated(mitData);
-          setTelemetryUnmitigated(unmitData);
-          setTelemetryPeak(peakData);
 
-          if (onUpdateCaseTelemetryRef.current && activeCaseIdRef.current) {
-            onUpdateCaseTelemetryRef.current(activeCaseIdRef.current, mitData, kpisData, unmitData, peakData);
+          // Results belong to the case and the inputs the run was sent with (F2-07)
+          const run = pendingRunRef.current;
+          pendingRunRef.current = null;
+          const targetCaseId = run?.caseId || activeCaseIdRef.current;
+          if (onUpdateCaseTelemetryRef.current && targetCaseId) {
+            onUpdateCaseTelemetryRef.current(targetCaseId, mitData, kpisData, unmitData, peakData, run?.hash);
           }
-
-          const activeDataset = selectTelemetrySet(telemetryModeRef.current, mitData, unmitData, peakData);
-          applyTelemetryToGraphRef.current(activeDataset);
+          if (response.stats?.non_finite_count) {
+            console.warn(`Solver returned ${response.stats.non_finite_count} non-finite value(s):`, response.stats.non_finite_fields);
+          }
 
         } else if (response.status === 'error') {
           setIsSimulating(false);
-          alert(`Simulation Engine Error: ${response.message}`);
+          const run = pendingRunRef.current;
+          pendingRunRef.current = null;
+          if (run?.silent) {
+            console.warn(`Simulation not run: ${response.message}`);
+          } else {
+            alert(`Simulation Engine Error: ${response.message}`);
+          }
         } else {
           setIsSimulating(false);
         }
       } catch (e) {
+        // F2-15: an unreadable reply must not leave the user waiting without any message
         console.error('Failed to parse WebSocket message:', e);
         setIsSimulating(false);
+        const run = pendingRunRef.current;
+        pendingRunRef.current = null;
+        if (!run?.silent) alert('The solver reply could not be read. Please run the simulation again.');
       }
     };
 
@@ -174,26 +143,31 @@ export function useWebSocketSimulation({ nodes, edges, setNodes, setEdges, globa
     };
   }, [isAuthenticated, reconnectTrigger]);
 
-  const runSimulation = useCallback(() => {
+  // options.silent: automatic run after loading a diagram; model errors are logged instead of shown as alerts
+  const runSimulation = useCallback((options = {}) => {
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {
       setIsSimulating(true);
+      pendingRunRef.current = {
+        caseId: activeCaseId,
+        hash: computeCaseInputHash({ nodes, edges, globalSettings, cases }, activeCaseId),
+        silent: options?.silent === true,
+      };
       ws.current.send(
         JSON.stringify({
           action: 'run_simulation',
-          graph: {
-            nodes,
-            edges,
-            global_settings: globalSettings,
-            cases,
-            active_case_id: activeCaseId
-          },
+          graph: toSolverGraph({ nodes, edges, globalSettings, cases, activeCaseId }),
         })
       );
-    } else {
+      return true;
+    }
+    if (options?.silent !== true) {
       alert("Simulation engine is not connected. Please ensure the backend is running and you are logged in.");
     }
+    return false;
   }, [nodes, edges, globalSettings, cases, activeCaseId]);
 
+  // Live preview of a valve opening on the backend only. The value itself is stored case-aware by the
+  // caller (updateNodeData); writing it here would change the base case from inside another case (F2-06).
   const handleValveChange = useCallback(
     (newValue, nodeId) => {
       if (ws.current && ws.current.readyState === WebSocket.OPEN) {
@@ -205,13 +179,8 @@ export function useWebSocketSimulation({ nodes, edges, setNodes, setEdges, globa
           })
         );
       }
-      setNodes((nds) =>
-        nds.map((node) =>
-          node.id === nodeId ? { ...node, data: { ...node.data, opening: newValue } } : node
-        )
-      );
     },
-    [setNodes]
+    []
   );
 
   return {
@@ -224,7 +193,6 @@ export function useWebSocketSimulation({ nodes, edges, setNodes, setEdges, globa
     telemetryMode,
     setTelemetryMode,
     hasPsv,
-    telemetryMitigated,
-    telemetryUnmitigated
+    graphError
   };
 }

@@ -26,7 +26,7 @@ from routers.diagrams import router as diagrams_router, collab_manager
 from routers.projects import router as projects_router
 from routers.invitations import router as invitations_router
 from routers.admin import router as admin_router
-from routers.simulation import router as simulation_router, calculate_case_kpis, extract_telemetry, numpy_json_default
+from routers.simulation import router as simulation_router, calculate_case_kpis, extract_telemetry, numpy_json_default, sanitize_result
 from routers.pipe_classes import router as pipe_classes_router
 from routers.fitting_standards import router as fitting_standards_router
 
@@ -148,6 +148,7 @@ async def websocket_endpoint(websocket: WebSocket):
                         network_instance = GraphParser.parse_graph(rf_graph)
                         solver_instance = NetworkSolver(network_instance)
                         print(f"Graph updated: {len(network_instance.nodes)} nodes, {len(network_instance.edges)} edges.")
+                        await websocket.send_text(json.dumps({"status": "graph_accepted"}))
                     except ModelInputError:
                         # User input problem (e.g. missing pump head). Sent 250 ms after every edit,
                         # so stay silent here; the message is shown when the user runs a simulation.
@@ -158,7 +159,8 @@ async def websocket_endpoint(websocket: WebSocket):
                         traceback.print_exc()
                         # SEC-06: Sanitize error payload
                         safe_msg = "Invalid diagram graph format. Please verify component connections."
-                        await websocket.send_text(json.dumps({"status": "error", "message": safe_msg}))
+                        # context lets the client show this inline instead of as a popup (F2-17)
+                        await websocket.send_text(json.dumps({"status": "error", "context": "update_graph", "message": safe_msg}))
                         continue
 
             elif action == "update_valve":
@@ -216,6 +218,11 @@ async def websocket_endpoint(websocket: WebSocket):
                             print(f"  Solver stats: {stats}")
 
                         kpis = calculate_case_kpis(network_instance, telemetry_mitigated, stats)
+                        # F2-15: NaN/Infinity would make the frame invalid JSON; send null and report the fields
+                        stats, clean = sanitize_result(stats, telemetry=telemetry_mitigated, telemetry_unmitigated=telemetry_unmitigated,
+                                                       telemetry_peak=telemetry_peak, kpis=kpis)
+                        telemetry_mitigated, telemetry_unmitigated = clean["telemetry"], clean["telemetry_unmitigated"]
+                        telemetry_peak, kpis = clean["telemetry_peak"], clean["kpis"]
 
                         await websocket.send_text(json.dumps({
                             "status": "success",

@@ -64,12 +64,17 @@ import { useCanvasHistory } from './hooks/useCanvasHistory';
 import { getDefaultPipeData, DEFAULT_PIPE_LENGTH_M } from './utils/pipeDefaults';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useAutoSaveSession } from './hooks/useAutoSaveSession';
+import { HEAT_EXCHANGER_DEFAULTS } from './utils/equipmentDefaults';
+import { serializeDiagram, toSolverGraph, checkDiagramFile, stripResults } from './utils/diagramFile';
+import { computeCaseInputHashes, isCaseResultStale } from './utils/resultHash';
 
 import { APP_VERSION, FILE_FORMAT_VERSION, FILE_EXTENSION } from './constants';
 import { DEFAULT_BASE_CASE, isCaseVariableProperty } from './constants/case_constants';
 import {
   getEffectiveNodeData,
   getEffectiveEdgeData,
+  getCaseTelemetrySet,
+  getActiveCase,
   updateCaseTelemetry,
   hasActiveOverrides,
   updateCaseOverride,
@@ -122,6 +127,8 @@ const edgeTypes = {
   default: PipeEdge,
   signal: SignalEdge,
 };
+
+const KNOWN_NODE_TYPES = new Set(Object.keys(nodeTypes));
 
 const getId = () => `node_${crypto.randomUUID().split('-')[0]}`;
 const getEdgeId = () => `edge_${crypto.randomUUID().split('-')[0]}`;
@@ -425,6 +432,7 @@ function WalFlowContent() {
     damping_factor: 0.25
   });
   const [batchStats, setBatchStats] = useState(null);
+  const [autoRunPending, setAutoRunPending] = useState(false);
 
   useEffect(() => {
     setGlobalSettings(prev => prev.unit_system !== unitSystem ? { ...prev, unit_system: unitSystem } : prev);
@@ -480,11 +488,12 @@ function WalFlowContent() {
   }, [setNodes]);
 
   // WebSocket custom hook
-  const handleUpdateCaseTelemetry = useCallback((targetCaseId, telemetry, kpis, telemetryUnmitigated, telemetryPeak) => {
-    setCases(prev => updateCaseTelemetry(prev, targetCaseId, telemetry, kpis, telemetryUnmitigated, telemetryPeak));
+  const handleUpdateCaseTelemetry = useCallback((targetCaseId, telemetry, kpis, telemetryUnmitigated, telemetryPeak, resultHash) => {
+    setCases(prev => updateCaseTelemetry(prev, targetCaseId, telemetry, kpis, telemetryUnmitigated, telemetryPeak, resultHash));
   }, []);
 
-  const handleBatchResultsTelemetry = useCallback((batchResults) => {
+  // inputHashes: { caseId: hash } of the inputs the batch was sent with (F2-07)
+  const handleBatchResultsTelemetry = useCallback((batchResults, inputHashes = {}) => {
     setCases(prev => prev.map(c => {
       const match = batchResults.find(b => b.case_id === c.id);
       return (match && (match.telemetry || match.kpis)) 
@@ -493,7 +502,8 @@ function WalFlowContent() {
             telemetry: match.telemetry || c.telemetry, 
             telemetry_unmitigated: match.telemetry_unmitigated || c.telemetry_unmitigated,
             telemetry_peak: match.telemetry ? (match.telemetry_peak ?? null) : (c.telemetry_peak ?? null),
-            kpis: match.kpis || c.kpis 
+            kpis: match.kpis || c.kpis,
+            result_hash: match.telemetry ? inputHashes[c.id] : c.result_hash
           } 
         : c;
     }));
@@ -518,17 +528,31 @@ function WalFlowContent() {
     handleValveChange,
     telemetryMode,
     setTelemetryMode,
-    telemetryUnmitigated
+    graphError
   } = useWebSocketSimulation({
     nodes,
     edges,
-    setNodes,
-    setEdges,
     globalSettings,
     cases,
     activeCaseId,
     onUpdateCaseTelemetry: handleUpdateCaseTelemetry
   });
+
+  // After a diagram is loaded, solve it once the solver is connected (results are never stored in files)
+  useEffect(() => {
+    if (!autoRunPending || !isConnected) return;
+    setAutoRunPending(false);
+    runSimulation({ silent: true });
+  }, [autoRunPending, isConnected, runSimulation]);
+
+  // F2-07: hash of the inputs each case is solved from, and whether its stored results still match
+  const caseInputHashes = useMemo(
+    () => computeCaseInputHashes({ nodes, edges, globalSettings, cases }),
+    [nodes, edges, globalSettings, cases]
+  );
+  const activeCaseObj = useMemo(() => getActiveCase(cases, activeCaseId), [cases, activeCaseId]);
+  const resultsStale = isCaseResultStale(activeCaseObj, caseInputHashes);
+  const unmitigatedTelemetry = getCaseTelemetrySet(activeCaseObj, 'unmitigated_global');
 
   // History stack hook
   // A cloud drawing that is open but not checked out by this user
@@ -780,66 +804,82 @@ function WalFlowContent() {
     [setEdges]
   );
 
+  // F0-02 / F2-10: one gate for every load path. Returns true when the diagram is accepted.
   const loadData = useCallback((data) => {
+    const check = checkDiagramFile(data, KNOWN_NODE_TYPES);
+    if (!check.ok) {
+      hideCanvasLoading();
+      alert(check.message);
+      return false;
+    }
     showCanvasLoading();
     if (loadTimeoutRef.current) {
       clearTimeout(loadTimeoutRef.current);
     }
     loadTimeoutRef.current = setTimeout(() => {
-      if (data.nodes && data.edges) {
-        const seenNodeIds = new Set();
-        const restoredNodes = data.nodes.map((node, idx) => {
-          let uniqueId = node.id || `node_${idx}`;
-          while (seenNodeIds.has(uniqueId)) {
-            uniqueId = `node_${Math.random().toString(36).substring(2, 9)}`;
-          }
-          seenNodeIds.add(uniqueId);
-          return {
-            ...node,
-            id: uniqueId,
-            data: {
-              ...node.data,
-              rotation: node.data?.rotation || 0,
-              onRotate: handleRotation,
-              onChange: (node.type === 'linear_control_valve' || node.type === 'remote_control_valve') ? handleValveChange : undefined
-            }
-          };
-        });
-
-        const seenEdgeIds = new Set();
-        const restoredEdges = data.edges.map((edge, idx) => {
-          let uniqueId = edge.id || `edge_${idx}`;
-          while (seenEdgeIds.has(uniqueId)) {
-            uniqueId = `edge_${Math.random().toString(36).substring(2, 9)}`;
-          }
-          seenEdgeIds.add(uniqueId);
-          return {
-            ...edge,
-            id: uniqueId,
-            label: edge.data?.label || uniqueId
-          };
-        });
-        setNodes(restoredNodes);
-        setEdges(restoredEdges);
-        resetHistory(restoredNodes, restoredEdges);
-        if (data.globalSettings) {
-          setGlobalSettings(prev => ({ ...prev, ...data.globalSettings }));
-          if (data.globalSettings.unit_system) {
-            setUnitSystem(data.globalSettings.unit_system);
-          }
+      // Results are never loaded from a file (F2-22); old or hand-edited files may still carry them
+      const clean = stripResults({ nodes: data.nodes, edges: data.edges, cases: data.cases || [] });
+      const seenNodeIds = new Set();
+      const restoredNodes = clean.nodes.map((node, idx) => {
+        let uniqueId = node.id || `node_${idx}`;
+        while (seenNodeIds.has(uniqueId)) {
+          uniqueId = `node_${Math.random().toString(36).substring(2, 9)}`;
         }
-        if (data.cases && Array.isArray(data.cases) && data.cases.length > 0) {
-          setCases(data.cases);
-          setActiveCaseId(data.active_case_id || data.cases[0].id);
-        } else {
-          setCases([DEFAULT_BASE_CASE]);
-          setActiveCaseId('case_base');
+        seenNodeIds.add(uniqueId);
+        return {
+          ...node,
+          id: uniqueId,
+          data: {
+            ...node.data,
+            rotation: node.data?.rotation || 0,
+            onRotate: handleRotation,
+            onChange: (node.type === 'linear_control_valve' || node.type === 'remote_control_valve') ? handleValveChange : undefined
+          }
+        };
+      });
+
+      const seenEdgeIds = new Set();
+      const restoredEdges = clean.edges.map((edge, idx) => {
+        let uniqueId = edge.id || `edge_${idx}`;
+        while (seenEdgeIds.has(uniqueId)) {
+          uniqueId = `edge_${Math.random().toString(36).substring(2, 9)}`;
+        }
+        seenEdgeIds.add(uniqueId);
+        return {
+          ...edge,
+          id: uniqueId,
+          label: edge.data?.label || uniqueId
+        };
+      });
+      setNodes(restoredNodes);
+      setEdges(restoredEdges);
+      resetHistory(restoredNodes, restoredEdges);
+      if (data.globalSettings) {
+        setGlobalSettings(prev => ({ ...prev, ...data.globalSettings }));
+        if (data.globalSettings.unit_system) {
+          setUnitSystem(data.globalSettings.unit_system);
         }
       }
+      if (clean.cases.length > 0) {
+        setCases(clean.cases);
+        setActiveCaseId(data.active_case_id || clean.cases[0].id);
+      } else {
+        setCases([DEFAULT_BASE_CASE]);
+        setActiveCaseId('case_base');
+      }
+      // Solve the loaded diagram so it opens with results, as soon as the solver is connected
+      setAutoRunPending(restoredNodes.length > 0);
     }, 50);
-  }, [handleValveChange, handleRotation, setNodes, setEdges, showCanvasLoading, setUnitSystem, resetHistory]);
+    return true;
+  }, [handleValveChange, handleRotation, setNodes, setEdges, showCanvasLoading, hideCanvasLoading, setUnitSystem, resetHistory]);
 
   const handleLoadDiagramWithCheck = useCallback((data, diagramTitle = '', options = {}) => {
+    // Reject a bad file before anything about the open drawing changes (F0-02, F2-10)
+    const check = checkDiagramFile(data, KNOWN_NODE_TYPES);
+    if (!check.ok) {
+      alert(check.message);
+      return false;
+    }
     const hasCloudDiagram = !!activeDiagram?.id;
     if ((activeProject || hasCloudDiagram) && !options.skipProjectCheck) {
       const displayTitle = diagramTitle ? `"${diagramTitle}"` : 'this diagram';
@@ -863,8 +903,7 @@ function WalFlowContent() {
       }
     }
 
-    loadData(data);
-    return true;
+    return loadData(data);
   }, [activeProject, activeDiagram, hasLock, triggerManualCloudSave, checkinDiagram, setActiveDiagram, loadData]);
 
   useEffect(() => {
@@ -1127,7 +1166,7 @@ function WalFlowContent() {
 
           ...(type === 'flow_source' && { source_flow_lmin: 50.0, temperature: 293.15, max_discharge_pressure_bara: 50.0 }),
           ...(type === 'filter' && { dp_clean: 0.2, dp_terminal: 1.0, flow_ref: 100.0, clogging: 0.0 }),
-          ...(type === 'heat_exchanger' && { heat_duty_kw: -10.0, active: true }),
+          ...(type === 'heat_exchanger' && HEAT_EXCHANGER_DEFAULTS),
           ...(type === 'remote_control_valve' && { max_cv: 0.05, set_pressure: 500000.0 }),
           ...(type === 'three_way_tcv' && { max_cv: 0.1, set_temperature_c: 40.0, hot_port_idx: 0 }),
           ...(type === 'check_valve' && { cv: 10.0, cracking_pressure_bar: 0.05 }),
@@ -1145,17 +1184,7 @@ function WalFlowContent() {
   );
 
   const onSave = useCallback(() => {
-    const flowData = {
-      version: FILE_FORMAT_VERSION,
-      app_version: APP_VERSION,
-      format: 'walflow',
-      created_at: new Date().toISOString(),
-      active_case_id: activeCaseId,
-      cases,
-      nodes,
-      edges,
-      globalSettings,
-    };
+    const flowData = serializeDiagram({ nodes, edges, globalSettings, cases, activeCaseId });
     const blob = new Blob([JSON.stringify(flowData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -1198,17 +1227,7 @@ function WalFlowContent() {
 
   const handleSaveAs = useCallback(async ({ title, description, project_id }) => {
     try {
-      const flowData = {
-        version: FILE_FORMAT_VERSION,
-        app_version: APP_VERSION,
-        format: 'walflow',
-        created_at: new Date().toISOString(),
-        nodes,
-        edges,
-        globalSettings,
-        cases,
-        active_case_id: activeCaseId
-      };
+      const flowData = serializeDiagram({ nodes, edges, globalSettings, cases, activeCaseId });
 
       const response = await axios.post('/api/diagrams', {
         title,
@@ -1317,13 +1336,7 @@ function WalFlowContent() {
       if (isConnected && ws.current && ws.current.readyState === WebSocket.OPEN) {
         ws.current.send(JSON.stringify({ 
           action: 'update_graph', 
-          graph: { 
-            nodes, 
-            edges, 
-            global_settings: globalSettings,
-            cases,
-            active_case_id: activeCaseId
-          } 
+          graph: toSolverGraph({ nodes, edges, globalSettings, cases, activeCaseId })
         }));
       }
     }, 250);
@@ -1721,6 +1734,36 @@ function WalFlowContent() {
             </div>
           )}
 
+          {(resultsStale || graphError) && (
+            <div
+              role="status"
+              style={{
+                position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 20,
+                display: 'flex', alignItems: 'center', gap: '12px', maxWidth: 'calc(100% - 32px)',
+                padding: '8px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: 600,
+                background: graphError ? '#FEF2F2' : '#FFF7ED',
+                border: `1px solid ${graphError ? '#FEE2E2' : '#FDE3C3'}`,
+                color: graphError ? '#B91C1C' : '#7A3E00',
+                boxShadow: '0 2px 8px rgba(28, 43, 44, 0.12)'
+              }}
+            >
+              <span>
+                {graphError
+                  ? `The solver rejected the last change: ${graphError}`
+                  : 'Results are out of date: the diagram changed since the last run.'}
+              </span>
+              {!graphError && (
+                <button
+                  type="button"
+                  onClick={() => runSimulation()}
+                  disabled={isSimulating}
+                  style={{ background: '#F4F7F6', border: '1px solid #D8E2E1', borderRadius: '6px', color: '#1C2B2C', padding: '4px 10px', fontSize: '12px', fontWeight: 600, cursor: isSimulating ? 'default' : 'pointer', whiteSpace: 'nowrap' }}
+                >
+                  Run simulation
+                </button>
+              )}
+            </div>
+          )}
 
           <ReactFlow 
             nodes={interactiveNodes} 
@@ -1949,7 +1992,7 @@ function WalFlowContent() {
           onResetCaseOverride={handleResetCaseOverride}
           allNodes={nodes}
           allEdges={edges}
-          unmitigatedTelemetry={telemetryUnmitigated}
+          unmitigatedTelemetry={unmitigatedTelemetry}
           availablePipeClasses={availablePipeClasses}
           allowCustomPipes={allowCustomPipes}
           activeTab={inspectorTab}
@@ -1977,7 +2020,8 @@ function WalFlowContent() {
           onReorderCases={handleReorderCases}
           onBatchResults={handleBatchResultsTelemetry}
           telemetryMode={telemetryMode}
-          telemetryUnmitigated={telemetryUnmitigated}
+          telemetryUnmitigated={unmitigatedTelemetry}
+          caseInputHashes={caseInputHashes}
           onSetCaseOverride={handleSetCaseOverride}
           runSimulation={runSimulation}
           showCaseManager={showCaseManager}

@@ -36,6 +36,7 @@ export const M3H_TO_LMIN = 1 / LMIN_TO_M3H;
 
 export const KW_TO_HP = 1.3410220896;
 export const HP_TO_KW = 0.74569987158;
+export const KW_TO_BTUH = 3412.141633;
 
 export const M_TO_FT = 3.280839895;
 export const FT_TO_M = 1 / M_TO_FT;
@@ -54,7 +55,7 @@ export const FTS_TO_MS = 1 / MS_TO_FTS;
 // PRESSURE CONVERTERS
 // ==========================================
 export const paToBar = (pa, decimals = 2) => {
-  if (pa === null || pa === undefined || isNaN(pa)) return '0.00';
+  if (pa === null || pa === undefined || isNaN(pa)) return '—';
   const val = Number(pa) * PA_TO_BAR;
   return decimals !== undefined ? val.toFixed(decimals) : val;
 };
@@ -62,7 +63,7 @@ export const paToBar = (pa, decimals = 2) => {
 export const barToPa = (bar) => Number(bar) * BAR_TO_PA;
 
 export const barToPsi = (bar, decimals = 2) => {
-  if (bar === null || bar === undefined || isNaN(bar)) return '0.00';
+  if (bar === null || bar === undefined || isNaN(bar)) return '—';
   const val = Number(bar) * BAR_TO_PSI;
   return decimals !== undefined ? val.toFixed(decimals) : val;
 };
@@ -70,7 +71,7 @@ export const barToPsi = (bar, decimals = 2) => {
 export const psiToBar = (psi) => Number(psi) * PSI_TO_BAR;
 
 export const paToPsi = (pa, decimals = 2) => {
-  if (pa === null || pa === undefined || isNaN(pa)) return '0.00';
+  if (pa === null || pa === undefined || isNaN(pa)) return '—';
   const val = Number(pa) * PA_TO_PSI;
   return decimals !== undefined ? val.toFixed(decimals) : val;
 };
@@ -82,7 +83,7 @@ export const psiToPa = (psi) => Number(psi) * PSI_TO_PA;
 // FLOW CONVERTERS
 // ==========================================
 export const m3sToLmin = (m3s, decimals = 1) => {
-  if (m3s === null || m3s === undefined || isNaN(m3s)) return '0.0';
+  if (m3s === null || m3s === undefined || isNaN(m3s)) return '—';
   const val = Number(m3s) * M3S_TO_LMIN;
   return decimals !== undefined ? val.toFixed(decimals) : val;
 };
@@ -90,7 +91,7 @@ export const m3sToLmin = (m3s, decimals = 1) => {
 export const lminToM3s = (lmin) => Number(lmin) * LMIN_TO_M3S;
 
 export const lminToGpm = (lmin, decimals = 1) => {
-  if (lmin === null || lmin === undefined || isNaN(lmin)) return '0.0';
+  if (lmin === null || lmin === undefined || isNaN(lmin)) return '—';
   const val = Number(lmin) * LMIN_TO_GPM;
   return decimals !== undefined ? val.toFixed(decimals) : val;
 };
@@ -98,7 +99,7 @@ export const lminToGpm = (lmin, decimals = 1) => {
 export const gpmToLmin = (gpm) => Number(gpm) * GPM_TO_LMIN;
 
 export const m3sToGpm = (m3s, decimals = 1) => {
-  if (m3s === null || m3s === undefined || isNaN(m3s)) return '0.0';
+  if (m3s === null || m3s === undefined || isNaN(m3s)) return '—';
   const val = Number(m3s) * M3S_TO_GPM;
   return decimals !== undefined ? val.toFixed(decimals) : val;
 };
@@ -106,7 +107,7 @@ export const m3sToGpm = (m3s, decimals = 1) => {
 export const gpmToM3s = (gpm) => Number(gpm) * GPM_TO_M3S;
 
 export const lminToM3h = (lmin, decimals = 2) => {
-  if (lmin === null || lmin === undefined || isNaN(lmin)) return '0.00';
+  if (lmin === null || lmin === undefined || isNaN(lmin)) return '—';
   const val = Number(lmin) * LMIN_TO_M3H;
   return decimals !== undefined ? val.toFixed(decimals) : val;
 };
@@ -118,7 +119,7 @@ export const m3hToLmin = (m3h) => Number(m3h) * M3H_TO_LMIN;
 // TEMPERATURE CONVERTERS
 // ==========================================
 export const kToC = (k, decimals = 1) => {
-  if (k === null || k === undefined || isNaN(k)) return '0.0';
+  if (k === null || k === undefined || isNaN(k)) return '—';
   const val = Number(k) - 273.15;
   return decimals !== undefined ? val.toFixed(decimals) : val;
 };
@@ -126,7 +127,7 @@ export const kToC = (k, decimals = 1) => {
 export const cToK = (c) => Number(c) + 273.15;
 
 export const cToF = (c, decimals = 1) => {
-  if (c === null || c === undefined || isNaN(c)) return '0.0';
+  if (c === null || c === undefined || isNaN(c)) return '—';
   const val = Number(c) * 1.8 + 32;
   return decimals !== undefined ? val.toFixed(decimals) : val;
 };
@@ -134,7 +135,7 @@ export const cToF = (c, decimals = 1) => {
 export const fToC = (f) => (Number(f) - 32) / 1.8;
 
 export const kToF = (k, decimals = 1) => {
-  if (k === null || k === undefined || isNaN(k)) return '0.0';
+  if (k === null || k === undefined || isNaN(k)) return '—';
   const val = (Number(k) - 273.15) * 1.8 + 32;
   return decimals !== undefined ? val.toFixed(decimals) : val;
 };
@@ -146,15 +147,24 @@ export const fToK = (f) => (Number(f) - 32) / 1.8 + 273.15;
 // POWER CONVERTERS
 // ==========================================
 export const kwToHp = (kw, decimals = 2) => {
-  if (kw === null || kw === undefined || isNaN(kw)) return '0.00';
+  if (kw === null || kw === undefined || isNaN(kw)) return '—';
   const val = Number(kw) * KW_TO_HP;
   return decimals !== undefined ? val.toFixed(decimals) : val;
 };
 
 export const hpToKw = (hp) => Number(hp) * HP_TO_KW;
 
+// Heat duty: kW in the model, BTU/h in imperial display (HP is for shaft power)
+export const kwToBtuh = (kw, decimals = 0) => {
+  if (kw === null || kw === undefined || isNaN(kw)) return '—';
+  const val = Number(kw) * KW_TO_BTUH;
+  return decimals !== undefined ? val.toFixed(decimals) : val;
+};
+
+export const btuhToKw = (btuh) => Number(btuh) / KW_TO_BTUH;
+
 export const wToHp = (w, decimals = 2) => {
-  if (w === null || w === undefined || isNaN(w)) return '0.00';
+  if (w === null || w === undefined || isNaN(w)) return '—';
   const val = (Number(w) / 1000) * KW_TO_HP;
   return decimals !== undefined ? val.toFixed(decimals) : val;
 };
@@ -167,13 +177,13 @@ export const hpToW = (hp) => Number(hp) * HP_TO_KW * 1000;
 // ==========================================
 export const mmToM = (mm) => Number(mm) / 1000;
 export const mToMm = (m, decimals = 2) => {
-  if (m === null || m === undefined || isNaN(m)) return '0.00';
+  if (m === null || m === undefined || isNaN(m)) return '—';
   const val = Number(m) * 1000;
   return decimals !== undefined ? val.toFixed(decimals) : val;
 };
 
 export const mToFt = (m, decimals = 2) => {
-  if (m === null || m === undefined || isNaN(m)) return '0.00';
+  if (m === null || m === undefined || isNaN(m)) return '—';
   const val = Number(m) * M_TO_FT;
   return decimals !== undefined ? val.toFixed(decimals) : val;
 };
@@ -181,7 +191,7 @@ export const mToFt = (m, decimals = 2) => {
 export const ftToM = (ft) => Number(ft) * FT_TO_M;
 
 export const mmToIn = (mm, decimals = 3) => {
-  if (mm === null || mm === undefined || isNaN(mm)) return '0.000';
+  if (mm === null || mm === undefined || isNaN(mm)) return '—';
   const val = Number(mm) * MM_TO_IN;
   return decimals !== undefined ? val.toFixed(decimals) : val;
 };
@@ -189,7 +199,7 @@ export const mmToIn = (mm, decimals = 3) => {
 export const inToMm = (inch) => Number(inch) * IN_TO_MM;
 
 export const mToIn = (m, decimals = 3) => {
-  if (m === null || m === undefined || isNaN(m)) return '0.000';
+  if (m === null || m === undefined || isNaN(m)) return '—';
   const val = Number(m) * M_TO_IN;
   return decimals !== undefined ? val.toFixed(decimals) : val;
 };
@@ -201,7 +211,7 @@ export const inToM = (inch) => Number(inch) * IN_TO_M;
 // VELOCITY CONVERTERS
 // ==========================================
 export const msToFts = (ms, decimals = 2) => {
-  if (ms === null || ms === undefined || isNaN(ms)) return '0.00';
+  if (ms === null || ms === undefined || isNaN(ms)) return '—';
   const val = Number(ms) * MS_TO_FTS;
   return decimals !== undefined ? val.toFixed(decimals) : val;
 };
@@ -228,6 +238,7 @@ export const UNIT_LABELS = {
     temperature: '°C',
     temperatureAbs: 'K',
     power: 'kW',
+    heatDuty: 'kW',
     length: 'm',
     diameter: 'mm',
     diameterNps: 'in',
@@ -243,6 +254,7 @@ export const UNIT_LABELS = {
     temperature: '°F',
     temperatureAbs: '°R',
     power: 'HP',
+    heatDuty: 'BTU/h',
     length: 'ft',
     diameter: 'in',
     diameterNps: 'in',
@@ -334,6 +346,17 @@ export const formatVelocityFromMs = (valMs, unitSystem = UNIT_SYSTEMS.METRIC, de
     return msToFts(valMs, decimals);
   }
   return Number(valMs).toFixed(decimals);
+};
+
+/**
+ * Format a heat duty (given in kW) to the selected unit system (kW or BTU/h).
+ */
+export const formatHeatDutyFromKw = (valKw, unitSystem = UNIT_SYSTEMS.METRIC, decimals = 1) => {
+  if (valKw === null || valKw === undefined || isNaN(valKw)) return '—';
+  if (unitSystem === UNIT_SYSTEMS.IMPERIAL) {
+    return kwToBtuh(valKw, 0);
+  }
+  return Number(valKw).toFixed(decimals);
 };
 
 /**

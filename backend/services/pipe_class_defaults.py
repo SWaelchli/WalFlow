@@ -77,8 +77,8 @@ EXAMPLE_PIPE_CLASSES = [
         "schedule_standard_code": "ASME_B36_10M_SCHEDULES",
         "is_builtin": True,
         "sizes": [
-            {"dn": 15,  "nps": "1/2",   "od_mm": 21.3,  "wt_mm": 1.65, "id_mm": 18.00, "sch": "10S", "ca_mm": 0.0},
-            {"dn": 20,  "nps": "3/4",   "od_mm": 26.7,  "wt_mm": 1.65, "id_mm": 23.40, "sch": "10S", "ca_mm": 0.0},
+            {"dn": 15,  "nps": "1/2",   "od_mm": 21.3,  "wt_mm": 2.11, "id_mm": 17.08, "sch": "10S", "ca_mm": 0.0},
+            {"dn": 20,  "nps": "3/4",   "od_mm": 26.7,  "wt_mm": 2.11, "id_mm": 22.48, "sch": "10S", "ca_mm": 0.0},
             {"dn": 25,  "nps": "1",     "od_mm": 33.4,  "wt_mm": 2.77, "id_mm": 27.86, "sch": "10S", "ca_mm": 0.0},
             {"dn": 32,  "nps": "1 1/4", "od_mm": 42.2,  "wt_mm": 2.77, "id_mm": 36.66, "sch": "10S", "ca_mm": 0.0},
             {"dn": 40,  "nps": "1 1/2", "od_mm": 48.3,  "wt_mm": 2.77, "id_mm": 42.76, "sch": "10S", "ca_mm": 0.0},
@@ -164,8 +164,8 @@ EXAMPLE_PIPE_CLASSES = [
         "is_builtin": True,
 
         "sizes": [
-            {"dn": 15,  "nps": "1/2",   "od_mm": 21.3,  "wt_mm": 1.65, "id_mm": 18.00, "sch": "10S", "ca_mm": 0.0},
-            {"dn": 20,  "nps": "3/4",   "od_mm": 26.7,  "wt_mm": 1.65, "id_mm": 23.40, "sch": "10S", "ca_mm": 0.0},
+            {"dn": 15,  "nps": "1/2",   "od_mm": 21.3,  "wt_mm": 2.11, "id_mm": 17.08, "sch": "10S", "ca_mm": 0.0},
+            {"dn": 20,  "nps": "3/4",   "od_mm": 26.7,  "wt_mm": 2.11, "id_mm": 22.48, "sch": "10S", "ca_mm": 0.0},
             {"dn": 25,  "nps": "1",     "od_mm": 33.4,  "wt_mm": 2.77, "id_mm": 27.86, "sch": "10S", "ca_mm": 0.0},
             {"dn": 32,  "nps": "1 1/4", "od_mm": 42.2,  "wt_mm": 2.77, "id_mm": 36.66, "sch": "10S", "ca_mm": 0.0},
             {"dn": 40,  "nps": "1 1/2", "od_mm": 48.3,  "wt_mm": 2.77, "id_mm": 42.76, "sch": "10S", "ca_mm": 0.0},

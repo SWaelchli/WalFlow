@@ -59,3 +59,78 @@ describe('F2-08: free inner diameter commits on blur', () => {
     expect(input.value).toBe('60.00');
   });
 });
+
+const renderNodePanel = (node, unitSystem = UNIT_SYSTEMS.METRIC) => {
+  const onUpdate = vi.fn();
+  render(
+    <UnitProvider initialUnitSystem={unitSystem}>
+      <SetupPanel node={node} onUpdate={onUpdate} />
+    </UnitProvider>
+  );
+  return onUpdate;
+};
+
+describe('F2-05: leaving an untouched field does not rewrite it', () => {
+  const regulator = { id: 'r1', type: 'linear_regulator', data: { max_cv: 0.05, set_pressure: 225000, label: 'PRV' } };
+
+  it('keeps a 2.25 bar(a) setpoint exact and shows it without rounding to 2.3', () => {
+    const onUpdate = renderNodePanel(regulator);
+    const input = screen.getByDisplayValue('2.25');
+    fireEvent.focus(input);
+    fireEvent.blur(input);
+    expect(onUpdate).not.toHaveBeenCalled();
+  });
+
+  it('commits a typed setpoint once', () => {
+    const onUpdate = renderNodePanel(regulator);
+    const input = screen.getByDisplayValue('2.25');
+    fireEvent.change(input, { target: { value: '2.4' } });
+    fireEvent.blur(input);
+    expect(onUpdate).toHaveBeenCalledTimes(1);
+    expect(onUpdate.mock.calls[0][1].set_pressure).toBeCloseTo(240000, 6);
+  });
+
+  it('does not turn a 1 L/min restriction into 1.14 L/min by clicking through it in imperial', () => {
+    const node = { id: 'cr1', type: 'calibrated_restriction', data: { flow_base_lmin: 1, inlet_pressure_base_bar: 3.5, outlet_pressure_base_bar: 1, temp_base_c: 45, restriction_model: 'orifice', fluid_type: 'system' } };
+    const onUpdate = renderNodePanel(node, UNIT_SYSTEMS.IMPERIAL);
+    const input = screen.getByDisplayValue('0.3');
+    fireEvent.focus(input);
+    fireEvent.blur(input);
+    expect(onUpdate).not.toHaveBeenCalled();
+  });
+});
+
+describe('F2-16: zero is a legitimate value', () => {
+  it('accepts a check valve cracking pressure of 0', () => {
+    const node = { id: 'cv1', type: 'check_valve', data: { cv: 10, cracking_pressure_bar: 0.05 } };
+    const onUpdate = renderNodePanel(node);
+    const input = screen.getByDisplayValue('0.05');
+    fireEvent.change(input, { target: { value: '0' } });
+    fireEvent.blur(input);
+    expect(onUpdate).toHaveBeenCalledTimes(1);
+    expect(onUpdate.mock.calls[0][1].cracking_pressure_bar).toBe(0);
+  });
+
+  it('accepts a calibration temperature of 0 degC and below', () => {
+    const node = { id: 'cr1', type: 'calibrated_restriction', data: { flow_base_lmin: 10, inlet_pressure_base_bar: 3.5, outlet_pressure_base_bar: 1, temp_base_c: 45, restriction_model: 'orifice', fluid_type: 'system' } };
+    const onUpdate = renderNodePanel(node);
+    const input = screen.getByDisplayValue('45');
+    fireEvent.change(input, { target: { value: '-10' } });
+    fireEvent.blur(input);
+    expect(onUpdate.mock.calls[0][1].temp_base_c).toBe(-10);
+  });
+
+  it('shows a stored 0 as 0, not as the default', () => {
+    const node = { id: 'hx1', type: 'heat_exchanger', data: { rated_dp_bar: 0, medium_temp_c: 0 } };
+    renderNodePanel(node);
+    expect(screen.getAllByDisplayValue('0').length).toBeGreaterThanOrEqual(2);
+    expect(screen.queryByDisplayValue('10')).toBeNull();
+  });
+});
+
+describe('F2-04: the heat exchanger inspector shows what the solver uses', () => {
+  it('shows 0.5 bar(d) for a heat exchanger without a stored rated pressure drop', () => {
+    renderNodePanel({ id: 'hx1', type: 'heat_exchanger', data: {} });
+    expect(screen.getByDisplayValue('0.5')).toBeTruthy();
+  });
+});

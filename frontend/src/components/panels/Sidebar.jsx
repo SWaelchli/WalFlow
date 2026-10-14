@@ -5,6 +5,7 @@ import { InfoIcon, CheckIcon, CrossIcon, FolderIcon, SearchIcon, TrashIcon, Lock
 import { FLUID_CATEGORIES, FLUID_LIBRARY } from '../../constants/fluid_library';
 import { useUnits } from '../../context/UnitContext';
 import { FILE_FORMAT_VERSION, APP_VERSION } from '../../constants';
+import { parseSolverSetting } from '../../utils/solverSettings';
 import DraftNumberInput from '../common/DraftNumberInput';
 
 
@@ -678,6 +679,12 @@ export default function Sidebar({
   const [settingsSubTab, setSettingsSubTab] = useState('drawing'); // 'drawing' | 'project' | 'global'
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Numeric solver settings: commit on blur, ignore empty or out-of-range entries (F2-17)
+  const commitSolverSetting = (key, text) => {
+    const parsed = parseSolverSetting(key, text);
+    if (parsed.ok) onUpdateGlobalSettings({ ...globalSettings, [key]: parsed.value });
+  };
+
   const [projectsList, setProjectsList] = useState([]);
   const [standaloneList, setStandaloneList] = useState([]);
   const [expandedProjects, setExpandedProjects] = useState({});
@@ -937,11 +944,6 @@ export default function Sidebar({
       const response = await axios.get(`/api/diagrams/${diagramId}`);
       const parsedData = JSON.parse(response.data.diagram_data);
       
-      if (parsedData.version !== FILE_FORMAT_VERSION) {
-        alert(`Cannot load: File format version '${parsedData.version}' is incompatible with version '${FILE_FORMAT_VERSION}'.`);
-        return;
-      }
-
       // Load first; switch project/diagram only if the load was accepted.
       // Cloud diagrams carry their own project, so no "detach cloud sync" prompt.
       const accepted = onLoad(parsedData, response.data.title, { skipProjectCheck: true });
@@ -1370,66 +1372,57 @@ export default function Sidebar({
 
                   <div>
                     <label style={labelStyle}>Damping Factor</label>
-                    <input 
-                      type="number"
-                      step="0.05"
-                      min="0.05"
-                      max="1.0"
-                      value={globalSettings.damping_factor !== undefined ? globalSettings.damping_factor : 0.25}
-                      onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, damping_factor: parseFloat(e.target.value) })}
+                    <DraftNumberInput
+                      step="0.05" min="0.05" max="1" displayValue={globalSettings.damping_factor ?? 0.25}
+                      onCommit={(text) => commitSolverSetting('damping_factor', text)}
                       className="form-input"
                       style={inputStyle}
                     />
-                    <p style={hintStyle}>Damping (0.05 to 1.0) for outer regulator updates. Lower prevents oscillations; higher speeds convergence.</p>
+                    <p style={hintStyle}>Accepted for older files; the control loop no longer uses it. Range 0.05 to 1.</p>
                   </div>
 
                   <div>
                     <label style={labelStyle}>Control Iterations</label>
-                    <input 
-                      type="number"
-                      value={globalSettings.control_iterations || 100}
-                      onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, control_iterations: parseInt(e.target.value) })}
+                    <DraftNumberInput
+                      step="1" min="1" displayValue={globalSettings.control_iterations ?? 100}
+                      onCommit={(text) => commitSolverSetting('control_iterations', text)}
                       className="form-input"
                       style={inputStyle}
                     />
-                    <p style={hintStyle}>Max outer loop iterations for regulators and control valves.</p>
+                    <p style={hintStyle}>Max outer loop iterations for regulators and control valves (1 to 1000).</p>
                   </div>
 
                   <div>
                     <label style={labelStyle}>Property Iterations</label>
-                    <input 
-                      type="number"
-                      value={globalSettings.property_iterations}
-                      onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, property_iterations: parseInt(e.target.value) })}
+                    <DraftNumberInput
+                      step="1" min="1" displayValue={globalSettings.property_iterations}
+                      onCommit={(text) => commitSolverSetting('property_iterations', text)}
                       className="form-input"
                       style={inputStyle}
                     />
-                    <p style={hintStyle}>Max loops for propagating fluid temperature and thermal properties.</p>
+                    <p style={hintStyle}>Max loops for propagating fluid temperature and thermal properties (1 to 100).</p>
                   </div>
 
                   <div>
                     <label style={labelStyle}>Convergence Tolerance</label>
-                    <input 
-                      type="number"
-                      step="0.000001"
-                      value={globalSettings.tolerance}
-                      onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, tolerance: parseFloat(e.target.value) })}
+                    <DraftNumberInput
+                      step="any" displayValue={globalSettings.tolerance}
+                      onCommit={(text) => commitSolverSetting('tolerance', text)}
                       className="form-input"
                       style={inputStyle}
                     />
-                    <p style={hintStyle}>Target numerical residual precision (e.g., 1e-6).</p>
+                    <p style={hintStyle}>Target numerical residual precision, 1e-9 to 1e-2 (e.g., 1e-6).</p>
                   </div>
 
                   <div>
                     <label style={labelStyle}>Inner Solver Iterations</label>
-                    <input 
-                      type="number"
-                      value={globalSettings.inner_iterations || 1000}
-                      onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, inner_iterations: parseInt(e.target.value) })}
+                    <DraftNumberInput
+                      step="1" min="1" displayValue={globalSettings.inner_iterations ?? 1000}
+                      onCommit={(text) => commitSolverSetting('inner_iterations', text)}
                       className="form-input"
                       style={inputStyle}
                     />
-                    <p style={hintStyle}>Max steps for the core matrix solver per iteration.</p>
+                    <p style={hintStyle}>Max steps for the core matrix solver per iteration (1 to 10000).</p>
                   </div>
                 </div>
               </div>

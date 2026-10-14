@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Request, status
 from typing import List, Dict, Any
+import math
 import traceback
 
 import numpy as np
@@ -21,6 +22,45 @@ def numpy_json_default(obj):
     if isinstance(obj, np.ndarray):
         return obj.tolist()
     raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
+
+def sanitize_non_finite(obj, _path="", _found=None):
+    """F2-15: replace NaN/Infinity with None so the reply is valid JSON.
+
+    Returns (clean_copy, paths) where paths lists the first few fields that were not finite,
+    e.g. "telemetry.HX-1.temperature_out". The caller reports them as a solver warning.
+    """
+    top = _found is None
+    if top:
+        _found = []
+    if isinstance(obj, np.generic):
+        obj = obj.item()
+    if isinstance(obj, dict):
+        out = {k: sanitize_non_finite(v, f"{_path}.{k}" if _path else str(k), _found)[0] for k, v in obj.items()}
+    elif isinstance(obj, (list, tuple)):
+        out = [sanitize_non_finite(v, f"{_path}[{i}]", _found)[0] for i, v in enumerate(obj)]
+    elif isinstance(obj, np.ndarray):
+        out = sanitize_non_finite(obj.tolist(), _path, _found)[0]
+    elif isinstance(obj, float) and not math.isfinite(obj):
+        _found.append(_path)
+        out = None
+    else:
+        out = obj
+    return out, _found
+
+
+def sanitize_result(stats, **sections):
+    """Sanitise stats and result sections; non-finite fields are listed in stats['non_finite_fields']."""
+    clean_stats, found = sanitize_non_finite(stats, "stats")
+    clean = {}
+    for name, value in sections.items():
+        clean[name], f = sanitize_non_finite(value, name)
+        found += f
+    if found:
+        clean_stats = dict(clean_stats)
+        clean_stats["non_finite_fields"] = found[:20]
+        clean_stats["non_finite_count"] = len(found)
+    return clean_stats, clean
+
 
 THROTTLING_TYPES = {"linear_control_valve", "linear_regulator", "remote_control_valve", "orifice", "calibrated_restriction",
                     "check_valve", "check_valve_orifice", "three_way_tcv"}
@@ -223,6 +263,10 @@ def run_batch_simulation(request: Request, graph: ReactFlowGraph):
                 continue
 
             kpis = calculate_case_kpis(network, telemetry, stats)
+            stats, clean = sanitize_result(stats, telemetry=telemetry, telemetry_unmitigated=telemetry_unmitigated,
+                                           telemetry_peak=telemetry_peak, kpis=kpis)
+            telemetry, telemetry_unmitigated = clean["telemetry"], clean["telemetry_unmitigated"]
+            telemetry_peak, kpis = clean["telemetry_peak"], clean["kpis"]
 
             results.append(BatchCaseResult(
                 case_id=case.id,

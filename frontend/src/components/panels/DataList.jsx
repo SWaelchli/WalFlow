@@ -7,6 +7,8 @@ import { updateCaseOverride, effectiveForcedState } from '../../utils/case_resol
 import { useUnits } from '../../context/UnitContext';
 import { resolvePipeSelection } from '../../utils/pipeDefaults';
 import DraftNumberInput from '../common/DraftNumberInput';
+import { toSolverGraph } from '../../utils/diagramFile';
+import { computeCaseInputHashes, isCaseResultStale } from '../../utils/resultHash';
 
 
 const autoSortLogic = (nodes, edges) => {
@@ -153,6 +155,7 @@ export default function DataList({
   onBatchResults,
   telemetryMode = 'mitigated',
   telemetryUnmitigated,
+  caseInputHashes = {},
   onSetCaseOverride,
   runSimulation,
   showCaseManager = true,
@@ -192,13 +195,16 @@ export default function DataList({
     try {
       const baseNodes = next.nodes || rawNodes || nodes;
       const baseEdges = rawEdges || edges;
-      const payload = {
-        nodes: baseNodes.map(n => ({ id: n.id, type: n.type, position: n.position, data: n.data })),
-        edges: baseEdges.map(e => ({ id: e.id, source: e.source, target: e.target, sourceHandle: e.sourceHandle, targetHandle: e.targetHandle, data: e.data })),
-        global_settings: globalSettings,
-        cases: next.cases || cases,
-        active_case_id: activeCaseId
-      };
+      const batchCases = next.cases || cases;
+      const payload = toSolverGraph({
+        nodes: baseNodes,
+        edges: baseEdges,
+        globalSettings,
+        cases: batchCases,
+        activeCaseId
+      });
+      // Results are tagged with the inputs they are solved from (F2-07)
+      const inputHashes = computeCaseInputHashes({ nodes: baseNodes, edges: baseEdges, globalSettings, cases: batchCases });
       const response = await fetch('/api/simulation/batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -211,7 +217,7 @@ export default function DataList({
       const resList = data.results || [];
       setBatchResults(resList);
       if (onBatchResults) {
-        onBatchResults(resList);
+        onBatchResults(resList, inputHashes);
       }
     } catch (err) {
       console.error("Batch simulation failed:", err);
@@ -237,6 +243,12 @@ export default function DataList({
       };
     });
   }, [cases, batchResults]);
+
+  // F2-07: results whose inputs changed since they were solved are labelled and dimmed
+  const activeResultsStale = useMemo(
+    () => isCaseResultStale(cases.find(c => c.id === activeCaseId), caseInputHashes),
+    [cases, activeCaseId, caseInputHashes]
+  );
 
   const onCaseDragStart = (e, colIdx) => {
     if (colIdx === 0) return; // Base Case cannot be dragged
@@ -382,19 +394,20 @@ export default function DataList({
       if (ref.type === 'node') {
         const node = nodes.find(n => n.id === ref.id);
         if (!node || node.type === 'text_bubble' || node.type === 'note') return null;
+        // Missing results stay null and show as "—", never as 0 bar / 20 °C (F2-20)
         const telemetry = node.data?.telemetry;
-        const pStart = telemetry?.inlets?.[0]?.pressure || 0;
-        const pEnd = telemetry?.outlets?.[0]?.pressure || 0;
+        const pStart = telemetry?.inlets?.[0]?.pressure ?? null;
+        const pEnd = telemetry?.outlets?.[0]?.pressure ?? null;
         return {
           ...ref, originalIndex: index, item: node, label: node.data.label || node.id,
           displayType: node.type.replace('_',' ').toUpperCase(),
-          flow: telemetry?.outlets?.[0]?.flow_rate || 0,
-          dp: Math.abs(pStart - pEnd) / 100000,
-          pStart: pStart / 100000,
-          pEnd: pEnd / 100000,
-          temp: (telemetry?.outlets?.[0]?.temperature || telemetry?.inlets?.[0]?.temperature) || 293.15,
+          flow: telemetry?.outlets?.[0]?.flow_rate ?? null,
+          dp: pStart != null && pEnd != null ? Math.abs(pStart - pEnd) / 100000 : null,
+          pStart: pStart != null ? pStart / 100000 : null,
+          pEnd: pEnd != null ? pEnd / 100000 : null,
+          temp: telemetry?.outlets?.[0]?.temperature ?? telemetry?.inlets?.[0]?.temperature ?? null,
           length: 0,
-          velocity: 0
+          velocity: null
         };
       } else {
         const edge = edges.find(e => e.id === ref.id);
@@ -404,17 +417,17 @@ export default function DataList({
         if (edge.data?.type === 'SIGNAL') return null;
 
         const telemetry = edge.data?.telemetry;
-        const pStart = telemetry?.inlets?.[0]?.pressure || 0;
-        const pEnd = telemetry?.outlets?.[0]?.pressure || 0;
-        const flow = telemetry?.outlets?.[0]?.flow_rate || 0;
+        const pStart = telemetry?.inlets?.[0]?.pressure ?? null;
+        const pEnd = telemetry?.outlets?.[0]?.pressure ?? null;
+        const flow = telemetry?.outlets?.[0]?.flow_rate ?? null;
         const diaValue = edge.data.diameter || 0.1;
         const area = Math.PI * Math.pow(diaValue, 2) / 4;
         return {
           ...ref, originalIndex: index, item: edge, label: edge.data.label || edge.id, displayType: 'PIPE',
-          flow: flow, dp: Math.abs(pStart - pEnd) / 100000,
-          pStart: pStart / 100000, pEnd: pEnd / 100000,
-          temp: (telemetry?.outlets?.[0]?.temperature || telemetry?.inlets?.[0]?.temperature) || 293.15,
-          velocity: area > 0 ? flow / area : 0,
+          flow: flow, dp: pStart != null && pEnd != null ? Math.abs(pStart - pEnd) / 100000 : null,
+          pStart: pStart != null ? pStart / 100000 : null, pEnd: pEnd != null ? pEnd / 100000 : null,
+          temp: telemetry?.outlets?.[0]?.temperature ?? telemetry?.inlets?.[0]?.temperature ?? null,
+          velocity: flow != null && area > 0 ? flow / area : null,
           length: edge.data.length || 0
         };
       }
@@ -429,6 +442,8 @@ export default function DataList({
       items.sort((a, b) => {
         const av = a[sortConfig.key];
         const bv = b[sortConfig.key];
+        // Rows without a value sort last in either direction
+        if (av == null || bv == null) return av == null && bv == null ? 0 : (av == null ? 1 : -1);
         if (typeof av === 'string' && typeof bv === 'string') {
           return dir * av.localeCompare(bv, undefined, { numeric: true, sensitivity: 'base' });
         }
@@ -632,6 +647,9 @@ export default function DataList({
                               </button>
                             )}
                             {isActive && <span style={{ fontSize: '10px', color: 'var(--color-primary)', fontWeight: 'bold' }}>Active</span>}
+                            {isCaseResultStale(c, caseInputHashes) && (
+                              <span title="The diagram changed since this case was solved. Run the simulation again." style={{ fontSize: '10px', fontWeight: '700', color: '#7A3E00', background: '#FFF7ED', border: '1px solid #FDE3C3', padding: '1px 6px', borderRadius: '10px', whiteSpace: 'nowrap' }}>Out of date</span>
+                            )}
                           </div>
                         </th>
                       );
@@ -757,6 +775,9 @@ export default function DataList({
                               </button>
                             )}
                             {isActive && <span style={{ fontSize: '10px', color: 'var(--color-primary)', fontWeight: 'bold' }}>Active</span>}
+                            {isCaseResultStale(c, caseInputHashes) && (
+                              <span title="The diagram changed since this case was solved. Run the simulation again." style={{ fontSize: '10px', fontWeight: '700', color: '#7A3E00', background: '#FFF7ED', border: '1px solid #FDE3C3', padding: '1px 6px', borderRadius: '10px', whiteSpace: 'nowrap' }}>Out of date</span>
+                            )}
                           </div>
                         </th>
                       );
@@ -951,7 +972,7 @@ export default function DataList({
             )}
           </div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', textAlign: 'left' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', textAlign: 'left', opacity: activeResultsStale ? 0.55 : 1 }} aria-label={activeResultsStale ? 'Results out of date' : undefined}>
           <thead>
             <tr style={{ background: 'var(--color-border-hover)', borderBottom: '2px solid var(--color-border)', color: 'var(--color-brand-dark)', fontWeight: '700', position: 'sticky', top: 0, zIndex: 1 }}>
 

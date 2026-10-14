@@ -22,6 +22,9 @@ import {
   cToK,
   fToK,
   kwToHp,
+  kwToBtuh,
+  btuhToKw,
+  formatHeatDutyFromKw,
   hpToKw,
   mToFt,
   ftToM,
@@ -46,6 +49,7 @@ const UnitContext = createContext({
   formatTemperatureK: () => '',
   formatVelocity: () => '',
   formatPower: () => '',
+  formatHeatDuty: () => '',
   toDisplayValue: () => '',
   fromInputValue: () => 0
 });
@@ -132,6 +136,10 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
     return formatPowerFromKw(valKw, unitSystem, decimals);
   }, [unitSystem]);
 
+  const formatHeatDuty = useCallback((valKw, decimals = 1) => {
+    return formatHeatDutyFromKw(valKw, unitSystem, decimals);
+  }, [unitSystem]);
+
   /**
    * Convert a base Metric property value to a display value string for property editors.
    */
@@ -195,10 +203,13 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
 
       // Power (base: kW)
       case 'motor_power':
+        return Number(kwToHp(num, 2));
+
+      // Heat duty (base: kW)
       case 'heat_duty_kw':
       case 'rated_cooling_kw':
       case 'rated_heating_kw':
-        return Number(kwToHp(num, 2));
+        return Number(kwToBtuh(num, 0));
 
       // Pipe Length, Level, Elevation (base: m)
       case 'head_rated_m':
@@ -298,10 +309,13 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
 
       // Power (input: HP -> base: kW)
       case 'motor_power':
+        return hpToKw(num);
+
+      // Heat duty (input: BTU/h -> base: kW)
       case 'heat_duty_kw':
       case 'rated_cooling_kw':
       case 'rated_heating_kw':
-        return hpToKw(num);
+        return btuhToKw(num);
 
       // Pipe Length, Level, Elevation (input: ft -> base: m)
       case 'head_rated_m':
@@ -345,6 +359,7 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
     formatTemperatureK,
     formatVelocity,
     formatPower,
+    formatHeatDuty,
     toDisplayValue,
     fromInputValue
   }), [
@@ -363,6 +378,7 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
     formatTemperatureK,
     formatVelocity,
     formatPower,
+    formatHeatDuty,
     toDisplayValue,
     fromInputValue
   ]);

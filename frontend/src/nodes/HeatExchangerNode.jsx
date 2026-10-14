@@ -3,11 +3,13 @@ import { useMemo } from 'react';
 import { getRotatedPosition } from '../components/canvas/NodeRotationHandle';
 import { SensingPin } from '../components/canvas/SensingPin';
 import BaseNode from './BaseNode';
+import { useUnits } from '../context/UnitContext';
 
 /**
  * Shell and Tube Heat Exchanger (ISA / PFD style)
  */
 export default function HeatExchangerNode({ id, data, selected }) {
+  const { formatHeatDuty, labels } = useUnits();
   const telemetry = data.telemetry;
   const rotation = data.rotation || 0;
   const sensing = useMemo(() => data.sensing || {}, [data.sensing]);
@@ -30,7 +32,7 @@ export default function HeatExchangerNode({ id, data, selected }) {
   }
 
   const deltaT = (tOut - tIn).toFixed(1);
-  const dutyFormatted = Math.abs(dutyVal) < 0.01 ? '0' : dutyVal.toFixed(1);
+  const dutyFormatted = Math.abs(dutyVal) < 0.01 ? '0' : formatHeatDuty(dutyVal);
 
   return (
     <BaseNode
@@ -43,7 +45,7 @@ export default function HeatExchangerNode({ id, data, selected }) {
         <>
           <div style={{ fontSize: '9px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>{data.label || 'HEAT EXCH'}</div>
           <div style={{ fontSize: '10px', fontWeight: 'bold', color: dutyVal > 0.01 ? '#ef4444' : dutyVal < -0.01 ? '#3b82f6' : '#64748b' }}>
-            {dutyFormatted} kW
+            {dutyFormatted} {labels.heatDuty}
           </div>
           <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)' }}>ΔT: {deltaT} K</div>
         </>

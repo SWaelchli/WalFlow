@@ -210,9 +210,9 @@ const ProjectManagerModal = ({
       const response = await axios.get(`/api/diagrams/${diagramId}`);
       const parsedData = JSON.parse(response.data.diagram_data);
       
-      // Auto-validate schema format
-      if (parsedData.version !== FILE_FORMAT_VERSION) {
-        alert(`Cannot load: File format version '${parsedData.version}' is incompatible with version '${FILE_FORMAT_VERSION}'.`);
+      // Version and structure are checked by the loader (F0-02); only link the contexts once it accepted the file
+      const accepted = onLoadDiagram(parsedData);
+      if (accepted === false) {
         if (hideCanvasLoading) {
           hideCanvasLoading();
         }
@@ -237,7 +237,6 @@ const ProjectManagerModal = ({
           description: response.data.description
         });
       }
-      onLoadDiagram(parsedData);
     } catch {
       alert("Failed to load diagram from server.");
       if (hideCanvasLoading) {

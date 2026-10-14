@@ -29,6 +29,7 @@ export const getEffectiveNodeData = (node, cases = [], activeCaseId = 'case_base
   if (!node) return {};
   const activeCase = getActiveCase(cases, activeCaseId);
   let effective = { ...(node.data || {}) };
+  delete effective.telemetry; // F2-07: results come from the case only, never from a previously solved case
 
   if (activeCase && !activeCase.is_base && activeCase.overrides?.nodes?.[node.id]) {
     effective = {
@@ -37,7 +38,7 @@ export const getEffectiveNodeData = (node, cases = [], activeCaseId = 'case_base
     };
   }
 
-  const caseTelemetry = getCaseTelemetrySet(activeCase, telemetryMode)?.nodes?.[node.id] || node.data?.telemetry;
+  const caseTelemetry = getCaseTelemetrySet(activeCase, telemetryMode)?.nodes?.[node.id];
 
   if (caseTelemetry) {
     effective.telemetry = caseTelemetry;
@@ -53,8 +54,9 @@ export const getEffectiveEdgeData = (edge, cases = [], activeCaseId = 'case_base
   if (!edge) return {};
   const activeCase = getActiveCase(cases, activeCaseId);
   let effective = { ...(edge.data || {}) };
+  delete effective.telemetry;
 
-  const caseTelemetry = getCaseTelemetrySet(activeCase, telemetryMode)?.edges?.[edge.id] || edge.data?.telemetry;
+  const caseTelemetry = getCaseTelemetrySet(activeCase, telemetryMode)?.edges?.[edge.id];
 
   if (caseTelemetry) {
     effective.telemetry = caseTelemetry;
@@ -66,8 +68,9 @@ export const getEffectiveEdgeData = (edge, cases = [], activeCaseId = 'case_base
 /**
  * Updates the calculated telemetry for a specific operating case (relieved, unmitigated and peak).
  * telemetryPeak is null when the peak is the relieved state, so a new run always replaces it.
+ * resultHash identifies the inputs the results were solved from (F2-07, see resultHash.js).
  */
-export const updateCaseTelemetry = (cases = [], targetCaseId, telemetry, kpis, telemetryUnmitigated, telemetryPeak = null) => {
+export const updateCaseTelemetry = (cases = [], targetCaseId, telemetry, kpis, telemetryUnmitigated, telemetryPeak = null, resultHash = undefined) => {
   return cases.map(c => {
     if (c.id !== targetCaseId) return c;
     return {
@@ -75,7 +78,8 @@ export const updateCaseTelemetry = (cases = [], targetCaseId, telemetry, kpis, t
       telemetry: telemetry || c.telemetry,
       telemetry_unmitigated: telemetryUnmitigated || c.telemetry_unmitigated || telemetry || c.telemetry,
       telemetry_peak: telemetry ? telemetryPeak : (c.telemetry_peak ?? null),
-      kpis: kpis || c.kpis
+      kpis: kpis || c.kpis,
+      result_hash: telemetry ? resultHash : c.result_hash
     };
   });
 };

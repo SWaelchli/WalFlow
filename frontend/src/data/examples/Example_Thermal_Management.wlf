@@ -1,6 +1,6 @@
 {
-  "version": "0.1",
-  "app_version": "0.1.6",
+  "version": "0.2",
+  "app_version": "0.2.0",
   "format": "walflow",
   "nodes": [
     {
@@ -76,7 +76,7 @@
         "rated_flow_lmin": 200.0,
         "design_inlet_temp_c": 55.0,
         "medium_temp_c": 20.0,
-        "k_factor": 5.0
+        "rated_dp_bar": 0.5
       }
     },
     {
