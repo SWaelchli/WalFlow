@@ -81,8 +81,8 @@ const PressureSafetyValveDetails = memo(function PressureSafetyValveDetails({ no
         </div>
         {actionMode === 'pop_action' && (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ color: 'var(--color-text-secondary)', fontWeight: '500' }}>Blowdown Reset:</span>
-            <span style={{ fontWeight: '700', color: 'var(--color-text-primary)', fontFamily: 'var(--font-mono)' }}>{setPressureBarg !== null ? formatPressureGauge(setPressureBarg * (1 - blowdownPct / 100)) : '—'} ({blowdownPct}%)</span>
+            <span style={{ color: 'var(--color-text-secondary)', fontWeight: '500' }}>Reseat Pressure:</span>
+            <span style={{ fontWeight: '700', color: 'var(--color-text-primary)', fontFamily: 'var(--font-mono)' }}>{setPressureBarg !== null ? formatPressureGauge(setPressureBarg * (1 - blowdownPct / 100)) : '—'} ({blowdownPct} % blowdown)</span>
           </div>
         )}
       </div>

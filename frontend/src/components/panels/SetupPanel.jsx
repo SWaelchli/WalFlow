@@ -1220,7 +1220,7 @@ export default function SetupPanel({
               </div>
               {(effectiveData.action_mode === 'pop_action' || !effectiveData.action_mode) && (
                 <div>
-                  {renderLabel('Blowdown Reset (%)', 'blowdown_pct')}
+                  {renderLabel('Blowdown (% of set)', 'blowdown_pct')}
                   <input 
                     type="number" step="0.5" min="0" max="50"
                     className="form-input" style={{ width: '100%' }} 
