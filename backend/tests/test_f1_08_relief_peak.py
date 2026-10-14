@@ -22,6 +22,12 @@ from simulation.schemas import HydraulicNetwork, GlobalSettings
 from simulation.solver import NetworkSolver, run_sequential_relief_simulation
 
 ID = 0.05
+P_ATM_BAR = 1.01325
+
+
+def barg(bara):
+    """Set pressures are entered in barg (F1-09); the reference values below are bar(a)."""
+    return bara - P_ATM_BAR
 
 
 def _network(nodes, edges):
@@ -80,7 +86,7 @@ def test_ramp_scales_and_restores_drivers():
 
 
 def test_pop_psv_opening_snapshot_is_at_set_pressure():
-    psv = PressureSafetyValve("PSV-1", set_pressure_bar=4.0, cv=15.0, action_mode="pop_action")
+    psv = PressureSafetyValve("PSV-1", set_pressure_barg=barg(4.0), cv=15.0, action_mode="pop_action")
     net = _blocked_outlet_pump(psv)
     stats, tel, tel_unmit, has_psv, tel_peak = _run(net)
     assert stats["success"] and has_psv
@@ -95,9 +101,14 @@ def test_pop_psv_opening_snapshot_is_at_set_pressure():
     lam_expected = math.sqrt((4.0 - p_tank) / (p_unmit - p_tank))
     assert abs(dev["opening_ramp_pct"] / 100.0 - lam_expected) < 0.005
 
-    # The peak is the opening snapshot: the closed PSV dead-heads the pump at its set pressure
+    # The peak is the higher of the opening snapshot (the closed PSV dead-heads the pump at its set pressure)
+    # and the relieved state. The Cv 15 pop valve is oversized for this pump: it would cycle (F1-04), so the
+    # relieved state holds the inlet between set pressure and full lift at +10 %, which is the peak here.
     peak = tel["relief"]["peak"]
-    assert peak["available"] and abs(peak["pressure_bara"] - 4.0) < 0.02
+    assert psv.status == "cycling"
+    p_set_g = 4.0 - P_ATM_BAR
+    assert 4.0 <= dev["inlet_relieved_bara"] <= 4.0 + 0.1 * p_set_g
+    assert peak["available"] and peak["pressure_bara"] == tel["kpis"]["relieved_pressure_bara"]
     assert tel["kpis"]["peak_pressure_bara"] == peak["pressure_bara"]
     if peak["source"] == "opening":
         assert tel_peak is not None and peak["device_ids"] == ["psv"]
@@ -106,12 +117,12 @@ def test_pop_psv_opening_snapshot_is_at_set_pressure():
 
 
 def test_relieved_network_and_drivers_are_untouched_by_the_ramp():
-    psv = PressureSafetyValve("PSV-1", set_pressure_bar=4.0, cv=15.0, action_mode="pop_action")
+    psv = PressureSafetyValve("PSV-1", set_pressure_barg=barg(4.0), cv=15.0, action_mode="pop_action")
     net = _blocked_outlet_pump(psv)
     stats, tel, *_ = _run(net)
     pump = net.nodes["pump"]
     assert pump.flow_rated == 0.002
-    assert psv.status in ("cracked", "overcapacity")
+    assert psv.status in ("cracked", "cycling", "overcapacity")
     # Network ports still hold the relieved solution (KPIs read them after the call)
     assert math.isclose(psv.inlets[0].pressure, tel["nodes"]["psv"]["inlets"][0]["pressure"])
 
@@ -120,7 +131,7 @@ def test_rupture_disc_on_pressure_source():
     """Pressure source → disc → drain: closed disc sees the source pressure, λ is linear."""
     nodes = {
         "src": PressureSource("Header", source_pressure=1_001_325.0),   # 10 bar(a)
-        "rd": RuptureDisc("RD-1", burst_pressure_bar=5.0, cv=10.0),
+        "rd": RuptureDisc("RD-1", burst_pressure_barg=barg(5.0), cv=10.0),
         "t2": Tank("Drain", fluid_level=0.0),
     }
     edges = [
@@ -138,7 +149,7 @@ def test_rupture_disc_on_pressure_source():
 
 
 def test_no_enabled_driver_reports_peak_unavailable():
-    psv = PressureSafetyValve("PSV-1", set_pressure_bar=4.0, cv=15.0, action_mode="pop_action")
+    psv = PressureSafetyValve("PSV-1", set_pressure_barg=barg(4.0), cv=15.0, action_mode="pop_action")
     net = _blocked_outlet_pump(psv)
     net.nodes["pump"].relief_ramp_enabled = False
     stats, tel, _, _, tel_peak = _run(net)
@@ -149,7 +160,7 @@ def test_no_enabled_driver_reports_peak_unavailable():
 
 
 def test_no_opening_peak_equals_relieved():
-    psv = PressureSafetyValve("PSV-1", set_pressure_bar=50.0, cv=15.0, action_mode="pop_action")
+    psv = PressureSafetyValve("PSV-1", set_pressure_barg=barg(50.0), cv=15.0, action_mode="pop_action")
     net = _blocked_outlet_pump(psv)
     stats, tel, _, _, tel_peak = _run(net)
     peak = tel["relief"]["peak"]
@@ -163,8 +174,8 @@ def test_staggered_devices_open_in_order():
     nodes = {
         "t1": Tank("Supply", fluid_level=2.0),
         "pump": CentrifugalPump("Pump", flow_rated=0.004, head_rated=water_head(800000.0)),
-        "psv1": PressureSafetyValve("PSV-1", set_pressure_bar=4.0, cv=0.3, action_mode="pop_action"),
-        "psv2": PressureSafetyValve("PSV-2", set_pressure_bar=6.0, cv=20.0, action_mode="pop_action"),
+        "psv1": PressureSafetyValve("PSV-1", set_pressure_barg=barg(4.0), cv=0.3, action_mode="pop_action"),
+        "psv2": PressureSafetyValve("PSV-2", set_pressure_barg=barg(6.0), cv=20.0, action_mode="pop_action"),
         "t2": Tank("Drain 1", fluid_level=0.0),
         "t3": Tank("Drain 2", fluid_level=0.0),
     }

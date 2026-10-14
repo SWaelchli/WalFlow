@@ -3,7 +3,7 @@ import { PlusIcon, PlayIcon, ExportIcon, CaseIcon, TrashIcon, SpinnerIcon } from
 import { findClosestPipeMatch, ASME_PIPE_STANDARDS } from '../../utils/standards_library';
 import { getPipeScheduleDetails } from '../../constants/asme_b16_9_data';
 
-import { updateCaseOverride } from '../../utils/case_resolver';
+import { updateCaseOverride, effectiveForcedState } from '../../utils/case_resolver';
 import { useUnits } from '../../context/UnitContext';
 import { resolvePipeSelection } from '../../utils/pipeDefaults';
 import DraftNumberInput from '../common/DraftNumberInput';
@@ -100,7 +100,8 @@ const reliefBadge = (result) => {
   if (result.forced_state === 'forced_closed') return { label: 'Forced closed', ...RELIEF_BADGES.closed };
   if (result.status === 'overcapacity') return { label: 'Overcapacity', ...RELIEF_BADGES.overcapacity };
   if (result.status === 'burst') return { label: 'Burst', ...RELIEF_BADGES.open };
-  if (result.status === 'cracked') return { label: 'Open', ...RELIEF_BADGES.open };
+  if (result.status === 'cycling') return { label: 'Cycling', ...RELIEF_BADGES.open, title: 'Pop valve oversized for this load: it would cycle between reseat and set pressure. Shown with the inlet held near set pressure.' };
+  if (result.status === 'cracked') return { label: result.forced_state === 'forced_open' ? 'Forced open' : 'Open', ...RELIEF_BADGES.open };
   return { label: 'Closed', ...RELIEF_BADGES.closed };
 };
 
@@ -110,9 +111,12 @@ function ReliefDeviceResult({ result, hasResults, formatPressure, unit }) {
   if (!result) return null;
   const badge = reliefBadge(result);
   const opens = result.inlet_at_opening_bara != null;
-  const title = opens
-    ? `Opening #${result.opening_order}: inlet reaches the set pressure at ${result.opening_ramp_pct} % driver load. Final (relieved) inlet pressure and relief flow are at 100 % load.`
-    : 'Inlet pressure in the final (relieved) state.';
+  const title = [
+    opens
+      ? `Opening #${result.opening_order}: inlet reaches the set pressure at ${result.opening_ramp_pct} % driver load. Final (relieved) inlet pressure and relief flow are at 100 % load.`
+      : 'Inlet pressure in the final (relieved) state.',
+    badge.title,
+  ].filter(Boolean).join(' ');
   return (
     <div title={title} style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '4px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
@@ -156,7 +160,7 @@ export default function DataList({
   availablePipeClasses = [],
   allowCustomPipes = true
 }) {
-  const { labels, isImperial, formatPressure, formatFlow, formatFlowM3s, formatPower, formatTemperatureK, formatVelocity } = useUnits();
+  const { labels, isImperial, formatPressure, formatPressureGauge, formatFlow, formatFlowM3s, formatPower, formatTemperatureK, formatVelocity } = useUnits();
 
   const classList = availablePipeClasses || [];
 
@@ -181,17 +185,18 @@ export default function DataList({
   const [isBatchLoading, setIsBatchLoading] = useState(false);
   const [batchError, setBatchError] = useState(null);
 
-  const fetchBatchSimulations = useCallback(async () => {
+  // F2-09: a caller that has just changed cases or nodes passes them in; the props still hold the previous state
+  const fetchBatchSimulations = useCallback(async (next = {}) => {
     setIsBatchLoading(true);
     setBatchError(null);
     try {
-      const baseNodes = rawNodes || nodes;
+      const baseNodes = next.nodes || rawNodes || nodes;
       const baseEdges = rawEdges || edges;
       const payload = {
         nodes: baseNodes.map(n => ({ id: n.id, type: n.type, position: n.position, data: n.data })),
         edges: baseEdges.map(e => ({ id: e.id, source: e.source, target: e.target, sourceHandle: e.sourceHandle, targetHandle: e.targetHandle, data: e.data })),
         global_settings: globalSettings,
-        cases: cases,
+        cases: next.cases || cases,
         active_case_id: activeCaseId
       };
       const response = await fetch('/api/simulation/batch', {
@@ -279,6 +284,8 @@ export default function DataList({
     [reliefDevices]
   );
 
+  const [pendingRerun, setPendingRerun] = useState(null);   // active-case re-run waiting for the new state (F2-09)
+
   const handleMatrixForcedStateChange = useCallback((caseId, nodeId, value) => {
     const targetCase = displayCases.find(c => (c.id || c.case_id) === caseId);
     if (!targetCase) return;
@@ -300,12 +307,21 @@ export default function DataList({
       nextCases = updateCaseOverride(cases, caseId, nodeId, 'forced_state', value, baseValue);
     }
 
-    fetchBatchSimulations(nextCases, nextNodes);
+    fetchBatchSimulations({ cases: nextCases, nodes: nextNodes });
 
+    // The active case is re-run once the new state has reached the props (and with it runSimulation's graph)
     if (caseId === activeCaseId && runSimulation) {
-      setTimeout(() => runSimulation(), 50);
+      setPendingRerun({ caseId, nodeId, value });
     }
   }, [displayCases, cases, nodes, rawNodes, onUpdateNode, onSetCaseOverride, fetchBatchSimulations, activeCaseId, runSimulation]);
+
+  useEffect(() => {
+    if (!pendingRerun || !runSimulation) return;
+    const { caseId, nodeId, value } = pendingRerun;
+    if (effectiveForcedState(cases, rawNodes || nodes, caseId, nodeId) !== value) return;
+    setPendingRerun(null);
+    runSimulation();
+  }, [pendingRerun, cases, rawNodes, nodes, runSimulation]);
 
   const handleAutoSortClick = () => {
     const newOrder = autoSortLogic(nodes, edges);
@@ -483,7 +499,7 @@ export default function DataList({
                 <CaseIcon size={14} style={{ marginRight: '6px' }} /> {showCaseManager ? 'Hide Case Manager' : 'Show Case Manager'}
               </button>
               <button
-                onClick={fetchBatchSimulations}
+                onClick={() => fetchBatchSimulations()}
                 disabled={isBatchLoading}
                 className="btn-primary btn-compact"
               >
@@ -752,9 +768,9 @@ export default function DataList({
                     const devTypeLabel = dev.type === 'rupture_disc'
                       ? 'Rupture Disc'
                       : (dev.data?.action_mode === 'modulating' ? 'PSV (Modulating)' : 'PSV (Pop Action)');
-                    const ratingLabel = dev.type === 'rupture_disc'
-                      ? `${dev.data?.burst_pressure_bar || 30.0} bar(a)`
-                      : `${dev.data?.set_pressure_bar || 20.0} bar(a)`;
+                    // Set / burst pressure in gauge (F1-09); older files without it show "missing"
+                    const ratingBarg = dev.type === 'rupture_disc' ? dev.data?.burst_pressure_barg : dev.data?.set_pressure_barg;
+                    const ratingLabel = ratingBarg ? formatPressureGauge(Number(ratingBarg)) : 'missing';
 
                     return (
                       <tr key={dev.id} style={{ borderBottom: '1px solid var(--color-border-hover)', background: idx % 2 === 0 ? '#FFFFFF' : '#F8FAFA', height: '36px' }}>
@@ -770,13 +786,12 @@ export default function DataList({
                         
                         {displayCases.map(c => {
                           const caseId = c.id || c.case_id;
-                          const caseOverride = !c.is_base && c.overrides?.nodes?.[dev.id]?.forced_state;
-                          const effectiveForcedState = caseOverride || dev.data?.forced_state || 'auto';
+                          const forcedState = effectiveForcedState(cases, rawNodes || nodes, caseId, dev.id);
 
                           return (
                             <td key={caseId} style={{ padding: '4px 12px', background: caseId === activeCaseId ? '#fff7ed' : 'inherit', borderLeft: '1px solid var(--color-border)', verticalAlign: 'middle' }}>
                               <select
-                                value={effectiveForcedState}
+                                value={forcedState}
                                 onChange={(e) => handleMatrixForcedStateChange(caseId, dev.id, e.target.value)}
                                 style={{
                                   padding: '4px 8px',
@@ -784,10 +799,10 @@ export default function DataList({
                                   fontWeight: '700',
                                   borderRadius: '6px',
                                   border: `1px solid ${
-                                    effectiveForcedState === 'forced_closed' ? '#FEE2E2' : (effectiveForcedState === 'forced_open' ? '#FEF3C7' : 'var(--color-border)')
+                                    forcedState === 'forced_closed' ? '#FEE2E2' : (forcedState === 'forced_open' ? '#FEF3C7' : 'var(--color-border)')
                                   }`,
-                                  background: effectiveForcedState === 'forced_closed' ? '#FEF2F2' : (effectiveForcedState === 'forced_open' ? '#FFFBEB' : '#FFFFFF'),
-                                  color: effectiveForcedState === 'forced_closed' ? '#EF4444' : (effectiveForcedState === 'forced_open' ? '#D97706' : 'var(--color-text-primary)'),
+                                  background: forcedState === 'forced_closed' ? '#FEF2F2' : (forcedState === 'forced_open' ? '#FFFBEB' : '#FFFFFF'),
+                                  color: forcedState === 'forced_closed' ? '#EF4444' : (forcedState === 'forced_open' ? '#D97706' : 'var(--color-text-primary)'),
                                   cursor: 'pointer',
                                   outline: 'none',
                                   width: '100%'

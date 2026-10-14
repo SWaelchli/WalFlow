@@ -5,14 +5,16 @@ import { useUnits } from '../../context/UnitContext';
  * Inspector detail card for Rupture Disc (Burst Diaphragm) equipment nodes.
  */
 export default function RuptureDiscDetails({ node, unmitigatedTelemetry }) {
-  const { labels, formatPressure, formatPressurePa, formatFlowM3s, formatDiameter } = useUnits();
+  const { labels, formatPressureGauge, formatPressurePa, formatFlowM3s, formatDiameter } = useUnits();
   if (!node) return null;
 
   const data = node.data || {};
   const telemetry = data.telemetry || {};
   const unmitTelemetry = unmitigatedTelemetry?.nodes?.[node.id] || telemetry;
 
-  const burstPressureBar = data.burst_pressure_bar || 25.0;
+  const burstPressureBarg = data.burst_pressure_barg ? Number(data.burst_pressure_barg) : null;
+  // Burst pressure is gauge (F1-09); the solver also reports it in bar(a) for comparison with port pressures
+  const burstPressureBara = telemetry?.set_pressure_bara ?? (burstPressureBarg !== null ? burstPressureBarg + 1.01325 : null);
   const boreType = data.bore_type || 'full_bore';
   const cv = data.cv || 10.0;
   const orificeDiameterM = data.orifice_diameter || 0.01;
@@ -57,7 +59,7 @@ export default function RuptureDiscDetails({ node, unmitigatedTelemetry }) {
       <div style={{ background: 'var(--color-surface-hover)', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontSize: '11.5px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ color: 'var(--color-text-secondary)', fontWeight: '500' }}>Burst Pressure:</span>
-          <span style={{ fontWeight: '700', color: 'var(--color-primary)', fontFamily: 'var(--font-mono)' }}>{formatPressure(burstPressureBar)} {labels.pressureAbs}</span>
+          <span style={{ fontWeight: '700', color: 'var(--color-primary)', fontFamily: 'var(--font-mono)' }}>{burstPressureBarg !== null ? formatPressureGauge(burstPressureBarg) : 'missing'}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ color: 'var(--color-text-secondary)', fontWeight: '500' }}>Bore Configuration:</span>
@@ -75,7 +77,7 @@ export default function RuptureDiscDetails({ node, unmitigatedTelemetry }) {
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ color: 'var(--color-text-secondary)', fontWeight: '500' }}>Mitigated Line Pressure:</span>
-          <span style={{ fontWeight: '700', color: pInBar >= burstPressureBar ? 'var(--color-warning)' : 'var(--color-success)', fontFamily: 'var(--font-mono)' }}>
+          <span style={{ fontWeight: '700', color: burstPressureBara !== null && pInBar >= burstPressureBara ? 'var(--color-warning)' : 'var(--color-success)', fontFamily: 'var(--font-mono)' }}>
             {formatPressurePa(pIn)} {labels.pressureAbs}
           </span>
         </div>
@@ -97,7 +99,7 @@ export default function RuptureDiscDetails({ node, unmitigatedTelemetry }) {
         {/* Orifice / Seat Capacity Utilization Bar */}
         <div style={{ marginTop: '4px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px', marginBottom: '3px', alignItems: 'center' }}>
-            <span style={{ color: 'var(--color-text-secondary)', fontWeight: '500' }}>Discharge Capacity Utilization:</span>
+            <span style={{ color: 'var(--color-text-secondary)', fontWeight: '500' }}>Capacity Used (of rated flow at 110 % burst):</span>
             <span style={{ fontWeight: '700', color: capacityPct > 100 ? 'var(--color-danger)' : (capacityPct > 80 ? 'var(--color-warning)' : 'var(--color-success)'), fontFamily: 'var(--font-mono)' }}>
               {capacityPct.toFixed(1)}%
             </span>

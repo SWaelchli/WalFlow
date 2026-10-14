@@ -69,6 +69,7 @@ All notable changes to the WälFlow project will be documented in this file.
 - Peak system pressure is now a solved steady state: pumps and sources are ramped until each relief device reaches its set pressure, replacing the old interpolation. The Peak view shows that state, the Relief Analysis Matrix shows per-device status, opening order, load and inlet pressures, and pumps/sources get a "Ramp during relief analysis" option.
 - Fixed "Simulation Engine Error" on diagrams with a PD pump (e.g. Multi-PSV Protection example): pump warning flags broke the result payload.
 - PD pumps and flow sources get a "Max. Discharge Pressure" input (absolute, default 50 bar(a)), replacing the hidden 200 bar cap; above it the delivered flow drops (PD pump: internal relief to suction, flagged in the pump details).
+- Relief devices: set and burst pressure are entered in gauge (barg / psig) and open when the inlet gauge pressure reaches them (older files need the value re-entered; examples are converted). "Forced Open" now works, pop valves respect blowdown and report "cycling" when oversized, capacity % refers to the rated flow at 10 % overpressure, and the relief matrix re-solves with the newly chosen forced state.
 
 
 ---

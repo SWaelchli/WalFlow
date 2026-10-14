@@ -216,6 +216,7 @@ All 21 hydraulic types are registered everywhere. `HelpInfoModal` does not descr
 - Location: [DataList.jsx:255-258](../../frontend/src/components/panels/DataList.jsx#L255-L258) calls `fetchBatchSimulations(nextCases, nextNodes)`, but the function takes no arguments and uses the stale closure state ([:142-175](../../frontend/src/components/panels/DataList.jsx#L142-L175)). The follow-up `runSimulation` after 50 ms is also the previous render's function and sends the old graph.
 - Effect: the matrix shows results for the setting before the change. (With F1-03, `forced_open` has no effect at all anyway.)
 - Suggested fix: let the batch call take the new payload explicitly, or trigger it from an effect after state settles.
+- **Status: fixed 2026-10-14 (B1c).** The batch call takes the new cases/nodes; the active case re-runs once the new state is in the props.
 
 #### F2-10  No error boundary and no import validation: a bad file or any render error blanks the app
 - **Severity: S2**

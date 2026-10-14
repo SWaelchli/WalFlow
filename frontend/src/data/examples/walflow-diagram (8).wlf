@@ -20792,7 +20792,6 @@
       "data": {
         "label": "RV-2358B",
         "rotation": 180,
-        "set_pressure_bar": 10,
         "cv": 1.074,
         "action_mode": "modulating",
         "telemetry": {
@@ -20824,7 +20823,8 @@
           "set_pressure_bar": 10,
           "forced_state": "forced_closed",
           "cv": 1.074
-        }
+        },
+        "set_pressure_barg": 8.98675
       }
     },
     {
@@ -20845,7 +20845,6 @@
       "data": {
         "label": "RV-2358A",
         "rotation": 180,
-        "set_pressure_bar": 10,
         "cv": 1.074,
         "action_mode": "modulating",
         "telemetry": {
@@ -20877,7 +20876,8 @@
           "set_pressure_bar": 10,
           "forced_state": "forced_closed",
           "cv": 1.074
-        }
+        },
+        "set_pressure_barg": 8.98675
       }
     },
     {

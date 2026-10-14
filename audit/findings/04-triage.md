@@ -312,9 +312,9 @@ Anchors at `HEAD` = `5b3fe27`. Decisions (user, 2026-10-14): D1 bracketed secant
 - Results of all shipped diagrams unchanged by the review fixes; total solve time 6.7 s (8.9 s before the review, 7.8 s before B1b). New regression tests: parallel PRVs, report consistency at iteration limits 1–8, wrong-acting RCV (217 tests pass).
 - Known limits, unchanged: identical controllers in parallel at the same setpoint have no unique split (least-squares picks one); controller sensitivity is measured with properties frozen, so strongly temperature-coupled loops converge linearly over a few extra iterations.
 
-### B1c: relief devices (in progress)
+### B1c: relief devices (done 2026-10-14; F1-08 in 7edb53d, the rest not yet committed)
 
-Done so far: F1-08 (2026-10-14, not yet committed). Open: F1-03, F1-04, F1-09, F1-38, F2-09.
+All six findings done: F1-08 first, then F1-03, F1-04, F1-09, F1-38, F2-09 (below).
 
 **F1-08 result (2026-10-14).** Decision (user, 2026-10-14): replace the KPI, not remove it. "Peak system pressure" means the system pressures at the moment a PSV or rupture disc opens; after opening they may fall again.
 - *Removed:* the interpolation `P_min + S·(P_max − P_min)` in `solver.py › run_sequential_relief_simulation`, and the matching frontend scaling of the unmitigated telemetry (`case_resolver.js › scaleTelemetryItem`, `getActiveCaseScalingInfo`).
@@ -345,3 +345,27 @@ Done so far: F1-08 (2026-10-14, not yet committed). Open: F1-03, F1-04, F1-09, F
   - F1-03: the matrix option "Forced Open" still maps to auto in the backend.
   - F1-09: set pressures stay in bar(a) for now, and the opening criterion uses the absolute inlet pressure, consistent with the breach check. The barg switch will move the opening points.
   - The PSV status flips inside Newton noted under B1b.
+
+**B1c remaining prompt (confirmed 2026-10-14).** Anchors at `HEAD` = `0bbf096`. Decisions (user, 2026-10-14): D1 rename the keys to `set_pressure_barg` / `burst_pressure_barg` (older 0.2 files: "Set pressure (barg) missing", no run); D2 a pop valve that would cycle is solved like a modulating valve at about set pressure with status `chatter`; D3 opening reference is inlet gauge pressure (roadmap note for conventional valves under backpressure); D4 rated capacity from Cv only (roadmap note for a certified-capacity input).
+
+1. **F1-03, Forced Open.** `forced_open` accepted (PSV full lift, disc burst regardless of pressure). Pass 1 (unmitigated) holds every device closed; afterwards non-auto devices return to their user state. The F1-08 ramp keeps `forced_open` devices open.
+2. **F1-09, barg.** Set and burst pressure in barg/psig. Opening criterion P_in − P_atm ≥ P_set in status, closed-device complementarity, sequential breach check and F1-08 ramp margin. UI, node cards, detail panels and matrix show barg/psig; telemetry also carries the set pressure in bar(a). Shipped examples converted as value − 1.01325.
+3. **F1-04, pop action.** No latch. Reseat = set·(1 − blowdown) (gauge). Closed below set; at set, full lift; full-lift inlet ≥ reseat → open; below reseat → `chatter` (D2).
+4. **F1-38, capacity.** Rated flow at full lift with ΔP = 1.1·P_set(g) + P_atm − P_out (reduced-bore disc: orifice flow at that ΔP). Overcapacity = flow above rated (inlet above 110 % of set).
+5. **Status inside Newton.** Device states are decided between solves and held fixed during a Newton solve.
+6. **F2-09.** `fetchBatchSimulations` takes the next cases/nodes; the active-case re-run happens after the state has settled.
+
+**Out of scope:** warning UI (B4, F3-05), example result re-save (B2), gas/two-phase relief sizing.
+
+**B1c remaining result (2026-10-14).**
+- *Model.* New shared base `equipment/relief_device.py › ReliefDevice` for PSV and rupture disc. Inside a Newton solve a device is a flow equation Q = lift·√(Δp/c(Q)) with c(Q) = Δp_open(Q)/Q² (Cv / orifice loss as before), no reverse flow, exactly zero flow when closed (the old closed seat leaked through 1e10 Pa·s/m³). Lift is 0, 1 or the modulating lift (linear from set to +10 %). The solver treats every relief row as a complementarity row (numerical Jacobian, B1b).
+- *State between solves (item 5).* `solve()` resets every relief device at the start of the run and calls `update_relief_state(p_in)` after each hydraulic solve; the loop does not stop while a state changed. Transitions are monotone (closed → open → cycling; intact → burst), so they end. When a state changes, branches at exactly zero flow restart from the initial flow guess (a dead-headed pump has zero curve slope at Q = 0, which made the first Newton step singular).
+- *F1-09.* `set_pressure_barg` / `burst_pressure_barg` in UI, parser, model, telemetry (`set_pressure_barg`, `set_pressure_bara`) and relief matrix; the F1-08 ramp and the sequential breach check use the same absolute set pressure (barg + global atmospheric pressure). A missing key is a `ModelInputError` naming the device; the inspector shows "Set Pressure (barg) missing … had X bar(a)". New devices drop with 20 barg / 25 barg. Examples: Multi_PSV 18.98675 / 23.98675 / 28.98675 barg, walflow-diagram (8) 8.98675 barg.
+- *F1-04.* Pop action: closed until set, then full lift; if the full-lift inlet falls below reseat, status `cycling` with the modulating law (inlet between set and +10 %). Inspector shows the reseat pressure; detail panel, node card and matrix show "Cycling" as text with an explanation. Renamed from "chatter" to "cycling" after review (user, 2026-10-14): the steady-state check detects open/close cycling of an oversized valve (API 520 terminology); rapid chatter from inlet loss or backpressure is dynamic and not predicted.
+- *F1-38.* Rated flow = full-lift flow with ΔP = 1.1·P_set(g) + P_atm − P_out at the current loss coefficient; `capacity_utilization_pct`, `rated_flow_lmin`, `lift_pct` in telemetry; overcapacity = flow above rated.
+- *F1-03.* `forced_open` accepted; pass 1 (unmitigated) still holds all devices closed, then every device returns to the user's state.
+- *F2-09.* `fetchBatchSimulations({ cases, nodes })`; the active-case re-run waits in an effect until `effectiveForcedState` (now in `case_resolver.js`) in the props equals the chosen value.
+- *Shipped diagrams (18 cases, all solve).* Only Multi_PSV changes: PSV-101 (pop, Cv 12, PD pump 91.5 L/min) cycles with inlet 20.23 bar(a) (was "cracked" at 1.71 bar(a), 115 L/min, below reseat); relieved / peak KPI 1.77 / 20.00 → 20.27 / 20.27 bar(a); capacity 66.5 → 11.6 %. walflow-diagram (8) unchanged (no device opens). Total solve time 10.8 → 10.3 s.
+- *Tests (lasting references).* `test_b1c_relief.py` (17): opening at 10 barg = 11.013 bar(a) and with 0.9 bar(a) ambient; capacity 100 % at 10 % overpressure (audit C4) against the US Cv definition Q[gpm] = Cv·√(ΔP[psi]/SG); overcapacity ratio √(30/22); reduced-bore disc ratio; pop full lift above reseat and cycling below; first run = second run; forced open / closed; state constant within each hydraulic solve; old bar(a) key rejected. `test_physics_rupture_disc.py` and `test_physics_psv.py` now assert numbers; F1-08 tests use barg inputs with the same bar(a) references (the oversized pop valve now cyclings, so its peak is the relieved state). Frontend: `ReliefInspector.test.jsx` (4), matrix barg/cycling/missing and F2-09 in `DataList.test.jsx`. Totals: backend 259 passed, 1 xfailed; Vitest 40; lint and build clean.
+- *Not checked in the browser:* loading the example would have replaced the canvas open in the user's session.
+- *Roadmap (D3, D4):* conventional vs balanced valves under backpressure; certified-capacity input.

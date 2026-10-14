@@ -92,11 +92,11 @@
       "data": {
         "label": "PSV-101 (Primary Pop)",
         "rotation": 0,
-        "set_pressure_bar": 20.0,
         "cv": 12.0,
         "action_mode": "pop_action",
         "blowdown_pct": 7.0,
-        "forced_state": "auto"
+        "forced_state": "auto",
+        "set_pressure_barg": 18.98675
       }
     },
     {
@@ -109,10 +109,10 @@
       "data": {
         "label": "PSV-102 (Secondary Modulating)",
         "rotation": 0,
-        "set_pressure_bar": 25.0,
         "cv": 15.0,
         "action_mode": "modulating",
-        "forced_state": "auto"
+        "forced_state": "auto",
+        "set_pressure_barg": 23.98675
       }
     },
     {
@@ -125,10 +125,10 @@
       "data": {
         "label": "RD-101 (Burst Diaphragm)",
         "rotation": 0,
-        "burst_pressure_bar": 30.0,
         "bore_type": "reduced_bore",
         "orifice_diameter": 0.01,
-        "forced_state": "auto"
+        "forced_state": "auto",
+        "burst_pressure_barg": 28.98675
       }
     },
     {

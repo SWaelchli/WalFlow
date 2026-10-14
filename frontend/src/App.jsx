@@ -1121,6 +1121,8 @@ function WalFlowContent() {
           ...(type === 'remote_control_valve' && { max_cv: 0.05, set_pressure: 500000.0 }),
           ...(type === 'three_way_tcv' && { max_cv: 0.1, set_temperature_c: 40.0, hot_port_idx: 0 }),
           ...(type === 'check_valve' && { cv: 10.0, cracking_pressure_bar: 0.05 }),
+          ...((type === 'pressure_safety_valve' || type === 'psv') && { set_pressure_barg: 20.0, cv: 10.0, action_mode: 'pop_action', blowdown_pct: 7.0, forced_state: 'auto' }),
+          ...(type === 'rupture_disc' && { burst_pressure_barg: 25.0, bore_type: 'full_bore', cv: 10.0, forced_state: 'auto' }),
           ...(type === 'check_valve_orifice' && { cv: 10.0, cracking_pressure_bar: 0.05, pipe_diameter: 0.05248, orifice_diameter: 0.01, standardDn: 50, standardSch: '40' }),
           ...(type === 'text_bubble' && { label: 'Note', title: 'NOTE', text: 'Double-click to edit note...', fontSize: 'md' }),
         },

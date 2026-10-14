@@ -29,6 +29,18 @@ class ModelInputError(ValueError):
     """Invalid or missing user input in the diagram. The message names the component and is
     safe to show to the user unchanged."""
 
+
+def _relief_pressure_barg(d: dict, key: str, name: str, what: str) -> float:
+    """Relief set / burst pressure in barg (F1-09). Files from before the switch store bar(a) under
+    another key and are not converted: the device must be re-entered from its datasheet."""
+    value = d.get(key)
+    if value is None or value == '':
+        raise ModelInputError(f"'{name}': {what} (barg) missing. Enter the {what} from the datasheet as gauge pressure.")
+    value = float(value)
+    if value <= 0.0:
+        raise ModelInputError(f"'{name}': {what} must be above 0 barg.")
+    return value
+
 class GraphParser:
     @staticmethod
     def _max_discharge_pa(d: dict, name: str) -> float:
@@ -369,7 +381,7 @@ class GraphParser:
         elif t == 'pressure_safety_valve' or t == 'psv':
             node = PressureSafetyValve(
                 name=name,
-                set_pressure_bar=float(d.get('set_pressure_bar', 20.0)),
+                set_pressure_barg=_relief_pressure_barg(d, 'set_pressure_barg', name, "set pressure"),
                 cv=float(d.get('cv', 10.0)),
                 action_mode=str(d.get('action_mode', 'pop_action')),
                 blowdown_pct=float(d.get('blowdown_pct', 7.0)),
@@ -378,7 +390,7 @@ class GraphParser:
         elif t == 'rupture_disc':
             node = RuptureDisc(
                 name=name,
-                burst_pressure_bar=float(d.get('burst_pressure_bar', 25.0)),
+                burst_pressure_barg=_relief_pressure_barg(d, 'burst_pressure_barg', name, "burst pressure"),
                 bore_type=str(d.get('bore_type', 'full_bore')),
                 cv=float(d.get('cv', 10.0)),
                 pipe_diameter=float(d.get('pipe_diameter', 0.05248)),

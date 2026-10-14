@@ -59,12 +59,14 @@ Scratch scripts (not in repo): `solve_examples.py`, `jac_check.py` in the sessio
 - Location: [pressure_safety_valve.py:24](../../backend/simulation/equipment/pressure_safety_valve.py#L24), [rupture_disc.py:27](../../backend/simulation/equipment/rupture_disc.py#L27) (map anything except `forced_closed` to `auto`); [solver.py:1118-1131](../../backend/simulation/solver.py#L1118-L1131) (pass 1 forces all devices closed, only `auto` ones are reset afterwards); UI [SetupPanel.jsx:1104](../../frontend/src/components/panels/SetupPanel.jsx#L1104), [1170](../../frontend/src/components/panels/SetupPanel.jsx#L1170), [DataList.jsx:744](../../frontend/src/components/panels/DataList.jsx#L744)
 - Evidence: `Example_Multi_PSV_Protection`, rupture disc set to `forced_open` → result `forced_state=forced_closed, status=intact, Q=0`. Identical results to `auto`.
 - Even if `forced_open` were accepted, devices with a non-`auto` user state are never restored after pass 1, so they stay `forced_closed`.
+- **Status: fixed 2026-10-14 (B1c).** `forced_open` = PSV at full lift / disc burst; user states return after the unmitigated pass.
 
 #### F1-04  Pop-action PSV latches open at any pressure; blowdown is ignored; relieved-pressure KPI is non-physical
 - **Severity: S1**
 - Location: [pressure_safety_valve.py:60-67](../../backend/simulation/equipment/pressure_safety_valve.py#L60-L67) (`_was_open` latch), `blowdown_pct` parsed but never used
 - Evidence: `Example_Multi_PSV_Protection`: primary PSV set 20 bar(a) reports `cracked`, 115.5 L/min, with **inlet pressure 1.80 bar(a)**. KPI `relieved_pressure_bara = 1.92`. A real pop-action valve reseats at set·(1−blowdown) ≈ 18.6 bar(a). In steady state the honest answer is "valve cycles / chatters (oversized relief)" or the valve modulating near set pressure, not wide open at 1.8 bar.
 - Suggested fix: steady-state PSV model = closed below set, open with a lift curve between set and set+overpressure (like `modulating`), and flag `chatter_risk` when the open-valve equilibrium lies below the reseat pressure. Detailed review in 1.29.
+- **Status: fixed 2026-10-14 (B1c).** No latch; reseat = set·(1 − blowdown). Full lift while the inlet stays above reseat, otherwise status `cycling` (named "chatter" in the first draft; renamed because a steady-state solver detects cycling of an oversized valve, not rapid chatter) solved like a modulating valve (Multi_PSV: inlet 20.23 bar(a), was 1.71).
 
 #### F1-05  TCV path pressure drop in the solver ignores viscosity; telemetry uses it (inconsistent, flow split wrong)
 - **Severity: S2**
@@ -113,6 +115,7 @@ Scratch scripts (not in repo): `solve_examples.py`, `jac_check.py` in the sessio
 - **Severity: S2** (to quantify in 1.29)
 - Status/latching and the sequential-relief breach check use **absolute** inlet pressure ≥ set ([pressure_safety_valve.py:62](../../backend/simulation/equipment/pressure_safety_valve.py#L62), [solver.py:1149](../../backend/simulation/solver.py#L1149)). The closed-valve complementarity residual uses **differential** `P_in − P_out` vs set ([pressure_safety_valve.py:137-145](../../backend/simulation/equipment/pressure_safety_valve.py#L137-L145)); the Jacobian for rupture discs does the same with burst pressure ([solver.py:507](../../backend/simulation/solver.py#L507)). With an atmospheric outlet, the two disagree by ~1 bar.
 - Industry practice (API 520 / ISO 4126) states set pressure in **gauge**. The UI asks for bar(a) ([SetupPanel.jsx:1053](../../frontend/src/components/panels/SetupPanel.jsx#L1053), [1113](../../frontend/src/components/panels/SetupPanel.jsx#L1113)), so users entering datasheet values get valves that open ~1 bar early.
+- **Status: fixed 2026-10-14 (B1c).** Set/burst pressure in barg (`set_pressure_barg`, `burst_pressure_barg`); one criterion everywhere: P_in − P_atm ≥ P_set. Older keys are not converted (input error); examples converted.
 
 #### F1-10  Islands without a pressure reference are silently dropped and reported as success
 - **Severity: S2** (mainly UX)
@@ -534,6 +537,7 @@ Density and α (0.0007 /K) are typical for mineral oils ✔. cp is +4 to +5 % vs
 - Suggested fix:
   - Rated capacity = flow at full lift with ΔP = 1.1·P_set − P_back (or a user-entered certified capacity, API 520 liquid sizing).
   - "Overcapacity" should mean that the required relief flow exceeds that value. In practice that shows up as the inlet pressure exceeding the allowable accumulation.
+- **Status: fixed 2026-10-14 (B1c).** Rated flow at full lift, inlet 110 % of set (gauge), actual outlet; C4 now 100.0 %.
 
 #### F1-39  ISO 5167 orifice: β silently clamped to [0.1, 0.75]; no validity warning
 - **Severity: S3**

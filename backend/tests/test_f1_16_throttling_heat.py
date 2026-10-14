@@ -23,8 +23,8 @@ COMPONENTS = {
     "remote_control_valve": lambda: RemoteControlValve("R", max_cv=1.0, set_pressure=50e5),
     "check_valve": lambda: CheckValve("R", cv=1.0, cracking_pressure_bar=0.5),
     "check_valve_orifice": lambda: CheckValveOrifice("R", cv=1.0, cracking_pressure_bar=0.5, pipe_diameter=0.05, orifice_diameter=0.01),
-    "psv": lambda: PressureSafetyValve("R", set_pressure_bar=2.0, cv=1.0),
-    "rupture_disc": lambda: RuptureDisc("R", burst_pressure_bar=1.5, cv=1.0),
+    "psv": lambda: PressureSafetyValve("R", set_pressure_barg=2.0, cv=1.0),
+    "rupture_disc": lambda: RuptureDisc("R", burst_pressure_barg=1.5, cv=1.0),
 }
 
 

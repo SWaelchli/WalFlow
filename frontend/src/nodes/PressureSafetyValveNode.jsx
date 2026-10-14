@@ -10,7 +10,7 @@ import { useUnits } from '../context/UnitContext';
  * Represents an ISA standard 90-degree angle relief valve with live relief badging.
  */
 export default function PressureSafetyValveNode({ id, data, selected }) {
-  const { formatFlowM3s, formatPressure, labels } = useUnits();
+  const { formatFlowM3s, formatPressureGauge, labels } = useUnits();
   const telemetry = data.telemetry;
   const rotation = data.rotation || 0;
   const sensing = useMemo(() => data.sensing || {}, [data.sensing]);
@@ -18,9 +18,8 @@ export default function PressureSafetyValveNode({ id, data, selected }) {
   const flow = telemetry?.outlets?.[0]?.flow_rate || 0;
   const flowFormatted = formatFlowM3s(Math.abs(flow));
   
-  const status = telemetry?.status || 'closed'; // 'closed', 'cracked', 'overcapacity'
-  const setPressureBar = data.set_pressure_bar || 20.0;
-  const setPressureFormatted = formatPressure(setPressureBar);
+  const status = telemetry?.status || 'closed'; // 'closed', 'cracked', 'cycling', 'overcapacity'
+  const setPressureFormatted = data.set_pressure_barg ? formatPressureGauge(Number(data.set_pressure_barg)) : 'missing';
 
   let statusText = 'CLOSED';
   let statusColor = 'var(--color-text-secondary)'; // Muted Slate
@@ -29,6 +28,11 @@ export default function PressureSafetyValveNode({ id, data, selected }) {
   if (status === 'cracked') {
     statusText = 'CRACKED';
     statusColor = 'var(--color-warning)'; // Amber / Orange
+    badgeBg = 'rgba(245, 158, 11, 0.12)';
+  } else if (status === 'cycling') {
+    // Pop valve oversized for the load: it would cycle between set and reseat pressure (F1-04)
+    statusText = 'CYCLING';
+    statusColor = 'var(--color-warning)';
     badgeBg = 'rgba(245, 158, 11, 0.12)';
   } else if (status === 'overcapacity') {
     statusText = 'OVERCAPACITY';
@@ -63,7 +67,7 @@ export default function PressureSafetyValveNode({ id, data, selected }) {
             {statusText}
           </div>
           <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)', marginTop: '1px' }}>
-            Set: {setPressureFormatted} {labels.pressureAbs} | {flowFormatted} {labels.flow}
+            Set: {setPressureFormatted} | {flowFormatted} {labels.flow}
           </div>
         </>
       }

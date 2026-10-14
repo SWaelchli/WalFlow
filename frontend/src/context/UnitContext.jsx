@@ -39,6 +39,7 @@ const UnitContext = createContext({
   getLabel: () => '',
   formatPressure: () => '',
   formatPressurePa: () => '',
+  formatPressureGauge: () => '',
   formatFlow: () => '',
   formatFlowM3s: () => '',
   formatTemperature: () => '',
@@ -95,6 +96,12 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
 
   const formatPressure = useCallback((valBar, decimals = 2) => {
     return formatPressureFromBar(valBar, unitSystem, decimals);
+  }, [unitSystem]);
+
+  // Gauge pressure (relief set / burst pressure, F1-09) with its unit: "18.99 barg" / "275.4 psig"
+  const formatPressureGauge = useCallback((valBarg, decimals = 2) => {
+    if (valBarg === null || valBarg === undefined || isNaN(valBarg)) return '—';
+    return `${formatPressureFromBar(valBarg, unitSystem, unitSystem === UNIT_SYSTEMS.IMPERIAL ? 1 : decimals)} ${unitSystem === UNIT_SYSTEMS.IMPERIAL ? 'psig' : 'barg'}`;
   }, [unitSystem]);
 
   const formatPressurePa = useCallback((valPa, decimals = 2) => {
@@ -155,6 +162,8 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
       case 'pressure_rated':
       case 'set_pressure_bar':
       case 'burst_pressure_bar':
+      case 'set_pressure_barg':
+      case 'burst_pressure_barg':
       case 'backpressure_bar':
       case 'dp_clean_bar':
       case 'dp_terminal_bar':
@@ -254,6 +263,8 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
       case 'pressure_rated':
       case 'set_pressure_bar':
       case 'burst_pressure_bar':
+      case 'set_pressure_barg':
+      case 'burst_pressure_barg':
       case 'backpressure_bar':
       case 'dp_clean_bar':
       case 'dp_terminal_bar':
@@ -323,6 +334,7 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
     getLabel,
     formatPressure,
     formatPressurePa,
+    formatPressureGauge,
     formatFlow,
     formatFlowM3s,
     formatTemperature,
@@ -340,6 +352,7 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
     getLabel,
     formatPressure,
     formatPressurePa,
+    formatPressureGauge,
     formatFlow,
     formatFlowM3s,
     formatTemperature,

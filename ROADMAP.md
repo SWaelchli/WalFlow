@@ -32,6 +32,15 @@ This document outlines planned features, overlays, and enhancements for the WalF
 - [ ] 🔬 **Relief Device Capacity Sizing Investigation (PSVs & Rupture Discs)**
   * **Concept:** Detailed technical investigation into industry standard methodologies (e.g. API 520/526, ISO 4126, ASME Section VIII) for determining rated relief capacity ($Q_{\text{rated}}$), allowable overpressure accumulation (e.g., 10% for non-fire, 21% for fire case), and liquid vs. gas $C_v$ / coefficient of discharge ($K_d$) orifice sizing models across relief valves and burst diaphragms.
   * **Goal:** Determine standard formulas and reference pressure drops ($\Delta P_{\text{ref}}$) for assessing capacity utilization percentage ($Q_{\text{actual}} / Q_{\text{rated}}$) and overcapacity alerts for both incompressible liquids and compressible gases.
+  * **Status (B1c, 2026-10-14):** liquid service done: rated flow = flow at full lift with the inlet at 110 % of set (gauge) against the actual outlet pressure, from the device's Cv / orifice. Gases, two-phase and fire-case accumulation remain open.
+
+- [ ] **🏷️ Certified Relief Capacity Input (PSVs & Rupture Discs)**
+  * **Concept:** Optional "certified capacity (L/min)" field from the valve datasheet / nameplate (API 526 orifice letter, ASME-stamped capacity). When set, capacity utilisation and overcapacity use it instead of the Cv-derived rated flow.
+  * **Engineering Value:** Matches the relief study to the purchased valve; the Cv-derived value (B1c) stays the default when no certified figure is known.
+
+- [ ] **⚖️ Conventional vs Balanced Relief Valves (Backpressure Effect)**
+  * **Concept:** Device-type option for PSVs. Today (B1c) a valve opens when its inlet gauge pressure reaches the set pressure, which is how balanced-bellows and pilot valves behave. A conventional spring valve opens at set + superimposed backpressure (differential across the seat), and built-up backpressure above ~10 % of set reduces its capacity (API 520 Kb factor).
+  * **Engineering Value:** Correct opening points and capacities for relief valves discharging into a pressurised header or a long outlet line.
 
 - [ ] **🎛️ Advanced Control Valve (Custom $C_v$ Trim Curves)**
   * **Concept:** Throttling flow control valve supporting custom inherent flow characteristics (Equal Percentage, Quick Opening, and Linear trims).

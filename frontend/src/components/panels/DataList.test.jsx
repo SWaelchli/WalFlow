@@ -45,7 +45,7 @@ describe('F3-01: results table headers line up with the cells', () => {
 });
 
 describe('F1-08: relief analysis matrix', () => {
-  const psvNodes = [{ id: 'psv', type: 'pressure_safety_valve', position: { x: 0, y: 0 }, data: { label: 'PSV-1', set_pressure_bar: 4.0 } }];
+  const psvNodes = [{ id: 'psv', type: 'pressure_safety_valve', position: { x: 0, y: 0 }, data: { label: 'PSV-1', set_pressure_barg: 2.98675 } }];
   const reliefCase = (relief) => ({
     id: 'case_base', name: 'Case 1', is_base: true, overrides: { nodes: {} },
     telemetry: { nodes: {}, edges: {}, relief }, kpis: { relieved_pressure_bara: 2.55 },
@@ -78,6 +78,60 @@ describe('F1-08: relief analysis matrix', () => {
   it('asks for a re-run on results from before the relief analysis', () => {
     renderRelief([reliefCase(undefined)]);
     expect(screen.getByText('Re-run the simulation')).toBeTruthy();
+  });
+
+  it('F1-09 / F1-04: shows the set pressure in barg and a cycling result as text', () => {
+    renderRelief([reliefCase({
+      peak: { available: true, pressure_bara: 4.2, source: 'relieved', device_ids: [] },
+      devices: { psv: { status: 'cycling', forced_state: 'auto', opening_order: 1, opening_ramp_pct: 62.3, inlet_at_opening_bara: 4.0, inlet_relieved_bara: 4.21 } },
+    })]);
+    expect(screen.getByText('2.99 barg')).toBeTruthy();
+    const badge = screen.getByText('Cycling #1');
+    expect(badge.closest('div[title]').title).toMatch(/would cycle between reseat and set pressure/);
+  });
+
+  it('shows "missing" for a device from an older file without a gauge set pressure', () => {
+    const oldNodes = [{ id: 'psv', type: 'pressure_safety_valve', position: { x: 0, y: 0 }, data: { label: 'PSV-1', set_pressure_bar: 20.0 } }];
+    render(
+      <UnitProvider initialUnitSystem={UNIT_SYSTEMS.METRIC}>
+        <DataList nodes={oldNodes} edges={[]} rawNodes={oldNodes} rawEdges={[]} cases={[reliefCase(undefined)]} onSelectNode={vi.fn()} onSelectEdge={vi.fn()} />
+      </UnitProvider>
+    );
+    fireEvent.click(screen.getByText('Relief Analysis Matrix'));
+    expect(screen.getByText('missing')).toBeTruthy();
+  });
+});
+
+describe('F2-09: changing a forced state in the relief matrix', () => {
+  const baseCase = { id: 'case_base', name: 'Case 1', is_base: true, overrides: { nodes: {} } };
+  const psvAt = (forced_state) => [{ id: 'psv', type: 'pressure_safety_valve', position: { x: 0, y: 0 }, data: { label: 'PSV-1', set_pressure_barg: 5.0, forced_state } }];
+  const tree = (nodesList, props) => (
+    <UnitProvider initialUnitSystem={UNIT_SYSTEMS.METRIC}>
+      <DataList nodes={nodesList} edges={[]} rawNodes={nodesList} rawEdges={[]} cases={[baseCase]} activeCaseId="case_base" onSelectNode={vi.fn()} onSelectEdge={vi.fn()} {...props} />
+    </UnitProvider>
+  );
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('solves the batch with the new state and re-runs the active case once the state has arrived', () => {
+    const fetchMock = vi.fn(() => Promise.resolve({ ok: true, json: () => Promise.resolve({ results: [] }) }));
+    vi.stubGlobal('fetch', fetchMock);
+    const runSimulation = vi.fn();
+    const onUpdateNode = vi.fn();
+    const props = { runSimulation, onUpdateNode };
+    const { rerender } = render(tree(psvAt('auto'), props));
+    fireEvent.click(screen.getByText('Relief Analysis Matrix'));
+
+    fireEvent.change(screen.getByDisplayValue('Auto (Normal Relief)'), { target: { value: 'forced_open' } });
+
+    expect(onUpdateNode).toHaveBeenCalledWith('psv', { forced_state: 'forced_open' }, 'case_base');
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(body.nodes[0].data.forced_state).toBe('forced_open');
+    // runSimulation still holds the old graph until the parent re-renders with the new state
+    expect(runSimulation).not.toHaveBeenCalled();
+
+    rerender(tree(psvAt('forced_open'), props));
+    expect(runSimulation).toHaveBeenCalledTimes(1);
   });
 });
 

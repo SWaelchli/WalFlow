@@ -110,8 +110,14 @@ def extract_telemetry(network) -> Dict[str, Any]:
             node_tel["capacity_utilization_pct"] = node.capacity_utilization_pct
         if hasattr(node, 'action_mode'):
             node_tel["action_mode"] = node.action_mode
-        if hasattr(node, 'set_pressure_bar'):
-            node_tel["set_pressure_bar"] = node.set_pressure_bar
+        if hasattr(node, 'set_pressure_barg'):
+            # Relief devices (F1-09, F1-04, F1-38): set pressure in barg, plus bar(a) to compare with port pressures
+            node_tel["set_pressure_barg"] = node.set_pressure_barg
+            node_tel["set_pressure_bara"] = node.set_pressure_bara
+            node_tel["rated_flow_lmin"] = node.rated_flow_lmin
+            node_tel["lift_pct"] = node.lift_pct
+            if hasattr(node, 'reseat_pressure_barg'):
+                node_tel["reseat_pressure_barg"] = node.reseat_pressure_barg
         if hasattr(node, 'forced_state'):
             node_tel["forced_state"] = node.forced_state
         if hasattr(node, 'cv'):

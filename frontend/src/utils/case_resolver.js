@@ -221,3 +221,11 @@ export const duplicateCase = (sourceCase, newName) => {
     overrides: JSON.parse(JSON.stringify(sourceCase.overrides || { nodes: {}, global_settings: {} }))
   };
 };
+
+// Forced state of a relief device in a case: case override over the base value (default auto)
+export const effectiveForcedState = (casesList, nodesList, caseId, nodeId) => {
+  const c = (casesList || []).find(cs => cs.id === caseId);
+  const override = c && !c.is_base ? c.overrides?.nodes?.[nodeId]?.forced_state : undefined;
+  const node = (nodesList || []).find(n => n.id === nodeId);
+  return override || node?.data?.forced_state || 'auto';
+};

@@ -459,11 +459,32 @@ class NetworkSolver:
                 self._propagate_properties(sol[num_int:])
             return True
 
+        # Relief devices start every run closed / intact; their state is decided between hydraulic solves
+        relief_nodes = [n for n in self.nodes_list if getattr(n, 'node_type', '') in RELIEF_NODE_TYPES]
+        for n in relief_nodes:
+            n.reset_run_state()
+
+        def update_relief_states() -> bool:
+            # Held fixed inside each Newton solve; changed only here from the solved inlet pressures
+            changed = False
+            for n in relief_nodes:
+                changed = n.update_relief_state(n.inlets[0].pressure) or changed
+            if changed and state["sol"] is not None:
+                # A device that opens leaves branches at exactly zero flow, where pump curves and pipe losses
+                # have zero slope (singular Newton step); restart those flows from the initial flow guess
+                x = np.array(state["x"], dtype=float)
+                n_int = state["num_int"]
+                q = x[n_int:]
+                q[np.abs(q) < 1e-7] = self._initial_flow_guess()
+                state["x"] = x
+            return changed
+
         controllers = {idx: self._init_controller(idx) for idx in self.control_node_indices}
         for idx in self.tcv_node_indices:
             self.nodes_list[idx].mix_ratio = 0.5
 
         outer_iterations = 0
+        relief_changed = False
         prev_temperatures = {}
         properties_converged = False
         controls_converged = not controllers
@@ -484,6 +505,7 @@ class NetworkSolver:
 
             if not run_hydraulics():
                 break
+            relief_changed = update_relief_states()
 
             # Property change since the previous solution (taken before any finite-difference solves)
             max_temp_change = 0.0
@@ -570,7 +592,7 @@ class NetworkSolver:
                                      for idx in self.tcv_node_indices)
                 tcv_settled = (max_err_temp < tolerance_temp) or (it >= 2 and max_mix_change < 0.001)
 
-            if controls_converged and tcv_settled and properties_converged:
+            if controls_converged and tcv_settled and properties_converged and not relief_changed:
                 break
 
         saturated = []
@@ -584,6 +606,12 @@ class NetworkSolver:
                 self.nodes_list[idx].mix_ratio = base_states[f"tcv_{idx}"]
             if dirty:
                 run_hydraulics()    # finite-difference solves overwrote the stored state
+            # A relief device that changed state after the last solve (iteration limit): solve again with it
+            for _ in range(2 * len(relief_nodes) + 1):
+                if state["error"] is not None or not relief_changed:
+                    break
+                run_hydraulics()
+                relief_changed = update_relief_states()
 
             # F1-15: with the control positions frozen, iterate the fluid properties until the reported
             # pressures belong to the reported temperatures (the loop may have stopped at its limit)
@@ -754,12 +782,13 @@ class NetworkSolver:
         if self.nodes_list and self.nodes_list[0].global_settings:
             atm_p = getattr(self.nodes_list[0].global_settings, 'atmospheric_pressure', 101325.0)
         avg_p = np.mean(list(self.fixed_pressure_nodes.values())) if self.fixed_pressure_nodes else atm_p
-        q_guess_base = 0.005
+        return np.concatenate([np.full(num_internal, avg_p), np.full(num_edges, self._initial_flow_guess())])
+
+    def _initial_flow_guess(self) -> float:
         for node in self.nodes_list:
             if hasattr(node, 'flow_rated') and node.flow_rated > 0:
-                q_guess_base = node.flow_rated
-                break
-        return np.concatenate([np.full(num_internal, avg_p), np.full(num_edges, q_guess_base)])
+                return node.flow_rated
+        return 0.005
 
     def calculate_jacobian(self, x_scaled) -> np.ndarray:
         """
@@ -1162,11 +1191,8 @@ class NetworkSolver:
     def _use_mcp_for_node(self, node) -> bool:
         if getattr(node, 'use_mcp_formulation', False):
             return True
-        if getattr(node, 'node_type', '') in ['pressure_safety_valve', 'rupture_disc']:
-            if getattr(node, 'forced_state', '') == 'auto':
-                is_open = getattr(node, 'status', '') in ['cracked', 'burst', 'overcapacity'] or getattr(node, 'is_burst', False)
-                return not is_open
-        return False
+        # Relief devices are always a flow equation with their open/closed state held (B1c)
+        return getattr(node, 'node_type', '') in RELIEF_NODE_TYPES
 
     def _get_node_p_out(self, node, p_in, q_in, q_out, update_state: bool = False):
         port = node.inlets[0] if node.inlets else (node.outlets[0] if node.outlets else None)
@@ -1196,9 +1222,7 @@ class NetworkSolver:
                         p_out_est = tgt_node.inlets[0].pressure + edge['pipe'].calculate_delta_p(q_flow, density, viscosity)
                         break
                 return p_in - node.calculate_delta_p(q_flow, density, viscosity, p_in_pa=p_in, p_out_pa=p_out_est, update_state=update_state)
-            
-            if hasattr(node, 'node_type') and node.node_type in ['pressure_safety_valve', 'rupture_disc']:
-                return p_in - node.calculate_delta_p(q_flow, density, viscosity, p_in_pa=p_in, update_state=update_state)
+
             return p_in - node.calculate_delta_p(q_flow, density, viscosity)
         else:
             return p_in
@@ -1459,12 +1483,9 @@ RELIEF_RAMP_TOL_PA = 100.0      # 1 mbar: inlet pressure at the opening snapshot
 RELIEF_RAMP_TOL_LAM = 1e-4
 
 
-def _relief_set_pressure_bar(node) -> float:
-    if hasattr(node, 'set_pressure_bar'):
-        return float(node.set_pressure_bar)
-    if hasattr(node, 'burst_pressure_bar'):
-        return float(node.burst_pressure_bar)
-    return 0.0
+def _relief_set_pressure_bara(node) -> float:
+    """Set / burst pressure as absolute pressure (bar(a)); entered in barg (F1-09)."""
+    return float(node.set_pressure_bara)
 
 
 def _telemetry_max_pressure_bara(tel) -> float:
@@ -1525,7 +1546,7 @@ def _find_relief_openings(network, opening_groups, auto_ids, original_states, ex
                 stats = ramp_solver.solve()
                 if not stats.get("success"):
                     return None, None
-                margin = max(node.inlets[0].pressure - _relief_set_pressure_bar(node) * 100000.0
+                margin = max(node.inlets[0].pressure - node.set_pressure_pa
                              for _, node in group_nodes)
                 return margin, extract_telemetry_fn(net)
 
@@ -1596,6 +1617,10 @@ def run_sequential_relief_simulation(network, solver, extract_telemetry_fn):
     first_warm_start_status = first_stats.get("warm_start_status")   # F0-06: report the user's run, not the last pass
     telemetry_unmitigated = extract_telemetry_fn(network)
 
+    # F1-03: devices the user forced open or closed return to that state for the relieved passes
+    for k, node in psv_items:
+        node.forced_state = original_states[k]
+
     # Initialize sequential states for Mitigated passes
     auto_psv_nodes = [node for node in psv_nodes if original_states[key_of[id(node)]] == "auto"]
 
@@ -1616,7 +1641,7 @@ def run_sequential_relief_simulation(network, solver, extract_telemetry_fn):
         for node in auto_psv_nodes:
             if node.forced_state == "forced_closed":
                 p_in_bar = (node.inlets[0].pressure / 100000.0) if node.inlets else 0.0
-                set_p = _relief_set_pressure_bar(node)
+                set_p = _relief_set_pressure_bara(node)   # F1-09: inlet gauge pressure reaches the set pressure
                 if p_in_bar >= set_p:
                     breached_nodes.append((set_p, node))
 
@@ -1684,7 +1709,8 @@ def run_sequential_relief_simulation(network, solver, extract_telemetry_fn):
         flow = outlets[0].get("flow_rate", 0.0) if outlets else 0.0
         order, op = opening_by_id.get(k, (None, None))
         devices[k] = {
-            "set_pressure_bar": _relief_set_pressure_bar(node),
+            "set_pressure_barg": node.set_pressure_barg,
+            "set_pressure_bara": round(_relief_set_pressure_bara(node), 5),
             "forced_state": original_states[k],
             "status": node_tel.get("status"),
             "opening_order": order,

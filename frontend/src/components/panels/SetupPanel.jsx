@@ -487,7 +487,7 @@ export default function SetupPanel({
   inline = false
 }) {
 
-  const { isImperial, fromInputValue } = useUnits();
+  const { isImperial, fromInputValue, formatPressureGauge } = useUnits();
 
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [localDrafts, setLocalDrafts] = useState({});
@@ -1175,14 +1175,27 @@ export default function SetupPanel({
           {isNode && (type === 'pressure_safety_valve' || type === 'psv') && (
             <>
               <div>
-                {renderLabel(`Cracking Set Pressure (${isImperial ? 'psi(a)' : 'bar(a)'})`, 'set_pressure_bar')}
-                <input 
+                {renderLabel(`Set Pressure (${isImperial ? 'psig' : 'barg'})`, 'set_pressure_barg')}
+                <input
                   type="number" step="0.1" min="0.01"
-                  className="form-input" style={{ width: '100%' }} 
-                  value={localDrafts.set_pressure_bar !== undefined ? localDrafts.set_pressure_bar : (isImperial ? (Number(effectiveData.set_pressure_bar ?? 20.0) * 14.5037738).toFixed(1) : (effectiveData.set_pressure_bar ?? 20.0))} 
-                  onChange={(e) => handleDraftChange('set_pressure_bar', e.target.value)}
-                  onBlur={(e) => validateAndCommit('set_pressure_bar', e.target.value, true)}
+                  className="form-input" style={{ width: '100%' }}
+                  placeholder={effectiveData.set_pressure_barg ? undefined : 'Enter set pressure (gauge)'}
+                  value={localDrafts.set_pressure_barg !== undefined ? localDrafts.set_pressure_barg : (effectiveData.set_pressure_barg ? (isImperial ? (Number(effectiveData.set_pressure_barg) * 14.5037738).toFixed(1) : effectiveData.set_pressure_barg) : '')}
+                  onChange={(e) => handleDraftChange('set_pressure_barg', e.target.value)}
+                  onBlur={(e) => { if (e.target.value !== '' || effectiveData.set_pressure_barg) validateAndCommit('set_pressure_barg', e.target.value, true); }}
                 />
+                {!effectiveData.set_pressure_barg ? (
+                  <div role="alert" style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', marginTop: '6px', padding: '6px 8px', borderRadius: '6px', backgroundColor: '#FEF3C7', border: '1px solid #FCD34D', fontSize: '10px', color: '#92400E' }}>
+                    <WarningIcon size={12} color="#92400E" style={{ flexShrink: 0, marginTop: '1px' }} />
+                    <span>
+                      Set Pressure (barg) missing. Relief devices are set in gauge pressure since v0.2; this device{effectiveData.set_pressure_bar ? ` had ${effectiveData.set_pressure_bar} bar(a)` : ''}. Enter the set pressure from the datasheet; the simulation will not run until then.
+                    </span>
+                  </div>
+                ) : (
+                  <p style={{ fontSize: '10px', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
+                    Opens when the inlet gauge pressure reaches the set pressure; rated capacity at 10 % overpressure.
+                  </p>
+                )}
               </div>
               <div>
                 {renderLabel('Flow Coefficient (Cv)', 'cv')}
@@ -1215,6 +1228,11 @@ export default function SetupPanel({
                     onChange={(e) => handleDraftChange('blowdown_pct', e.target.value)}
                     onBlur={(e) => validateAndCommit('blowdown_pct', e.target.value)}
                   />
+                  {effectiveData.set_pressure_barg ? (
+                    <p style={{ fontSize: '10px', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
+                      Reseats at {formatPressureGauge(Number(effectiveData.set_pressure_barg) * (1 - Number(effectiveData.blowdown_pct ?? 7.0) / 100))}. If the open valve would drop its inlet below that, it would open and close cyclically and is reported as cycling.
+                    </p>
+                  ) : null}
                 </div>
               )}
               <div>
@@ -1235,14 +1253,27 @@ export default function SetupPanel({
           {isNode && type === 'rupture_disc' && (
             <>
               <div>
-                {renderLabel(`Burst Pressure (${isImperial ? 'psi(a)' : 'bar(a)'})`, 'burst_pressure_bar')}
-                <input 
+                {renderLabel(`Burst Pressure (${isImperial ? 'psig' : 'barg'})`, 'burst_pressure_barg')}
+                <input
                   type="number" step="0.1" min="0.01"
-                  className="form-input" style={{ width: '100%' }} 
-                  value={localDrafts.burst_pressure_bar !== undefined ? localDrafts.burst_pressure_bar : (isImperial ? (Number(effectiveData.burst_pressure_bar ?? 25.0) * 14.5037738).toFixed(1) : (effectiveData.burst_pressure_bar ?? 25.0))} 
-                  onChange={(e) => handleDraftChange('burst_pressure_bar', e.target.value)}
-                  onBlur={(e) => validateAndCommit('burst_pressure_bar', e.target.value, true)}
+                  className="form-input" style={{ width: '100%' }}
+                  placeholder={effectiveData.burst_pressure_barg ? undefined : 'Enter burst pressure (gauge)'}
+                  value={localDrafts.burst_pressure_barg !== undefined ? localDrafts.burst_pressure_barg : (effectiveData.burst_pressure_barg ? (isImperial ? (Number(effectiveData.burst_pressure_barg) * 14.5037738).toFixed(1) : effectiveData.burst_pressure_barg) : '')}
+                  onChange={(e) => handleDraftChange('burst_pressure_barg', e.target.value)}
+                  onBlur={(e) => { if (e.target.value !== '' || effectiveData.burst_pressure_barg) validateAndCommit('burst_pressure_barg', e.target.value, true); }}
                 />
+                {!effectiveData.burst_pressure_barg ? (
+                  <div role="alert" style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', marginTop: '6px', padding: '6px 8px', borderRadius: '6px', backgroundColor: '#FEF3C7', border: '1px solid #FCD34D', fontSize: '10px', color: '#92400E' }}>
+                    <WarningIcon size={12} color="#92400E" style={{ flexShrink: 0, marginTop: '1px' }} />
+                    <span>
+                      Burst Pressure (barg) missing. Relief devices are set in gauge pressure since v0.2; this device{effectiveData.burst_pressure_bar ? ` had ${effectiveData.burst_pressure_bar} bar(a)` : ''}. Enter the burst pressure from the datasheet; the simulation will not run until then.
+                    </span>
+                  </div>
+                ) : (
+                  <p style={{ fontSize: '10px', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
+                    Bursts when the inlet gauge pressure reaches the burst pressure and stays open for the run.
+                  </p>
+                )}
               </div>
               <div>
                 {renderLabel('Bore Configuration', 'bore_type')}
