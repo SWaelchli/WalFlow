@@ -1012,6 +1012,16 @@ function WalFlowContent() {
     }
   }, [activeCaseId, cases, selectedNode, setNodes, nodes, activeDiagram, hasLock]);
 
+  // Canvas valve slider: live-preview the opening on the backend, then store it case-aware
+  // (an override in a non-base case) so the case badge shows and the base case stays untouched.
+  const handleCanvasValveChange = useCallback((newValue, nodeId) => {
+    if (isReadOnly) return; // Controlled slider snaps back; avoids an alert per drag tick
+    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+      ws.current.send(JSON.stringify({ action: 'update_valve', value: parseFloat(newValue), node_id: nodeId }));
+    }
+    updateNodeData(nodeId, { opening: newValue });
+  }, [isReadOnly, ws, updateNodeData]);
+
   const updateEdgeData = useCallback((edgeId, newData) => {
     if (activeDiagram && !hasLock) {
       alert("This drawing is read-only. Please check out the drawing to edit.");
@@ -1497,11 +1507,11 @@ function WalFlowContent() {
           ...effectiveData,
           hasCaseOverrides: hasOverrides,
           onRotate: rotateNode,
-          onChange: (node.type === 'linear_control_valve' || node.type === 'remote_control_valve') ? handleValveChange : undefined,
+          onChange: (node.type === 'linear_control_valve' || node.type === 'remote_control_valve') ? handleCanvasValveChange : undefined,
         }
       };
     });
-  }, [nodes, cases, activeCaseId, telemetryMode, rotateNode, handleValveChange]);
+  }, [nodes, cases, activeCaseId, telemetryMode, rotateNode, handleCanvasValveChange]);
 
   const effectiveSelectedNode = useMemo(() => {
     if (!selectedNode) return null;

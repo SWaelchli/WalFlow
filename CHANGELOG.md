@@ -70,6 +70,7 @@ All notable changes to the WälFlow project will be documented in this file.
 - Fixed "Simulation Engine Error" on diagrams with a PD pump (e.g. Multi-PSV Protection example): pump warning flags broke the result payload.
 - PD pumps and flow sources get a "Max. Discharge Pressure" input (absolute, default 50 bar(a)), replacing the hidden 200 bar cap; above it the delivered flow drops (PD pump: internal relief to suction, flagged in the pump details).
 - Relief devices: set and burst pressure are entered in gauge (barg / psig) and open when the inlet gauge pressure reaches them (older files need the value re-entered; examples are converted). "Forced Open" now works, pop valves respect blowdown and report "cycling" when oversized, capacity % refers to the rated flow at 10 % overpressure, and the relief matrix re-solves with the newly chosen forced state.
+- Control valve sliders on the canvas now respect the active operating case: in a non-base case the opening is stored as a case override (with the case badge) instead of silently changing the base case.
 
 
 ---
