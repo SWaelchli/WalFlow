@@ -14,7 +14,6 @@ def test_thermal_mixing_balances():
     _mix_and_check(tol_k=1.0)
 
 
-@pytest.mark.xfail(strict=True, reason="F1-42: mixing weights temperature by mass only (cp assumed constant); 0.86 K low here")
 def test_f1_42_mixing_conserves_enthalpy_with_variable_cp():
     _mix_and_check(tol_k=0.1)
 

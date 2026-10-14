@@ -22,6 +22,19 @@ def numpy_json_default(obj):
         return obj.tolist()
     raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
 
+THROTTLING_TYPES = {"linear_control_valve", "linear_regulator", "remote_control_valve", "orifice", "calibrated_restriction",
+                    "check_valve", "check_valve_orifice", "three_way_tcv"}
+
+
+def _outlet_below_vapor_pressure(network, node) -> bool:
+    """F1-28: a throttling device whose downstream pressure is below the vapour pressure flashes / cavitates."""
+    fluid = getattr(getattr(network, 'global_settings', None), 'fluid_type', 'water')
+    for port in node.outlets:
+        if port.flow_rate > 0.0 and port.pressure < FluidProperties.get_vapor_pressure(fluid, port.temperature):
+            return True
+    return False
+
+
 def calculate_case_kpis(network, telemetry: Dict[str, Any], stats: Dict[str, Any]) -> Dict[str, Any]:
     """
     Computes key performance indicators (KPIs) for an operating case simulation run.
@@ -48,7 +61,7 @@ def calculate_case_kpis(network, telemetry: Dict[str, Any], stats: Dict[str, Any
             if p > max_p_pa: max_p_pa = p
             if p < min_p_pa: min_p_pa = p
             
-        if node_tel.get("cavitation_warning", False):
+        if node_tel.get("cavitation_warning", False) or node_tel.get("flashing_warning", False):
             has_cavitation = True
 
         # Aggregate pump power & flow: shaft power Q·ΔP/η at the actual operating point,
@@ -95,6 +108,16 @@ def extract_telemetry(network) -> Dict[str, Any]:
             node_tel["cavitation_warning"] = node.cavitation_warning
         if isinstance(node, (VolumetricPump, CentrifugalPump)):
             node_tel["shaft_power_kw"] = node.shaft_power() / 1000.0
+            node_tel["npsha_m"] = node.npsha_m
+            node_tel["npshr_m"] = node.npshr_m
+            node_tel["npsh_margin_m"] = node.npsh_margin_m
+        if node.node_type == "orifice" and getattr(node, 'standard', None) == 'iso_5167':
+            inlet = node.inlets[0]
+            re_pipe = node._pipe_reynolds(inlet.flow_rate, inlet.density, inlet.viscosity, node.pipe_diameter)
+            issues = node.iso_validity_issues(re_pipe if abs(inlet.flow_rate) > 0 else None)
+            node_tel["iso_validity"] = {"valid": not issues, "issues": issues}
+        if node.node_type in THROTTLING_TYPES and not isinstance(node, (VolumetricPump, CentrifugalPump)):
+            node_tel["flashing_warning"] = _outlet_below_vapor_pressure(network, node)
         if isinstance(node, VolumetricPump):
             node.refresh_warnings()
             node_tel["drive_type"] = node.drive_type
@@ -102,6 +125,13 @@ def extract_telemetry(network) -> Dict[str, Any]:
             node_tel["motor_overload"] = node.motor_overload
             node_tel["power_limited"] = node.power_limited
             node_tel["pressure_cap_reached"] = node.pressure_cap_reached
+        if node.node_type == "flow_source":
+            node.refresh_warnings()
+            node_tel["pressure_cap_reached"] = node.pressure_cap_reached
+            node_tel["max_discharge_pressure_bara"] = node.max_discharge_pressure / 100000.0
+        if node.node_type == "heat_exchanger":
+            node_tel["rating_status"] = node.rating_status
+            node_tel["design_effectiveness"] = node.design_effectiveness
         if hasattr(node, 'actual_duty_kw'):
             node_tel["actual_duty_kw"] = node.actual_duty_kw
         if hasattr(node, 'status'):

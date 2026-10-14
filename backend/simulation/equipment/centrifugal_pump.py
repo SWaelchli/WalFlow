@@ -20,7 +20,8 @@ class CentrifugalPump(HydraulicNode):
       ΔP = −ρ·g·H_rated·[(1−ε)·x·|x| + ε·x], x = Q/Q_rated, ε = 5 % (rated head lost at rated flow).
     - efficiency: hydraulic pump efficiency, excluding the motor (pump heat, shaft power).
     """
-    def __init__(self, name: str, flow_rated: float, head_rated: float, rise_to_shutoff_pct: float = 20.0, efficiency: float = 0.75):
+    def __init__(self, name: str, flow_rated: float, head_rated: float, rise_to_shutoff_pct: float = 20.0, efficiency: float = 0.75,
+                 npshr_m: float = 0.0, npsh_margin_m: float = 0.5):
         super().__init__(name, node_type="centrifugal_pump")
 
         # Engineering Specs (SI Units)
@@ -29,6 +30,9 @@ class CentrifugalPump(HydraulicNode):
         self.rise_pct = rise_to_shutoff_pct  # %
         self.efficiency = efficiency         # 0.0 to 1.0
         self.cavitation_warning = False
+        self.npshr_m = npshr_m              # required NPSH from the datasheet (m), 0 = not entered
+        self.npsh_margin_m = npsh_margin_m  # margin on top of NPSHr (m)
+        self.npsha_m = None                 # available NPSH at the current operating point (m)
 
         # Internal curve coefficients (head)
         self.head_shutoff = self.head_rated * (1.0 + self.rise_pct / 100.0)
@@ -103,16 +107,9 @@ class CentrifugalPump(HydraulicNode):
         inlet = self.inlets[0]
         outlet = self.outlets[0]
 
-        # Cavitation Check
+        # NPSH check (F1-28)
         fluid_type = self.global_settings.fluid_type if self.global_settings else 'water'
-        vapor_pressure = FluidProperties.get_vapor_pressure(fluid_type, inlet.temperature)
-
-        # 120% margin
-        npsh_safety_margin = 1.2
-        if inlet.pressure < (vapor_pressure * npsh_safety_margin):
-            self.cavitation_warning = True
-        else:
-            self.cavitation_warning = False
+        self.update_npsh(inlet)
 
         # Calculate the generated pressure
         dp = self.calculate_delta_p(inlet.flow_rate, inlet.density, inlet.viscosity)

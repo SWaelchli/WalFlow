@@ -90,7 +90,8 @@ class RuptureDisc(ReliefDevice):
             dp = rec_delta_p * (1.0 - beta_ratio**2)
 
             # Derivative w.r.t. flow rate
-            deriv = density * abs(velocity) / area_pipe * geometry_factor * (1.0 - beta_ratio**2)
+            deriv = (density * abs(velocity) / area_pipe * geometry_factor * (1.0 - beta_ratio**2)
+                     * (1.0 - FluidProperties.get_orifice_cd_slope(re_orifice)))
             return dp, deriv
         else: # "full_bore"
             K_CV_SI = 1.732e9

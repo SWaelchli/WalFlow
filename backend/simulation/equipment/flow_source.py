@@ -14,7 +14,9 @@ class FlowSource(HydraulicNode):
     """
 
     _BASE_STIFFNESS_PA_PER_M3S = 1e10
-    _HARD_CAP_PA = 20_000_000.0           # 200 bar cap below the reference (flow above target)
+    # Numerical guard only: limits the pressure DROP the spring can impose when the flow is above target
+    # (solver search steps). The user-facing limit is max_discharge_pressure (pressure rise).
+    _HARD_CAP_PA = 20_000_000.0
 
     def __init__(
         self,
@@ -28,6 +30,8 @@ class FlowSource(HydraulicNode):
         self.source_flow = float(source_flow)           # m³/s
         self.temperature = float(temperature)           # K
         self.max_discharge_pressure = float(max_discharge_pressure)  # Pa(a)
+
+        self.pressure_cap_reached = False   # outlet pressure held at max_discharge_pressure (F1-24)
 
         self.is_pressure_boundary = False
         self.is_flow_boundary = False
@@ -61,6 +65,11 @@ class FlowSource(HydraulicNode):
         """Largest pressure rise over the reference (atmospheric, where the solver pins the source node)."""
         atm = getattr(self.global_settings, 'atmospheric_pressure', 101325.0) if self.global_settings else 101325.0
         return max(0.0, self.max_discharge_pressure - atm)
+
+    def refresh_warnings(self) -> None:
+        """Flag set when the delivered flow is limited by the discharge pressure limit."""
+        p_out = self.outlets[0].pressure if self.outlets else 0.0
+        self.pressure_cap_reached = bool(p_out >= self.max_discharge_pressure - 1.0)
 
     def _get_fluid_type(self) -> str:
         return getattr(self.global_settings, 'fluid_type', 'water')

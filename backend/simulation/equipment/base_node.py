@@ -3,6 +3,7 @@ import uuid
 
 # Import the Port schema from our sibling file
 from simulation.schemas import Port
+from simulation.fluid_utils import FluidProperties
 
 class HydraulicNode:
     """
@@ -70,15 +71,33 @@ class HydraulicNode:
         # to the outward ports yet, we just propagate the inward temperature.
         # Specialized nodes (HX, Orifice) set their outlet temp BEFORE calling this.
         
+        # Enthalpy balance (F1-42): sum(m_i * h_i) = m_total * h_mix, with h = integral of cp dT
+        fluid_type = getattr(self.global_settings, 'fluid_type', 'water')
+        weighted_temp_sum = 0.0
+        enthalpy_sum = 0.0
         for port in inward_ports:
             m_dot = abs(port.flow_rate) * port.density
             total_mass_flow += m_dot
             weighted_temp_sum += m_dot * port.temperature
-            
-        mix_temp = weighted_temp_sum / total_mass_flow if total_mass_flow > 0 else inward_ports[0].temperature
+            enthalpy_sum += m_dot * FluidProperties.get_enthalpy(fluid_type, port.temperature)
+
+        if total_mass_flow > 0:
+            mix_temp = FluidProperties.get_temperature_from_enthalpy(
+                fluid_type, enthalpy_sum / total_mass_flow, weighted_temp_sum / total_mass_flow)
+        else:
+            mix_temp = inward_ports[0].temperature
         
         for port in outward_ports:
             port.temperature = mix_temp
+
+    def update_npsh(self, inlet) -> None:
+        """NPSHa = (P_in - Pv)/(rho g) at a pump suction (F1-28), always reported. The cavitation warning is
+        raised when NPSHa < NPSHr + margin (NPSHr 0 when no datasheet value is entered)."""
+        fluid_type = getattr(self.global_settings, 'fluid_type', 'water')
+        pv = FluidProperties.get_vapor_pressure(fluid_type, inlet.temperature)
+        self.npsha_m = (inlet.pressure - pv) / (max(1.0, inlet.density) * 9.81)
+        required = (self.npshr_m or 0.0) + self.npsh_margin_m
+        self.cavitation_warning = bool(getattr(self, 'active', True) and self.npsha_m < required)
 
     def apply_relief_ramp(self, lam: float) -> None:
         """Scales the driving parameters to the fraction lam (0..1) of their case value.
@@ -112,4 +131,4 @@ class HydraulicNode:
             dp_plus = self.calculate_delta_p(flow_rate + dq, density, viscosity)
             dp_minus = self.calculate_delta_p(flow_rate - dq, density, viscosity)
 
-        return (dp_plus - dp_minus) / (2.0 * dq)
+        return (dp_plus - dp_minus) / (2.0 * dq)

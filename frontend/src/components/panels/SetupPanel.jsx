@@ -522,6 +522,35 @@ export default function SetupPanel({
     </div>
   );
 
+  // NPSH inputs shared by both pump types (F1-28); lengths are shown in metres / feet
+  const renderNpshFields = () => (
+    <>
+      <div>
+        {renderLabel(`NPSHr (${isImperial ? 'ft' : 'm'}, 0 = not entered)`, 'npshr_m')}
+        <input
+          type="number" min="0" step="0.1" placeholder="0"
+          className="form-input" style={{ width: '100%' }}
+          value={localDrafts.npshr_m !== undefined ? localDrafts.npshr_m : (isImperial ? (Number(effectiveData.npshr_m ?? 0) * 3.280839895).toFixed(1) : (effectiveData.npshr_m ?? 0))}
+          onChange={(e) => handleDraftChange('npshr_m', e.target.value)}
+          onBlur={(e) => validateAndCommit('npshr_m', e.target.value)}
+        />
+      </div>
+      <div>
+        {renderLabel(`NPSH margin (${isImperial ? 'ft' : 'm'})`, 'npsh_margin_m')}
+        <input
+          type="number" min="0" step="0.1"
+          className="form-input" style={{ width: '100%' }}
+          value={localDrafts.npsh_margin_m !== undefined ? localDrafts.npsh_margin_m : (isImperial ? (Number(effectiveData.npsh_margin_m ?? 0.5) * 3.280839895).toFixed(1) : (effectiveData.npsh_margin_m ?? 0.5))}
+          onChange={(e) => handleDraftChange('npsh_margin_m', e.target.value)}
+          onBlur={(e) => validateAndCommit('npsh_margin_m', e.target.value)}
+        />
+        <p style={{ fontSize: '10px', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
+          Cavitation warning when NPSHa &lt; NPSHr + margin (datasheet NPSHr at the duty point).
+        </p>
+      </div>
+    </>
+  );
+
   const validateAndCommit = (fieldOrUpdates, rawValue, isCritical = false) => {
     let updates = {};
 
@@ -867,6 +896,7 @@ export default function SetupPanel({
                   Hydraulic pump efficiency only, excluding the motor. Used for pump heat and shaft power.
                 </p>
               </div>
+              {renderNpshFields()}
               {effectiveData.active === false && (
                 <p style={{ fontSize: '10px', color: 'var(--color-text-secondary)', margin: 0 }}>
                   Stopped pump: modelled as a flow resistance in both directions (rated head lost at rated flow). Add a check valve to block backflow.
@@ -958,6 +988,7 @@ export default function SetupPanel({
                   Pump efficiency only, excluding the motor. Shaft power = flow × ΔP ÷ efficiency.
                 </p>
               </div>
+              {renderNpshFields()}
             </>
           )}
 
@@ -995,6 +1026,11 @@ export default function SetupPanel({
 
           {isNode && type === 'flow_source' && (
             <>
+              {node?.data?.telemetry?.pressure_cap_reached && (
+                <div role="alert" style={{ background: '#FEF2F2', border: '1px solid #FEE2E2', borderRadius: '4px', padding: '8px', fontSize: '11px', color: '#EF4444' }}>
+                  Discharge pressure limit reached: the delivered flow is below the set flow. Raise the max. discharge pressure or check for a blocked outlet path.
+                </div>
+              )}
               <div>
                 {renderLabel(`Set Flow (${isImperial ? 'GPM' : 'L/min'})`, 'source_flow_lmin')}
                 <input
@@ -1400,6 +1436,13 @@ export default function SetupPanel({
 
           {isNode && type === 'heat_exchanger' && (
             <>
+              {node?.data?.telemetry?.rating_status && node.data.telemetry.rating_status !== 'ok' && (
+                <div role="alert" style={{ background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: '4px', padding: '8px', fontSize: '11px', color: '#92400E' }}>
+                  {node.data.telemetry.rating_status === 'infeasible'
+                    ? 'Rating is not achievable: the rated duty needs a larger temperature change than the fluid and medium temperatures allow. The result is limited by the heat balance, not the rating.'
+                    : 'Rating needs an effectiveness above 0.95: very large heat transfer area. Check the rated duty and temperatures.'}
+                </div>
+              )}
               <div>
                 {renderLabel('Operating Status', 'active')}
                 <select 
@@ -1566,6 +1609,17 @@ export default function SetupPanel({
                   value={localDrafts.clogging !== undefined ? localDrafts.clogging : (effectiveData.clogging || 0.0)} 
                   onChange={(e) => handleDraftChange('clogging', e.target.value)}
                   onBlur={(e) => validateAndCommit('clogging', e.target.value)}
+                />
+              </div>
+              <div>
+                {renderLabel('Reference viscosity (mPa·s, 0 = auto)', 'ref_viscosity')}
+                <input 
+                  type="number" min="0" step="1" placeholder="auto"
+                  className="form-input" style={{ width: '100%' }} 
+                  title="Viscosity of the fluid the datasheet ΔP refers to. Auto: system fluid at 40 °C (oils, fuels) or 20 °C (aqueous)."
+                  value={localDrafts.ref_viscosity !== undefined ? localDrafts.ref_viscosity : (effectiveData.ref_viscosity || '')} 
+                  onChange={(e) => handleDraftChange('ref_viscosity', e.target.value)}
+                  onBlur={(e) => validateAndCommit('ref_viscosity', e.target.value)}
                 />
               </div>
             </>

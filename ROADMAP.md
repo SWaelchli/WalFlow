@@ -42,6 +42,10 @@ This document outlines planned features, overlays, and enhancements for the WalF
   * **Concept:** Device-type option for PSVs. Today (B1c) a valve opens when its inlet gauge pressure reaches the set pressure, which is how balanced-bellows and pilot valves behave. A conventional spring valve opens at set + superimposed backpressure (differential across the seat), and built-up backpressure above ~10 % of set reduces its capacity (API 520 Kb factor).
   * **Engineering Value:** Correct opening points and capacities for relief valves discharging into a pressurised header or a long outlet line.
 
+- [ ] **💧 Valve Choked Flow & Cavitation (IEC 60534 $F_L$, $F_F$)**
+  * **Concept:** Liquid pressure-recovery factor $F_L$ and critical pressure ratio $F_F$ per valve: choked-flow limit $\Delta P_{\max} = F_L^2 (P_1 - F_F P_v)$, flashing and cavitation onset indices.
+  * **Status (B1d, 2026-10-14):** valves, regulators and orifices only flag an outlet pressure below the vapour pressure (`flashing_warning`); the flow is not limited by choking.
+
 - [ ] **🎛️ Advanced Control Valve (Custom $C_v$ Trim Curves)**
   * **Concept:** Throttling flow control valve supporting custom inherent flow characteristics (Equal Percentage, Quick Opening, and Linear trims).
   * **Physics:** Computes effective flow coefficient $C_v(x)$ dynamic curves based on valve stem opening percentage $x$, with optional choked flow detection for compressible/high-$\Delta P$ regimes.

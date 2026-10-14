@@ -23,6 +23,12 @@ const FilterDetails = memo(function FilterDetails({ node }) {
 
   const maxX_lmin = Math.max(300, actualFlowLmin * 2);
 
+  // The solver calibrates K to the datasheet fluid; scale the curves so that "Current" passes through
+  // the solved operating point (reference viscosity / temperature effects).
+  const currentDpMeasuredPa = Math.abs((telemetry?.inlets?.[0]?.pressure || 0) - (telemetry?.outlets?.[0]?.pressure || 0));
+  const modelAtOp = kCurr * rho * (actualFlowLmin / 60000) ** 2;
+  const fluidScale = (telemetry && modelAtOp > 1e-6 && currentDpMeasuredPa > 0) ? currentDpMeasuredPa / modelAtOp : 1.0;
+
   const flowMultiplier = isImperial ? 0.264172052 : 1.0;
   const pressMultiplier = isImperial ? 14.5037738 : 1.0;
 
@@ -34,13 +40,13 @@ const FilterDetails = memo(function FilterDetails({ node }) {
       const qM3s = qLmin / 60000;
       data.push({
         q: qLmin * flowMultiplier,
-        clean: ((kClean * rho * qM3s**2) / 100000) * pressMultiplier,
-        terminal: ((kTerminal * rho * qM3s**2) / 100000) * pressMultiplier,
-        current: ((kCurr * rho * qM3s**2) / 100000) * pressMultiplier
+        clean: ((kClean * rho * qM3s**2 * fluidScale) / 100000) * pressMultiplier,
+        terminal: ((kTerminal * rho * qM3s**2 * fluidScale) / 100000) * pressMultiplier,
+        current: ((kCurr * rho * qM3s**2 * fluidScale) / 100000) * pressMultiplier
       });
     }
     return data;
-  }, [kClean, kTerminal, kCurr, rho, maxX_lmin, flowMultiplier, pressMultiplier]);
+  }, [kClean, kTerminal, kCurr, rho, fluidScale, maxX_lmin, flowMultiplier, pressMultiplier]);
 
   const currentDpPa = Math.abs((telemetry?.inlets?.[0]?.pressure || 0) - (telemetry?.outlets?.[0]?.pressure || 0));
   const currentDpBar = currentDpPa / 100000;

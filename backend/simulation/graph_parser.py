@@ -23,6 +23,7 @@ from simulation.equipment.pressure_source import PressureSource
 
 from simulation.equipment.flow_source import FlowSource
 from simulation.equipment.base_node import HydraulicNode
+from simulation.fluid_utils import FluidProperties
 
 
 class ModelInputError(ValueError):
@@ -42,6 +43,15 @@ def _relief_pressure_barg(d: dict, key: str, name: str, what: str) -> float:
     return value
 
 class GraphParser:
+    @staticmethod
+    def _npsh_value(d: dict, key: str, default: float, name: str) -> float:
+        """NPSHr / NPSH margin in m (F1-28); empty = default, negative is an input error."""
+        v = d.get(key)
+        v = default if v in (None, '') else float(v)
+        if v < 0.0:
+            raise ModelInputError(f"'{name}': {key.replace('_m', '').upper().replace('_', ' ')} must not be negative.")
+        return v
+
     @staticmethod
     def _max_discharge_pa(d: dict, name: str) -> float:
         """Outlet pressure limit of a PD pump / flow source: bar(a) in the file, Pa(a) in the model (50 bar(a) default)."""
@@ -99,11 +109,25 @@ class GraphParser:
         )
 
     @staticmethod
+    def _validate_fluids(graph: ReactFlowGraph) -> None:
+        """F1-31: a fluid id that is not in the catalog is an input error (no silent water default)."""
+        gs_fluid = getattr(graph.global_settings, 'fluid_type', None) if graph.global_settings else None
+        ids = [("System fluid", gs_fluid or 'water')]
+        for node in graph.nodes:
+            f = (node.data or {}).get('fluid_type')
+            if f and f != 'system':
+                ids.append((f"'{(node.data or {}).get('label') or node.id}': fluid", f))
+        for what, fid in ids:
+            if fid not in FluidProperties.FLUIDS:
+                raise ModelInputError(f"{what} '{fid}' is not in the fluid catalog. Select a fluid from the list.")
+
+    @staticmethod
     def parse_graph(graph: ReactFlowGraph, case_id: Optional[str] = None) -> HydraulicNetwork:
         """
         Converts a React Flow graph into a HydraulicNetwork, layering operating case overrides if specified.
         """
         resolved_graph = GraphParser.resolve_graph_for_case(graph, case_id)
+        GraphParser._validate_fluids(resolved_graph)
 
         # 1. Instantiate Equipment Nodes (ignoring non-hydraulic visual annotations)
         nodes_dict: Dict[str, HydraulicNode] = {}
@@ -246,7 +270,9 @@ class GraphParser:
                 flow_rated=flow_rated_lmin / 60000.0,
                 head_rated=float(head_m),
                 rise_to_shutoff_pct=rise_pct,
-                efficiency=eff_pct / 100.0
+                efficiency=eff_pct / 100.0,
+                npshr_m=GraphParser._npsh_value(d, 'npshr_m', 0.0, name),
+                npsh_margin_m=GraphParser._npsh_value(d, 'npsh_margin_m', 0.5, name)
             )
         elif t == 'volumetric_pump':
             # flow_rated in L/min -> convert to m3/s
@@ -267,7 +293,9 @@ class GraphParser:
                 motor_power=power_w,
                 efficiency=eff_dec,
                 drive_type=str(d.get('drive_type', 'fixed_speed')),
-                max_discharge_pressure=GraphParser._max_discharge_pa(d, name)
+                max_discharge_pressure=GraphParser._max_discharge_pa(d, name),
+                npshr_m=GraphParser._npsh_value(d, 'npshr_m', 0.0, name),
+                npsh_margin_m=GraphParser._npsh_value(d, 'npsh_margin_m', 0.5, name)
             )
         elif t == 'linear_control_valve':
             node = LinearControlValve(
@@ -349,7 +377,8 @@ class GraphParser:
                 dp_clean_bar=float(d.get('dp_clean', 0.2)),
                 dp_terminal_bar=float(d.get('dp_terminal', 1.0)),
                 flow_ref_lmin=float(d.get('flow_ref', 100.0)),
-                clogging_pct=float(d.get('clogging', 0.0))
+                clogging_pct=float(d.get('clogging', 0.0)),
+                ref_viscosity_mpas=(float(d['ref_viscosity']) if d.get('ref_viscosity') not in (None, '') else None)
             )
         elif t == 'splitter':
             # 1 inlet, 2 outlets

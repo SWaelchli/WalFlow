@@ -369,3 +369,50 @@ All six findings done: F1-08 first, then F1-03, F1-04, F1-09, F1-38, F2-09 (belo
 - *Tests (lasting references).* `test_b1c_relief.py` (17): opening at 10 barg = 11.013 bar(a) and with 0.9 bar(a) ambient; capacity 100 % at 10 % overpressure (audit C4) against the US Cv definition Q[gpm] = Cv·√(ΔP[psi]/SG); overcapacity ratio √(30/22); reduced-bore disc ratio; pop full lift above reseat and cycling below; first run = second run; forced open / closed; state constant within each hydraulic solve; old bar(a) key rejected. `test_physics_rupture_disc.py` and `test_physics_psv.py` now assert numbers; F1-08 tests use barg inputs with the same bar(a) references (the oversized pop valve now cyclings, so its peak is the relieved state). Frontend: `ReliefInspector.test.jsx` (4), matrix barg/cycling/missing and F2-09 in `DataList.test.jsx`. Totals: backend 259 passed, 1 xfailed; Vitest 40; lint and build clean.
 - *Not checked in the browser:* loading the example would have replaced the canvas open in the user's session.
 - *Roadmap (D3, D4):* conventional vs balanced valves under backpressure; certified-capacity input.
+
+### B1d: fluid properties and component correlations (implemented 2026-10-14, not committed)
+
+Anchors at `HEAD` = `b4973cc`, clean tree. Decisions (user, 2026-10-14): D1 tabulated data in code, **no CoolProp dependency**; D2 NPSHr input with **editable margin**, IEC 60534 FL/choked flow goes to the roadmap; D3 fixed representative RVP per catalog fluid; D4 filter reference viscosity field, default = system fluid at 40 °C (oils) / 20 °C (water), heat exchangers unchanged; D5 unknown fluid id is an error, **no extra code for old-file compatibility** (old files need not load); D6 Churchill friction factor in the transition zone is acceptable (+11–14 % flow at Re 2000–4000).
+
+**Goal.** Fluid properties match published data within a stated tolerance. An out-of-range temperature or an unknown fluid is reported, not silently extrapolated or replaced by water. Cold-start and oil results become more conservative.
+
+**Order of work.** F1-42 and F1-30 first (other items use their values), then the rest in the order below.
+
+1. **F1-42, mixing.** `base_node.py › HydraulicNode.calculate_temperature`: enthalpy balance weighted by ṁ·cp(T) (cp linear in T for oils: solve exactly). Turns the strict-xfail `test_f1_42_…` in `test_physics_mixing.py` green (VG46 810 L/min at 80 °C + 1097 L/min at 20 °C → 45.74 °C).
+2. **F1-30, water.** `fluid_utils.py › get_density` / `get_vapor_pressure` / `get_specific_heat`: Kell (1975) density, one continuous saturation curve (Wagner–Pruss or IF97, no 100 °C step), temperature-dependent cp. Reference values from IAPWS-95 as a static table in the tests.
+3. **F1-26, ISO VG oils.** ν from Walther/ASTM D341 using ν40 (ISO grade) and ν100 per grade (typical VI ≈ 100). Fixes VG32/VG46. Check against the audit table (−10 to −28 % today at 0 to −10 °C).
+4. **F1-29, aqueous solutions.** Seawater, EG 30/50 %, PG 50 %: tabulated ν, cp, Pv scale with interpolation (data from Sharqawy 2010 / Melinder 2010, copied once into the code; no runtime dependency).
+5. **F1-27, vapour pressure of fuels.** Gasoline from RVP and T (API MPMS 19.2 / Nelson), representative RVP about 60 kPa; light crude finite; diesel/kerosene n-decane-like.
+6. **F1-31, validity.** `t_min` / `t_max` per fluid; leaving the range adds an entry to `physical_validity` (as in B1b), the run continues. Unknown `fluid_type` raises `ModelInputError` naming the fluid; the silent water fallbacks in `get_density`, `get_viscosity`, `get_vapor_pressure`, `get_specific_heat` are removed. No compatibility code for old files.
+7. **F1-25, orifice Cd.** `get_orifice_cd`: Cd = Cd_t·tanh(0.2·√Re/Cd_t) (Wuest laminar law blended into the turbulent value). Used by calibrated restriction, check valve + orifice, rupture disc (orifice mode) and orifice with `classic_cd`.
+8. **F1-19, filter.** `filter.py`: new field "ΔP reference viscosity" (D4); the model returns the entered ΔP at that viscosity.
+9. **F1-28, NPSH.** Pumps (centrifugal and volumetric) report NPSHa = (P_in − Pv)/(ρg) always. Optional NPSHr input (m) plus an editable margin; warning when NPSHa < NPSHr + margin. The old "P < 1.2·Pv" flag is replaced. Valves and orifices: flag an outlet below Pv. FL/choked flow: roadmap.
+10. **F1-39, ISO 5167 orifice.** Outside the ISO limits (β 0.1–0.75, d ≥ 12.5 mm, D 50–1000 mm, Re_D ≥ 5000) use a thin-orifice loss (Idelchik) and set a `validity` flag; no silent clamping.
+11. **F1-40, heat exchanger.** Reject or warn when the rated duty exceeds ṁ·cp·(T_in − T_medium); warn at effectiveness > 0.95.
+12. **F1-21, transition zone.** `pipe.py › calculate_delta_p`: Churchill friction factor instead of the linear 2000–4000 blend (derivative kept consistent).
+13. **F1-24, flow source.** Re-scoped (see below): `pressure_cap_reached` flag when the source sits at its `max_discharge_pressure`.
+
+**F1-24 re-scoping (answer to "is the 200 bar cap obsolete?").** The two clamps in `flow_source.py › calculate_delta_p` sit on opposite sides. The 200 bar `_HARD_CAP_PA` clamps the **positive** ΔP side (flow above target, outlet below the source reference); a physical solution would need −200 bar absolute there, so it is only a numerical guard during the Newton search and can no longer cause the silent saturation the audit describes. The silent saturation F1-24 is about now happens at `max_discharge_pressure` (573772c), which is user-configurable, but the flow source does not report it (unlike the PD pump's `pressure_cap_reached`). So: keep the guard as a numerical constant (renamed/commented, not a model limit), and add the flag and telemetry for `max_discharge_pressure`.
+
+**Effect on existing diagrams.** Oil systems at low temperature: higher ΔP (viscosity up to ~25 % at 0 °C for VG68–220). Hot water: density −2.7 % at 100 °C. Orifice restrictions in viscous service: ΔP lower or higher depending on Re (up to 3–4× at cold start). Filter ΔP in oil falls to the datasheet value. Seawater/glycol viscosity changes. Mixing temperatures shift by up to ~1 K. Transition-zone flows +11–14 %. Stored results in the examples stay stale until the example re-save at the end of B2; files with unknown fluid ids will not run.
+
+**Out of scope:** warning and property-table UI (B4: F3-05, F1-31 table), F1-32 (documentation), per-tank fluid (F1-23, B6), IEC 60534 FL/choked flow (roadmap), HI 9.6.7 pump viscosity correction, heat-exchanger viscosity reference.
+
+**Verification.**
+- `pytest backend/tests`, one test per finding named `test_f1_xx_…` against independent values: IAPWS (density, Pv, cp at 20/80/100/150 °C), Walther (VG15–220 at −10/40/100 °C), CoolProp INCOMP values as static tables (seawater, glycol), EN 228 RVP, Wuest Cd at Re_d 10–3000, filter ΔP at its reference viscosity, mixing enthalpy balance, Churchill f at Re 2000/3000/4000, NPSHa, validity flags, unknown fluid error.
+- Solve all shipped diagrams before/after; list the changed KPIs.
+- Frontend lint, build and Vitest for the new fields (NPSHr, margin, filter reference viscosity); consult `ui-ux-pro-max` first.
+- One CHANGELOG line.
+
+**Review suggestion.** Second look at the fluid data tables (items 3, 4) against the references, and at the Cd blend inside calibrated restrictions (item 7).
+
+**Implementation notes (B1d).**
+- Backend suite 366 passed; frontend lint, build and Vitest (40) clean. One test file per finding (`test_f1_19`, `21`, `24`, `25`, `26`, `27_31`, `28`, `29`, `30`, `39`, `40`); F1-42 turned green in `test_physics_mixing.py`.
+- *Data are representative, not datasheet values.* ν100 per ISO VG grade (VI ≈ 100), glycol and seawater tables are typical ASHRAE / Melinder / Sharqawy values entered from memory (web search returned no clean by-mass tables); RVP 60 kPa (gasoline) and 40 kPa (light crude). Re-check against a reference before relying on a specific product.
+- *F1-31.* Ranges are limited by pour point or data span (`_T_RANGE_C` at the end of `fluid_utils.py`); `temperature_out_of_range` entries in `physical_validity` (no UI yet, B4/F3-05). Unknown fluid ids raise `UnknownFluidError` / `ModelInputError`.
+- *F1-28.* `npshr_m` (default 0) and `npsh_margin_m` (default 0.5 m) on both pump types; telemetry `npsha_m`, `npshr_m`, `npsh_margin_m`; valves, regulators, orifices, restrictions: `flashing_warning` (also counted in `has_cavitation_warning`). Pump inspector fields and NPSHa read-out added.
+- *F1-39.* Instead of an Idelchik loss the RG correlation is evaluated at the true β (0.01–0.99) and `iso_validity` (list of violated ISO 5167-2 limits) is reported in telemetry; the inspector already warns for β > 0.75.
+- *F1-40.* `rating_status` (`ok` / `high_effectiveness` / `infeasible`) and `design_effectiveness` in telemetry, with an inspector notice; the solver still clamps effectiveness.
+- *F1-24.* `pressure_cap_reached` and `max_discharge_pressure_bara` in flow source telemetry, inspector notice; `_HARD_CAP_PA` kept as a documented numerical guard.
+- *F1-19.* New `ref_viscosity` field (mPa·s, 0 = auto); K is calibrated to the datasheet dP at the reference fluid state. The filter chart scales its curves to pass through the solved operating point.
+- *Shipped diagrams, before vs after (KPI changes):* API 614 LOS −1 to +4 % flow (fouled/clogged filter cases +2 to +4 % flow, −0.2 to −0.35 bar max pressure), API 682 seal flush flow 32.9 → 35.4 L/min and max pressure 12.4 → 12.1 bar, other examples ≤ 0.1 % in flow and power. `walflow-diagram (8)` min pressure drops (1.03 → 0.44 bar) only at the stopped, zero-flow pump B, whose pressure is undefined. No example gains or loses a cavitation warning; all still converge.

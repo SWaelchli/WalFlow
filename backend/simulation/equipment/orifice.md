@@ -103,7 +103,7 @@ Byte-for-byte previous behavior:
 
 $$\Delta p = \underbrace{\tfrac{1}{2}\rho v_{\mathrm{pipe}}^2}_{\text{dynamic}} \cdot \frac{1-\beta^4}{C_d^2\,\beta^4}\cdot (1-\beta^2), \qquad C_d = C_d(\mathrm{Re}_o) \text{ from `fluid_utils.get_orifice_cd`}$$
 
-with $\beta = \min(0.99, d/D)$ and the existing closed-form analytic derivative. `fluid_utils.get_orifice_cd` is shared by `check_valve_orifice`, `rupture_disc`, and `calibrated_restriction` and is **not** modified.
+with $\beta = \min(0.99, d/D)$ and the existing closed-form analytic derivative. `fluid_utils.get_orifice_cd` is shared by `check_valve_orifice`, `rupture_disc`, and `calibrated_restriction` (tanh blend into 0.60, F1-25).
 
 ## 4. Thermal & Energy Balance
 

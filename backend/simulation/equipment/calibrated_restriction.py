@@ -187,19 +187,11 @@ class CalibratedRestriction(HydraulicNode):
             v_orifice = flow_rate / max(1e-9, area_orifice)
             re_orifice = (density * abs(v_orifice) * orif_d) / max(1e-7, viscosity)
             
-            cd_turbulent = 0.60
-            re_safe = max(1e-6, re_orifice)
-            cd_val = cd_turbulent / math.sqrt(1.0 + 250.0 / re_safe)
-            
+            # dP = K*Q|Q|/Cd(Re)^2 with Re ~ |Q|:  dP/dQ = 2*K*|Q|/Cd^2 * (1 - dlnCd/dlnRe)
+            cd_val = FluidProperties.get_orifice_cd(re_orifice)
             c_const = 0.5 * density / (area_pipe ** 2) * (1.0 - beta_ratio**4) / (beta_ratio**4) * (1.0 - beta_ratio**2)
-            
-            if cd_val <= 0.05:
-                cd = 0.05
-                return c_const / (cd**2) * 2.0 * abs(flow_rate)
-            else:
-                c_re_coeff = (density * (1.0 / area_orifice) * orif_d) / max(1e-7, viscosity)
-                c_inv_q = 250.0 / c_re_coeff
-                return c_const / 0.36 * (2.0 * abs(flow_rate) + c_inv_q)
+            q_eff = max(abs(flow_rate), 1e-6 * area_orifice * max(1e-7, viscosity) / (density * orif_d))
+            return c_const * 2.0 * q_eff / cd_val**2 * (1.0 - FluidProperties.get_orifice_cd_slope(re_orifice))
 
     def calculate(self):
         # Trigger calibration just in case

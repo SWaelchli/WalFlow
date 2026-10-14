@@ -57,6 +57,7 @@ All notable changes to the WälFlow project will be documented in this file.
 - Fixed solver warm-start cache lookup collisions by incorporating active node pressure-boundary states into the topology key.
 - Fixed solver pressure drop evaluation and mass-balance constraints for 2-port inline nodes (such as flow sources and pumps) when their inlet ports are unconnected.
 - Fixed reducer gradual-contraction loss coefficients (Crane TP 410 angle ranges were swapped, overstating losses ~57% for standard reducers) and the reducer Jacobian sign under static pressure recovery.
+- Fluid properties and component correlations: tabulated water, seawater and glycol properties, Walther oil viscosity, RVP-based fuel vapour pressure, fluid temperature ranges (unknown fluid ids are an error), NPSHa/NPSHr check with editable margin, filter reference viscosity, low-Re orifice Cd, Churchill pipe friction, ISO 5167 / heat exchanger / flow source limit warnings.
 - Pipe classes now reject unknown fitting standard references, and pipe class library import keeps reducer / schedule standard codes.
 - TR2000 design-code mapping to DIN EN reducers now matches whole words only; reducer nodes with null geometry no longer crash the graph parser.
 - Fixed imperial pipe sizes stored 39× too small, misaligned DataList columns (added sortable Name column), numeric inputs reformatting while typing (now commit on blur/Enter, Esc reverts), cloud-load cancel leaving the wrong diagram active, and examples/files loaded over an open cloud drawing overwriting it.

@@ -32,11 +32,20 @@ class Pipe(HydraulicNode):
         self.add_inlet()
         self.add_outlet()
 
+    def _friction_factor(self, re: float) -> float:
+        """Darcy friction factor from the Churchill (1977) equation (F1-21): one continuous expression for
+        laminar (64/Re), transition and turbulent (Colebrook-like) flow, so the solver sees no blend band."""
+        if re < 10.0:
+            return 64.0 / re
+        eps_over_d = self.rel_roughness_term * 3.7
+        a = (2.457 * math.log(1.0 / ((7.0 / re) ** 0.9 + 0.27 * eps_over_d))) ** 16
+        b = (37530.0 / re) ** 16
+        return 8.0 * ((8.0 / re) ** 12 + 1.0 / (a + b) ** 1.5) ** (1.0 / 12.0)
+
     def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float) -> float:
         """
-        Calculates pressure drop using the Darcy-Weisbach equation.
-        Friction factor is calculated with a smooth transition between laminar (Re < 2000)
-        and turbulent (Re > 4000) regimes to ensure solver stability.
+        Calculates pressure drop using the Darcy-Weisbach equation with the Churchill friction factor,
+        which is continuous from laminar to fully turbulent flow.
         """
         if self.diameter <= 0:
             raise ValueError("Pipe diameter must be strictly positive.")
@@ -47,16 +56,7 @@ class Pipe(HydraulicNode):
         if viscosity > 0 and abs_v > 0:
             re = (density * abs_v * self.diameter) / viscosity
 
-            if re < 2000.0:
-                f = 64.0 / re
-            elif re > 4000.0:
-                f = 0.25 / (math.log10(self.rel_roughness_term + 5.74 / re**0.9))**2
-            else:
-                # Smooth blending between 2000 and 4000
-                f_lam = 64.0 / re
-                f_turb = 0.25 / (math.log10(self.rel_roughness_term + 5.74 / re**0.9))**2
-                w = (re - 2000.0) / 2000.0
-                f = (1.0 - w) * f_lam + w * f_turb
+            f = self._friction_factor(re)
         else:
             f = 0.0
             
@@ -100,18 +100,11 @@ class Pipe(HydraulicNode):
         if viscosity > 0 and abs_v > 0:
             re = (density * abs_v * self.diameter) / viscosity
 
-            if re < 2000.0:
-                return 32.0 * viscosity * self.length / ((self.diameter ** 2) * self.area)
-            elif re > 4000.0:
-                f = 0.25 / (math.log10(self.rel_roughness_term + 5.74 / re**0.9))**2
-                return f * (self.length / self.diameter) * density * abs(flow_rate) / (self.area ** 2)
-            else:
-                # Blended derivative
-                deriv_lam = 32.0 * viscosity * self.length / ((self.diameter ** 2) * self.area)
-                f_turb = 0.25 / (math.log10(self.rel_roughness_term + 5.74 / re**0.9))**2
-                deriv_turb = f_turb * (self.length / self.diameter) * density * abs(flow_rate) / (self.area ** 2)
-                w = (re - 2000.0) / 2000.0
-                return (1.0 - w) * deriv_lam + w * deriv_turb
+            # dP = f(Re) (L/D) rho Q|Q| / (2 A^2), Re ~ |Q|  ->  dP/dQ = (L/D) rho |Q| / (2 A^2) (2 f + dF/dlnRe)
+            f = self._friction_factor(re)
+            h = 1e-4
+            dfdlnre = (self._friction_factor(re * (1.0 + h)) - self._friction_factor(re * (1.0 - h))) / (2.0 * h)
+            return (self.length / self.diameter) * density * abs(flow_rate) / (2.0 * self.area ** 2) * (2.0 * f + dfdlnre)
         elif viscosity > 0:
             # Zero flow: laminar limit instead of a zero slope, so a dead leg keeps a usable Jacobian
             return 32.0 * viscosity * self.length / ((self.diameter ** 2) * self.area)

@@ -714,10 +714,17 @@ class NetworkSolver:
         gs = getattr(self.network, 'global_settings', None)
         fluid = getattr(gs, 'fluid_type', 'water') if gs else 'water'
         issues = []
+        t_lo, t_hi = FluidProperties.temperature_range_c(fluid)
         for nid in sorted(self.active_node_ids):
             node = self.network.nodes[nid]
             if isinstance(node, Pipe):
                 continue
+            # F1-31: fluid correlations are only valid inside the fluid's temperature range
+            t_ports = [p.temperature - 273.15 for p in node.inlets + node.outlets if p.flow_rate != 0.0]
+            if t_ports and (min(t_ports) < t_lo or max(t_ports) > t_hi):
+                t_bad = min(t_ports) if min(t_ports) < t_lo else max(t_ports)
+                issues.append({"node_id": node.id, "node": node.name, "port": "-", "temperature_c": t_bad,
+                               "range_c": [t_lo, t_hi], "reason": "temperature_out_of_range"})
             for kind, ports in (("inlet", node.inlets), ("outlet", node.outlets)):
                 for i, port in enumerate(ports):
                     p = port.pressure

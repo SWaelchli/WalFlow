@@ -4,7 +4,7 @@ import {
 } from 'recharts';
 import { useUnits } from '../../context/UnitContext';
 
-const CavitationWarning = () => (
+const CavitationWarning = ({ npsha, required, unit, mult }) => (
   <div style={{
     background: '#fff1f2',
     padding: '10px',
@@ -20,7 +20,9 @@ const CavitationWarning = () => (
       CAVITATION RISK
     </div>
     <p style={{ fontSize: '11px', color: 'var(--color-danger)', margin: 0, paddingLeft: '24px' }}>
-      Suction pressure is critically low. Pump may be cavitating, leading to damage.
+      {npsha != null
+        ? `NPSHa ${(npsha * mult).toFixed(1)} ${unit} is below NPSHr + margin (${(required * mult).toFixed(1)} ${unit}). Pump may be cavitating, leading to damage.`
+        : 'Suction pressure is critically low. Pump may be cavitating, leading to damage.'}
     </p>
   </div>
 );
@@ -128,7 +130,22 @@ const PumpDetails = memo(function PumpDetails({ node }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', fontFamily: 'inherit' }}>
-      {showCavitationWarning && <CavitationWarning />}
+      {showCavitationWarning && (
+        <CavitationWarning
+          npsha={telemetry?.npsha_m}
+          required={(telemetry?.npshr_m || 0) + (telemetry?.npsh_margin_m ?? 0.5)}
+          unit={isImperial ? 'ft' : 'm'}
+          mult={isImperial ? 3.280839895 : 1}
+        />
+      )}
+      {telemetry?.npsha_m != null && (
+        <div style={{ fontSize: '11.5px', color: 'var(--color-text-secondary)', display: 'flex', justifyContent: 'space-between' }}>
+          <span>NPSHa:</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--color-text-primary)' }}>
+            {(telemetry.npsha_m * (isImperial ? 3.280839895 : 1)).toFixed(1)} {isImperial ? 'ft' : 'm'}
+          </span>
+        </div>
+      )}
       {telemetry?.motor_overload && (
         <PumpWarning tone="danger" title={`MOTOR OVERLOADED (${Math.round(motorLoadPct || 0)} % OF RATING)`}
           text="Shaft power exceeds the motor rating. A fixed-speed motor keeps the flow but would overheat and trip; reduce the discharge pressure or use a larger motor." />

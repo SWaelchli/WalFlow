@@ -53,7 +53,10 @@ class HeatExchanger(HydraulicNode):
         
         # Internal State
         self.actual_duty_kw = 0.0
-        
+        # F1-40: design effectiveness of the rating and the resulting feasibility status
+        self.design_effectiveness = None
+        self.rating_status = "ok"   # "ok" | "high_effectiveness" (> 0.95) | "infeasible" (>= 1)
+
         self.add_inlet()
         self.add_outlet()
 
@@ -63,6 +66,8 @@ class HeatExchanger(HydraulicNode):
         # For a single-phase utility medium with infinite capacity (C_max = inf):
         # effectiveness = (t_in - t_out) / (t_in - tm)
         effectiveness = (t_in - t_out) / (t_in - tm)
+        self.design_effectiveness = effectiveness
+        self.rating_status = "infeasible" if effectiveness >= 1.0 else ("high_effectiveness" if effectiveness > 0.95 else "ok")
         # Bounded between 0 and 1
         effectiveness = max(1e-5, min(0.999, effectiveness))
         ntu = -math.log(1.0 - effectiveness)

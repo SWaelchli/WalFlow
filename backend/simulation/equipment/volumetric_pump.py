@@ -30,7 +30,8 @@ class VolumetricPump(HydraulicNode):
     `pressure_cap_reached` is set.
     """
     def __init__(self, name: str, flow_rated: float, motor_power: float, efficiency: float, drive_type: str = DRIVE_FIXED_SPEED,
-                 max_discharge_pressure: float = DEFAULT_MAX_DISCHARGE_PA):
+                 max_discharge_pressure: float = DEFAULT_MAX_DISCHARGE_PA,
+                 npshr_m: float = 0.0, npsh_margin_m: float = 0.5):
         super().__init__(name, node_type="volumetric_pump")
         self.blocks_flow_on_shutdown = True
 
@@ -40,6 +41,9 @@ class VolumetricPump(HydraulicNode):
         self.drive_type = drive_type if drive_type in (DRIVE_FIXED_SPEED, DRIVE_VFD_POWER_LIMIT) else DRIVE_FIXED_SPEED
         self.max_discharge_pressure = max_discharge_pressure  # Pa(a)
         self.cavitation_warning = False
+        self.npshr_m = npshr_m              # required NPSH from the datasheet (m), 0 = not entered
+        self.npsh_margin_m = npsh_margin_m  # margin on top of NPSHr (m)
+        self.npsha_m = None                 # available NPSH at the current operating point (m)
         self.motor_overload = False
         self.motor_load_pct = 0.0
         self.power_limited = False
@@ -163,15 +167,9 @@ class VolumetricPump(HydraulicNode):
         inlet = self.inlets[0]
         outlet = self.outlets[0]
 
-        # Cavitation Check
+        # NPSH check (F1-28)
         fluid_type = self.global_settings.fluid_type if self.global_settings else 'water'
-        vapor_pressure = FluidProperties.get_vapor_pressure(fluid_type, inlet.temperature)
-
-        npsh_safety_margin = 1.2
-        if inlet.pressure < (vapor_pressure * npsh_safety_margin):
-            self.cavitation_warning = True
-        else:
-            self.cavitation_warning = False
+        self.update_npsh(inlet)
 
         dp = self.calculate_delta_p(inlet.flow_rate, inlet.density, inlet.viscosity, p_in_pa=inlet.pressure)
         self._update_warnings(inlet.flow_rate, dp, inlet.pressure + dp)

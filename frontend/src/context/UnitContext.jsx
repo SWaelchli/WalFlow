@@ -202,6 +202,8 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
 
       // Pipe Length, Level, Elevation (base: m)
       case 'head_rated_m':
+      case 'npshr_m':
+      case 'npsh_margin_m':
       case 'length':
       case 'level':
       case 'elevation':
@@ -303,6 +305,8 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
 
       // Pipe Length, Level, Elevation (input: ft -> base: m)
       case 'head_rated_m':
+      case 'npshr_m':
+      case 'npsh_margin_m':
       case 'length':
       case 'level':
       case 'elevation':

@@ -2,9 +2,6 @@ from simulation.equipment.base_node import HydraulicNode
 from simulation.fluid_utils import FluidProperties
 import math
 
-# Constants from the viscous-corrected Cd model: Cd = 0.6 / sqrt(1 + _CD_VISCOUS_RE_COEFF / Re_o)
-_CD_VISCOUS_RE_COEFF = 250.0
-_CD_TURBULENT_SQ = 0.36  # 0.6^2, turbulent discharge coefficient squared
 
 class Orifice(HydraulicNode):
     """
@@ -40,6 +37,27 @@ class Orifice(HydraulicNode):
         self.add_outlet()
 
     @staticmethod
+    def _beta_eff(beta: float) -> float:
+        """Beta used in the correlations: the true beta (F1-39), only guarded against 0 and 1."""
+        return min(0.99, max(0.01, beta))
+
+    def iso_validity_issues(self, re_pipe: float = None) -> list:
+        """Limits of ISO 5167-2 that the current geometry / operating point violates (F1-39)."""
+        pipe_d = max(0.001, getattr(self, 'pipe_diameter', 0.05248))
+        orif_d = self.orifice_diameter
+        beta = orif_d / pipe_d
+        issues = []
+        if not 0.1 <= beta <= 0.75:
+            issues.append(f"beta {beta:.2f} outside 0.1-0.75")
+        if orif_d < 0.0125:
+            issues.append(f"orifice d {orif_d * 1000:.1f} mm below 12.5 mm")
+        if not 0.05 <= pipe_d <= 1.0:
+            issues.append(f"pipe D {pipe_d * 1000:.0f} mm outside 50-1000 mm")
+        if re_pipe is not None and re_pipe < self._re_valid(self._beta_eff(beta)):
+            issues.append(f"Re_D {re_pipe:.0f} below {self._re_valid(self._beta_eff(beta)):.0f}")
+        return issues
+
+    @staticmethod
     def _smoothstep(t: float) -> float:
         """C^1 smoothstep, clamped to [0, 1]. 0 below the blend band, 1 above it."""
         t = max(0.0, min(1.0, t))
@@ -63,7 +81,7 @@ class Orifice(HydraulicNode):
         Reader-Harris/Gallagher discharge coefficient C_d (ISO 5167-2:2022 Formula (4))
         for corner taps (L1 = L2' = 0).
         Returns C_d directly — NOT the meter coefficient C_m = C_d / sqrt(1 - beta^4).
-        beta must be the clamped effective beta ratio (within [0.1, 0.75]).
+        beta outside 0.1-0.75 is an extrapolation of the RG correlation (flagged by iso_validity_issues).
         """
         re_safe = max(1e-9, re_pipe)
         a = (19000.0 * beta / re_safe) ** 0.8
@@ -95,7 +113,7 @@ class Orifice(HydraulicNode):
         cd_rg = self._cd_rg_iso5167(beta_eff, pipe_d, re_pipe)
         c_rg = cd_rg / math.sqrt(1.0 - beta_eff ** 4)
         re_o = max(1e-6, re_pipe / beta_eff)
-        c_low = (0.6 / math.sqrt(1.0 + _CD_VISCOUS_RE_COEFF / re_o)) / math.sqrt(1.0 - beta_eff ** 4)
+        c_low = FluidProperties.get_orifice_cd(re_o) / math.sqrt(1.0 - beta_eff ** 4)
         w = self._smoothstep((re_pipe - re_lo) / (re_valid - re_lo))
         return (1.0 - w) * c_low + w * c_rg
 
@@ -111,7 +129,7 @@ class Orifice(HydraulicNode):
         orif_d = max(0.0001, self.orifice_diameter)
         beta = orif_d / pipe_d
         if beta_eff is None:
-            beta_eff = min(0.75, max(0.1, beta))
+            beta_eff = self._beta_eff(beta)
         re_pipe = self._pipe_reynolds(flow_rate, density, viscosity, pipe_d)
 
         if self.standard == 'classic_cd':
@@ -167,7 +185,7 @@ class Orifice(HydraulicNode):
         beta_ratio = orif_d / pipe_d
 
         if self.standard == 'classic_cd':
-            # Legacy model: byte-for-byte previous behavior
+            # Classic Cd model
             beta_ratio = min(0.99, beta_ratio)
             area_pipe = math.pi * (pipe_d / 2.0) ** 2
             velocity = flow_rate / max(1e-9, area_pipe)
@@ -183,7 +201,7 @@ class Orifice(HydraulicNode):
             return rec_delta_p * (1 - beta_ratio ** 2)
 
         # ISO 5167 model
-        beta_eff = min(0.75, max(0.1, beta_ratio))
+        beta_eff = self._beta_eff(beta_ratio)
         area_orifice = math.pi * (orif_d / 2.0) ** 2
         c_meter = self._effective_c_meter(flow_rate, density, viscosity, pipe_d, beta_eff)
 
@@ -207,27 +225,19 @@ class Orifice(HydraulicNode):
         mu = max(1e-7, viscosity)
 
         if self.standard == 'classic_cd':
-            # Legacy model: byte-for-byte previous analytic derivative
+            # Classic Cd model: analytic derivative
             beta_ratio = min(0.99, beta_ratio)
             v_orifice = flow_rate / max(1e-9, area_orifice)
             re_orifice = (density * abs(v_orifice) * orif_d) / max(1e-7, viscosity)
 
-            cd_turbulent = 0.60
-            re_safe = max(1e-6, re_orifice)
-            cd_val = cd_turbulent / math.sqrt(1.0 + 250.0 / re_safe)
-
+            # dP = K*Q|Q|/Cd(Re)^2 with Re ~ |Q|:  dP/dQ = 2*K*|Q|/Cd^2 * (1 - dlnCd/dlnRe)
+            cd_val = FluidProperties.get_orifice_cd(re_orifice)
             c_const = 0.5 * density / (area_pipe ** 2) * (1.0 - beta_ratio ** 4) / (beta_ratio ** 4) * (1.0 - beta_ratio ** 2)
-
-            if cd_val <= 0.05:
-                cd = 0.05
-                return c_const / (cd ** 2) * 2.0 * abs(flow_rate)
-            else:
-                c_re_coeff = (density * (1.0 / area_orifice) * orif_d) / max(1e-7, viscosity)
-                c_inv_q = 250.0 / c_re_coeff
-                return c_const / 0.36 * (2.0 * abs(flow_rate) + c_inv_q)
+            q_eff = max(abs(flow_rate), 1e-6 * area_orifice * mu / (density * orif_d))
+            return c_const * 2.0 * q_eff / cd_val ** 2 * (1.0 - FluidProperties.get_orifice_cd_slope(re_orifice))
 
         # ISO 5167 model: semi-analytic chain rule through the closed-form meter coefficient
-        beta_eff = min(0.75, max(0.1, beta_ratio))
+        beta_eff = self._beta_eff(beta_ratio)
         c_meter = self._effective_c_meter(flow_rate, density, mu, pipe_d, beta_eff)
         # Recover C_d for Formula (7); C_m = C_d/sqrt(1-beta^4) so C_d = C_m*sqrt(1-beta^4)
         sqrt_one_minus_b4 = math.sqrt(1.0 - beta_eff ** 4)
@@ -238,8 +248,8 @@ class Orifice(HydraulicNode):
         # Small-|q| laminar limit: C_m ~ sqrt(Re_o) so d(tap_dp)/dq tends to a positive constant
         if abs(flow_rate) < 1e-12:
             c_re = density * pipe_d / (area_pipe * mu)
-            slope = (0.5 * density * (1.0 - beta_eff ** 4) * _CD_VISCOUS_RE_COEFF * beta_eff
-                     / (area_orifice ** 2 * _CD_TURBULENT_SQ * c_re))
+            slope = (0.5 * density * (1.0 - beta_eff ** 4) * beta_eff
+                     / (area_orifice ** 2 * 0.04 * c_re))   # Cd = 0.2*sqrt(Re_o) (Wuest) at Re -> 0
             return ratio * slope
 
         re_pipe = self._pipe_reynolds(flow_rate, density, mu, pipe_d)
