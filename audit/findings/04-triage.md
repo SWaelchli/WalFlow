@@ -79,7 +79,7 @@ Sorted by severity, then effort. 95 findings, 6 merged into others (see the end 
 | F3-07 | M | U | Help hidden, outdated, raw LaTeX; no model/limits doc | `HelpInfoModal.jsx`, grep `Calculate`; `README.md` | B4 |
 | F3-05 | L | U | No plausibility warnings (pump run-out, velocity, class rating, fluid range) | new warnings module; `DataList.jsx`, grep `> 4.0`; `PumpDetails.jsx` | B4 |
 | F3-06 | L | U | 86 native alert/confirm/prompt dialogs | grep `window\.(alert|confirm|prompt)\|\balert\(` in `frontend/src` | B4 |
-| F1-17 | L | P | No elevation except tanks; no fittings ΣK / entrance losses | `pipe.py › Pipe`; `graph_parser.py › parse_graph` | B6 (scope decision) |
+| F1-17 | L | P | No elevation except tanks; no fittings ΣK / entrance losses | `pipe.py › Pipe`; `graph_parser.py › parse_graph` | Roadmap (B6 decision) |
 
 ### S3: minor, cosmetic or hygiene (40)
 
@@ -619,3 +619,20 @@ Anchors at `HEAD` = `269fb23`: `App.jsx › onConnect` (line ~1000, no `isValidC
 - *Not covered.* The three pipe-dimension tables are still separate; `PipeClassesPage`, `Sidebar`, `DataList` only lost duplicated pipe-class code; `toDisplayValue` is used again (TankNode) so it stays.
 
 **Tests.** Backend 434 pass (`test_f1_12_jacobian`, `test_f1_13_port_transport`, `test_f1_20_node_fields`, `test_f3_19_versions`, `test_f2_24_*`). Frontend 211 pass (`App.test.jsx` smoke mount, `draftStorage`, `graphSignature`, `itemMemo`, `heatmapRange`, `pumpCurves`, `nodeDefaults`, `pipeSelectionPatches`); lint and build clean. Browser check (1568x698, Chrome): start, orphan draft dialog and restore, run to "Converged", component drag, per-tab draft key and heartbeat present. Two real tabs side by side and 1920x1080 were not checked.
+### B6: model scope (prepared 2026-10-15, not started)
+
+**Decisions (user, 2026-10-15).** F1-17 (pipe elevation, fittings ΣK, entrance loss): **not implemented**, moved to ROADMAP ("Pipe Elevation & Fittings Losses"); limits stay documented in the help. F1-33 (tank nozzle height): **closed, won't fix**. F1-23 (hidden per-tank fluid): **remove**. No file format bump.
+
+#### F1-23: tanks always use the system fluid (~0.5 day)
+1. `graph_parser.py › create_node` (tank): stop reading `d['fluid_type']`; use the global fluid (default water). `_validate_fluids` no longer checks tank `fluid_type` (the calibrated restriction keeps its own `fluid_type`, which is a different, visible field).
+2. `tank.py`: keep the `fluid_type` constructor argument (set by the parser from the global fluid).
+3. Example `Example_API_682_Seal_Flush.wlf`: remove the hidden VG32 tank fluid (check that results stay sensible in a VG46 system) and any other tank `fluid_type` in examples, `GreetingCanvas.wlf`, and `Sidebar` / `nodeDefaults` / `SetupPanel` if they write one. Old files that still contain the field load; the field is ignored.
+4. `docs/node-fields.md`: tank row without `fluid_type`; `test_f1_20_node_fields.py` stays equal.
+
+**Tests.** `test_f1_23_tank_fluid.py`: tank with `fluid_type` VG32 in a VG46 system gets VG46 density and viscosity; unknown tank `fluid_type` does not raise. Full backend suite, frontend suite, lint and build; run the Seal_Flush example before and after and compare.
+
+**Out of scope.** F1-17 (roadmap), F1-33 (closed), mixed-fluid networks.
+
+**Version and docs.** Brief `CHANGELOG.md` entry; no version bump, no format change, no commit unless you ask.
+
+**B6 result (not committed).** F1-23 done: `graph_parser.py` tanks take the system fluid (a stale `fluid_type` is ignored and not validated); hidden tank fluid removed from `Example_API_682_Seal_Flush` (was VG32 in a VG46 system), `Example_Chilled_Water_Loop` and `Example_Thermal_Management` (same as system); `docs/node-fields.md` lists `fluid_type` for the calibrated restriction only. Seal_Flush still converges (tank now VG46). Tests: `test_f1_23_tank_fluid.py`; backend 436 pass, frontend 211 pass, lint clean. Build not re-run (no frontend source changed).

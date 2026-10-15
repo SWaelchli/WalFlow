@@ -33,6 +33,7 @@ All notable changes to the WälFlow project will be documented in this file.
 
 ### Changed
 
+- **Tank fluid**: tanks always use the system fluid; a hidden per-tank `fluid_type` in old files is ignored (audit F1-23).
 - **Settings levels**: Drawing (in the `.wlf`), Project and Global settings. Solver settings can be set on each level and are applied in the order Drawing, Project, Global (one tick box per level); fluid and ambient stay with the drawing. The unit system is now a per-user display preference stored with the account.
 - **UX**: resizable and collapsible data panel, fit-view after loading, right-click menus, empty-canvas hint, "-" instead of fake zeros before a run, positive pressure drops, tank and atmospheric pressure units, readable auto names, round pump chart ticks, and darker text colours (orange CTA now uses dark text) for WCAG contrast.
 - **Model checks and status**: the drawing is checked before each run. Errors (unknown component type, several pipes on one port, empty drawing) block the run; warnings (open ports, self-loops, isolated components, circuits without tank or source) do not. A navbar status chip (connected, signed out, running, converged, failed, out of date) opens a panel that lists the checks and the notes of the last run, with a Show button for each item. A second pipe on a port is refused: use a splitter or mixer.

@@ -114,6 +114,8 @@ class GraphParser:
         gs_fluid = getattr(graph.global_settings, 'fluid_type', None) if graph.global_settings else None
         ids = [("System fluid", gs_fluid or 'water')]
         for node in graph.nodes:
+            if node.type == 'tank':
+                continue  # F1-23: tank fluid_type is ignored
             f = (node.data or {}).get('fluid_type')
             if f and f != 'system':
                 ids.append((f"'{(node.data or {}).get('label') or node.id}': fluid", f))
@@ -238,12 +240,8 @@ class GraphParser:
         
         node = None
         if t == 'tank':
-            # Priority: Node data > Global settings > Default
-            fluid_type = d.get('fluid_type')
-            if not fluid_type and global_settings:
-                fluid_type = getattr(global_settings, 'fluid_type', 'water')
-            if not fluid_type:
-                fluid_type = 'water'
+            # F1-23: a tank always uses the system fluid (a stale per-tank fluid_type in old files is ignored)
+            fluid_type = getattr(global_settings, 'fluid_type', None) or 'water'
 
             node = Tank(
                 name=name,

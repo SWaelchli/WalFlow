@@ -34,8 +34,7 @@
         "label": "Chilled Water Reservoir",
         "level": 3.0,
         "elevation": 5.0,
-        "temperature": 279.15,
-        "fluid_type": "water"
+        "temperature": 279.15
       }
     },
     {

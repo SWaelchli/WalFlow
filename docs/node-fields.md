@@ -11,7 +11,7 @@ Units in the file are what the user's data holds; the parser converts to SI (Pa,
 | all | `label` | text | `<type>_<id>` |
 | all | `active` | bool | true |
 | all | `relief_ramp_enabled` | bool | - |
-| all | `fluid_type` | catalogue id (`system` = global) | system |
+| calibrated_restriction | `fluid_type` | catalogue id (`system` = global) | system |
 | tank | `elevation` | m | 0 |
 | tank | `level` | m | 1 |
 | tank | `temperature` | **K** | 293.15 |

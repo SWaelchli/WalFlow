@@ -34,8 +34,7 @@
         "label": "Warm Oil Reservoir (55\u00b0C)",
         "level": 2.0,
         "elevation": 0.0,
-        "temperature": 328.15,
-        "fluid_type": "iso_vg_46"
+        "temperature": 328.15
       }
     },
     {

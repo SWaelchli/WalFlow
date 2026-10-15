@@ -34,6 +34,10 @@ This document outlines planned features, overlays, and enhancements for the WalF
   * **Goal:** Determine standard formulas and reference pressure drops ($\Delta P_{\text{ref}}$) for assessing capacity utilization percentage ($Q_{\text{actual}} / Q_{\text{rated}}$) and overcapacity alerts for both incompressible liquids and compressible gases.
   * **Status (B1c, 2026-10-14):** liquid service done: rated flow = flow at full lift with the inlet at 110 % of set (gauge) against the actual outlet pressure, from the device's Cv / orifice. Gases, two-phase and fire-case accumulation remain open.
 
+- [ ] **⛰️ Pipe Elevation & Fittings Losses (audit F1-17)**
+  * **Concept:** Per-pipe elevation change ($\rho g \Delta Z$ term) so suction lift, siphons and NPSH at an elevated pump can be modelled, plus a fittings $\Sigma K$ (or equivalent length) per pipe and a tank-outlet entrance loss ($\approx 1.5\,\rho v^2/2$). Steady-state only.
+  * **Status (B6 decision, 2026-10-15):** not implemented. Today only tanks have an elevation, pipes are straight-pipe Darcy-Weisbach, and the in-app help documents these limits. New fields would be optional (no file format bump).
+
 - [ ] **🏷️ Certified Relief Capacity Input (PSVs & Rupture Discs)**
   * **Concept:** Optional "certified capacity (L/min)" field from the valve datasheet / nameplate (API 526 orifice letter, ASME-stamped capacity). When set, capacity utilisation and overcapacity use it instead of the Cv-derived rated flow.
   * **Engineering Value:** Matches the relief study to the purchased valve; the Cv-derived value (B1c) stays the default when no certified figure is known.
@@ -106,7 +110,7 @@ This document outlines planned features, overlays, and enhancements for the WalF
   * **Problem**: With the static pressure model, only the Reducer node accounts for velocity head. An expander (e.g. DN50 → DN80) with a short pipe (< ~1.5 m) to a tank or pressure source recovers more static pressure than the system loses, so no steady-state solution exists and the solver reports non-convergence. Reducing flow (contraction) is unaffected.
   * **Fix to evaluate**: Add entry / exit losses and velocity-head handling at tanks and pressure sources (or an equivalent total-pressure formulation), then re-verify expander cases against hand calculations. Needs evaluation before implementing.
 
-- [ ] **🔓 Public Read Access for Pipe Class Catalog**
+- [x] **🔓 Public Read Access for Pipe Class Catalog**
   * **Problem**: `GET /api/pipe-classes` requires login, while the fitting standards catalog (`GET /api/fitting-standards`) does not.
   * **Fix**: Make all catalog reads (pipe classes, fitting standards) public; keep create / update / delete / import restricted to `admin` and `pipe_manager`. Add tests for anonymous read and for write rejection.
 
@@ -114,7 +118,7 @@ This document outlines planned features, overlays, and enhancements for the WalF
   * **Problem**: Only ASME B36.10M / B36.19M pipe schedules exist, so DIN EN pipe classes (and DIN reducers) fall back to ASME schedule data for lines without a pipe class.
   * **Fix**: Seed a DIN / EN pipe dimension standard (e.g. DIN EN 10220 / ISO 4200 series) as a `pipe_schedule` fitting standard, and use the pipe class's `schedule_standard_code` in the pipe and reducer inspectors instead of the hard-coded ASME table.
 
-- [ ] **🔥 Extend Equipment Classes to Model Temperature Changes Due to Pressure Drop**
+- [x] **🔥 Extend Equipment Classes to Model Temperature Changes Due to Pressure Drop**
   * **Scope**: Add or extend `calculate_temperature()` in equipment classes (e.g., `Pipe`, `Orifice`, `Filter`) to model temperature changes due to pressure drop using the formula `ΔT = ΔP / (ρ * Cp)`.
   * **Considerations**:
     - Ensure numerical stability (e.g., handle small flow rates, zero pressure drop).
@@ -129,6 +133,7 @@ This document outlines planned features, overlays, and enhancements for the WalF
 
 - [ ] **🌡️ Controller Sensitivity With Temperature-Coupled Loops**
   * **Problem**: The pressure-controller Jacobian is measured with fluid properties frozen. In strongly temperature-coupled loops (large throttling heat in oil systems) the loop converges linearly and needs a few extra iterations, and the solve is slower on the largest diagrams (about 2 s for `walflow-diagram (8)`).
+  * **Status (2026-10-15):** the linear convergence on the large network was mostly a Jacobian error and is fixed (B1d/B5: complementarity rows differentiated from the node itself). `Example_Large_Reference_Network` now solves in about 1.3 s (warm). Temperature coupling is still frozen in the perturbed solves; re-measure on a strongly coupled oil loop before closing.
   * **Fix to evaluate**: Include the property update in the perturbed solves only when the previous iteration shows temperature coupling, or reuse the Jacobian between iterations (Broyden update). Measure first; do not trade away robustness.
 
 - [ ] **🔁 Thermal Control Valve Loop Stops Within 0.1 K of Its Setpoint**

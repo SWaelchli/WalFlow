@@ -36,7 +36,6 @@
         "level": 1.5,
         "elevation": 0,
         "temperature": 303.15,
-        "fluid_type": "iso_vg_32",
         "rotation": 0
       },
       "width": 95,
