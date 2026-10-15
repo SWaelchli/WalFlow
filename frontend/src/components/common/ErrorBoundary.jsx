@@ -1,4 +1,5 @@
 import React from 'react';
+import { confirmDialog } from '../../utils/dialogs';
 import { LOCAL_DRAFT_KEY } from '../../hooks/useAutoSaveSession';
 
 const readDraft = () => {
@@ -43,8 +44,14 @@ export default class ErrorBoundary extends React.Component {
     URL.revokeObjectURL(url);
   };
 
-  discardDraftAndReload = () => {
-    if (!window.confirm('Discard the local draft and reload? Export it first if you want to keep it.')) return;
+  discardDraftAndReload = async () => {
+    const ok = await confirmDialog({
+      title: 'Discard local draft?',
+      message: 'Discard the local draft and reload? Export it first if you want to keep it.',
+      confirmLabel: 'Discard and reload',
+      danger: true,
+    });
+    if (!ok) return;
     try {
       localStorage.removeItem(LOCAL_DRAFT_KEY);
     } catch {

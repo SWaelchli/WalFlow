@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
+import { notify } from '../utils/dialogs';
 import { useAuth } from './useAuth';
 import { toSolverGraph } from '../utils/diagramFile';
 import { computeCaseInputHash } from '../utils/resultHash';
@@ -19,6 +20,10 @@ export function useWebSocketSimulation({ nodes, edges, globalSettings, cases = [
   const [telemetryMode, setTelemetryMode] = useState('mitigated'); // 'mitigated' | 'peak' | 'unmitigated_global'
   const [hasPsv, setHasPsv] = useState(false);
   const [graphError, setGraphError] = useState(null); // last rejected graph update (shown inline, not as a popup)
+  // Last model error of a run, shown as a banner (F3-04/F3-06). `id` changes with every new error, so the same text is shown again.
+  const [runErrorState, setRunErrorState] = useState({ message: null, id: 0 });
+  const setRunError = useCallback((message) => setRunErrorState((prev) => ({ message, id: message ? prev.id + 1 : prev.id })), []);
+  const runError = runErrorState.message;
   const [loginRequired, setLoginRequired] = useState(false); // server only lets logged-in users simulate (F3-03)
 
   // Refs to eliminate socket churn
@@ -105,6 +110,7 @@ export function useWebSocketSimulation({ nodes, edges, globalSettings, cases = [
           const kpisData = response.kpis || null;
 
           setLastStats(response.stats);
+          setRunError(null);
           setHasPsv(psvPresent);
 
           // Results belong to the case and the inputs the run was sent with (F2-07)
@@ -120,13 +126,9 @@ export function useWebSocketSimulation({ nodes, edges, globalSettings, cases = [
 
         } else if (response.status === 'error') {
           setIsSimulating(false);
-          const run = pendingRunRef.current;
           pendingRunRef.current = null;
-          if (run?.silent) {
-            console.warn(`Simulation not run: ${response.message}`);
-          } else {
-            alert(`Simulation Engine Error: ${response.message}`);
-          }
+          console.warn(`Simulation not run: ${response.message}`);
+          setRunError(response.message || 'The solver reported an error.');
         } else {
           setIsSimulating(false);
         }
@@ -134,9 +136,8 @@ export function useWebSocketSimulation({ nodes, edges, globalSettings, cases = [
         // F2-15: an unreadable reply must not leave the user waiting without any message
         console.error('Failed to parse WebSocket message:', e);
         setIsSimulating(false);
-        const run = pendingRunRef.current;
         pendingRunRef.current = null;
-        if (!run?.silent) alert('The solver reply could not be read. Please run the simulation again.');
+        setRunError('The solver reply could not be read. Please run the simulation again.');
       }
     };
 
@@ -149,12 +150,13 @@ export function useWebSocketSimulation({ nodes, edges, globalSettings, cases = [
         socket.close();
       }
     };
-  }, [isAuthenticated, reconnectTrigger]);
+  }, [isAuthenticated, reconnectTrigger, setRunError]);
 
-  // options.silent: automatic run after loading a diagram; model errors are logged instead of shown as alerts
+  // options.silent: automatic run after loading a diagram; the "not connected" notice is skipped
   const runSimulation = useCallback((options = {}) => {
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {
       setIsSimulating(true);
+      setRunError(null);
       pendingRunRef.current = {
         caseId: activeCaseId,
         hash: computeCaseInputHash({ nodes, edges, globalSettings, cases }, activeCaseId),
@@ -169,12 +171,12 @@ export function useWebSocketSimulation({ nodes, edges, globalSettings, cases = [
       return true;
     }
     if (options?.silent !== true) {
-      alert(loginRequired
+      notify(loginRequired
         ? "This server only allows signed-in users to run simulations. Please sign in and try again."
-        : "Simulation engine is not connected. Please ensure the backend is running.");
+        : "Simulation engine is not connected. Please ensure the backend is running.", 'warning');
     }
     return false;
-  }, [nodes, edges, globalSettings, cases, activeCaseId, loginRequired]);
+  }, [nodes, edges, globalSettings, cases, activeCaseId, loginRequired, setRunError]);
 
   // Live preview of a valve opening on the backend only. The value itself is stored case-aware by the
   // caller (updateNodeData); writing it here would change the base case from inside another case (F2-06).
@@ -204,6 +206,8 @@ export function useWebSocketSimulation({ nodes, edges, globalSettings, cases = [
     setTelemetryMode,
     hasPsv,
     graphError,
+    runError,
+    runErrorId: runErrorState.id,
     loginRequired
   };
 }

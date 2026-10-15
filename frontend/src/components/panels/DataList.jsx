@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { confirmDialog } from '../../utils/dialogs';
 import { PlusIcon, PlayIcon, ExportIcon, CaseIcon, TrashIcon, SpinnerIcon } from '../symbols/IconLibrary';
 import { findClosestPipeMatch, ASME_PIPE_STANDARDS } from '../../utils/standards_library';
 import { getPipeScheduleDetails } from '../../constants/asme_b16_9_data';
@@ -246,11 +247,6 @@ export default function DataList({
     });
   }, [cases, batchResults]);
 
-  // F2-07: results whose inputs changed since they were solved are labelled and dimmed
-  const activeResultsStale = useMemo(
-    () => isCaseResultStale(cases.find(c => c.id === activeCaseId), caseInputHashes),
-    [cases, activeCaseId, caseInputHashes]
-  );
 
   const onCaseDragStart = (e, colIdx) => {
     if (colIdx === 0) return; // Base Case cannot be dragged
@@ -663,10 +659,14 @@ export default function DataList({
                             )}
                             {!isBase && onDeleteCase && (
                               <button
-                                onClick={() => {
-                                  if (confirm(`Delete case "${caseName}"?`)) {
-                                    onDeleteCase(caseId);
-                                  }
+                                onClick={async () => {
+                                  const ok = await confirmDialog({
+                                    title: 'Delete case?',
+                                    message: `Delete case "${caseName}"?`,
+                                    confirmLabel: 'Delete',
+                                    danger: true,
+                                  });
+                                  if (ok) onDeleteCase(caseId);
                                 }}
                                 title="Delete this operating case"
                                 style={{ padding: '2px 6px', fontSize: '10px', borderRadius: '4px', border: '1px solid #fee2e2', background: '#fef2f2', cursor: 'pointer', color: 'var(--color-danger-text)', fontWeight: '600', whiteSpace: 'nowrap' }}
@@ -1000,7 +1000,7 @@ export default function DataList({
             )}
           </div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', textAlign: 'left', opacity: activeResultsStale ? 0.55 : 1 }} aria-label={activeResultsStale ? 'Results out of date' : undefined}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', textAlign: 'left' }}>
           <thead>
             <tr style={{ background: 'var(--color-border-hover)', borderBottom: '2px solid var(--color-border)', color: 'var(--color-brand-dark)', fontWeight: '700', position: 'sticky', top: 0, zIndex: 1 }}>
 

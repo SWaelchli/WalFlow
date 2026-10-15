@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 
+import { notify, confirmDialog } from '../../utils/dialogs';
 import axios from 'axios';
 import { useAuth } from '../../hooks/useAuth';
 import { FILE_FORMAT_VERSION, APP_VERSION, FILE_EXTENSION } from '../../constants';
@@ -145,14 +146,20 @@ const ProjectManagerModal = ({
       // Auto open the new project detail view
       fetchProjectDetail(response.data.id);
     } catch {
-      alert("Failed to create project.");
+      notify("Failed to create project.", 'error');
     } finally {
       setIsCreatingProject(false);
     }
   };
 
   const handleDeleteProject = async (projectId, title) => {
-    if (!window.confirm(`Are you sure you want to delete '${title}'? This will permanently delete all diagrams inside it.`)) return;
+    const ok = await confirmDialog({
+      title: 'Delete project?',
+      message: `Delete '${title}'? This will permanently delete all diagrams inside it.`,
+      confirmLabel: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
     try {
       await axios.delete(`/api/projects/${projectId}`);
       if (activeProject && activeProject.id === projectId) {
@@ -161,7 +168,7 @@ const ProjectManagerModal = ({
       }
       fetchProjects();
     } catch {
-      alert("Failed to delete project. You must be an Owner of this project.");
+      notify("Failed to delete project. You must be an Owner of this project.", 'error');
     }
   };
 
@@ -192,9 +199,9 @@ const ProjectManagerModal = ({
       setNewDiagramTitle("");
       setNewDiagramDesc("");
       fetchProjectDetail(projectDetail.id);
-      alert(`New PFD diagram '${response.data.title}' created inside project.`);
+      notify(`New PFD diagram '${response.data.title}' created inside project.`, 'success');
     } catch {
-      alert("Failed to create diagram inside project.");
+      notify("Failed to create diagram inside project.", 'error');
     } finally {
       setIsCreatingDiagram(false);
     }
@@ -239,7 +246,7 @@ const ProjectManagerModal = ({
         });
       }
     } catch {
-      alert("Failed to load diagram from server.");
+      notify("Failed to load diagram from server.", 'error');
       if (hideCanvasLoading) {
         hideCanvasLoading();
       }
@@ -254,7 +261,13 @@ const ProjectManagerModal = ({
 
 
   const handleDeleteDiagram = async (diagramId, title) => {
-    if (!window.confirm(`Are you sure you want to delete PFD diagram '${title}'?`)) return;
+    const ok = await confirmDialog({
+      title: 'Delete diagram?',
+      message: `Delete PFD diagram '${title}'?`,
+      confirmLabel: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
     try {
       await axios.delete(`/api/diagrams/${diagramId}`);
       if (activeDiagram && activeDiagram.id === diagramId) {
@@ -262,7 +275,7 @@ const ProjectManagerModal = ({
       }
       fetchProjectDetail(projectDetail.id);
     } catch {
-      alert("Failed to delete diagram. Project Owners or the diagram creator only.");
+      notify("Failed to delete diagram. Project Owners or the diagram creator only.", 'error');
     }
   };
 
@@ -278,12 +291,12 @@ const ProjectManagerModal = ({
       });
       setInviteUsername("");
       fetchProjectDetail(projectDetail.id);
-      alert(`User '${inviteUsername}' successfully added to the project.`);
+      notify(`User '${inviteUsername}' successfully added to the project.`, 'success');
     } catch (err) {
       if (err.response && err.response.data && err.response.data.detail) {
-        alert(err.response.data.detail);
+        notify(err.response.data.detail, 'warning');
       } else {
-        alert("Failed to add project member.");
+        notify("Failed to add project member.", 'error');
       }
     } finally {
       setIsAddingMember(false);
@@ -293,10 +306,17 @@ const ProjectManagerModal = ({
   // Remove Member
   const handleRemoveMember = async (memberId, username) => {
     if (!projectDetail) return;
-    const msg = username === currentUser?.username 
-      ? "Are you sure you want to leave this project?"
+    const leaving = username === currentUser?.username;
+    const msg = leaving
+      ? "Leave this project?"
       : `Remove team member '${username}' from project?`;
-    if (!window.confirm(msg)) return;
+const ok = await confirmDialog({
+      title: leaving ? 'Leave project?' : 'Remove member?',
+      message: msg,
+      confirmLabel: leaving ? 'Leave' : 'Remove',
+      danger: true,
+    });
+    if (!ok) return;
 
     try {
       await axios.delete(`/api/projects/${projectDetail.id}/members/${memberId}`);
@@ -309,9 +329,9 @@ const ProjectManagerModal = ({
       }
     } catch (err) {
       if (err.response && err.response.data && err.response.data.detail) {
-        alert(err.response.data.detail);
+        notify(err.response.data.detail, 'warning');
       } else {
-        alert("Failed to remove member.");
+        notify("Failed to remove member.", 'error');
       }
     }
   };
@@ -327,9 +347,9 @@ const ProjectManagerModal = ({
       fetchProjectDetail(projectDetail.id);
     } catch (err) {
       if (err.response && err.response.data && err.response.data.detail) {
-        alert(err.response.data.detail);
+        notify(err.response.data.detail, 'warning');
       } else {
-        alert("Failed to change user role.");
+        notify("Failed to change user role.", 'error');
       }
     }
   };
@@ -347,19 +367,25 @@ const ProjectManagerModal = ({
       const link = `${window.location.origin}/invite/${response.data.token}`;
       setInviteTokenLink(link);
     } catch {
-      alert("Failed to generate invite token.");
+      notify("Failed to generate invite token.", 'error');
     } finally {
       setIsGeneratingLink(false);
     }
   };
 
   const handleForceReleaseLock = async (diagramId) => {
-    if (!window.confirm("Force release edit lock? Unsaved modifications by the current editor will be lost.")) return;
+    const ok = await confirmDialog({
+      title: 'Force release edit lock?',
+      message: 'Unsaved modifications by the current editor will be lost.',
+      confirmLabel: 'Release lock',
+      danger: true,
+    });
+    if (!ok) return;
     try {
       await axios.post(`/api/diagrams/${diagramId}/force-checkin`);
       fetchProjectDetail(projectDetail.id);
     } catch {
-      alert("Failed to release lock. Only project owners can force release locks.");
+      notify("Failed to release lock. Only project owners can force release locks.", 'error');
     }
   };
 
@@ -377,7 +403,7 @@ const ProjectManagerModal = ({
       link.click();
       URL.revokeObjectURL(url);
     } catch {
-      alert("Failed to export diagram.");
+      notify("Failed to export diagram.", 'error');
     }
   };
 

@@ -8,6 +8,10 @@ import ReactFlow, {
   applyEdgeChanges,
   ReactFlowProvider
 } from 'reactflow';
+import { notify, confirmDialog, askName } from './utils/dialogs';
+import { validateNetwork, checkNewConnection, PORT_TAKEN_MESSAGE } from './utils/networkValidation';
+import { summarizeStats, deriveRunState } from './utils/runStatus';
+import RunBanners from './components/overlays/RunBanners';
 import 'reactflow/dist/style.css'; 
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import axios from 'axios';
@@ -330,10 +334,16 @@ function WalFlowContent() {
   const [activeCaseId, setActiveCaseId] = useState('case_base');
   const [showCaseManager, setShowCaseManager] = useState(false);
 
-  const handleAddCase = useCallback(() => {
+  const handleAddCase = useCallback(async () => {
     const currentActiveCase = cases.find(c => c.id === activeCaseId) || cases[0] || DEFAULT_BASE_CASE;
-    const defaultName = `Case ${cases.length + 1}`;
-    const newCase = duplicateCase(currentActiveCase, defaultName);
+    const name = await askName({
+      title: 'New operating case',
+      label: `Name (copies the settings of "${currentActiveCase.name}")`,
+      initial: `Case ${cases.length + 1}`,
+      confirmLabel: 'Create case',
+    });
+    if (!name) return;
+    const newCase = duplicateCase(currentActiveCase, name);
     setCases(prev => [...prev, newCase]);
     setActiveCaseId(newCase.id);
   }, [cases, activeCaseId]);
@@ -544,7 +554,10 @@ function WalFlowContent() {
     handleValveChange,
     telemetryMode,
     setTelemetryMode,
-    graphError
+    graphError,
+    runError,
+    runErrorId,
+    loginRequired
   } = useWebSocketSimulation({
     nodes,
     edges,
@@ -554,12 +567,30 @@ function WalFlowContent() {
     onUpdateCaseTelemetry: handleUpdateCaseTelemetry
   });
 
+  // F3-04 / F2-19: model checks before a run. Errors block it, warnings are only listed in the status panel.
+  const validation = useMemo(() => validateNetwork({ nodes, edges }, KNOWN_NODE_TYPES), [nodes, edges]);
+  const [statusPanelOpen, setStatusPanelOpen] = useState(false);
+  const closeStatusPanel = useCallback(() => setStatusPanelOpen(false), []);
+  const toggleStatusPanel = useCallback(() => setStatusPanelOpen(open => !open), []);
+
+  const runChecked = useCallback((options) => {
+    if (validation.errors.length > 0) {
+      // An automatic run after loading stays quiet; the chip shows the count
+      if (options?.silent !== true) {
+        setStatusPanelOpen(true);
+        notify(`Simulation not started: ${validation.errors.length} error${validation.errors.length > 1 ? 's' : ''} in the model. See the status panel.`, 'error');
+      }
+      return false;
+    }
+    return runSimulation(options);
+  }, [validation, runSimulation]);
+
   // After a diagram is loaded, solve it once the solver is connected (results are never stored in files)
   useEffect(() => {
     if (!autoRunPending || !isConnected) return;
     setAutoRunPending(false);
-    runSimulation({ silent: true });
-  }, [autoRunPending, isConnected, runSimulation]);
+    runChecked({ silent: true });
+  }, [autoRunPending, isConnected, runChecked]);
 
   // F2-07: hash of the inputs each case is solved from, and whether its stored results still match
   const caseInputHashes = useMemo(
@@ -569,13 +600,18 @@ function WalFlowContent() {
   const activeCaseObj = useMemo(() => getActiveCase(cases, activeCaseId), [cases, activeCaseId]);
   const resultsStale = isCaseResultStale(activeCaseObj, caseInputHashes);
   const unmitigatedTelemetry = getCaseTelemetrySet(activeCaseObj, 'unmitigated_global');
+  const runSummary = useMemo(() => summarizeStats(lastStats), [lastStats]);
+  const runStatus = useMemo(
+    () => deriveRunState({ isConnected, loginRequired, isSimulating, stats: lastStats, runError, resultsStale }),
+    [isConnected, loginRequired, isSimulating, lastStats, runError, resultsStale]
+  );
 
   // History stack hook
   // A cloud drawing that is open but not checked out by this user
   const isReadOnly = !!activeDiagram && !hasLock;
   const blockIfReadOnly = useCallback(() => {
     if (!isReadOnly) return false;
-    alert("This drawing is read-only. Please check out the drawing to edit.");
+    notify("This drawing is read-only. Please check out the drawing to edit.", 'warning');
     return true;
   }, [isReadOnly]);
 
@@ -875,7 +911,7 @@ function WalFlowContent() {
     const check = checkDiagramFile(data, KNOWN_NODE_TYPES);
     if (!check.ok) {
       hideCanvasLoading();
-      alert(check.message);
+      notify(check.message, 'warning');
       return false;
     }
     showCanvasLoading();
@@ -937,11 +973,11 @@ function WalFlowContent() {
     return true;
   }, [handleValveChange, handleRotation, setNodes, setEdges, showCanvasLoading, hideCanvasLoading, resetHistory]);
 
-  const handleLoadDiagramWithCheck = useCallback((data, diagramTitle = '', options = {}) => {
+  const handleLoadDiagramWithCheck = useCallback(async (data, diagramTitle = '', options = {}) => {
     // Reject a bad file before anything about the open drawing changes (F0-02, F2-10)
     const check = checkDiagramFile(data, KNOWN_NODE_TYPES);
     if (!check.ok) {
-      alert(check.message);
+      notify(check.message, 'warning');
       return false;
     }
     const hasCloudDiagram = !!activeDiagram?.id;
@@ -950,9 +986,12 @@ function WalFlowContent() {
       const cloudTarget = hasCloudDiagram ? `drawing "${activeDiagram.title}"` : `project "${activeProject.title}"`;
       const confirmText = `Are you sure you want to load ${displayTitle}?\n\nNote: This closes the cloud ${cloudTarget} and detaches cloud sync, so the cloud copy is not overwritten.`;
 
-      if (!window.confirm(confirmText)) {
-        return false;
-      }
+      const proceed = await confirmDialog({
+        title: 'Load diagram?',
+        message: confirmText,
+        confirmLabel: 'Load',
+      });
+      if (!proceed) return false;
 
       // Detach cloud sync FIRST (F2-29): save pending edits of the open drawing
       // (serialized now, before the new content loads), then release its lock.
@@ -962,9 +1001,8 @@ function WalFlowContent() {
       setActiveDiagram(null);
       setActiveProject(null);
     } else if (diagramTitle && (options.isTemplate || options.promptConfirmation)) {
-      if (!window.confirm(`Load "${diagramTitle}"?`)) {
-        return false;
-      }
+      const proceed = await confirmDialog({ title: 'Load example?', message: `Load "${diagramTitle}"?`, confirmLabel: 'Load' });
+      if (!proceed) return false;
     }
 
     return loadData(data);
@@ -999,16 +1037,20 @@ function WalFlowContent() {
 
   const onConnect = useCallback((params) => {
     if (activeDiagram && !hasLock) {
-      alert("This drawing is read-only. Please check out the drawing to edit.");
+      notify("This drawing is read-only. Please check out the drawing to edit.", 'warning');
       return;
     }
     const isSourceSignal = !!params.sourceHandle?.startsWith('signal-');
     const isTargetSignal = !!params.targetHandle?.startsWith('signal-');
     if (isSourceSignal !== isTargetSignal) {
-      alert("Cannot connect a signal handle to a hydraulic port.");
+      notify("Cannot connect a signal handle to a hydraulic port.", 'error');
       return;
     }
     const isSignal = isSourceSignal && isTargetSignal;
+    if (!isSignal && !checkNewConnection(edges, params).ok) {
+      notify(PORT_TAKEN_MESSAGE, 'warning');
+      return;
+    }
     const pipeData = isSignal ? {} : getDefaultPipeData(availablePipeClasses, allowCustomPipes);
 
     setEdges((eds) => {
@@ -1035,7 +1077,22 @@ function WalFlowContent() {
       return addEdge(newEdge, eds);
     });
     requestSnapshot();
-  }, [setEdges, activeDiagram, hasLock, availablePipeClasses, allowCustomPipes, requestSnapshot]);
+  }, [setEdges, edges, activeDiagram, hasLock, availablePipeClasses, allowCustomPipes, requestSnapshot]);
+
+  // F2-19: a port takes one pipe. The red handle while dragging comes from isValidConnection; the reason is
+  // shown when the drag ends on a handle that was refused.
+  const refusedConnectionRef = useRef(false);
+  const isValidConnection = useCallback((connection) => {
+    const ok = checkNewConnection(edges, connection).ok;
+    refusedConnectionRef.current = !ok;
+    return ok;
+  }, [edges]);
+  const onConnectStart = useCallback(() => { refusedConnectionRef.current = false; }, []);
+  const onConnectEnd = useCallback((event) => {
+    const overHandle = event?.target?.closest?.('.react-flow__handle');
+    if (refusedConnectionRef.current && overHandle) notify(PORT_TAKEN_MESSAGE, 'warning');
+    refusedConnectionRef.current = false;
+  }, []);
 
   const onNodeClick = useCallback((event, node) => {
     setSelectedNode(node);
@@ -1054,7 +1111,7 @@ function WalFlowContent() {
 
   const updateNodeData = useCallback((nodeId, newData, targetCaseId = null) => {
     if (activeDiagram && !hasLock) {
-      alert("This drawing is read-only. Please check out the drawing to edit.");
+      notify("This drawing is read-only. Please check out the drawing to edit.", 'warning');
       return;
     }
     const effectiveCaseId = targetCaseId || activeCaseId;
@@ -1127,7 +1184,7 @@ function WalFlowContent() {
 
   const updateEdgeData = useCallback((edgeId, newData) => {
     if (activeDiagram && !hasLock) {
-      alert("This drawing is read-only. Please check out the drawing to edit.");
+      notify("This drawing is read-only. Please check out the drawing to edit.", 'warning');
       return;
     }
     setEdges((eds) =>
@@ -1179,7 +1236,7 @@ function WalFlowContent() {
       
       const type = event.dataTransfer.getData('application/reactflow');
       if (type && activeDiagram && !hasLock) {
-        alert("This drawing is read-only. Please check out the drawing to edit.");
+        notify("This drawing is read-only. Please check out the drawing to edit.", 'warning');
         return;
       }
 
@@ -1193,7 +1250,7 @@ function WalFlowContent() {
               const parsed = JSON.parse(e.target.result);
               handleLoadDiagramWithCheck(parsed, file.name);
             } catch {
-              alert('Failed to parse dropped project file. Please check file format.');
+              notify('Failed to parse dropped project file. Please check file format.', 'error');
             }
           };
           reader.readAsText(file);
@@ -1260,7 +1317,7 @@ function WalFlowContent() {
 
   const onDeleteNode = useCallback((nodeId) => {
     if (activeDiagram && !hasLock) {
-      alert("This drawing is read-only. Please check out the drawing to edit.");
+      notify("This drawing is read-only. Please check out the drawing to edit.", 'warning');
       return;
     }
     setNodes((nds) => nds.filter((node) => node.id !== nodeId));
@@ -1271,7 +1328,7 @@ function WalFlowContent() {
 
   const onDeleteEdge = useCallback((edgeId) => {
     if (activeDiagram && !hasLock) {
-      alert("This drawing is read-only. Please check out the drawing to edit.");
+      notify("This drawing is read-only. Please check out the drawing to edit.", 'warning');
       return;
     }
     setEdges((eds) => eds.filter((edge) => edge.id !== edgeId));
@@ -1322,9 +1379,9 @@ function WalFlowContent() {
         setActiveProject(null);
       }
 
-      alert("Drawing copy saved successfully.");
+      notify("Drawing copy saved successfully.", 'success');
     } catch {
-      alert("Failed to perform Save As.");
+      notify("Failed to perform Save As.", 'error');
     }
   }, [nodes, edges, globalSettings, cases, activeCaseId, setActiveDiagram, setActiveProject]);
 
@@ -1335,7 +1392,7 @@ function WalFlowContent() {
       setActiveProject(null);
       setActiveDiagram(null);
       clearLocalDraft();
-      alert("New local draft initialized.");
+      notify("New local draft initialized.", 'success');
       return;
     }
 
@@ -1382,9 +1439,9 @@ function WalFlowContent() {
 
 
       loadData(blankPayload);
-      alert("New cloud drawing created successfully.");
+      notify("New cloud drawing created successfully.", 'success');
     } catch {
-      alert("Failed to create new cloud drawing.");
+      notify("Failed to create new cloud drawing.", 'error');
     }
   }, [resetCanvas, clearLocalDraft, setActiveDiagram, setActiveProject, loadData, showCanvasLoading]);
 
@@ -1660,7 +1717,7 @@ function WalFlowContent() {
   return (
     <div style={{ width: '100%', height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#F0F4F4', overflow: 'hidden' }}>
       <Navbar 
-        onCalculate={runSimulation}
+        onCalculate={runChecked}
         isSimulating={isSimulating}
         onOpenAuthModal={handleOpenAuthModal}
         onOpenAdminHub={handleOpenAdminHub}
@@ -1674,6 +1731,14 @@ function WalFlowContent() {
         onAddCase={handleAddCase}
         activeProject={activeProject}
         activeDiagram={activeDiagram}
+        runStatus={runStatus}
+        findings={validation}
+        statusNotes={runSummary?.notes || []}
+        runError={runError}
+        statusPanelOpen={statusPanelOpen}
+        onToggleStatusPanel={toggleStatusPanel}
+        onCloseStatusPanel={closeStatusPanel}
+        onSelectFinding={(id, type) => { setStatusPanelOpen(false); handleSelectComponent(id, type); }}
       />
 
 
@@ -1745,7 +1810,7 @@ function WalFlowContent() {
                   const parsed = JSON.parse(event.target.result);
                   handleLoadDiagramWithCheck(parsed, file.name);
                 } catch {
-                  alert('Failed to load project file. Please ensure it is a valid .wlf or .json file.');
+                  notify('Failed to load project file. Please ensure it is a valid .wlf or .json file.', 'error');
                 }
               };
               reader.readAsText(file);
@@ -1799,36 +1864,29 @@ function WalFlowContent() {
             </div>
           )}
 
-          {(resultsStale || graphError) && (
-            <div
-              role="status"
-              style={{
-                position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 20,
-                display: 'flex', alignItems: 'center', gap: '12px', maxWidth: 'calc(100% - 32px)',
-                padding: '8px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: 600,
-                background: graphError ? '#FEF2F2' : '#FFF7ED',
-                border: `1px solid ${graphError ? '#FEE2E2' : '#FDE3C3'}`,
-                color: graphError ? '#B91C1C' : '#7A3E00',
-                boxShadow: '0 2px 8px rgba(28, 43, 44, 0.12)'
-              }}
-            >
-              <span>
-                {graphError
-                  ? `The solver rejected the last change: ${graphError}`
-                  : 'Results are out of date: the diagram changed since the last run.'}
-              </span>
-              {!graphError && (
-                <button
-                  type="button"
-                  onClick={() => runSimulation()}
-                  disabled={isSimulating}
-                  style={{ background: '#F4F7F6', border: '1px solid #D8E2E1', borderRadius: '6px', color: '#1C2B2C', padding: '4px 10px', fontSize: '12px', fontWeight: 600, cursor: isSimulating ? 'default' : 'pointer', whiteSpace: 'nowrap' }}
-                >
-                  Run simulation
-                </button>
-              )}
-            </div>
-          )}
+          <RunBanners
+            runError={runError}
+            runErrorId={runErrorId}
+            summary={runSummary}
+            resultKey={lastStats}
+            onSelect={handleSelectComponent}
+            onOpenStatus={() => setStatusPanelOpen(true)}
+          >
+            {graphError && (
+              <div
+                role="status"
+                style={{
+                  pointerEvents: 'auto', width: '100%', boxSizing: 'border-box',
+                  display: 'flex', alignItems: 'center', gap: '12px',
+                  padding: '8px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: 600,
+                  background: '#FEF2F2', border: '1px solid #FEE2E2', color: '#B91C1C',
+                  boxShadow: '0 2px 8px rgba(28, 43, 44, 0.12)'
+                }}
+              >
+                <span style={{ flex: 1 }}>{`The solver rejected the last change: ${graphError}`}</span>
+              </div>
+            )}
+          </RunBanners>
 
           {nodes.length === 0 && !isCanvasLoading && <EmptyCanvasHint />}
 
@@ -1840,6 +1898,9 @@ function WalFlowContent() {
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChangeCustom}
             onConnect={onConnect}
+            isValidConnection={isValidConnection}
+            onConnectStart={onConnectStart}
+            onConnectEnd={onConnectEnd}
             onNodeClick={onNodeClick}
             onEdgeClick={onEdgeClick}
             onNodeContextMenu={onNodeContextMenu}
@@ -2099,7 +2160,7 @@ function WalFlowContent() {
           telemetryUnmitigated={unmitigatedTelemetry}
           caseInputHashes={caseInputHashes}
           onSetCaseOverride={handleSetCaseOverride}
-          runSimulation={runSimulation}
+          runSimulation={runChecked}
           showCaseManager={showCaseManager}
           onToggleCaseManager={() => setShowCaseManager(prev => !prev)}
           availablePipeClasses={availablePipeClasses}

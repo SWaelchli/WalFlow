@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 
+import { notify, confirmDialog } from '../../utils/dialogs';
 import { mToMm, mmToM } from '../../utils/converters';
 import { isCaseVariableProperty, RELIEF_DRIVER_TYPES } from '../../constants/case_constants';
 import { isPropertyOverridden, getEffectiveNodeData } from '../../utils/case_resolver';
@@ -564,7 +565,7 @@ export default function SetupPanel({
       // Handle empty string
       if (finalValue === '' || finalValue === undefined || finalValue === null) {
         if (isCritical) {
-          alert(`${field} cannot be empty or zero. Reverting to previous value.`);
+          notify(`${field} cannot be empty or zero. Reverting to previous value.`, 'error');
           setLocalDrafts({}); 
           return;
         }
@@ -578,38 +579,38 @@ export default function SetupPanel({
       if (isCritical) {
         if (field === 'opening') {
           if (isNaN(numericValue) || numericValue < 0 || numericValue > 100) {
-            alert('Opening must be a number between 0 and 100.');
+            notify('Opening must be a number between 0 and 100.', 'warning');
             setLocalDrafts({});
             return;
           }
         } else if (field === 'efficiency') {
           if (isNaN(numericValue) || numericValue < 1 || numericValue > 100) {
-            alert('Efficiency must be a number between 1 and 100 %.');
+            notify('Efficiency must be a number between 1 and 100 %.', 'warning');
             setLocalDrafts({});
             return;
           }
         } else if (field === 'max_discharge_pressure_bara') {
           if (isNaN(numericValue) || numericValue <= 1.0) {
-            alert(`Max. discharge pressure must be above 1 bar(a)${isImperial ? ' (14.5 psi(a))' : ''}.`);
+            notify(`Max. discharge pressure must be above 1 bar(a)${isImperial ? ' (14.5 psi(a))' : ''}.`, 'warning');
             setLocalDrafts({});
             return;
           }
         } else if (field === 'temp_base_c') {
           // Calibration temperature: any physical temperature, including 0 °C and below
           if (isNaN(numericValue) || numericValue <= -273.15) {
-            alert('Calibration temperature must be above absolute zero.');
+            notify('Calibration temperature must be above absolute zero.', 'warning');
             setLocalDrafts({});
             return;
           }
         } else if (field === 'cracking_pressure_bar') {
           // Zero cracking pressure is a valid check valve
           if (isNaN(numericValue) || numericValue < 0) {
-            alert('Cracking pressure must be zero or positive.');
+            notify('Cracking pressure must be zero or positive.', 'warning');
             setLocalDrafts({});
             return;
           }
         } else if (isNaN(numericValue) || numericValue <= 0) {
-          alert(`${field} must be a positive number greater than zero.`);
+          notify(`${field} must be a positive number greater than zero.`, 'warning');
           setLocalDrafts({});
           return;
         }
@@ -633,7 +634,7 @@ export default function SetupPanel({
 
         if (finalVal === '' || finalVal === undefined || finalVal === null) {
           if (isFieldCritical) {
-            alert(`${f} cannot be empty or zero. Reverting to previous value.`);
+            notify(`${f} cannot be empty or zero. Reverting to previous value.`, 'error');
             return;
           }
           finalVal = 0;
@@ -643,7 +644,7 @@ export default function SetupPanel({
         const numericValue = typeof convertedVal === 'number' ? convertedVal : parseFloat(convertedVal);
 
         if (isFieldCritical && (isNaN(numericValue) || numericValue <= 0)) {
-          alert(`${f} must be a positive number greater than zero.`);
+          notify(`${f} must be a positive number greater than zero.`, 'warning');
           return;
         }
 
@@ -662,12 +663,17 @@ export default function SetupPanel({
     setLocalDrafts(prev => ({ ...prev, [field]: val }));
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     const label = isNode ? `node ${type}` : 'connection';
-    if (window.confirm(`Are you sure you want to delete this ${label}?`)) {
-      if (isNode) onDelete(id);
-      else onDeleteEdge(id);
-    }
+    const ok = await confirmDialog({
+      title: isNode ? 'Delete component?' : 'Delete pipe?',
+      message: `Delete this ${label}?`,
+      confirmLabel: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
+    if (isNode) onDelete(id);
+    else onDeleteEdge(id);
   };
 
   const handleSensingToggle = (portId) => {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { notify, confirmDialog, confirmDiscard } from '../utils/dialogs';
 import axios from 'axios';
 import walflowLogo from '../assets/Logo_WalFlow.svg';
 import { useAuth } from '../hooks/useAuth';
@@ -97,10 +98,10 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
     setIsSeedingExamples(true);
     try {
       const res = await axios.post('/api/pipe-classes/seed-examples');
-      alert(res.data.message || `Created ${res.data.created_count} default example specifications.`);
+      notify(res.data.message || `Created ${res.data.created_count} default example specifications.`, 'success');
       fetchClasses();
     } catch {
-      alert('Failed to initialize example specifications.');
+      notify('Failed to initialize example specifications.', 'error');
     } finally {
       setIsSeedingExamples(false);
     }
@@ -117,7 +118,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
       downloadAnchor.click();
       downloadAnchor.remove();
     } catch {
-      alert('Failed to export pipe classes library.');
+      notify('Failed to export pipe classes library.', 'error');
     }
   };
 
@@ -135,7 +136,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
         setIsImportReportModalOpen(true);
         fetchClasses();
       } catch (err) {
-        alert(err.response?.data?.detail || 'Failed to parse or import JSON file. Please check file format.');
+        notify(err.response?.data?.detail || 'Failed to parse or import JSON file. Please check file format.', 'error');
       } finally {
         if (fileInputRef.current) fileInputRef.current.value = '';
       }
@@ -183,7 +184,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
 
   const handleOpenTr2000Modal = async () => {
     if (isEditing) {
-      if (!window.confirm("You have unsaved changes. Discard changes and import from TR2000?")) return;
+      if (!(await confirmDiscard('import from TR2000'))) return;
       handleCancelEdit();
     }
     setIsTr2000ModalOpen(true);
@@ -250,11 +251,11 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
   // --- Batch Import & Duplicate Conflict Resolution ---
   const handleStartBatchImport = () => {
     if (!agreedToEquinorTerms) {
-      alert("You must review and agree to Equinor's Terms and Conditions before downloading TR2000 specifications.");
+      notify("You must review and agree to Equinor's Terms and Conditions before downloading TR2000 specifications.", 'warning');
       return;
     }
     if (selectedTr2000Codes.size === 0) {
-      alert("Please select at least one specification to import.");
+      notify("Please select at least one specification to import.", 'warning');
       return;
     }
 
@@ -377,9 +378,9 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
     });
   };
 
-  const handleStartNewClass = () => {
+  const handleStartNewClass = async () => {
     if (isEditing) {
-      if (!window.confirm("You have unsaved changes. Discard changes and create a new pipe class?")) return;
+      if (!(await confirmDiscard('create a new pipe class'))) return;
       handleCancelEdit();
     }
     setNewClassCode('CS02');
@@ -390,7 +391,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
   const handleConfirmNewClass = (e) => {
     e.preventDefault();
     if (!newClassCode.trim() || !newClassName.trim()) {
-      alert("Please fill in both Class Code and Class Name.");
+      notify("Please fill in both Class Code and Class Name.", 'warning');
       return;
     }
     const code = newClassCode.trim().toUpperCase();
@@ -423,9 +424,9 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
     });
   };
 
-  const handleCloneClass = (source) => {
+  const handleCloneClass = async (source) => {
     if (isEditing) {
-      if (!window.confirm("You have unsaved changes. Discard changes and clone this spec?")) return;
+      if (!(await confirmDiscard('clone this spec'))) return;
     }
     setIsNewDraft(true);
     setIsEditing(true);
@@ -458,11 +459,11 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
 
   const handleSaveEdit = async () => {
     if (!formData.code.trim() || !formData.name.trim()) {
-      alert("Please fill in required Class Code and Class Name.");
+      notify("Please fill in required Class Code and Class Name.", 'warning');
       return;
     }
     if (!formData.sizes || formData.sizes.length === 0) {
-      alert("Please define at least one nominal size row in the table.");
+      notify("Please define at least one nominal size row in the table.", 'warning');
       return;
     }
 
@@ -515,9 +516,9 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
       }
     } catch (err) {
       if (err.response?.data?.detail) {
-        alert(err.response.data.detail);
+        notify(err.response.data.detail, 'warning');
       } else {
-        alert("Failed to save pipe class.");
+        notify("Failed to save pipe class.", 'error');
       }
     } finally {
       setIsSaving(false);
@@ -525,20 +526,26 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
   };
 
   const handleDeleteClass = async (targetClass) => {
-    if (!window.confirm(`Are you sure you want to delete pipe class '${targetClass.code}'?`)) return;
+    const ok = await confirmDialog({
+      title: 'Delete pipe class?',
+      message: `Delete pipe class '${targetClass.code}'?`,
+      confirmLabel: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
     try {
       await axios.delete(`/api/pipe-classes/${targetClass.id}`);
       setSelectedClassId(null);
       if (isEditing) handleCancelEdit();
       fetchClasses();
     } catch {
-      alert("Failed to delete pipe class.");
+      notify("Failed to delete pipe class.", 'error');
     }
   };
 
-  const handleSelectSidebarClass = (id) => {
+  const handleSelectSidebarClass = async (id) => {
     if (isEditing) {
-      if (!window.confirm("You have unsaved changes. Discard changes and switch?")) return;
+      if (!(await confirmDiscard('switch'))) return;
       handleCancelEdit();
     }
     setSelectedClassId(id);
@@ -655,9 +662,9 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
           <div style={{ width: '1px', height: '24px', backgroundColor: 'var(--color-border)' }} />
 
           <button
-            onClick={() => {
+            onClick={async () => {
               if (isEditing) {
-                if (!window.confirm("You have unsaved changes. Discard and return to canvas?")) return;
+                if (!(await confirmDiscard('return to the canvas'))) return;
               }
               onNavigateToCanvas();
             }}
@@ -684,8 +691,8 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
             marginLeft: '8px'
           }}>
             <button
-              onClick={() => {
-                if (isEditing && !window.confirm("You have unsaved changes. Discard?")) return;
+              onClick={async () => {
+                if (isEditing && !(await confirmDiscard())) return;
                 setIsEditing(false);
                 setActiveTab('pipe_classes');
               }}
@@ -706,8 +713,8 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
               Pipe Specifications
             </button>
             <button
-              onClick={() => {
-                if (isEditing && !window.confirm("You have unsaved changes. Discard?")) return;
+              onClick={async () => {
+                if (isEditing && !(await confirmDiscard())) return;
                 setIsEditing(false);
                 setActiveTab('fitting_standards');
               }}

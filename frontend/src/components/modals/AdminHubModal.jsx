@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { confirmDialog } from '../../utils/dialogs';
 import { useAuth } from '../../hooks/useAuth';
 import { CrownIcon, CrossIcon, TrashIcon, ExportIcon, InfoIcon, UserIcon, CloudIcon } from '../symbols/IconLibrary';
 
@@ -99,9 +100,13 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
   };
 
   const handleDeleteUser = async (userId, username) => {
-    if (!window.confirm(`Are you sure you want to delete user '${username}'? This action cannot be undone.`)) {
-      return;
-    }
+    const ok = await confirmDialog({
+      title: 'Delete user?',
+      message: `Delete user '${username}'? This action cannot be undone.`,
+      confirmLabel: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
     try {
       await deleteUser(userId);
       showMessage(`User '${username}' deleted successfully.`, 'success');

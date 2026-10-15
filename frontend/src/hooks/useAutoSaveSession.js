@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { notify, confirmDialog } from '../utils/dialogs';
 import axios from 'axios';
 import { serializeDiagram, checkFormatVersion } from '../utils/diagramFile';
 import { useAuth } from './useAuth';
@@ -168,9 +169,9 @@ export function useAutoSaveSession({
     } catch (err) {
       console.error('Failed to checkout diagram:', err);
       if (err.response && err.response.data && err.response.data.detail) {
-        alert(err.response.data.detail);
+        notify(err.response.data.detail, 'warning');
       } else {
-        alert('Could not check out diagram. It may be locked by another user.');
+        notify('Could not check out diagram. It may be locked by another user.', 'error');
       }
       // Refresh status
       fetchLockStatus(activeDiagram.id);
@@ -194,16 +195,20 @@ export function useAutoSaveSession({
   // Force checkin (Owner Override Lock Release)
   const forceCheckinDiagram = useCallback(async () => {
     if (!activeDiagram || !activeDiagram.id || !isAuthenticated) return false;
-    if (!window.confirm('Force release another user\'s edit lock? Any unsaved work they have will not sync to the cloud.')) {
-      return false;
-    }
+    const ok = await confirmDialog({
+      title: 'Force release edit lock?',
+      message: "Force release another user's edit lock? Any unsaved work they have will not sync to the cloud.",
+      confirmLabel: 'Release lock',
+      danger: true,
+    });
+    if (!ok) return false;
     try {
       await axios.post(`/api/diagrams/${activeDiagram.id}/force-checkin`);
       setLockInfo(null);
       return true;
     } catch (err) {
       console.error('Failed to force release lock:', err);
-      alert('Failed to release lock. You must be an owner of this project.');
+      notify('Failed to release lock. You must be an owner of this project.', 'error');
       return false;
     }
   }, [activeDiagram, isAuthenticated]);
@@ -422,9 +427,9 @@ export function useAutoSaveSession({
       const versionError = checkFormatVersion(parsed);
       if (versionError) {
         localStorage.removeItem(LOCAL_DRAFT_KEY);
-        setTimeout(() => alert(`Your unsaved draft was discarded.
+        setTimeout(() => notify(`Your unsaved draft was discarded.
 
-${versionError}`), 0);
+${versionError}`, 'error'), 0);
         return null;
       }
 

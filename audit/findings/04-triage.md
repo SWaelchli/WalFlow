@@ -526,3 +526,47 @@ Anchors checked at `HEAD` = `af4e168`, clean tree. Decision already taken (user,
 **Tests.** Backend `test_f3_12_settings_levels.py`; frontend `settingsLevels`, `autoTag`, `chartTicks`, `nodeReadouts`, `usePanelHeight`, `useKeyboardShortcuts`, `CanvasContextMenu`, `SolverSettingsGroup`. Lint, build, 121 frontend and 408 backend tests pass. Browser check at 1366x768 (panel, collapse, context menu, settings, markers); 1920x1080 and a login/migration round trip were not run.
 
 **Roadmap (moved out of B4).** F3-05 plausibility warnings (pump run-out, velocity limits, class rating, fluid range).
+
+---
+
+### B4b: validation, dialogs, help, accessibility (prepared 2026-10-15, not started)
+
+**Decisions (user, 2026-10-15).** B4b is split. Self-loops: warn only. A second pipe on a port: the connection is blocked (use a splitter or mixer). Validation errors block the run; warnings still allow it. `prompt()` becomes an inline-name modal. Help stays English and in the modal.
+
+#### B4b-1: pre-run validation, status chip, dialogs (F3-04, F2-19, F3-06)
+
+Anchors at `HEAD` = `269fb23`: `App.jsx › onConnect` (line ~1000, no `isValidConnection`); `useWebSocketSimulation.js` (only reader of `error_kind`); 95 native dialog calls in 14 files (`PipeClassesPage` 20, `ProjectManagerModal` 20, `App` 19, `SetupPanel` 10, `Sidebar` 10, `useAutoSaveSession` 5, others 1-3).
+
+1. **Validation module.** Pure `utils/networkValidation.js`, run before each simulation (and on import for unknown types). Result: `{errors[], warnings[]}`, each with a code, message and node/edge ids.
+   - Errors (block the run): unknown node type; more than one pipe on a port (only possible from imported files); empty drawing.
+   - Warnings (run allowed): open outlet or inlet port; self-loop; isolated node; no flow path between a source (tank, pump suction) and a sink.
+2. **Connection rules.** `isValidConnection` on ReactFlow: reject a second pipe on an occupied port and show a toast "Port already connected. Use a splitter or mixer." Self-loops stay allowed (warning only).
+3. **Validation panel.** Lists findings with severity icon and text; click selects and centres the node or pipe. Opens when a run is blocked; a count badge on the status chip otherwise.
+4. **Status chip (navbar).** States: not connected, signed out (when login is required), running, converged, failed, stale (inputs changed since the last result). Click opens Stats or the validation panel. Uses a neutral/teal/orange/red scheme with icon plus text, never colour alone.
+5. **Result banners.** From the reply: `success=false`, `error_kind`, `physical_validity` (vacuum, below vapour pressure, temperature out of range), `non_finite_fields`. A solve with 0 equations or no flow is not shown as "balanced". Banner text names the affected ports and is dismissible.
+6. **Dialog service.** `useDialog()` / provider: `notify(msg, type)` (toast), `confirm({title, message, danger})`, `askName({title, initial})`; promise based, focus trapped, Esc cancels. Replace all 95 calls (`alert` to toast or banner, `confirm` to dialog, `prompt` to name modal). New operating cases ask for a name. Remove the now unused local confirms in `CollabNotice` and `useAutoSaveSession`, where they exist.
+
+**Tests (lasting references).** Frontend `networkValidation.test.js` (each code), `isValidConnection` rules, `useDialog.test.jsx`, status chip states, banner mapping. Grep check that `window.alert|confirm|prompt` no longer appears in `src`. Then `npm run lint`, `npm run build`, backend suite unchanged. Browser check of a blocked run, a warned run and a refused second pipe.
+
+**Out of scope.** F3-05 plausibility warnings (roadmap); backend changes (none planned).
+
+**Effort.** ~5-6 days.
+
+#### B4b-2: help, pipe classes, accessibility (F3-07 + F1-32, F3-17, F2-27)
+
+1. **F3-07 + F1-32.** Rewrite `HelpInfoModal.jsx` for the current UI (Run Simulation, settings levels, cases, context menus, shortcuts); render units properly instead of raw LaTeX. New "Model & limits" section: steady state only, Darcy-Weisbach friction model, fluid property ranges, valve viscosity correction simplified relative to IEC 60534-2-1 (within about 12 % for up to 30 cSt, 0.7-1.7x up to 1000 cSt), no transient effects. Help button in the navbar (Shift+? stays). Short matching section in README.
+2. **F3-17.** Explainer on the pipe class page: what rating, design temperature, corrosion allowance and TR2000 mean, and that they are informational and not checked by the solver. Schedule dropdown in the data list built from the catalogue (10S, 40S, etc.).
+3. **F2-27.** `htmlFor`/`id` pairs for inspector and settings fields; `role="dialog"`, `aria-modal`, `aria-labelledby`, focus trap and focus return in all modals (shared with the B4b-1 dialog service); visible `:focus-visible` rings instead of `outline: none`; clickable `div`/`td`/`span` get `role="button"`, `tabIndex` and Enter/Space handling; the cases matrix and heatmap show status by icon or text as well as colour.
+
+**Tests.** Help content smoke test, schedule options test, modal a11y test (role, focus trap, return), label association check for inspector fields. Lint, build, browser keyboard walk-through.
+
+**Effort.** ~4-5 days. Starts after B4b-1.
+
+**Version and docs.** `CHANGELOG.md` entries (brief). No version bump, no format change, no commit unless you ask.
+
+**B4b-1 result (not committed).**
+- *F3-04 + F2-19.* `utils/networkValidation.js` (`validateNetwork`, `checkNewConnection`, port table per component type). Errors: empty drawing, unknown type, port shared by several pipes, pipe on a missing port or component. Warnings: open port (tanks, sources and relief outlets exempt), self-loop, isolated component, circuit without tank or source. `App.jsx › runChecked` blocks the run on errors (an automatic run after loading stays quiet) and is used by the navbar, the stale banner and the case re-run. `isValidConnection` plus `onConnect` refuse a second pipe on a port with a toast. `utils/runStatus.js` (`summarizeStats`, `deriveRunState`); `StatusChip` (navbar, with panel listing checks and run notes, Show selects the item); `RunBanners` over the canvas; the Stats tab uses the same summary ("Nothing to solve" for 0 equations, "Converged with warnings").
+- *F3-06.* `utils/dialogs.js` (`notify`, `confirmDialog`, `confirmDiscard`, `askName`), `DialogHost` mounted in `main.jsx`, `useDialog()`. All native dialogs removed from `src` (a test greps for them). New operating cases ask for a name. `handleLoadDiagramWithCheck` is async now (Sidebar awaits it).
+- *Not covered.* Batch Solve (`/batch`) does not run the model checks; the in-modal message areas of `AdminHubModal` and `FittingStandardsTab` were already non-blocking and are unchanged.
+
+**Tests.** Frontend `networkValidation`, `runStatus`, `DialogHost` (incl. the no-native-dialogs check), `StatusChip` / `RunBanners` (165 pass); lint and build clean. Browser check (1568x698): status chip and panel, New Case name dialog, open-port warning after deleting a tank. The refused second pipe by dragging, the blocked run and 1920x1080 were not checked in the browser.

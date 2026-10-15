@@ -1,7 +1,9 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { notify, confirmDialog } from '../../utils/dialogs';
+import { summarizeStats } from '../../utils/runStatus';
 import axios from 'axios';
 import { EquipmentSymbol } from '../symbols/SymbolLibrary';
-import { InfoIcon, CheckIcon, CrossIcon, FolderIcon, SearchIcon, TrashIcon, LockIcon, UnlockIcon, FolderOpenIcon } from '../symbols/IconLibrary';
+import { InfoIcon, WarningIcon, CheckIcon, CrossIcon, FolderIcon, SearchIcon, TrashIcon, LockIcon, UnlockIcon, FolderOpenIcon } from '../symbols/IconLibrary';
 import { FLUID_CATEGORIES, FLUID_LIBRARY } from '../../constants/fluid_library';
 import { useUnits } from '../../context/UnitContext';
 import { FILE_FORMAT_VERSION, APP_VERSION } from '../../constants';
@@ -134,7 +136,15 @@ function DiagnosticsContent({ stats, batchStats, onSelectComponent }) {
   const activeSource = (statsSource === 'batch' && hasBatch) ? 'batch' : (hasSingle ? 'single' : 'batch');
 
   // Single Case Stats
-  const { success, time_ms, outer_iterations, total_inner_iterations, fallback_used, system_size, bottleneck, error } = stats || {};
+  const { success, time_ms, outer_iterations, total_inner_iterations, fallback_used, system_size, bottleneck } = stats || {};
+  const summary = summarizeStats(stats);
+  const SUMMARY_TONE = {
+    ok: { bg: '#f0fdf4', border: '#bbf7d0', title: '#166534', text: '#15803d' },
+    warning: { bg: '#FFF7ED', border: '#FDE3C3', title: '#7A3E00', text: '#7A3E00' },
+    nothing: { bg: '#FFF7ED', border: '#FDE3C3', title: '#7A3E00', text: '#7A3E00' },
+    failed: { bg: '#fef2f2', border: '#fecaca', title: '#991b1b', text: '#b91c1c' },
+  };
+  const tone = SUMMARY_TONE[summary?.level] || SUMMARY_TONE.failed;
 
   // Selected Batch Case Stats
   const selectedCase = hasBatch ? (batchStats.find(c => c.case_id === selectedBatchCaseId) || batchStats[0]) : null;
@@ -175,22 +185,32 @@ function DiagnosticsContent({ stats, batchStats, onSelectComponent }) {
           <div style={{ 
             padding: '16px', 
             borderRadius: '8px', 
-            background: success ? '#f0fdf4' : '#fef2f2',
-            border: `1px solid ${success ? '#bbf7d0' : '#fecaca'}`,
+            background: tone.bg,
+            border: `1px solid ${tone.border}`,
             display: 'flex',
             alignItems: 'center',
             gap: '12px'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center' }}>{success ? <CheckIcon size={20} color="#166534" /> : <CrossIcon size={20} color="#991b1b" />}</div>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              {summary.level === 'ok' ? <CheckIcon size={20} color={tone.title} />
+                : summary.level === 'failed' ? <CrossIcon size={20} color={tone.title} />
+                : <WarningIcon size={20} color={tone.title} />}
+            </div>
             <div>
-              <div style={{ fontSize: '14px', fontWeight: '700', color: success ? '#166534' : '#991b1b' }}>
-                {success ? 'SOLVER CONVERGED' : 'SOLVER FAILED'}
+              <div style={{ fontSize: '14px', fontWeight: '700', color: tone.title }}>
+                {summary.headline.toUpperCase()}
               </div>
-              <div style={{ fontSize: '11px', color: success ? '#15803d' : '#b91c1c' }}>
-                {success ? 'System is balanced.' : error || 'Non-physical results found.'}
+              <div style={{ fontSize: '11px', color: tone.text }}>
+                {summary.detail}
               </div>
             </div>
           </div>
+
+          {summary.level === 'warning' && summary.notes.length > 1 && (
+            <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '11px', color: '#7A3E00', lineHeight: 1.5 }}>
+              {summary.notes.slice(1).map((n, i) => <li key={i}>{n.text}</li>)}
+            </ul>
+          )}
 
           {bottleneck && !success && (
             <div 
@@ -700,7 +720,7 @@ export default function Sidebar({
     try {
       await onUpdateProjectSettings(next);
     } catch (err) {
-      alert(err.response?.data?.detail || 'Failed to save the project settings.');
+      notify(err.response?.data?.detail || 'Failed to save the project settings.', 'error');
     }
   };
   const toggleProjectSolver = (on) => saveProjectSettings({
@@ -784,7 +804,7 @@ export default function Sidebar({
         }));
       }
     } catch {
-      alert("Failed to update project pipe specifications.");
+      notify("Failed to update project pipe specifications.", 'error');
     } finally {
       setSavingPipeSpecs(false);
     }
@@ -805,7 +825,7 @@ export default function Sidebar({
         }));
       }
     } catch {
-      alert("Failed to update project pipe specifications.");
+      notify("Failed to update project pipe specifications.", 'error');
     } finally {
       setSavingPipeSpecs(false);
     }
@@ -826,7 +846,7 @@ export default function Sidebar({
         }));
       }
     } catch {
-      alert("Failed to update custom dimensions setting.");
+      notify("Failed to update custom dimensions setting.", 'error');
     } finally {
       setSavingPipeSpecs(false);
     }
@@ -941,9 +961,9 @@ export default function Sidebar({
       } catch (err) {
         console.error("Failed to acquire lock from explorer:", err);
         if (err.response && err.response.data && err.response.data.detail) {
-          alert(err.response.data.detail);
+          notify(err.response.data.detail, 'warning');
         } else {
-          alert('Could not check out diagram. It may be locked by another user.');
+          notify('Could not check out diagram. It may be locked by another user.', 'error');
         }
       }
     }
@@ -970,7 +990,7 @@ export default function Sidebar({
       
       // Load first; switch project/diagram only if the load was accepted.
       // Cloud diagrams carry their own project, so no "detach cloud sync" prompt.
-      const accepted = onLoad(parsedData, response.data.title, { skipProjectCheck: true });
+      const accepted = await onLoad(parsedData, response.data.title, { skipProjectCheck: true });
       if (accepted === false) return;
 
       if (setActiveDiagram) {
@@ -1007,17 +1027,23 @@ export default function Sidebar({
         }
       }
     } catch {
-      alert("Failed to load drawing from cloud.");
+      notify("Failed to load drawing from cloud.", 'error');
     }
   };
 
 
   const handleDeleteDiagram = async (e, diagramId, title) => {
     e.stopPropagation();
-    if (!window.confirm(`Are you sure you want to delete drawing '${title}'? This action cannot be undone.`)) return;
+    const ok = await confirmDialog({
+      title: 'Delete drawing?',
+      message: `Delete drawing '${title}'? This action cannot be undone.`,
+      confirmLabel: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
     try {
       await axios.delete(`/api/diagrams/${diagramId}`);
-      alert(`Drawing '${title}' deleted successfully.`);
+      notify(`Drawing '${title}' deleted successfully.`, 'success');
       
       if (activeDiagram && activeDiagram.id === diagramId) {
         if (setActiveDiagram) setActiveDiagram(null);
@@ -1063,7 +1089,7 @@ export default function Sidebar({
         return next;
       });
     } catch {
-      alert("Failed to delete drawing. You must be the owner of the project or drawing creator.");
+      notify("Failed to delete drawing. You must be the owner of the project or drawing creator.", 'error');
     }
   };
 

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { confirmDialog } from '../../utils/dialogs';
 import SetupPanel from './SetupPanel';
 import ResultsPanel from '../details/ResultsPanel';
 import { TrashIcon, CaseIcon } from '../symbols/IconLibrary';
@@ -40,12 +41,17 @@ export default function InspectorPanel({
     ? (data.label || type.toUpperCase().replace('_', ' ')) 
     : (data.label && !String(data.label).startsWith('reactflow__edge-') ? data.label : 'Pipe');
 
-  const handleDelete = () => {
-    const itemLabel = isNode ? `node ${type}` : 'connection';
-    if (window.confirm(`Are you sure you want to delete this ${itemLabel}?`)) {
-      if (isNode) onDelete(id);
-      else onDeleteEdge(id);
-    }
+  const handleDelete = async () => {
+    const itemLabel = isNode ? (data.label || `node ${type}`) : (label || 'connection');
+    const ok = await confirmDialog({
+      title: isNode ? 'Delete component?' : 'Delete pipe?',
+      message: `Delete ${itemLabel}?`,
+      confirmLabel: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
+    if (isNode) onDelete(id);
+    else onDeleteEdge(id);
   };
 
   return (

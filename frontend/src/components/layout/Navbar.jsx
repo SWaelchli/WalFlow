@@ -2,6 +2,7 @@ import React from 'react';
 import walflowLogo from '../../assets/Logo_WalFlow.svg';
 import { useAuth } from '../../hooks/useAuth';
 import { APP_VERSION, RELEASE_STAGE } from '../../constants';
+import StatusChip from './StatusChip';
 import { 
   PlusIcon, 
   CloudIcon, 
@@ -28,7 +29,15 @@ export default function Navbar({
   onSelectCase,
   onAddCase,
   activeProject,
-  activeDiagram
+  activeDiagram,
+  runStatus = { state: 'idle', label: 'Not run yet', tone: 'neutral' },
+  findings = { errors: [], warnings: [] },
+  statusNotes = [],
+  runError = null,
+  statusPanelOpen = false,
+  onToggleStatusPanel,
+  onCloseStatusPanel,
+  onSelectFinding
 }) {
 
   const { currentUser, isAuthenticated, isAdmin, adminStatus, logout } = useAuth();
@@ -180,8 +189,19 @@ export default function Navbar({
         </div>
       </div>
 
-      {/* Center: Empty (Moved to Left) */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+      {/* Center: solver status and model checks */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, paddingLeft: '16px' }}>
+        <StatusChip
+          status={runStatus}
+          errors={findings.errors}
+          warnings={findings.warnings}
+          notes={statusNotes}
+          runError={runError}
+          open={statusPanelOpen}
+          onToggle={onToggleStatusPanel}
+          onClose={onCloseStatusPanel}
+          onSelect={onSelectFinding}
+        />
       </div>
 
       {/* Right: Admin Hub & User Auth */}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
+import { confirmDialog, confirmDiscard } from '../../utils/dialogs';
 import axios from 'axios';
 import { 
   PlusIcon, 
@@ -210,9 +211,13 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
       showToast('Built-in standard library components cannot be deleted.', 'error');
       return;
     }
-    if (!window.confirm(`Are you sure you want to permanently delete custom standard '${item.code}'?`)) {
-      return;
-    }
+    const ok = await confirmDialog({
+      title: 'Delete standard?',
+      message: `Permanently delete custom standard '${item.code}'?`,
+      confirmLabel: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
     try {
       await axios.delete(`/api/fitting-standards/${item.id}`);
       showToast(`Standard '${item.code}' deleted.`);
@@ -423,9 +428,9 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
               return (
                 <div
                   key={item.id}
-                  onClick={() => {
+                  onClick={async () => {
                     if (isEditing) {
-                      if (!window.confirm("You have unsaved changes. Discard and switch?")) return;
+                      if (!(await confirmDiscard('switch'))) return;
                       setIsEditing(false);
                     }
                     setSelectedId(item.id);

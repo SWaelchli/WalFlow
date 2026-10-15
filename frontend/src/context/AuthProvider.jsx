@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { notify } from '../utils/dialogs';
 import axios from 'axios';
 import { AuthContext } from './AuthContext';
 
@@ -20,7 +21,7 @@ export const AuthProvider = ({ children }) => {
         if (error.response?.status === 401 && userRef.current && !url.includes('/api/auth/')) {
           userRef.current = null;
           setCurrentUser(null);
-          alert('Your session has expired. Please log in again.');
+          notify('Your session has expired. Please log in again.', 'warning');
         }
         return Promise.reject(error);
       }
