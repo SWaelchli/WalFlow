@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, model_validator, ConfigDict
 from typing import Optional, List, Dict, Any
 import uuid
 
@@ -27,7 +27,6 @@ class GlobalSettings(BaseModel):
     fluid_type: str = "water"
     ambient_temperature: float = 293.15 # 20°C
     atmospheric_pressure: float = 101325.0
-    global_roughness: float = 0.000045 # 0.045mm (Standard Steel)
     property_iterations: int = 5
     tolerance: float = 1e-6
     inner_iterations: int = 1000 # Max steps for the hydraulic solver (HYBR/LM)
@@ -44,7 +43,6 @@ class GlobalSettings(BaseModel):
                 'fluidType': 'fluid_type',
                 'ambientTemperature': 'ambient_temperature',
                 'atmosphericPressure': 'atmospheric_pressure',
-                'globalRoughness': 'global_roughness',
                 'propertyIterations': 'property_iterations',
                 'innerIterations': 'inner_iterations',
                 'controlIterations': 'control_iterations',
@@ -139,8 +137,7 @@ class HydraulicNetwork(BaseModel):
     A full graph of equipment and their connections.
     Used by the solver to traverse and build system equations.
     """
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     nodes: Dict[str, Any]  # ID -> HydraulicNode
     edges: List[Dict[str, Any]]  # List of: {'source': id, 'target': id, 'pipe': Pipe, 'source_port': str, 'target_port': str}

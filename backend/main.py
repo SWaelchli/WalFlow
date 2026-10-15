@@ -14,6 +14,7 @@ from slowapi import _rate_limit_exceeded_handler
 
 from auth import decode_access_token, get_user_from_token
 from limiter import limiter
+from constants import APP_VERSION
 
 from simulation.solver import NetworkSolver, run_sequential_relief_simulation
 from simulation.graph_parser import GraphParser, ModelInputError
@@ -44,7 +45,7 @@ async def lifespan(app: FastAPI):
     init_db()
     yield
 
-app = FastAPI(title="WalFlow Engine", description="Hydraulic Simulation Backend", lifespan=lifespan)
+app = FastAPI(title="WalFlow Engine", description="Hydraulic Simulation Backend", version=APP_VERSION, lifespan=lifespan)
 
 # Attach slowapi rate limiter state & middleware (R4 / Security)
 app.state.limiter = limiter
@@ -91,7 +92,7 @@ app.include_router(settings_router)
 
 @app.get("/")
 async def read_root():
-    return {"status": "online", "message": "WalFlow Engine is ready.", "version": "0.2.0"}
+    return {"status": "online", "message": "WalFlow Engine is ready.", "version": APP_VERSION}
 
 @app.websocket("/ws/simulate")
 async def websocket_endpoint(websocket: WebSocket):

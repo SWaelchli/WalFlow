@@ -138,3 +138,13 @@ This document outlines planned features, overlays, and enhancements for the WalF
 - [ ] **💤 Undefined Pressure in Stagnant Branches**
   * **Problem**: The pressure of a branch with no flow behind a closed pump or relief device is not defined by the equations. It differs between solver methods (Newton vs LM) and previous runs.
   * **Fix to evaluate**: Define it explicitly (for example equal to the upstream connection) and mark such ports as "stagnant" in telemetry.
+
+- [ ] **🏷️ Unit-Consistent Node Data Field Names (Format Break)**
+  * **Problem**: Node `data` mixes units and naming (`set_pressure` in Pa vs `set_pressure_bar` / `source_pressure_bara` in bar, `flow_rated` vs `flow_rated_lmin`, tank `temperature` in K vs `set_temperature_c` in °C, `orifice_diameter` in m). Audit F1-20. B5 only documents the fields and tests the parser against that table; no renaming.
+  * **Fix**: Rename to one convention (unit suffix on every dimensional field, e.g. `_pa`, `_bar`, `_lmin`, `_c`, `_m`), together with one `migrateDiagram` step for old files. Do it in the same release as the next unavoidable format break (at the latest the 1.0 format bump), not on its own, so users migrate only once.
+  * **Benefit**: no silent unit mistakes when adding equipment, simpler parser and inspectors, one converter path.
+
+- [ ] **⚛️ Upgrade reactflow 11 to @xyflow/react 12**
+  * **Problem**: `reactflow` 11 is the legacy package with a peer range of React 17/18, but the app runs on React 19. Audit F2-28.
+  * **Benefits**: supported package on React 19, fewer re-renders per drag frame (v12 measures and updates nodes more efficiently, `useNodesData` / `useStore` selectors), better typed and documented node and edge APIs, server-side rendering and `colorMode` support, and continued security and bug fixes. A memoised v11 (done in B5) removes most of the lag, so this is for long-term maintenance, not urgent.
+  * **Effort and risk**: about 2-3 days. Custom nodes, handles, edge types, `onConnect` / `isValidConnection`, context menus and the fit-view logic need re-testing; `node.width/height` becomes `node.measured`.

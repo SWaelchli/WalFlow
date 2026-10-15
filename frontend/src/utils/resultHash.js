@@ -9,7 +9,7 @@ const IGNORED_DATA_KEYS = new Set([
 const IGNORED_NODE_TYPES = new Set(['text_bubble', 'note']);
 const IGNORED_GLOBAL_KEYS = new Set(['unit_system']);
 
-const stableStringify = (value) => {
+export const stableStringify = (value) => {
   if (value === null || typeof value !== 'object') return JSON.stringify(value) ?? 'null';
   if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
   const keys = Object.keys(value).filter(k => typeof value[k] !== 'function' && value[k] !== undefined).sort();
@@ -36,18 +36,34 @@ const pickData = (data, ignored) => {
   return out;
 };
 
+// Nodes and pipes are replaced on every drag frame and selection change, so their signature is built once per
+// object; a case hash after a drag frame then costs one node instead of the whole diagram (F2-28)
+const nodeSignatures = new WeakMap();
+const edgeSignatures = new WeakMap();
+const signatureOf = (store, item, build) => {
+  let sig = store.get(item);
+  if (sig === undefined) {
+    sig = stableStringify(build(item));
+    store.set(item, sig);
+  }
+  return sig;
+};
+
 /** Hash of everything the solver sees for one case: components, pipes, global settings and that case's overrides. */
 export const computeCaseInputHash = ({ nodes = [], edges = [], globalSettings = {}, cases = [] }, caseId) => {
   const c = cases.find(x => x.id === caseId);
-  const payload = {
-    n: nodes
-      .filter(n => !IGNORED_NODE_TYPES.has(n.type))
-      .map(n => [n.id, n.type, pickData(n.data, IGNORED_DATA_KEYS)]),
-    e: edges.map(e => [e.id, e.source, e.target, e.sourceHandle ?? null, e.targetHandle ?? null, pickData(e.data, IGNORED_DATA_KEYS)]),
-    g: pickData(globalSettings, IGNORED_GLOBAL_KEYS),
-    o: c && !c.is_base ? (c.overrides || null) : null,
-  };
-  return hashString(stableStringify(payload));
+  const nodePart = nodes
+    .filter(n => !IGNORED_NODE_TYPES.has(n.type))
+    .map(n => signatureOf(nodeSignatures, n, () => [n.id, n.type, pickData(n.data, IGNORED_DATA_KEYS)]));
+  const edgePart = edges
+    .map(e => signatureOf(edgeSignatures, e, () => [e.id, e.source, e.target, e.sourceHandle ?? null, e.targetHandle ?? null, pickData(e.data, IGNORED_DATA_KEYS)]));
+  const payload = [
+    nodePart.join(','),
+    edgePart.join(','),
+    stableStringify(pickData(globalSettings, IGNORED_GLOBAL_KEYS)),
+    stableStringify(c && !c.is_base ? (c.overrides || null) : null),
+  ].join('|');
+  return hashString(payload);
 };
 
 /** { [caseId]: hash } for every case. */

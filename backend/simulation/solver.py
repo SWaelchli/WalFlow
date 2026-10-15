@@ -798,6 +798,13 @@ class NetworkSolver:
                 return node.flow_rated
         return 0.005
 
+    @staticmethod
+    def _numeric_derivative(fn, q):
+        """Central difference of fn(q). The step follows |q| (1e-4 relative, at least 1e-12 m3/s), so a nearly
+        closed valve at q ~ 0 does not see a step larger than its own flow."""
+        h = max(1e-12, 1e-4 * abs(q))
+        return (fn(q + h) - fn(q - h)) / (2.0 * h)
+
     def calculate_jacobian(self, x_scaled) -> np.ndarray:
         """
         Calculates the sparse Jacobian J(x_scaled) analytically.
@@ -935,11 +942,15 @@ class NetworkSolver:
                     density = inlet.density if inlet else 1000.0
                     viscosity = inlet.viscosity if inlet else 0.001
                     
-                    dp_deriv_src = src_node.calculate_dp_derivative(q_edges[j], density, viscosity)
                     is_pump = isinstance(src_node, (CentrifugalPump, VolumetricPump))
-                    sign = 1.0 if is_pump else -1.0
-                    dp_deriv_src_signed = sign * dp_deriv_src
-                    
+                    if is_pump:
+                        dp_deriv_src_signed = src_node.calculate_dp_derivative(q_edges[j], density, viscosity)
+                    else:
+                        # Valves, regulators, orifices, filters...: differentiate the node's own outlet
+                        # pressure so viscosity corrections and branch switches are included (F1-12)
+                        dp_deriv_src_signed = self._numeric_derivative(
+                            lambda q_: self._get_node_p_out(src_node, p_in_all[src_idx], q_, q_), q_edges[j])
+
                     rows.append(a_row)
                     cols.append(num_internal + j)
                     data.append((q_scale / p_scale) * dp_deriv_src_signed)
@@ -958,7 +969,8 @@ class NetworkSolver:
                     port_idx = self._parse_port_idx(edge.get('target_port', 'inlet-0'))
                     tcv_density = tgt_node.inlets[port_idx].density
                     tcv_viscosity = tgt_node.inlets[port_idx].viscosity
-                    dp_deriv_tcv = max(100.0, tgt_node.calculate_dp_derivative_path(q_edges[j], tcv_density, port_idx, tcv_viscosity))
+                    dp_deriv_tcv = max(100.0, self._numeric_derivative(
+                        lambda q_: tgt_node.calculate_path_dp(q_, tcv_density, port_idx, tcv_viscosity), q_edges[j]))
 
                 rows.append(a_row)
                 cols.append(num_internal + j)
@@ -1188,6 +1200,7 @@ class NetworkSolver:
         if is_converged:
             final_p = sol.x[:num_internal] * p_scale
             final_q = sol.x[num_internal:] * q_scale
+            self._last_objective, self._last_x_scaled = objective, sol.x.copy()   # Jacobian checks (F1-12 test)
             self._update_telemetry(final_p, final_q)
             
             converged_x = np.concatenate([final_p, final_q])
@@ -1228,7 +1241,7 @@ class NetworkSolver:
                         tgt_id = edge['target']
                         tgt_idx = self.all_node_id_to_idx[tgt_id]
                         tgt_node = self.network.nodes[tgt_id]
-                        p_out_est = tgt_node.inlets[0].pressure + edge['pipe'].calculate_delta_p(q_flow, density, viscosity)
+                        p_out_est = self._tgt_port(edge, tgt_node).pressure + edge['pipe'].calculate_delta_p(q_flow, density, viscosity)
                         break
                 return p_in - node.calculate_delta_p(q_flow, density, viscosity, p_in_pa=p_in, p_out_pa=p_out_est, update_state=update_state)
 
@@ -1389,22 +1402,24 @@ class NetworkSolver:
             tgt_is_closed_relief = getattr(tgt_node, 'node_type', '') in ['pressure_safety_valve', 'rupture_disc'] and \
                                    (getattr(tgt_node, 'status', '') in ['closed', 'intact'] or getattr(tgt_node, 'forced_state', '') == 'forced_closed')
 
+            src_port = self._src_port(edge, src_node)
+            tgt_port = self._tgt_port(edge, tgt_node)
             if src_is_closed_relief:
-                pipe_p = src_node.outlets[0].pressure
+                pipe_p = src_port.pressure
                 pipe.inlets[0].pressure = pipe_p
                 pipe.outlets[0].pressure = pipe_p
                 pipe.inlets[0].flow_rate = 0.0
                 pipe.outlets[0].flow_rate = 0.0
             elif tgt_is_closed_relief:
-                pipe_p = tgt_node.inlets[0].pressure
+                pipe_p = tgt_port.pressure
                 pipe.inlets[0].pressure = pipe_p
                 pipe.outlets[0].pressure = pipe_p
                 pipe.inlets[0].flow_rate = 0.0
                 pipe.outlets[0].flow_rate = 0.0
             else:
-                pipe.inlets[0].pressure = src_node.outlets[0].pressure
+                pipe.inlets[0].pressure = src_port.pressure
                 pipe.inlets[0].flow_rate = q
-                pipe.outlets[0].pressure = tgt_node.inlets[0].pressure
+                pipe.outlets[0].pressure = tgt_port.pressure
                 pipe.outlets[0].flow_rate = q
 
     def _parse_port_idx(self, port_str: str) -> int:
@@ -1412,6 +1427,16 @@ class NetworkSolver:
             return int(port_str.split('-')[-1])
         except (ValueError, IndexError, AttributeError):
             return 0
+
+    def _src_port(self, edge, node):
+        """Outlet port of `node` that the edge leaves from (F1-13: not always port 0)."""
+        idx = self._parse_port_idx(edge.get('source_port', 'outlet-0'))
+        return node.outlets[idx] if idx < len(node.outlets) else node.outlets[0]
+
+    def _tgt_port(self, edge, node):
+        """Inlet port of `node` that the edge arrives at (F1-13: not always port 0)."""
+        idx = self._parse_port_idx(edge.get('target_port', 'inlet-0'))
+        return node.inlets[idx] if idx < len(node.inlets) else node.inlets[0]
 
     def _propagate_properties(self, q_edges):
         # Save all port pressures to prevent property calculations from corrupting solved pressures
@@ -1437,13 +1462,15 @@ class NetworkSolver:
                 pipe.inlets[0].flow_rate = q
                 pipe.outlets[0].flow_rate = q
                 if q >= 0:
-                    pipe.inlets[0].temperature = src_node.outlets[0].temperature
-                    pipe.inlets[0].density = src_node.outlets[0].density
-                    pipe.inlets[0].viscosity = src_node.outlets[0].viscosity
+                    src_port = self._src_port(edge, src_node)
+                    pipe.inlets[0].temperature = src_port.temperature
+                    pipe.inlets[0].density = src_port.density
+                    pipe.inlets[0].viscosity = src_port.viscosity
                 else:
-                    pipe.outlets[0].temperature = tgt_node.inlets[0].temperature
-                    pipe.outlets[0].density = tgt_node.inlets[0].density
-                    pipe.outlets[0].viscosity = tgt_node.inlets[0].viscosity
+                    tgt_port = self._tgt_port(edge, tgt_node)
+                    pipe.outlets[0].temperature = tgt_port.temperature
+                    pipe.outlets[0].density = tgt_port.density
+                    pipe.outlets[0].viscosity = tgt_port.viscosity
                 pipe.calculate() 
             for node_id, node in self.network.nodes.items():
                 if isinstance(node, Tank):

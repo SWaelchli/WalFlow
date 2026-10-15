@@ -24,7 +24,6 @@ export const DEFAULT_DRAWING_SETTINGS = {
   fluid_type: 'water',
   ambient_temperature: 293.15,
   atmospheric_pressure: 101325.0,
-  global_roughness: 0.000045,
   ...BUILTIN_SOLVER_SETTINGS,
   use_drawing_solver: false,
 };
@@ -68,5 +67,6 @@ export const migrateDrawingSettings = (settings) => {
   const next = { ...settings };
   if (next.use_drawing_solver === undefined) next.use_drawing_solver = true;
   delete next.unit_system; // display preference now lives with the user
+  delete next.global_roughness; // removed in 0.2.x: pipes take their roughness from the pipe class or their own value
   return next;
 };

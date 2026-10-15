@@ -22,8 +22,6 @@ export default function HeatExchangerNode({ id, data, selected }) {
   let dutyVal = 0;
   if (telemetry?.actual_duty_kw !== undefined && telemetry?.actual_duty_kw !== null) {
     dutyVal = telemetry.actual_duty_kw;
-  } else if (data.heat_duty_kw !== undefined && data.heat_duty_kw !== null) {
-    dutyVal = data.heat_duty_kw;
   } else if (Math.abs(flowRate) > 1e-9) {
     // Dynamic thermodynamic fallback: Q = m_dot * Cp * deltaT
     const cp = (density < 900) ? 2000 : 4184; // Approx Cp for oil vs water

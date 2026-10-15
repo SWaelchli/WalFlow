@@ -79,7 +79,7 @@ class GraphParser:
             return graph
 
         # Clone global settings with overrides if present
-        resolved_global_settings = graph.global_settings.copy() if graph.global_settings else None
+        resolved_global_settings = graph.global_settings.model_copy() if graph.global_settings else None
         if resolved_global_settings and selected_case.overrides and selected_case.overrides.global_settings:
             for key, val in selected_case.overrides.global_settings.items():
                 if hasattr(resolved_global_settings, key):
@@ -185,8 +185,7 @@ class GraphParser:
                 name=pipe_name,
                 length=float(edge_data.get('length', 25.0)),
                 diameter=float(edge_data.get('diameter', 0.1)),
-                roughness=roughness_m,
-                friction_factor=float(edge_data.get('friction_factor', 0.02))
+                roughness=roughness_m
             )
             pipe.global_settings = resolved_graph.global_settings
 

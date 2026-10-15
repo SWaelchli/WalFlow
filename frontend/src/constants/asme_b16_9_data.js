@@ -308,19 +308,6 @@ export const ASME_B16_9_REDUCERS = [
   { dn_large: 600, nps_large: "24", od_large_mm: 610.0, dn_small: 350, nps_small: "14", od_small_mm: 355.6, length_mm: 508.0, cone_angle_deg: 28.11 }
 ];
 
-export function getReducerCombinations(dnLarge, standard = 'ASME_B16_9') {
-  const dataset = standard === 'DIN_EN_10253_2' ? DIN_EN_10253_2_REDUCERS : ASME_B16_9_REDUCERS;
-  if (!dnLarge) return dataset;
-  return dataset.filter(r => r.dn_large === Number(dnLarge));
-}
-
-export function getReducerEntry(dnLarge, dnSmall, standard = 'ASME_B16_9') {
-  const dataset = standard === 'DIN_EN_10253_2' ? DIN_EN_10253_2_REDUCERS : ASME_B16_9_REDUCERS;
-  return dataset.find(
-    r => r.dn_large === Number(dnLarge) && r.dn_small === Number(dnSmall)
-  ) || null;
-}
-
 export const DIN_EN_10253_2_REDUCERS = [
   { dn_large: 25, nps_large: "DN25", od_large_mm: 33.7, dn_small: 20, nps_small: "DN20", od_small_mm: 26.9, length_mm: 50.0, cone_angle_deg: 7.78 },
   { dn_large: 32, nps_large: "DN32", od_large_mm: 42.4, dn_small: 25, nps_small: "DN25", od_small_mm: 33.7, length_mm: 50.0, cone_angle_deg: 9.94 },

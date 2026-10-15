@@ -206,7 +206,6 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
         return Number(kwToHp(num, 2));
 
       // Heat duty (base: kW)
-      case 'heat_duty_kw':
       case 'rated_cooling_kw':
       case 'rated_heating_kw':
         return Number(kwToBtuh(num, 0));
@@ -227,8 +226,7 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
       case 'diameter':
         return Number((num * 39.37007874).toFixed(3));
 
-      // Global pipe roughness (base: m)
-      case 'global_roughness':
+      // Pipe roughness (base: m)
       case 'roughness':
         return Number((num * 39.37007874).toFixed(6));
 
@@ -312,7 +310,6 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
         return hpToKw(num);
 
       // Heat duty (input: BTU/h -> base: kW)
-      case 'heat_duty_kw':
       case 'rated_cooling_kw':
       case 'rated_heating_kw':
         return btuhToKw(num);
@@ -334,7 +331,6 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
         return inToM(num);
 
       // Pipe roughness (input: in -> base: m)
-      case 'global_roughness':
       case 'roughness':
         return inToM(num);
 

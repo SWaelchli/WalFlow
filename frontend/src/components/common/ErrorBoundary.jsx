@@ -1,14 +1,6 @@
 import React from 'react';
 import { confirmDialog } from '../../utils/dialogs';
-import { LOCAL_DRAFT_KEY } from '../../hooks/useAutoSaveSession';
-
-const readDraft = () => {
-  try {
-    return localStorage.getItem(LOCAL_DRAFT_KEY);
-  } catch {
-    return null;
-  }
-};
+import { readDraft, removeDraft } from '../../utils/draftStorage';
 
 const buttonStyle = {
   background: '#F4F7F6', border: '1px solid #D8E2E1', borderRadius: '8px', color: '#1C2B2C',
@@ -52,11 +44,7 @@ export default class ErrorBoundary extends React.Component {
       danger: true,
     });
     if (!ok) return;
-    try {
-      localStorage.removeItem(LOCAL_DRAFT_KEY);
-    } catch {
-      // storage unavailable: reloading is all we can do
-    }
+    removeDraft();
     window.location.reload();
   };
 

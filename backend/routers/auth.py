@@ -1,6 +1,6 @@
 import os
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
 from db.database import get_db
@@ -24,8 +24,7 @@ class UserResponseSchema(BaseModel):
     role: str
     status: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 def _set_auth_cookie(response: Response, token: str):
     secure_cookie_env = os.getenv("WALFLOW_SECURE_COOKIES")

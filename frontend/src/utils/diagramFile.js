@@ -3,7 +3,8 @@ import { FILE_FORMAT_VERSION, APP_VERSION } from '../constants';
 // Simulation results live only in memory (per case). They are never written to files, drafts, cloud
 // saves or solver messages (F2-22); a diagram is re-solved after loading.
 export const CASE_RESULT_KEYS = ['telemetry', 'telemetry_unmitigated', 'telemetry_peak', 'kpis', 'stats', 'result_hash', '_scalingInfo'];
-const NODE_RUNTIME_KEYS = ['telemetry', 'onRotate', 'onChange', 'hasCaseOverrides'];
+export const NODE_RUNTIME_KEYS = ['telemetry', 'onRotate', 'onChange', 'hasCaseOverrides'];
+export const EDGE_RUNTIME_KEYS = ['telemetry'];
 
 const omit = (obj, keys) => {
   if (!obj) return obj;
@@ -14,7 +15,7 @@ const omit = (obj, keys) => {
 
 export const stripCaseResults = (c) => omit(c, CASE_RESULT_KEYS);
 export const stripNodeRuntime = (n) => ({ ...n, data: omit(n.data, NODE_RUNTIME_KEYS) });
-export const stripEdgeRuntime = (e) => ({ ...e, data: omit(e.data, ['telemetry']) });
+export const stripEdgeRuntime = (e) => ({ ...e, data: omit(e.data, EDGE_RUNTIME_KEYS) });
 
 /** True if the case holds solver results. */
 export const hasCaseResults = (c) => Boolean(c && (c.telemetry || c.kpis));

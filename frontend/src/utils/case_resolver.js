@@ -85,17 +85,6 @@ export const updateCaseTelemetry = (cases = [], targetCaseId, telemetry, kpis, t
 };
 
 /**
- * Computes effective global settings by layering active case global overrides over base global settings.
- */
-export const getEffectiveGlobalSettings = (globalSettings = {}, cases = [], activeCaseId = 'case_base') => {
-  const activeCase = getActiveCase(cases, activeCaseId);
-  if (!activeCase || activeCase.is_base || !activeCase.overrides?.global_settings) {
-    return globalSettings;
-  }
-  return { ...globalSettings, ...activeCase.overrides.global_settings };
-};
-
-/**
  * Checks if a specific node property is overridden in the currently active case.
  */
 export const isPropertyOverridden = (nodeId, propKey, cases = [], activeCaseId = 'case_base') => {

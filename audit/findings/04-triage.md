@@ -578,3 +578,44 @@ Anchors at `HEAD` = `269fb23`: `App.jsx › onConnect` (line ~1000, no `isValidC
 - *Not covered.* Label association is heuristic (first control after the label); fields whose label is not a `<label>` (e.g. plain text above an input) still have no accessible name. No screen reader or browser keyboard walk-through was done.
 
 **Tests.** `HelpInfoModal.test.jsx`, `a11yProps.test.jsx`, `labelAssociation.test.js`, `asme_b16_9_data.test.js`; 177 frontend tests, lint and build pass.
+
+### B5: refactors and hygiene (implemented 2026-10-15, not committed)
+
+**Decisions (user, 2026-10-15).** F1-20: no renaming now; document the node fields and unit conventions and test the parser against the table; the rename goes on the roadmap (with the next format break). F2-28: reactflow 11 to @xyflow/react 12 moves to the roadmap (memoised v11 only). F2-26: split only `App.jsx` and `SetupPanel.jsx`; the other large files get dead-code and duplicate cleanup only. F2-24: `global_roughness` is **removed** (setting, state, UI and file field; the parser keeps using the pipe class roughness, default 0.045 mm). F2-22: only the per-tab draft key remains (results are already out of saved files, B2).
+
+#### B5a: backend and versions (~3 days)
+1. **F1-13.** Port-aware transport in `solver.py` (temperature, density, viscosity, pipe telemetry use the edge's port index, not `outlets[0]`/`inlets[0]`; about lines 535, 878-949, 1437-1471). Tests: TCV pipe on inlet 1, reverse flow through splitter and mixer.
+2. **F1-12.** Remaining Jacobian errors (TCV `d/dq`, valve and regulator viscosity-correction derivative, Q = 0 laminar limit): numerical differentiation from the node's own function. Lasting test: Jacobian against finite differences for every equipment type.
+3. **F0-07.** Pydantic v2 (`model_config`, `model_dump`, `min_length`) with zero warnings in pytest; bundle split (lazy modals, help, pipe class page); Node >= 22.12 (`engines`, `.nvmrc`, Docker). `qa_report/` no longer exists.
+4. **F3-19 / F0-03.** AGENTS.md app 0.2.0 / format 0.2; `design-system/walflow/MASTER.md` (0.1.6); `backend/version.py` as the single backend source (used by `main.py`); test that it equals `constants.js` and `package.json`.
+5. **F1-20 (documentation only).** `docs/node-fields.md`: field, unit, component; test that the parser reads exactly these fields.
+
+#### B5b: frontend data flow (~3-4 days)
+6. **F2-22 remainder.** Draft key `walflow_draft_<tabId>` (id in `sessionStorage`); drafts of closed tabs expire after 7 days; `ErrorBoundary` uses the same key; boot offers the newest draft from another tab.
+7. **F2-24.** Remove `global_roughness` (schemas, parser alias, App state, settings UI, defaults, old files simply ignore it); calibration-fluid select lists all 23 fluids; fluid list generated from the backend catalogue with an equality test; one `defaultGlobalSettings` (App, new drawing, Sidebar delete); remove the duplicated pump-curve formulas in `PumpDetails` and the unused edge `friction_factor`.
+8. **F2-28 (v11 only).** Memoise `interactiveNodes` / `styledEdges` per node; save and send only on real edits (not selection or drag). Measure before and after with a generated 150-node network.
+
+#### B5c: code health (~2-3 days)
+9. **F2-26.** Side effects out of the `setNodes` / `setCases` updaters; dead code removed (`toDisplayValue`, `getReducerCombinations/Entry`, `getEffectiveGlobalSettings`, `heat_duty_kw`, orifice `standardDn/Sch`, `hasPsv`); one heatmap-range function; one pipe-class selection logic; `App.jsx` and `SetupPanel.jsx` split into hooks and sub-components with no behaviour change.
+
+**Tests (lasting references).** Backend: port transport, Jacobian vs finite differences, no Pydantic warnings, version equality, node-field table. Frontend: draft key per tab, defaults single source, fluid list equality, render count for a drag. Then backend suite (408), frontend suite (177), `npm run lint`, `npm run build`, browser check of drag, draft restore with two tabs, and an old file containing `global_roughness`.
+
+**Out of scope.** Field renaming and the @xyflow/react upgrade (roadmap); splitting `PipeClassesPage`, `Sidebar`, `DataList`.
+
+**Version and docs.** `CHANGELOG.md` entries (brief). No version bump, no format change, no commit unless you ask.
+
+**Effort.** ~8-10 days, order B5a, B5b, B5c.
+
+**B5 result (not committed).** Plan changes: the backend version file is `backend/constants.py` (same name as `frontend/src/constants.js`, user decision) instead of `version.py`; AGENTS.md now says app 0.2.0 / format 0.2.
+- *F1-13.* `solver.py › _src_port / _tgt_port`: pipe telemetry and property transport use the port index of the edge. Test: TCV pipe on inlet 1; reverse flow through splitter and mixer was already right.
+- *F1-12.* Valves, regulators and other non-pump sources, and the TCV path term, are differentiated numerically from the node's own function (step relative to |q|, at least 1e-12 m3/s; a fixed 1e-7 step broke the parallel-PRV case). Lasting test `test_f1_12_jacobian.py`: Jacobian against finite differences of the residual at the converged state for every case of every shipped diagram (row deviation under 3 %; a deliberate 20 % error is caught).
+- *F0-07.* Pydantic v2 API (zero warnings; `pytest.ini` makes them errors), 413 literal, bundle split (main chunk 1.27 MB to 565 kB; vendor chunks and lazy dialogs and pipe class page), `engines` and `.nvmrc` Node 22.12. This machine still has Node 22.11 (Vite warns; build works).
+- *F3-19 / F0-03.* One version per side with a test (`test_f3_19_versions.py`: backend constants = frontend constants = package.json = AGENTS.md); Sidebar new-drawing uses the constants and `DEFAULT_DRAWING_SETTINGS`; MASTER.md updated.
+- *F1-20.* `docs/node-fields.md` with units; `test_f1_20_node_fields.py` keeps the parser and the table equal. No renaming (roadmap).
+- *F2-22.* `utils/draftStorage.js`: draft key per tab (`walflow_draft_<tabId>`, id in sessionStorage), heartbeat, 7-day expiry, orphaned drafts (and the old single-key draft) offered at start with Restore / Discard.
+- *F2-24.* `global_roughness` removed (backend, state, defaults, example files; old files still load); calibration fluid lists all 23 fluids and a test keeps the list equal to the backend catalogue; pump chart formulas in `utils/pumpCurves.js` with fixtures written by the backend test; edge `friction_factor` no longer read.
+- *F2-28.* `utils/graphSignature.js` (`solverMessageKey`, `persistKey`), per-object signatures in `resultHash`, `utils/itemMemo.js` (`mapCached`) for nodes and pipes. Solver update and draft save fire only on real edits; a drag frame rebuilds 1 of 150 nodes. Measured (150 nodes, 5 cases): case hash 4.8 to 1.3 ms, solver message key 0.18 ms.
+- *F2-26.* Selection follows `nodes` / `edges` in effects (no state setters inside updaters); dead code removed (`getReducerCombinations/Entry`, `getEffectiveGlobalSettings`, `hasPsv`, `heat_duty_kw`); one `computeHeatmapRange`; pipe class changes shared in `pipeDefaults.js` (inspector and table); `App.jsx` 1970 to 1665 lines (hooks `useModalManager`, `useOperatingCases`, `useCanvasLoading`, `usePipeClasses`, `useHeatmapSettings`, `utils/nodeDefaults.js`, lazy dialogs); `SetupPanel.jsx` 2161 to 1373 lines (`PipeSelector`, `PropertyBadge`, `ReducerSetup`).
+- *Not covered.* The three pipe-dimension tables are still separate; `PipeClassesPage`, `Sidebar`, `DataList` only lost duplicated pipe-class code; `toDisplayValue` is used again (TankNode) so it stays.
+
+**Tests.** Backend 434 pass (`test_f1_12_jacobian`, `test_f1_13_port_transport`, `test_f1_20_node_fields`, `test_f3_19_versions`, `test_f2_24_*`). Frontend 211 pass (`App.test.jsx` smoke mount, `draftStorage`, `graphSignature`, `itemMemo`, `heatmapRange`, `pumpCurves`, `nodeDefaults`, `pipeSelectionPatches`); lint and build clean. Browser check (1568x698, Chrome): start, orphan draft dialog and restore, run to "Converged", component drag, per-tab draft key and heartbeat present. Two real tabs side by side and 1920x1080 were not checked.

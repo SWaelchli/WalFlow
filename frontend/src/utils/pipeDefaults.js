@@ -44,6 +44,52 @@ const manualPipeData = (dn, sch) => {
   };
 };
 
+// Dimensions only (what changes when the size of the current class or the schedule changes)
+const sizeDimensions = (size) => ({
+  standardDn: size.dn,
+  standardSch: size.sch || 'STD',
+  outer_diameter_mm: size.od_mm,
+  wall_thickness_mm: size.wt_mm,
+  diameter: (size.od_mm - 2.0 * size.wt_mm) / 1000.0,
+});
+
+const scheduleDimensions = (s) => ({
+  standardDn: s.dn,
+  standardSch: s.sch,
+  outer_diameter_mm: s.od_mm,
+  wall_thickness_mm: s.wt_mm,
+  diameter: s.id_mm / 1000.0,
+});
+
+// The pipe data changes below are shared by the inspector (PipeSelector) and the pipe table (DataList).
+// Each returns the patch to apply to the pipe, or null when the choice cannot be applied.
+
+/** Switch to manual (custom) dimensions at the given size and schedule; roughness stays as it is. */
+export function manualSelectionPatch(dn, sch) {
+  const s = getPipeScheduleDetails(dn || DEFAULT_PIPE_DN, sch || DEFAULT_PIPE_SCH)
+    || getPipeScheduleDetails(DEFAULT_PIPE_DN, DEFAULT_PIPE_SCH);
+  return { pipe_class_id: 'manual', pipe_class_code: 'CUSTOM', ...scheduleDimensions(s) };
+}
+
+/** A pipe class was chosen: keep the current size when the class has it, otherwise the class's first size. */
+export function classSelectionPatch(pc, currentDn) {
+  if (!pc || !Array.isArray(pc.sizes) || pc.sizes.length === 0) return null;
+  const size = pc.sizes.find(s => s.dn === currentDn) || pc.sizes[0];
+  return classSizeToPipeData(pc, size);
+}
+
+/** A size of the current pipe class was chosen. */
+export function classSizePatch(pc, dn) {
+  const size = pc?.sizes?.find(s => s.dn === Number(dn));
+  return size ? sizeDimensions(size) : null;
+}
+
+/** A size or schedule of the B36.10M table was chosen (manual pipes). */
+export function schedulePatch(dn, sch) {
+  const s = getPipeScheduleDetails(dn, sch);
+  return s ? scheduleDimensions(s) : null;
+}
+
 /**
  * Pipe sizing for a newly connected hydraulic pipe: DN50 STD.
  * - First available pipe class, if it lists DN50.

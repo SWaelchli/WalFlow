@@ -8,7 +8,7 @@ import ReactFlow, {
   applyEdgeChanges,
   ReactFlowProvider
 } from 'reactflow';
-import { notify, confirmDialog, askName } from './utils/dialogs';
+import { notify, confirmDialog } from './utils/dialogs';
 import { validateNetwork, checkNewConnection, PORT_TAKEN_MESSAGE } from './utils/networkValidation';
 import { summarizeStats, deriveRunState } from './utils/runStatus';
 import RunBanners from './components/overlays/RunBanners';
@@ -47,19 +47,12 @@ import DataList from './components/panels/DataList';
 
 import PipeEdge from './edges/PipeEdge';
 import SignalEdge from './edges/SignalEdge';
-import PipeClassesPage from './pages/PipeClassesPage';
+import { PipeClassesPage, HelpInfoModal, LoginModal, ProjectManagerModal, AdminSetupModal, AdminHubModal, SaveAsModal, NewDrawingModal, LazyModal, LazyPage } from './components/common/LazyModal';
 import HeatmapLegend from './components/overlays/HeatmapLegend';
 
 import CanvasLoadingOverlay from './components/overlays/CanvasLoadingOverlay';
 import { FlameIcon, CaseIcon, HelpIcon } from './components/symbols/IconLibrary';
 import CaseManager from './components/overlays/CaseManager';
-import HelpInfoModal from './components/modals/HelpInfoModal';
-import LoginModal from './components/modals/LoginModal';
-import ProjectManagerModal from './components/modals/ProjectManagerModal';
-import AdminSetupModal from './components/modals/AdminSetupModal';
-import AdminHubModal from './components/modals/AdminHubModal';
-import SaveAsModal from './components/modals/SaveAsModal';
-import NewDrawingModal from './components/modals/NewDrawingModal';
 import { AuthProvider } from './context/AuthProvider';
 import { useAuth } from './hooks/useAuth';
 import { UnitProvider, useUnits } from './context/UnitContext';
@@ -72,6 +65,14 @@ import { useAutoSaveSession } from './hooks/useAutoSaveSession';
 import { HEAT_EXCHANGER_DEFAULTS } from './utils/equipmentDefaults';
 import { serializeDiagram, toSolverGraph, checkDiagramFile, stripResults } from './utils/diagramFile';
 import { computeCaseInputHashes, isCaseResultStale } from './utils/resultHash';
+import { solverMessageKey } from './utils/graphSignature';
+import { mapCached } from './utils/itemMemo';
+import { useHeatmapSettings } from './hooks/useHeatmapSettings';
+import { usePipeClasses } from './hooks/usePipeClasses';
+import { useCanvasLoading } from './hooks/useCanvasLoading';
+import { useModalManager } from './hooks/useModalManager';
+import { useOperatingCases } from './hooks/useOperatingCases';
+import { defaultNodeData } from './utils/nodeDefaults';
 import { DEFAULT_DRAWING_SETTINGS, migrateDrawingSettings, withEffectiveSolver } from './utils/settingsLevels';
 import useSettingsLevels from './hooks/useSettingsLevels';
 import { nextAutoTag } from './utils/autoTag';
@@ -85,11 +86,8 @@ import {
   getEffectiveEdgeData,
   getCaseTelemetrySet,
   getActiveCase,
-  updateCaseTelemetry,
   hasActiveOverrides,
-  updateCaseOverride,
-  removeCaseOverride,
-  duplicateCase
+  updateCaseOverride
 } from './utils/case_resolver';
 
 // Import Examples
@@ -144,9 +142,6 @@ const KNOWN_NODE_TYPES = new Set(Object.keys(nodeTypes));
 const getId = () => `node_${crypto.randomUUID().split('-')[0]}`;
 const getEdgeId = () => `edge_${crypto.randomUUID().split('-')[0]}`;
 
-const MIN_VISIBLE_MS = 400;
-const SAFETY_TIMEOUT_MS = 5000;
-
 const getNextLabelNumber = (edges) => {
   let maxNum = 99; // Default starting from 100
   edges.forEach(edge => {
@@ -174,15 +169,12 @@ function WalFlowContent() {
 
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges] = useEdgesState([]);
-  const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
-  const [helpModalInitialTab, setHelpModalInitialTab] = useState('shortcuts');
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [isProjectManagerModalOpen, setIsProjectManagerModalOpen] = useState(false);
-  const [isAdminHubOpen, setIsAdminHubOpen] = useState(false);
-  const [isSaveAsModalOpen, setIsSaveAsModalOpen] = useState(false);
-  const [isNewDrawingModalOpen, setIsNewDrawingModalOpen] = useState(false);
-  const [activeModal, setActiveModal] = useState(null);
-  const [projectManagerProjectId, setProjectManagerProjectId] = useState(null);
+  const {
+    isHelpModalOpen, helpModalInitialTab, isAuthModalOpen, isProjectManagerModalOpen, isAdminHubOpen,
+    isSaveAsModalOpen, isNewDrawingModalOpen, activeModal, projectManagerProjectId,
+    handleOpenHelpModal, handleCloseModal, handleOpenAdminHub, handleOpenAuthModal,
+    handleOpenSaveAsModal, handleOpenNewDrawingModal, handleOpenProjectManagerModal,
+  } = useModalManager();
 
   // Active Cloud Project & Auto-Save Session Hook
   const [activeProject, setActiveProject] = useState(null);
@@ -203,96 +195,10 @@ function WalFlowContent() {
     setCurrentPath(path);
   }, []);
 
-  // System Pipe Classes Catalog
-  const [pipeClasses, setPipeClasses] = useState([]);
-
-  const fetchPipeClasses = useCallback(async () => {
-    try {
-      const res = await axios.get('/api/pipe-classes');
-      setPipeClasses(res.data);
-    } catch {
-      console.warn("Failed to load pipe classes catalog in App.");
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchPipeClasses();
-  }, [fetchPipeClasses]);
-
-  const availablePipeClasses = useMemo(() => {
-    if (!pipeClasses || pipeClasses.length === 0) return [];
-    if (activeProject && Array.isArray(activeProject.allowed_pipe_classes)) {
-      return pipeClasses.filter(c => 
-        activeProject.allowed_pipe_classes.includes(c.id) || 
-        activeProject.allowed_pipe_classes.includes(c.code)
-      );
-    }
-    return pipeClasses;
-  }, [pipeClasses, activeProject]);
+  const { fetchPipeClasses, availablePipeClasses, allowCustomPipes } = usePipeClasses(activeProject);
 
 
-  const allowCustomPipes = useMemo(() => {
-    if (!activeProject) return true;
-    return activeProject.allow_custom_pipes !== false;
-  }, [activeProject]);
-
-
-
-
-  // Canvas loading overlay state
-  const [isCanvasLoading, setIsCanvasLoading] = useState(false);
-  const [canvasLoadingLabel, setCanvasLoadingLabel] = useState('Opening drawing…');
-  const pendingLoadRef = useRef(false);
-  const loadStartedAtRef = useRef(0);
-  const hideTimerRef = useRef(null);
-  const paintFrameRef = useRef(null);
-  const loadTimeoutRef = useRef(null);
-
-  const showCanvasLoading = useCallback((label = 'Opening drawing…') => {
-    if (hideTimerRef.current) {
-      clearTimeout(hideTimerRef.current);
-    }
-    if (paintFrameRef.current) {
-      cancelAnimationFrame(paintFrameRef.current);
-    }
-    if (loadTimeoutRef.current) {
-      clearTimeout(loadTimeoutRef.current);
-    }
-    pendingLoadRef.current = true;
-    loadStartedAtRef.current = Date.now();
-    setCanvasLoadingLabel(label);
-    setIsCanvasLoading(true);
-    hideTimerRef.current = setTimeout(() => {
-      pendingLoadRef.current = false;
-      setIsCanvasLoading(false);
-    }, SAFETY_TIMEOUT_MS);
-  }, []);
-
-  const hideCanvasLoading = useCallback(() => {
-    if (hideTimerRef.current) {
-      clearTimeout(hideTimerRef.current);
-    }
-    if (paintFrameRef.current) {
-      cancelAnimationFrame(paintFrameRef.current);
-    }
-    if (loadTimeoutRef.current) {
-      clearTimeout(loadTimeoutRef.current);
-    }
-    pendingLoadRef.current = false;
-    setIsCanvasLoading(false);
-  }, []);
-
-  useEffect(() => () => {
-    if (hideTimerRef.current) {
-      clearTimeout(hideTimerRef.current);
-    }
-    if (paintFrameRef.current) {
-      cancelAnimationFrame(paintFrameRef.current);
-    }
-    if (loadTimeoutRef.current) {
-      clearTimeout(loadTimeoutRef.current);
-    }
-  }, []);
+  const { isCanvasLoading, canvasLoadingLabel, showCanvasLoading, hideCanvasLoading, scheduleLoad } = useCanvasLoading({ nodes, edges });
 
   // F3-08: frame the diagram after a load, an example or a new drawing
   useEffect(() => {
@@ -300,22 +206,6 @@ function WalFlowContent() {
     fitViewPendingRef.current = false;
     requestAnimationFrame(() => reactFlowInstance.fitView({ padding: 0.2, duration: 250, maxZoom: 1.2 }));
   }, [nodes, reactFlowInstance]);
-
-  // Hide the loader once the loaded canvas commits (completion-driven, not a fixed timer).
-  // The requestAnimationFrame gate guarantees the loader is included in at least one painted
-  // frame before the hide timer starts, so heavy synchronous loads still flash it.
-  useEffect(() => {
-    if (!pendingLoadRef.current) return;
-    pendingLoadRef.current = false;
-    if (hideTimerRef.current) {
-      clearTimeout(hideTimerRef.current);
-    }
-    paintFrameRef.current = requestAnimationFrame(() => {
-      const elapsed = Date.now() - loadStartedAtRef.current;
-      const remaining = Math.max(0, MIN_VISIBLE_MS - elapsed);
-      hideTimerRef.current = setTimeout(() => setIsCanvasLoading(false), remaining === 0 ? 50 : remaining);
-    });
-  }, [nodes, edges]);
 
   // Reset active cloud project when user switches accounts or logs out
   const prevUserIdRef = useRef(currentUser?.id);
@@ -329,113 +219,11 @@ function WalFlowContent() {
     prevUserIdRef.current = currentUser?.id;
   }, [currentUser?.id]);
 
-  // Operating Case Manager State
-  const [cases, setCases] = useState([DEFAULT_BASE_CASE]);
-  const [activeCaseId, setActiveCaseId] = useState('case_base');
-  const [showCaseManager, setShowCaseManager] = useState(false);
-
-  const handleAddCase = useCallback(async () => {
-    const currentActiveCase = cases.find(c => c.id === activeCaseId) || cases[0] || DEFAULT_BASE_CASE;
-    const name = await askName({
-      title: 'New operating case',
-      label: `Name (copies the settings of "${currentActiveCase.name}")`,
-      initial: `Case ${cases.length + 1}`,
-      confirmLabel: 'Create case',
-    });
-    if (!name) return;
-    const newCase = duplicateCase(currentActiveCase, name);
-    setCases(prev => [...prev, newCase]);
-    setActiveCaseId(newCase.id);
-  }, [cases, activeCaseId]);
-
-  const handleRenameCase = useCallback((caseId, newName) => {
-    setCases(prev => prev.map(c => c.id === caseId ? { ...c, name: newName } : c));
-  }, []);
-
-  const handleDeleteCase = useCallback((caseId) => {
-    setCases(prev => {
-      const filtered = prev.filter(c => c.id !== caseId);
-      if (activeCaseId === caseId) {
-        setActiveCaseId(filtered[0]?.id || 'case_base');
-      }
-      return filtered;
-    });
-  }, [activeCaseId]);
-
-  const handleReorderCases = useCallback((fromIdx, toIdx) => {
-    setCases(prev => {
-      if (fromIdx <= 0 || toIdx <= 0 || fromIdx >= prev.length || toIdx >= prev.length) return prev;
-      const newCases = [...prev];
-      const [moved] = newCases.splice(fromIdx, 1);
-      newCases.splice(toIdx, 0, moved);
-      return newCases;
-    });
-  }, []);
-
-  const handleResetCaseOverride = useCallback((nodeId, propKey) => {
-    setCases(prev => removeCaseOverride(prev, activeCaseId, nodeId, propKey));
-  }, [activeCaseId]);
-
-  const handleSetCaseOverride = useCallback((caseId, nodeId, propKey, value) => {
-    const nodeObj = nodes.find(n => n.id === nodeId);
-    const baseValue = nodeObj?.data?.[propKey];
-    setCases(prev => updateCaseOverride(prev, caseId, nodeId, propKey, value, baseValue));
-  }, [nodes]);
-
-  const handleOpenHelpModal = (tab = 'shortcuts') => {
-    setHelpModalInitialTab(tab);
-    setIsHelpModalOpen(true);
-    setActiveModal('help');
-  };
-
-  const handleCloseModal = () => {
-    setIsHelpModalOpen(false);
-    setIsAuthModalOpen(false);
-    setIsProjectManagerModalOpen(false);
-    setIsAdminHubOpen(false);
-    setIsSaveAsModalOpen(false);
-    setIsNewDrawingModalOpen(false);
-    setActiveModal(null);
-  };
-
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && activeModal) {
-        handleCloseModal();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [activeModal]);
-
-  const handleOpenAdminHub = () => {
-    setIsAdminHubOpen(true);
-    setActiveModal('adminHub');
-  };
-
-  const handleOpenAuthModal = () => {
-    setIsAuthModalOpen(true);
-    setActiveModal('auth');
-  };
-
-  const handleOpenSaveAsModal = () => {
-    setIsSaveAsModalOpen(true);
-    setActiveModal('saveAs');
-  };
-
-  const handleOpenNewDrawingModal = () => {
-    setIsNewDrawingModalOpen(true);
-    setActiveModal('newDrawing');
-  };
-
-  const handleOpenProjectManagerModal = (projectId = null) => {
-    setProjectManagerProjectId(projectId);
-    setIsProjectManagerModalOpen(true);
-    setActiveModal('projectManager');
-  };
+  const {
+    cases, setCases, activeCaseId, setActiveCaseId, showCaseManager, setShowCaseManager,
+    handleAddCase, handleRenameCase, handleDeleteCase, handleReorderCases, handleResetCaseOverride, handleSetCaseOverride,
+    handleUpdateCaseTelemetry, batchStats, handleBatchResultsTelemetry,
+  } = useOperatingCases({ nodes });
 
   const { unitSystem, setUnitSystem } = useUnits();
   const dragCounter = useRef(0);
@@ -459,7 +247,6 @@ function WalFlowContent() {
     () => withEffectiveSolver(globalSettings, { project: projectSettings, user: userSettings }),
     [globalSettings, projectSettings, userSettings]
   );
-  const [batchStats, setBatchStats] = useState(null);
   const [autoRunPending, setAutoRunPending] = useState(false);
 
 
@@ -469,6 +256,7 @@ function WalFlowContent() {
     restoredDraftTime,
     clearLocalDraft,
     loadLocalDraftOnBoot,
+    offerOrphanDraft,
     triggerManualCloudSave,
     lockInfo,
     isLockedByOther,
@@ -512,38 +300,6 @@ function WalFlowContent() {
       })
     );
   }, [setNodes]);
-
-  // WebSocket custom hook
-  const handleUpdateCaseTelemetry = useCallback((targetCaseId, telemetry, kpis, telemetryUnmitigated, telemetryPeak, resultHash) => {
-    setCases(prev => updateCaseTelemetry(prev, targetCaseId, telemetry, kpis, telemetryUnmitigated, telemetryPeak, resultHash));
-  }, []);
-
-  // inputHashes: { caseId: hash } of the inputs the batch was sent with (F2-07)
-  const handleBatchResultsTelemetry = useCallback((batchResults, inputHashes = {}) => {
-    setCases(prev => prev.map(c => {
-      const match = batchResults.find(b => b.case_id === c.id);
-      return (match && (match.telemetry || match.kpis)) 
-        ? { 
-            ...c, 
-            telemetry: match.telemetry || c.telemetry, 
-            telemetry_unmitigated: match.telemetry_unmitigated || c.telemetry_unmitigated,
-            telemetry_peak: match.telemetry ? (match.telemetry_peak ?? null) : (c.telemetry_peak ?? null),
-            kpis: match.kpis || c.kpis,
-            result_hash: match.telemetry ? inputHashes[c.id] : c.result_hash
-          } 
-        : c;
-    }));
-
-    if (batchResults) {
-      setBatchStats(batchResults.map(r => ({
-        case_id: r.case_id,
-        case_name: r.case_name,
-        status: r.status,
-        error_message: r.error_message,
-        ...(r.stats || {})
-      })));
-    }
-  }, []);
 
   const {
     ws,
@@ -916,10 +672,7 @@ function WalFlowContent() {
       return false;
     }
     showCanvasLoading();
-    if (loadTimeoutRef.current) {
-      clearTimeout(loadTimeoutRef.current);
-    }
-    loadTimeoutRef.current = setTimeout(() => {
+    scheduleLoad(() => {
       // Results are never loaded from a file (F2-22); old or hand-edited files may still carry them
       const clean = stripResults({ nodes: data.nodes, edges: data.edges, cases: data.cases || [] });
       const seenNodeIds = new Set();
@@ -972,7 +725,7 @@ function WalFlowContent() {
       setAutoRunPending(restoredNodes.length > 0);
     }, 50);
     return true;
-  }, [handleValveChange, handleRotation, setNodes, setEdges, showCanvasLoading, hideCanvasLoading, resetHistory]);
+  }, [handleValveChange, handleRotation, setNodes, setEdges, setCases, setActiveCaseId, showCanvasLoading, hideCanvasLoading, scheduleLoad, resetHistory]);
 
   const handleLoadDiagramWithCheck = useCallback(async (data, diagramTitle = '', options = {}) => {
     // Reject a bad file before anything about the open drawing changes (F0-02, F2-10)
@@ -1010,8 +763,7 @@ function WalFlowContent() {
   }, [activeProject, activeDiagram, hasLock, triggerManualCloudSave, checkinDiagram, setActiveDiagram, loadData]);
 
   useEffect(() => {
-    const draft = loadLocalDraftOnBoot();
-    if (draft) {
+    const applyDraft = (draft) => {
       loadData(draft);
       if (draft.active_project_id && draft.active_project_title) {
         setActiveProject({
@@ -1030,8 +782,15 @@ function WalFlowContent() {
       }
       setShowRestoredToast(true);
       setTimeout(() => setShowRestoredToast(false), 5000);
+    };
+
+    // This tab's own draft (reload) is restored directly; otherwise a draft left by a closed tab is offered (F2-22)
+    const draft = loadLocalDraftOnBoot();
+    if (draft) {
+      applyDraft(draft);
     } else {
       loadData(greetingCanvas);
+      offerOrphanDraft().then((orphan) => { if (orphan) applyDraft(orphan); });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -1119,18 +878,10 @@ function WalFlowContent() {
     const targetCaseObj = cases.find(c => c.id === effectiveCaseId) || DEFAULT_BASE_CASE;
     const isBase = targetCaseObj.is_base;
 
+    // The selected node follows `nodes` in an effect, so the updaters below stay free of side effects
     if (isBase) {
       setNodes((nds) =>
-        nds.map((node) => {
-          if (node.id === nodeId) {
-            const updatedNode = { ...node, data: { ...node.data, ...newData } };
-            if (selectedNode && selectedNode.id === nodeId) {
-              setSelectedNode(updatedNode);
-            }
-            return updatedNode;
-          }
-          return node;
-        })
+        nds.map((node) => (node.id === nodeId ? { ...node, data: { ...node.data, ...newData } } : node))
       );
     } else {
       const caseVarUpdates = {};
@@ -1145,7 +896,7 @@ function WalFlowContent() {
       });
 
       if (Object.keys(caseVarUpdates).length > 0) {
-        const targetNode = nodes.find(n => n.id === nodeId);
+        const targetNode = nodesRef.current.find(n => n.id === nodeId);
         setCases(prev => {
           let updatedCases = prev;
           Object.entries(caseVarUpdates).forEach(([key, val]) => {
@@ -1158,20 +909,11 @@ function WalFlowContent() {
 
       if (Object.keys(globalUpdates).length > 0) {
         setNodes((nds) =>
-          nds.map((node) => {
-            if (node.id === nodeId) {
-              const updatedNode = { ...node, data: { ...node.data, ...globalUpdates } };
-              if (selectedNode && selectedNode.id === nodeId) {
-                setSelectedNode(updatedNode);
-              }
-              return updatedNode;
-            }
-            return node;
-          })
+          nds.map((node) => (node.id === nodeId ? { ...node, data: { ...node.data, ...globalUpdates } } : node))
         );
       }
     }
-  }, [activeCaseId, cases, selectedNode, setNodes, nodes, activeDiagram, hasLock]);
+  }, [activeCaseId, cases, setNodes, setCases, activeDiagram, hasLock]);
 
   // Canvas valve slider: live-preview the opening on the backend, then store it case-aware
   // (an override in a non-base case) so the case badge shows and the base case stays untouched.
@@ -1188,23 +930,15 @@ function WalFlowContent() {
       notify("This drawing is read-only. Please check out the drawing to edit.", 'warning');
       return;
     }
+    // The selected pipe follows `edges` in an effect, so this updater stays free of side effects
     setEdges((eds) =>
-      eds.map((edge) => {
-        if (edge.id === edgeId) {
-          const updatedEdge = { 
-            ...edge, 
-            label: newData.label !== undefined ? newData.label : edge.label,
-            data: { ...edge.data, ...newData } 
-          };
-          if (selectedEdge && selectedEdge.id === edgeId) {
-            setSelectedEdge(updatedEdge);
-          }
-          return updatedEdge;
-        }
-        return edge;
-      })
+      eds.map((edge) => (edge.id === edgeId ? {
+        ...edge,
+        label: newData.label !== undefined ? newData.label : edge.label,
+        data: { ...edge.data, ...newData }
+      } : edge))
     );
-  }, [selectedEdge, setEdges, activeDiagram, hasLock]);
+  }, [setEdges, activeDiagram, hasLock]);
 
   const onDragEnter = useCallback((event) => {
     event.preventDefault();
@@ -1270,33 +1004,12 @@ function WalFlowContent() {
         id: getId(),
         type,
         position,
-        data: { 
+        data: defaultNodeData(type, {
           label: nextAutoTag(type, nodes.map(n => n.data?.label)),
-          rotation: 0,
+          ambientTemperature: globalSettings.ambient_temperature,
           onRotate: handleRotation,
-          onChange: type === 'linear_control_valve' ? handleValveChange : undefined,
-          ...(type === 'centrifugal_pump' && { flow_rated_lmin: 100.0, head_rated_m: 50.0, rise_to_shutoff_pct: 20.0, efficiency: 75.0, active: true }),
-          ...(type === 'pump' && { flow_rated_lmin: 100.0, head_rated_m: 50.0, rise_to_shutoff_pct: 20.0, efficiency: 75.0, active: true }),
-          ...(type === 'volumetric_pump' && { flow_rated: 100.0, motor_power: 5.0, efficiency: 85.0, drive_type: 'fixed_speed', max_discharge_pressure_bara: 50.0, active: true }),
-          ...(type === 'tank' && { level: 2.0, elevation: 0.0, temperature: globalSettings.ambient_temperature }),
-          ...(type === 'linear_control_valve' && { max_cv: 0.05, opening: 50.0 }),
-          ...(type === 'linear_regulator' && { max_cv: 0.05, set_pressure: 500000.0, backpressure: false }),
-          ...(type === 'orifice' && { pipe_diameter: 0.05248, orifice_diameter: 0.02, standard: 'iso_5167', standardDn: 50, standardSch: '40' }),
-          ...(type === 'calibrated_restriction' && { flow_base_lmin: 10.0, inlet_pressure_base_bar: 3.5, outlet_pressure_base_bar: 1.0, temp_base_c: 45.0, restriction_model: 'orifice', fluid_type: 'system' }),
-          ...(type === 'reducer' && { standard: 'ASME_B16_9', reducer_type: 'concentric', dn_large: 80, nps_large: '3', dn_small: 50, nps_small: '2', sch_large: 'STD', sch_small: 'STD', length: 0.089, length_mm: 89.0, cone_angle_deg: 18.2, diameter_in: 0.07792, diameter_out: 0.05248, orientation: 'reducing' }),
-          ...(type === 'pressure_source' && { source_pressure_bara: 6.0, temperature: 293.15 }),
-
-          ...(type === 'flow_source' && { source_flow_lmin: 50.0, temperature: 293.15, max_discharge_pressure_bara: 50.0 }),
-          ...(type === 'filter' && { dp_clean: 0.2, dp_terminal: 1.0, flow_ref: 100.0, clogging: 0.0 }),
-          ...(type === 'heat_exchanger' && HEAT_EXCHANGER_DEFAULTS),
-          ...(type === 'remote_control_valve' && { max_cv: 0.05, set_pressure: 500000.0 }),
-          ...(type === 'three_way_tcv' && { max_cv: 0.1, set_temperature_c: 40.0, hot_port_idx: 0 }),
-          ...(type === 'check_valve' && { cv: 10.0, cracking_pressure_bar: 0.05 }),
-          ...((type === 'pressure_safety_valve' || type === 'psv') && { set_pressure_barg: 20.0, cv: 10.0, action_mode: 'pop_action', blowdown_pct: 7.0, forced_state: 'auto' }),
-          ...(type === 'rupture_disc' && { burst_pressure_barg: 25.0, bore_type: 'full_bore', cv: 10.0, forced_state: 'auto' }),
-          ...(type === 'check_valve_orifice' && { cv: 10.0, cracking_pressure_bar: 0.05, pipe_diameter: 0.05248, orifice_diameter: 0.01, standardDn: 50, standardSch: '40' }),
-          ...(type === 'text_bubble' && { label: 'Note', title: 'NOTE', text: 'Double-click to edit note...', fontSize: 'md' }),
-        },
+          onChange: handleValveChange,
+        }),
       };
 
       setNodes((nds) => nds.concat(newNode));
@@ -1347,7 +1060,7 @@ function WalFlowContent() {
     setCases([DEFAULT_BASE_CASE]);
     setActiveCaseId('case_base');
     setGlobalSettings(DEFAULT_DRAWING_SETTINGS);
-  }, [setNodes, setEdges, resetHistory]);
+  }, [setNodes, setEdges, setCases, setActiveCaseId, resetHistory]);
 
   const handleSaveAs = useCallback(async ({ title, description, project_id }) => {
     try {
@@ -1446,18 +1159,28 @@ function WalFlowContent() {
     }
   }, [resetCanvas, clearLocalDraft, setActiveDiagram, setActiveProject, loadData, showCanvasLoading]);
 
+  // The solver gets the graph again only when something it uses changes (F2-28): not on drag, selection or
+  // when results arrive. The key is cheap; the graph itself is read from a ref when the timer fires.
+  const solverKey = useMemo(
+    () => solverMessageKey({ nodes, edges, globalSettings: effectiveGlobalSettings, cases, activeCaseId }),
+    [nodes, edges, effectiveGlobalSettings, cases, activeCaseId]
+  );
+  const latestGraphRef = useRef(null);
+  useEffect(() => {
+    latestGraphRef.current = { nodes, edges, globalSettings: effectiveGlobalSettings, cases, activeCaseId };
+  });
   useEffect(() => {
     const handler = setTimeout(() => {
-      if (isConnected && ws.current && ws.current.readyState === WebSocket.OPEN) {
-        ws.current.send(JSON.stringify({ 
-          action: 'update_graph', 
-          graph: toSolverGraph({ nodes, edges, globalSettings: effectiveGlobalSettings, cases, activeCaseId })
+      if (isConnected && ws.current && ws.current.readyState === WebSocket.OPEN && latestGraphRef.current) {
+        ws.current.send(JSON.stringify({
+          action: 'update_graph',
+          graph: toSolverGraph(latestGraphRef.current)
         }));
       }
     }, 250);
 
     return () => clearTimeout(handler);
-  }, [nodes, edges, isConnected, effectiveGlobalSettings, cases, activeCaseId, ws]);
+  }, [solverKey, isConnected, ws]);
 
   useEffect(() => {
     if (isConnected && ws.current && ws.current.readyState === WebSocket.OPEN && activeDiagram?.id) {
@@ -1468,136 +1191,41 @@ function WalFlowContent() {
     }
   }, [isConnected, activeDiagram?.id, ws]);
 
+  // The inspector shows the selected component and pipe; they follow edits made to the lists
+  const nodesRef = useRef(nodes);
+  useEffect(() => { nodesRef.current = nodes; });
   useEffect(() => {
     if (selectedNode) {
       const liveNode = nodes.find(n => n.id === selectedNode.id);
-      if (liveNode) setSelectedNode(liveNode);
+      if (liveNode && liveNode !== selectedNode) setSelectedNode(liveNode);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodes]);
-
-  const [heatmapSettings, setHeatmapSettings] = useState({
-    mode: 'default',
-    autoScale: true,
-    globalAutoScale: true,
-    customRanges: {
-      pressure: { min: 0.0, max: 6.0 },
-      temperature: { min: 20.0, max: 60.0 },
-      volumeflow: { min: 0.0, max: 200.0 },
-      velocity: { min: 0.0, max: 10.0 }
+  useEffect(() => {
+    if (selectedEdge) {
+      const liveEdge = edges.find(e => e.id === selectedEdge.id);
+      if (liveEdge && liveEdge !== selectedEdge) setSelectedEdge(liveEdge);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [edges]);
+
+  const { heatmapSettings, setHeatmapSettings, computeGlobalHeatmapRange, computedHeatmapRange } = useHeatmapSettings({
+    edges, cases, activeCaseId, telemetryMode,
   });
 
-  const computeGlobalHeatmapRange = useCallback((mode) => {
-    if (!mode || mode === 'default') return { min: 0, max: 1 };
-
-    let minVal = Infinity;
-    let maxVal = -Infinity;
-
-    const targetCases = (cases && cases.length > 0) ? cases : [{ id: activeCaseId }];
-
-    targetCases.forEach((c) => {
-       edges.forEach((e) => {
-        const effectiveData = getEffectiveEdgeData(e, cases, c.id, telemetryMode);
-        const tele = effectiveData.telemetry || e.data?.telemetry || {};
-        if (mode === 'pressure') {
-          const p1 = tele.inlets?.[0]?.pressure != null ? tele.inlets[0].pressure / 100000.0 : null;
-          const p2 = tele.outlets?.[0]?.pressure != null ? tele.outlets[0].pressure / 100000.0 : null;
-          if (p1 !== null) { minVal = Math.min(minVal, p1); maxVal = Math.max(maxVal, p1); }
-          if (p2 !== null) { minVal = Math.min(minVal, p2); maxVal = Math.max(maxVal, p2); }
-        } else if (mode === 'temperature') {
-          const t1 = tele.inlets?.[0]?.temperature != null ? tele.inlets[0].temperature - 273.15 : null;
-          const t2 = tele.outlets?.[0]?.temperature != null ? tele.outlets[0].temperature - 273.15 : null;
-          if (t1 !== null) { minVal = Math.min(minVal, t1); maxVal = Math.max(maxVal, t1); }
-          if (t2 !== null) { minVal = Math.min(minVal, t2); maxVal = Math.max(maxVal, t2); }
-        } else if (mode === 'volumeflow') {
-          const q1 = tele.inlets?.[0]?.flow_rate != null ? Math.abs(tele.inlets[0].flow_rate * 60000.0) : null;
-          const q2 = tele.outlets?.[0]?.flow_rate != null ? Math.abs(tele.outlets[0].flow_rate * 60000.0) : null;
-          if (q1 !== null) { minVal = Math.min(minVal, q1); maxVal = Math.max(maxVal, q1); }
-          if (q2 !== null) { minVal = Math.min(minVal, q2); maxVal = Math.max(maxVal, q2); }
-        } else if (mode === 'velocity') {
-          const dia = e.data?.diameter || 0.1;
-          const area = (Math.PI * Math.pow(dia, 2)) / 4.0;
-          const q1 = tele.inlets?.[0]?.flow_rate != null ? Math.abs(tele.inlets[0].flow_rate) : null;
-          const q2 = tele.outlets?.[0]?.flow_rate != null ? Math.abs(tele.outlets[0].flow_rate) : null;
-          const v1 = (q1 !== null && area > 0) ? q1 / area : null;
-          const v2 = (q2 !== null && area > 0) ? q2 / area : null;
-          if (v1 !== null) { minVal = Math.min(minVal, v1); maxVal = Math.max(maxVal, v1); }
-          if (v2 !== null) { minVal = Math.min(minVal, v2); maxVal = Math.max(maxVal, v2); }
-        }
-      });
-    });
-
-    if (minVal === Infinity || maxVal === -Infinity || Math.abs(maxVal - minVal) < 1e-4) {
-      if (mode === 'pressure') return { min: 0.0, max: 6.0 };
-      if (mode === 'temperature') return { min: 20.0, max: 60.0 };
-      if (mode === 'volumeflow') return { min: 0.0, max: 200.0 };
-      if (mode === 'velocity') return { min: 0.0, max: 10.0 };
-    }
-
-    return { min: Math.max(0, parseFloat(minVal.toFixed(1))), max: parseFloat(maxVal.toFixed(1)) };
-  }, [edges, cases, activeCaseId, telemetryMode]);
-
-  const computedHeatmapRange = useMemo(() => {
-    const mode = heatmapSettings.mode;
-    if (mode === 'default') return { min: 0, max: 1 };
-
-    if (!heatmapSettings.autoScale) {
-      const custom = heatmapSettings.customRanges[mode];
-      return custom || { min: 0, max: 10 };
-    }
-
-    let minVal = Infinity;
-    let maxVal = -Infinity;
-
-    const targetCases = (heatmapSettings.globalAutoScale && cases && cases.length > 0)
-      ? cases
-      : [{ id: activeCaseId }];
-
-    targetCases.forEach((c) => {
-      edges.forEach((e) => {
-        const effectiveData = getEffectiveEdgeData(e, cases, c.id, telemetryMode);
-        const tele = effectiveData.telemetry || e.data?.telemetry || {};
-        if (mode === 'pressure') {
-          const p1 = tele.inlets?.[0]?.pressure != null ? tele.inlets[0].pressure / 100000.0 : null;
-          const p2 = tele.outlets?.[0]?.pressure != null ? tele.outlets[0].pressure / 100000.0 : null;
-          if (p1 !== null) { minVal = Math.min(minVal, p1); maxVal = Math.max(maxVal, p1); }
-          if (p2 !== null) { minVal = Math.min(minVal, p2); maxVal = Math.max(maxVal, p2); }
-        } else if (mode === 'temperature') {
-          const t1 = tele.inlets?.[0]?.temperature != null ? tele.inlets[0].temperature - 273.15 : null;
-          const t2 = tele.outlets?.[0]?.temperature != null ? tele.outlets[0].temperature - 273.15 : null;
-          if (t1 !== null) { minVal = Math.min(minVal, t1); maxVal = Math.max(maxVal, t1); }
-          if (t2 !== null) { minVal = Math.min(minVal, t2); maxVal = Math.max(maxVal, t2); }
-        } else if (mode === 'volumeflow') {
-          const q1 = tele.inlets?.[0]?.flow_rate != null ? Math.abs(tele.inlets[0].flow_rate * 60000.0) : null;
-          const q2 = tele.outlets?.[0]?.flow_rate != null ? Math.abs(tele.outlets[0].flow_rate * 60000.0) : null;
-          if (q1 !== null) { minVal = Math.min(minVal, q1); maxVal = Math.max(maxVal, q1); }
-          if (q2 !== null) { minVal = Math.min(minVal, q2); maxVal = Math.max(maxVal, q2); }
-        } else if (mode === 'velocity') {
-          const dia = e.data?.diameter || 0.1;
-          const area = (Math.PI * Math.pow(dia, 2)) / 4.0;
-          const q1 = tele.inlets?.[0]?.flow_rate != null ? Math.abs(tele.inlets[0].flow_rate) : null;
-          const q2 = tele.outlets?.[0]?.flow_rate != null ? Math.abs(tele.outlets[0].flow_rate) : null;
-          const v1 = (q1 !== null && area > 0) ? q1 / area : null;
-          const v2 = (q2 !== null && area > 0) ? q2 / area : null;
-          if (v1 !== null) { minVal = Math.min(minVal, v1); maxVal = Math.max(maxVal, v1); }
-          if (v2 !== null) { minVal = Math.min(minVal, v2); maxVal = Math.max(maxVal, v2); }
-        }
-      });
-    });
-
-    if (minVal === Infinity || maxVal === -Infinity || Math.abs(maxVal - minVal) < 1e-4) {
-      if (mode === 'pressure') return { min: 0.0, max: 6.0 };
-      if (mode === 'temperature') return { min: 20.0, max: 60.0 };
-      if (mode === 'volumeflow') return { min: 0.0, max: 200.0 };
-      if (mode === 'velocity') return { min: 0.0, max: 10.0 };
-    }
-
-    return { min: Math.max(0, minVal), max: maxVal };
-  }, [edges, cases, activeCaseId, telemetryMode, heatmapSettings.mode, heatmapSettings.autoScale, heatmapSettings.globalAutoScale, heatmapSettings.customRanges]);
+  // Pipes and components that did not change keep their object between renders, so a drag frame re-renders only
+  // the moved node (F2-28)
+  const [edgeCache] = useState(() => new Map());
+  const [nodeCache] = useState(() => new Map());
+  // handleCanvasValveChange depends on the node list, so it changes on every drag frame; the nodes get a stable
+  // wrapper that always calls the latest version
+  const valveChangeRef = useRef(handleCanvasValveChange);
+  useEffect(() => { valveChangeRef.current = handleCanvasValveChange; });
+  const stableValveChange = useCallback((value, nodeId) => valveChangeRef.current(value, nodeId), []);
 
   const styledEdges = useMemo(() => {
-    return edges.map(edge => {
+    const deps = [cases, activeCaseId, telemetryMode, isSimulating, heatmapSettings.mode, computedHeatmapRange.min, computedHeatmapRange.max];
+    return mapCached(edges, edgeCache, deps, (edge) => {
       const effectiveData = getEffectiveEdgeData(edge, cases, activeCaseId, telemetryMode);
       const isSignal = edge.data?.type === 'SIGNAL';
       const tele = effectiveData.telemetry || edge.data?.telemetry || {};
@@ -1621,10 +1249,10 @@ function WalFlowContent() {
         }
       };
     });
-  }, [edges, cases, activeCaseId, telemetryMode, isSimulating, heatmapSettings.mode, computedHeatmapRange]);
+  }, [edges, edgeCache, cases, activeCaseId, telemetryMode, isSimulating, heatmapSettings.mode, computedHeatmapRange]);
 
   const interactiveNodes = useMemo(() => {
-    return nodes.map(node => {
+    return mapCached(nodes, nodeCache, [cases, activeCaseId, telemetryMode, rotateNode, stableValveChange], (node) => {
       const effectiveData = getEffectiveNodeData(node, cases, activeCaseId, telemetryMode);
       const hasOverrides = hasActiveOverrides(node.id, cases, activeCaseId);
       return {
@@ -1635,11 +1263,11 @@ function WalFlowContent() {
           ...effectiveData,
           hasCaseOverrides: hasOverrides,
           onRotate: rotateNode,
-          onChange: (node.type === 'linear_control_valve' || node.type === 'remote_control_valve') ? handleCanvasValveChange : undefined,
+          onChange: (node.type === 'linear_control_valve' || node.type === 'remote_control_valve') ? stableValveChange : undefined,
         }
       };
     });
-  }, [nodes, cases, activeCaseId, telemetryMode, rotateNode, handleCanvasValveChange]);
+  }, [nodes, nodeCache, cases, activeCaseId, telemetryMode, rotateNode, stableValveChange]);
 
   const effectiveSelectedNode = useMemo(() => {
     if (!selectedNode) return null;
@@ -1687,23 +1315,28 @@ function WalFlowContent() {
 
     return (
       <>
-        <PipeClassesPage 
-          onNavigateToCanvas={() => { fetchPipeClasses(); navigateTo('/'); }}
-          onOpenAuthModal={handleOpenAuthModal}
-          onOpenAdminHub={handleOpenAdminHub}
-          onOpenHelpModal={(tab) => handleOpenHelpModal(tab || 'about')}
-        />
-        <LoginModal
+        <LazyPage>
+          <PipeClassesPage
+            onNavigateToCanvas={() => { fetchPipeClasses(); navigateTo('/'); }}
+            onOpenAuthModal={handleOpenAuthModal}
+            onOpenAdminHub={handleOpenAdminHub}
+            onOpenHelpModal={(tab) => handleOpenHelpModal(tab || 'about')}
+          />
+        </LazyPage>
+        <LazyModal
+          as={LoginModal}
           isOpen={isAuthModalOpen}
           onClose={handleCloseModal}
           adminExists={adminStatus.adminExists}
         />
-        <AdminHubModal
+        <LazyModal
+          as={AdminHubModal}
           isOpen={isAdminHubOpen}
           onClose={handleCloseModal}
           onLoadDiagram={loadData}
         />
-        <HelpInfoModal
+        <LazyModal
+          as={HelpInfoModal}
           isOpen={isHelpModalOpen}
           onClose={handleCloseModal}
           initialTab={helpModalInitialTab}
@@ -1955,18 +1588,21 @@ function WalFlowContent() {
     <CanvasContextMenu x={contextMenu.x} y={contextMenu.y} items={contextMenuItems} onClose={closeContextMenu} />
   )}
 
-  <HelpInfoModal
+  <LazyModal
+    as={HelpInfoModal}
     isOpen={isHelpModalOpen}
     onClose={handleCloseModal}
     initialTab={helpModalInitialTab}
   />
 
-  <LoginModal
+  <LazyModal
+    as={LoginModal}
     isOpen={isAuthModalOpen}
     onClose={handleCloseModal}
   />
 
-  <ProjectManagerModal
+  <LazyModal
+    as={ProjectManagerModal}
     isOpen={isProjectManagerModalOpen}
     onClose={handleCloseModal}
     currentFlowData={{ nodes, edges, globalSettings, cases, activeCaseId }}
@@ -1980,14 +1616,16 @@ function WalFlowContent() {
     hideCanvasLoading={hideCanvasLoading}
   />
 
-  <SaveAsModal
+  <LazyModal
+    as={SaveAsModal}
     isOpen={isSaveAsModalOpen}
     onClose={handleCloseModal}
     onSaveAs={handleSaveAs}
     currentTitle={activeDiagram?.title || "Untitled Drawing"}
   />
 
-  <NewDrawingModal
+  <LazyModal
+    as={NewDrawingModal}
     isOpen={isNewDrawingModalOpen}
     onClose={handleCloseModal}
     onCreateNew={handleCreateNewDrawing}
@@ -2046,12 +1684,14 @@ function WalFlowContent() {
             </div>
           )}
 
-          <AdminSetupModal
+          <LazyModal
+            as={AdminSetupModal}
             isOpen={!adminStatus.adminExists}
             onClose={() => {}}
           />
 
-  <AdminHubModal
+  <LazyModal
+    as={AdminHubModal}
     isOpen={isAdminHubOpen}
     onClose={handleCloseModal}
     onLoadDiagram={loadData}

@@ -16,6 +16,21 @@ const wlfPlugin = () => ({
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), wlfPlugin()],
+  build: {
+    chunkSizeWarningLimit: 600,   // app chunk is about 565 kB after the split (was 1.27 MB in one file)
+    rollupOptions: {
+      output: {
+        // Libraries change rarely, so they cache separately from the app code (F0-07)
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined;
+          if (/node_modules[\\/](recharts|d3-[^\\/]+|victory-vendor|decimal\.js-light|es-toolkit|eventemitter3|immer|redux|@reduxjs|reselect|react-redux)[\\/]/.test(id)) return 'vendor-charts';
+          if (/node_modules[\\/](reactflow|@reactflow|zustand|classcat)[\\/]/.test(id)) return 'vendor-flow';
+          if (/node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return 'vendor-react';
+          return undefined;
+        },
+      },
+    },
+  },
   test: {
     environment: 'jsdom',
     include: ['src/**/*.test.{js,jsx}'],

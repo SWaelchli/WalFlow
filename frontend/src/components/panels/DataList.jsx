@@ -2,11 +2,11 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { confirmDialog } from '../../utils/dialogs';
 import { PlusIcon, PlayIcon, ExportIcon, CaseIcon, TrashIcon, SpinnerIcon } from '../symbols/IconLibrary';
 import { findClosestPipeMatch, ASME_PIPE_STANDARDS } from '../../utils/standards_library';
-import { getPipeScheduleDetails, getAvailableSchedules } from '../../constants/asme_b16_9_data';
+import { getAvailableSchedules } from '../../constants/asme_b16_9_data';
 
 import { updateCaseOverride, effectiveForcedState } from '../../utils/case_resolver';
 import { useUnits } from '../../context/UnitContext';
-import { resolvePipeSelection } from '../../utils/pipeDefaults';
+import { resolvePipeSelection, manualSelectionPatch, classSelectionPatch, classSizePatch, schedulePatch } from '../../utils/pipeDefaults';
 import DraftNumberInput from '../common/DraftNumberInput';
 import usePanelHeight from '../../hooks/usePanelHeight';
 import { toSolverGraph } from '../../utils/diagramFile';
@@ -1043,79 +1043,25 @@ export default function DataList({
               const pipeInfo = ASME_PIPE_STANDARDS.find(p => p.dn === currentDn);
               const npsDisplay = pipeInfo ? `${pipeInfo.nps}"` : `${currentDn}mm`;
 
+              // Same pipe data changes as the inspector's PipeSelector (utils/pipeDefaults.js)
               const handleClassChange = (newClassId) => {
-                if (newClassId === 'manual') {
-                  const schDetails = getPipeScheduleDetails(currentDn, currentSch || 'STD') || getPipeScheduleDetails(50, 'STD');
-                  onUpdateEdge(item.id, {
-                    pipe_class_id: 'manual',
-                    pipe_class_code: 'CUSTOM',
-                    standardDn: schDetails.dn,
-                    standardSch: schDetails.sch,
-                    diameter: schDetails.id_mm / 1000.0,
-                    outer_diameter_mm: schDetails.od_mm,
-                    wall_thickness_mm: schDetails.wt_mm
-                  });
-                  return;
-                }
-                const pc = classList.find(c => c.id === newClassId);
-                if (!pc) return;
-                const sizes = pc.sizes || [];
-                const matchedSize = sizes.find(s => s.dn === currentDn) || sizes[0];
-                if (matchedSize) {
-                  const calcId = (matchedSize.od_mm - 2.0 * matchedSize.wt_mm) / 1000.0;
-                  onUpdateEdge(item.id, {
-                    pipe_class_id: pc.id,
-                    pipe_class_code: pc.code,
-                    diameter: calcId,
-                    standardDn: matchedSize.dn,
-                    standardSch: matchedSize.sch || 'STD',
-                    roughness_mm: pc.roughness_mm,
-                    roughness: pc.roughness_mm / 1000.0,
-                    outer_diameter_mm: matchedSize.od_mm,
-                    wall_thickness_mm: matchedSize.wt_mm
-                  });
-                }
+                const patch = newClassId === 'manual'
+                  ? manualSelectionPatch(currentDn, currentSch)
+                  : classSelectionPatch(classList.find(c => c.id === newClassId), currentDn);
+                if (patch) onUpdateEdge(item.id, patch);
               };
 
               const handleDnChange = (newDn) => {
                 const dnInt = parseInt(newDn, 10);
-                if (selectedClass && selectedClass.sizes) {
-                  const sizeObj = selectedClass.sizes.find(s => s.dn === dnInt);
-                  if (sizeObj) {
-                    const calcId = (sizeObj.od_mm - 2.0 * sizeObj.wt_mm) / 1000.0;
-                    onUpdateEdge(item.id, {
-                      diameter: calcId,
-                      standardDn: dnInt,
-                      standardSch: sizeObj.sch || 'STD',
-                      outer_diameter_mm: sizeObj.od_mm,
-                      wall_thickness_mm: sizeObj.wt_mm
-                    });
-                    return;
-                  }
-                }
-                const schDetails = getPipeScheduleDetails(dnInt, currentSch || 'STD') || getPipeScheduleDetails(dnInt, 'STD');
-                if (schDetails && !isNode) {
-                  onUpdateEdge(item.id, {
-                    diameter: schDetails.id_mm / 1000.0,
-                    standardDn: dnInt,
-                    standardSch: schDetails.sch,
-                    outer_diameter_mm: schDetails.od_mm,
-                    wall_thickness_mm: schDetails.wt_mm
-                  });
-                }
+                const patch = classSizePatch(selectedClass, dnInt)
+                  || (!isNode ? (schedulePatch(dnInt, currentSch || 'STD') || schedulePatch(dnInt, 'STD')) : null);
+                if (patch) onUpdateEdge(item.id, patch);
               };
 
               const handleScheduleChange = (newSch) => {
                 if (isNode) return;
-                const schDetails = getPipeScheduleDetails(currentDn, newSch);
-                if (schDetails) {
-                  onUpdateEdge(item.id, {
-                    standardSch: newSch,
-                    diameter: schDetails.id_mm / 1000.0,
-                    outer_diameter_mm: schDetails.od_mm,
-                    wall_thickness_mm: schDetails.wt_mm
-                  });
-                }
+                const patch = schedulePatch(currentDn, newSch);
+                if (patch) onUpdateEdge(item.id, patch);
               };
 
               const handleNameChange = (newName) => {

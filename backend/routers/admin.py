@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import List, Optional
 from sqlalchemy.orm import Session
 
@@ -24,8 +24,7 @@ class UserAdminResponseSchema(BaseModel):
     created_at: str
     diagram_count: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 @router.get("/users")
 def get_all_users(db: Session = Depends(get_db)):

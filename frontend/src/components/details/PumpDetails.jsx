@@ -4,6 +4,7 @@ import {
 } from 'recharts';
 import { useUnits } from '../../context/UnitContext';
 import { niceTicks, formatTick } from '../../utils/chartTicks';
+import { centrifugalDpBar, volumetricDpBar } from '../../utils/pumpCurves';
 
 const CavitationWarning = ({ npsha, required, unit, mult }) => (
   <div style={{
@@ -40,8 +41,6 @@ const PumpWarning = ({ title, text, tone = 'warning' }) => (
     <p style={{ fontSize: '11px', color: tone === 'danger' ? 'var(--color-danger)' : '#92400E', margin: 0 }}>{text}</p>
   </div>
 );
-
-const GRAVITY = 9.81;
 
 const PumpDetails = memo(function PumpDetails({ node }) {
   const { labels, isImperial, formatPressurePa, formatFlowM3s, formatPower } = useUnits();
@@ -83,25 +82,13 @@ const PumpDetails = memo(function PumpDetails({ node }) {
       const qLmin = (maxX_lmin * i) / steps;
       const qM3s = qLmin / 60000;
       
-      let pumpBar = 0;
-      if (isVolumetric) {
-          const flow_rated_m3s = (parseFloat(flow_rated) || 100) / 60000;
-          const power_w = (parseFloat(motor_power) || 5) * 1000;
-          const eff_dec = (parseFloat(efficiency) || 85) / 100;
-          const stiffness = 10_000_000.0 / (0.01 * flow_rated_m3s);
-          const dp_displacement = Math.max(0, stiffness * (flow_rated_m3s - qM3s));
-          const dp_power = isFixedSpeed ? Infinity : (power_w * eff_dec) / Math.sqrt(qM3s**2 + 1e-10);
-          // Discharge limit is absolute: the rise is capped at limit − suction pressure
-          const dp_limit = Math.max(0, maxDischargeBara * 100000 - (currentPin || 101325));
-          pumpBar = Math.min(dp_displacement, dp_power, dp_limit) / 100000;
-      } else {
-          const q_rated_m3s = (parseFloat(flow_rated_lmin) || 100) / 60000;
-          const h_rated = parseFloat(head_rated_m) || 0;
-          const rise = parseFloat(rise_to_shutoff_pct) || 20.0;
-          const h_shutoff = h_rated * (1.0 + rise / 100.0);
-          const c_coeff = (q_rated_m3s > 0) ? (h_rated - h_shutoff) / (q_rated_m3s ** 2) : 0;
-          pumpBar = Math.max(0, rho * GRAVITY * (h_shutoff + c_coeff * (qM3s ** 2))) / 100000;
-      }
+      // Discharge limit of a PD pump is absolute: the rise is capped at limit − suction pressure
+      const pumpBar = isVolumetric
+        ? volumetricDpBar({
+            flowRatedLmin: flow_rated, motorPowerKw: motor_power, efficiencyPct: efficiency,
+            fixedSpeed: isFixedSpeed, maxDischargeBara, suctionPa: currentPin || 101325,
+          }, qM3s)
+        : centrifugalDpBar({ flowRatedLmin: flow_rated_lmin, headRatedM: head_rated_m, risePct: rise_to_shutoff_pct }, qM3s, rho);
 
       const systemBar = K * (qM3s ** 2);
       if (pumpBar > localMaxY) localMaxY = pumpBar;

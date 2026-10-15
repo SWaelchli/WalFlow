@@ -3,7 +3,7 @@ import json
 from typing import List, Optional
 from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
 try:
@@ -69,8 +69,7 @@ class DiagramSummarySchema(BaseModel):
     updated_at: datetime
     lock_info: Optional[dict] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class DiagramDetailSchema(DiagramSummarySchema):
     diagram_data: str

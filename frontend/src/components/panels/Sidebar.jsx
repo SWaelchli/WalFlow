@@ -7,7 +7,7 @@ import { InfoIcon, WarningIcon, CheckIcon, CrossIcon, FolderIcon, SearchIcon, Tr
 import { FLUID_CATEGORIES, FLUID_LIBRARY } from '../../constants/fluid_library';
 import { useUnits } from '../../context/UnitContext';
 import { FILE_FORMAT_VERSION, APP_VERSION } from '../../constants';
-import { resolveSolverSettings, SOLVER_KEYS } from '../../utils/settingsLevels';
+import { resolveSolverSettings, SOLVER_KEYS, DEFAULT_DRAWING_SETTINGS } from '../../utils/settingsLevels';
 import SolverSettingsGroup from './SolverSettingsGroup';
 import DraftNumberInput from '../common/DraftNumberInput';
 
@@ -1050,24 +1050,13 @@ export default function Sidebar({
         if (setActiveDiagram) setActiveDiagram(null);
         if (setActiveProject) setActiveProject(null);
         onLoad({
-          version: '0.2',
-          app_version: '0.2.1',
+          version: FILE_FORMAT_VERSION,
+          app_version: APP_VERSION,
           format: 'walflow',
           created_at: new Date().toISOString(),
           nodes: [],
           edges: [],
-          globalSettings: {
-            fluid_type: 'water',
-            ambient_temperature: 293.15,
-            atmospheric_pressure: 101325.0,
-            global_roughness: 0.000045,
-            tolerance: 0.000001,
-            inner_iterations: 1000,
-            control_iterations: 100,
-            solver_method: 'sparse_newton',
-            warm_start: true,
-            damping_factor: 0.25
-          },
+          globalSettings: { ...DEFAULT_DRAWING_SETTINGS },
           cases: [
             {
               id: 'case_base',

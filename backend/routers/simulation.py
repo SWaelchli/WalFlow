@@ -105,7 +105,7 @@ def calculate_case_kpis(network, telemetry: Dict[str, Any], stats: Dict[str, Any
         if node_tel.get("cavitation_warning", False) or node_tel.get("flashing_warning", False):
             has_cavitation = True
 
-        # Aggregate pump power & flow: shaft power Q·ΔP/η at the actual operating point,
+        # Aggregate pump power & flow: shaft power QÂ·Î”P/Î· at the actual operating point,
         # stopped pumps count 0 (F1-36)
         if isinstance(node, (VolumetricPump, CentrifugalPump)):
             total_pump_power_w += node.shaft_power()
@@ -138,8 +138,8 @@ def extract_telemetry(network) -> Dict[str, Any]:
     telemetry = {"nodes": {}, "edges": {}}
     for node_id, node in network.nodes.items():
         node_tel = {
-            "inlets": [p.dict() for p in node.inlets],
-            "outlets": [p.dict() for p in node.outlets]
+            "inlets": [p.model_dump() for p in node.inlets],
+            "outlets": [p.model_dump() for p in node.outlets]
         }
         if hasattr(node, 'opening_pct'):
             node_tel["opening_pct"] = node.opening_pct
@@ -205,8 +205,8 @@ def extract_telemetry(network) -> Dict[str, Any]:
         edge_id = edge["id"]
         pipe = edge["pipe"]
         telemetry["edges"][edge_id] = {
-            "inlets": [p.dict() for p in pipe.inlets],
-            "outlets": [p.dict() for p in pipe.outlets]
+            "inlets": [p.model_dump() for p in pipe.inlets],
+            "outlets": [p.model_dump() for p in pipe.outlets]
         }
     return telemetry
 
@@ -239,10 +239,10 @@ def run_batch_simulation(request: Request, graph: ReactFlowGraph):
     """
     # F2-13: /batch is open to anonymous users, so bound the work one request can ask for
     if len(graph.nodes) > max_nodes():
-        raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+        raise HTTPException(status_code=413,
                             detail=f"Diagram too large: {len(graph.nodes)} components (limit {max_nodes()}).")
     if len(graph.cases or []) > max_cases():
-        raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+        raise HTTPException(status_code=413,
                             detail=f"Too many operating cases: {len(graph.cases)} (limit {max_cases()}).")
 
     cases_to_run = graph.cases or []

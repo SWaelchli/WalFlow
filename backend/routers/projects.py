@@ -1,7 +1,7 @@
 from typing import List, Optional
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
 from db.database import get_db
@@ -34,8 +34,7 @@ class MemberSummarySchema(BaseModel):
     username: str
     role: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class DiagramSummarySchema(BaseModel):
     id: str
@@ -45,8 +44,7 @@ class DiagramSummarySchema(BaseModel):
     updated_at: datetime
     lock_info: Optional[dict] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class ProjectDetailSchema(BaseModel):
     id: str
@@ -60,8 +58,7 @@ class ProjectDetailSchema(BaseModel):
     members: List[MemberSummarySchema]
     diagrams: List[DiagramSummarySchema]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class ProjectSummarySchema(BaseModel):
     id: str
@@ -74,8 +71,7 @@ class ProjectSummarySchema(BaseModel):
     updated_at: datetime
     role: str  # Current user's role in this project
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class MemberAddSchema(BaseModel):
@@ -256,7 +252,7 @@ def update_project(
     if not project:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found.")
 
-    fields_set = getattr(payload, 'model_fields_set', getattr(payload, '__fields_set__', set()))
+    fields_set = payload.model_fields_set
 
     if "title" in fields_set and payload.title is not None:
         project.title = payload.title

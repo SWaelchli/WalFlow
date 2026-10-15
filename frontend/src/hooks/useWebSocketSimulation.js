@@ -18,7 +18,6 @@ export function useWebSocketSimulation({ nodes, edges, globalSettings, cases = [
 
   // Dual-Pass Telemetry States
   const [telemetryMode, setTelemetryMode] = useState('mitigated'); // 'mitigated' | 'peak' | 'unmitigated_global'
-  const [hasPsv, setHasPsv] = useState(false);
   const [graphError, setGraphError] = useState(null); // last rejected graph update (shown inline, not as a popup)
   // Last model error of a run, shown as a banner (F3-04/F3-06). `id` changes with every new error, so the same text is shown again.
   const [runErrorState, setRunErrorState] = useState({ message: null, id: 0 });
@@ -106,12 +105,10 @@ export function useWebSocketSimulation({ nodes, edges, globalSettings, cases = [
           const mitData = response.telemetry || response.data || {};
           const unmitData = response.telemetry_unmitigated || mitData;
           const peakData = response.telemetry_peak || null;
-          const psvPresent = Boolean(response.has_psv);
           const kpisData = response.kpis || null;
 
           setLastStats(response.stats);
           setRunError(null);
-          setHasPsv(psvPresent);
 
           // Results belong to the case and the inputs the run was sent with (F2-07)
           const run = pendingRunRef.current;
@@ -204,7 +201,6 @@ export function useWebSocketSimulation({ nodes, edges, globalSettings, cases = [
     handleValveChange,
     telemetryMode,
     setTelemetryMode,
-    hasPsv,
     graphError,
     runError,
     runErrorId: runErrorState.id,

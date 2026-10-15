@@ -2,7 +2,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
 from db.database import get_db
@@ -31,8 +31,7 @@ class InvitationSummarySchema(BaseModel):
     expires_at: datetime
     used: bool
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 @router.post("", response_model=InvitationSummarySchema, status_code=status.HTTP_201_CREATED)
 def create_project_invitation(

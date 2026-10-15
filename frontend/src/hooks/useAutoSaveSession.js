@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { persistKey } from '../utils/graphSignature';
 import { notify, confirmDialog } from '../utils/dialogs';
 import axios from 'axios';
 import { serializeDiagram, checkFormatVersion } from '../utils/diagramFile';
 import { useAuth } from './useAuth';
-
-export const LOCAL_DRAFT_KEY = 'walflow_active_session_draft';
+import { writeDraft, readDraft, removeDraft, startHeartbeat, pruneDrafts, findOrphanDraft, adoptDraft, discardOrphan } from '../utils/draftStorage';
 
 // One id per browser tab, sent with cloud saves so the server's "diagram updated" notice skips the saving tab (F2-11)
 const CLIENT_ID = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `tab-${Math.random().toString(36).slice(2)}`;
@@ -121,7 +121,7 @@ export function useAutoSaveSession({
   const saveToLocalDraft = useCallback(() => {
     try {
       const payload = serializeWorkspaceState();
-      localStorage.setItem(LOCAL_DRAFT_KEY, JSON.stringify(payload));
+      writeDraft(JSON.stringify(payload));
       return payload.timestamp;
     } catch (e) {
       console.warn('Failed to save session draft to localStorage:', e);
@@ -131,11 +131,13 @@ export function useAutoSaveSession({
 
   // Helper to purge local draft
   const clearLocalDraft = useCallback(() => {
-    try {
-      localStorage.removeItem(LOCAL_DRAFT_KEY);
-    } catch (e) {
-      console.warn('Failed to remove local draft:', e);
-    }
+    removeDraft();
+  }, []);
+
+  // This tab's draft stays out of other tabs' reach while the tab is open (F2-22)
+  useEffect(() => {
+    pruneDrafts();
+    return startHeartbeat();
   }, []);
 
   // Fetch lock status for diagram
@@ -301,6 +303,13 @@ export function useAutoSaveSession({
     };
   }, [saveToLocalDraft, hasLock, activeDiagram]);
 
+  // What a save would write. Selection, measuring and results do not change it, so they no longer start the
+  // save timers (F2-22, F2-28); a moved component does.
+  const contentSignature = useMemo(
+    () => persistKey({ nodes, edges, globalSettings, cases, activeCaseId }),
+    [nodes, edges, globalSettings, cases, activeCaseId]
+  );
+
   // Skip initial mount effect trigger
   const isInitialMount = useRef(true);
 
@@ -374,7 +383,7 @@ export function useAutoSaveSession({
       clearTimeout(localTimer);
       if (cloudTimer) clearTimeout(cloudTimer);
     };
-  }, [nodes, edges, globalSettings, cases, activeCaseId, activeProject, activeDiagram, isAuthenticated, hasLock, isLockedByOther, saveToLocalDraft, serializeWorkspaceState, setActiveDiagram, putDiagram]);
+  }, [contentSignature, activeProject, activeDiagram, isAuthenticated, hasLock, isLockedByOther, saveToLocalDraft, serializeWorkspaceState, setActiveDiagram, putDiagram]);
 
   // Manual Trigger for Instant Cloud Save
   const triggerManualCloudSave = useCallback(async () => {
@@ -413,9 +422,9 @@ export function useAutoSaveSession({
   }, [activeDiagram, isAuthenticated, hasLock, isLockedByOther, saveToLocalDraft, serializeWorkspaceState, setActiveDiagram, putDiagram]);
 
   // Hydration Loader on Boot
-  const loadLocalDraftOnBoot = useCallback(() => {
+  // Reads a stored draft; null when it is empty, unreadable or in another file format (F0-02: say so once)
+  const parseDraft = useCallback((raw, discard) => {
     try {
-      const raw = localStorage.getItem(LOCAL_DRAFT_KEY);
       if (!raw) return null;
 
       const parsed = JSON.parse(raw);
@@ -423,10 +432,9 @@ export function useAutoSaveSession({
         return null;
       }
 
-      // F0-02: a draft in another format cannot be opened. Say so once, then discard it.
       const versionError = checkFormatVersion(parsed);
       if (versionError) {
-        localStorage.removeItem(LOCAL_DRAFT_KEY);
+        discard();
         setTimeout(() => notify(`Your unsaved draft was discarded.
 
 ${versionError}`, 'error'), 0);
@@ -444,6 +452,29 @@ ${versionError}`, 'error'), 0);
     }
   }, []);
 
+  // This tab's own draft (after a reload)
+  const loadLocalDraftOnBoot = useCallback(() => parseDraft(readDraft(), removeDraft), [parseDraft]);
+
+  // A new tab: offer the newest draft of a tab that is gone (closed, crashed, browser restarted)
+  const offerOrphanDraft = useCallback(async () => {
+    const orphan = findOrphanDraft();
+    if (!orphan) return null;
+    const when = orphan.timestamp ? new Date(orphan.timestamp).toLocaleString() : 'an earlier session';
+    const restore = await confirmDialog({
+      title: 'Restore unsaved drawing?',
+      message: `An unsaved drawing from ${when} was found in this browser. Restore it? Choosing Discard removes it.`,
+      confirmLabel: 'Restore',
+      cancelLabel: 'Discard',
+    });
+    if (!restore) {
+      discardOrphan(orphan);
+      return null;
+    }
+    const draft = parseDraft(orphan.raw, () => discardOrphan(orphan));
+    if (draft) adoptDraft(orphan);
+    return draft;
+  }, [parseDraft]);
+
   return {
     saveStatus,
     lastSavedTimestamp,
@@ -451,6 +482,7 @@ ${versionError}`, 'error'), 0);
     restoredDraftTime,
     clearLocalDraft,
     loadLocalDraftOnBoot,
+    offerOrphanDraft,
     triggerManualCloudSave,
     // Co-editing locking details
     lockInfo,

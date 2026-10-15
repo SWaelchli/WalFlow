@@ -215,7 +215,6 @@
       },
       "data": {
         "label": "Cooler",
-        "heat_duty_kw": -267,
         "rotation": 270,
         "rated_dp_bar": 0.5
       },
@@ -1345,7 +1344,6 @@
     "fluid_type": "iso_vg_46",
     "ambient_temperature": 293.15,
     "atmospheric_pressure": 101325,
-    "global_roughness": 4.5e-05,
     "property_iterations": 5,
     "tolerance": 1e-06,
     "inner_iterations": 1000,

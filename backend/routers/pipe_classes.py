@@ -2,7 +2,7 @@ import json
 import logging
 from typing import List, Optional, Any, Dict
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from sqlalchemy.orm import Session
 
 from db.database import get_db
@@ -26,7 +26,7 @@ class PipeSizeEntry(BaseModel):
 
 
 class TempPressureEntry(BaseModel):
-    temp_c: float = Field(..., description="Temperature point in °C")
+    temp_c: float = Field(..., description="Temperature point in Â°C")
     press_bar: float = Field(..., ge=0, description="Max allowable pressure in bar")
 
 
@@ -42,12 +42,12 @@ class PipeClassCreate(BaseModel):
     schedule_standard_code: Optional[str] = Field("ASME_B36_10M_SCHEDULES", description="Code of referenced Pipe Schedule standard")
     roughness_mm: float = Field(0.045, gt=0, description="Absolute surface roughness in mm")
     corrosion_allowance_mm: float = Field(0.0, ge=0, description="Base corrosion allowance in mm")
-    min_temp_c: Optional[float] = Field(None, description="Minimum allowable design temperature in °C")
-    max_temp_c: Optional[float] = Field(None, description="Maximum allowable design temperature in °C")
+    min_temp_c: Optional[float] = Field(None, description="Minimum allowable design temperature in Â°C")
+    max_temp_c: Optional[float] = Field(None, description="Maximum allowable design temperature in Â°C")
     revision: str = Field("1.0", description="Specification revision")
     rev_date: Optional[str] = Field(None, description="Specification revision date")
     source_plant_id: Optional[int] = Field(None, description="Equinor TR2000 plant ID if synced")
-    sizes: List[PipeSizeEntry] = Field(..., min_items=1, description="Array of supported nominal sizes")
+    sizes: List[PipeSizeEntry] = Field(..., min_length=1, description="Array of supported nominal sizes")
     temp_pressures: Optional[List[TempPressureEntry]] = Field(default_factory=list, description="P-T rating points")
 
 
@@ -93,8 +93,7 @@ class PipeClassResponse(BaseModel):
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 def _serialize_pipe_class(item: PipeClass) -> Dict[str, Any]:

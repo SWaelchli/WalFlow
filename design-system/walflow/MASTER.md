@@ -7,7 +7,7 @@
 ---
 
 **Project:** WälFlow
-**Version:** 0.1.6
+**Version:** 0.2.0
 **Design Dials:** Variance 3/10 (Clean Minimalism) | Motion 3/10 (Subtle Micro-interactions) | Density 8/10 (Compact Editor Density)
 
 ---
