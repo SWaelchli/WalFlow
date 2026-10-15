@@ -4,6 +4,7 @@ import { getRotatedPosition } from '../components/canvas/NodeRotationHandle';
 import { SensingPin } from '../components/canvas/SensingPin';
 import BaseNode from './BaseNode';
 import { useUnits } from '../context/UnitContext';
+import { pressureDrop } from '../utils/nodeReadouts';
 
 /**
  * Calibrated Restriction Node (Orifice, Laminar, or Quadratic)
@@ -13,9 +14,7 @@ export default function CalibratedRestrictionNode({ id, data, selected }) {
   const telemetry = data.telemetry;
   const rotation = data.rotation || 0;
   const sensing = useMemo(() => data.sensing || {}, [data.sensing]);
-  const pIn = telemetry?.inlets?.[0]?.pressure || 0;
-  const pOut = telemetry?.outlets?.[0]?.pressure || 0;
-  const dP = pIn - pOut;
+  const dP = pressureDrop(telemetry);
   const dPFormatted = formatPressurePa(dP);
 
   // Pretty model badge name
@@ -41,8 +40,7 @@ export default function CalibratedRestrictionNode({ id, data, selected }) {
           <div style={{ fontSize: '8px', color: 'var(--color-text-secondary)', fontStyle: 'italic', marginTop: '1px' }}>
             {modelName}
           </div>
-          <div style={{ fontSize: '10px', fontWeight: 'bold', color: 'var(--color-danger)', marginTop: '2px' }}>
-            -{dPFormatted} {labels.pressureDiff}
+          <div style={{ fontSize: '10px', fontWeight: 'bold', color: 'var(--color-brand-dark)', marginTop: '2px' }}>ΔP {dPFormatted} {labels.pressureDiff}
           </div>
         </>
       }

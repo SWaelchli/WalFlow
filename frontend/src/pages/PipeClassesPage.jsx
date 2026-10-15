@@ -873,7 +873,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
               {adminStatus?.pendingCount > 0 && (
                 <span style={{
                   backgroundColor: 'var(--color-primary)',
-                  color: '#ffffff',
+                  color: 'var(--color-text-primary)',
                   borderRadius: '10px',
                   padding: '1px 6px',
                   fontSize: '10px',
@@ -934,7 +934,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                 style={{
                   backgroundColor: 'transparent',
                   border: 'none',
-                  color: 'var(--color-primary)',
+                  color: 'var(--color-primary-text)',
                   padding: '0 6px',
                   gap: '4px'
                 }}
@@ -1012,7 +1012,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                  <span style={{ fontWeight: '800', fontSize: '13px', color: 'var(--color-primary)' }}>
+                  <span style={{ fontWeight: '800', fontSize: '13px', color: 'var(--color-primary-text)' }}>
                     {formData.code || 'NEW_SPEC'} (Draft)
                   </span>
                   <span style={{
@@ -1021,7 +1021,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                     padding: '2px 6px',
                     borderRadius: '4px',
                     backgroundColor: 'var(--color-primary)',
-                    color: '#FFFFFF'
+                    color: 'var(--color-text-primary)'
                   }}>
                     DRAFT
                   </span>
@@ -1033,7 +1033,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
             )}
 
             {loading && <div style={{ textAlign: 'center', padding: '20px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>Loading catalog...</div>}
-            {error && <div style={{ color: 'var(--color-danger)', fontSize: '12px', padding: '10px' }}>{error}</div>}
+            {error && <div style={{ color: 'var(--color-danger-text)', fontSize: '12px', padding: '10px' }}>{error}</div>}
             
             {!loading && filteredClasses.map(pc => {
               const isSelected = (!isNewDraft && activeClass?.id === pc.id);
@@ -1652,7 +1652,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: 'var(--color-primary)'
+                  color: 'var(--color-primary-text)'
                 }}>
                   <PlusIcon size={16} />
                 </div>
@@ -1723,7 +1723,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: 'var(--color-primary)'
+                  color: 'var(--color-primary-text)'
                 }}>
                   <GlobeIcon size={20} />
                 </div>
@@ -1740,7 +1740,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
 
             <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {tr2000Error && (
-                <div style={{ color: 'var(--color-danger)', fontSize: '12px', padding: '10px 14px', backgroundColor: 'rgba(239, 68, 68, 0.1)', borderRadius: '8px', border: '1px solid var(--color-danger)' }}>
+                <div style={{ color: 'var(--color-danger-text)', fontSize: '12px', padding: '10px 14px', backgroundColor: 'rgba(239, 68, 68, 0.1)', borderRadius: '8px', border: '1px solid var(--color-danger)' }}>
                   {tr2000Error}
                 </div>
               )}
@@ -1804,7 +1804,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                     href="https://www.equinor.com/about-us/terms-and-conditions"
                     target="_blank"
                     rel="noreferrer"
-                    style={{ color: 'var(--color-primary)', fontWeight: '700', textDecoration: 'underline' }}
+                    style={{ color: 'var(--color-primary-text)', fontWeight: '700', textDecoration: 'underline' }}
                   >
                     Equinor Terms and Conditions
                   </a>
@@ -1974,7 +1974,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                                   style={{ cursor: 'pointer' }}
                                 />
                               </td>
-                              <td style={{ padding: '8px 10px', fontWeight: '800', color: 'var(--color-primary)' }}>{code}</td>
+                              <td style={{ padding: '8px 10px', fontWeight: '800', color: 'var(--color-primary-text)' }}>{code}</td>
                               <td style={{ padding: '8px 10px' }}>{item.Description || item.description || '—'}</td>
                               <td style={{ padding: '8px 10px' }}>{item.RatingClass || item.rating_class || '—'}</td>
                               <td style={{ padding: '8px 10px' }}>{item.MaterialGroup || item.MaterialGrade || item.material_group || '—'}</td>
@@ -1992,7 +1992,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '8px', borderTop: '1px solid var(--color-border)' }}>
                 <div>
                   {batchSyncProgress ? (
-                    <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--color-primary)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--color-primary-text)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                       <SpinnerIcon size={12} /> Importing {batchSyncProgress.current} of {batchSyncProgress.total}: [{batchSyncProgress.currentCode}]...
                     </span>
                   ) : (
@@ -2048,7 +2048,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                   height: '32px',
                   borderRadius: '8px',
                   backgroundColor: 'rgba(250, 133, 7, 0.12)',
-                  color: 'var(--color-primary)',
+                  color: 'var(--color-primary-text)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'
@@ -2111,7 +2111,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                   <tbody>
                     {conflictList.map((item) => (
                       <tr key={item.code} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                        <td style={{ padding: '8px 10px', fontWeight: '800', color: 'var(--color-primary)' }}>{item.code}</td>
+                        <td style={{ padding: '8px 10px', fontWeight: '800', color: 'var(--color-primary-text)' }}>{item.code}</td>
                         <td style={{ padding: '8px 10px' }}>{item.description}</td>
                         <td style={{ padding: '8px 10px', textAlign: 'right' }}>
                           <div style={{ display: 'inline-flex', gap: '3px', backgroundColor: 'var(--color-surface)', padding: '2px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
@@ -2179,7 +2179,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                   type="button"
                   onClick={() => setIsConflictModalOpen(false)}
                   className="btn-secondary"
-                  style={{ color: 'var(--color-danger)' }}
+                  style={{ color: 'var(--color-danger-text)' }}
                 >
                   Abort Import
                 </button>
@@ -2306,10 +2306,10 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                   flexDirection: 'column',
                   gap: '4px'
                 }}>
-                  <strong style={{ fontSize: '12px', color: 'var(--color-danger)' }}>
+                  <strong style={{ fontSize: '12px', color: 'var(--color-danger-text)' }}>
                     {importReport.invalid_entries.length} entries could not be parsed:
                   </strong>
-                  <ul style={{ margin: '4px 0 0 16px', padding: 0, fontSize: '11px', color: 'var(--color-danger)' }}>
+                  <ul style={{ margin: '4px 0 0 16px', padding: 0, fontSize: '11px', color: 'var(--color-danger-text)' }}>
                     {importReport.invalid_entries.map((inv, idx) => (
                       <li key={idx}>{inv.reason}</li>
                     ))}

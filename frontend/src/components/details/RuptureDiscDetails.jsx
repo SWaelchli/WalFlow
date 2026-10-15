@@ -59,7 +59,7 @@ export default function RuptureDiscDetails({ node, unmitigatedTelemetry }) {
       <div style={{ background: 'var(--color-surface-hover)', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontSize: '11.5px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ color: 'var(--color-text-secondary)', fontWeight: '500' }}>Burst Pressure:</span>
-          <span style={{ fontWeight: '700', color: 'var(--color-primary)', fontFamily: 'var(--font-mono)' }}>{burstPressureBarg !== null ? formatPressureGauge(burstPressureBarg) : 'missing'}</span>
+          <span style={{ fontWeight: '700', color: 'var(--color-primary-text)', fontFamily: 'var(--font-mono)' }}>{burstPressureBarg !== null ? formatPressureGauge(burstPressureBarg) : 'missing'}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ color: 'var(--color-text-secondary)', fontWeight: '500' }}>Bore Configuration:</span>
@@ -90,8 +90,8 @@ export default function RuptureDiscDetails({ node, unmitigatedTelemetry }) {
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FEF2F2', padding: '6px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid #FEE2E2' }}>
-          <span style={{ color: 'var(--color-danger)', fontWeight: '600' }}>Unmitigated Peak Pressure:</span>
-          <span style={{ fontWeight: '800', color: 'var(--color-danger)', fontFamily: 'var(--font-mono)' }}>
+          <span style={{ color: 'var(--color-danger-text)', fontWeight: '600' }}>Unmitigated Peak Pressure:</span>
+          <span style={{ fontWeight: '800', color: 'var(--color-danger-text)', fontFamily: 'var(--font-mono)' }}>
             {formatPressurePa(pUnmitigatedIn)} {labels.pressureAbs}
           </span>
         </div>

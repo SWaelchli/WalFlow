@@ -12,15 +12,15 @@
         "y": -80
       },
       "width": 400,
-      "height": 140,
+      "height": 210,
       "style": {
         "width": 400,
-        "height": 140
+        "height": 210
       },
       "data": {
         "label": "Note",
         "title": "API 682 SEAL FLUSH (PLAN 52/53)",
-        "text": "Demonstrates a dual mechanical seal barrier fluid circulation loop for process pumps. Features a barrier reservoir, circulation pump, orifice flow restriction, and heat exchanger to maintain seal lubrication and dissipate frictional heat.",
+        "text": "Demonstrates a dual mechanical seal barrier fluid circulation loop for process pumps. Features a barrier reservoir, circulation pump, orifice flow restriction, and heat exchanger to maintain seal lubrication and dissipate frictional heat.\n\nAfter running, check the barrier fluid temperature before and after the heat exchanger and the flow through the orifice. The seal feed and outlet lines run at about 3.0 m/s.",
         "fontSize": "md"
       }
     },

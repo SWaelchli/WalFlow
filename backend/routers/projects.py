@@ -8,6 +8,7 @@ from db.database import get_db
 from db.models import User, Project, ProjectMember, Diagram
 from auth import get_current_user
 from services.lock_service import get_lock_status_info
+from services.settings_schema import ProjectSettings, dump_settings, load_settings
 
 router = APIRouter(prefix="/api/projects", tags=["projects"])
 
@@ -25,6 +26,7 @@ class ProjectUpdateSchema(BaseModel):
     description: Optional[str] = None
     allowed_pipe_classes: Optional[List[str]] = None
     allow_custom_pipes: Optional[bool] = None
+    settings: Optional[ProjectSettings] = None
 
 class MemberSummarySchema(BaseModel):
     id: str
@@ -52,6 +54,7 @@ class ProjectDetailSchema(BaseModel):
     description: Optional[str]
     allowed_pipe_classes: Optional[List[str]] = None
     allow_custom_pipes: bool = True
+    settings: ProjectSettings = ProjectSettings()
     created_at: datetime
     updated_at: datetime
     members: List[MemberSummarySchema]
@@ -66,6 +69,7 @@ class ProjectSummarySchema(BaseModel):
     description: Optional[str]
     allowed_pipe_classes: Optional[List[str]] = None
     allow_custom_pipes: bool = True
+    settings: ProjectSettings = ProjectSettings()
     created_at: datetime
     updated_at: datetime
     role: str  # Current user's role in this project
@@ -144,6 +148,7 @@ def create_project(
         description=new_project.description,
         allowed_pipe_classes=_parse_allowed_pipe_classes(new_project.allowed_pipe_classes),
         allow_custom_pipes=new_project.allow_custom_pipes if new_project.allow_custom_pipes is not None else True,
+        settings=load_settings(new_project.settings, ProjectSettings),
         created_at=new_project.created_at,
         updated_at=new_project.updated_at,
         members=members_list,
@@ -166,6 +171,7 @@ def list_user_projects(
                 description=p.description,
                 allowed_pipe_classes=_parse_allowed_pipe_classes(p.allowed_pipe_classes),
                 allow_custom_pipes=p.allow_custom_pipes if p.allow_custom_pipes is not None else True,
+                settings=load_settings(p.settings, ProjectSettings),
                 created_at=p.created_at,
                 updated_at=p.updated_at,
                 role=m.role
@@ -225,6 +231,7 @@ def get_project_detail(
         description=project.description,
         allowed_pipe_classes=_parse_allowed_pipe_classes(project.allowed_pipe_classes),
         allow_custom_pipes=project.allow_custom_pipes if project.allow_custom_pipes is not None else True,
+        settings=load_settings(project.settings, ProjectSettings),
         created_at=project.created_at,
         updated_at=project.updated_at,
         members=members_formatted,
@@ -259,6 +266,8 @@ def update_project(
         project.allowed_pipe_classes = json.dumps(payload.allowed_pipe_classes) if payload.allowed_pipe_classes is not None else None
     if "allow_custom_pipes" in fields_set and payload.allow_custom_pipes is not None:
         project.allow_custom_pipes = payload.allow_custom_pipes
+    if "settings" in fields_set and payload.settings is not None:
+        project.settings = dump_settings(payload.settings)
 
     project.updated_at = datetime.now(timezone.utc)
     db.commit()

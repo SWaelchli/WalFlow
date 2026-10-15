@@ -66,6 +66,8 @@ def init_db():
                 conn.execute(text("ALTER TABLE users ADD COLUMN role VARCHAR DEFAULT 'user'"))
             if "status" not in columns:
                 conn.execute(text("ALTER TABLE users ADD COLUMN status VARCHAR DEFAULT 'approved'"))
+            if "settings" not in columns:
+                conn.execute(text("ALTER TABLE users ADD COLUMN settings TEXT"))
 
         if "projects" in inspector.get_table_names():
             proj_cols = [c["name"] for c in inspector.get_columns("projects")]
@@ -73,6 +75,8 @@ def init_db():
                 conn.execute(text("ALTER TABLE projects ADD COLUMN allowed_pipe_classes TEXT"))
             if "allow_custom_pipes" not in proj_cols:
                 conn.execute(text("ALTER TABLE projects ADD COLUMN allow_custom_pipes BOOLEAN DEFAULT 1"))
+            if "settings" not in proj_cols:
+                conn.execute(text("ALTER TABLE projects ADD COLUMN settings TEXT"))
 
         if "pipe_classes" in inspector.get_table_names():
             pc_cols = [c["name"] for c in inspector.get_columns("pipe_classes")]

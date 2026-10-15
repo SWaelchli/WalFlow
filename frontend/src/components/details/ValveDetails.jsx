@@ -111,7 +111,7 @@ const ValveDetails = memo(function ValveDetails({ node }) {
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: '11.5px', color: 'var(--color-text-secondary)', fontWeight: '500' }}>Sensed Pressure:</span>
-          <span style={{ fontSize: '11.5px', color: 'var(--color-primary)', fontWeight: '700', fontFamily: 'var(--font-mono)' }}>{formatPressurePa(sensedP)} {labels.pressureAbs}</span>
+          <span style={{ fontSize: '11.5px', color: 'var(--color-primary-text)', fontWeight: '700', fontFamily: 'var(--font-mono)' }}>{formatPressurePa(sensedP)} {labels.pressureAbs}</span>
         </div>
         {isRegulator && (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

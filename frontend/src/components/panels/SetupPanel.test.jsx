@@ -129,7 +129,7 @@ describe('F2-16: zero is a legitimate value', () => {
 });
 
 describe('F2-04: the heat exchanger inspector shows what the solver uses', () => {
-  it('shows 0.5 bar(d) for a heat exchanger without a stored rated pressure drop', () => {
+  it('shows 0.5 bar for a heat exchanger without a stored rated pressure drop', () => {
     renderNodePanel({ id: 'hx1', type: 'heat_exchanger', data: {} });
     expect(screen.getByDisplayValue('0.5')).toBeTruthy();
   });

@@ -11,15 +11,15 @@
         "y": -20
       },
       "width": 400,
-      "height": 140,
+      "height": 210,
       "style": {
         "width": 400,
-        "height": 140
+        "height": 210
       },
       "data": {
         "label": "Note",
         "title": "REMOTE CONTROL & INTERLOCKS",
-        "text": "Demonstrates automated hydraulic control and remote interlocks. Shows a remote control valve responding to downstream pressure setpoints and sensor triggers to cut off flow under emergency overpressure conditions.",
+        "text": "Demonstrates automated hydraulic control and remote interlocks. Shows a remote control valve responding to downstream pressure setpoints and sensor triggers to cut off flow under emergency overpressure conditions.\n\nAfter running, check the remote valve opening and the downstream pressure it controls. All lines run at about 5.3 m/s, above the usual 2 to 3 m/s guideline for liquid lines: the pipe sizes are chosen for demonstration.",
         "fontSize": "md"
       }
     },

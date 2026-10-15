@@ -11,15 +11,15 @@
         "y": -120
       },
       "width": 400,
-      "height": 140,
+      "height": 210,
       "style": {
         "width": 400,
-        "height": 140
+        "height": 210
       },
       "data": {
         "label": "Note",
         "title": "CHILLED WATER CIRCUIT",
-        "text": "Demonstrates a closed-loop industrial chilled water cooling circuit with parallel primary pumps, check valve protection, heat exchanger cooling load, dynamic 3-way TCV mixing, and an expansion reservoir.",
+        "text": "Demonstrates a closed-loop industrial chilled water cooling circuit with parallel primary pumps, check valve protection, heat exchanger cooling load, dynamic 3-way TCV mixing, and an expansion reservoir.\n\nAfter running, compare the flows of the two pumps, the heat exchanger outlet temperature and the 3-way valve position. Some coil lines run at about 5.6 m/s, above the usual 2 to 3 m/s guideline for liquid lines: the pipe sizes are chosen for demonstration.",
         "fontSize": "md"
       }
     },

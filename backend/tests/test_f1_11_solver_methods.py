@@ -6,14 +6,14 @@ from physics_refs import node_named, solve_example
 CASES = [
     ("Example_Multi_PSV_Protection", "Case 1"),
     ("Example_Pump_Comparison", None),
-    ("walflow-diagram (8)", "Case 1"),
+    ("Example_Large_Reference_Network", "Case 1"),
     ("Example_Pressure_Regulation", None),
 ]
 
 
 @pytest.mark.parametrize("example,case", CASES)
 def test_lm_solves_the_examples_newton_solves(example, case):
-    # Audit: 'lm' failed on Multi_PSV, Pump_Comparison and walflow-diagram (8)
+    # Audit: 'lm' failed on Multi_PSV, Pump_Comparison and the large reference network
     net_n, stats_n = solve_example(example, case, solver_method="sparse_newton")
     net_l, stats_l = solve_example(example, case, solver_method="lm")
     assert stats_n["success"] and stats_l["success"], stats_l["error"]

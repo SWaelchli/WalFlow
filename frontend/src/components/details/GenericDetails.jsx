@@ -137,7 +137,7 @@ export default function GenericDetails({ node, edge, allNodes = [], allEdges = [
         <tr>
           <td className="details-label">Pressure Gradient</td>
           <td className="details-value" style={{ textAlign: 'right' }}>
-            {isImperial ? `${dpPerFtPsi.toFixed(4)} psi/ft` : `${dpPerMeterMbar.toFixed(2)} mbar(d)/m`}
+            {isImperial ? `${dpPerFtPsi.toFixed(4)} psi/ft` : `${dpPerMeterMbar.toFixed(2)} mbar/m`}
           </td>
         </tr>
       </>

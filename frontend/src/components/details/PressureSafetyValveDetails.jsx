@@ -73,7 +73,7 @@ const PressureSafetyValveDetails = memo(function PressureSafetyValveDetails({ no
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ color: 'var(--color-text-secondary)', fontWeight: '500' }}>Set Pressure:</span>
-          <span style={{ fontWeight: '700', color: 'var(--color-primary)', fontFamily: 'var(--font-mono)' }}>{setPressureBarg !== null ? formatPressureGauge(setPressureBarg) : 'missing'}</span>
+          <span style={{ fontWeight: '700', color: 'var(--color-primary-text)', fontFamily: 'var(--font-mono)' }}>{setPressureBarg !== null ? formatPressureGauge(setPressureBarg) : 'missing'}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ color: 'var(--color-text-secondary)', fontWeight: '500' }}>Flow Coefficient (Cv):</span>
@@ -108,8 +108,8 @@ const PressureSafetyValveDetails = memo(function PressureSafetyValveDetails({ no
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FEF2F2', padding: '6px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid #FEE2E2' }}>
-          <span style={{ color: 'var(--color-danger)', fontWeight: '600' }}>Unmitigated Peak Pressure:</span>
-          <span style={{ fontWeight: '800', color: 'var(--color-danger)', fontFamily: 'var(--font-mono)' }}>
+          <span style={{ color: 'var(--color-danger-text)', fontWeight: '600' }}>Unmitigated Peak Pressure:</span>
+          <span style={{ fontWeight: '800', color: 'var(--color-danger-text)', fontFamily: 'var(--font-mono)' }}>
             {formatPressurePa(pUnmitigatedIn)} {labels.pressureAbs}
           </span>
         </div>

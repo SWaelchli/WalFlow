@@ -147,7 +147,7 @@ export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts
                       fontWeight: '700',
                       textTransform: 'uppercase',
                       letterSpacing: '0.06em',
-                      color: 'var(--color-primary)',
+                      color: 'var(--color-primary-text)',
                       marginBottom: '12px',
                       marginTop: 0,
                     }}
@@ -221,7 +221,7 @@ export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts
                     About WalFlow
                   </h3>
                   <div style={{ display: 'flex', gap: '8px' }}>
-                    <span style={{ backgroundColor: 'var(--color-bg-canvas)', border: '1px solid var(--color-border)', color: 'var(--color-primary)', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '700' }}>
+                    <span style={{ backgroundColor: 'var(--color-bg-canvas)', border: '1px solid var(--color-border)', color: 'var(--color-primary-text)', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '700' }}>
                       App v{APP_VERSION}
                     </span>
                     <span style={{ backgroundColor: 'var(--color-bg-canvas)', border: '1px solid var(--color-border)', color: '#0284C7', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '700' }}>
@@ -243,7 +243,7 @@ export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts
                   border: '1px solid var(--color-border)',
                 }}
               >
-                <h3 style={{ margin: '0 0 14px 0', fontSize: '15px', color: 'var(--color-primary)' }}>
+                <h3 style={{ margin: '0 0 14px 0', fontSize: '15px', color: 'var(--color-primary-text)' }}>
                   Developer & Portfolio Links
                 </h3>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
@@ -283,7 +283,7 @@ export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts
                   border: '1px dashed var(--color-primary)',
                 }}
               >
-                <h4 style={{ margin: '0 0 8px 0', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-primary)' }}>
+                <h4 style={{ margin: '0 0 8px 0', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-primary-text)' }}>
                   Copyright & Licensing (WalFlow v{APP_VERSION}{RELEASE_STAGE ? ` ${RELEASE_STAGE}` : ''})
                 </h4>
                 <p
@@ -307,7 +307,7 @@ export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', lineHeight: '1.6' }}>
               {/* 1. Canvas & Diagram Construction */}
               <div style={{ backgroundColor: 'var(--color-surface-hover)', borderRadius: '12px', padding: '18px 20px', border: '1px solid var(--color-border)' }}>
-                <h4 style={{ margin: '0 0 8px 0', fontSize: '15px', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h4 style={{ margin: '0 0 8px 0', fontSize: '15px', color: 'var(--color-primary-text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   1. Canvas & Diagram Construction
                 </h4>
                 <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--color-text-secondary)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -319,7 +319,7 @@ export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts
 
               {/* 2. Global Fluid & Solver Settings */}
               <div style={{ backgroundColor: 'var(--color-surface-hover)', borderRadius: '12px', padding: '18px 20px', border: '1px solid var(--color-border)' }}>
-                <h4 style={{ margin: '0 0 8px 0', fontSize: '15px', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h4 style={{ margin: '0 0 8px 0', fontSize: '15px', color: 'var(--color-primary-text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   2. Global Fluid & System Settings
                 </h4>
                 <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: 'var(--color-text-secondary)' }}>
@@ -334,19 +334,19 @@ export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts
 
               {/* 3. Property Editor & Live Tuning */}
               <div style={{ backgroundColor: 'var(--color-surface-hover)', borderRadius: '12px', padding: '18px 20px', border: '1px solid var(--color-border)' }}>
-                <h4 style={{ margin: '0 0 8px 0', fontSize: '15px', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h4 style={{ margin: '0 0 8px 0', fontSize: '15px', color: 'var(--color-primary-text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   3. Property Editor & Equipment Parameters
                 </h4>
                 <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--color-text-secondary)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <li><strong>Component Selection:</strong> Click any node or pipe on the canvas to inspect its parameters in the <strong>Property Editor</strong> on the right.</li>
-                  <li><strong>Parameter Customization:</strong> Adjust pump rated flow rate ($L/min$) & shutoff pressure ($bar(d)$), valve $Cv$ capacity, setpoint pressures ($Pa$), filter clean/terminal pressure drops, or pipe diameter ($m$) and length ($m$).</li>
+                  <li><strong>Parameter Customization:</strong> Adjust pump rated flow rate ($L/min$) & rated head ($m$), valve $Cv$ capacity, setpoint pressures ($Pa$), filter clean/terminal pressure drops, or pipe diameter ($m$) and length ($m$).</li>
                   <li><strong>Live Valve Control:</strong> Drag opening % sliders on control valves to observe dynamic flow and pressure redistributions in real time!</li>
                 </ul>
               </div>
 
               {/* 4. Real-Time Telemetry & Performance Stats */}
               <div style={{ backgroundColor: 'var(--color-surface-hover)', borderRadius: '12px', padding: '18px 20px', border: '1px solid var(--color-border)' }}>
-                <h4 style={{ margin: '0 0 8px 0', fontSize: '15px', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h4 style={{ margin: '0 0 8px 0', fontSize: '15px', color: 'var(--color-primary-text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   4. Simulation Engine, Telemetry & Stats
                 </h4>
                 <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--color-text-secondary)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -359,7 +359,7 @@ export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts
 
               {/* 5. Heatmap Visualizations */}
               <div style={{ backgroundColor: 'var(--color-surface-hover)', borderRadius: '12px', padding: '18px 20px', border: '1px solid var(--color-border)' }}>
-                <h4 style={{ margin: '0 0 8px 0', fontSize: '15px', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h4 style={{ margin: '0 0 8px 0', fontSize: '15px', color: 'var(--color-primary-text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   5. Heatmap Visualizations
                 </h4>
                 <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--color-text-secondary)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -371,7 +371,7 @@ export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts
 
               {/* 6. Save, Load & PFD Preset Templates */}
               <div style={{ backgroundColor: 'var(--color-surface-hover)', borderRadius: '12px', padding: '18px 20px', border: '1px solid var(--color-border)' }}>
-                <h4 style={{ margin: '0 0 8px 0', fontSize: '15px', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h4 style={{ margin: '0 0 8px 0', fontSize: '15px', color: 'var(--color-primary-text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   6. Save, Load & Preset PFD Templates
                 </h4>
                 <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--color-text-secondary)', display: 'flex', flexDirection: 'column', gap: '6px' }}>

@@ -17,6 +17,27 @@
   ],
   "nodes": [
     {
+      "id": "note-overview",
+      "type": "text_bubble",
+      "position": {
+        "x": 80,
+        "y": 440
+      },
+      "width": 440,
+      "height": 220,
+      "style": {
+        "width": 440,
+        "height": 220
+      },
+      "data": {
+        "label": "Note",
+        "title": "MULTI-PSV & RUPTURE DISC PROTECTION",
+        "text": "A volumetric pump (120 L/min) feeds a process line through a 4 mm orifice that cannot pass the full flow, so the pressure rises until the relief devices act.\n\nAfter running, PSV-101 (set 19.0 barg, pop action) opens and relieves about 90 L/min. PSV-102 (24.0 barg, modulating) and the rupture disc RD-101 (29.0 barg) stay closed in this case. To see the staged devices act, close PSV-101 (forced state) or raise the pump flow, then open the Relief Analysis Matrix in the data panel. All lines run below 1 m/s.",
+        "fontSize": "md",
+        "rotation": 0
+      }
+    },
+    {
       "id": "node_supply_tank",
       "type": "tank",
       "position": {

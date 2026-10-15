@@ -38,7 +38,7 @@ export default function InspectorPanel({
 
   const label = isNode 
     ? (data.label || type.toUpperCase().replace('_', ' ')) 
-    : `PIPE (${id.replace('reactflow__edge-', '')})`;
+    : (data.label && !String(data.label).startsWith('reactflow__edge-') ? data.label : 'Pipe');
 
   const handleDelete = () => {
     const itemLabel = isNode ? `node ${type}` : 'connection';

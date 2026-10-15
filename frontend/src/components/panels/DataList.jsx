@@ -7,6 +7,7 @@ import { updateCaseOverride, effectiveForcedState } from '../../utils/case_resol
 import { useUnits } from '../../context/UnitContext';
 import { resolvePipeSelection } from '../../utils/pipeDefaults';
 import DraftNumberInput from '../common/DraftNumberInput';
+import usePanelHeight from '../../hooks/usePanelHeight';
 import { toSolverGraph } from '../../utils/diagramFile';
 import { computeCaseInputHashes, isCaseResultStale } from '../../utils/resultHash';
 
@@ -94,7 +95,7 @@ const calculateMaxPressureBar = (telemetry) => {
 // Relief device result badge (status as text, colour is secondary)
 const RELIEF_BADGES = {
   open: { color: '#B45309', bg: '#FFFBEB', border: '#FDE68A' },
-  overcapacity: { color: '#EF4444', bg: '#FEF2F2', border: '#FEE2E2' },
+  overcapacity: { color: 'var(--color-danger-text)', bg: '#FEF2F2', border: '#FEE2E2' },
   closed: { color: '#587071', bg: '#F4F7F6', border: '#D8E2E1' },
 };
 
@@ -170,6 +171,7 @@ export default function DataList({
 
 
   const [activeTab, setActiveTab] = useState('pipes');
+  const panel = usePanelHeight('walflow_datalist_panel');
 
   const [manualOrder, setManualOrder] = useState([]);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
@@ -471,9 +473,35 @@ export default function DataList({
   }, [processedItems, activeTab, labels, isImperial, formatFlowM3s, formatVelocity, formatPressure, formatTemperatureK]);
 
   return (
-    <div style={{ height: '350px', background: '#ffffff', borderTop: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 -4px 16px rgba(57, 82, 83, 0.05)' }}>
+    <div style={{ height: `${panel.height}px`, flexShrink: 0, background: '#ffffff', borderTop: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 -4px 16px rgba(57, 82, 83, 0.05)', position: 'relative' }}>
+      {!panel.collapsed && (
+        <div
+          role="separator"
+          aria-orientation="horizontal"
+          aria-label="Resize data panel"
+          aria-valuenow={panel.height}
+          tabIndex={0}
+          onPointerDown={panel.startDrag}
+          onKeyDown={panel.onKeyDown}
+          className="panel-resize-handle"
+          title="Drag to resize (or use the arrow keys)"
+        />
+      )}
       <div style={{ display: 'flex', background: 'var(--color-surface-hover)', borderBottom: '1px solid var(--color-border)', justifyContent: 'space-between', alignItems: 'center', padding: '0 16px' }}>
-        <div style={{ display: 'flex', gap: '4px' }}>
+        <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+          <button
+            type="button"
+            onClick={() => panel.setCollapsed(!panel.collapsed)}
+            aria-label={panel.collapsed ? 'Expand data panel' : 'Collapse data panel'}
+            aria-expanded={!panel.collapsed}
+            title={panel.collapsed ? 'Expand data panel' : 'Collapse data panel'}
+            className="panel-collapse-btn"
+          >
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+              style={{ transform: panel.collapsed ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s ease' }}>
+              <path d="M3 6l5 5 5-5" />
+            </svg>
+          </button>
           <button onClick={() => { setActiveTab('pipes'); setSortConfig({key:null, direction:'asc'}); }}
             className={`datalist-tab ${activeTab === 'pipes' ? 'active' : ''}`}
           >
@@ -568,7 +596,7 @@ export default function DataList({
                 <SpinnerIcon size={14} color="var(--color-text-secondary)" /> Running batch simulations across all operating cases...
               </div>
             ) : batchError ? (
-              <div style={{ padding: '16px', color: 'var(--color-danger)', background: '#fef2f2', borderRadius: '8px', border: '1px solid #fee2e2' }}>
+              <div style={{ padding: '16px', color: 'var(--color-danger-text)', background: '#fef2f2', borderRadius: '8px', border: '1px solid #fee2e2' }}>
                 <strong>Batch Simulation Error:</strong> {batchError}
               </div>
             ) : (
@@ -641,12 +669,12 @@ export default function DataList({
                                   }
                                 }}
                                 title="Delete this operating case"
-                                style={{ padding: '2px 6px', fontSize: '10px', borderRadius: '4px', border: '1px solid #fee2e2', background: '#fef2f2', cursor: 'pointer', color: 'var(--color-danger)', fontWeight: '600', whiteSpace: 'nowrap' }}
+                                style={{ padding: '2px 6px', fontSize: '10px', borderRadius: '4px', border: '1px solid #fee2e2', background: '#fef2f2', cursor: 'pointer', color: 'var(--color-danger-text)', fontWeight: '600', whiteSpace: 'nowrap' }}
                               >
-                                <TrashIcon size={12} style={{ color: 'var(--color-danger)' }} />
+                                <TrashIcon size={12} style={{ color: 'var(--color-danger-text)' }} />
                               </button>
                             )}
-                            {isActive && <span style={{ fontSize: '10px', color: 'var(--color-primary)', fontWeight: 'bold' }}>Active</span>}
+                            {isActive && <span style={{ fontSize: '10px', color: 'var(--color-primary-text)', fontWeight: 'bold' }}>Active</span>}
                             {isCaseResultStale(c, caseInputHashes) && (
                               <span title="The diagram changed since this case was solved. Run the simulation again." style={{ fontSize: '10px', fontWeight: '700', color: '#7A3E00', background: '#FFF7ED', border: '1px solid #FDE3C3', padding: '1px 6px', borderRadius: '10px', whiteSpace: 'nowrap' }}>Out of date</span>
                             )}
@@ -730,7 +758,7 @@ export default function DataList({
                       return (
                         <td key={c.case_id || c.id} style={{ padding: '6px 12px', borderLeft: caseDragOverIdx === colIdx ? '3px solid var(--color-primary)' : '1px solid var(--color-border)', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                           {hasCav ? (
-                            <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--color-danger)', background: '#fef2f2', padding: '2px 8px', borderRadius: '10px', border: '1px solid #fee2e2' }}>
+                            <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--color-danger-text)', background: '#fef2f2', padding: '2px 8px', borderRadius: '10px', border: '1px solid #fee2e2' }}>
                               ⚠️ Cavitation Risk
                             </span>
                           ) : (
@@ -774,7 +802,7 @@ export default function DataList({
                                 Switch
                               </button>
                             )}
-                            {isActive && <span style={{ fontSize: '10px', color: 'var(--color-primary)', fontWeight: 'bold' }}>Active</span>}
+                            {isActive && <span style={{ fontSize: '10px', color: 'var(--color-primary-text)', fontWeight: 'bold' }}>Active</span>}
                             {isCaseResultStale(c, caseInputHashes) && (
                               <span title="The diagram changed since this case was solved. Run the simulation again." style={{ fontSize: '10px', fontWeight: '700', color: '#7A3E00', background: '#FFF7ED', border: '1px solid #FDE3C3', padding: '1px 6px', borderRadius: '10px', whiteSpace: 'nowrap' }}>Out of date</span>
                             )}
@@ -797,7 +825,7 @@ export default function DataList({
                       <tr key={dev.id} style={{ borderBottom: '1px solid var(--color-border-hover)', background: idx % 2 === 0 ? '#FFFFFF' : '#F8FAFA', height: '36px' }}>
                         <td 
                           onClick={() => onSelectNode && onSelectNode(dev.id)} 
-                          style={{ padding: '6px 12px', fontWeight: '700', color: 'var(--color-primary)', cursor: 'pointer', verticalAlign: 'middle' }}
+                          style={{ padding: '6px 12px', fontWeight: '700', color: 'var(--color-primary-text)', cursor: 'pointer', verticalAlign: 'middle' }}
                           title="Click to locate on canvas"
                         >
                           {dev.data?.label || dev.id}
@@ -1104,7 +1132,10 @@ export default function DataList({
               const hoverBg = item.selected ? '#FFEAD1' : '#F0F4F4';
 
               const vel = Math.abs(entry.velocity || 0);
-              const velColor = vel > 4.0 ? '#DC2626' : (vel > 2.5 ? '#D97706' : 'inherit');
+              const velColor = vel > 4.0 ? 'var(--color-danger-text)' : (vel > 2.5 ? 'var(--color-primary-text)' : 'inherit');
+              // not by colour alone: a marker and a tooltip carry the severity (F3-09)
+              const velMark = vel > 4.0 ? '▲▲' : (vel > 2.5 ? '▲' : '');
+              const velTitle = vel > 4.0 ? 'High velocity: above 4 m/s' : (vel > 2.5 ? 'Elevated velocity: above 2.5 m/s' : undefined);
               const velWeight = vel > 2.5 ? '700' : 'normal';
 
               return (
@@ -1135,8 +1166,8 @@ export default function DataList({
                     />
                   </td>
                   <td style={{ padding: '8px', textAlign: 'right', fontWeight: '600' }}>{formatFlowM3s(entry.flow)}</td>
-                  <td style={{ padding: '8px', textAlign: 'right', color: velColor, fontWeight: velWeight }}>
-                    {formatVelocity(entry.velocity)}
+                  <td style={{ padding: '8px', textAlign: 'right', color: velColor, fontWeight: velWeight }} title={velTitle}>
+                    {velMark && <span aria-label={velTitle} style={{ fontSize: '8px', marginRight: '4px' }}>{velMark}</span>}{formatVelocity(entry.velocity)}
                   </td>
                   <td style={{ padding: '8px', textAlign: 'right' }}>{formatPressure(entry.dp, 3)}</td>
                   <td style={{ padding: '8px', textAlign: 'right' }}>{formatPressure(entry.pStart)}</td>

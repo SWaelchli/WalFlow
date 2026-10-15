@@ -436,7 +436,7 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
                       {allUsers.map((user) => (
                         <tr key={user.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
                           <td style={{ padding: '12px', fontWeight: '700' }}>
-                            {user.username} {user.id === currentUser?.id && <span style={{ color: 'var(--color-primary)', fontSize: '11px' }}>(You)</span>}
+                            {user.username} {user.id === currentUser?.id && <span style={{ color: 'var(--color-primary-text)', fontSize: '11px' }}>(You)</span>}
                           </td>
                           <td style={{ padding: '12px' }}>
                             <select
@@ -480,7 +480,7 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
                                 title="Ends the user's access immediately; the account and its diagrams are kept"
                                 style={{
                                   backgroundColor: '#FEF2F2',
-                                  color: '#EF4444',
+                                  color: 'var(--color-danger-text)',
                                   border: '1px solid #FEE2E2',
                                   borderRadius: '6px',
                                   padding: '4px 10px',
@@ -514,7 +514,7 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
                                 onClick={() => handleDeleteUser(user.id, user.username)}
                                 style={{
                                   backgroundColor: 'rgba(239, 68, 68, 0.15)',
-                                  color: '#EF4444',
+                                  color: 'var(--color-danger-text)',
                                   border: '1px solid #EF4444',
                                   borderRadius: '6px',
                                   padding: '4px 10px',
@@ -550,8 +550,8 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
                     <div style={{ color: 'var(--color-warning)', fontSize: '22px', fontWeight: '800', marginTop: '4px' }}>{dbData.stats.pending_users}</div>
                   </div>
                   <div className="modal-metric-card">
-                    <div style={{ color: 'var(--color-primary)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>ADMIN USERS</div>
-                    <div style={{ color: 'var(--color-primary)', fontSize: '22px', fontWeight: '800', marginTop: '4px' }}>{dbData.stats.admin_users}</div>
+                    <div style={{ color: 'var(--color-primary-text)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>ADMIN USERS</div>
+                    <div style={{ color: 'var(--color-primary-text)', fontSize: '22px', fontWeight: '800', marginTop: '4px' }}>{dbData.stats.admin_users}</div>
                   </div>
                   <div className="modal-metric-card">
                     <div style={{ color: '#0284C7', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>STORED PFD DIAGRAMS</div>
@@ -700,7 +700,7 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
                                   title="Delete Diagram"
                                   style={{
                                     backgroundColor: 'rgba(239, 68, 68, 0.15)',
-                                    color: '#EF4444',
+                                    color: 'var(--color-danger-text)',
                                     border: '1px solid #EF4444',
                                     borderRadius: '6px',
                                     padding: '5px 8px',
@@ -740,7 +740,7 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
               </h3>
             </div>
             <p style={{ color: 'var(--color-text-secondary)', fontSize: '14px', lineHeight: '1.5', margin: '0 0 24px 0' }}>
-              Are you sure you want to permanently delete the diagram <strong style={{ color: 'var(--color-primary)' }}>'{diagramToDelete.title}'</strong>? This action cannot be undone.
+              Are you sure you want to permanently delete the diagram <strong style={{ color: 'var(--color-primary-text)' }}>'{diagramToDelete.title}'</strong>? This action cannot be undone.
             </p>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
               <button

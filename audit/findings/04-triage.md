@@ -507,3 +507,22 @@ Anchors checked at `HEAD` = `af4e168`, clean tree. Decision already taken (user,
 **Tests (lasting references).** Backend `test_b3_security.py` (18 tests; also covers F3-03, F2-11), `test_auth_and_diagrams.py` updated for the new WebSocket default (403 pass in total). Frontend `useAutoSaveSession.test.jsx` (5 tests; 82 pass in total); lint and build clean. `docker compose config` and a real nginx start were not run (no Docker here), and nothing was checked in the browser.
 
 **Limits of this batch.** A restored local draft that is linked to a cloud diagram carries no server version, so its first save is not version-checked (the edit lock still applies). Behind a proxy the header can only be trusted if the backend port is not reachable directly, hence the 127.0.0.1 binding. Redis is still optional; locks and revoked tokens are in memory for the single worker.
+
+---
+
+### B4a: UX quick wins and settings levels
+
+**Decisions (user, 2026-10-15).** F3-09: orange fill kept, dark text (`#1C2B2C`, 5.9:1). F3-05 (new plausibility warnings) is **not** in B4; moved to the roadmap. F3-12: three settings levels. Drawing (`.wlf`): title, description, fluid, ambient, atmospheric pressure, solver group with "use drawing solver settings". Project (database, `projects.settings`): pipe specs, custom pipes, solver group with "use project solver settings", owner edits. Global (database, `users.settings`; localStorage for anonymous users): units (display only, no longer in the `.wlf`) and the always-active solver group. Precedence Drawing > Project > Global, whole group per level. New drawings always start from the built-in defaults. F3-15: `walflow-diagram (8).wlf` became `Example_Large_Reference_Network.wlf`. B4 is split into B4a (this) and B4b.
+
+**B4a result (not committed).**
+- *F3-12.* `services/settings_schema.py` (validated ranges), `routers/settings.py` (`GET/PUT /api/settings`, `stored` flag so a local preference moves up on first login), `settings` on `PUT /api/projects/{id}` (owner only), light migration for both columns. Frontend: `utils/settingsLevels.js` (precedence, migration), `hooks/useSettingsLevels.js`, `SolverSettingsGroup.jsx` shared by the three tabs (greyed out with "from <level>" when unticked). Solver messages and the result hash use the effective settings. Old files: their solver values become a ticked drawing override; stored unit system ignored. Loading or resetting a drawing now replaces the drawing settings instead of keeping the previous ones.
+- *F3-08.* `usePanelHeight` (drag handle, arrow keys, collapse, remembered; default 40 % of the window, 300 to 480 px); fit-view after load, example and new drawing.
+- *F3-09.* Tokens `--color-primary-text` (#B45309, 5.0:1) and `--color-danger-text` (#B91C1C, 6.5:1) replace orange and red as text colour; primary button dark text; hover and pressed shades keep at least 4.5:1; velocity shows a marker and tooltip (above 2.5 / 4 m/s), not colour only.
+- *F3-10, F3-11.* `utils/nodeReadouts.js`: missing results are "-"; drops and pump rises shown as positive "ΔP"; neutral colour; `bar(d)` replaced by `bar` / `barg`; tanks convert in imperial; atmospheric pressure in bar(a) / psi(a); regulator set label follows the unit system; example labels say `bar(a)`.
+- *F3-13, F3-14.* Tank default temperature = ambient; auto tags like "Centrifugal Pump 3"; pipe inspector title uses the name; pump chart with round ticks and axis titles; Motor Load tooltip.
+- *F3-15.* Notes say what to check, with measured velocities (up to 7.9 m/s in the regulation example); Multi-PSV note added; welcome canvas and large network listed.
+- *F3-18, F2-18.* Context menus (component, pipe, canvas), empty-canvas hint; shortcuts are inactive behind dialogs and leave Ctrl+C to the browser while text is selected (the lock was already checked).
+
+**Tests.** Backend `test_f3_12_settings_levels.py`; frontend `settingsLevels`, `autoTag`, `chartTicks`, `nodeReadouts`, `usePanelHeight`, `useKeyboardShortcuts`, `CanvasContextMenu`, `SolverSettingsGroup`. Lint, build, 121 frontend and 408 backend tests pass. Browser check at 1366x768 (panel, collapse, context menu, settings, markers); 1920x1080 and a login/migration round trip were not run.
+
+**Roadmap (moved out of B4).** F3-05 plausibility warnings (pump run-out, velocity limits, class rating, fluid range).

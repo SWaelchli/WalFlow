@@ -83,7 +83,7 @@ const AdminSetupModal = ({ isOpen, onClose }) => {
               border: '1px solid var(--color-danger)',
               borderRadius: '10px',
               padding: '12px 14px',
-              color: 'var(--color-danger)',
+              color: 'var(--color-danger-text)',
               fontSize: '13px',
               marginBottom: '18px',
               lineHeight: '1.4'

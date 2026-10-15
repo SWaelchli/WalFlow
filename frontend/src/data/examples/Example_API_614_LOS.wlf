@@ -93,15 +93,15 @@
         "y": -350
       },
       "width": 420,
-      "height": 160,
+      "height": 230,
       "style": {
         "width": 420,
-        "height": 160
+        "height": 230
       },
       "data": {
         "label": "Note",
         "title": "API 614 LUBE OIL SYSTEM (LOS)",
-        "text": "Demonstrates a heavy-duty API 614 lubrication oil system featuring redundant supply pumps (Main/Auxiliary), oil cooler heat exchanger, duplex filtration with dp monitoring, and pressure control (PRV/BPR) to ensure continuous oil delivery to high-speed turbomachinery bearings.",
+        "text": "Demonstrates a heavy-duty API 614 lubrication oil system featuring redundant supply pumps (Main/Auxiliary), oil cooler heat exchanger, duplex filtration with dp monitoring, and pressure control (PRV/BPR) to ensure continuous oil delivery to high-speed turbomachinery bearings.\n\nAfter running, open the Operating Cases Matrix and compare the cold-start, fouled-filter, clogged-filter and failed-open-TCV cases: watch the filter pressure drop and the pump discharge pressure. The pump discharge line runs at about 2.9 m/s.",
         "fontSize": "md",
         "rotation": 0
       }

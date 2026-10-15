@@ -403,7 +403,7 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
         {/* List of Standards */}
         <div style={{ flexGrow: 1, overflowY: 'auto', padding: '10px' }}>
           {error && (
-            <div style={{ color: 'var(--color-danger)', fontSize: '12px', padding: '10px' }}>
+            <div style={{ color: 'var(--color-danger-text)', fontSize: '12px', padding: '10px' }}>
               {error}
             </div>
           )}
@@ -467,7 +467,7 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
                           padding: '2px 6px',
                           borderRadius: '4px',
                           backgroundColor: 'rgba(250, 133, 7, 0.15)',
-                          color: 'var(--color-primary)'
+                          color: 'var(--color-primary-text)'
                         }}>
                           CUSTOM
                         </span>
@@ -868,7 +868,7 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: 'var(--color-primary)'
+                  color: 'var(--color-primary-text)'
                 }}>
                   <CopyIcon size={16} />
                 </div>
@@ -937,7 +937,7 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: 'var(--color-primary)'
+                  color: 'var(--color-primary-text)'
                 }}>
                   <PlusIcon size={16} />
                 </div>

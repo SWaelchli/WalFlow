@@ -110,7 +110,7 @@ const SaveAsModal = ({ isOpen, onClose, onSaveAs, currentTitle = "" }) => {
         <form onSubmit={handleSubmit} style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {error && (
             <div style={{
-              color: 'var(--color-danger)',
+              color: 'var(--color-danger-text)',
               fontSize: '12px',
               padding: '10px 12px',
               backgroundColor: 'rgba(239, 68, 68, 0.12)',

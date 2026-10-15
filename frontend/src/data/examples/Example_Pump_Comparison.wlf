@@ -11,15 +11,15 @@
         "y": -120
       },
       "width": 400,
-      "height": 140,
+      "height": 210,
       "style": {
         "width": 400,
-        "height": 140
+        "height": 210
       },
       "data": {
         "label": "Note",
         "title": "CENTRIFUGAL VS. VOLUMETRIC PUMPING",
-        "text": "Compares dynamic centrifugal pumping (flow varies inversely with discharge pressure head) side-by-side with positive displacement volumetric pumping (constant flow delivery regardless of system flow resistance).",
+        "text": "Compares dynamic centrifugal pumping (flow varies inversely with discharge pressure head) side-by-side with positive displacement volumetric pumping (constant flow delivery regardless of system flow resistance).\n\nAfter running, raise the discharge resistance on both sides and compare how the two flows respond. Lines run at up to about 3.6 m/s.",
         "fontSize": "md"
       }
     },

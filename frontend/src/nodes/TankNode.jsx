@@ -3,15 +3,17 @@ import { useMemo } from 'react';
 import { getRotatedPosition } from '../components/canvas/NodeRotationHandle';
 import { SensingPin } from '../components/canvas/SensingPin';
 import BaseNode from './BaseNode';
+import { useUnits } from '../context/UnitContext';
 
 /**
  * Vertical Tank (ISA / PFD style)
  */
 export default function TankNode({ id, data, selected }) {
+  const { toDisplayValue, labels, formatTemperatureK } = useUnits();
   const rotation = data.rotation || 0;
   const sensing = useMemo(() => data.sensing || {}, [data.sensing]);
   const level = data.level || 0;
-  const temp = ((data.temperature !== undefined ? data.temperature : data.telemetry?.outlets?.[0]?.temperature) || 293.15) - 273.15;
+  const tempK = (data.temperature !== undefined ? data.temperature : data.telemetry?.outlets?.[0]?.temperature) || 293.15;
 
   return (
     <BaseNode
@@ -23,8 +25,8 @@ export default function TankNode({ id, data, selected }) {
       footer={
         <>
           <div style={{ fontSize: '9px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>{data.label || 'TANK'}</div>
-          <div style={{ fontSize: '10px', fontWeight: 'bold', color: 'var(--color-brand-dark)' }}>{level.toFixed(2)} m</div>
-          <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)' }}>{temp.toFixed(1)} °C</div>
+          <div style={{ fontSize: '10px', fontWeight: 'bold', color: 'var(--color-brand-dark)' }}>{Number(toDisplayValue('level', level)).toFixed(2)} {labels.length}</div>
+          <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)' }}>{formatTemperatureK(tempK)} {labels.temperature}</div>
         </>
       }
     >

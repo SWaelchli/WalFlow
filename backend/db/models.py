@@ -18,6 +18,7 @@ class User(Base):
     password_hash = Column(String, nullable=False)
     role = Column(String, default="user", nullable=False)  # "admin" | "pipe_manager" | "user"
     status = Column(String, default="approved", nullable=False)
+    settings = Column(Text, nullable=True)  # JSON: global preferences (unit system, solver settings)
 
     diagrams = relationship("Diagram", back_populates="owner", cascade="all, delete-orphan")
     project_memberships = relationship("ProjectMember", back_populates="user", cascade="all, delete-orphan")
@@ -30,6 +31,7 @@ class Project(Base):
     description = Column(Text, nullable=True)
     allowed_pipe_classes = Column(Text, nullable=True)  # JSON list of allowed pipe class IDs
     allow_custom_pipes = Column(Boolean, default=True, nullable=False)
+    settings = Column(Text, nullable=True)  # JSON: project solver settings and their "use" flag
     created_at = Column(DateTime, default=utc_now)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 

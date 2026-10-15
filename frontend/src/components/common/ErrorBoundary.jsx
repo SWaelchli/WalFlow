@@ -72,7 +72,7 @@ export default class ErrorBoundary extends React.Component {
             </button>
             {hasDraft && <button type="button" style={buttonStyle} onClick={this.exportDraft}>Export draft as file</button>}
             {hasDraft && (
-              <button type="button" style={{ ...buttonStyle, background: '#FEF2F2', borderColor: '#FEE2E2', color: '#EF4444' }} onClick={this.discardDraftAndReload}>
+              <button type="button" style={{ ...buttonStyle, background: '#FEF2F2', borderColor: '#FEE2E2', color: 'var(--color-danger-text)' }} onClick={this.discardDraftAndReload}>
                 Discard draft and reload
               </button>
             )}

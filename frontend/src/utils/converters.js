@@ -232,7 +232,7 @@ export const UNIT_LABELS = {
   [UNIT_SYSTEMS.METRIC]: {
     pressure: 'bar',
     pressureAbs: 'bar(a)',
-    pressureDiff: 'bar(d)',
+    pressureDiff: 'bar',
     flow: 'L/min',
     flowM3h: 'm³/h',
     temperature: '°C',
@@ -248,7 +248,7 @@ export const UNIT_LABELS = {
   [UNIT_SYSTEMS.IMPERIAL]: {
     pressure: 'psi',
     pressureAbs: 'psi(a)',
-    pressureDiff: 'psi(d)',
+    pressureDiff: 'psi',
     flow: 'gpm',
     flowM3h: 'gpm',
     temperature: '°F',

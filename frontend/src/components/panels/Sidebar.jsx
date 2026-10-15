@@ -5,7 +5,8 @@ import { InfoIcon, CheckIcon, CrossIcon, FolderIcon, SearchIcon, TrashIcon, Lock
 import { FLUID_CATEGORIES, FLUID_LIBRARY } from '../../constants/fluid_library';
 import { useUnits } from '../../context/UnitContext';
 import { FILE_FORMAT_VERSION, APP_VERSION } from '../../constants';
-import { parseSolverSetting } from '../../utils/solverSettings';
+import { resolveSolverSettings, SOLVER_KEYS } from '../../utils/settingsLevels';
+import SolverSettingsGroup from './SolverSettingsGroup';
 import DraftNumberInput from '../common/DraftNumberInput';
 
 
@@ -651,6 +652,10 @@ export default function Sidebar({
   onLoad,
   globalSettings,
   onUpdateGlobalSettings,
+  userSettings,
+  onUpdateUserSolver,
+  projectSettings,
+  onUpdateProjectSettings,
   templates,
   lastStats,
   batchStats,
@@ -679,11 +684,29 @@ export default function Sidebar({
   const [settingsSubTab, setSettingsSubTab] = useState('drawing'); // 'drawing' | 'project' | 'global'
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Numeric solver settings: commit on blur, ignore empty or out-of-range entries (F2-17)
-  const commitSolverSetting = (key, text) => {
-    const parsed = parseSolverSetting(key, text);
-    if (parsed.ok) onUpdateGlobalSettings({ ...globalSettings, [key]: parsed.value });
+  // Solver settings on the three levels (F3-12): Drawing > Project > Global
+  const solverInForce = resolveSolverSettings({ drawing: globalSettings, project: projectSettings, user: userSettings });
+  const solverBelowDrawing = resolveSolverSettings({ drawing: { use_drawing_solver: false }, project: projectSettings, user: userSettings });
+  const solverBelowProject = resolveSolverSettings({ user: userSettings });
+  const drawingSolverOn = globalSettings.use_drawing_solver === true;
+  const projectSolverOn = projectSettings?.use_project_solver === true;
+  const drawingSolverValues = Object.fromEntries(SOLVER_KEYS.map(k => [k, globalSettings[k] ?? solverBelowDrawing.values[k]]));
+
+  const toggleDrawingSolver = (on) => {
+    // ticking starts from the values in force, so nothing changes until the user edits
+    onUpdateGlobalSettings({ ...globalSettings, ...(on ? solverBelowDrawing.values : {}), use_drawing_solver: on });
   };
+  const saveProjectSettings = async (next) => {
+    try {
+      await onUpdateProjectSettings(next);
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to save the project settings.');
+    }
+  };
+  const toggleProjectSolver = (on) => saveProjectSettings({
+    use_project_solver: on,
+    solver: on ? solverBelowProject.values : (projectSettings?.solver || solverBelowProject.values),
+  });
 
   const [projectsList, setProjectsList] = useState([]);
   const [standaloneList, setStandaloneList] = useState([]);
@@ -1317,18 +1340,18 @@ export default function Sidebar({
                   </div>
 
                   <div>
-                    <label style={labelStyle}>Atmospheric Pressure ({isImperial ? 'psi(a)' : 'Pa'})</label>
+                    <label style={labelStyle}>Atmospheric Pressure ({isImperial ? 'psi(a)' : 'bar(a)'})</label>
                     <DraftNumberInput
-                      step={isImperial ? "0.01" : "1"}
+                      step={isImperial ? "0.01" : "0.001"}
                       displayValue={
                         isImperial
                           ? (globalSettings.atmospheric_pressure * 0.00014503773773).toFixed(2)
-                          : globalSettings.atmospheric_pressure
+                          : Number((globalSettings.atmospheric_pressure / 100000).toFixed(5))
                       }
                       onCommit={(text) => {
                         const rawVal = parseFloat(text);
                         if (isNaN(rawVal) || rawVal <= 0) return;
-                        const pa = isImperial ? rawVal * 6894.757293 : rawVal;
+                        const pa = isImperial ? rawVal * 6894.757293 : rawVal * 100000;
                         onUpdateGlobalSettings({ ...globalSettings, atmospheric_pressure: pa });
                       }}
                       className="form-input"
@@ -1339,93 +1362,13 @@ export default function Sidebar({
                 </div>
 
                 {/* Numerical Solver Settings */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', borderTop: `1px solid ${theme.slate100}`, paddingTop: '16px' }}>
-                  <h4 style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', color: theme.slate500, margin: 0, letterSpacing: '0.05em' }}>
-                    Numerical Solver
-                  </h4>
-                  
-                  <div>
-                    <label style={labelStyle}>Solver Method</label>
-                    <select 
-                      value={globalSettings.solver_method || 'sparse_newton'}
-                      onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, solver_method: e.target.value })}
-                      className="form-select"
-                      style={inputStyle}
-                    >
-                      <option value="sparse_newton">Sparse Newton (Analytical)</option>
-                      <option value="lm">LM (Least-Squares)</option>
-                    </select>
-                    <p style={hintStyle}>Sparse Newton is fast and scalable; LM is a legacy dense solver.</p>
-                  </div>
-
-                  <div>
-                    <label style={labelStyle}>Warm-Start Cache</label>
-                    <select 
-                      value={globalSettings.warm_start !== false ? 'true' : 'false'}
-                      onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, warm_start: e.target.value === 'true' })}
-                      className="form-select"
-                      style={inputStyle}
-                    >
-                      <option value="true">Enabled (Recommended)</option>
-                      <option value="false">Disabled (Force Cold Starts)</option>
-                    </select>
-                    <p style={hintStyle}>Reuses the last solved state as an initial guess. Speeds up real-time slider updates.</p>
-                  </div>
-
-                  <div>
-                    <label style={labelStyle}>Damping Factor</label>
-                    <DraftNumberInput
-                      step="0.05" min="0.05" max="1" displayValue={globalSettings.damping_factor ?? 0.25}
-                      onCommit={(text) => commitSolverSetting('damping_factor', text)}
-                      className="form-input"
-                      style={inputStyle}
-                    />
-                    <p style={hintStyle}>Accepted for older files; the control loop no longer uses it. Range 0.05 to 1.</p>
-                  </div>
-
-                  <div>
-                    <label style={labelStyle}>Control Iterations</label>
-                    <DraftNumberInput
-                      step="1" min="1" displayValue={globalSettings.control_iterations ?? 100}
-                      onCommit={(text) => commitSolverSetting('control_iterations', text)}
-                      className="form-input"
-                      style={inputStyle}
-                    />
-                    <p style={hintStyle}>Max outer loop iterations for regulators and control valves (1 to 1000).</p>
-                  </div>
-
-                  <div>
-                    <label style={labelStyle}>Property Iterations</label>
-                    <DraftNumberInput
-                      step="1" min="1" displayValue={globalSettings.property_iterations}
-                      onCommit={(text) => commitSolverSetting('property_iterations', text)}
-                      className="form-input"
-                      style={inputStyle}
-                    />
-                    <p style={hintStyle}>Max loops for propagating fluid temperature and thermal properties (1 to 100).</p>
-                  </div>
-
-                  <div>
-                    <label style={labelStyle}>Convergence Tolerance</label>
-                    <DraftNumberInput
-                      step="any" displayValue={globalSettings.tolerance}
-                      onCommit={(text) => commitSolverSetting('tolerance', text)}
-                      className="form-input"
-                      style={inputStyle}
-                    />
-                    <p style={hintStyle}>Target numerical residual precision, 1e-9 to 1e-2 (e.g., 1e-6).</p>
-                  </div>
-
-                  <div>
-                    <label style={labelStyle}>Inner Solver Iterations</label>
-                    <DraftNumberInput
-                      step="1" min="1" displayValue={globalSettings.inner_iterations ?? 1000}
-                      onCommit={(text) => commitSolverSetting('inner_iterations', text)}
-                      className="form-input"
-                      style={inputStyle}
-                    />
-                    <p style={hintStyle}>Max steps for the core matrix solver per iteration (1 to 10000).</p>
-                  </div>
+                <div style={{ borderTop: `1px solid ${theme.slate100}`, paddingTop: '16px' }}>
+                  <SolverSettingsGroup
+                    values={drawingSolverOn ? drawingSolverValues : solverBelowDrawing.values}
+                    onChange={(patch) => onUpdateGlobalSettings({ ...globalSettings, ...patch })}
+                    toggle={{ checked: drawingSolverOn, onChange: toggleDrawingSolver, label: 'Use drawing solver settings' }}
+                    inheritedFrom={solverBelowDrawing.source}
+                  />
                 </div>
               </div>
             )}
@@ -1482,7 +1425,7 @@ export default function Sidebar({
                       gap: '10px'
                     }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <h4 style={{ margin: 0, color: 'var(--color-primary)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        <h4 style={{ margin: 0, color: 'var(--color-primary-text)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                           Available Pipe Specs
                         </h4>
                         {isOwnerOfActiveProject && (
@@ -1571,7 +1514,7 @@ export default function Sidebar({
                                   />
                                   <div style={{ display: 'flex', flexDirection: 'column' }}>
                                     <span style={{ fontWeight: '600' }}>
-                                      <span style={{ color: 'var(--color-primary)', marginRight: '4px' }}>[{pc.code}]</span>
+                                      <span style={{ color: 'var(--color-primary-text)', marginRight: '4px' }}>[{pc.code}]</span>
                                       {pc.name}
                                     </span>
                                     <span style={{ fontSize: '9px', color: 'var(--color-text-secondary)' }}>
@@ -1643,6 +1586,24 @@ export default function Sidebar({
                         </div>
                       </div>
                     </div>
+
+                    {/* Project solver settings (owner edits) */}
+                    <div style={{ borderTop: `1px solid ${theme.slate100}`, paddingTop: '16px' }}>
+                      <SolverSettingsGroup
+                        values={projectSolverOn ? { ...solverBelowProject.values, ...projectSettings.solver } : solverBelowProject.values}
+                        onChange={(patch) => saveProjectSettings({ use_project_solver: true, solver: { ...solverBelowProject.values, ...projectSettings?.solver, ...patch } })}
+                        toggle={{
+                          checked: projectSolverOn,
+                          onChange: toggleProjectSolver,
+                          label: 'Use project solver settings',
+                          disabled: !isOwnerOfActiveProject,
+                          disabledHint: 'Only project owners can change the project solver settings.',
+                        }}
+                        inheritedFrom={solverBelowProject.source}
+                        overriddenBy={projectSolverOn && drawingSolverOn ? 'drawing' : null}
+                        readOnly={!isOwnerOfActiveProject}
+                      />
+                    </div>
                   </>
                 ) : (
                   /* Standalone Mode Banner */
@@ -1707,7 +1668,6 @@ export default function Sidebar({
                         type="button"
                         onClick={() => {
                           setUnitSystem('metric');
-                          onUpdateGlobalSettings({ ...globalSettings, unit_system: 'metric' });
                         }}
                         style={{
                           flex: 1,
@@ -1729,7 +1689,6 @@ export default function Sidebar({
                         type="button"
                         onClick={() => {
                           setUnitSystem('imperial');
-                          onUpdateGlobalSettings({ ...globalSettings, unit_system: 'imperial' });
                         }}
                         style={{
                           flex: 1,
@@ -1754,6 +1713,20 @@ export default function Sidebar({
                         : 'Displaying pressure in psi, flow in GPM, temp in °F, pipe in ft/in.'}
                     </p>
                   </div>
+                </div>
+
+                {/* Global solver settings: always active unless a project or drawing overrides them */}
+                <div style={{ borderTop: `1px solid ${theme.slate100}`, paddingTop: '16px' }}>
+                  <SolverSettingsGroup
+                    values={userSettings.solver}
+                    onChange={onUpdateUserSolver}
+                    overriddenBy={null}
+                  />
+                  {solverInForce.source !== 'global' && (
+                    <p style={{ ...hintStyle, marginTop: '8px' }}>
+                      Not in force for the open drawing: the <strong>{solverInForce.source === 'drawing' ? 'Drawing' : 'Project'}</strong> settings take precedence.
+                    </p>
+                  )}
                 </div>
 
                 {/* System Specs & Version Info */}

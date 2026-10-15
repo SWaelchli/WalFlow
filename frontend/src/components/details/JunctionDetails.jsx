@@ -63,7 +63,7 @@ function TelemetryList({ title, total, items, formatFlowM3s, formatTemperatureK,
               {item.name}
             </span>
             <div style={{ textAlign: 'right', flexShrink: 0 }}>
-              <div style={{ fontWeight: '700', color: 'var(--color-primary)' }}>{formatFlowM3s(item.flow)} <span style={{ fontSize: '8px', fontWeight: '500' }}>{labels.flow}</span></div>
+              <div style={{ fontWeight: '700', color: 'var(--color-primary-text)' }}>{formatFlowM3s(item.flow)} <span style={{ fontSize: '8px', fontWeight: '500' }}>{labels.flow}</span></div>
               <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)' }}>{formatTemperatureK(item.temp)} {labels.temperature}</div>
             </div>
           </div>
@@ -175,7 +175,7 @@ export default function JunctionDetails({ node, allNodes, allEdges }) {
           <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Mixing Balance</div>
           
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-            <span style={{ fontSize: '20px', fontWeight: '800', color: 'var(--color-primary)' }}>
+            <span style={{ fontSize: '20px', fontWeight: '800', color: 'var(--color-primary-text)' }}>
               {formatTemperatureK(data.telemetry?.outlets?.[0]?.temperature || 293.15)} {labels.temperature}
             </span>
             <span style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>
@@ -199,7 +199,7 @@ export default function JunctionDetails({ node, allNodes, allEdges }) {
       )}
 
       {hasError && (
-        <div style={{ fontSize: '10px', color: 'var(--color-danger)', background: '#FEF2F2', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid #FEE2E2' }}>
+        <div style={{ fontSize: '10px', color: 'var(--color-danger-text)', background: '#FEF2F2', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid #FEE2E2' }}>
           ⚠️ <strong>Imbalance:</strong> {formatFlowM3s(imbalance)} {labels.flow} difference.
         </div>
       )}

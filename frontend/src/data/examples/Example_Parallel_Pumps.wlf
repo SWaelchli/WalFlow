@@ -11,15 +11,15 @@
         "y": -120
       },
       "width": 400,
-      "height": 140,
+      "height": 210,
       "style": {
         "width": 400,
-        "height": 140
+        "height": 210
       },
       "data": {
         "label": "Note",
         "title": "PARALLEL PUMPING & MIN-FLOW",
-        "text": "Demonstrates parallel centrifugal pump operation (Duty/Standby) discharging into a common header. Illustrates check valve backflow protection and minimum-flow bypass orifices to protect pumps from deadheading under low demand.",
+        "text": "Demonstrates parallel centrifugal pump operation (Duty/Standby) discharging into a common header. Illustrates check valve backflow protection and minimum-flow bypass orifices to protect pumps from deadheading under low demand.\n\nAfter running, look at how the flow splits between the two pumps and what passes through the minimum-flow bypass. All lines run at about 3.7 m/s.",
         "fontSize": "md"
       }
     },

@@ -4,6 +4,7 @@ import { getRotatedPosition } from '../components/canvas/NodeRotationHandle';
 import { SensingPin } from '../components/canvas/SensingPin';
 import BaseNode from './BaseNode';
 import { useUnits } from '../context/UnitContext';
+import { pressureDrop } from '../utils/nodeReadouts';
 
 /**
  * Reducer / Expander Component Node (ASME B16.9 / Custom)
@@ -16,9 +17,7 @@ export default function ReducerNode({ id, data, selected }) {
   const rotation = data.rotation || 0;
   const sensing = useMemo(() => data.sensing || {}, [data.sensing]);
 
-  const pIn = telemetry?.inlets?.[0]?.pressure || 0;
-  const pOut = telemetry?.outlets?.[0]?.pressure || 0;
-  const dP = pIn - pOut;
+  const dP = pressureDrop(telemetry);
   const dPFormatted = formatPressurePa(dP);
 
   const isEccentric = data.reducer_type === 'eccentric';
@@ -75,11 +74,9 @@ export default function ReducerNode({ id, data, selected }) {
               Line Mismatch
             </div>
           )}
-          {telemetry && (
-            <div style={{ fontSize: '10px', fontWeight: 'bold', color: dP >= 0 ? 'var(--color-danger)' : 'var(--color-primary)', marginTop: '2px' }}>
-              {dP >= 0 ? `-${dPFormatted}` : `+${formatPressurePa(Math.abs(dP))}`} {labels.pressureDiff}
-            </div>
-          )}
+          <div style={{ fontSize: '10px', fontWeight: 'bold', color: 'var(--color-brand-dark)', marginTop: '2px' }}>
+            ΔP {dP !== null && dP < 0 ? `${formatPressurePa(Math.abs(dP))} (recovery)` : dPFormatted} {labels.pressureDiff}
+          </div>
         </>
       }
     >

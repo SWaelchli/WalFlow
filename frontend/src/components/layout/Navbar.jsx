@@ -212,7 +212,7 @@ export default function Navbar({
             {adminStatus?.pendingCount > 0 && (
               <span style={{
                 backgroundColor: 'var(--color-primary)',
-                color: '#ffffff',
+                color: 'var(--color-text-primary)',
                 borderRadius: '10px',
                 padding: '1px 6px',
                 fontSize: '10px',
@@ -273,7 +273,7 @@ export default function Navbar({
               style={{
                 backgroundColor: 'transparent',
                 border: 'none',
-                color: 'var(--color-primary)',
+                color: 'var(--color-primary-text)',
                 padding: '0 6px',
                 gap: '4px'
               }}

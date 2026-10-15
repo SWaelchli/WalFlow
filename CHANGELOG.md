@@ -33,6 +33,9 @@ All notable changes to the WälFlow project will be documented in this file.
 
 ### Changed
 
+- **Settings levels**: Drawing (in the `.wlf`), Project and Global settings. Solver settings can be set on each level and are applied in the order Drawing, Project, Global (one tick box per level); fluid and ambient stay with the drawing. The unit system is now a per-user display preference stored with the account.
+- **UX**: resizable and collapsible data panel, fit-view after loading, right-click menus, empty-canvas hint, "-" instead of fake zeros before a run, positive pressure drops, tank and atmospheric pressure units, readable auto names, round pump chart ticks, and darker text colours (orange CTA now uses dark text) for WCAG contrast.
+- Shortcuts no longer act behind dialogs or block copying selected text. Welcome canvas and the large reference network are listed as examples; example notes say what to check.
 - DataList matrix table now allows direct selection of Piping Specifications rather than pipe schedules.
 - Added global Enter key handler to automatically blur/deselect text or numeric input fields on keypress, triggering validation and committing app updates.
 - Redesigned all modal overlay dialogs (Login, Save As, New Drawing, Help & Shortcuts, Project Manager, Admin Setup, and Admin Hub) to use the global light theme tokens and generic classes defined in `index.css`.

@@ -29,7 +29,7 @@ const renderInspector = (node, unitSystem = UNIT_SYSTEMS.METRIC) => {
 describe('D1: centrifugal pump rated in head', () => {
   it('warns when an older pump only has a rated pressure', () => {
     renderInspector(pumpNode({ pressure_rated_bar: 6 }));
-    expect(screen.getByRole('alert').textContent).toMatch(/Rated head missing.*6 bar\(d\)/);
+    expect(screen.getByRole('alert').textContent).toMatch(/Rated head missing.*6 bar/);
   });
 
   it('stores a head typed in feet as metres', () => {

@@ -397,7 +397,7 @@ const ProjectManagerModal = ({
               transition: color 0.15s ease;
             }
             .breadcrumb-link:hover {
-              color: var(--color-primary);
+              color: var(--color-primary-text);
             }
           `}
         </style>
@@ -447,7 +447,7 @@ const ProjectManagerModal = ({
           )}
 
           {error && (
-            <div style={{ color: 'var(--color-danger)', fontSize: '13px', padding: '12px', backgroundColor: 'rgba(239,68,68,0.12)', borderRadius: '10px', border: '1px solid var(--color-danger)' }}>{error}</div>
+            <div style={{ color: 'var(--color-danger-text)', fontSize: '13px', padding: '12px', backgroundColor: 'rgba(239,68,68,0.12)', borderRadius: '10px', border: '1px solid var(--color-danger)' }}>{error}</div>
           )}
 
           {/* VIEW 1: PROJECTS LIST */}
@@ -455,7 +455,7 @@ const ProjectManagerModal = ({
             <>
               {/* Project Creation Form */}
               <div className="modal-metric-card" style={{ padding: '18px 20px' }}>
-                <h4 style={{ margin: '0 0 14px 0', color: 'var(--color-primary)', fontSize: '13px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h4 style={{ margin: '0 0 14px 0', color: 'var(--color-primary-text)', fontSize: '13px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <PlusIcon size={14} color="var(--color-primary)" /> Create New Project
                 </h4>
                 <form onSubmit={handleCreateProject} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -492,7 +492,7 @@ const ProjectManagerModal = ({
 
               {/* Projects List display */}
               <div>
-                <h4 style={{ margin: '0 0 14px 0', color: 'var(--color-primary)', fontSize: '13px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Your Projects</h4>
+                <h4 style={{ margin: '0 0 14px 0', color: 'var(--color-primary-text)', fontSize: '13px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Your Projects</h4>
                 {projects.length === 0 ? (
                   <div style={{ color: 'var(--color-text-secondary)', fontSize: '13px', textAlign: 'center', padding: '28px', backgroundColor: 'var(--color-surface-hover)', borderRadius: '12px', border: '1px dashed var(--color-border)' }}>
                     No projects found. Create your first project using the form above.
@@ -541,7 +541,7 @@ const ProjectManagerModal = ({
                 
                 {/* Diagram Creation Form */}
                 <div className="modal-metric-card" style={{ padding: '16px 18px' }}>
-                  <h4 style={{ margin: '0 0 12px 0', color: 'var(--color-primary)', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Create New Drawing</h4>
+                  <h4 style={{ margin: '0 0 12px 0', color: 'var(--color-primary-text)', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Create New Drawing</h4>
                   <form onSubmit={handleCreateDiagram} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     <input
                       type="text"
@@ -568,7 +568,7 @@ const ProjectManagerModal = ({
 
                 {/* Diagrams List */}
                 <div>
-                  <h4 style={{ margin: '0 0 12px 0', color: 'var(--color-primary)', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Drawing List</h4>
+                  <h4 style={{ margin: '0 0 12px 0', color: 'var(--color-primary-text)', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Drawing List</h4>
                   {projectDetail.diagrams.length === 0 ? (
                     <div style={{ color: 'var(--color-text-secondary)', fontSize: '12px', textAlign: 'center', padding: '24px', backgroundColor: 'var(--color-surface-hover)', borderRadius: '12px', border: '1px dashed var(--color-border)' }}>
                       No drawings inside this project. Create one above to get started.
@@ -628,7 +628,7 @@ const ProjectManagerModal = ({
                               
                               {/* Override lock release button */}
                               {isLockedByOther && isOwnerOfActiveProject && (
-                                <button onClick={() => handleForceReleaseLock(d.id)} className="btn-secondary" style={{ height: '28px', padding: '0 8px', borderRadius: '6px', fontSize: '11px', color: '#EF4444', backgroundColor: '#FEF2F2', borderColor: '#FEE2E2' }} title="Force release user edit lock">
+                                <button onClick={() => handleForceReleaseLock(d.id)} className="btn-secondary" style={{ height: '28px', padding: '0 8px', borderRadius: '6px', fontSize: '11px', color: 'var(--color-danger-text)', backgroundColor: '#FEF2F2', borderColor: '#FEE2E2' }} title="Force release user edit lock">
                                   Release Lock
                                 </button>
                               )}
@@ -656,7 +656,7 @@ const ProjectManagerModal = ({
                 
                 {/* Project Members List */}
                 <div className="modal-metric-card" style={{ padding: '16px 18px' }}>
-                  <h4 style={{ margin: '0 0 12px 0', color: 'var(--color-primary)', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Project Team</h4>
+                  <h4 style={{ margin: '0 0 12px 0', color: 'var(--color-primary-text)', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Project Team</h4>
                   
                   {/* Add Member Form (Owners only) */}
                   {isOwnerOfActiveProject && (
@@ -721,7 +721,7 @@ const ProjectManagerModal = ({
                 {/* Share Token Link Generator */}
                 {isOwnerOfActiveProject && (
                   <div className="modal-metric-card" style={{ padding: '16px 18px' }}>
-                    <h4 style={{ margin: '0 0 12px 0', color: 'var(--color-primary)', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Generate Invitation Token</h4>
+                    <h4 style={{ margin: '0 0 12px 0', color: 'var(--color-primary-text)', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Generate Invitation Token</h4>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       <div>
@@ -755,7 +755,7 @@ const ProjectManagerModal = ({
  
                       {inviteTokenLink && (
                         <div style={{ marginTop: '8px' }}>
-                          <label style={{ display: 'block', color: 'var(--color-primary)', fontSize: '10px', fontWeight: '750', marginBottom: '4px' }}>Copy Shareable Link:</label>
+                          <label style={{ display: 'block', color: 'var(--color-primary-text)', fontSize: '10px', fontWeight: '750', marginBottom: '4px' }}>Copy Shareable Link:</label>
                           <textarea
                             readOnly
                             value={inviteTokenLink}

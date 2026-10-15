@@ -4,6 +4,7 @@ import { getRotatedPosition } from '../components/canvas/NodeRotationHandle';
 import { SensingPin } from '../components/canvas/SensingPin';
 import BaseNode from './BaseNode';
 import { useUnits } from '../context/UnitContext';
+import { pressureDrop } from '../utils/nodeReadouts';
 
 /**
  * Strainer (ISA style)
@@ -13,9 +14,7 @@ export default function FilterNode({ id, data, selected }) {
   const telemetry = data.telemetry;
   const rotation = data.rotation || 0;
   const sensing = useMemo(() => data.sensing || {}, [data.sensing]);
-  const pIn = telemetry?.inlets?.[0]?.pressure || 0;
-  const pOut = telemetry?.outlets?.[0]?.pressure || 0;
-  const dP = pIn - pOut;
+  const dP = pressureDrop(telemetry);
   const clogging = data.clogging || 0;
   const dPFormatted = formatPressurePa(dP);
 
@@ -29,7 +28,7 @@ export default function FilterNode({ id, data, selected }) {
       footer={
         <>
           <div style={{ fontSize: '9px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>{data.label || 'STRAINER'}</div>
-          <div style={{ fontSize: '10px', fontWeight: 'bold', color: 'var(--color-danger)' }}>-{dPFormatted} {labels.pressureDiff}</div>
+          <div style={{ fontSize: '10px', fontWeight: 'bold', color: 'var(--color-brand-dark)' }}>ΔP {dPFormatted} {labels.pressureDiff}</div>
           <div style={{ fontSize: '8px', color: 'var(--color-text-secondary)' }}>Clogging: {clogging.toFixed(0)}%</div>
         </>
       }

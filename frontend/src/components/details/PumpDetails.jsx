@@ -3,6 +3,7 @@ import {
   ComposedChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Scatter, Legend
 } from 'recharts';
 import { useUnits } from '../../context/UnitContext';
+import { niceTicks, formatTick } from '../../utils/chartTicks';
 
 const CavitationWarning = ({ npsha, required, unit, mult }) => (
   <div style={{
@@ -13,13 +14,13 @@ const CavitationWarning = ({ npsha, required, unit, mult }) => (
     display: 'flex',
     flexDirection: 'column', gap: '4px', marginBottom: '10px'
   }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: 'var(--color-danger)', fontWeight: 'bold' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: 'var(--color-danger-text)', fontWeight: 'bold' }}>
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 9v4m0 4h.01M2.75 12A9.25 9.25 0 0 1 12 2.75 9.25 9.25 0 0 1 21.25 12 9.25 9.25 0 0 1 12 21.25 9.25 9.25 0 0 1 2.75 12Z"/>
       </svg>
       CAVITATION RISK
     </div>
-    <p style={{ fontSize: '11px', color: 'var(--color-danger)', margin: 0, paddingLeft: '24px' }}>
+    <p style={{ fontSize: '11px', color: 'var(--color-danger-text)', margin: 0, paddingLeft: '24px' }}>
       {npsha != null
         ? `NPSHa ${(npsha * mult).toFixed(1)} ${unit} is below NPSHr + margin (${(required * mult).toFixed(1)} ${unit}). Pump may be cavitating, leading to damage.`
         : 'Suction pressure is critically low. Pump may be cavitating, leading to damage.'}
@@ -124,6 +125,9 @@ const PumpDetails = memo(function PumpDetails({ node }) {
     };
   }, [isVolumetric, isFixedSpeed, maxDischargeBara, currentPin, rho, flow_rated_lmin, head_rated_m, rise_to_shutoff_pct, flow_rated, motor_power, efficiency, currentQ, currentDpBar, maxX_lmin, isImperial, actualFlowLmin]);
 
+  const xTicks = niceTicks(maxX, 5);
+  const yTicks = niceTicks(maxY, 5);
+
   const hydraulicPowerKW = (currentDpPa * Math.abs(currentQ)) / 1000;
   const motorLoadPct = telemetry?.motor_load_pct;
   const shaftPowerKW = telemetry?.shaft_power_kw;
@@ -166,10 +170,12 @@ const PumpDetails = memo(function PumpDetails({ node }) {
       
       <div style={{ width: '100%', height: '240px', background: 'var(--color-surface)', borderRadius: 'var(--radius-md)' }}>
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: -20, bottom: 10 }}>
+          <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 4, bottom: 10 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
-            <XAxis dataKey="q" type="number" domain={[0, maxX]} fontSize={10} tickCount={6} unit={` ${labels.flow}`} />
-            <YAxis type="number" domain={[0, maxY]} fontSize={10} tickCount={6} unit={` ${labels.pressureDiff}`} />
+            <XAxis dataKey="q" type="number" domain={[0, xTicks[xTicks.length - 1]]} ticks={xTicks} tickFormatter={formatTick} fontSize={10}
+              label={{ value: `Flow (${labels.flow})`, position: 'insideBottom', offset: -6, fontSize: 10 }} height={36} />
+            <YAxis type="number" domain={[0, yTicks[yTicks.length - 1]]} ticks={yTicks} tickFormatter={formatTick} fontSize={10} width={44}
+              label={{ value: `Pressure (${labels.pressureDiff})`, angle: -90, position: 'insideLeft', offset: 14, fontSize: 10, style: { textAnchor: 'middle' } }} />
             <Legend verticalAlign="top" align="right" height={40} iconType="plainline" wrapperStyle={{ fontSize: '11px' }} />
             <Line dataKey="pump" stroke="var(--color-primary)" strokeWidth={2.5} dot={false} name="Pump Curve" isAnimationActive={false} />
             <Line dataKey="system" stroke="var(--color-success)" strokeWidth={2} dot={false} name="System" isAnimationActive={false} />
@@ -185,7 +191,7 @@ const PumpDetails = memo(function PumpDetails({ node }) {
         </div>
         <div style={{ background: 'var(--color-surface-hover)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
           <div style={{ fontSize: '10.5px', color: 'var(--color-text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: '2px' }}>Pressure Increase</div>
-          <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--color-primary)', fontFamily: 'var(--font-mono)' }}>{formatPressurePa(currentDpPa)} <span style={{ fontSize: '9px', fontWeight: '500' }}>{labels.pressureDiff}</span></div>
+          <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--color-primary-text)', fontFamily: 'var(--font-mono)' }}>{formatPressurePa(currentDpPa)} <span style={{ fontSize: '9px', fontWeight: '500' }}>{labels.pressureDiff}</span></div>
         </div>
         <div style={{ background: 'var(--color-surface-hover)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
           <div style={{ fontSize: '10.5px', color: 'var(--color-text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: '2px' }}>Hydraulic Power</div>
@@ -194,7 +200,7 @@ const PumpDetails = memo(function PumpDetails({ node }) {
         <div style={{ background: 'var(--color-surface-hover)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
           {isVolumetric ? (
             <>
-              <div style={{ fontSize: '10.5px', color: 'var(--color-text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: '2px' }}>Motor Load</div>
+              <div title="Shaft power as a percentage of the motor rating" style={{ fontSize: '10.5px', color: 'var(--color-text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: '2px', cursor: 'help' }}>Motor Load (% of rating)</div>
               <div style={{ fontSize: '12px', fontWeight: '700', color: (motorLoadPct || 0) > 100 ? 'var(--color-danger)' : 'var(--color-success)', fontFamily: 'var(--font-mono)' }}>
                 {motorLoadPct !== undefined ? motorLoadPct.toFixed(0) : '—'} <span style={{ fontSize: '9px', fontWeight: '500' }}>%</span>
               </div>

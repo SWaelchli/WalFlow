@@ -33,7 +33,7 @@ export default function ThreeWayTCVNode({ id, data, selected }) {
         <>
           <div style={{ fontSize: '9px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>{data.label || '3-WAY TCV'}</div>
           <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)' }}>{flowFormatted} {labels.flow}</div>
-          <div style={{ fontSize: '9px', color: 'var(--color-danger)', fontWeight: 'bold' }}>{tOutFormatted} {labels.temperature}</div>
+          <div style={{ fontSize: '9px', color: 'var(--color-danger-text)', fontWeight: 'bold' }}>{tOutFormatted} {labels.temperature}</div>
         </>
       }
     >

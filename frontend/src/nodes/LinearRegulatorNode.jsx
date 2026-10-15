@@ -3,11 +3,13 @@ import { useMemo } from 'react';
 import { getRotatedPosition } from '../components/canvas/NodeRotationHandle';
 import { SensingPin } from '../components/canvas/SensingPin';
 import BaseNode from './BaseNode';
+import { useUnits } from '../context/UnitContext';
 
 /**
  * Pressure Regulator (ISA / PFD style)
  */
 export default function LinearRegulatorNode({ id, data, selected }) {
+  const { formatPressurePa, labels } = useUnits();
   const rotation = data.rotation || 0;
   const sensing = useMemo(() => data.sensing || {}, [data.sensing]);
   const telemetry = data.telemetry;
@@ -24,7 +26,7 @@ export default function LinearRegulatorNode({ id, data, selected }) {
       footer={
         <>
           <div style={{ fontSize: '9px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>{data.label || 'REGULATOR'}</div>
-          <div style={{ fontSize: '10px', fontWeight: 'bold', color: 'var(--color-brand-dark)' }}>Set: {(setP / 100000).toFixed(1)} bar(a)</div>
+          <div style={{ fontSize: '10px', fontWeight: 'bold', color: 'var(--color-brand-dark)' }}>Set: {formatPressurePa(setP, 1)} {labels.pressureAbs}</div>
           <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)' }}>Pos: {opening.toFixed(1)} %</div>
         </>
       }

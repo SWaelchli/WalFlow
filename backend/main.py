@@ -32,6 +32,7 @@ from routers.admin import router as admin_router
 from routers.simulation import router as simulation_router, calculate_case_kpis, extract_telemetry, numpy_json_default, sanitize_result
 from routers.pipe_classes import router as pipe_classes_router
 from routers.fitting_standards import router as fitting_standards_router
+from routers.settings import router as settings_router
 
 from contextlib import asynccontextmanager
 
@@ -84,6 +85,7 @@ app.include_router(admin_router)
 app.include_router(simulation_router)
 app.include_router(pipe_classes_router)
 app.include_router(fitting_standards_router)
+app.include_router(settings_router)
 
 
 

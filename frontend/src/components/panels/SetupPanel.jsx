@@ -224,7 +224,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', fontSize: '10px', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
               <div>OD: <strong style={{ color: 'var(--color-text-primary)' }}>{isImperial ? `${(currentOdMm / 25.4).toFixed(3)} in` : `${currentOdMm.toFixed(1)} mm`}</strong></div>
               <div>WT: <strong style={{ color: 'var(--color-text-primary)' }}>{isImperial ? `${(currentWtMm / 25.4).toFixed(3)} in` : `${currentWtMm.toFixed(2)} mm`}</strong></div>
-              <div>ID: <strong style={{ color: 'var(--color-primary)' }}>{isImperial ? `${(value * 39.3701).toFixed(3)} in` : `${(value * 1000).toFixed(2)} mm`}</strong></div>
+              <div>ID: <strong style={{ color: 'var(--color-primary-text)' }}>{isImperial ? `${(value * 39.3701).toFixed(3)} in` : `${(value * 1000).toFixed(2)} mm`}</strong></div>
               <div>Area: <strong style={{ color: 'var(--color-text-primary)' }}>{isImperial ? `${flowAreaIn2.toFixed(2)} in²` : `${flowAreaCm2.toFixed(2)} cm²`}</strong></div>
             </div>
             <div style={{ fontSize: '10px', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
@@ -359,7 +359,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
               }}>
                 <div>OD: <strong style={{ color: 'var(--color-text-primary)' }}>{isImperial ? `${(currentOdMm / 25.4).toFixed(3)} in` : `${currentOdMm.toFixed(1)} mm`}</strong></div>
                 <div>WT: <strong style={{ color: 'var(--color-text-primary)' }}>{isImperial ? `${(currentWtMm / 25.4).toFixed(3)} in` : `${currentWtMm.toFixed(2)} mm`}</strong></div>
-                <div>ID: <strong style={{ color: 'var(--color-primary)' }}>{isImperial ? `${(value * 39.3701).toFixed(3)} in` : `${(value * 1000).toFixed(2)} mm`}</strong></div>
+                <div>ID: <strong style={{ color: 'var(--color-primary-text)' }}>{isImperial ? `${(value * 39.3701).toFixed(3)} in` : `${(value * 1000).toFixed(2)} mm`}</strong></div>
                 <div>Area: <strong style={{ color: 'var(--color-text-primary)' }}>{isImperial ? `${flowAreaIn2.toFixed(2)} in²` : `${flowAreaCm2.toFixed(2)} cm²`}</strong></div>
               </div>
             </>
@@ -723,7 +723,7 @@ export default function SetupPanel({
             onClick={handleDelete}
             style={{ 
               background: 'rgba(239, 68, 68, 0.1)', 
-              color: '#ef4444', 
+              color: 'var(--color-danger-text)', 
               border: '1px solid rgba(239, 68, 68, 0.2)', 
               borderRadius: '6px', 
               padding: '4px 10px', 
@@ -879,13 +879,13 @@ export default function SetupPanel({
                   <div role="alert" style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', marginTop: '6px', padding: '6px 8px', borderRadius: '6px', backgroundColor: '#FEF3C7', border: '1px solid #FCD34D', fontSize: '10px', color: '#92400E' }}>
                     <WarningIcon size={12} color="#92400E" style={{ flexShrink: 0, marginTop: '1px' }} />
                     <span>
-                      Rated head missing. Pumps are rated in head since v0.2; this pump{effectiveData.pressure_rated_bar ? ` had a rated pressure of ${effectiveData.pressure_rated_bar} bar(d)` : ''}. Enter the head from the pump datasheet; the simulation will not run until then.
+                      Rated head missing. Pumps are rated in head since v0.2; this pump{effectiveData.pressure_rated_bar ? ` had a rated pressure difference of ${effectiveData.pressure_rated_bar} bar` : ''}. Enter the head from the pump datasheet; the simulation will not run until then.
                     </span>
                   </div>
                 ) : (
                   <p style={{ fontSize: '10px', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
                     Pressure rise = ρ·g·head, so it follows the fluid density.
-                    {data.telemetry?.inlets?.[0]?.density ? ` At the last result (ρ = ${data.telemetry.inlets[0].density.toFixed(0)} kg/m³) the rated head equals ${isImperial ? `${(data.telemetry.inlets[0].density * 9.81 * effectiveData.head_rated_m / 6894.757).toFixed(1)} psi(d)` : `${(data.telemetry.inlets[0].density * 9.81 * effectiveData.head_rated_m / 1e5).toFixed(2)} bar(d)`}.` : ''}
+                    {data.telemetry?.inlets?.[0]?.density ? ` At the last result (ρ = ${data.telemetry.inlets[0].density.toFixed(0)} kg/m³) the rated head equals ${isImperial ? `${(data.telemetry.inlets[0].density * 9.81 * effectiveData.head_rated_m / 6894.757).toFixed(1)} psi` : `${(data.telemetry.inlets[0].density * 9.81 * effectiveData.head_rated_m / 1e5).toFixed(2)} bar`}.` : ''}
                   </p>
                 )}
               </div>
@@ -1044,7 +1044,7 @@ export default function SetupPanel({
           {isNode && type === 'flow_source' && (
             <>
               {node?.data?.telemetry?.pressure_cap_reached && (
-                <div role="alert" style={{ background: '#FEF2F2', border: '1px solid #FEE2E2', borderRadius: '4px', padding: '8px', fontSize: '11px', color: '#EF4444' }}>
+                <div role="alert" style={{ background: '#FEF2F2', border: '1px solid #FEE2E2', borderRadius: '4px', padding: '8px', fontSize: '11px', color: 'var(--color-danger-text)' }}>
                   Discharge pressure limit reached: the delivered flow is below the set flow. Raise the max. discharge pressure or check for a blocked outlet path.
                 </div>
               )}
@@ -1396,7 +1396,7 @@ export default function SetupPanel({
                 />
               </div>
               <div>
-                {renderLabel(`Cracking Pressure (${isImperial ? 'psi(d)' : 'bar(d)'})`, 'cracking_pressure_bar')}
+                {renderLabel(`Cracking Pressure (${isImperial ? 'psig' : 'barg'})`, 'cracking_pressure_bar')}
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
@@ -1423,7 +1423,7 @@ export default function SetupPanel({
                 />
               </div>
               <div>
-                {renderLabel(`Cracking Pressure (${isImperial ? 'psi(d)' : 'bar(d)'})`, 'cracking_pressure_bar')}
+                {renderLabel(`Cracking Pressure (${isImperial ? 'psig' : 'barg'})`, 'cracking_pressure_bar')}
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
@@ -1574,7 +1574,7 @@ export default function SetupPanel({
                 </div>
               )}
               <div>
-                {renderLabel(`Rated Pressure Drop (${isImperial ? 'psi(d)' : 'bar(d)'})`, 'rated_dp_bar')}
+                {renderLabel(`Rated ΔP (${isImperial ? 'psi' : 'bar'})`, 'rated_dp_bar')}
                 <input 
                   type="number" step="0.01" 
                   className="form-input" style={{ width: '100%' }} 
@@ -1589,7 +1589,7 @@ export default function SetupPanel({
           {isNode && type === 'filter' && (
             <>
               <div>
-                {renderLabel(`Clean ΔP (${isImperial ? 'psi(d)' : 'bar(d)'})`, 'dp_clean')}
+                {renderLabel(`Clean ΔP (${isImperial ? 'psi' : 'bar'})`, 'dp_clean')}
                 <input 
                   type="number" step="0.01" 
                   className="form-input" style={{ width: '100%' }} 
@@ -1599,7 +1599,7 @@ export default function SetupPanel({
                 />
               </div>
               <div>
-                {renderLabel(`Terminal ΔP (${isImperial ? 'psi(d)' : 'bar(d)'})`, 'dp_terminal')}
+                {renderLabel(`Terminal ΔP (${isImperial ? 'psi' : 'bar'})`, 'dp_terminal')}
                 <input 
                   type="number" step="0.1" 
                   className="form-input" style={{ width: '100%' }} 

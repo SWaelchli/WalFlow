@@ -100,7 +100,7 @@ export default function ResultsPanel({ selectedNode, selectedEdge, allNodes, all
           </h3>
         </div>
         {!isCollapsed && (
-          <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--color-primary)', background: 'var(--color-primary-tint)', padding: '3px 8px', borderRadius: '12px' }}>
+          <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--color-primary-text)', background: 'var(--color-primary-tint)', padding: '3px 8px', borderRadius: '12px' }}>
             {type.toUpperCase()}
           </span>
         )}

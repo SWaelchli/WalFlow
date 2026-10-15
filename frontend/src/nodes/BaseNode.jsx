@@ -37,7 +37,7 @@ export default function BaseNode({
             top: -15,
             left: '50%',
             transform: 'translateX(-50%)',
-            color: 'var(--color-danger)',
+            color: 'var(--color-danger-text)',
             fontSize: '20px',
             fontWeight: 'bold',
             textShadow: '0 0 5px rgba(239, 68, 68, 0.5)',

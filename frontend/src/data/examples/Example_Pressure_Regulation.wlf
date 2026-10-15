@@ -11,15 +11,15 @@
         "y": -120
       },
       "width": 400,
-      "height": 140,
+      "height": 210,
       "style": {
         "width": 400,
-        "height": 140
+        "height": 210
       },
       "data": {
         "label": "Note",
         "title": "PRV VS. BPR REGULATION",
-        "text": "Demonstrates the fundamental difference between pressure regulation modes: a Pressure Reducing Valve (PRV) maintains constant downstream load pressure, while a Backpressure Regulator (BPR) maintains constant upstream header pressure by bypassing excess flow.",
+        "text": "Demonstrates the fundamental difference between pressure regulation modes: a Pressure Reducing Valve (PRV) maintains constant downstream load pressure, while a Backpressure Regulator (BPR) maintains constant upstream header pressure by bypassing excess flow.\n\nAfter running, compare the pressure downstream of the PRV with the header pressure kept by the BPR, and the bypass flow. The discharge line runs at about 7.9 m/s, far above the usual 2 to 3 m/s guideline for liquid lines: the pipe sizes are chosen for demonstration.",
         "fontSize": "md"
       }
     },
@@ -70,7 +70,7 @@
         "y": 140
       },
       "data": {
-        "label": "BPR (Upstream Set: 5 bar)",
+        "label": "BPR (Upstream Set: 5 bar(a))",
         "max_cv": 8.0,
         "set_pressure": 500000,
         "backpressure": true
@@ -98,7 +98,7 @@
         "y": 360
       },
       "data": {
-        "label": "PRV (Downstream Set: 3 bar)",
+        "label": "PRV (Downstream Set: 3 bar(a))",
         "max_cv": 8.0,
         "set_pressure": 300000,
         "backpressure": false

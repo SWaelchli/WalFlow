@@ -11,15 +11,15 @@
         "y": -120
       },
       "width": 400,
-      "height": 140,
+      "height": 210,
       "style": {
         "width": 400,
-        "height": 140
+        "height": 210
       },
       "data": {
         "label": "Note",
         "title": "THERMAL MANAGEMENT & 3-WAY TCV",
-        "text": "Demonstrates temperature control using a 3-way Thermostatic Control Valve (TCV) in a hydraulic oil circuit. Shows dynamic temperature-dependent fluid viscosity calculations and heat dissipation through a heat exchanger.",
+        "text": "Demonstrates temperature control using a 3-way Thermostatic Control Valve (TCV) in a hydraulic oil circuit. Shows dynamic temperature-dependent fluid viscosity calculations and heat dissipation through a heat exchanger.\n\nAfter running, compare the 3-way valve outlet temperature with its setpoint and the oil temperature before and after the heat exchanger. Lines run at up to about 4.8 m/s, above the usual 2 to 3 m/s guideline for liquid lines: the pipe sizes are chosen for demonstration.",
         "fontSize": "md"
       }
     },

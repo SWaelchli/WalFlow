@@ -68,6 +68,11 @@ import { useAutoSaveSession } from './hooks/useAutoSaveSession';
 import { HEAT_EXCHANGER_DEFAULTS } from './utils/equipmentDefaults';
 import { serializeDiagram, toSolverGraph, checkDiagramFile, stripResults } from './utils/diagramFile';
 import { computeCaseInputHashes, isCaseResultStale } from './utils/resultHash';
+import { DEFAULT_DRAWING_SETTINGS, migrateDrawingSettings, withEffectiveSolver } from './utils/settingsLevels';
+import useSettingsLevels from './hooks/useSettingsLevels';
+import { nextAutoTag } from './utils/autoTag';
+import CanvasContextMenu from './components/canvas/CanvasContextMenu';
+import EmptyCanvasHint from './components/canvas/EmptyCanvasHint';
 
 import { APP_VERSION, FILE_FORMAT_VERSION, FILE_EXTENSION } from './constants';
 import { DEFAULT_BASE_CASE, isCaseVariableProperty } from './constants/case_constants';
@@ -92,6 +97,7 @@ import exampleThermal from './data/examples/Example_Thermal_Management.wlf';
 import examplePumpComp from './data/examples/Example_Pump_Comparison.wlf';
 import exampleRemoteControl from './data/examples/Example_Remote_Control.wlf';
 import exampleParallelPumps from './data/examples/Example_Parallel_Pumps.wlf';
+import exampleLargeNetwork from './data/examples/Example_Large_Reference_Network.wlf';
 import exampleMultiPsv from './data/examples/Example_Multi_PSV_Protection.wlf';
 import greetingCanvas from './data/GreetingCanvas.wlf';
 
@@ -156,6 +162,7 @@ function WalFlowContent() {
   const { currentUser, isAuthenticated, adminStatus } = useAuth();
   const reactFlowWrapper = useRef(null);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
+  const fitViewPendingRef = useRef(false);
   
   const [selectedNode, setSelectedNode] = useState(null);
   const [inspectorTab, setInspectorTab] = useState('setup');
@@ -282,6 +289,13 @@ function WalFlowContent() {
       clearTimeout(loadTimeoutRef.current);
     }
   }, []);
+
+  // F3-08: frame the diagram after a load, an example or a new drawing
+  useEffect(() => {
+    if (!fitViewPendingRef.current || !reactFlowInstance) return;
+    fitViewPendingRef.current = false;
+    requestAnimationFrame(() => reactFlowInstance.fitView({ padding: 0.2, duration: 250, maxZoom: 1.2 }));
+  }, [nodes, reactFlowInstance]);
 
   // Hide the loader once the loaded canvas commits (completion-driven, not a fixed timer).
   // The requestAnimationFrame gate guarantees the loader is included in at least one painted
@@ -418,26 +432,25 @@ function WalFlowContent() {
   const [isFileDragging, setIsFileDragging] = useState(false);
 
   const clipboardRef = useRef({ nodes: [], edges: [] });
-  const [globalSettings, setGlobalSettings] = useState({
-    unit_system: unitSystem || 'metric',
-    fluid_type: 'water',
-    ambient_temperature: 293.15,
-    atmospheric_pressure: 101325.0,
-    global_roughness: 0.000045,
-    property_iterations: 5,
-    tolerance: 1e-6,
-    inner_iterations: 1000,
-    control_iterations: 100,
-    solver_method: 'sparse_newton',
-    warm_start: true,
-    damping_factor: 0.25
+  const [globalSettings, setGlobalSettings] = useState(DEFAULT_DRAWING_SETTINGS);
+  const {
+    userSettings,
+    updateUserSolver,
+    projectSettings,
+    updateProjectSettings
+  } = useSettingsLevels({
+    isAuthenticated,
+    activeProjectId: activeProject?.id || null,
+    unitSystem,
+    setUnitSystem
   });
+  // Solver settings in force (Drawing > Project > Global): what the solver and the result hash see
+  const effectiveGlobalSettings = useMemo(
+    () => withEffectiveSolver(globalSettings, { project: projectSettings, user: userSettings }),
+    [globalSettings, projectSettings, userSettings]
+  );
   const [batchStats, setBatchStats] = useState(null);
   const [autoRunPending, setAutoRunPending] = useState(false);
-
-  useEffect(() => {
-    setGlobalSettings(prev => prev.unit_system !== unitSystem ? { ...prev, unit_system: unitSystem } : prev);
-  }, [unitSystem]);
 
 
   const {
@@ -535,7 +548,7 @@ function WalFlowContent() {
   } = useWebSocketSimulation({
     nodes,
     edges,
-    globalSettings,
+    globalSettings: effectiveGlobalSettings,
     cases,
     activeCaseId,
     onUpdateCaseTelemetry: handleUpdateCaseTelemetry
@@ -550,8 +563,8 @@ function WalFlowContent() {
 
   // F2-07: hash of the inputs each case is solved from, and whether its stored results still match
   const caseInputHashes = useMemo(
-    () => computeCaseInputHashes({ nodes, edges, globalSettings, cases }),
-    [nodes, edges, globalSettings, cases]
+    () => computeCaseInputHashes({ nodes, edges, globalSettings: effectiveGlobalSettings, cases }),
+    [nodes, edges, effectiveGlobalSettings, cases]
   );
   const activeCaseObj = useMemo(() => getActiveCase(cases, activeCaseId), [cases, activeCaseId]);
   const resultsStale = isCaseResultStale(activeCaseObj, caseInputHashes);
@@ -735,6 +748,56 @@ function WalFlowContent() {
     onSaveShortcut: triggerManualCloudSave,
   });
 
+  // F3-18: right-click menus (components, pipes, empty canvas)
+  const [contextMenu, setContextMenu] = useState(null);
+  const closeContextMenu = useCallback(() => setContextMenu(null), []);
+
+  const onNodeContextMenu = useCallback((event, node) => {
+    event.preventDefault();
+    setNodes((nds) => nds.map((n) => ({ ...n, selected: n.id === node.id })));
+    setEdges((eds) => eds.map((e) => ({ ...e, selected: false })));
+    setSelectedNode(node);
+    setSelectedEdge(null);
+    setContextMenu({ x: event.clientX, y: event.clientY, kind: 'node' });
+  }, [setNodes, setEdges]);
+
+  const onEdgeContextMenu = useCallback((event, edge) => {
+    event.preventDefault();
+    setNodes((nds) => nds.map((n) => ({ ...n, selected: false })));
+    setEdges((eds) => eds.map((e) => ({ ...e, selected: e.id === edge.id })));
+    setSelectedEdge(edge);
+    setSelectedNode(null);
+    setContextMenu({ x: event.clientX, y: event.clientY, kind: 'edge' });
+  }, [setNodes, setEdges]);
+
+  const onPaneContextMenu = useCallback((event) => {
+    event.preventDefault();
+    setContextMenu({ x: event.clientX, y: event.clientY, kind: 'pane', canPaste: clipboardRef.current.nodes.length > 0 });
+  }, []);
+
+  const contextMenuItems = useMemo(() => {
+    if (!contextMenu) return [];
+    const locked = isReadOnly;
+    if (contextMenu.kind === 'node') {
+      return [
+        { id: 'rotate', label: 'Rotate', shortcut: 'R', disabled: locked, onSelect: rotateSelectedNode },
+        { id: 'copy', label: 'Copy', shortcut: 'Ctrl+C', onSelect: copySelected },
+        { id: 'duplicate', label: 'Duplicate', shortcut: 'Ctrl+D', disabled: locked, onSelect: duplicateSelected },
+        { separator: true },
+        { id: 'delete', label: 'Delete', shortcut: 'Del', disabled: locked, danger: true, onSelect: deleteSelected },
+      ];
+    }
+    if (contextMenu.kind === 'edge') {
+      return [{ id: 'delete', label: 'Delete pipe', shortcut: 'Del', disabled: locked, danger: true, onSelect: deleteSelected }];
+    }
+    return [
+      { id: 'paste', label: 'Paste', shortcut: 'Ctrl+V', disabled: locked || !contextMenu.canPaste, onSelect: pasteCopied },
+      { id: 'select-all', label: 'Select all', shortcut: 'Ctrl+A', onSelect: selectAllNodes },
+      { separator: true },
+      { id: 'fit', label: 'Fit view', onSelect: () => reactFlowInstance?.fitView({ padding: 0.2, duration: 250, maxZoom: 1.2 }) },
+    ];
+  }, [contextMenu, isReadOnly, rotateSelectedNode, copySelected, duplicateSelected, deleteSelected, pasteCopied, selectAllNodes, reactFlowInstance]);
+
   const selectNodeById = useCallback((nodeId) => {
     const targetNode = nodes.find(n => n.id === nodeId);
     if (targetNode) {
@@ -857,12 +920,10 @@ function WalFlowContent() {
       setNodes(restoredNodes);
       setEdges(restoredEdges);
       resetHistory(restoredNodes, restoredEdges);
-      if (data.globalSettings) {
-        setGlobalSettings(prev => ({ ...prev, ...data.globalSettings }));
-        if (data.globalSettings.unit_system) {
-          setUnitSystem(data.globalSettings.unit_system);
-        }
-      }
+      fitViewPendingRef.current = true;
+      // Settings of the loaded drawing replace the previous ones; old files keep their solver values as a
+      // ticked drawing override, and their stored unit system is ignored (display preference of the user, F3-12)
+      setGlobalSettings({ ...DEFAULT_DRAWING_SETTINGS, ...migrateDrawingSettings(data.globalSettings || { use_drawing_solver: false }) });
       if (clean.cases.length > 0) {
         setCases(clean.cases);
         setActiveCaseId(data.active_case_id || clean.cases[0].id);
@@ -874,7 +935,7 @@ function WalFlowContent() {
       setAutoRunPending(restoredNodes.length > 0);
     }, 50);
     return true;
-  }, [handleValveChange, handleRotation, setNodes, setEdges, showCanvasLoading, hideCanvasLoading, setUnitSystem, resetHistory]);
+  }, [handleValveChange, handleRotation, setNodes, setEdges, showCanvasLoading, hideCanvasLoading, resetHistory]);
 
   const handleLoadDiagramWithCheck = useCallback((data, diagramTitle = '', options = {}) => {
     // Reject a bad file before anything about the open drawing changes (F0-02, F2-10)
@@ -1152,14 +1213,14 @@ function WalFlowContent() {
         type,
         position,
         data: { 
-          label: `${type.toUpperCase()}_${Math.floor(Math.random() * 1000)}`, 
+          label: nextAutoTag(type, nodes.map(n => n.data?.label)),
           rotation: 0,
           onRotate: handleRotation,
           onChange: type === 'linear_control_valve' ? handleValveChange : undefined,
           ...(type === 'centrifugal_pump' && { flow_rated_lmin: 100.0, head_rated_m: 50.0, rise_to_shutoff_pct: 20.0, efficiency: 75.0, active: true }),
           ...(type === 'pump' && { flow_rated_lmin: 100.0, head_rated_m: 50.0, rise_to_shutoff_pct: 20.0, efficiency: 75.0, active: true }),
           ...(type === 'volumetric_pump' && { flow_rated: 100.0, motor_power: 5.0, efficiency: 85.0, drive_type: 'fixed_speed', max_discharge_pressure_bara: 50.0, active: true }),
-          ...(type === 'tank' && { level: 2.0, elevation: 0.0, temperature: 313.15 }),
+          ...(type === 'tank' && { level: 2.0, elevation: 0.0, temperature: globalSettings.ambient_temperature }),
           ...(type === 'linear_control_valve' && { max_cv: 0.05, opening: 50.0 }),
           ...(type === 'linear_regulator' && { max_cv: 0.05, set_pressure: 500000.0, backpressure: false }),
           ...(type === 'orifice' && { pipe_diameter: 0.05248, orifice_diameter: 0.02, standard: 'iso_5167', standardDn: 50, standardSch: '40' }),
@@ -1183,7 +1244,7 @@ function WalFlowContent() {
       setNodes((nds) => nds.concat(newNode));
       requestSnapshot();
     },
-    [reactFlowInstance, handleValveChange, handleRotation, setNodes, handleLoadDiagramWithCheck, activeDiagram, hasLock, requestSnapshot]
+    [reactFlowInstance, handleValveChange, handleRotation, setNodes, handleLoadDiagramWithCheck, activeDiagram, hasLock, requestSnapshot, nodes, globalSettings.ambient_temperature]
   );
 
   const onSave = useCallback(() => {
@@ -1219,6 +1280,7 @@ function WalFlowContent() {
   }, [setEdges, activeDiagram, hasLock, requestSnapshot]);
 
   const resetCanvas = useCallback(() => {
+    fitViewPendingRef.current = true;
     setNodes([]);
     setEdges([]);
     resetHistory([], []);
@@ -1226,6 +1288,7 @@ function WalFlowContent() {
     setSelectedEdge(null);
     setCases([DEFAULT_BASE_CASE]);
     setActiveCaseId('case_base');
+    setGlobalSettings(DEFAULT_DRAWING_SETTINGS);
   }, [setNodes, setEdges, resetHistory]);
 
   const handleSaveAs = useCallback(async ({ title, description, project_id }) => {
@@ -1284,18 +1347,7 @@ function WalFlowContent() {
         created_at: new Date().toISOString(),
         nodes: [],
         edges: [],
-        globalSettings: {
-          fluid_type: 'water',
-          ambient_temperature: 293.15,
-          atmospheric_pressure: 101325.0,
-          global_roughness: 0.000045,
-          tolerance: 0.000001,
-          inner_iterations: 1000,
-          control_iterations: 100,
-          solver_method: 'sparse_newton',
-          warm_start: true,
-          damping_factor: 0.25
-        },
+        globalSettings: { ...DEFAULT_DRAWING_SETTINGS },
         cases: [DEFAULT_BASE_CASE],
         active_case_id: 'case_base'
       };
@@ -1341,13 +1393,13 @@ function WalFlowContent() {
       if (isConnected && ws.current && ws.current.readyState === WebSocket.OPEN) {
         ws.current.send(JSON.stringify({ 
           action: 'update_graph', 
-          graph: toSolverGraph({ nodes, edges, globalSettings, cases, activeCaseId })
+          graph: toSolverGraph({ nodes, edges, globalSettings: effectiveGlobalSettings, cases, activeCaseId })
         }));
       }
     }, 250);
 
     return () => clearTimeout(handler);
-  }, [nodes, edges, isConnected, globalSettings, cases, activeCaseId, ws]);
+  }, [nodes, edges, isConnected, effectiveGlobalSettings, cases, activeCaseId, ws]);
 
   useEffect(() => {
     if (isConnected && ws.current && ws.current.readyState === WebSocket.OPEN && activeDiagram?.id) {
@@ -1630,14 +1682,22 @@ function WalFlowContent() {
           onLoad={handleLoadDiagramWithCheck} 
           globalSettings={globalSettings}
           onUpdateGlobalSettings={setGlobalSettings}
+          userSettings={userSettings}
+          onUpdateUserSolver={updateUserSolver}
+          projectSettings={projectSettings}
+          onUpdateProjectSettings={updateProjectSettings}
           lastStats={lastStats}
           batchStats={batchStats}
           onSelectComponent={handleSelectComponent}
           templates={{
+            "Getting Started": {
+              "Welcome canvas: tank, pump and orifice": greetingCanvas
+            },
             "Industrial Process Systems": {
               "API 614 Lube Oil System (LOS)": exampleAPI614,
               "API 682 Mechanical Seal Flush": exampleAPI682,
-              "Industrial Chilled Water Circuit": exampleChilledWater
+              "Industrial Chilled Water Circuit": exampleChilledWater,
+              "Large Reference Network (49 components)": exampleLargeNetwork
             },
             "Capability Spotlights": {
               "Pressure Regulation: PRV vs BPR": examplePressureReg,
@@ -1770,6 +1830,8 @@ function WalFlowContent() {
             </div>
           )}
 
+          {nodes.length === 0 && !isCanvasLoading && <EmptyCanvasHint />}
+
           <ReactFlow 
             nodes={interactiveNodes} 
             edges={styledEdges} 
@@ -1780,6 +1842,9 @@ function WalFlowContent() {
             onConnect={onConnect}
             onNodeClick={onNodeClick}
             onEdgeClick={onEdgeClick}
+            onNodeContextMenu={onNodeContextMenu}
+            onEdgeContextMenu={onEdgeContextMenu}
+            onPaneContextMenu={onPaneContextMenu}
             onNodesDelete={(deleted) => {
               if (selectedNode && deleted.some(n => n.id === selectedNode.id)) setSelectedNode(null);
               requestSnapshot();
@@ -1795,7 +1860,7 @@ function WalFlowContent() {
             onNodeDragStop={requestSnapshot}
             nodesDraggable={!activeDiagram || hasLock}
             nodesConnectable={!activeDiagram || hasLock}
-            deleteKeyCode={isReadOnly ? null : 'Backspace'}
+            deleteKeyCode={isReadOnly || activeModal ? null : 'Backspace'}
             elementsSelectable={true}
             fitView
           >
@@ -1823,6 +1888,10 @@ function WalFlowContent() {
               </ControlButton>
             </Controls>
           </ReactFlow>
+
+  {contextMenu && contextMenuItems.length > 0 && (
+    <CanvasContextMenu x={contextMenu.x} y={contextMenu.y} items={contextMenuItems} onClose={closeContextMenu} />
+  )}
 
   <HelpInfoModal
     isOpen={isHelpModalOpen}
@@ -1893,7 +1962,7 @@ function WalFlowContent() {
               </style>
               <div style={{ width: '8px', height: '8px', minWidth: '8px', borderRadius: '50%', backgroundColor: 'var(--color-success)', display: 'inline-block' }} />
               <div>
-                <div style={{ fontWeight: '700', color: 'var(--color-primary)' }}>Restored Session Draft</div>
+                <div style={{ fontWeight: '700', color: 'var(--color-primary-text)' }}>Restored Session Draft</div>
                 <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontWeight: '400', marginTop: '1px' }}>
                   {restoredDraftTime ? `Restored workspace saved at ${restoredDraftTime}` : 'Restored previous unsaved workspace'}
                 </div>
@@ -2019,7 +2088,7 @@ function WalFlowContent() {
           onSelectEdge={selectEdgeById}
           cases={cases}
           activeCaseId={activeCaseId}
-          globalSettings={globalSettings}
+          globalSettings={effectiveGlobalSettings}
           onSelectCase={setActiveCaseId}
           onAddCase={handleAddCase}
           onRenameCase={handleRenameCase}

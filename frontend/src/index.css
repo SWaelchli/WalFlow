@@ -1,8 +1,9 @@
 /* WalFlow Design System - Brand Theme (#FA8507 & #395253) */
 :root {
   --color-primary: #FA8507;
-  --color-primary-hover: #E07600;
-  --color-primary-active: #C86900;
+  --color-primary-hover: #E87F00;
+  --color-primary-active: #DE7500;
+  --color-primary-text: #B45309; /* orange as text on light surfaces: 5.0:1 on white (#FA8507 is only 2.49:1) */
   --color-primary-tint: rgba(250, 133, 7, 0.12);
   --color-primary-glow: rgba(250, 133, 7, 0.35);
 
@@ -28,6 +29,7 @@
   --color-success: #10B981;
   --color-warning: #F59E0B;
   --color-danger: #EF4444;
+  --color-danger-text: #B91C1C; /* red as small text: 6.5:1 on white (#EF4444 is 3.76:1) */
   --color-info: #0284C7;
   --color-inlet: #0284C7;
   --color-outlet: #E11D48;
@@ -236,7 +238,7 @@ body {
 .react-flow__controls-button:hover {
   background: var(--color-surface-hover) !important;
   fill: var(--color-primary) !important;
-  color: var(--color-primary) !important;
+  color: var(--color-primary-text) !important;
 }
 
 .react-flow__controls-button.active {
@@ -330,7 +332,7 @@ textarea:focus-visible,
   font-weight: 600;
   cursor: pointer;
   background-color: var(--color-primary);
-  color: var(--color-text-inverse);
+  color: var(--color-text-primary); /* dark text on orange: 5.9:1 (white was 2.49:1) */
   border: none;
   display: inline-flex;
   align-items: center;
@@ -418,7 +420,7 @@ textarea:focus-visible,
   font-weight: 600;
   cursor: pointer;
   background-color: transparent;
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   border: 1px solid rgba(239, 68, 68, 0.2);
   display: inline-flex;
   align-items: center;
@@ -578,7 +580,7 @@ textarea:focus-visible,
 
 .sidebar-list-item:hover {
   background-color: var(--color-primary-tint);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .sidebar-bottleneck-card {
@@ -652,7 +654,7 @@ textarea:focus-visible,
 
 .datalist-active-tab {
   border-bottom: 2px solid var(--color-primary);
-  color: var(--color-primary) !important;
+  color: var(--color-primary-text) !important;
   font-weight: 700;
 }
 
@@ -667,7 +669,7 @@ textarea:focus-visible,
   border-radius: 50%;
   background-color: var(--color-surface);
   border: 1.5px solid var(--color-primary);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 14px;
   font-weight: bold;
   cursor: pointer;
@@ -720,7 +722,7 @@ textarea:focus-visible,
 }
 
 .badge-case.not-overridden {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   background: var(--color-primary-tint);
   border-color: rgba(250, 133, 7, 0.2);
 }
@@ -741,12 +743,12 @@ textarea:focus-visible,
   gap: 6px;
 }
 .datalist-tab:hover {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 .datalist-tab.active {
   background: var(--color-surface);
   border-bottom-color: var(--color-primary);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 /* --- Generic Modals & Dialogs (Light Theme) --- */
@@ -950,3 +952,88 @@ textarea:focus-visible,
 
 
 
+
+/* Canvas context menu (F3-18) */
+.context-menu-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 32px;
+  padding: 0 10px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-primary);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.context-menu-item:hover:not(:disabled),
+.context-menu-item:focus-visible {
+  background: #EBF0EF;
+  outline: none;
+}
+.context-menu-item:disabled {
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+.context-menu-shortcut {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+/* Resizable data panel (F3-08) */
+.panel-resize-handle {
+  position: absolute;
+  top: -3px;
+  left: 0;
+  right: 0;
+  height: 7px;
+  cursor: ns-resize;
+  z-index: 5;
+  touch-action: none;
+}
+.panel-resize-handle::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 2px;
+  width: 36px;
+  height: 3px;
+  margin-left: -18px;
+  border-radius: 2px;
+  background: var(--color-border-hover);
+}
+.panel-resize-handle:hover::after,
+.panel-resize-handle:focus-visible::after {
+  background: var(--color-brand-dark);
+}
+.panel-resize-handle:focus-visible {
+  outline: 2px solid var(--color-brand-dark);
+  outline-offset: -2px;
+}
+.panel-collapse-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-right: 6px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+.panel-collapse-btn:hover {
+  background: #EBF0EF;
+  color: var(--color-text-primary);
+}
+.panel-collapse-btn:focus-visible {
+  outline: 2px solid var(--color-brand-dark);
+  outline-offset: 1px;
+}
