@@ -244,22 +244,19 @@ class TestAuthAndDiagrams(unittest.TestCase):
         old_auth_req = os.environ.get("WALFLOW_REQUIRE_WS_AUTH")
 
         try:
-            # Case 1: WALFLOW_REQUIRE_WS_AUTH is not set (should default to true)
+            # Case 1: WALFLOW_REQUIRE_WS_AUTH is not set: anonymous users may simulate (F3-03)
             if "WALFLOW_REQUIRE_WS_AUTH" in os.environ:
                 del os.environ["WALFLOW_REQUIRE_WS_AUTH"]
-
-            # Unauthenticated connection should fail with close code 1008
             unauth_client = TestClient(app)
+            with unauth_client.websocket_connect("/ws/simulate") as ws:
+                pass
+
+            # Case 2: WALFLOW_REQUIRE_WS_AUTH = "true" makes the socket login-only (close code 1008)
+            os.environ["WALFLOW_REQUIRE_WS_AUTH"] = "true"
             with self.assertRaises(WebSocketDisconnect) as context:
                 with unauth_client.websocket_connect("/ws/simulate") as ws:
                     pass
             self.assertEqual(context.exception.code, 1008)
-
-            # Case 2: WALFLOW_REQUIRE_WS_AUTH = "false" (explicitly disabled)
-            os.environ["WALFLOW_REQUIRE_WS_AUTH"] = "false"
-            with unauth_client.websocket_connect("/ws/simulate") as ws:
-                # Successfully connected and did not raise exception
-                pass
         finally:
             # Restore environment
             if old_auth_req is not None:

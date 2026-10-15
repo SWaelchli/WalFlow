@@ -441,3 +441,69 @@ Anchors at `HEAD` = `97cca37`, clean tree. Decisions (user, 2026-10-14): F2-22 i
 **Tests (lasting references).** Backend `test_f2_15_non_finite.py`, `test_f2_04_heat_exchanger_default.py`, `test_f2_23_catalog.py`, `test_f0_02_shipped_files.py` (385 pass). Frontend `diagramFile.test.js` (also checks every shipped file), `resultHash.test.js`, `solverSettings.test.js`, additions to `SetupPanel.test.jsx`, `case_resolver.test.js`, `converters.test.js` (77 pass); lint and build clean. Not checked in the browser.
 
 **Open for later batches.** Tab-specific draft key (F2-22 remainder, assigned to B5: one localStorage key per browser tab so two tabs no longer overwrite each other's draft); UI for `non_finite_fields` and `physical_validity` (B4); the autosave still fires when results arrive (F2-11, B3); `alert()` replacement (F3-06).
+
+### B3: security and deployment (implemented 2026-10-15, not committed)
+
+Anchors checked at `HEAD` = `af4e168`, clean tree. Decision already taken (user, 2026-10-13): anonymous users may run simulations; collaboration still needs a login; `/batch` stays open with a timeout and size limit.
+
+**Goal.** A default `docker compose up` deployment is safe to expose: the rate limit cannot be spoofed, secrets and ports are set sensibly, a disabled user really loses access, and collaboration events no longer leak or spam.
+
+1. **F2-12, rate-limit key.** `limiter.py › get_client_ip` takes the first `X-Forwarded-For` entry (client-controlled). Change to: use the entry `N` hops from the **right**, `N = WALFLOW_TRUSTED_PROXY_HOPS` (default 1 = the nginx container; 2 behind an extra reverse proxy; 0 = ignore the header). Fewer entries than hops: fall back to the socket peer. Do not publish the backend port in compose (see 2). `nginx.conf` keeps `$proxy_add_x_forwarded_for`.
+2. **F2-13, compose and nginx.**
+   - `docker-compose.yml`: remove `WALFLOW_REQUIRE_WS_AUTH=false` (obsolete after 6); add `ENVIRONMENT=production` and `WALFLOW_SECRET_KEY=${WALFLOW_SECRET_KEY:?set it in .env}` (fails fast); bind the backend port to `127.0.0.1:5701` (or drop it).
+   - `nginx.conf`: `client_max_body_size 5m;` (results are no longer in saved files since B2, so this is generous) with a comment. Add the same to `/ws/` is not needed.
+   - Secure cookies follow `WALFLOW_SECRET_KEY` (`routers/auth.py:31-36`): a plain-HTTP LAN install then cannot log in. README: say that HTTPS is expected, otherwise set `WALFLOW_SECURE_COOKIES=false`. Update the README env table and `.env` example.
+3. **F2-13, `/batch` and solver limits.**
+   - Keep `/batch` open (30/min limit stays). Add a size limit: reject graphs above `WALFLOW_MAX_NODES` (default 500) / `WALFLOW_MAX_CASES` (default 20) with HTTP 413/422 and a clear message.
+   - Solver timeout `WALFLOW_SOLVE_TIMEOUT_S` (default 60). A thread cannot be killed, so add a **cooperative deadline** checked between cases/relief stages and in the `NetworkSolver` iteration loop; on expiry return `stats.error_kind = "timeout"` with a message (WebSocket: shown like other model errors; batch: per-case `status="error"`).
+   - Global cap on concurrent solves (semaphore, default = CPU count) so anonymous load cannot starve the event loop's thread pool.
+   - WebSocket: `--ws-max-size` 2 MiB in `Dockerfile.backend` CMD (the default is 16 MiB).
+4. **F2-14, admin and user lifecycle.** `routers/admin.py`, `auth.py › get_current_user`, `routers/auth.py` (`/refresh`):
+   - `update_user_role`: refuse to demote the last admin (also self-demotion when last). Accept `pipe_manager`.
+   - `reject_user`: refuse for an admin who is the last admin or yourself; works on approved users and means "disabled".
+   - `get_current_user` and `/refresh`: require `user.status == "approved"` (403 "Account disabled"); revoke the current token on reject if cheap.
+   - Frontend `AdminHub`: role dropdown gets `pipe_manager`; the action on an approved user is labelled **Disable** (same endpoint), with a re-enable (approve).
+5. **F2-25, locks and collaboration.**
+   - `checkout` and `lock-status`: for standalone diagrams require `diagram.user_id == current_user.id` (403 otherwise). Factor one `assert_diagram_access(db, diagram, user)` helper used by GET, PUT, checkout, checkin, lock-status and `join_diagram`.
+   - `join_diagram` over the WebSocket: needs a valid login (cookie/token, user approved) and the same access check; otherwise reply `{"status":"error","context":"join_diagram"}` and do not subscribe. Anonymous simulation is unaffected.
+   - Release on disconnect: when a socket that joined a diagram closes and its user holds the lock and has no other socket on that diagram, release it and broadcast `lock_released`. Add a `navigator.sendBeacon` check-in on `pagehide` for tab close.
+   - Not changed: a save without a lock still takes the lock for the saver (documented). In-memory locks and token revocation: README states that WalFlow runs as **one worker** (the Dockerfile already does) unless Redis is configured.
+6. **F3-03, anonymous simulation.** `main.py › websocket_endpoint`: `WALFLOW_REQUIRE_WS_AUTH` default becomes **false** (`true` forces a login for everything on the socket). `join_diagram` always needs a login (item 5). Frontend: `GreetingCanvas.wlf` note and the "not connected" alert in `useWebSocketSimulation.js:164` drop the "you are logged in" wording; if the server rejects the socket for auth, show "Sign in to simulate" (banner, not `alert`). Update `test_auth_and_diagrams.py` (the "defaults to true" case) and README.
+7. **F2-11, autosave and broadcast spam.**
+   - Frontend: skip the cloud autosave when the serialized diagram (without timestamp and viewport) equals the last saved one; this also stops the save after each simulation result and selection change (open point from B2).
+   - Backend `update_diagram`: broadcast only if `diagram_data` actually changed, at most once per 10 s per diagram (trailing coalesce), and exclude the saver's own socket.
+   - Frontend `useAutoSaveSession.js:180-186`: replace `window.confirm` by a non-blocking banner "<name> saved changes. Reload" (dismissable; unsaved local edits are mentioned). Replace the `alert` on forced release by the same banner.
+
+**Tests (lasting references).** Backend: `test_f2_12_client_ip.py` (hops, spoofed header, short header), `test_f2_13_limits.py` (size limit, timeout returns error and frees the slot), `test_f2_14_user_lifecycle.py` (last admin, disabled user token refused, `pipe_manager`), `test_f2_25_collab_authz.py` (standalone checkout by non-owner, anonymous/unauthorised `join_diagram`, release on disconnect), `test_f3_03_anonymous_simulation.py`, and the broadcast coalescing for F2-11. Frontend: autosave no-op on unchanged hash, banner instead of confirm. Then `npm run lint`, `npm run build`, backend suite, and a manual `docker compose config` check.
+
+**Version and docs.** `CHANGELOG.md` entries (brief). No version bump, no format change, no commit unless you ask.
+
+**Open questions (need your answer before I start).**
+- **A. Proxy hops (item 1):** is WalFlow deployed behind another reverse proxy (Traefik, NPM, Cloudflare) in front of the nginx container? If yes, default `WALFLOW_TRUSTED_PROXY_HOPS` should be 2 in compose. I assume **1**.
+- **B. Plain HTTP (item 2):** is the production install reached over HTTPS? If it is HTTP-only, compose must also set `WALFLOW_SECURE_COOKIES=false`, otherwise nobody can log in after the secret key is set. I assume **HTTPS**.
+- **C. Existing deployments:** setting `WALFLOW_SECRET_KEY` as required means the next `compose pull` fails until `.env` has one. Acceptable? I assume **yes** (fail fast, noted in changelog).
+- **D. Limits:** 500 nodes, 20 cases, 60 s, 2 MiB WS message, 5 MB body. OK, or other values?
+- **E. Save without lock (item 5):** keep (silently takes the lock) or reject saves from users who hold no lock on project diagrams? I assume **keep**.
+
+**Effort.** ~3-4 days; B3 is independent of B4/B5.
+
+**Answers (user, 2026-10-14).**
+- A: `WALFLOW_TRUSTED_PROXY_HOPS`, default 1, documented in README and compose.
+- B: `WALFLOW_SECURE_COOKIES` passed through compose as `${WALFLOW_SECURE_COOKIES:-true}`; documented.
+- C: `WALFLOW_SECRET_KEY` is **required** in compose (`:?` fail-fast); README, compose comment and `.env.example` explain it; changelog notes the one-time logout.
+- D: all limits configurable with clearly named variables: `WALFLOW_MAX_NODES`, `WALFLOW_MAX_CASES`, `WALFLOW_SOLVE_TIMEOUT_S`, `UVICORN_WS_MAX_SIZE`, `NGINX_MAX_BODY_SIZE` (nginx template, checked against `Dockerfile.frontend`); defaults as in item 3 and 2.
+- E: keep "save takes the lock". Proposed addition (item 8, pending): optimistic version check on `PUT /diagrams/{id}` (client sends loaded `updated_at`; newer server copy returns 409 and shows the reload banner), covering stale-lock and standalone two-tab overwrites; test `test_f2_25_stale_save_rejected`; ~0.5 day.
+
+**Decision (user, 2026-10-15).** E: follow the recommendation, including item 8 (version check on save).
+
+**B3 result.**
+- *F2-12.* `limiter.py › get_client_ip` takes the `X-Forwarded-For` entry `WALFLOW_TRUSTED_PROXY_HOPS` from the right (default 1); fewer entries than hops falls back to the socket peer. Backend port bound to 127.0.0.1 in compose.
+- *F2-13.* Compose: `ENVIRONMENT=production`, `WALFLOW_SECRET_KEY` required (`:?`), `WALFLOW_SECURE_COOKIES`, `WALFLOW_TRUSTED_PROXY_HOPS`, `WALFLOW_REQUIRE_WS_AUTH` and the limits passed through with defaults; `.env.example` added and `.env` git-ignored. nginx config is a template (`NGINX_MAX_BODY_SIZE`, default 5m); `UVICORN_WS_MAX_SIZE` 2 MiB in `Dockerfile.backend`. New `simulation/limits.py`: `WALFLOW_MAX_NODES` (500), `WALFLOW_MAX_CASES` (20), `WALFLOW_SOLVE_TIMEOUT_S` (60, 0 = off), `WALFLOW_MAX_CONCURRENT_SOLVES` (CPUs). The deadline is checked in the solver's residual function (every Newton/LM iteration), so a run stops within one iteration; it is a ContextVar and follows `asyncio.to_thread`. `/batch` answers 413 above the node/case limits and reports a timeout as a per-case error; the WebSocket reports it like other model errors.
+- *F2-14.* `get_current_user` (so also `/refresh`) refuses accounts that are not `approved` (403 "Account disabled"). Last approved admin cannot be demoted, disabled or deleted. `pipe_manager` assignable. Admin Hub: **Disable** / **Enable** buttons and a Pipe Manager role option.
+- *F2-25.* `user_can_access_diagram` / `require_diagram_access` used by checkout and lock-status (standalone diagrams are owner-only) and by `join_diagram`, which now needs a login. The lock is released when the last socket of the holder closes (`release_lock_after_disconnect`) and by a `sendBeacon` check-in on `pagehide`. Item 8: `PUT /diagrams/{id}` takes `base_updated_at`; a newer server copy returns 409 with header `X-Walflow-Conflict: stale` and the client shows a banner instead of overwriting.
+- *F3-03.* `WALFLOW_REQUIRE_WS_AUTH` defaults to false; `true` closes the socket with 1008 and the client then says that signing in is required. The greeting note never mentioned a login, so it was left as is.
+- *F2-11.* The server broadcasts only when title, description or data changed, at most once per `WALFLOW_COLLAB_BROADCAST_INTERVAL_S` (10 s) per diagram with a trailing notice, tagged with the saving tab's client id. The client skips an autosave when the content (without timestamp and viewport) equals the last saved version, and shows a non-blocking `CollabNotice` banner instead of `window.confirm` / `alert`.
+
+**Tests (lasting references).** Backend `test_b3_security.py` (18 tests; also covers F3-03, F2-11), `test_auth_and_diagrams.py` updated for the new WebSocket default (403 pass in total). Frontend `useAutoSaveSession.test.jsx` (5 tests; 82 pass in total); lint and build clean. `docker compose config` and a real nginx start were not run (no Docker here), and nothing was checked in the browser.
+
+**Limits of this batch.** A restored local draft that is linked to a cloud diagram carries no server version, so its first save is not version-checked (the edit lock still applies). Behind a proxy the header can only be trusted if the backend port is not reachable directly, hence the 127.0.0.1 binding. Redis is still optional; locks and revoked tokens are in memory for the single worker.

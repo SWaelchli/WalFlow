@@ -4,11 +4,25 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 from fastapi import Request
 
+def trusted_proxy_hops() -> int:
+    """WALFLOW_TRUSTED_PROXY_HOPS: proxies in front of the backend that append to X-Forwarded-For.
+
+    1 = the bundled nginx container (default); 2 = one more reverse proxy in front of it; 0 = ignore the header.
+    """
+    try:
+        return max(0, int(os.getenv("WALFLOW_TRUSTED_PROXY_HOPS", "1")))
+    except ValueError:
+        return 1
+
 def get_client_ip(request: Request) -> str:
-    # Check X-Forwarded-For header if behind a reverse proxy (e.g. Nginx, Docker)
+    # F2-12: the left side of X-Forwarded-For is client-controlled; only entries appended by our own proxies
+    # count, so take the address `hops` entries from the right (the peer the outermost trusted proxy saw).
+    hops = trusted_proxy_hops()
     forwarded = request.headers.get("X-Forwarded-For")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
+    if hops and forwarded:
+        entries = [e.strip() for e in forwarded.split(",") if e.strip()]
+        if len(entries) >= hops:
+            return entries[-hops]
     return get_remote_address(request) or "127.0.0.1"
 
 def is_rate_limiting_enabled() -> bool:

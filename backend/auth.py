@@ -167,7 +167,25 @@ def get_current_user(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found",
         )
-    
+
+    # F2-14: a disabled (rejected) or still pending account loses access immediately, not at token expiry
+    if user.status != "approved":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account disabled",
+        )
+
+    return user
+
+def get_user_from_token(token: str, db: Session):
+    """Resolve a login token to an approved user, or None (used by the WebSocket, which has no Depends)."""
+    payload = decode_access_token(token) if token else None
+    user_id = payload.get("sub") if payload else None
+    if not user_id:
+        return None
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user or user.status != "approved":
+        return None
     return user
 
 def get_current_admin_user(

@@ -36,6 +36,7 @@ import FlowSourceNode from './nodes/FlowSourceNode';
 
 
 import Navbar from './components/layout/Navbar';
+import CollabNotice from './components/CollabNotice';
 import Sidebar from './components/panels/Sidebar';
 import InspectorPanel from './components/panels/InspectorPanel';
 import DataList from './components/panels/DataList';
@@ -450,7 +451,9 @@ function WalFlowContent() {
     isLockedByOther,
     hasLock,
     checkoutDiagram,
-    checkinDiagram
+    checkinDiagram,
+    collabNotice,
+    dismissCollabNotice
   } = useAutoSaveSession({
     nodes,
     edges,
@@ -1239,7 +1242,8 @@ function WalFlowContent() {
       setActiveDiagram({
         id: response.data.id,
         title: response.data.title,
-        description: response.data.description
+        description: response.data.description,
+        updated_at: response.data.updated_at
       });
 
       if (project_id) {
@@ -1306,7 +1310,8 @@ function WalFlowContent() {
       setActiveDiagram({
         id: response.data.id,
         title: response.data.title,
-        description: response.data.description
+        description: response.data.description,
+        updated_at: response.data.updated_at
       });
 
       if (project_id) {
@@ -1856,6 +1861,8 @@ function WalFlowContent() {
     onClose={handleCloseModal}
     onCreateNew={handleCreateNewDrawing}
   />
+
+          <CollabNotice notice={collabNotice} onDismiss={dismissCollabNotice} />
 
           {showRestoredToast && (
             <div style={{

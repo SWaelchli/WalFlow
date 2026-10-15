@@ -81,7 +81,7 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
   const handleReject = async (userId) => {
     try {
       await rejectUser(userId);
-      showMessage('User registration rejected.', 'warning');
+      showMessage('User disabled. Their access ends immediately.', 'warning');
       loadData();
     } catch (err) {
       showMessage(err.response?.data?.detail || 'Failed to reject user.', 'error');
@@ -453,6 +453,7 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
                               }}
                             >
                               <option value="user">User</option>
+                              <option value="pipe_manager">Pipe Manager</option>
                               <option value="admin">👑 Admin</option>
                             </select>
                           </td>
@@ -473,6 +474,41 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
                             {user.diagram_count} diagrams
                           </td>
                           <td style={{ padding: '12px', textAlign: 'right' }}>
+                            {user.id !== currentUser?.id && user.status === 'approved' && (
+                              <button
+                                onClick={() => handleReject(user.id)}
+                                title="Ends the user's access immediately; the account and its diagrams are kept"
+                                style={{
+                                  backgroundColor: '#FEF2F2',
+                                  color: '#EF4444',
+                                  border: '1px solid #FEE2E2',
+                                  borderRadius: '6px',
+                                  padding: '4px 10px',
+                                  fontSize: '12px',
+                                  cursor: 'pointer',
+                                  marginRight: '8px'
+                                }}
+                              >
+                                Disable
+                              </button>
+                            )}
+                            {user.id !== currentUser?.id && user.status === 'rejected' && (
+                              <button
+                                onClick={() => handleApprove(user.id)}
+                                style={{
+                                  backgroundColor: '#F4F7F6',
+                                  color: '#1C2B2C',
+                                  border: '1px solid #D8E2E1',
+                                  borderRadius: '6px',
+                                  padding: '4px 10px',
+                                  fontSize: '12px',
+                                  cursor: 'pointer',
+                                  marginRight: '8px'
+                                }}
+                              >
+                                Enable
+                              </button>
+                            )}
                             {user.id !== currentUser?.id && (
                               <button
                                 onClick={() => handleDeleteUser(user.id, user.username)}

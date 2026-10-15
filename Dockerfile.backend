@@ -19,6 +19,8 @@ COPY backend ./backend
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app/backend
 ENV PORT=8000
+# Largest WebSocket message uvicorn accepts, in bytes (F2-13); uvicorn reads UVICORN_* variables as its CLI options
+ENV UVICORN_WS_MAX_SIZE=2097152
 
 WORKDIR /app/backend
 

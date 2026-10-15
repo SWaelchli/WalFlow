@@ -12,6 +12,7 @@ from simulation.equipment.volumetric_pump import VolumetricPump
 from simulation.equipment.centrifugal_pump import CentrifugalPump
 from simulation.fluid_utils import FluidProperties
 from limiter import limiter
+from simulation.limits import SolveTimeout, solve_deadline, solve_slot, max_nodes, max_cases
 
 router = APIRouter(prefix="/api/simulation", tags=["simulation"])
 
@@ -236,6 +237,14 @@ def run_batch_simulation(request: Request, graph: ReactFlowGraph):
     Executes hydraulic simulations for all operating cases in the diagram graph.
     Returns side-by-side telemetry and KPI comparisons for the matrix dashboard.
     """
+    # F2-13: /batch is open to anonymous users, so bound the work one request can ask for
+    if len(graph.nodes) > max_nodes():
+        raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                            detail=f"Diagram too large: {len(graph.nodes)} components (limit {max_nodes()}).")
+    if len(graph.cases or []) > max_cases():
+        raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                            detail=f"Too many operating cases: {len(graph.cases)} (limit {max_cases()}).")
+
     cases_to_run = graph.cases or []
     if not cases_to_run:
         # Fallback to single base case if no cases defined
@@ -245,48 +254,55 @@ def run_batch_simulation(request: Request, graph: ReactFlowGraph):
 
     results: List[BatchCaseResult] = []
 
-    for case in cases_to_run:
-        try:
-            # Parse graph layering the current case overrides
-            network = GraphParser.parse_graph(graph, case_id=case.id)
-            solver = NetworkSolver(network)
+    # One deadline for the whole request and a cap on concurrent solves (F2-13)
+    with solve_slot(), solve_deadline():
+        for case in cases_to_run:
+            try:
+                # Parse graph layering the current case overrides
+                network = GraphParser.parse_graph(graph, case_id=case.id)
+                solver = NetworkSolver(network)
 
-            stats, telemetry, telemetry_unmitigated, has_psv, telemetry_peak = run_sequential_relief_simulation(
-                network, solver, extract_telemetry_dict
-            )
+                stats, telemetry, telemetry_unmitigated, has_psv, telemetry_peak = run_sequential_relief_simulation(
+                    network, solver, extract_telemetry_dict
+                )
 
-            print(f"Batch Case '{case.name}': success={stats.get('success')}, error={stats.get('error')}, time={stats.get('time_ms', 0):.2f}ms, fallback={stats.get('fallback_used')}")
+                print(f"Batch Case '{case.name}': success={stats.get('success')}, error={stats.get('error')}, time={stats.get('time_ms', 0):.2f}ms, fallback={stats.get('fallback_used')}")
 
-            if stats.get("error_kind"):
-                results.append(BatchCaseResult(case_id=case.id, case_name=case.name, is_base=case.is_base,
-                                               status="error", error_message=stats["error"]))
-                continue
+                if stats.get("error_kind"):
+                    results.append(BatchCaseResult(case_id=case.id, case_name=case.name, is_base=case.is_base,
+                                                   status="error", error_message=stats["error"]))
+                    continue
 
-            kpis = calculate_case_kpis(network, telemetry, stats)
-            stats, clean = sanitize_result(stats, telemetry=telemetry, telemetry_unmitigated=telemetry_unmitigated,
-                                           telemetry_peak=telemetry_peak, kpis=kpis)
-            telemetry, telemetry_unmitigated = clean["telemetry"], clean["telemetry_unmitigated"]
-            telemetry_peak, kpis = clean["telemetry_peak"], clean["kpis"]
+                kpis = calculate_case_kpis(network, telemetry, stats)
+                stats, clean = sanitize_result(stats, telemetry=telemetry, telemetry_unmitigated=telemetry_unmitigated,
+                                               telemetry_peak=telemetry_peak, kpis=kpis)
+                telemetry, telemetry_unmitigated = clean["telemetry"], clean["telemetry_unmitigated"]
+                telemetry_peak, kpis = clean["telemetry_peak"], clean["kpis"]
 
-            results.append(BatchCaseResult(
-                case_id=case.id,
-                case_name=case.name,
-                is_base=case.is_base,
-                status="success",
-                stats=stats,
-                telemetry=telemetry,
-                telemetry_unmitigated=telemetry_unmitigated,
-                telemetry_peak=telemetry_peak,
-                kpis=kpis
-            ))
-        except Exception as e:
-            traceback.print_exc()
-            results.append(BatchCaseResult(
-                case_id=case.id,
-                case_name=case.name,
-                is_base=case.is_base,
-                status="error",
-                error_message=sanitize_error_message(e)
-            ))
+                results.append(BatchCaseResult(
+                    case_id=case.id,
+                    case_name=case.name,
+                    is_base=case.is_base,
+                    status="success",
+                    stats=stats,
+                    telemetry=telemetry,
+                    telemetry_unmitigated=telemetry_unmitigated,
+                    telemetry_peak=telemetry_peak,
+                    kpis=kpis
+                ))
+            except SolveTimeout as e:
+                results.append(BatchCaseResult(
+                    case_id=case.id, case_name=case.name, is_base=case.is_base,
+                    status="error", error_message=str(e)
+                ))
+            except Exception as e:
+                traceback.print_exc()
+                results.append(BatchCaseResult(
+                    case_id=case.id,
+                    case_name=case.name,
+                    is_base=case.is_base,
+                    status="error",
+                    error_message=sanitize_error_message(e)
+                ))
 
     return BatchSimulationResponse(status="success", results=results)

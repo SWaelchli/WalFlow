@@ -20,6 +20,7 @@ from simulation.equipment.heat_exchanger import HeatExchanger
 from simulation.equipment.filter import Filter
 from simulation.equipment.three_way_tcv import ThreeWayTCV
 from simulation.fluid_utils import FluidProperties
+from simulation.limits import check_deadline
 
 class NetworkSolver:
     """
@@ -1066,6 +1067,7 @@ class NetworkSolver:
             x0 = np.concatenate([x0_raw[:num_internal] / p_scale, x0_raw[num_internal:] / q_scale])
 
         def objective(x_scaled):
+            check_deadline()   # F2-13: cooperative solve timeout
             p_in_internal = x_scaled[:num_internal] * p_scale
             q_edges = x_scaled[num_internal:] * q_scale
             p_in_all = np.zeros(len(self.nodes_list))

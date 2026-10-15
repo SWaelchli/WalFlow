@@ -20,3 +20,5 @@ performance_log.md
 .claude/skills/slides
 .claude/skills/ui-styling
 .claude/skills/ui-ux-pro-max
+# Local deployment secrets (see .env.example)
+.env

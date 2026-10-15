@@ -33,12 +33,14 @@ services:
     container_name: walflow-backend
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     volumes:
       - /docker/walflow/data:/app/data
     environment:
       - DATABASE_PATH=/app/data/walflow.db
       - PYTHONUNBUFFERED=1
+      - ENVIRONMENT=production
+      - WALFLOW_SECRET_KEY=${WALFLOW_SECRET_KEY:?set it in .env}
 
   walflow-frontend:
     image: ghcr.io/swaelchli/walflow-frontend:latest
@@ -50,46 +52,40 @@ services:
       - walflow-backend
 ```
 
-Run `docker compose up -d` and navigate to `http://localhost:5173` in order to access the web UI.
+Create a `.env` file with `WALFLOW_SECRET_KEY` (see below), run `docker compose up -d` and navigate to `http://localhost:5173` in order to access the web UI.
 
 ### Environment Variables Configuration
 
-The backend supports several environment variables that can be customized in the `environment:` section of the `walflow-backend` service:
+Copy [`.env.example`](./.env.example) to `.env` next to `docker-compose.yml` and set at least **`WALFLOW_SECRET_KEY`**. `docker compose` stops with an error until it is set. All other variables are optional; the compose file passes them to the containers with the defaults shown below.
 
-*   **`WALFLOW_REQUIRE_WS_AUTH`** (Default: `true`)
-    *   **What it does**: Controls whether WebSocket connections (required to run simulations) need user authentication/login.
-    *   **How to implement**: Set to `false` to allow guest users to run simulations:
-        ```yaml
-        - WALFLOW_REQUIRE_WS_AUTH=false
-        ```
+> **Upgrading from an earlier compose file:** add `WALFLOW_SECRET_KEY` to `.env` before `docker compose pull`. All users are logged out once, because the previously random key is replaced. The backend port 5701 is now published on `127.0.0.1` only; use port 5702 (the frontend) for users.
 
-*   **`WALFLOW_SECRET_KEY`** (Default: Auto-generated random key at startup if not defined, provided `ENVIRONMENT` is not `production`)
-    *   **What it does**: The cryptographic key used to sign and verify JSON Web Tokens (JWT) for user authentication.
-    *   **Benefits & Trade-offs of Configuration Options**:
-        *   *Omitted / Not Set (Default)*: If not configured, the backend auto-generates a temporary random key on startup.
-            *   *Pros*: Zero-configuration setup, ideal for quick testing.
-            *   *Cons*: Every container restart or redeployment invalidates all active user login sessions, forcing users to log in again.
-        *   *Set explicitly*: Defined as a persistent, secure random string.
-            *   *Pros*: Keeps user sessions valid and logged in across container restarts and updates. Enforced in production environments.
-            *   *Cons*: Requires manual configuration and secure storage in your docker compose file.
-    *   **How to implement**:
-        ```yaml
-        - WALFLOW_SECRET_KEY=your_secure_random_key_here
-        ```
+**Backend (`walflow-backend`)**
 
-*   **`ENVIRONMENT`** (Default: `development` behavior if not set)
-    *   **What it does**: Sets the execution mode. If set to `production`, the backend strictly enforces security checks, such as crashing on startup if `WALFLOW_SECRET_KEY` is not defined.
-    *   **How to implement**:
-        ```yaml
-        - ENVIRONMENT=production
-        ```
+| Variable | Default | What it does |
+|---|---|---|
+| `WALFLOW_SECRET_KEY` | none, **required** in compose | Key that signs login tokens. Generate with `openssl rand -hex 32`. Changing it logs everybody out. Without it the backend would invent a random key at each start and, with `ENVIRONMENT=production`, refuses to start. |
+| `ENVIRONMENT` | `production` in compose | `production` enforces the checks above. |
+| `WALFLOW_SECURE_COOKIES` | `true` | Login cookies are sent over HTTPS only. Set to `false` for a plain-HTTP LAN install, otherwise login does not work. |
+| `WALFLOW_TRUSTED_PROXY_HOPS` | `1` | Number of reverse proxies that append the client address to `X-Forwarded-For` (the bundled nginx is 1; use `2` when another proxy such as Traefik or Nginx Proxy Manager sits in front of it; `0` ignores the header). The login rate limit uses this address, so a wrong value either lets clients spoof their address or puts all users into one bucket. |
+| `WALFLOW_REQUIRE_WS_AUTH` | `false` | `false`: anonymous users may run simulations (collaboration on shared diagrams always needs a login). `true`: the simulation also needs a login. |
+| `WALFLOW_MAX_NODES` | `500` | Largest diagram (number of components) accepted for simulation. |
+| `WALFLOW_MAX_CASES` | `20` | Most operating cases accepted by `/api/simulation/batch`. |
+| `WALFLOW_SOLVE_TIMEOUT_S` | `60` | Seconds one simulation request may take before it is stopped with an error. `0` turns the limit off. |
+| `WALFLOW_MAX_CONCURRENT_SOLVES` | number of CPUs | Simulations running at the same time; further requests wait. |
+| `UVICORN_WS_MAX_SIZE` | `2097152` (2 MiB) | Largest WebSocket message in bytes. |
+| `WALFLOW_COLLAB_BROADCAST_INTERVAL_S` | `10` | Shortest gap between "diagram updated" notices that co-editors receive. |
 
-*   **`WALFLOW_SECURE_COOKIES`** (Default: `true` if `WALFLOW_SECRET_KEY` is configured, `false` otherwise)
-    *   **What it does**: Overrides the `Secure` flag on HTTP cookies (tells the browser to only transmit cookies over encrypted `https://` connections).
-    *   **How to implement**: Set to `false` if deploying without HTTPS (e.g., local home network/LAN):
-        ```yaml
-        - WALFLOW_SECURE_COOKIES=false
-        ```
+**Frontend / nginx (`walflow-frontend`)**
+
+| Variable | Default | What it does |
+|---|---|---|
+| `NGINX_MAX_BODY_SIZE` | `5m` | Largest request body, for example a cloud save or `/batch`. Larger requests get HTTP 413. |
+
+**Notes**
+*   WalFlow runs as a **single backend worker**. Edit locks and the list of logged-out tokens are kept in memory (or in Redis when `REDIS_URL` is set), so do not start more than one worker without Redis.
+*   Saving a project diagram while nobody holds its edit lock takes the lock for the saver. A save is refused when someone else changed the diagram since you opened it ("changed elsewhere"); reload to see their version.
+*   Disabling a user in the Admin Hub ends their access immediately. The last administrator cannot be demoted, disabled or deleted.
 
 ---
 

@@ -19,6 +19,7 @@ export function useWebSocketSimulation({ nodes, edges, globalSettings, cases = [
   const [telemetryMode, setTelemetryMode] = useState('mitigated'); // 'mitigated' | 'peak' | 'unmitigated_global'
   const [hasPsv, setHasPsv] = useState(false);
   const [graphError, setGraphError] = useState(null); // last rejected graph update (shown inline, not as a popup)
+  const [loginRequired, setLoginRequired] = useState(false); // server only lets logged-in users simulate (F3-03)
 
   // Refs to eliminate socket churn
   const activeCaseIdRef = useRef(activeCaseId);
@@ -43,6 +44,7 @@ export function useWebSocketSimulation({ nodes, edges, globalSettings, cases = [
 
     socket.onopen = () => {
       setIsConnected(true);
+      setLoginRequired(false);
     };
 
     socket.onclose = (event) => {
@@ -51,6 +53,7 @@ export function useWebSocketSimulation({ nodes, edges, globalSettings, cases = [
 
       if (event.code === 1008) {
         console.warn('WebSocket closed due to policy violation (unauthenticated).');
+        setLoginRequired(true);
         return;
       }
 
@@ -85,6 +88,11 @@ export function useWebSocketSimulation({ nodes, edges, globalSettings, cases = [
         }
         if (response.status === 'error' && response.context === 'update_graph') {
           setGraphError(response.message);
+          return;
+        }
+        if (response.status === 'error' && response.context === 'join_diagram') {
+          // Collaboration needs a login and access to the diagram; simulation works without (F2-25)
+          console.warn(`Collaboration updates not available: ${response.message}`);
           return;
         }
 
@@ -161,10 +169,12 @@ export function useWebSocketSimulation({ nodes, edges, globalSettings, cases = [
       return true;
     }
     if (options?.silent !== true) {
-      alert("Simulation engine is not connected. Please ensure the backend is running and you are logged in.");
+      alert(loginRequired
+        ? "This server only allows signed-in users to run simulations. Please sign in and try again."
+        : "Simulation engine is not connected. Please ensure the backend is running.");
     }
     return false;
-  }, [nodes, edges, globalSettings, cases, activeCaseId]);
+  }, [nodes, edges, globalSettings, cases, activeCaseId, loginRequired]);
 
   // Live preview of a valve opening on the backend only. The value itself is stored case-aware by the
   // caller (updateNodeData); writing it here would change the base case from inside another case (F2-06).
@@ -193,6 +203,7 @@ export function useWebSocketSimulation({ nodes, edges, globalSettings, cases = [
     telemetryMode,
     setTelemetryMode,
     hasPsv,
-    graphError
+    graphError,
+    loginRequired
   };
 }

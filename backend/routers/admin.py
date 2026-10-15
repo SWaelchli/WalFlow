@@ -76,24 +76,36 @@ def approve_user(user_id: str, db: Session = Depends(get_db)):
     db.commit()
     return {"status": "success", "message": f"User '{target_user.username}' has been approved."}
 
+def _is_last_active_admin(db: Session, user: User) -> bool:
+    """True when `user` is the only approved admin (F2-14: without one, /setup-admin reopens for visitors)."""
+    if user.role != "admin" or user.status != "approved":
+        return False
+    others = db.query(User).filter(User.role == "admin", User.status == "approved", User.id != user.id).count()
+    return others == 0
+
 @router.post("/users/{user_id}/reject")
 def reject_user(user_id: str, db: Session = Depends(get_db)):
     target_user = db.query(User).filter(User.id == user_id).first()
     if not target_user:
         raise HTTPException(status_code=404, detail="User not found")
-    
+    if _is_last_active_admin(db, target_user):
+        raise HTTPException(status_code=400, detail="Cannot disable the last administrator.")
+
+    # Also used to disable an approved user: get_current_user refuses non-approved accounts at once
     target_user.status = "rejected"
     db.commit()
     return {"status": "success", "message": f"User '{target_user.username}' has been rejected."}
 
 @router.put("/users/{user_id}/role")
 def update_user_role(user_id: str, payload: RoleUpdateSchema, db: Session = Depends(get_db)):
-    if payload.role not in ["admin", "user"]:
-        raise HTTPException(status_code=400, detail="Invalid role. Must be 'admin' or 'user'.")
+    if payload.role not in ["admin", "user", "pipe_manager"]:
+        raise HTTPException(status_code=400, detail="Invalid role. Must be 'admin', 'user' or 'pipe_manager'.")
     
     target_user = db.query(User).filter(User.id == user_id).first()
     if not target_user:
         raise HTTPException(status_code=404, detail="User not found")
+    if payload.role != "admin" and _is_last_active_admin(db, target_user):
+        raise HTTPException(status_code=400, detail="Cannot remove the administrator role from the last administrator.")
 
     target_user.role = payload.role
     db.commit()
@@ -107,6 +119,8 @@ def delete_user(user_id: str, admin_user: User = Depends(get_current_admin_user)
     target_user = db.query(User).filter(User.id == user_id).first()
     if not target_user:
         raise HTTPException(status_code=404, detail="User not found")
+    if _is_last_active_admin(db, target_user):
+        raise HTTPException(status_code=400, detail="Cannot delete the last administrator.")
 
     username = target_user.username
     db.delete(target_user)

@@ -12,7 +12,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from slowapi import _rate_limit_exceeded_handler
 
-from auth import decode_access_token
+from auth import decode_access_token, get_user_from_token
 from limiter import limiter
 
 from simulation.solver import NetworkSolver, run_sequential_relief_simulation
@@ -20,9 +20,12 @@ from simulation.graph_parser import GraphParser, ModelInputError
 from simulation.schemas import ReactFlowGraph
 from simulation.equipment.linear_control_valve import LinearControlValve
 
-from db.database import init_db
+from db.database import init_db, SessionLocal
 from routers.auth import router as auth_router
-from routers.diagrams import router as diagrams_router, collab_manager
+from routers.diagrams import router as diagrams_router, collab_manager, user_can_access_diagram
+from services.lock_service import release_lock_after_disconnect
+from db.models import Diagram
+from simulation.limits import SolveTimeout, run_limited, max_nodes
 from routers.projects import router as projects_router
 from routers.invitations import router as invitations_router
 from routers.admin import router as admin_router
@@ -96,9 +99,9 @@ async def websocket_endpoint(websocket: WebSocket):
     if not token:
         token = websocket.query_params.get("token")
         
-    # Check if authentication is required for WebSocket simulation
-    # Defaults to true across all environments (SEC-02) unless explicitly disabled via WALFLOW_REQUIRE_WS_AUTH
-    require_auth = os.getenv("WALFLOW_REQUIRE_WS_AUTH", "true").lower() in ("true", "1")
+    # Anonymous users may run simulations (F3-03); WALFLOW_REQUIRE_WS_AUTH=true makes the whole socket login-only.
+    # Collaboration (join_diagram) always needs a login, see below.
+    require_auth = os.getenv("WALFLOW_REQUIRE_WS_AUTH", "false").lower() in ("true", "1")
 
     if require_auth:
         if not token or not decode_access_token(token):
@@ -110,7 +113,7 @@ async def websocket_endpoint(websocket: WebSocket):
     solver_instance = None
     
     await websocket.accept()
-    print("Frontend client connected and authenticated.")
+    print("Frontend client connected.")
     
     try:
         while True:
@@ -136,7 +139,22 @@ async def websocket_endpoint(websocket: WebSocket):
             if action == "join_diagram":
                 diagram_id = data.get("diagram_id")
                 if diagram_id:
-                    await collab_manager.connect(websocket, diagram_id)
+                    # F2-25: lock and update events carry user names, so joining needs a login and project/owner access
+                    db = SessionLocal()
+                    try:
+                        user = get_user_from_token(token, db)
+                        diagram = db.query(Diagram).filter(Diagram.id == diagram_id).first() if user else None
+                        allowed = bool(user and diagram and user_can_access_diagram(db, diagram, user))
+                        user_id = user.id if allowed else None
+                    finally:
+                        db.close()
+                    if not allowed:
+                        await websocket.send_text(json.dumps({
+                            "status": "error", "context": "join_diagram",
+                            "message": "Sign in with access to this diagram to receive collaboration updates."
+                        }))
+                        continue
+                    await collab_manager.connect(websocket, diagram_id, user_id)
                     print(f"WS client joined diagram collab channel: {diagram_id}")
 
             elif action == "update_graph":
@@ -145,6 +163,8 @@ async def websocket_endpoint(websocket: WebSocket):
                     try:
                         # Parse the React Flow JSON into our HydraulicNetwork model
                         rf_graph = ReactFlowGraph(**graph_data)
+                        if len(rf_graph.nodes) > max_nodes():
+                            raise ModelInputError(f"Diagram too large: {len(rf_graph.nodes)} components (limit {max_nodes()}).")
                         network_instance = GraphParser.parse_graph(rf_graph)
                         solver_instance = NetworkSolver(network_instance)
                         print(f"Graph updated: {len(network_instance.nodes)} nodes, {len(network_instance.edges)} edges.")
@@ -184,6 +204,8 @@ async def websocket_endpoint(websocket: WebSocket):
                 if graph_data:
                     try:
                         rf_graph = ReactFlowGraph(**graph_data)
+                        if len(rf_graph.nodes) > max_nodes():
+                            raise ModelInputError(f"Diagram too large: {len(rf_graph.nodes)} components (limit {max_nodes()}).")
                         network_instance = GraphParser.parse_graph(rf_graph)
                         solver_instance = NetworkSolver(network_instance)
                     except ModelInputError as e:
@@ -201,7 +223,9 @@ async def websocket_endpoint(websocket: WebSocket):
                     try:
                         # Offload CPU-heavy matrix solver to thread pool to prevent event loop starvation
                         import asyncio
+                        # F2-13: bounded by the solve timeout and the concurrent-solve cap
                         stats, telemetry_mitigated, telemetry_unmitigated, has_psv, telemetry_peak = await asyncio.to_thread(
+                            run_limited,
                             run_sequential_relief_simulation,
                             network_instance,
                             solver_instance,
@@ -233,6 +257,8 @@ async def websocket_endpoint(websocket: WebSocket):
                             "has_psv": has_psv,
                             "kpis": kpis
                         }, default=numpy_json_default))
+                    except SolveTimeout as e:
+                        await websocket.send_text(json.dumps({"status": "error", "message": str(e)}))
                     except Exception as e:
                         print(f"Solver Error: {e}")
                         traceback.print_exc()
@@ -245,7 +271,8 @@ async def websocket_endpoint(websocket: WebSocket):
     except WebSocketDisconnect:
         print("Frontend client disconnected.")
     finally:
-        collab_manager.disconnect(websocket)
+        # F2-25: a closed tab must not keep the edit lock for its full 15 minutes
+        await release_lock_after_disconnect(collab_manager, collab_manager.disconnect(websocket))
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

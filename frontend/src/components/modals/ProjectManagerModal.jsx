@@ -234,7 +234,8 @@ const ProjectManagerModal = ({
         setActiveDiagram({
           id: response.data.id,
           title: response.data.title,
-          description: response.data.description
+          description: response.data.description,
+          updated_at: response.data.updated_at
         });
       }
     } catch {

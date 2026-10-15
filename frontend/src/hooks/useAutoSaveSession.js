@@ -5,6 +5,20 @@ import { useAuth } from './useAuth';
 
 export const LOCAL_DRAFT_KEY = 'walflow_active_session_draft';
 
+// One id per browser tab, sent with cloud saves so the server's "diagram updated" notice skips the saving tab (F2-11)
+const CLIENT_ID = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `tab-${Math.random().toString(36).slice(2)}`;
+
+// Content that decides whether a save is needed: everything except the timestamp and the viewport
+const contentKey = (payload) => {
+  const { timestamp: _t, viewport: _v, ...content } = payload;
+  return JSON.stringify(content);
+};
+
+const isStaleConflict = (err) => !!(err.response && err.response.status === 409 &&
+  err.response.headers && err.response.headers['x-walflow-conflict'] === 'stale');
+
+const STALE_MESSAGE = 'Not saved: this diagram was changed elsewhere since you opened it. Reload to see the latest version; your edits here stay in the local draft.';
+
 export function useAutoSaveSession({
   nodes,
   edges,
@@ -22,6 +36,13 @@ export function useAutoSaveSession({
   const [lastSavedTimestamp, setLastSavedTimestamp] = useState(null);
   const [isRestoredFromDraft, setIsRestoredFromDraft] = useState(false);
   const [restoredDraftTime, setRestoredDraftTime] = useState(null);
+  // Non-blocking notice about co-editors / saves refused because the diagram changed elsewhere (F2-11, F2-25)
+  const [collabNotice, setCollabNotice] = useState(null);
+  const dismissCollabNotice = useCallback(() => setCollabNotice(null), []);
+  // updated_at of the server version this tab last loaded or saved; sent with each save so a newer copy is not overwritten
+  const baseUpdatedAtRef = useRef(null);
+  // content of the last version known to be on the server, to skip saves that would change nothing
+  const lastSavedKeyRef = useRef(null);
 
   // Collaboration Lock States
   const [lockInfo, setLockInfo] = useState(null); // { user_id, username, expires_at }
@@ -70,6 +91,29 @@ export function useAutoSaveSession({
       active_diagram_description: activeDiagram?.description || null,
       viewport,
     };
+  }, []);
+
+  // Learn the server version when a diagram is opened; remember what was on screen at that moment
+  useEffect(() => {
+    if (activeDiagram && activeDiagram.updated_at) baseUpdatedAtRef.current = activeDiagram.updated_at;
+    if (!activeDiagram) baseUpdatedAtRef.current = null;
+  }, [activeDiagram]);
+  const activeDiagramId = activeDiagram ? activeDiagram.id : null;
+  useEffect(() => {
+    lastSavedKeyRef.current = activeDiagramId ? contentKey(serializeWorkspaceState()) : null;
+  }, [activeDiagramId, serializeWorkspaceState]);
+
+  // Cloud save with the version check; remembers the new server version and content on success
+  const putDiagram = useCallback(async (diagram, payload) => {
+    const response = await axios.put(`/api/diagrams/${diagram.id}`, {
+      title: diagram.title,
+      description: diagram.description || '',
+      diagram_data: JSON.stringify(payload),
+      base_updated_at: baseUpdatedAtRef.current || undefined
+    }, { headers: { 'X-Walflow-Client-Id': CLIENT_ID } });
+    if (response.data && response.data.updated_at) baseUpdatedAtRef.current = response.data.updated_at;
+    lastSavedKeyRef.current = contentKey(payload);
+    return response;
   }, []);
 
   // Helper to save to local browser storage
@@ -175,14 +219,13 @@ export function useAutoSaveSession({
       } else if (eventData.action === 'lock_released') {
         setLockInfo(null);
         if (eventData.forced && eventData.by_username) {
-          alert(`Your checkout lock was force-released by project owner ${eventData.by_username}.`);
+          setCollabNotice({ kind: 'lock_released', message: `Your edit lock was released by project owner ${eventData.by_username}.` });
         }
       } else if (eventData.action === 'diagram_updated') {
-        // Diagram was modified on the server
-        if (currentUser && eventData.user_id !== currentUser.id) {
-          if (window.confirm(`Co-editor ${eventData.username} has updated this diagram. Would you like to reload the canvas to see their changes?`)) {
-            window.location.reload();
-          }
+        // Diagram was modified on the server, by someone else or by another tab of this user (F2-11)
+        if (eventData.client_id !== CLIENT_ID) {
+          const who = currentUser && eventData.user_id === currentUser.id ? 'Another tab of yours' : `Co-editor ${eventData.username}`;
+          setCollabNotice({ kind: 'diagram_updated', message: `${who} saved changes to this diagram. Reload to see them; your unsaved edits here are kept as a local draft.` });
         }
       }
     };
@@ -238,12 +281,20 @@ export function useAutoSaveSession({
     const handleBeforeUnload = () => {
       saveToLocalDraft();
     };
+    // Give the edit lock back when the tab closes (the server also releases it when the socket drops, F2-25)
+    const handlePageHide = () => {
+      if (hasLock && activeDiagram && activeDiagram.id && navigator.sendBeacon) {
+        navigator.sendBeacon(`/api/diagrams/${activeDiagram.id}/checkin`);
+      }
+    };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('pagehide', handlePageHide);
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('pagehide', handlePageHide);
     };
-  }, [saveToLocalDraft]);
+  }, [saveToLocalDraft, hasLock, activeDiagram]);
 
   // Skip initial mount effect trigger
   const isInitialMount = useRef(true);
@@ -285,16 +336,20 @@ export function useAutoSaveSession({
       cloudTimer = setTimeout(async () => {
         try {
           const payload = serializeWorkspaceState();
-          await axios.put(`/api/diagrams/${activeDiagram.id}`, {
-            title: activeDiagram.title,
-            description: activeDiagram.description || '',
-            diagram_data: JSON.stringify(payload)
-          });
+          // Nothing but selection, viewport or results changed since the last save: nothing to send (F2-11)
+          if (contentKey(payload) === lastSavedKeyRef.current) {
+            setSaveStatus('saved_cloud');
+            return;
+          }
+          await putDiagram(activeDiagram, payload);
           setSaveStatus('saved_cloud');
           setLastSavedTimestamp(new Date().toLocaleTimeString());
         } catch (err) {
           console.error('Cloud auto-save failed:', err);
-          if (err.response && (err.response.status === 404 || err.response.status === 403)) {
+          if (isStaleConflict(err)) {
+            setSaveStatus('error');
+            setCollabNotice({ kind: 'stale', message: STALE_MESSAGE });
+          } else if (err.response && (err.response.status === 404 || err.response.status === 403)) {
             console.warn('Active diagram no longer accessible. Detaching.');
             if (setActiveDiagram) setActiveDiagram(null);
             setSaveStatus('saved_local');
@@ -314,7 +369,7 @@ export function useAutoSaveSession({
       clearTimeout(localTimer);
       if (cloudTimer) clearTimeout(cloudTimer);
     };
-  }, [nodes, edges, globalSettings, cases, activeCaseId, activeProject, activeDiagram, isAuthenticated, hasLock, isLockedByOther, saveToLocalDraft, serializeWorkspaceState, setActiveDiagram]);
+  }, [nodes, edges, globalSettings, cases, activeCaseId, activeProject, activeDiagram, isAuthenticated, hasLock, isLockedByOther, saveToLocalDraft, serializeWorkspaceState, setActiveDiagram, putDiagram]);
 
   // Manual Trigger for Instant Cloud Save
   const triggerManualCloudSave = useCallback(async () => {
@@ -329,17 +384,18 @@ export function useAutoSaveSession({
     setSaveStatus('saving_cloud');
     try {
       const payload = serializeWorkspaceState();
-      await axios.put(`/api/diagrams/${activeDiagram.id}`, {
-        title: activeDiagram.title,
-        description: activeDiagram.description || '',
-        diagram_data: JSON.stringify(payload)
-      });
+      await putDiagram(activeDiagram, payload);
       setSaveStatus('saved_cloud');
       const timeStr = new Date().toLocaleTimeString();
       setLastSavedTimestamp(timeStr);
       return true;
     } catch (err) {
       console.error('Manual cloud save failed:', err);
+      if (isStaleConflict(err)) {
+        setSaveStatus('error');
+        setCollabNotice({ kind: 'stale', message: STALE_MESSAGE });
+        return false;
+      }
       if (err.response && (err.response.status === 404 || err.response.status === 403)) {
         console.warn('Active diagram no longer accessible. Detaching.');
         if (setActiveDiagram) setActiveDiagram(null);
@@ -349,7 +405,7 @@ export function useAutoSaveSession({
       setSaveStatus('error');
       return false;
     }
-  }, [activeDiagram, isAuthenticated, hasLock, isLockedByOther, saveToLocalDraft, serializeWorkspaceState, setActiveDiagram]);
+  }, [activeDiagram, isAuthenticated, hasLock, isLockedByOther, saveToLocalDraft, serializeWorkspaceState, setActiveDiagram, putDiagram]);
 
   // Hydration Loader on Boot
   const loadLocalDraftOnBoot = useCallback(() => {
@@ -398,7 +454,9 @@ ${versionError}`), 0);
     checkoutDiagram,
     checkinDiagram,
     forceCheckinDiagram,
-    fetchLockStatus
+    fetchLockStatus,
+    collabNotice,
+    dismissCollabNotice
   };
 }
 

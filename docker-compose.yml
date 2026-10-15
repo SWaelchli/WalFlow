@@ -7,7 +7,9 @@ services:
     container_name: walflow-backend
     restart: unless-stopped
     ports:
-      - "5701:8000" # Host port 5701 -> Container port 8000
+      # Only reachable from this host: users go through the frontend/nginx container, which sets the
+      # forwarded client address the rate limiter relies on (F2-12). Remove "127.0.0.1:" to expose it.
+      - "127.0.0.1:5701:8000"
     volumes:
       - /docker/walflow/data:/app/data
       - /etc/localtime:/etc/localtime:ro
@@ -17,7 +19,21 @@ services:
       - PUID=${PUID}
       - PGID=${PGID}
       - PYTHONUNBUFFERED=1
-      - WALFLOW_REQUIRE_WS_AUTH=false
+      - ENVIRONMENT=production
+      # Required: signs login tokens. Put it in .env, e.g. WALFLOW_SECRET_KEY=<output of: openssl rand -hex 32>
+      - WALFLOW_SECRET_KEY=${WALFLOW_SECRET_KEY:?Set WALFLOW_SECRET_KEY in .env (see .env.example)}
+      # Cookies are Secure (HTTPS only). Set to false in .env for a plain-HTTP LAN install.
+      - WALFLOW_SECURE_COOKIES=${WALFLOW_SECURE_COOKIES:-true}
+      # Proxies in front of the backend that append to X-Forwarded-For: 1 = the bundled nginx, 2 = one more in front
+      - WALFLOW_TRUSTED_PROXY_HOPS=${WALFLOW_TRUSTED_PROXY_HOPS:-1}
+      # true = simulation also needs a login (default: anonymous users may simulate)
+      - WALFLOW_REQUIRE_WS_AUTH=${WALFLOW_REQUIRE_WS_AUTH:-false}
+      # Limits for one simulation request (also /api/simulation/batch)
+      - WALFLOW_MAX_NODES=${WALFLOW_MAX_NODES:-500}
+      - WALFLOW_MAX_CASES=${WALFLOW_MAX_CASES:-20}
+      - WALFLOW_SOLVE_TIMEOUT_S=${WALFLOW_SOLVE_TIMEOUT_S:-60}
+      - WALFLOW_MAX_CONCURRENT_SOLVES=${WALFLOW_MAX_CONCURRENT_SOLVES:-}
+      - UVICORN_WS_MAX_SIZE=${UVICORN_WS_MAX_SIZE:-2097152}
 
   ############################
   # WalFlow - Frontend & Nginx Proxy
@@ -34,3 +50,5 @@ services:
       - TZ=${TZ}
       - PUID=${PUID}
       - PGID=${PGID}
+      # Largest request body nginx accepts (cloud saves, /batch)
+      - NGINX_MAX_BODY_SIZE=${NGINX_MAX_BODY_SIZE:-5m}

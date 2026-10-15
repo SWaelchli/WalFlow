@@ -822,7 +822,8 @@ export default function Sidebar({
         setActiveDiagram(prev => ({
           ...prev,
           title: res.data.title,
-          description: res.data.description
+          description: res.data.description,
+          updated_at: res.data.updated_at
         }));
       }
       fetchWorkspaceFiles();
@@ -953,7 +954,8 @@ export default function Sidebar({
         setActiveDiagram({
           id: response.data.id,
           title: response.data.title,
-          description: response.data.description
+          description: response.data.description,
+          updated_at: response.data.updated_at
         });
       }
 
