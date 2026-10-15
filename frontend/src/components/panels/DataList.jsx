@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { confirmDialog } from '../../utils/dialogs';
 import { PlusIcon, PlayIcon, ExportIcon, CaseIcon, TrashIcon, SpinnerIcon } from '../symbols/IconLibrary';
 import { findClosestPipeMatch, ASME_PIPE_STANDARDS } from '../../utils/standards_library';
-import { getPipeScheduleDetails } from '../../constants/asme_b16_9_data';
+import { getPipeScheduleDetails, getAvailableSchedules } from '../../constants/asme_b16_9_data';
 
 import { updateCaseOverride, effectiveForcedState } from '../../utils/case_resolver';
 import { useUnits } from '../../context/UnitContext';
@@ -13,6 +13,7 @@ import { toSolverGraph } from '../../utils/diagramFile';
 import { computeCaseInputHashes, isCaseResultStale } from '../../utils/resultHash';
 
 
+import { clickableProps, clickableRowProps } from '../../utils/a11yProps';
 const autoSortLogic = (nodes, edges) => {
   const ordered = [];
   const visitedNodes = new Set();
@@ -51,7 +52,7 @@ const autoSortLogic = (nodes, edges) => {
 function SortHeader({ label, sortKey, sortConfig, requestSort, align = 'left' }) {
   const isSorted = sortConfig.key === sortKey;
   return (
-    <th onClick={() => requestSort(sortKey)} style={{ padding: '8px', cursor: 'pointer', textAlign: align, userSelect: 'none', backgroundColor: isSorted ? '#e2e8f0' : 'inherit', transition: 'background 0.2s' }}>
+    <th {...clickableRowProps} onClick={() => requestSort(sortKey)} style={{ padding: '8px', cursor: 'pointer', textAlign: align, userSelect: 'none', backgroundColor: isSorted ? '#e2e8f0' : 'inherit', transition: 'background 0.2s' }}>
       {label} {isSorted ? (sortConfig.direction === 'asc' ? '↑' : '↓') : '↕'}
     </th>
   );
@@ -762,7 +763,7 @@ export default function DataList({
                               ⚠️ Cavitation Risk
                             </span>
                           ) : (
-                            <span style={{ fontSize: '10px', fontWeight: '700', color: '#16a34a', background: '#f0fdf4', padding: '2px 8px', borderRadius: '10px', border: '1px solid #dcfce7' }}>
+                            <span style={{ fontSize: '10px', fontWeight: '700', color: '#166534', background: '#f0fdf4', padding: '2px 8px', borderRadius: '10px', border: '1px solid #dcfce7' }}>
                               ✓ Normal
                             </span>
                           )}
@@ -823,7 +824,7 @@ export default function DataList({
 
                     return (
                       <tr key={dev.id} style={{ borderBottom: '1px solid var(--color-border-hover)', background: idx % 2 === 0 ? '#FFFFFF' : '#F8FAFA', height: '36px' }}>
-                        <td 
+                        <td {...clickableProps} 
                           onClick={() => onSelectNode && onSelectNode(dev.id)} 
                           style={{ padding: '6px 12px', fontWeight: '700', color: 'var(--color-primary-text)', cursor: 'pointer', verticalAlign: 'middle' }}
                           title="Click to locate on canvas"
@@ -1139,7 +1140,7 @@ export default function DataList({
               const velWeight = vel > 2.5 ? '700' : 'normal';
 
               return (
-                <tr key={item.id} draggable={!sortConfig.key && !isEditing} onDragStart={(e) => onDragStart(e, entry.originalIndex)}
+                <tr {...clickableRowProps} key={item.id} draggable={!sortConfig.key && !isEditing} onDragStart={(e) => onDragStart(e, entry.originalIndex)}
                   onDragOver={(e) => onDragOver(e, entry.originalIndex)} onDrop={(e) => onDrop(e, entry.originalIndex)}
                   onClick={() => handleRowClick(entry)}
                   style={{ 
@@ -1214,9 +1215,14 @@ export default function DataList({
                           onMouseDown={(e) => e.stopPropagation()}
                         >
                           {isCustomId && <option value="" disabled>—</option>}
-                          {['STD', '40', '80', 'XS', '160'].map(s => (
-                            <option key={s} value={s}>{s}</option>
-                          ))}
+                          {(() => {
+                            const options = getAvailableSchedules(currentDn);
+                            // Keep a value the catalogue does not list for this size (e.g. an imported file) visible
+                            if (currentSch && !options.includes(currentSch)) options.push(currentSch);
+                            return options.map(s => (
+                              <option key={s} value={s} disabled={!getAvailableSchedules(currentDn).includes(s)}>{s}</option>
+                            ));
+                          })()}
                         </select>
                       ) : '—'}
                     </td>

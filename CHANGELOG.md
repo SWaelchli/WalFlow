@@ -39,6 +39,9 @@ All notable changes to the WälFlow project will be documented in this file.
 - **Result banners**: solver errors, non-physical results (vacuum, below vapour pressure, temperature out of range), unsettled control loops and unreadable values show as dismissible banners. A run without equations is reported as "Nothing to solve" instead of "converged".
 - **Out-of-date results**: the data lists are no longer greyed out and the canvas banner is gone; the navbar chip shows the state.
 - **Dialogs**: all native alert, confirm and prompt dialogs are replaced by toasts and in-app dialogs (focus stays inside and returns afterwards). New operating cases ask for a name.
+- **Help**: rewritten for the current UI, with a new Model & Limits tab (steady state only, Darcy-Weisbach friction, fluid ranges, simplified valve viscosity correction). Help button in the navbar; `Shift + ?` opens it.
+- **Pipe classes**: explainer on the catalogue page (what the solver uses and what is informational only). The schedule dropdown lists only the schedules the catalogue has for the selected size.
+- **Accessibility**: all dialogs have a dialog role, a title label, a focus trap and focus return; form labels are tied to their fields; clickable elements work with Enter and Space; visible focus rings; case and heatmap controls expose their state as text.
 - Shortcuts no longer act behind dialogs or block copying selected text. Welcome canvas and the large reference network are listed as examples; example notes say what to check.
 - DataList matrix table now allows direct selection of Piping Specifications rather than pipe schedules.
 - Added global Enter key handler to automatically blur/deselect text or numeric input fields on keypress, triggering validation and committing app updates.

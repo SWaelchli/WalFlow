@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { CrownIcon } from '../symbols/IconLibrary';
 
+import { modalA11yRef } from '../../hooks/useModalA11y';
 const AdminSetupModal = ({ isOpen, onClose }) => {
   const { setupFirstAdmin } = useAuth();
   const [username, setUsername] = useState('admin');
@@ -45,7 +46,7 @@ const AdminSetupModal = ({ isOpen, onClose }) => {
 
   return (
     <div className="modal-overlay">
-      <div className="modal-container" style={{ maxWidth: '460px' }}>
+      <div className="modal-container" ref={modalA11yRef} style={{ maxWidth: '460px' }}>
         {/* Header */}
         <div className="modal-header" style={{ padding: '24px 28px 18px 28px', flexDirection: 'column', alignItems: 'stretch' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '8px' }}>

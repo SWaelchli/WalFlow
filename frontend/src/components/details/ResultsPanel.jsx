@@ -8,6 +8,7 @@ import GenericDetails from './GenericDetails';
 import PressureSafetyValveDetails from './PressureSafetyValveDetails';
 import RuptureDiscDetails from './RuptureDiscDetails';
 
+import { clickableProps } from '../../utils/a11yProps';
 export default function ResultsPanel({ selectedNode, selectedEdge, allNodes, allEdges, unmitigatedTelemetry, inline = false }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -81,7 +82,7 @@ export default function ResultsPanel({ selectedNode, selectedEdge, allNodes, all
       gap: '15px',
       transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
     }}>
-      <div 
+      <div {...clickableProps} 
         onClick={() => setIsCollapsed(!isCollapsed)}
         style={{ 
           display: 'flex', 

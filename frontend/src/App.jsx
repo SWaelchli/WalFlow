@@ -782,6 +782,7 @@ function WalFlowContent() {
     undo,
     redo,
     onSaveShortcut: triggerManualCloudSave,
+    onOpenHelp: () => handleOpenHelpModal('shortcuts'),
   });
 
   // F3-18: right-click menus (components, pipes, empty canvas)

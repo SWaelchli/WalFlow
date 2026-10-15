@@ -209,6 +209,16 @@ export function getPipeOuterDiameter(dn) {
   return OD_MAP[dn] || 0.0;
 }
 
+const SCHEDULE_ORDER = ['STD', '40', '80', 'XS', '160'];
+
+/** Schedules the catalogue holds for a nominal size (DN), in the usual order. Empty for unknown sizes. */
+export function getAvailableSchedules(dn) {
+  const sizeObj = ASME_B36_10M_SCHEDULES.find(s => s.dn === Number(dn));
+  if (!sizeObj) return [];
+  const keys = Object.keys(sizeObj.schedules);
+  return [...SCHEDULE_ORDER.filter(k => keys.includes(k)), ...keys.filter(k => !SCHEDULE_ORDER.includes(k))];
+}
+
 export function getPipeScheduleDetails(dn, sch = 'STD') {
   const sizeObj = ASME_B36_10M_SCHEDULES.find(s => s.dn === Number(dn));
   if (!sizeObj) return null;

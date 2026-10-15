@@ -13,6 +13,8 @@ import {
 import { useUnits } from '../../context/UnitContext';
 import { invalidateFittingStandards } from '../../hooks/useFittingStandards';
 
+import { modalA11yRef } from '../../hooks/useModalA11y';
+import { clickableProps } from '../../utils/a11yProps';
 const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage }, ref) {
   const { isImperial } = useUnits();
 
@@ -426,7 +428,7 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
               const isSelected = item.id === selectedId;
               const dimCount = Array.isArray(item.dimensions) ? item.dimensions.length : 0;
               return (
-                <div
+                <div {...clickableProps}
                   key={item.id}
                   onClick={async () => {
                     if (isEditing) {
@@ -862,7 +864,7 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
       {/* CLONE STANDARD MODAL */}
       {isCloneModalOpen && (
         <div className="modal-overlay">
-          <div className="modal-container" style={{ maxWidth: '440px' }}>
+          <div className="modal-container" ref={modalA11yRef} style={{ maxWidth: '440px' }}>
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div style={{
@@ -931,7 +933,7 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
       {/* CREATE NEW STANDARD MODAL */}
       {isNewModalOpen && (
         <div className="modal-overlay">
-          <div className="modal-container" style={{ maxWidth: '480px' }}>
+          <div className="modal-container" ref={modalA11yRef} style={{ maxWidth: '480px' }}>
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div style={{

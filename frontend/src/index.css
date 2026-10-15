@@ -317,7 +317,8 @@ button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
-[role="button"]:focus-visible {
+[role="button"]:focus-visible,
+[tabindex]:focus-visible {
   outline: 2px solid var(--color-primary) !important;
   outline-offset: 2px !important;
 }
@@ -974,7 +975,6 @@ textarea:focus-visible,
 .context-menu-item:hover:not(:disabled),
 .context-menu-item:focus-visible {
   background: #EBF0EF;
-  outline: none;
 }
 .context-menu-item:disabled {
   color: var(--color-text-muted);

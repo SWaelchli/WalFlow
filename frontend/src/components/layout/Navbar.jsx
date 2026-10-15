@@ -3,6 +3,7 @@ import walflowLogo from '../../assets/Logo_WalFlow.svg';
 import { useAuth } from '../../hooks/useAuth';
 import { APP_VERSION, RELEASE_STAGE } from '../../constants';
 import StatusChip from './StatusChip';
+import { clickableProps } from '../../utils/a11yProps';
 import { 
   PlusIcon, 
   CloudIcon, 
@@ -13,7 +14,8 @@ import {
   SignOutIcon, 
   SignInIcon, 
   PlayIcon,
-  SpinnerIcon
+  SpinnerIcon,
+  HelpIcon,
 } from '../symbols/IconLibrary';
 
 export default function Navbar({
@@ -68,14 +70,14 @@ export default function Navbar({
       {/* Left: Brand Logo (300px aligned) + RUN Simulation & Case Switcher */}
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <div style={{ width: '316px', minWidth: '316px', display: 'flex', alignItems: 'flex-end', gap: '8px' }}>
-          <img
+          <img {...clickableProps}
             src={walflowLogo}
             alt="WälFlow Logo"
             onClick={() => onOpenHelpModal && onOpenHelpModal('about')}
             title="Click for Help & Documentation"
             style={{ height: '28px', display: 'block', cursor: 'pointer' }}
           />
-          <span
+          <span {...clickableProps}
             onClick={() => onOpenHelpModal && onOpenHelpModal('about')}
             title="Click for Help & Documentation"
             style={{
@@ -98,7 +100,7 @@ export default function Navbar({
           <button
             onClick={onCalculate}
             disabled={isSimulating}
-            title="Run hydraulic simulation for the active case (Ctrl + Enter)"
+            title="Run hydraulic simulation for the active case"
             className="btn-primary"
             style={{
               padding: '0 18px',
@@ -220,6 +222,17 @@ export default function Navbar({
           title="Open Piping Specifications Catalog (/pipes)"
         >
           Piping Classes
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onOpenHelpModal && onOpenHelpModal('guide')}
+          className="btn-secondary"
+          style={{ height: '34px', padding: '0 12px', borderRadius: '8px', fontSize: '12px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' }}
+          title="Help, user guide and model limits (Shift + ?)"
+        >
+          <HelpIcon size={14} />
+          Help
         </button>
 
         {isAdmin && (

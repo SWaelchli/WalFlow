@@ -4,6 +4,9 @@ import './index.css'
 import App from './App.jsx'
 import ErrorBoundary from './components/common/ErrorBoundary.jsx'
 import DialogHost from './components/common/DialogHost.jsx'
+import { observeLabelAssociation } from './utils/labelAssociation'
+
+observeLabelAssociation(document.body)
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

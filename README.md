@@ -18,6 +18,19 @@
 * **Colaborative Project Structure:** Create Projects and invite your team to work on your PFDs together .
 
 ---
+
+## Model & Limits
+
+WalFlow is a **steady-state** simulator: it solves the algebraic balance of pressures, flows and temperatures, with no time stepping (no transients, water hammer or dynamic filling).
+
+* **Friction:** Darcy-Weisbach with the Churchill (1977) friction factor, using the roughness of the piping spec.
+* **Fluids:** built-in properties are valid only over a limited temperature range per fluid (for example water 0 to 150 °C); runs outside the range are flagged.
+* **Control valves:** the viscosity correction is a simplified form of the IEC 60534-2-1 Reynolds factor (within about 12 % up to 30 cSt, 0.7 to 1.7 times the standard up to 1000 cSt); choked flow is not modelled.
+* **Not checked:** pipe class ratings, corrosion allowance, pump run-out and velocity limits are informational or unchecked. Review results against the applicable standards.
+
+The same text is in the app under **Help > Model & Limits**.
+
+---
 <img width="1033" height="667" alt="Untitled" src="https://github.com/user-attachments/assets/5839d719-bae1-4ee6-9179-d06644e6875b" />
 ---
 

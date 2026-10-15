@@ -23,6 +23,7 @@ export function useKeyboardShortcuts({
   undo,
   redo,
   onSaveShortcut,
+  onOpenHelp,
 }) {
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -117,6 +118,13 @@ export function useKeyboardShortcuts({
         return;
       }
 
+      // Help: Shift + ? (opens the Help screen; Esc closes it)
+      if (e.key === '?' && !isMod) {
+        e.preventDefault();
+        if (onOpenHelp) onOpenHelp();
+        return;
+      }
+
       // Deselect / Cancel: Escape
       if (e.key === 'Escape') {
         e.preventDefault();
@@ -138,5 +146,6 @@ export function useKeyboardShortcuts({
     undo,
     redo,
     onSaveShortcut,
+    onOpenHelp,
   ]);
 }

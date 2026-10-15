@@ -86,7 +86,6 @@ export default function CaseManager({
             text-align: left;
             font-family: inherit;
             transition: all 0.15s ease;
-            outline: none;
           }
           .case-manager-btn:hover {
             background-color: var(--color-surface-hover);
@@ -110,7 +109,6 @@ export default function CaseManager({
             align-items: center;
             justify-content: center;
             transition: all 0.15s ease;
-            outline: none;
           }
           .case-manager-close:hover {
             background-color: var(--color-surface-hover);
@@ -176,6 +174,7 @@ export default function CaseManager({
               <button
                 key={mode.id}
                 onClick={() => onToggleTelemetryMode && onToggleTelemetryMode(mode.id)}
+                aria-pressed={isActive}
                 title={mode.desc}
                 className="case-manager-btn"
                 style={{
@@ -200,6 +199,7 @@ export default function CaseManager({
                 }}>
                   {mode.label}
                 </span>
+                {isActive && <span aria-hidden="true" style={{ marginLeft: 'auto', fontSize: '11px', fontWeight: 700, color: mode.textActive }}>✓ On</span>}
               </button>
             );
           })}

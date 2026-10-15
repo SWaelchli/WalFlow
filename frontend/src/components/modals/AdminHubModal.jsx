@@ -3,6 +3,7 @@ import { confirmDialog } from '../../utils/dialogs';
 import { useAuth } from '../../hooks/useAuth';
 import { CrownIcon, CrossIcon, TrashIcon, ExportIcon, InfoIcon, UserIcon, CloudIcon } from '../symbols/IconLibrary';
 
+import { modalA11yRef } from '../../hooks/useModalA11y';
 const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
   const {
     fetchUsers,
@@ -210,7 +211,7 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
 
   return (
     <div className="modal-overlay">
-      <div className="modal-container" style={{ maxWidth: '1080px', maxHeight: '88vh' }}>
+      <div className="modal-container" ref={modalA11yRef} style={{ maxWidth: '1080px', maxHeight: '88vh' }}>
         {/* Modal Header */}
         <div className="modal-header" style={{ padding: '24px 28px 16px 28px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
@@ -732,7 +733,7 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
       {/* Delete Confirmation Modal Popup */}
       {diagramToDelete && (
         <div className="modal-overlay" style={{ zIndex: 10000 }}>
-          <div className="modal-container" style={{
+          <div className="modal-container" ref={modalA11yRef} style={{
             maxWidth: '440px',
             padding: '24px',
             border: '1px solid var(--color-danger)',
@@ -778,7 +779,7 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
       {/* Edit Metadata Modal Popup */}
       {editingDiagram && (
         <div className="modal-overlay" style={{ zIndex: 10000 }}>
-          <form onSubmit={handleSaveMetadata} className="modal-container" style={{
+          <form onSubmit={handleSaveMetadata} className="modal-container" ref={modalA11yRef} style={{
             maxWidth: '460px',
             padding: '24px'
           }}>

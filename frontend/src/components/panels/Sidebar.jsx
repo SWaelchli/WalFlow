@@ -13,6 +13,7 @@ import DraftNumberInput from '../common/DraftNumberInput';
 
 
 
+import { clickableProps } from '../../utils/a11yProps';
 const categorizedEquipment = [
   {
     name: 'Fluid Sources',
@@ -213,7 +214,7 @@ function DiagnosticsContent({ stats, batchStats, onSelectComponent }) {
           )}
 
           {bottleneck && !success && (
-            <div 
+            <div {...clickableProps} 
               onClick={() => bottleneck.id && onSelectComponent && onSelectComponent(bottleneck.id, bottleneck.type)}
               className="sidebar-bottleneck-card"
               style={{ cursor: bottleneck.id ? 'pointer' : 'default' }}
@@ -319,7 +320,7 @@ function DiagnosticsContent({ stats, batchStats, onSelectComponent }) {
                     </div>
 
                     {selectedCase.bottleneck && !caseSuccess && (
-                      <div 
+                      <div {...clickableProps} 
                         onClick={() => selectedCase.bottleneck.id && onSelectComponent && onSelectComponent(selectedCase.bottleneck.id, selectedCase.bottleneck.type)}
                         className="sidebar-bottleneck-card"
                         style={{ cursor: selectedCase.bottleneck.id ? 'pointer' : 'default' }}
@@ -526,7 +527,7 @@ function ProjectFolderRow({ project, isExpanded, onToggle, onManage }) {
         color: '#1C2B2C'
       }}
     >
-      <div onClick={onToggle} style={{ display: 'flex', alignItems: 'center', gap: '6px', flexGrow: 1, overflow: 'hidden' }}>
+      <div {...clickableProps} onClick={onToggle} style={{ display: 'flex', alignItems: 'center', gap: '6px', flexGrow: 1, overflow: 'hidden' }}>
         <span style={{ fontSize: '9px', color: '#587071', width: '10px' }}>{isExpanded ? '▼' : '▶'}</span>
         <span style={{ color: '#FA8507' }}>📁</span>
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{project.title}</span>
@@ -582,7 +583,7 @@ function DiagramRow({ diagram, isActive, isHighlighted, onClick, onOpen, onToggl
         transition: 'all 0.15s ease'
       }}
     >
-      <div 
+      <div {...clickableProps} 
         onClick={onClick}
         onDoubleClick={onOpen}
         style={{ display: 'flex', alignItems: 'center', gap: '6px', flexGrow: 1, overflow: 'hidden' }}

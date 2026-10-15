@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { SignInIcon, UserIcon, CrossIcon } from '../symbols/IconLibrary';
 
+import { modalA11yRef } from '../../hooks/useModalA11y';
 const LoginModal = ({ isOpen, onClose }) => {
   const { login, register } = useAuth();
   const [mode, setMode] = useState('login'); // 'login' or 'register'
@@ -68,7 +69,7 @@ const LoginModal = ({ isOpen, onClose }) => {
 
   return (
     <div className="modal-overlay">
-      <div className="modal-container" style={{ maxWidth: '440px' }}>
+      <div className="modal-container" ref={modalA11yRef} style={{ maxWidth: '440px' }}>
         {/* Header */}
         <div className="modal-header" style={{ padding: '24px 28px 16px 28px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>

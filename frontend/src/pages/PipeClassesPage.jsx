@@ -21,6 +21,8 @@ import {
 } from '../components/symbols/IconLibrary';
 import FittingStandardsTab from '../components/piping/FittingStandardsTab';
 
+import { modalA11yRef } from '../hooks/useModalA11y';
+import { clickableProps, clickableRowProps } from '../utils/a11yProps';
 const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, onOpenHelpModal }) => {
   const { currentUser, isAuthenticated, isAdmin, adminStatus, logout } = useAuth();
   const { isImperial } = useUnits();
@@ -640,7 +642,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
               title="Click for Help & Documentation"
               style={{ height: '28px', display: 'block', cursor: 'pointer' }}
             />
-            <span
+            <span {...clickableProps}
               onClick={() => onOpenHelpModal && onOpenHelpModal('about')}
               title="Click for Help & Documentation"
               style={{
@@ -1045,7 +1047,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
             {!loading && filteredClasses.map(pc => {
               const isSelected = (!isNewDraft && activeClass?.id === pc.id);
               return (
-                <div
+                <div {...clickableProps}
                   key={pc.id}
                   onClick={() => handleSelectSidebarClass(pc.id)}
                   style={{
@@ -1089,6 +1091,27 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
         <main style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', padding: '24px', gap: '20px' }}>
           {currentSpec ? (
             <>
+              <details
+                data-testid="pipe-class-explainer"
+                style={{ backgroundColor: '#F4F7F6', border: '1px solid var(--color-border)', borderRadius: '12px', padding: '10px 16px', fontSize: '12px', color: 'var(--color-text-secondary)', lineHeight: 1.6 }}
+              >
+                <summary style={{ cursor: 'pointer', fontWeight: 700, color: 'var(--color-brand-dark)' }}>What is a pipe class, and what does the solver use?</summary>
+                <div style={{ marginTop: '8px' }}>
+                  <p style={{ margin: '0 0 6px' }}>
+                    A pipe class (piping specification) describes the pipe, fittings and material approved for a service: the available sizes and schedules, the material group and the pressure rating. A drawing takes its pipe sizes from the class chosen in the project.
+                  </p>
+                  <p style={{ margin: '0 0 6px' }}>
+                    <strong>Used by the solver:</strong> inside diameter (from size and schedule or wall thickness) and wall roughness ε, which set the friction loss.
+                  </p>
+                  <p style={{ margin: '0 0 6px' }}>
+                    <strong>Informational only, not checked:</strong> pressure rating (e.g. CL150), the P-T rating table and corrosion allowance. WalFlow does not compare calculated pressures or temperatures with these values and does not reduce the wall for corrosion.
+                  </p>
+                  <p style={{ margin: 0 }}>
+                    <strong>TR2000</strong> is Equinor's piping class database. Importing a specification copies its sizes, schedules and ratings into the catalogue; later changes at Equinor are not synchronised.
+                  </p>
+                </div>
+              </details>
+
               {/* Header Spec Banner Card */}
               <div style={{
                 backgroundColor: '#FFFFFF',
@@ -1648,7 +1671,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
       {/* NEW PIPE CLASS MINI-DIALOG */}
       {isNewClassModalOpen && (
         <div className="modal-overlay">
-          <div className="modal-container" style={{ maxWidth: '440px' }}>
+          <div className="modal-container" ref={modalA11yRef} style={{ maxWidth: '440px' }}>
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div style={{
@@ -1719,7 +1742,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
       {/* EQUINOR TR2000 IMPORTER MODAL */}
       {isTr2000ModalOpen && (
         <div className="modal-overlay">
-          <div className="modal-container" style={{ maxWidth: '800px', maxHeight: '90vh' }}>
+          <div className="modal-container" ref={modalA11yRef} style={{ maxWidth: '800px', maxHeight: '90vh' }}>
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div style={{
@@ -1963,7 +1986,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                           const isSelected = selectedTr2000Codes.has(code);
 
                           return (
-                            <tr
+                            <tr {...clickableRowProps}
                               key={idx}
                               onClick={() => handleToggleSelectTr2000Spec(code)}
                               style={{
@@ -2046,7 +2069,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
       {/* DUPLICATE SPECIFICATION CONFLICT RESOLUTION MODAL */}
       {isConflictModalOpen && (
         <div className="modal-overlay" style={{ zIndex: 20000 }}>
-          <div className="modal-container" style={{ maxWidth: '600px' }}>
+          <div className="modal-container" ref={modalA11yRef} style={{ maxWidth: '600px' }}>
 
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -2209,7 +2232,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
 
       {isImportReportModalOpen && importReport && (
         <div className="modal-overlay">
-          <div className="modal-container" style={{ maxWidth: '520px' }}>
+          <div className="modal-container" ref={modalA11yRef} style={{ maxWidth: '520px' }}>
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div style={{

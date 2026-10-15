@@ -6,6 +6,8 @@ import { useAuth } from '../../hooks/useAuth';
 import { FILE_FORMAT_VERSION, APP_VERSION, FILE_EXTENSION } from '../../constants';
 import { CloudIcon, ExportIcon, ImportIcon, TrashIcon, CrossIcon, PlusIcon } from '../symbols/IconLibrary';
 
+import { modalA11yRef } from '../../hooks/useModalA11y';
+import { clickableProps } from '../../utils/a11yProps';
 const ProjectManagerModal = ({
   isOpen,
   onClose,
@@ -414,7 +416,7 @@ const ok = await confirmDialog({
 
   return (
     <div className="modal-overlay">
-      <div className="modal-container" style={{ maxWidth: '820px', maxHeight: '90vh' }}>
+      <div className="modal-container" ref={modalA11yRef} style={{ maxWidth: '820px', maxHeight: '90vh' }}>
         <style>
           {`
             .breadcrumb-link {
@@ -449,7 +451,7 @@ const ok = await confirmDialog({
                   <span>Projects Manager</span>
                 ) : (
                   <span style={{ fontSize: '16px' }}>
-                    <span onClick={() => setCurrentView("projects")} className="breadcrumb-link">Projects</span>
+                    <span {...clickableProps} onClick={() => setCurrentView("projects")} className="breadcrumb-link">Projects</span>
                     <span style={{ margin: '0 6px', color: 'var(--color-text-secondary)' }}>/</span>
                     <span style={{ color: 'var(--color-text-primary)' }}>{projectDetail?.title}</span>
                   </span>

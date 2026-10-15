@@ -30,6 +30,7 @@ import { resolvePipeSelection, matchScheduleByInnerDiameter } from '../../utils/
 import DraftNumberInput from '../common/DraftNumberInput';
 
 
+import { clickableProps } from '../../utils/a11yProps';
 function PropertyBadge({ propKey, nodeId, cases = [], activeCaseId = 'case_base', onResetOverride }) {
   const isCaseVar = isCaseVariableProperty(propKey);
   const activeCaseObj = cases.find(c => c.id === activeCaseId);
@@ -709,7 +710,7 @@ export default function SetupPanel({
           borderBottom: isCollapsed ? 'none' : '1px solid #EBF0EF',
           paddingBottom: isCollapsed ? '0px' : '12px'
         }}>
-          <div 
+          <div {...clickableProps} 
             style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
             onClick={() => setIsCollapsed(!isCollapsed)}
           >

@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useAuth } from '../../hooks/useAuth';
 import { CrossIcon } from '../symbols/IconLibrary';
 
+import { modalA11yRef } from '../../hooks/useModalA11y';
 const SaveAsModal = ({ isOpen, onClose, onSaveAs, currentTitle = "" }) => {
   const { isAuthenticated } = useAuth();
   const [title, setTitle] = useState("");
@@ -95,7 +96,7 @@ const SaveAsModal = ({ isOpen, onClose, onSaveAs, currentTitle = "" }) => {
 
   return (
     <div className="modal-overlay">
-      <div className="modal-container" style={{ maxWidth: '480px' }}>
+      <div className="modal-container" ref={modalA11yRef} style={{ maxWidth: '480px' }}>
         {/* Header */}
         <div className="modal-header">
           <h3 className="modal-title">

@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { APP_VERSION, RELEASE_STAGE, FILE_FORMAT_VERSION } from '../../constants';
 import { InfoIcon, CrossIcon, KeyboardIcon, BookIcon } from '../symbols/IconLibrary';
 
+import { GUIDE_SECTIONS, MODEL_SECTIONS } from './helpContent';
+import { modalA11yRef } from '../../hooks/useModalA11y';
 const SHORTCUT_GROUPS = [
   {
     title: 'Selection & Manipulation',
@@ -21,7 +23,7 @@ const SHORTCUT_GROUPS = [
       { keys: ['Ctrl', 'S'], label: 'Manual save session draft or cloud project' },
       { keys: ['Ctrl', 'Z'], label: 'Undo previous canvas action' },
       { keys: ['Ctrl', 'Y'], extraKeys: ['Ctrl', 'Shift', 'Z'], label: 'Redo canvas action' },
-      { keys: ['Shift', '?'], label: 'Toggle Help & Info screen' },
+      { keys: ['Shift', '?'], label: 'Open this Help screen (Esc closes it)' },
     ],
   },
 ];
@@ -54,6 +56,7 @@ export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts
     >
       <div
         className="modal-container"
+        ref={modalA11yRef}
         style={{
           maxWidth: '680px',
           maxHeight: '85vh',
@@ -92,6 +95,7 @@ export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts
             className="modal-close-btn"
             style={{ padding: '6px 10px' }}
             title="Close"
+            aria-label="Close help"
           >
             <CrossIcon size={18} />
           </button>
@@ -117,6 +121,12 @@ export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts
             onClick={() => setActiveTab('guide')}
           >
             <BookIcon size={14} /> User Guide
+          </button>
+          <button
+            className={`modal-tab-btn ${activeTab === 'model' ? 'active' : ''}`}
+            onClick={() => setActiveTab('model')}
+          >
+            <InfoIcon size={14} /> Model & Limits
           </button>
           <button
             className={`modal-tab-btn ${activeTab === 'about' ? 'active' : ''}`}
@@ -302,83 +312,17 @@ export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts
             </div>
           )}
 
-          {/* TAB 3: EXPANDED USER GUIDE */}
-          {activeTab === 'guide' && (
+          {/* TAB 3: USER GUIDE and TAB 4: MODEL & LIMITS */}
+          {(activeTab === 'guide' || activeTab === 'model') && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', lineHeight: '1.6' }}>
-              {/* 1. Canvas & Diagram Construction */}
-              <div style={{ backgroundColor: 'var(--color-surface-hover)', borderRadius: '12px', padding: '18px 20px', border: '1px solid var(--color-border)' }}>
-                <h4 style={{ margin: '0 0 8px 0', fontSize: '15px', color: 'var(--color-primary-text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  1. Canvas & Diagram Construction
-                </h4>
-                <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--color-text-secondary)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <li><strong>Drag & Drop Equipment:</strong> Drag pumps (Centrifugal & Volumetric), tanks, control valves, pressure regulators, orifices, filters, heat exchangers, or 3-way TCVs from the left sidebar onto the canvas.</li>
-                  <li><strong>Port Wiring:</strong> Connect blue inlet handles (left) to red outlet handles (right) to build hydraulic pipe runs. Drag yellow handles for signal controls.</li>
-                  <li><strong>Canvas Shortcuts:</strong> Rotate nodes (`R`), Copy (`Ctrl+C`), Paste (`Ctrl+V`), Duplicate (`Ctrl+D`), Delete (`Delete`), or Select All (`Ctrl+A`).</li>
-                </ul>
-              </div>
-
-              {/* 2. Global Fluid & Solver Settings */}
-              <div style={{ backgroundColor: 'var(--color-surface-hover)', borderRadius: '12px', padding: '18px 20px', border: '1px solid var(--color-border)' }}>
-                <h4 style={{ margin: '0 0 8px 0', fontSize: '15px', color: 'var(--color-primary-text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  2. Global Fluid & System Settings
-                </h4>
-                <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: 'var(--color-text-secondary)' }}>
-                  Expand the <strong>Global Settings</strong> accordion in the left sidebar to configure simulation physical parameters:
-                </p>
-                <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--color-text-secondary)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <li><strong>Fluid Properties:</strong> Select working fluid (Water, ISO VG 46 Oil, Glycol) to automatically apply density and dynamic viscosity models.</li>
-                  <li><strong>Environment:</strong> Set ambient temperature (K) and atmospheric reference pressure (Pa).</li>
-                  <li><strong>Solver Configuration:</strong> Tune numerical solver method (`sparse_newton` or `lm`), inner iteration limits, control iterations, and convergence tolerance ($10^{-6}$).</li>
-                </ul>
-              </div>
-
-              {/* 3. Property Editor & Live Tuning */}
-              <div style={{ backgroundColor: 'var(--color-surface-hover)', borderRadius: '12px', padding: '18px 20px', border: '1px solid var(--color-border)' }}>
-                <h4 style={{ margin: '0 0 8px 0', fontSize: '15px', color: 'var(--color-primary-text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  3. Property Editor & Equipment Parameters
-                </h4>
-                <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--color-text-secondary)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <li><strong>Component Selection:</strong> Click any node or pipe on the canvas to inspect its parameters in the <strong>Property Editor</strong> on the right.</li>
-                  <li><strong>Parameter Customization:</strong> Adjust pump rated flow rate ($L/min$) & rated head ($m$), valve $Cv$ capacity, setpoint pressures ($Pa$), filter clean/terminal pressure drops, or pipe diameter ($m$) and length ($m$).</li>
-                  <li><strong>Live Valve Control:</strong> Drag opening % sliders on control valves to observe dynamic flow and pressure redistributions in real time!</li>
-                </ul>
-              </div>
-
-              {/* 4. Real-Time Telemetry & Performance Stats */}
-              <div style={{ backgroundColor: 'var(--color-surface-hover)', borderRadius: '12px', padding: '18px 20px', border: '1px solid var(--color-border)' }}>
-                <h4 style={{ margin: '0 0 8px 0', fontSize: '15px', color: 'var(--color-primary-text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  4. Simulation Engine, Telemetry & Stats
-                </h4>
-                <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--color-text-secondary)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <li><strong>Run Simulation:</strong> Click <strong>Calculate</strong> to send the PFD topology to the Python FastAPI physics solver via WebSocket.</li>
-                  <li><strong>Solver Performance Stats:</strong> Inspect total iterations, solver convergence status, residual error, and overall mass/volume balance.</li>
-                  <li><strong>Live Telemetry:</strong> View calculated inlet/outlet pressures ($bar(a)$), volumetric flow rates ($L/min$), temperatures ($^\circ C$), and flow velocities ($m/s$).</li>
-                  <li><strong>Detail Graphs:</strong> Inspect pump curves, valve characteristic curves, and pressure profile plots in the <strong>Detail Panel</strong>.</li>
-                </ul>
-              </div>
-
-              {/* 5. Heatmap Visualizations */}
-              <div style={{ backgroundColor: 'var(--color-surface-hover)', borderRadius: '12px', padding: '18px 20px', border: '1px solid var(--color-border)' }}>
-                <h4 style={{ margin: '0 0 8px 0', fontSize: '15px', color: 'var(--color-primary-text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  5. Heatmap Visualizations
-                </h4>
-                <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--color-text-secondary)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <li><strong>Toggle Heatmaps:</strong> Click the 🎨 button in the canvas controls bar to overlay thermal gradients onto the pipes.</li>
-                  <li><strong>Modes:</strong> Switch between <strong>Pressure Gradient</strong> ($bar(a)$), <strong>Temperature Profile</strong> ($^\circ C$), <strong>Volume Flow</strong> ($l/min$), and <strong>Velocity</strong> ($m/s$).</li>
-                  <li><strong>Custom Scale Ranges:</strong> Toggle auto-scaling or manually define custom min/max bounds via the floating Heatmap Legend.</li>
-                </ul>
-              </div>
-
-              {/* 6. Save, Load & PFD Preset Templates */}
-              <div style={{ backgroundColor: 'var(--color-surface-hover)', borderRadius: '12px', padding: '18px 20px', border: '1px solid var(--color-border)' }}>
-                <h4 style={{ margin: '0 0 8px 0', fontSize: '15px', color: 'var(--color-primary-text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  6. Save, Load & Preset PFD Templates
-                </h4>
-                <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--color-text-secondary)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <li><strong>Save & Load .wlf:</strong> Export your PFD model configuration to `walflow-diagram.wlf` or restore previously saved project files (`.wlf` or legacy `.json`). You can also drag and drop `.wlf` files directly onto the canvas.</li>
-                  <li><strong>Built-in Templates:</strong> Load pre-configured industrial examples from the top dropdown: *Standard PFD*, *Volumetric Pump*, *PRV System*, *BPR System*, *API 614 LOS*, or *Remote Control Test*.</li>
-                </ul>
-              </div>
+              {(activeTab === 'guide' ? GUIDE_SECTIONS : MODEL_SECTIONS).map((section) => (
+                <section key={section.title} style={{ backgroundColor: 'var(--color-surface-hover)', borderRadius: '12px', padding: '18px 20px', border: '1px solid var(--color-border)' }}>
+                  <h3 style={{ margin: '0 0 8px 0', fontSize: '15px', color: 'var(--color-primary-text)' }}>{section.title}</h3>
+                  <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--color-text-secondary)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {section.items.map((item, i) => <li key={i}>{item}</li>)}
+                  </ul>
+                </section>
+              ))}
             </div>
           )}
         </div>

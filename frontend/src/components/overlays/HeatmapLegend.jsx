@@ -102,7 +102,6 @@ export default function HeatmapLegend({
             align-items: center;
             justifyContent: center;
             transition: all 0.15s ease;
-            outline: none;
           }
           .heatmap-legend-close:hover {
             background-color: var(--color-surface-hover);
@@ -122,7 +121,6 @@ export default function HeatmapLegend({
             transition: all 0.15s ease;
             whiteSpace: 'nowrap';
             textAlign: 'center';
-            outline: none;
           }
           .heatmap-mode-pill:focus-visible {
             border-color: var(--color-primary);
@@ -160,6 +158,7 @@ export default function HeatmapLegend({
           <button
             key={mode.id}
             onClick={() => onModeChange(mode.id)}
+            aria-pressed={heatmapMode === mode.id}
             className="heatmap-mode-pill"
             style={{
               fontWeight: heatmapMode === mode.id ? 700 : 500,
@@ -192,8 +191,7 @@ export default function HeatmapLegend({
               color: autoScale ? 'var(--color-text-inverse)' : 'var(--color-text-secondary)',
               boxShadow: autoScale ? '0 2px 6px var(--color-primary-glow)' : 'none',
               transition: 'all 0.2s ease',
-              whiteSpace: 'nowrap',
-              outline: 'none'
+              whiteSpace: 'nowrap'
             }}
             title={autoScale ? 'Auto-Scaling is ON (click to switch to manual bounds)' : 'Auto-Scaling is OFF (click to auto-detect system limits)'}
           >
@@ -216,7 +214,7 @@ export default function HeatmapLegend({
       </div>
 
       {/* Gradient Bar */}
-      <div style={{
+      <div role="img" aria-label={`${config.title} colour scale from minimum to maximum, values given below`} style={{
         height: '10px',
         width: '100%',
         borderRadius: '5px',
@@ -237,6 +235,7 @@ export default function HeatmapLegend({
             <input
               type="number"
               step="0.5"
+              aria-label={`Minimum (${config.unit})`}
               value={customRange?.min ?? 0}
               onChange={(e) => onUpdateCustomRange && onUpdateCustomRange(parseFloat(e.target.value) || 0, customRange?.max ?? 10)}
               className="form-input"
@@ -259,6 +258,7 @@ export default function HeatmapLegend({
             <input
               type="number"
               step="0.5"
+              aria-label={`Maximum (${config.unit})`}
               value={customRange?.max ?? 10}
               onChange={(e) => onUpdateCustomRange && onUpdateCustomRange(customRange?.min ?? 0, parseFloat(e.target.value) || 10)}
               className="form-input"
