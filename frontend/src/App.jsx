@@ -51,7 +51,7 @@ import { PipeClassesPage, HelpInfoModal, LoginModal, ProjectManagerModal, AdminS
 import HeatmapLegend from './components/overlays/HeatmapLegend';
 
 import CanvasLoadingOverlay from './components/overlays/CanvasLoadingOverlay';
-import { FlameIcon, CaseIcon, HelpIcon } from './components/symbols/IconLibrary';
+import { FlameIcon, CaseIcon, HelpIcon, InboxIcon, CrossIcon } from './components/symbols/IconLibrary';
 import CaseManager from './components/overlays/CaseManager';
 import { AuthProvider } from './context/AuthProvider';
 import { useAuth } from './hooks/useAuth';
@@ -306,6 +306,7 @@ function WalFlowContent() {
     isSimulating,
     isConnected,
     lastStats,
+    lastRunAt,
     resetRunState,
     runSimulation,
     handleValveChange,
@@ -1365,10 +1366,19 @@ function WalFlowContent() {
         cases={cases}
         activeCaseId={activeCaseId}
         onSelectCase={setActiveCaseId}
-        onAddCase={handleAddCase}
         activeProject={activeProject}
         activeDiagram={activeDiagram}
+        saveStatus={saveStatus}
+        lastSavedTimestamp={lastSavedTimestamp}
+        isLockedByOther={isLockedByOther}
+        onNewDrawing={handleOpenNewDrawingModal}
+        onOpenDrawing={() => handleOpenProjectManagerModal(null)}
+        onSave={triggerManualCloudSave}
+        onSaveAs={handleOpenSaveAsModal}
+        onImportFile={() => document.getElementById('sidebar-file-upload').click()}
+        onExportFile={onSave}
         runStatus={runStatus}
+        lastRunAt={lastRunAt}
         findings={validation}
         statusNotes={runSummary?.notes || []}
         runError={runError}
@@ -1485,18 +1495,14 @@ function WalFlowContent() {
               pointerEvents: 'none',
               transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
             }}>
-              <div style={{
-                fontSize: '64px',
-                marginBottom: '16px',
-                filter: 'drop-shadow(0 4px 12px rgba(250, 133, 7, 0.5))'
-              }}>
-                📥
+              <div style={{ marginBottom: '16px' }}>
+                <InboxIcon size={56} color="var(--color-primary)" />
               </div>
-              <h2 style={{ color: '#FFFFFF', margin: '0 0 8px 0', fontSize: '24px', fontWeight: '700', letterSpacing: '-0.01em' }}>
-                Drop .wlf File to Import Diagram
+              <h2 style={{ color: '#FFFFFF', margin: '0 0 8px 0', fontSize: 'var(--fs-2xl)', fontWeight: '700', letterSpacing: '-0.01em' }}>
+                Drop a .wlf file to open it
               </h2>
-              <p style={{ color: '#94A3B8', margin: 0, fontSize: '14px', fontWeight: '500' }}>
-                Release anywhere on the canvas to load PFD configuration
+              <p style={{ color: 'var(--color-text-muted)', margin: 0, fontSize: 'var(--fs-md)', fontWeight: '500' }}>
+                Release anywhere on the canvas to load the drawing
               </p>
             </div>
           )}
@@ -1515,7 +1521,7 @@ function WalFlowContent() {
                 style={{
                   pointerEvents: 'auto', width: '100%', boxSizing: 'border-box',
                   display: 'flex', alignItems: 'center', gap: '12px',
-                  padding: '8px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: 600,
+                  padding: '8px 12px', borderRadius: '8px', fontSize: 'var(--fs-sm)', fontWeight: 600,
                   background: '#FEF2F2', border: '1px solid #FEE2E2', color: '#B91C1C',
                   boxShadow: '0 2px 8px rgba(28, 43, 44, 0.12)'
                 }}
@@ -1566,21 +1572,26 @@ function WalFlowContent() {
             <Controls>
               <ControlButton 
                 onClick={() => setHeatmapSettings(prev => ({ ...prev, mode: prev.mode === 'default' ? 'pressure' : 'default' }))}
-                title={heatmapSettings.mode === 'default' ? "Turn On Heatmap" : "Turn Off Heatmap"}
+                title={heatmapSettings.mode === 'default' ? "Show pressure heatmap" : "Hide pressure heatmap"}
+                aria-label="Pressure heatmap"
+                aria-pressed={heatmapSettings.mode !== 'default'}
                 className={heatmapSettings.mode !== 'default' ? 'active' : ''}
               >
                 <FlameIcon size={14} />
               </ControlButton>
               <ControlButton 
                 onClick={() => setShowCaseManager(prev => !prev)}
-                title={showCaseManager ? "Hide Case Manager" : "Show Case Manager"}
+                title={showCaseManager ? "Hide case manager" : "Show case manager"}
+                aria-label="Case manager"
+                aria-pressed={showCaseManager}
                 className={showCaseManager ? 'active' : ''}
               >
                 <CaseIcon size={14} />
               </ControlButton>
               <ControlButton 
                 onClick={() => handleOpenHelpModal('shortcuts')}
-                title="Help & Information (?)"
+                title="Keyboard shortcuts and help (?)"
+                aria-label="Keyboard shortcuts and help"
               >
                 <HelpIcon size={14} />
               </ControlButton>
@@ -1646,7 +1657,7 @@ function WalFlowContent() {
                 border: '1px solid var(--color-brand-dark)',
                 borderRadius: '12px',
                 padding: '12px 18px',
-                fontSize: '13px',
+                fontSize: 'var(--fs-base)',
                 fontWeight: '600',
                 boxShadow: '0 10px 25px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--color-primary-tint)',
                 zIndex: 99999,
@@ -1665,8 +1676,8 @@ function WalFlowContent() {
               </style>
               <div style={{ width: '8px', height: '8px', minWidth: '8px', borderRadius: '50%', backgroundColor: 'var(--color-success)', display: 'inline-block' }} />
               <div>
-                <div style={{ fontWeight: '700', color: 'var(--color-primary-text)' }}>Restored Session Draft</div>
-                <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontWeight: '400', marginTop: '1px' }}>
+                <div style={{ fontWeight: '700', color: 'var(--color-primary-text)' }}>Restored unsaved drawing</div>
+                <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-muted)', fontWeight: '400', marginTop: '1px' }}>
                   {restoredDraftTime ? `Restored workspace saved at ${restoredDraftTime}` : 'Restored previous unsaved workspace'}
                 </div>
               </div>
@@ -1677,12 +1688,15 @@ function WalFlowContent() {
                   border: 'none',
                   color: '#B8C9C8',
                   cursor: 'pointer',
-                  fontSize: '14px',
+                  fontSize: 'var(--fs-md)',
                   padding: '2px 6px',
-                  borderRadius: '4px'
+                  borderRadius: '4px',
+                  display: 'inline-flex',
+                  alignItems: 'center'
                 }}
+                aria-label="Dismiss"
               >
-                ✕
+                <CrossIcon size={14} />
               </button>
             </div>
           )}

@@ -103,9 +103,9 @@ const NewDrawingModal = ({ isOpen, onClose, onCreateNew }) => {
         {/* Header */}
         <div className="modal-header">
           <h3 className="modal-title">
-            New PFD Drawing
+            New drawing
           </h3>
-          <button onClick={onClose} className="modal-close-btn" title="Close">
+          <button onClick={onClose} className="modal-close-btn" title="Close" aria-label="Close">
             <CrossIcon size={16} />
           </button>
         </div>
@@ -115,7 +115,7 @@ const NewDrawingModal = ({ isOpen, onClose, onCreateNew }) => {
           {error && (
             <div style={{
               color: 'var(--color-danger-text)',
-              fontSize: '12px',
+              fontSize: 'var(--fs-sm)',
               padding: '10px 12px',
               backgroundColor: 'rgba(239, 68, 68, 0.12)',
               borderRadius: '8px',
@@ -126,38 +126,38 @@ const NewDrawingModal = ({ isOpen, onClose, onCreateNew }) => {
           )}
 
           <div>
-            <label style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', marginBottom: '6px' }}>Drawing Title</label>
+            <label style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: 'var(--fs-xs)', fontWeight: '600', marginBottom: '6px' }}>Drawing title</label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Lube Oil Loop"
               className="form-input"
-              style={{ width: '100%', height: '36px', fontSize: '13px' }}
+              style={{ width: '100%', height: '36px', fontSize: 'var(--fs-base)' }}
               required
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', marginBottom: '6px' }}>Description</label>
+            <label style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: 'var(--fs-xs)', fontWeight: '600', marginBottom: '6px' }}>Description</label>
             <input
               type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Short drawing description (optional)"
               className="form-input"
-              style={{ width: '100%', height: '36px', fontSize: '13px' }}
+              style={{ width: '100%', height: '36px', fontSize: 'var(--fs-base)' }}
             />
           </div>
 
           {isAuthenticated ? (
             <div>
-              <label style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', marginBottom: '6px' }}>Creation Destination</label>
+              <label style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: 'var(--fs-xs)', fontWeight: '600', marginBottom: '6px' }}>Creation destination</label>
               <select
                 value={destType}
                 onChange={(e) => setDestType(e.target.value)}
                 className="form-select"
-                style={{ width: '100%', height: '36px', fontSize: '13px', marginBottom: '12px' }}
+                style={{ width: '100%', height: '36px', fontSize: 'var(--fs-base)', marginBottom: '12px' }}
               >
                 <option value="draft">Temporary Local Draft (No Cloud Sync)</option>
                 <option value="standalone">Standalone Cloud Drawing (No Project Folder)</option>
@@ -165,22 +165,22 @@ const NewDrawingModal = ({ isOpen, onClose, onCreateNew }) => {
                 <option value="new_project">Inside Brand New Project Folder</option>
               </select>
 
-              {loading && <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>Loading projects...</div>}
+              {loading && <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>Loading projects...</div>}
 
               {destType === "project" && projects.length === 0 && !loading && (
-                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', padding: '6px', border: '1px dashed var(--color-border)', borderRadius: '6px' }}>
+                <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-text-secondary)', padding: '6px', border: '1px dashed var(--color-border)', borderRadius: '6px' }}>
                   No projects found. Select "New Project" to create one.
                 </div>
               )}
 
               {destType === "project" && projects.length > 0 && (
                 <div>
-                  <label style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: '10px', fontWeight: '700', marginBottom: '4px' }}>Select Project</label>
+                  <label style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: 'var(--fs-xs)', fontWeight: '700', marginBottom: '4px' }}>Select project</label>
                   <select
                     value={selectedProjectId}
                     onChange={(e) => setSelectedProjectId(e.target.value)}
                     className="form-select"
-                    style={{ width: '100%', height: '36px', fontSize: '13px' }}
+                    style={{ width: '100%', height: '36px', fontSize: 'var(--fs-base)' }}
                   >
                     {projects.map(p => (
                       <option key={p.id} value={p.id}>{p.title}</option>
@@ -191,21 +191,21 @@ const NewDrawingModal = ({ isOpen, onClose, onCreateNew }) => {
 
               {destType === "new_project" && (
                 <div>
-                  <label style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: '10px', fontWeight: '700', marginBottom: '4px' }}>New Project Folder Title</label>
+                  <label style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: 'var(--fs-xs)', fontWeight: '700', marginBottom: '4px' }}>New project folder title</label>
                   <input
                     type="text"
                     value={newProjectTitle}
                     onChange={(e) => setNewProjectTitle(e.target.value)}
                     placeholder="e.g. Hydraulic Loop Phase C"
                     className="form-input"
-                    style={{ width: '100%', height: '36px', fontSize: '13px' }}
+                    style={{ width: '100%', height: '36px', fontSize: 'var(--fs-base)' }}
                     required
                   />
                 </div>
               )}
             </div>
           ) : (
-            <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', backgroundColor: 'var(--color-bg-canvas)', padding: '10px 12px', borderRadius: '8px', border: '1px dashed var(--color-border)' }}>
+            <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-text-secondary)', backgroundColor: 'var(--color-bg-canvas)', padding: '10px 12px', borderRadius: '8px', border: '1px dashed var(--color-border)' }}>
               Note: You are currently offline or a Guest. Your new drawing will be saved as a temporary local draft in browser cache. Login to sync with the cloud database.
             </div>
           )}
@@ -216,7 +216,7 @@ const NewDrawingModal = ({ isOpen, onClose, onCreateNew }) => {
               type="button"
               onClick={onClose}
               className="btn-secondary"
-              style={{ height: '36px', padding: '0 16px', borderRadius: '8px', fontSize: '12px' }}
+              style={{ height: '36px', padding: '0 16px', borderRadius: '8px', fontSize: 'var(--fs-sm)' }}
             >
               Cancel
             </button>
@@ -228,7 +228,7 @@ const NewDrawingModal = ({ isOpen, onClose, onCreateNew }) => {
                 height: '36px',
                 padding: '0 18px',
                 borderRadius: '8px',
-                fontSize: '12px',
+                fontSize: 'var(--fs-sm)',
                 fontWeight: '700',
                 boxShadow: '0 2px 8px var(--color-primary-glow)'
               }}

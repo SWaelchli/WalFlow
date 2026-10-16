@@ -201,7 +201,7 @@ const ProjectManagerModal = ({
       setNewDiagramTitle("");
       setNewDiagramDesc("");
       fetchProjectDetail(projectDetail.id);
-      notify(`New PFD diagram '${response.data.title}' created inside project.`, 'success');
+      notify(`Drawing '${response.data.title}' created in the project.`, 'success');
     } catch {
       notify("Failed to create diagram inside project.", 'error');
     } finally {
@@ -265,7 +265,7 @@ const ProjectManagerModal = ({
   const handleDeleteDiagram = async (diagramId, title) => {
     const ok = await confirmDialog({
       title: 'Delete diagram?',
-      message: `Delete PFD diagram '${title}'?`,
+      message: `Delete drawing '${title}'?`,
       confirmLabel: 'Delete',
       danger: true,
     });
@@ -446,23 +446,23 @@ const ok = await confirmDialog({
               <CloudIcon size={20} color="#ffffff" />
             </div>
             <div>
-              <h3 className="modal-title" style={{ fontSize: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <h3 className="modal-title" style={{ fontSize: 'var(--fs-xl)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 {currentView === "projects" ? (
                   <span>Projects Manager</span>
                 ) : (
-                  <span style={{ fontSize: '16px' }}>
+                  <span style={{ fontSize: 'var(--fs-lg)' }}>
                     <span {...clickableProps} onClick={() => setCurrentView("projects")} className="breadcrumb-link">Projects</span>
                     <span style={{ margin: '0 6px', color: 'var(--color-text-secondary)' }}>/</span>
                     <span style={{ color: 'var(--color-text-primary)' }}>{projectDetail?.title}</span>
                   </span>
                 )}
               </h3>
-              <p style={{ margin: '2px 0 0 0', color: 'var(--color-text-secondary)', fontSize: '12px' }}>
+              <p style={{ margin: '2px 0 0 0', color: 'var(--color-text-secondary)', fontSize: 'var(--fs-sm)' }}>
                 {currentView === "projects" ? "Select a project to view its diagrams and share options" : "Manage project drawings, members, and lock states"}
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="modal-close-btn" title="Close">
+          <button onClick={onClose} className="modal-close-btn" title="Close" aria-label="Close">
             <CrossIcon size={18} />
           </button>
         </div>
@@ -471,11 +471,11 @@ const ok = await confirmDialog({
         <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           
           {loading && (
-            <div style={{ color: 'var(--color-text-secondary)', fontSize: '13px', textAlign: 'center', padding: '20px' }}>Loading...</div>
+            <div style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--fs-base)', textAlign: 'center', padding: '20px' }}>Loading...</div>
           )}
 
           {error && (
-            <div style={{ color: 'var(--color-danger-text)', fontSize: '13px', padding: '12px', backgroundColor: 'rgba(239,68,68,0.12)', borderRadius: '10px', border: '1px solid var(--color-danger)' }}>{error}</div>
+            <div style={{ color: 'var(--color-danger-text)', fontSize: 'var(--fs-base)', padding: '12px', backgroundColor: 'rgba(239,68,68,0.12)', borderRadius: '10px', border: '1px solid var(--color-danger)' }}>{error}</div>
           )}
 
           {/* VIEW 1: PROJECTS LIST */}
@@ -483,36 +483,36 @@ const ok = await confirmDialog({
             <>
               {/* Project Creation Form */}
               <div className="modal-metric-card" style={{ padding: '18px 20px' }}>
-                <h4 style={{ margin: '0 0 14px 0', color: 'var(--color-primary-text)', fontSize: '13px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h4 style={{ margin: '0 0 14px 0', color: 'var(--color-primary-text)', fontSize: 'var(--fs-base)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <PlusIcon size={14} color="var(--color-primary)" /> Create New Project
                 </h4>
                 <form onSubmit={handleCreateProject} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '14px' }}>
                     <div>
-                      <label style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '6px' }}>Project Title</label>
+                      <label style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: 'var(--fs-xs)', fontWeight: '600', marginBottom: '6px' }}>Project title</label>
                       <input
                         type="text"
                         value={newProjectTitle}
                         onChange={(e) => setNewProjectTitle(e.target.value)}
                         placeholder="e.g. Refinery Loop A"
                         className="form-input"
-                        style={{ width: '100%', height: '38px', fontSize: '13px' }}
+                        style={{ width: '100%', height: '38px', fontSize: 'var(--fs-base)' }}
                         required
                       />
                     </div>
                     <div>
-                      <label style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '6px' }}>Description</label>
+                      <label style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: 'var(--fs-xs)', fontWeight: '600', marginBottom: '6px' }}>Description</label>
                       <input
                         type="text"
                         value={newProjectDesc}
                         onChange={(e) => setNewProjectDesc(e.target.value)}
                         placeholder="Project overview or system purpose"
                         className="form-input"
-                        style={{ width: '100%', height: '38px', fontSize: '13px' }}
+                        style={{ width: '100%', height: '38px', fontSize: 'var(--fs-base)' }}
                       />
                     </div>
                   </div>
-                  <button type="submit" disabled={isCreatingProject} className="btn-primary" style={{ alignSelf: 'flex-end', height: '36px', padding: '0 18px', borderRadius: '10px', fontSize: '12px', fontWeight: '700', boxShadow: '0 4px 12px var(--color-primary-glow)' }}>
+                  <button type="submit" disabled={isCreatingProject} className="btn-primary" style={{ alignSelf: 'flex-end', height: '36px', padding: '0 18px', borderRadius: '10px', fontSize: 'var(--fs-sm)', fontWeight: '700', boxShadow: '0 4px 12px var(--color-primary-glow)' }}>
                     {isCreatingProject ? 'Creating...' : 'Create Project'}
                   </button>
                 </form>
@@ -520,9 +520,9 @@ const ok = await confirmDialog({
 
               {/* Projects List display */}
               <div>
-                <h4 style={{ margin: '0 0 14px 0', color: 'var(--color-primary-text)', fontSize: '13px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Your Projects</h4>
+                <h4 style={{ margin: '0 0 14px 0', color: 'var(--color-primary-text)', fontSize: 'var(--fs-base)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Your Projects</h4>
                 {projects.length === 0 ? (
-                  <div style={{ color: 'var(--color-text-secondary)', fontSize: '13px', textAlign: 'center', padding: '28px', backgroundColor: 'var(--color-surface-hover)', borderRadius: '12px', border: '1px dashed var(--color-border)' }}>
+                  <div style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--fs-base)', textAlign: 'center', padding: '28px', backgroundColor: 'var(--color-surface-hover)', borderRadius: '12px', border: '1px dashed var(--color-border)' }}>
                     No projects found. Create your first project using the form above.
                   </div>
                 ) : (
@@ -535,19 +535,19 @@ const ok = await confirmDialog({
                         margin: '0'
                       }}>
                         <div>
-                          <h5 style={{ margin: '0 0 4px 0', color: 'var(--color-text-primary)', fontSize: '14px', fontWeight: '700' }}>
+                          <h5 style={{ margin: '0 0 4px 0', color: 'var(--color-text-primary)', fontSize: 'var(--fs-md)', fontWeight: '700' }}>
                             {p.title}
                           </h5>
-                          <div style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>
-                            {p.description || 'No description'} • Role: <strong style={{ color: p.role === 'owner' ? 'var(--color-primary)' : 'var(--color-text-primary)' }}>{p.role}</strong>
+                          <div style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--fs-sm)' }}>
+                            {p.description || 'No description'} • Role: <strong style={{ color: 'var(--color-text-primary)' }}>{p.role}</strong>
                           </div>
                         </div>
                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                          <button onClick={() => fetchProjectDetail(p.id)} className="btn-primary" style={{ height: '30px', padding: '0 14px', borderRadius: '8px', fontSize: '12px', fontWeight: '700', boxShadow: '0 2px 8px var(--color-primary-glow)' }}>
+                          <button onClick={() => fetchProjectDetail(p.id)} className="btn-secondary" style={{ height: '30px', padding: '0 14px', borderRadius: '8px', fontSize: 'var(--fs-sm)', fontWeight: '600' }}>
                             Open
                           </button>
                           {p.role === "owner" && (
-                            <button onClick={() => handleDeleteProject(p.id, p.title)} className="btn-danger-ghost" style={{ height: '30px', width: '30px', padding: 0, borderRadius: '8px' }} title="Delete Project">
+                            <button aria-label="Delete project" onClick={() => handleDeleteProject(p.id, p.title)} className="btn-danger-ghost" style={{ height: '30px', width: '30px', padding: 0, borderRadius: '8px' }} title="Delete Project">
                               <TrashIcon size={14} />
                             </button>
                           )}
@@ -569,15 +569,15 @@ const ok = await confirmDialog({
                 
                 {/* Diagram Creation Form */}
                 <div className="modal-metric-card" style={{ padding: '16px 18px' }}>
-                  <h4 style={{ margin: '0 0 12px 0', color: 'var(--color-primary-text)', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Create New Drawing</h4>
+                  <h4 style={{ margin: '0 0 12px 0', color: 'var(--color-primary-text)', fontSize: 'var(--fs-sm)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Create New Drawing</h4>
                   <form onSubmit={handleCreateDiagram} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     <input
                       type="text"
                       value={newDiagramTitle}
                       onChange={(e) => setNewDiagramTitle(e.target.value)}
-                      placeholder="PFD Title (e.g. Cooling Loop)"
+                      placeholder="Drawing title (e.g. Cooling loop)"
                       className="form-input"
-                      style={{ width: '100%', height: '34px', fontSize: '12px' }}
+                      style={{ width: '100%', height: '34px', fontSize: 'var(--fs-sm)' }}
                       required
                     />
                     <input
@@ -586,19 +586,19 @@ const ok = await confirmDialog({
                       onChange={(e) => setNewDiagramDesc(e.target.value)}
                       placeholder="Description (optional)"
                       className="form-input"
-                      style={{ width: '100%', height: '34px', fontSize: '12px' }}
+                      style={{ width: '100%', height: '34px', fontSize: 'var(--fs-sm)' }}
                     />
-                    <button type="submit" disabled={isCreatingDiagram} className="btn-primary" style={{ height: '32px', padding: '0 12px', borderRadius: '8px', fontSize: '11px', fontWeight: '700', alignSelf: 'flex-end' }}>
-                      {isCreatingDiagram ? 'Creating...' : 'Create PFD'}
+                    <button type="submit" disabled={isCreatingDiagram} className="btn-primary" style={{ height: '32px', padding: '0 12px', borderRadius: '8px', fontSize: 'var(--fs-xs)', fontWeight: '700', alignSelf: 'flex-end' }}>
+                      {isCreatingDiagram ? 'Creating…' : 'Create drawing'}
                     </button>
                   </form>
                 </div>
 
                 {/* Diagrams List */}
                 <div>
-                  <h4 style={{ margin: '0 0 12px 0', color: 'var(--color-primary-text)', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Drawing List</h4>
+                  <h4 style={{ margin: '0 0 12px 0', color: 'var(--color-primary-text)', fontSize: 'var(--fs-sm)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Drawing List</h4>
                   {projectDetail.diagrams.length === 0 ? (
-                    <div style={{ color: 'var(--color-text-secondary)', fontSize: '12px', textAlign: 'center', padding: '24px', backgroundColor: 'var(--color-surface-hover)', borderRadius: '12px', border: '1px dashed var(--color-border)' }}>
+                    <div style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--fs-sm)', textAlign: 'center', padding: '24px', backgroundColor: 'var(--color-surface-hover)', borderRadius: '12px', border: '1px dashed var(--color-border)' }}>
                       No drawings inside this project. Create one above to get started.
                     </div>
                   ) : (
@@ -617,22 +617,22 @@ const ok = await confirmDialog({
                           }}>
                             <div style={{ flexGrow: 1, marginRight: '10px' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <h5 style={{ margin: 0, color: 'var(--color-text-primary)', fontSize: '13px', fontWeight: '700' }}>{d.title}</h5>
+                                <h5 style={{ margin: 0, color: 'var(--color-text-primary)', fontSize: 'var(--fs-base)', fontWeight: '700' }}>{d.title}</h5>
                                 {lock ? (
                                   <span style={{
-                                    fontSize: '9px',
+                                    fontSize: 'var(--fs-xs)',
                                     fontWeight: '700',
                                     padding: '2px 6px',
                                     borderRadius: '10px',
-                                    backgroundColor: isLockedByMe ? '#ECFDF5' : '#FFFBEB',
-                                    color: isLockedByMe ? '#10B981' : '#D97706',
+                                    backgroundColor: isLockedByMe ? '#ECFDF5' : 'var(--color-warning-bg)',
+                                    color: isLockedByMe ? '#047857' : 'var(--color-warning-text)',
                                     border: isLockedByMe ? '1px solid #A7F3D0' : '1px solid #FDE68A'
                                   }}>
-                                    {isLockedByMe ? '🟢 Editing' : `🔒 Locked: ${lock.username}`}
+                                    {isLockedByMe ? 'Checked out by you' : `Locked by ${lock.username}`}
                                   </span>
                                 ) : (
                                   <span style={{
-                                    fontSize: '9px',
+                                    fontSize: 'var(--fs-xs)',
                                     fontWeight: '700',
                                     padding: '2px 6px',
                                     borderRadius: '10px',
@@ -644,29 +644,29 @@ const ok = await confirmDialog({
                                   </span>
                                 )}
                               </div>
-                              <p style={{ margin: '4px 0 0 0', color: 'var(--color-text-secondary)', fontSize: '11px' }}>
+                              <p style={{ margin: '4px 0 0 0', color: 'var(--color-text-secondary)', fontSize: 'var(--fs-xs)' }}>
                                 {d.description || 'No description'}
                               </p>
                             </div>
                             
                             <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
-                              <button onClick={() => handleLoadDiagram(d.id)} className="btn-primary" style={{ height: '28px', padding: '0 10px', borderRadius: '6px', fontSize: '11px', fontWeight: '700' }}>
+                              <button onClick={() => handleLoadDiagram(d.id)} className="btn-secondary" style={{ height: '28px', padding: '0 10px', borderRadius: '6px', fontSize: 'var(--fs-xs)', fontWeight: '600' }}>
                                 Open
                               </button>
                               
                               {/* Override lock release button */}
                               {isLockedByOther && isOwnerOfActiveProject && (
-                                <button onClick={() => handleForceReleaseLock(d.id)} className="btn-secondary" style={{ height: '28px', padding: '0 8px', borderRadius: '6px', fontSize: '11px', color: 'var(--color-danger-text)', backgroundColor: '#FEF2F2', borderColor: '#FEE2E2' }} title="Force release user edit lock">
+                                <button onClick={() => handleForceReleaseLock(d.id)} className="btn-secondary" style={{ height: '28px', padding: '0 8px', borderRadius: '6px', fontSize: 'var(--fs-xs)', color: 'var(--color-danger-text)', backgroundColor: '#FEF2F2', borderColor: '#FEE2E2' }} title="Force release user edit lock">
                                   Release Lock
                                 </button>
                               )}
  
-                              <button onClick={() => handleExportDiagramAsFile(d)} className="btn-secondary" style={{ height: '28px', padding: '0 8px', borderRadius: '6px', fontSize: '11px', color: 'var(--color-text-primary)', backgroundColor: 'var(--color-surface-hover)', border: '1px solid var(--color-border)' }} title="Download .wlf">
+                              <button aria-label="Download .wlf file" onClick={() => handleExportDiagramAsFile(d)} className="btn-secondary" style={{ height: '28px', padding: '0 8px', borderRadius: '6px', fontSize: 'var(--fs-xs)', color: 'var(--color-text-primary)', backgroundColor: 'var(--color-surface-hover)', border: '1px solid var(--color-border)' }} title="Download .wlf">
                                 <ExportIcon size={10} />
                               </button>
  
                               {(isOwnerOfActiveProject || d.user_id === currentUser?.id) && (
-                                <button onClick={() => handleDeleteDiagram(d.id, d.title)} className="btn-danger-ghost" style={{ height: '28px', width: '28px', padding: 0, borderRadius: '6px' }}>
+                                <button aria-label="Delete drawing" title="Delete drawing" onClick={() => handleDeleteDiagram(d.id, d.title)} className="btn-danger-ghost" style={{ height: '28px', width: '28px', padding: 0, borderRadius: '6px' }}>
                                   <TrashIcon size={12} />
                                 </button>
                               )}
@@ -684,7 +684,7 @@ const ok = await confirmDialog({
                 
                 {/* Project Members List */}
                 <div className="modal-metric-card" style={{ padding: '16px 18px' }}>
-                  <h4 style={{ margin: '0 0 12px 0', color: 'var(--color-primary-text)', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Project Team</h4>
+                  <h4 style={{ margin: '0 0 12px 0', color: 'var(--color-primary-text)', fontSize: 'var(--fs-sm)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Project Team</h4>
                   
                   {/* Add Member Form (Owners only) */}
                   {isOwnerOfActiveProject && (
@@ -695,19 +695,19 @@ const ok = await confirmDialog({
                         onChange={(e) => setInviteUsername(e.target.value)}
                         placeholder="Add member by username"
                         className="form-input"
-                        style={{ flexGrow: 1, height: '32px', fontSize: '12px' }}
+                        style={{ flexGrow: 1, height: '32px', fontSize: 'var(--fs-sm)' }}
                         required
                       />
                       <select
                         value={inviteRole}
                         onChange={(e) => setInviteRole(e.target.value)}
                         className="form-select"
-                        style={{ height: '32px', padding: '0 4px', fontSize: '12px' }}
+                        style={{ height: '32px', padding: '0 4px', fontSize: 'var(--fs-sm)' }}
                       >
                         <option value="member">Member</option>
                         <option value="owner">Owner</option>
                       </select>
-                      <button type="submit" disabled={isAddingMember} className="btn-primary" style={{ height: '32px', padding: '0 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '700' }}>
+                      <button type="submit" disabled={isAddingMember} className="btn-primary" style={{ height: '32px', padding: '0 12px', borderRadius: '6px', fontSize: 'var(--fs-xs)', fontWeight: '700' }}>
                         {isAddingMember ? 'Adding...' : 'Add'}
                       </button>
                     </form>
@@ -718,10 +718,10 @@ const ok = await confirmDialog({
                     {projectDetail.members.map(m => (
                       <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 8px', borderRadius: '6px', backgroundColor: 'var(--color-bg-canvas)', border: '1px solid var(--color-border)' }}>
                         <div>
-                          <span style={{ fontSize: '12px', fontWeight: '600', color: m.user_id === currentUser?.id ? 'var(--color-primary)' : 'var(--color-text-primary)' }}>
+                          <span style={{ fontSize: 'var(--fs-sm)', fontWeight: '600', color: m.user_id === currentUser?.id ? 'var(--color-primary)' : 'var(--color-text-primary)' }}>
                             {m.username} {m.user_id === currentUser?.id && "(You)"}
                           </span>
-                          <span style={{ fontSize: '10px', color: 'var(--color-text-secondary)', marginLeft: '6px', textTransform: 'uppercase', fontWeight: '700' }}>
+                          <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', marginLeft: '6px', fontWeight: '600' }}>
                             ({m.role})
                           </span>
                         </div>
@@ -729,12 +729,12 @@ const ok = await confirmDialog({
                         {/* Owner actions (promote role, remove member) */}
                         <div style={{ display: 'flex', gap: '6px' }}>
                           {isOwnerOfActiveProject && m.user_id !== currentUser?.id && (
-                            <button onClick={() => handleToggleMemberRole(m.id, m.role)} className="btn-secondary" style={{ height: '22px', fontSize: '9px', padding: '0 6px', borderRadius: '4px' }}>
+                            <button onClick={() => handleToggleMemberRole(m.id, m.role)} className="btn-secondary" style={{ height: '22px', fontSize: 'var(--fs-xs)', padding: '0 6px', borderRadius: '4px' }}>
                               {m.role === 'owner' ? 'Demote' : 'Promote'}
                             </button>
                           )}
                           {(isOwnerOfActiveProject || m.user_id === currentUser?.id) && (
-                            <button onClick={() => handleRemoveMember(m.id, m.username)} className="btn-danger-ghost" style={{ height: '22px', padding: '0 6px', borderRadius: '4px', fontSize: '9px' }}>
+                            <button onClick={() => handleRemoveMember(m.id, m.username)} className="btn-danger-ghost" style={{ height: '22px', padding: '0 6px', borderRadius: '4px', fontSize: 'var(--fs-xs)' }}>
                               {m.user_id === currentUser?.id ? 'Leave' : 'Remove'}
                             </button>
                           )}
@@ -749,27 +749,27 @@ const ok = await confirmDialog({
                 {/* Share Token Link Generator */}
                 {isOwnerOfActiveProject && (
                   <div className="modal-metric-card" style={{ padding: '16px 18px' }}>
-                    <h4 style={{ margin: '0 0 12px 0', color: 'var(--color-primary-text)', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Generate Invitation Token</h4>
+                    <h4 style={{ margin: '0 0 12px 0', color: 'var(--color-primary-text)', fontSize: 'var(--fs-sm)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Generate Invitation Token</h4>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       <div>
-                        <label style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: '10px', fontWeight: '700', marginBottom: '4px' }}>Link Password (optional)</label>
+                        <label style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: 'var(--fs-xs)', fontWeight: '700', marginBottom: '4px' }}>Link password (optional)</label>
                         <input
                           type="password"
                           value={sharePassword}
                           onChange={(e) => setSharePassword(e.target.value)}
                           placeholder="Leave empty for public link"
                           className="form-input"
-                          style={{ width: '100%', height: '32px', fontSize: '12px' }}
+                          style={{ width: '100%', height: '32px', fontSize: 'var(--fs-sm)' }}
                         />
                       </div>
                       <div>
-                        <label style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: '10px', fontWeight: '700', marginBottom: '4px' }}>Expiry Duration</label>
+                        <label style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: 'var(--fs-xs)', fontWeight: '700', marginBottom: '4px' }}>Expiry duration</label>
                         <select
                           value={inviteDuration}
                           onChange={(e) => setInviteDuration(e.target.value)}
                           className="form-select"
-                          style={{ width: '100%', height: '32px', fontSize: '12px' }}
+                          style={{ width: '100%', height: '32px', fontSize: 'var(--fs-sm)' }}
                         >
                           <option value={1}>1 Hour</option>
                           <option value={12}>12 Hours</option>
@@ -777,18 +777,18 @@ const ok = await confirmDialog({
                           <option value={168}>168 Hours (1 Week)</option>
                         </select>
                       </div>
-                      <button onClick={handleGenerateShareToken} disabled={isGeneratingLink} className="btn-primary" style={{ height: '32px', borderRadius: '8px', fontSize: '11px', fontWeight: '700', width: '100%' }}>
+                      <button onClick={handleGenerateShareToken} disabled={isGeneratingLink} className="btn-primary" style={{ height: '32px', borderRadius: '8px', fontSize: 'var(--fs-xs)', fontWeight: '700', width: '100%' }}>
                         {isGeneratingLink ? 'Generating...' : 'Generate Token Link'}
                       </button>
  
                       {inviteTokenLink && (
                         <div style={{ marginTop: '8px' }}>
-                          <label style={{ display: 'block', color: 'var(--color-primary-text)', fontSize: '10px', fontWeight: '750', marginBottom: '4px' }}>Copy Shareable Link:</label>
+                          <label style={{ display: 'block', color: 'var(--color-primary-text)', fontSize: 'var(--fs-xs)', fontWeight: '750', marginBottom: '4px' }}>Copy shareable link:</label>
                           <textarea
                             readOnly
                             value={inviteTokenLink}
                             onClick={(e) => e.target.select()}
-                            style={{ width: '100%', height: '54px', fontSize: '11px', backgroundColor: 'var(--color-bg-canvas)', border: '1px solid var(--color-border)', borderRadius: '6px', color: 'var(--color-text-primary)', padding: '6px', resize: 'none', fontFamily: 'monospace' }}
+                            style={{ width: '100%', height: '54px', fontSize: 'var(--fs-xs)', backgroundColor: 'var(--color-bg-canvas)', border: '1px solid var(--color-border)', borderRadius: '6px', color: 'var(--color-text-primary)', padding: '6px', resize: 'none', fontFamily: 'monospace' }}
                           />
                         </div>
                       )}

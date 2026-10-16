@@ -4,7 +4,7 @@ import React, { useEffect, useRef } from 'react';
  * F3-18: right-click menu for components, pipes and the empty canvas.
  * items: [{ id, label, shortcut, disabled, danger, onSelect }]; a falsy entry is skipped, `{ separator: true }` draws a rule.
  */
-export default function CanvasContextMenu({ x, y, items, onClose }) {
+export default function CanvasContextMenu({ x, y, items, onClose, label = 'Canvas actions', width = 200 }) {
   const ref = useRef(null);
 
   useEffect(() => {
@@ -31,7 +31,6 @@ export default function CanvasContextMenu({ x, y, items, onClose }) {
   }, [onClose]);
 
   // keep the menu inside the window
-  const width = 200;
   const height = items.filter(Boolean).length * 32 + 12;
   const left = Math.max(4, Math.min(x, window.innerWidth - width - 4));
   const top = Math.max(4, Math.min(y, window.innerHeight - height - 4));
@@ -40,7 +39,7 @@ export default function CanvasContextMenu({ x, y, items, onClose }) {
     <div
       ref={ref}
       role="menu"
-      aria-label="Canvas actions"
+      aria-label={label}
       onContextMenu={(e) => e.preventDefault()}
       style={{
         position: 'fixed', left, top, width, zIndex: 9000, padding: '6px', background: 'var(--color-surface)',

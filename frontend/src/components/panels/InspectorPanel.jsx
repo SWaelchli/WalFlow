@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { confirmDialog } from '../../utils/dialogs';
 import SetupPanel from './SetupPanel';
 import ResultsPanel from '../details/ResultsPanel';
-import { TrashIcon, CaseIcon } from '../symbols/IconLibrary';
+import { TrashIcon, CaseIcon, CaretRightIcon } from '../symbols/IconLibrary';
+import { componentLabel } from '../../constants/componentLabels';
 
 export default function InspectorPanel({
   node,
@@ -70,9 +71,9 @@ export default function InspectorPanel({
       }}
     >
       {/* Collapse Handle Button on the Left Border */}
-      <button
+      <button aria-label={isCollapsed ? "Expand inspector" : "Collapse inspector"}
         onClick={() => setIsCollapsed(!isCollapsed)}
-        title={isCollapsed ? "Expand Inspector" : "Collapse Inspector"}
+        title={isCollapsed ? "Expand inspector" : "Collapse inspector"}
         style={{
           position: 'absolute',
           left: '-24px',
@@ -93,9 +94,7 @@ export default function InspectorPanel({
           outline: 'none'
         }}
       >
-        <span style={{ fontSize: '11px', transition: 'transform 0.2s', transform: isCollapsed ? 'rotate(180deg)' : 'none', display: 'inline-block', lineHeight: 1 }}>
-          ▶
-        </span>
+        <CaretRightIcon size={12} style={{ transition: 'transform 0.2s', transform: isCollapsed ? 'rotate(180deg)' : 'none' }} />
       </button>
 
       {/* Main Content Area */}
@@ -104,17 +103,17 @@ export default function InspectorPanel({
           {/* Header */}
           <div style={{ padding: '16px', borderBottom: '1px solid #EBF0EF', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F4F7F6' }}>
             <div style={{ overflow: 'hidden', marginRight: '8px' }}>
-              <h3 style={{ margin: 0, fontSize: '13px', fontWeight: '700', color: '#1C2B2C', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }} title={label}>
+              <h3 style={{ margin: 0, fontSize: 'var(--fs-base)', fontWeight: '700', color: '#1C2B2C', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }} title={label}>
                 {label}
               </h3>
-              <span style={{ fontSize: '10px', color: '#587071', textTransform: 'uppercase', fontWeight: '600' }}>
-                {isNode ? type.replace('_', ' ') : 'Connection'}
+              <span style={{ fontSize: 'var(--fs-xs)', color: '#587071', fontWeight: '600' }}>
+                {componentLabel(type, { isEdge: !isNode })}
               </span>
             </div>
             <button 
               onClick={handleDelete}
               className="btn-danger-ghost"
-              style={{ height: '28px', padding: '0 8px', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+              style={{ height: '28px', padding: '0 8px', fontSize: 'var(--fs-xs)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
             >
               <TrashIcon size={12} />
               Delete
@@ -130,11 +129,11 @@ export default function InspectorPanel({
                  padding: '10px 0',
                  border: 'none',
                  background: 'none',
-                 fontSize: '12px',
+                 fontSize: 'var(--fs-sm)',
                  fontWeight: '600',
                  cursor: 'pointer',
-                 color: activeTab === 'setup' ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-                 borderBottom: activeTab === 'setup' ? '2px solid var(--color-primary)' : '2px solid transparent',
+                 color: activeTab === 'setup' ? 'var(--color-brand-dark)' : 'var(--color-text-secondary)',
+                 borderBottom: activeTab === 'setup' ? '2px solid var(--color-brand-dark)' : '2px solid transparent',
                  transition: 'all 0.15s ease',
                  display: 'inline-flex',
                  alignItems: 'center',
@@ -152,11 +151,11 @@ export default function InspectorPanel({
                  padding: '10px 0',
                  border: 'none',
                  background: 'none',
-                 fontSize: '12px',
+                 fontSize: 'var(--fs-sm)',
                  fontWeight: '600',
                  cursor: 'pointer',
-                 color: activeTab === 'results' ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-                 borderBottom: activeTab === 'results' ? '2px solid var(--color-primary)' : '2px solid transparent',
+                 color: activeTab === 'results' ? 'var(--color-brand-dark)' : 'var(--color-text-secondary)',
+                 borderBottom: activeTab === 'results' ? '2px solid var(--color-brand-dark)' : '2px solid transparent',
                  transition: 'all 0.15s ease',
                  display: 'inline-flex',
                  alignItems: 'center',

@@ -20,7 +20,7 @@ export default function CollabNotice({ notice, onDismiss }) {
         borderLeft: '4px solid #FA8507',
         borderRadius: '12px',
         padding: '12px 14px',
-        fontSize: '13px',
+        fontSize: 'var(--fs-base)',
         lineHeight: 1.4,
         boxShadow: '0 10px 25px rgba(28, 43, 44, 0.18)',
         zIndex: 99999,

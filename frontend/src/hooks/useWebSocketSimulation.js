@@ -14,6 +14,8 @@ export function useWebSocketSimulation({ nodes, edges, globalSettings, cases = [
   const [isSimulating, setIsSimulating] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [lastStats, setLastStats] = useState(null);
+  // time of the last finished run, so a re-run that changes nothing still shows it happened
+  const [lastRunAt, setLastRunAt] = useState(null);
   const [reconnectTrigger, setReconnectTrigger] = useState(0);
 
   // Dual-Pass Telemetry States
@@ -108,6 +110,7 @@ export function useWebSocketSimulation({ nodes, edges, globalSettings, cases = [
           const kpisData = response.kpis || null;
 
           setLastStats(response.stats);
+          setLastRunAt(new Date());
           setRunError(null);
 
           // Results belong to the case and the inputs the run was sent with (F2-07)
@@ -195,6 +198,7 @@ export function useWebSocketSimulation({ nodes, edges, globalSettings, cases = [
   // F5-02: another drawing replaces the canvas, so the last run no longer describes it
   const resetRunState = useCallback(() => {
     setLastStats(null);
+    setLastRunAt(null);
     setRunError(null);
   }, [setRunError]);
 
@@ -203,6 +207,7 @@ export function useWebSocketSimulation({ nodes, edges, globalSettings, cases = [
     isSimulating,
     isConnected,
     lastStats,
+    lastRunAt,
     resetRunState,
     runSimulation,
     handleValveChange,

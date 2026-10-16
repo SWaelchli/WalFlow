@@ -1,7 +1,7 @@
 import React from 'react';
 import { isCaseVariableProperty } from '../../constants/case_constants';
 import { isPropertyOverridden } from '../../utils/case_resolver';
-import { GlobeIcon, BoltIcon } from '../symbols/IconLibrary';
+import { GlobeIcon, BoltIcon, DotIcon, ResetIcon } from '../symbols/IconLibrary';
 
 /** Small marker next to a property that shows whether the active case overrides it, with a reset button. */
 export default function PropertyBadge({ propKey, nodeId, cases = [], activeCaseId = 'case_base', onResetOverride }) {
@@ -24,20 +24,20 @@ export default function PropertyBadge({ propKey, nodeId, cases = [], activeCaseI
         className={`badge-case ${isOverridden ? '' : 'not-overridden'}`} 
         title="Case-specific operating variable"
       >
-        <BoltIcon size={10} color={isOverridden ? '#d97706' : 'var(--color-primary)'} /> Case Variable
+        <BoltIcon size={10} color={isOverridden ? 'var(--color-warning-text)' : 'var(--color-primary-text)'} /> Case variable
       </span>
       {isOverridden && (
-        <span style={{ fontSize: '9px', color: '#d97706', fontWeight: '700' }} title={`Overridden in current case`}>
-          ● Overridden
+        <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-warning-text)', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '3px' }} title="Overridden in current case">
+          <DotIcon size={6} /> Overridden
         </span>
       )}
       {isOverridden && onResetOverride && (
         <button
           onClick={(e) => { e.preventDefault(); onResetOverride(nodeId, propKey); }}
-          title="Reset to Base Case value"
-          style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '10px', color: 'var(--color-text-secondary)', padding: 0 }}
+          title="Reset to base case value"
+          style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', padding: 0, display: 'inline-flex', alignItems: 'center', gap: '3px' }}
         >
-          ↺ Reset
+          <ResetIcon size={11} /> Reset
         </button>
       )}
     </div>

@@ -28,7 +28,7 @@ export default function CanvasLoadingOverlay({ visible, label = 'Opening drawing
         style={{
           color: 'var(--color-text-secondary)',
           margin: '12px 0 0 0',
-          fontSize: '14px',
+          fontSize: 'var(--fs-md)',
           fontWeight: '500',
           letterSpacing: '0.01em'
         }}

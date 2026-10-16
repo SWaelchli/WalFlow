@@ -3,7 +3,7 @@ import { notify, confirmDialog } from '../../utils/dialogs';
 import { summarizeStats } from '../../utils/runStatus';
 import axios from 'axios';
 import { EquipmentSymbol } from '../symbols/SymbolLibrary';
-import { InfoIcon, WarningIcon, CheckIcon, CrossIcon, FolderIcon, SearchIcon, TrashIcon, LockIcon, UnlockIcon, FolderOpenIcon } from '../symbols/IconLibrary';
+import { InfoIcon, WarningIcon, CheckIcon, CrossIcon, FolderIcon, SearchIcon, TrashIcon, LockIcon, UnlockIcon, FolderOpenIcon, CaretDownIcon, CaretRightIcon, GearIcon, FileIcon, NoteEditIcon, SaveIcon, ImportIcon, ExportIcon, PlusIcon, DotIcon } from '../symbols/IconLibrary';
 import { FLUID_CATEGORIES, FLUID_LIBRARY } from '../../constants/fluid_library';
 import { useUnits } from '../../context/UnitContext';
 import { FILE_FORMAT_VERSION, APP_VERSION } from '../../constants';
@@ -126,8 +126,8 @@ function DiagnosticsContent({ stats, batchStats, onSelectComponent }) {
         <div style={{ marginBottom: '12px', display: 'flex', justifyContent: 'center' }}>
           <InfoIcon size={32} color="var(--color-text-muted)" />
         </div>
-        <p style={{ fontSize: '13px', margin: 0 }}>No simulation data yet.</p>
-        <p style={{ fontSize: '11px', marginTop: '4px' }}>Run a simulation or batch solve to see performance.</p>
+        <p style={{ fontSize: 'var(--fs-base)', margin: 0 }}>No simulation data yet.</p>
+        <p style={{ fontSize: 'var(--fs-xs)', marginTop: '4px' }}>Run a simulation or batch solve to see performance.</p>
       </div>
     );
   }
@@ -158,7 +158,7 @@ function DiagnosticsContent({ stats, batchStats, onSelectComponent }) {
             onClick={() => setStatsSource('single')}
             style={{
               flex: 1, padding: '6px', border: 'none', borderRadius: '6px',
-              fontSize: '11px', fontWeight: '700', cursor: 'pointer',
+              fontSize: 'var(--fs-xs)', fontWeight: '700', cursor: 'pointer',
               background: statsSource === 'single' ? theme.brandDark : 'transparent',
               color: statsSource === 'single' ? theme.white : theme.slate500,
               transition: 'all 0.15s ease'
@@ -170,7 +170,7 @@ function DiagnosticsContent({ stats, batchStats, onSelectComponent }) {
             onClick={() => setStatsSource('batch')}
             style={{
               flex: 1, padding: '6px', border: 'none', borderRadius: '6px',
-              fontSize: '11px', fontWeight: '700', cursor: 'pointer',
+              fontSize: 'var(--fs-xs)', fontWeight: '700', cursor: 'pointer',
               background: statsSource === 'batch' ? theme.brandDark : 'transparent',
               color: statsSource === 'batch' ? theme.white : theme.slate500,
               transition: 'all 0.15s ease'
@@ -198,17 +198,17 @@ function DiagnosticsContent({ stats, batchStats, onSelectComponent }) {
                 : <WarningIcon size={20} color={tone.title} />}
             </div>
             <div>
-              <div style={{ fontSize: '14px', fontWeight: '700', color: tone.title }}>
+              <div style={{ fontSize: 'var(--fs-md)', fontWeight: '700', color: tone.title }}>
                 {summary.headline.toUpperCase()}
               </div>
-              <div style={{ fontSize: '11px', color: tone.text }}>
+              <div style={{ fontSize: 'var(--fs-xs)', color: tone.text }}>
                 {summary.detail}
               </div>
             </div>
           </div>
 
           {summary.level === 'warning' && summary.notes.length > 1 && (
-            <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '11px', color: '#7A3E00', lineHeight: 1.5 }}>
+            <ul style={{ margin: 0, paddingLeft: '18px', fontSize: 'var(--fs-xs)', color: '#7A3E00', lineHeight: 1.5 }}>
               {summary.notes.slice(1).map((n, i) => <li key={i}>{n.text}</li>)}
             </ul>
           )}
@@ -219,15 +219,15 @@ function DiagnosticsContent({ stats, batchStats, onSelectComponent }) {
               className="sidebar-bottleneck-card"
               style={{ cursor: bottleneck.id ? 'pointer' : 'default' }}
             >
-              <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: '#94a3b8', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', textTransform: 'uppercase', color: 'var(--color-text-muted)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span>Critical Bottleneck</span>
-                {bottleneck.id && <span style={{ fontSize: '9px', color: theme.primary, fontWeight: '700' }}>Click to locate</span>}
+                {bottleneck.id && <span style={{ fontSize: 'var(--fs-xs)', color: theme.primary, fontWeight: '700' }}>Click to locate</span>}
               </div>
               <div>
-                <div style={{ fontSize: '14px', fontWeight: '700' }}>{bottleneck.name}</div>
-                <div style={{ fontSize: '11px', color: '#94a3b8' }}>{bottleneck.error_type}</div>
+                <div style={{ fontSize: 'var(--fs-md)', fontWeight: '700' }}>{bottleneck.name}</div>
+                <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-muted)' }}>{bottleneck.error_type}</div>
               </div>
-              <div style={{ fontSize: '10px', color: '#64748b', borderTop: '1px solid #334155', paddingTop: '8px', marginTop: '4px' }}>
+              <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', borderTop: '1px solid #334155', paddingTop: '8px', marginTop: '4px' }}>
                 This component has the largest mathematical error. Check its sizing or connections.
               </div>
             </div>
@@ -258,22 +258,22 @@ function DiagnosticsContent({ stats, batchStats, onSelectComponent }) {
             gap: '8px'
           }}>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: '9px', color: theme.slate500, fontWeight: '600', textTransform: 'uppercase' }}>Total Batch Time</span>
-              <span style={{ fontSize: '14px', fontWeight: '700', color: theme.slate800 }}>
+              <span style={{ fontSize: 'var(--fs-xs)', color: theme.slate500, fontWeight: '600' }}>Total Batch Time</span>
+              <span style={{ fontSize: 'var(--fs-md)', fontWeight: '700', color: theme.slate800 }}>
                 {batchStats.reduce((sum, c) => sum + (c.time_ms || 0), 0).toFixed(1)} ms
               </span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: '9px', color: theme.slate500, fontWeight: '600', textTransform: 'uppercase' }}>Success Rate</span>
-              <span style={{ fontSize: '14px', fontWeight: '700', color: theme.slate800 }}>
+              <span style={{ fontSize: 'var(--fs-xs)', color: theme.slate500, fontWeight: '600' }}>Success Rate</span>
+              <span style={{ fontSize: 'var(--fs-md)', fontWeight: '700', color: theme.slate800 }}>
                 {((batchStats.filter(c => c.status === 'success' && !c.error_message).length / batchStats.length) * 100).toFixed(0)}%
               </span>
             </div>
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: theme.slate500, marginBottom: '6px' }}>
-              Select Operating Case
+            <label style={{ display: 'block', fontSize: 'var(--fs-xs)', fontWeight: '600', color: theme.slate500, marginBottom: '6px' }}>
+              Select operating case
             </label>
             <select
               value={selectedBatchCaseId}
@@ -310,10 +310,10 @@ function DiagnosticsContent({ stats, batchStats, onSelectComponent }) {
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center' }}>{caseSuccess ? <CheckIcon size={20} color="#166534" /> : <CrossIcon size={20} color="#991b1b" />}</div>
                       <div>
-                        <div style={{ fontSize: '14px', fontWeight: '700', color: caseSuccess ? '#166534' : '#991b1b' }}>
+                        <div style={{ fontSize: 'var(--fs-md)', fontWeight: '700', color: caseSuccess ? '#166534' : '#991b1b' }}>
                           {caseSuccess ? 'CASE CONVERGED' : 'CASE FAILED'}
                         </div>
-                        <div style={{ fontSize: '11px', color: caseSuccess ? '#15803d' : '#b91c1c' }}>
+                        <div style={{ fontSize: 'var(--fs-xs)', color: caseSuccess ? '#15803d' : '#b91c1c' }}>
                           {caseSuccess ? 'System is balanced.' : caseErr || 'Non-physical results found.'}
                         </div>
                       </div>
@@ -325,15 +325,15 @@ function DiagnosticsContent({ stats, batchStats, onSelectComponent }) {
                         className="sidebar-bottleneck-card"
                         style={{ cursor: selectedCase.bottleneck.id ? 'pointer' : 'default' }}
                       >
-                        <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: '#94a3b8', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', textTransform: 'uppercase', color: 'var(--color-text-muted)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <span>Critical Bottleneck</span>
-                          {selectedCase.bottleneck.id && <span style={{ fontSize: '9px', color: theme.primary, fontWeight: '700' }}>Click to locate</span>}
+                          {selectedCase.bottleneck.id && <span style={{ fontSize: 'var(--fs-xs)', color: theme.primary, fontWeight: '700' }}>Click to locate</span>}
                         </div>
                         <div>
-                          <div style={{ fontSize: '14px', fontWeight: '700' }}>{selectedCase.bottleneck.name}</div>
-                          <div style={{ fontSize: '11px', color: '#94a3b8' }}>{selectedCase.bottleneck.error_type}</div>
+                          <div style={{ fontSize: 'var(--fs-md)', fontWeight: '700' }}>{selectedCase.bottleneck.name}</div>
+                          <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-muted)' }}>{selectedCase.bottleneck.error_type}</div>
                         </div>
-                        <div style={{ fontSize: '10px', color: '#64748b', borderTop: '1px solid #334155', paddingTop: '8px', marginTop: '4px' }}>
+                        <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', borderTop: '1px solid #334155', paddingTop: '8px', marginTop: '4px' }}>
                           This component has the largest mathematical error. Check its sizing or connections.
                         </div>
                       </div>
@@ -365,9 +365,9 @@ function DiagnosticsContent({ stats, batchStats, onSelectComponent }) {
 function StatCard({ label, value, hint }) {
   return (
     <div style={{ background: theme.white, padding: '12px', borderRadius: '8px', border: `1px solid ${theme.slate200}` }}>
-      <div style={{ fontSize: '10px', fontWeight: '600', color: theme.slate500, textTransform: 'uppercase' }}>{label}</div>
-      <div style={{ fontSize: '16px', fontWeight: '700', color: theme.slate800, margin: '2px 0' }}>{value}</div>
-      {hint && <div style={{ fontSize: '9px', color: theme.slate500 }}>{hint}</div>}
+      <div style={{ fontSize: 'var(--fs-xs)', fontWeight: '600', color: theme.slate500 }}>{label}</div>
+      <div style={{ fontSize: 'var(--fs-lg)', fontWeight: '700', color: theme.slate800, margin: '2px 0' }}>{value}</div>
+      {hint && <div style={{ fontSize: 'var(--fs-xs)', color: theme.slate500 }}>{hint}</div>}
     </div>
   );
 }
@@ -403,8 +403,8 @@ function CollapsibleCategory({ name, items, onDragStart }) {
           outline: 'none'
         }}
       >
-        <h3 style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', color: theme.slate500, margin: 0, letterSpacing: '0.05em' }}>{name}</h3>
-        <span style={{ fontSize: '10px', color: theme.slate500, transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }}>▼</span>
+        <h3 style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', textTransform: 'uppercase', color: theme.slate500, margin: 0, letterSpacing: '0.05em' }}>{name}</h3>
+        <CaretDownIcon size={10} color={theme.slate500} style={{ transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }} />
       </div>
       
       {isExpanded && (
@@ -419,9 +419,9 @@ function CollapsibleCategory({ name, items, onDragStart }) {
               <div style={{ height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '4px' }}>
                 <EquipmentSymbol type={item.type} size={36} />
               </div>
-              <div style={{ fontSize: '11px', fontWeight: '700', color: theme.slate800, lineHeight: '1.2' }}>{item.label}</div>
+              <div style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', color: theme.slate800, lineHeight: '1.2' }}>{item.label}</div>
               {item.description ? (
-                <div style={{ fontSize: '9px', color: theme.slate500, lineHeight: '1.3', marginTop: '2px' }}>{item.description}</div>
+                <div style={{ fontSize: 'var(--fs-xs)', color: theme.slate500, lineHeight: '1.3', marginTop: '2px' }}>{item.description}</div>
               ) : null}
             </div>
           ))}
@@ -463,9 +463,9 @@ function CollapsibleScenarios({ templates, onLoad }) {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <FolderIcon size={16} color="var(--color-brand-dark)" />
-          <h3 style={{ fontSize: '12px', fontWeight: '600', color: theme.slate800, margin: 0 }}>Library & Examples</h3>
+          <h3 style={{ fontSize: 'var(--fs-sm)', fontWeight: '600', color: theme.slate800, margin: 0 }}>Library & Examples</h3>
         </div>
-        <span style={{ fontSize: '10px', color: theme.slate500, transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }}>▼</span>
+        <CaretDownIcon size={10} color={theme.slate500} style={{ transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }} />
       </div>
       
       {isExpanded && (
@@ -473,7 +473,7 @@ function CollapsibleScenarios({ templates, onLoad }) {
           {isCategorized ? (
             Object.entries(templates || {}).map(([category, items]) => (
               <div key={category} style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                <div style={{ fontSize: '10px', fontWeight: '700', color: theme.slate500, textTransform: 'uppercase', letterSpacing: '0.5px', padding: '4px 8px 2px 8px' }}>
+                <div style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', color: theme.slate500, textTransform: 'uppercase', letterSpacing: '0.5px', padding: '4px 8px 2px 8px' }}>
                   {category}
                 </div>
                 {Object.entries(items || {}).map(([name, data]) => (
@@ -482,7 +482,7 @@ function CollapsibleScenarios({ templates, onLoad }) {
                     onClick={() => onLoad(data, name, { isTemplate: true })}
                     className="sidebar-list-item"
                   >
-                    <span style={{ fontSize: '10px', color: theme.primary }}>•</span>
+                    <span style={{ fontSize: 'var(--fs-xs)', color: theme.primary }}>•</span>
                     <span>{name}</span>
                   </button>
                 ))}
@@ -495,7 +495,7 @@ function CollapsibleScenarios({ templates, onLoad }) {
                 onClick={() => onLoad(data, name, { isTemplate: true })}
                 className="sidebar-list-item"
               >
-                <span style={{ fontSize: '10px', color: theme.primary }}>•</span>
+                <span style={{ fontSize: 'var(--fs-xs)', color: theme.primary }}>•</span>
                 <span>{name}</span>
               </button>
             ))
@@ -522,14 +522,14 @@ function ProjectFolderRow({ project, isExpanded, onToggle, onManage }) {
         cursor: 'pointer',
         backgroundColor: hovered ? '#EBF0EF' : 'transparent',
         transition: 'background-color 0.15s ease',
-        fontSize: '12px',
+        fontSize: 'var(--fs-sm)',
         fontWeight: '600',
         color: '#1C2B2C'
       }}
     >
       <div {...clickableProps} onClick={onToggle} style={{ display: 'flex', alignItems: 'center', gap: '6px', flexGrow: 1, overflow: 'hidden' }}>
-        <span style={{ fontSize: '9px', color: '#587071', width: '10px' }}>{isExpanded ? '▼' : '▶'}</span>
-        <span style={{ color: '#FA8507' }}>📁</span>
+        {isExpanded ? <CaretDownIcon size={10} color="#587071" /> : <CaretRightIcon size={10} color="#587071" />}
+        <FolderIcon size={14} color="var(--color-brand-dark)" />
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{project.title}</span>
       </div>
       {hovered && (
@@ -539,19 +539,19 @@ function ProjectFolderRow({ project, isExpanded, onToggle, onManage }) {
             onManage(project.id);
           }}
           title="Manage project members and sharing"
+          aria-label="Manage project members and sharing"
           style={{
             background: 'transparent',
             border: 'none',
             color: '#395253',
             cursor: 'pointer',
             padding: '2px 4px',
-            fontSize: '13px',
             display: 'flex',
             alignItems: 'center',
             borderRadius: '4px'
           }}
         >
-          ⚙️
+          <GearIcon size={14} />
         </button>
       )}
     </div>
@@ -576,7 +576,7 @@ function DiagramRow({ diagram, isActive, isHighlighted, onClick, onOpen, onToggl
         padding: '5px 8px',
         borderRadius: '4px',
         cursor: 'pointer',
-        fontSize: '11px',
+        fontSize: 'var(--fs-xs)',
         backgroundColor: isActive ? '#395253' : isHighlighted ? '#EBF0EF' : hovered ? '#F4F7F6' : 'transparent',
         color: isActive ? '#ffffff' : '#1C2B2C',
         fontWeight: isActive ? '700' : isHighlighted ? '600' : '500',
@@ -588,7 +588,7 @@ function DiagramRow({ diagram, isActive, isHighlighted, onClick, onOpen, onToggl
         onDoubleClick={onOpen}
         style={{ display: 'flex', alignItems: 'center', gap: '6px', flexGrow: 1, overflow: 'hidden' }}
       >
-        <span style={{ color: isActive ? '#ffffff' : '#FA8507', display: 'flex', alignItems: 'center' }}>📄</span>
+        <FileIcon size={14} color={isActive ? '#ffffff' : 'var(--color-text-secondary)'} />
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexGrow: 1 }}>{diagram.title}</span>
         {(hovered || isHighlighted) && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -598,6 +598,7 @@ function DiagramRow({ diagram, isActive, isHighlighted, onClick, onOpen, onToggl
                 onOpen();
               }}
               title="Open drawing"
+              aria-label="Open drawing"
               style={{
                 background: 'transparent',
                 border: 'none',
@@ -617,6 +618,7 @@ function DiagramRow({ diagram, isActive, isHighlighted, onClick, onOpen, onToggl
                 onDelete(e);
               }}
               title="Delete drawing"
+              aria-label="Delete drawing"
               style={{
                 background: 'transparent',
                 border: 'none',
@@ -639,7 +641,8 @@ function DiagramRow({ diagram, isActive, isHighlighted, onClick, onOpen, onToggl
             onToggleLock();
           }}
           disabled={isLocked && !isLockedByMe}
-          title={isLocked ? (isLockedByMe ? 'Release Edit Lock (Check in)' : `Locked by ${lock.username}`) : 'Acquire Edit Lock (Check out)'}
+          title={isLocked ? (isLockedByMe ? 'Release edit lock (check in)' : `Locked by ${lock.username}`) : 'Check out to edit'}
+          aria-label={isLocked ? (isLockedByMe ? 'Release edit lock' : `Locked by ${lock.username}`) : 'Check out to edit'}
           style={{
             background: 'transparent',
             border: 'none',
@@ -1100,9 +1103,9 @@ export default function Sidebar({
     event.dataTransfer.effectAllowed = 'move';
   };
 
-  const labelStyle = { display: 'block', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', color: theme.slate500, marginBottom: '6px', letterSpacing: '0.04em' };
+  const labelStyle = { display: 'block', fontSize: 'var(--fs-xs)', fontWeight: '600', color: theme.slate500, marginBottom: '6px' };
   const inputStyle = { width: '100%' };
-  const hintStyle = { fontSize: '10px', color: theme.slate500, marginTop: '4px' };
+  const hintStyle = { fontSize: 'var(--fs-xs)', color: theme.slate500, marginTop: '4px' };
 
   return (
     <aside style={{
@@ -1117,7 +1120,7 @@ export default function Sidebar({
             onClick={() => setActiveTab(tab)}
             style={{
               flex: 1, padding: '6px 2px', border: 'none', borderRadius: '7px',
-              fontSize: '10px', fontWeight: '700', cursor: 'pointer',
+              fontSize: 'var(--fs-xs)', fontWeight: '700', cursor: 'pointer',
               textTransform: 'capitalize',
               background: activeTab === tab ? theme.brandDark : 'transparent',
               color: activeTab === tab ? theme.white : theme.slate500,
@@ -1163,11 +1166,11 @@ export default function Sidebar({
                   style={{ ...inputStyle, paddingLeft: '36px' }}
                 />
                 {searchQuery && (
-                  <button 
+                  <button aria-label="Clear search" title="Clear search" 
                     onClick={() => setSearchQuery('')}
-                    style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', color: theme.slate500, cursor: 'pointer', fontSize: '16px' }}
+                    style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', color: theme.slate500, cursor: 'pointer', display: 'inline-flex' }}
                   >
-                    ×
+                    <CrossIcon size={14} />
                   </button>
                 )}
               </div>
@@ -1178,7 +1181,7 @@ export default function Sidebar({
                 <CollapsibleCategory key={category.name} name={category.name} items={category.items} onDragStart={onDragStart} />
               ))
             ) : (
-              <div style={{ textAlign: 'center', padding: '20px', color: theme.slate500, fontSize: '12px' }}>
+              <div style={{ textAlign: 'center', padding: '20px', color: theme.slate500, fontSize: 'var(--fs-sm)' }}>
                 No components match "{searchQuery}"
               </div>
             )}
@@ -1211,7 +1214,7 @@ export default function Sidebar({
                       padding: '5px 8px',
                       border: 'none',
                       borderRadius: '6px',
-                      fontSize: '11px',
+                      fontSize: 'var(--fs-xs)',
                       fontWeight: '700',
                       cursor: 'pointer',
                       transition: 'all 0.15s ease',
@@ -1240,11 +1243,11 @@ export default function Sidebar({
                   gap: '10px'
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '10.5px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--color-text-secondary)', letterSpacing: '0.04em' }}>
+                    <span style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', textTransform: 'uppercase', color: 'var(--color-text-secondary)', letterSpacing: '0.04em' }}>
                       Drawing Info
                     </span>
                     <span style={{
-                      fontSize: '9px',
+                      fontSize: 'var(--fs-xs)',
                       fontWeight: '700',
                       padding: '2px 6px',
                       borderRadius: '10px',
@@ -1257,7 +1260,7 @@ export default function Sidebar({
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--color-text-secondary)', marginBottom: '4px' }}>
+                    <label style={{ display: 'block', fontSize: 'var(--fs-xs)', fontWeight: '600', color: 'var(--color-text-secondary)', marginBottom: '4px' }}>
                       Title
                     </label>
                     <input
@@ -1268,12 +1271,12 @@ export default function Sidebar({
                       disabled={!activeDiagram || isLockedByOther}
                       placeholder="Drawing Title"
                       className="form-input"
-                      style={{ width: '100%', height: '32px', fontSize: '12px' }}
+                      style={{ width: '100%', height: '32px', fontSize: 'var(--fs-sm)' }}
                     />
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--color-text-secondary)', marginBottom: '4px' }}>
+                    <label style={{ display: 'block', fontSize: 'var(--fs-xs)', fontWeight: '600', color: 'var(--color-text-secondary)', marginBottom: '4px' }}>
                       Description
                     </label>
                     <input
@@ -1284,14 +1287,14 @@ export default function Sidebar({
                       disabled={!activeDiagram || isLockedByOther}
                       placeholder="Optional notes or system description"
                       className="form-input"
-                      style={{ width: '100%', height: '32px', fontSize: '11.5px' }}
+                      style={{ width: '100%', height: '32px', fontSize: 'var(--fs-sm)' }}
                     />
                   </div>
 
                   {activeDiagram && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px' }}>
-                      <span style={{ fontSize: '10px', color: 'var(--color-text-secondary)' }}>
-                        {isLockedByOther ? '🔒 Locked by another user' : hasLock ? '🟢 Checked out (editing)' : 'Available (read-only)'}
+                      <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
+                        {isLockedByOther ? 'Locked by another user' : hasLock ? 'Checked out (editing)' : 'Available (read-only)'}
                       </span>
                       {hasLock && (
                         <button
@@ -1299,7 +1302,7 @@ export default function Sidebar({
                           onClick={handleSaveDrawingMetadata}
                           disabled={isSavingDrawingMeta}
                           className="btn-secondary"
-                          style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '4px', height: '24px' }}
+                          style={{ fontSize: 'var(--fs-xs)', padding: '3px 8px', borderRadius: '4px', height: '24px' }}
                         >
                           {isSavingDrawingMeta ? 'Saving...' : 'Save Info'}
                         </button>
@@ -1310,12 +1313,12 @@ export default function Sidebar({
 
                 {/* Fluid Dynamics */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  <h4 style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', color: theme.slate500, margin: 0, letterSpacing: '0.05em' }}>
+                  <h4 style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', textTransform: 'uppercase', color: theme.slate500, margin: 0, letterSpacing: '0.05em' }}>
                     Fluid Dynamics
                   </h4>
                   
                   <div>
-                    <label style={labelStyle}>System Fluid</label>
+                    <label style={labelStyle}>System fluid</label>
                     <select 
                       value={globalSettings.fluid_type}
                       onChange={(e) => onUpdateGlobalSettings({ ...globalSettings, fluid_type: e.target.value })}
@@ -1334,7 +1337,7 @@ export default function Sidebar({
                   </div>
 
                   <div>
-                    <label style={labelStyle}>Ambient Temp ({isImperial ? '°F' : '°C'})</label>
+                    <label style={labelStyle}>Ambient temperature ({isImperial ? '°F' : '°C'})</label>
                     <DraftNumberInput
                       step="0.1"
                       displayValue={
@@ -1356,7 +1359,7 @@ export default function Sidebar({
                   </div>
 
                   <div>
-                    <label style={labelStyle}>Atmospheric Pressure ({isImperial ? 'psi(a)' : 'bar(a)'})</label>
+                    <label style={labelStyle}>Atmospheric pressure ({isImperial ? 'psi(a)' : 'bar(a)'})</label>
                     <DraftNumberInput
                       step={isImperial ? "0.01" : "0.001"}
                       displayValue={
@@ -1382,8 +1385,9 @@ export default function Sidebar({
                   <SolverSettingsGroup
                     values={drawingSolverOn ? drawingSolverValues : solverBelowDrawing.values}
                     onChange={(patch) => onUpdateGlobalSettings({ ...globalSettings, ...patch })}
-                    toggle={{ checked: drawingSolverOn, onChange: toggleDrawingSolver, label: 'Use drawing solver settings' }}
+                    toggle={{ checked: drawingSolverOn, onChange: toggleDrawingSolver, label: 'Use drawing solver settings (overrides project and global)' }}
                     inheritedFrom={solverBelowDrawing.source}
+                    inForce={drawingSolverOn}
                   />
                 </div>
               </div>
@@ -1406,8 +1410,8 @@ export default function Sidebar({
                     }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ color: '#FA8507' }}>📁</span>
-                          <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--color-text-primary)' }}>
+                          <FolderIcon size={16} color="var(--color-brand-dark)" />
+                          <span style={{ fontSize: 'var(--fs-base)', fontWeight: '700', color: 'var(--color-text-primary)' }}>
                             {activeProject.title}
                           </span>
                         </div>
@@ -1416,15 +1420,15 @@ export default function Sidebar({
                             type="button"
                             onClick={() => onOpenProjectsModal(activeProject.id)}
                             className="btn-secondary"
-                            style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '4px', height: '24px' }}
+                            style={{ fontSize: 'var(--fs-xs)', padding: '3px 8px', borderRadius: '4px', height: '24px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                             title="Manage project members and sharing"
                           >
-                            ⚙️ Team
+                            <GearIcon size={12} /> Team
                           </button>
                         )}
                       </div>
                       {activeProject.description && (
-                        <p style={{ margin: 0, fontSize: '11px', color: 'var(--color-text-secondary)' }}>
+                        <p style={{ margin: 0, fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
                           {activeProject.description}
                         </p>
                       )}
@@ -1441,7 +1445,7 @@ export default function Sidebar({
                       gap: '10px'
                     }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <h4 style={{ margin: 0, color: 'var(--color-primary-text)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        <h4 style={{ margin: 0, color: 'var(--color-primary-text)', fontSize: 'var(--fs-xs)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                           Available Pipe Specs
                         </h4>
                         {isOwnerOfActiveProject && (
@@ -1451,7 +1455,7 @@ export default function Sidebar({
                               onClick={() => handleSetAllPipeClasses(true)}
                               disabled={savingPipeSpecs}
                               className="btn-secondary"
-                              style={{ height: '20px', fontSize: '9px', padding: '0 6px', borderRadius: '4px', backgroundColor: '#F4F7F6', border: '1px solid #D8E2E1' }}
+                              style={{ height: '20px', fontSize: 'var(--fs-xs)', padding: '0 6px', borderRadius: '4px', backgroundColor: '#F4F7F6', border: '1px solid #D8E2E1' }}
                             >
                               All
                             </button>
@@ -1460,7 +1464,7 @@ export default function Sidebar({
                               onClick={() => handleSetAllPipeClasses(false)}
                               disabled={savingPipeSpecs}
                               className="btn-secondary"
-                              style={{ height: '20px', fontSize: '9px', padding: '0 6px', borderRadius: '4px', backgroundColor: '#F4F7F6', border: '1px solid #D8E2E1' }}
+                              style={{ height: '20px', fontSize: 'var(--fs-xs)', padding: '0 6px', borderRadius: '4px', backgroundColor: '#F4F7F6', border: '1px solid #D8E2E1' }}
                             >
                               None
                             </button>
@@ -1468,7 +1472,7 @@ export default function Sidebar({
                         )}
                       </div>
 
-                      <p style={{ margin: 0, fontSize: '11px', color: 'var(--color-text-secondary)' }}>
+                      <p style={{ margin: 0, fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
                         {!activeProject.allowed_pipe_classes
                           ? "All system pipe specifications are active for this project."
                           : `${activeProject.allowed_pipe_classes.length} of ${pipeClasses.length} specifications enabled.`}
@@ -1482,13 +1486,13 @@ export default function Sidebar({
                           onChange={(e) => setPipeSpecSearch(e.target.value)}
                           placeholder="Filter specs by code or name..."
                           className="form-input"
-                          style={{ width: '100%', height: '28px', fontSize: '11px', padding: '0 8px' }}
+                          style={{ width: '100%', height: '28px', fontSize: 'var(--fs-xs)', padding: '0 8px' }}
                         />
                       </div>
 
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '200px', overflowY: 'auto', paddingRight: '4px' }}>
                         {pipeClasses.length === 0 ? (
-                          <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', textAlign: 'center', padding: '12px' }}>
+                          <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', textAlign: 'center', padding: '12px' }}>
                             Loading pipe specifications...
                           </div>
                         ) : (
@@ -1515,7 +1519,7 @@ export default function Sidebar({
                                     borderRadius: '6px',
                                     backgroundColor: isAllowed ? '#F4F7F6' : 'transparent',
                                     border: `1px solid ${isAllowed ? '#D8E2E1' : 'transparent'}`,
-                                    fontSize: '11px',
+                                    fontSize: 'var(--fs-xs)',
                                     color: isAllowed ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
                                     cursor: isOwnerOfActiveProject ? 'pointer' : 'default',
                                     opacity: isAllowed ? 1 : 0.6
@@ -1533,7 +1537,7 @@ export default function Sidebar({
                                       <span style={{ color: 'var(--color-primary-text)', marginRight: '4px' }}>[{pc.code}]</span>
                                       {pc.name}
                                     </span>
-                                    <span style={{ fontSize: '9px', color: 'var(--color-text-secondary)' }}>
+                                    <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
                                       {pc.rating_class} • {pc.material_grade} • ε={pc.roughness_mm}mm
                                     </span>
                                   </div>
@@ -1553,10 +1557,10 @@ export default function Sidebar({
                         alignItems: 'center'
                       }}>
                         <div>
-                          <span style={{ fontSize: '11px', fontWeight: '600', color: 'var(--color-text-primary)', display: 'block' }}>
+                          <span style={{ fontSize: 'var(--fs-xs)', fontWeight: '600', color: 'var(--color-text-primary)', display: 'block' }}>
                             Custom Dimensions
                           </span>
-                          <span style={{ fontSize: '9.5px', color: 'var(--color-text-secondary)' }}>
+                          <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
                             Allow manual pipe diameters
                           </span>
                         </div>
@@ -1567,7 +1571,7 @@ export default function Sidebar({
                             disabled={!isOwnerOfActiveProject || savingPipeSpecs}
                             style={{
                               padding: '2px 10px',
-                              fontSize: '10.5px',
+                              fontSize: 'var(--fs-xs)',
                               fontWeight: '700',
                               borderRadius: '4px',
                               border: 'none',
@@ -1586,7 +1590,7 @@ export default function Sidebar({
                             disabled={!isOwnerOfActiveProject || savingPipeSpecs}
                             style={{
                               padding: '2px 10px',
-                              fontSize: '10.5px',
+                              fontSize: 'var(--fs-xs)',
                               fontWeight: '700',
                               borderRadius: '4px',
                               border: 'none',
@@ -1611,12 +1615,13 @@ export default function Sidebar({
                         toggle={{
                           checked: projectSolverOn,
                           onChange: toggleProjectSolver,
-                          label: 'Use project solver settings',
+                          label: 'Use project solver settings (overrides global)',
                           disabled: !isOwnerOfActiveProject,
                           disabledHint: 'Only project owners can change the project solver settings.',
                         }}
                         inheritedFrom={solverBelowProject.source}
                         overriddenBy={projectSolverOn && drawingSolverOn ? 'drawing' : null}
+                        inForce={projectSolverOn && !drawingSolverOn}
                         readOnly={!isOwnerOfActiveProject}
                       />
                     </div>
@@ -1646,10 +1651,10 @@ export default function Sidebar({
                       <FolderIcon size={20} color="var(--color-brand-dark)" />
                     </div>
                     <div>
-                      <h4 style={{ margin: '0 0 4px 0', fontSize: '13px', fontWeight: '700', color: 'var(--color-text-primary)' }}>
+                      <h4 style={{ margin: '0 0 4px 0', fontSize: 'var(--fs-base)', fontWeight: '700', color: 'var(--color-text-primary)' }}>
                         Standalone Drawing
                       </h4>
-                      <p style={{ margin: 0, fontSize: '11px', color: 'var(--color-text-secondary)', lineHeight: '1.4' }}>
+                      <p style={{ margin: 0, fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', lineHeight: '1.4' }}>
                         This drawing is not part of a cloud project. All standard pipe specifications and manual pipe dimensions are available.
                       </p>
                     </div>
@@ -1657,10 +1662,10 @@ export default function Sidebar({
                       <button
                         type="button"
                         onClick={onSaveAsClick}
-                        className="btn-primary"
-                        style={{ height: '30px', padding: '0 14px', fontSize: '11px', fontWeight: '700', borderRadius: '6px' }}
+                        className="btn-secondary"
+                        style={{ height: '30px', padding: '0 14px', fontSize: 'var(--fs-xs)', fontWeight: '600', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                       >
-                        📁 Save into Cloud Project
+                        <FolderIcon size={14} /> Save into cloud project
                       </button>
                     )}
                   </div>
@@ -1673,12 +1678,12 @@ export default function Sidebar({
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 {/* Engineering Unit System */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <h4 style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', color: theme.slate500, margin: 0, letterSpacing: '0.05em' }}>
+                  <h4 style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', textTransform: 'uppercase', color: theme.slate500, margin: 0, letterSpacing: '0.05em' }}>
                     Unit System
                   </h4>
                   
                   <div>
-                    <label style={labelStyle}>Engineering Units</label>
+                    <label style={labelStyle}>Engineering units</label>
                     <div style={{ display: 'flex', gap: '6px', background: '#F4F7F6', padding: '4px', borderRadius: '8px', border: '1px solid #D8E2E1' }}>
                       <button
                         type="button"
@@ -1688,7 +1693,7 @@ export default function Sidebar({
                         style={{
                           flex: 1,
                           padding: '6px 8px',
-                          fontSize: '11.5px',
+                          fontSize: 'var(--fs-sm)',
                           fontWeight: '600',
                           borderRadius: '6px',
                           border: 'none',
@@ -1709,7 +1714,7 @@ export default function Sidebar({
                         style={{
                           flex: 1,
                           padding: '6px 8px',
-                          fontSize: '11.5px',
+                          fontSize: 'var(--fs-sm)',
                           fontWeight: '600',
                           borderRadius: '6px',
                           border: 'none',
@@ -1737,6 +1742,7 @@ export default function Sidebar({
                     values={userSettings.solver}
                     onChange={onUpdateUserSolver}
                     overriddenBy={null}
+                    inForce={solverInForce.source === 'global'}
                   />
                   {solverInForce.source !== 'global' && (
                     <p style={{ ...hintStyle, marginTop: '8px' }}>
@@ -1755,18 +1761,18 @@ export default function Sidebar({
                   flexDirection: 'column',
                   gap: '8px'
                 }}>
-                  <h4 style={{ margin: 0, fontSize: '10.5px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--color-text-secondary)', letterSpacing: '0.04em' }}>
+                  <h4 style={{ margin: 0, fontSize: 'var(--fs-xs)', fontWeight: '700', textTransform: 'uppercase', color: 'var(--color-text-secondary)', letterSpacing: '0.04em' }}>
                     System Specifications
                   </h4>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--fs-sm)' }}>
                     <span style={{ color: 'var(--color-text-secondary)' }}>App Version:</span>
                     <span style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>v{APP_VERSION}</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--fs-sm)' }}>
                     <span style={{ color: 'var(--color-text-secondary)' }}>File Format:</span>
                     <span style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>v{FILE_FORMAT_VERSION}</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--fs-sm)' }}>
                     <span style={{ color: 'var(--color-text-secondary)' }}>Physics Engine:</span>
                     <span style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>Steady-State (Δt=0)</span>
                   </div>
@@ -1792,58 +1798,60 @@ export default function Sidebar({
               flexDirection: 'column',
               gap: '8px'
             }}>
-              <div style={{ display: 'block', fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: theme.brandDark }}>
-                Active Drawing
+              <div style={{ display: 'block', fontSize: 'var(--fs-xs)', fontWeight: '600', color: theme.brandDark }}>
+                Active drawing
               </div>
               {activeDiagram ? (
                 <>
-                  <div style={{ fontSize: '13px', fontWeight: '700', color: theme.slate800, wordBreak: 'break-all' }}>
-                    📄 {activeDiagram.title}
+                  <div style={{ fontSize: 'var(--fs-base)', fontWeight: '700', color: theme.slate800, wordBreak: 'break-all' }}>
+                    <FileIcon size={14} color={theme.slate500} style={{ marginRight: '6px' }} />{activeDiagram.title}
                   </div>
-                  <div style={{ fontSize: '11px', color: theme.slate500 }}>
-                    {activeProject ? `Folder: Project "${activeProject.title}"` : 'Folder: Standalone Drawing'}
+                  <div style={{ fontSize: 'var(--fs-xs)', color: theme.slate500 }}>
+                    {activeProject ? `Project: ${activeProject.title}` : 'Standalone drawing'}
                   </div>
-                  <div style={{ fontSize: '11px', color: theme.slate500, marginTop: '2px' }}>
+                  <div style={{ fontSize: 'var(--fs-xs)', color: theme.slate500, marginTop: '2px' }}>
                     {saveStatus === 'saving_cloud' ? 'Saving changes...' :
-                     saveStatus === 'error' ? 'Sync error!' :
-                     lastSavedTimestamp ? `Last saved: ${lastSavedTimestamp}` : 'Saved to Cloud'}
+                     saveStatus === 'error' ? 'Sync error' :
+                     lastSavedTimestamp ? `Last saved: ${lastSavedTimestamp}` : 'Saved to cloud'}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
                     {isLockedByOther ? (
-                      <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '10px', backgroundColor: '#FFFBEB', color: '#D97706', border: '1px solid #FDE68A', fontWeight: '700' }}>
-                        🔒 Locked: {lockInfo?.username}
+                      <span style={{ fontSize: 'var(--fs-xs)', padding: '2px 8px', borderRadius: '10px', backgroundColor: 'var(--color-warning-bg)', color: 'var(--color-warning-text)', border: '1px solid var(--color-warning-border)', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <LockIcon size={11} /> Locked by {lockInfo?.username}
                       </span>
                     ) : hasLock ? (
-                      <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '10px', backgroundColor: '#ECFDF5', color: '#10B981', border: '1px solid #A7F3D0', fontWeight: '700' }}>
-                        🟢 Checked Out
+                      <span style={{ fontSize: 'var(--fs-xs)', padding: '2px 8px', borderRadius: '10px', backgroundColor: '#ECFDF5', color: '#047857', border: '1px solid #A7F3D0', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <DotIcon size={8} /> Checked out
                       </span>
                     ) : (
-                      <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '10px', backgroundColor: '#F4F7F6', color: '#587071', border: '1px solid #D8E2E1', fontWeight: '750' }}>
-                        Available (Read-Only)
+                      <span style={{ fontSize: 'var(--fs-xs)', padding: '2px 8px', borderRadius: '10px', backgroundColor: '#F4F7F6', color: '#587071', border: '1px solid #D8E2E1', fontWeight: '600' }}>
+                        Available (read-only)
                       </span>
                     )}
                   </div>
                   <div style={{ marginTop: '6px' }}>
                     {isLockedByOther ? (
-                      <p style={{ margin: 0, fontSize: '10px', color: '#D97706' }}>Drawing is read-only. Lock held by another user.</p>
+                      <p style={{ margin: 0, fontSize: 'var(--fs-xs)', color: 'var(--color-warning-text)' }}>Drawing is read-only while another user has it checked out.</p>
                     ) : hasLock ? (
-                      <button onClick={onCheckin} className="btn-secondary" style={{ width: '100%', borderColor: '#10B981', color: '#10B981', fontWeight: '700', backgroundColor: 'transparent' }}>
-                        🔓 Release Edit Lock
+                      <button onClick={onCheckin} className="btn-secondary" style={{ width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                        <UnlockIcon size={14} /> Release edit lock
                       </button>
                     ) : (
-                      <button onClick={onCheckout} className="btn-secondary" style={{ width: '100%', color: theme.brandDark, borderColor: theme.brandDark, fontWeight: '700', backgroundColor: 'transparent' }}>
-                        📝 Check Out to Edit
+                      <button onClick={onCheckout} className="btn-secondary" style={{ width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                        <NoteEditIcon size={14} /> Check out to edit
                       </button>
                     )}
                   </div>
                 </>
               ) : (
                 <>
-                  <div style={{ fontSize: '13px', fontWeight: '700', color: theme.slate800 }}>
-                    📝 Local Draft
+                  <div style={{ fontSize: 'var(--fs-base)', fontWeight: '700', color: theme.slate800 }}>
+                    <NoteEditIcon size={14} color={theme.slate500} style={{ marginRight: '6px' }} />Local draft
                   </div>
-                  <div style={{ fontSize: '11px', color: theme.slate500 }}>
-                    Cached in browser storage. Log in and save to cloud.
+                  <div style={{ fontSize: 'var(--fs-xs)', color: theme.slate500 }}>
+                    {isAuthenticated
+                      ? 'Kept in this browser only. Use Save as to store it in the cloud.'
+                      : 'Kept in this browser only. Sign in to save it to the cloud.'}
                   </div>
                 </>
               )}
@@ -1852,20 +1860,20 @@ export default function Sidebar({
             {/* Drawings Explorer */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flexGrow: 1, minHeight: '200px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', color: theme.slate500, letterSpacing: '0.04em' }}>Drawings Explorer</span>
+                <span style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', textTransform: 'uppercase', color: theme.slate500, letterSpacing: '0.04em' }}>Drawings</span>
                 {isAuthenticated && onOpenProjectsModal && (
                   <button 
                     onClick={() => onOpenProjectsModal(null)} 
-                    style={{ background: 'transparent', border: 'none', color: '#395253', fontSize: '11px', fontWeight: '600', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '3px' }}
+                    style={{ background: 'transparent', border: 'none', color: '#395253', fontSize: 'var(--fs-xs)', fontWeight: '600', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                   >
-                    ⚙️ Manage Projects
+                    <GearIcon size={12} /> Manage projects
                   </button>
                 )}
               </div>
               
               {!isAuthenticated ? (
-                <div style={{ padding: '16px', border: `1px dashed ${theme.slate200}`, borderRadius: '8px', textAlign: 'center', fontSize: '12px', color: theme.slate500, backgroundColor: theme.slate50 }}>
-                  Please log in to browse your cloud projects and drawings.
+                <div style={{ padding: '16px', border: `1px dashed ${theme.slate200}`, borderRadius: '8px', textAlign: 'center', fontSize: 'var(--fs-sm)', color: theme.slate500, backgroundColor: theme.slate50 }}>
+                  Sign in to browse your cloud projects and drawings.
                 </div>
               ) : (
                 <div className="matrix-scroll-container" style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '300px', overflowY: 'auto', paddingRight: '4px' }}>
@@ -1885,7 +1893,7 @@ export default function Sidebar({
                         {isExpanded && (
                           <div style={{ paddingLeft: '14px', borderLeft: `1px solid ${theme.slate200}`, marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                             {diags.length === 0 ? (
-                              <div style={{ padding: '4px 8px', fontSize: '11px', color: theme.slate500 }}>
+                              <div style={{ padding: '4px 8px', fontSize: 'var(--fs-xs)', color: theme.slate500 }}>
                                 No drawings
                               </div>
                             ) : (
@@ -1916,8 +1924,8 @@ export default function Sidebar({
                   {/* Standalone Drawings */}
                   {standaloneList.length > 0 && (
                     <div style={{ display: 'flex', flexDirection: 'column', marginTop: '10px', gap: '4px' }}>
-                      <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: theme.slate500, marginBottom: '2px', letterSpacing: '0.04em' }}>
-                        Standalone Drawings
+                      <div style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', textTransform: 'uppercase', color: theme.slate500, marginBottom: '2px', letterSpacing: '0.04em' }}>
+                        Standalone drawings
                       </div>
                       {standaloneList.map(d => {
                         const isActive = activeDiagram?.id === d.id;
@@ -1940,7 +1948,7 @@ export default function Sidebar({
                   )}
 
                   {projectsList.length === 0 && standaloneList.length === 0 && !loadingFiles && (
-                    <div style={{ padding: '12px', textAlign: 'center', fontSize: '11px', color: theme.slate500 }}>
+                    <div style={{ padding: '12px', textAlign: 'center', fontSize: 'var(--fs-xs)', color: theme.slate500 }}>
                       No cloud drawings found.
                     </div>
                   )}
@@ -1958,18 +1966,18 @@ export default function Sidebar({
             }}>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button onClick={onNewDrawingClick} className="btn-secondary" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                  <span>+</span> New Drawing
+                  <PlusIcon size={14} /> New
                 </button>
                 <button onClick={onSaveAsClick} className="btn-secondary" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                  <span>💾</span> Save As...
+                  <SaveIcon size={14} /> Save as…
                 </button>
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button onClick={onImportClick} className="btn-secondary" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                  <span>📥</span> Import File
+                  <ImportIcon size={14} /> Import
                 </button>
                 <button onClick={onExportClick} className="btn-secondary" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                  <span>📤</span> Export File
+                  <ExportIcon size={14} /> Export
                 </button>
               </div>
             </div>

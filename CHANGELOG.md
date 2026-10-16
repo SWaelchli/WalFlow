@@ -33,6 +33,9 @@ All notable changes to the WälFlow project will be documented in this file.
 
 ### Changed
 
+- **UI/UX consistency pass**: one SVG icon set (Phosphor) replaces all emoji; Inter is bundled and a 7-step type scale (`--fs-*`) and warning colour tokens replace raw sizes and hex values; orange is reserved for the main action per area; tabs and segmented controls use dark teal; sentence-case labels and one set of component names (Pipe, Control valve, Drawing, "DN 20").
+- **Header**: File menu (New, Open, Save `Ctrl+S`, Save as, Import, Export), document name with save state, and the last run time in the status pill; operating cases are created only in the Operating cases tab.
+- **Smaller fixes**: easier pipe selection (wider hit area), Admin Hub with fixed height and neutral stats, readable catalogue names and units in column headers on Piping Classes, "In force" badges on solver settings, the unused damping factor hidden, wider Help, tooltips and labels on icon-only buttons.
 - **Tank fluid**: tanks always use the system fluid; a hidden per-tank `fluid_type` in old files is ignored (audit F1-23).
 - **Settings levels**: Drawing (in the `.wlf`), Project and Global settings. Solver settings can be set on each level and are applied in the order Drawing, Project, Global (one tick box per level); fluid and ambient stay with the drawing. The unit system is now a per-user display preference stored with the account.
 - **UX**: resizable and collapsible data panel, fit-view after loading, right-click menus, empty-canvas hint, "-" instead of fake zeros before a run, positive pressure drops, tank and atmospheric pressure units, readable auto names, round pump chart ticks, and darker text colours (orange CTA now uses dark text) for WCAG contrast.

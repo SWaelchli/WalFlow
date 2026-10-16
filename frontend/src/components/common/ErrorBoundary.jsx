@@ -4,7 +4,7 @@ import { readDraft, removeDraft } from '../../utils/draftStorage';
 
 const buttonStyle = {
   background: '#F4F7F6', border: '1px solid #D8E2E1', borderRadius: '8px', color: '#1C2B2C',
-  padding: '8px 14px', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
+  padding: '8px 14px', fontSize: 'var(--fs-base)', fontWeight: 600, cursor: 'pointer',
 };
 
 /**
@@ -54,11 +54,11 @@ export default class ErrorBoundary extends React.Component {
     return (
       <div role="alert" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F4F7F6', color: '#1C2B2C', padding: '16px' }}>
         <div style={{ maxWidth: 520, background: '#FFFFFF', border: '1px solid #D8E2E1', borderRadius: 12, padding: 24 }}>
-          <h1 style={{ fontSize: 18, margin: '0 0 8px' }}>Something went wrong</h1>
-          <p style={{ fontSize: 13, color: '#587071', margin: '0 0 12px' }}>
+          <h1 style={{ fontSize: 'var(--fs-xl)', margin: '0 0 8px' }}>Something went wrong</h1>
+          <p style={{ fontSize: 'var(--fs-base)', color: '#587071', margin: '0 0 12px' }}>
             WalFlow hit an unexpected error and could not draw this screen. {hasDraft ? 'Your last local draft is still stored in this browser.' : 'No local draft is stored in this browser.'}
           </p>
-          <pre style={{ fontSize: 11, background: '#F4F7F6', border: '1px solid #EBF0EF', borderRadius: 8, padding: 8, whiteSpace: 'pre-wrap', margin: '0 0 16px' }}>
+          <pre style={{ fontSize: 'var(--fs-xs)', background: '#F4F7F6', border: '1px solid #EBF0EF', borderRadius: 8, padding: 8, whiteSpace: 'pre-wrap', margin: '0 0 16px' }}>
             {String(this.state.error?.message || this.state.error)}
           </pre>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>

@@ -48,15 +48,15 @@ export default function RuptureDiscDetails({ node, unmitigatedTelemetry }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
       {/* Diaphragm Status Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-brand-dark)', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '3px solid var(--color-primary)', paddingLeft: '8px' }}>
+        <div style={{ fontSize: 'var(--fs-xs)', fontWeight: '800', color: 'var(--color-brand-dark)', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '3px solid var(--color-primary)', paddingLeft: '8px' }}>
           Safety Relief Assessment
         </div>
-        <span style={{ fontSize: '9.5px', fontWeight: '800', color: statusBadgeColor, backgroundColor: statusBadgeBg, padding: '2px 8px', borderRadius: 'var(--radius-sm)', border: `1px solid var(--color-border)` }}>
+        <span style={{ fontSize: 'var(--fs-xs)', fontWeight: '800', color: statusBadgeColor, backgroundColor: statusBadgeBg, padding: '2px 8px', borderRadius: 'var(--radius-sm)', border: `1px solid var(--color-border)` }}>
           {statusLabel}
         </span>
       </div>
 
-      <div style={{ background: 'var(--color-surface-hover)', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontSize: '11.5px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+      <div style={{ background: 'var(--color-surface-hover)', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontSize: 'var(--fs-sm)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ color: 'var(--color-text-secondary)', fontWeight: '500' }}>Burst Pressure:</span>
           <span style={{ fontWeight: '700', color: 'var(--color-primary-text)', fontFamily: 'var(--font-mono)' }}>{burstPressureBarg !== null ? formatPressureGauge(burstPressureBarg) : 'missing'}</span>
@@ -70,8 +70,8 @@ export default function RuptureDiscDetails({ node, unmitigatedTelemetry }) {
       </div>
 
       {/* Telemetry & Sizing Card */}
-      <div style={{ background: 'var(--color-surface)', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontSize: '11.5px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        <div style={{ fontWeight: '800', fontSize: '10.5px', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--color-border)', paddingBottom: '4px' }}>
+      <div style={{ background: 'var(--color-surface)', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontSize: 'var(--fs-sm)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div style={{ fontWeight: '800', fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', borderBottom: '1px solid var(--color-border)', paddingBottom: '4px' }}>
           Operational Telemetry & Safety Baseline
         </div>
 
@@ -98,7 +98,7 @@ export default function RuptureDiscDetails({ node, unmitigatedTelemetry }) {
 
         {/* Orifice / Seat Capacity Utilization Bar */}
         <div style={{ marginTop: '4px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px', marginBottom: '3px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--fs-sm)', marginBottom: '3px', alignItems: 'center' }}>
             <span style={{ color: 'var(--color-text-secondary)', fontWeight: '500' }}>Capacity Used (of rated flow at 110 % burst):</span>
             <span style={{ fontWeight: '700', color: capacityPct > 100 ? 'var(--color-danger)' : (capacityPct > 80 ? 'var(--color-warning)' : 'var(--color-success)'), fontFamily: 'var(--font-mono)' }}>
               {capacityPct.toFixed(1)}%

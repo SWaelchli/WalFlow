@@ -1,11 +1,12 @@
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
 import { subscribeDialogs, getDialogState, dismissToast, resolveModal } from '../../utils/dialogs';
+import { InfoIcon, CheckIcon, WarningIcon, CrossIcon } from '../symbols/IconLibrary';
 
 const TOAST_STYLE = {
-  info: { bar: '#395253', icon: 'i', label: 'Info' },
-  success: { bar: '#047857', icon: '✓', label: 'Done' },
-  warning: { bar: '#B45309', icon: '!', label: 'Warning' },
-  error: { bar: '#B91C1C', icon: '×', label: 'Error' },
+  info: { bar: '#395253', icon: <InfoIcon size={12} weight="bold" />, label: 'Info' },
+  success: { bar: '#047857', icon: <CheckIcon size={12} />, label: 'Done' },
+  warning: { bar: '#B45309', icon: <WarningIcon size={12} weight="bold" />, label: 'Warning' },
+  error: { bar: '#B91C1C', icon: <CrossIcon size={12} weight="bold" />, label: 'Error' },
 };
 
 const FOCUSABLE = 'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href], [tabindex]:not([tabindex="-1"])';
@@ -28,14 +29,14 @@ function Toasts({ toasts }) {
             style={{
               pointerEvents: 'auto', display: 'flex', alignItems: 'flex-start', gap: '10px', background: '#FFFFFF',
               color: '#1C2B2C', border: '1px solid #D8E2E1', borderLeft: `4px solid ${s.bar}`, borderRadius: '10px',
-              padding: '10px 12px', fontSize: '13px', lineHeight: 1.4, boxShadow: '0 8px 20px rgba(28, 43, 44, 0.16)',
+              padding: '10px 12px', fontSize: 'var(--fs-base)', lineHeight: 1.4, boxShadow: '0 8px 20px rgba(28, 43, 44, 0.16)',
             }}
           >
             <span
               aria-hidden="true"
               style={{
                 flex: '0 0 auto', width: '18px', height: '18px', borderRadius: '50%', background: s.bar, color: '#FFFFFF',
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 800,
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--fs-xs)', fontWeight: 800,
               }}
             >
               {s.icon}
@@ -48,9 +49,9 @@ function Toasts({ toasts }) {
               type="button"
               onClick={() => dismissToast(t.id)}
               aria-label="Dismiss message"
-              style={{ background: 'transparent', border: 'none', color: '#587071', cursor: 'pointer', fontSize: '16px', lineHeight: 1, padding: '2px 4px' }}
+              style={{ background: 'transparent', border: 'none', color: '#587071', cursor: 'pointer', lineHeight: 1, padding: '2px 4px', display: 'inline-flex' }}
             >
-              ×
+              <CrossIcon size={14} />
             </button>
           </div>
         );
@@ -116,10 +117,10 @@ function ModalDialog({ modal }) {
           width: 'min(440px, 100%)', padding: '20px', boxShadow: '0 20px 45px rgba(28, 43, 44, 0.3)',
         }}
       >
-        <h2 id={titleId} style={{ margin: '0 0 10px', fontSize: '16px', fontWeight: 700 }}>{modal.title}</h2>
+        <h2 id={titleId} style={{ margin: '0 0 10px', fontSize: 'var(--fs-lg)', fontWeight: 700 }}>{modal.title}</h2>
         {isName ? (
           <div style={{ marginBottom: '16px' }}>
-            <label htmlFor={inputId} style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#587071', marginBottom: '6px' }}>
+            <label htmlFor={inputId} style={{ display: 'block', fontSize: 'var(--fs-sm)', fontWeight: 600, color: '#587071', marginBottom: '6px' }}>
               {modal.label}
             </label>
             <input
@@ -134,7 +135,7 @@ function ModalDialog({ modal }) {
             />
           </div>
         ) : (
-          <p id={messageId} style={{ margin: '0 0 18px', fontSize: '13px', lineHeight: 1.5, color: '#1C2B2C', whiteSpace: 'pre-line' }}>
+          <p id={messageId} style={{ margin: '0 0 18px', fontSize: 'var(--fs-base)', lineHeight: 1.5, color: '#1C2B2C', whiteSpace: 'pre-line' }}>
             {modal.message}
           </p>
         )}
@@ -150,7 +151,7 @@ function ModalDialog({ modal }) {
             data-autofocus={modal.danger ? undefined : ''}
             style={modal.danger ? {
               background: '#B91C1C', color: '#FFFFFF', border: 'none', borderRadius: '8px', padding: '0 16px',
-              height: '34px', fontWeight: 700, fontSize: '13px', cursor: 'pointer',
+              height: '34px', fontWeight: 700, fontSize: 'var(--fs-base)', cursor: 'pointer',
             } : undefined}
           >
             {modal.confirmLabel}

@@ -1,3 +1,4 @@
+import { SwapIcon } from '../symbols/IconLibrary';
 import React from 'react';
 import {
   DEFAULT_REDUCER_STANDARD,
@@ -208,20 +209,20 @@ export default function ReducerSetup({ ctx }) {
                     gap: '6px'
                   }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--color-brand-dark)' }}>
+                      <span style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', color: 'var(--color-brand-dark)' }}>
                         Connected Lines Spec
                       </span>
                       <button
                         type="button"
                         onClick={handleAutoInheritFromLines}
                         className="btn-secondary"
-                        style={{ height: '22px', padding: '0 8px', fontSize: '9px', fontWeight: '700', gap: '4px' }}
+                        style={{ height: '22px', padding: '0 8px', fontSize: 'var(--fs-xs)', fontWeight: '700', gap: '4px' }}
                         title="Match reducer sizes, schedules and fitting standard to the connected lines"
                       >
                         <BoltIcon size={10} /> Auto-Detect Sizes
                       </button>
                     </div>
-                    <div style={{ fontSize: '10px', color: 'var(--color-text-secondary)', display: 'flex', justifyContent: 'space-between' }}>
+                    <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', display: 'flex', justifyContent: 'space-between' }}>
                       <span>Inlet: {connectedInletEdge ? `${pipeInletDn ? `DN${pipeInletDn}` : 'No DN'} (${connectedInletEdge.data?.pipe_class_code || 'Custom'})` : 'Open'}</span>
                       <span>Outlet: {connectedOutletEdge ? `${pipeOutletDn ? `DN${pipeOutletDn}` : 'No DN'} (${connectedOutletEdge.data?.pipe_class_code || 'Custom'})` : 'Open'}</span>
                     </div>
@@ -240,8 +241,8 @@ export default function ReducerSetup({ ctx }) {
                       display: 'flex',
                       alignItems: 'flex-start',
                       gap: '6px',
-                      fontSize: '10px',
-                      color: notice.kind === 'error' ? '#B91C1C' : '#92400E'
+                      fontSize: 'var(--fs-xs)',
+                      color: notice.kind === 'error' ? '#B91C1C' : 'var(--color-warning-text-strong)'
                     }}
                   >
                     <WarningIcon size={12} style={{ flexShrink: 0, marginTop: '1px' }} />
@@ -267,7 +268,7 @@ export default function ReducerSetup({ ctx }) {
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '6px',
-                    fontSize: '10px',
+                    fontSize: 'var(--fs-xs)',
                     color: '#1C2B2C'
                   }}>
                     <span>
@@ -277,7 +278,7 @@ export default function ReducerSetup({ ctx }) {
                       type="button"
                       className="btn-secondary"
                       onClick={() => handleStandardChange(classReducerStandard)}
-                      style={{ alignSelf: 'flex-start', height: '22px', padding: '0 8px', fontSize: '9px', fontWeight: '700' }}
+                      style={{ alignSelf: 'flex-start', height: '22px', padding: '0 8px', fontSize: 'var(--fs-xs)', fontWeight: '700' }}
                     >
                       Use {classStandardName}
                     </button>
@@ -296,10 +297,10 @@ export default function ReducerSetup({ ctx }) {
                     gap: '4px'
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <WarningIcon size={12} color="#92400E" />
-                      <strong style={{ fontSize: '11px', color: '#92400E' }}>Pipe Size Mismatch Detected</strong>
+                      <WarningIcon size={12} color="var(--color-warning-text-strong)" />
+                      <strong style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-warning-text-strong)' }}>Pipe Size Mismatch Detected</strong>
                     </div>
-                    <div style={{ fontSize: '10px', color: '#B45309' }}>
+                    <div style={{ fontSize: 'var(--fs-xs)', color: '#B45309' }}>
                       {hasInletMismatch && <div>• Inlet: Pipe is {(pipeInletDiameterM * 1000).toFixed(1)}mm vs Reducer {(dInMeters * 1000).toFixed(1)}mm</div>}
                       {hasOutletMismatch && <div>• Outlet: Pipe is {(pipeOutletDiameterM * 1000).toFixed(1)}mm vs Reducer {(dOutMeters * 1000).toFixed(1)}mm</div>}
                     </div>
@@ -311,9 +312,9 @@ export default function ReducerSetup({ ctx }) {
                         padding: '3px 8px',
                         borderRadius: '4px',
                         border: '1px solid #D97706',
-                        backgroundColor: '#D97706',
+                        backgroundColor: 'var(--color-warning-text)',
                         color: '#FFFFFF',
-                        fontSize: '10px',
+                        fontSize: 'var(--fs-xs)',
                         fontWeight: '700',
                         cursor: 'pointer'
                       }}
@@ -327,7 +328,7 @@ export default function ReducerSetup({ ctx }) {
                   {renderLabel('Dimensional Standard', 'standard')}
                   <select
                     className="form-select"
-                    style={{ width: '100%', height: '32px', fontSize: '11px' }}
+                    style={{ width: '100%', height: '32px', fontSize: 'var(--fs-xs)' }}
                     value={isCustom ? CUSTOM_REDUCER_STANDARD : standardCode}
                     onChange={(e) => handleStandardChange(e.target.value)}
                   >
@@ -347,7 +348,7 @@ export default function ReducerSetup({ ctx }) {
                   {renderLabel('Reducer Type', 'reducer_type')}
                   <select
                     className="form-select"
-                    style={{ width: '100%', height: '32px', fontSize: '11px' }}
+                    style={{ width: '100%', height: '32px', fontSize: 'var(--fs-xs)' }}
                     value={reducerType}
                     onChange={(e) => onUpdate(id, { reducer_type: e.target.value })}
                   >
@@ -360,25 +361,25 @@ export default function ReducerSetup({ ctx }) {
                 {!isCustom ? (
                   <>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc', padding: '6px 8px', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
-                      <span style={{ fontSize: '11px', fontWeight: '600', color: '#334155' }}>
+                      <span style={{ fontSize: 'var(--fs-xs)', fontWeight: '600', color: 'var(--color-text-primary)' }}>
                         Flow: {isExpanding ? 'Expander (Small → Large)' : 'Reducer (Large → Small)'}
                       </span>
                       <button
                         type="button"
                         onClick={() => applySizes({ dl: dnLarge, ds: dnSmall, expanding: !isExpanding })}
-                        style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', background: '#ffffff', cursor: 'pointer' }}
+                        style={{ fontSize: 'var(--fs-xs)', padding: '2px 8px', borderRadius: '4px', border: '1px solid var(--color-border)', background: '#ffffff', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                         title="Flip flow orientation between reducing and expanding"
                       >
-                        ⇄ Invert
+                        <SwapIcon size={12} /> Invert
                       </button>
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                       <div>
-                        <label style={{ fontSize: '10px', color: '#64748b', fontWeight: '700' }}>Large End (NPS)</label>
+                        <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '700' }}>Large end (NPS)</label>
                         <select
                           className="form-select"
-                          style={{ width: '100%', height: '30px', fontSize: '11px' }}
+                          style={{ width: '100%', height: '30px', fontSize: 'var(--fs-xs)' }}
                           value={dnLarge}
                           onChange={(e) => handleLargeDnChange(e.target.value)}
                         >
@@ -389,10 +390,10 @@ export default function ReducerSetup({ ctx }) {
                       </div>
 
                       <div>
-                        <label style={{ fontSize: '10px', color: '#64748b', fontWeight: '700' }}>Small End (NPS)</label>
+                        <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '700' }}>Small end (NPS)</label>
                         <select
                           className="form-select"
-                          style={{ width: '100%', height: '30px', fontSize: '11px' }}
+                          style={{ width: '100%', height: '30px', fontSize: 'var(--fs-xs)' }}
                           value={dnSmall}
                           onChange={(e) => applySizes({ dl: dnLarge, ds: Number(e.target.value) })}
                         >
@@ -405,10 +406,10 @@ export default function ReducerSetup({ ctx }) {
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                       <div>
-                        <label style={{ fontSize: '10px', color: '#64748b', fontWeight: '700' }}>Large Schedule</label>
+                        <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '700' }}>Large schedule</label>
                         <select
                           className="form-select"
-                          style={{ width: '100%', height: '30px', fontSize: '11px' }}
+                          style={{ width: '100%', height: '30px', fontSize: 'var(--fs-xs)' }}
                           value={schLarge}
                           disabled={largeSchFromClass}
                           title={largeSchFromClass ? `Wall thickness taken from pipe class ${largeClass.code}` : undefined}
@@ -419,15 +420,15 @@ export default function ReducerSetup({ ctx }) {
                           ))}
                         </select>
                         {largeSchFromClass && (
-                          <div style={{ fontSize: '9px', color: '#587071', marginTop: '2px' }}>From {largeClass.code}</div>
+                          <div style={{ fontSize: 'var(--fs-xs)', color: '#587071', marginTop: '2px' }}>From {largeClass.code}</div>
                         )}
                       </div>
 
                       <div>
-                        <label style={{ fontSize: '10px', color: '#64748b', fontWeight: '700' }}>Small Schedule</label>
+                        <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '700' }}>Small schedule</label>
                         <select
                           className="form-select"
-                          style={{ width: '100%', height: '30px', fontSize: '11px' }}
+                          style={{ width: '100%', height: '30px', fontSize: 'var(--fs-xs)' }}
                           value={schSmall}
                           disabled={smallSchFromClass}
                           title={smallSchFromClass ? `Wall thickness taken from pipe class ${smallClass.code}` : undefined}
@@ -438,12 +439,12 @@ export default function ReducerSetup({ ctx }) {
                           ))}
                         </select>
                         {smallSchFromClass && (
-                          <div style={{ fontSize: '9px', color: '#587071', marginTop: '2px' }}>From {smallClass.code}</div>
+                          <div style={{ fontSize: 'var(--fs-xs)', color: '#587071', marginTop: '2px' }}>From {smallClass.code}</div>
                         )}
                       </div>
                     </div>
 
-                    <div style={{ background: '#f4f7f6', padding: '8px', borderRadius: '4px', border: '1px solid #d8e2e1', fontSize: '10px', color: '#334155' }}>
+                    <div style={{ background: '#f4f7f6', padding: '8px', borderRadius: '4px', border: '1px solid #d8e2e1', fontSize: 'var(--fs-xs)', color: 'var(--color-text-primary)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
                         <span>Catalog:</span>
                         <strong style={{ color: activeEntry ? 'inherit' : '#B45309' }}>
@@ -530,7 +531,7 @@ export default function ReducerSetup({ ctx }) {
                   </>
                 )}
 
-                <div style={{ fontSize: '10px', color: '#587071', background: '#f8fafc', padding: '6px', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: 'var(--fs-xs)', color: '#587071', background: '#f8fafc', padding: '6px', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
                   <span><strong>Hydraulic Ratio (β):</strong> {betaRatio.toFixed(3)} | <strong>Loss Standard:</strong> Crane TP 410 conical transition with Bernoulli static pressure shift.</span>
                 </div>
               </>

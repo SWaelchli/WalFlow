@@ -120,6 +120,16 @@ export default function PipeEdge({
         }}
       />
 
+      {/* Invisible wide stroke so the pipe is easy to click (the visible line is only 3.5px) */}
+      <path
+        d={edgePath}
+        fill="none"
+        stroke="#000"
+        strokeOpacity={0}
+        strokeWidth={18}
+        className="react-flow__edge-interaction"
+      />
+
       {/* Animated Flow Particles Overlay */}
       {hasFlow && (
         <path

@@ -85,7 +85,10 @@
 
 ## Typography
 
-*   **Font Family:** Inter (via Google Fonts or standard variable packages).
+*   **Font Family:** Inter, bundled through `@fontsource-variable/inter` (works offline).
+*   **Type scale (tokens in `frontend/src/index.css`):** `--fs-xs` 11px, `--fs-sm` 12px, `--fs-base` 13px, `--fs-md` 14px, `--fs-lg` 16px, `--fs-xl` 20px, `--fs-2xl` 24px. Use the tokens, not raw px; nothing below 11px in UI chrome (canvas symbols excepted).
+*   **Casing:** sentence case for labels, buttons, chips and badges; UPPERCASE only for small section headers.
+*   **Icons:** Phosphor (regular weight) through `components/symbols/IconLibrary.jsx` only; no emoji as icons.
 *   **Weights:** Light (300), Regular (400), Medium (500), SemiBold (600), Bold (700), Black (900).
 *   **Header Selection:** Strict bold/heavy weight selectors to emphasize visual landmarks.
 

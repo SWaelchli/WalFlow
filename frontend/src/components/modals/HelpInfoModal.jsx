@@ -58,7 +58,7 @@ export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts
         className="modal-container"
         ref={modalA11yRef}
         style={{
-          maxWidth: '680px',
+          maxWidth: '880px',
           maxHeight: '85vh',
           position: 'relative',
         }}
@@ -82,10 +82,10 @@ export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts
               <InfoIcon size={20} color="#ffffff" />
             </div>
             <div>
-              <h2 className="modal-title" style={{ fontSize: '20px' }}>
+              <h2 className="modal-title" style={{ fontSize: 'var(--fs-xl)' }}>
                 WalFlow Help & Information
               </h2>
-              <p style={{ margin: '3px 0 0 0', fontSize: '13px', color: 'var(--color-text-secondary)' }}>
+              <p style={{ margin: '3px 0 0 0', fontSize: 'var(--fs-base)', color: 'var(--color-text-secondary)' }}>
                 Real-time Web Hydraulic Simulator
               </p>
             </div>
@@ -153,7 +153,7 @@ export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts
                 <div key={groupIdx}>
                   <h3
                     style={{
-                      fontSize: '12px',
+                      fontSize: 'var(--fs-sm)',
                       fontWeight: '700',
                       textTransform: 'uppercase',
                       letterSpacing: '0.06em',
@@ -186,20 +186,20 @@ export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts
                           borderBottom: idx < group.shortcuts.length - 1 ? '1px solid var(--color-border)' : 'none',
                         }}
                       >
-                        <span style={{ fontSize: '14px', color: 'var(--color-text-secondary)', paddingRight: '32px', flex: 1 }}>{item.label}</span>
+                        <span style={{ fontSize: 'var(--fs-md)', color: 'var(--color-text-secondary)', paddingRight: '32px', flex: 1 }}>{item.label}</span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: 'auto', flexShrink: 0 }}>
                           {item.keys.map((k, kIdx) => (
                             <React.Fragment key={kIdx}>
-                              {kIdx > 0 && <span style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>+</span>}
+                              {kIdx > 0 && <span style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--fs-sm)' }}>+</span>}
                               <kbd className="modal-kbd">{formatKey(k)}</kbd>
                             </React.Fragment>
                           ))}
                           {item.extraKeys && (
                             <>
-                              <span style={{ color: 'var(--color-text-secondary)', fontSize: '12px', margin: '0 4px' }}>or</span>
+                              <span style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--fs-sm)', margin: '0 4px' }}>or</span>
                               {item.extraKeys.map((k, kIdx) => (
                                 <React.Fragment key={kIdx}>
-                                  {kIdx > 0 && <span style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>+</span>}
+                                  {kIdx > 0 && <span style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--fs-sm)' }}>+</span>}
                                   <kbd className="modal-kbd">{formatKey(k)}</kbd>
                                 </React.Fragment>
                               ))}
@@ -227,19 +227,19 @@ export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '0 0 10px 0' }}>
-                  <h3 style={{ margin: 0, fontSize: '16px', color: 'var(--color-text-primary)' }}>
+                  <h3 style={{ margin: 0, fontSize: 'var(--fs-lg)', color: 'var(--color-text-primary)' }}>
                     About WalFlow
                   </h3>
                   <div style={{ display: 'flex', gap: '8px' }}>
-                    <span style={{ backgroundColor: 'var(--color-bg-canvas)', border: '1px solid var(--color-border)', color: 'var(--color-primary-text)', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '700' }}>
+                    <span style={{ backgroundColor: 'var(--color-bg-canvas)', border: '1px solid var(--color-border)', color: 'var(--color-primary-text)', padding: '3px 8px', borderRadius: '6px', fontSize: 'var(--fs-xs)', fontWeight: '700' }}>
                       App v{APP_VERSION}
                     </span>
-                    <span style={{ backgroundColor: 'var(--color-bg-canvas)', border: '1px solid var(--color-border)', color: '#0284C7', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '700' }}>
+                    <span style={{ backgroundColor: 'var(--color-bg-canvas)', border: '1px solid var(--color-border)', color: '#0284C7', padding: '3px 8px', borderRadius: '6px', fontSize: 'var(--fs-xs)', fontWeight: '700' }}>
                       Format v{FILE_FORMAT_VERSION}
                     </span>
                   </div>
                 </div>
-                <p style={{ margin: 0, fontSize: '14px', color: 'var(--color-text-secondary)' }}>
+                <p style={{ margin: 0, fontSize: 'var(--fs-md)', color: 'var(--color-text-secondary)' }}>
                   WalFlow is a full-stack web application designed for building and simulating hydraulic process and instrumentation diagrams (P&IDs) directly in your browser. It pairs a high-performance Python FastAPI physics engine with an interactive ReactFlow drag-and-drop canvas.
                 </p>
               </div>
@@ -253,7 +253,7 @@ export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts
                   border: '1px solid var(--color-border)',
                 }}
               >
-                <h3 style={{ margin: '0 0 14px 0', fontSize: '15px', color: 'var(--color-primary-text)' }}>
+                <h3 style={{ margin: '0 0 14px 0', fontSize: 'var(--fs-lg)', color: 'var(--color-primary-text)' }}>
                   Developer & Portfolio Links
                 </h3>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
@@ -293,13 +293,13 @@ export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts
                   border: '1px dashed var(--color-primary)',
                 }}
               >
-                <h4 style={{ margin: '0 0 8px 0', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-primary-text)' }}>
+                <h4 style={{ margin: '0 0 8px 0', fontSize: 'var(--fs-base)', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-primary-text)' }}>
                   Copyright & Licensing (WalFlow v{APP_VERSION}{RELEASE_STAGE ? ` ${RELEASE_STAGE}` : ''})
                 </h4>
                 <p
                   style={{
                     margin: 0,
-                    fontSize: '13px',
+                    fontSize: 'var(--fs-base)',
                     color: 'var(--color-text-secondary)',
                     fontFamily: 'var(--font-mono, monospace)',
                     lineHeight: '1.5',
@@ -317,8 +317,8 @@ export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', lineHeight: '1.6' }}>
               {(activeTab === 'guide' ? GUIDE_SECTIONS : MODEL_SECTIONS).map((section) => (
                 <section key={section.title} style={{ backgroundColor: 'var(--color-surface-hover)', borderRadius: '12px', padding: '18px 20px', border: '1px solid var(--color-border)' }}>
-                  <h3 style={{ margin: '0 0 8px 0', fontSize: '15px', color: 'var(--color-primary-text)' }}>{section.title}</h3>
-                  <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--color-text-secondary)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <h3 style={{ margin: '0 0 8px 0', fontSize: 'var(--fs-lg)', color: 'var(--color-primary-text)' }}>{section.title}</h3>
+                  <ul style={{ margin: 0, paddingLeft: '20px', fontSize: 'var(--fs-base)', color: 'var(--color-text-secondary)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     {section.items.map((item, i) => <li key={i}>{item}</li>)}
                   </ul>
                 </section>
@@ -332,7 +332,7 @@ export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts
           className="modal-footer"
           style={{
             justifyContent: 'center',
-            fontSize: '12px',
+            fontSize: 'var(--fs-sm)',
             color: 'var(--color-text-muted)',
           }}
         >

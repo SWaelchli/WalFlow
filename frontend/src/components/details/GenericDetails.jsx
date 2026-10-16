@@ -1,3 +1,4 @@
+import { ArrowRightIcon } from '../symbols/IconLibrary';
 import React from 'react';
 import { useUnits } from '../../context/UnitContext';
 
@@ -12,7 +13,7 @@ export default function GenericDetails({ node, edge, allNodes = [], allEdges = [
 
   if (!telemetry) {
     return (
-      <div style={{ color: '#587071', fontSize: '11.5px', fontStyle: 'italic', padding: '10px 0' }}>
+      <div style={{ color: '#587071', fontSize: 'var(--fs-sm)', fontStyle: 'italic', padding: '10px 0' }}>
         No simulation data available. Click "Calculate Network" to generate results.
       </div>
     );
@@ -81,7 +82,7 @@ export default function GenericDetails({ node, edge, allNodes = [], allEdges = [
       border: '1px solid var(--color-border)',
       borderRadius: 'var(--radius-sm)',
       padding: '8px 12px',
-      fontSize: '11.5px',
+      fontSize: 'var(--fs-sm)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
@@ -92,9 +93,7 @@ export default function GenericDetails({ node, edge, allNodes = [], allEdges = [
       <div style={{ flex: 1, textAlign: 'left', fontWeight: '600' }}>
         {upLabel}
       </div>
-      <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', fontWeight: '500' }}>
-        ➔
-      </div>
+      <ArrowRightIcon size={14} color="var(--color-text-secondary)" />
       <div style={{ flex: 1, textAlign: 'right', fontWeight: '600' }}>
         {downLabel}
       </div>
@@ -147,7 +146,7 @@ export default function GenericDetails({ node, edge, allNodes = [], allEdges = [
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
       
-      <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-brand-dark)', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '3px solid var(--color-primary)', paddingLeft: '8px', marginBottom: '8px' }}>
+      <div style={{ fontSize: 'var(--fs-xs)', fontWeight: '800', color: 'var(--color-brand-dark)', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '3px solid var(--color-primary)', paddingLeft: '8px', marginBottom: '8px' }}>
         Operational Telemetry
       </div>
 
@@ -167,7 +166,7 @@ export default function GenericDetails({ node, edge, allNodes = [], allEdges = [
           </tr>
           <tr>
             <td className="details-label">Pressure Drop (ΔP)</td>
-            <td className="details-value" style={{ textAlign: 'right' }}>{formatPressurePa(dpPa)} {labels.pressureDiff}</td>
+            <td className="details-value" style={{ textAlign: 'right' }}>{formatPressurePa(dpPa, 3)} {labels.pressureDiff}</td>
           </tr>
           <tr>
             <td className="details-label">Flow Rate</td>

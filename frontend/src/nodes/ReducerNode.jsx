@@ -30,7 +30,7 @@ export default function ReducerNode({ id, data, selected }) {
   const dnSmall = data.dn_small || 50;
   const isMetricCatalog = String(data.nps_large || '').toUpperCase().startsWith('DN');
   const sizeLabel = data.standard !== 'CUSTOM'
-    ? (isImperial && !isMetricCatalog ? `${data.nps_large || '3"' } × ${data.nps_small || '2"'}` : `DN${dnLarge} → DN${dnSmall}`)
+    ? (isImperial && !isMetricCatalog ? `${data.nps_large || '3"' } × ${data.nps_small || '2"'}` : `DN ${dnLarge} → DN ${dnSmall}`)
     : (isImperial ? `${(dIn * 39.3701).toFixed(1)}" → ${(dOut * 39.3701).toFixed(1)}"` : `${(dIn * 1000).toFixed(0)}mm → ${(dOut * 1000).toFixed(0)}mm`);
 
   // Detect connected edges and check for size mismatches

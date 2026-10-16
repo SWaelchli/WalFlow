@@ -54,11 +54,11 @@ const PressureSafetyValveDetails = memo(function PressureSafetyValveDetails({ no
     <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
       {/* Header Badge */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-brand-dark)', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '3px solid var(--color-primary)', paddingLeft: '8px' }}>
+        <div style={{ fontSize: 'var(--fs-xs)', fontWeight: '800', color: 'var(--color-brand-dark)', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '3px solid var(--color-primary)', paddingLeft: '8px' }}>
           Safety Relief Assessment
         </div>
         <span style={{
-          fontSize: '9.5px', fontWeight: '800', padding: '2px 8px', borderRadius: 'var(--radius-sm)',
+          fontSize: 'var(--fs-xs)', fontWeight: '800', padding: '2px 8px', borderRadius: 'var(--radius-sm)',
           background: statusBg, color: statusColor, border: `1px solid var(--color-border)`
         }}>
           {statusText}
@@ -66,7 +66,7 @@ const PressureSafetyValveDetails = memo(function PressureSafetyValveDetails({ no
       </div>
 
       {/* Primary Metrics Card */}
-      <div style={{ background: 'var(--color-surface-hover)', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontSize: '11.5px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+      <div style={{ background: 'var(--color-surface-hover)', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontSize: 'var(--fs-sm)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ color: 'var(--color-text-secondary)', fontWeight: '500' }}>Action Mode:</span>
           <span style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>{modeLabels[actionMode] || actionMode}</span>
@@ -88,8 +88,8 @@ const PressureSafetyValveDetails = memo(function PressureSafetyValveDetails({ no
       </div>
 
       {/* Telemetry Comparison & Sizing Card */}
-      <div style={{ background: 'var(--color-surface)', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontSize: '11.5px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        <div style={{ fontWeight: '800', fontSize: '10.5px', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--color-border)', paddingBottom: '4px' }}>
+      <div style={{ background: 'var(--color-surface)', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontSize: 'var(--fs-sm)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div style={{ fontWeight: '800', fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', borderBottom: '1px solid var(--color-border)', paddingBottom: '4px' }}>
           Operational Telemetry & Failure Baseline
         </div>
 
@@ -115,14 +115,14 @@ const PressureSafetyValveDetails = memo(function PressureSafetyValveDetails({ no
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '2px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--fs-sm)', alignItems: 'center' }}>
             <span style={{ color: 'var(--color-text-secondary)', fontWeight: '500' }}>Capacity Used (of rated flow):</span>
             <span style={{ fontWeight: '700', color: capUtil > 100 ? 'var(--color-danger)' : (capUtil > 80 ? 'var(--color-warning)' : 'var(--color-success)'), fontFamily: 'var(--font-mono)' }}>
               {capUtil.toFixed(1)} %
             </span>
           </div>
           {ratedFlowLmin > 0 && (
-            <div style={{ fontSize: '10px', color: 'var(--color-text-secondary)' }}>
+            <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
               Rated {formatFlow(ratedFlowLmin)} {labels.flow} at full lift, 10 % overpressure · lift {liftPct.toFixed(0)} %
             </div>
           )}
@@ -140,7 +140,7 @@ const PressureSafetyValveDetails = memo(function PressureSafetyValveDetails({ no
       </div>
 
       {status === 'cycling' && (
-        <div role="status" style={{ fontSize: '10.5px', color: '#92400E', background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: 'var(--radius-sm)', padding: '8px 10px', lineHeight: 1.45 }}>
+        <div role="status" style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-warning-text-strong)', background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: 'var(--radius-sm)', padding: '8px 10px', lineHeight: 1.45 }}>
           Valve oversized for this relief load: at full lift the inlet would fall below the reseat pressure
           {setPressureBarg !== null ? ` (${formatPressureGauge(setPressureBarg * (1 - blowdownPct / 100))})` : ''}, so a pop valve
           would cycle between reseat and set pressure. Shown as the time-averaged equivalent with the inlet held near set pressure. Rapid chatter (from inlet loss or backpressure) is a dynamic effect and not predicted here.

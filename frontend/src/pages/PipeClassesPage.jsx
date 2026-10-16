@@ -17,12 +17,27 @@ import {
   GlobeIcon,
   WarningIcon,
   CheckCircleIcon,
-  SpinnerIcon
+  SpinnerIcon,
+  ArrowLeftIcon,
+  RulerIcon,
+  ClipboardIcon
 } from '../components/symbols/IconLibrary';
 import FittingStandardsTab from '../components/piping/FittingStandardsTab';
 
 import { modalA11yRef } from '../hooks/useModalA11y';
 import { clickableProps, clickableRowProps } from '../utils/a11yProps';
+
+// Readable names for internal catalogue identifiers. The raw code stays available as a tooltip.
+const SOURCE_LABELS = { ALL: 'All', WALFLOW_EXAMPLE: 'Example', TR2000: 'TR2000', CUSTOM: 'Custom' };
+const CATALOG_LABELS = {
+  ASME_B16_9_REDUCERS: 'ASME B16.9 buttweld reducers',
+  DIN_EN_10253_2_REDUCERS: 'DIN EN 10253-2 buttweld reducers',
+  ASME_B36_10M_SCHEDULES: 'ASME B36.10M / B36.19M pipe schedules',
+  DIN_EN_PIPE_SCHEDULES: 'DIN EN pipe schedules',
+  CUSTOM: 'Custom',
+};
+const sourceLabel = (code) => SOURCE_LABELS[code] || code;
+const catalogLabel = (code) => CATALOG_LABELS[code] || code;
 const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, onOpenHelpModal }) => {
   const { currentUser, isAuthenticated, isAdmin, adminStatus, logout } = useAuth();
   const { isImperial } = useUnits();
@@ -646,7 +661,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
               onClick={() => onOpenHelpModal && onOpenHelpModal('about')}
               title="Click for Help & Documentation"
               style={{
-                fontSize: '11px',
+                fontSize: 'var(--fs-xs)',
                 fontWeight: '600',
                 color: 'var(--color-brand-dark)',
                 cursor: 'pointer',
@@ -674,23 +689,24 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
             style={{
               height: '32px',
               padding: '0 12px',
-              fontSize: '12px',
+              fontSize: 'var(--fs-sm)',
               fontWeight: '700',
               gap: '6px'
             }}
           >
-            ← Back to Diagram
+            <ArrowLeftIcon size={14} /> Back to drawing
           </button>
 
           {/* Navigation Tabs */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            backgroundColor: '#F1F5F9',
-            padding: '2px',
-            borderRadius: '8px',
+            backgroundColor: 'var(--color-surface-hover)',
+            padding: '3px',
+            borderRadius: '10px',
             border: '1px solid var(--color-border)',
-            marginLeft: '8px'
+            marginLeft: '8px',
+            gap: '2px'
           }}>
             <button
               onClick={async () => {
@@ -701,18 +717,18 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
               style={{
                 height: '28px',
                 padding: '0 12px',
-                fontSize: '11px',
-                fontWeight: '700',
-                borderRadius: '6px',
+                fontSize: 'var(--fs-sm)',
+                fontWeight: '600',
+                borderRadius: '7px',
                 border: 'none',
                 cursor: 'pointer',
-                backgroundColor: activeTab === 'pipe_classes' ? '#FFFFFF' : 'transparent',
-                color: activeTab === 'pipe_classes' ? 'var(--color-brand-dark)' : 'var(--color-text-secondary)',
-                boxShadow: activeTab === 'pipe_classes' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                backgroundColor: activeTab === 'pipe_classes' ? 'var(--color-brand-dark)' : 'transparent',
+                color: activeTab === 'pipe_classes' ? 'var(--color-text-inverse)' : 'var(--color-text-secondary)',
+                boxShadow: activeTab === 'pipe_classes' ? 'var(--shadow-sm)' : 'none',
                 transition: 'all 0.15s ease'
               }}
             >
-              Pipe Specifications
+              Pipe specifications
             </button>
             <button
               onClick={async () => {
@@ -723,18 +739,18 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
               style={{
                 height: '28px',
                 padding: '0 12px',
-                fontSize: '11px',
-                fontWeight: '700',
-                borderRadius: '6px',
+                fontSize: 'var(--fs-sm)',
+                fontWeight: '600',
+                borderRadius: '7px',
                 border: 'none',
                 cursor: 'pointer',
-                backgroundColor: activeTab === 'fitting_standards' ? '#FFFFFF' : 'transparent',
-                color: activeTab === 'fitting_standards' ? 'var(--color-brand-dark)' : 'var(--color-text-secondary)',
-                boxShadow: activeTab === 'fitting_standards' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                backgroundColor: activeTab === 'fitting_standards' ? 'var(--color-brand-dark)' : 'transparent',
+                color: activeTab === 'fitting_standards' ? 'var(--color-text-inverse)' : 'var(--color-text-secondary)',
+                boxShadow: activeTab === 'fitting_standards' ? 'var(--shadow-sm)' : 'none',
                 transition: 'all 0.15s ease'
               }}
             >
-              Fitting Standards & Schedules
+              Fitting standards and schedules
             </button>
           </div>
         </div>
@@ -748,7 +764,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                   onClick={handleSeedExamples}
                   disabled={isSeedingExamples || isEditing}
                   className="btn-secondary"
-                  style={{ height: '32px', padding: '0 10px', fontSize: '11px', fontWeight: '700' }}
+                  style={{ height: '32px', padding: '0 10px', fontSize: 'var(--fs-xs)', fontWeight: '700' }}
                   title="Restore standard default example classes (CS01, SS01, LT01, DX01)"
                 >
                   {isSeedingExamples ? 'Restoring...' : 'Restore Defaults'}
@@ -758,7 +774,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
               <button
                 onClick={handleExportLibrary}
                 className="btn-secondary"
-                style={{ height: '32px', padding: '0 10px', fontSize: '11px', fontWeight: '700', gap: '4px' }}
+                style={{ height: '32px', padding: '0 10px', fontSize: 'var(--fs-xs)', fontWeight: '700', gap: '4px' }}
                 title="Export catalog as JSON file"
               >
                 <ExportIcon size={12} />
@@ -770,7 +786,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isEditing}
                   className="btn-secondary"
-                  style={{ height: '32px', padding: '0 10px', fontSize: '11px', fontWeight: '700', gap: '4px' }}
+                  style={{ height: '32px', padding: '0 10px', fontSize: 'var(--fs-xs)', fontWeight: '700', gap: '4px' }}
                   title="Import specifications from JSON file"
                 >
                   <ImportIcon size={12} />
@@ -786,7 +802,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                     style={{
                       height: '32px',
                       padding: '0 12px',
-                      fontSize: '11px',
+                      fontSize: 'var(--fs-xs)',
                       fontWeight: '700',
                       gap: '4px'
                     }}
@@ -803,7 +819,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                       height: '32px',
                       padding: '0 14px',
                       borderRadius: '8px',
-                      fontSize: '11px',
+                      fontSize: 'var(--fs-xs)',
                       fontWeight: '700',
                       gap: '6px'
                     }}
@@ -822,7 +838,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                 <button
                   onClick={() => fittingTabRef.current?.seedDefaults()}
                   className="btn-secondary"
-                  style={{ height: '32px', padding: '0 10px', fontSize: '11px', fontWeight: '700' }}
+                  style={{ height: '32px', padding: '0 10px', fontSize: 'var(--fs-xs)', fontWeight: '700' }}
                   title="Restore standard default fitting standards (ASME B16.9, ASME B36.10M)"
                 >
                   Restore Defaults
@@ -832,7 +848,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
               <button
                 onClick={() => fittingTabRef.current?.exportLibrary()}
                 className="btn-secondary"
-                style={{ height: '32px', padding: '0 10px', fontSize: '11px', fontWeight: '700', gap: '4px' }}
+                style={{ height: '32px', padding: '0 10px', fontSize: 'var(--fs-xs)', fontWeight: '700', gap: '4px' }}
                 title="Export fitting standards catalog as JSON file"
               >
                 <ExportIcon size={12} />
@@ -843,7 +859,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                 <button
                   onClick={() => fittingTabRef.current?.triggerImport()}
                   className="btn-secondary"
-                  style={{ height: '32px', padding: '0 10px', fontSize: '11px', fontWeight: '700', gap: '4px' }}
+                  style={{ height: '32px', padding: '0 10px', fontSize: 'var(--fs-xs)', fontWeight: '700', gap: '4px' }}
                   title="Import fitting standards from JSON file"
                 >
                   <ImportIcon size={12} />
@@ -859,7 +875,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                     height: '32px',
                     padding: '0 14px',
                     borderRadius: '8px',
-                    fontSize: '11px',
+                    fontSize: 'var(--fs-xs)',
                     fontWeight: '700',
                     gap: '6px'
                   }}
@@ -875,17 +891,17 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
             <button
               onClick={onOpenAdminHub}
               className="btn-secondary"
-              style={{ height: '32px', padding: '0 10px', fontSize: '11px', fontWeight: '700', gap: '4px' }}
+              style={{ height: '32px', padding: '0 10px', fontSize: 'var(--fs-xs)', fontWeight: '700', gap: '4px' }}
             >
               <CrownIcon size={12} />
               Admin Hub
               {adminStatus?.pendingCount > 0 && (
-                <span style={{
-                  backgroundColor: 'var(--color-primary)',
-                  color: 'var(--color-text-primary)',
+                <span aria-label={`${adminStatus.pendingCount} pending registration requests`} style={{
+                  backgroundColor: 'var(--color-danger)',
+                  color: '#FFFFFF',
                   borderRadius: '10px',
                   padding: '1px 6px',
-                  fontSize: '10px',
+                  fontSize: 'var(--fs-xs)',
                   fontWeight: '700',
                   marginLeft: '2px'
                 }}>
@@ -910,18 +926,22 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
             {isAuthenticated ? (
               <>
                 <span style={{
-                  fontSize: '12px',
+                  fontSize: 'var(--fs-sm)',
                   fontWeight: '600',
                   fontFamily: 'inherit',
-                  color: isAdmin ? 'var(--color-primary)' : '#1C2B2C',
-                  whiteSpace: 'nowrap'
+                  color: '#1C2B2C',
+                  whiteSpace: 'nowrap',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px'
                 }}>
+                  {isAdmin && <CrownIcon size={12} color="var(--color-text-secondary)" aria-label="Administrator" />}
                   {currentUser?.username}
                 </span>
 
                 <button
                   onClick={() => logout()}
-                  title="Sign Out"
+                  title="Sign out"
                   className="btn-danger-ghost"
                   style={{
                     backgroundColor: 'transparent',
@@ -933,7 +953,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                   }}
                 >
                   <SignOutIcon size={12} />
-                  Sign Out
+                  Sign out
                 </button>
               </>
             ) : (
@@ -949,7 +969,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                 }}
               >
                 <SignInIcon size={12} />
-                Sign In
+                Sign in
               </button>
             )}
           </div>
@@ -981,7 +1001,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search code, name, grade..."
               className="form-input"
-              style={{ width: '100%', height: '34px', fontSize: '12px' }}
+              style={{ width: '100%', height: '34px', fontSize: 'var(--fs-sm)' }}
             />
             <div style={{ display: 'flex', gap: '6px' }}>
               {['ALL', 'WALFLOW_EXAMPLE', 'TR2000', 'CUSTOM'].map(st => (
@@ -991,8 +1011,8 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                   style={{
                     flex: 1,
                     padding: '4px 6px',
-                    fontSize: '10px',
-                    fontWeight: '700',
+                    fontSize: 'var(--fs-xs)',
+                    fontWeight: '600',
                     borderRadius: '6px',
                     border: '1px solid var(--color-border)',
                     backgroundColor: standardFilter === st ? 'var(--color-brand-dark)' : 'var(--color-surface-light)',
@@ -1000,7 +1020,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                     cursor: 'pointer'
                   }}
                 >
-                  {st === 'WALFLOW_EXAMPLE' ? 'Example' : st}
+                  {sourceLabel(st)}
                 </button>
               ))}
             </div>
@@ -1021,11 +1041,11 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                  <span style={{ fontWeight: '800', fontSize: '13px', color: 'var(--color-primary-text)' }}>
+                  <span style={{ fontWeight: '800', fontSize: 'var(--fs-base)', color: 'var(--color-primary-text)' }}>
                     {formData.code || 'NEW_SPEC'} (Draft)
                   </span>
                   <span style={{
-                    fontSize: '9px',
+                    fontSize: 'var(--fs-xs)',
                     fontWeight: '700',
                     padding: '2px 6px',
                     borderRadius: '4px',
@@ -1035,14 +1055,14 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                     DRAFT
                   </span>
                 </div>
-                <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {formData.name || 'Unsaved new specification'}
                 </div>
               </div>
             )}
 
-            {loading && <div style={{ textAlign: 'center', padding: '20px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>Loading catalog...</div>}
-            {error && <div style={{ color: 'var(--color-danger-text)', fontSize: '12px', padding: '10px' }}>{error}</div>}
+            {loading && <div style={{ textAlign: 'center', padding: '20px', fontSize: 'var(--fs-sm)', color: 'var(--color-text-secondary)' }}>Loading catalog...</div>}
+            {error && <div style={{ color: 'var(--color-danger-text)', fontSize: 'var(--fs-sm)', padding: '10px' }}>{error}</div>}
             
             {!loading && filteredClasses.map(pc => {
               const isSelected = (!isNewDraft && activeClass?.id === pc.id);
@@ -1061,24 +1081,24 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                    <span style={{ fontWeight: '800', fontSize: '13px', color: isSelected ? 'var(--color-primary)' : 'var(--color-text-primary)' }}>
+                    <span style={{ fontWeight: '800', fontSize: 'var(--fs-base)', color: isSelected ? 'var(--color-primary)' : 'var(--color-text-primary)' }}>
                       {pc.code}
                     </span>
-                    <span style={{
-                      fontSize: '9px',
-                      fontWeight: '700',
+                    <span title={pc.standard} style={{
+                      fontSize: 'var(--fs-xs)',
+                      fontWeight: '600',
                       padding: '2px 6px',
                       borderRadius: '4px',
                       backgroundColor: pc.is_builtin ? '#E2E8F0' : 'rgba(16, 185, 129, 0.15)',
-                      color: pc.is_builtin ? '#475569' : '#059669'
+                      color: pc.is_builtin ? 'var(--color-text-secondary)' : '#059669'
                     }}>
-                      {pc.standard === 'WALFLOW_EXAMPLE' ? 'EXAMPLE' : pc.standard}
+                      {sourceLabel(pc.standard)}
                     </span>
                   </div>
-                  <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {pc.name}
                   </div>
-                  <div style={{ fontSize: '10px', color: '#94A3B8', marginTop: '2px' }}>
+                  <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-muted)', marginTop: '2px' }}>
                     {pc.rating_class} • {pc.material_group} • ε={pc.roughness_mm}mm
                   </div>
                 </div>
@@ -1093,7 +1113,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
             <>
               <details
                 data-testid="pipe-class-explainer"
-                style={{ backgroundColor: '#F4F7F6', border: '1px solid var(--color-border)', borderRadius: '12px', padding: '10px 16px', fontSize: '12px', color: 'var(--color-text-secondary)', lineHeight: 1.6 }}
+                style={{ backgroundColor: '#F4F7F6', border: '1px solid var(--color-border)', borderRadius: '12px', padding: '10px 16px', fontSize: 'var(--fs-sm)', color: 'var(--color-text-secondary)', lineHeight: 1.6 }}
               >
                 <summary style={{ cursor: 'pointer', fontWeight: 700, color: 'var(--color-brand-dark)' }}>What is a pipe class, and what does the solver use?</summary>
                 <div style={{ marginTop: '8px' }}>
@@ -1128,7 +1148,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                     <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <div>
-                          <label className="form-label" style={{ fontSize: '10px', fontWeight: '700', marginBottom: '2px' }}>Class Code *</label>
+                          <label className="form-label" style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', marginBottom: '2px' }}>Class code *</label>
                           <input
                             type="text"
                             value={formData.code}
@@ -1140,7 +1160,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                           />
                         </div>
                         <div style={{ flexGrow: 1 }}>
-                          <label className="form-label" style={{ fontSize: '10px', fontWeight: '700', marginBottom: '2px' }}>Specification Name *</label>
+                          <label className="form-label" style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', marginBottom: '2px' }}>Specification name *</label>
                           <input
                             type="text"
                             value={formData.name}
@@ -1152,12 +1172,12 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                           />
                         </div>
                         <div>
-                          <label className="form-label" style={{ fontSize: '10px', fontWeight: '700', marginBottom: '2px' }}>Standard Category</label>
+                          <label className="form-label" style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', marginBottom: '2px' }}>Standard category</label>
                           <select
                             value={formData.standard}
                             onChange={(e) => updateFormField('standard', e.target.value)}
                             className="form-select"
-                            style={{ height: '34px', fontSize: '11px', fontWeight: '700' }}
+                            style={{ height: '34px', fontSize: 'var(--fs-xs)', fontWeight: '700' }}
                           >
                             <option value="CUSTOM">CUSTOM</option>
                             <option value="ASME">ASME</option>
@@ -1171,25 +1191,25 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
 
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <div>
-                          <label className="form-label" style={{ fontSize: '10px', fontWeight: '700', marginBottom: '2px' }}>Design Standard / Code *</label>
+                          <label className="form-label" style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', marginBottom: '2px' }}>Design standard / code *</label>
                           <input
                             type="text"
                             value={formData.design_code}
                             onChange={(e) => updateFormField('design_code', e.target.value)}
                             placeholder="e.g. ASME B31.3"
                             className="form-input"
-                            style={{ width: '200px', height: '30px', fontSize: '12px' }}
+                            style={{ width: '200px', height: '30px', fontSize: 'var(--fs-sm)' }}
                           />
                         </div>
                         <div>
-                          <label className="form-label" style={{ fontSize: '10px', fontWeight: '700', marginBottom: '2px' }}>Revision *</label>
+                          <label className="form-label" style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', marginBottom: '2px' }}>Revision *</label>
                           <input
                             type="text"
                             value={formData.revision}
                             onChange={(e) => updateFormField('revision', e.target.value)}
                             placeholder="e.g. 1.0, Rev B"
                             className="form-input"
-                            style={{ width: '110px', height: '30px', fontSize: '12px' }}
+                            style={{ width: '110px', height: '30px', fontSize: 'var(--fs-sm)' }}
                           />
                         </div>
                       </div>
@@ -1198,22 +1218,22 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                     /* Read-Only Header View */
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-                        <h2 style={{ margin: 0, fontSize: '22px', fontWeight: '800', color: 'var(--color-brand-dark)' }}>
+                        <h2 style={{ margin: 0, fontSize: 'var(--fs-2xl)', fontWeight: '800', color: 'var(--color-brand-dark)' }}>
                           {activeClass.code} — {activeClass.name}
                         </h2>
-                        <span style={{
-                          fontSize: '11px',
-                          fontWeight: '700',
+                        <span title={activeClass.standard} style={{
+                          fontSize: 'var(--fs-xs)',
+                          fontWeight: '600',
                           padding: '3px 8px',
                           borderRadius: '6px',
                           backgroundColor: activeClass.is_builtin ? '#F1F5F9' : 'rgba(16, 185, 129, 0.12)',
-                          color: activeClass.is_builtin ? '#475569' : '#059669',
+                          color: activeClass.is_builtin ? 'var(--color-text-secondary)' : '#059669',
                           border: '1px solid var(--color-border)'
                         }}>
-                          {activeClass.standard}
+                          {sourceLabel(activeClass.standard)}
                         </span>
                       </div>
-                      <p style={{ margin: 0, fontSize: '13px', color: 'var(--color-text-secondary)' }}>
+                      <p style={{ margin: 0, fontSize: 'var(--fs-base)', color: 'var(--color-text-secondary)' }}>
                         Standard: <strong>{activeClass.design_code}</strong> • Revision: <strong>{activeClass.revision}</strong>
                       </p>
                     </div>
@@ -1228,7 +1248,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                             type="button"
                             onClick={handleCancelEdit}
                             className="btn-secondary"
-                            style={{ height: '34px', padding: '0 14px', borderRadius: '8px', fontSize: '12px', fontWeight: '700' }}
+                            style={{ height: '34px', padding: '0 14px', borderRadius: '8px', fontSize: 'var(--fs-sm)', fontWeight: '700' }}
                           >
                             Cancel / Discard
                           </button>
@@ -1237,7 +1257,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                             onClick={handleSaveEdit}
                             disabled={isSaving}
                             className="btn-primary"
-                            style={{ height: '34px', padding: '0 18px', borderRadius: '8px', fontSize: '12px', fontWeight: '700' }}
+                            style={{ height: '34px', padding: '0 18px', borderRadius: '8px', fontSize: 'var(--fs-sm)', fontWeight: '700' }}
                           >
                             {isSaving ? 'Saving...' : 'Save Changes'}
                           </button>
@@ -1247,18 +1267,18 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                           <button
                             onClick={() => handleCloneClass(activeClass)}
                             className="btn-secondary"
-                            style={{ height: '32px', padding: '0 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '700' }}
+                            style={{ height: '32px', padding: '0 12px', borderRadius: '6px', fontSize: 'var(--fs-xs)', fontWeight: '700' }}
                           >
                             Clone / Duplicate
                           </button>
                           <button
                             onClick={handleStartEdit}
                             className="btn-primary"
-                            style={{ height: '32px', padding: '0 14px', borderRadius: '6px', fontSize: '11px', fontWeight: '700' }}
+                            style={{ height: '32px', padding: '0 14px', borderRadius: '6px', fontSize: 'var(--fs-xs)', fontWeight: '700' }}
                           >
                             Edit Spec
                           </button>
-                          <button
+                          <button aria-label="Delete class"
                             onClick={() => handleDeleteClass(activeClass)}
                             className="btn-danger-ghost"
                             style={{ height: '32px', width: '32px', padding: 0, borderRadius: '6px' }}
@@ -1278,47 +1298,47 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                   <>
                     <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr 1fr 1fr', gap: '12px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--color-border)' }}>
                       <div>
-                        <label className="form-label" style={{ fontSize: '10px', fontWeight: '700' }}>Material Grade *</label>
+                        <label className="form-label" style={{ fontSize: 'var(--fs-xs)', fontWeight: '700' }}>Material grade *</label>
                         <input
                           type="text"
                           value={formData.material_grade}
                           onChange={(e) => updateFormField('material_grade', e.target.value)}
                           placeholder="ASTM A106 Gr. B"
                           className="form-input"
-                          style={{ height: '30px', fontSize: '12px' }}
+                          style={{ height: '30px', fontSize: 'var(--fs-sm)' }}
                         />
                       </div>
                       <div>
-                        <label className="form-label" style={{ fontSize: '10px', fontWeight: '700' }}>Material Group</label>
+                        <label className="form-label" style={{ fontSize: 'var(--fs-xs)', fontWeight: '700' }}>Material group</label>
                         <input
                           type="text"
                           value={formData.material_group}
                           onChange={(e) => updateFormField('material_group', e.target.value)}
                           placeholder="CS / SS / DX"
                           className="form-input"
-                          style={{ height: '30px', fontSize: '12px' }}
+                          style={{ height: '30px', fontSize: 'var(--fs-sm)' }}
                         />
                       </div>
                       <div>
-                        <label className="form-label" style={{ fontSize: '10px', fontWeight: '700' }}>Pressure Rating</label>
+                        <label className="form-label" style={{ fontSize: 'var(--fs-xs)', fontWeight: '700' }}>Pressure rating</label>
                         <input
                           type="text"
                           value={formData.rating_class}
                           onChange={(e) => updateFormField('rating_class', e.target.value)}
                           placeholder="CL150 / PN16"
                           className="form-input"
-                          style={{ height: '30px', fontSize: '12px' }}
+                          style={{ height: '30px', fontSize: 'var(--fs-sm)' }}
                         />
                       </div>
                       <div>
-                        <label className="form-label" style={{ fontSize: '10px', fontWeight: '700' }}>Roughness (ε mm)</label>
+                        <label className="form-label" style={{ fontSize: 'var(--fs-xs)', fontWeight: '700' }}>Roughness (ε mm)</label>
                         <input
                           type="number"
                           step="0.001"
                           value={formData.roughness_mm}
                           onChange={(e) => updateFormField('roughness_mm', e.target.value)}
                           className="form-input"
-                          style={{ height: '30px', fontSize: '12px' }}
+                          style={{ height: '30px', fontSize: 'var(--fs-sm)' }}
                         />
                       </div>
                     </div>
@@ -1326,12 +1346,12 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                     {/* Standard Catalog References Selectors */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '12px', paddingTop: '12px', borderTop: '1px dashed var(--color-border)' }}>
                       <div>
-                        <label className="form-label" style={{ fontSize: '10px', fontWeight: '700' }}>Authorized Reducer Standard</label>
+                        <label className="form-label" style={{ fontSize: 'var(--fs-xs)', fontWeight: '700' }}>Reducer standard</label>
                         <select
                           value={formData.reducer_standard_code || 'ASME_B16_9_REDUCERS'}
                           onChange={(e) => updateFormField('reducer_standard_code', e.target.value)}
                           className="form-select"
-                          style={{ height: '32px', fontSize: '12px', width: '100%' }}
+                          style={{ height: '32px', fontSize: 'var(--fs-sm)', width: '100%' }}
                         >
                           <option value="ASME_B16_9_REDUCERS">ASME B16.9 Buttweld Reducers</option>
                           <option value="DIN_EN_10253_2_REDUCERS">DIN EN 10253-2 Buttweld Reducers</option>
@@ -1339,12 +1359,12 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                         </select>
                       </div>
                       <div>
-                        <label className="form-label" style={{ fontSize: '10px', fontWeight: '700' }}>Referenced Pipe Schedule Standard</label>
+                        <label className="form-label" style={{ fontSize: 'var(--fs-xs)', fontWeight: '700' }}>Pipe schedule standard</label>
                         <select
                           value={formData.schedule_standard_code || 'ASME_B36_10M_SCHEDULES'}
                           onChange={(e) => updateFormField('schedule_standard_code', e.target.value)}
                           className="form-select"
-                          style={{ height: '32px', fontSize: '12px', width: '100%' }}
+                          style={{ height: '32px', fontSize: 'var(--fs-sm)', width: '100%' }}
                         >
                           <option value="ASME_B36_10M_SCHEDULES">ASME B36.10M / B36.19M Pipe Schedules</option>
                           <option value="DIN_EN_PIPE_SCHEDULES">DIN EN Standard Pipe Schedules</option>
@@ -1358,8 +1378,8 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                   <>
                     <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr 1fr', gap: '14px', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--color-border)' }}>
                       <div>
-                        <span style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--color-text-secondary)', fontWeight: '700' }}>Material Group & Grade</span>
-                        <div style={{ fontSize: '13px', fontWeight: '700', marginTop: '2px' }}>
+                        <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '600' }}>Material Group & Grade</span>
+                        <div style={{ fontSize: 'var(--fs-base)', fontWeight: '700', marginTop: '2px' }}>
                           {activeClass.material_group ? (
                             <span>
                               <span style={{ color: 'var(--color-brand-dark)', fontWeight: '800' }}>{activeClass.material_group}</span>
@@ -1373,16 +1393,16 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                         </div>
                       </div>
                       <div>
-                        <span style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--color-text-secondary)', fontWeight: '700' }}>Pressure Rating</span>
-                        <div style={{ fontSize: '13px', fontWeight: '700', marginTop: '2px' }}>{activeClass.rating_class}</div>
+                        <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '600' }}>Pressure Rating</span>
+                        <div style={{ fontSize: 'var(--fs-base)', fontWeight: '700', marginTop: '2px' }}>{activeClass.rating_class}</div>
                       </div>
                       <div>
-                        <span style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--color-text-secondary)', fontWeight: '700' }}>Surface Roughness (ε)</span>
-                        <div style={{ fontSize: '13px', fontWeight: '700', marginTop: '2px', color: 'var(--color-brand-dark)' }}>{activeClass.roughness_mm} mm</div>
+                        <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '600' }}>Surface Roughness (ε)</span>
+                        <div style={{ fontSize: 'var(--fs-base)', fontWeight: '700', marginTop: '2px', color: 'var(--color-brand-dark)' }}>{activeClass.roughness_mm} mm</div>
                       </div>
                       <div>
-                        <span style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--color-text-secondary)', fontWeight: '700' }}>Design Temp Range</span>
-                        <div style={{ fontSize: '13px', fontWeight: '700', marginTop: '2px' }}>
+                        <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '600' }}>Design Temp Range</span>
+                        <div style={{ fontSize: 'var(--fs-base)', fontWeight: '700', marginTop: '2px' }}>
                           {activeClass.min_temp_c !== null ? activeClass.min_temp_c : '—'}°C to {activeClass.max_temp_c !== null ? activeClass.max_temp_c : '—'}°C
                         </div>
                       </div>
@@ -1391,20 +1411,20 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                     {/* Standard Catalog References Info Row */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginTop: '14px', paddingTop: '14px', borderTop: '1px dashed var(--color-border)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', backgroundColor: 'var(--color-surface-light)', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
-                        <span style={{ fontSize: '16px' }}>📐</span>
+                        <RulerIcon size={18} color="var(--color-text-secondary)" />
                         <div>
-                          <span style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--color-text-secondary)', fontWeight: '700', display: 'block' }}>Authorized Reducer Standard</span>
-                          <strong style={{ fontSize: '12px', color: 'var(--color-brand-dark)' }}>
-                            {activeClass.reducer_standard_code || 'ASME_B16_9_REDUCERS'}
+                          <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '600', display: 'block' }}>Reducer standard</span>
+                          <strong title={activeClass.reducer_standard_code || 'ASME_B16_9_REDUCERS'} style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-brand-dark)' }}>
+                            {catalogLabel(activeClass.reducer_standard_code || 'ASME_B16_9_REDUCERS')}
                           </strong>
                         </div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', backgroundColor: 'var(--color-surface-light)', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
-                        <span style={{ fontSize: '16px' }}>📋</span>
+                        <ClipboardIcon size={18} color="var(--color-text-secondary)" />
                         <div>
-                          <span style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--color-text-secondary)', fontWeight: '700', display: 'block' }}>Referenced Pipe Schedule Standard</span>
-                          <strong style={{ fontSize: '12px', color: 'var(--color-brand-dark)' }}>
-                            {activeClass.schedule_standard_code || 'ASME_B36_10M_SCHEDULES'}
+                          <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '600', display: 'block' }}>Pipe schedule standard</span>
+                          <strong title={activeClass.schedule_standard_code || 'ASME_B36_10M_SCHEDULES'} style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-brand-dark)' }}>
+                            {catalogLabel(activeClass.schedule_standard_code || 'ASME_B36_10M_SCHEDULES')}
                           </strong>
                         </div>
                       </div>
@@ -1425,32 +1445,32 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                 boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-                  <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: 'var(--color-brand-dark)' }}>
-                    Size Schedule Table ({currentSpec.sizes.length} Nominal Sizes)
+                  <h3 style={{ margin: 0, fontSize: 'var(--fs-lg)', fontWeight: '800', color: 'var(--color-brand-dark)' }}>
+                    Sizes ({currentSpec.sizes.length})
                   </h3>
                   {isEditing && (
                     <button
                       type="button"
                       onClick={handleAddSizeRow}
                       className="btn-secondary"
-                      style={{ height: '28px', fontSize: '11px', fontWeight: '700', padding: '0 10px' }}
+                      style={{ height: '28px', fontSize: 'var(--fs-xs)', fontWeight: '700', padding: '0 10px' }}
                     >
-                      + Add Size Row
+                      <PlusIcon size={12} /> Add size
                     </button>
                   )}
                 </div>
                 
                 <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--fs-sm)' }}>
                     <thead>
                       <tr style={{ backgroundColor: 'var(--color-surface-light)', borderBottom: '2px solid var(--color-border)', textAlign: 'left' }}>
-                        <th style={{ padding: '8px 12px' }}>Nominal Size (DN)</th>
-                        <th style={{ padding: '8px 12px' }}>NPS (inches)</th>
-                        <th style={{ padding: '8px 12px' }}>Outer Diameter (OD)</th>
-                        <th style={{ padding: '8px 12px' }}>Wall Thickness (WT)</th>
+                        <th style={{ padding: '8px 12px' }}>Nominal size</th>
+                        <th style={{ padding: '8px 12px' }}>NPS [in]</th>
+                        <th style={{ padding: '8px 12px', textAlign: isEditing ? 'left' : 'right' }}>OD [mm]</th>
+                        <th style={{ padding: '8px 12px', textAlign: isEditing ? 'left' : 'right' }}>Wall thickness [mm]</th>
                         <th style={{ padding: '8px 12px' }}>Schedule</th>
-                        <th style={{ padding: '8px 12px' }}>Internal Diameter (ID)</th>
-                        <th style={{ padding: '8px 12px' }}>Corrosion Allowance</th>
+                        <th style={{ padding: '8px 12px', textAlign: isEditing ? 'left' : 'right' }}>ID [mm]{isImperial && ' (in)'}</th>
+                        <th style={{ padding: '8px 12px', textAlign: isEditing ? 'left' : 'right' }}>Corrosion allowance [mm]</th>
                         {isEditing && <th style={{ padding: '8px 12px', textAlign: 'center', width: '80px' }}>Action</th>}
                       </tr>
                     </thead>
@@ -1511,7 +1531,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                                 />
                               </td>
                               <td style={{ padding: '6px 10px', color: calcId > 0 ? 'var(--color-text-primary)' : 'var(--color-danger)', fontWeight: '600' }}>
-                                {calcId} mm {isImperial && `(${(calcId / 25.4).toFixed(3)} in)`}
+                                {calcId} {isImperial && `(${(calcId / 25.4).toFixed(3)})`}
                               </td>
                               <td style={{ padding: '6px 10px' }}>
                                 <input
@@ -1528,7 +1548,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                                   type="button"
                                   onClick={() => handleRemoveSizeRow(idx)}
                                   className="btn-danger-ghost"
-                                  style={{ padding: '2px 8px', fontSize: '11px', height: '26px' }}
+                                  style={{ padding: '2px 8px', fontSize: 'var(--fs-xs)', height: '26px' }}
                                 >
                                   Remove
                                 </button>
@@ -1541,14 +1561,14 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                         activeClass.sizes.map((s, idx) => (
                           <tr key={idx} style={{ borderBottom: '1px solid var(--color-border)' }}>
                             <td style={{ padding: '10px 12px', fontWeight: '700' }}>DN {s.dn}</td>
-                            <td style={{ padding: '10px 12px' }}>{s.nps}"</td>
-                            <td style={{ padding: '10px 12px' }}>{s.od_mm} mm</td>
-                            <td style={{ padding: '10px 12px' }}>{s.wt_mm} mm</td>
+                            <td style={{ padding: '10px 12px' }}>{s.nps}</td>
+                            <td style={{ padding: '10px 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{s.od_mm}</td>
+                            <td style={{ padding: '10px 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{s.wt_mm}</td>
                             <td style={{ padding: '10px 12px' }}>{s.sch || 'STD'}</td>
-                            <td style={{ padding: '10px 12px', color: 'var(--color-text-primary)' }}>
-                              {s.id_mm} mm {isImperial && `(${(s.id_mm / 25.4).toFixed(3)} in)`}
+                            <td style={{ padding: '10px 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--color-text-primary)' }}>
+                              {s.id_mm} {isImperial && `(${(s.id_mm / 25.4).toFixed(3)})`}
                             </td>
-                            <td style={{ padding: '10px 12px' }}>{s.ca_mm || 0} mm</td>
+                            <td style={{ padding: '10px 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{s.ca_mm || 0}</td>
                           </tr>
                         ))
                       )}
@@ -1566,7 +1586,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                 boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-                  <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: 'var(--color-brand-dark)' }}>
+                  <h3 style={{ margin: 0, fontSize: 'var(--fs-lg)', fontWeight: '800', color: 'var(--color-brand-dark)' }}>
                     Temperature vs. Pressure (P-T) Ratings
                   </h3>
                   {isEditing && (
@@ -1574,7 +1594,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                       type="button"
                       onClick={handleAddTempPressureRow}
                       className="btn-secondary"
-                      style={{ height: '28px', fontSize: '11px', fontWeight: '700', padding: '0 10px' }}
+                      style={{ height: '28px', fontSize: 'var(--fs-xs)', fontWeight: '700', padding: '0 10px' }}
                     >
                       + Add P-T Rating Row
                     </button>
@@ -1584,7 +1604,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                 {isEditing ? (
                   /* Editable P-T Table */
                   <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', maxWidth: '600px', borderCollapse: 'collapse', fontSize: '12px' }}>
+                    <table style={{ width: '100%', maxWidth: '600px', borderCollapse: 'collapse', fontSize: 'var(--fs-sm)' }}>
                       <thead>
                         <tr style={{ backgroundColor: 'var(--color-surface-light)', borderBottom: '2px solid var(--color-border)', textAlign: 'left' }}>
                           <th style={{ padding: '8px 12px' }}>Temperature (°C)</th>
@@ -1627,7 +1647,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                                   type="button"
                                   onClick={() => handleRemoveTempPressureRow(idx)}
                                   className="btn-danger-ghost"
-                                  style={{ padding: '2px 8px', fontSize: '11px', height: '26px' }}
+                                  style={{ padding: '2px 8px', fontSize: 'var(--fs-xs)', height: '26px' }}
                                 >
                                   Remove
                                 </button>
@@ -1644,13 +1664,13 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                     <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                       {activeClass.temp_pressures.map((tp, idx) => (
                         <div key={idx} style={{ padding: '10px 16px', borderRadius: '8px', backgroundColor: 'var(--color-surface-light)', border: '1px solid var(--color-border)', minWidth: '120px' }}>
-                          <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', fontWeight: '700' }}>{tp.temp_c}°C</div>
-                          <div style={{ fontSize: '15px', fontWeight: '800', color: 'var(--color-brand-dark)', marginTop: '2px' }}>{tp.press_bar} bar</div>
+                          <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '700' }}>{tp.temp_c}°C</div>
+                          <div style={{ fontSize: 'var(--fs-lg)', fontWeight: '800', color: 'var(--color-brand-dark)', marginTop: '2px' }}>{tp.press_bar} bar</div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+                    <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-text-secondary)' }}>
                       No P-T rating points defined for this specification.
                     </div>
                   )
@@ -1687,20 +1707,20 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                   <PlusIcon size={16} />
                 </div>
                 <div>
-                  <h3 className="modal-title" style={{ margin: 0, fontSize: '15px' }}>New Pipe Class</h3>
-                  <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: 'var(--color-text-secondary)' }}>
+                  <h3 className="modal-title" style={{ margin: 0, fontSize: 'var(--fs-lg)' }}>New Pipe Class</h3>
+                  <p style={{ margin: '2px 0 0 0', fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
                     Enter initial identification to begin editing on page
                   </p>
                 </div>
               </div>
-              <button onClick={() => setIsNewClassModalOpen(false)} className="modal-close-btn">
+              <button onClick={() => setIsNewClassModalOpen(false)} className="modal-close-btn" aria-label="Close" title="Close">
                 <CrossIcon size={16} />
               </button>
             </div>
 
             <form onSubmit={handleConfirmNewClass} className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
-                <label className="form-label" style={{ fontSize: '11px', fontWeight: '700' }}>Class Code *</label>
+                <label className="form-label" style={{ fontSize: 'var(--fs-xs)', fontWeight: '700' }}>Class code *</label>
                 <input
                   type="text"
                   value={newClassCode}
@@ -1714,7 +1734,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
               </div>
 
               <div>
-                <label className="form-label" style={{ fontSize: '11px', fontWeight: '700' }}>Class Name *</label>
+                <label className="form-label" style={{ fontSize: 'var(--fs-xs)', fontWeight: '700' }}>Class name *</label>
                 <input
                   type="text"
                   value={newClassName}
@@ -1730,7 +1750,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                 <button type="button" onClick={() => setIsNewClassModalOpen(false)} className="btn-secondary">
                   Cancel
                 </button>
-                <button type="submit" className="btn-primary" style={{ padding: '0 16px', height: '34px', fontSize: '12px', fontWeight: '700' }}>
+                <button type="submit" className="btn-primary" style={{ padding: '0 16px', height: '34px', fontSize: 'var(--fs-sm)', fontWeight: '700' }}>
                   Create Draft
                 </button>
               </div>
@@ -1759,18 +1779,18 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                 </div>
 
                 <div>
-                  <h3 className="modal-title" style={{ margin: 0, fontSize: '16px' }}>Import Equinor TR2000 Specification</h3>
-                  <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: 'var(--color-text-secondary)' }}>
+                  <h3 className="modal-title" style={{ margin: 0, fontSize: 'var(--fs-lg)' }}>Import Equinor TR2000 Specification</h3>
+                  <p style={{ margin: '2px 0 0 0', fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
                     Fetch piping classes from Equinor's REST API into WalFlow
                   </p>
                 </div>
               </div>
-              <button onClick={() => setIsTr2000ModalOpen(false)} className="modal-close-btn"><CrossIcon size={18} /></button>
+              <button onClick={() => setIsTr2000ModalOpen(false)} className="modal-close-btn" aria-label="Close" title="Close"><CrossIcon size={18} /></button>
             </div>
 
             <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {tr2000Error && (
-                <div style={{ color: 'var(--color-danger-text)', fontSize: '12px', padding: '10px 14px', backgroundColor: 'rgba(239, 68, 68, 0.1)', borderRadius: '8px', border: '1px solid var(--color-danger)' }}>
+                <div style={{ color: 'var(--color-danger-text)', fontSize: 'var(--fs-sm)', padding: '10px 14px', backgroundColor: 'rgba(239, 68, 68, 0.1)', borderRadius: '8px', border: '1px solid var(--color-danger)' }}>
                   {tr2000Error}
                 </div>
               )}
@@ -1778,10 +1798,10 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
               {/* Plant selector and Search Bar */}
               <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 2fr', gap: '12px' }}>
                 <div>
-                  <label className="form-label" style={{ fontSize: '11px', fontWeight: '700' }}>PCS Library / Plant</label>
+                  <label className="form-label" style={{ fontSize: 'var(--fs-xs)', fontWeight: '700' }}>PCS library / plant</label>
                   <select
                     className="form-select"
-                    style={{ width: '100%', height: '36px', fontSize: '12px' }}
+                    style={{ width: '100%', height: '36px', fontSize: 'var(--fs-sm)' }}
                     value={selectedPlantId}
                     onChange={(e) => handlePlantChange(e.target.value)}
                   >
@@ -1794,7 +1814,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                 </div>
 
                 <div>
-                  <label className="form-label" style={{ fontSize: '11px', fontWeight: '700' }}>Filter Specification Code</label>
+                  <label className="form-label" style={{ fontSize: 'var(--fs-xs)', fontWeight: '700' }}>Filter specification code</label>
                   <form onSubmit={handleSearchTr2000Submit} style={{ display: 'flex', gap: '6px' }}>
                     <input
                       type="text"
@@ -1802,9 +1822,9 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                       onChange={(e) => setTr2000SearchQuery(e.target.value)}
                       placeholder="e.g. AC140, AC111, DX, CL300..."
                       className="form-input"
-                      style={{ flexGrow: 1, height: '36px', fontSize: '12px' }}
+                      style={{ flexGrow: 1, height: '36px', fontSize: 'var(--fs-sm)' }}
                     />
-                    <button type="submit" disabled={isSearchingTr2000} className="btn-secondary" style={{ height: '36px', padding: '0 14px', fontSize: '11px', fontWeight: '700' }}>
+                    <button type="submit" disabled={isSearchingTr2000} className="btn-secondary" style={{ height: '36px', padding: '0 14px', fontSize: 'var(--fs-xs)', fontWeight: '700' }}>
                       {isSearchingTr2000 ? 'Searching...' : 'Filter'}
                     </button>
                   </form>
@@ -1828,7 +1848,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                   onChange={(e) => setAgreedToEquinorTerms(e.target.checked)}
                   style={{ marginTop: '3px', cursor: 'pointer' }}
                 />
-                <label htmlFor="equinorTermsCheckbox" style={{ fontSize: '11px', color: 'var(--color-text-primary)', cursor: 'pointer', lineHeight: '1.4' }}>
+                <label htmlFor="equinorTermsCheckbox" style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-primary)', cursor: 'pointer', lineHeight: '1.4' }}>
                   <strong>Equinor Terms & Conditions Acceptance:</strong> I acknowledge that TR2000 piping specifications are owned by Equinor. I have reviewed and agree to the{' '}
                   <a
                     href="https://www.equinor.com/about-us/terms-and-conditions"
@@ -1846,12 +1866,12 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <h4 style={{ margin: 0, fontSize: '12px', fontWeight: '700', color: 'var(--color-brand-dark)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    <h4 style={{ margin: 0, fontSize: 'var(--fs-sm)', fontWeight: '700', color: 'var(--color-brand-dark)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                       Available Specifications ({tr2000Results.length} found)
                     </h4>
                     {selectedTr2000Codes.size > 0 && (
                       <span style={{
-                        fontSize: '11px',
+                        fontSize: 'var(--fs-xs)',
                         fontWeight: '700',
                         backgroundColor: 'var(--color-brand-dark)',
                         color: '#ffffff',
@@ -1869,7 +1889,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                       onClick={handleSelectAllTr2000}
                       disabled={tr2000Results.length === 0 || isSyncingTr2000}
                       className="btn-secondary"
-                      style={{ height: '26px', padding: '0 10px', fontSize: '11px', fontWeight: '600' }}
+                      style={{ height: '26px', padding: '0 10px', fontSize: 'var(--fs-xs)', fontWeight: '600' }}
                     >
                       Select All
                     </button>
@@ -1878,7 +1898,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                       onClick={handleUnselectAllTr2000}
                       disabled={selectedTr2000Codes.size === 0 || isSyncingTr2000}
                       className="btn-secondary"
-                      style={{ height: '26px', padding: '0 10px', fontSize: '11px', fontWeight: '600' }}
+                      style={{ height: '26px', padding: '0 10px', fontSize: 'var(--fs-xs)', fontWeight: '600' }}
                     >
                       Unselect All
                     </button>
@@ -1887,15 +1907,15 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
 
                 <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid var(--color-border)', borderRadius: '8px', backgroundColor: '#FFFFFF' }}>
                   {isSearchingTr2000 ? (
-                    <div style={{ textAlign: 'center', padding: '30px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+                    <div style={{ textAlign: 'center', padding: '30px', fontSize: 'var(--fs-sm)', color: 'var(--color-text-secondary)' }}>
                       Querying TR2000 API...
                     </div>
                   ) : tr2000Results.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '30px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+                    <div style={{ textAlign: 'center', padding: '30px', fontSize: 'var(--fs-sm)', color: 'var(--color-text-secondary)' }}>
                       No specifications found for the current query in this plant.
                     </div>
                   ) : (
-                    <table style={{ width: '100%', fontSize: '12px', borderCollapse: 'collapse' }}>
+                    <table style={{ width: '100%', fontSize: 'var(--fs-sm)', borderCollapse: 'collapse' }}>
                       <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
                         <tr style={{ textAlign: 'left' }}>
                           <th style={{
@@ -2022,11 +2042,11 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '8px', borderTop: '1px solid var(--color-border)' }}>
                 <div>
                   {batchSyncProgress ? (
-                    <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--color-primary-text)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', color: 'var(--color-primary-text)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                       <SpinnerIcon size={12} /> Importing {batchSyncProgress.current} of {batchSyncProgress.total}: [{batchSyncProgress.currentCode}]...
                     </span>
                   ) : (
-                    <span style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>
+                    <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
                       {selectedTr2000Codes.size} specification{selectedTr2000Codes.size === 1 ? '' : 's'} selected for download.
                     </span>
                   )}
@@ -2049,7 +2069,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                     style={{
                       height: '36px',
                       padding: '0 20px',
-                      fontSize: '12px',
+                      fontSize: 'var(--fs-sm)',
                       fontWeight: '700',
                       opacity: (!agreedToEquinorTerms || selectedTr2000Codes.size === 0) ? 0.5 : 1
                     }}
@@ -2087,18 +2107,18 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                 </div>
 
                 <div>
-                  <h3 className="modal-title" style={{ margin: 0, fontSize: '15px' }}>Duplicate Specifications Detected</h3>
-                  <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: 'var(--color-text-secondary)' }}>
+                  <h3 className="modal-title" style={{ margin: 0, fontSize: 'var(--fs-lg)' }}>Duplicate Specifications Detected</h3>
+                  <p style={{ margin: '2px 0 0 0', fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
                     {conflictList.length} of your selected specification(s) already exist in your local library.
                   </p>
                 </div>
               </div>
-              <button onClick={() => setIsConflictModalOpen(false)} className="modal-close-btn"><CrossIcon size={18} /></button>
+              <button onClick={() => setIsConflictModalOpen(false)} className="modal-close-btn" aria-label="Close" title="Close"><CrossIcon size={18} /></button>
             </div>
 
             <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--color-text-primary)' }}>
+                <span style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', color: 'var(--color-text-primary)' }}>
                   Set Action for All Conflicts:
                 </span>
                 <div style={{ display: 'flex', gap: '4px' }}>
@@ -2106,7 +2126,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                     type="button"
                     onClick={() => handleSetAllConflictActions('update')}
                     className="btn-secondary"
-                    style={{ height: '24px', padding: '0 8px', fontSize: '10px', fontWeight: '700' }}
+                    style={{ height: '24px', padding: '0 8px', fontSize: 'var(--fs-xs)', fontWeight: '700' }}
                   >
                     Set All to Update
                   </button>
@@ -2114,7 +2134,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                     type="button"
                     onClick={() => handleSetAllConflictActions('copy')}
                     className="btn-secondary"
-                    style={{ height: '24px', padding: '0 8px', fontSize: '10px', fontWeight: '700' }}
+                    style={{ height: '24px', padding: '0 8px', fontSize: 'var(--fs-xs)', fontWeight: '700' }}
                   >
                     Set All to Copy (1)
                   </button>
@@ -2122,7 +2142,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                     type="button"
                     onClick={() => handleSetAllConflictActions('skip')}
                     className="btn-secondary"
-                    style={{ height: '24px', padding: '0 8px', fontSize: '10px', fontWeight: '700' }}
+                    style={{ height: '24px', padding: '0 8px', fontSize: 'var(--fs-xs)', fontWeight: '700' }}
                   >
                     Set All to Skip
                   </button>
@@ -2130,7 +2150,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
               </div>
 
               <div style={{ maxHeight: '240px', overflowY: 'auto', border: '1px solid var(--color-border)', borderRadius: '8px' }}>
-                <table style={{ width: '100%', fontSize: '11px', borderCollapse: 'collapse' }}>
+                <table style={{ width: '100%', fontSize: 'var(--fs-xs)', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ backgroundColor: '#F4F7F6', textAlign: 'left', borderBottom: '1px solid var(--color-border)' }}>
                       <th style={{ padding: '8px 10px' }}>PCS Code</th>
@@ -2150,7 +2170,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                               onClick={() => handleUpdateSingleConflictAction(item.code, 'update')}
                               style={{
                                 padding: '2px 8px',
-                                fontSize: '10px',
+                                fontSize: 'var(--fs-xs)',
                                 fontWeight: '700',
                                 borderRadius: '3px',
                                 border: 'none',
@@ -2167,7 +2187,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                               onClick={() => handleUpdateSingleConflictAction(item.code, 'copy')}
                               style={{
                                 padding: '2px 8px',
-                                fontSize: '10px',
+                                fontSize: 'var(--fs-xs)',
                                 fontWeight: '700',
                                 borderRadius: '3px',
                                 border: 'none',
@@ -2184,7 +2204,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                               onClick={() => handleUpdateSingleConflictAction(item.code, 'skip')}
                               style={{
                                 padding: '2px 8px',
-                                fontSize: '10px',
+                                fontSize: 'var(--fs-xs)',
                                 fontWeight: '700',
                                 borderRadius: '3px',
                                 border: 'none',
@@ -2248,13 +2268,13 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                   <ImportIcon size={16} />
                 </div>
                 <div>
-                  <h3 className="modal-title" style={{ margin: 0, fontSize: '15px' }}>Catalog Import Summary</h3>
-                  <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: 'var(--color-text-secondary)' }}>
+                  <h3 className="modal-title" style={{ margin: 0, fontSize: 'var(--fs-lg)' }}>Catalog Import Summary</h3>
+                  <p style={{ margin: '2px 0 0 0', fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
                     Results from importing piping specifications JSON
                   </p>
                 </div>
               </div>
-              <button onClick={() => setIsImportReportModalOpen(false)} className="modal-close-btn">
+              <button onClick={() => setIsImportReportModalOpen(false)} className="modal-close-btn" aria-label="Close" title="Close">
                 <CrossIcon size={16} />
               </button>
             </div>
@@ -2272,11 +2292,11 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
               }}>
                 <CheckCircleIcon size={20} color="#059669" />
                 <div>
-                  <div style={{ fontWeight: '700', fontSize: '12px', color: '#065F46' }}>
+                  <div style={{ fontWeight: '700', fontSize: 'var(--fs-sm)', color: '#065F46' }}>
                     {importReport.imported_count} specifications successfully imported
                   </div>
                   {importReport.imported?.length > 0 && (
-                    <div style={{ fontSize: '11px', color: '#047857', marginTop: '2px' }}>
+                    <div style={{ fontSize: 'var(--fs-xs)', color: '#047857', marginTop: '2px' }}>
                       Codes: {importReport.imported.join(', ')}
                     </div>
                   )}
@@ -2295,8 +2315,8 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                   gap: '6px'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <WarningIcon size={16} color="#92400E" />
-                    <strong style={{ fontSize: '12px', color: '#92400E' }}>
+                    <WarningIcon size={16} color="var(--color-warning-text-strong)" />
+                    <strong style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-warning-text-strong)' }}>
                       {importReport.skipped_duplicates.length} duplicate specifications were skipped (not imported):
                     </strong>
                   </div>
@@ -2309,9 +2329,9 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                           padding: '2px 8px',
                           borderRadius: '4px',
                           backgroundColor: '#FEF3C7',
-                          color: '#92400E',
+                          color: 'var(--color-warning-text-strong)',
                           fontWeight: '700',
-                          fontSize: '11px',
+                          fontSize: 'var(--fs-xs)',
                           border: '1px solid #FCD34D'
                         }}
                       >
@@ -2319,7 +2339,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                       </span>
                     ))}
                   </div>
-                  <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: '#B45309' }}>
+                  <p style={{ margin: '4px 0 0 0', fontSize: 'var(--fs-xs)', color: '#B45309' }}>
                     Existing classes with matching codes were preserved to prevent accidental overwriting.
                   </p>
                 </div>
@@ -2336,10 +2356,10 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                   flexDirection: 'column',
                   gap: '4px'
                 }}>
-                  <strong style={{ fontSize: '12px', color: 'var(--color-danger-text)' }}>
+                  <strong style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-danger-text)' }}>
                     {importReport.invalid_entries.length} entries could not be parsed:
                   </strong>
-                  <ul style={{ margin: '4px 0 0 16px', padding: 0, fontSize: '11px', color: 'var(--color-danger-text)' }}>
+                  <ul style={{ margin: '4px 0 0 16px', padding: 0, fontSize: 'var(--fs-xs)', color: 'var(--color-danger-text)' }}>
                     {importReport.invalid_entries.map((inv, idx) => (
                       <li key={idx}>{inv.reason}</li>
                     ))}
@@ -2353,7 +2373,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                   type="button"
                   onClick={() => setIsImportReportModalOpen(false)}
                   className="btn-primary"
-                  style={{ padding: '0 18px', height: '34px', fontSize: '12px', fontWeight: '700' }}
+                  style={{ padding: '0 18px', height: '34px', fontSize: 'var(--fs-sm)', fontWeight: '700' }}
                 >
                   OK
                 </button>

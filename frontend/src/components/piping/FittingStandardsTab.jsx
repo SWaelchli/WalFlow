@@ -322,7 +322,7 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
             <CheckCircleIcon size={16} color="#16A34A" />
           )}
           <span style={{
-            fontSize: '12px',
+            fontSize: 'var(--fs-sm)',
             fontWeight: '600',
             color: toastMessage.type === 'error' ? '#DC2626' : '#16A34A'
           }}>
@@ -345,7 +345,7 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
           <input
             type="text"
             className="form-input"
-            style={{ width: '100%', height: '34px', fontSize: '12px' }}
+            style={{ width: '100%', height: '34px', fontSize: 'var(--fs-sm)' }}
             placeholder="Search standards & schedules..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -364,7 +364,7 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
                 style={{
                   flex: 1,
                   padding: '4px 6px',
-                  fontSize: '10px',
+                  fontSize: 'var(--fs-xs)',
                   fontWeight: '700',
                   borderRadius: '6px',
                   border: '1px solid var(--color-border)',
@@ -392,7 +392,7 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
                 style={{
                   flex: 1,
                   padding: '4px 6px',
-                  fontSize: '10px',
+                  fontSize: 'var(--fs-xs)',
                   fontWeight: '700',
                   borderRadius: '6px',
                   border: '1px solid var(--color-border)',
@@ -410,17 +410,17 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
         {/* List of Standards */}
         <div style={{ flexGrow: 1, overflowY: 'auto', padding: '10px' }}>
           {error && (
-            <div style={{ color: 'var(--color-danger-text)', fontSize: '12px', padding: '10px' }}>
+            <div style={{ color: 'var(--color-danger-text)', fontSize: 'var(--fs-sm)', padding: '10px' }}>
               {error}
             </div>
           )}
 
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '20px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+            <div style={{ textAlign: 'center', padding: '20px', fontSize: 'var(--fs-sm)', color: 'var(--color-text-secondary)' }}>
               Loading catalog...
             </div>
           ) : filteredStandards.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '20px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+            <div style={{ textAlign: 'center', padding: '20px', fontSize: 'var(--fs-sm)', color: 'var(--color-text-secondary)' }}>
               No fitting standards match criteria.
             </div>
           ) : (
@@ -450,7 +450,7 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                     <span style={{
                       fontWeight: '800',
-                      fontSize: '13px',
+                      fontSize: 'var(--fs-base)',
                       color: isSelected ? 'var(--color-primary)' : 'var(--color-text-primary)'
                     }}>
                       {item.code}
@@ -458,18 +458,18 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
                     <div style={{ display: 'flex', gap: '4px' }}>
                       {item.is_builtin ? (
                         <span style={{
-                          fontSize: '9px',
+                          fontSize: 'var(--fs-xs)',
                           fontWeight: '700',
                           padding: '2px 6px',
                           borderRadius: '4px',
                           backgroundColor: '#E2E8F0',
-                          color: '#475569'
+                          color: 'var(--color-text-secondary)'
                         }}>
                           BUILT-IN
                         </span>
                       ) : (
                         <span style={{
-                          fontSize: '9px',
+                          fontSize: 'var(--fs-xs)',
                           fontWeight: '700',
                           padding: '2px 6px',
                           borderRadius: '4px',
@@ -483,7 +483,7 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
                   </div>
 
                   <div style={{
-                    fontSize: '11px',
+                    fontSize: 'var(--fs-xs)',
                     color: 'var(--color-text-secondary)',
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
@@ -493,7 +493,7 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
                     {item.name}
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--color-text-secondary)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
                     <span>{item.fitting_type === 'reducer' ? 'Reducer / Expander' : 'Pipe Schedules'}</span>
                     <span>{dimCount} {item.fitting_type === 'reducer' ? 'sizes' : 'DN entries'}</span>
                   </div>
@@ -531,7 +531,7 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
                   <h2 style={{
                     margin: 0,
-                    fontSize: '22px',
+                    fontSize: 'var(--fs-2xl)',
                     fontWeight: '800',
                     color: 'var(--color-brand-dark)',
                     fontFamily: 'inherit'
@@ -540,7 +540,7 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
                       <input
                         type="text"
                         className="form-input"
-                        style={{ fontSize: '18px', fontWeight: '800', height: '36px' }}
+                        style={{ fontSize: 'var(--fs-xl)', fontWeight: '800', height: '36px' }}
                         value={editFormData?.name || ''}
                         onChange={(e) => setEditFormData(prev => ({ ...prev, name: e.target.value }))}
                       />
@@ -549,7 +549,7 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
                     )}
                   </h2>
                   <span style={{
-                    fontSize: '11px',
+                    fontSize: 'var(--fs-xs)',
                     fontWeight: '700',
                     padding: '3px 8px',
                     borderRadius: '6px',
@@ -559,7 +559,7 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
                     {selectedStandard.code}
                   </span>
                   <span style={{
-                    fontSize: '11px',
+                    fontSize: 'var(--fs-xs)',
                     fontWeight: '600',
                     padding: '3px 8px',
                     borderRadius: '6px',
@@ -573,7 +573,7 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
 
                 <p style={{
                   margin: 0,
-                  fontSize: '12px',
+                  fontSize: 'var(--fs-sm)',
                   color: 'var(--color-text-secondary)',
                   maxWidth: '700px'
                 }}>
@@ -581,7 +581,7 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
                     <input
                       type="text"
                       className="form-input"
-                      style={{ fontSize: '12px', width: '500px' }}
+                      style={{ fontSize: 'var(--fs-sm)', width: '500px' }}
                       value={editFormData?.description || ''}
                       onChange={(e) => setEditFormData(prev => ({ ...prev, description: e.target.value }))}
                       placeholder="Description of standard..."
@@ -599,7 +599,7 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
                     <button
                       onClick={() => { setIsEditing(false); setEditFormData(null); }}
                       className="btn-secondary"
-                      style={{ height: '32px', padding: '0 12px', fontSize: '11px', fontWeight: '700' }}
+                      style={{ height: '32px', padding: '0 12px', fontSize: 'var(--fs-xs)', fontWeight: '700' }}
                     >
                       Cancel
                     </button>
@@ -607,7 +607,7 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
                       onClick={handleSaveEdit}
                       disabled={isSaving}
                       className="btn-primary"
-                      style={{ height: '32px', padding: '0 16px', borderRadius: '8px', fontSize: '11px', fontWeight: '700' }}
+                      style={{ height: '32px', padding: '0 16px', borderRadius: '8px', fontSize: 'var(--fs-xs)', fontWeight: '700' }}
                     >
                       {isSaving ? 'Saving...' : 'Save Changes'}
                     </button>
@@ -617,7 +617,7 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
                     <button
                       onClick={handleOpenCloneModal}
                       className="btn-secondary"
-                      style={{ height: '32px', padding: '0 12px', fontSize: '11px', fontWeight: '700', gap: '6px' }}
+                      style={{ height: '32px', padding: '0 12px', fontSize: 'var(--fs-xs)', fontWeight: '700', gap: '6px' }}
                       title="Clone standard into an editable custom version"
                     >
                       <CopyIcon size={12} />
@@ -629,7 +629,7 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
                         <button
                           onClick={handleStartEdit}
                           className="btn-secondary"
-                          style={{ height: '32px', padding: '0 12px', fontSize: '11px', fontWeight: '700', gap: '6px' }}
+                          style={{ height: '32px', padding: '0 12px', fontSize: 'var(--fs-xs)', fontWeight: '700', gap: '6px' }}
                         >
                           <EditIcon size={12} />
                           Edit Table
@@ -637,7 +637,7 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
                         <button
                           onClick={() => handleDeleteStandard(selectedStandard)}
                           className="btn-danger-ghost"
-                          style={{ height: '32px', padding: '0 12px', fontSize: '11px', fontWeight: '700', gap: '6px' }}
+                          style={{ height: '32px', padding: '0 12px', fontSize: 'var(--fs-xs)', fontWeight: '700', gap: '6px' }}
                         >
                           <TrashIcon size={12} />
                           Delete
@@ -663,7 +663,7 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h3 style={{
                   margin: 0,
-                  fontSize: '15px',
+                  fontSize: 'var(--fs-lg)',
                   fontWeight: '800',
                   color: 'var(--color-brand-dark)',
                   fontFamily: 'inherit'
@@ -676,7 +676,7 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
                   <button
                     onClick={handleAddReducerRow}
                     className="btn-secondary"
-                    style={{ height: '28px', padding: '0 10px', fontSize: '11px', fontWeight: '700', gap: '4px' }}
+                    style={{ height: '28px', padding: '0 10px', fontSize: 'var(--fs-xs)', fontWeight: '700', gap: '4px' }}
                   >
                     <PlusIcon size={12} />
                     Add Size Row
@@ -686,13 +686,13 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
 
               {selectedStandard.fitting_type === 'reducer' ? (
                 /* Reducer Dimensions Table */
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--fs-sm)' }}>
                   <thead>
                     <tr style={{
                       borderBottom: '2px solid var(--color-border)',
                       textAlign: 'left',
                       color: 'var(--color-text-secondary)',
-                      fontSize: '11px',
+                      fontSize: 'var(--fs-xs)',
                       fontWeight: '700'
                     }}>
                       <th style={{ padding: '8px 12px' }}>Large End (DN)</th>
@@ -787,7 +787,7 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
                           </td>
                           {isEditing && (
                             <td style={{ padding: '8px 12px', textAlign: 'center' }}>
-                              <button
+                              <button aria-label="Remove size row"
                                 onClick={() => handleRemoveDimensionRow(idx)}
                                 className="btn-danger-ghost"
                                 style={{ height: '24px', padding: '0 6px' }}
@@ -804,13 +804,13 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
                 </table>
               ) : (
                 /* Pipe Schedule Matrix */
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--fs-sm)' }}>
                   <thead>
                     <tr style={{
                       borderBottom: '2px solid var(--color-border)',
                       textAlign: 'left',
                       color: 'var(--color-text-secondary)',
-                      fontSize: '11px',
+                      fontSize: 'var(--fs-xs)',
                       fontWeight: '700'
                     }}>
                       <th style={{ padding: '8px 12px' }}>Nominal Size</th>
@@ -838,7 +838,7 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
 
                       return (
                         <tr key={idx} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                          <td style={{ padding: '8px 12px', fontWeight: '700', color: 'var(--color-text-primary)' }}>DN{row.dn}</td>
+                          <td style={{ padding: '8px 12px', fontWeight: '700', color: 'var(--color-text-primary)' }}>DN {row.dn}</td>
                           <td style={{ padding: '8px 12px', color: 'var(--color-text-secondary)' }}>{row.nps}"</td>
                           <td style={{ padding: '8px 12px', color: 'var(--color-text-primary)' }}>{od}</td>
                           <td style={{ padding: '8px 12px' }}>{formatSch('STD')}</td>
@@ -881,20 +881,20 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
                 </div>
                 <div>
                   <h3 className="modal-title">Clone Fitting Standard</h3>
-                  <p style={{ margin: 0, fontSize: '11px', color: 'var(--color-text-secondary)' }}>
+                  <p style={{ margin: 0, fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
                     Create an editable custom copy of {selectedStandard?.code}
                   </p>
                 </div>
               </div>
-              <button onClick={() => setIsCloneModalOpen(false)} className="modal-close-btn">
+              <button onClick={() => setIsCloneModalOpen(false)} className="modal-close-btn" aria-label="Close" title="Close">
                 <CrossIcon size={16} />
               </button>
             </div>
 
             <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--color-brand-dark)', marginBottom: '4px' }}>
-                  New Standard Code
+                <label style={{ display: 'block', fontSize: 'var(--fs-xs)', fontWeight: '700', color: 'var(--color-brand-dark)', marginBottom: '4px' }}>
+                  New standard code
                 </label>
                 <input
                   type="text"
@@ -905,8 +905,8 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
                 />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--color-brand-dark)', marginBottom: '4px' }}>
-                  New Standard Name
+                <label style={{ display: 'block', fontSize: 'var(--fs-xs)', fontWeight: '700', color: 'var(--color-brand-dark)', marginBottom: '4px' }}>
+                  New standard name
                 </label>
                 <input
                   type="text"
@@ -950,20 +950,20 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
                 </div>
                 <div>
                   <h3 className="modal-title">Create Custom Fitting Standard</h3>
-                  <p style={{ margin: 0, fontSize: '11px', color: 'var(--color-text-secondary)' }}>
+                  <p style={{ margin: 0, fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
                     Add a new standard catalog or schedule matrix
                   </p>
                 </div>
               </div>
-              <button onClick={() => setIsNewModalOpen(false)} className="modal-close-btn">
+              <button onClick={() => setIsNewModalOpen(false)} className="modal-close-btn" aria-label="Close" title="Close">
                 <CrossIcon size={16} />
               </button>
             </div>
 
             <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--color-brand-dark)', marginBottom: '4px' }}>
-                  Standard Code (e.g. ISO_5251_REDUCERS)
+                <label style={{ display: 'block', fontSize: 'var(--fs-xs)', fontWeight: '700', color: 'var(--color-brand-dark)', marginBottom: '4px' }}>
+                  Standard code (e.g. ISO_5251_REDUCERS)
                 </label>
                 <input
                   type="text"
@@ -974,8 +974,8 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
                 />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--color-brand-dark)', marginBottom: '4px' }}>
-                  Standard Name
+                <label style={{ display: 'block', fontSize: 'var(--fs-xs)', fontWeight: '700', color: 'var(--color-brand-dark)', marginBottom: '4px' }}>
+                  Standard name
                 </label>
                 <input
                   type="text"
@@ -987,8 +987,8 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--color-brand-dark)', marginBottom: '4px' }}>
-                    Fitting Type
+                  <label style={{ display: 'block', fontSize: 'var(--fs-xs)', fontWeight: '700', color: 'var(--color-brand-dark)', marginBottom: '4px' }}>
+                    Fitting type
                   </label>
                   <select
                     className="form-select"
@@ -1001,8 +1001,8 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
                   </select>
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--color-brand-dark)', marginBottom: '4px' }}>
-                    Standard Group
+                  <label style={{ display: 'block', fontSize: 'var(--fs-xs)', fontWeight: '700', color: 'var(--color-brand-dark)', marginBottom: '4px' }}>
+                    Standard group
                   </label>
                   <input
                     type="text"
@@ -1014,7 +1014,7 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
                 </div>
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--color-brand-dark)', marginBottom: '4px' }}>
+                <label style={{ display: 'block', fontSize: 'var(--fs-xs)', fontWeight: '700', color: 'var(--color-brand-dark)', marginBottom: '4px' }}>
                   Description
                 </label>
                 <input

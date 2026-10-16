@@ -1,3 +1,4 @@
+import { RotateIcon } from '../symbols/IconLibrary';
 import React from 'react';
 import { Position } from 'reactflow';
 
@@ -33,9 +34,10 @@ export const RotateButton = ({ onClick, visible }) => {
         onClick();
       }}
       title="Rotate 90°"
+      aria-label="Rotate 90°"
       className="rotate-btn"
     >
-      ↻
+      <RotateIcon size={12} />
     </button>
   );
 };

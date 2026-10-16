@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo } from 'react';
 import { useUpdateNodeInternals } from 'reactflow';
 import { RotateButton } from '../components/canvas/NodeRotationHandle';
+import { WarningIcon } from '../components/symbols/IconLibrary';
 
 /**
  * BaseNode component wrapper
@@ -43,9 +44,11 @@ export default function BaseNode({
             textShadow: '0 0 5px rgba(239, 68, 68, 0.5)',
             zIndex: 10
           }}
-          title={warningTitle || warningMessage}
+          title={warningTitle || 'Warning'}
+          role="img"
+          aria-label={warningTitle || 'Warning'}
         >
-          {warningMessage}
+          <WarningIcon size={18} weight="fill" />
         </div>
       )}
 

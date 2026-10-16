@@ -1,3 +1,4 @@
+import { WarningIcon } from '../symbols/IconLibrary';
 import React, { useMemo } from 'react';
 import { Sankey, ResponsiveContainer, Tooltip, Layer, Rectangle } from 'recharts';
 import { useUnits } from '../../context/UnitContext';
@@ -36,8 +37,8 @@ function TelemetryList({ title, total, items, formatFlowM3s, formatTemperatureK,
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
       <div style={{ borderBottom: `1px solid ${theme.slate200}`, paddingBottom: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-        <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{title}</span>
-        <span style={{ fontSize: '11.5px', fontWeight: '700', color: 'var(--color-text-primary)', fontFamily: 'var(--font-mono)' }}>{formatFlowM3s(total)} <span style={{ fontSize: '9px', fontWeight: '500' }}>{labels.flow}</span></span>
+        <span style={{ fontSize: 'var(--fs-xs)', fontWeight: '800', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{title}</span>
+        <span style={{ fontSize: 'var(--fs-sm)', fontWeight: '700', color: 'var(--color-text-primary)', fontFamily: 'var(--font-mono)' }}>{formatFlowM3s(total)} <span style={{ fontSize: 'var(--fs-xs)', fontWeight: '500' }}>{labels.flow}</span></span>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
         {items.map((item, i) => (
@@ -45,7 +46,7 @@ function TelemetryList({ title, total, items, formatFlowM3s, formatTemperatureK,
             display: 'flex', 
             justifyContent: 'space-between', 
             alignItems: 'flex-start', 
-            fontSize: '10px', 
+            fontSize: 'var(--fs-xs)', 
             background: theme.slate50, 
             padding: '6px 8px', 
             borderRadius: 'var(--radius-sm)',
@@ -63,8 +64,8 @@ function TelemetryList({ title, total, items, formatFlowM3s, formatTemperatureK,
               {item.name}
             </span>
             <div style={{ textAlign: 'right', flexShrink: 0 }}>
-              <div style={{ fontWeight: '700', color: 'var(--color-primary-text)' }}>{formatFlowM3s(item.flow)} <span style={{ fontSize: '8px', fontWeight: '500' }}>{labels.flow}</span></div>
-              <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)' }}>{formatTemperatureK(item.temp)} {labels.temperature}</div>
+              <div style={{ fontWeight: '700', color: 'var(--color-primary-text)' }}>{formatFlowM3s(item.flow)} <span style={{ fontSize: 'var(--fs-xs)', fontWeight: '500' }}>{labels.flow}</span></div>
+              <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>{formatTemperatureK(item.temp)} {labels.temperature}</div>
             </div>
           </div>
         ))}
@@ -128,7 +129,7 @@ export default function JunctionDetails({ node, allNodes, allEdges }) {
   if (sankeyData.links.length === 0) {
     return (
       <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--color-text-secondary)' }}>
-        <p style={{ fontSize: '12px' }}>No active flow through this junction.</p>
+        <p style={{ fontSize: 'var(--fs-sm)' }}>No active flow through this junction.</p>
       </div>
     );
   }
@@ -139,7 +140,7 @@ export default function JunctionDetails({ node, allNodes, allEdges }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-brand-dark)', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '3px solid var(--color-primary)', paddingLeft: '8px' }}>
+        <span style={{ fontSize: 'var(--fs-xs)', fontWeight: '800', color: 'var(--color-brand-dark)', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '3px solid var(--color-primary)', paddingLeft: '8px' }}>
           Flow Balance
         </span>
       </div>
@@ -156,7 +157,7 @@ export default function JunctionDetails({ node, allNodes, allEdges }) {
           >
             <Tooltip 
               formatter={(value) => [`${value.toFixed(1)} ${labels.flow}`, 'Flow']}
-              contentStyle={{ fontSize: '11px', borderRadius: 'var(--radius-sm)', border: `1px solid var(--color-border)` }}
+              contentStyle={{ fontSize: 'var(--fs-xs)', borderRadius: 'var(--radius-sm)', border: `1px solid var(--color-border)` }}
             />
           </Sankey>
         </ResponsiveContainer>
@@ -172,13 +173,13 @@ export default function JunctionDetails({ node, allNodes, allEdges }) {
           background: 'var(--color-surface-hover)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)',
           display: 'flex', flexDirection: 'column', gap: '12px'
         }}>
-          <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Mixing Balance</div>
+          <div style={{ fontSize: 'var(--fs-xs)', fontWeight: '800', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Mixing Balance</div>
           
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-            <span style={{ fontSize: '20px', fontWeight: '800', color: 'var(--color-primary-text)' }}>
+            <span style={{ fontSize: 'var(--fs-xl)', fontWeight: '800', color: 'var(--color-primary-text)' }}>
               {formatTemperatureK(data.telemetry?.outlets?.[0]?.temperature || 293.15)} {labels.temperature}
             </span>
-            <span style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>
+            <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
               Target: {formatTemperature(parseFloat(data.set_temperature_c) || 20.0)} {labels.temperature}
             </span>
           </div>
@@ -191,7 +192,7 @@ export default function JunctionDetails({ node, allNodes, allEdges }) {
             }} />
           </div>
           
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', fontWeight: '600' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--fs-xs)', fontWeight: '600' }}>
             <span>Port 1: {(data.telemetry?.opening_pct || 50).toFixed(0)}%</span>
             <span>Port 2: {(100 - (data.telemetry?.opening_pct || 50)).toFixed(0)}%</span>
           </div>
@@ -199,8 +200,8 @@ export default function JunctionDetails({ node, allNodes, allEdges }) {
       )}
 
       {hasError && (
-        <div style={{ fontSize: '10px', color: 'var(--color-danger-text)', background: '#FEF2F2', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid #FEE2E2' }}>
-          ⚠️ <strong>Imbalance:</strong> {formatFlowM3s(imbalance)} {labels.flow} difference.
+        <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-danger-text)', background: '#FEF2F2', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid #FEE2E2' }}>
+          <WarningIcon size={12} style={{ marginRight: '4px', verticalAlign: '-2px' }} /><strong>Imbalance:</strong> {formatFlowM3s(imbalance)} {labels.flow} difference.
         </div>
       )}
     </div>

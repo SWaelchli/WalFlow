@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useRef, useCallback } from 'react';
+import CanvasContextMenu from '../canvas/CanvasContextMenu';
 import walflowLogo from '../../assets/Logo_WalFlow.svg';
 import { useAuth } from '../../hooks/useAuth';
 import { APP_VERSION, RELEASE_STAGE } from '../../constants';
@@ -16,7 +17,23 @@ import {
   PlayIcon,
   SpinnerIcon,
   HelpIcon,
+  FileIcon,
+  CaretDownIcon,
 } from '../symbols/IconLibrary';
+
+const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || '');
+const MOD = isMac ? '⌘' : 'Ctrl+';
+
+/** Save state shown next to the document name: a dot colour + a short label. */
+function describeSaveState({ saveStatus, isCloudDoc, isLockedByOther, lastSavedTimestamp }) {
+  if (isLockedByOther || saveStatus === 'locked') return { dot: '#B45309', label: 'Read-only' };
+  if (saveStatus === 'saving_cloud' || saveStatus === 'saving_local') return { dot: '#B45309', label: 'Saving…' };
+  if (saveStatus === 'error') return { dot: '#B91C1C', label: 'Not saved' };
+  if (saveStatus === 'saved_cloud') return { dot: '#047857', label: lastSavedTimestamp ? `Saved ${lastSavedTimestamp}` : 'Saved' };
+  return isCloudDoc
+    ? { dot: '#587071', label: 'Saved in this browser' }
+    : { dot: '#587071', label: 'Draft in this browser' };
+}
 
 export default function Navbar({
   onCalculate,
@@ -29,10 +46,19 @@ export default function Navbar({
   cases = [],
   activeCaseId = 'case_base',
   onSelectCase,
-  onAddCase,
   activeProject,
   activeDiagram,
+  saveStatus = 'saved_local',
+  lastSavedTimestamp = null,
+  isLockedByOther = false,
+  onNewDrawing,
+  onOpenDrawing,
+  onSave,
+  onSaveAs,
+  onImportFile,
+  onExportFile,
   runStatus = { state: 'idle', label: 'Not run yet', tone: 'neutral' },
+  lastRunAt = null,
   findings = { errors: [], warnings: [] },
   statusNotes = [],
   runError = null,
@@ -43,6 +69,28 @@ export default function Navbar({
 }) {
 
   const { currentUser, isAuthenticated, isAdmin, adminStatus, logout } = useAuth();
+  const fileBtnRef = useRef(null);
+  const [fileMenu, setFileMenu] = useState(null); // { x, y } while open
+  const closeFileMenu = useCallback(() => {
+    setFileMenu(null);
+    fileBtnRef.current?.focus();
+  }, []);
+  const toggleFileMenu = () => {
+    if (fileMenu) { setFileMenu(null); return; }
+    const rect = fileBtnRef.current.getBoundingClientRect();
+    setFileMenu({ x: rect.left, y: rect.bottom + 4 });
+  };
+  const fileItems = [
+    onNewDrawing && { id: 'new', label: 'New drawing…', onSelect: onNewDrawing },
+    isAuthenticated && onOpenDrawing && { id: 'open', label: 'Open from cloud…', onSelect: onOpenDrawing },
+    { separator: true },
+    onSave && { id: 'save', label: 'Save', shortcut: `${MOD}S`, onSelect: onSave },
+    onSaveAs && { id: 'saveas', label: 'Save as…', onSelect: onSaveAs },
+    { separator: true },
+    onImportFile && { id: 'import', label: 'Import .wlf file…', onSelect: onImportFile },
+    onExportFile && { id: 'export', label: 'Export .wlf file', onSelect: onExportFile },
+  ];
+  const saveState = describeSaveState({ saveStatus, isCloudDoc: !!activeDiagram, isLockedByOther, lastSavedTimestamp });
 
   const handleUserLogout = () => {
     logout();
@@ -81,7 +129,7 @@ export default function Navbar({
             onClick={() => onOpenHelpModal && onOpenHelpModal('about')}
             title="Click for Help & Documentation"
             style={{
-              fontSize: '11px',
+              fontSize: 'var(--fs-xs)',
               fontWeight: '600',
               color: 'var(--color-brand-dark)',
               cursor: 'pointer',
@@ -98,6 +146,21 @@ export default function Navbar({
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <button
+            ref={fileBtnRef}
+            type="button"
+            onClick={toggleFileMenu}
+            className="btn-secondary"
+            aria-haspopup="menu"
+            aria-expanded={!!fileMenu}
+            style={{ padding: '0 10px', gap: '4px' }}
+          >
+            File <CaretDownIcon size={10} />
+          </button>
+          {fileMenu && (
+            <CanvasContextMenu x={fileMenu.x} y={fileMenu.y} items={fileItems} onClose={closeFileMenu} label="File" width={220} />
+          )}
+
+          <button
             onClick={onCalculate}
             disabled={isSimulating}
             title="Run hydraulic simulation for the active case"
@@ -111,7 +174,7 @@ export default function Navbar({
             {isSimulating ? (
               <>
                 <SpinnerIcon size={12} color="var(--color-text-inverse)" />
-                Simulating...
+                Solving…
               </>
             ) : (
               <>
@@ -133,11 +196,13 @@ export default function Navbar({
             border: '1px solid #D8E2E1',
             boxSizing: 'border-box'
           }}>
-            <span style={{ fontSize: '12px', fontWeight: '600', color: '#1C2B2C' }}>
+            <span style={{ fontSize: 'var(--fs-sm)', fontWeight: '600', color: '#1C2B2C' }}>
               Case:
             </span>
 
             <select
+              aria-label="Active operating case"
+              title="Switch operating case. Add cases in the Operating cases tab below the canvas."
               value={activeCaseId}
               onChange={(e) => onSelectCase && onSelectCase(e.target.value)}
               className="form-select"
@@ -149,45 +214,38 @@ export default function Navbar({
             >
               {cases.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.name} {c.is_base ? ' (Base)' : ''}
+                  {c.name} {c.is_base ? ' (base)' : ''}
                 </option>
               ))}
             </select>
 
-            <button
-              onClick={onAddCase}
-              title="Duplicate Active Case to create a New Case"
-              className="btn-secondary"
-              style={{
-                height: '24px',
-                padding: '0 8px',
-                borderRadius: '6px'
-              }}
-            >
-              <PlusIcon size={10} />
-              New Case
-            </button>
           </div>
 
-          {activeDiagram && (
-            <span style={{
-              fontSize: '12px',
-              fontWeight: '600',
-              color: 'var(--color-brand-dark)',
-              backgroundColor: '#F4F7F6',
-              padding: '0 14px',
-              height: '34px',
-              boxSizing: 'border-box',
-              borderRadius: '8px',
-              border: '1px solid #D8E2E1',
+          <div
+            title={activeDiagram ? `${activeProject ? `${activeProject.title} / ` : ''}${activeDiagram.title} — ${saveState.label}` : `Local draft — ${saveState.label}`}
+            style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '6px'
-            }}>
-              <CloudIcon size={12} color="var(--color-primary)" />
-              {activeProject ? `${activeProject.title} / ` : ''}<strong>{activeDiagram.title}</strong>
-            </span>
-          )}
+              gap: '8px',
+              minWidth: 0,
+              maxWidth: '280px',
+              fontSize: 'var(--fs-sm)',
+              color: 'var(--color-text-primary)'
+            }}
+          >
+            {activeDiagram ? <CloudIcon size={14} color="var(--color-text-secondary)" /> : <FileIcon size={14} color="var(--color-text-secondary)" />}
+            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, lineHeight: 1.25 }}>
+              <span style={{ fontWeight: '600', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {activeDiagram
+                  ? <>{activeProject && <span style={{ color: 'var(--color-text-secondary)', fontWeight: '500' }}>{activeProject.title} / </span>}{activeDiagram.title}</>
+                  : 'Local draft'}
+              </span>
+              <span role="status" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' }}>
+                <span aria-hidden="true" style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: saveState.dot, flexShrink: 0 }} />
+                {saveState.label}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -195,6 +253,7 @@ export default function Navbar({
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, paddingLeft: '16px' }}>
         <StatusChip
           status={runStatus}
+          lastRunAt={lastRunAt}
           errors={findings.errors}
           warnings={findings.warnings}
           notes={statusNotes}
@@ -216,19 +275,19 @@ export default function Navbar({
             height: '34px',
             padding: '0 12px',
             borderRadius: '8px',
-            fontSize: '12px',
+            fontSize: 'var(--fs-sm)',
             fontWeight: '700'
           }}
-          title="Open Piping Specifications Catalog (/pipes)"
+          title="Open the piping class catalogue"
         >
-          Piping Classes
+          Piping classes
         </button>
 
         <button
           type="button"
           onClick={() => onOpenHelpModal && onOpenHelpModal('guide')}
           className="btn-secondary"
-          style={{ height: '34px', padding: '0 12px', borderRadius: '8px', fontSize: '12px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' }}
+          style={{ height: '34px', padding: '0 12px', borderRadius: '8px', fontSize: 'var(--fs-sm)', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' }}
           title="Help, user guide and model limits (Shift + ?)"
         >
           <HelpIcon size={14} />
@@ -243,12 +302,12 @@ export default function Navbar({
             <CrownIcon size={12} />
             Admin Hub
             {adminStatus?.pendingCount > 0 && (
-              <span style={{
-                backgroundColor: 'var(--color-primary)',
-                color: 'var(--color-text-primary)',
+              <span aria-label={`${adminStatus.pendingCount} pending registration requests`} style={{
+                backgroundColor: 'var(--color-danger)',
+                color: '#FFFFFF',
                 borderRadius: '10px',
                 padding: '1px 6px',
-                fontSize: '10px',
+                fontSize: 'var(--fs-xs)',
                 fontWeight: '700',
                 marginLeft: '2px'
               }}>
@@ -273,18 +332,22 @@ export default function Navbar({
           {isAuthenticated ? (
             <>
               <span style={{
-                fontSize: '12px',
+                fontSize: 'var(--fs-sm)',
                 fontWeight: '600',
                 fontFamily: 'inherit',
-                color: isAdmin ? 'var(--color-primary)' : '#1C2B2C',
-                whiteSpace: 'nowrap'
+                color: '#1C2B2C',
+                whiteSpace: 'nowrap',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px'
               }}>
+                {isAdmin && <CrownIcon size={12} color="var(--color-text-secondary)" aria-label="Administrator" />}
                 {currentUser?.username}
               </span>
 
               <button
                 onClick={handleUserLogout}
-                title="Sign Out"
+                title="Sign out"
                 className="btn-danger-ghost"
                 style={{
                   backgroundColor: 'transparent',
@@ -296,7 +359,7 @@ export default function Navbar({
                 }}
               >
                 <SignOutIcon size={12} />
-                Sign Out
+                Sign out
               </button>
             </>
           ) : (
@@ -312,7 +375,7 @@ export default function Navbar({
               }}
             >
               <SignInIcon size={12} />
-              Sign In
+              Sign in
             </button>
           )}
         </div>

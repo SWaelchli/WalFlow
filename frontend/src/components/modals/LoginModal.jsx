@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { SignInIcon, UserIcon, CrossIcon } from '../symbols/IconLibrary';
+import { SignInIcon, UserIcon, CrossIcon, WarningIcon } from '../symbols/IconLibrary';
 
 import { modalA11yRef } from '../../hooks/useModalA11y';
 const LoginModal = ({ isOpen, onClose }) => {
@@ -49,7 +49,7 @@ const LoginModal = ({ isOpen, onClose }) => {
       } else {
         const res = await register(username.trim(), password);
         if (res && res.status === 'pending_approval') {
-          setInfoMessage('🎉 Registration submitted! Your account is pending Administrator approval before you can log in.');
+          setInfoMessage('Registration submitted. An administrator needs to approve your account before you can sign in.');
           setMode('login');
           setConfirmPassword('');
         } else {
@@ -86,10 +86,10 @@ const LoginModal = ({ isOpen, onClose }) => {
               {mode === 'login' ? <SignInIcon size={20} color="#ffffff" /> : <UserIcon size={20} color="#ffffff" /> }
             </div>
             <div>
-              <h3 className="modal-title" style={{ fontSize: '18px' }}>
+              <h3 className="modal-title" style={{ fontSize: 'var(--fs-xl)' }}>
                 {mode === 'login' ? 'Sign In to WalFlow' : 'Create New Account'}
               </h3>
-              <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+              <p style={{ margin: '2px 0 0 0', fontSize: 'var(--fs-sm)', color: 'var(--color-text-secondary)' }}>
                 {mode === 'login' ? 'Access your cloud hydraulic diagrams' : 'Register for access approval'}
               </p>
             </div>
@@ -98,6 +98,7 @@ const LoginModal = ({ isOpen, onClose }) => {
             onClick={onClose}
             className="modal-close-btn"
             title="Close"
+            aria-label="Close"
           >
             <CrossIcon size={18} />
           </button>
@@ -130,7 +131,7 @@ const LoginModal = ({ isOpen, onClose }) => {
               borderRadius: '10px',
               padding: '12px 14px',
               color: 'var(--color-success)',
-              fontSize: '13px',
+              fontSize: 'var(--fs-base)',
               marginBottom: '18px',
               lineHeight: '1.4'
             }}>
@@ -145,16 +146,16 @@ const LoginModal = ({ isOpen, onClose }) => {
               borderRadius: '10px',
               padding: '12px 14px',
               color: 'var(--color-danger-text)',
-              fontSize: '13px',
+              fontSize: 'var(--fs-base)',
               marginBottom: '18px',
               lineHeight: '1.4'
             }}>
-              ⚠️ {error}
+              <WarningIcon size={14} style={{ marginRight: '6px', verticalAlign: '-2px' }} />{error}
             </div>
           )}
 
           <div style={{ marginBottom: '18px' }}>
-            <label style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
+            <label style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: 'var(--fs-xs)', fontWeight: '600', marginBottom: '6px' }}>
               Username
             </label>
             <input
@@ -166,26 +167,26 @@ const LoginModal = ({ isOpen, onClose }) => {
               style={{
                 width: '100%',
                 height: '38px',
-                fontSize: '14px'
+                fontSize: 'var(--fs-md)'
               }}
               required
             />
           </div>
 
           <div style={{ marginBottom: mode === 'register' ? '18px' : '24px' }}>
-            <label style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
+            <label style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: 'var(--fs-xs)', fontWeight: '600', marginBottom: '6px' }}>
               Password
             </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
+              placeholder=""
               className="form-input"
               style={{
                 width: '100%',
                 height: '38px',
-                fontSize: '14px'
+                fontSize: 'var(--fs-md)'
               }}
               required
             />
@@ -193,19 +194,19 @@ const LoginModal = ({ isOpen, onClose }) => {
 
           {mode === 'register' && (
             <div style={{ marginBottom: '24px' }}>
-              <label style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
-                Confirm Password
+              <label style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: 'var(--fs-xs)', fontWeight: '600', marginBottom: '6px' }}>
+                Confirm password
               </label>
               <input
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder=""
                 className="form-input"
                 style={{
                   width: '100%',
                   height: '38px',
-                  fontSize: '14px'
+                  fontSize: 'var(--fs-md)'
                 }}
                 required
               />
@@ -220,7 +221,7 @@ const LoginModal = ({ isOpen, onClose }) => {
               width: '100%',
               height: '42px',
               borderRadius: '10px',
-              fontSize: '14px',
+              fontSize: 'var(--fs-md)',
               fontWeight: '700',
               boxShadow: '0 4px 14px var(--color-primary-glow)'
             }}

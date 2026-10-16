@@ -24,7 +24,7 @@ export default function VolumetricPumpNode({ id, data, selected }) {
       selected={selected}
       width={60}
       height={60}
-      warningMessage={cavitation ? '⚠' : null}
+      warningMessage={cavitation ? 'Cavitation risk' : null}
       warningTitle="CAVITATION RISK: Low Suction Pressure"
       footer={
         <>

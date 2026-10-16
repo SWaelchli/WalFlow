@@ -51,7 +51,7 @@ export default function RunBanners({ runError, runErrorId, summary, resultKey, o
             role={it.tone === 'error' ? 'alert' : 'status'}
             style={{
               pointerEvents: 'auto', display: 'flex', alignItems: 'flex-start', gap: '10px', width: '100%', boxSizing: 'border-box',
-              padding: '8px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: 600, lineHeight: 1.45,
+              padding: '8px 12px', borderRadius: '8px', fontSize: 'var(--fs-sm)', fontWeight: 600, lineHeight: 1.45,
               background: t.bg, border: `1px solid ${t.border}`, color: t.color, boxShadow: '0 2px 8px rgba(28, 43, 44, 0.12)',
             }}
           >
@@ -60,15 +60,15 @@ export default function RunBanners({ runError, runErrorId, summary, resultKey, o
             </span>
             <span style={{ flex: 1, overflowWrap: 'anywhere' }}>{it.text}</span>
             {it.target && (
-              <button type="button" className="btn-secondary" style={{ height: '24px', padding: '0 8px', fontSize: '11px', flex: '0 0 auto' }}
+              <button type="button" className="btn-secondary" style={{ height: '24px', padding: '0 8px', fontSize: 'var(--fs-xs)', flex: '0 0 auto' }}
                 onClick={() => onSelect?.(it.target, 'Node')}>Show</button>
             )}
             {it.showStatus && (
-              <button type="button" className="btn-secondary" style={{ height: '24px', padding: '0 8px', fontSize: '11px', flex: '0 0 auto' }}
+              <button type="button" className="btn-secondary" style={{ height: '24px', padding: '0 8px', fontSize: 'var(--fs-xs)', flex: '0 0 auto' }}
                 onClick={onOpenStatus}>Details</button>
             )}
             <button type="button" onClick={it.close} aria-label="Dismiss message"
-              style={{ background: 'transparent', border: 'none', color: t.color, cursor: 'pointer', fontSize: '16px', lineHeight: 1, padding: '0 2px', flex: '0 0 auto' }}>
+              style={{ background: 'transparent', border: 'none', color: t.color, cursor: 'pointer', fontSize: 'var(--fs-lg)', lineHeight: 1, padding: '0 2px', flex: '0 0 auto' }}>
               ×
             </button>
           </div>

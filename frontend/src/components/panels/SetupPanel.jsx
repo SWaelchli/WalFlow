@@ -5,7 +5,8 @@ import { mToMm, mmToM } from '../../utils/converters';
 import { RELIEF_DRIVER_TYPES } from '../../constants/case_constants';
 import { FLUID_CATEGORIES, FLUID_LIBRARY } from '../../constants/fluid_library';
 import { getEffectiveNodeData } from '../../utils/case_resolver';
-import { GlobeIcon, BoltIcon, WarningIcon, CrossIcon } from '../symbols/IconLibrary';
+import { GlobeIcon, BoltIcon, WarningIcon, CrossIcon, CaretDownIcon } from '../symbols/IconLibrary';
+import { componentLabel } from '../../constants/componentLabels';
 
 import { useUnits } from '../../context/UnitContext';
 import { useFittingStandards } from '../../hooks/useFittingStandards';
@@ -59,7 +60,7 @@ export default function SetupPanel({
 
   const renderLabel = (labelStr, propKey) => (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-      <label style={{ fontSize: '11px', color: '#64748b' }}>{labelStr}</label>
+      <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>{labelStr}</label>
       {propKey && (
         <PropertyBadge
           propKey={propKey}
@@ -94,7 +95,7 @@ export default function SetupPanel({
           onChange={(e) => handleDraftChange('npsh_margin_m', e.target.value)}
           onBlur={(e) => validateAndCommit('npsh_margin_m', e.target.value)}
         />
-        <p style={{ fontSize: '10px', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
+        <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
           Cavitation warning when NPSHa &lt; NPSHr + margin (datasheet NPSHr at the duty point).
         </p>
       </div>
@@ -262,15 +263,14 @@ export default function SetupPanel({
             style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
             onClick={() => setIsCollapsed(!isCollapsed)}
           >
-            <span style={{ fontSize: '10px', color: '#94a3b8', transform: isCollapsed ? 'rotate(-90deg)' : 'none', transition: 'transform 0.2s' }}>▼</span>
+            <CaretDownIcon size={10} color="var(--color-text-muted)" style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'none', transition: 'transform 0.2s' }} />
             <span style={{ 
               fontWeight: '700', 
-              fontSize: '13px', 
+              fontSize: 'var(--fs-base)', 
               color: '#1C2B2C', 
-              letterSpacing: '-0.01em',
-              textTransform: 'capitalize'
+              letterSpacing: '-0.01em'
             }}>
-              {type?.replace(/_/g, ' ') || 'Connection'}
+              {componentLabel(type, { isEdge: !isNode })}
             </span>
           </div>
 
@@ -282,7 +282,7 @@ export default function SetupPanel({
               border: '1px solid rgba(239, 68, 68, 0.2)', 
               borderRadius: '6px', 
               padding: '4px 10px', 
-              fontSize: '11px', 
+              fontSize: 'var(--fs-xs)', 
               fontWeight: '600',
               cursor: 'pointer',
               transition: 'all 0.2s'
@@ -299,7 +299,7 @@ export default function SetupPanel({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {type !== 'text_bubble' && (
             <div key="label">
-              <label style={{ fontSize: '11px', color: '#64748b' }}>Name Tag</label>
+              <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>Name tag</label>
               <input 
                 className="form-input" style={{ width: '100%' }} 
                 value={localDrafts.label !== undefined ? localDrafts.label : (data.label || '')} 
@@ -311,14 +311,14 @@ export default function SetupPanel({
 
           {isNode && type !== 'text_bubble' && (
             <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '8px' }}>
-              <label style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold' }}>Sensing Nodes (Yellow Pin)</label>
+              <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: 'bold' }}>Sensing nodes (yellow pin)</label>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '4px' }}>
                 {['inlet-0', 'outlet-0'].map(portId => (
                   <button
                     key={portId}
                     onClick={() => handleSensingToggle(portId)}
                     style={{
-                      fontSize: '10px', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer',
+                      fontSize: 'var(--fs-xs)', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer',
                       background: data.sensing?.[portId] ? 'var(--color-warning)' : 'var(--color-bg-canvas)',
                       color: data.sensing?.[portId] ? 'var(--color-text-inverse)' : 'var(--color-text-secondary)',
                       border: '1px solid var(--color-border)'
@@ -398,7 +398,7 @@ export default function SetupPanel({
               <div>
                 {renderLabel('Operating Status', 'active')}
                 <select 
-                  style={{ width: '100%', fontSize: '12px', padding: '4px' }} 
+                  style={{ width: '100%', fontSize: 'var(--fs-sm)', padding: '4px' }} 
                   value={effectiveData.active !== false ? "true" : "false"} 
                   onChange={(e) => {
                     const isActive = e.target.value === "true";
@@ -431,14 +431,14 @@ export default function SetupPanel({
                   onBlur={(e) => { if (e.target.value !== '' || effectiveData.head_rated_m) validateAndCommit('head_rated_m', e.target.value, true); }}
                 />
                 {!effectiveData.head_rated_m ? (
-                  <div role="alert" style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', marginTop: '6px', padding: '6px 8px', borderRadius: '6px', backgroundColor: '#FEF3C7', border: '1px solid #FCD34D', fontSize: '10px', color: '#92400E' }}>
-                    <WarningIcon size={12} color="#92400E" style={{ flexShrink: 0, marginTop: '1px' }} />
+                  <div role="alert" style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', marginTop: '6px', padding: '6px 8px', borderRadius: '6px', backgroundColor: '#FEF3C7', border: '1px solid #FCD34D', fontSize: 'var(--fs-xs)', color: 'var(--color-warning-text-strong)' }}>
+                    <WarningIcon size={12} color="var(--color-warning-text-strong)" style={{ flexShrink: 0, marginTop: '1px' }} />
                     <span>
                       Rated head missing. Pumps are rated in head since v0.2; this pump{effectiveData.pressure_rated_bar ? ` had a rated pressure difference of ${effectiveData.pressure_rated_bar} bar` : ''}. Enter the head from the pump datasheet; the simulation will not run until then.
                     </span>
                   </div>
                 ) : (
-                  <p style={{ fontSize: '10px', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
+                  <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
                     Pressure rise = ρ·g·head, so it follows the fluid density.
                     {data.telemetry?.inlets?.[0]?.density ? ` At the last result (ρ = ${data.telemetry.inlets[0].density.toFixed(0)} kg/m³) the rated head equals ${isImperial ? `${(data.telemetry.inlets[0].density * 9.81 * effectiveData.head_rated_m / 6894.757).toFixed(1)} psi` : `${(data.telemetry.inlets[0].density * 9.81 * effectiveData.head_rated_m / 1e5).toFixed(2)} bar`}.` : ''}
                   </p>
@@ -464,13 +464,13 @@ export default function SetupPanel({
                   onChange={(e) => handleDraftChange('efficiency', e.target.value)}
                   onBlur={(e) => validateAndCommit('efficiency', e.target.value, true)}
                 />
-                <p style={{ fontSize: '10px', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
+                <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
                   Hydraulic pump efficiency only, excluding the motor. Used for pump heat and shaft power.
                 </p>
               </div>
               {renderNpshFields()}
               {effectiveData.active === false && (
-                <p style={{ fontSize: '10px', color: 'var(--color-text-secondary)', margin: 0 }}>
+                <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', margin: 0 }}>
                   Stopped pump: modelled as a flow resistance in both directions (rated head lost at rated flow). Add a check valve to block backflow.
                 </p>
               )}
@@ -482,7 +482,7 @@ export default function SetupPanel({
               <div>
                 {renderLabel('Operating Status', 'active')}
                 <select 
-                  style={{ width: '100%', fontSize: '12px', padding: '4px' }} 
+                  style={{ width: '100%', fontSize: 'var(--fs-sm)', padding: '4px' }} 
                   value={effectiveData.active !== false ? "true" : "false"} 
                   onChange={(e) => {
                     const isActive = e.target.value === "true";
@@ -507,14 +507,14 @@ export default function SetupPanel({
                 {renderLabel('Drive', 'drive_type')}
                 <select
                   className="form-select"
-                  style={{ width: '100%', height: '32px', fontSize: '11px' }}
+                  style={{ width: '100%', height: '32px', fontSize: 'var(--fs-xs)' }}
                   value={effectiveData.drive_type || 'fixed_speed'}
                   onChange={(e) => { if (isNode) onUpdate(id, { drive_type: e.target.value }); }}
                 >
                   <option value="fixed_speed">Fixed speed (motor overload flagged)</option>
                   <option value="vfd_power_limit">VFD with power limit (flow reduced)</option>
                 </select>
-                <p style={{ fontSize: '10px', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
+                <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
                   {(effectiveData.drive_type || 'fixed_speed') === 'fixed_speed'
                     ? 'Flow stays at displacement; above the motor rating the motor would overheat and trip.'
                     : 'Above the motor rating the drive slows the pump, so the flow drops to the power limit.'}
@@ -532,7 +532,7 @@ export default function SetupPanel({
                   onChange={(e) => handleDraftChange('max_discharge_pressure_bara', e.target.value)}
                   onBlur={(e) => validateAndCommit('max_discharge_pressure_bara', e.target.value, true)}
                 />
-                <p style={{ fontSize: '10px', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
+                <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
                   Internal relief: above this outlet pressure the excess flow recirculates to suction, so the delivered flow drops below displacement.
                 </p>
               </div>
@@ -556,7 +556,7 @@ export default function SetupPanel({
                   onChange={(e) => handleDraftChange('efficiency', e.target.value)}
                   onBlur={(e) => validateAndCommit('efficiency', e.target.value)}
                 />
-                <p style={{ fontSize: '10px', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
+                <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
                   Pump efficiency only, excluding the motor. Shaft power = flow × ΔP ÷ efficiency.
                 </p>
               </div>
@@ -599,7 +599,7 @@ export default function SetupPanel({
           {isNode && type === 'flow_source' && (
             <>
               {node?.data?.telemetry?.pressure_cap_reached && (
-                <div role="alert" style={{ background: '#FEF2F2', border: '1px solid #FEE2E2', borderRadius: '4px', padding: '8px', fontSize: '11px', color: 'var(--color-danger-text)' }}>
+                <div role="alert" style={{ background: '#FEF2F2', border: '1px solid #FEE2E2', borderRadius: '4px', padding: '8px', fontSize: 'var(--fs-xs)', color: 'var(--color-danger-text)' }}>
                   Discharge pressure limit reached: the delivered flow is below the set flow. Raise the max. discharge pressure or check for a blocked outlet path.
                 </div>
               )}
@@ -629,7 +629,7 @@ export default function SetupPanel({
                   onChange={(e) => handleDraftChange('max_discharge_pressure_bara', e.target.value)}
                   onBlur={(e) => validateAndCommit('max_discharge_pressure_bara', e.target.value, true)}
                 />
-                <p style={{ fontSize: '10px', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
+                <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
                   Above this outlet pressure the delivered flow drops below the set flow.
                 </p>
               </div>
@@ -655,14 +655,14 @@ export default function SetupPanel({
               {renderLabel('Ramp during relief analysis', 'relief_ramp_enabled')}
               <select
                 className="form-select"
-                style={{ width: '100%', height: '32px', fontSize: '11px' }}
+                style={{ width: '100%', height: '32px', fontSize: 'var(--fs-xs)' }}
                 value={effectiveData.relief_ramp_enabled !== false ? 'true' : 'false'}
                 onChange={(e) => onUpdate(id, { relief_ramp_enabled: e.target.value === 'true' })}
               >
                 <option value="true">Ramp (drives the relief scenario)</option>
                 <option value="false">Hold at set value</option>
               </select>
-              <p style={{ fontSize: '10px', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
+              <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
                 The relief analysis ramps every enabled driver from rest to its set value to find the state at which each relief device opens. Hold receivers, such as a downstream header, at their set value.
               </p>
             </div>
@@ -681,9 +681,9 @@ export default function SetupPanel({
                 />
               </div>
               <div>
-                <label style={{ fontSize: '11px', color: '#64748b' }}>Regulation Mode</label>
+                <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>Regulation mode</label>
                 <select 
-                  style={{ width: '100%', fontSize: '12px', padding: '4px' }} 
+                  style={{ width: '100%', fontSize: 'var(--fs-sm)', padding: '4px' }} 
                   value={effectiveData.backpressure ? "true" : "false"} 
                   onChange={(e) => {
                     const isBack = e.target.value === "true";
@@ -737,9 +737,9 @@ export default function SetupPanel({
                 />
               </div>
               <div>
-                <label style={{ fontSize: '11px', color: '#64748b' }}>Hot Port Selection</label>
+                <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>Hot port selection</label>
                 <select 
-                  style={{ width: '100%', fontSize: '12px', padding: '4px' }} 
+                  style={{ width: '100%', fontSize: 'var(--fs-sm)', padding: '4px' }} 
                   value={effectiveData.hot_port_idx || 0} 
                   onChange={(e) => onUpdate(id, { hot_port_idx: parseInt(e.target.value) })}
                 >
@@ -793,14 +793,14 @@ export default function SetupPanel({
                   onBlur={(e) => { if (e.target.value !== '' || effectiveData.set_pressure_barg) validateAndCommit('set_pressure_barg', e.target.value, true); }}
                 />
                 {!effectiveData.set_pressure_barg ? (
-                  <div role="alert" style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', marginTop: '6px', padding: '6px 8px', borderRadius: '6px', backgroundColor: '#FEF3C7', border: '1px solid #FCD34D', fontSize: '10px', color: '#92400E' }}>
-                    <WarningIcon size={12} color="#92400E" style={{ flexShrink: 0, marginTop: '1px' }} />
+                  <div role="alert" style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', marginTop: '6px', padding: '6px 8px', borderRadius: '6px', backgroundColor: '#FEF3C7', border: '1px solid #FCD34D', fontSize: 'var(--fs-xs)', color: 'var(--color-warning-text-strong)' }}>
+                    <WarningIcon size={12} color="var(--color-warning-text-strong)" style={{ flexShrink: 0, marginTop: '1px' }} />
                     <span>
                       Set Pressure (barg) missing. Relief devices are set in gauge pressure since v0.2; this device{effectiveData.set_pressure_bar ? ` had ${effectiveData.set_pressure_bar} bar(a)` : ''}. Enter the set pressure from the datasheet; the simulation will not run until then.
                     </span>
                   </div>
                 ) : (
-                  <p style={{ fontSize: '10px', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
+                  <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
                     Opens when the inlet gauge pressure reaches the set pressure; rated capacity at 10 % overpressure.
                   </p>
                 )}
@@ -818,7 +818,7 @@ export default function SetupPanel({
               <div>
                 {renderLabel('Relief Action Mode', 'action_mode')}
                 <select 
-                  style={{ width: '100%', fontSize: '12px', padding: '4px' }} 
+                  style={{ width: '100%', fontSize: 'var(--fs-sm)', padding: '4px' }} 
                   value={effectiveData.action_mode || 'pop_action'} 
                   onChange={(e) => onUpdate(id, { action_mode: e.target.value })}
                 >
@@ -837,7 +837,7 @@ export default function SetupPanel({
                     onBlur={(e) => validateAndCommit('blowdown_pct', e.target.value)}
                   />
                   {effectiveData.set_pressure_barg ? (
-                    <p style={{ fontSize: '10px', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
+                    <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
                       Reseats at {formatPressureGauge(Number(effectiveData.set_pressure_barg) * (1 - Number(effectiveData.blowdown_pct ?? 7.0) / 100))}. If the open valve would drop its inlet below that, it would open and close cyclically and is reported as cycling.
                     </p>
                   ) : null}
@@ -846,13 +846,13 @@ export default function SetupPanel({
               <div>
                 {renderLabel('Contingency Test Mode', 'forced_state')}
                 <select 
-                  style={{ width: '100%', fontSize: '12px', padding: '4px' }} 
+                  style={{ width: '100%', fontSize: 'var(--fs-sm)', padding: '4px' }} 
                   value={effectiveData.forced_state || 'auto'} 
                   onChange={(e) => onUpdate(id, { forced_state: e.target.value })}
                 >
                   <option value="auto">Auto (Normal Relief)</option>
-                  <option value="forced_closed">🔒 Forced Closed</option>
-                  <option value="forced_open">🔓 Forced Open</option>
+                  <option value="forced_closed">Forced closed</option>
+                  <option value="forced_open">Forced open</option>
                 </select>
               </div>
             </>
@@ -871,14 +871,14 @@ export default function SetupPanel({
                   onBlur={(e) => { if (e.target.value !== '' || effectiveData.burst_pressure_barg) validateAndCommit('burst_pressure_barg', e.target.value, true); }}
                 />
                 {!effectiveData.burst_pressure_barg ? (
-                  <div role="alert" style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', marginTop: '6px', padding: '6px 8px', borderRadius: '6px', backgroundColor: '#FEF3C7', border: '1px solid #FCD34D', fontSize: '10px', color: '#92400E' }}>
-                    <WarningIcon size={12} color="#92400E" style={{ flexShrink: 0, marginTop: '1px' }} />
+                  <div role="alert" style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', marginTop: '6px', padding: '6px 8px', borderRadius: '6px', backgroundColor: '#FEF3C7', border: '1px solid #FCD34D', fontSize: 'var(--fs-xs)', color: 'var(--color-warning-text-strong)' }}>
+                    <WarningIcon size={12} color="var(--color-warning-text-strong)" style={{ flexShrink: 0, marginTop: '1px' }} />
                     <span>
                       Burst Pressure (barg) missing. Relief devices are set in gauge pressure since v0.2; this device{effectiveData.burst_pressure_bar ? ` had ${effectiveData.burst_pressure_bar} bar(a)` : ''}. Enter the burst pressure from the datasheet; the simulation will not run until then.
                     </span>
                   </div>
                 ) : (
-                  <p style={{ fontSize: '10px', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
+                  <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
                     Bursts when the inlet gauge pressure reaches the burst pressure and stays open for the run.
                   </p>
                 )}
@@ -886,7 +886,7 @@ export default function SetupPanel({
               <div>
                 {renderLabel('Bore Configuration', 'bore_type')}
                 <select 
-                  style={{ width: '100%', fontSize: '12px', padding: '4px' }} 
+                  style={{ width: '100%', fontSize: 'var(--fs-sm)', padding: '4px' }} 
                   value={effectiveData.bore_type || 'full_bore'} 
                   onChange={(e) => onUpdate(id, { bore_type: e.target.value })}
                 >
@@ -925,13 +925,13 @@ export default function SetupPanel({
               <div>
                 {renderLabel('Contingency Test Mode', 'forced_state')}
                 <select 
-                  style={{ width: '100%', fontSize: '12px', padding: '4px' }} 
+                  style={{ width: '100%', fontSize: 'var(--fs-sm)', padding: '4px' }} 
                   value={effectiveData.forced_state || 'auto'} 
                   onChange={(e) => onUpdate(id, { forced_state: e.target.value })}
                 >
                   <option value="auto">Auto (Normal Relief)</option>
-                  <option value="forced_closed">🔒 Forced Closed</option>
-                  <option value="forced_open">🔓 Forced Open</option>
+                  <option value="forced_closed">Forced closed</option>
+                  <option value="forced_open">Forced open</option>
                 </select>
               </div>
             </>
@@ -1009,7 +1009,7 @@ export default function SetupPanel({
           {isNode && type === 'heat_exchanger' && (
             <>
               {node?.data?.telemetry?.rating_status && node.data.telemetry.rating_status !== 'ok' && (
-                <div role="alert" style={{ background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: '4px', padding: '8px', fontSize: '11px', color: '#92400E' }}>
+                <div role="alert" style={{ background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: '4px', padding: '8px', fontSize: 'var(--fs-xs)', color: 'var(--color-warning-text-strong)' }}>
                   {node.data.telemetry.rating_status === 'infeasible'
                     ? 'Rating is not achievable: the rated duty needs a larger temperature change than the fluid and medium temperatures allow. The result is limited by the heat balance, not the rating.'
                     : 'Rating needs an effectiveness above 0.95: very large heat transfer area. Check the rated duty and temperatures.'}
@@ -1018,7 +1018,7 @@ export default function SetupPanel({
               <div>
                 {renderLabel('Operating Status', 'active')}
                 <select 
-                  style={{ width: '100%', fontSize: '12px', padding: '4px' }} 
+                  style={{ width: '100%', fontSize: 'var(--fs-sm)', padding: '4px' }} 
                   value={effectiveData.active !== false ? "true" : "false"} 
                   onChange={(e) => {
                     const isActive = e.target.value === "true";
@@ -1032,7 +1032,7 @@ export default function SetupPanel({
               <div>
                 {renderLabel('Rating Method', 'rating_method')}
                 <select 
-                  style={{ width: '100%', fontSize: '12px', padding: '4px' }} 
+                  style={{ width: '100%', fontSize: 'var(--fs-sm)', padding: '4px' }} 
                   value={effectiveData.rating_method || "rated_duty"} 
                   onChange={(e) => {
                     const val = e.target.value;
@@ -1105,7 +1105,7 @@ export default function SetupPanel({
               <div>
                 {renderLabel('Cooler Type', 'cooler_type')}
                 <select 
-                  style={{ width: '100%', fontSize: '12px', padding: '4px' }} 
+                  style={{ width: '100%', fontSize: 'var(--fs-sm)', padding: '4px' }} 
                   value={effectiveData.cooler_type || "water_cooled"} 
                   onChange={(e) => {
                     const val = e.target.value;
@@ -1212,9 +1212,9 @@ export default function SetupPanel({
               <>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                    <label style={{ fontSize: '11px', color: '#64748b' }}>Connected Pipe Diameter ({isImperial ? 'in' : 'mm'})</label>
+                    <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>Connected pipe diameter ({isImperial ? 'in' : 'mm'})</label>
                     {isTelemetryPipe && (
-                      <span style={{ fontSize: '9.5px', color: '#395253', background: '#EBF0EF', border: '1px solid #D8E2E1', borderRadius: '3px', padding: '1px 5px', fontWeight: '600' }}>
+                      <span style={{ fontSize: 'var(--fs-xs)', color: '#395253', background: '#EBF0EF', border: '1px solid #D8E2E1', borderRadius: '3px', padding: '1px 5px', fontWeight: '600' }}>
                         AUTO
                       </span>
                     )}
@@ -1225,8 +1225,8 @@ export default function SetupPanel({
                     borderRadius: '4px',
                     background: '#F4F7F6',
                     border: '1px solid #D8E2E1',
-                    fontSize: '12px',
-                    color: isTelemetryPipe ? '#1C2B2C' : '#94a3b8',
+                    fontSize: 'var(--fs-sm)',
+                    color: isTelemetryPipe ? '#1C2B2C' : 'var(--color-text-muted)',
                     fontFamily: 'var(--font-mono, monospace)',
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -1235,10 +1235,10 @@ export default function SetupPanel({
                   }}>
                     <span>{isImperial ? `${activePipeDin} in` : `${activePipeDmm} mm`}</span>
                     {!isTelemetryPipe && (
-                      <span style={{ fontSize: '9.5px', color: '#94a3b8', fontFamily: 'inherit' }}>no pipe connected</span>
+                      <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-muted)', fontFamily: 'inherit' }}>no pipe connected</span>
                     )}
                   </div>
-                  <div style={{ fontSize: '10px', color: '#587071', marginTop: '3px' }}>
+                  <div style={{ fontSize: 'var(--fs-xs)', color: '#587071', marginTop: '3px' }}>
                     Auto-detected from the inlet pipe edge. Run simulation to update.
                   </div>
                 </div>
@@ -1262,15 +1262,15 @@ export default function SetupPanel({
                       marginTop: '5px',
                       padding: '5px 8px',
                       borderRadius: '4px',
-                      background: '#FFFBEB',
+                      background: 'var(--color-warning-bg)',
                       border: '1px solid #FCD34D',
-                      fontSize: '10px',
-                      color: '#92400E',
+                      fontSize: 'var(--fs-xs)',
+                      color: 'var(--color-warning-text-strong)',
                       display: 'flex',
                       alignItems: 'flex-start',
                       gap: '5px',
                     }}>
-                      <span style={{ fontSize: '12px', lineHeight: 1 }}>⚠</span>
+                      <WarningIcon size={12} style={{ marginTop: '1px' }} />
                       <span>
                         <strong>β = {_beta.toFixed(3)}</strong> — outside ISO 5167&#8209;2 range [0.10–0.75]. Results are extrapolated.
                       </span>
@@ -1281,7 +1281,7 @@ export default function SetupPanel({
                 <div>
                   {renderLabel('Standard', 'standard')}
                   <select 
-                    style={{ width: '100%', fontSize: '12px', padding: '4px' }} 
+                    style={{ width: '100%', fontSize: 'var(--fs-sm)', padding: '4px' }} 
                     value={_standard} 
                     onChange={(e) => onUpdate(id, { standard: e.target.value })}
                     title="ISO 5167-2:2022 (Reader-Harris/Gallagher) or the legacy classic Cd model."
@@ -1289,7 +1289,7 @@ export default function SetupPanel({
                     <option value="iso_5167" title="ISO 5167-2:2022 Reader-Harris/Gallagher discharge coefficient with §5.4 Formula (7) permanent pressure loss.">ISO 5167 (Reader-Harris/Gallagher)</option>
                     <option value="classic_cd" title="Legacy Reynolds-corrected discharge coefficient model.">Classic Cd (legacy)</option>
                   </select>
-                  <div style={{ fontSize: '10px', color: '#587071', marginTop: '4px', background: '#f4f7f6', padding: '6px', borderRadius: '4px', border: '1px solid #d8e2e1' }}>
+                  <div style={{ fontSize: 'var(--fs-xs)', color: '#587071', marginTop: '4px', background: '#f4f7f6', padding: '6px', borderRadius: '4px', border: '1px solid #d8e2e1' }}>
                     <span><strong>ISO 5167:</strong> Reader-Harris/Gallagher meter coefficient with ISO 5167-2 permanent pressure loss. <strong>Classic Cd:</strong> turbulent discharge coefficient with (1 − β²) loss.</span>
                   </div>
                 </div>
@@ -1302,7 +1302,7 @@ export default function SetupPanel({
               <div>
                 {renderLabel('Restriction Model', 'restriction_model')}
                 <select 
-                  style={{ width: '100%', fontSize: '12px', padding: '4px' }} 
+                  style={{ width: '100%', fontSize: 'var(--fs-sm)', padding: '4px' }} 
                   value={effectiveData.restriction_model || 'orifice'} 
                   onChange={(e) => onUpdate(id, { restriction_model: e.target.value })}
                   title="Orifice (Turbulent with Re-dependent Cd), Laminar (dP proportional to viscosity & flow), or Quadratic (fixed K-factor)"
@@ -1311,7 +1311,7 @@ export default function SetupPanel({
                   <option value="laminar" title="Capillary/bearing clearance flow. dP scales with viscosity and flow rate.">Laminar/Linear Model</option>
                   <option value="quadratic" title="Fixed K-factor flow resistance. dP scales with density and flow squared.">Simple Quadratic Model</option>
                 </select>
-                <div style={{ fontSize: '10px', color: '#587071', marginTop: '4px', background: '#f4f7f6', padding: '6px', borderRadius: '4px', border: '1px solid #d8e2e1' }}>
+                <div style={{ fontSize: 'var(--fs-xs)', color: '#587071', marginTop: '4px', background: '#f4f7f6', padding: '6px', borderRadius: '4px', border: '1px solid #d8e2e1' }}>
                   {effectiveData.restriction_model === 'laminar' && (
                     <span><strong>Laminar Model:</strong> dP = K_lam * mu * q. Best for narrow viscous clearances, fluid film journal bearings, capillary lines, and leakage channels.</span>
                   )}
@@ -1326,7 +1326,7 @@ export default function SetupPanel({
               <div>
                 {renderLabel('Calibration Fluid', 'fluid_type')}
                 <select 
-                  style={{ width: '100%', fontSize: '12px', padding: '4px' }} 
+                  style={{ width: '100%', fontSize: 'var(--fs-sm)', padding: '4px' }} 
                   value={effectiveData.fluid_type || 'system'} 
                   onChange={(e) => onUpdate(id, { fluid_type: e.target.value })}
                   title="Fluid used to look up density & viscosity at baseline calibration temperature."
@@ -1393,7 +1393,7 @@ export default function SetupPanel({
           {isNode && type === 'text_bubble' && (
             <>
               <div>
-                <label style={{ fontSize: '11px', color: '#64748b' }}>Title</label>
+                <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>Title</label>
                 <input 
                   className="form-input" style={{ width: '100%' }} 
                   value={localDrafts.title !== undefined ? localDrafts.title : (data.title || 'NOTE')} 
@@ -1402,7 +1402,7 @@ export default function SetupPanel({
                 />
               </div>
               <div>
-                <label style={{ fontSize: '11px', color: '#64748b' }}>Note Content</label>
+                <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>Note content</label>
                 <textarea 
                   rows={4}
                   className="form-input"
@@ -1413,7 +1413,7 @@ export default function SetupPanel({
                 />
               </div>
               <div>
-                <label style={{ fontSize: '11px', color: '#64748b' }}>Font Size</label>
+                <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>Font size</label>
                 <select
                   className="form-select"
                   style={{ width: '100%' }}

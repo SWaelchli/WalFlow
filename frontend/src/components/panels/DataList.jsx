@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { confirmDialog } from '../../utils/dialogs';
-import { PlusIcon, PlayIcon, ExportIcon, CaseIcon, TrashIcon, SpinnerIcon } from '../symbols/IconLibrary';
+import { componentLabel } from '../../constants/componentLabels';
+import { PlusIcon, PlayIcon, ExportIcon, CaseIcon, TrashIcon, SpinnerIcon, ArrowUpIcon, ArrowDownIcon, SortIcon, WarningIcon, CheckIcon, DragHandleIcon, CrossIcon } from '../symbols/IconLibrary';
 import { findClosestPipeMatch, ASME_PIPE_STANDARDS } from '../../utils/standards_library';
 import { getAvailableSchedules } from '../../constants/asme_b16_9_data';
 
@@ -53,7 +54,10 @@ function SortHeader({ label, sortKey, sortConfig, requestSort, align = 'left' })
   const isSorted = sortConfig.key === sortKey;
   return (
     <th {...clickableRowProps} onClick={() => requestSort(sortKey)} style={{ padding: '8px', cursor: 'pointer', textAlign: align, userSelect: 'none', backgroundColor: isSorted ? '#e2e8f0' : 'inherit', transition: 'background 0.2s' }}>
-      {label} {isSorted ? (sortConfig.direction === 'asc' ? '↑' : '↓') : '↕'}
+      {label}{' '}
+      {isSorted
+        ? (sortConfig.direction === 'asc' ? <ArrowUpIcon size={11} /> : <ArrowDownIcon size={11} />)
+        : <SortIcon size={11} color="var(--color-text-muted)" />}
     </th>
   );
 }
@@ -96,7 +100,7 @@ const calculateMaxPressureBar = (telemetry) => {
 
 // Relief device result badge (status as text, colour is secondary)
 const RELIEF_BADGES = {
-  open: { color: '#B45309', bg: '#FFFBEB', border: '#FDE68A' },
+  open: { color: '#B45309', bg: 'var(--color-warning-bg)', border: 'var(--color-warning-border)' },
   overcapacity: { color: 'var(--color-danger-text)', bg: '#FEF2F2', border: '#FEE2E2' },
   closed: { color: '#587071', bg: '#F4F7F6', border: '#D8E2E1' },
 };
@@ -111,7 +115,7 @@ const reliefBadge = (result) => {
 };
 
 function ReliefDeviceResult({ result, hasResults, formatPressure, unit }) {
-  const muted = { fontSize: '10px', color: 'var(--color-text-secondary)' };
+  const muted = { fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' };
   if (!hasResults) return <div style={{ ...muted, marginTop: '4px' }}>Run the simulation for results</div>;
   if (!result) return null;
   const badge = reliefBadge(result);
@@ -125,7 +129,7 @@ function ReliefDeviceResult({ result, hasResults, formatPressure, unit }) {
   return (
     <div title={title} style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '4px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
-        <span style={{ fontSize: '10px', fontWeight: '700', color: badge.color, background: badge.bg, border: `1px solid ${badge.border}`, padding: '1px 6px', borderRadius: '10px' }}>
+        <span style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', color: badge.color, background: badge.bg, border: `1px solid ${badge.border}`, padding: '1px 6px', borderRadius: '10px' }}>
           {badge.label}{result.opening_order ? ` #${result.opening_order}` : ''}
         </span>
         {opens && <span style={muted}>at {result.opening_ramp_pct} % load</span>}
@@ -399,7 +403,7 @@ export default function DataList({
         const pEnd = telemetry?.outlets?.[0]?.pressure ?? null;
         return {
           ...ref, originalIndex: index, item: node, label: node.data.label || node.id,
-          displayType: node.type.replace('_',' ').toUpperCase(),
+          displayType: componentLabel(node.type),
           flow: telemetry?.outlets?.[0]?.flow_rate ?? null,
           dp: pStart != null && pEnd != null ? Math.abs(pStart - pEnd) / 100000 : null,
           pStart: pStart != null ? pStart / 100000 : null,
@@ -422,7 +426,7 @@ export default function DataList({
         const diaValue = edge.data.diameter || 0.1;
         const area = Math.PI * Math.pow(diaValue, 2) / 4;
         return {
-          ...ref, originalIndex: index, item: edge, label: edge.data.label || edge.id, displayType: 'PIPE',
+          ...ref, originalIndex: index, item: edge, label: edge.data.label || edge.id, displayType: 'Pipe',
           flow: flow, dp: pStart != null && pEnd != null ? Math.abs(pStart - pEnd) / 100000 : null,
           pStart: pStart != null ? pStart / 100000 : null, pEnd: pEnd != null ? pEnd / 100000 : null,
           temp: telemetry?.outlets?.[0]?.temperature ?? telemetry?.inlets?.[0]?.temperature ?? null,
@@ -455,7 +459,7 @@ export default function DataList({
   }, [manualOrder, nodes, edges, activeTab, filterText, sortConfig]);
 
   const exportCSV = useCallback(() => {
-    const headers = ["Type", "Name", `Flow (${labels.flow})`, `Velocity (${labels.velocity})`, `dP (${labels.pressureDiff})`, `P Start (${labels.pressureAbs})`, `P End (${labels.pressureAbs})`, `Temp (${labels.temperature})`];
+    const headers = ["Type", "Name", `Flow (${labels.flow})`, `Velocity (${labels.velocity})`, `ΔP (${labels.pressureDiff})`, `P Start (${labels.pressureAbs})`, `P End (${labels.pressureAbs})`, `Temp (${labels.temperature})`];
     if (activeTab === 'pipes') headers.push(`Length (${labels.length})`);
     const rows = processedItems.map(i => {
       const lenDisplay = isImperial ? (i.length * 3.280839895).toFixed(2) : i.length;
@@ -527,32 +531,32 @@ export default function DataList({
               {onAddCase && (
                 <button
                   onClick={onAddCase}
-                  className="btn-primary btn-compact"
+                  className="btn-secondary btn-compact"
                 >
-                  <PlusIcon size={14} style={{ marginRight: '6px' }} /> New Case
+                  <PlusIcon size={14} style={{ marginRight: '6px' }} /> New case
                 </button>
               )}
               <button
                 onClick={onToggleCaseManager}
-                className={showCaseManager ? "btn-primary btn-compact" : "btn-secondary btn-compact"}
+                className={showCaseManager ? "btn-active btn-compact" : "btn-secondary btn-compact"}
               >
-                <CaseIcon size={14} style={{ marginRight: '6px' }} /> {showCaseManager ? 'Hide Case Manager' : 'Show Case Manager'}
+                <CaseIcon size={14} style={{ marginRight: '6px' }} /> {showCaseManager ? 'Hide case manager' : 'Case manager'}
               </button>
               <button
                 onClick={() => fetchBatchSimulations()}
                 disabled={isBatchLoading}
                 className="btn-primary btn-compact"
               >
-                <PlayIcon size={14} style={{ marginRight: '6px' }} /> {isBatchLoading ? 'Solving Cases...' : 'Batch Solve Matrix'}
+                <PlayIcon size={14} style={{ marginRight: '6px' }} /> {isBatchLoading ? 'Solving cases…' : 'Solve all cases'}
               </button>
             </div>
           ) : activeTab === 'relief' ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '6px 0' }}>
               <button
                 onClick={onToggleCaseManager}
-                className={showCaseManager ? "btn-primary btn-compact" : "btn-secondary btn-compact"}
+                className={showCaseManager ? "btn-active btn-compact" : "btn-secondary btn-compact"}
               >
-                <CaseIcon size={14} style={{ marginRight: '6px' }} /> {showCaseManager ? 'Hide Case Manager' : 'Show Case Manager'}
+                <CaseIcon size={14} style={{ marginRight: '6px' }} /> {showCaseManager ? 'Hide case manager' : 'Case manager'}
               </button>
             </div>
           ) : (
@@ -560,23 +564,24 @@ export default function DataList({
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                 <input 
                   type="text" 
-                  placeholder="Filter list..." 
+                  placeholder="Filter list…"
+                  aria-label="Filter list" 
                   value={filterText} 
                   onChange={(e) => setFilterText(e.target.value)}
                   className="form-input"
                   style={{ width: '160px' }} 
                 />
-                {filterText && <button onClick={() => setFilterText("")} style={{ position:'absolute', right:5, top:'50%', transform:'translateY(-50%)', border:'none', background:'none', cursor:'pointer', color:'var(--color-text-secondary)' }}>×</button>}
+                {filterText && <button onClick={() => setFilterText("")} aria-label="Clear filter" title="Clear filter" style={{ position:'absolute', right:5, top:'50%', transform:'translateY(-50%)', border:'none', background:'none', cursor:'pointer', color:'var(--color-text-secondary)', display: 'inline-flex' }}><CrossIcon size={12} /></button>}
               </div>
               <button 
                 onClick={handleAutoSortClick} 
                 className="btn-secondary btn-compact"
               >
-                Auto Sort
+                Auto sort
               </button>
               <button 
                 onClick={exportCSV} 
-                className="btn-primary btn-compact"
+                className="btn-secondary btn-compact"
               >
                 <ExportIcon size={14} style={{ marginRight: '6px' }} /> Export CSV
               </button>
@@ -589,7 +594,7 @@ export default function DataList({
         {activeTab === 'cases' ? (
           <div style={{ display: 'inline-block', minWidth: '100%', boxSizing: 'border-box', verticalAlign: 'top' }}>
             {isBatchLoading ? (
-              <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--color-text-secondary)', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+              <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--color-text-secondary)', fontSize: 'var(--fs-base)', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                 <SpinnerIcon size={14} color="var(--color-text-secondary)" /> Running batch simulations across all operating cases...
               </div>
             ) : batchError ? (
@@ -597,7 +602,7 @@ export default function DataList({
                 <strong>Batch Simulation Error:</strong> {batchError}
               </div>
             ) : (
-              <table style={{ width: '100%', height: 'max-content', borderCollapse: 'collapse', fontSize: '11px', textAlign: 'left', tableLayout: 'auto' }}>
+              <table style={{ width: '100%', height: 'max-content', borderCollapse: 'collapse', fontSize: 'var(--fs-xs)', textAlign: 'left', tableLayout: 'auto' }}>
                 <thead>
                   <tr style={{ background: 'var(--color-border-hover)', borderBottom: '2px solid var(--color-border)', color: 'var(--color-brand-dark)', fontWeight: '700', height: '40px' }}>
                     <th style={{ padding: '6px 12px', verticalAlign: 'middle', width: '200px', minWidth: '200px', maxWidth: '200px', whiteSpace: 'nowrap' }}>Performance Metric</th>
@@ -627,14 +632,14 @@ export default function DataList({
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'nowrap', whiteSpace: 'nowrap' }}>
                             {!isBase && (
-                              <span style={{ fontSize: '11px', color: '#94a3b8', cursor: 'grab', userSelect: 'none' }} title="Drag column to reorder">
+                              <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-muted)', cursor: 'grab', userSelect: 'none' }} title="Drag column to reorder">
                                 ⋮⋮
                               </span>
                             )}
                             <input 
                               style={{ 
                                 width: `${inputWidth}px`, 
-                                fontSize: '11px', 
+                                fontSize: 'var(--fs-xs)', 
                                 border: '1px solid var(--color-border)', 
                                 padding: '3px 6px', 
                                 borderRadius: '5px', 
@@ -649,17 +654,17 @@ export default function DataList({
                               onPointerDown={(e) => e.stopPropagation()} 
                               onMouseDown={(e) => e.stopPropagation()}
                             />
-                            {isBase && <span style={{ fontSize: '10px', fontWeight: '800', color: 'var(--color-brand-dark)' }}>(Base)</span>}
+                            {isBase && <span style={{ fontSize: 'var(--fs-xs)', fontWeight: '800', color: 'var(--color-brand-dark)' }}>(Base)</span>}
                             {!isActive && onSelectCase && (
                               <button
                                 onClick={() => onSelectCase(caseId)}
-                                style={{ padding: '2px 6px', fontSize: '10px', borderRadius: '4px', border: '1px solid var(--color-border)', background: '#ffffff', cursor: 'pointer', color: 'var(--color-brand-dark)', fontWeight: '600', whiteSpace: 'nowrap' }}
+                                style={{ padding: '2px 6px', fontSize: 'var(--fs-xs)', borderRadius: '4px', border: '1px solid var(--color-border)', background: '#ffffff', cursor: 'pointer', color: 'var(--color-brand-dark)', fontWeight: '600', whiteSpace: 'nowrap' }}
                               >
                                 Switch
                               </button>
                             )}
                             {!isBase && onDeleteCase && (
-                              <button
+                              <button aria-label="Delete this operating case"
                                 onClick={async () => {
                                   const ok = await confirmDialog({
                                     title: 'Delete case?',
@@ -670,14 +675,14 @@ export default function DataList({
                                   if (ok) onDeleteCase(caseId);
                                 }}
                                 title="Delete this operating case"
-                                style={{ padding: '2px 6px', fontSize: '10px', borderRadius: '4px', border: '1px solid #fee2e2', background: '#fef2f2', cursor: 'pointer', color: 'var(--color-danger-text)', fontWeight: '600', whiteSpace: 'nowrap' }}
+                                style={{ padding: '2px 6px', fontSize: 'var(--fs-xs)', borderRadius: '4px', border: '1px solid #fee2e2', background: '#fef2f2', cursor: 'pointer', color: 'var(--color-danger-text)', fontWeight: '600', whiteSpace: 'nowrap' }}
                               >
                                 <TrashIcon size={12} style={{ color: 'var(--color-danger-text)' }} />
                               </button>
                             )}
-                            {isActive && <span style={{ fontSize: '10px', color: 'var(--color-primary-text)', fontWeight: 'bold' }}>Active</span>}
+                            {isActive && <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-primary-text)', fontWeight: 'bold' }}>Active</span>}
                             {isCaseResultStale(c, caseInputHashes) && (
-                              <span title="The diagram changed since this case was solved. Run the simulation again." style={{ fontSize: '10px', fontWeight: '700', color: '#7A3E00', background: '#FFF7ED', border: '1px solid #FDE3C3', padding: '1px 6px', borderRadius: '10px', whiteSpace: 'nowrap' }}>Out of date</span>
+                              <span title="The diagram changed since this case was solved. Run the simulation again." style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', color: '#7A3E00', background: '#FFF7ED', border: '1px solid #FDE3C3', padding: '1px 6px', borderRadius: '10px', whiteSpace: 'nowrap' }}>Out of date</span>
                             )}
                           </div>
                         </th>
@@ -697,7 +702,7 @@ export default function DataList({
                       return (
                         <td key={c.case_id || c.id} style={{ padding: '6px 12px', borderLeft: caseDragOverIdx === colIdx ? '3px solid var(--color-primary)' : '1px solid var(--color-border)', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                           <span style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>{val !== undefined ? `${formatPressure(val)} ${labels.pressureAbs}` : '—'}</span>
-                          {deltaStr && <span style={{ fontSize: '10px', color: '#d97706', marginLeft: '8px' }}>{deltaStr}</span>}
+                          {deltaStr && <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-warning-text)', marginLeft: '8px' }}>{deltaStr}</span>}
                         </td>
                       );
                     })}
@@ -713,7 +718,7 @@ export default function DataList({
                       return (
                         <td key={c.case_id || c.id} style={{ padding: '6px 12px', borderLeft: caseDragOverIdx === colIdx ? '3px solid var(--color-primary)' : '1px solid var(--color-border)', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                           <span style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>{val !== undefined ? `${formatPressure(val)} ${labels.pressureAbs}` : '—'}</span>
-                          {deltaStr && <span style={{ fontSize: '10px', color: '#d97706', marginLeft: '8px' }}>{deltaStr}</span>}
+                          {deltaStr && <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-warning-text)', marginLeft: '8px' }}>{deltaStr}</span>}
                         </td>
                       );
                     })}
@@ -729,7 +734,7 @@ export default function DataList({
                       return (
                         <td key={c.case_id || c.id} style={{ padding: '6px 12px', borderLeft: caseDragOverIdx === colIdx ? '3px solid var(--color-primary)' : '1px solid var(--color-border)', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                           <span style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>{val !== undefined ? `${formatFlow(val)} ${labels.flow}` : '—'}</span>
-                          {deltaStr && <span style={{ fontSize: '10px', color: '#d97706', marginLeft: '8px' }}>{deltaStr}</span>}
+                          {deltaStr && <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-warning-text)', marginLeft: '8px' }}>{deltaStr}</span>}
                         </td>
                       );
                     })}
@@ -745,7 +750,7 @@ export default function DataList({
                       return (
                         <td key={c.case_id || c.id} style={{ padding: '6px 12px', borderLeft: caseDragOverIdx === colIdx ? '3px solid var(--color-primary)' : '1px solid var(--color-border)', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                           <span style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>{val !== undefined ? `${formatPower(val)} ${labels.power}` : '—'}</span>
-                          {deltaStr && <span style={{ fontSize: '10px', color: '#d97706', marginLeft: '8px' }}>{deltaStr}</span>}
+                          {deltaStr && <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-warning-text)', marginLeft: '8px' }}>{deltaStr}</span>}
                         </td>
                       );
                     })}
@@ -759,12 +764,12 @@ export default function DataList({
                       return (
                         <td key={c.case_id || c.id} style={{ padding: '6px 12px', borderLeft: caseDragOverIdx === colIdx ? '3px solid var(--color-primary)' : '1px solid var(--color-border)', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                           {hasCav ? (
-                            <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--color-danger-text)', background: '#fef2f2', padding: '2px 8px', borderRadius: '10px', border: '1px solid #fee2e2' }}>
-                              ⚠️ Cavitation Risk
+                            <span style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', color: 'var(--color-danger-text)', background: '#fef2f2', padding: '2px 8px', borderRadius: '10px', border: '1px solid #fee2e2' }}>
+                              <WarningIcon size={11} style={{ marginRight: '3px', verticalAlign: '-1px' }} />Cavitation risk
                             </span>
                           ) : (
-                            <span style={{ fontSize: '10px', fontWeight: '700', color: '#166534', background: '#f0fdf4', padding: '2px 8px', borderRadius: '10px', border: '1px solid #dcfce7' }}>
-                              ✓ Normal
+                            <span style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', color: '#166534', background: '#f0fdf4', padding: '2px 8px', borderRadius: '10px', border: '1px solid #dcfce7' }}>
+                              <CheckIcon size={11} style={{ marginRight: '3px', verticalAlign: '-1px' }} />Normal
                             </span>
                           )}
                         </td>
@@ -778,11 +783,11 @@ export default function DataList({
         ) : activeTab === 'relief' ? (
           <div style={{ display: 'inline-block', minWidth: '100%', boxSizing: 'border-box', verticalAlign: 'top' }}>
             {reliefDevices.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--color-text-secondary)', fontSize: '13px', fontWeight: '600' }}>
+              <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--color-text-secondary)', fontSize: 'var(--fs-base)', fontWeight: '600' }}>
                 ℹ No Pressure Safety Valves or Rupture Discs in the current diagram. Drag a PSV or Rupture Disc from the sidebar onto the canvas to enable relief contingency analysis.
               </div>
             ) : (
-              <table style={{ width: '100%', height: 'max-content', borderCollapse: 'collapse', fontSize: '11px', textAlign: 'left', tableLayout: 'auto' }}>
+              <table style={{ width: '100%', height: 'max-content', borderCollapse: 'collapse', fontSize: 'var(--fs-xs)', textAlign: 'left', tableLayout: 'auto' }}>
                 <thead>
                   <tr style={{ background: 'var(--color-border-hover)', borderBottom: '2px solid var(--color-border)', color: 'var(--color-brand-dark)', fontWeight: '700', height: '40px' }}>
                     <th style={{ padding: '6px 12px', verticalAlign: 'middle', width: '180px', minWidth: '180px', whiteSpace: 'nowrap' }}>Relief Equipment Tag</th>
@@ -798,14 +803,14 @@ export default function DataList({
                             {!isActive && onSelectCase && (
                               <button
                                 onClick={() => onSelectCase(caseId)}
-                                style={{ padding: '2px 6px', fontSize: '10px', borderRadius: '4px', border: '1px solid var(--color-border)', background: '#ffffff', cursor: 'pointer', color: 'var(--color-brand-dark)', fontWeight: '600', whiteSpace: 'nowrap' }}
+                                style={{ padding: '2px 6px', fontSize: 'var(--fs-xs)', borderRadius: '4px', border: '1px solid var(--color-border)', background: '#ffffff', cursor: 'pointer', color: 'var(--color-brand-dark)', fontWeight: '600', whiteSpace: 'nowrap' }}
                               >
                                 Switch
                               </button>
                             )}
-                            {isActive && <span style={{ fontSize: '10px', color: 'var(--color-primary-text)', fontWeight: 'bold' }}>Active</span>}
+                            {isActive && <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-primary-text)', fontWeight: 'bold' }}>Active</span>}
                             {isCaseResultStale(c, caseInputHashes) && (
-                              <span title="The diagram changed since this case was solved. Run the simulation again." style={{ fontSize: '10px', fontWeight: '700', color: '#7A3E00', background: '#FFF7ED', border: '1px solid #FDE3C3', padding: '1px 6px', borderRadius: '10px', whiteSpace: 'nowrap' }}>Out of date</span>
+                              <span title="The diagram changed since this case was solved. Run the simulation again." style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', color: '#7A3E00', background: '#FFF7ED', border: '1px solid #FDE3C3', padding: '1px 6px', borderRadius: '10px', whiteSpace: 'nowrap' }}>Out of date</span>
                             )}
                           </div>
                         </th>
@@ -845,14 +850,14 @@ export default function DataList({
                                 onChange={(e) => handleMatrixForcedStateChange(caseId, dev.id, e.target.value)}
                                 style={{
                                   padding: '4px 8px',
-                                  fontSize: '11px',
+                                  fontSize: 'var(--fs-xs)',
                                   fontWeight: '700',
                                   borderRadius: '6px',
                                   border: `1px solid ${
                                     forcedState === 'forced_closed' ? '#FEE2E2' : (forcedState === 'forced_open' ? '#FEF3C7' : 'var(--color-border)')
                                   }`,
-                                  background: forcedState === 'forced_closed' ? '#FEF2F2' : (forcedState === 'forced_open' ? '#FFFBEB' : '#FFFFFF'),
-                                  color: forcedState === 'forced_closed' ? '#EF4444' : (forcedState === 'forced_open' ? '#D97706' : 'var(--color-text-primary)'),
+                                  background: forcedState === 'forced_closed' ? '#FEF2F2' : (forcedState === 'forced_open' ? 'var(--color-warning-bg)' : '#FFFFFF'),
+                                  color: forcedState === 'forced_closed' ? '#EF4444' : (forcedState === 'forced_open' ? 'var(--color-warning-text)' : 'var(--color-text-primary)'),
                                   cursor: 'pointer',
                                   outline: 'none',
                                   width: '100%'
@@ -910,7 +915,7 @@ export default function DataList({
                    </tr>
 
                    {/* Peak System Pressure */}
-                   <tr style={{ borderBottom: '1px solid var(--color-border-hover)', height: '36px', background: telemetryMode === 'peak' ? '#FFFBEB' : '#ffffff' }}>
+                   <tr style={{ borderBottom: '1px solid var(--color-border-hover)', height: '36px', background: telemetryMode === 'peak' ? 'var(--color-warning-bg)' : '#ffffff' }}>
                      <td colSpan={3} title="Highest steady-state pressure at the moment a relief device reaches its set pressure (pumps and sources ramped up), or the relieved pressure if higher" style={{ padding: '6px 12px', fontWeight: '700', color: '#B45309', verticalAlign: 'middle' }}>
                        Peak system pressure ({labels.pressureAbs})
                      </td>
@@ -932,7 +937,7 @@ export default function DataList({
                        return (
                          <td key={caseId} title={title} style={{ padding: '6px 12px', borderLeft: '1px solid var(--color-border)', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                            <div style={{ fontWeight: '700', color: '#B45309' }}>{value}</div>
-                           {note && <div style={{ fontSize: '10px', color: 'var(--color-text-secondary)' }}>{note}</div>}
+                           {note && <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>{note}</div>}
                          </td>
                        );
                      })}
@@ -1001,7 +1006,7 @@ export default function DataList({
             )}
           </div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', textAlign: 'left' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--fs-xs)', textAlign: 'left' }}>
           <thead>
             <tr style={{ background: 'var(--color-border-hover)', borderBottom: '2px solid var(--color-border)', color: 'var(--color-brand-dark)', fontWeight: '700', position: 'sticky', top: 0, zIndex: 1 }}>
 
@@ -1011,7 +1016,7 @@ export default function DataList({
               <SortHeader label={`Flow (${labels.flow})`} sortKey="flow" align="right" sortConfig={sortConfig} requestSort={requestSort} />
               <SortHeader label={`Velocity (${labels.velocity})`} sortKey="velocity" align="right" sortConfig={sortConfig} requestSort={requestSort} />
 
-              <SortHeader label={`dP (${labels.pressureDiff})`} sortKey="dp" align="right" sortConfig={sortConfig} requestSort={requestSort} />
+              <SortHeader label={`ΔP (${labels.pressureDiff})`} sortKey="dp" align="right" sortConfig={sortConfig} requestSort={requestSort} />
               <SortHeader label={`P Start (${labels.pressureAbs})`} sortKey="pStart" align="right" sortConfig={sortConfig} requestSort={requestSort} />
               <SortHeader label={`P End (${labels.pressureAbs})`} sortKey="pEnd" align="right" sortConfig={sortConfig} requestSort={requestSort} />
               <SortHeader label={`Temp (${labels.temperature})`} sortKey="temp" align="right" sortConfig={sortConfig} requestSort={requestSort} />
@@ -1097,11 +1102,11 @@ export default function DataList({
                   onMouseEnter={(e) => e.currentTarget.style.background = hoverBg}
                   onMouseLeave={(e) => e.currentTarget.style.background = baseBg}
                 >
-                  <td style={{ padding: '8px', color: '#849A9B', fontSize: '10px' }}>{sortConfig.key ? "—" : "☰"}</td>
+                  <td style={{ padding: '8px', color: '#849A9B', fontSize: 'var(--fs-xs)' }} title={sortConfig.key ? 'Clear sorting to reorder rows' : 'Drag to reorder'}>{sortConfig.key ? "—" : <DragHandleIcon size={12} />}</td>
                   <td style={{ padding: '8px', color: 'var(--color-text-secondary)', fontWeight: '600' }}>{entry.displayType}</td>
                   <td style={{ padding: '8px' }}>
                     <input 
-                      style={{ width: '110px', fontSize: '11px', border: '1px solid var(--color-border)', padding: '3px 6px', borderRadius: '5px', fontWeight: '700', color: 'var(--color-text-primary)', outline: 'none' }}
+                      style={{ width: '110px', fontSize: 'var(--fs-xs)', border: '1px solid var(--color-border)', padding: '3px 6px', borderRadius: '5px', fontWeight: '700', color: 'var(--color-text-primary)', outline: 'none' }}
                       value={item.data.label || item.id} 
                       onChange={(e) => handleNameChange(e.target.value)} 
                       onFocus={() => { handleRowClick(entry); setIsEditing(true); }}
@@ -1114,7 +1119,7 @@ export default function DataList({
                   </td>
                   <td style={{ padding: '8px', textAlign: 'right', fontWeight: '600' }}>{formatFlowM3s(entry.flow)}</td>
                   <td style={{ padding: '8px', textAlign: 'right', color: velColor, fontWeight: velWeight }} title={velTitle}>
-                    {velMark && <span aria-label={velTitle} style={{ fontSize: '8px', marginRight: '4px' }}>{velMark}</span>}{formatVelocity(entry.velocity)}
+                    {velMark && <WarningIcon size={11} weight={vel > 4.0 ? 'fill' : 'bold'} aria-label={velTitle} style={{ marginRight: '4px', verticalAlign: '-1px' }} />}{formatVelocity(entry.velocity)}
                   </td>
                   <td style={{ padding: '8px', textAlign: 'right' }}>{formatPressure(entry.dp, 3)}</td>
                   <td style={{ padding: '8px', textAlign: 'right' }}>{formatPressure(entry.pStart)}</td>
@@ -1125,7 +1130,7 @@ export default function DataList({
                       {!isNode ? (
                         <select 
                           className="form-select"
-                          style={{ fontSize: '11px', padding: '2px 6px', height: '26px' }}
+                          style={{ fontSize: 'var(--fs-xs)', padding: '2px 6px', height: '26px' }}
                           value={isCustomId ? '' : currentDn}
                           onChange={(e) => { handleDnChange(e.target.value); }}
                           onFocus={() => { handleRowClick(entry); setIsEditing(true); }}
@@ -1152,7 +1157,7 @@ export default function DataList({
                       {!isNode ? (
                         <select 
                           className="form-select"
-                          style={{ fontSize: '11px', padding: '2px 6px', height: '26px' }}
+                          style={{ fontSize: 'var(--fs-xs)', padding: '2px 6px', height: '26px' }}
                           value={currentSch}
                           onChange={(e) => handleScheduleChange(e.target.value)}
                           onFocus={() => { handleRowClick(entry); setIsEditing(true); }}
@@ -1178,7 +1183,7 @@ export default function DataList({
                       {!isNode ? (
                         <select 
                           className="form-select"
-                          style={{ fontSize: '11px', padding: '2px 6px', height: '26px', minWidth: '160px' }}
+                          style={{ fontSize: 'var(--fs-xs)', padding: '2px 6px', height: '26px', minWidth: '160px' }}
                           value={currentClassId} 
                           onChange={(e) => handleClassChange(e.target.value)} 
                           onFocus={() => { handleRowClick(entry); setIsEditing(true); }}
@@ -1205,7 +1210,7 @@ export default function DataList({
                       {!isNode && (
                         <DraftNumberInput
                           step="0.1"
-                          style={{ width: '55px', fontSize: '11px', border: '1px solid var(--color-border)', padding: '3px 6px', borderRadius: '5px', textAlign: 'right', fontWeight: '600', color: 'var(--color-brand-dark)', outline: 'none' }}
+                          style={{ width: '55px', fontSize: 'var(--fs-xs)', border: '1px solid var(--color-border)', padding: '3px 6px', borderRadius: '5px', textAlign: 'right', fontWeight: '600', color: 'var(--color-brand-dark)', outline: 'none' }}
                           displayValue={isImperial ? (item.data.length * 3.280839895).toFixed(1) : item.data.length}
                           onCommit={handleLengthCommit}
                           onFocus={() => { handleRowClick(entry); setIsEditing(true); }}

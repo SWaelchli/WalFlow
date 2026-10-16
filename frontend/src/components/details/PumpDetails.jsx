@@ -15,13 +15,13 @@ const CavitationWarning = ({ npsha, required, unit, mult }) => (
     display: 'flex',
     flexDirection: 'column', gap: '4px', marginBottom: '10px'
   }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: 'var(--color-danger-text)', fontWeight: 'bold' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: 'var(--fs-sm)', color: 'var(--color-danger-text)', fontWeight: 'bold' }}>
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 9v4m0 4h.01M2.75 12A9.25 9.25 0 0 1 12 2.75 9.25 9.25 0 0 1 21.25 12 9.25 9.25 0 0 1 12 21.25 9.25 9.25 0 0 1 2.75 12Z"/>
       </svg>
       CAVITATION RISK
     </div>
-    <p style={{ fontSize: '11px', color: 'var(--color-danger-text)', margin: 0, paddingLeft: '24px' }}>
+    <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-danger-text)', margin: 0, paddingLeft: '24px' }}>
       {npsha != null
         ? `NPSHa ${(npsha * mult).toFixed(1)} ${unit} is below NPSHr + margin (${(required * mult).toFixed(1)} ${unit}). Pump may be cavitating, leading to damage.`
         : 'Suction pressure is critically low. Pump may be cavitating, leading to damage.'}
@@ -37,8 +37,8 @@ const PumpWarning = ({ title, text, tone = 'warning' }) => (
     border: `1px solid ${tone === 'danger' ? 'var(--color-danger)' : '#FCD34D'}`,
     display: 'flex', flexDirection: 'column', gap: '4px'
   }}>
-    <div style={{ fontSize: '12px', fontWeight: 'bold', color: tone === 'danger' ? 'var(--color-danger)' : '#92400E' }}>{title}</div>
-    <p style={{ fontSize: '11px', color: tone === 'danger' ? 'var(--color-danger)' : '#92400E', margin: 0 }}>{text}</p>
+    <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 'bold', color: tone === 'danger' ? 'var(--color-danger)' : 'var(--color-warning-text-strong)' }}>{title}</div>
+    <p style={{ fontSize: 'var(--fs-xs)', color: tone === 'danger' ? 'var(--color-danger)' : 'var(--color-warning-text-strong)', margin: 0 }}>{text}</p>
   </div>
 );
 
@@ -130,7 +130,7 @@ const PumpDetails = memo(function PumpDetails({ node }) {
         />
       )}
       {telemetry?.npsha_m != null && (
-        <div style={{ fontSize: '11.5px', color: 'var(--color-text-secondary)', display: 'flex', justifyContent: 'space-between' }}>
+        <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-text-secondary)', display: 'flex', justifyContent: 'space-between' }}>
           <span>NPSHa:</span>
           <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--color-text-primary)' }}>
             {(telemetry.npsha_m * (isImperial ? 3.280839895 : 1)).toFixed(1)} {isImperial ? 'ft' : 'm'}
@@ -150,7 +150,7 @@ const PumpDetails = memo(function PumpDetails({ node }) {
           text="The internal relief recirculates the excess flow to suction, so the delivered flow is below displacement. Check for a closed or undersized outlet path." />
       )}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-brand-dark)', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '3px solid var(--color-primary)', paddingLeft: '8px' }}>
+        <span style={{ fontSize: 'var(--fs-xs)', fontWeight: '800', color: 'var(--color-brand-dark)', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '3px solid var(--color-primary)', paddingLeft: '8px' }}>
           Performance Curve
         </span>
       </div>
@@ -160,10 +160,10 @@ const PumpDetails = memo(function PumpDetails({ node }) {
           <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 4, bottom: 10 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
             <XAxis dataKey="q" type="number" domain={[0, xTicks[xTicks.length - 1]]} ticks={xTicks} tickFormatter={formatTick} fontSize={10}
-              label={{ value: `Flow (${labels.flow})`, position: 'insideBottom', offset: -6, fontSize: 10 }} height={36} />
+              label={{ value: `Flow (${labels.flow})`, position: 'insideBottom', offset: -6, fontSize: 'var(--fs-xs)' }} height={36} />
             <YAxis type="number" domain={[0, yTicks[yTicks.length - 1]]} ticks={yTicks} tickFormatter={formatTick} fontSize={10} width={44}
-              label={{ value: `Pressure (${labels.pressureDiff})`, angle: -90, position: 'insideLeft', offset: 14, fontSize: 10, style: { textAnchor: 'middle' } }} />
-            <Legend verticalAlign="top" align="right" height={40} iconType="plainline" wrapperStyle={{ fontSize: '11px' }} />
+              label={{ value: `Pressure (${labels.pressureDiff})`, angle: -90, position: 'insideLeft', offset: 14, fontSize: 'var(--fs-xs)', style: { textAnchor: 'middle' } }} />
+            <Legend verticalAlign="top" align="right" height={40} iconType="plainline" wrapperStyle={{ fontSize: 'var(--fs-xs)' }} />
             <Line dataKey="pump" stroke="var(--color-primary)" strokeWidth={2.5} dot={false} name="Pump Curve" isAnimationActive={false} />
             <Line dataKey="system" stroke="var(--color-success)" strokeWidth={2} dot={false} name="System" isAnimationActive={false} />
             {telemetry && <Scatter name="Operating Point" dataKey="p" data={opPoint} fill="var(--color-brand-dark)" isAnimationActive={false} shape="cross" />}
@@ -173,30 +173,30 @@ const PumpDetails = memo(function PumpDetails({ node }) {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
         <div style={{ background: 'var(--color-surface-hover)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
-          <div style={{ fontSize: '10.5px', color: 'var(--color-text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: '2px' }}>Flow</div>
-          <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--color-text-primary)', fontFamily: 'var(--font-mono)' }}>{formatFlowM3s(Math.abs(currentQ))} <span style={{ fontSize: '9px', fontWeight: '500' }}>{labels.flow}</span></div>
+          <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '600', letterSpacing: '0.02em', marginBottom: '2px' }}>Flow</div>
+          <div style={{ fontSize: 'var(--fs-sm)', fontWeight: '700', color: 'var(--color-text-primary)', fontFamily: 'var(--font-mono)' }}>{formatFlowM3s(Math.abs(currentQ))} <span style={{ fontSize: 'var(--fs-xs)', fontWeight: '500' }}>{labels.flow}</span></div>
         </div>
         <div style={{ background: 'var(--color-surface-hover)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
-          <div style={{ fontSize: '10.5px', color: 'var(--color-text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: '2px' }}>Pressure Increase</div>
-          <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--color-primary-text)', fontFamily: 'var(--font-mono)' }}>{formatPressurePa(currentDpPa)} <span style={{ fontSize: '9px', fontWeight: '500' }}>{labels.pressureDiff}</span></div>
+          <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '600', letterSpacing: '0.02em', marginBottom: '2px' }}>Pressure Increase</div>
+          <div style={{ fontSize: 'var(--fs-sm)', fontWeight: '700', color: 'var(--color-primary-text)', fontFamily: 'var(--font-mono)' }}>{formatPressurePa(currentDpPa)} <span style={{ fontSize: 'var(--fs-xs)', fontWeight: '500' }}>{labels.pressureDiff}</span></div>
         </div>
         <div style={{ background: 'var(--color-surface-hover)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
-          <div style={{ fontSize: '10.5px', color: 'var(--color-text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: '2px' }}>Hydraulic Power</div>
-          <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--color-text-primary)', fontFamily: 'var(--font-mono)' }}>{formatPower(Math.max(0, hydraulicPowerKW))} <span style={{ fontSize: '9px', fontWeight: '500' }}>{labels.power}</span></div>
+          <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '600', letterSpacing: '0.02em', marginBottom: '2px' }}>Hydraulic Power</div>
+          <div style={{ fontSize: 'var(--fs-sm)', fontWeight: '700', color: 'var(--color-text-primary)', fontFamily: 'var(--font-mono)' }}>{formatPower(Math.max(0, hydraulicPowerKW))} <span style={{ fontSize: 'var(--fs-xs)', fontWeight: '500' }}>{labels.power}</span></div>
         </div>
         <div style={{ background: 'var(--color-surface-hover)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
           {isVolumetric ? (
             <>
-              <div title="Shaft power as a percentage of the motor rating" style={{ fontSize: '10.5px', color: 'var(--color-text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: '2px', cursor: 'help' }}>Motor Load (% of rating)</div>
-              <div style={{ fontSize: '12px', fontWeight: '700', color: (motorLoadPct || 0) > 100 ? 'var(--color-danger)' : 'var(--color-success)', fontFamily: 'var(--font-mono)' }}>
-                {motorLoadPct !== undefined ? motorLoadPct.toFixed(0) : '—'} <span style={{ fontSize: '9px', fontWeight: '500' }}>%</span>
+              <div title="Shaft power as a percentage of the motor rating" style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '600', letterSpacing: '0.02em', marginBottom: '2px', cursor: 'help' }}>Motor Load (% of rating)</div>
+              <div style={{ fontSize: 'var(--fs-sm)', fontWeight: '700', color: (motorLoadPct || 0) > 100 ? 'var(--color-danger)' : 'var(--color-success)', fontFamily: 'var(--font-mono)' }}>
+                {motorLoadPct !== undefined ? motorLoadPct.toFixed(0) : '—'} <span style={{ fontSize: 'var(--fs-xs)', fontWeight: '500' }}>%</span>
               </div>
             </>
           ) : (
             <>
-              <div style={{ fontSize: '10.5px', color: 'var(--color-text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: '2px' }}>Shaft Power</div>
-              <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--color-text-primary)', fontFamily: 'var(--font-mono)' }}>
-                {shaftPowerKW !== undefined ? formatPower(shaftPowerKW) : '—'} <span style={{ fontSize: '9px', fontWeight: '500' }}>{labels.power}</span>
+              <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '600', letterSpacing: '0.02em', marginBottom: '2px' }}>Shaft Power</div>
+              <div style={{ fontSize: 'var(--fs-sm)', fontWeight: '700', color: 'var(--color-text-primary)', fontFamily: 'var(--font-mono)' }}>
+                {shaftPowerKW !== undefined ? formatPower(shaftPowerKW) : '—'} <span style={{ fontSize: 'var(--fs-xs)', fontWeight: '500' }}>{labels.power}</span>
               </div>
             </>
           )}

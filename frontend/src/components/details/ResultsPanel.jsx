@@ -1,3 +1,4 @@
+import { CaretDownIcon } from '../symbols/IconLibrary';
 import React, { useState } from 'react';
 import PumpDetails from './PumpDetails';
 import ValveDetails from './ValveDetails';
@@ -95,13 +96,13 @@ export default function ResultsPanel({ selectedNode, selectedEdge, allNodes, all
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '11px', color: 'var(--color-text-secondary)', transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▼</span>
-          <h3 style={{ margin: 0, fontSize: '14px', color: 'var(--color-brand-dark)', fontWeight: '700', letterSpacing: '0.01em' }}>
+          <CaretDownIcon size={12} color="var(--color-text-secondary)" style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
+          <h3 style={{ margin: 0, fontSize: 'var(--fs-md)', color: 'var(--color-brand-dark)', fontWeight: '700', letterSpacing: '0.01em' }}>
             {data.label || (isEdge ? `PIPE (${item.id.replace('reactflow__edge-', '')})` : type.toUpperCase())}
           </h3>
         </div>
         {!isCollapsed && (
-          <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--color-primary-text)', background: 'var(--color-primary-tint)', padding: '3px 8px', borderRadius: '12px' }}>
+          <span style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', color: 'var(--color-primary-text)', background: 'var(--color-primary-tint)', padding: '3px 8px', borderRadius: '12px' }}>
             {type.toUpperCase()}
           </span>
         )}

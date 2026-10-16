@@ -1,255 +1,129 @@
 import React from 'react';
+// Per-icon imports keep the bundle and test start-up small (the package index holds ~1,500 icons).
+import { PlusIcon as PhPlus } from '@phosphor-icons/react/Plus';
+import { CloudIcon as PhCloud } from '@phosphor-icons/react/Cloud';
+import { UploadSimpleIcon as PhUpload } from '@phosphor-icons/react/UploadSimple';
+import { DownloadSimpleIcon as PhDownload } from '@phosphor-icons/react/DownloadSimple';
+import { TrashIcon as PhTrash } from '@phosphor-icons/react/Trash';
+import { CrownIcon as PhCrown } from '@phosphor-icons/react/Crown';
+import { SignOutIcon as PhSignOut } from '@phosphor-icons/react/SignOut';
+import { SignInIcon as PhSignIn } from '@phosphor-icons/react/SignIn';
+import { PaletteIcon as PhPalette } from '@phosphor-icons/react/Palette';
+import { StackIcon as PhStack } from '@phosphor-icons/react/Stack';
+import { QuestionIcon as PhQuestion } from '@phosphor-icons/react/Question';
+import { CheckIcon as PhCheck } from '@phosphor-icons/react/Check';
+import { XIcon as PhX } from '@phosphor-icons/react/X';
+import { PlayIcon as PhPlay } from '@phosphor-icons/react/Play';
+import { InfoIcon as PhInfo } from '@phosphor-icons/react/Info';
+import { UserIcon as PhUser } from '@phosphor-icons/react/User';
+import { BookOpenIcon as PhBookOpen } from '@phosphor-icons/react/BookOpen';
+import { KeyboardIcon as PhKeyboard } from '@phosphor-icons/react/Keyboard';
+import { FolderIcon as PhFolder } from '@phosphor-icons/react/Folder';
+import { MagnifyingGlassIcon as PhMagnifyingGlass } from '@phosphor-icons/react/MagnifyingGlass';
+import { GlobeIcon as PhGlobe } from '@phosphor-icons/react/Globe';
+import { LightningIcon as PhLightning } from '@phosphor-icons/react/Lightning';
+import { CircleNotchIcon as PhCircleNotch } from '@phosphor-icons/react/CircleNotch';
+import { FlameIcon as PhFlame } from '@phosphor-icons/react/Flame';
+import { LockIcon as PhLock } from '@phosphor-icons/react/Lock';
+import { LockOpenIcon as PhLockOpen } from '@phosphor-icons/react/LockOpen';
+import { FolderOpenIcon as PhFolderOpen } from '@phosphor-icons/react/FolderOpen';
+import { CopyIcon as PhCopy } from '@phosphor-icons/react/Copy';
+import { PencilSimpleIcon as PhPencil } from '@phosphor-icons/react/PencilSimple';
+import { WarningIcon as PhWarning } from '@phosphor-icons/react/Warning';
+import { CheckCircleIcon as PhCheckCircle } from '@phosphor-icons/react/CheckCircle';
+import { ArrowsClockwiseIcon as PhArrowsClockwise } from '@phosphor-icons/react/ArrowsClockwise';
+import { FloppyDiskIcon as PhFloppyDisk } from '@phosphor-icons/react/FloppyDisk';
+import { FileTextIcon as PhFileText } from '@phosphor-icons/react/FileText';
+import { GearSixIcon as PhGear } from '@phosphor-icons/react/GearSix';
+import { NotePencilIcon as PhNotePencil } from '@phosphor-icons/react/NotePencil';
+import { RulerIcon as PhRuler } from '@phosphor-icons/react/Ruler';
+import { ClipboardTextIcon as PhClipboardText } from '@phosphor-icons/react/ClipboardText';
+import { ConfettiIcon as PhConfetti } from '@phosphor-icons/react/Confetti';
+import { CaretDownIcon as PhCaretDown } from '@phosphor-icons/react/CaretDown';
+import { CaretRightIcon as PhCaretRight } from '@phosphor-icons/react/CaretRight';
+import { ArrowUpIcon as PhArrowUp } from '@phosphor-icons/react/ArrowUp';
+import { ArrowDownIcon as PhArrowDown } from '@phosphor-icons/react/ArrowDown';
+import { ArrowsDownUpIcon as PhArrowsDownUp } from '@phosphor-icons/react/ArrowsDownUp';
+import { ArrowRightIcon as PhArrowRight } from '@phosphor-icons/react/ArrowRight';
+import { ArrowLeftIcon as PhArrowLeft } from '@phosphor-icons/react/ArrowLeft';
+import { ArrowCounterClockwiseIcon as PhArrowCounterClockwise } from '@phosphor-icons/react/ArrowCounterClockwise';
+import { ArrowClockwiseIcon as PhArrowClockwise } from '@phosphor-icons/react/ArrowClockwise';
+import { ArrowsLeftRightIcon as PhArrowsLeftRight } from '@phosphor-icons/react/ArrowsLeftRight';
+import { DotsSixVerticalIcon as PhDotsSixVertical } from '@phosphor-icons/react/DotsSixVertical';
+import { CircleIcon as PhCircle } from '@phosphor-icons/react/Circle';
+import { TrayArrowDownIcon as PhTrayArrowDown } from '@phosphor-icons/react/TrayArrowDown';
 
-const baseSvgProps = (size, color) => ({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: 2,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  style: { display: 'inline-block', verticalAlign: 'middle' }
-});
+/*
+ * WalFlow icon set. Every UI icon goes through this file so the app uses one
+ * family (Phosphor, regular weight) at consistent sizes. Do not use emoji as icons.
+ * Sizes: 12 (inline in dense text), 14 (buttons/tabs), 16 (default), 20+ (modal headers).
+ */
+const wrap = (PhIcon, defaults = {}) => {
+  const Icon = ({ size = 16, color = 'currentColor', weight = defaults.weight || 'regular', style, ...props }) => (
+    <PhIcon
+      className={defaults.className}
+      aria-hidden={props['aria-label'] ? undefined : true}
+      focusable="false"
+      {...props}
+      size={size}
+      color={color}
+      weight={weight}
+      style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0, ...style }}
+    />
+  );
+  return Icon;
+};
 
-export const PlusIcon = ({ size = 16, color = 'currentColor', ...props }) => (
-  <svg {...baseSvgProps(size, color)} {...props}>
-    <line x1="12" y1="5" x2="12" y2="19" />
-    <line x1="5" y1="12" x2="19" y2="12" />
-  </svg>
-);
-
-export const CloudIcon = ({ size = 16, color = 'currentColor', ...props }) => (
-  <svg {...baseSvgProps(size, color)} {...props}>
-    <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
-  </svg>
-);
-
-export const ExportIcon = ({ size = 16, color = 'currentColor', ...props }) => (
-  <svg {...baseSvgProps(size, color)} {...props}>
-    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-    <polyline points="16 6 12 2 8 6" />
-    <line x1="12" y1="2" x2="12" y2="15" />
-  </svg>
-);
-
-export const ImportIcon = ({ size = 16, color = 'currentColor', ...props }) => (
-  <svg {...baseSvgProps(size, color)} {...props}>
-    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-    <polyline points="8 12 12 16 16 12" />
-    <line x1="12" y1="2" x2="12" y2="16" />
-  </svg>
-);
-
-export const TrashIcon = ({ size = 16, color = 'currentColor', ...props }) => (
-  <svg {...baseSvgProps(size, color)} {...props}>
-    <polyline points="3 6 5 6 21 6" />
-    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-    <line x1="10" y1="11" x2="10" y2="17" />
-    <line x1="14" y1="11" x2="14" y2="17" />
-  </svg>
-);
-
-export const CrownIcon = ({ size = 16, color = 'currentColor', ...props }) => (
-  <svg {...baseSvgProps(size, color)} {...props}>
-    <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z" />
-    <path d="M5 20h14" />
-  </svg>
-);
-
-export const SignOutIcon = ({ size = 16, color = 'currentColor', ...props }) => (
-  <svg {...baseSvgProps(size, color)} {...props}>
-    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-    <polyline points="16 17 21 12 16 7" />
-    <line x1="21" y1="12" x2="9" y2="12" />
-  </svg>
-);
-
-export const SignInIcon = ({ size = 16, color = 'currentColor', ...props }) => (
-  <svg {...baseSvgProps(size, color)} {...props}>
-    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-    <polyline points="10 17 15 12 10 7" />
-    <line x1="15" y1="12" x2="3" y2="12" />
-  </svg>
-);
-
-export const PaletteIcon = ({ size = 16, color = 'currentColor', ...props }) => (
-  <svg {...baseSvgProps(size, color)} {...props}>
-    <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 14.7255 3.09032 17.1962 4.85857 19C4.85857 19 4.5 20 4 21C3.5 22 4.5 22 5.5 21.5C6.5 21 7.5 20.5414 7.5 20.5414C8.88081 21.4883 10.5186 22 12 22Z" />
-    <circle cx="7.5" cy="10.5" r="1.5" fill={color} />
-    <circle cx="11.5" cy="7.5" r="1.5" fill={color} />
-    <circle cx="16.5" cy="9.5" r="1.5" fill={color} />
-  </svg>
-);
-
-export const CaseIcon = ({ size = 16, color = 'currentColor', ...props }) => (
-  <svg {...baseSvgProps(size, color)} {...props}>
-    <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
-    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-  </svg>
-);
-
-export const HelpIcon = ({ size = 16, color = 'currentColor', ...props }) => (
-  <svg {...baseSvgProps(size, color)} {...props}>
-    <circle cx="12" cy="12" r="10" />
-    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-    <line x1="12" y1="17" x2="12.01" y2="17" />
-  </svg>
-);
-
-export const CheckIcon = ({ size = 16, color = 'currentColor', ...props }) => (
-  <svg {...baseSvgProps(size, color)} {...props}>
-    <polyline points="20 6 9 17 4 12" />
-  </svg>
-);
-
-export const CrossIcon = ({ size = 16, color = 'currentColor', ...props }) => (
-  <svg {...baseSvgProps(size, color)} {...props}>
-    <line x1="18" y1="6" x2="6" y2="18" />
-    <line x1="6" y1="6" x2="18" y2="18" />
-  </svg>
-);
-
-export const PlayIcon = ({ size = 16, color = 'currentColor', ...props }) => (
-  <svg {...baseSvgProps(size, color)} fill={color} {...props}>
-    <polygon points="5 3 19 12 5 21" />
-  </svg>
-);
-
-export const InfoIcon = ({ size = 16, color = 'currentColor', ...props }) => (
-  <svg {...baseSvgProps(size, color)} {...props}>
-    <circle cx="12" cy="12" r="10" />
-    <line x1="12" y1="16" x2="12" y2="12" />
-    <line x1="12" y1="8" x2="12.01" y2="8" />
-  </svg>
-);
-
-export const UserIcon = ({ size = 16, color = 'currentColor', ...props }) => (
-  <svg {...baseSvgProps(size, color)} {...props}>
-    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-    <circle cx="12" cy="7" r="4" />
-  </svg>
-);
-
-export const BookIcon = ({ size = 16, color = 'currentColor', ...props }) => (
-  <svg {...baseSvgProps(size, color)} {...props}>
-    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-  </svg>
-);
-
-export const KeyboardIcon = ({ size = 16, color = 'currentColor', ...props }) => (
-  <svg {...baseSvgProps(size, color)} {...props}>
-    <rect x="2" y="4" width="20" height="16" rx="2" ry="2" />
-    <line x1="6" y1="8" x2="6.01" y2="8" />
-    <line x1="10" y1="8" x2="10.01" y2="8" />
-    <line x1="14" y1="8" x2="14.01" y2="8" />
-    <line x1="18" y1="8" x2="18.01" y2="8" />
-    <line x1="6" y1="12" x2="6.01" y2="12" />
-    <line x1="10" y1="12" x2="10.01" y2="12" />
-    <line x1="14" y1="12" x2="14.01" y2="12" />
-    <line x1="18" y1="12" x2="18.01" y2="12" />
-    <line x1="7" y1="16" x2="17" y2="16" />
-  </svg>
-);
-
-export const FolderIcon = ({ size = 16, color = 'currentColor', ...props }) => (
-  <svg {...baseSvgProps(size, color)} {...props}>
-    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-  </svg>
-);
-
-export const SearchIcon = ({ size = 16, color = 'currentColor', ...props }) => (
-  <svg {...baseSvgProps(size, color)} {...props}>
-    <circle cx="11" cy="11" r="8" />
-    <line x1="21" y1="21" x2="16.65" y2="16.65" />
-  </svg>
-);
-
-export const GlobeIcon = ({ size = 16, color = 'currentColor', ...props }) => (
-  <svg {...baseSvgProps(size, color)} {...props}>
-    <circle cx="12" cy="12" r="10" />
-    <line x1="2" y1="12" x2="22" y2="12" />
-    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-  </svg>
-);
-
-export const BoltIcon = ({ size = 16, color = 'currentColor', ...props }) => (
-  <svg {...baseSvgProps(size, color)} {...props}>
-    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-  </svg>
-);
-
-export const SpinnerIcon = ({ size = 16, color = 'currentColor', ...props }) => (
-  <svg 
-    {...baseSvgProps(size, color)} 
-    className="spinner-loader" 
-    {...props}
-  >
-    <line x1="12" y1="2" x2="12" y2="6" />
-    <line x1="12" y1="18" x2="12" y2="22" />
-    <line x1="4.93" y1="4.93" x2="7.76" y2="7.76" />
-    <line x1="16.24" y1="16.24" x2="19.07" y2="19.07" />
-    <line x1="2" y1="12" x2="6" y2="12" />
-    <line x1="18" y1="12" x2="22" y2="12" />
-    <line x1="4.93" y1="19.07" x2="7.76" y2="16.24" />
-    <line x1="16.24" y1="7.76" x2="19.07" y2="4.93" />
-  </svg>
-);
-
-export const FlameIcon = ({ size = 16, color = 'currentColor', ...props }) => (
-  <svg {...baseSvgProps(size, color)} {...props}>
-    <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
-  </svg>
-);
-
-export const LockIcon = ({ size = 16, color = 'currentColor', ...props }) => (
-  <svg {...baseSvgProps(size, color)} {...props}>
-    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-  </svg>
-);
-
-export const UnlockIcon = ({ size = 16, color = 'currentColor', ...props }) => (
-  <svg {...baseSvgProps(size, color)} {...props}>
-    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-    <path d="M7 11V7a5 5 0 0 1 9.9-1" />
-  </svg>
-);
-
-export const FolderOpenIcon = ({ size = 16, color = 'currentColor', ...props }) => (
-  <svg {...baseSvgProps(size, color)} {...props}>
-    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-    <path d="M2 10h20" />
-  </svg>
-);
-
-export const CopyIcon = ({ size = 16, color = 'currentColor', ...props }) => (
-  <svg {...baseSvgProps(size, color)} {...props}>
-    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-  </svg>
-);
-
-export const EditIcon = ({ size = 16, color = 'currentColor', ...props }) => (
-  <svg {...baseSvgProps(size, color)} {...props}>
-    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-  </svg>
-);
-
-export const WarningIcon = ({ size = 16, color = 'currentColor', ...props }) => (
-  <svg {...baseSvgProps(size, color)} {...props}>
-    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-    <line x1="12" y1="9" x2="12" y2="13" />
-    <line x1="12" y1="17" x2="12.01" y2="17" />
-  </svg>
-);
-
-export const CheckCircleIcon = ({ size = 16, color = 'currentColor', ...props }) => (
-  <svg {...baseSvgProps(size, color)} {...props}>
-    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-    <polyline points="22 4 12 14.01 9 11.01" />
-  </svg>
-);
-
+export const PlusIcon = wrap(PhPlus, { weight: 'bold' });
+export const CloudIcon = wrap(PhCloud);
+export const ExportIcon = wrap(PhUpload);
+export const ImportIcon = wrap(PhDownload);
+export const DownloadIcon = wrap(PhDownload);
+export const TrashIcon = wrap(PhTrash);
+export const CrownIcon = wrap(PhCrown);
+export const SignOutIcon = wrap(PhSignOut);
+export const SignInIcon = wrap(PhSignIn);
+export const PaletteIcon = wrap(PhPalette);
+export const CaseIcon = wrap(PhStack);
+export const HelpIcon = wrap(PhQuestion);
+export const CheckIcon = wrap(PhCheck, { weight: 'bold' });
+export const CrossIcon = wrap(PhX);
+export const PlayIcon = wrap(PhPlay, { weight: 'fill' });
+export const InfoIcon = wrap(PhInfo);
+export const UserIcon = wrap(PhUser);
+export const BookIcon = wrap(PhBookOpen);
+export const KeyboardIcon = wrap(PhKeyboard);
+export const FolderIcon = wrap(PhFolder);
+export const SearchIcon = wrap(PhMagnifyingGlass);
+export const GlobeIcon = wrap(PhGlobe);
+export const BoltIcon = wrap(PhLightning);
+export const SpinnerIcon = wrap(PhCircleNotch, { className: 'spinner-loader', weight: 'bold' });
+export const FlameIcon = wrap(PhFlame);
+export const LockIcon = wrap(PhLock);
+export const UnlockIcon = wrap(PhLockOpen);
+export const FolderOpenIcon = wrap(PhFolderOpen);
+export const CopyIcon = wrap(PhCopy);
+export const EditIcon = wrap(PhPencil);
+export const WarningIcon = wrap(PhWarning);
+export const CheckCircleIcon = wrap(PhCheckCircle);
+export const RefreshIcon = wrap(PhArrowsClockwise);
+export const SaveIcon = wrap(PhFloppyDisk);
+export const FileIcon = wrap(PhFileText);
+export const GearIcon = wrap(PhGear);
+export const NoteEditIcon = wrap(PhNotePencil);
+export const RulerIcon = wrap(PhRuler);
+export const ClipboardIcon = wrap(PhClipboardText);
+export const ConfettiIcon = wrap(PhConfetti);
+export const CaretDownIcon = wrap(PhCaretDown, { weight: 'bold' });
+export const CaretRightIcon = wrap(PhCaretRight, { weight: 'bold' });
+export const ArrowUpIcon = wrap(PhArrowUp, { weight: 'bold' });
+export const ArrowDownIcon = wrap(PhArrowDown, { weight: 'bold' });
+export const SortIcon = wrap(PhArrowsDownUp);
+export const ArrowRightIcon = wrap(PhArrowRight);
+export const ArrowLeftIcon = wrap(PhArrowLeft);
+export const ResetIcon = wrap(PhArrowCounterClockwise);
+export const RotateIcon = wrap(PhArrowClockwise, { weight: 'bold' });
+export const SwapIcon = wrap(PhArrowsLeftRight);
+export const DragHandleIcon = wrap(PhDotsSixVertical, { weight: 'bold' });
+export const DotIcon = wrap(PhCircle, { weight: 'fill' });
+export const InboxIcon = wrap(PhTrayArrowDown);

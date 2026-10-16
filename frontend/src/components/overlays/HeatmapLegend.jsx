@@ -130,7 +130,7 @@ export default function HeatmapLegend({
       </style>
 
       {/* Top-Right Close Button */}
-      <button
+      <button aria-label="Hide heatmap"
         onClick={() => onModeChange('default')}
         className="heatmap-legend-close"
         title="Turn Off Heatmap"
@@ -173,7 +173,7 @@ export default function HeatmapLegend({
 
       {/* Control Row: Title + Auto Toggle + Global Checkbox */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
-        <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--color-brand-dark)', whiteSpace: 'nowrap' }}>
+        <span style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--color-brand-dark)', whiteSpace: 'nowrap' }}>
           {config.title}
         </span>
         
@@ -181,7 +181,7 @@ export default function HeatmapLegend({
           <button
             onClick={onToggleAutoScale}
             style={{
-              fontSize: '10.5px',
+              fontSize: 'var(--fs-xs)',
               fontWeight: 700,
               padding: '3px 9px',
               borderRadius: '12px',
@@ -200,7 +200,7 @@ export default function HeatmapLegend({
           
           <label 
             title={globalAutoScale ? "Global auto-scaling considers all operating cases" : "Case-specific auto-scaling considers the active case only"}
-            style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', userSelect: 'none', color: 'var(--color-brand-dark)', fontSize: '11px', fontWeight: 600 }}
+            style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', userSelect: 'none', color: 'var(--color-brand-dark)', fontSize: 'var(--fs-xs)', fontWeight: 600 }}
           >
             <input
               type="checkbox"
@@ -224,14 +224,14 @@ export default function HeatmapLegend({
 
       {/* Range Footer: Auto Labels vs Manual Inputs */}
       {autoScale ? (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: 600 }}>
           <span>Min: {minDisplay} {config.unit}</span>
           <span>Max: {maxDisplay} {config.unit}</span>
         </div>
       ) : (
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>MIN</span>
+            <span style={{ fontSize: 'var(--fs-xs)', fontWeight: 700, color: 'var(--color-text-secondary)' }}>MIN</span>
             <input
               type="number"
               step="0.5"
@@ -243,18 +243,18 @@ export default function HeatmapLegend({
                 width: '60px',
                 height: '24px',
                 padding: '0 4px',
-                fontSize: '11px',
+                fontSize: 'var(--fs-xs)',
                 fontWeight: '700',
                 borderRadius: '6px',
                 borderColor: 'var(--color-border)',
                 textAlign: 'center'
               }}
             />
-            <span style={{ fontSize: '10px', color: 'var(--color-text-muted)' }}>{config.unit}</span>
+            <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-muted)' }}>{config.unit}</span>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-text-secondary)' }}>MAX</span>
+            <span style={{ fontSize: 'var(--fs-xs)', fontWeight: 700, color: 'var(--color-text-secondary)' }}>MAX</span>
             <input
               type="number"
               step="0.5"
@@ -266,14 +266,14 @@ export default function HeatmapLegend({
                 width: '60px',
                 height: '24px',
                 padding: '0 4px',
-                fontSize: '11px',
+                fontSize: 'var(--fs-xs)',
                 fontWeight: '700',
                 borderRadius: '6px',
                 borderColor: 'var(--color-border)',
                 textAlign: 'center'
               }}
             />
-            <span style={{ fontSize: '10px', color: 'var(--color-text-muted)' }}>{config.unit}</span>
+            <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-muted)' }}>{config.unit}</span>
           </div>
 
           <button
@@ -281,7 +281,7 @@ export default function HeatmapLegend({
             className="btn-secondary"
             style={{
               height: '24px',
-              fontSize: '10px',
+              fontSize: 'var(--fs-xs)',
               fontWeight: 600,
               padding: '0 8px',
               borderRadius: '6px'

@@ -1,5 +1,5 @@
 import React from 'react';
-import { CrossIcon } from '../symbols/IconLibrary';
+import { CrossIcon, CheckIcon } from '../symbols/IconLibrary';
 
 /**
  * CaseManager component provides a floating dashboard panel on the canvas
@@ -28,10 +28,10 @@ export default function CaseManager({
       id: 'peak',
       label: 'Peak system pressure (bar(a))',
       desc: 'Steady state at the moment the governing relief device reaches its set pressure (pumps and sources ramped up)',
-      color: '#D97706',
-      bgActive: '#FFFBEB',
+      color: 'var(--color-warning-text)',
+      bgActive: 'var(--color-warning-bg)',
       borderActive: 'var(--color-primary)',
-      textActive: '#92400E'
+      textActive: 'var(--color-warning-text-strong)'
     },
     {
       id: 'unmitigated_global',
@@ -126,7 +126,8 @@ export default function CaseManager({
         <button 
           onClick={onClose} 
           className="case-manager-close"
-          title="Close Case Manager"
+          title="Close case manager"
+          aria-label="Close case manager"
         >
           <CrossIcon size={14} />
         </button>
@@ -134,15 +135,15 @@ export default function CaseManager({
 
       {/* Panel Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--color-brand-dark)' }}>
+        <span style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--color-brand-dark)' }}>
           Scenario & Case Manager
         </span>
       </div>
 
       {/* Operating Case Selection */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-        <label style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-text-secondary)', letterSpacing: '0.04em' }}>
-          Operating Case
+        <label style={{ fontSize: 'var(--fs-xs)', fontWeight: 700, color: 'var(--color-text-secondary)', letterSpacing: '0.04em' }}>
+          Operating case
         </label>
         <select
           value={activeCaseId}
@@ -151,7 +152,7 @@ export default function CaseManager({
           style={{
             width: '100%',
             fontWeight: '700',
-            fontSize: '11px'
+            fontSize: 'var(--fs-xs)'
           }}
         >
           {cases.map((c) => (
@@ -164,8 +165,8 @@ export default function CaseManager({
 
       {/* Relief contingency selection */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-        <label style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-text-secondary)', letterSpacing: '0.04em' }}>
-          Relief Case View
+        <label style={{ fontSize: 'var(--fs-xs)', fontWeight: 700, color: 'var(--color-text-secondary)', letterSpacing: '0.04em' }}>
+          Relief case view
         </label>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {reliefModes.map((mode) => {
@@ -193,19 +194,19 @@ export default function CaseManager({
                 }} />
                 
                 <span style={{ 
-                  fontSize: '11px', 
+                  fontSize: 'var(--fs-xs)', 
                   fontWeight: '700', 
                   color: isActive ? mode.textActive : 'var(--color-text-primary)' 
                 }}>
                   {mode.label}
                 </span>
-                {isActive && <span aria-hidden="true" style={{ marginLeft: 'auto', fontSize: '11px', fontWeight: 700, color: mode.textActive }}>✓ On</span>}
+                {isActive && <span aria-hidden="true" style={{ marginLeft: 'auto', fontSize: 'var(--fs-xs)', fontWeight: 700, color: mode.textActive, display: 'inline-flex', alignItems: 'center', gap: '3px' }}><CheckIcon size={11} /> On</span>}
               </button>
             );
           })}
         </div>
         {peakNote && (
-          <p role="status" style={{ fontSize: '10px', color: 'var(--color-text-secondary)', margin: '2px 0 0' }}>
+          <p role="status" style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', margin: '2px 0 0' }}>
             {peakNote}
           </p>
         )}

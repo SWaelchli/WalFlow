@@ -51,10 +51,10 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
       {/* Pipe Class Selection */}
       <div>
-        <label style={{ fontSize: '10px', color: 'var(--color-text-secondary)', fontWeight: '700', textTransform: 'uppercase' }}>Piping Spec</label>
+        <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '600' }}>Piping spec</label>
         <select
           className="form-select"
-          style={{ width: '100%', height: '32px', fontSize: '11px' }}
+          style={{ width: '100%', height: '32px', fontSize: 'var(--fs-xs)' }}
           value={currentClassId}
           onChange={(e) => handleClassChange(e.target.value)}
         >
@@ -75,10 +75,10 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
       {!isManual && selectedClass && (
         <>
           <div>
-            <label style={{ fontSize: '10px', color: 'var(--color-text-secondary)', fontWeight: '700' }}>Nominal Size</label>
+            <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '700' }}>Nominal size</label>
             <select
               className="form-select"
-              style={{ width: '100%', height: '32px', fontSize: '11px' }}
+              style={{ width: '100%', height: '32px', fontSize: 'var(--fs-xs)' }}
               value={currentDn}
               onChange={(e) => handleSpecSizeChange(e.target.value)}
             >
@@ -92,7 +92,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
 
           {/* Enhanced Spec Dimensional Summary Card */}
           <div style={{
-            fontSize: '11px',
+            fontSize: 'var(--fs-xs)',
             backgroundColor: 'var(--color-surface-light)',
             padding: '10px 12px',
             borderRadius: '8px',
@@ -105,20 +105,20 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
               <span style={{ fontWeight: '700', color: 'var(--color-brand-dark)' }}>
                 DN{currentDn} ({selectedClass.sizes.find(s => s.dn === currentDn)?.nps || ''}") • {data.standardSch || 'STD'}
               </span>
-              <span style={{ fontSize: '10px', color: 'var(--color-text-secondary)' }}>
+              <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
                 {selectedClass.code}
               </span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', fontSize: '10px', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
               <div>OD: <strong style={{ color: 'var(--color-text-primary)' }}>{isImperial ? `${(currentOdMm / 25.4).toFixed(3)} in` : `${currentOdMm.toFixed(1)} mm`}</strong></div>
               <div>WT: <strong style={{ color: 'var(--color-text-primary)' }}>{isImperial ? `${(currentWtMm / 25.4).toFixed(3)} in` : `${currentWtMm.toFixed(2)} mm`}</strong></div>
               <div>ID: <strong style={{ color: 'var(--color-primary-text)' }}>{isImperial ? `${(value * 39.3701).toFixed(3)} in` : `${(value * 1000).toFixed(2)} mm`}</strong></div>
               <div>Area: <strong style={{ color: 'var(--color-text-primary)' }}>{isImperial ? `${flowAreaIn2.toFixed(2)} in²` : `${flowAreaCm2.toFixed(2)} cm²`}</strong></div>
             </div>
-            <div style={{ fontSize: '10px', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+            <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
               Mat: <span style={{ color: 'var(--color-text-primary)' }}>{selectedClass.material_grade} (ε={selectedClass.roughness_mm}mm)</span>
             </div>
-            <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)', marginTop: '4px', paddingTop: '4px', borderTop: '1px dashed var(--color-border)', display: 'flex', justifyContent: 'space-between' }}>
+            <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', marginTop: '4px', paddingTop: '4px', borderTop: '1px dashed var(--color-border)', display: 'flex', justifyContent: 'space-between' }}>
               <span>Reducers: <strong style={{ color: 'var(--color-brand-dark)' }}>{selectedClass.reducer_standard_code || 'ASME_B16_9'}</strong></span>
               <span>Sch: <strong style={{ color: 'var(--color-brand-dark)' }}>{selectedClass.schedule_standard_code || 'ASME_B36_10M'}</strong></span>
             </div>
@@ -138,7 +138,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
               style={{
                 flex: 1,
                 padding: '4px 6px',
-                fontSize: '10px',
+                fontSize: 'var(--fs-xs)',
                 fontWeight: '700',
                 borderRadius: '4px',
                 border: 'none',
@@ -155,7 +155,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
               style={{
                 flex: 1,
                 padding: '4px 6px',
-                fontSize: '10px',
+                fontSize: 'var(--fs-xs)',
                 fontWeight: '700',
                 borderRadius: '4px',
                 border: 'none',
@@ -173,10 +173,10 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
               {/* Preset Selectors */}
               <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '6px' }}>
                 <div>
-                  <label style={{ fontSize: '10px', color: 'var(--color-text-secondary)', fontWeight: '700' }}>Nominal Size (NPS)</label>
+                  <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '700' }}>Nominal size (NPS)</label>
                   <select
                     className="form-select"
-                    style={{ width: '100%', height: '30px', fontSize: '11px' }}
+                    style={{ width: '100%', height: '30px', fontSize: 'var(--fs-xs)' }}
                     value={currentDn}
                     onChange={(e) => handleManualPresetChange(e.target.value, currentSch)}
                   >
@@ -188,10 +188,10 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
                   </select>
                 </div>
                 <div>
-                  <label style={{ fontSize: '10px', color: 'var(--color-text-secondary)', fontWeight: '700' }}>Schedule</label>
+                  <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '700' }}>Schedule</label>
                   <select
                     className="form-select"
-                    style={{ width: '100%', height: '30px', fontSize: '11px' }}
+                    style={{ width: '100%', height: '30px', fontSize: 'var(--fs-xs)' }}
                     value={currentSch}
                     onChange={(e) => handleManualPresetChange(currentDn, e.target.value)}
                   >
@@ -218,7 +218,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
                       style={{
                         flex: 1,
                         padding: '2px 4px',
-                        fontSize: '9px',
+                        fontSize: 'var(--fs-xs)',
                         fontWeight: '700',
                         borderRadius: '4px',
                         border: isCurrent ? '1px solid var(--color-primary)' : '1px solid var(--color-border)',
@@ -235,7 +235,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
 
               {/* Dimensional Preview Card */}
               <div style={{
-                fontSize: '10px',
+                fontSize: 'var(--fs-xs)',
                 backgroundColor: 'var(--color-surface-light)',
                 padding: '8px 10px',
                 borderRadius: '8px',
@@ -254,7 +254,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
           ) : (
             /* Free Manual Numeric Inputs */
             <div>
-              <label style={{ fontSize: '10px', color: 'var(--color-text-secondary)', fontWeight: '600' }}>Inner Diameter ({isImperial ? 'in' : 'mm'})</label>
+              <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '600' }}>Inner diameter ({isImperial ? 'in' : 'mm'})</label>
               <DraftNumberInput
                 step="0.1"
                 className="form-input"
@@ -281,7 +281,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
 
           {/* Roughness & Design Ratings */}
           <div>
-            <label style={{ fontSize: '10px', color: 'var(--color-text-secondary)', fontWeight: '600' }}>Surface Roughness ε (mm)</label>
+            <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '600' }}>Surface roughness ε (mm)</label>
             <input
               type="number"
               step="0.001"
@@ -301,7 +301,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
             <div>
-              <label style={{ fontSize: '10px', color: 'var(--color-text-secondary)', fontWeight: '600' }}>Design Temp ({isImperial ? '°F' : '°C'})</label>
+              <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '600' }}>Design temperature ({isImperial ? '°F' : '°C'})</label>
               <input
                 type="number"
                 step="0.5"
@@ -325,7 +325,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
               />
             </div>
             <div>
-              <label style={{ fontSize: '10px', color: 'var(--color-text-secondary)', fontWeight: '600' }}>Design Press ({isImperial ? 'psi' : 'bar(g)'})</label>
+              <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '600' }}>Design pressure ({isImperial ? 'psi' : 'bar(g)'})</label>
               <input
                 type="number"
                 step="0.1"

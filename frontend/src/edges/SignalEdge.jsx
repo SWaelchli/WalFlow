@@ -38,6 +38,14 @@ export default function SignalEdge({
       <path
         d={edgePath}
         fill="none"
+        stroke="#000"
+        strokeOpacity={0}
+        strokeWidth={16}
+        className="react-flow__edge-interaction"
+      />
+      <path
+        d={edgePath}
+        fill="none"
         stroke="rgba(250, 133, 7, 0.5)"
         strokeWidth={1.5}
         strokeDasharray="3 9"
