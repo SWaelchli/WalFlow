@@ -4,6 +4,7 @@ Default Built-in Fitting Standards for WalFlow
 Defines standardized dimensional catalogs based on:
 1. ASME B16.9 - Factory-Made Wrought Buttwelding Fittings (Concentric & Eccentric Reducers)
 2. ASME B36.10M / ASME B36.19M - Standard Pipe Dimensions and Schedules
+3. DIN EN 10220 / EN ISO 1127 - Steel Tube Dimensions (DIN EN pipe schedules)
 """
 
 import math
@@ -380,6 +381,46 @@ for dn_l, dn_s, od_l, od_s, len_h in DIN_EN_10253_2_REDUCERS_RAW:
         "cone_angle_deg": cone_ang
     })
 
+# DIN EN pipe dimensions: EN 10220 / ISO 4200 series 1 outside diameters (the same ODs as the
+# DIN EN 10253-2 reducers above). EN has no schedules; the wall series are kept as designations:
+#   "Normal"   - DIN 2448 / EN 10220 normal wall (carbon steel, counterpart of ASME STD)
+#   "Heavy"    - reinforced wall (counterpart of ASME XS)
+#   "ISO 1127" - thin-wall stainless steel tube per EN ISO 1127 (counterpart of ASME 10S)
+DIN_EN_PIPE_SCHEDULES_RAW = [
+    # (dn, od_mm, normal_wt, heavy_wt, iso1127_wt)
+    (15, 21.3, 2.0, 3.2, 1.6),
+    (20, 26.9, 2.3, 3.2, 1.6),
+    (25, 33.7, 2.6, 4.0, 2.0),
+    (32, 42.4, 2.6, 4.0, 2.0),
+    (40, 48.3, 2.6, 4.0, 2.0),
+    (50, 60.3, 2.9, 4.5, 2.0),
+    (65, 76.1, 2.9, 5.0, 2.0),
+    (80, 88.9, 3.2, 5.6, 2.3),
+    (100, 114.3, 3.6, 6.3, 2.3),
+    (125, 139.7, 4.0, 6.3, 2.6),
+    (150, 168.3, 4.5, 7.1, 2.6),
+    (200, 219.1, 6.3, 8.0, 2.6),
+    (250, 273.0, 6.3, 10.0, 2.9),
+    (300, 323.9, 7.1, 10.0, 2.9),
+    (350, 355.6, 8.0, 11.0, 3.2),
+    (400, 406.4, 8.8, 12.5, 3.2),
+    (450, 457.0, 10.0, 12.5, 4.0),
+    (500, 508.0, 11.0, 14.2, 4.0),
+    (600, 610.0, 12.5, 16.0, 4.0),
+]
+
+DIN_EN_PIPE_SCHEDULES_DATA = []
+for _dn, _od, _wt_normal, _wt_heavy, _wt_iso in DIN_EN_PIPE_SCHEDULES_RAW:
+    DIN_EN_PIPE_SCHEDULES_DATA.append({
+        "dn": _dn,
+        "nps": f"DN{_dn}",
+        "od_mm": _od,
+        "schedules": {
+            key: {"wt_mm": wt, "id_mm": round(_od - 2 * wt, 2)}
+            for key, wt in (("Normal", _wt_normal), ("Heavy", _wt_heavy), ("ISO 1127", _wt_iso))
+        }
+    })
+
 EXAMPLE_FITTING_STANDARDS = [
     {
         "id": "walflow-asme-b16-9-reducers",
@@ -413,6 +454,17 @@ EXAMPLE_FITTING_STANDARDS = [
         "description": "Butt-welding pipe fittings - Non-alloy and ferritic alloy steels with specific inspection requirements (DIN EN 10253-2)",
         "is_builtin": True,
         "dimensions": DIN_EN_10253_2_REDUCERS_DATA
+    },
+    {
+        "id": "walflow-din-en-pipe-schedules",
+        "code": "DIN_EN_PIPE_SCHEDULES",
+        "name": "DIN EN 10220 / EN ISO 1127 Pipe Dimensions",
+        "standard": "DIN_EN",
+        "fitting_type": "pipe_schedule",
+        "subtype": "carbon_stainless_schedules",
+        "description": "Steel tube dimensions with ISO 4200 series 1 outside diameters: normal and heavy wall (DIN EN 10220) and thin-wall stainless (EN ISO 1127)",
+        "is_builtin": True,
+        "dimensions": DIN_EN_PIPE_SCHEDULES_DATA
     }
 ]
 

@@ -71,7 +71,8 @@ This document outlines planned features, overlays, and enhancements for the WalF
 - [ ] **📍 In-Line Measurement Point & Instrumentation Bubble (`MeasurePoint`)**
   * **Concept:** Passive, zero-resistance pass-through sensor (1 Inlet, 1 Outlet) for monitoring local hydraulic process conditions without altering circuit physics ($P_{\text{in}} = P_{\text{out}}$, $Q_{\text{in}} = Q_{\text{out}}$).
   * **Selectable Measurements (Property Panel Checkboxes):**
-    * ☐ **Pressure ($P$):** Static line pressure (bar / PSI).
+    * ☐ **Pressure ($P$):** Static line pressure (bara / PSIa or barg / PSIg).
+    * ☐ **Pressure Difference ($dP$):** Differential pressure between to points (bard /psid)
     * ☐ **Flow Rate ($Q$):** Volumetric flow (L/min, m³/h, GPM).
     * ☐ **Temperature ($T$):** Operating fluid temperature (°C / °F).
     * ☐ **Fluid Velocity ($v$):** Velocity through sensor bore (m/s) for pipe erosion/sizing checks.
@@ -84,6 +85,7 @@ This document outlines planned features, overlays, and enhancements for the WalF
     * 🔴 **LL (Low-Low):** Critical low trip threshold (Emergency Red).
   * **Visuals & Canvas Display:**
     * ISA-style instrumentation bubble on the canvas (e.g. `PIT`, `FIT`, `TIT`).
+    * Dedicated tab in Datalist for measurements. The list shows all measurements and their respective alarms and trips. Alarm and trip values can be changed in this list.
     * Configurable live numerical callout badge under the symbol displaying all active checked measurements.
     * Real-time visual alarm state: badge dynamically highlights in **Orange** (H/L Warning) or **Red** (HH/LL Critical Trip) when thresholds are breached.
   * **Engineering Value:** Enables clean P&ID telemetry tapping, custom monitoring locations, and standard industrial alarm indication across complex circuits (e.g. API 614 lube oil supply headers and filter differential monitoring).
@@ -127,7 +129,7 @@ This document outlines planned features, overlays, and enhancements for the WalF
   * **Problem**: `GET /api/pipe-classes` requires login, while the fitting standards catalog (`GET /api/fitting-standards`) does not.
   * **Fix**: Make all catalog reads (pipe classes, fitting standards) public; keep create / update / delete / import restricted to `admin` and `pipe_manager`. Add tests for anonymous read and for write rejection.
 
-- [ ] **📐 DIN Pipe Schedule Standard**
+- [x] **📐 DIN Pipe Schedule Standard**
   * **Problem**: Only ASME B36.10M / B36.19M pipe schedules exist, so DIN EN pipe classes (and DIN reducers) fall back to ASME schedule data for lines without a pipe class.
   * **Fix**: Seed a DIN / EN pipe dimension standard (e.g. DIN EN 10220 / ISO 4200 series) as a `pipe_schedule` fitting standard, and use the pipe class's `schedule_standard_code` in the pipe and reducer inspectors instead of the hard-coded ASME table.
 

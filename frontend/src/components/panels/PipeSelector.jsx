@@ -1,19 +1,24 @@
 import React, { useState } from 'react';
 import { useUnits } from '../../context/UnitContext';
-import { ASME_B36_10M_SCHEDULES, getPipeScheduleDetails } from '../../constants/asme_b16_9_data';
 import { resolvePipeSelection, matchScheduleByInnerDiameter, manualSelectionPatch, classSelectionPatch, classSizePatch, schedulePatch } from '../../utils/pipeDefaults';
+import { getScheduleStandardOptions, getScheduleStandardName, getScheduleDataset, getScheduleBore, listSchedules } from '../../utils/pipe_schedules';
+import { formatDnOption, normalizeReducerStandard, getReducerStandardOptions } from '../../utils/reducer_catalog';
+import { useFittingStandards } from '../../hooks/useFittingStandards';
 import DraftNumberInput from '../common/DraftNumberInput';
 
 /**
- * PipeSelector component supporting Pipe Specifications catalog and ASME B36.10M Schedule presets.
+ * PipeSelector component supporting Pipe Specifications catalog and schedule presets of the
+ * catalog's pipe schedule standards (ASME B36.10M / B36.19M, DIN EN 10220 / EN ISO 1127).
  * Emits SI values (diameter in m, roughness_mm in mm).
  */
 const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPipes = true }) => {
   const { isImperial } = useUnits();
   const classList = availablePipeClasses || [];
+  const scheduleOptions = getScheduleStandardOptions(useFittingStandards('pipe_schedule'));
+  const reducerOptions = getReducerStandardOptions(useFittingStandards('reducer'));
 
   // Pipes without a class reference (older files) show as Manual; display never rewrites data
-  const selection = resolvePipeSelection(data);
+  const selection = resolvePipeSelection(data, scheduleOptions);
   const currentClassId = selection.classId;
   const isManual = currentClassId === 'manual';
   const selectedClass = classList.find(c => c.id === currentClassId);
@@ -23,10 +28,13 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
   const value = data.diameter || 0;
   const currentDn = selection.dn;
   const currentSch = selection.sch || 'STD';
+  const scheduleStandard = selection.scheduleStandard;
+  const scheduleDataset = getScheduleDataset(scheduleStandard, scheduleOptions);
+  const currentSchedules = listSchedules(currentDn, scheduleStandard, scheduleOptions);
 
   const handleClassChange = (newClassId) => {
     const patch = newClassId === 'manual'
-      ? manualSelectionPatch(currentDn, currentSch)
+      ? manualSelectionPatch(currentDn, currentSch, scheduleStandard, scheduleOptions)
       : classSelectionPatch(classList.find(c => c.id === newClassId), currentDn);
     if (patch) onChange(patch);
   };
@@ -37,9 +45,16 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
   };
 
   const handleManualPresetChange = (newDn, newSch) => {
-    const patch = schedulePatch(Number(newDn !== undefined ? newDn : currentDn), newSch !== undefined ? newSch : currentSch);
+    const patch = schedulePatch(Number(newDn !== undefined ? newDn : currentDn), newSch !== undefined ? newSch : currentSch, scheduleStandard, scheduleOptions);
     if (patch) onChange(patch);
   };
+
+  // Another dimension standard: same DN (or nearest) and the counterpart schedule (STD ↔ Normal, XS ↔ Heavy)
+  const handleScheduleStandardChange = (newCode) => {
+    onChange(manualSelectionPatch(currentDn, currentSch, newCode, scheduleOptions));
+  };
+
+  const reducerStandardName = (code) => reducerOptions.find(o => o.code === normalizeReducerStandard(code))?.name || code;
 
   // Dimensions & Area calculation
   const currentOdMm = data.outer_diameter_mm || (value * 1000 * 1.15);
@@ -84,7 +99,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
             >
               {selectedClass.sizes.map(s => (
                 <option key={s.dn} value={s.dn}>
-                  DN {s.dn} ({s.nps}") - {s.sch || 'STD'}
+                  {formatDnOption(s.dn, s.nps)} - {s.sch || 'STD'}
                 </option>
               ))}
             </select>
@@ -103,7 +118,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border)', paddingBottom: '4px' }}>
               <span style={{ fontWeight: '700', color: 'var(--color-brand-dark)' }}>
-                DN{currentDn} ({selectedClass.sizes.find(s => s.dn === currentDn)?.nps || ''}") • {data.standardSch || 'STD'}
+                {formatDnOption(currentDn, selectedClass.sizes.find(s => s.dn === currentDn)?.nps)} • {data.standardSch || 'STD'}
               </span>
               <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
                 {selectedClass.code}
@@ -118,9 +133,9 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
             <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
               Mat: <span style={{ color: 'var(--color-text-primary)' }}>{selectedClass.material_grade} (ε={selectedClass.roughness_mm}mm)</span>
             </div>
-            <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', marginTop: '4px', paddingTop: '4px', borderTop: '1px dashed var(--color-border)', display: 'flex', justifyContent: 'space-between' }}>
-              <span>Reducers: <strong style={{ color: 'var(--color-brand-dark)' }}>{selectedClass.reducer_standard_code || 'ASME_B16_9'}</strong></span>
-              <span>Sch: <strong style={{ color: 'var(--color-brand-dark)' }}>{selectedClass.schedule_standard_code || 'ASME_B36_10M'}</strong></span>
+            <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', marginTop: '4px', paddingTop: '4px', borderTop: '1px dashed var(--color-border)', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              <span>Reducers: <strong style={{ color: 'var(--color-brand-dark)' }}>{reducerStandardName(selectedClass.reducer_standard_code || 'ASME_B16_9_REDUCERS')}</strong></span>
+              <span>Pipe dimensions: <strong style={{ color: 'var(--color-brand-dark)' }}>{getScheduleStandardName(selectedClass.schedule_standard_code || 'ASME_B36_10M_SCHEDULES', scheduleOptions)}</strong></span>
             </div>
           </div>
         </>
@@ -170,19 +185,34 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
 
           {manualMode === 'preset' ? (
             <>
+              {/* Dimension Standard */}
+              <div>
+                <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '700' }}>Dimension standard</label>
+                <select
+                  className="form-select"
+                  style={{ width: '100%', height: '30px', fontSize: 'var(--fs-xs)' }}
+                  value={scheduleStandard}
+                  onChange={(e) => handleScheduleStandardChange(e.target.value)}
+                >
+                  {scheduleOptions.map(o => (
+                    <option key={o.code} value={o.code}>{o.name}</option>
+                  ))}
+                </select>
+              </div>
+
               {/* Preset Selectors */}
               <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '6px' }}>
                 <div>
-                  <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '700' }}>Nominal size (NPS)</label>
+                  <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '700' }}>Nominal size</label>
                   <select
                     className="form-select"
                     style={{ width: '100%', height: '30px', fontSize: 'var(--fs-xs)' }}
                     value={currentDn}
                     onChange={(e) => handleManualPresetChange(e.target.value, currentSch)}
                   >
-                    {ASME_B36_10M_SCHEDULES.map(s => (
+                    {scheduleDataset.map(s => (
                       <option key={s.dn} value={s.dn}>
-                        DN {s.dn} ({s.nps}")
+                        {formatDnOption(s.dn, s.nps)}
                       </option>
                     ))}
                   </select>
@@ -195,7 +225,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
                     value={currentSch}
                     onChange={(e) => handleManualPresetChange(currentDn, e.target.value)}
                   >
-                    {Object.keys(ASME_B36_10M_SCHEDULES.find(s => s.dn === currentDn)?.schedules || { 'STD': true, '40': true, '80': true }).map(schKey => (
+                    {(currentSchedules.includes(currentSch) ? currentSchedules : [currentSch, ...currentSchedules]).map(schKey => (
                       <option key={schKey} value={schKey}>
                         {schKey}
                       </option>
@@ -206,10 +236,8 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
 
               {/* Quick-Pick Schedule Buttons */}
               <div style={{ display: 'flex', gap: '4px' }}>
-                {['STD', '40', '80', 'XS', '160'].map(schKey => {
-                  const isAvailable = !!(ASME_B36_10M_SCHEDULES.find(s => s.dn === currentDn)?.schedules?.[schKey]);
+                {currentSchedules.map(schKey => {
                   const isCurrent = currentSch === schKey;
-                  if (!isAvailable) return null;
                   return (
                     <button
                       key={schKey}
@@ -264,9 +292,9 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
                   const raw = parseFloat(text);
                   if (isNaN(raw) || raw <= 0) return; // reverts to the stored value
                   const idM = isImperial ? raw / 39.37007874 : raw / 1000.0;
-                  // A free ID keeps DN/schedule/OD/WT only if it equals a B36.10M schedule
-                  const match = matchScheduleByInnerDiameter(idM);
-                  const sch = match ? getPipeScheduleDetails(match.dn, match.sch) : null;
+                  // A free ID keeps DN/schedule/OD/WT only if it equals a schedule of the pipe's dimension standard
+                  const match = matchScheduleByInnerDiameter(idM, scheduleStandard, scheduleOptions);
+                  const sch = match ? getScheduleBore(match.dn, match.sch, scheduleStandard, scheduleOptions) : null;
                   onChange({
                     diameter: idM,
                     standardDn: sch ? sch.dn : null,

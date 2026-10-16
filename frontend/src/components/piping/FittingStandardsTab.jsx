@@ -12,6 +12,7 @@ import {
 } from '../symbols/IconLibrary';
 import { useUnits } from '../../context/UnitContext';
 import { invalidateFittingStandards } from '../../hooks/useFittingStandards';
+import { orderSchedules } from '../../utils/pipe_schedules';
 
 import { modalA11yRef } from '../../hooks/useModalA11y';
 import { clickableProps } from '../../utils/a11yProps';
@@ -82,6 +83,10 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
   }, [fetchStandards]);
 
   const selectedStandard = standards.find(s => s.id === selectedId) || standards[0] || null;
+  // Schedule matrix columns: every designation the selected standard lists (e.g. STD / 40 or Normal / Heavy)
+  const scheduleColumns = selectedStandard?.fitting_type === 'pipe_schedule'
+    ? orderSchedules([...new Set((selectedStandard.dimensions || []).flatMap(row => Object.keys(row.schedules || {})))])
+    : [];
 
   // Filtered standards for sidebar
   const filteredStandards = standards.filter(item => {
@@ -668,9 +673,9 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
                   color: 'var(--color-brand-dark)',
                   fontFamily: 'inherit'
                 }}>
-                  {selectedStandard.fitting_type === 'reducer' 
-                    ? 'Standard Reducer Size Combinations (ASME B16.9 / Custom)'
-                    : 'Nominal Pipe Dimensions & Schedule Matrix (ASME B36.10M / B36.19M)'}
+                  {selectedStandard.fitting_type === 'reducer'
+                    ? `Standard reducer size combinations (${selectedStandard.name})`
+                    : `Nominal pipe dimensions & schedule matrix (${selectedStandard.name})`}
                 </h3>
                 {isEditing && selectedStandard.fitting_type === 'reducer' && (
                   <button
@@ -816,11 +821,9 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
                       <th style={{ padding: '8px 12px' }}>Nominal Size</th>
                       <th style={{ padding: '8px 12px' }}>NPS</th>
                       <th style={{ padding: '8px 12px' }}>OD ({isImperial ? 'in' : 'mm'})</th>
-                      <th style={{ padding: '8px 12px' }}>STD (WT / ID)</th>
-                      <th style={{ padding: '8px 12px' }}>Sch 40 (WT / ID)</th>
-                      <th style={{ padding: '8px 12px' }}>Sch 80 (WT / ID)</th>
-                      <th style={{ padding: '8px 12px' }}>XS (WT / ID)</th>
-                      <th style={{ padding: '8px 12px' }}>Sch 160 (WT / ID)</th>
+                      {scheduleColumns.map(key => (
+                        <th key={key} style={{ padding: '8px 12px' }}>{/^\d/.test(key) ? `Sch ${key}` : key} (WT / ID)</th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
@@ -839,13 +842,11 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
                       return (
                         <tr key={idx} style={{ borderBottom: '1px solid var(--color-border)' }}>
                           <td style={{ padding: '8px 12px', fontWeight: '700', color: 'var(--color-text-primary)' }}>DN {row.dn}</td>
-                          <td style={{ padding: '8px 12px', color: 'var(--color-text-secondary)' }}>{row.nps}"</td>
+                          <td style={{ padding: '8px 12px', color: 'var(--color-text-secondary)' }}>{String(row.nps).toUpperCase().startsWith('DN') ? '—' : `${row.nps}"`}</td>
                           <td style={{ padding: '8px 12px', color: 'var(--color-text-primary)' }}>{od}</td>
-                          <td style={{ padding: '8px 12px' }}>{formatSch('STD')}</td>
-                          <td style={{ padding: '8px 12px' }}>{formatSch('40')}</td>
-                          <td style={{ padding: '8px 12px' }}>{formatSch('80')}</td>
-                          <td style={{ padding: '8px 12px' }}>{formatSch('XS')}</td>
-                          <td style={{ padding: '8px 12px' }}>{formatSch('160')}</td>
+                          {scheduleColumns.map(key => (
+                            <td key={key} style={{ padding: '8px 12px' }}>{formatSch(key)}</td>
+                          ))}
                         </tr>
                       );
                     })}

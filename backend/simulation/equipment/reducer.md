@@ -7,7 +7,7 @@ The **Reducer / Expander** is a passive in-line piping component that models the
 ## 1. Functional Overview
 * **Component Type:** Passive In-line Resistance & Area Transition (`reducer`)
 * **Ports:** 1 Inlet (`inlet-0`) and 1 Outlet (`outlet-0`)
-* **Governing Dimensional Standard:** **ASME B16.9** (Factory-Made Wrought Buttwelding Fittings — Concentric & Eccentric Reducers) and **ASME B36.10M / B36.19M** (Pipe Schedules).
+* **Governing Dimensional Standard:** **ASME B16.9** (Factory-Made Wrought Buttwelding Fittings — Concentric & Eccentric Reducers) and **ASME B36.10M / B36.19M** (Pipe Schedules); **DIN EN 10253-2** reducers with **DIN EN 10220 / EN ISO 1127** pipe dimensions. Each reducer end takes its wall from the connected line's pipe class (size grid, then its schedule standard), otherwise from the schedule standard matching the reducer standard.
 * **Governing Hydraulic Standard:** **Crane Technical Paper No. 410 (Crane TP 410)** / Miller / Idelchik formulas for conical contractions and conical diffusers.
 
 ---

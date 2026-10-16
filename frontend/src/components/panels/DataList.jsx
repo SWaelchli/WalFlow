@@ -3,7 +3,9 @@ import { confirmDialog } from '../../utils/dialogs';
 import { componentLabel } from '../../constants/componentLabels';
 import { PlusIcon, PlayIcon, ExportIcon, CaseIcon, TrashIcon, SpinnerIcon, ArrowUpIcon, ArrowDownIcon, SortIcon, WarningIcon, CheckIcon, DragHandleIcon, CrossIcon } from '../symbols/IconLibrary';
 import { findClosestPipeMatch, ASME_PIPE_STANDARDS } from '../../utils/standards_library';
-import { getAvailableSchedules } from '../../constants/asme_b16_9_data';
+import { getScheduleStandardOptions, getScheduleDataset, listSchedules } from '../../utils/pipe_schedules';
+import { formatDnOption } from '../../utils/reducer_catalog';
+import { useFittingStandards } from '../../hooks/useFittingStandards';
 
 import { updateCaseOverride, effectiveForcedState } from '../../utils/case_resolver';
 import { useUnits } from '../../context/UnitContext';
@@ -177,6 +179,7 @@ export default function DataList({
 
 
   const [activeTab, setActiveTab] = useState('pipes');
+  const scheduleOptions = getScheduleStandardOptions(useFittingStandards('pipe_schedule'));
   const panel = usePanelHeight('walflow_datalist_panel');
 
   const [manualOrder, setManualOrder] = useState([]);
@@ -1032,7 +1035,8 @@ export default function DataList({
               const item = entry.item;
               const diaValue = isNode ? (item.data.orifice_diameter || item.data.pipe_diameter || 0) : (item.data.diameter || 0);
               // Pipes without a class reference (older files) show as Manual; display never rewrites data
-              const pipeSel = isNode ? null : resolvePipeSelection(item.data);
+              const pipeSel = isNode ? null : resolvePipeSelection(item.data, scheduleOptions);
+              const scheduleStd = pipeSel?.scheduleStandard;
               const match = isNode ? findClosestPipeMatch(diaValue) : null;
 
               const currentClassId = isNode ? (item.data.pipe_class_id || 'manual') : pipeSel.classId;
@@ -1051,7 +1055,7 @@ export default function DataList({
               // Same pipe data changes as the inspector's PipeSelector (utils/pipeDefaults.js)
               const handleClassChange = (newClassId) => {
                 const patch = newClassId === 'manual'
-                  ? manualSelectionPatch(currentDn, currentSch)
+                  ? manualSelectionPatch(currentDn, currentSch, scheduleStd, scheduleOptions)
                   : classSelectionPatch(classList.find(c => c.id === newClassId), currentDn);
                 if (patch) onUpdateEdge(item.id, patch);
               };
@@ -1059,13 +1063,13 @@ export default function DataList({
               const handleDnChange = (newDn) => {
                 const dnInt = parseInt(newDn, 10);
                 const patch = classSizePatch(selectedClass, dnInt)
-                  || (!isNode ? (schedulePatch(dnInt, currentSch || 'STD') || schedulePatch(dnInt, 'STD')) : null);
+                  || (!isNode ? schedulePatch(dnInt, currentSch || 'STD', scheduleStd, scheduleOptions) : null);
                 if (patch) onUpdateEdge(item.id, patch);
               };
 
               const handleScheduleChange = (newSch) => {
                 if (isNode) return;
-                const patch = schedulePatch(currentDn, newSch);
+                const patch = schedulePatch(currentDn, newSch, scheduleStd, scheduleOptions);
                 if (patch) onUpdateEdge(item.id, patch);
               };
 
@@ -1146,7 +1150,7 @@ export default function DataList({
                               </option>
                             ))
                           ) : (
-                            ASME_PIPE_STANDARDS.map(p => <option key={p.dn} value={p.dn}>DN {p.dn} ({p.nps}")</option>)
+                            getScheduleDataset(scheduleStd, scheduleOptions).map(p => <option key={p.dn} value={p.dn}>{formatDnOption(p.dn, p.nps)}</option>)
                           )}
                         </select>
                       ) : npsDisplay}
@@ -1167,11 +1171,11 @@ export default function DataList({
                         >
                           {isCustomId && <option value="" disabled>—</option>}
                           {(() => {
-                            const options = getAvailableSchedules(currentDn);
+                            const listed = listSchedules(currentDn, scheduleStd, scheduleOptions);
                             // Keep a value the catalogue does not list for this size (e.g. an imported file) visible
-                            if (currentSch && !options.includes(currentSch)) options.push(currentSch);
+                            const options = currentSch && !listed.includes(currentSch) ? [...listed, currentSch] : listed;
                             return options.map(s => (
-                              <option key={s} value={s} disabled={!getAvailableSchedules(currentDn).includes(s)}>{s}</option>
+                              <option key={s} value={s} disabled={!listed.includes(s)}>{s}</option>
                             ));
                           })()}
                         </select>

@@ -165,6 +165,18 @@ def test_tr2000_design_code_to_reducer_standard(design_code, expected):
     assert _map_reducer_standard(design_code) == expected
 
 
+@pytest.mark.parametrize("design_code,expected", [
+    ("EN 13480", "DIN_EN_PIPE_SCHEDULES"),
+    ("DIN EN 13480-3", "DIN_EN_PIPE_SCHEDULES"),
+    ("ASME B31.3", "ASME_B36_10M_SCHEDULES"),
+    ("NORSOK L-001 / GENERAL", "ASME_B36_10M_SCHEDULES"),
+    ("", "ASME_B36_10M_SCHEDULES"),
+])
+def test_tr2000_design_code_to_schedule_standard(design_code, expected):
+    from services.tr2000_service import _map_schedule_standard
+    assert _map_schedule_standard(design_code) == expected
+
+
 def test_reducer_reverse_flow_symmetry():
     """
     Verifies that reverse flow (Q < 0) through a 3"x2" reducer acts identically to

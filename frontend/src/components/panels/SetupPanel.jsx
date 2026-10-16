@@ -44,6 +44,7 @@ export default function SetupPanel({
   const [localDrafts, setLocalDrafts] = useState({});
   const [reducerNotice, setReducerNotice] = useState(null); // { nodeId, kind: 'error' | 'warning', text }
   const reducerStandards = useFittingStandards('reducer');
+  const scheduleStandards = useFittingStandards('pipe_schedule');
 
   const isNode = !!node;
   const item = isNode ? node : edge;
@@ -1388,7 +1389,7 @@ export default function SetupPanel({
             </>
           )}
 
-          {isNode && (type === 'reducer' || type === 'expander') && <ReducerSetup ctx={{ allEdges, availablePipeClasses, effectiveData, handleDraftChange, id, isImperial, localDrafts, onUpdate, reducerNotice, reducerStandards, renderLabel, setReducerNotice, validateAndCommit }} />}
+          {isNode && (type === 'reducer' || type === 'expander') && <ReducerSetup ctx={{ allEdges, availablePipeClasses, effectiveData, handleDraftChange, id, isImperial, localDrafts, onUpdate, reducerNotice, reducerStandards, scheduleStandards, renderLabel, setReducerNotice, validateAndCommit }} />}
 
           {isNode && type === 'text_bubble' && (
             <>

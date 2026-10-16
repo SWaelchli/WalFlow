@@ -209,31 +209,6 @@ export function getPipeOuterDiameter(dn) {
   return OD_MAP[dn] || 0.0;
 }
 
-const SCHEDULE_ORDER = ['STD', '40', '80', 'XS', '160'];
-
-/** Schedules the catalogue holds for a nominal size (DN), in the usual order. Empty for unknown sizes. */
-export function getAvailableSchedules(dn) {
-  const sizeObj = ASME_B36_10M_SCHEDULES.find(s => s.dn === Number(dn));
-  if (!sizeObj) return [];
-  const keys = Object.keys(sizeObj.schedules);
-  return [...SCHEDULE_ORDER.filter(k => keys.includes(k)), ...keys.filter(k => !SCHEDULE_ORDER.includes(k))];
-}
-
-export function getPipeScheduleDetails(dn, sch = 'STD') {
-  const sizeObj = ASME_B36_10M_SCHEDULES.find(s => s.dn === Number(dn));
-  if (!sizeObj) return null;
-  const schObj = sizeObj.schedules[sch] || sizeObj.schedules['STD'] || sizeObj.schedules['40'];
-  if (!schObj) return null;
-  return {
-    dn: sizeObj.dn,
-    nps: sizeObj.nps,
-    od_mm: sizeObj.od_mm,
-    wt_mm: schObj.wt_mm,
-    id_mm: schObj.id_mm,
-    sch: sch
-  };
-}
-
 export const ASME_B16_9_REDUCERS = [
   { dn_large: 20, nps_large: "3/4", od_large_mm: 26.7, dn_small: 15, nps_small: "1/2", od_small_mm: 21.3, length_mm: 38.0, cone_angle_deg: 8.13 },
   { dn_large: 25, nps_large: "1", od_large_mm: 33.4, dn_small: 20, nps_small: "3/4", od_small_mm: 26.7, length_mm: 51.0, cone_angle_deg: 7.51 },

@@ -23,6 +23,8 @@ import {
   ClipboardIcon
 } from '../components/symbols/IconLibrary';
 import FittingStandardsTab from '../components/piping/FittingStandardsTab';
+import { useFittingStandards } from '../hooks/useFittingStandards';
+import { getScheduleStandardOptions } from '../utils/pipe_schedules';
 
 import { modalA11yRef } from '../hooks/useModalA11y';
 import { clickableProps, clickableRowProps } from '../utils/a11yProps';
@@ -33,7 +35,7 @@ const CATALOG_LABELS = {
   ASME_B16_9_REDUCERS: 'ASME B16.9 buttweld reducers',
   DIN_EN_10253_2_REDUCERS: 'DIN EN 10253-2 buttweld reducers',
   ASME_B36_10M_SCHEDULES: 'ASME B36.10M / B36.19M pipe schedules',
-  DIN_EN_PIPE_SCHEDULES: 'DIN EN pipe schedules',
+  DIN_EN_PIPE_SCHEDULES: 'DIN EN 10220 / EN ISO 1127 pipe dimensions',
   CUSTOM: 'Custom',
 };
 const sourceLabel = (code) => SOURCE_LABELS[code] || code;
@@ -43,6 +45,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
   const { isImperial } = useUnits();
 
   const [activeTab, setActiveTab] = useState('pipe_classes'); // 'pipe_classes' | 'fitting_standards'
+  const scheduleStandardOptions = getScheduleStandardOptions(useFittingStandards('pipe_schedule'));
   const fittingTabRef = useRef(null);
   const [pipeClasses, setPipeClasses] = useState([]);
 
@@ -1366,9 +1369,9 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                           className="form-select"
                           style={{ height: '32px', fontSize: 'var(--fs-sm)', width: '100%' }}
                         >
-                          <option value="ASME_B36_10M_SCHEDULES">ASME B36.10M / B36.19M Pipe Schedules</option>
-                          <option value="DIN_EN_PIPE_SCHEDULES">DIN EN Standard Pipe Schedules</option>
-                          <option value="CUSTOM">Custom Sizing Schedule</option>
+                          {scheduleStandardOptions.map(o => (
+                            <option key={o.code} value={o.code}>{o.name}</option>
+                          ))}
                         </select>
                       </div>
                     </div>

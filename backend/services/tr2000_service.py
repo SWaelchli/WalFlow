@@ -216,6 +216,11 @@ def _map_reducer_standard(design_code: str) -> str:
     return "DIN_EN_10253_2_REDUCERS" if _EN_DESIGN_CODE.search(design_code or "") else "ASME_B16_9_REDUCERS"
 
 
+def _map_schedule_standard(design_code: str) -> str:
+    """Maps a TR2000 design code to the default pipe schedule standard (same rule as reducers)."""
+    return "DIN_EN_PIPE_SCHEDULES" if _EN_DESIGN_CODE.search(design_code or "") else "ASME_B36_10M_SCHEDULES"
+
+
 async def fetch_and_normalize_tr2000_pcs(
     plant_id: int,
     pcs_code: str,
@@ -325,7 +330,7 @@ async def fetch_and_normalize_tr2000_pcs(
     description = pcs_header.get("Description") or f"{mat_group} {pcs_header.get('RatingClass', '')}".strip() or f"Equinor TR2000 {pcs_code}"
     design_code = pcs_header.get("DesignCode") or "ASME B31.3"
     reducer_standard = _map_reducer_standard(design_code)
-    schedule_standard = "ASME_B36_10M_SCHEDULES"
+    schedule_standard = _map_schedule_standard(design_code)
 
     return {
         "code": pcs_code.upper().strip(),

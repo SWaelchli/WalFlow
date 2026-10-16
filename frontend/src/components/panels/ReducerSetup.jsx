@@ -12,8 +12,16 @@ import {
   coneAngleFromGeometry,
   getEdgePipeClass,
   resolveBore,
+  endScheduleStandard,
   formatDnOption
 } from '../../utils/reducer_catalog';
+import {
+  getScheduleStandardOptions,
+  getScheduleStandardName,
+  listSchedules,
+  equivalentSchedule,
+  defaultScheduleFor
+} from '../../utils/pipe_schedules';
 
 /**
  * Inspector fields of a reducer / expander (standard, sizes, geometry). `ctx` carries the helpers of the
@@ -22,15 +30,13 @@ import {
 export default function ReducerSetup({ ctx }) {
   const {
     allEdges, availablePipeClasses, effectiveData, handleDraftChange, id, isImperial, localDrafts, onUpdate,
-    reducerNotice, reducerStandards, renderLabel, setReducerNotice, validateAndCommit,
+    reducerNotice, reducerStandards, scheduleStandards, renderLabel, setReducerNotice, validateAndCommit,
   } = ctx;
   return (() => {
             const isCustom = effectiveData.standard === CUSTOM_REDUCER_STANDARD;
             const reducerType = effectiveData.reducer_type || 'concentric';
             const dnLarge = Number(effectiveData.dn_large || 80);
             const dnSmall = Number(effectiveData.dn_small || 50);
-            const schLarge = effectiveData.sch_large || 'STD';
-            const schSmall = effectiveData.sch_small || 'STD';
             const isExpanding = effectiveData.orientation === 'expanding'; // Small -> Large
 
             // Catalog standard (API-backed, bundled fallback)
@@ -38,6 +44,7 @@ export default function ReducerSetup({ ctx }) {
             const standardCode = isCustom ? DEFAULT_REDUCER_STANDARD : normalizeReducerStandard(effectiveData.standard);
             const standardName = standardOptions.find(o => o.code === standardCode)?.name || standardCode;
             const dataset = getReducerDataset(standardCode, standardOptions);
+            const scheduleOptions = getScheduleStandardOptions(scheduleStandards);
 
             // Find connected inlet and outlet pipe edges and their pipe classes
             const connectedInletEdge = allEdges.find(e => e.target === id && (e.targetHandle === 'inlet-0' || !e.targetHandle));
@@ -57,8 +64,13 @@ export default function ReducerSetup({ ctx }) {
             // Large end sits on the inlet when reducing, on the outlet when expanding
             const largeClass = isExpanding ? outletClass : inletClass;
             const smallClass = isExpanding ? inletClass : outletClass;
-            const largeBore = resolveBore(dnLarge, schLarge, largeClass);
-            const smallBore = resolveBore(dnSmall, schSmall, smallClass);
+            // Each end reads its walls from the line's pipe class schedule standard, else the one matching the reducer standard
+            const largeScheduleStd = endScheduleStandard(largeClass, standardCode, scheduleOptions);
+            const smallScheduleStd = endScheduleStandard(smallClass, standardCode, scheduleOptions);
+            const schLarge = effectiveData.sch_large || defaultScheduleFor(largeScheduleStd);
+            const schSmall = effectiveData.sch_small || defaultScheduleFor(smallScheduleStd);
+            const largeBore = resolveBore(dnLarge, schLarge, largeClass, largeScheduleStd, scheduleOptions);
+            const smallBore = resolveBore(dnSmall, schSmall, smallClass, smallScheduleStd, scheduleOptions);
             const largeSchFromClass = !!(largeBore && largeClass && largeBore.source === largeClass.code);
             const smallSchFromClass = !!(smallBore && smallClass && smallBore.source === smallClass.code);
 
@@ -82,8 +94,13 @@ export default function ReducerSetup({ ctx }) {
               const stdDataset = getReducerDataset(std, standardOptions);
               const stdName = standardOptions.find(o => o.code === std)?.name || std;
               const entry = findReducerEntry(stdDataset, dl, ds);
-              const lBore = resolveBore(dl, sl, lClass);
-              const sBore = resolveBore(ds, ss, sClass);
+              // A schedule of the other standard (e.g. ASME STD on a DIN EN reducer) maps to its counterpart
+              const lStd = endScheduleStandard(lClass, std, scheduleOptions);
+              const sStd = endScheduleStandard(sClass, std, scheduleOptions);
+              sl = equivalentSchedule(sl, lStd, dl, scheduleOptions) || sl;
+              ss = equivalentSchedule(ss, sStd, ds, scheduleOptions) || ss;
+              const lBore = resolveBore(dl, sl, lClass, lStd, scheduleOptions);
+              const sBore = resolveBore(ds, ss, sClass, sStd, scheduleOptions);
 
               const missing = [];
               if (!lBore) missing.push(`DN${dl} Sch ${sl}`);
@@ -188,9 +205,13 @@ export default function ReducerSetup({ ctx }) {
               const entry = dataset.find(r => Number(r[`dn_${end}`]) === dn);
               return formatDnOption(dn, entry?.[`nps_${end}`]);
             };
-            const scheduleOptions = (current) => (
-              ['STD', '40', '80', 'XS', '160'].includes(current) ? ['STD', '40', '80', 'XS', '160'] : [current, 'STD', '40', '80', 'XS', '160']
-            );
+            // Designations of the end's schedule standard; an unlisted stored value stays visible
+            const scheduleChoices = (current, dn, std) => {
+              const listed = listSchedules(dn, std, scheduleOptions);
+              return listed.includes(current) ? listed : [current, ...listed];
+            };
+            const largeScheduleName = getScheduleStandardName(largeScheduleStd, scheduleOptions);
+            const smallScheduleName = getScheduleStandardName(smallScheduleStd, scheduleOptions);
             const notice = reducerNotice?.nodeId === id ? reducerNotice : null;
 
             const betaRatio = Math.min(dInMeters, dOutMeters) / Math.max(1e-6, Math.max(dInMeters, dOutMeters));
@@ -415,7 +436,7 @@ export default function ReducerSetup({ ctx }) {
                           title={largeSchFromClass ? `Wall thickness taken from pipe class ${largeClass.code}` : undefined}
                           onChange={(e) => applySizes({ dl: dnLarge, ds: dnSmall, sl: e.target.value })}
                         >
-                          {scheduleOptions(schLarge).map(s => (
+                          {scheduleChoices(schLarge, dnLarge, largeScheduleStd).map(s => (
                             <option key={s} value={s}>{s}</option>
                           ))}
                         </select>
@@ -434,7 +455,7 @@ export default function ReducerSetup({ ctx }) {
                           title={smallSchFromClass ? `Wall thickness taken from pipe class ${smallClass.code}` : undefined}
                           onChange={(e) => applySizes({ dl: dnLarge, ds: dnSmall, ss: e.target.value })}
                         >
-                          {scheduleOptions(schSmall).map(s => (
+                          {scheduleChoices(schSmall, dnSmall, smallScheduleStd).map(s => (
                             <option key={s} value={s}>{s}</option>
                           ))}
                         </select>
@@ -449,6 +470,12 @@ export default function ReducerSetup({ ctx }) {
                         <span>Catalog:</span>
                         <strong style={{ color: activeEntry ? 'inherit' : '#B45309' }}>
                           {activeEntry ? standardName : `Not listed in ${standardName}`}
+                        </strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', marginBottom: '3px' }}>
+                        <span>Pipe dimensions:</span>
+                        <strong style={{ textAlign: 'right' }}>
+                          {largeScheduleName === smallScheduleName ? largeScheduleName : `${largeScheduleName} / ${smallScheduleName}`}
                         </strong>
                       </div>
                       {(!largeBore || !smallBore) && (

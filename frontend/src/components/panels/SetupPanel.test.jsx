@@ -23,7 +23,7 @@ const renderPanel = (edge, unitSystem) => {
 describe('F2-01: pipe sizes picked in the inspector are stored in SI in imperial mode', () => {
   it('stores DN80 STD as 77.92 mm (3.068 in), not divided by 39.37', () => {
     const onUpdateEdge = renderPanel(pipeEdge({ pipe_class_id: 'manual', standardDn: 50, standardSch: 'STD', diameter: 0.05248 }), UNIT_SYSTEMS.IMPERIAL);
-    fireEvent.change(screen.getByDisplayValue('DN 50 (2")'), { target: { value: '80' } });
+    fireEvent.change(screen.getByDisplayValue('2" (DN50)'), { target: { value: '80' } });
 
     const updates = onUpdateEdge.mock.calls.at(-1)[1];
     expect(updates.standardDn).toBe(80);

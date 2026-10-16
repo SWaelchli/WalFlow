@@ -42,7 +42,7 @@ describe('F3-02: default pipe for new connections is DN50 STD', () => {
 
 describe('F3-02: display of pipes without catalog references', () => {
   it('shows an older pipe with a standard bore as Manual with its matching DN', () => {
-    expect(resolvePipeSelection({ diameter: 0.05248 })).toEqual({ classId: 'manual', dn: 50, sch: 'STD', isCustomId: false });
+    expect(resolvePipeSelection({ diameter: 0.05248 })).toEqual({ classId: 'manual', dn: 50, sch: 'STD', isCustomId: false, scheduleStandard: 'ASME_B36_10M_SCHEDULES' });
   });
 
   it('shows a non-standard bore as a custom inner diameter', () => {
@@ -55,6 +55,6 @@ describe('F3-02: display of pipes without catalog references', () => {
 
   it('keeps stored class and size references', () => {
     expect(resolvePipeSelection({ pipe_class_id: 'pc-cs01', standardDn: 25, standardSch: '80', diameter: 0.02664 }))
-      .toEqual({ classId: 'pc-cs01', dn: 25, sch: '80', isCustomId: false });
+      .toEqual({ classId: 'pc-cs01', dn: 25, sch: '80', isCustomId: false, scheduleStandard: 'ASME_B36_10M_SCHEDULES' });
   });
 });

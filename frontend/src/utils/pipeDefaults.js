@@ -2,14 +2,21 @@
  * Default pipe data for new connections and display resolution for pipes
  * saved without catalog references (older files).
  */
-import { ASME_B36_10M_SCHEDULES, getPipeScheduleDetails } from '../constants/asme_b16_9_data';
+import {
+  DEFAULT_SCHEDULE_STANDARD,
+  getScheduleBore,
+  getScheduleDataset,
+  isKnownScheduleStandard,
+  equivalentSchedule,
+  nearestListedDn
+} from './pipe_schedules';
 
 export const DEFAULT_PIPE_DN = 50;
 export const DEFAULT_PIPE_SCH = 'STD';
 export const DEFAULT_PIPE_LENGTH_M = 25.0;
 export const DEFAULT_ROUGHNESS_MM = 0.045; // matches the solver fallback
 
-// Stored IDs within this tolerance of a B36.10M schedule count as that schedule
+// Stored IDs within this tolerance of a catalog schedule count as that schedule
 const ID_MATCH_TOLERANCE_MM = 0.05;
 
 const classSizeToPipeData = (pc, size) => {
@@ -30,15 +37,11 @@ const classSizeToPipeData = (pc, size) => {
 };
 
 const manualPipeData = (dn, sch) => {
-  const s = getPipeScheduleDetails(dn, sch);
+  const s = getScheduleBore(dn, sch, DEFAULT_SCHEDULE_STANDARD);
   return {
     pipe_class_id: 'manual',
     pipe_class_code: 'CUSTOM',
-    standardDn: s.dn,
-    standardSch: s.sch,
-    outer_diameter_mm: s.od_mm,
-    wall_thickness_mm: s.wt_mm,
-    diameter: s.id_mm / 1000.0,
+    ...scheduleDimensions(s),
     roughness_mm: DEFAULT_ROUGHNESS_MM,
     roughness: DEFAULT_ROUGHNESS_MM / 1000.0
   };
@@ -53,21 +56,36 @@ const sizeDimensions = (size) => ({
   diameter: (size.od_mm - 2.0 * size.wt_mm) / 1000.0,
 });
 
-const scheduleDimensions = (s) => ({
-  standardDn: s.dn,
-  standardSch: s.sch,
-  outer_diameter_mm: s.od_mm,
-  wall_thickness_mm: s.wt_mm,
-  diameter: s.id_mm / 1000.0,
-});
+// Manual pipes also record which schedule standard their size and schedule refer to
+function scheduleDimensions(s) {
+  return {
+    schedule_standard_code: s.standard,
+    standardDn: s.dn,
+    standardSch: s.sch,
+    outer_diameter_mm: s.od_mm,
+    wall_thickness_mm: s.wt_mm,
+    diameter: s.id_mm / 1000.0,
+  };
+}
+
+// Bore of a size in a schedule standard; a schedule the standard does not list maps to its counterpart
+function scheduleBoreFor(dn, sch, code, options) {
+  const mapped = equivalentSchedule(sch, code, dn, options);
+  return mapped ? getScheduleBore(dn, mapped, code, options) : null;
+}
 
 // The pipe data changes below are shared by the inspector (PipeSelector) and the pipe table (DataList).
 // Each returns the patch to apply to the pipe, or null when the choice cannot be applied.
 
-/** Switch to manual (custom) dimensions at the given size and schedule; roughness stays as it is. */
-export function manualSelectionPatch(dn, sch) {
-  const s = getPipeScheduleDetails(dn || DEFAULT_PIPE_DN, sch || DEFAULT_PIPE_SCH)
-    || getPipeScheduleDetails(DEFAULT_PIPE_DN, DEFAULT_PIPE_SCH);
+/**
+ * Switch to manual (custom) dimensions at the given size and schedule of a schedule standard
+ * (default ASME B36.10M); the nearest listed size is used when the standard lacks the DN. Roughness stays as it is.
+ */
+export function manualSelectionPatch(dn, sch, scheduleCode = DEFAULT_SCHEDULE_STANDARD, options) {
+  const code = isKnownScheduleStandard(scheduleCode, options) ? scheduleCode : DEFAULT_SCHEDULE_STANDARD;
+  const size = nearestListedDn(Number(dn) || DEFAULT_PIPE_DN, code, options);
+  const s = scheduleBoreFor(size, sch || DEFAULT_PIPE_SCH, code, options)
+    || getScheduleBore(DEFAULT_PIPE_DN, DEFAULT_PIPE_SCH, DEFAULT_SCHEDULE_STANDARD);
   return { pipe_class_id: 'manual', pipe_class_code: 'CUSTOM', ...scheduleDimensions(s) };
 }
 
@@ -84,9 +102,9 @@ export function classSizePatch(pc, dn) {
   return size ? sizeDimensions(size) : null;
 }
 
-/** A size or schedule of the B36.10M table was chosen (manual pipes). */
-export function schedulePatch(dn, sch) {
-  const s = getPipeScheduleDetails(dn, sch);
+/** A size or schedule of a schedule standard was chosen (manual pipes). Null for a size the standard lacks. */
+export function schedulePatch(dn, sch, scheduleCode = DEFAULT_SCHEDULE_STANDARD, options) {
+  const s = scheduleBoreFor(dn, sch, scheduleCode, options);
   return s ? scheduleDimensions(s) : null;
 }
 
@@ -111,21 +129,24 @@ export function getDefaultPipeData(pipeClasses = [], allowCustomPipes = true) {
   return manualPipeData(DEFAULT_PIPE_DN, DEFAULT_PIPE_SCH);
 }
 
+// Preferred names when two schedules of a size share a bore (e.g. STD = 40)
+const PREFERRED_SCHEDULES = ['STD', 'XS', 'Normal', 'Heavy'];
+
 /**
- * Finds the B36.10M size/schedule whose inner diameter matches `idMeters`.
+ * Finds the size/schedule of a schedule standard (default ASME B36.10M) whose inner diameter matches `idMeters`.
  * Returns { dn, sch } or null when no schedule is within tolerance.
  */
-export function matchScheduleByInnerDiameter(idMeters) {
+export function matchScheduleByInnerDiameter(idMeters, scheduleCode = DEFAULT_SCHEDULE_STANDARD, options) {
   if (!(idMeters > 0)) return null;
   const idMm = idMeters * 1000.0;
   let best = null;
   let bestDiff = Infinity;
-  for (const size of ASME_B36_10M_SCHEDULES) {
+  for (const size of getScheduleDataset(scheduleCode, options)) {
     // Integer-like keys ("40", "80") iterate before "STD"; prefer STD/XS names on equal bores
     for (const [sch, s] of Object.entries(size.schedules)) {
       const diff = Math.abs(s.id_mm - idMm);
       const isTie = Math.abs(diff - bestDiff) < 1e-9;
-      if ((diff < bestDiff && !isTie) || (isTie && (sch === 'STD' || sch === 'XS'))) {
+      if ((diff < bestDiff && !isTie) || (isTie && PREFERRED_SCHEDULES.includes(sch))) {
         bestDiff = diff;
         best = { dn: size.dn, sch };
       }
@@ -134,14 +155,14 @@ export function matchScheduleByInnerDiameter(idMeters) {
   return bestDiff <= ID_MATCH_TOLERANCE_MM ? best : null;
 }
 
-/** DN whose STD inner diameter is closest to `idMeters` (for select boxes). */
-export function nearestDnByInnerDiameter(idMeters) {
+/** DN whose normal-wall (STD / Normal) inner diameter is closest to `idMeters` (for select boxes). */
+export function nearestDnByInnerDiameter(idMeters, scheduleCode = DEFAULT_SCHEDULE_STANDARD, options) {
   if (!(idMeters > 0)) return DEFAULT_PIPE_DN;
   const idMm = idMeters * 1000.0;
   let best = DEFAULT_PIPE_DN;
   let bestDiff = Infinity;
-  for (const size of ASME_B36_10M_SCHEDULES) {
-    const std = size.schedules.STD || size.schedules['40'];
+  for (const size of getScheduleDataset(scheduleCode, options)) {
+    const std = size.schedules.STD || size.schedules['40'] || size.schedules.Normal;
     if (!std) continue;
     const diff = Math.abs(std.id_mm - idMm);
     if (diff < bestDiff) {
@@ -157,14 +178,21 @@ export function nearestDnByInnerDiameter(idMeters) {
  * Pipes without a class reference show as Manual; pipes without a stored
  * DN show the matching schedule, or as a custom inner diameter. Never writes data.
  */
-export function resolvePipeSelection(data = {}) {
+export function resolvePipeSelection(data = {}, options) {
   const classId = data.pipe_class_id || 'manual';
+  const scheduleStandard = pipeScheduleStandard(data, options);
   if (data.standardDn) {
-    return { classId, dn: Number(data.standardDn), sch: data.standardSch || 'STD', isCustomId: false };
+    return { classId, dn: Number(data.standardDn), sch: data.standardSch || 'STD', isCustomId: false, scheduleStandard };
   }
-  const match = matchScheduleByInnerDiameter(data.diameter);
+  const match = matchScheduleByInnerDiameter(data.diameter, scheduleStandard, options);
   if (match) {
-    return { classId, dn: match.dn, sch: match.sch, isCustomId: false };
+    return { classId, dn: match.dn, sch: match.sch, isCustomId: false, scheduleStandard };
   }
-  return { classId, dn: nearestDnByInnerDiameter(data.diameter), sch: null, isCustomId: true };
+  return { classId, dn: nearestDnByInnerDiameter(data.diameter, scheduleStandard, options), sch: null, isCustomId: true, scheduleStandard };
+}
+
+/** Schedule standard a manual pipe's size refers to (files without one are ASME B36.10M). */
+export function pipeScheduleStandard(data = {}, options) {
+  const code = data.schedule_standard_code;
+  return code && isKnownScheduleStandard(code, options) ? code : DEFAULT_SCHEDULE_STANDARD;
 }

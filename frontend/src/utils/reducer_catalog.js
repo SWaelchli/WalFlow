@@ -1,8 +1,8 @@
 import {
   ASME_B16_9_REDUCERS,
-  ASME_B36_10M_SCHEDULES,
   DIN_EN_10253_2_REDUCERS
 } from '../constants/asme_b16_9_data';
+import { getScheduleBore, isKnownScheduleStandard, scheduleStandardForReducer } from './pipe_schedules';
 
 export const DEFAULT_REDUCER_STANDARD = 'ASME_B16_9_REDUCERS';
 export const CUSTOM_REDUCER_STANDARD = 'CUSTOM';
@@ -63,12 +63,19 @@ export function coneAngleFromGeometry(dLargeMm, dSmallMm, lengthMm) {
   return 2 * Math.atan((dLargeMm - dSmallMm) / (2 * lengthMm)) * 180 / Math.PI;
 }
 
-/** Exact ASME B36.10M / B36.19M schedule lookup — no silent fallback to STD. */
-export function getExactScheduleBore(dn, sch) {
-  const size = ASME_B36_10M_SCHEDULES.find(s => s.dn === Number(dn));
-  const schObj = size?.schedules?.[sch];
-  if (!size || !schObj) return null;
-  return { dn: size.dn, nps: size.nps, od_mm: size.od_mm, wt_mm: schObj.wt_mm, id_mm: schObj.id_mm, sch, source: 'ASME B36.10M' };
+/** Exact schedule lookup in a schedule standard (default ASME B36.10M) — no silent fallback to STD. */
+export function getExactScheduleBore(dn, sch, scheduleCode, scheduleOptions) {
+  return getScheduleBore(dn, sch, scheduleCode, scheduleOptions);
+}
+
+/**
+ * Schedule standard for one reducer end: the line's pipe class standard when it has dimension data,
+ * otherwise the one implied by the reducer standard (DIN EN reducers → DIN EN pipe dimensions).
+ */
+export function endScheduleStandard(pipeClass, reducerCode, scheduleOptions) {
+  const classCode = pipeClass?.schedule_standard_code;
+  if (classCode && isKnownScheduleStandard(classCode, scheduleOptions)) return classCode;
+  return scheduleStandardForReducer(normalizeReducerStandard(reducerCode));
 }
 
 /** The pipe class assigned to a connected line, if any. */
@@ -80,10 +87,10 @@ export function getEdgePipeClass(edge, pipeClasses = []) {
 
 /**
  * Resolves the bore for a DN / schedule, preferring the connected line's pipe class
- * (exact wall thickness, e.g. 10S stainless) over the generic ASME schedule table.
+ * (exact wall thickness, e.g. 10S stainless) over the schedule standard `scheduleCode`.
  * Returns null when neither source knows the size — callers must warn, never guess.
  */
-export function resolveBore(dn, sch, pipeClass) {
+export function resolveBore(dn, sch, pipeClass, scheduleCode, scheduleOptions) {
   const classSize = pipeClass?.sizes?.find(s => Number(s.dn) === Number(dn));
   if (classSize && classSize.od_mm > 2 * classSize.wt_mm) {
     return {
@@ -96,7 +103,7 @@ export function resolveBore(dn, sch, pipeClass) {
       source: pipeClass.code
     };
   }
-  return getExactScheduleBore(dn, sch);
+  return getExactScheduleBore(dn, sch, scheduleCode, scheduleOptions);
 }
 
 /** Label for a DN option: NPS for ASME tables, plain DN for metric catalogs. */

@@ -76,6 +76,16 @@ class TestFittingStandardsDatabase(unittest.TestCase):
         codes = [item["code"] for item in data]
         self.assertIn("ASME_B16_9_REDUCERS", codes)
         self.assertIn("ASME_B36_10M_SCHEDULES", codes)
+        self.assertIn("DIN_EN_PIPE_SCHEDULES", codes)
+
+    def test_01b_din_schedules_usable_by_pipe_class(self):
+        """The DIN EN schedule standard is a pipe_schedule standard a pipe class can reference."""
+        res = self.client.get("/api/fitting-standards?fitting_type=pipe_schedule")
+        self.assertEqual(res.status_code, 200)
+        din = next(item for item in res.json() if item["code"] == "DIN_EN_PIPE_SCHEDULES")
+        dn50 = next(row for row in din["dimensions"] if row["dn"] == 50)
+        self.assertEqual(dn50["od_mm"], 60.3)
+        self.assertEqual(set(dn50["schedules"]), {"Normal", "Heavy", "ISO 1127"})
 
     def test_02_filter_by_type(self):
         """Verifies filtering by fitting_type."""
