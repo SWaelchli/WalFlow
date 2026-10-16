@@ -112,8 +112,8 @@
       "id": "seal-bpr",
       "type": "linear_regulator",
       "position": {
-        "x": 677.0977624898185,
-        "y": 97.7264251502344
+        "x": 677,
+        "y": 98
       },
       "data": {
         "label": "Seal Return BPR (8 bar)",
@@ -127,16 +127,16 @@
       "selected": false,
       "dragging": false,
       "positionAbsolute": {
-        "x": 677.0977624898185,
-        "y": 97.7264251502344
+        "x": 677,
+        "y": 98
       }
     },
     {
       "id": "return-tank",
       "type": "tank",
       "position": {
-        "x": 103.21523759932683,
-        "y": 72.71710180281286
+        "x": 103,
+        "y": 73
       },
       "data": {
         "label": "Barrier Return Tank",
@@ -149,8 +149,8 @@
       "height": 143,
       "selected": false,
       "positionAbsolute": {
-        "x": 103.21523759932683,
-        "y": 72.71710180281286
+        "x": 103,
+        "y": 73
       },
       "dragging": false
     }

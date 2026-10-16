@@ -134,7 +134,7 @@
         "label": "Main Oil Pump",
         "rotation": 270,
         "flow_rated_lmin": 500,
-        "head_rated_m": 120.29,
+        "head_rated_m": 120.3,
         "rise_to_shutoff_pct": 20
       },
       "width": 63,

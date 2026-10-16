@@ -85,7 +85,7 @@
       "data": {
         "label": "P-101 Main Pump",
         "flow_rated_lmin": 150.0,
-        "head_rated_m": 61.16,
+        "head_rated_m": 61.2,
         "rise_to_shutoff_pct": 20.0
       }
     },

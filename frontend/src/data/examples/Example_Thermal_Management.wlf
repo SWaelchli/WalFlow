@@ -47,7 +47,7 @@
       "data": {
         "label": "Circulation Pump",
         "flow_rated_lmin": 200.0,
-        "head_rated_m": 71.91,
+        "head_rated_m": 71.9,
         "rise_to_shutoff_pct": 20.0
       }
     },

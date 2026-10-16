@@ -117,7 +117,7 @@
         "action_mode": "pop_action",
         "blowdown_pct": 7.0,
         "forced_state": "auto",
-        "set_pressure_barg": 18.98675
+        "set_pressure_barg": 19.0
       }
     },
     {
@@ -133,7 +133,7 @@
         "cv": 15.0,
         "action_mode": "modulating",
         "forced_state": "auto",
-        "set_pressure_barg": 23.98675
+        "set_pressure_barg": 24.0
       }
     },
     {
@@ -149,7 +149,7 @@
         "bore_type": "reduced_bore",
         "orifice_diameter": 0.01,
         "forced_state": "auto",
-        "burst_pressure_barg": 28.98675
+        "burst_pressure_barg": 29.0
       }
     },
     {

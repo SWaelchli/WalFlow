@@ -68,15 +68,15 @@
       "id": "node_8fd45f2a",
       "type": "tank",
       "position": {
-        "x": -127.22304753249557,
-        "y": 64.97771662262011
+        "x": -127,
+        "y": 65
       },
       "width": 60,
       "height": 143,
       "selected": false,
       "positionAbsolute": {
-        "x": -127.22304753249557,
-        "y": 64.97771662262011
+        "x": -127,
+        "y": 65
       },
       "dragging": false,
       "data": {
@@ -91,15 +91,15 @@
       "id": "node_032bb480",
       "type": "volumetric_pump",
       "position": {
-        "x": 39.46420044720361,
-        "y": 71.94967962369522
+        "x": 39,
+        "y": 72
       },
       "width": 60,
       "height": 103,
       "selected": false,
       "positionAbsolute": {
-        "x": 39.46420044720361,
-        "y": 71.94967962369522
+        "x": 39,
+        "y": 72
       },
       "dragging": false,
       "data": {
@@ -115,15 +115,15 @@
       "id": "node_c2c3ec68",
       "type": "tank",
       "position": {
-        "x": -127.8056304791528,
-        "y": 390.3239824366579
+        "x": -128,
+        "y": 390
       },
       "width": 67,
       "height": 143,
       "selected": false,
       "positionAbsolute": {
-        "x": -127.8056304791528,
-        "y": 390.3239824366579
+        "x": -128,
+        "y": 390
       },
       "dragging": false,
       "data": {
@@ -138,15 +138,15 @@
       "id": "node_b4cf5bf5",
       "type": "volumetric_pump",
       "position": {
-        "x": 52.19347185254617,
-        "y": 376.9603876208197
+        "x": 52,
+        "y": 377
       },
       "width": 60,
       "height": 103,
       "selected": false,
       "positionAbsolute": {
-        "x": 52.19347185254617,
-        "y": 376.9603876208197
+        "x": 52,
+        "y": 377
       },
       "dragging": false,
       "data": {
@@ -162,15 +162,15 @@
       "id": "node_31c4a871",
       "type": "splitter",
       "position": {
-        "x": 50.142226632774396,
-        "y": 260.76492922044656
+        "x": 50,
+        "y": 261
       },
       "width": 59,
       "height": 71,
       "selected": false,
       "positionAbsolute": {
-        "x": 50.142226632774396,
-        "y": 260.76492922044656
+        "x": 50,
+        "y": 261
       },
       "dragging": false,
       "data": {
@@ -182,15 +182,15 @@
       "id": "node_713c04c3",
       "type": "splitter",
       "position": {
-        "x": 34.53664735906125,
-        "y": -39.86367800039602
+        "x": 35,
+        "y": -40
       },
       "width": 83,
       "height": 71,
       "selected": false,
       "positionAbsolute": {
-        "x": 34.53664735906125,
-        "y": -39.86367800039602
+        "x": 35,
+        "y": -40
       },
       "dragging": false,
       "data": {
@@ -202,105 +202,105 @@
       "id": "node_2cc6a499",
       "type": "pressure_safety_valve",
       "position": {
-        "x": -109.65796577529329,
-        "y": 202.93714041974548
+        "x": -110,
+        "y": 203
       },
       "width": 86,
       "height": 121,
       "selected": false,
       "positionAbsolute": {
-        "x": -109.65796577529329,
-        "y": 202.93714041974548
+        "x": -110,
+        "y": 203
       },
       "dragging": false,
       "data": {
         "label": "RV-2358B",
         "rotation": 180,
-        "cv": 1.074,
+        "cv": 1.1,
         "action_mode": "modulating",
-        "set_pressure_barg": 8.98675
+        "set_pressure_barg": 9.0
       }
     },
     {
       "id": "node_3176b1fc",
       "type": "pressure_safety_valve",
       "position": {
-        "x": -100.00664772306982,
-        "y": -128.10848408959245
+        "x": -100,
+        "y": -128
       },
       "width": 86,
       "height": 121,
       "selected": false,
       "positionAbsolute": {
-        "x": -100.00664772306982,
-        "y": -128.10848408959245
+        "x": -100,
+        "y": -128
       },
       "dragging": false,
       "data": {
         "label": "RV-2358A",
         "rotation": 180,
-        "cv": 1.074,
+        "cv": 1.1,
         "action_mode": "modulating",
-        "set_pressure_barg": 8.98675
+        "set_pressure_barg": 9.0
       }
     },
     {
       "id": "node_807e08c4",
       "type": "check_valve",
       "position": {
-        "x": 198.55650001062463,
-        "y": -93.89271280193525
+        "x": 199,
+        "y": -94
       },
       "width": 79,
       "height": 103,
       "selected": false,
       "positionAbsolute": {
-        "x": 198.55650001062463,
-        "y": -93.89271280193525
+        "x": 199,
+        "y": -94
       },
       "dragging": false,
       "data": {
         "label": "CHECK_VALVE_724",
         "rotation": 0,
-        "cv": 104.04,
-        "cracking_pressure_bar": 0.027
+        "cv": 104.0,
+        "cracking_pressure_bar": 0.03
       }
     },
     {
       "id": "node_d26da9b2",
       "type": "check_valve",
       "position": {
-        "x": 189.31994463521443,
-        "y": 201.67705921119313
+        "x": 189,
+        "y": 202
       },
       "width": 79,
       "height": 103,
       "selected": false,
       "positionAbsolute": {
-        "x": 189.31994463521443,
-        "y": 201.67705921119313
+        "x": 189,
+        "y": 202
       },
       "dragging": false,
       "data": {
         "label": "CHECK_VALVE_460",
         "rotation": 0,
-        "cv": 104.04,
-        "cracking_pressure_bar": 0.027
+        "cv": 104.0,
+        "cracking_pressure_bar": 0.03
       }
     },
     {
       "id": "node_6a53fcc0",
       "type": "splitter",
       "position": {
-        "x": 338.5694693812996,
-        "y": -79.19886578276514
+        "x": 339,
+        "y": -79
       },
       "width": 59,
       "height": 71,
       "selected": false,
       "positionAbsolute": {
-        "x": 338.5694693812996,
-        "y": -79.19886578276514
+        "x": 339,
+        "y": -79
       },
       "dragging": false,
       "data": {
@@ -312,15 +312,15 @@
       "id": "node_192e77a1",
       "type": "mixer",
       "position": {
-        "x": 375.6694358527564,
-        "y": 252.203600028827
+        "x": 376,
+        "y": 252
       },
       "width": 56,
       "height": 71,
       "selected": false,
       "positionAbsolute": {
-        "x": 375.6694358527564,
-        "y": 252.203600028827
+        "x": 376,
+        "y": 252
       },
       "dragging": false,
       "data": {
@@ -332,15 +332,15 @@
       "id": "node_db1f9a5f",
       "type": "tank",
       "position": {
-        "x": 364.9895315462313,
-        "y": 577.958244126588
+        "x": 365,
+        "y": 578
       },
       "width": 60,
       "height": 143,
       "selected": false,
       "positionAbsolute": {
-        "x": 364.9895315462313,
-        "y": 577.958244126588
+        "x": 365,
+        "y": 578
       },
       "dragging": false,
       "data": {
@@ -355,15 +355,15 @@
       "id": "node_d8aa69c8",
       "type": "splitter",
       "position": {
-        "x": 380.52488770295986,
-        "y": -232.53737492539676
+        "x": 381,
+        "y": -233
       },
       "width": 59,
       "height": 71,
       "selected": false,
       "positionAbsolute": {
-        "x": 380.52488770295986,
-        "y": -232.53737492539676
+        "x": 381,
+        "y": -233
       },
       "dragging": false,
       "data": {
@@ -375,15 +375,15 @@
       "id": "node_c2678a3e",
       "type": "heat_exchanger",
       "position": {
-        "x": 476.52488770296,
-        "y": -386.3886765703996
+        "x": 477,
+        "y": -386
       },
       "width": 100,
       "height": 103,
       "selected": true,
       "positionAbsolute": {
-        "x": 476.52488770296,
-        "y": -386.3886765703996
+        "x": 477,
+        "y": -386
       },
       "dragging": false,
       "data": {
@@ -401,15 +401,15 @@
       "id": "node_50250584",
       "type": "three_way_tcv",
       "position": {
-        "x": 481.5248877029599,
-        "y": -548.5886765703999
+        "x": 482,
+        "y": -549
       },
       "width": 91,
       "height": 101,
       "selected": false,
       "positionAbsolute": {
-        "x": 481.5248877029599,
-        "y": -548.5886765703999
+        "x": 482,
+        "y": -549
       },
       "dragging": false,
       "data": {
@@ -424,15 +424,15 @@
       "id": "node_f59f6043",
       "type": "filter",
       "position": {
-        "x": 663.0257167264607,
-        "y": -533.5983278557295
+        "x": 663,
+        "y": -534
       },
       "width": 60,
       "height": 82,
       "selected": false,
       "positionAbsolute": {
-        "x": 663.0257167264607,
-        "y": -533.5983278557295
+        "x": 663,
+        "y": -534
       },
       "dragging": false,
       "data": {
@@ -448,22 +448,22 @@
       "id": "node_8d84994e",
       "type": "check_valve",
       "position": {
-        "x": 786.7220021842777,
-        "y": -547.9543381302624
+        "x": 787,
+        "y": -548
       },
       "width": 103,
       "height": 103,
       "selected": false,
       "positionAbsolute": {
-        "x": 786.7220021842777,
-        "y": -547.9543381302624
+        "x": 787,
+        "y": -548
       },
       "dragging": false,
       "data": {
         "label": "CHECK_VALVE_724_copy",
         "rotation": 0,
-        "cv": 104.04,
-        "cracking_pressure_bar": 0.027,
+        "cv": 104.0,
+        "cracking_pressure_bar": 0.03,
         "sensing": {
           "outlet-0": false
         }
@@ -473,15 +473,15 @@
       "id": "node_abab9f02",
       "type": "splitter",
       "position": {
-        "x": 925.8138273466059,
-        "y": -532.2460204952383
+        "x": 926,
+        "y": -532
       },
       "width": 56,
       "height": 71,
       "selected": false,
       "positionAbsolute": {
-        "x": 925.8138273466059,
-        "y": -532.2460204952383
+        "x": 926,
+        "y": -532
       },
       "dragging": false,
       "data": {
@@ -497,15 +497,15 @@
       "id": "node_f9bb5ad9",
       "type": "orifice",
       "position": {
-        "x": 991.5470810240372,
-        "y": -289.9745780732412
+        "x": 992,
+        "y": -290
       },
       "width": 53,
       "height": 91,
       "selected": false,
       "positionAbsolute": {
-        "x": 991.5470810240372,
-        "y": -289.9745780732412
+        "x": 992,
+        "y": -290
       },
       "dragging": false,
       "data": {
@@ -525,15 +525,15 @@
       "id": "node_59ab52bf",
       "type": "tank",
       "position": {
-        "x": 995.6609278771841,
-        "y": -151.3418601689854
+        "x": 996,
+        "y": -151
       },
       "width": 60,
       "height": 143,
       "selected": false,
       "positionAbsolute": {
-        "x": 995.6609278771841,
-        "y": -151.3418601689854
+        "x": 996,
+        "y": -151
       },
       "dragging": false,
       "data": {
@@ -548,15 +548,15 @@
       "id": "node_d7a7dc67",
       "type": "splitter",
       "position": {
-        "x": 1249.289234037703,
-        "y": -471.74518294033527
+        "x": 1249,
+        "y": -472
       },
       "width": 59,
       "height": 71,
       "selected": false,
       "positionAbsolute": {
-        "x": 1249.289234037703,
-        "y": -471.74518294033527
+        "x": 1249,
+        "y": -472
       },
       "dragging": false,
       "data": {
@@ -568,22 +568,22 @@
       "id": "node_9a1b2114",
       "type": "orifice",
       "position": {
-        "x": 1791.7219569429471,
-        "y": -881.8839015070803
+        "x": 1792,
+        "y": -882
       },
       "width": 43,
       "height": 91,
       "selected": false,
       "positionAbsolute": {
-        "x": 1791.7219569429471,
-        "y": -881.8839015070803
+        "x": 1792,
+        "y": -882
       },
       "dragging": false,
       "data": {
         "label": "RO-2301A",
         "rotation": 270,
         "pipe_diameter": 0.05248,
-        "orifice_diameter": 0.008199999999999999,
+        "orifice_diameter": 0.0082,
         "standardDn": 50,
         "standardSch": "40"
       }
@@ -592,22 +592,22 @@
       "id": "node_d4dbe2e8",
       "type": "orifice",
       "position": {
-        "x": 1941.3535497316957,
-        "y": -851.3396819358818
+        "x": 1941,
+        "y": -851
       },
       "width": 43,
       "height": 91,
       "selected": false,
       "positionAbsolute": {
-        "x": 1941.3535497316957,
-        "y": -851.3396819358818
+        "x": 1941,
+        "y": -851
       },
       "dragging": false,
       "data": {
         "label": "RO-2301A",
         "rotation": 270,
         "pipe_diameter": 0.05248,
-        "orifice_diameter": 0.008199999999999999,
+        "orifice_diameter": 0.0082,
         "standardDn": 50,
         "standardSch": "40"
       }
@@ -616,15 +616,15 @@
       "id": "node_0f156414",
       "type": "splitter",
       "position": {
-        "x": 1724.18411653964,
-        "y": -627.0361612320963
+        "x": 1724,
+        "y": -627
       },
       "width": 107,
       "height": 71,
       "selected": false,
       "positionAbsolute": {
-        "x": 1724.18411653964,
-        "y": -627.0361612320963
+        "x": 1724,
+        "y": -627
       },
       "dragging": false,
       "data": {
@@ -636,15 +636,15 @@
       "id": "node_a0ba4eba",
       "type": "splitter",
       "position": {
-        "x": 1445.988335431005,
-        "y": -370.8066435096066
+        "x": 1446,
+        "y": -371
       },
       "width": 83,
       "height": 71,
       "selected": false,
       "positionAbsolute": {
-        "x": 1445.988335431005,
-        "y": -370.8066435096066
+        "x": 1446,
+        "y": -371
       },
       "dragging": false,
       "data": {
@@ -656,15 +656,15 @@
       "id": "node_bf70bd63",
       "type": "orifice",
       "position": {
-        "x": 1511.7219569429471,
-        "y": -187.88390150708088
+        "x": 1512,
+        "y": -188
       },
       "width": 43,
       "height": 91,
       "selected": false,
       "positionAbsolute": {
-        "x": 1511.7219569429471,
-        "y": -187.88390150708088
+        "x": 1512,
+        "y": -188
       },
       "dragging": false,
       "data": {
@@ -683,15 +683,15 @@
       "id": "node_4211d433",
       "type": "splitter",
       "position": {
-        "x": 1804.9883354310048,
-        "y": -374.80664350960654
+        "x": 1805,
+        "y": -375
       },
       "width": 107,
       "height": 71,
       "selected": false,
       "positionAbsolute": {
-        "x": 1804.9883354310048,
-        "y": -374.80664350960654
+        "x": 1805,
+        "y": -375
       },
       "dragging": false,
       "data": {
@@ -703,15 +703,15 @@
       "id": "node_485f95a2",
       "type": "orifice",
       "position": {
-        "x": 1932.7219569429465,
-        "y": -223.8839015070808
+        "x": 1933,
+        "y": -224
       },
       "width": 44,
       "height": 91,
       "selected": false,
       "positionAbsolute": {
-        "x": 1932.7219569429465,
-        "y": -223.8839015070808
+        "x": 1933,
+        "y": -224
       },
       "dragging": false,
       "data": {
@@ -727,15 +727,15 @@
       "id": "node_8368ae5f",
       "type": "orifice",
       "position": {
-        "x": 2183.7219569429462,
-        "y": -223.8839015070808
+        "x": 2184,
+        "y": -224
       },
       "width": 42,
       "height": 91,
       "selected": false,
       "positionAbsolute": {
-        "x": 2183.7219569429462,
-        "y": -223.8839015070808
+        "x": 2184,
+        "y": -224
       },
       "dragging": false,
       "data": {
@@ -751,15 +751,15 @@
       "id": "node_6e5b1658",
       "type": "splitter",
       "position": {
-        "x": 2125.988335431004,
-        "y": -378.8066435096065
+        "x": 2126,
+        "y": -379
       },
       "width": 131,
       "height": 71,
       "selected": false,
       "positionAbsolute": {
-        "x": 2125.988335431004,
-        "y": -378.8066435096065
+        "x": 2126,
+        "y": -379
       },
       "dragging": false,
       "data": {
@@ -771,15 +771,15 @@
       "id": "node_f243d748",
       "type": "orifice",
       "position": {
-        "x": 2317.7219569429462,
-        "y": -248.88390150708074
+        "x": 2318,
+        "y": -249
       },
       "width": 71,
       "height": 91,
       "selected": false,
       "positionAbsolute": {
-        "x": 2317.7219569429462,
-        "y": -248.88390150708074
+        "x": 2318,
+        "y": -249
       },
       "dragging": false,
       "data": {
@@ -795,15 +795,15 @@
       "id": "node_f57214b9",
       "type": "orifice",
       "position": {
-        "x": 2407.7219569429462,
-        "y": -244.8839015070807
+        "x": 2408,
+        "y": -245
       },
       "width": 71,
       "height": 91,
       "selected": false,
       "positionAbsolute": {
-        "x": 2407.7219569429462,
-        "y": -244.8839015070807
+        "x": 2408,
+        "y": -245
       },
       "dragging": false,
       "data": {
@@ -819,15 +819,15 @@
       "id": "node_327c00de",
       "type": "splitter",
       "position": {
-        "x": 2359.9883354310036,
-        "y": -358.8066435096065
+        "x": 2360,
+        "y": -359
       },
       "width": 155,
       "height": 71,
       "selected": false,
       "positionAbsolute": {
-        "x": 2359.9883354310036,
-        "y": -358.8066435096065
+        "x": 2360,
+        "y": -359
       },
       "dragging": false,
       "data": {
@@ -839,15 +839,15 @@
       "id": "node_bcd1d1e9",
       "type": "calibrated_restriction",
       "position": {
-        "x": 1513.7103979626306,
-        "y": -51.84593240735872
+        "x": 1514,
+        "y": -52
       },
       "width": 42,
       "height": 105,
       "selected": false,
       "positionAbsolute": {
-        "x": 1513.7103979626306,
-        "y": -51.84593240735872
+        "x": 1514,
+        "y": -52
       },
       "dragging": false,
       "data": {
@@ -865,15 +865,15 @@
       "id": "node_c255f237",
       "type": "tank",
       "position": {
-        "x": 1502.9895315462313,
-        "y": 71.38152269466428
+        "x": 1503,
+        "y": 71
       },
       "width": 67,
       "height": 143,
       "selected": false,
       "positionAbsolute": {
-        "x": 1502.9895315462313,
-        "y": 71.38152269466428
+        "x": 1503,
+        "y": 71
       },
       "dragging": false,
       "data": {
@@ -888,15 +888,15 @@
       "id": "node_9958a664",
       "type": "calibrated_restriction",
       "position": {
-        "x": 1938.7024058562715,
-        "y": -72.4745950677746
+        "x": 1939,
+        "y": -72
       },
       "width": 64,
       "height": 105,
       "selected": false,
       "positionAbsolute": {
-        "x": 1938.7024058562715,
-        "y": -72.4745950677746
+        "x": 1939,
+        "y": -72
       },
       "dragging": false,
       "data": {
@@ -914,15 +914,15 @@
       "id": "node_0099e94d",
       "type": "calibrated_restriction",
       "position": {
-        "x": 2186.6168081107344,
-        "y": -85.31471939763816
+        "x": 2187,
+        "y": -85
       },
       "width": 71,
       "height": 105,
       "selected": false,
       "positionAbsolute": {
-        "x": 2186.6168081107344,
-        "y": -85.31471939763816
+        "x": 2187,
+        "y": -85
       },
       "dragging": false,
       "data": {
@@ -940,15 +940,15 @@
       "id": "node_a5dde124",
       "type": "tank",
       "position": {
-        "x": 1933.5469722452228,
-        "y": 41.77040238184398
+        "x": 1934,
+        "y": 42
       },
       "width": 91,
       "height": 143,
       "selected": false,
       "positionAbsolute": {
-        "x": 1933.5469722452228,
-        "y": 41.77040238184398
+        "x": 1934,
+        "y": 42
       },
       "dragging": false,
       "data": {
@@ -963,15 +963,15 @@
       "id": "node_79e1d31e",
       "type": "tank",
       "position": {
-        "x": 2178.015279434695,
-        "y": 41.56595995694778
+        "x": 2178,
+        "y": 42
       },
       "width": 115,
       "height": 143,
       "selected": false,
       "positionAbsolute": {
-        "x": 2178.015279434695,
-        "y": 41.56595995694778
+        "x": 2178,
+        "y": 42
       },
       "dragging": false,
       "data": {
@@ -986,21 +986,21 @@
       "id": "node_89d45b5d",
       "type": "calibrated_restriction",
       "position": {
-        "x": 2317.3639781555003,
-        "y": -99.30354208249877
+        "x": 2317,
+        "y": -99
       },
       "width": 88,
       "height": 105,
       "selected": false,
       "positionAbsolute": {
-        "x": 2317.3639781555003,
-        "y": -99.30354208249877
+        "x": 2317,
+        "y": -99
       },
       "dragging": false,
       "data": {
         "label": "Compressor Thrust 1",
         "rotation": 90,
-        "flow_base_lmin": 27.95,
+        "flow_base_lmin": 27.9,
         "inlet_pressure_base_bar": 3,
         "outlet_pressure_base_bar": 1,
         "temp_base_c": 45,
@@ -1012,21 +1012,21 @@
       "id": "node_0effe165",
       "type": "calibrated_restriction",
       "position": {
-        "x": 2486.018193915168,
-        "y": -109.84626970236826
+        "x": 2486,
+        "y": -110
       },
       "width": 88,
       "height": 105,
       "selected": false,
       "positionAbsolute": {
-        "x": 2486.018193915168,
-        "y": -109.84626970236826
+        "x": 2486,
+        "y": -110
       },
       "dragging": false,
       "data": {
         "label": "Compressor Thrust 2",
         "rotation": 0,
-        "flow_base_lmin": 27.95,
+        "flow_base_lmin": 27.9,
         "inlet_pressure_base_bar": 3,
         "outlet_pressure_base_bar": 1,
         "temp_base_c": 45,
@@ -1038,15 +1038,15 @@
       "id": "node_9496a1ca",
       "type": "tank",
       "position": {
-        "x": 2307.6137511244638,
-        "y": 40.21281917705454
+        "x": 2308,
+        "y": 40
       },
       "width": 139,
       "height": 143,
       "selected": false,
       "positionAbsolute": {
-        "x": 2307.6137511244638,
-        "y": 40.21281917705454
+        "x": 2308,
+        "y": 40
       },
       "dragging": false,
       "data": {
@@ -1061,15 +1061,15 @@
       "id": "node_fcae2cd8",
       "type": "tank",
       "position": {
-        "x": 2594.583897448826,
-        "y": -129.99897978740267
+        "x": 2595,
+        "y": -130
       },
       "width": 163,
       "height": 143,
       "selected": false,
       "positionAbsolute": {
-        "x": 2594.583897448826,
-        "y": -129.99897978740267
+        "x": 2595,
+        "y": -130
       },
       "dragging": false,
       "data": {
@@ -1084,15 +1084,15 @@
       "id": "node_70d07517",
       "type": "calibrated_restriction",
       "position": {
-        "x": 1792.1570047221837,
-        "y": -1001.7520784642859
+        "x": 1792,
+        "y": -1002
       },
       "width": 48,
       "height": 105,
       "selected": false,
       "positionAbsolute": {
-        "x": 1792.1570047221837,
-        "y": -1001.7520784642859
+        "x": 1792,
+        "y": -1002
       },
       "dragging": false,
       "data": {
@@ -1110,15 +1110,15 @@
       "id": "node_a522310e",
       "type": "calibrated_restriction",
       "position": {
-        "x": 1936.2525217544223,
-        "y": -995.7035504328346
+        "x": 1936,
+        "y": -996
       },
       "width": 42,
       "height": 105,
       "selected": false,
       "positionAbsolute": {
-        "x": 1936.2525217544223,
-        "y": -995.7035504328346
+        "x": 1936,
+        "y": -996
       },
       "dragging": false,
       "data": {
@@ -1136,15 +1136,15 @@
       "id": "node_da61ac05",
       "type": "tank",
       "position": {
-        "x": 1764.5838974488265,
-        "y": -1159.1989797874025
+        "x": 1765,
+        "y": -1159
       },
       "width": 79,
       "height": 143,
       "selected": false,
       "positionAbsolute": {
-        "x": 1764.5838974488265,
-        "y": -1159.1989797874025
+        "x": 1765,
+        "y": -1159
       },
       "dragging": false,
       "data": {
@@ -1159,15 +1159,15 @@
       "id": "node_d16d6bb3",
       "type": "tank",
       "position": {
-        "x": 1927.5838974488265,
-        "y": -1170.1989797874025
+        "x": 1928,
+        "y": -1170
       },
       "width": 72,
       "height": 143,
       "selected": false,
       "positionAbsolute": {
-        "x": 1927.5838974488265,
-        "y": -1170.1989797874025
+        "x": 1928,
+        "y": -1170
       },
       "dragging": false,
       "data": {
@@ -1182,8 +1182,8 @@
       "id": "node_37e0704c",
       "type": "remote_control_valve",
       "position": {
-        "x": 368.33569562176206,
-        "y": 399.8671470412145
+        "x": 368,
+        "y": 400
       },
       "data": {
         "label": "REMOTE_CONTROL_VALVE_976",
@@ -1196,8 +1196,8 @@
       "height": 114,
       "selected": false,
       "positionAbsolute": {
-        "x": 368.33569562176206,
-        "y": 399.8671470412145
+        "x": 368,
+        "y": 400
       },
       "dragging": false
     }

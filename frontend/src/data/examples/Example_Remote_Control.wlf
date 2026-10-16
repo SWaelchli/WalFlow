@@ -47,7 +47,7 @@
       "data": {
         "label": "High-Pressure Feed Pump",
         "flow_rated_lmin": 200.0,
-        "head_rated_m": 101.94,
+        "head_rated_m": 101.9,
         "rise_to_shutoff_pct": 20.0
       }
     },

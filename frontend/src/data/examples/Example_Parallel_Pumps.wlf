@@ -47,7 +47,7 @@
       "data": {
         "label": "Duty Pump A",
         "flow_rated_lmin": 250.0,
-        "head_rated_m": 61.16,
+        "head_rated_m": 61.2,
         "rise_to_shutoff_pct": 20.0
       }
     },
@@ -75,7 +75,7 @@
       "data": {
         "label": "Standby Pump B",
         "flow_rated_lmin": 250.0,
-        "head_rated_m": 61.16,
+        "head_rated_m": 61.2,
         "rise_to_shutoff_pct": 20.0
       }
     },

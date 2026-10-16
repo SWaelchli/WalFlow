@@ -47,7 +47,7 @@
       "data": {
         "label": "Supply Pump",
         "flow_rated_lmin": 150.0,
-        "head_rated_m": 81.55,
+        "head_rated_m": 81.5,
         "rise_to_shutoff_pct": 20.0
       }
     },
