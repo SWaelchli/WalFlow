@@ -15,6 +15,43 @@ const good = () => ({
   edges: [pipe('e1', 't1', 'p1'), pipe('e2', 'p1', 't2')],
 });
 
+describe('measurement taps and instruments', () => {
+  it('a tap is an in-line component and an instrument bubble is not part of the network', () => {
+    const d = {
+      nodes: [node('t1', 'tank'), node('tap', 'measure_point'), node('t2', 'tank'), node('i', 'instrument')],
+      edges: [pipe('e1', 't1', 'tap'), pipe('e2', 'tap', 't2'),
+        { id: 's', source: 'tap', target: 'i', sourceHandle: 'signal-inlet-0', targetHandle: 'signal-in', data: { type: 'SIGNAL' } }],
+    };
+    const r = validateNetwork(d);
+    expect(r.errors).toEqual([]);
+    expect(r.warnings).toEqual([]);
+  });
+
+  const sig = (id, source, targetHandle) => (
+    { id, source, target: 'i', sourceHandle: 'signal-outlet-0', targetHandle, data: { type: 'SIGNAL' } }
+  );
+  const withInstrument = (variable, signals) => {
+    const d = good();
+    d.nodes.push({ ...node('i', 'instrument', 'PIT 1'), data: { label: 'PIT 1', variable } });
+    d.edges.push(...signals);
+    return validateNetwork(d).warnings;
+  };
+
+  it('warns about an instrument that is not wired', () => {
+    const w = withInstrument('P', []);
+    expect(codes(w)).toEqual(['instrument_unwired']);
+    expect(w[0].nodeIds).toEqual(['i']);
+    expect(withInstrument('P', [sig('s', 'p1', 'signal-in')])).toEqual([]);
+  });
+
+  it('warns about a ΔP instrument with only one input', () => {
+    expect(codes(withInstrument('dP', []))).toEqual(['instrument_unwired']);
+    expect(withInstrument('dP', [sig('s', 'p1', 'signal-in')])[0].message).toMatch(/only its \(\+\) input/);
+    expect(withInstrument('dP', [sig('s', 'p1', 'signal-in-ref')])[0].message).toMatch(/only its \(−\) input/);
+    expect(withInstrument('dP', [sig('s', 'p1', 'signal-in'), sig('r', 't1', 'signal-in-ref')])).toEqual([]);
+  });
+});
+
 describe('checkNewConnection', () => {
   const edges = [pipe('e1', 't1', 'p1')];
 

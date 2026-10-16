@@ -26,6 +26,8 @@ import FilterNode from './nodes/FilterNode';
 import HeatExchangerNode from './nodes/HeatExchangerNode';
 import SplitterNode from './nodes/SplitterNode';
 import MixerNode from './nodes/MixerNode';
+import MeasurePointNode from './nodes/MeasurePointNode';
+import InstrumentNode from './nodes/InstrumentNode';
 import RemoteControlValveNode from './nodes/RemoteControlValveNode';
 import ThreeWayTCVNode from './nodes/ThreeWayTCVNode';
 import CheckValveNode from './nodes/CheckValveNode';
@@ -76,6 +78,8 @@ import { defaultNodeData } from './utils/nodeDefaults';
 import { DEFAULT_DRAWING_SETTINGS, migrateDrawingSettings, withEffectiveSolver } from './utils/settingsLevels';
 import useSettingsLevels from './hooks/useSettingsLevels';
 import { nextAutoTag } from './utils/autoTag';
+import { splitEdgeWithTap, canInsertTap } from './utils/insertTap';
+import { readInstruments, defaultInstrumentData } from './utils/instrumentReadings';
 import CanvasContextMenu from './components/canvas/CanvasContextMenu';
 import EmptyCanvasHint from './components/canvas/EmptyCanvasHint';
 
@@ -120,6 +124,8 @@ const nodeTypes = {
   heat_exchanger: HeatExchangerNode,
   splitter: SplitterNode,
   mixer: MixerNode,
+  measure_point: MeasurePointNode,
+  instrument: InstrumentNode,
   remote_control_valve: RemoteControlValveNode,
   three_way_tcv: ThreeWayTCVNode,
   text_bubble: TextBubbleNode,
@@ -553,8 +559,46 @@ function WalFlowContent() {
     setEdges((eds) => eds.map((e) => ({ ...e, selected: false })));
     setSelectedNode(node);
     setSelectedEdge(null);
-    setContextMenu({ x: event.clientX, y: event.clientY, kind: 'node' });
+    // Pins an instrument can be wired to: a tap's own pin, or the sensing pins switched on at a component
+    const pins = node.type === 'measure_point'
+      ? ['inlet-0']
+      : Object.entries(node.data?.sensing || {}).filter(([, on]) => on).map(([port]) => port);
+    setContextMenu({ x: event.clientX, y: event.clientY, kind: 'node', nodeId: node.id, isTap: node.type === 'measure_point', pins: node.type === 'instrument' ? [] : pins });
   }, [setNodes, setEdges]);
+
+  // Adds a pressure instrument above a component, wired to one of its pins (one undo step)
+  const addInstrumentAtPin = useCallback((nodeId, portId) => {
+    if (blockIfReadOnly()) return;
+    const host = nodes.find(n => n.id === nodeId);
+    if (!host) return;
+    // Up and to the right of the pin, so the signal line rises and turns into the bubble's left-hand input
+    const pinX = host.type === 'measure_point' ? 20 : (portId.startsWith('outlet') ? (host.width || 60) : 0);
+    const instrument = {
+      id: getId(),
+      type: 'instrument',
+      position: { x: host.position.x + pinX + 40, y: host.position.y - 110 },
+      selected: true,
+      data: defaultInstrumentData('P', nodes.map(n => n.data?.label)),
+    };
+    const label = `Signal ${getNextLabelNumber(edges)}`;
+    const signal = {
+      id: getEdgeId(),
+      source: nodeId,
+      sourceHandle: `signal-${portId}`,
+      target: instrument.id,
+      targetHandle: 'signal-in',
+      label,
+      animated: true,
+      type: 'step',
+      style: { stroke: '#fde047', strokeWidth: 3, strokeDasharray: '5,5' },
+      data: { label, type: 'SIGNAL' },
+    };
+    setNodes(nds => nds.map(n => ({ ...n, selected: false })).concat(instrument));
+    setEdges(eds => eds.concat(signal));
+    setSelectedNode(instrument);
+    setSelectedEdge(null);
+    requestSnapshot();
+  }, [nodes, edges, setNodes, setEdges, requestSnapshot, blockIfReadOnly]);
 
   const onEdgeContextMenu = useCallback((event, edge) => {
     event.preventDefault();
@@ -562,8 +606,34 @@ function WalFlowContent() {
     setEdges((eds) => eds.map((e) => ({ ...e, selected: e.id === edge.id })));
     setSelectedEdge(edge);
     setSelectedNode(null);
-    setContextMenu({ x: event.clientX, y: event.clientY, kind: 'edge' });
+    setContextMenu({ x: event.clientX, y: event.clientY, kind: 'edge', edgeId: edge.id, canTap: canInsertTap(edge) });
   }, [setNodes, setEdges]);
+
+  // Splits a pipe at the clicked point with a measurement tap (one undo step)
+  const insertTapOnEdge = useCallback((edgeId, screenPoint) => {
+    if (blockIfReadOnly() || !reactFlowInstance) return;
+    const result = splitEdgeWithTap({
+      nodes,
+      edges,
+      edgeId,
+      position: reactFlowInstance.screenToFlowPosition(screenPoint),
+      tapId: getId(),
+      tapData: defaultNodeData('measure_point', {
+        label: nextAutoTag('measure_point', nodes.map(n => n.data?.label)),
+        ambientTemperature: globalSettings.ambient_temperature,
+        onRotate: handleRotation,
+        onChange: handleValveChange,
+      }),
+      downstreamEdgeId: getEdgeId(),
+      downstreamLabel: `Pipe ${getNextLabelNumber(edges)}`,
+    });
+    if (!result) return;
+    setNodes(result.nodes);
+    setEdges(result.edges);
+    setSelectedNode(result.tap);
+    setSelectedEdge(null);
+    requestSnapshot();
+  }, [nodes, edges, reactFlowInstance, globalSettings.ambient_temperature, handleRotation, handleValveChange, setNodes, setEdges, requestSnapshot, blockIfReadOnly]);
 
   const onPaneContextMenu = useCallback((event) => {
     event.preventDefault();
@@ -574,7 +644,16 @@ function WalFlowContent() {
     if (!contextMenu) return [];
     const locked = isReadOnly;
     if (contextMenu.kind === 'node') {
+      const pins = contextMenu.pins || [];
+      const instrumentItems = pins.map(port => ({
+        id: `add-instrument-${port}`,
+        label: contextMenu.isTap ? 'Add instrument' : `Add instrument at ${port.replace('-', ' ')}`,
+        disabled: locked,
+        onSelect: () => addInstrumentAtPin(contextMenu.nodeId, port),
+      }));
       return [
+        ...instrumentItems,
+        ...(instrumentItems.length ? [{ separator: true }] : []),
         { id: 'rotate', label: 'Rotate', shortcut: 'R', disabled: locked, onSelect: rotateSelectedNode },
         { id: 'copy', label: 'Copy', shortcut: 'Ctrl+C', onSelect: copySelected },
         { id: 'duplicate', label: 'Duplicate', shortcut: 'Ctrl+D', disabled: locked, onSelect: duplicateSelected },
@@ -583,7 +662,14 @@ function WalFlowContent() {
       ];
     }
     if (contextMenu.kind === 'edge') {
-      return [{ id: 'delete', label: 'Delete pipe', shortcut: 'Del', disabled: locked, danger: true, onSelect: deleteSelected }];
+      const items = [];
+      if (contextMenu.canTap) {
+        items.push(
+          { id: 'insert-tap', label: 'Insert measurement tap', disabled: locked, onSelect: () => insertTapOnEdge(contextMenu.edgeId, { x: contextMenu.x, y: contextMenu.y }) },
+          { separator: true },
+        );
+      }
+      return [...items, { id: 'delete', label: 'Delete pipe', shortcut: 'Del', disabled: locked, danger: true, onSelect: deleteSelected }];
     }
     return [
       { id: 'paste', label: 'Paste', shortcut: 'Ctrl+V', disabled: locked || !contextMenu.canPaste, onSelect: pasteCopied },
@@ -591,7 +677,7 @@ function WalFlowContent() {
       { separator: true },
       { id: 'fit', label: 'Fit view', onSelect: () => reactFlowInstance?.fitView({ padding: 0.2, duration: 250, maxZoom: 1.2 }) },
     ];
-  }, [contextMenu, isReadOnly, rotateSelectedNode, copySelected, duplicateSelected, deleteSelected, pasteCopied, selectAllNodes, reactFlowInstance]);
+  }, [contextMenu, isReadOnly, rotateSelectedNode, copySelected, duplicateSelected, deleteSelected, pasteCopied, selectAllNodes, reactFlowInstance, insertTapOnEdge, addInstrumentAtPin]);
 
   const selectNodeById = useCallback((nodeId) => {
     const targetNode = nodes.find(n => n.id === nodeId);
@@ -810,6 +896,12 @@ function WalFlowContent() {
       return;
     }
     const isSignal = isSourceSignal && isTargetSignal;
+    // An instrument input reads one pin
+    const targetIsInstrument = nodes.some(n => n.id === params.target && n.type === 'instrument');
+    if (isSignal && targetIsInstrument && edges.some(e => e.target === params.target && e.targetHandle === params.targetHandle)) {
+      notify('This instrument input is already wired. Delete its signal line first.', 'warning');
+      return;
+    }
     if (!isSignal && !checkNewConnection(edges, params).ok) {
       notify(PORT_TAKEN_MESSAGE, 'warning');
       return;
@@ -840,7 +932,7 @@ function WalFlowContent() {
       return addEdge(newEdge, eds);
     });
     requestSnapshot();
-  }, [setEdges, edges, activeDiagram, hasLock, availablePipeClasses, allowCustomPipes, requestSnapshot]);
+  }, [setEdges, edges, nodes, activeDiagram, hasLock, availablePipeClasses, allowCustomPipes, requestSnapshot]);
 
   // F2-19: a port takes one pipe. The red handle while dragging comes from isValidConnection; the reason is
   // shown when the drag ends on a handle that was refused.
@@ -1273,6 +1365,25 @@ function WalFlowContent() {
     });
   }, [nodes, nodeCache, cases, activeCaseId, telemetryMode, rotateNode, stableValveChange]);
 
+  // Instrument readings of the active case; edited alarm limits apply at once, without a re-run
+  const instrumentReadings = useMemo(() => {
+    const activeCase = getActiveCase(cases, activeCaseId);
+    const atmPa = activeCase?.overrides?.global_settings?.atmospheric_pressure ?? effectiveGlobalSettings.atmospheric_pressure;
+    return readInstruments(nodes, edges, getCaseTelemetrySet(activeCase, telemetryMode), atmPa);
+  }, [nodes, edges, cases, activeCaseId, telemetryMode, effectiveGlobalSettings.atmospheric_pressure]);
+
+  // An instrument keeps its object while its reading is unchanged, so a drag frame does not re-render it
+  const [instrumentCache] = useState(() => new Map());
+  const canvasNodes = useMemo(() => interactiveNodes.map((node) => {
+    if (node.type !== 'instrument') return node;
+    const reading = instrumentReadings.get(node.id) || { value: null, state: null };
+    const hit = instrumentCache.get(node.id);
+    if (hit && hit.base === node && hit.value === reading.value && hit.state === reading.state) return hit.out;
+    const out = { ...node, data: { ...node.data, reading } };
+    instrumentCache.set(node.id, { base: node, value: reading.value, state: reading.state, out });
+    return out;
+  }), [interactiveNodes, instrumentReadings, instrumentCache]);
+
   const effectiveSelectedNode = useMemo(() => {
     if (!selectedNode) return null;
     const liveNode = nodes.find(n => n.id === selectedNode.id) || selectedNode;
@@ -1403,13 +1514,13 @@ function WalFlowContent() {
           onSelectComponent={handleSelectComponent}
           templates={{
             "Getting Started": {
-              "Welcome canvas: tank, pump and orifice": greetingCanvas
+              "Welcome canvas": greetingCanvas
             },
             "Industrial Process Systems": {
               "API 614 Lube Oil System (LOS)": exampleAPI614,
               "API 682 Mechanical Seal Flush": exampleAPI682,
               "Industrial Chilled Water Circuit": exampleChilledWater,
-              "Large Reference Network (49 components)": exampleLargeNetwork
+              "Large Reference Network": exampleLargeNetwork
             },
             "Capability Spotlights": {
               "Pressure Regulation: PRV vs BPR": examplePressureReg,
@@ -1533,8 +1644,8 @@ function WalFlowContent() {
 
           {nodes.length === 0 && !isCanvasLoading && <EmptyCanvasHint />}
 
-          <ReactFlow 
-            nodes={interactiveNodes} 
+          <ReactFlow
+            nodes={canvasNodes}
             edges={styledEdges} 
             nodeTypes={nodeTypes} 
             edgeTypes={edgeTypes}

@@ -68,27 +68,31 @@ This document outlines planned features, overlays, and enhancements for the WalF
   * **Physics:** Computes effective flow coefficient $C_v(x)$ dynamic curves based on valve stem opening percentage $x$, with optional choked flow detection for compressible/high-$\Delta P$ regimes.
   * **Engineering Value:** Enables accurate modeling of dynamic process control loops, valve sizing, and loop gain linearity across varying valve positions.
 
-- [ ] **📍 In-Line Measurement Point & Instrumentation Bubble (`MeasurePoint`)**
-  * **Concept:** Passive, zero-resistance pass-through sensor (1 Inlet, 1 Outlet) for monitoring local hydraulic process conditions without altering circuit physics ($P_{\text{in}} = P_{\text{out}}$, $Q_{\text{in}} = Q_{\text{out}}$).
-  * **Selectable Measurements (Property Panel Checkboxes):**
-    * ☐ **Pressure ($P$):** Static line pressure (bara / PSIa or barg / PSIg).
-    * ☐ **Pressure Difference ($dP$):** Differential pressure between to points (bard /psid)
-    * ☐ **Flow Rate ($Q$):** Volumetric flow (L/min, m³/h, GPM).
-    * ☐ **Temperature ($T$):** Operating fluid temperature (°C / °F).
-    * ☐ **Fluid Velocity ($v$):** Velocity through sensor bore (m/s) for pipe erosion/sizing checks.
-    * ☐ **Kinematic Viscosity ($\nu$):** Live viscosity (cSt) adjusted for operating temperature.
-    * ☐ **Reynolds Number ($Re$):** Flow regime diagnostic (Laminar / Transition / Turbulent).
-  * **Configurable 4-Tier Industrial Alarms (per parameter):**
-    * 🔴 **HH (High-High):** Critical high trip threshold (Emergency Red).
-    * 🟠 **H (High):** Warning high threshold (Caution Amber/Orange).
-    * 🟠 **L (Low):** Warning low threshold (Caution Amber/Orange).
-    * 🔴 **LL (Low-Low):** Critical low trip threshold (Emergency Red).
-  * **Visuals & Canvas Display:**
-    * ISA-style instrumentation bubble on the canvas (e.g. `PIT`, `FIT`, `TIT`).
-    * Dedicated tab in Datalist for measurements. The list shows all measurements and their respective alarms and trips. Alarm and trip values can be changed in this list.
-    * Configurable live numerical callout badge under the symbol displaying all active checked measurements.
-    * Real-time visual alarm state: badge dynamically highlights in **Orange** (H/L Warning) or **Red** (HH/LL Critical Trip) when thresholds are breached.
-  * **Engineering Value:** Enables clean P&ID telemetry tapping, custom monitoring locations, and standard industrial alarm indication across complex circuits (e.g. API 614 lube oil supply headers and filter differential monitoring).
+- [x] **📍 Measurement Tap & Instrument Bubbles (`measure_point`, `instrument`)**
+  * **Concept:** Two passive elements that read the solved state without changing it. A **Tap** marks a location in a line; an **Instrument** (ISA bubble) shows one measured variable at a location. Alarms are indication only: the solver is steady-state, so a trip never feeds back into the physics.
+  * **Tap (`measure_point`):** In-line, 1 inlet and 1 outlet, zero ΔP ($P_{	ext{in}} = P_{	ext{out}}$, $Q_{	ext{in}} = Q_{	ext{out}}$), with a fixed yellow sensing pin. A pin on any equipment port is a measuring location too. A remote control valve can also sense a tap.
+  * **Instrument (`instrument`):** No hydraulic ports (like a note). Its `signal-in` handle takes a SIGNAL edge from any pin; a ΔP instrument also has `signal-in-ref` (−). One bubble measures one variable, chosen in a dropdown; the ISA letters follow (`PIT`, `PDIT`, `FIT`, `TIT`; `VI` and `νI` for the two derived variables). The tag is editable and auto-numbered like other components. Several variables at one tap means several bubbles on the same pin.
+  * **Variables (v1):**
+    * **Pressure ($P$):** barg by default, bara per instrument.
+    * **Pressure difference ($dP$):** bar (mbar for small values), pin (+) minus pin (−).
+    * **Flow rate ($Q$):** L/min or m³/h. Reverse flow shows as negative.
+    * **Temperature ($T$):** °C.
+    * **Fluid velocity ($v$):** m/s, from the pipe ID at the pin's port (inlet-side pipe for a tap). Derived, not an ISA variable.
+    * **Kinematic viscosity ($
+u$):** cSt at the local temperature. Derived, not an ISA variable.
+    * Reynolds number is not a v1 variable; the pipe columns already show it.
+    * Imperial units follow `UnitContext`.
+  * **Alarms (per instrument):** HH and LL (red), H and L (orange). Blank is off; validation requires LL < L < H < HH. Limits are stored on the instrument (same in every case); each operating case's reading is judged against them.
+  * **Canvas display:** ISA circle with letters and tag, and a value badge underneath (with unit, "—" until a run has results). The badge turns orange (H/L) or red (HH/LL).
+  * **Datalist:** new "Measurements" tab modelled on the relief tab: one row per instrument (tag, variable, location, editable LL/L/H/HH) and one value column per operating case, coloured by alarm state, so it shows which case trips HH.
+  * **Workflow:** drag a Tap or Instrument and wire; right-click a pipe → **Insert tap** (splits the pipe in two, copying class, diameter and roughness and halving the length); right-click a tap or pin → **Add instrument** (pre-wired, auto-tagged bubble next to it).
+  * **Implementation notes (minimal impact):**
+    * Backend: a small `MeasurePoint` pass-through class plus an entry in `create_node`; the parser skips `instrument` like `text_bubble`; the solver is untouched. Check that a zero-ΔP element does not upset the Jacobian (add a test).
+    * Frontend: a pure `instrumentReadings(telemetry, nodes, edges)` util (like `nodeReadouts.js`) so edited limits update instantly and need no re-run; `PORTS_BY_TYPE`, sidebar and symbol library entries; add `instrument` to `IGNORED_NODE_TYPES` in `resultHash.js` and to the note types in validation; `onConnect` accepts pin → `signal-in` and `signal-in-ref` only.
+    * Validation warnings: unwired instrument, ΔP instrument with one input.
+    * No file-format bump (new node types are additive). CHANGELOG entry on delivery.
+  * **Out of scope for v1:** a transmitter wired directly into a control valve (the valve senses a pin, as today), trip actions, Reynolds number as a bubble variable.
+  * **Engineering Value:** Clean P&ID telemetry tapping, custom monitoring locations and standard alarm indication across complex circuits (e.g. API 614 lube oil supply headers, filter differential pressure).
 
 - [x] **🔀 Reducer / Expander (Area Transition w/ ASME B16.9 Database)**
   * **Concept:** Piping fitting that transitions the fluid stream between two different pipe diameters, integrating a standardized database of ASME B16.9 factory-made wrought buttwelding concentric and eccentric reducers.

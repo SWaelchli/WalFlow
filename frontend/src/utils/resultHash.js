@@ -6,7 +6,8 @@ const IGNORED_DATA_KEYS = new Set([
   'telemetry', 'onRotate', 'onChange', 'hasCaseOverrides', 'rotation', 'label',
   'title', 'text', 'fontSize',
 ]);
-const IGNORED_NODE_TYPES = new Set(['text_bubble', 'note']);
+// Instrument bubbles only read results; they and the signal lines into them are not solver input
+const IGNORED_NODE_TYPES = new Set(['text_bubble', 'note', 'instrument']);
 const IGNORED_GLOBAL_KEYS = new Set(['unit_system']);
 
 export const stableStringify = (value) => {
@@ -55,7 +56,9 @@ export const computeCaseInputHash = ({ nodes = [], edges = [], globalSettings = 
   const nodePart = nodes
     .filter(n => !IGNORED_NODE_TYPES.has(n.type))
     .map(n => signatureOf(nodeSignatures, n, () => [n.id, n.type, pickData(n.data, IGNORED_DATA_KEYS)]));
+  const ignoredIds = new Set(nodes.filter(n => IGNORED_NODE_TYPES.has(n.type)).map(n => n.id));
   const edgePart = edges
+    .filter(e => !ignoredIds.has(e.target))
     .map(e => signatureOf(edgeSignatures, e, () => [e.id, e.source, e.target, e.sourceHandle ?? null, e.targetHandle ?? null, pickData(e.data, IGNORED_DATA_KEYS)]));
   const payload = [
     nodePart.join(','),

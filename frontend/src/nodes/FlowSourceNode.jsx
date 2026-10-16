@@ -89,7 +89,7 @@ export default function FlowSourceNode({ id, data, selected }) {
         className="handle-outlet"
         style={{
           top: '50%', left: '65px',
-          marginTop: '-4px', marginLeft: '-4px',
+          marginTop: '-5px', marginLeft: '-5px',
           right: 'auto', bottom: 'auto', transform: 'none',
           background: 'var(--color-outlet)', width: '8px', height: '8px'
         }}

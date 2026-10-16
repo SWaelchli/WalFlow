@@ -69,7 +69,7 @@ export default function PressureSourceNode({ id, data, selected }) {
         className="handle-inlet"
         style={{
           top: '50%', left: '5px',
-          marginTop: '-4px', marginLeft: '-4px',
+          marginTop: '-5px', marginLeft: '-5px',
           right: 'auto', bottom: 'auto', transform: 'none',
           background: 'var(--color-inlet)', width: '8px', height: '8px'
         }}
@@ -84,7 +84,7 @@ export default function PressureSourceNode({ id, data, selected }) {
         className="handle-outlet"
         style={{
           top: '50%', left: '65px',
-          marginTop: '-4px', marginLeft: '-4px',
+          marginTop: '-5px', marginLeft: '-5px',
           right: 'auto', bottom: 'auto', transform: 'none',
           background: 'var(--color-outlet)', width: '8px', height: '8px'
         }}

@@ -63,7 +63,7 @@ export default function CheckValveOrificeNode({ id, data, selected }) {
         className="handle-inlet"
         style={{ 
           top: '35px', left: '10px', 
-          marginTop: '-4px', marginLeft: '-4px',
+          marginTop: '-5px', marginLeft: '-5px',
           right: 'auto', bottom: 'auto', transform: 'none',
           background: 'var(--color-inlet)', width: '8px', height: '8px' 
         }} 
@@ -77,7 +77,7 @@ export default function CheckValveOrificeNode({ id, data, selected }) {
         className="handle-outlet"
         style={{ 
           top: '35px', left: '50px', 
-          marginTop: '-4px', marginLeft: '-4px',
+          marginTop: '-5px', marginLeft: '-5px',
           right: 'auto', bottom: 'auto', transform: 'none',
           background: 'var(--color-outlet)', width: '8px', height: '8px' 
         }} 

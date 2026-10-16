@@ -26,8 +26,8 @@ const categorizedEquipment = [
   {
     name: 'Power & Drive',
     items: [
-      { type: 'centrifugal_pump', label: 'Centrifugal Pump', description: '' },
-      { type: 'volumetric_pump', label: 'Volumetric Pump', description: 'Positive Displacement' },
+      { type: 'centrifugal_pump', label: 'Centrifugal Pump', description: 'Dynamic Pump' },
+      { type: 'volumetric_pump', label: 'Volumetric Pump', description: 'Positive Displacement Pump' },
     ]
   },
   {
@@ -35,20 +35,27 @@ const categorizedEquipment = [
     items: [
       { type: 'linear_control_valve', label: 'Control Valve', description: '' },
       { type: 'check_valve', label: 'Check Valve', description: '' },
-      { type: 'check_valve_orifice', label: 'Check Valve w/ Orifice', description: 'With Bypass' },
-      { type: 'pressure_safety_valve', label: 'Safety Relief Valve', description: 'PSV / PRV Overpressure' },
-      { type: 'rupture_disc', label: 'Rupture Disc', description: 'Burst Diaphragm' },
-      { type: 'remote_control_valve', label: 'Remote Valve', description: 'Pilot Signal Control' },
+      { type: 'check_valve_orifice', label: 'Check Valve w/ Orifice', description: '' },
+      { type: 'pressure_safety_valve', label: 'Safety Relief Valve', description: '' },
+      { type: 'rupture_disc', label: 'Rupture Disc', description: '' },
+      { type: 'remote_control_valve', label: 'Remote Control Valve', description: '' },
       { type: 'linear_regulator', label: 'Pressure Regulator', description: '' },
-      { type: 'three_way_tcv', label: '3-Way Temp Valve', description: 'Thermal Mixing' },
+      { type: 'three_way_tcv', label: '3-Way Temperature Valve', description: '' },
     ]
   },
   {
     name: 'Piping & Fittings',
     items: [
-      { type: 'reducer', label: 'Reducer / Expander', description: 'ASME B16.9 Area Transition' },
+      { type: 'reducer', label: 'Reducer / Expander', description: '' },
       { type: 'orifice', label: 'Orifice', description: 'Flow Restriction Element' },
-      { type: 'calibrated_restriction', label: 'Calibrated Restriction', description: 'Flow/dP-calibrated clearance' },
+      { type: 'calibrated_restriction', label: 'Calibrated Restriction', description: 'Flow/dP-calibrated' },
+    ]
+  },
+  {
+    name: 'Instrumentation',
+    items: [
+      { type: 'measure_point', label: 'Measurement Tap', description: '' },
+      { type: 'instrument', label: 'Instrument', description: '' },
     ]
   },
   {

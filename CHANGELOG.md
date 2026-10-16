@@ -30,9 +30,11 @@ All notable changes to the WälFlow project will be documented in this file.
 - **AI Agent Skill (`.agents/skills/pipe-classes`)**: Added dedicated skill documentation for AI pair programmers and LLM agents.
 - **Catalog-Driven Reducer Inspector**: Reducer sizes now come from the fitting standards catalog (incl. DIN EN 10253-2 and custom standards), follow the connected line's pipe class standard and wall thickness, and report missing data inline instead of guessing.
 - **Fitting Standard Validation & Restore**: Fitting standard create/update/import is validated (atomic import), deletion is blocked while pipe classes reference a standard, and admins can restore edited built-in standards to factory data.
+- **Measurement taps and instruments**: an in-line Tap (zero ΔP, with a sensing pin) and rotatable ISA instrument bubbles (P, ΔP, Q, T, velocity, viscosity) with auto-tags, a pill shape for long tags, and LL/L/H/HH alarm indication. "Insert tap" on a pipe and "Add instrument" on a pin, a Measurements tab with per-case readings and editable limits, and warnings for unwired instruments. The API 614, Large Reference Network, Multi-PSV, Chilled Water and Thermal Management examples now carry instruments with alarm limits and upset cases that trip them. Signal lines stay attached to the pin of a rotated instrument.
 
 ### Changed
 
+- **Canvas labels**: the tag and readouts below every component are centred on its symbol, however long they are.
 - **UI/UX consistency pass**: one SVG icon set (Phosphor) replaces all emoji; Inter is bundled and a 7-step type scale (`--fs-*`) and warning colour tokens replace raw sizes and hex values; orange is reserved for the main action per area; tabs and segmented controls use dark teal; sentence-case labels and one set of component names (Pipe, Control valve, Drawing, "DN 20").
 - **Header**: File menu (New, Open, Save `Ctrl+S`, Save as, Import, Export), document name with save state, and the last run time in the status pill; operating cases are created only in the Operating cases tab.
 - **Smaller fixes**: easier pipe selection (wider hit area), Admin Hub with fixed height and neutral stats, readable catalogue names and units in column headers on Piping Classes, "In force" badges on solver settings, the unused damping factor hidden, wider Help, tooltips and labels on icon-only buttons.

@@ -27,6 +27,7 @@ const DEFAULTS_BY_TYPE = {
   psv: { set_pressure_barg: 20.0, cv: 10.0, action_mode: 'pop_action', blowdown_pct: 7.0, forced_state: 'auto' },
   rupture_disc: { burst_pressure_barg: 25.0, bore_type: 'full_bore', cv: 10.0, forced_state: 'auto' },
   check_valve_orifice: { cv: 10.0, cracking_pressure_bar: 0.05, pipe_diameter: 0.05248, orifice_diameter: 0.01, standardDn: 50, standardSch: '40' },
+  instrument: { variable: 'P', pressure_basis: 'gauge', alarm_ll: null, alarm_l: null, alarm_h: null, alarm_hh: null },
   text_bubble: { label: 'Note', title: 'NOTE', text: 'Double-click to edit note...', fontSize: 'md' },
 };
 

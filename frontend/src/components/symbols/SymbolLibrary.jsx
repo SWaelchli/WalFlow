@@ -15,6 +15,8 @@ export const EquipmentSymbol = ({ type, size = 40, style = {} }) => {
     splitter: { w: 40, h: 40 },
 
     mixer: { w: 40, h: 40 },
+    measure_point: { w: 40, h: 40 },
+    instrument: { w: 50, h: 50 },
     filter: { w: 60, h: 40 },
   };
 
@@ -233,6 +235,23 @@ export const EquipmentSymbol = ({ type, size = 40, style = {} }) => {
             <path d="M 5 10 L 15 15" stroke="#334155" strokeWidth="1.5" />
             <path d="M 5 30 L 15 25" stroke="#334155" strokeWidth="1.5" />
             <path d="M 25 20 L 35 20" stroke="#334155" strokeWidth="1.5" />
+          </svg>
+        );
+      case 'measure_point':
+        return (
+          <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+            <line x1="20" y1="6" x2="20" y2="20" stroke="#587071" strokeWidth="2.5" strokeLinecap="round" />
+            <circle cx="20" cy="6" r="3" fill="var(--color-warning)" stroke="#334155" strokeWidth="1.5" />
+            <line x1="2" y1="26" x2="38" y2="26" stroke="#334155" strokeWidth="2.5" />
+            <circle cx="20" cy="26" r="4" fill="white" stroke="#334155" strokeWidth="2" />
+          </svg>
+        );
+      case 'instrument':
+        return (
+          <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+            <circle cx="25" cy="25" r="21" fill="white" stroke="#334155" strokeWidth="2.5" />
+            <text x="25" y="23" textAnchor="middle" fontSize="11" fontWeight="800" fill="#395253" fontFamily="Inter, sans-serif">PIT</text>
+            <text x="25" y="35" textAnchor="middle" fontSize="10" fontWeight="600" fill="#587071" fontFamily="Inter, sans-serif">1</text>
           </svg>
         );
       case 'text_bubble':

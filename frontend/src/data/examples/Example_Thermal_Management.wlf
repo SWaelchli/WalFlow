@@ -8,18 +8,18 @@
       "type": "text_bubble",
       "position": {
         "x": 100,
-        "y": -120
+        "y": -340
       },
       "width": 400,
-      "height": 210,
+      "height": 410,
       "style": {
         "width": 400,
-        "height": 210
+        "height": 410
       },
       "data": {
         "label": "Note",
         "title": "THERMAL MANAGEMENT & 3-WAY TCV",
-        "text": "Demonstrates temperature control using a 3-way Thermostatic Control Valve (TCV) in a hydraulic oil circuit. Shows dynamic temperature-dependent fluid viscosity calculations and heat dissipation through a heat exchanger.\n\nAfter running, compare the 3-way valve outlet temperature with its setpoint and the oil temperature before and after the heat exchanger. Lines run at up to about 4.8 m/s, above the usual 2 to 3 m/s guideline for liquid lines: the pipe sizes are chosen for demonstration.",
+        "text": "Demonstrates temperature control using a 3-way Thermostatic Control Valve (TCV) in a hydraulic oil circuit. Shows dynamic temperature-dependent fluid viscosity calculations and heat dissipation through a heat exchanger.\n\nAfter running, compare the 3-way valve outlet temperature with its setpoint and the oil temperature before and after the heat exchanger. Lines run at up to about 4.8 m/s, above the usual 2 to 3 m/s guideline for liquid lines: the pipe sizes are chosen for demonstration.\n\nInstruments: TIT 101 and FIT 102 on the oil supply to the process, FIT 103 cooler flow and PIT 104 pump discharge pressure. Solve all cases: hot oil sends more flow through the cooler, a stuck TCV or a cold start trips the temperature alarms.",
         "fontSize": "md"
       }
     },
@@ -48,7 +48,10 @@
         "label": "Circulation Pump",
         "flow_rated_lmin": 200.0,
         "head_rated_m": 71.9,
-        "rise_to_shutoff_pct": 20.0
+        "rise_to_shutoff_pct": 20.0,
+        "sensing": {
+          "outlet-0": true
+        }
       }
     },
     {
@@ -75,7 +78,10 @@
         "rated_flow_lmin": 200.0,
         "design_inlet_temp_c": 55.0,
         "medium_temp_c": 20.0,
-        "rated_dp_bar": 0.5
+        "rated_dp_bar": 0.5,
+        "sensing": {
+          "outlet-0": true
+        }
       }
     },
     {
@@ -102,7 +108,10 @@
       "data": {
         "label": "Process Throttling Valve",
         "max_cv": 15.0,
-        "opening": 70.0
+        "opening": 70.0,
+        "sensing": {
+          "inlet-0": true
+        }
       }
     },
     {
@@ -117,6 +126,78 @@
         "level": 1.0,
         "elevation": 0.0,
         "temperature": 318.15
+      }
+    },
+    {
+      "id": "tit-101",
+      "type": "instrument",
+      "position": {
+        "x": 840,
+        "y": 140
+      },
+      "data": {
+        "label": "TIT 101",
+        "rotation": 180,
+        "variable": "T",
+        "pressure_basis": "gauge",
+        "alarm_ll": 25,
+        "alarm_l": 40,
+        "alarm_h": 50,
+        "alarm_hh": 54
+      }
+    },
+    {
+      "id": "fit-102",
+      "type": "instrument",
+      "position": {
+        "x": 975,
+        "y": 140
+      },
+      "data": {
+        "label": "FIT 102",
+        "rotation": 0,
+        "variable": "Q",
+        "pressure_basis": "gauge",
+        "alarm_ll": null,
+        "alarm_l": 200,
+        "alarm_h": null,
+        "alarm_hh": null
+      }
+    },
+    {
+      "id": "fit-103",
+      "type": "instrument",
+      "position": {
+        "x": 665,
+        "y": 60
+      },
+      "data": {
+        "label": "FIT 103",
+        "rotation": 0,
+        "variable": "Q",
+        "pressure_basis": "gauge",
+        "alarm_ll": null,
+        "alarm_l": null,
+        "alarm_h": null,
+        "alarm_hh": null
+      }
+    },
+    {
+      "id": "pit-104",
+      "type": "instrument",
+      "position": {
+        "x": 360,
+        "y": 150
+      },
+      "data": {
+        "label": "PIT 104",
+        "rotation": 0,
+        "variable": "P",
+        "pressure_basis": "gauge",
+        "alarm_ll": null,
+        "alarm_l": null,
+        "alarm_h": 6,
+        "alarm_hh": null
       }
     }
   ],
@@ -260,6 +341,82 @@
         "roughness_mm": 0.045,
         "roughness": 4.5e-05
       }
+    },
+    {
+      "id": "sig_tit-101_in",
+      "source": "process-heat-load",
+      "sourceHandle": "signal-inlet-0",
+      "target": "tit-101",
+      "targetHandle": "signal-in",
+      "label": "TIT 101 signal",
+      "animated": true,
+      "type": "step",
+      "style": {
+        "stroke": "#fde047",
+        "strokeWidth": 3,
+        "strokeDasharray": "5,5"
+      },
+      "data": {
+        "label": "TIT 101 signal",
+        "type": "SIGNAL"
+      }
+    },
+    {
+      "id": "sig_fit-102_in",
+      "source": "process-heat-load",
+      "sourceHandle": "signal-inlet-0",
+      "target": "fit-102",
+      "targetHandle": "signal-in",
+      "label": "FIT 102 signal",
+      "animated": true,
+      "type": "step",
+      "style": {
+        "stroke": "#fde047",
+        "strokeWidth": 3,
+        "strokeDasharray": "5,5"
+      },
+      "data": {
+        "label": "FIT 102 signal",
+        "type": "SIGNAL"
+      }
+    },
+    {
+      "id": "sig_fit-103_in",
+      "source": "oil-cooler",
+      "sourceHandle": "signal-outlet-0",
+      "target": "fit-103",
+      "targetHandle": "signal-in",
+      "label": "FIT 103 signal",
+      "animated": true,
+      "type": "step",
+      "style": {
+        "stroke": "#fde047",
+        "strokeWidth": 3,
+        "strokeDasharray": "5,5"
+      },
+      "data": {
+        "label": "FIT 103 signal",
+        "type": "SIGNAL"
+      }
+    },
+    {
+      "id": "sig_pit-104_in",
+      "source": "oil-pump",
+      "sourceHandle": "signal-outlet-0",
+      "target": "pit-104",
+      "targetHandle": "signal-in",
+      "label": "PIT 104 signal",
+      "animated": true,
+      "type": "step",
+      "style": {
+        "stroke": "#fde047",
+        "strokeWidth": 3,
+        "strokeDasharray": "5,5"
+      },
+      "data": {
+        "label": "PIT 104 signal",
+        "type": "SIGNAL"
+      }
     }
   ],
   "globalSettings": {
@@ -272,5 +429,71 @@
     "control_iterations": 100,
     "solver_method": "hybr",
     "max_iterations": 1000
-  }
+  },
+  "cases": [
+    {
+      "id": "case_base",
+      "name": "Case 1",
+      "is_base": true,
+      "overrides": {
+        "nodes": {},
+        "global_settings": {}
+      }
+    },
+    {
+      "id": "case_hot_oil",
+      "name": "Hot oil (70 \u00b0C)",
+      "is_base": false,
+      "overrides": {
+        "nodes": {
+          "warm-reservoir": {
+            "temperature": 343.15
+          }
+        },
+        "global_settings": {}
+      }
+    },
+    {
+      "id": "case_cold_start",
+      "name": "Cold start (15 \u00b0C)",
+      "is_base": false,
+      "overrides": {
+        "nodes": {
+          "warm-reservoir": {
+            "temperature": 288.15
+          }
+        },
+        "global_settings": {
+          "ambient_temperature": 288.15
+        }
+      }
+    },
+    {
+      "id": "case_tcv_bypass",
+      "name": "TCV stuck in bypass",
+      "is_base": false,
+      "overrides": {
+        "nodes": {
+          "tcv-3way": {
+            "set_temperature_c": 100
+          }
+        },
+        "global_settings": {}
+      }
+    },
+    {
+      "id": "case_throttled",
+      "name": "Process valve throttled (30 %)",
+      "is_base": false,
+      "overrides": {
+        "nodes": {
+          "process-heat-load": {
+            "opening": 30
+          }
+        },
+        "global_settings": {}
+      }
+    }
+  ],
+  "active_case_id": "case_base"
 }

@@ -42,7 +42,7 @@ export default function TankNode({ id, data, selected }) {
         className="handle-inlet"
         style={{ 
           top: '50%', left: '10px', 
-          marginTop: '-4px', marginLeft: '-4px',
+          marginTop: '-5px', marginLeft: '-5px',
           right: 'auto', bottom: 'auto', transform: 'none',
           background: 'var(--color-inlet)', width: '8px', height: '8px' 
         }} 
@@ -56,7 +56,7 @@ export default function TankNode({ id, data, selected }) {
         className="handle-outlet"
         style={{ 
           top: '80%', left: '50px', 
-          marginTop: '-4px', marginLeft: '-4px',
+          marginTop: '-5px', marginLeft: '-5px',
           right: 'auto', bottom: 'auto', transform: 'none',
           background: 'var(--color-outlet)', width: '8px', height: '8px' 
         }} 

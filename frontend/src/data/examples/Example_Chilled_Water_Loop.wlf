@@ -8,18 +8,18 @@
       "type": "text_bubble",
       "position": {
         "x": 150,
-        "y": -120
+        "y": -340
       },
       "width": 400,
-      "height": 210,
+      "height": 400,
       "style": {
         "width": 400,
-        "height": 210
+        "height": 400
       },
       "data": {
         "label": "Note",
         "title": "CHILLED WATER CIRCUIT",
-        "text": "Demonstrates a closed-loop industrial chilled water cooling circuit with parallel primary pumps, check valve protection, heat exchanger cooling load, dynamic 3-way TCV mixing, and an expansion reservoir.\n\nAfter running, compare the flows of the two pumps, the heat exchanger outlet temperature and the 3-way valve position. Some coil lines run at about 5.6 m/s, above the usual 2 to 3 m/s guideline for liquid lines: the pipe sizes are chosen for demonstration.",
+        "text": "Demonstrates a closed-loop industrial chilled water cooling circuit with parallel primary pumps, check valve protection, heat exchanger cooling load, dynamic 3-way TCV mixing, and an expansion reservoir.\n\nAfter running, compare the flows of the two pumps, the heat exchanger outlet temperature and the 3-way valve position. Some coil lines run at about 5.6 m/s, above the usual 2 to 3 m/s guideline for liquid lines: the pipe sizes are chosen for demonstration.\n\nInstruments: TIT 101 chilled water supply temperature, PDIT 102 evaporator pressure drop (low = low evaporator flow, freeze risk), FIT 103 cooling coil flow and FIT 104 pump A flow. Solve all cases: a pump trip runs pump A out and starves the evaporator.",
         "fontSize": "md"
       }
     },
@@ -75,7 +75,10 @@
       "data": {
         "label": "Check Valve A",
         "cv": 15.0,
-        "cracking_pressure_bar": 0.1
+        "cracking_pressure_bar": 0.1,
+        "sensing": {
+          "outlet-0": true
+        }
       }
     },
     {
@@ -115,7 +118,11 @@
         "rated_flow_lmin": 500.0,
         "design_inlet_temp_c": 12.0,
         "medium_temp_c": 2.0,
-        "rated_dp_bar": 0.5
+        "rated_dp_bar": 0.5,
+        "sensing": {
+          "outlet-0": true,
+          "inlet-0": true
+        }
       }
     },
     {
@@ -142,7 +149,10 @@
         "rated_flow_lmin": 300.0,
         "design_inlet_temp_c": 6.0,
         "medium_temp_c": 35.0,
-        "rated_dp_bar": 0.5
+        "rated_dp_bar": 0.5,
+        "sensing": {
+          "inlet-0": true
+        }
       }
     },
     {
@@ -193,6 +203,78 @@
       "data": {
         "label": "Common Suction Splitter",
         "rotation": 0
+      }
+    },
+    {
+      "id": "tit-101",
+      "type": "instrument",
+      "position": {
+        "x": 770,
+        "y": 150
+      },
+      "data": {
+        "label": "TIT 101",
+        "rotation": 0,
+        "variable": "T",
+        "pressure_basis": "gauge",
+        "alarm_ll": 1,
+        "alarm_l": 2,
+        "alarm_h": 4.5,
+        "alarm_hh": 7
+      }
+    },
+    {
+      "id": "pdit-102",
+      "type": "instrument",
+      "position": {
+        "x": 663,
+        "y": 140
+      },
+      "data": {
+        "label": "PDIT 102",
+        "rotation": 0,
+        "variable": "dP",
+        "pressure_basis": "gauge",
+        "alarm_ll": 0.25,
+        "alarm_l": 0.5,
+        "alarm_h": null,
+        "alarm_hh": null
+      }
+    },
+    {
+      "id": "fit-103",
+      "type": "instrument",
+      "position": {
+        "x": 985,
+        "y": 85
+      },
+      "data": {
+        "label": "FIT 103",
+        "rotation": 0,
+        "variable": "Q",
+        "pressure_basis": "gauge",
+        "alarm_ll": null,
+        "alarm_l": 350,
+        "alarm_h": 500,
+        "alarm_hh": null
+      }
+    },
+    {
+      "id": "fit-104",
+      "type": "instrument",
+      "position": {
+        "x": 480,
+        "y": 100
+      },
+      "data": {
+        "label": "FIT 104",
+        "rotation": 0,
+        "variable": "Q",
+        "pressure_basis": "gauge",
+        "alarm_ll": null,
+        "alarm_l": null,
+        "alarm_h": 380,
+        "alarm_hh": null
       }
     }
   ],
@@ -476,6 +558,101 @@
         "roughness_mm": 0.045,
         "roughness": 4.5e-05
       }
+    },
+    {
+      "id": "sig_tit-101_in",
+      "source": "chiller-evaporator",
+      "sourceHandle": "signal-outlet-0",
+      "target": "tit-101",
+      "targetHandle": "signal-in",
+      "label": "TIT 101 signal",
+      "animated": true,
+      "type": "step",
+      "style": {
+        "stroke": "#fde047",
+        "strokeWidth": 3,
+        "strokeDasharray": "5,5"
+      },
+      "data": {
+        "label": "TIT 101 signal",
+        "type": "SIGNAL"
+      }
+    },
+    {
+      "id": "sig_pdit-102_in",
+      "source": "chiller-evaporator",
+      "sourceHandle": "signal-inlet-0",
+      "target": "pdit-102",
+      "targetHandle": "signal-in",
+      "label": "PDIT 102 (+)",
+      "animated": true,
+      "type": "step",
+      "style": {
+        "stroke": "#fde047",
+        "strokeWidth": 3,
+        "strokeDasharray": "5,5"
+      },
+      "data": {
+        "label": "PDIT 102 (+)",
+        "type": "SIGNAL"
+      }
+    },
+    {
+      "id": "sig_pdit-102_ref",
+      "source": "chiller-evaporator",
+      "sourceHandle": "signal-outlet-0",
+      "target": "pdit-102",
+      "targetHandle": "signal-in-ref",
+      "label": "PDIT 102 (-)",
+      "animated": true,
+      "type": "step",
+      "style": {
+        "stroke": "#fde047",
+        "strokeWidth": 3,
+        "strokeDasharray": "5,5"
+      },
+      "data": {
+        "label": "PDIT 102 (-)",
+        "type": "SIGNAL"
+      }
+    },
+    {
+      "id": "sig_fit-103_in",
+      "source": "process-cooling-coil",
+      "sourceHandle": "signal-inlet-0",
+      "target": "fit-103",
+      "targetHandle": "signal-in",
+      "label": "FIT 103 signal",
+      "animated": true,
+      "type": "step",
+      "style": {
+        "stroke": "#fde047",
+        "strokeWidth": 3,
+        "strokeDasharray": "5,5"
+      },
+      "data": {
+        "label": "FIT 103 signal",
+        "type": "SIGNAL"
+      }
+    },
+    {
+      "id": "sig_fit-104_in",
+      "source": "cv-check-1",
+      "sourceHandle": "signal-outlet-0",
+      "target": "fit-104",
+      "targetHandle": "signal-in",
+      "label": "FIT 104 signal",
+      "animated": true,
+      "type": "step",
+      "style": {
+        "stroke": "#fde047",
+        "strokeWidth": 3,
+        "strokeDasharray": "5,5"
+      },
+      "data": {
+        "label": "FIT 104 signal",
+        "type": "SIGNAL"
+      }
     }
   ],
   "globalSettings": {
@@ -488,5 +665,56 @@
     "control_iterations": 100,
     "solver_method": "hybr",
     "max_iterations": 1000
-  }
+  },
+  "cases": [
+    {
+      "id": "case_base",
+      "name": "Case 1",
+      "is_base": true,
+      "overrides": {
+        "nodes": {},
+        "global_settings": {}
+      }
+    },
+    {
+      "id": "case_pump_b_trip",
+      "name": "Pump B tripped",
+      "is_base": false,
+      "overrides": {
+        "nodes": {
+          "primary-pump-2": {
+            "active": false
+          }
+        },
+        "global_settings": {}
+      }
+    },
+    {
+      "id": "case_ahu_throttled",
+      "name": "AHU valve throttled (20 %)",
+      "is_base": false,
+      "overrides": {
+        "nodes": {
+          "secondary-control-valve": {
+            "opening": 20
+          }
+        },
+        "global_settings": {}
+      }
+    },
+    {
+      "id": "case_warm_reservoir",
+      "name": "Warm reservoir (12 \u00b0C)",
+      "is_base": false,
+      "overrides": {
+        "nodes": {
+          "expansion-tank": {
+            "temperature": 285.15
+          }
+        },
+        "global_settings": {}
+      }
+    }
+  ],
+  "active_case_id": "case_base"
 }

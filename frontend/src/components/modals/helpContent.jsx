@@ -24,7 +24,7 @@ export const GUIDE_SECTIONS = [
   {
     title: '3. Run a simulation',
     items: [
-      <>Click {b('Run Simulation')} in the top bar. The model is checked first: errors (empty drawing, unknown component, several pipes on one port) block the run; warnings (open ports, self-loops, isolated components, a circuit without tank or source) still allow it.</>,
+      <>Click {b('Run Simulation')} in the top bar. The model is checked first: errors (empty drawing, unknown component, several pipes on one port) block the run; warnings (open ports, self-loops, isolated components, a circuit without tank or source, unwired instruments) still allow it.</>,
       <>The {b('status chip')} next to the case switcher shows the state: not connected, running, converged, converged with warnings, failed, or out of date after you changed the drawing. Click it to see the checks, the notes from the last run and a Show button that selects the affected item.</>,
       <>Banners over the canvas report vacuum or sub-vapour-pressure ports, fluid temperatures outside the property range, and values the solver could not return.</>,
       <>Results appear on the components, on the pipes and in the data list. A dash ("-") means there is no result yet.</>,
@@ -47,7 +47,16 @@ export const GUIDE_SECTIONS = [
     ],
   },
   {
-    title: '6. Save, load and examples',
+    title: '6. Measurement taps and instruments',
+    items: [
+      <>A {b('Tap')} marks a point in a line without pressure drop; its yellow pin is a measuring location, like the pin on any component port. Right-click a pipe and choose {b('Insert tap')} to split it in two.</>,
+      <>An {b('Instrument')} bubble shows one variable (pressure, ΔP, flow, temperature, velocity or viscosity) read at a pin. Drag a signal line from a pin to the bubble, or right-click a tap or pin and choose {b('Add instrument')}. A ΔP instrument needs both its (+) and (−) inputs.</>,
+      <>Alarm limits LL, L, H and HH are set per instrument and apply to every case; the value badge turns orange (H, L) or red (HH, LL). Alarms are indication only: they never act on the model.</>,
+      <>The {b('Measurements')} tab in the data list shows every instrument with editable limits and its reading per case, so you can see which case trips an alarm. Use {b('Solve all cases')} to fill all columns.</>,
+    ],
+  },
+  {
+    title: '7. Save, load and examples',
     items: [
       <>{b('Export / Import')} saves and loads .wlf files (older .json files also open); you can drop a file onto the canvas. Results are not stored in the file; run the simulation again after loading.</>,
       <>Signed-in users can save drawings to cloud projects. A draft is also kept in this browser and offered again after a crash or reload.</>,

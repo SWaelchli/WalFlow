@@ -82,6 +82,32 @@
         },
         "global_settings": {}
       }
+    },
+    {
+      "id": "case_sov_low",
+      "name": "Spill-over valve set low (5 bar(a))",
+      "is_base": false,
+      "overrides": {
+        "nodes": {
+          "spill-over-valve": {
+            "set_pressure": 500000
+          }
+        },
+        "global_settings": {}
+      }
+    },
+    {
+      "id": "case_sov_misset",
+      "name": "Spill-over valve mis-set (4 bar(a))",
+      "is_base": false,
+      "overrides": {
+        "nodes": {
+          "spill-over-valve": {
+            "set_pressure": 400000
+          }
+        },
+        "global_settings": {}
+      }
     }
   ],
   "nodes": [
@@ -90,18 +116,18 @@
       "type": "text_bubble",
       "position": {
         "x": 220,
-        "y": -350
+        "y": -680
       },
       "width": 420,
-      "height": 230,
+      "height": 430,
       "style": {
         "width": 420,
-        "height": 230
+        "height": 430
       },
       "data": {
         "label": "Note",
         "title": "API 614 LUBE OIL SYSTEM (LOS)",
-        "text": "Demonstrates a heavy-duty API 614 lubrication oil system featuring redundant supply pumps (Main/Auxiliary), oil cooler heat exchanger, duplex filtration with dp monitoring, and pressure control (PRV/BPR) to ensure continuous oil delivery to high-speed turbomachinery bearings.\n\nAfter running, open the Operating Cases Matrix and compare the cold-start, fouled-filter, clogged-filter and failed-open-TCV cases: watch the filter pressure drop and the pump discharge pressure. The pump discharge line runs at about 2.9 m/s.",
+        "text": "Demonstrates a heavy-duty API 614 lubrication oil system featuring redundant supply pumps (Main/Auxiliary), oil cooler heat exchanger, duplex filtration with dp monitoring, and pressure control (PRV/BPR) to ensure continuous oil delivery to high-speed turbomachinery bearings.\n\nAfter running, open the Operating Cases Matrix and compare the cold-start, fouled-filter, clogged-filter and failed-open-TCV cases: watch the filter pressure drop and the pump discharge pressure. The pump discharge line runs at about 2.9 m/s.\n\nInstruments: TIT 101 oil supply temperature, PDIT 102 filter pressure drop, PIT 103 header pressure (low alarm / low-low trip) and FIT 104 bearing oil flow. Click Solve all cases in the Measurements tab to see which case trips which alarm.",
         "fontSize": "md",
         "rotation": 0
       }
@@ -236,7 +262,11 @@
         "dp_terminal": 1,
         "flow_ref": 550,
         "clogging": 0,
-        "rotation": 0
+        "rotation": 0,
+        "sensing": {
+          "inlet-0": true,
+          "outlet-0": true
+        }
       },
       "width": 60,
       "height": 82
@@ -424,7 +454,10 @@
       "data": {
         "label": "Compressor 1 DE",
         "orifice_diameter": 0.0073,
-        "rotation": 0
+        "rotation": 0,
+        "sensing": {
+          "inlet-0": true
+        }
       },
       "width": 72,
       "height": 91
@@ -604,6 +637,102 @@
         "y": -60
       },
       "dragging": false
+    },
+    {
+      "id": "tap-oil-supply",
+      "type": "measure_point",
+      "position": {
+        "x": 267,
+        "y": -35
+      },
+      "data": {
+        "label": "Supply Tap",
+        "rotation": 0
+      }
+    },
+    {
+      "id": "tap-header",
+      "type": "measure_point",
+      "position": {
+        "x": 630,
+        "y": -35
+      },
+      "data": {
+        "label": "Header Tap",
+        "rotation": 0
+      }
+    },
+    {
+      "id": "tit-101",
+      "type": "instrument",
+      "position": {
+        "x": 250,
+        "y": -150
+      },
+      "data": {
+        "label": "TIT 101",
+        "rotation": 0,
+        "variable": "T",
+        "pressure_basis": "gauge",
+        "alarm_ll": 25,
+        "alarm_l": 40,
+        "alarm_h": 50,
+        "alarm_hh": 55
+      }
+    },
+    {
+      "id": "pdit-102",
+      "type": "instrument",
+      "position": {
+        "x": 355,
+        "y": -150
+      },
+      "data": {
+        "label": "PDIT 102",
+        "rotation": 0,
+        "variable": "dP",
+        "pressure_basis": "gauge",
+        "alarm_ll": null,
+        "alarm_l": null,
+        "alarm_h": 0.4,
+        "alarm_hh": 0.7
+      }
+    },
+    {
+      "id": "pit-103",
+      "type": "instrument",
+      "position": {
+        "x": 663,
+        "y": -150
+      },
+      "data": {
+        "label": "PIT 103",
+        "rotation": 0,
+        "variable": "P",
+        "pressure_basis": "gauge",
+        "alarm_ll": 1.2,
+        "alarm_l": 1.5,
+        "alarm_h": null,
+        "alarm_hh": null
+      }
+    },
+    {
+      "id": "fit-104",
+      "type": "instrument",
+      "position": {
+        "x": 1010,
+        "y": 75
+      },
+      "data": {
+        "label": "FIT 104",
+        "rotation": 180,
+        "variable": "Q",
+        "pressure_basis": "gauge",
+        "alarm_ll": 24,
+        "alarm_l": 27,
+        "alarm_h": null,
+        "alarm_hh": null
+      }
     }
   ],
   "edges": [
@@ -772,12 +901,35 @@
       "id": "sensing-line",
       "source": "flow-sensing-orifice",
       "sourceHandle": "outlet-0",
+      "target": "tap-header",
+      "targetHandle": "inlet-0",
+      "label": "sensing-line",
+      "animated": true,
+      "data": {
+        "length": 1.0,
+        "diameter": 0.07792,
+        "type": "PIPE",
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 80,
+        "standardSch": "STD",
+        "outer_diameter_mm": 88.9,
+        "wall_thickness_mm": 5.49,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
+      },
+      "style": {}
+    },
+    {
+      "id": "sensing-line_b",
+      "source": "tap-header",
+      "sourceHandle": "outlet-0",
       "target": "distribution-header-splitter",
       "targetHandle": "inlet-0",
       "label": "sensing-line",
       "animated": true,
       "data": {
-        "length": 2,
+        "length": 1.0,
         "diameter": 0.07792,
         "type": "PIPE",
         "pipe_class_id": "CS01",
@@ -1316,7 +1468,7 @@
     {
       "source": "node_6f63ec38",
       "sourceHandle": "outlet-0",
-      "target": "main-filter",
+      "target": "tap-oil-supply",
       "targetHandle": "inlet-0",
       "id": "Pipe 104",
       "label": "Pipe 104",
@@ -1326,7 +1478,7 @@
       "data": {
         "label": "Pipe 104",
         "type": "PIPE",
-        "length": 1,
+        "length": 0.5,
         "diameter": 0.07792,
         "standardDn": 80,
         "standardSch": "STD",
@@ -1338,6 +1490,127 @@
         "roughness": 4.5e-05
       },
       "selected": false
+    },
+    {
+      "source": "tap-oil-supply",
+      "sourceHandle": "outlet-0",
+      "target": "main-filter",
+      "targetHandle": "inlet-0",
+      "id": "Pipe 104_b",
+      "label": "Pipe 104",
+      "animated": true,
+      "type": "default",
+      "style": {},
+      "data": {
+        "label": "Pipe 104",
+        "type": "PIPE",
+        "length": 0.5,
+        "diameter": 0.07792,
+        "standardDn": 80,
+        "standardSch": "STD",
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 88.9,
+        "wall_thickness_mm": 5.49,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
+      },
+      "selected": false
+    },
+    {
+      "id": "sig_tit-101_in",
+      "source": "tap-oil-supply",
+      "sourceHandle": "signal-inlet-0",
+      "target": "tit-101",
+      "targetHandle": "signal-in",
+      "label": "TIT 101 signal",
+      "animated": true,
+      "type": "step",
+      "style": {
+        "stroke": "#fde047",
+        "strokeWidth": 3,
+        "strokeDasharray": "5,5"
+      },
+      "data": {
+        "label": "TIT 101 signal",
+        "type": "SIGNAL"
+      }
+    },
+    {
+      "id": "sig_pdit-102_in",
+      "source": "main-filter",
+      "sourceHandle": "signal-inlet-0",
+      "target": "pdit-102",
+      "targetHandle": "signal-in",
+      "label": "PDIT 102 (+)",
+      "animated": true,
+      "type": "step",
+      "style": {
+        "stroke": "#fde047",
+        "strokeWidth": 3,
+        "strokeDasharray": "5,5"
+      },
+      "data": {
+        "label": "PDIT 102 (+)",
+        "type": "SIGNAL"
+      }
+    },
+    {
+      "id": "sig_pdit-102_ref",
+      "source": "main-filter",
+      "sourceHandle": "signal-outlet-0",
+      "target": "pdit-102",
+      "targetHandle": "signal-in-ref",
+      "label": "PDIT 102 (-)",
+      "animated": true,
+      "type": "step",
+      "style": {
+        "stroke": "#fde047",
+        "strokeWidth": 3,
+        "strokeDasharray": "5,5"
+      },
+      "data": {
+        "label": "PDIT 102 (-)",
+        "type": "SIGNAL"
+      }
+    },
+    {
+      "id": "sig_pit-103_in",
+      "source": "tap-header",
+      "sourceHandle": "signal-inlet-0",
+      "target": "pit-103",
+      "targetHandle": "signal-in",
+      "label": "PIT 103 signal",
+      "animated": true,
+      "type": "step",
+      "style": {
+        "stroke": "#fde047",
+        "strokeWidth": 3,
+        "strokeDasharray": "5,5"
+      },
+      "data": {
+        "label": "PIT 103 signal",
+        "type": "SIGNAL"
+      }
+    },
+    {
+      "id": "sig_fit-104_in",
+      "source": "orifice-comp1-de",
+      "sourceHandle": "signal-inlet-0",
+      "target": "fit-104",
+      "targetHandle": "signal-in",
+      "label": "FIT 104 signal",
+      "animated": true,
+      "type": "step",
+      "style": {
+        "stroke": "#fde047",
+        "strokeWidth": 3,
+        "strokeDasharray": "5,5"
+      },
+      "data": {
+        "label": "FIT 104 signal",
+        "type": "SIGNAL"
+      }
     }
   ],
   "globalSettings": {

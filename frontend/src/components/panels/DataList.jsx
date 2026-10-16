@@ -11,6 +11,7 @@ import { updateCaseOverride, effectiveForcedState } from '../../utils/case_resol
 import { useUnits } from '../../context/UnitContext';
 import { resolvePipeSelection, manualSelectionPatch, classSelectionPatch, classSizePatch, schedulePatch } from '../../utils/pipeDefaults';
 import DraftNumberInput from '../common/DraftNumberInput';
+import MeasurementsTable from './MeasurementsTable';
 import usePanelHeight from '../../hooks/usePanelHeight';
 import { toSolverGraph } from '../../utils/diagramFile';
 import { computeCaseInputHashes, isCaseResultStale } from '../../utils/resultHash';
@@ -526,6 +527,11 @@ export default function DataList({
           >
             Relief Analysis Matrix
           </button>
+          <button onClick={() => { setActiveTab('measurements'); setSortConfig({key:null, direction:'asc'}); }}
+            className={`datalist-tab ${activeTab === 'measurements' ? 'active' : ''}`}
+          >
+            Measurements
+          </button>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -539,6 +545,22 @@ export default function DataList({
                   <PlusIcon size={14} style={{ marginRight: '6px' }} /> New case
                 </button>
               )}
+              <button
+                onClick={onToggleCaseManager}
+                className={showCaseManager ? "btn-active btn-compact" : "btn-secondary btn-compact"}
+              >
+                <CaseIcon size={14} style={{ marginRight: '6px' }} /> {showCaseManager ? 'Hide case manager' : 'Case manager'}
+              </button>
+              <button
+                onClick={() => fetchBatchSimulations()}
+                disabled={isBatchLoading}
+                className="btn-primary btn-compact"
+              >
+                <PlayIcon size={14} style={{ marginRight: '6px' }} /> {isBatchLoading ? 'Solving cases…' : 'Solve all cases'}
+              </button>
+            </div>
+          ) : activeTab === 'measurements' ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 0' }}>
               <button
                 onClick={onToggleCaseManager}
                 className={showCaseManager ? "btn-active btn-compact" : "btn-secondary btn-compact"}
@@ -782,6 +804,27 @@ export default function DataList({
                 </tbody>
               </table>
             )}
+          </div>
+        ) : activeTab === 'measurements' ? (
+          <div style={{ display: 'inline-block', minWidth: '100%', boxSizing: 'border-box', verticalAlign: 'top' }}>
+            {batchError && (
+              <div style={{ margin: '8px 12px', padding: '8px 12px', color: 'var(--color-danger-text)', background: '#fef2f2', borderRadius: '8px', border: '1px solid #fee2e2' }}>
+                <strong>Batch Simulation Error:</strong> {batchError}
+              </div>
+            )}
+            <MeasurementsTable
+              nodes={rawNodes || nodes}
+              edges={rawEdges || edges}
+              cases={displayCases}
+              activeCaseId={activeCaseId}
+              onSelectCase={onSelectCase}
+              onSelectNode={onSelectNode}
+              onUpdateNode={onUpdateNode}
+              caseInputHashes={caseInputHashes}
+              telemetryMode={telemetryMode}
+              globalSettings={globalSettings}
+              isImperial={isImperial}
+            />
           </div>
         ) : activeTab === 'relief' ? (
           <div style={{ display: 'inline-block', minWidth: '100%', boxSizing: 'border-box', verticalAlign: 'top' }}>

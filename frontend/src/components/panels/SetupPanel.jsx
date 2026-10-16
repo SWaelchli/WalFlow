@@ -16,6 +16,7 @@ import DraftNumberInput from '../common/DraftNumberInput';
 import PropertyBadge from './PropertyBadge';
 import PipeSelector from './PipeSelector';
 import ReducerSetup from './ReducerSetup';
+import InstrumentSetup from './InstrumentSetup';
 
 
 import { clickableProps } from '../../utils/a11yProps';
@@ -32,6 +33,7 @@ export default function SetupPanel({
   onResetCaseOverride,
   availablePipeClasses = [],
   allowCustomPipes = true,
+  allNodes = [],
   allEdges = [],
   style = {},
 
@@ -310,7 +312,8 @@ export default function SetupPanel({
             </div>
           )}
 
-          {isNode && type !== 'text_bubble' && (
+          {/* a measurement tap always shows its pin and an instrument has none, so neither has sensing toggles */}
+          {isNode && type !== 'text_bubble' && type !== 'measure_point' && type !== 'instrument' && (
             <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '8px' }}>
               <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: 'bold' }}>Sensing nodes (yellow pin)</label>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '4px' }}>
@@ -1390,6 +1393,10 @@ export default function SetupPanel({
           )}
 
           {isNode && (type === 'reducer' || type === 'expander') && <ReducerSetup ctx={{ allEdges, availablePipeClasses, effectiveData, handleDraftChange, id, isImperial, localDrafts, onUpdate, reducerNotice, reducerStandards, scheduleStandards, renderLabel, setReducerNotice, validateAndCommit }} />}
+
+          {isNode && type === 'instrument' && (
+            <InstrumentSetup id={id} data={data} allNodes={allNodes} allEdges={allEdges} isImperial={isImperial} onUpdate={onUpdate} />
+          )}
 
           {isNode && type === 'text_bubble' && (
             <>

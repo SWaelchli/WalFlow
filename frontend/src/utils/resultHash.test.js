@@ -28,6 +28,16 @@ describe('F2-07: input hash of a case', () => {
     expect(computeCaseInputHash(g, 'case_base')).toBe(h);
   });
 
+  it('ignores instrument bubbles, their limits and the signal lines into them', () => {
+    const h = computeCaseInputHash(base(), 'case_base');
+    const g = base();
+    g.nodes.push({ id: 'i', type: 'instrument', position: { x: 0, y: 0 }, data: { variable: 'P', alarm_h: 5 } });
+    g.edges.push({ id: 's', source: 'p', target: 'i', sourceHandle: 'signal-inlet-0', targetHandle: 'signal-in', data: { type: 'SIGNAL' } });
+    expect(computeCaseInputHash(g, 'case_base')).toBe(h);
+    g.nodes[2].data.alarm_h = 6;
+    expect(computeCaseInputHash(g, 'case_base')).toBe(h);
+  });
+
   it('changes with any solver input', () => {
     const h = computeCaseInputHash(base(), 'case_base');
     const edits = [

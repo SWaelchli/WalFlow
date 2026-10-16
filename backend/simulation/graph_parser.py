@@ -9,6 +9,7 @@ from simulation.equipment.pipe import Pipe
 from simulation.equipment.orifice import Orifice
 from simulation.equipment.splitter import Splitter
 from simulation.equipment.mixer import Mixer
+from simulation.equipment.measure_point import MeasurePoint
 from simulation.equipment.heat_exchanger import HeatExchanger
 from simulation.equipment.filter import Filter
 from simulation.equipment.remote_control_valve import RemoteControlValve
@@ -131,10 +132,11 @@ class GraphParser:
         resolved_graph = GraphParser.resolve_graph_for_case(graph, case_id)
         GraphParser._validate_fluids(resolved_graph)
 
-        # 1. Instantiate Equipment Nodes (ignoring non-hydraulic visual annotations)
+        # 1. Instantiate Equipment Nodes (ignoring non-hydraulic visual annotations and instrument bubbles;
+        #    signal edges into an instrument are then dropped below because their target is not a node)
         nodes_dict: Dict[str, HydraulicNode] = {}
         for node_data in resolved_graph.nodes:
-            if node_data.type in ['text_bubble', 'note', 'annotation']:
+            if node_data.type in ['text_bubble', 'note', 'annotation', 'instrument']:
                 continue
             node = GraphParser.create_node(node_data, resolved_graph.global_settings)
             node.id = node_data.id
@@ -380,6 +382,9 @@ class GraphParser:
         elif t == 'mixer':
             # 2 inlets, 1 outlet
             node = Mixer(name=name, num_inlets=2)
+        elif t == 'measure_point':
+            # In-line tap: zero pressure drop, sensed through its pin (signal-inlet-0)
+            node = MeasurePoint(name=name)
         elif t == 'three_way_tcv':
             node = ThreeWayTCV(
                 name=name,

@@ -465,7 +465,7 @@
         "cv": 104.0,
         "cracking_pressure_bar": 0.03,
         "sensing": {
-          "outlet-0": false
+          "outlet-0": true
         }
       }
     },
@@ -907,7 +907,10 @@
         "outlet_pressure_base_bar": 1,
         "temp_base_c": 45,
         "restriction_model": "laminar",
-        "fluid_type": "system"
+        "fluid_type": "system",
+        "sensing": {
+          "inlet-0": true
+        }
       }
     },
     {
@@ -1200,6 +1203,90 @@
         "y": 400
       },
       "dragging": false
+    },
+    {
+      "id": "tap-oil-supply",
+      "type": "measure_point",
+      "position": {
+        "x": 580,
+        "y": -524
+      },
+      "data": {
+        "label": "Oil Supply Tap",
+        "rotation": 0
+      }
+    },
+    {
+      "id": "tit-101",
+      "type": "instrument",
+      "position": {
+        "x": 545,
+        "y": -660
+      },
+      "data": {
+        "label": "TIT 101",
+        "rotation": 180,
+        "variable": "T",
+        "pressure_basis": "gauge",
+        "alarm_ll": 25,
+        "alarm_l": 35,
+        "alarm_h": 50,
+        "alarm_hh": null
+      }
+    },
+    {
+      "id": "vi-102",
+      "type": "instrument",
+      "position": {
+        "x": 640,
+        "y": -660
+      },
+      "data": {
+        "label": "\u03bdI 102",
+        "rotation": 0,
+        "variable": "nu",
+        "pressure_basis": "gauge",
+        "alarm_ll": null,
+        "alarm_l": null,
+        "alarm_h": 100,
+        "alarm_hh": 200
+      }
+    },
+    {
+      "id": "pit-103",
+      "type": "instrument",
+      "position": {
+        "x": 860,
+        "y": -660
+      },
+      "data": {
+        "label": "PIT 103",
+        "rotation": 0,
+        "variable": "P",
+        "pressure_basis": "gauge",
+        "alarm_ll": null,
+        "alarm_l": 1.5,
+        "alarm_h": 3.5,
+        "alarm_hh": null
+      }
+    },
+    {
+      "id": "fit-104",
+      "type": "instrument",
+      "position": {
+        "x": 2010,
+        "y": -140
+      },
+      "data": {
+        "label": "FIT 104",
+        "rotation": 0,
+        "variable": "Q",
+        "pressure_basis": "gauge",
+        "alarm_ll": 15,
+        "alarm_l": 24,
+        "alarm_h": null,
+        "alarm_hh": null
+      }
     }
   ],
   "edges": [
@@ -1648,7 +1735,7 @@
     {
       "source": "node_50250584",
       "sourceHandle": "outlet-0",
-      "target": "node_f59f6043",
+      "target": "tap-oil-supply",
       "targetHandle": "inlet-0",
       "id": "edge_723416db",
       "label": "Pipe 119",
@@ -1659,7 +1746,33 @@
       "data": {
         "label": "Pipe 119",
         "type": "PIPE",
-        "length": 0.3,
+        "length": 0.15,
+        "diameter": 0.07792,
+        "standardDn": 80,
+        "standardSch": "STD",
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "outer_diameter_mm": 88.9,
+        "wall_thickness_mm": 5.49,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
+      }
+    },
+    {
+      "source": "tap-oil-supply",
+      "sourceHandle": "outlet-0",
+      "target": "node_f59f6043",
+      "targetHandle": "inlet-0",
+      "id": "edge_723416db_b",
+      "label": "Pipe 119",
+      "animated": true,
+      "type": "default",
+      "style": {},
+      "selected": false,
+      "data": {
+        "label": "Pipe 119",
+        "type": "PIPE",
+        "length": 0.15,
         "diameter": 0.07792,
         "standardDn": 80,
         "standardSch": "STD",
@@ -2556,6 +2669,82 @@
         "wall_thickness_mm": 3.91,
         "roughness_mm": 0.045,
         "roughness": 4.5e-05
+      }
+    },
+    {
+      "id": "sig_tit-101_in",
+      "source": "tap-oil-supply",
+      "sourceHandle": "signal-inlet-0",
+      "target": "tit-101",
+      "targetHandle": "signal-in",
+      "label": "TIT 101 signal",
+      "animated": true,
+      "type": "step",
+      "style": {
+        "stroke": "#fde047",
+        "strokeWidth": 3,
+        "strokeDasharray": "5,5"
+      },
+      "data": {
+        "label": "TIT 101 signal",
+        "type": "SIGNAL"
+      }
+    },
+    {
+      "id": "sig_vi-102_in",
+      "source": "tap-oil-supply",
+      "sourceHandle": "signal-inlet-0",
+      "target": "vi-102",
+      "targetHandle": "signal-in",
+      "label": "\u03bdI 102 signal",
+      "animated": true,
+      "type": "step",
+      "style": {
+        "stroke": "#fde047",
+        "strokeWidth": 3,
+        "strokeDasharray": "5,5"
+      },
+      "data": {
+        "label": "\u03bdI 102 signal",
+        "type": "SIGNAL"
+      }
+    },
+    {
+      "id": "sig_pit-103_in",
+      "source": "node_8d84994e",
+      "sourceHandle": "signal-outlet-0",
+      "target": "pit-103",
+      "targetHandle": "signal-in",
+      "label": "PIT 103 signal",
+      "animated": true,
+      "type": "step",
+      "style": {
+        "stroke": "#fde047",
+        "strokeWidth": 3,
+        "strokeDasharray": "5,5"
+      },
+      "data": {
+        "label": "PIT 103 signal",
+        "type": "SIGNAL"
+      }
+    },
+    {
+      "id": "sig_fit-104_in",
+      "source": "node_9958a664",
+      "sourceHandle": "signal-inlet-0",
+      "target": "fit-104",
+      "targetHandle": "signal-in",
+      "label": "FIT 104 signal",
+      "animated": true,
+      "type": "step",
+      "style": {
+        "stroke": "#fde047",
+        "strokeWidth": 3,
+        "strokeDasharray": "5,5"
+      },
+      "data": {
+        "label": "FIT 104 signal",
+        "type": "SIGNAL"
       }
     }
   ],

@@ -20,6 +20,8 @@ export const COMPONENT_LABELS = {
   calibrated_restriction: 'Calibrated restriction',
   splitter: 'Splitter',
   mixer: 'Mixer',
+  measure_point: 'Measurement tap',
+  instrument: 'Instrument',
   filter: 'Filter',
   heat_exchanger: 'Cooler',
   text_bubble: 'Note',

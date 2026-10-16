@@ -4,6 +4,9 @@ import DataList from './DataList';
 import { UnitProvider } from '../../context/UnitContext';
 import { UNIT_SYSTEMS } from '../../utils/converters';
 
+// The schedule catalogue request has no server in jsdom; the bundled datasets are used instead
+vi.mock('axios', () => ({ default: { get: vi.fn(() => Promise.resolve({ data: [] })) } }));
+
 afterEach(cleanup);
 
 const nodes = [
@@ -132,6 +135,54 @@ describe('F2-09: changing a forced state in the relief matrix', () => {
 
     rerender(tree(psvAt('forced_open'), props));
     expect(runSimulation).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('Measurements tab', () => {
+  const instNodes = (data = {}) => [
+    { id: 'mp', type: 'measure_point', position: { x: 0, y: 0 }, data: { label: 'TAP-1' } },
+    { id: 'i', type: 'instrument', position: { x: 0, y: 80 }, data: { label: 'PIT 1', variable: 'P', pressure_basis: 'gauge', alarm_h: 2, ...data } },
+  ];
+  const signal = [{ id: 's', source: 'mp', sourceHandle: 'signal-inlet-0', target: 'i', targetHandle: 'signal-in', data: { type: 'SIGNAL' } }];
+  const solvedCase = (id, name, barg, extra = {}) => ({
+    id, name, overrides: { nodes: {} }, ...extra,
+    telemetry: { nodes: { mp: { inlets: [{ pressure: 101325 + barg * 1e5 }] } }, edges: {} },
+  });
+  const cases = [solvedCase('case_base', 'Case 1', 2.5, { is_base: true }), solvedCase('case_2', 'Case 2', 1.5)];
+  const renderMeasurements = (onUpdateNode = vi.fn(), nodesList = instNodes()) => {
+    render(
+      <UnitProvider initialUnitSystem={UNIT_SYSTEMS.METRIC}>
+        <DataList nodes={nodesList} edges={signal} rawNodes={nodesList} rawEdges={signal} cases={cases} activeCaseId="case_base" onUpdateNode={onUpdateNode} onSelectNode={vi.fn()} onSelectEdge={vi.fn()} />
+      </UnitProvider>
+    );
+    fireEvent.click(screen.getByText('Measurements'));
+    return onUpdateNode;
+  };
+
+  it('shows one row per instrument with its location and one reading per case, flagged by alarm', () => {
+    renderMeasurements();
+    expect(screen.getByText('PIT 1')).toBeTruthy();
+    expect(screen.getByText('TAP-1')).toBeTruthy();
+    expect(screen.getByText('2.50').closest('td').textContent).toMatch(/^H2\.50bar\(g\)$/);
+    expect(screen.getByText('1.50').closest('td').textContent).toBe('1.50bar(g)');
+  });
+
+  it('commits an edited limit to the instrument and rejects limits out of order', () => {
+    const onUpdateNode = renderMeasurements();
+    const hh = screen.getByLabelText('HH limit of PIT 1 (bar(g))');
+
+    fireEvent.change(hh, { target: { value: '1' } });
+    fireEvent.blur(hh);
+    expect(onUpdateNode).not.toHaveBeenCalled();
+
+    fireEvent.change(hh, { target: { value: '3' } });
+    fireEvent.blur(hh);
+    expect(onUpdateNode).toHaveBeenCalledWith('i', { alarm_hh: 3 });
+  });
+
+  it('says so when there are no instruments', () => {
+    renderMeasurements(vi.fn(), [instNodes()[0]]);
+    expect(screen.getByText(/No instruments in the current diagram/)).toBeTruthy();
   });
 });
 

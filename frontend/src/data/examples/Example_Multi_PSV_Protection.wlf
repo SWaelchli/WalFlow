@@ -13,6 +13,35 @@
         "nodes": {},
         "global_settings": {}
       }
+    },
+    {
+      "id": "case_psv101_blocked",
+      "name": "PSV-101 blocked",
+      "is_base": false,
+      "overrides": {
+        "nodes": {
+          "node_psv_primary": {
+            "forced_state": "forced_closed"
+          }
+        },
+        "global_settings": {}
+      }
+    },
+    {
+      "id": "case_psv101_102_blocked",
+      "name": "PSV-101 and PSV-102 blocked",
+      "is_base": false,
+      "overrides": {
+        "nodes": {
+          "node_psv_primary": {
+            "forced_state": "forced_closed"
+          },
+          "node_psv_secondary": {
+            "forced_state": "forced_closed"
+          }
+        },
+        "global_settings": {}
+      }
     }
   ],
   "nodes": [
@@ -24,15 +53,15 @@
         "y": 440
       },
       "width": 440,
-      "height": 220,
+      "height": 390,
       "style": {
         "width": 440,
-        "height": 220
+        "height": 390
       },
       "data": {
         "label": "Note",
         "title": "MULTI-PSV & RUPTURE DISC PROTECTION",
-        "text": "A volumetric pump (120 L/min) feeds a process line through a 4 mm orifice that cannot pass the full flow, so the pressure rises until the relief devices act.\n\nAfter running, PSV-101 (set 19.0 barg, pop action) opens and relieves about 90 L/min. PSV-102 (24.0 barg, modulating) and the rupture disc RD-101 (29.0 barg) stay closed in this case. To see the staged devices act, close PSV-101 (forced state) or raise the pump flow, then open the Relief Analysis Matrix in the data panel. All lines run below 1 m/s.",
+        "text": "A volumetric pump (120 L/min) feeds a process line through a 4 mm orifice that cannot pass the full flow, so the pressure rises until the relief devices act.\n\nAfter running, PSV-101 (set 19.0 barg, pop action) opens and relieves about 90 L/min. PSV-102 (24.0 barg, modulating) and the rupture disc RD-101 (29.0 barg) stay closed in this case. To see the staged devices act, close PSV-101 (forced state) or raise the pump flow, then open the Relief Analysis Matrix in the data panel. All lines run below 1 m/s.\n\nInstruments: PIT 101 pump discharge pressure (H below the PSV-101 set point, HH below PSV-102), FIT 102 relief flow and FIT 103 process flow. Solve all cases to follow the relief cascade: blocking PSV-101 lifts PSV-102, blocking both bursts the rupture disc.",
         "fontSize": "md",
         "rotation": 0
       }
@@ -64,7 +93,10 @@
         "rotation": 0,
         "flow_rated": 120.0,
         "motor_power": 7.5,
-        "efficiency": 85.0
+        "efficiency": 85.0,
+        "sensing": {
+          "outlet-0": true
+        }
       }
     },
     {
@@ -217,6 +249,84 @@
         "label": "RETURN_MIXER",
         "rotation": 0
       }
+    },
+    {
+      "id": "tap-relief-return",
+      "type": "measure_point",
+      "position": {
+        "x": 860,
+        "y": 245
+      },
+      "data": {
+        "label": "Relief Return Tap",
+        "rotation": 0
+      }
+    },
+    {
+      "id": "tap-process-return",
+      "type": "measure_point",
+      "position": {
+        "x": 690,
+        "y": 320
+      },
+      "data": {
+        "label": "Process Tap",
+        "rotation": 0
+      }
+    },
+    {
+      "id": "pit-101",
+      "type": "instrument",
+      "position": {
+        "x": 320,
+        "y": 200
+      },
+      "data": {
+        "label": "PIT 101",
+        "rotation": 0,
+        "variable": "P",
+        "pressure_basis": "gauge",
+        "alarm_ll": null,
+        "alarm_l": 10,
+        "alarm_h": 18,
+        "alarm_hh": 23
+      }
+    },
+    {
+      "id": "fit-102",
+      "type": "instrument",
+      "position": {
+        "x": 900,
+        "y": 140
+      },
+      "data": {
+        "label": "FIT 102",
+        "rotation": 0,
+        "variable": "Q",
+        "pressure_basis": "gauge",
+        "alarm_ll": null,
+        "alarm_l": null,
+        "alarm_h": 5,
+        "alarm_hh": null
+      }
+    },
+    {
+      "id": "fit-103",
+      "type": "instrument",
+      "position": {
+        "x": 720,
+        "y": 250
+      },
+      "data": {
+        "label": "FIT 103",
+        "rotation": 0,
+        "variable": "Q",
+        "pressure_basis": "gauge",
+        "alarm_ll": null,
+        "alarm_l": 20,
+        "alarm_h": null,
+        "alarm_hh": null
+      }
     }
   ],
   "edges": [
@@ -290,13 +400,35 @@
       "id": "pipe_process_return",
       "source": "node_process_restriction",
       "sourceHandle": "outlet-0",
+      "target": "tap-process-return",
+      "targetHandle": "inlet-0",
+      "type": "default",
+      "data": {
+        "label": "Process Return",
+        "type": "PIPE",
+        "length": 7.5,
+        "diameter": 0.05248,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 50,
+        "standardSch": "STD",
+        "outer_diameter_mm": 60.3,
+        "wall_thickness_mm": 3.91,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
+      }
+    },
+    {
+      "id": "pipe_process_return_b",
+      "source": "tap-process-return",
+      "sourceHandle": "outlet-0",
       "target": "node_return_mixer",
       "targetHandle": "inlet-1",
       "type": "default",
       "data": {
         "label": "Process Return",
         "type": "PIPE",
-        "length": 15.0,
+        "length": 7.5,
         "diameter": 0.05248,
         "pipe_class_id": "CS01",
         "pipe_class_code": "CS01",
@@ -510,13 +642,35 @@
       "id": "pipe_relief_to_tank",
       "source": "node_relief_mixer_2",
       "sourceHandle": "outlet-0",
+      "target": "tap-relief-return",
+      "targetHandle": "inlet-0",
+      "type": "default",
+      "data": {
+        "label": "Common Relief Discharge",
+        "type": "PIPE",
+        "length": 10.0,
+        "diameter": 0.05248,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 50,
+        "standardSch": "STD",
+        "outer_diameter_mm": 60.3,
+        "wall_thickness_mm": 3.91,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
+      }
+    },
+    {
+      "id": "pipe_relief_to_tank_b",
+      "source": "tap-relief-return",
+      "sourceHandle": "outlet-0",
       "target": "node_return_mixer",
       "targetHandle": "inlet-0",
       "type": "default",
       "data": {
         "label": "Common Relief Discharge",
         "type": "PIPE",
-        "length": 20.0,
+        "length": 10.0,
         "diameter": 0.05248,
         "pipe_class_id": "CS01",
         "pipe_class_code": "CS01",
@@ -548,6 +702,63 @@
         "wall_thickness_mm": 5.16,
         "roughness_mm": 0.045,
         "roughness": 4.5e-05
+      }
+    },
+    {
+      "id": "sig_pit-101_in",
+      "source": "node_hp_pump",
+      "sourceHandle": "signal-outlet-0",
+      "target": "pit-101",
+      "targetHandle": "signal-in",
+      "label": "PIT 101 signal",
+      "animated": true,
+      "type": "step",
+      "style": {
+        "stroke": "#fde047",
+        "strokeWidth": 3,
+        "strokeDasharray": "5,5"
+      },
+      "data": {
+        "label": "PIT 101 signal",
+        "type": "SIGNAL"
+      }
+    },
+    {
+      "id": "sig_fit-102_in",
+      "source": "tap-relief-return",
+      "sourceHandle": "signal-inlet-0",
+      "target": "fit-102",
+      "targetHandle": "signal-in",
+      "label": "FIT 102 signal",
+      "animated": true,
+      "type": "step",
+      "style": {
+        "stroke": "#fde047",
+        "strokeWidth": 3,
+        "strokeDasharray": "5,5"
+      },
+      "data": {
+        "label": "FIT 102 signal",
+        "type": "SIGNAL"
+      }
+    },
+    {
+      "id": "sig_fit-103_in",
+      "source": "tap-process-return",
+      "sourceHandle": "signal-inlet-0",
+      "target": "fit-103",
+      "targetHandle": "signal-in",
+      "label": "FIT 103 signal",
+      "animated": true,
+      "type": "step",
+      "style": {
+        "stroke": "#fde047",
+        "strokeWidth": 3,
+        "strokeDasharray": "5,5"
+      },
+      "data": {
+        "label": "FIT 103 signal",
+        "type": "SIGNAL"
       }
     }
   ],

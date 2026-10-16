@@ -27,15 +27,18 @@ export const PORTS_BY_TYPE = {
   flow_source: { inlets: [], outlets: ['outlet-0'] },
   splitter: { inlets: ['inlet-0'], outlets: ['outlet-0', 'outlet-1'] },
   mixer: { inlets: ['inlet-0', 'inlet-1'], outlets: ['outlet-0'] },
+  measure_point: single,
   three_way_tcv: { inlets: ['inlet-0', 'inlet-1'], outlets: ['outlet-0'] },
   text_bubble: { inlets: [], outlets: [] },
+  instrument: { inlets: [], outlets: [] },
 };
 
 // Boundaries fix a pressure or a flow; an unused port on them is normal.
 const BOUNDARY_TYPES = new Set(['tank', 'pressure_source', 'flow_source']);
 // Relief devices may discharge to atmosphere, so an unconnected outlet is not reported.
 const VENTING_TYPES = new Set(['pressure_safety_valve', 'psv', 'rupture_disc']);
-const NOTE_TYPES = new Set(['text_bubble']);
+// Not part of the hydraulic network: notes, and instrument bubbles (they only read results)
+const NOTE_TYPES = new Set(['text_bubble', 'instrument']);
 
 export const ERROR_CODES = ['empty_drawing', 'unknown_type', 'unknown_endpoint', 'invalid_port', 'port_shared'];
 
@@ -174,6 +177,23 @@ export function validateNetwork({ nodes = [], edges = [] }, knownTypes = null) {
     if (!ids.some(id => BOUNDARY_TYPES.has(byId.get(id).type))) {
       add(warnings, 'warning', 'no_boundary',
         'A group of connected components has no tank, pressure source or flow source, so it has no pressure reference and cannot be solved meaningfully.', ids);
+    }
+  });
+
+  // Instruments only read results; an input without a signal line from a pin shows no value
+  const wired = (inst, handle) => edges.some(e => e.target === inst.id && e.targetHandle === handle && byId.has(e.source));
+  nodes.filter(n => n.type === 'instrument').forEach((inst) => {
+    const plus = wired(inst, 'signal-in');
+    if (inst.data?.variable !== 'dP') {
+      if (!plus) add(warnings, 'warning', 'instrument_unwired', `${nodeName(inst)} is not wired to a measuring pin and shows no value.`, [inst.id]);
+      return;
+    }
+    const minus = wired(inst, 'signal-in-ref');
+    if (!plus && !minus) {
+      add(warnings, 'warning', 'instrument_unwired', `${nodeName(inst)} is not wired to a measuring pin and shows no value.`, [inst.id]);
+    } else if (!plus || !minus) {
+      add(warnings, 'warning', 'instrument_dp_one_input',
+        `${nodeName(inst)} measures a pressure difference but only its ${plus ? '(+)' : '(−)'} input is wired, so it shows no value.`, [inst.id]);
     }
   });
 
