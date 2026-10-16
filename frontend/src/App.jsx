@@ -1786,7 +1786,7 @@ function WalFlowContent() {
           activeCaseId={activeCaseId}
           onResetCaseOverride={handleResetCaseOverride}
           allNodes={nodes}
-          allEdges={edges}
+          allEdges={styledEdges}
           unmitigatedTelemetry={unmitigatedTelemetry}
           availablePipeClasses={availablePipeClasses}
           allowCustomPipes={allowCustomPipes}
