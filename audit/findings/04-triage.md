@@ -312,7 +312,7 @@ Anchors at `HEAD` = `5b3fe27`. Decisions (user, 2026-10-14): D1 bracketed secant
 - Results of all shipped diagrams unchanged by the review fixes; total solve time 6.7 s (8.9 s before the review, 7.8 s before B1b). New regression tests: parallel PRVs, report consistency at iteration limits 1–8, wrong-acting RCV (217 tests pass).
 - Known limits, unchanged: identical controllers in parallel at the same setpoint have no unique split (least-squares picks one); controller sensitivity is measured with properties frozen, so strongly temperature-coupled loops converge linearly over a few extra iterations.
 
-### B1c: relief devices (done 2026-10-14; F1-08 in 7edb53d, the rest not yet committed)
+### B1c: relief devices (done 2026-10-14; F1-08 7edb53d, rest c01d29b, wording 800fc25)
 
 All six findings done: F1-08 first, then F1-03, F1-04, F1-09, F1-38, F2-09 (below).
 
@@ -370,7 +370,7 @@ All six findings done: F1-08 first, then F1-03, F1-04, F1-09, F1-38, F2-09 (belo
 - *Not checked in the browser:* loading the example would have replaced the canvas open in the user's session.
 - *Roadmap (D3, D4):* conventional vs balanced valves under backpressure; certified-capacity input.
 
-### B1d: fluid properties and component correlations (implemented 2026-10-14, not committed)
+### B1d: fluid properties and component correlations (done 2026-10-14, 97cca37)
 
 Anchors at `HEAD` = `b4973cc`, clean tree. Decisions (user, 2026-10-14): D1 tabulated data in code, **no CoolProp dependency**; D2 NPSHr input with **editable margin**, IEC 60534 FL/choked flow goes to the roadmap; D3 fixed representative RVP per catalog fluid; D4 filter reference viscosity field, default = system fluid at 40 °C (oils) / 20 °C (water), heat exchangers unchanged; D5 unknown fluid id is an error, **no extra code for old-file compatibility** (old files need not load); D6 Churchill friction factor in the transition zone is acceptable (+11–14 % flow at Re 2000–4000).
 
@@ -417,7 +417,7 @@ Anchors at `HEAD` = `b4973cc`, clean tree. Decisions (user, 2026-10-14): D1 tabu
 - *F1-19.* New `ref_viscosity` field (mPa·s, 0 = auto); K is calibrated to the datasheet dP at the reference fluid state. The filter chart scales its curves to pass through the solved operating point.
 - *Shipped diagrams, before vs after (KPI changes):* API 614 LOS −1 to +4 % flow (fouled/clogged filter cases +2 to +4 % flow, −0.2 to −0.35 bar max pressure), API 682 seal flush flow 32.9 → 35.4 L/min and max pressure 12.4 → 12.1 bar, other examples ≤ 0.1 % in flow and power. `walflow-diagram (8)` min pressure drops (1.03 → 0.44 bar) only at the stopped, zero-flow pump B, whose pressure is undefined. No example gains or loses a cavitation warning; all still converge.
 
-### B2: contract and data-integrity bugs (implemented 2026-10-14, not committed)
+### B2: contract and data-integrity bugs (done 2026-10-14, af4e168; canvas slider b4973cc)
 
 Anchors at `HEAD` = `97cca37`, clean tree. Decisions (user, 2026-10-14): F2-22 is **combined into B2** (results leave the files, hash-tagged per case); heat exchanger examples get **0.5 bar(d)**; a draft in another format is **shown as a message once, then discarded** (no second storage key).
 
@@ -442,7 +442,7 @@ Anchors at `HEAD` = `97cca37`, clean tree. Decisions (user, 2026-10-14): F2-22 i
 
 **Open for later batches.** Tab-specific draft key (F2-22 remainder, assigned to B5: one localStorage key per browser tab so two tabs no longer overwrite each other's draft); UI for `non_finite_fields` and `physical_validity` (B4); the autosave still fires when results arrive (F2-11, B3); `alert()` replacement (F3-06).
 
-### B3: security and deployment (implemented 2026-10-15, not committed)
+### B3: security and deployment (done 2026-10-15, 08c69cc)
 
 Anchors checked at `HEAD` = `af4e168`, clean tree. Decision already taken (user, 2026-10-13): anonymous users may run simulations; collaboration still needs a login; `/batch` stays open with a timeout and size limit.
 
@@ -514,7 +514,7 @@ Anchors checked at `HEAD` = `af4e168`, clean tree. Decision already taken (user,
 
 **Decisions (user, 2026-10-15).** F3-09: orange fill kept, dark text (`#1C2B2C`, 5.9:1). F3-05 (new plausibility warnings) is **not** in B4; moved to the roadmap. F3-12: three settings levels. Drawing (`.wlf`): title, description, fluid, ambient, atmospheric pressure, solver group with "use drawing solver settings". Project (database, `projects.settings`): pipe specs, custom pipes, solver group with "use project solver settings", owner edits. Global (database, `users.settings`; localStorage for anonymous users): units (display only, no longer in the `.wlf`) and the always-active solver group. Precedence Drawing > Project > Global, whole group per level. New drawings always start from the built-in defaults. F3-15: `walflow-diagram (8).wlf` became `Example_Large_Reference_Network.wlf`. B4 is split into B4a (this) and B4b.
 
-**B4a result (not committed).**
+**B4a result (269fb23).**
 - *F3-12.* `services/settings_schema.py` (validated ranges), `routers/settings.py` (`GET/PUT /api/settings`, `stored` flag so a local preference moves up on first login), `settings` on `PUT /api/projects/{id}` (owner only), light migration for both columns. Frontend: `utils/settingsLevels.js` (precedence, migration), `hooks/useSettingsLevels.js`, `SolverSettingsGroup.jsx` shared by the three tabs (greyed out with "from <level>" when unticked). Solver messages and the result hash use the effective settings. Old files: their solver values become a ticked drawing override; stored unit system ignored. Loading or resetting a drawing now replaces the drawing settings instead of keeping the previous ones.
 - *F3-08.* `usePanelHeight` (drag handle, arrow keys, collapse, remembered; default 40 % of the window, 300 to 480 px); fit-view after load, example and new drawing.
 - *F3-09.* Tokens `--color-primary-text` (#B45309, 5.0:1) and `--color-danger-text` (#B91C1C, 6.5:1) replace orange and red as text colour; primary button dark text; hover and pressed shades keep at least 4.5:1; velocity shows a marker and tooltip (above 2.5 / 4 m/s), not colour only.
@@ -529,7 +529,7 @@ Anchors checked at `HEAD` = `af4e168`, clean tree. Decision already taken (user,
 
 ---
 
-### B4b: validation, dialogs, help, accessibility (prepared 2026-10-15, not started)
+### B4b: validation, dialogs, help, accessibility (done 2026-10-15; B4b-1 df0f716, B4b-2 1e2e9fe)
 
 **Decisions (user, 2026-10-15).** B4b is split. Self-loops: warn only. A second pipe on a port: the connection is blocked (use a splitter or mixer). Validation errors block the run; warnings still allow it. `prompt()` becomes an inline-name modal. Help stays English and in the modal.
 
@@ -564,14 +564,14 @@ Anchors at `HEAD` = `269fb23`: `App.jsx › onConnect` (line ~1000, no `isValidC
 
 **Version and docs.** `CHANGELOG.md` entries (brief). No version bump, no format change, no commit unless you ask.
 
-**B4b-1 result (not committed).**
+**B4b-1 result (df0f716).**
 - *F3-04 + F2-19.* `utils/networkValidation.js` (`validateNetwork`, `checkNewConnection`, port table per component type). Errors: empty drawing, unknown type, port shared by several pipes, pipe on a missing port or component. Warnings: open port (tanks, sources and relief outlets exempt), self-loop, isolated component, circuit without tank or source. `App.jsx › runChecked` blocks the run on errors (an automatic run after loading stays quiet) and is used by the navbar, the stale banner and the case re-run. `isValidConnection` plus `onConnect` refuse a second pipe on a port with a toast. `utils/runStatus.js` (`summarizeStats`, `deriveRunState`); `StatusChip` (navbar, with panel listing checks and run notes, Show selects the item); `RunBanners` over the canvas; the Stats tab uses the same summary ("Nothing to solve" for 0 equations, "Converged with warnings").
 - *F3-06.* `utils/dialogs.js` (`notify`, `confirmDialog`, `confirmDiscard`, `askName`), `DialogHost` mounted in `main.jsx`, `useDialog()`. All native dialogs removed from `src` (a test greps for them). New operating cases ask for a name. `handleLoadDiagramWithCheck` is async now (Sidebar awaits it).
 - *Not covered.* Batch Solve (`/batch`) does not run the model checks; the in-modal message areas of `AdminHubModal` and `FittingStandardsTab` were already non-blocking and are unchanged.
 
 **Tests.** Frontend `networkValidation`, `runStatus`, `DialogHost` (incl. the no-native-dialogs check), `StatusChip` / `RunBanners` (165 pass); lint and build clean. Browser check (1568x698): status chip and panel, New Case name dialog, open-port warning after deleting a tank. The refused second pipe by dragging, the blocked run and 1920x1080 were not checked in the browser.
 
-**B4b-2 result (not committed).**
+**B4b-2 result (1e2e9fe).**
 - *F3-07 + F1-32.* `HelpInfoModal` rewritten around `helpContent.jsx` (User Guide for the current UI, new Model & Limits tab incl. the simplified IEC 60534-2-1 Fr note); no LaTeX. Navbar Help button; `Shift + ?` now really opens Help (it was listed but not implemented); the "Ctrl + Enter" run tooltip was removed (not implemented). README section "Model & Limits".
 - *F3-17.* Collapsible explainer on the pipe class page (used by the solver: ID and roughness; informational: rating, P-T table, corrosion allowance; TR2000). `getAvailableSchedules(dn)` feeds the data list schedule dropdown (only schedules the catalogue holds for the size; an unlisted imported value stays visible but disabled). The catalogue itself still holds only STD, 40, 80, XS and 160, so 10S and similar need catalogue data first.
 - *F2-27.* `hooks/useModalA11y.js` (`modalA11yRef` on every `.modal-container`: role, aria-modal, aria-labelledby from the title, focus in, Tab trap, focus return); `utils/labelAssociation.js` ties label-then-control pairs by DOM order at runtime (observer started in `main.jsx`) instead of adding ids at about 85 sites; `utils/a11yProps.js` (`clickableProps`, `clickableRowProps`) on 16 clickable non-button elements; `outline: none` removed from overlays and a `[tabindex]` focus ring added; case-manager and heatmap controls have `aria-pressed`, labels and "On" text; "Normal" status text darkened for contrast.
@@ -579,7 +579,7 @@ Anchors at `HEAD` = `269fb23`: `App.jsx › onConnect` (line ~1000, no `isValidC
 
 **Tests.** `HelpInfoModal.test.jsx`, `a11yProps.test.jsx`, `labelAssociation.test.js`, `asme_b16_9_data.test.js`; 177 frontend tests, lint and build pass.
 
-### B5: refactors and hygiene (implemented 2026-10-15, not committed)
+### B5: refactors and hygiene (done 2026-10-15, c2e2edf)
 
 **Decisions (user, 2026-10-15).** F1-20: no renaming now; document the node fields and unit conventions and test the parser against the table; the rename goes on the roadmap (with the next format break). F2-28: reactflow 11 to @xyflow/react 12 moves to the roadmap (memoised v11 only). F2-26: split only `App.jsx` and `SetupPanel.jsx`; the other large files get dead-code and duplicate cleanup only. F2-24: `global_roughness` is **removed** (setting, state, UI and file field; the parser keeps using the pipe class roughness, default 0.045 mm). F2-22: only the per-tab draft key remains (results are already out of saved files, B2).
 
@@ -606,7 +606,7 @@ Anchors at `HEAD` = `269fb23`: `App.jsx › onConnect` (line ~1000, no `isValidC
 
 **Effort.** ~8-10 days, order B5a, B5b, B5c.
 
-**B5 result (not committed).** Plan changes: the backend version file is `backend/constants.py` (same name as `frontend/src/constants.js`, user decision) instead of `version.py`; AGENTS.md now says app 0.2.0 / format 0.2.
+**B5 result (c2e2edf).** Plan changes: the backend version file is `backend/constants.py` (same name as `frontend/src/constants.js`, user decision) instead of `version.py`; AGENTS.md now says app 0.2.0 / format 0.2.
 - *F1-13.* `solver.py › _src_port / _tgt_port`: pipe telemetry and property transport use the port index of the edge. Test: TCV pipe on inlet 1; reverse flow through splitter and mixer was already right.
 - *F1-12.* Valves, regulators and other non-pump sources, and the TCV path term, are differentiated numerically from the node's own function (step relative to |q|, at least 1e-12 m3/s; a fixed 1e-7 step broke the parallel-PRV case). Lasting test `test_f1_12_jacobian.py`: Jacobian against finite differences of the residual at the converged state for every case of every shipped diagram (row deviation under 3 %; a deliberate 20 % error is caught).
 - *F0-07.* Pydantic v2 API (zero warnings; `pytest.ini` makes them errors), 413 literal, bundle split (main chunk 1.27 MB to 565 kB; vendor chunks and lazy dialogs and pipe class page), `engines` and `.nvmrc` Node 22.12. This machine still has Node 22.11 (Vite warns; build works).
@@ -619,7 +619,7 @@ Anchors at `HEAD` = `269fb23`: `App.jsx › onConnect` (line ~1000, no `isValidC
 - *Not covered.* The three pipe-dimension tables are still separate; `PipeClassesPage`, `Sidebar`, `DataList` only lost duplicated pipe-class code; `toDisplayValue` is used again (TankNode) so it stays.
 
 **Tests.** Backend 434 pass (`test_f1_12_jacobian`, `test_f1_13_port_transport`, `test_f1_20_node_fields`, `test_f3_19_versions`, `test_f2_24_*`). Frontend 211 pass (`App.test.jsx` smoke mount, `draftStorage`, `graphSignature`, `itemMemo`, `heatmapRange`, `pumpCurves`, `nodeDefaults`, `pipeSelectionPatches`); lint and build clean. Browser check (1568x698, Chrome): start, orphan draft dialog and restore, run to "Converged", component drag, per-tab draft key and heartbeat present. Two real tabs side by side and 1920x1080 were not checked.
-### B6: model scope (prepared 2026-10-15, not started)
+### B6: model scope (done 2026-10-15, f44beee)
 
 **Decisions (user, 2026-10-15).** F1-17 (pipe elevation, fittings ΣK, entrance loss): **not implemented**, moved to ROADMAP ("Pipe Elevation & Fittings Losses"); limits stay documented in the help. F1-33 (tank nozzle height): **closed, won't fix**. F1-23 (hidden per-tank fluid): **remove**. No file format bump.
 
@@ -635,4 +635,4 @@ Anchors at `HEAD` = `269fb23`: `App.jsx › onConnect` (line ~1000, no `isValidC
 
 **Version and docs.** Brief `CHANGELOG.md` entry; no version bump, no format change, no commit unless you ask.
 
-**B6 result (not committed).** F1-23 done: `graph_parser.py` tanks take the system fluid (a stale `fluid_type` is ignored and not validated); hidden tank fluid removed from `Example_API_682_Seal_Flush` (was VG32 in a VG46 system), `Example_Chilled_Water_Loop` and `Example_Thermal_Management` (same as system); `docs/node-fields.md` lists `fluid_type` for the calibrated restriction only. Seal_Flush still converges (tank now VG46). Tests: `test_f1_23_tank_fluid.py`; backend 436 pass, frontend 211 pass, lint clean. Build not re-run (no frontend source changed).
+**B6 result (f44beee).** F1-23 done: `graph_parser.py` tanks take the system fluid (a stale `fluid_type` is ignored and not validated); hidden tank fluid removed from `Example_API_682_Seal_Flush` (was VG32 in a VG46 system), `Example_Chilled_Water_Loop` and `Example_Thermal_Management` (same as system); `docs/node-fields.md` lists `fluid_type` for the calibrated restriction only. Seal_Flush still converges (tank now VG46). Tests: `test_f1_23_tank_fluid.py`; backend 436 pass, frontend 211 pass, lint clean. Build not re-run (no frontend source changed).

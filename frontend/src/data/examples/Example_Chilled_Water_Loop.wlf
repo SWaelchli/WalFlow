@@ -27,7 +27,7 @@
       "id": "expansion-tank",
       "type": "tank",
       "position": {
-        "x": 100,
+        "x": -50,
         "y": 250
       },
       "data": {
@@ -182,12 +182,24 @@
         "elevation": 0.0,
         "temperature": 285.15
       }
+    },
+    {
+      "id": "suction-splitter",
+      "type": "splitter",
+      "position": {
+        "x": 120,
+        "y": 250
+      },
+      "data": {
+        "label": "Common Suction Splitter",
+        "rotation": 0
+      }
     }
   ],
   "edges": [
     {
       "id": "c1",
-      "source": "expansion-tank",
+      "source": "suction-splitter",
       "sourceHandle": "outlet-0",
       "target": "primary-pump-1",
       "targetHandle": "inlet-0",
@@ -207,8 +219,8 @@
     },
     {
       "id": "c2",
-      "source": "expansion-tank",
-      "sourceHandle": "outlet-0",
+      "source": "suction-splitter",
+      "sourceHandle": "outlet-1",
       "target": "primary-pump-2",
       "targetHandle": "inlet-0",
       "data": {
@@ -434,6 +446,26 @@
       "data": {
         "label": "Main Return",
         "length": 5,
+        "diameter": 0.06268,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 65,
+        "standardSch": "STD",
+        "outer_diameter_mm": 73.0,
+        "wall_thickness_mm": 5.16,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
+      }
+    },
+    {
+      "id": "c0",
+      "source": "expansion-tank",
+      "sourceHandle": "outlet-0",
+      "target": "suction-splitter",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Common Suction",
+        "length": 1,
         "diameter": 0.06268,
         "pipe_class_id": "CS01",
         "pipe_class_code": "CS01",

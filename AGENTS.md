@@ -29,7 +29,7 @@ The application allows users to drag various hydraulic components (pumps, valves
 2.  **Run the Server:**
     The backend server is a FastAPI application run with uvicorn.
     ```bash
-    uvicorn backend.main:app --reload --port 8000
+    uvicorn main:app --app-dir backend --reload --port 8000
     ```
     The server will be available at `http://localhost:8000`.
 

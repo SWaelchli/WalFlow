@@ -112,7 +112,7 @@ To run backend and frontend dev servers locally:
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1   # Linux/macOS: source .venv/bin/activate
 pip install -r requirements.txt
-uvicorn backend.main:app --reload --port 8000
+uvicorn main:app --app-dir backend --reload --port 8000
 
 # 2. Start Frontend (Vite + React)
 cd frontend

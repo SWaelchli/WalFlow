@@ -18,7 +18,10 @@ const contentKey = (payload) => {
 const isStaleConflict = (err) => !!(err.response && err.response.status === 409 &&
   err.response.headers && err.response.headers['x-walflow-conflict'] === 'stale');
 
-const STALE_MESSAGE = 'Not saved: this diagram was changed elsewhere since you opened it. Reload to see the latest version; your edits here stay in the local draft.';
+// Orphan-draft dialogs that are still open, by draft key (F5-04)
+const pendingOrphanOffers = new Map();
+
+const STALE_MESSAGE ='Not saved: this diagram was changed elsewhere since you opened it. Reload to see the latest version; your edits here stay in the local draft.';
 
 export function useAutoSaveSession({
   nodes,
@@ -455,10 +458,7 @@ ${versionError}`, 'error'), 0);
   // This tab's own draft (after a reload)
   const loadLocalDraftOnBoot = useCallback(() => parseDraft(readDraft(), removeDraft), [parseDraft]);
 
-  // A new tab: offer the newest draft of a tab that is gone (closed, crashed, browser restarted)
-  const offerOrphanDraft = useCallback(async () => {
-    const orphan = findOrphanDraft();
-    if (!orphan) return null;
+  const askAboutOrphan = useCallback(async (orphan) => {
     const when = orphan.timestamp ? new Date(orphan.timestamp).toLocaleString() : 'an earlier session';
     const restore = await confirmDialog({
       title: 'Restore unsaved drawing?',
@@ -474,6 +474,17 @@ ${versionError}`, 'error'), 0);
     if (draft) adoptDraft(orphan);
     return draft;
   }, [parseDraft]);
+
+  // A new tab: offer the newest draft of a tab that is gone (closed, crashed, browser restarted)
+  const offerOrphanDraft = useCallback(async () => {
+    const orphan = findOrphanDraft();
+    if (!orphan) return null;
+    // React StrictMode runs the boot effect twice in dev: both runs share one dialog (F5-04)
+    if (pendingOrphanOffers.has(orphan.key)) return pendingOrphanOffers.get(orphan.key);
+    const offer = askAboutOrphan(orphan).finally(() => pendingOrphanOffers.delete(orphan.key));
+    pendingOrphanOffers.set(orphan.key, offer);
+    return offer;
+  }, [askAboutOrphan]);
 
   return {
     saveStatus,

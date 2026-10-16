@@ -27,7 +27,7 @@
       "id": "source-reservoir",
       "type": "tank",
       "position": {
-        "x": 100,
+        "x": -50,
         "y": 250
       },
       "data": {
@@ -119,12 +119,24 @@
         "elevation": 0.0,
         "temperature": 293.15
       }
+    },
+    {
+      "id": "suction-splitter",
+      "type": "splitter",
+      "position": {
+        "x": 120,
+        "y": 250
+      },
+      "data": {
+        "label": "Common Suction Splitter",
+        "rotation": 0
+      }
     }
   ],
   "edges": [
     {
       "id": "b1",
-      "source": "source-reservoir",
+      "source": "suction-splitter",
       "sourceHandle": "outlet-0",
       "target": "centrifugal-pump",
       "targetHandle": "inlet-0",
@@ -184,8 +196,8 @@
     },
     {
       "id": "b4",
-      "source": "source-reservoir",
-      "sourceHandle": "outlet-0",
+      "source": "suction-splitter",
+      "sourceHandle": "outlet-1",
       "target": "volumetric-pump",
       "targetHandle": "inlet-0",
       "data": {
@@ -238,6 +250,26 @@
         "standardSch": "STD",
         "outer_diameter_mm": 33.4,
         "wall_thickness_mm": 3.38,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
+      }
+    },
+    {
+      "id": "b0",
+      "source": "source-reservoir",
+      "sourceHandle": "outlet-0",
+      "target": "suction-splitter",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Common Suction",
+        "length": 1,
+        "diameter": 0.04094,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 40,
+        "standardSch": "STD",
+        "outer_diameter_mm": 48.3,
+        "wall_thickness_mm": 3.68,
         "roughness_mm": 0.045,
         "roughness": 4.5e-05
       }

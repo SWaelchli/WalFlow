@@ -1,4 +1,7 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync, readdirSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { validateNetwork, checkNewConnection, PORTS_BY_TYPE } from './networkValidation';
 
 const node = (id, type, label) => ({ id, type, position: { x: 0, y: 0 }, data: { label: label || id } });
@@ -147,5 +150,19 @@ describe('validateNetwork', () => {
     Object.values(PORTS_BY_TYPE).forEach(p => {
       expect(Array.isArray(p.inlets) && Array.isArray(p.outlets)).toBe(true);
     });
+  });
+});
+
+// F5-01: every shipped drawing passes the model checks, so none of them is blocked from running
+describe('shipped diagrams pass the model checks', () => {
+  const dataDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'data');
+  const files = [
+    ...readdirSync(join(dataDir, 'examples')).filter(f => f.endsWith('.wlf')).map(f => join(dataDir, 'examples', f)),
+    join(dataDir, 'GreetingCanvas.wlf'),
+  ];
+
+  it.each(files)('%s has no errors or warnings', (file) => {
+    const data = JSON.parse(readFileSync(file, 'utf-8'));
+    expect(validateNetwork(data, new Set(Object.keys(PORTS_BY_TYPE)))).toEqual({ errors: [], warnings: [] });
   });
 });

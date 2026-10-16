@@ -27,7 +27,7 @@
       "id": "common-suction-tank",
       "type": "tank",
       "position": {
-        "x": 100,
+        "x": -50,
         "y": 250
       },
       "data": {
@@ -143,7 +143,7 @@
       "id": "discharge-sink",
       "type": "tank",
       "position": {
-        "x": 1040,
+        "x": 1190,
         "y": 250
       },
       "data": {
@@ -152,12 +152,36 @@
         "elevation": 0.0,
         "temperature": 293.15
       }
+    },
+    {
+      "id": "suction-splitter",
+      "type": "splitter",
+      "position": {
+        "x": 120,
+        "y": 250
+      },
+      "data": {
+        "label": "Common Suction Splitter",
+        "rotation": 0
+      }
+    },
+    {
+      "id": "return-mixer",
+      "type": "mixer",
+      "position": {
+        "x": 1050,
+        "y": 250
+      },
+      "data": {
+        "label": "Common Return Mixer",
+        "rotation": 0
+      }
     }
   ],
   "edges": [
     {
       "id": "pp1",
-      "source": "common-suction-tank",
+      "source": "suction-splitter",
       "sourceHandle": "outlet-0",
       "target": "pump-a",
       "targetHandle": "inlet-0",
@@ -177,8 +201,8 @@
     },
     {
       "id": "pp2",
-      "source": "common-suction-tank",
-      "sourceHandle": "outlet-0",
+      "source": "suction-splitter",
+      "sourceHandle": "outlet-1",
       "target": "pump-b",
       "targetHandle": "inlet-0",
       "data": {
@@ -339,7 +363,7 @@
       "id": "pp10",
       "source": "load-a",
       "sourceHandle": "outlet-0",
-      "target": "discharge-sink",
+      "target": "return-mixer",
       "targetHandle": "inlet-0",
       "data": {
         "label": "Return 1",
@@ -359,8 +383,8 @@
       "id": "pp11",
       "source": "load-b",
       "sourceHandle": "outlet-0",
-      "target": "discharge-sink",
-      "targetHandle": "inlet-0",
+      "target": "return-mixer",
+      "targetHandle": "inlet-1",
       "data": {
         "label": "Return 2",
         "length": 3,
@@ -371,6 +395,46 @@
         "standardSch": "STD",
         "outer_diameter_mm": 42.4,
         "wall_thickness_mm": 3.56,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
+      }
+    },
+    {
+      "id": "pp0",
+      "source": "common-suction-tank",
+      "sourceHandle": "outlet-0",
+      "target": "suction-splitter",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Common Suction",
+        "length": 1,
+        "diameter": 0.05248,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 50,
+        "standardSch": "STD",
+        "outer_diameter_mm": 60.3,
+        "wall_thickness_mm": 3.91,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
+      }
+    },
+    {
+      "id": "pp12",
+      "source": "return-mixer",
+      "sourceHandle": "outlet-0",
+      "target": "discharge-sink",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Common Return",
+        "length": 1,
+        "diameter": 0.04094,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 40,
+        "standardSch": "STD",
+        "outer_diameter_mm": 48.3,
+        "wall_thickness_mm": 3.68,
         "roughness_mm": 0.045,
         "roughness": 4.5e-05
       }

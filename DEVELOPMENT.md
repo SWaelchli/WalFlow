@@ -24,7 +24,7 @@ This guide is intended for developers and contributors looking to understand the
 
 3. **Start the FastAPI server with reload:**
    ```bash
-   uvicorn backend.main:app --reload --port 8000
+   uvicorn main:app --app-dir backend --reload --port 8000
    ```
    The backend API and WebSocket endpoints will be available at `http://localhost:8000`.
 

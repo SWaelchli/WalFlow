@@ -26,9 +26,10 @@ Severity: **S1** wrong physics or data loss · **S2** wrong or misleading result
 | 1 | Backend physical correctness | DONE | 4/20/17 | audit/findings/01-physics.md |
 | 2 | Frontend implementation | DONE | 3/11/14 | audit/findings/02-frontend.md |
 | 3 | User friendliness | DONE | 2/8/9 | audit/findings/03-ux.md |
-| 4 | Triage and fix roadmap | IN PROGRESS | 89 unique (9/40/40) | audit/findings/04-triage.md |
+| 4 | Triage and fix roadmap | DONE | 89 unique (9/40/40) | audit/findings/04-triage.md |
+| 5 | Close-out and release | IN PROGRESS | - | this file, Phase 5 |
 
-**Last updated:** 2026-10-14 (B0 84ca2cc; B1a 5b3fe27; B1b 36de94b)
+**Last updated:** 2026-10-16 (all batches B0 to B6 committed, last f44beee; every finding fixed or wontfix)
 
 ---
 
@@ -213,9 +214,35 @@ Method: act as a new user (a hydraulic/process engineer who has never seen the a
 |---|---|---|
 | 4.1 | Consolidate all findings into `audit/findings/04-triage.md`, sorted by severity, then effort | DONE: 95 → 89 unique (6 merged); effort S/M/L; anchors (file › symbol) |
 | 4.2 | Group fixes into batches (physics S1/S2 first, then contract bugs, then UX quick wins, then refactors) | DONE: B0 hotfixes, B1a–d physics, B2 contract, B3 security, B4 UX, B5 refactor, B6 scope; decisions listed per batch |
-| 4.3 | For each batch write a requirement prompt and **wait for user confirmation** before editing code (AGENTS.md rule 1) | IN PROGRESS: B0 done (84ca2cc); B1a done (5b3fe27); B1b done (36de94b); next: B1c prompt |
-| 4.4 | For each physics fix, add a regression test with an independent reference value | TODO |
-| 4.5 | Update CHANGELOG.md for each shipped fix (no version bump without user confirmation) | TODO |
+| 4.3 | For each batch write a requirement prompt and **wait for user confirmation** before editing code (AGENTS.md rule 1) | DONE: B0 84ca2cc; B1a 5b3fe27; B1b 36de94b; B1c 7edb53d, c01d29b, 800fc25; B1d 97cca37; B2 af4e168, b4973cc; B3 08c69cc; B4a 269fb23; B4b-1 df0f716; B4b-2 1e2e9fe; B5 c2e2edf; B6 f44beee |
+| 4.4 | For each physics fix, add a regression test with an independent reference value | DONE: one `test_f*_xx` file or test per finding (see each batch result in 04-triage.md) |
+| 4.5 | Update CHANGELOG.md for each shipped fix (no version bump without user confirmation) | DONE: entries under [0.2.0] |
+
+---
+
+## Phase 5: Close-out and Release
+
+Goal: prove the batches work together, close the bookkeeping, release. No full re-audit: each batch was tested on its own; this phase covers the gaps the batch notes list as not checked.
+
+| ID | Task | Status |
+|---|---|---|
+| 5.1 | Bookkeeping: Findings Index statuses with commits, phase tables, 04-triage.md batch headings, deferred items on ROADMAP.md | DONE (2026-10-16) |
+| 5.2 | Full gate on a clean checkout with Node >= 22.12: backend suite, Vitest, `npm run lint`, `npm run build`; `docker compose up` with `WALFLOW_REQUIRE_WS_AUTH=true` (B3 deployment never ran in a container) | PARTLY (2026-10-16, Node 26.12): backend 461 pass, Vitest 211 pass, lint and build clean. Vitest needed `--no-experimental-webstorage` (Node 25+ `localStorage` global hid jsdom's; 19 tests failed). Docker not installed here: container check open |
+| 5.3 | Golden-results test: every case of every shipped example solves, converges and matches stored key results (flows, pressures, temperatures, KPIs) | DONE (2026-10-16): `test_golden_examples.py` + `golden_examples.json`, 10 examples, 18 cases, all converge; same path as `/batch`; refresh with `WALFLOW_UPDATE_GOLDEN=1` and review the diff |
+| 5.4 | Browser smoke test of paths not checked in their batch: refused second pipe by dragging and blocked run (B4b-1), 1920x1080 (B4a, B4b-1), two real tabs and draft restore (B5), cloud projects and Admin Hub (Phase 3 code-only, B3 lock and stale-save banner), login and settings migration round trip (B4a), old files (pre-head pumps, pre-barg relief keys, `global_roughness`) give clear messages | PARTLY (2026-10-16, Chrome, viewport 1568x744; 1920x1080 not possible on this screen). OK: orphan draft offer and restore, two tabs keep separate drafts and do not offer each other's, blocked run (toast, no solve), status panel lists the error, old pump file ("rated head missing") and old relief file ("set pressure (barg) missing") give clear banners, `global_roughness` ignored on import. Not done: refused second pipe by dragging (the automated drag pans the canvas; unit-tested), cloud projects and Admin Hub, login and settings migration. New findings F5-01 to F5-04 below |
+| 5.5 | Focused review: `/security-review` of B3 (auth, locks, limits); `/code-review high` on `solver.py` and `relief_device.py` (B1b, B1c); optional `/code-review ultra` over `8610e46..HEAD` (user-triggered) | TODO |
+| 5.6 | Release `v0.2.0`: tag (Docker build), release note that pre-audit 0.2 drawings need pump head and barg relief inputs, then empty CHANGELOG.md (user confirms) | TODO |
+
+**Findings from Phase 5:**
+
+| ID | Severity | Title | Location | Status |
+|---|---|---|---|---|
+| F5-01 | S1 | 4 of 10 shipped examples cannot run: two pipes on one tank or reservoir port is a model-check error since B4b-1 (Chilled Water Loop, Multi-PSV Protection, Parallel Pumps, Pump Comparison). The backend solves them (golden test); `isValidConnection` also refuses a second pipe on a tank port | `utils/networkValidation.js › validateNetwork`, `checkNewConnection`; `frontend/src/data/examples/` | fixed (uncommitted): rule kept (user, 2026-10-16: a port takes one pipe; branch with a splitter or mixer, separate nozzles = second tank). The four examples got a common suction splitter or common return mixer with a 1 m pipe one size up (results -0.1 to -0.7 % flow, golden refreshed). Test: every shipped drawing passes the model checks (`networkValidation.test.js`). Multiple nozzles on sources: ROADMAP |
+| F5-02 | S2 | Status chip says "Converged" for a drawing that has no results (restored draft or loaded example whose run was blocked or skipped); the chip keeps the previous drawing's state | `utils/runStatus.js › deriveRunState`; `App.jsx` load path | fixed (uncommitted): `useWebSocketSimulation › resetRunState` clears the last stats and run error in `loadData` and `resetCanvas`; checked in the browser ("Not run yet" after a converged run) |
+| F5-03 | S3 | Docs give `uvicorn backend.main:app`, which fails (`No module named 'auth'`); the backend runs from `backend/` as `uvicorn main:app` (as in `Dockerfile.backend`) | AGENTS.md, README.md:115, DEVELOPMENT.md:27 | fixed (uncommitted): `uvicorn main:app --app-dir backend --reload --port 8000` |
+| F5-04 | S3 | Dev only: the orphan-draft dialog appears twice (StrictMode runs the boot effect twice); the second Restore re-applies the same draft. Production build mounts once | `App.jsx` boot effect, `useAutoSaveSession.js › offerOrphanDraft` | fixed (uncommitted): both boot runs share one pending offer per draft key; checked in the browser (one dialog) |
+
+**Known limits carried into the release (not findings):** Batch Solve (`/batch`) does not run the model checks; label association is heuristic (first control after a `<label>`); a restored local draft linked to a cloud drawing has no server version for its first save; locks and revoked tokens are in memory (single worker); fluid tables for glycol, seawater and RVP are representative values, not datasheet values. 
 
 ---
 
@@ -226,102 +253,102 @@ Add one row per finding; details live in the phase findings file. **Locations ar
 | ID | Phase | Severity | Title | Location | Status (open / fixed / wontfix) |
 |---|---|---|---|---|---|
 | F0-01 | 0 | S1 | Regulator control loop does not converge, answer depends on iteration limit, still reported as success (root cause: F1-01) | backend/simulation/solver.py:196-366 | fixed (36de94b) |
-| F0-02 | 0 | S2 | File format 0.1 diagrams blocked (cloud) or silently purged (drafts); examples and local import bypass the check; no migration | constants.js, Sidebar.jsx:939, ProjectManagerModal.jsx:214, useAutoSaveSession.js:366 | open |
-| F0-03 | 0 | S3 | Version drift: AGENTS.md 0.1.6/0.1 vs code 0.2.0/0.2; backend version hardcoded | AGENTS.md, constants.js, main.py:89 | open |
-| F0-04 | 0 | S3 | Stray `walflow-diagram (8).wlf` in examples, not registered | frontend/src/data/examples/ | open |
+| F0-02 | 0 | S2 | File format 0.1 diagrams blocked (cloud) or silently purged (drafts); examples and local import bypass the check; no migration | constants.js, Sidebar.jsx:939, ProjectManagerModal.jsx:214, useAutoSaveSession.js:366 | fixed (af4e168) |
+| F0-03 | 0 | S3 | Version drift: AGENTS.md 0.1.6/0.1 vs code 0.2.0/0.2; backend version hardcoded | AGENTS.md, constants.js, main.py:89 | fixed (c2e2edf) |
+| F0-04 | 0 | S3 | Stray `walflow-diagram (8).wlf` in examples, not registered | frontend/src/data/examples/ | fixed (269fb23) |
 | F0-05 | 0 | S2 | Earlier QA and some physics tests are self-referential (formula checked against itself) | qa_report (deleted), backend/tests | fixed (5b3fe27) |
 | F0-06 | 0 | S3 | `warm_start_status` reports "Exact Hit" after a cache clear (last internal solve, not the request) | solver.py:1076 | fixed (36de94b) |
-| F0-07 | 0 | S3 | Hygiene: Pydantic v2 deprecations, 1.5 MB bundle, Node < 22.12, stale `qa_report/` | various | open |
+| F0-07 | 0 | S3 | Hygiene: Pydantic v2 deprecations, 1.5 MB bundle, Node < 22.12, stale `qa_report/` | various | fixed (c2e2edf) |
 | F1-01 | 1A | S1 | Pressure-control outer loop unstable (fixed gain); results depend on damping, iteration limit, history | solver.py:226-357 | fixed (36de94b) |
 | F1-02 | 1A | S1 | At iteration limit, telemetry is not a hydraulic solution (negative abs. pressure, uphill flow) | solver.py:359-361 | fixed (5b3fe27) |
-| F1-03 | 1A | S1 | "Forced Open" PSV/rupture disc offered in UI, solved as closed | pressure_safety_valve.py:24, rupture_disc.py:27, solver.py:1118 | open |
-| F1-04 | 1A | S1 | Pop-action PSV latches open at any pressure, blowdown unused; relieved-pressure KPI non-physical | pressure_safety_valve.py:60-67 | open |
+| F1-03 | 1A | S1 | "Forced Open" PSV/rupture disc offered in UI, solved as closed | pressure_safety_valve.py:24, rupture_disc.py:27, solver.py:1118 | fixed (c01d29b) |
+| F1-04 | 1A | S1 | Pop-action PSV latches open at any pressure, blowdown unused; relieved-pressure KPI non-physical | pressure_safety_valve.py:60-67 | fixed (c01d29b) |
 | F1-05 | 1A | S2 | TCV path ΔP in residual ignores viscosity (up to 3× too low); telemetry inconsistent | solver.py:724 | fixed (5b3fe27) |
 | F1-06 | 1A | S2 | Absolute 10 Pa tolerance → phantom flows (150 L/min DN200 between equal tanks); user tolerance ignored < 1e-5 | solver.py:750 | fixed (36de94b) |
 | F1-07 | 1A | S2 | Negative absolute pressures (−23 bar(a)) reported as converged; no global P < P_vap check | solver.py:732-740 | fixed (36de94b) |
-| F1-08 | 1A | S2 | "Peak pressure" KPI is an ad-hoc pseudo-transient interpolation, mixes abs/diff pressure | solver.py:1185-1245 | open |
-| F1-09 | 1A | S2 | Relief set pressure: absolute vs differential inconsistent; bar(a) instead of industry barg | pressure_safety_valve.py:62,137; SetupPanel.jsx:1053 | open |
+| F1-08 | 1A | S2 | "Peak pressure" KPI is an ad-hoc pseudo-transient interpolation, mixes abs/diff pressure | solver.py:1185-1245 | fixed (7edb53d) |
+| F1-09 | 1A | S2 | Relief set pressure: absolute vs differential inconsistent; bar(a) instead of industry barg | pressure_safety_valve.py:62,137; SetupPanel.jsx:1053 | fixed (c01d29b) |
 | F1-10 | 1A | S2 | Islands without pressure reference silently dropped, reported as success | solver.py:53-119 | fixed (36de94b) |
 | F1-11 | 1A | S3 | LM solver option fails on 3/10 examples; fallback not checked for physicality | solver.py:752-760 | fixed (36de94b) |
-| F1-12 | 1A | S3 | Analytical Jacobian inaccurate for TCV, valves, PSV (robustness only) | solver.py:433-592 | partly fixed (36de94b: complementarity rows); rest B5 |
-| F1-13 | 1A | S3 | Telemetry/temperature transport assume port 0 (latent multi-port bug) | solver.py:991,993,1026,1030 | open |
+| F1-12 | 1A | S3 | Analytical Jacobian inaccurate for TCV, valves, PSV (robustness only) | solver.py:433-592 | fixed (c2e2edf) |
+| F1-13 | 1A | S3 | Telemetry/temperature transport assume port 0 (latent multi-port bug) | solver.py:991,993,1026,1030 | fixed (c2e2edf) |
 | F1-14 | 1A | S2 | Global warm-start cache shared across users, unsynchronised across threads, history-dependent | solver.py:28,410,780 | fixed (36de94b) |
 | F1-15 | 1A | S3 | Success reported when property iteration hits the limit | solver.py:356-366 | fixed (36de94b) |
 | F1-16 | 1D | S2 | Throttling heat erased in control valve, regulator, RCV, check valves, PSV, rupture disc | base_node.py:40-75 + 7 equipment files | fixed (5b3fe27) |
-| F1-17 | 1D | S2 | No elevation except tanks; no fittings ΣK / entrance losses | pipe.py, graph_parser.py | open |
+| F1-17 | 1D | S2 | No elevation except tanks; no fittings ΣK / entrance losses | pipe.py, graph_parser.py | wontfix: ROADMAP "Pipe Elevation & Fittings Losses"; limits in Help |
 | F1-18 | 1D | S2 | Centrifugal pump: pressure (not head) curve, η fixed 0.75, stopped pump frictionless | centrifugal_pump.py, graph_parser.py:211 | fixed (5b3fe27) |
-| F1-19 | 1D | S2 | Filter ΔP_clean water-referenced: 125–159 % of entered value in oil at design temp | filter.py | open |
-| F1-20 | 1D | S3 | Inconsistent unit conventions in node data (Pa vs bar, K vs °C, field names) | graph_parser.py | open |
-| F1-21 | 1D | S3 | Transition zone linear blend: +11–14 % flow vs Colebrook/Churchill | pipe.py | open |
-| F1-22 | 1D | S3 | Case variables speed_rpm / flow_demand have no backend effect | case_constants.js | open |
-| F1-23 | 1D | S3 | Hidden per-tank fluid_type honoured by backend, not editable | graph_parser.py:193 | open |
-| F1-24 | 1D | S3 | Flow source silently saturates at 200 bar | flow_source.py | open |
-| F1-25 | 1B | S2 | Classic orifice Cd too low at low Re; ΔP over-predicted up to ~27× | fluid_utils.py:262 | open |
-| F1-26 | 1B | S2 | Mineral-oil viscosity too low when cold (−17…−28 %); VG32 coefficients inconsistent | fluid_utils.py:66-213 | open |
-| F1-27 | 1B | S2 | Gasoline vapor pressure = n-heptane, 4–8× too low; light crude "negligible" | fluid_utils.py:327 | open |
-| F1-28 | 1B | S2 | Cavitation flag is a boiling check (P<1.2·Pv), no NPSH; valves not checked | centrifugal_pump.py:54, volumetric_pump.py:115 | open |
-| F1-29 | 1B | S3 | Seawater/glycol ν and cp errors away from 20 °C (PG50 −35 % cold) | fluid_utils.py:32-63 | open |
-| F1-30 | 1B | S3 | Water density linear (+2.7 % at 100 °C); Antoine step at 100 °C | fluid_utils.py:27, 316 | open |
-| F1-31 | 1B | S3 | No validity ranges; silent fallback for unknown fluid; properties not shown in UI | fluid_utils.py | open |
-| F1-32 | 1B | S3 | Valve Fr simplified vs IEC 60534-2-1 (0.7–1.7× ΔP in viscous flow) | fluid_utils.py:275 | open |
-| F1-33 | 1C | S3 | Tank: all ports at bottom pressure; no nozzle height | tank.py:39 | open |
+| F1-19 | 1D | S2 | Filter ΔP_clean water-referenced: 125–159 % of entered value in oil at design temp | filter.py | fixed (97cca37) |
+| F1-20 | 1D | S3 | Inconsistent unit conventions in node data (Pa vs bar, K vs °C, field names) | graph_parser.py | fixed (c2e2edf): documented and tested; rename on ROADMAP |
+| F1-21 | 1D | S3 | Transition zone linear blend: +11–14 % flow vs Colebrook/Churchill | pipe.py | fixed (97cca37) |
+| F1-22 | 1D | S3 | Case variables speed_rpm / flow_demand have no backend effect | case_constants.js | fixed (af4e168) |
+| F1-23 | 1D | S3 | Hidden per-tank fluid_type honoured by backend, not editable | graph_parser.py:193 | fixed (f44beee) |
+| F1-24 | 1D | S3 | Flow source silently saturates at 200 bar | flow_source.py | fixed (97cca37) |
+| F1-25 | 1B | S2 | Classic orifice Cd too low at low Re; ΔP over-predicted up to ~27× | fluid_utils.py:262 | fixed (97cca37) |
+| F1-26 | 1B | S2 | Mineral-oil viscosity too low when cold (−17…−28 %); VG32 coefficients inconsistent | fluid_utils.py:66-213 | fixed (97cca37) |
+| F1-27 | 1B | S2 | Gasoline vapor pressure = n-heptane, 4–8× too low; light crude "negligible" | fluid_utils.py:327 | fixed (97cca37) |
+| F1-28 | 1B | S2 | Cavitation flag is a boiling check (P<1.2·Pv), no NPSH; valves not checked | centrifugal_pump.py:54, volumetric_pump.py:115 | fixed (97cca37) |
+| F1-29 | 1B | S3 | Seawater/glycol ν and cp errors away from 20 °C (PG50 −35 % cold) | fluid_utils.py:32-63 | fixed (97cca37) |
+| F1-30 | 1B | S3 | Water density linear (+2.7 % at 100 °C); Antoine step at 100 °C | fluid_utils.py:27, 316 | fixed (97cca37) |
+| F1-31 | 1B | S3 | No validity ranges; silent fallback for unknown fluid; properties not shown in UI | fluid_utils.py | fixed (97cca37) |
+| F1-32 | 1B | S3 | Valve Fr simplified vs IEC 60534-2-1 (0.7–1.7× ΔP in viscous flow) | fluid_utils.py:275 | fixed (1e2e9fe) |
+| F1-33 | 1C | S3 | Tank: all ports at bottom pressure; no nozzle height | tank.py:39 | wontfix (user decision 2026-10-15) |
 | F1-34 | 1C | S3 | Centrifugal curve symmetric for reverse flow (running pump) | centrifugal_pump.py:31 | fixed (5b3fe27) |
 | F1-35 | 1C | S2 | Volumetric pump passes unlimited flow when pushed (19× rated) | volumetric_pump.py:46 | fixed (5b3fe27) |
 | F1-36 | 1C | S2 | Volumetric pump power limit silently cuts flow; KPI power = nameplate even when off | volumetric_pump.py:48, routers/simulation.py:54 | fixed (5b3fe27) |
 | F1-37 | 1C | S2 | Regulator cannot lock up; zero demand → downstream = inlet pressure | linear_regulator.py:25, remote_control_valve.py:30 | fixed (36de94b) |
-| F1-38 | 1C | S2 | PSV / rupture disc capacity % referenced to 1 bar → always "overcapacity" | pressure_safety_valve.py:165, rupture_disc.py:133 | open |
-| F1-39 | 1C | S3 | ISO 5167 orifice β silently clamped to 0.1–0.75 (ΔP 2.4–9× at β 0.88–0.96) | orifice.py:186 | open |
-| F1-40 | 1C | S3 | Heat exchanger accepts infeasible rated duty silently | heat_exchanger.py:101 | open |
+| F1-38 | 1C | S2 | PSV / rupture disc capacity % referenced to 1 bar → always "overcapacity" | pressure_safety_valve.py:165, rupture_disc.py:133 | fixed (c01d29b) |
+| F1-39 | 1C | S3 | ISO 5167 orifice β silently clamped to 0.1–0.75 (ΔP 2.4–9× at β 0.88–0.96) | orifice.py:186 | fixed (97cca37) |
+| F1-40 | 1C | S3 | Heat exchanger accepts infeasible rated duty silently | heat_exchanger.py:101 | fixed (97cca37) |
 | F1-41 | 1C | S2 | Six physics test files have no assertions | backend/tests | fixed (5b3fe27) |
-| F1-42 | 1 | S3 | Mixing assumes constant cp (0.86 K low for VG46 80/20 °C mix); found in B1a | base_node.py › calculate_temperature | open (B1d; strict xfail test) |
+| F1-42 | 1 | S3 | Mixing assumes constant cp (0.86 K low for VG46 80/20 °C mix); found in B1a | base_node.py › calculate_temperature | fixed (97cca37) |
 | F2-01 | 2 | S1 | Imperial: pipe diameter/roughness from inspector divided by 39.37 twice | SetupPanel.jsx:575,730; UnitContext.jsx:300 | fixed (84ca2cc) |
 | F2-02 | 2 | S1 | Cancel on cloud-diagram load leaves old canvas labelled as new diagram (overwrite risk; to confirm 3.7) | Sidebar.jsx:934-976; App.jsx:828 | fixed (84ca2cc) |
 | F2-03 | 2 | S1 | Undo history survives loading another diagram; Ctrl+Z restores the previous diagram; coverage gaps | useCanvasHistory.js; App.jsx:770 | fixed (84ca2cc) |
-| F2-04 | 2 | S2 | Heat exchanger rated dP shown 0.5 bar, solved ~0 (new nodes and all 5 example HXs) | App.jsx:1098; graph_parser.py:292 | open |
-| F2-05 | 2 | S2 | Blur rewrites values with display rounding; spurious case overrides | SetupPanel.jsx:970 and others | open |
-| F2-06 | 2 | S2 | Valve opening edits (slider/inspector) write base case, ignore active case | useWebSocketSimulation.js:188; SetupPanel.jsx:1039 | open |
-| F2-07 | 2 | S2 | Results of another case / pre-edit shown as current; no stale marking | case_resolver.js:141,167 | open |
+| F2-04 | 2 | S2 | Heat exchanger rated dP shown 0.5 bar, solved ~0 (new nodes and all 5 example HXs) | App.jsx:1098; graph_parser.py:292 | fixed (af4e168) |
+| F2-05 | 2 | S2 | Blur rewrites values with display rounding; spurious case overrides | SetupPanel.jsx:970 and others | fixed (af4e168) |
+| F2-06 | 2 | S2 | Valve opening edits (slider/inspector) write base case, ignore active case | useWebSocketSimulation.js:188; SetupPanel.jsx:1039 | fixed (af4e168, b4973cc) |
+| F2-07 | 2 | S2 | Results of another case / pre-edit shown as current; no stale marking | case_resolver.js:141,167 | fixed (af4e168) |
 | F2-08 | 2 | S2 | Inputs reformat per keystroke (free ID, ambient temp, imperial length); to confirm 3.x | SetupPanel.jsx:373; Sidebar.jsx:1293; DataList.jsx:1083 | fixed (84ca2cc) |
-| F2-09 | 2 | S2 | Relief matrix re-solves with previous forced state (stale closure) | DataList.jsx:255 | open |
-| F2-10 | 2 | S2 | No error boundary, no import validation: bad file blanks app | App.jsx:770 | open |
-| F2-11 | 2 | S2 | Every autosave broadcasts diagram_updated: reload prompt spam for co-viewers | diagrams.py:184; useAutoSaveSession.js:185 | open |
-| F2-12 | 2 | S2 | Login rate limit bypass via spoofed X-Forwarded-For | limiter.py:7 | open |
-| F2-13 | 2 | S2 | Compose: WS auth off, no secret key, backend port exposed; /batch unauthenticated; nginx 1 MB limit | docker-compose.yml, nginx.conf, routers/simulation.py:145 | open |
-| F2-14 | 2 | S2 | Last admin can demote self (setup reopens); rejected users keep access; pipe_manager unassignable | admin.py:89; auth.py:134 | open |
-| F2-15 | 2 | S3 | NaN in telemetry -> invalid JSON -> reply silently dropped | main.py:206; useWebSocketSimulation.js:151 | open |
-| F2-16 | 2 | S3 | Zero displayed as default (||); legit 0/negative values rejected | SetupPanel.jsx | open |
-| F2-17 | 2 | S3 | Cleared solver setting -> null -> validation alert per keystroke | Sidebar.jsx:1375-1424 | open |
-| F2-18 | 2 | S3 | Shortcuts: Ctrl+C blocks text copy; act behind modals; bypass lock | useKeyboardShortcuts.js | open |
-| F2-19 | 2 | S3 | Connection validation gaps (multi-pipe ports, self-loops, open ports, unknown types) | App.jsx:876 | open |
-| F2-20 | 2 | S3 | Unit/missing-value presentation inconsistencies (relief matrix bar(a), 0 for missing) | DataList.jsx; converters.js | open |
-| F2-21 | 2 | S3 | Peak scaling cache _scalingInfo stale after re-run, saved into files | case_resolver.js:41-115 | open |
-| F2-22 | 2 | S3 | Results = 91 % of saved data; sent/saved on every change; silent localStorage quota failure | App.jsx:1277; useAutoSaveSession.js:81 | open |
-| F2-23 | 2 | S3 | Catalog errors: SS01/DX01 DN15/20 10S wall, DN400 Sch20/30, DIN fallback rows | pipe_class_defaults.py; standards_library.js:26 | open |
-| F2-24 | 2 | S3 | Duplicated sources of truth; global_roughness ignored; /fluids unused | graph_parser.py:128; fluid_library.js | open |
-| F2-25 | 2 | S3 | Lock/collab authz and lifecycle gaps (standalone checkout, join_diagram, no release on disconnect) | diagrams.py:249; main.py:136; lock_service.py | open |
-| F2-26 | 2 | S3 | Code health: monoliths, duplicated logic, side effects in updaters, dead code | App.jsx, SetupPanel.jsx, Sidebar.jsx | open |
-| F2-27 | 2 | S3 | Accessibility basics missing (labels, dialog roles, focus) | frontend/src | open |
-| F2-28 | 2 | S3 | reactflow 11 on React 19; full re-render per drag frame | package.json; App.jsx:1438-1481 | open |
+| F2-09 | 2 | S2 | Relief matrix re-solves with previous forced state (stale closure) | DataList.jsx:255 | fixed (c01d29b) |
+| F2-10 | 2 | S2 | No error boundary, no import validation: bad file blanks app | App.jsx:770 | fixed (af4e168) |
+| F2-11 | 2 | S2 | Every autosave broadcasts diagram_updated: reload prompt spam for co-viewers | diagrams.py:184; useAutoSaveSession.js:185 | fixed (08c69cc) |
+| F2-12 | 2 | S2 | Login rate limit bypass via spoofed X-Forwarded-For | limiter.py:7 | fixed (08c69cc) |
+| F2-13 | 2 | S2 | Compose: WS auth off, no secret key, backend port exposed; /batch unauthenticated; nginx 1 MB limit | docker-compose.yml, nginx.conf, routers/simulation.py:145 | fixed (08c69cc) |
+| F2-14 | 2 | S2 | Last admin can demote self (setup reopens); rejected users keep access; pipe_manager unassignable | admin.py:89; auth.py:134 | fixed (08c69cc) |
+| F2-15 | 2 | S3 | NaN in telemetry -> invalid JSON -> reply silently dropped | main.py:206; useWebSocketSimulation.js:151 | fixed (af4e168) |
+| F2-16 | 2 | S3 | Zero displayed as default (||); legit 0/negative values rejected | SetupPanel.jsx | fixed (af4e168) |
+| F2-17 | 2 | S3 | Cleared solver setting -> null -> validation alert per keystroke | Sidebar.jsx:1375-1424 | fixed (af4e168) |
+| F2-18 | 2 | S3 | Shortcuts: Ctrl+C blocks text copy; act behind modals; bypass lock | useKeyboardShortcuts.js | fixed (269fb23) |
+| F2-19 | 2 | S3 | Connection validation gaps (multi-pipe ports, self-loops, open ports, unknown types) | App.jsx:876 | fixed (df0f716) |
+| F2-20 | 2 | S3 | Unit/missing-value presentation inconsistencies (relief matrix bar(a), 0 for missing) | DataList.jsx; converters.js | fixed (af4e168) |
+| F2-21 | 2 | S3 | Peak scaling cache _scalingInfo stale after re-run, saved into files | case_resolver.js:41-115 | fixed (af4e168) |
+| F2-22 | 2 | S3 | Results = 91 % of saved data; sent/saved on every change; silent localStorage quota failure | App.jsx:1277; useAutoSaveSession.js:81 | fixed (af4e168, c2e2edf) |
+| F2-23 | 2 | S3 | Catalog errors: SS01/DX01 DN15/20 10S wall, DN400 Sch20/30, DIN fallback rows | pipe_class_defaults.py; standards_library.js:26 | fixed (af4e168) |
+| F2-24 | 2 | S3 | Duplicated sources of truth; global_roughness ignored; /fluids unused | graph_parser.py:128; fluid_library.js | fixed (c2e2edf) |
+| F2-25 | 2 | S3 | Lock/collab authz and lifecycle gaps (standalone checkout, join_diagram, no release on disconnect) | diagrams.py:249; main.py:136; lock_service.py | fixed (08c69cc) |
+| F2-26 | 2 | S3 | Code health: monoliths, duplicated logic, side effects in updaters, dead code | App.jsx, SetupPanel.jsx, Sidebar.jsx | fixed (c2e2edf) |
+| F2-27 | 2 | S3 | Accessibility basics missing (labels, dialog roles, focus) | frontend/src | fixed (1e2e9fe) |
+| F2-28 | 2 | S3 | reactflow 11 on React 19; full re-render per drag frame | package.json; App.jsx:1438-1481 | fixed (c2e2edf): memoised; @xyflow upgrade on ROADMAP |
 | F2-29 | 2 | S1 | Loading an example/file over an open cloud diagram keeps it as autosave target (found in B0) | App.jsx › handleLoadDiagramWithCheck | fixed (84ca2cc) |
 | F3-01 | 3 | S1 | Pipe Network List: name column has no header, every value under the wrong label | DataList.jsx:847-856 | fixed (84ca2cc) |
 | F3-02 | 3 | S1 | New pipes displayed as DN15/first class but simulated at DN50 (52.5 mm) | App.jsx:907; DataList.jsx:869-873 | fixed (84ca2cc) |
-| F3-03 | 3 | S2 | Simulation needs login by default; anonymous user invited to run, gets native alert | main.py:101; GreetingCanvas.wlf | open |
-| F3-04 | 3 | S2 | "Converged" for degenerate network (open port, 0 eq.); no topology validation; status only in Stats | Sidebar Stats; solver | open |
-| F3-05 | 3 | S2 | No plausibility warnings (pump run-out, velocity, class rating/temp, fluid range) | DataList.jsx:968; PumpDetails.jsx | open |
-| F3-06 | 3 | S2 | 86 native alert/confirm/prompt dialogs; cases created unnamed | App.jsx, ProjectManagerModal.jsx, PipeClassesPage.jsx | open |
-| F3-07 | 3 | S2 | Help hidden, outdated, raw LaTeX; no model/limits documentation | HelpInfoModal.jsx:310-380; README.md | open |
-| F3-08 | 3 | S2 | Fixed 350 px data panel, overlaying inspector, no fit-view on load/new drawing | DataList.jsx:389; App.jsx | open |
-| F3-09 | 3 | S2 | Contrast below WCAG AA (CTA 2.49:1, orange 2.49:1, red 3.76:1); colour-only warnings | index.css palette | open |
-| F3-10 | 3 | S2 | Pre-run placeholders look like results (0.00 bar(a), red -0.00 bar(d)) | nodes/*.jsx; DataList.jsx | open |
-| F3-11 | 3 | S3 | Units/notation: tanks not converted in imperial, Pa field, bar(d), negative red drops, gauge/abs ambiguity | TankNode.jsx; Sidebar.jsx | open |
-| F3-12 | 3 | S3 | Settings layout: Global holds only units; fluid/solver under Drawing | Sidebar.jsx:1696 | open |
-| F3-13 | 3 | S3 | Defaults/labels: tank 40 C, auto tags, edge id in inspector title | App.jsx:1076-1104 | open |
-| F3-14 | 3 | S3 | Pump chart raw-float ticks, clipped labels, "Load Factor — %" | PumpDetails.jsx | open |
-| F3-15 | 3 | S3 | Examples: greeting not reopenable, Multi-PSV no note, 7-8 m/s, stray walflow-diagram (8).wlf | frontend/src/data/examples | open |
+| F3-03 | 3 | S2 | Simulation needs login by default; anonymous user invited to run, gets native alert | main.py:101; GreetingCanvas.wlf | fixed (08c69cc) |
+| F3-04 | 3 | S2 | "Converged" for degenerate network (open port, 0 eq.); no topology validation; status only in Stats | Sidebar Stats; solver | fixed (df0f716) |
+| F3-05 | 3 | S2 | No plausibility warnings (pump run-out, velocity, class rating/temp, fluid range) | DataList.jsx:968; PumpDetails.jsx | wontfix: ROADMAP "Plausibility Warnings" |
+| F3-06 | 3 | S2 | 86 native alert/confirm/prompt dialogs; cases created unnamed | App.jsx, ProjectManagerModal.jsx, PipeClassesPage.jsx | fixed (df0f716) |
+| F3-07 | 3 | S2 | Help hidden, outdated, raw LaTeX; no model/limits documentation | HelpInfoModal.jsx:310-380; README.md | fixed (1e2e9fe) |
+| F3-08 | 3 | S2 | Fixed 350 px data panel, overlaying inspector, no fit-view on load/new drawing | DataList.jsx:389; App.jsx | fixed (269fb23) |
+| F3-09 | 3 | S2 | Contrast below WCAG AA (CTA 2.49:1, orange 2.49:1, red 3.76:1); colour-only warnings | index.css palette | fixed (269fb23) |
+| F3-10 | 3 | S2 | Pre-run placeholders look like results (0.00 bar(a), red -0.00 bar(d)) | nodes/*.jsx; DataList.jsx | fixed (269fb23) |
+| F3-11 | 3 | S3 | Units/notation: tanks not converted in imperial, Pa field, bar(d), negative red drops, gauge/abs ambiguity | TankNode.jsx; Sidebar.jsx | fixed (269fb23) |
+| F3-12 | 3 | S3 | Settings layout: Global holds only units; fluid/solver under Drawing | Sidebar.jsx:1696 | fixed (269fb23) |
+| F3-13 | 3 | S3 | Defaults/labels: tank 40 C, auto tags, edge id in inspector title | App.jsx:1076-1104 | fixed (269fb23) |
+| F3-14 | 3 | S3 | Pump chart raw-float ticks, clipped labels, "Load Factor — %" | PumpDetails.jsx | fixed (269fb23) |
+| F3-15 | 3 | S3 | Examples: greeting not reopenable, Multi-PSV no note, 7-8 m/s, stray walflow-diagram (8).wlf | frontend/src/data/examples | fixed (269fb23) |
 | F3-16 | 3 | S3 | Pump Off still passes 0.3 L/min at equal heads | centrifugal pump model | fixed (5b3fe27) |
-| F3-17 | 3 | S3 | Pipe class concept unexplained; rating/temp/CA unused; schedule dropdown limited | PipeClassesPage.jsx; DataList.jsx | open |
-| F3-18 | 3 | S3 | Discoverability: no empty-canvas hint, no context menus | App.jsx | open |
-| F3-19 | 3 | S3 | Version labels: UI v0.2.0/format 0.2 vs AGENTS.md 0.1.6/0.1 | Sidebar.jsx; AGENTS.md; GreetingCanvas.wlf | open |
+| F3-17 | 3 | S3 | Pipe class concept unexplained; rating/temp/CA unused; schedule dropdown limited | PipeClassesPage.jsx; DataList.jsx | fixed (1e2e9fe) |
+| F3-18 | 3 | S3 | Discoverability: no empty-canvas hint, no context menus | App.jsx | fixed (269fb23) |
+| F3-19 | 3 | S3 | Version labels: UI v0.2.0/format 0.2 vs AGENTS.md 0.1.6/0.1 | Sidebar.jsx; AGENTS.md; GreetingCanvas.wlf | fixed (c2e2edf) |
 
 ---
 
@@ -343,6 +370,11 @@ Add one row per finding; details live in the phase findings file. **Locations ar
 | 2026-10-13 | F2-29 + B0 follow-ups | F2-29 fixed (prompt whenever a cloud drawing is open; save pending edits, release lock, detach). Read-only lock now blocks keyboard/ReactFlow delete, paste/duplicate and rotate; rotate handle creates an undo step (verified live) | Commit on request; B1a prompt |
 | 2026-10-13 | B1a implemented | F1-41/F0-05, F1-05, F1-16, F1-02, F1-35, F1-36, F1-18/F3-16, F1-34 fixed with D1–D4; pumps rated in head (examples converted, older files blocked); backend 166 tests + 1 strict xfail (new F1-42); 11 diagrams compared before/after | Commit on request; B1b prompt (incl. solver tolerance and property-lag notes from B1a) |
 | 2026-10-14 | B1b implemented | F1-01/F0-01, F1-37, F1-06, F1-07, F1-10, F1-11, F1-14/F0-06, F1-15 fixed with D1–D4; controller loop is Newton on ln(opening) with finite-difference Jacobian (secant for one controller); backend 217 tests + 1 strict xfail; 21 diagram cases compared before/after; second-pass review of the control loop and convergence criterion done (5 fixes, results unchanged) | Commit on request; B1c prompt |
+| 2026-10-14 to 2026-10-15 | B1c to B6 | Results per batch in 04-triage.md; commits listed in 4.3 | - |
+| 2026-10-16 | Phase 5.1 bookkeeping | Findings Index: all 97 rows fixed or wontfix with commits; Phase 4 DONE; Phase 5 plan added; F3-05 and HI pump viscosity correction added to ROADMAP | 5.2 full gate, 5.3 golden-results test |
+| 2026-10-16 | Phase 5.2 / 5.3 | Full gate green on Node 26.12 after the Vitest web-storage flag; golden-results test for all shipped examples (18 cases) | 5.2 Docker check (user), 5.4 browser smoke test, 5.5 focused review |
+| 2026-10-16 | Phase 5.4 browser smoke test | Drafts, two tabs, blocked run, old-file messages OK; new F5-01 (S1, 4 examples blocked), F5-02, F5-03, F5-04 | User decides F5-01/F5-02 fixes; then 5.5 review |
+| 2026-10-16 | F5-01 to F5-04 fixed | Tank ports keep one pipe (user decision); four examples rewired with splitter/mixer; run state reset on load; single orphan dialog; start command in docs; `qa_report/` deleted. Backend, Vitest (222), lint, build pass; checked in the browser | 5.2 Docker check (user), 5.5 focused review, commit on request |
 
 ---
 

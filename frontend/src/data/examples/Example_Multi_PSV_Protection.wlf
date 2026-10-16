@@ -195,7 +195,7 @@
       "id": "node_return_tank",
       "type": "tank",
       "position": {
-        "x": 950,
+        "x": 1100,
         "y": 300
       },
       "data": {
@@ -204,6 +204,18 @@
         "level": 2.0,
         "elevation": 0.0,
         "temperature": 313.15
+      }
+    },
+    {
+      "id": "node_return_mixer",
+      "type": "mixer",
+      "position": {
+        "x": 960,
+        "y": 300
+      },
+      "data": {
+        "label": "RETURN_MIXER",
+        "rotation": 0
       }
     }
   ],
@@ -278,8 +290,8 @@
       "id": "pipe_process_return",
       "source": "node_process_restriction",
       "sourceHandle": "outlet-0",
-      "target": "node_return_tank",
-      "targetHandle": "inlet-0",
+      "target": "node_return_mixer",
+      "targetHandle": "inlet-1",
       "type": "default",
       "data": {
         "label": "Process Return",
@@ -498,7 +510,7 @@
       "id": "pipe_relief_to_tank",
       "source": "node_relief_mixer_2",
       "sourceHandle": "outlet-0",
-      "target": "node_return_tank",
+      "target": "node_return_mixer",
       "targetHandle": "inlet-0",
       "type": "default",
       "data": {
@@ -512,6 +524,28 @@
         "standardSch": "STD",
         "outer_diameter_mm": 60.3,
         "wall_thickness_mm": 3.91,
+        "roughness_mm": 0.045,
+        "roughness": 4.5e-05
+      }
+    },
+    {
+      "id": "pipe_common_return",
+      "source": "node_return_mixer",
+      "sourceHandle": "outlet-0",
+      "target": "node_return_tank",
+      "targetHandle": "inlet-0",
+      "type": "default",
+      "data": {
+        "label": "Common Return",
+        "type": "PIPE",
+        "length": 1,
+        "diameter": 0.06268,
+        "pipe_class_id": "CS01",
+        "pipe_class_code": "CS01",
+        "standardDn": 65,
+        "standardSch": "STD",
+        "outer_diameter_mm": 73.0,
+        "wall_thickness_mm": 5.16,
         "roughness_mm": 0.045,
         "roughness": 4.5e-05
       }

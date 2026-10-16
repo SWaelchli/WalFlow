@@ -46,6 +46,19 @@ This document outlines planned features, overlays, and enhancements for the WalF
   * **Concept:** Device-type option for PSVs. Today (B1c) a valve opens when its inlet gauge pressure reaches the set pressure, which is how balanced-bellows and pilot valves behave. A conventional spring valve opens at set + superimposed backpressure (differential across the seat), and built-up backpressure above ~10 % of set reduces its capacity (API 520 Kb factor).
   * **Engineering Value:** Correct opening points and capacities for relief valves discharging into a pressurised header or a long outlet line.
 
+- [ ] **🔌 Multiple Nozzles on Fluid Sources (Tanks and Pressure Sources)**
+  * **Concept:** Configurable number of inlet and outlet nozzles on a tank or pressure source (e.g. two pump suctions and a separate relief return on one tank), each a separate port with its own pipe, optionally with its own nozzle height.
+  * **Today (audit F5-01, 2026-10-16):** a port takes one pipe. A line that branches needs a splitter or mixer; separate nozzles are modelled with a second tank at the same level and conditions. The solver already treats a tank or pressure source as one fixed-pressure node, so extra ports mainly need the node component, the port table in `networkValidation.js` (`PORTS_BY_TYPE`) and the parser.
+  * **Engineering Value:** Drawings that match the P&ID without helper tanks or splitters.
+
+- [ ] **🚦 Plausibility Warnings (audit F3-05)**
+  * **Concept:** Non-blocking result warnings, shown in the status chip panel and the result banners: centrifugal pump run-out and minimum flow (% of rated / BEP), pipe velocity above a limit per service (e.g. suction, discharge, return), operating pressure or temperature above the pipe class P-T rating, and fluid temperature outside the property data range (`temperature_out_of_range` is already in `physical_validity`).
+  * **Status (B4a decision, 2026-10-15):** moved out of the audit. The backend flags for NPSH (F1-28), fluid range (F1-31) and motor overload (F1-36) exist; thresholds (velocity limits, % of rated flow) need a decision before building the UI.
+
+- [ ] **🛢️ Pump Viscosity Correction (HI 9.6.7)**
+  * **Concept:** Correct centrifugal pump head, flow and efficiency for viscous fluids (Hydraulic Institute 9.6.7 correction factors $C_H$, $C_Q$, $C_\eta$ from the water curve). Today the curve is head-based (B1a), so density is handled, but viscosity does not change the curve.
+  * **Engineering Value:** Realistic duty points for cold lube and seal oils (VG32 to VG220), where the uncorrected water curve over-predicts head and efficiency.
+
 - [ ] **💧 Valve Choked Flow & Cavitation (IEC 60534 $F_L$, $F_F$)**
   * **Concept:** Liquid pressure-recovery factor $F_L$ and critical pressure ratio $F_F$ per valve: choked-flow limit $\Delta P_{\max} = F_L^2 (P_1 - F_F P_v)$, flashing and cavitation onset indices.
   * **Status (B1d, 2026-10-14):** valves, regulators and orifices only flag an outlet pressure below the vapour pressure (`flashing_warning`); the flow is not limited by choking.

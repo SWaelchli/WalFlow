@@ -306,6 +306,7 @@ function WalFlowContent() {
     isSimulating,
     isConnected,
     lastStats,
+    resetRunState,
     runSimulation,
     handleValveChange,
     telemetryMode,
@@ -671,6 +672,7 @@ function WalFlowContent() {
       notify(check.message, 'warning');
       return false;
     }
+    resetRunState();
     showCanvasLoading();
     scheduleLoad(() => {
       // Results are never loaded from a file (F2-22); old or hand-edited files may still carry them
@@ -725,7 +727,7 @@ function WalFlowContent() {
       setAutoRunPending(restoredNodes.length > 0);
     }, 50);
     return true;
-  }, [handleValveChange, handleRotation, setNodes, setEdges, setCases, setActiveCaseId, showCanvasLoading, hideCanvasLoading, scheduleLoad, resetHistory]);
+  }, [handleValveChange, handleRotation, setNodes, setEdges, setCases, setActiveCaseId, showCanvasLoading, hideCanvasLoading, scheduleLoad, resetHistory, resetRunState]);
 
   const handleLoadDiagramWithCheck = useCallback(async (data, diagramTitle = '', options = {}) => {
     // Reject a bad file before anything about the open drawing changes (F0-02, F2-10)
@@ -1060,7 +1062,8 @@ function WalFlowContent() {
     setCases([DEFAULT_BASE_CASE]);
     setActiveCaseId('case_base');
     setGlobalSettings(DEFAULT_DRAWING_SETTINGS);
-  }, [setNodes, setEdges, setCases, setActiveCaseId, resetHistory]);
+    resetRunState();
+  }, [setNodes, setEdges, setCases, setActiveCaseId, resetHistory, resetRunState]);
 
   const handleSaveAs = useCallback(async ({ title, description, project_id }) => {
     try {

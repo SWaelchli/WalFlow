@@ -192,11 +192,18 @@ export function useWebSocketSimulation({ nodes, edges, globalSettings, cases = [
     []
   );
 
+  // F5-02: another drawing replaces the canvas, so the last run no longer describes it
+  const resetRunState = useCallback(() => {
+    setLastStats(null);
+    setRunError(null);
+  }, [setRunError]);
+
   return {
     ws,
     isSimulating,
     isConnected,
     lastStats,
+    resetRunState,
     runSimulation,
     handleValveChange,
     telemetryMode,
