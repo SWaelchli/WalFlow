@@ -21,6 +21,7 @@ from simulation.equipment.filter import Filter
 from simulation.equipment.three_way_tcv import ThreeWayTCV
 from simulation.fluid_utils import FluidProperties
 from simulation.limits import check_deadline
+from simulation.equipment.relief_device import is_closed_relief
 
 class NetworkSolver:
     """
@@ -62,7 +63,7 @@ class NetworkSolver:
         inactive_node_ids = set()
         for node_id, node in self.network.nodes.items():
             is_inactive_pump = (not getattr(node, 'active', True) and getattr(node, 'blocks_flow_on_shutdown', False))
-            is_closed_relief = (getattr(node, 'forced_state', '') == 'forced_closed' and getattr(node, 'node_type', '') in ['pressure_safety_valve', 'rupture_disc'])
+            is_closed_relief = (getattr(node, 'forced_state', '') == 'forced_closed' and getattr(node, 'node_type', '') in RELIEF_NODE_TYPES)
             if is_inactive_pump or is_closed_relief:
                 inactive_node_ids.add(node_id)
                 
@@ -522,7 +523,12 @@ class NetworkSolver:
             prev_temperatures = curr_temperatures
 
             # 1. Pressure controllers (Newton on the openings, F1-01)
-            if controllers:
+            if controllers and relief_changed:
+                # The solution above belongs to the previous relief state: differencing against it would mix
+                # the relief jump into the Jacobian. Re-solve with the new state first.
+                memo.clear()
+                controls_converged, dirty = False, False
+            elif controllers:
                 controls_converged, dirty = self._control_step(controllers, lambda: run_hydraulics(fatal=False, propagate=False), memo)
             else:
                 controls_converged = True
@@ -833,6 +839,8 @@ class NetworkSolver:
         for i, idx in enumerate(self.internal_node_indices):
             p_in_all[idx] = p_in_internal[i]
 
+        internal_pos = {idx: i for i, idx in enumerate(self.internal_node_indices)}
+
         # 1. Mass Balance Rows (a < num_internal)
         for a, node_idx in enumerate(self.internal_node_indices):
             node_id = self.node_ids[node_idx]
@@ -851,15 +859,14 @@ class NetworkSolver:
             cols.append(a)
             data.append(1e-9)
             
-            for j, edge in enumerate(self.edges_list):
-                if edge['target'] == node_id:
-                    rows.append(a)
-                    cols.append(num_internal + j)
-                    data.append(5.0)
-                if edge['source'] == node_id:
-                    rows.append(a)
-                    cols.append(num_internal + j)
-                    data.append(-5.0)
+            for j in self.node_incoming_edge_indices.get(node_id, []):
+                rows.append(a)
+                cols.append(num_internal + j)
+                data.append(5.0)
+            for j in self.node_outgoing_edge_indices.get(node_id, []):
+                rows.append(a)
+                cols.append(num_internal + j)
+                data.append(-5.0)
 
         # 2. Pressure Balance Rows (a_row = num_internal + j)
         for j, edge in enumerate(self.edges_list):
@@ -870,12 +877,8 @@ class NetworkSolver:
             tgt_idx = self.node_id_to_idx[tgt_id]
             src_node = self.nodes_list[src_idx]
             
-            src_internal_idx = -1
-            if src_idx in self.internal_node_indices:
-                src_internal_idx = self.internal_node_indices.index(src_idx)
-            tgt_internal_idx = -1
-            if tgt_idx in self.internal_node_indices:
-                tgt_internal_idx = self.internal_node_indices.index(tgt_idx)
+            src_internal_idx = internal_pos.get(src_idx, -1)
+            tgt_internal_idx = internal_pos.get(tgt_idx, -1)
 
             if self._use_mcp_for_node(src_node):
                 # Complementarity rows (check valves, closed relief devices): the node itself decides which
@@ -894,12 +897,12 @@ class NetworkSolver:
                 def row_residual(p_src, p_tgt, q):
                     # Same function as the objective's row for this edge
                     dp_pipe_ = pipe.calculate_delta_p(q, pipe_density, pipe_viscosity)
-                    dp_node_ = src_node.calculate_delta_p(q, density, viscosity, p_in_pa=p_src,
-                                                          p_out_pa=p_tgt + dp_pipe_, update_state=False)
                     dp_tcv_ = 0.0
                     if tcv_port is not None:
                         port = tgt_node_obj.inlets[tcv_port]
                         dp_tcv_ = tgt_node_obj.calculate_path_dp(q, port.density, tcv_port, port.viscosity)
+                    dp_node_ = src_node.calculate_delta_p(q, density, viscosity, p_in_pa=p_src,
+                                                          p_out_pa=p_tgt + dp_pipe_ + dp_tcv_, update_state=False)
                     return ((p_src - dp_node_) - p_tgt - dp_pipe_ - dp_tcv_) / p_scale
 
                 p_src0, p_tgt0, q0 = p_in_all[src_idx], p_in_all[tgt_idx], q_edges[j]
@@ -1120,8 +1123,8 @@ class NetworkSolver:
                 elif self._use_mcp_for_node(src_node):
                     pipe = edge['pipe']
                     dp_pipe = pipe.calculate_delta_p(q_edges[j], pipe.inlets[0].density, pipe.inlets[0].viscosity)
-                    p_out_est = p_in_all[tgt_idx] + dp_pipe
-                    
+                    p_out_est = p_in_all[tgt_idx] + dp_pipe + self._tcv_entry_dp(edge, self.network.nodes[tgt_id], q_edges[j])
+
                     inlet = src_node.inlets[0] if src_node.inlets else None
                     density = inlet.density if inlet else 1000.0
                     viscosity = inlet.viscosity if inlet else 0.001
@@ -1216,7 +1219,16 @@ class NetworkSolver:
         # Relief devices are always a flow equation with their open/closed state held (B1c)
         return getattr(node, 'node_type', '') in RELIEF_NODE_TYPES
 
-    def _get_node_p_out(self, node, p_in, q_in, q_out, update_state: bool = False):
+    def _tcv_entry_dp(self, edge, tgt_node, q) -> float:
+        """Loss of a 3-way TCV inlet path when the edge ends at one (0 for any other target)."""
+        if not isinstance(tgt_node, ThreeWayTCV):
+            return 0.0
+        port_idx = self._parse_port_idx(edge.get('target_port', 'inlet-0'))
+        port = tgt_node.inlets[port_idx]
+        return tgt_node.calculate_path_dp(q, port.density, port_idx, port.viscosity)
+
+    def _get_node_p_out(self, node, p_in, q_in, q_out, update_state: bool = False, p_in_all=None):
+        """p_in_all (indexed like all_nodes_list) supplies the solved downstream pressure for relief devices."""
         port = node.inlets[0] if node.inlets else (node.outlets[0] if node.outlets else None)
         density = port.density if port else 1000.0
         viscosity = port.viscosity if port else 0.001
@@ -1241,7 +1253,10 @@ class NetworkSolver:
                         tgt_id = edge['target']
                         tgt_idx = self.all_node_id_to_idx[tgt_id]
                         tgt_node = self.network.nodes[tgt_id]
-                        p_out_est = self._tgt_port(edge, tgt_node).pressure + edge['pipe'].calculate_delta_p(q_flow, density, viscosity)
+                        pipe = edge['pipe']
+                        p_tgt = p_in_all[tgt_idx] if p_in_all is not None else self._tgt_port(edge, tgt_node).pressure
+                        p_out_est = (p_tgt + pipe.calculate_delta_p(q_flow, pipe.inlets[0].density, pipe.inlets[0].viscosity)
+                                     + self._tcv_entry_dp(edge, tgt_node, q_flow))
                         break
                 return p_in - node.calculate_delta_p(q_flow, density, viscosity, p_in_pa=p_in, p_out_pa=p_out_est, update_state=update_state)
 
@@ -1294,16 +1309,12 @@ class NetworkSolver:
                 for port in node.inlets: port.pressure = p_in
                 q_in_total = sum(p.flow_rate for p in node.inlets)
                 q_out_total = sum(p.flow_rate for p in node.outlets)
-                p_out = self._get_node_p_out(node, p_in, q_in_total, q_out_total, update_state=True)
+                p_out = self._get_node_p_out(node, p_in, q_in_total, q_out_total, update_state=True, p_in_all=p_in_all)
                 for port in node.outlets: port.pressure = p_out
                 if isinstance(node, ThreeWayTCV):
                     node.calculate()
 
         # 6b. Bidirectional pressure propagation to pruned/inactive components
-        def is_closed_relief_node(n):
-            return getattr(n, 'node_type', '') in ['pressure_safety_valve', 'rupture_disc'] and \
-                   (getattr(n, 'status', '') in ['closed', 'intact'] or getattr(n, 'forced_state', '') == 'forced_closed')
-
         for _ in range(5):
             for edge in self.all_edges_list:
                 src_node = self.network.nodes[edge['source']]
@@ -1315,7 +1326,7 @@ class NetworkSolver:
                 # Case 1: Propagate downstream (src is active, tgt is pruned)
                 if src_key not in self.pruned_node_ids and tgt_key in self.pruned_node_ids:
                     # Closed relief nodes block pressure propagation from inlet to outlet
-                    if is_closed_relief_node(src_node):
+                    if is_closed_relief(src_node):
                         continue
                     src_port_idx = self._parse_port_idx(edge.get('source_port', 'outlet-0'))
                     if src_port_idx < len(src_node.outlets):
@@ -1323,14 +1334,14 @@ class NetworkSolver:
                         tgt_idx = self.all_node_id_to_idx[tgt_key]
                         p_in_all[tgt_idx] = p_src_out
                         for port in tgt_node.inlets: port.pressure = p_src_out
-                        if not is_closed_relief_node(tgt_node):
+                        if not is_closed_relief(tgt_node):
                             p_out = self._get_node_p_out(tgt_node, p_src_out, 0.0, 0.0, update_state=True)
                             for port in tgt_node.outlets: port.pressure = p_out
 
                 # Case 2: Propagate upstream (tgt is active, src is pruned)
                 elif tgt_key not in self.pruned_node_ids and src_key in self.pruned_node_ids:
                     # Closed relief nodes block pressure propagation from outlet to inlet
-                    if is_closed_relief_node(tgt_node):
+                    if is_closed_relief(tgt_node):
                         continue
                     tgt_port_idx = self._parse_port_idx(edge.get('target_port', 'inlet-0'))
                     if tgt_port_idx < len(tgt_node.inlets):
@@ -1338,7 +1349,7 @@ class NetworkSolver:
                         src_idx = self.all_node_id_to_idx[src_key]
                         p_in_all[src_idx] = p_tgt_in
                         for port in src_node.outlets: port.pressure = p_tgt_in
-                        if not is_closed_relief_node(src_node):
+                        if not is_closed_relief(src_node):
                             for port in src_node.inlets: port.pressure = p_tgt_in
 
                 # Case 3: Both pruned -> propagate from updated node to unupdated node (relative to atmospheric pressure)
@@ -1349,32 +1360,31 @@ class NetworkSolver:
                     p_tgt = p_in_all[tgt_idx]
                     
                     if abs(p_src - atm_p) > abs(p_tgt - atm_p):
-                        if is_closed_relief_node(src_node):
+                        if is_closed_relief(src_node):
                             continue
                         src_port_idx = self._parse_port_idx(edge.get('source_port', 'outlet-0'))
                         if src_port_idx < len(src_node.outlets):
                             p_src_out = src_node.outlets[src_port_idx].pressure
                             p_in_all[tgt_idx] = p_src_out
                             for port in tgt_node.inlets: port.pressure = p_src_out
-                            if not is_closed_relief_node(tgt_node):
+                            if not is_closed_relief(tgt_node):
                                 p_out = self._get_node_p_out(tgt_node, p_src_out, 0.0, 0.0, update_state=True)
                                 for port in tgt_node.outlets: port.pressure = p_out
                     elif abs(p_tgt - atm_p) > abs(p_src - atm_p):
-                        if is_closed_relief_node(tgt_node):
+                        if is_closed_relief(tgt_node):
                             continue
                         tgt_port_idx = self._parse_port_idx(edge.get('target_port', 'inlet-0'))
                         if tgt_port_idx < len(tgt_node.inlets):
                             p_tgt_in = tgt_node.inlets[tgt_port_idx].pressure
                             p_in_all[src_idx] = p_tgt_in
                             for port in src_node.outlets: port.pressure = p_tgt_in
-                            if not is_closed_relief_node(src_node):
+                            if not is_closed_relief(src_node):
                                 for port in src_node.inlets: port.pressure = p_tgt_in
 
         # 7. Special handling for closed/pruned relief nodes (PSV & Rupture Disc)
         for node in self.all_nodes_list:
-            if getattr(node, 'node_type', '') in ['pressure_safety_valve', 'rupture_disc']:
-                is_closed = getattr(node, 'status', '') in ['closed', 'intact'] or getattr(node, 'forced_state', '') == 'forced_closed'
-                if is_closed:
+            if getattr(node, 'node_type', '') in RELIEF_NODE_TYPES:
+                if is_closed_relief(node):
                     node_id = self.node_to_key[id(node)]
                     ds_p = node.inlets[0].pressure if node.inlets else 101325.0
                     for edge in self.all_edges_list:
@@ -1389,18 +1399,18 @@ class NetworkSolver:
                         port.pressure = ds_p
 
         # 8. Populate all edges' pipe flows and pressures
+        active_edge_pos = {id(e): j for j, e in enumerate(self.edges_list)}
         for edge in self.all_edges_list:
             pipe = edge['pipe']
             src_node = self.network.nodes[edge['source']]
             tgt_node = self.network.nodes[edge['target']]
             
-            is_active = (edge in self.edges_list)
-            q = q_edges[self.edges_list.index(edge)] if is_active else 0.0
+            active_pos = active_edge_pos.get(id(edge))
+            is_active = active_pos is not None
+            q = q_edges[active_pos] if is_active else 0.0
             
-            src_is_closed_relief = getattr(src_node, 'node_type', '') in ['pressure_safety_valve', 'rupture_disc'] and \
-                                   (getattr(src_node, 'status', '') in ['closed', 'intact'] or getattr(src_node, 'forced_state', '') == 'forced_closed')
-            tgt_is_closed_relief = getattr(tgt_node, 'node_type', '') in ['pressure_safety_valve', 'rupture_disc'] and \
-                                   (getattr(tgt_node, 'status', '') in ['closed', 'intact'] or getattr(tgt_node, 'forced_state', '') == 'forced_closed')
+            src_is_closed_relief = is_closed_relief(src_node)
+            tgt_is_closed_relief = is_closed_relief(tgt_node)
 
             src_port = self._src_port(edge, src_node)
             tgt_port = self._tgt_port(edge, tgt_node)
@@ -1519,11 +1529,6 @@ RELIEF_RAMP_TOL_PA = 100.0      # 1 mbar: inlet pressure at the opening snapshot
 RELIEF_RAMP_TOL_LAM = 1e-4
 
 
-def _relief_set_pressure_bara(node) -> float:
-    """Set / burst pressure as absolute pressure (bar(a)); entered in barg (F1-09)."""
-    return float(node.set_pressure_bara)
-
-
 def _telemetry_max_pressure_bara(tel) -> float:
     """Maximum pressure (bar(a)) over all node and edge ports of a telemetry dict."""
     max_pa = 0.0
@@ -1572,7 +1577,7 @@ def _find_relief_openings(network, opening_groups, auto_ids, original_states, ex
                 net.nodes[k].forced_state = "auto" if k in earlier else "forced_closed"
             group_nodes = [(k, net.nodes[k]) for k in group_ids]
 
-            best = None   # (|margin|, λ, telemetry)
+            best = None   # (|margin|, λ)
 
             def margin_at(lam):
                 for d in drivers:
@@ -1581,21 +1586,19 @@ def _find_relief_openings(network, opening_groups, auto_ids, original_states, ex
                     net.nodes[k].reset_run_state()
                 stats = ramp_solver.solve()
                 if not stats.get("success"):
-                    return None, None
-                margin = max(node.inlets[0].pressure - node.set_pressure_pa
-                             for _, node in group_nodes)
-                return margin, extract_telemetry_fn(net)
+                    return None
+                return max(node.inlets[0].pressure - node.set_pressure_pa for _, node in group_nodes)
 
             # The group breached its set pressure at λ = 1 (that is why it opened); below its
             # set pressure at λ = 0 (drivers at rest).
             lo, hi = 0.0, 1.0
             for _ in range(RELIEF_RAMP_MAX_SOLVES):
                 lam = 0.5 * (lo + hi)
-                margin, tel = margin_at(lam)
+                margin = margin_at(lam)
                 if margin is None:
                     return openings, f"Relief ramp did not converge at {lam * 100:.1f} % driver load."
                 if best is None or abs(margin) < best[0]:
-                    best = (abs(margin), lam, tel)
+                    best = (abs(margin), lam)
                 if margin >= 0.0:
                     hi = lam
                 else:
@@ -1603,7 +1606,11 @@ def _find_relief_openings(network, opening_groups, auto_ids, original_states, ex
                 if abs(margin) < RELIEF_RAMP_TOL_PA or hi - lo < RELIEF_RAMP_TOL_LAM:
                     break
 
-            _, lam, tel = best
+            _, lam = best
+            # Telemetry only for the chosen λ (re-solved once) instead of at every bisection step
+            if margin_at(lam) is None:
+                return openings, f"Relief ramp did not converge at {lam * 100:.1f} % driver load."
+            tel = extract_telemetry_fn(net)
             # The snapshot holds the auto devices closed by the method, not by the user
             for k in auto_ids:
                 if k in tel.get("nodes", {}):
@@ -1659,6 +1666,7 @@ def run_sequential_relief_simulation(network, solver, extract_telemetry_fn):
 
     # Initialize sequential states for Mitigated passes
     auto_psv_nodes = [node for node in psv_nodes if original_states[key_of[id(node)]] == "auto"]
+    auto_ids_all = [key_of[id(node)] for node in auto_psv_nodes]
 
     for node in auto_psv_nodes:
         node.forced_state = "forced_closed"
@@ -1677,7 +1685,7 @@ def run_sequential_relief_simulation(network, solver, extract_telemetry_fn):
         for node in auto_psv_nodes:
             if node.forced_state == "forced_closed":
                 p_in_bar = (node.inlets[0].pressure / 100000.0) if node.inlets else 0.0
-                set_p = _relief_set_pressure_bara(node)   # F1-09: inlet gauge pressure reaches the set pressure
+                set_p = node.set_pressure_bara   # F1-09: inlet gauge pressure reaches the set pressure
                 if p_in_bar >= set_p:
                     breached_nodes.append((set_p, node))
 
@@ -1701,6 +1709,13 @@ def run_sequential_relief_simulation(network, solver, extract_telemetry_fn):
         opening_groups.append(group)
 
     telemetry_mitigated = extract_telemetry_fn(network)
+    # The passes held auto devices closed by the method; the caller's network and the telemetry keep the user's state
+    for k, node in psv_items:
+        node.forced_state = original_states[k]
+    for tel in (telemetry_mitigated, telemetry_unmitigated):
+        for k in auto_ids_all:
+            if k in tel.get("nodes", {}):
+                tel["nodes"][k]["forced_state"] = original_states[k]
     if stats is not None and first_warm_start_status is not None:
         stats["warm_start_status"] = first_warm_start_status
 
@@ -1746,7 +1761,7 @@ def run_sequential_relief_simulation(network, solver, extract_telemetry_fn):
         order, op = opening_by_id.get(k, (None, None))
         devices[k] = {
             "set_pressure_barg": node.set_pressure_barg,
-            "set_pressure_bara": round(_relief_set_pressure_bara(node), 5),
+            "set_pressure_bara": round(node.set_pressure_bara, 5),
             "forced_state": original_states[k],
             "status": node_tel.get("status"),
             "opening_order": order,

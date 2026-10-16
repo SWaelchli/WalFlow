@@ -93,10 +93,14 @@ class ReliefDevice(HydraulicNode):
 
     def rated_flow(self, flow_rate, density, viscosity, p_out_pa) -> float:
         """Flow at full lift with the inlet at 110 % of set pressure (gauge) against the actual outlet (F1-38)."""
-        dp_rated = self.set_pressure_pa + RATED_OVERPRESSURE * self.set_pressure_barg * P_SCALE - p_out_pa
+        dp_rated = self.set_pressure_pa + self.full_lift_overpressure_pa - p_out_pa
         if dp_rated <= 0.0:
             return 0.0
-        return (dp_rated / self._loss_coefficient(flow_rate, density, viscosity)) ** 0.5
+        # The loss coefficient depends on Q through the Reynolds correction: evaluate it at the rated flow
+        q_rated = max(abs(flow_rate), Q_COEFF_MIN)
+        for _ in range(4):
+            q_rated = (dp_rated / self._loss_coefficient(q_rated, density, viscosity)) ** 0.5
+        return q_rated
 
     def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001,
                           p_in_pa: float = None, p_out_pa: float = None, update_state: bool = True) -> float:
@@ -118,10 +122,16 @@ class ReliefDevice(HydraulicNode):
         """Status, capacity and lift for telemetry; never changes the held open/closed state."""
         q = max(0.0, flow_rate)
         self.lift_pct = 100.0 * self.lift(p_in_pa)
-        if self.lift_mode() == "closed" or q <= 1e-9:
+        if self.lift_pct <= 0.0:
             self.capacity_utilization_pct = 0.0
             self.rated_flow_lmin = 0.0
             self.status = self.closed_status()
+            return
+        if q <= 1e-9:
+            # Open (burst, popped or forced open) but nothing flows, e.g. no pressure difference across it
+            self.capacity_utilization_pct = 0.0
+            self.rated_flow_lmin = 0.0
+            self.status = self.open_status()
             return
         rated = self.rated_flow(q, density, viscosity, p_out_pa)
         self.rated_flow_lmin = rated * 60000.0
@@ -163,3 +173,8 @@ class ReliefDevice(HydraulicNode):
 
         # Outlet temperature already includes the throttling heat (F1-16); do not overwrite it
         return dp
+
+
+def is_closed_relief(node) -> bool:
+    """True for a relief device (PSV, rupture disc) that currently passes no flow."""
+    return isinstance(node, ReliefDevice) and node.is_closed()

@@ -244,3 +244,32 @@ def test_d1_barg_key_is_read():
     net = GraphParser.parse_graph(_graph({"set_pressure_barg": 12.5, "forced_state": "forced_open"}))
     psv = net.nodes["psv"]
     assert psv.set_pressure_barg == 12.5 and psv.forced_state == "forced_open"
+
+
+# --- code review follow-ups -------------------------------------------------------------------------
+
+def test_sequential_relief_run_leaves_the_users_forced_states_on_the_network():
+    """A PSV that never opened stays 'auto' on the network and in the telemetry (re-run without a new graph)."""
+    psv = PressureSafetyValve("PSV", set_pressure_barg=50.0, cv=2.0)   # far above the pump head: never opens
+    net = _pump_to_psv(psv)
+    stats, tel, tel_unmit, *_ = run_sequential_relief_simulation(net, NetworkSolver(net), extract_telemetry)
+    assert stats["success"] and psv.forced_state == "auto"
+    assert tel["nodes"]["psv"]["forced_state"] == "auto"
+    assert tel_unmit["nodes"]["psv"]["forced_state"] == "auto"
+
+
+def test_open_device_without_flow_is_not_reported_closed():
+    """A burst disc with no pressure difference across it is open (no flow), not 'intact'."""
+    disc = RuptureDisc("Disc", burst_pressure_barg=5.0, cv=2.0, forced_state="forced_open")
+    disc.report(0.0, 998.0, 0.001, P_ATM + 1.0e5, P_ATM + 1.0e5)
+    assert disc.status != "intact" and not disc.is_closed()
+    assert disc.capacity_utilization_pct == 0.0
+
+
+def test_rated_flow_uses_the_full_lift_overpressure():
+    """Tiny set pressure: rated flow is evaluated where full lift is reached, so a full-lift flow is 100 %."""
+    psv = PressureSafetyValve("PSV", set_pressure_barg=0.05, cv=10.0, action_mode="modulating")
+    p_in = psv.set_pressure_pa + psv.full_lift_overpressure_pa
+    q = psv.model_flow(0.001, 998.0, 0.001, p_in, P_ATM)
+    rated = psv.rated_flow(q, 998.0, 0.001, P_ATM)
+    assert math.isclose(q, rated, rel_tol=0.01)
