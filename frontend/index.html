@@ -6,6 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script>
       window.addEventListener('error', function(event) {
+        // Benign browser notice (layout changed during a resize callback); not a crash.
+        if (event.message && event.message.indexOf('ResizeObserver loop') === 0) {
+          event.stopImmediatePropagation();
+          return;
+        }
         var errorDiv = document.createElement('div');
         errorDiv.id = 'vite-runtime-error-overlay';
         errorDiv.style.position = 'fixed';
