@@ -4,7 +4,7 @@ from typing import List, Optional
 from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, defer
 
 try:
     import redis
@@ -87,10 +87,10 @@ def list_user_diagrams(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You do not have access to this project's diagrams."
             )
-        diagrams = db.query(Diagram).filter(Diagram.project_id == project_id).order_by(Diagram.updated_at.desc()).all()
+        diagrams = db.query(Diagram).options(defer(Diagram.diagram_data)).filter(Diagram.project_id == project_id).order_by(Diagram.updated_at.desc()).all()
     else:
         # Standalone diagrams owned directly by user
-        diagrams = db.query(Diagram).filter(
+        diagrams = db.query(Diagram).options(defer(Diagram.diagram_data)).filter(
             Diagram.user_id == current_user.id,
             Diagram.project_id.is_(None)
         ).order_by(Diagram.updated_at.desc()).all()

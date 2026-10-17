@@ -155,6 +155,16 @@ async def release_lock_after_disconnect(manager: "ConnectionManager", info):
 collab_manager = ConnectionManager()
 
 
+# Replaces the lock value only if it still equals the value that was read (ARGV[1])
+_CAS_SET_LUA = """
+if redis.call('GET', KEYS[1]) == ARGV[1] then
+    redis.call('SET', KEYS[1], ARGV[2], 'EX', tonumber(ARGV[3]))
+    return 1
+end
+return 0
+"""
+
+
 def acquire_lock(diagram_id: str, user_id: str, username: str, expire_seconds: int = 900) -> dict:
     """Acquires or refreshes an editing lock on a diagram."""
     now = datetime.now(timezone.utc)
@@ -169,13 +179,24 @@ def acquire_lock(diagram_id: str, user_id: str, username: str, expire_seconds: i
     if redis_client:
         try:
             key = f"walflow:lock:{diagram_id}"
-            existing_raw = redis_client.get(key)
-            if existing_raw:
+            payload = json.dumps(lock_data)
+            # Atomic: SET NX claims a free key; replacing a held key is a compare-and-swap on the value we read
+            for _ in range(3):
+                if redis_client.set(key, payload, nx=True, ex=expire_seconds):
+                    return lock_data
+                existing_raw = redis_client.get(key)
+                if existing_raw is None:
+                    continue
                 existing = json.loads(existing_raw)
                 existing_expires = datetime.fromisoformat(existing["expires_at"])
                 if existing["user_id"] != user_id and existing_expires > now:
                     return existing
-            redis_client.set(key, json.dumps(lock_data), ex=expire_seconds)
+                if redis_client.eval(_CAS_SET_LUA, 1, key, existing_raw, payload, expire_seconds):
+                    return lock_data
+            existing_raw = redis_client.get(key)
+            if existing_raw:
+                return json.loads(existing_raw)
+            redis_client.set(key, payload, ex=expire_seconds)
             return lock_data
         except Exception:
             pass

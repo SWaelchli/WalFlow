@@ -1461,6 +1461,11 @@ class NetworkSolver:
         if self.nodes_list and self.nodes_list[0].global_settings:
             max_iterations = getattr(self.nodes_list[0].global_settings, 'property_iterations', 5)
         actual_iters = 0
+        # Edges per node, built once so each node only visits its own edges
+        edges_into, edges_out_of = {}, {}
+        for j, edge in enumerate(self.edges_list):
+            edges_into.setdefault(edge['target'], []).append((j, edge))
+            edges_out_of.setdefault(edge['source'], []).append((j, edge))
         for _ in range(max_iterations):
             actual_iters += 1
             max_temp_change = 0.0
@@ -1487,25 +1492,26 @@ class NetworkSolver:
                     node.calculate()
                     continue
                 old_temps = [p.temperature for p in node.outlets] + [p.temperature for p in node.inlets]
-                for j, edge in enumerate(self.edges_list):
+                for j, edge in edges_into.get(node_id, ()):
                     q = q_edges[j]
                     pipe = edge['pipe']
-                    if edge['target'] == node_id:
-                        port_idx = self._parse_port_idx(edge.get('target_port', 'inlet-0'))
-                        if port_idx < len(node.inlets):
-                            node.inlets[port_idx].flow_rate = q
-                            if q >= 0:
-                                node.inlets[port_idx].temperature = pipe.outlets[0].temperature
-                                node.inlets[port_idx].density = pipe.outlets[0].density
-                                node.inlets[port_idx].viscosity = pipe.outlets[0].viscosity
-                    if edge['source'] == node_id:
-                        port_idx = self._parse_port_idx(edge.get('source_port', 'outlet-0'))
-                        if port_idx < len(node.outlets):
-                            node.outlets[port_idx].flow_rate = q
-                            if q < 0:
-                                node.outlets[port_idx].temperature = pipe.inlets[0].temperature
-                                node.outlets[port_idx].density = pipe.inlets[0].density
-                                node.outlets[port_idx].viscosity = pipe.inlets[0].viscosity
+                    port_idx = self._parse_port_idx(edge.get('target_port', 'inlet-0'))
+                    if port_idx < len(node.inlets):
+                        node.inlets[port_idx].flow_rate = q
+                        if q >= 0:
+                            node.inlets[port_idx].temperature = pipe.outlets[0].temperature
+                            node.inlets[port_idx].density = pipe.outlets[0].density
+                            node.inlets[port_idx].viscosity = pipe.outlets[0].viscosity
+                for j, edge in edges_out_of.get(node_id, ()):
+                    q = q_edges[j]
+                    pipe = edge['pipe']
+                    port_idx = self._parse_port_idx(edge.get('source_port', 'outlet-0'))
+                    if port_idx < len(node.outlets):
+                        node.outlets[port_idx].flow_rate = q
+                        if q < 0:
+                            node.outlets[port_idx].temperature = pipe.inlets[0].temperature
+                            node.outlets[port_idx].density = pipe.inlets[0].density
+                            node.outlets[port_idx].viscosity = pipe.inlets[0].viscosity
                 if hasattr(node, 'calculate_temperature'):
                     node.calculate_temperature()
                 node.calculate()
