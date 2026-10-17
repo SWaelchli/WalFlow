@@ -245,8 +245,8 @@ async def delete_diagram(
 
     if diagram.project_id:
         role = get_user_project_role(db, diagram.project_id, current_user.id)
-        # Only project owners or diagram creator can delete it
-        if role != "owner" and diagram.user_id != current_user.id:
+        # Only current project members who own the project or created the diagram can delete it
+        if role is None or (role != "owner" and diagram.user_id != current_user.id):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only project owners or the diagram creator can delete it."
@@ -319,6 +319,10 @@ async def checkin_diagram(
     if not diagram:
          raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Diagram not found.")
 
+    require_diagram_access(db, diagram, current_user)
+
+    lock = get_lock_status_info(diagram_id)
+    held_by_caller = bool(lock) and lock.get("user_id") == current_user.id
     released = release_lock(diagram_id, current_user.id, force=False)
     if not released:
         raise HTTPException(
@@ -326,16 +330,17 @@ async def checkin_diagram(
             detail="Cannot check in: Lock is held by another user."
         )
 
-    # Broadcast lock release
-    await collab_manager.broadcast_to_diagram(
-        diagram_id,
-        {
-            "action": "lock_released",
-            "diagram_id": diagram_id,
-            "user_id": current_user.id,
-            "username": current_user.username
-        }
-    )
+    # Broadcast lock release only if the caller actually held the lock
+    if held_by_caller:
+        await collab_manager.broadcast_to_diagram(
+            diagram_id,
+            {
+                "action": "lock_released",
+                "diagram_id": diagram_id,
+                "user_id": current_user.id,
+                "username": current_user.username
+            }
+        )
 
     return {"status": "success", "message": "Diagram checked in successfully."}
 

@@ -4,7 +4,7 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 
 from db.database import get_db
-from db.models import User, Diagram
+from db.models import User, Diagram, ProjectMember
 from auth import get_current_admin_user
 
 router = APIRouter(
@@ -110,6 +110,23 @@ def update_user_role(user_id: str, payload: RoleUpdateSchema, db: Session = Depe
     db.commit()
     return {"status": "success", "message": f"User '{target_user.username}' role updated to '{payload.role}'."}
 
+def _hand_over_project_diagrams(db: Session, user: User) -> None:
+    """Shared project diagrams created by `user` go to a remaining project owner (or member, promoted to owner)
+    so deleting the account does not delete other members' work. Diagrams of a project nobody else is in are deleted."""
+    project_ids = {pid for (pid,) in db.query(Diagram.project_id).filter(
+        Diagram.user_id == user.id, Diagram.project_id.isnot(None)).all()}
+    for pid in project_ids:
+        others = db.query(ProjectMember).filter(ProjectMember.project_id == pid, ProjectMember.user_id != user.id).all()
+        if not others:
+            continue
+        successor = next((m for m in others if m.role == "owner"), others[0])
+        successor.role = "owner"
+        db.query(Diagram).filter(Diagram.user_id == user.id, Diagram.project_id == pid).update(
+            {Diagram.user_id: successor.user_id}, synchronize_session=False)
+    db.flush()
+    db.expire(user, ["diagrams"])
+
+
 @router.delete("/users/{user_id}")
 def delete_user(user_id: str, admin_user: User = Depends(get_current_admin_user), db: Session = Depends(get_db)):
     if admin_user.id == user_id:
@@ -122,6 +139,7 @@ def delete_user(user_id: str, admin_user: User = Depends(get_current_admin_user)
         raise HTTPException(status_code=400, detail="Cannot delete the last administrator.")
 
     username = target_user.username
+    _hand_over_project_diagrams(db, target_user)
     db.delete(target_user)
     db.commit()
     return {"status": "success", "message": f"User '{username}' deleted successfully."}

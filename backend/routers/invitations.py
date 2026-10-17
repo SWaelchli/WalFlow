@@ -2,7 +2,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 
 from db.database import get_db
@@ -17,7 +17,7 @@ class InvitationCreateSchema(BaseModel):
     project_id: str
     recipient_username: Optional[str] = None
     password: Optional[str] = None
-    expires_in_hours: int = 24
+    expires_in_hours: int = Field(default=24, ge=1, le=24 * 365)
 
 class InvitationAcceptSchema(BaseModel):
     password: Optional[str] = None
@@ -59,7 +59,7 @@ def create_project_invitation(
             )
 
     token = secrets.token_urlsafe(32)
-    pwd_hash = hash_password(payload.password.strip()) if payload.password else None
+    pwd_hash = hash_password(payload.password) if payload.password else None
     
     expires_at = datetime.now(timezone.utc) + timedelta(hours=payload.expires_in_hours)
 

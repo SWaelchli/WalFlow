@@ -68,6 +68,8 @@ def init_db():
                 conn.execute(text("ALTER TABLE users ADD COLUMN status VARCHAR DEFAULT 'approved'"))
             if "settings" not in columns:
                 conn.execute(text("ALTER TABLE users ADD COLUMN settings TEXT"))
+            if "created_at" not in columns:
+                conn.execute(text("ALTER TABLE users ADD COLUMN created_at DATETIME"))
 
         if "projects" in inspector.get_table_names():
             proj_cols = [c["name"] for c in inspector.get_columns("projects")]

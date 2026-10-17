@@ -19,9 +19,11 @@ class User(Base):
     role = Column(String, default="user", nullable=False)  # "admin" | "pipe_manager" | "user"
     status = Column(String, default="approved", nullable=False)
     settings = Column(Text, nullable=True)  # JSON: global preferences (unit system, solver settings)
+    created_at = Column(DateTime, default=utc_now)
 
     diagrams = relationship("Diagram", back_populates="owner", cascade="all, delete-orphan")
     project_memberships = relationship("ProjectMember", back_populates="user", cascade="all, delete-orphan")
+    invitations = relationship("ProjectInvitation", back_populates="creator", cascade="all, delete-orphan")
 
 class Project(Base):
     __tablename__ = "projects"
@@ -38,6 +40,7 @@ class Project(Base):
 
     members = relationship("ProjectMember", back_populates="project", cascade="all, delete-orphan")
     diagrams = relationship("Diagram", back_populates="project", cascade="all, delete-orphan")
+    invitations = relationship("ProjectInvitation", back_populates="project", cascade="all, delete-orphan")
 
 
 class ProjectMember(Base):
@@ -59,14 +62,15 @@ class ProjectInvitation(Base):
 
     id = Column(String, primary_key=True, default=generate_uuid)
     token = Column(String, unique=True, index=True, nullable=False)
-    project_id = Column(String, ForeignKey("projects.id"), nullable=False, index=True)
+    project_id = Column(String, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True)
     recipient_username = Column(String, nullable=True)  # Restrict invitation to a specific user if set
     password_hash = Column(String, nullable=True)  # Optional password protection for link
     expires_at = Column(DateTime, nullable=False)
     used = Column(Boolean, default=False, nullable=False)
-    created_by = Column(String, ForeignKey("users.id"), nullable=False)
+    created_by = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
 
-    project = relationship("Project")
+    project = relationship("Project", back_populates="invitations")
+    creator = relationship("User", back_populates="invitations")
 
 class Diagram(Base):
     __tablename__ = "diagrams"

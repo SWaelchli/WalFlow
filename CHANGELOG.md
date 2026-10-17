@@ -98,9 +98,10 @@ All notable changes to the WälFlow project will be documented in this file.
 - **Security and deployment (B3)**: the login rate limit can no longer be bypassed with a spoofed `X-Forwarded-For` (`WALFLOW_TRUSTED_PROXY_HOPS`); the compose file requires `WALFLOW_SECRET_KEY` (see `.env.example`; everyone is logged out once on upgrade), publishes the backend on 127.0.0.1 only and passes configurable limits; simulations (WebSocket and `/batch`) have a size limit, a solve timeout and a concurrency cap; anonymous users may simulate while collaboration needs a login and access to the diagram; the last administrator is protected, disabled users lose access immediately and `pipe_manager` can be assigned in the Admin Hub; edit locks are released when the tab closes, standalone-diagram locks are owner-only, a save is refused when the diagram changed elsewhere, and co-editors get one non-blocking banner instead of a reload prompt after every autosave.
 - **DIN EN pipe dimensions**: new `DIN_EN_PIPE_SCHEDULES` standard (DIN EN 10220 normal / heavy wall and EN ISO 1127 stainless, DN15–DN600, same outside diameters as the DIN EN 10253-2 reducers). Reducers read their bores from the line's pipe class schedule standard (DIN EN reducers without a class use DIN EN), manual pipes get a dimension standard selector, and TR2000 classes with EN design codes are assigned DIN EN schedules.
 
-
----
-
 ### Fixed
 
 - **Simulation correctness**: Heat exchanger pressure drop now reverses with flow direction; relief analysis always restores user-set device states if a solve fails; empty or non-positive pipe and heat exchanger inputs now give readable input errors instead of generic failures.
+- **Access control and data integrity**: Removed project members can no longer delete diagrams; check-in requires diagram access and only announces a lock release when one was held; deleting projects or users with invitations works, and deleting a user hands their shared project diagrams to a project owner; invitation passwords are no longer trimmed and expiry is bounded; the admin user list shows the creation date; a deleted user's token now returns 401.
+
+
+---
