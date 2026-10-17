@@ -34,4 +34,4 @@ The folder sets the layer marker automatically (`pytest -m unit`, `-m scenario`,
 
 ## Benchmarks
 
-Run manually from `backend`, e.g. `python -c "import sys;sys.path.insert(0,'tests/helpers');import runpy;runpy.run_path('tests/bench/bench_solver_comparison.py',run_name='__main__')"` (with `PYTHONPATH=.`). Results go to the git-ignored `performance_log.md`.
+Run manually from anywhere: `python backend/tests/bench/bench_solver_scaling.py`. Results go to the git-ignored `performance_log.md`.

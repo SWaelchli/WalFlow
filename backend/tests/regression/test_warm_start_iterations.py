@@ -1,4 +1,4 @@
-"""hybr and sparse_newton must find the same solution, and a warm start must need far fewer iterations than a cold one."""
+"""Both solver methods find the same solution, and a warm start needs far fewer iterations than a cold one."""
 import numpy as np
 import pytest
 
@@ -8,19 +8,17 @@ from simulation.solver import NetworkSolver
 from networks import generate_stress_network
 
 
-def _solve(graph, method):
-    network = GraphParser.parse_graph(graph)
-    NetworkSolver._warm_start_cache.clear()
-    NetworkSolver(network).solve(method=method)
-    return network
-
-
 @pytest.mark.parametrize("complexity", [5, 15, 30])
-def test_hybr_and_sparse_newton_agree(complexity):
+def test_newton_and_lm_agree(complexity):
+    """The two solver methods are independent algorithms; they must land on the same pressures."""
     graph = ReactFlowGraph(**generate_stress_network(complexity))
-    p_hybr = np.array([n.inlets[0].pressure for n in _solve(graph, "hybr").nodes.values() if n.inlets])
-    p_sparse = np.array([n.inlets[0].pressure for n in _solve(graph, "sparse_newton").nodes.values() if n.inlets])
-    assert np.allclose(p_hybr, p_sparse, rtol=1e-3, atol=500.0)
+    results = {}
+    for method in ("sparse_newton", "lm"):
+        NetworkSolver._warm_start_cache.clear()
+        network = GraphParser.parse_graph(graph)
+        assert NetworkSolver(network).solve(method=method)["success"], method
+        results[method] = np.array([n.inlets[0].pressure for n in network.nodes.values() if n.inlets])
+    assert np.allclose(results["sparse_newton"], results["lm"], rtol=1e-3, atol=500.0)
 
 
 def test_warm_start_needs_few_iterations():
