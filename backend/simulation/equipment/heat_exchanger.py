@@ -117,7 +117,7 @@ class HeatExchanger(HydraulicNode):
         v_hx = flow / a_hx
         re_hx = (density * abs(v_hx) * d_hx) / max(1e-7, viscosity)
         visc_factor = FluidProperties.get_filter_viscosity_factor(re_hx)
-        return self.pressure_drop_factor * (flow**2) * (density / 1000.0) * visc_factor
+        return self.pressure_drop_factor * flow * abs(flow) * (density / 1000.0) * visc_factor
 
     def calculate_dp_derivative(self, flow: float, density: float, viscosity: float) -> float:
         d_hx = 0.01
@@ -127,7 +127,7 @@ class HeatExchanger(HydraulicNode):
         
         c2 = self.pressure_drop_factor * (density / 1000.0)
         
-        deriv_turb = 2.0 * c2 * flow
+        deriv_turb = 2.0 * c2 * abs(flow)
         if re_hx < 2000.0:
             c_lam = 100.0 * a_hx * viscosity / (density * d_hx)
             return c2 * (2.0 * abs(flow) + c_lam)

@@ -1628,6 +1628,17 @@ def _find_relief_openings(network, opening_groups, auto_ids, original_states, ex
 
 
 def run_sequential_relief_simulation(network, solver, extract_telemetry_fn):
+    """Runs the sequential relief passes and always restores the user's forced_state, even if a solve raises."""
+    saved = {k: node.forced_state for k, node in network.nodes.items()
+             if getattr(node, 'node_type', '') in RELIEF_NODE_TYPES}
+    try:
+        return _run_sequential_relief_passes(network, solver, extract_telemetry_fn)
+    finally:
+        for k, state in saved.items():
+            network.nodes[k].forced_state = state
+
+
+def _run_sequential_relief_passes(network, solver, extract_telemetry_fn):
     """
     Executes sequential multi-pass relief valve popping physics.
     Pass 1: Lock all relief valves forced_closed to calculate unmitigated baseline.

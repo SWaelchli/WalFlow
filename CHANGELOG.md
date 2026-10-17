@@ -100,3 +100,7 @@ All notable changes to the WälFlow project will be documented in this file.
 
 
 ---
+
+### Fixed
+
+- **Simulation correctness**: Heat exchanger pressure drop now reverses with flow direction; relief analysis always restores user-set device states if a solve fails; empty or non-positive pipe and heat exchanger inputs now give readable input errors instead of generic failures.

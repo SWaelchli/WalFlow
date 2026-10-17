@@ -6,7 +6,7 @@ import traceback
 import numpy as np
 
 from simulation.schemas import ReactFlowGraph, BatchSimulationResponse, BatchCaseResult, OperatingCase
-from simulation.graph_parser import GraphParser
+from simulation.graph_parser import GraphParser, ModelInputError
 from simulation.solver import NetworkSolver, run_sequential_relief_simulation
 from simulation.equipment.volumetric_pump import VolumetricPump
 from simulation.equipment.centrifugal_pump import CentrifugalPump
@@ -290,7 +290,7 @@ def run_batch_simulation(request: Request, graph: ReactFlowGraph):
                     telemetry_peak=telemetry_peak,
                     kpis=kpis
                 ))
-            except SolveTimeout as e:
+            except (SolveTimeout, ModelInputError) as e:
                 results.append(BatchCaseResult(
                     case_id=case.id, case_name=case.name, is_base=case.is_base,
                     status="error", error_message=str(e)

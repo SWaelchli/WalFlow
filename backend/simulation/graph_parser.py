@@ -179,16 +179,25 @@ class GraphParser:
             pipe_name = edge.label or edge_data.get('label') or f"Pipe {edge.id}"
             
             # Determine roughness in meters: check roughness_mm or roughness (in m) or default to 0.000045
-            roughness_m = 0.000045
-            if 'roughness_mm' in edge_data and edge_data['roughness_mm'] is not None:
-                roughness_m = float(edge_data['roughness_mm']) / 1000.0
-            elif 'roughness' in edge_data and edge_data['roughness'] is not None:
-                roughness_m = float(edge_data['roughness'])
+            try:
+                roughness_m = 0.000045
+                if 'roughness_mm' in edge_data and edge_data['roughness_mm'] is not None:
+                    roughness_m = float(edge_data['roughness_mm']) / 1000.0
+                elif 'roughness' in edge_data and edge_data['roughness'] is not None:
+                    roughness_m = float(edge_data['roughness'])
+                length = float(edge_data.get('length', 25.0))
+                diameter = float(edge_data.get('diameter', 0.1))
+            except (ValueError, TypeError) as e:
+                raise ModelInputError(f"Pipe '{pipe_name}': length, diameter or roughness is empty or not a number ({e}).") from e
+            if diameter <= 0.0:
+                raise ModelInputError(f"Pipe '{pipe_name}': diameter must be above 0.")
+            if length < 0.0 or roughness_m < 0.0:
+                raise ModelInputError(f"Pipe '{pipe_name}': length and roughness must not be negative.")
 
             pipe = Pipe(
                 name=pipe_name,
-                length=float(edge_data.get('length', 25.0)),
-                diameter=float(edge_data.get('diameter', 0.1)),
+                length=length,
+                diameter=diameter,
                 roughness=roughness_m
             )
             pipe.global_settings = resolved_graph.global_settings
@@ -236,6 +245,26 @@ class GraphParser:
 
     @staticmethod
     def create_node(node_data: ReactFlowNode, global_settings: Any = None) -> HydraulicNode:
+        """Builds one equipment node; unreadable numeric fields become a ModelInputError naming the component."""
+        try:
+            node = GraphParser._build_node(node_data, global_settings)
+        except ModelInputError:
+            raise
+        except (ValueError, TypeError) as e:
+            name = (node_data.data or {}).get('label') or f"{node_data.type}_{node_data.id}"
+            raise ModelInputError(f"'{name}': a numeric field is empty or not a number ({e}).") from e
+        GraphParser._check_node_geometry(node, node_data)
+        return node
+
+    @staticmethod
+    def _check_node_geometry(node: HydraulicNode, node_data: ReactFlowNode) -> None:
+        """Rated values used as divisors must be above zero."""
+        name = (node_data.data or {}).get('label') or f"{node_data.type}_{node_data.id}"
+        if node_data.type == 'heat_exchanger' and node.rated_flow_lmin <= 0.0:
+            raise ModelInputError(f"'{name}': rated flow must be above 0 L/min.")
+
+    @staticmethod
+    def _build_node(node_data: ReactFlowNode, global_settings: Any = None) -> HydraulicNode:
         t = node_data.type
         d = node_data.data
         name = d.get('label', f"{t}_{node_data.id}")
