@@ -1,0 +1,34 @@
+# Local build for Docker Desktop: docker compose -f docker-compose.local.yml up --build -d
+services:
+  walflow-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: walflow-backend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5701:8000"
+    volumes:
+      - walflow-data:/app/data
+    environment:
+      - DATABASE_PATH=/app/data/walflow.db
+      - PYTHONUNBUFFERED=1
+      - ENVIRONMENT=production
+      - WALFLOW_SECRET_KEY=${WALFLOW_SECRET_KEY:?Set WALFLOW_SECRET_KEY in .env}
+      - WALFLOW_SECURE_COOKIES=false
+      - WALFLOW_TRUSTED_PROXY_HOPS=1
+      - WALFLOW_REQUIRE_WS_AUTH=false
+
+  walflow-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: walflow-frontend
+    restart: unless-stopped
+    ports:
+      - "5702:80"
+    depends_on:
+      - walflow-backend
+
+volumes:
+  walflow-data:
