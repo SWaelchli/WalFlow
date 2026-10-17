@@ -223,10 +223,15 @@ def import_fitting_standards_library(
     imported_count = 0
     skipped_count = 0
     updated_count = 0
+    added_codes = set()   # autoflush is off, so a repeated code in one payload is not visible to the query
 
     for item in payload:
         code = str(item.get("code")).strip().upper()
         fitting_type = str(item.get("fitting_type") or "reducer").strip().lower()
+
+        if code in added_codes:
+            skipped_count += 1
+            continue
 
         existing = db.query(FittingStandard).filter(FittingStandard.code == code).first()
         dim_json = json.dumps(item.get("dimensions", []))
@@ -254,6 +259,7 @@ def import_fitting_standards_library(
                 dimensions_json=dim_json
             )
             db.add(new_obj)
+            added_codes.add(code)
             imported_count += 1
 
     db.commit()

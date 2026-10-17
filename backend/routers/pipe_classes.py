@@ -174,7 +174,7 @@ async def list_tr2000_plants(
         logging.error(f"TR2000 plants error: {err}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Failed to communicate with Equinor TR2000 REST API: {str(err)}"
+            detail="Failed to communicate with Equinor TR2000 REST API. See the server log for details."
         )
 
 
@@ -192,7 +192,7 @@ async def search_tr2000_pipe_classes(
         logging.error(f"TR2000 search error: {err}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Failed to fetch TR2000 PCS specifications: {str(err)}"
+            detail="Failed to fetch TR2000 PCS specifications. See the server log for details."
         )
 
 
@@ -221,11 +221,15 @@ async def sync_tr2000_pipe_class(
             pcs_code=payload.pcs_code,
             rev_id=payload.rev_id
         )
+    except ValueError as err:
+        # Input problem (invalid code, unknown PCS): the message is ours and safe to show
+        logging.warning(f"TR2000 sync rejected for {payload.pcs_code!r}: {err}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(err))
     except Exception as err:
-        logging.error(f"TR2000 sync error for {payload.pcs_code}: {err}", exc_info=True)
+        logging.error(f"TR2000 sync error for {payload.pcs_code!r}: {err}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Failed to retrieve specification '{payload.pcs_code}' from TR2000 API: {str(err)}"
+            detail="Failed to retrieve the specification from the TR2000 API. See the server log for details."
         )
 
     from db.database import SessionLocal
@@ -429,7 +433,7 @@ def update_pipe_class(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_pipe_manager_user)
 ):
-    """Update a custom pipe class (Built-in standard example classes cannot be modified)."""
+    """Update a pipe class. The seeded example classes may be edited too; seed-examples restores missing ones."""
     item = db.query(PipeClass).filter(
         (PipeClass.id == class_id) | (PipeClass.code == class_id)
     ).first()
@@ -438,6 +442,7 @@ def update_pipe_class(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Pipe class with identifier '{class_id}' not found."
         )
+
 
     update_data = payload.model_dump(exclude_unset=True)
     for field in ("reducer_standard_code", "schedule_standard_code"):
@@ -491,6 +496,7 @@ def delete_pipe_class(
             detail=f"Pipe class with identifier '{class_id}' not found."
         )
 
+
     db.delete(item)
     db.commit()
     return None
@@ -528,76 +534,80 @@ def import_pipe_classes_library(
     invalid_entries = []
 
     for item_data in payload.classes:
-        code = (item_data.get("code") or "").upper().strip()
+        code = str(item_data.get("code") or "").upper().strip()
         if not code:
             invalid_entries.append({"reason": "Missing specification code", "item": item_data})
             continue
 
         existing = db.query(PipeClass).filter(PipeClass.code == code).first()
-        if existing:
+        if existing or code in imported:
             skipped_duplicates.append(code)
             continue
 
-        raw_sizes = item_data.get("sizes") or []
-        if not raw_sizes or not isinstance(raw_sizes, list):
-            invalid_entries.append({"reason": f"Class '{code}' has no valid sizes array", "item": item_data})
+        try:
+            raw_sizes = item_data.get("sizes") or []
+            if not raw_sizes or not isinstance(raw_sizes, list):
+                invalid_entries.append({"reason": f"Class '{code}' has no valid sizes array", "item": item_data})
+                continue
+
+            normalized_sizes = []
+            valid_sizes = True
+            for s in raw_sizes:
+                od = float(s.get("od_mm") or 0.0)
+                wt = float(s.get("wt_mm") or 0.0)
+                calc_id = round(od - 2.0 * wt, 3)
+                if calc_id <= 0:
+                    valid_sizes = False
+                    break
+                normalized_sizes.append({
+                    "dn": int(s.get("dn") or 0),
+                    "nps": str(s.get("nps") or ""),
+                    "od_mm": od,
+                    "wt_mm": wt,
+                    "id_mm": calc_id,
+                    "sch": str(s.get("sch") or "STD"),
+                    "ca_mm": float(s.get("ca_mm") or 0.0)
+                })
+
+            if not valid_sizes:
+                invalid_entries.append({"reason": f"Class '{code}' has invalid size dimensions (OD <= 2*WT)", "item": item_data})
+                continue
+
+            raw_tp = item_data.get("temp_pressures") or []
+
+            reducer_code = str(item_data.get("reducer_standard_code") or "ASME_B16_9_REDUCERS").strip().upper()
+            schedule_code = str(item_data.get("schedule_standard_code") or "ASME_B36_10M_SCHEDULES").strip().upper()
+            ref_errors = _fitting_reference_errors(db, reducer_code, schedule_code)
+            if ref_errors:
+                invalid_entries.append({"reason": f"Class '{code}': " + "; ".join(ref_errors), "item": item_data})
+                continue
+
+            new_class = PipeClass(
+                code=code,
+                name=str(item_data.get("name") or f"Imported {code}").strip(),
+                standard=str(item_data.get("standard") or "CUSTOM").upper().strip(),
+                material_group=str(item_data.get("material_group") or "CS").strip(),
+                material_grade=str(item_data.get("material_grade") or "Generic").strip(),
+                rating_class=str(item_data.get("rating_class") or "CL150").strip(),
+                design_code=str(item_data.get("design_code") or "ASME B31.3").strip(),
+                reducer_standard_code=reducer_code,
+                schedule_standard_code=schedule_code,
+                roughness_mm=float(item_data.get("roughness_mm") or 0.045),
+                corrosion_allowance_mm=float(item_data.get("corrosion_allowance_mm") or 0.0),
+                min_temp_c=float(item_data["min_temp_c"]) if item_data.get("min_temp_c") is not None else None,
+                max_temp_c=float(item_data["max_temp_c"]) if item_data.get("max_temp_c") is not None else None,
+                revision=str(item_data.get("revision") or "1.0").strip(),
+                rev_date=item_data.get("rev_date"),
+                source_plant_id=item_data.get("source_plant_id"),
+                is_builtin=False,
+                sizes_json=json.dumps(normalized_sizes),
+                temp_pressures_json=json.dumps(raw_tp)
+            )
+            db.add(new_class)
+            imported.append(code)
+        except (ValueError, TypeError, AttributeError) as e:
+            invalid_entries.append({"reason": f"Class '{code}' has an unreadable value: {e}", "item": item_data})
             continue
-
-        normalized_sizes = []
-        valid_sizes = True
-        for s in raw_sizes:
-            od = float(s.get("od_mm") or 0.0)
-            wt = float(s.get("wt_mm") or 0.0)
-            calc_id = round(od - 2.0 * wt, 3)
-            if calc_id <= 0:
-                valid_sizes = False
-                break
-            normalized_sizes.append({
-                "dn": int(s.get("dn") or 0),
-                "nps": str(s.get("nps") or ""),
-                "od_mm": od,
-                "wt_mm": wt,
-                "id_mm": calc_id,
-                "sch": str(s.get("sch") or "STD"),
-                "ca_mm": float(s.get("ca_mm") or 0.0)
-            })
-
-        if not valid_sizes:
-            invalid_entries.append({"reason": f"Class '{code}' has invalid size dimensions (OD <= 2*WT)", "item": item_data})
-            continue
-
-        raw_tp = item_data.get("temp_pressures") or []
-
-        reducer_code = str(item_data.get("reducer_standard_code") or "ASME_B16_9_REDUCERS").strip().upper()
-        schedule_code = str(item_data.get("schedule_standard_code") or "ASME_B36_10M_SCHEDULES").strip().upper()
-        ref_errors = _fitting_reference_errors(db, reducer_code, schedule_code)
-        if ref_errors:
-            invalid_entries.append({"reason": f"Class '{code}': " + "; ".join(ref_errors), "item": item_data})
-            continue
-
-        new_class = PipeClass(
-            code=code,
-            name=str(item_data.get("name") or f"Imported {code}").strip(),
-            standard=str(item_data.get("standard") or "CUSTOM").upper().strip(),
-            material_group=str(item_data.get("material_group") or "CS").strip(),
-            material_grade=str(item_data.get("material_grade") or "Generic").strip(),
-            rating_class=str(item_data.get("rating_class") or "CL150").strip(),
-            design_code=str(item_data.get("design_code") or "ASME B31.3").strip(),
-            reducer_standard_code=reducer_code,
-            schedule_standard_code=schedule_code,
-            roughness_mm=float(item_data.get("roughness_mm") or 0.045),
-            corrosion_allowance_mm=float(item_data.get("corrosion_allowance_mm") or 0.0),
-            min_temp_c=float(item_data["min_temp_c"]) if item_data.get("min_temp_c") is not None else None,
-            max_temp_c=float(item_data["max_temp_c"]) if item_data.get("max_temp_c") is not None else None,
-            revision=str(item_data.get("revision") or "1.0").strip(),
-            rev_date=item_data.get("rev_date"),
-            source_plant_id=item_data.get("source_plant_id"),
-            is_builtin=False,
-            sizes_json=json.dumps(normalized_sizes),
-            temp_pressures_json=json.dumps(raw_tp)
-        )
-        db.add(new_class)
-        imported.append(code)
 
     db.commit()
     return {

@@ -102,6 +102,7 @@ All notable changes to the WälFlow project will be documented in this file.
 
 - **Simulation correctness**: Heat exchanger pressure drop now reverses with flow direction; relief analysis always restores user-set device states if a solve fails; empty or non-positive pipe and heat exchanger inputs now give readable input errors instead of generic failures.
 - **Access control and data integrity**: Removed project members can no longer delete diagrams; check-in requires diagram access and only announces a lock release when one was held; deleting projects or users with invitations works, and deleting a user hands their shared project diagrams to a project owner; invitation passwords are no longer trimmed and expiry is bounded; the admin user list shows the creation date; a deleted user's token now returns 401.
+- **Library imports and TR2000**: Pipe class and fitting standard imports no longer fail on repeated codes or malformed entries in one file; TR2000 requests validate the PCS code and revision, verify TLS certificates by default (`TR2000_VERIFY_TLS=false` to disable behind a re-signing proxy), and no longer expose upstream error text.
 
 
 ---

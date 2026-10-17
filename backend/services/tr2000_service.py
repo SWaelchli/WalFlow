@@ -8,7 +8,9 @@ Terms & Conditions: https://www.equinor.com/about-us/terms-and-conditions
 import asyncio
 import httpx
 import logging
+import os
 import re
+from urllib.parse import quote
 from typing import List, Dict, Any, Optional
 
 
@@ -16,6 +18,19 @@ TR2000_PRIMARY_URL = "https://tr2000api.equinor.com"
 TR2000_FALLBACK_URL = "https://equinor.pipespec-api.presight.com"
 DEFAULT_PLANT_CODE = "UON"
 DEFAULT_PLANT_ID = 109
+
+# TLS verification of the Equinor endpoints; set TR2000_VERIFY_TLS=false only behind a proxy that re-signs certificates
+TR2000_VERIFY_TLS = os.environ.get("TR2000_VERIFY_TLS", "true").strip().lower() not in ("0", "false", "no")
+
+_PATH_SEGMENT_RE = re.compile(r"^[A-Za-z0-9._\- ]{1,64}$")
+
+
+def _safe_segment(value: Any, what: str) -> str:
+    """URL-encodes a user-supplied path segment; rejects anything that could change the upstream request path."""
+    text = str(value).strip()
+    if not _PATH_SEGMENT_RE.match(text) or text in (".", ".."):
+        raise ValueError(f"Invalid {what}.")
+    return quote(text, safe="")
 
 # Standard ASME / ISO NPS (inch) to DN (mm) nominal conversion table
 NPS_TO_DN_MAP: Dict[str, int] = {
@@ -105,7 +120,7 @@ async def _fetch_get(path: str, client: Optional[httpx.AsyncClient] = None) -> A
                 else:
                     resp.raise_for_status()
             else:
-                async with httpx.AsyncClient(timeout=15.0, verify=False, headers=headers) as new_client:
+                async with httpx.AsyncClient(timeout=15.0, verify=TR2000_VERIFY_TLS, headers=headers) as new_client:
                     resp = await new_client.get(url)
                     if resp.status_code == 200:
                         return resp.json()
@@ -230,12 +245,16 @@ async def fetch_and_normalize_tr2000_pcs(
     Fetches full specification, sizes grid, and P-T ratings for a PCS code from Equinor TR2000,
     normalizing dimensions into clean WalFlow pipe class format.
     """
+    plant_id = int(plant_id)
+    pcs_seg = _safe_segment(pcs_code, "PCS code")
+    rev_seg = _safe_segment(rev_id, "revision") if rev_id else None
+
     # 1. Fetch PCS Header via /rev/{rev_id} or /rev
     header_data = None
-    if rev_id:
-        header_data = await _fetch_get(f"/plants/{plant_id}/pcs/{pcs_code}/rev/{rev_id}")
+    if rev_seg:
+        header_data = await _fetch_get(f"/plants/{plant_id}/pcs/{pcs_seg}/rev/{rev_seg}")
     if not header_data:
-        header_data = await _fetch_get(f"/plants/{plant_id}/pcs/{pcs_code}/rev")
+        header_data = await _fetch_get(f"/plants/{plant_id}/pcs/{pcs_seg}/rev")
         
     if not header_data:
         raise ValueError(f"No PCS found for code '{pcs_code}' in plant {plant_id}.")
@@ -246,12 +265,13 @@ async def fetch_and_normalize_tr2000_pcs(
     pcs_header = raw_headers[0] if isinstance(raw_headers, list) else raw_headers
 
     actual_rev = str(pcs_header.get("Revision") or pcs_header.get("RevID") or rev_id or "0")
+    actual_rev_seg = _safe_segment(actual_rev, "revision")
 
     # 2 & 3. Fetch Pipe Sizes and Temp-Pressure tables concurrently
     headers = {"User-Agent": "WalFlow/1.0", "Accept": "application/json"}
-    async with httpx.AsyncClient(timeout=15.0, verify=False, headers=headers) as client:
-        sizes_task = _fetch_get(f"/plants/{plant_id}/pcs/{pcs_code}/rev/{actual_rev}/pipe-sizes", client=client)
-        pt_task = _fetch_get(f"/plants/{plant_id}/pcs/{pcs_code}/rev/{actual_rev}/temp-pressures", client=client)
+    async with httpx.AsyncClient(timeout=15.0, verify=TR2000_VERIFY_TLS, headers=headers) as client:
+        sizes_task = _fetch_get(f"/plants/{plant_id}/pcs/{pcs_seg}/rev/{actual_rev_seg}/pipe-sizes", client=client)
+        pt_task = _fetch_get(f"/plants/{plant_id}/pcs/{pcs_seg}/rev/{actual_rev_seg}/temp-pressures", client=client)
         sizes_json, pt_json = await asyncio.gather(sizes_task, pt_task)
 
     sizes_data = (sizes_json.get("getPipeSize", []) if isinstance(sizes_json, dict) else sizes_json) or []
