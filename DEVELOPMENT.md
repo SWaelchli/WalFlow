@@ -123,12 +123,13 @@ To ensure compatibility with the high-speed Newton solver:
 10. **Open Flow Coefficient for Closed State MCP:** When closed, the Fischer-Burmeister complementarity function evaluates pressure drops using open friction characteristics. Ensure `calculate_open_friction_and_deriv` uses the fully open flow coefficient (e.g. `self.cv`), rather than state-dependent effective flow coefficients, to prevent extremely stiff derivatives when the device is closed.
 11. **Solver Backtracking Depth:** Highly non-linear network systems require sufficient line-search backtracking depth (at least 25 steps) to successfully step through intermediate high-resistance transitions without failing to decrease the residual.
 12. **Pruned Node Pressure Propagation:** For nodes/edges pruned due to inactive branches, copy outlet pressures downstream step-by-step (respecting flow direction) to prevent back-pressures from leaking backward across closed flow-blocking boundaries.
-
+13. **Sign Convention of `calculate_delta_p`:** Pressure drop must be an odd function of flow: use `q * abs(q)`, never `q**2`. An even function makes a branch with reversed flow act as a pressure source and breaks the Jacobian (its derivative `2*c*|q|` is even, so the function must be odd). Test it with `calculate_delta_p(+q) == -calculate_delta_p(-q)`.
+14. **Relief State Is Restored:** `run_sequential_relief_simulation` changes `forced_state` of relief devices during its passes and restores it in a `finally`. If you add another analysis that temporarily mutates shared node state, do the same, because the WebSocket reuses the network between runs.
 
 #### Step B: Register in Graph Parser
 Open `backend/simulation/graph_parser.py` and:
 1. Import your new class.
-2. Add a case in the `create_node` static method to instantiate it from the incoming JSON node data:
+2. Add a case in the `_build_node` static method (the `elif` chain behind `create_node`) to instantiate it from the incoming JSON node data. `create_node` wraps it: an empty or non-numeric field (`ValueError`/`TypeError`) is turned into a `ModelInputError` that names the component, so plain `float(d.get(...))` is fine here:
 
 ```python
 elif t == 'new_equipment':
@@ -137,6 +138,7 @@ elif t == 'new_equipment':
         param1=float(d.get('param1', 1.0))
     )
 ```
+3. If a parameter is used as a divisor or must be positive (rated flow, diameter), check it in `_check_node_geometry` and raise `ModelInputError("'<name>': ... must be above 0 ...")`. The message is shown to the user unchanged, so keep it readable. Never let such input reach the solver as a `ZeroDivisionError`.
 
 ---
 

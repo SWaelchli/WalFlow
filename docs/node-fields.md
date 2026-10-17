@@ -1,6 +1,6 @@
 # Node data fields and units
 
-What the backend (`graph_parser.py › create_node`) reads from a node's `data` object in a `.wlf` file. The names are historical and **mixed**: some carry a unit suffix, some are bare. Do not rename them (a rename is a format break, see ROADMAP "Unit-Consistent Node Data Field Names"). A test (`test_f1_20_node_fields.py`) checks that this table and the parser list exactly the same fields.
+What the backend (`graph_parser.py › _build_node`, called by `create_node`) reads from a node's `data` object in a `.wlf` file. The names are historical and **mixed**: some carry a unit suffix, some are bare. Do not rename them (a rename is a format break, see ROADMAP "Unit-Consistent Node Data Field Names"). A test (`test_f1_20_node_fields.py`) checks that this table and the parser list exactly the same fields.
 
 **Convention for new fields:** always put the unit in the name (`_pa`, `_bar`, `_barg`, `_bara`, `_lmin`, `_c`, `_k`, `_m`, `_mm`, `_kw`, `_pct`).
 

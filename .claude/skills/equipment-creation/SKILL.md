@@ -71,7 +71,7 @@ Create `backend/simulation/equipment/<name>.md` detailing:
 ### Step 3: Register in Graph Parser
 In `backend/simulation/graph_parser.py`:
 1. Import the new equipment class.
-2. In `GraphParser.create_node(node_data, global_settings)`, add a branch for your `node_data.type` to deserialize incoming parameters with unit conversions:
+2. In `GraphParser._build_node(node_data, global_settings)` (called by `create_node`, which turns empty or non-numeric fields into a `ModelInputError`), add a branch for your `node_data.type` to deserialize incoming parameters with unit conversions:
    - Pressure: $\text{bar} \times 10^5 \to \text{Pa}$
    - Flow: $\text{L/min} / 60\,000 \to \text{m}^3/\text{s}$
    - Power: $\text{kW} \times 1\,000 \to \text{W}$
