@@ -419,14 +419,22 @@ textarea:focus-visible,
   cursor: not-allowed;
 }
 
-.btn-active {
-  background-color: var(--color-brand-dark) !important;
-  color: var(--color-text-inverse) !important;
-  border-color: var(--color-brand-dark) !important;
+/* Toggled-on state; combine with a base button class (e.g. btn-secondary) */
+.btn-secondary.btn-active,
+.btn-secondary.btn-active:hover:not(:disabled),
+.btn-secondary.btn-active:active:not(:disabled) {
+  background-color: var(--color-brand-dark);
+  color: var(--color-text-inverse);
+  border-color: var(--color-brand-dark);
 }
 
-.btn-active:hover {
-  background-color: var(--color-brand-darker) !important;
+.btn-secondary.btn-active {
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.btn-secondary.btn-active:hover:not(:disabled) {
+  background-color: var(--color-brand-darker);
+  border-color: var(--color-brand-darker);
 }
 
 .btn-danger-ghost {

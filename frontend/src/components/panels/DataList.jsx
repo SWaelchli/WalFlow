@@ -547,7 +547,8 @@ export default function DataList({
               )}
               <button
                 onClick={onToggleCaseManager}
-                className={showCaseManager ? "btn-active btn-compact" : "btn-secondary btn-compact"}
+                className={showCaseManager ? "btn-secondary btn-active btn-compact" : "btn-secondary btn-compact"}
+                aria-pressed={showCaseManager}
               >
                 <CaseIcon size={14} style={{ marginRight: '6px' }} /> {showCaseManager ? 'Hide case manager' : 'Case manager'}
               </button>
@@ -563,7 +564,8 @@ export default function DataList({
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 0' }}>
               <button
                 onClick={onToggleCaseManager}
-                className={showCaseManager ? "btn-active btn-compact" : "btn-secondary btn-compact"}
+                className={showCaseManager ? "btn-secondary btn-active btn-compact" : "btn-secondary btn-compact"}
+                aria-pressed={showCaseManager}
               >
                 <CaseIcon size={14} style={{ marginRight: '6px' }} /> {showCaseManager ? 'Hide case manager' : 'Case manager'}
               </button>
@@ -579,7 +581,8 @@ export default function DataList({
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '6px 0' }}>
               <button
                 onClick={onToggleCaseManager}
-                className={showCaseManager ? "btn-active btn-compact" : "btn-secondary btn-compact"}
+                className={showCaseManager ? "btn-secondary btn-active btn-compact" : "btn-secondary btn-compact"}
+                aria-pressed={showCaseManager}
               >
                 <CaseIcon size={14} style={{ marginRight: '6px' }} /> {showCaseManager ? 'Hide case manager' : 'Case manager'}
               </button>
