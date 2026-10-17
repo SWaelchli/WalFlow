@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useUnits } from '../../context/UnitContext';
-import { resolvePipeSelection, matchScheduleByInnerDiameter, manualSelectionPatch, classSelectionPatch, classSizePatch, schedulePatch } from '../../utils/pipeDefaults';
+import { resolvePipeSelection, findPipeClass, matchScheduleByInnerDiameter, manualSelectionPatch, classSelectionPatch, classSizePatch, schedulePatch } from '../../utils/pipeDefaults';
 import { getScheduleStandardOptions, getScheduleStandardName, getScheduleDataset, getScheduleBore, listSchedules } from '../../utils/pipe_schedules';
 import { formatDnOption, normalizeReducerStandard, getReducerStandardOptions } from '../../utils/reducer_catalog';
 import { useFittingStandards } from '../../hooks/useFittingStandards';
@@ -21,7 +21,9 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
   const selection = resolvePipeSelection(data, scheduleOptions);
   const currentClassId = selection.classId;
   const isManual = currentClassId === 'manual';
-  const selectedClass = classList.find(c => c.id === currentClassId);
+  const selectedClass = findPipeClass(classList, currentClassId);
+  // A class the pipe refers to that is not in the catalogue (or not allowed in this project)
+  const isUnknownClass = !isManual && !selectedClass;
 
   const [manualMode, setManualMode] = useState(selection.isCustomId ? 'free' : 'preset'); // 'preset' | 'free'
 
@@ -35,7 +37,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
   const handleClassChange = (newClassId) => {
     const patch = newClassId === 'manual'
       ? manualSelectionPatch(currentDn, currentSch, scheduleStandard, scheduleOptions)
-      : classSelectionPatch(classList.find(c => c.id === newClassId), currentDn);
+      : classSelectionPatch(findPipeClass(classList, newClassId), currentDn);
     if (patch) onChange(patch);
   };
 
@@ -70,7 +72,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
         <select
           className="form-select"
           style={{ width: '100%', height: '32px', fontSize: 'var(--fs-xs)' }}
-          value={currentClassId}
+          value={selectedClass ? selectedClass.id : currentClassId}
           onChange={(e) => handleClassChange(e.target.value)}
         >
           {classList.map(c => (
@@ -78,6 +80,11 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
               [{c.code}] {c.name}
             </option>
           ))}
+          {isUnknownClass && (
+            <option value={currentClassId} disabled>
+              [{data.pipe_class_code || currentClassId}] not in catalogue
+            </option>
+          )}
           {(allowCustomPipes || isManual) && (
             <option value="manual" disabled={!allowCustomPipes}>
               Manual / Custom Dimensions{allowCustomPipes ? '' : ' (not allowed in this project)'}
@@ -137,6 +144,33 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
               <span>Reducers: <strong style={{ color: 'var(--color-brand-dark)' }}>{reducerStandardName(selectedClass.reducer_standard_code || 'ASME_B16_9_REDUCERS')}</strong></span>
               <span>Pipe dimensions: <strong style={{ color: 'var(--color-brand-dark)' }}>{getScheduleStandardName(selectedClass.schedule_standard_code || 'ASME_B36_10M_SCHEDULES', scheduleOptions)}</strong></span>
             </div>
+          </div>
+        </>
+      )}
+
+
+      {/* Spec missing from the catalogue / project: show the stored dimensions, sizes cannot be chosen */}
+      {isUnknownClass && (
+        <>
+          <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-warning-text)' }}>
+            Piping spec "{data.pipe_class_code || currentClassId}" is not available in the catalogue or this project. Showing the stored dimensions; choose another spec to change the size.
+          </div>
+          <div style={{
+            fontSize: 'var(--fs-xs)',
+            backgroundColor: 'var(--color-surface-light)',
+            padding: '8px 10px',
+            borderRadius: '8px',
+            border: '1px solid var(--color-border)',
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '4px',
+            color: 'var(--color-text-secondary)'
+          }}>
+            <div>Size: <strong style={{ color: 'var(--color-text-primary)' }}>{formatDnOption(currentDn)} • {data.standardSch || 'STD'}</strong></div>
+            <div>OD: <strong style={{ color: 'var(--color-text-primary)' }}>{isImperial ? `${(currentOdMm / 25.4).toFixed(3)} in` : `${currentOdMm.toFixed(1)} mm`}</strong></div>
+            <div>WT: <strong style={{ color: 'var(--color-text-primary)' }}>{isImperial ? `${(currentWtMm / 25.4).toFixed(3)} in` : `${currentWtMm.toFixed(2)} mm`}</strong></div>
+            <div>ID: <strong style={{ color: 'var(--color-primary-text)' }}>{isImperial ? `${(value * 39.3701).toFixed(3)} in` : `${(value * 1000).toFixed(2)} mm`}</strong></div>
+            <div>Area: <strong style={{ color: 'var(--color-text-primary)' }}>{isImperial ? `${flowAreaIn2.toFixed(2)} in²` : `${flowAreaCm2.toFixed(2)} cm²`}</strong></div>
           </div>
         </>
       )}

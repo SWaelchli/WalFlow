@@ -9,7 +9,7 @@ import { useFittingStandards } from '../../hooks/useFittingStandards';
 
 import { updateCaseOverride, effectiveForcedState } from '../../utils/case_resolver';
 import { useUnits } from '../../context/UnitContext';
-import { resolvePipeSelection, manualSelectionPatch, classSelectionPatch, classSizePatch, schedulePatch } from '../../utils/pipeDefaults';
+import { resolvePipeSelection, findPipeClass, manualSelectionPatch, classSelectionPatch, classSizePatch, schedulePatch } from '../../utils/pipeDefaults';
 import DraftNumberInput from '../common/DraftNumberInput';
 import MeasurementsTable from './MeasurementsTable';
 import usePanelHeight from '../../hooks/usePanelHeight';
@@ -1086,7 +1086,7 @@ export default function DataList({
               const match = isNode ? findClosestPipeMatch(diaValue) : null;
 
               const currentClassId = isNode ? (item.data.pipe_class_id || 'manual') : pipeSel.classId;
-              const selectedClass = classList.find(c => c.id === currentClassId);
+              const selectedClass = isNode ? classList.find(c => c.id === currentClassId) : findPipeClass(classList, currentClassId);
               const supportedSizes = selectedClass?.sizes || [];
 
               const currentDn = isNode ? Number(item.data.standardDn || (match ? match.dn : 50)) : pipeSel.dn;
@@ -1102,7 +1102,7 @@ export default function DataList({
               const handleClassChange = (newClassId) => {
                 const patch = newClassId === 'manual'
                   ? manualSelectionPatch(currentDn, currentSch, scheduleStd, scheduleOptions)
-                  : classSelectionPatch(classList.find(c => c.id === newClassId), currentDn);
+                  : classSelectionPatch(findPipeClass(classList, newClassId), currentDn);
                 if (patch) onUpdateEdge(item.id, patch);
               };
 
@@ -1113,8 +1113,11 @@ export default function DataList({
                 if (patch) onUpdateEdge(item.id, patch);
               };
 
+              // The schedule follows the pipe class; it is free only for manual / custom dimensions
+              const scheduleLocked = currentClassId !== 'manual';
+
               const handleScheduleChange = (newSch) => {
-                if (isNode) return;
+                if (isNode || scheduleLocked) return;
                 const patch = schedulePatch(currentDn, newSch, scheduleStd, scheduleOptions);
                 if (patch) onUpdateEdge(item.id, patch);
               };
@@ -1182,6 +1185,8 @@ export default function DataList({
                           className="form-select"
                           style={{ fontSize: 'var(--fs-xs)', padding: '2px 6px', height: '26px' }}
                           value={isCustomId ? '' : currentDn}
+                          disabled={currentClassId !== 'manual' && !selectedClass}
+                          title={currentClassId !== 'manual' && !selectedClass ? 'Piping spec not available: choose another spec to change the size.' : undefined}
                           onChange={(e) => { handleDnChange(e.target.value); }}
                           onFocus={() => { handleRowClick(entry); setIsEditing(true); }}
                           onBlur={() => setIsEditing(false)}
@@ -1192,7 +1197,7 @@ export default function DataList({
                           {supportedSizes.length > 0 ? (
                             supportedSizes.map(s => (
                               <option key={s.dn} value={s.dn}>
-                                DN {s.dn} ({s.nps}")
+                                {formatDnOption(s.dn, s.nps)}
                               </option>
                             ))
                           ) : (
@@ -1209,6 +1214,8 @@ export default function DataList({
                           className="form-select"
                           style={{ fontSize: 'var(--fs-xs)', padding: '2px 6px', height: '26px' }}
                           value={currentSch}
+                          disabled={scheduleLocked}
+                          title={scheduleLocked ? 'Schedule is defined by the pipe class. Select Custom / Manual to change it.' : undefined}
                           onChange={(e) => handleScheduleChange(e.target.value)}
                           onFocus={() => { handleRowClick(entry); setIsEditing(true); }}
                           onBlur={() => setIsEditing(false)}
@@ -1234,7 +1241,7 @@ export default function DataList({
                         <select 
                           className="form-select"
                           style={{ fontSize: 'var(--fs-xs)', padding: '2px 6px', height: '26px', minWidth: '160px' }}
-                          value={currentClassId} 
+                          value={selectedClass ? selectedClass.id : currentClassId}
                           onChange={(e) => handleClassChange(e.target.value)} 
                           onFocus={() => { handleRowClick(entry); setIsEditing(true); }}
                           onBlur={() => setIsEditing(false)}
@@ -1246,6 +1253,11 @@ export default function DataList({
                               [{c.code}] {c.name}
                             </option>
                           ))}
+                          {!isNode && currentClassId !== 'manual' && !selectedClass && (
+                            <option value={currentClassId} disabled>
+                              [{item.data.pipe_class_code || currentClassId}] not in catalogue
+                            </option>
+                          )}
                           {(allowCustomPipes || currentClassId === 'manual') && (
                             <option value="manual" disabled={!allowCustomPipes}>
                               Custom / Manual{allowCustomPipes ? '' : ' (not allowed)'}

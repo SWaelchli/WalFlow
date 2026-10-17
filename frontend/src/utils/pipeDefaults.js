@@ -174,6 +174,16 @@ export function nearestDnByInnerDiameter(idMeters, scheduleCode = DEFAULT_SCHEDU
 }
 
 /**
+ * The catalogue pipe class a pipe refers to, or null for manual / unknown references.
+ * Matches the class id first, then its code (older files and examples stored the code).
+ */
+export function findPipeClass(pipeClasses, classId) {
+  if (!classId || classId === 'manual') return null;
+  const list = pipeClasses || [];
+  return list.find(c => c.id === classId) || list.find(c => c.code === classId) || null;
+}
+
+/**
  * How a pipe's sizing is shown in the inspector and the DataList.
  * Pipes without a class reference show as Manual; pipes without a stored
  * DN show the matching schedule, or as a custom inner diameter. Never writes data.

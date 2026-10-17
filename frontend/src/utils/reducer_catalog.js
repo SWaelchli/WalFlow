@@ -2,6 +2,7 @@ import {
   ASME_B16_9_REDUCERS,
   DIN_EN_10253_2_REDUCERS
 } from '../constants/asme_b16_9_data';
+import { findPipeClass } from './pipeDefaults';
 import { getScheduleBore, isKnownScheduleStandard, scheduleStandardForReducer } from './pipe_schedules';
 
 export const DEFAULT_REDUCER_STANDARD = 'ASME_B16_9_REDUCERS';
@@ -82,7 +83,7 @@ export function endScheduleStandard(pipeClass, reducerCode, scheduleOptions) {
 export function getEdgePipeClass(edge, pipeClasses = []) {
   const classId = edge?.data?.pipe_class_id;
   if (!classId || classId === 'manual') return null;
-  return pipeClasses.find(c => c.id === classId || c.code === classId) || null;
+  return findPipeClass(pipeClasses, classId);
 }
 
 /**

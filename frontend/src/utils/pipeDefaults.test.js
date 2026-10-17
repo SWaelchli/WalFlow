@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getDefaultPipeData, resolvePipeSelection, matchScheduleByInnerDiameter } from './pipeDefaults';
+import { getDefaultPipeData, resolvePipeSelection, findPipeClass, matchScheduleByInnerDiameter } from './pipeDefaults';
 
 const CS01 = {
   id: 'pc-cs01', code: 'CS01', roughness_mm: 0.046,
@@ -56,5 +56,21 @@ describe('F3-02: display of pipes without catalog references', () => {
   it('keeps stored class and size references', () => {
     expect(resolvePipeSelection({ pipe_class_id: 'pc-cs01', standardDn: 25, standardSch: '80', diameter: 0.02664 }))
       .toEqual({ classId: 'pc-cs01', dn: 25, sch: '80', isCustomId: false, scheduleStandard: 'ASME_B36_10M_SCHEDULES' });
+  });
+});
+
+describe('findPipeClass', () => {
+  const classes = [{ id: 'walflow-cs01', code: 'CS01' }, { id: 'walflow-ss01', code: 'SS01' }];
+
+  it('matches by id, then by code (older files stored the code)', () => {
+    expect(findPipeClass(classes, 'walflow-ss01')).toBe(classes[1]);
+    expect(findPipeClass(classes, 'CS01')).toBe(classes[0]);
+  });
+
+  it('returns null for manual, missing and unknown references', () => {
+    expect(findPipeClass(classes, 'manual')).toBeNull();
+    expect(findPipeClass(classes, undefined)).toBeNull();
+    expect(findPipeClass(classes, 'XX99')).toBeNull();
+    expect(findPipeClass(undefined, 'CS01')).toBeNull();
   });
 });
