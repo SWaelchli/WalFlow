@@ -5,9 +5,9 @@ import axios from 'axios';
 const cache = {};
 
 /**
- * Loads fitting standards from the catalog API (e.g. reducers).
- * Returns [] while loading or when the API is unavailable; callers fall back to
- * the bundled ASME / DIN datasets in that case.
+ * Loads fitting standards from the catalog API (e.g. reducers, pipe schedules).
+ * The catalogs live only in the database: this returns [] while loading or when the API is
+ * unavailable, and callers show that the catalog is not loaded.
  */
 export function useFittingStandards(fittingType = 'reducer') {
   const [standards, setStandards] = useState(() => cache[fittingType]?.data || []);
@@ -41,4 +41,14 @@ export function useFittingStandards(fittingType = 'reducer') {
 export function invalidateFittingStandards(fittingType) {
   if (fittingType) delete cache[fittingType];
   else Object.keys(cache).forEach(k => delete cache[k]);
+}
+
+/** Catalog rows already loaded for a fitting type ([] before the first response), for non-React callers. */
+export function getCachedFittingStandards(fittingType) {
+  return cache[fittingType]?.data || [];
+}
+
+/** Puts catalog rows into the cache (tests, or data fetched elsewhere). */
+export function primeFittingStandards(fittingType, data) {
+  cache[fittingType] = { data, promise: Promise.resolve(data) };
 }

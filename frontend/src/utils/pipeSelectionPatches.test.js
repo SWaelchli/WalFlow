@@ -21,7 +21,7 @@ describe('pipe selection patches (shared by the inspector and the pipe table)', 
 
   it('size change only touches the dimensions', () => {
     const patch = classSizePatch(pc, 80);
-    expect(Object.keys(patch).sort()).toEqual(['diameter', 'outer_diameter_mm', 'standardDn', 'standardSch', 'wall_thickness_mm']);
+    expect(Object.keys(patch).sort()).toEqual(['diameter', 'outer_diameter_mm', 'schedule_standard_code', 'standardDn', 'standardSch', 'wall_thickness_mm']);
     expect(classSizePatch(pc, 65)).toBeNull();
   });
 

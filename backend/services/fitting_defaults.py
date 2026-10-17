@@ -3,13 +3,14 @@ Default Built-in Fitting Standards for WalFlow
 
 Defines standardized dimensional catalogs based on:
 1. ASME B16.9 - Factory-Made Wrought Buttwelding Fittings (Concentric & Eccentric Reducers)
-2. ASME B36.10M / ASME B36.19M - Standard Pipe Dimensions and Schedules
-3. DIN EN 10220 / EN ISO 1127 - Steel Tube Dimensions (DIN EN pipe schedules)
+2. ASME B36.10M - Steel Pipe Dimensions and Schedules
+3. ASME B36.19M - Stainless Steel Pipe Dimensions (5S / 10S / 40S / 80S)
+4. DIN EN 10220 / EN ISO 1127 - Steel Tube Dimensions (DIN EN pipe schedules)
 """
 
 import math
 
-# Standard ASME B36.10M / B36.19M Outside Diameters & Schedule Wall Thicknesses (mm)
+# Standard ASME B36.10M Outside Diameters & Schedule Wall Thicknesses (mm)
 PIPE_SCHEDULES_DATA = [
     {
         "dn": 15, "nps": "1/2", "od_mm": 21.3,
@@ -207,8 +208,64 @@ PIPE_SCHEDULES_DATA = [
     }
 ]
 
+# Further ASME B36.10M schedules (wall thickness in mm) for the sizes that list them
+_B36_10M_EXTRA_SCHEDULES = {
+    200: {"20": 6.35, "30": 7.04, "60": 10.31},
+    250: {"20": 6.35, "30": 7.80, "60": 12.70},
+    300: {"20": 6.35, "30": 8.38, "60": 14.27},
+    350: {"10": 6.35, "20": 7.92, "30": 9.53, "60": 15.09},
+    400: {"10": 6.35, "20": 7.92, "30": 9.53, "60": 16.66},
+}
+for _row in PIPE_SCHEDULES_DATA:
+    for _sch, _wt in _B36_10M_EXTRA_SCHEDULES.get(_row["dn"], {}).items():
+        _row["schedules"][_sch] = {"wt_mm": _wt, "id_mm": round(_row["od_mm"] - 2 * _wt, 2)}
+
 # Helper lookup for OD by DN
 _OD_MAP = {p["dn"]: p["od_mm"] for p in PIPE_SCHEDULES_DATA}
+
+# ASME B36.19M stainless steel pipe: same outside diameters as B36.10M, S-schedule walls (mm).
+# 40S / 80S are listed up to NPS 12; NPS 14-24 carry 5S / 10S only.
+B36_19M_RAW = [
+    # (dn, 5S, 10S, 40S, 80S)
+    (15, 1.65, 2.11, 2.77, 3.73),
+    (20, 1.65, 2.11, 2.87, 3.91),
+    (25, 1.65, 2.77, 3.38, 4.55),
+    (32, 1.65, 2.77, 3.56, 4.85),
+    (40, 1.65, 2.77, 3.68, 5.08),
+    (50, 1.65, 2.77, 3.91, 5.54),
+    (65, 2.11, 3.05, 5.16, 7.01),
+    (80, 2.11, 3.05, 5.49, 7.62),
+    (90, 2.11, 3.05, 5.74, 8.08),
+    (100, 2.11, 3.05, 6.02, 8.56),
+    (125, 2.77, 3.40, 6.55, 9.53),
+    (150, 2.77, 3.40, 7.11, 10.97),
+    (200, 2.77, 3.76, 8.18, 12.70),
+    (250, 3.40, 4.19, 9.27, 12.70),
+    (300, 3.96, 4.57, 9.53, 12.70),
+    (350, 3.96, 4.78, None, None),
+    (400, 4.19, 4.78, None, None),
+    (450, 4.19, 4.78, None, None),
+    (500, 4.78, 5.54, None, None),
+    (600, 5.54, 6.35, None, None),
+]
+
+_NPS_MAP = {p["dn"]: p["nps"] for p in PIPE_SCHEDULES_DATA}
+
+PIPE_SCHEDULES_B36_19M_DATA = []
+for _dn, *_walls in B36_19M_RAW:
+    _od = _OD_MAP[_dn]
+    PIPE_SCHEDULES_B36_19M_DATA.append({
+        "dn": _dn,
+        "nps": _NPS_MAP[_dn],
+        "od_mm": _od,
+        "schedules": {
+            sch: {"wt_mm": wt, "id_mm": round(_od - 2 * wt, 2)}
+            for sch, wt in zip(("5S", "10S", "40S", "80S"), _walls) if wt is not None
+        }
+    })
+
+ASME_B36_10M_CODE = "ASME_B36_10M_SCHEDULES"
+ASME_B36_19M_CODE = "ASME_B36_19M_SCHEDULES"
 
 def _calc_cone_angle(od_large_mm: float, od_small_mm: float, length_mm: float) -> float:
     """Calculates total cone transition angle theta in degrees."""
@@ -435,14 +492,25 @@ EXAMPLE_FITTING_STANDARDS = [
     },
     {
         "id": "walflow-asme-b36-10m-schedules",
-        "code": "ASME_B36_10M_SCHEDULES",
-        "name": "ASME B36.10M / B36.19M Pipe Schedules",
+        "code": ASME_B36_10M_CODE,
+        "name": "ASME B36.10M Pipe Schedules",
         "standard": "ASME",
         "fitting_type": "pipe_schedule",
-        "subtype": "carbon_stainless_schedules",
-        "description": "Welded and Seamless Wrought Steel and Stainless Steel Pipe Schedules (ASME B36.10M / B36.19M)",
+        "subtype": "carbon_steel_schedules",
+        "description": "Welded and Seamless Wrought Steel Pipe Schedules (ASME B36.10M)",
         "is_builtin": True,
         "dimensions": PIPE_SCHEDULES_DATA
+    },
+    {
+        "id": "walflow-asme-b36-19m-schedules",
+        "code": ASME_B36_19M_CODE,
+        "name": "ASME B36.19M Stainless Pipe Schedules",
+        "standard": "ASME",
+        "fitting_type": "pipe_schedule",
+        "subtype": "stainless_steel_schedules",
+        "description": "Welded and Seamless Wrought Stainless Steel Pipe Schedules 5S / 10S / 40S / 80S (ASME B36.19M)",
+        "is_builtin": True,
+        "dimensions": PIPE_SCHEDULES_B36_19M_DATA
     },
     {
         "id": "walflow-din-en-10253-2-reducers",

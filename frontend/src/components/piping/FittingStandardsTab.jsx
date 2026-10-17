@@ -12,11 +12,11 @@ import {
 } from '../symbols/IconLibrary';
 import { useUnits } from '../../context/UnitContext';
 import { invalidateFittingStandards } from '../../hooks/useFittingStandards';
-import { orderSchedules } from '../../utils/pipe_schedules';
+import { orderSchedules, scheduleLabel } from '../../utils/pipe_schedules';
 
 import { modalA11yRef } from '../../hooks/useModalA11y';
 import { clickableProps } from '../../utils/a11yProps';
-const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage }, ref) {
+const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage, currentUser }, ref) {
   const { isImperial } = useUnits();
 
   const [standards, setStandards] = useState([]);
@@ -102,14 +102,21 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
     return true;
   });
 
-  // Re-seed defaults
+  // Restore Defaults: re-adds missing built-in catalogs from the seed; admins may also reset edited built-ins
   const handleSeedDefaults = async () => {
+    const resetBuiltins = currentUser?.role === 'admin' && await confirmDialog({
+      title: 'Restore default catalogs',
+      message: 'Missing built-in catalogs are added again. Also reset edited built-in catalogs to the shipped data? Sizes that pipe classes use cannot be removed.',
+      confirmLabel: 'Also reset edited',
+      cancelLabel: 'Only add missing',
+    });
     try {
-      const res = await axios.post('/api/fitting-standards/seed-defaults');
-      showToast(`Default standards synchronized (${res.data.seeded_count || 0} restored).`);
+      const res = await axios.post('/api/fitting-standards/seed-defaults', null, { params: { restore_builtins: resetBuiltins } });
+      showToast(`Default catalogs restored (${res.data.seeded_count || 0} added, ${res.data.restored_count || 0} reset).`);
+      invalidateFittingStandards();
       fetchStandards();
-    } catch {
-      showToast('Failed to restore default fitting standards.', 'error');
+    } catch (err) {
+      showToast(err.response?.data?.detail || 'Failed to restore default fitting standards.', 'error');
     }
   };
 
@@ -822,7 +829,7 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage 
                       <th style={{ padding: '8px 12px' }}>NPS</th>
                       <th style={{ padding: '8px 12px' }}>OD ({isImperial ? 'in' : 'mm'})</th>
                       {scheduleColumns.map(key => (
-                        <th key={key} style={{ padding: '8px 12px' }}>{/^\d/.test(key) ? `Sch ${key}` : key} (WT / ID)</th>
+                        <th key={key} style={{ padding: '8px 12px' }}>{scheduleLabel(key)} (WT / ID)</th>
                       ))}
                     </tr>
                   </thead>

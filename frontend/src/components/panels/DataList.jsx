@@ -2,14 +2,13 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { confirmDialog } from '../../utils/dialogs';
 import { componentLabel } from '../../constants/componentLabels';
 import { PlusIcon, PlayIcon, ExportIcon, CaseIcon, TrashIcon, SpinnerIcon, ArrowUpIcon, ArrowDownIcon, SortIcon, WarningIcon, CheckIcon, DragHandleIcon, CrossIcon } from '../symbols/IconLibrary';
-import { findClosestPipeMatch, ASME_PIPE_STANDARDS } from '../../utils/standards_library';
-import { getScheduleStandardOptions, getScheduleDataset, listSchedules } from '../../utils/pipe_schedules';
+import { getScheduleStandardOptions, getScheduleDataset, listSchedules, scheduleLabel, DEFAULT_SCHEDULE_STANDARD } from '../../utils/pipe_schedules';
 import { formatDnOption } from '../../utils/reducer_catalog';
 import { useFittingStandards } from '../../hooks/useFittingStandards';
 
 import { updateCaseOverride, effectiveForcedState } from '../../utils/case_resolver';
 import { useUnits } from '../../context/UnitContext';
-import { resolvePipeSelection, findPipeClass, manualSelectionPatch, classSelectionPatch, classSizePatch, schedulePatch } from '../../utils/pipeDefaults';
+import { resolvePipeSelection, findPipeClass, manualSelectionPatch, classSelectionPatch, classSizePatch, schedulePatch, matchScheduleByInnerDiameter, nearestDnByInnerDiameter } from '../../utils/pipeDefaults';
 import DraftNumberInput from '../common/DraftNumberInput';
 import MeasurementsTable from './MeasurementsTable';
 import usePanelHeight from '../../hooks/usePanelHeight';
@@ -1083,7 +1082,10 @@ export default function DataList({
               // Pipes without a class reference (older files) show as Manual; display never rewrites data
               const pipeSel = isNode ? null : resolvePipeSelection(item.data, scheduleOptions);
               const scheduleStd = pipeSel?.scheduleStandard;
-              const match = isNode ? findClosestPipeMatch(diaValue) : null;
+              const match = isNode && diaValue > 0
+                ? (matchScheduleByInnerDiameter(diaValue, DEFAULT_SCHEDULE_STANDARD, scheduleOptions)
+                  || { dn: nearestDnByInnerDiameter(diaValue, DEFAULT_SCHEDULE_STANDARD, scheduleOptions) })
+                : null;
 
               const currentClassId = isNode ? (item.data.pipe_class_id || 'manual') : pipeSel.classId;
               const selectedClass = isNode ? classList.find(c => c.id === currentClassId) : findPipeClass(classList, currentClassId);
@@ -1095,8 +1097,8 @@ export default function DataList({
               const customIdLabel = diaValue > 0
                 ? `Custom ID ${isImperial ? `${(diaValue * 39.37007874).toFixed(3)} in` : `${(diaValue * 1000).toFixed(2)} mm`}`
                 : 'Custom ID (not set)';
-              const pipeInfo = ASME_PIPE_STANDARDS.find(p => p.dn === currentDn);
-              const npsDisplay = pipeInfo ? `${pipeInfo.nps}"` : `${currentDn}mm`;
+              const pipeInfo = getScheduleDataset(scheduleStd || DEFAULT_SCHEDULE_STANDARD, scheduleOptions).find(p => Number(p.dn) === currentDn);
+              const npsDisplay = pipeInfo && !String(pipeInfo.nps).toUpperCase().startsWith('DN') ? `${pipeInfo.nps}"` : `DN${currentDn}`;
 
               // Same pipe data changes as the inspector's PipeSelector (utils/pipeDefaults.js)
               const handleClassChange = (newClassId) => {
@@ -1186,7 +1188,7 @@ export default function DataList({
                           style={{ fontSize: 'var(--fs-xs)', padding: '2px 6px', height: '26px' }}
                           value={isCustomId ? '' : currentDn}
                           disabled={currentClassId !== 'manual' && !selectedClass}
-                          title={currentClassId !== 'manual' && !selectedClass ? 'Piping spec not available: choose another spec to change the size.' : undefined}
+                          title={currentClassId !== 'manual' && !selectedClass ? 'Pipe class not available: choose another pipe class to change the size.' : undefined}
                           onChange={(e) => { handleDnChange(e.target.value); }}
                           onFocus={() => { handleRowClick(entry); setIsEditing(true); }}
                           onBlur={() => setIsEditing(false)}
@@ -1228,7 +1230,7 @@ export default function DataList({
                             // Keep a value the catalogue does not list for this size (e.g. an imported file) visible
                             const options = currentSch && !listed.includes(currentSch) ? [...listed, currentSch] : listed;
                             return options.map(s => (
-                              <option key={s} value={s} disabled={!listed.includes(s)}>{s}</option>
+                              <option key={s} value={s} disabled={!listed.includes(s)}>{scheduleLabel(s)}</option>
                             ));
                           })()}
                         </select>

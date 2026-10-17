@@ -24,28 +24,38 @@ import {
 } from '../components/symbols/IconLibrary';
 import FittingStandardsTab from '../components/piping/FittingStandardsTab';
 import { useFittingStandards } from '../hooks/useFittingStandards';
-import { getScheduleStandardOptions } from '../utils/pipe_schedules';
+import {
+  getScheduleStandardOptions,
+  getScheduleBore,
+  getScheduleStandardName,
+  classScheduleChoices,
+  classScheduleCodes,
+  classReducerCodes,
+  catalogDns,
+  defaultScheduleFor,
+  scheduleLabel,
+  DEFAULT_SCHEDULE_STANDARD
+} from '../utils/pipe_schedules';
+import { getReducerStandardOptions, DEFAULT_REDUCER_STANDARD } from '../utils/reducer_catalog';
+import { specUnits } from '../utils/specUnits';
+import DraftNumberInput from '../components/common/DraftNumberInput';
 
 import { modalA11yRef } from '../hooks/useModalA11y';
 import { clickableProps, clickableRowProps } from '../utils/a11yProps';
 
 // Readable names for internal catalogue identifiers. The raw code stays available as a tooltip.
 const SOURCE_LABELS = { ALL: 'All', WALFLOW_EXAMPLE: 'Example', TR2000: 'TR2000', CUSTOM: 'Custom' };
-const CATALOG_LABELS = {
-  ASME_B16_9_REDUCERS: 'ASME B16.9 buttweld reducers',
-  DIN_EN_10253_2_REDUCERS: 'DIN EN 10253-2 buttweld reducers',
-  ASME_B36_10M_SCHEDULES: 'ASME B36.10M / B36.19M pipe schedules',
-  DIN_EN_PIPE_SCHEDULES: 'DIN EN 10220 / EN ISO 1127 pipe dimensions',
-  CUSTOM: 'Custom',
-};
 const sourceLabel = (code) => SOURCE_LABELS[code] || code;
-const catalogLabel = (code) => CATALOG_LABELS[code] || code;
+// Catalog names come from the fitting catalog (database); the code shows while it is not loaded
+const catalogName = (code, options) => options.find(o => o.code === code)?.name || code;
 const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, onOpenHelpModal }) => {
   const { currentUser, isAuthenticated, isAdmin, adminStatus, logout } = useAuth();
   const { isImperial } = useUnits();
 
   const [activeTab, setActiveTab] = useState('pipe_classes'); // 'pipe_classes' | 'fitting_standards'
   const scheduleStandardOptions = getScheduleStandardOptions(useFittingStandards('pipe_schedule'));
+  const reducerStandardOptions = getReducerStandardOptions(useFittingStandards('reducer'));
+  const units = specUnits(isImperial);
   const fittingTabRef = useRef(null);
   const [pipeClasses, setPipeClasses] = useState([]);
 
@@ -104,7 +114,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
         setSelectedClassId(res.data[0].id);
       }
     } catch {
-      setError('Failed to fetch pipe specifications catalog.');
+      setError('Failed to fetch the pipe classes.');
     } finally {
       setLoading(false);
     }
@@ -118,10 +128,10 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
     setIsSeedingExamples(true);
     try {
       const res = await axios.post('/api/pipe-classes/seed-examples');
-      notify(res.data.message || `Created ${res.data.created_count} default example specifications.`, 'success');
+      notify(res.data.message || `Created ${res.data.created_count} example pipe classes.`, 'success');
       fetchClasses();
     } catch {
-      notify('Failed to initialize example specifications.', 'error');
+      notify('Failed to restore the example pipe classes.', 'error');
     } finally {
       setIsSeedingExamples(false);
     }
@@ -196,7 +206,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
       });
       setTr2000Results(res.data);
     } catch {
-      setTr2000Error('Failed to query specifications from TR2000 API.');
+      setTr2000Error('Failed to query pipe classes from the TR2000 API.');
     } finally {
       setIsSearchingTr2000(false);
     }
@@ -271,11 +281,11 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
   // --- Batch Import & Duplicate Conflict Resolution ---
   const handleStartBatchImport = () => {
     if (!agreedToEquinorTerms) {
-      notify("You must review and agree to Equinor's Terms and Conditions before downloading TR2000 specifications.", 'warning');
+      notify("You must review and agree to Equinor's Terms and Conditions before downloading TR2000 pipe classes.", 'warning');
       return;
     }
     if (selectedTr2000Codes.size === 0) {
-      notify("Please select at least one specification to import.", 'warning');
+      notify("Please select at least one pipe class to import.", 'warning');
       return;
     }
 
@@ -377,7 +387,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
     }
 
     if (errors.length > 0) {
-      setTr2000Error(`Imported ${successCount} specifications. ${errors.length} failed: ${errors.join(', ')}`);
+      setTr2000Error(`Imported ${successCount} pipe classes. ${errors.length} failed: ${errors.join(', ')}`);
     } else {
       setIsTr2000ModalOpen(false);
       setSelectedTr2000Codes(new Set());
@@ -393,6 +403,8 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
     setIsEditing(true);
     setFormData({
       ...activeClass,
+      reducer_standard_codes: [...classReducerCodes(activeClass)],
+      schedule_standard_codes: [...classScheduleCodes(activeClass)],
       sizes: activeClass.sizes.map(s => ({ ...s })),
       temp_pressures: (activeClass.temp_pressures || []).map(tp => ({ ...tp }))
     });
@@ -428,15 +440,15 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
       material_grade: 'ASTM A106 Gr. B',
       rating_class: 'CL150',
       design_code: 'ASME B31.3',
-      reducer_standard_code: 'ASME_B16_9_REDUCERS',
-      schedule_standard_code: 'ASME_B36_10M_SCHEDULES',
+      reducer_standard_codes: [DEFAULT_REDUCER_STANDARD],
+      schedule_standard_codes: [DEFAULT_SCHEDULE_STANDARD],
       revision: '1.0',
       roughness_mm: 0.045,
       corrosion_allowance_mm: 3.0,
       min_temp_c: -29,
       max_temp_c: 200,
       sizes: [
-        { dn: 50, nps: "2", od_mm: 60.3, wt_mm: 3.91, sch: "STD", ca_mm: 3.0 }
+        { dn: 50, catalog: DEFAULT_SCHEDULE_STANDARD, sch: 'STD', ca_mm: 3.0 }
       ],
       temp_pressures: [
         { temp_c: 20.0, press_bar: 19.6 }
@@ -446,7 +458,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
 
   const handleCloneClass = async (source) => {
     if (isEditing) {
-      if (!(await confirmDiscard('clone this spec'))) return;
+      if (!(await confirmDiscard('clone this pipe class'))) return;
     }
     setIsNewDraft(true);
     setIsEditing(true);
@@ -459,8 +471,8 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
       material_grade: source.material_grade,
       rating_class: source.rating_class,
       design_code: source.design_code || 'ASME B31.3',
-      reducer_standard_code: source.reducer_standard_code || 'ASME_B16_9_REDUCERS',
-      schedule_standard_code: source.schedule_standard_code || 'ASME_B36_10M_SCHEDULES',
+      reducer_standard_codes: [...classReducerCodes(source)],
+      schedule_standard_codes: [...classScheduleCodes(source)],
       revision: '1.0',
       roughness_mm: source.roughness_mm,
       corrosion_allowance_mm: source.corrosion_allowance_mm,
@@ -497,19 +509,26 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
         material_grade: formData.material_grade.trim(),
         rating_class: formData.rating_class.trim(),
         design_code: formData.design_code.trim(),
-        reducer_standard_code: formData.reducer_standard_code || 'ASME_B16_9_REDUCERS',
-        schedule_standard_code: formData.schedule_standard_code || 'ASME_B36_10M_SCHEDULES',
+        reducer_standard_codes: formData.reducer_standard_codes,
+        schedule_standard_codes: formData.schedule_standard_codes,
         revision: formData.revision.trim(),
         roughness_mm: parseFloat(formData.roughness_mm) || 0.045,
         corrosion_allowance_mm: parseFloat(formData.corrosion_allowance_mm) || 0.0,
         min_temp_c: formData.min_temp_c !== '' && formData.min_temp_c !== null ? parseFloat(formData.min_temp_c) : null,
         max_temp_c: formData.max_temp_c !== '' && formData.max_temp_c !== null ? parseFloat(formData.max_temp_c) : null,
-        sizes: formData.sizes.map(s => ({
+        // Catalog sizes are saved as references; only custom sizes carry their own dimensions
+        sizes: formData.sizes.map(s => (s.custom ? {
           dn: parseInt(s.dn, 10),
-          nps: String(s.nps),
+          custom: true,
+          nps: String(s.nps ?? ''),
           od_mm: parseFloat(s.od_mm),
           wt_mm: parseFloat(s.wt_mm),
-          sch: s.sch || "STD",
+          sch: s.sch || '',
+          ca_mm: parseFloat(s.ca_mm || 0)
+        } : {
+          dn: parseInt(s.dn, 10),
+          catalog: s.catalog,
+          sch: s.sch,
           ca_mm: parseFloat(s.ca_mm || 0)
         })),
         temp_pressures: (formData.temp_pressures || []).map(tp => ({
@@ -576,14 +595,84 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
     setFormData(prev => ({ ...prev, [field]: val }));
   };
 
+  // Catalog dimensions of a size row (references are looked up, custom rows carry their own)
+  const rowDimensions = (row) => {
+    if (row.custom) return { nps: row.nps, od_mm: row.od_mm, wt_mm: row.wt_mm };
+    const bore = getScheduleBore(row.dn, row.sch, row.catalog, scheduleStandardOptions);
+    return bore ? { nps: bore.nps, od_mm: bore.od_mm, wt_mm: bore.wt_mm } : null;
+  };
+
+  // Catalog and schedule for a DN among the class's catalogs: keep the current pair when listed,
+  // else the default wall of the first catalog listing the DN
+  const preferredReference = (dn, codes, current = {}) => {
+    const groups = classScheduleChoices(dn, codes, scheduleStandardOptions);
+    const same = groups.find(g => g.code === current.catalog && g.schedules.includes(current.sch));
+    if (same) return { catalog: same.code, sch: current.sch };
+    const sameSch = groups.find(g => g.schedules.includes(current.sch));
+    if (sameSch) return { catalog: sameSch.code, sch: current.sch };
+    if (!groups.length) return null;
+    const fallback = defaultScheduleFor(groups[0].code);
+    return { catalog: groups[0].code, sch: groups[0].schedules.includes(fallback) ? fallback : groups[0].schedules[0] };
+  };
+
   const handleAddSizeRow = () => {
+    setFormData(prev => {
+      const codes = prev.schedule_standard_codes || [];
+      const used = new Set((prev.sizes || []).map(s => Number(s.dn)));
+      const dn = catalogDns(codes, scheduleStandardOptions).find(d => !used.has(d));
+      const ref = dn !== undefined ? preferredReference(dn, codes) : null;
+      const ca = parseFloat(prev.corrosion_allowance_mm) || 0;
+      const row = ref ? { dn, ...ref, ca_mm: ca } : { dn: '', nps: '', od_mm: '', wt_mm: '', sch: '', ca_mm: ca, custom: true };
+      return { ...prev, sizes: [...(prev.sizes || []), row] };
+    });
+  };
+
+  // A catalog DN was picked: keep the schedule when listed for it. 'custom' keeps the current dimensions as a custom size.
+  const handlePickSizeDn = (idx, value) => {
     setFormData(prev => ({
       ...prev,
-      sizes: [
-        ...(prev.sizes || []),
-        { dn: 150, nps: "6", od_mm: 168.3, wt_mm: 7.11, sch: "STD", ca_mm: 3.0 }
-      ]
+      sizes: (prev.sizes || []).map((row, i) => {
+        if (i !== idx) return row;
+        if (value === 'custom') {
+          const dims = rowDimensions(row) || {};
+          return { dn: row.dn, nps: dims.nps ?? '', od_mm: dims.od_mm ?? '', wt_mm: dims.wt_mm ?? '', sch: row.sch || '', ca_mm: row.ca_mm, custom: true };
+        }
+        const dn = Number(value);
+        const ref = preferredReference(dn, prev.schedule_standard_codes || [], row);
+        return ref ? { dn, ...ref, ca_mm: row.ca_mm } : row;
+      })
     }));
+  };
+
+  // Schedule select values are `catalog|sch`, so the same designation in two catalogs stays distinct
+  const handlePickSchedule = (idx, value) => {
+    const [catalog, ...rest] = value.split('|');
+    const sch = rest.join('|');
+    setFormData(prev => ({
+      ...prev,
+      sizes: (prev.sizes || []).map((row, i) => (i === idx ? { dn: row.dn, catalog, sch, ca_mm: row.ca_mm } : row))
+    }));
+  };
+
+  // Catalog checkboxes. A schedule catalog that size rows use cannot be removed; one catalog stays selected.
+  const handleToggleCatalog = (field, code) => {
+    const current = formData[field] || [];
+    if (!current.includes(code)) {
+      updateFormField(field, [...current, code]);
+      return;
+    }
+    if (current.length === 1) {
+      notify('A pipe class needs at least one catalog.', 'warning');
+      return;
+    }
+    if (field === 'schedule_standard_codes') {
+      const inUse = (formData.sizes || []).filter(s => !s.custom && s.catalog === code).map(s => `DN${s.dn}`);
+      if (inUse.length) {
+        notify(`${getScheduleStandardName(code, scheduleStandardOptions)} is used by ${inUse.join(', ')}. Change those sizes first.`, 'warning');
+        return;
+      }
+    }
+    updateFormField(field, current.filter(c => c !== code));
   };
 
   const handleRemoveSizeRow = (idx) => {
@@ -601,13 +690,13 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
   };
 
   const handleAddTempPressureRow = () => {
-    setFormData(prev => ({
-      ...prev,
-      temp_pressures: [
-        ...(prev.temp_pressures || []),
-        { temp_c: 250.0, press_bar: 10.0 }
-      ]
-    }));
+    setFormData(prev => {
+      const points = prev.temp_pressures || [];
+      const last = points[points.length - 1];
+      // Next point 50 degC above the last one, same pressure until edited
+      const next = last ? { temp_c: Number(last.temp_c) + 50, press_bar: Number(last.press_bar) } : { temp_c: 38, press_bar: 0 };
+      return { ...prev, temp_pressures: [...points, next] };
+    });
   };
 
   const handleRemoveTempPressureRow = (idx) => {
@@ -617,10 +706,12 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
     }));
   };
 
+  // Committed on blur (DraftNumberInput) so negative temperatures can be typed; text that is not a number is ignored
   const handleUpdateTempPressureRow = (idx, field, val) => {
+    if (val === null) return;
     setFormData(prev => ({
       ...prev,
-      temp_pressures: (prev.temp_pressures || []).map((row, i) => i === idx ? { ...row, [field]: parseFloat(val) || 0 } : row)
+      temp_pressures: (prev.temp_pressures || []).map((row, i) => i === idx ? { ...row, [field]: val } : row)
     }));
   };
 
@@ -731,7 +822,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                 transition: 'all 0.15s ease'
               }}
             >
-              Pipe specifications
+              Pipe classes
             </button>
             <button
               onClick={async () => {
@@ -768,7 +859,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                   disabled={isSeedingExamples || isEditing}
                   className="btn-secondary"
                   style={{ height: '32px', padding: '0 10px', fontSize: 'var(--fs-xs)', fontWeight: '700' }}
-                  title="Restore standard default example classes (CS01, SS01, LT01, DX01)"
+                  title="Restore the example pipe classes (CS01, SS01, LT01, DX01)"
                 >
                   {isSeedingExamples ? 'Restoring...' : 'Restore Defaults'}
                 </button>
@@ -790,7 +881,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                   disabled={isEditing}
                   className="btn-secondary"
                   style={{ height: '32px', padding: '0 10px', fontSize: 'var(--fs-xs)', fontWeight: '700', gap: '4px' }}
-                  title="Import specifications from JSON file"
+                  title="Import pipe classes from a JSON file"
                 >
                   <ImportIcon size={12} />
                   Import Library
@@ -809,7 +900,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                       fontWeight: '700',
                       gap: '4px'
                     }}
-                    title="Search and import specs from Equinor TR2000 standard"
+                    title="Search and import pipe classes from Equinor TR2000"
                   >
                     <GlobeIcon size={12} />
                     Import from TR2000
@@ -842,7 +933,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                   onClick={() => fittingTabRef.current?.seedDefaults()}
                   className="btn-secondary"
                   style={{ height: '32px', padding: '0 10px', fontSize: 'var(--fs-xs)', fontWeight: '700' }}
-                  title="Restore standard default fitting standards (ASME B16.9, ASME B36.10M)"
+                  title="Restore the built-in fitting catalogs (reducers and pipe schedules)"
                 >
                   Restore Defaults
                 </button>
@@ -1029,7 +1120,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
             </div>
           </div>
 
-          {/* List of Specifications */}
+          {/* List of pipe classes */}
           <div style={{ flexGrow: 1, overflowY: 'auto', padding: '10px' }}>
             {/* If currently creating a new draft, show draft item at top */}
             {isNewDraft && formData && (
@@ -1059,7 +1150,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                   </span>
                 </div>
                 <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {formData.name || 'Unsaved new specification'}
+                  {formData.name || 'Unsaved new pipe class'}
                 </div>
               </div>
             )}
@@ -1121,7 +1212,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                 <summary style={{ cursor: 'pointer', fontWeight: 700, color: 'var(--color-brand-dark)' }}>What is a pipe class, and what does the solver use?</summary>
                 <div style={{ marginTop: '8px' }}>
                   <p style={{ margin: '0 0 6px' }}>
-                    A pipe class (piping specification) describes the pipe, fittings and material approved for a service: the available sizes and schedules, the material group and the pressure rating. A drawing takes its pipe sizes from the class chosen in the project.
+                    A pipe class describes the pipe, fittings and material approved for a service: the available sizes and schedules, the material group and the pressure rating. A drawing takes its pipe sizes from the class chosen in the project.
                   </p>
                   <p style={{ margin: '0 0 6px' }}>
                     <strong>Used by the solver:</strong> inside diameter (from size and schedule or wall thickness) and wall roughness ε, which set the friction loss.
@@ -1130,7 +1221,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                     <strong>Informational only, not checked:</strong> pressure rating (e.g. CL150), the P-T rating table and corrosion allowance. WalFlow does not compare calculated pressures or temperatures with these values and does not reduce the wall for corrosion.
                   </p>
                   <p style={{ margin: 0 }}>
-                    <strong>TR2000</strong> is Equinor's piping class database. Importing a specification copies its sizes, schedules and ratings into the catalogue; later changes at Equinor are not synchronised.
+                    <strong>TR2000</strong> is Equinor's piping class database. Importing a pipe class copies its sizes, schedules and ratings into the catalogue; later changes at Equinor are not synchronised.
                   </p>
                 </div>
               </details>
@@ -1163,7 +1254,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                           />
                         </div>
                         <div style={{ flexGrow: 1 }}>
-                          <label className="form-label" style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', marginBottom: '2px' }}>Specification name *</label>
+                          <label className="form-label" style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', marginBottom: '2px' }}>Pipe class name *</label>
                           <input
                             type="text"
                             value={formData.name}
@@ -1279,7 +1370,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                             className="btn-primary"
                             style={{ height: '32px', padding: '0 14px', borderRadius: '6px', fontSize: 'var(--fs-xs)', fontWeight: '700' }}
                           >
-                            Edit Spec
+                            Edit Pipe Class
                           </button>
                           <button aria-label="Delete class"
                             onClick={() => handleDeleteClass(activeClass)}
@@ -1346,40 +1437,79 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                       </div>
                     </div>
 
-                    {/* Standard Catalog References Selectors */}
+                    {/* Design limits: class default corrosion allowance and design temperature range */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginTop: '12px' }}>
+                      <div>
+                        <label htmlFor="pc-default-ca" className="form-label" style={{ fontSize: 'var(--fs-xs)', fontWeight: '700' }}>Default corrosion allowance [{units.length}]</label>
+                        <DraftNumberInput
+                          id="pc-default-ca"
+                          step="any"
+                          min="0"
+                          displayValue={units.lengthOut(formData.corrosion_allowance_mm)}
+                          onCommit={(text) => { const v = units.lengthIn(text); if (v !== null && v >= 0) updateFormField('corrosion_allowance_mm', v); }}
+                          className="form-input"
+                          style={{ height: '30px', fontSize: 'var(--fs-sm)' }}
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="pc-min-temp" className="form-label" style={{ fontSize: 'var(--fs-xs)', fontWeight: '700' }}>Min design temperature [{units.temperature}]</label>
+                        <DraftNumberInput
+                          id="pc-min-temp"
+                          step="any"
+                          displayValue={units.temperatureOut(formData.min_temp_c)}
+                          onCommit={(text) => updateFormField('min_temp_c', units.temperatureIn(text))}
+                          className="form-input"
+                          style={{ height: '30px', fontSize: 'var(--fs-sm)' }}
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="pc-max-temp" className="form-label" style={{ fontSize: 'var(--fs-xs)', fontWeight: '700' }}>Max design temperature [{units.temperature}]</label>
+                        <DraftNumberInput
+                          id="pc-max-temp"
+                          step="any"
+                          displayValue={units.temperatureOut(formData.max_temp_c)}
+                          onCommit={(text) => updateFormField('max_temp_c', units.temperatureIn(text))}
+                          className="form-input"
+                          style={{ height: '30px', fontSize: 'var(--fs-sm)' }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Catalogs of the class: sizes and reducers are taken from the ticked fitting catalogs */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '12px', paddingTop: '12px', borderTop: '1px dashed var(--color-border)' }}>
-                      <div>
-                        <label className="form-label" style={{ fontSize: 'var(--fs-xs)', fontWeight: '700' }}>Reducer standard</label>
-                        <select
-                          value={formData.reducer_standard_code || 'ASME_B16_9_REDUCERS'}
-                          onChange={(e) => updateFormField('reducer_standard_code', e.target.value)}
-                          className="form-select"
-                          style={{ height: '32px', fontSize: 'var(--fs-sm)', width: '100%' }}
-                        >
-                          <option value="ASME_B16_9_REDUCERS">ASME B16.9 Buttweld Reducers</option>
-                          <option value="DIN_EN_10253_2_REDUCERS">DIN EN 10253-2 Buttweld Reducers</option>
-                          <option value="CUSTOM">Custom / Project Reducers</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="form-label" style={{ fontSize: 'var(--fs-xs)', fontWeight: '700' }}>Pipe schedule standard</label>
-                        <select
-                          value={formData.schedule_standard_code || 'ASME_B36_10M_SCHEDULES'}
-                          onChange={(e) => updateFormField('schedule_standard_code', e.target.value)}
-                          className="form-select"
-                          style={{ height: '32px', fontSize: 'var(--fs-sm)', width: '100%' }}
-                        >
-                          {scheduleStandardOptions.map(o => (
-                            <option key={o.code} value={o.code}>{o.name}</option>
-                          ))}
-                        </select>
-                      </div>
+                      {[
+                        { field: 'schedule_standard_codes', legend: 'Pipe dimension catalogs', options: scheduleStandardOptions },
+                        { field: 'reducer_standard_codes', legend: 'Reducer catalogs', options: reducerStandardOptions },
+                      ].map(({ field, legend, options }) => {
+                        const selected = formData[field] || [];
+                        const missing = selected.filter(code => !options.some(o => o.code === code));
+                        return (
+                          <fieldset key={field} style={{ border: '1px solid var(--color-border)', borderRadius: '8px', padding: '8px 12px', margin: 0 }}>
+                            <legend className="form-label" style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', padding: '0 4px' }}>{legend}</legend>
+                            {options.length === 0 && (
+                              <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-warning-text)' }}>Catalog not loaded.</div>
+                            )}
+                            {[...options, ...missing.map(code => ({ code, name: `${code} (not in catalog)` }))].map(o => {
+                              const checked = selected.includes(o.code);
+                              return (
+                                <label key={o.code} style={{ display: 'flex', alignItems: 'center', gap: '8px', minHeight: '28px', fontSize: 'var(--fs-sm)', cursor: 'pointer' }}>
+                                  <input type="checkbox" checked={checked} onChange={() => handleToggleCatalog(field, o.code)} />
+                                  <span>{o.name}</span>
+                                  {checked && selected[0] === o.code && selected.length > 1 && (
+                                    <span title="Used first for new sizes and reducers" style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', border: '1px solid var(--color-border)', borderRadius: '4px', padding: '0 4px' }}>default</span>
+                                  )}
+                                </label>
+                              );
+                            })}
+                          </fieldset>
+                        );
+                      })}
                     </div>
                   </>
                 ) : (
                   /* Read-Only Properties Grid */
                   <>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr 1fr', gap: '14px', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--color-border)' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr 1fr 1fr', gap: '14px', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--color-border)' }}>
                       <div>
                         <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '600' }}>Material Group & Grade</span>
                         <div style={{ fontSize: 'var(--fs-base)', fontWeight: '700', marginTop: '2px' }}>
@@ -1406,31 +1536,33 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                       <div>
                         <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '600' }}>Design Temp Range</span>
                         <div style={{ fontSize: 'var(--fs-base)', fontWeight: '700', marginTop: '2px' }}>
-                          {activeClass.min_temp_c !== null ? activeClass.min_temp_c : '—'}°C to {activeClass.max_temp_c !== null ? activeClass.max_temp_c : '—'}°C
+                          {activeClass.min_temp_c !== null ? units.temperatureOut(activeClass.min_temp_c) : '—'}{units.temperature} to {activeClass.max_temp_c !== null ? units.temperatureOut(activeClass.max_temp_c) : '—'}{units.temperature}
                         </div>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '600' }}>Default Corrosion Allowance</span>
+                        <div style={{ fontSize: 'var(--fs-base)', fontWeight: '700', marginTop: '2px' }}>{units.lengthOut(activeClass.corrosion_allowance_mm)} {units.length}</div>
                       </div>
                     </div>
 
-                    {/* Standard Catalog References Info Row */}
+                    {/* Catalogs of the class */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginTop: '14px', paddingTop: '14px', borderTop: '1px dashed var(--color-border)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', backgroundColor: 'var(--color-surface-light)', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
-                        <RulerIcon size={18} color="var(--color-text-secondary)" />
-                        <div>
-                          <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '600', display: 'block' }}>Reducer standard</span>
-                          <strong title={activeClass.reducer_standard_code || 'ASME_B16_9_REDUCERS'} style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-brand-dark)' }}>
-                            {catalogLabel(activeClass.reducer_standard_code || 'ASME_B16_9_REDUCERS')}
-                          </strong>
+                      {[
+                        { label: 'Pipe dimension catalogs', codes: classScheduleCodes(activeClass), options: scheduleStandardOptions, icon: <ClipboardIcon size={18} color="var(--color-text-secondary)" /> },
+                        { label: 'Reducer catalogs', codes: classReducerCodes(activeClass), options: reducerStandardOptions, icon: <RulerIcon size={18} color="var(--color-text-secondary)" /> },
+                      ].map(({ label, codes, options, icon }) => (
+                        <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '10px', backgroundColor: 'var(--color-surface-light)', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                          {icon}
+                          <div>
+                            <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '600', display: 'block' }}>{label}</span>
+                            {codes.map(code => (
+                              <strong key={code} title={code} style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-brand-dark)', display: 'block' }}>
+                                {catalogName(code, options)}
+                              </strong>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', backgroundColor: 'var(--color-surface-light)', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
-                        <ClipboardIcon size={18} color="var(--color-text-secondary)" />
-                        <div>
-                          <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '600', display: 'block' }}>Pipe schedule standard</span>
-                          <strong title={activeClass.schedule_standard_code || 'ASME_B36_10M_SCHEDULES'} style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-brand-dark)' }}>
-                            {catalogLabel(activeClass.schedule_standard_code || 'ASME_B36_10M_SCHEDULES')}
-                          </strong>
-                        </div>
-                      </div>
+                      ))}
                     </div>
                   </>
                 )}
@@ -1469,109 +1601,176 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                       <tr style={{ backgroundColor: 'var(--color-surface-light)', borderBottom: '2px solid var(--color-border)', textAlign: 'left' }}>
                         <th style={{ padding: '8px 12px' }}>Nominal size</th>
                         <th style={{ padding: '8px 12px' }}>NPS [in]</th>
-                        <th style={{ padding: '8px 12px', textAlign: isEditing ? 'left' : 'right' }}>OD [mm]</th>
-                        <th style={{ padding: '8px 12px', textAlign: isEditing ? 'left' : 'right' }}>Wall thickness [mm]</th>
                         <th style={{ padding: '8px 12px' }}>Schedule</th>
-                        <th style={{ padding: '8px 12px', textAlign: isEditing ? 'left' : 'right' }}>ID [mm]{isImperial && ' (in)'}</th>
-                        <th style={{ padding: '8px 12px', textAlign: isEditing ? 'left' : 'right' }}>Corrosion allowance [mm]</th>
+                        <th style={{ padding: '8px 12px' }}>Catalog</th>
+                        <th style={{ padding: '8px 12px', textAlign: 'right' }}>OD [{units.length}]</th>
+                        <th style={{ padding: '8px 12px', textAlign: 'right' }}>Wall thickness [{units.length}]</th>
+                        <th style={{ padding: '8px 12px', textAlign: 'right' }}>ID [{units.length}]</th>
+                        <th style={{ padding: '8px 12px', textAlign: isEditing ? 'left' : 'right' }}>Corrosion allowance [{units.length}]</th>
                         {isEditing && <th style={{ padding: '8px 12px', textAlign: 'center', width: '80px' }}>Action</th>}
                       </tr>
                     </thead>
                     <tbody>
                       {isEditing ? (
-                        /* Editable Size Rows */
-                        formData.sizes.map((s, idx) => {
-                          const od = parseFloat(s.od_mm) || 0;
-                          const wt = parseFloat(s.wt_mm) || 0;
-                          const calcId = Math.max(0, +(od - 2 * wt).toFixed(3));
-                          return (
-                            <tr key={idx} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                              <td style={{ padding: '6px 10px' }}>
-                                <input
-                                  type="number"
-                                  value={s.dn}
-                                  onChange={(e) => handleUpdateSizeRow(idx, 'dn', e.target.value)}
-                                  className="form-input"
-                                  style={{ width: '70px', height: '28px' }}
-                                />
-                              </td>
-                              <td style={{ padding: '6px 10px' }}>
-                                <input
-                                  type="text"
-                                  value={s.nps}
-                                  onChange={(e) => handleUpdateSizeRow(idx, 'nps', e.target.value)}
-                                  className="form-input"
-                                  style={{ width: '60px', height: '28px' }}
-                                />
-                              </td>
-                              <td style={{ padding: '6px 10px' }}>
-                                <input
-                                  type="number"
-                                  step="0.1"
-                                  value={s.od_mm}
-                                  onChange={(e) => handleUpdateSizeRow(idx, 'od_mm', e.target.value)}
-                                  className="form-input"
-                                  style={{ width: '80px', height: '28px' }}
-                                />
-                              </td>
-                              <td style={{ padding: '6px 10px' }}>
-                                <input
-                                  type="number"
-                                  step="0.01"
-                                  value={s.wt_mm}
-                                  onChange={(e) => handleUpdateSizeRow(idx, 'wt_mm', e.target.value)}
-                                  className="form-input"
-                                  style={{ width: '80px', height: '28px' }}
-                                />
-                              </td>
-                              <td style={{ padding: '6px 10px' }}>
-                                <input
-                                  type="text"
-                                  value={s.sch}
-                                  onChange={(e) => handleUpdateSizeRow(idx, 'sch', e.target.value)}
-                                  className="form-input"
-                                  style={{ width: '70px', height: '28px' }}
-                                />
-                              </td>
-                              <td style={{ padding: '6px 10px', color: calcId > 0 ? 'var(--color-text-primary)' : 'var(--color-danger)', fontWeight: '600' }}>
-                                {calcId} {isImperial && `(${(calcId / 25.4).toFixed(3)})`}
-                              </td>
-                              <td style={{ padding: '6px 10px' }}>
-                                <input
-                                  type="number"
-                                  step="0.1"
-                                  value={s.ca_mm}
-                                  onChange={(e) => handleUpdateSizeRow(idx, 'ca_mm', e.target.value)}
-                                  className="form-input"
-                                  style={{ width: '70px', height: '28px' }}
-                                />
-                              </td>
-                              <td style={{ padding: '6px 10px', textAlign: 'center' }}>
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveSizeRow(idx)}
-                                  className="btn-danger-ghost"
-                                  style={{ padding: '2px 8px', fontSize: 'var(--fs-xs)', height: '26px' }}
-                                >
-                                  Remove
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        })
+                        /* Editable Size Rows: DN and schedule picked from the class's catalogs; OD / WT come from the catalog */
+                        (() => {
+                          const codes = formData.schedule_standard_codes || [];
+                          const listedDns = catalogDns(codes, scheduleStandardOptions);
+                          const numCell = { padding: '6px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' };
+                          return formData.sizes.map((s, idx) => {
+                            const isCustom = !!s.custom;
+                            const dims = rowDimensions(s);
+                            const od = parseFloat(dims?.od_mm) || 0;
+                            const wt = parseFloat(dims?.wt_mm) || 0;
+                            const calcId = Math.max(0, +(od - 2 * wt).toFixed(3));
+                            const groups = isCustom ? [] : classScheduleChoices(Number(s.dn), codes, scheduleStandardOptions);
+                            const listed = groups.some(g => g.code === s.catalog && g.schedules.includes(s.sch));
+                            const rowLabel = `Size row ${idx + 1}`;
+                            return (
+                              <tr key={idx} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                                <td style={{ padding: '6px 10px' }}>
+                                  {isCustom ? (
+                                    <input
+                                      type="number"
+                                      aria-label={`${rowLabel}: custom DN`}
+                                      title="Size not taken from a catalog"
+                                      value={s.dn}
+                                      onChange={(e) => handleUpdateSizeRow(idx, 'dn', e.target.value)}
+                                      className="form-input"
+                                      style={{ width: '90px', height: '28px' }}
+                                    />
+                                  ) : (
+                                    <select
+                                      aria-label={`${rowLabel}: DN`}
+                                      value={String(s.dn)}
+                                      onChange={(e) => handlePickSizeDn(idx, e.target.value)}
+                                      className="form-select"
+                                      style={{ width: '110px', height: '28px', fontSize: 'var(--fs-sm)' }}
+                                    >
+                                      {!listedDns.includes(Number(s.dn)) && <option value={String(s.dn)}>DN {s.dn} (not listed)</option>}
+                                      {listedDns.map(dn => <option key={dn} value={String(dn)}>DN {dn}</option>)}
+                                      <option value="custom">Custom size…</option>
+                                    </select>
+                                  )}
+                                </td>
+                                <td style={{ padding: '6px 10px' }}>
+                                  {isCustom ? (
+                                    <input
+                                      type="text"
+                                      aria-label={`${rowLabel}: NPS`}
+                                      value={s.nps}
+                                      onChange={(e) => handleUpdateSizeRow(idx, 'nps', e.target.value)}
+                                      className="form-input"
+                                      style={{ width: '60px', height: '28px' }}
+                                    />
+                                  ) : (
+                                    <span style={{ color: 'var(--color-text-secondary)' }}>{dims?.nps ?? '—'}</span>
+                                  )}
+                                </td>
+                                <td style={{ padding: '6px 10px' }}>
+                                  {isCustom ? (
+                                    <input
+                                      type="text"
+                                      aria-label={`${rowLabel}: schedule`}
+                                      value={s.sch}
+                                      onChange={(e) => handleUpdateSizeRow(idx, 'sch', e.target.value)}
+                                      className="form-input"
+                                      style={{ width: '80px', height: '28px' }}
+                                    />
+                                  ) : (
+                                    <select
+                                      aria-label={`${rowLabel}: schedule`}
+                                      value={`${s.catalog}|${s.sch}`}
+                                      onChange={(e) => handlePickSchedule(idx, e.target.value)}
+                                      className="form-select"
+                                      style={{ width: '120px', height: '28px', fontSize: 'var(--fs-sm)' }}
+                                    >
+                                      {!listed && <option value={`${s.catalog}|${s.sch}`}>{scheduleLabel(s.sch)} (not listed)</option>}
+                                      {groups.map(g => (
+                                        <optgroup key={g.code} label={g.name}>
+                                          {g.schedules.map(sch => <option key={sch} value={`${g.code}|${sch}`}>{scheduleLabel(sch)}</option>)}
+                                        </optgroup>
+                                      ))}
+                                    </select>
+                                  )}
+                                </td>
+                                <td style={{ padding: '6px 10px', fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
+                                  {isCustom ? 'Custom' : catalogName(s.catalog, scheduleStandardOptions)}
+                                </td>
+                                {isCustom ? (
+                                  <>
+                                    <td style={{ padding: '6px 10px' }}>
+                                      <DraftNumberInput
+                                        aria-label={`${rowLabel}: outside diameter`}
+                                        step="any"
+                                        displayValue={units.lengthOut(s.od_mm)}
+                                        onCommit={(text) => { const v = units.lengthIn(text); if (v !== null) handleUpdateSizeRow(idx, 'od_mm', v); }}
+                                        className="form-input"
+                                        style={{ width: '90px', height: '28px' }}
+                                      />
+                                    </td>
+                                    <td style={{ padding: '6px 10px' }}>
+                                      <DraftNumberInput
+                                        aria-label={`${rowLabel}: wall thickness`}
+                                        step="any"
+                                        displayValue={units.lengthOut(s.wt_mm)}
+                                        onCommit={(text) => { const v = units.lengthIn(text); if (v !== null) handleUpdateSizeRow(idx, 'wt_mm', v); }}
+                                        className="form-input"
+                                        style={{ width: '90px', height: '28px' }}
+                                      />
+                                    </td>
+                                  </>
+                                ) : (
+                                  <>
+                                    <td style={numCell}>{dims ? units.lengthOut(dims.od_mm) : '—'}</td>
+                                    <td style={numCell}>{dims ? units.lengthOut(dims.wt_mm) : '—'}</td>
+                                  </>
+                                )}
+                                <td style={{ ...numCell, color: calcId > 0 ? 'var(--color-text-primary)' : 'var(--color-danger)', fontWeight: '600' }}>
+                                  {units.lengthOut(calcId)}
+                                </td>
+                                <td style={{ padding: '6px 10px' }}>
+                                  <DraftNumberInput
+                                    aria-label={`${rowLabel}: corrosion allowance`}
+                                    step="any"
+                                    min="0"
+                                    displayValue={units.lengthOut(s.ca_mm)}
+                                    onCommit={(text) => { const v = units.lengthIn(text); if (v !== null && v >= 0) handleUpdateSizeRow(idx, 'ca_mm', v); }}
+                                    className="form-input"
+                                    style={{ width: '80px', height: '28px' }}
+                                  />
+                                </td>
+                                <td style={{ padding: '6px 10px', textAlign: 'center' }}>
+                                  <button
+                                    type="button"
+                                    aria-label={`Remove ${rowLabel.toLowerCase()}`}
+                                    onClick={() => handleRemoveSizeRow(idx)}
+                                    className="btn-danger-ghost"
+                                    style={{ padding: '2px 8px', fontSize: 'var(--fs-xs)', height: '26px' }}
+                                  >
+                                    Remove
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          });
+                        })()
                       ) : (
-                        /* Read-Only Size Rows */
+                        /* Read-Only Size Rows (dimensions looked up in the catalog by the API) */
                         activeClass.sizes.map((s, idx) => (
                           <tr key={idx} style={{ borderBottom: '1px solid var(--color-border)' }}>
                             <td style={{ padding: '10px 12px', fontWeight: '700' }}>DN {s.dn}</td>
-                            <td style={{ padding: '10px 12px' }}>{s.nps}</td>
-                            <td style={{ padding: '10px 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{s.od_mm}</td>
-                            <td style={{ padding: '10px 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{s.wt_mm}</td>
-                            <td style={{ padding: '10px 12px' }}>{s.sch || 'STD'}</td>
-                            <td style={{ padding: '10px 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--color-text-primary)' }}>
-                              {s.id_mm} {isImperial && `(${(s.id_mm / 25.4).toFixed(3)})`}
+                            <td style={{ padding: '10px 12px' }}>{s.nps ?? '—'}</td>
+                            <td style={{ padding: '10px 12px' }}>{scheduleLabel(s.sch)}</td>
+                            <td style={{ padding: '10px 12px', fontSize: 'var(--fs-xs)', color: s.unresolved ? 'var(--color-danger)' : 'var(--color-text-secondary)' }}>
+                              {s.custom ? 'Custom' : s.unresolved ? `Not in ${catalogName(s.catalog, scheduleStandardOptions)}` : catalogName(s.catalog, scheduleStandardOptions)}
                             </td>
-                            <td style={{ padding: '10px 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{s.ca_mm || 0}</td>
+                            <td style={{ padding: '10px 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{s.unresolved ? '—' : units.lengthOut(s.od_mm)}</td>
+                            <td style={{ padding: '10px 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{s.unresolved ? '—' : units.lengthOut(s.wt_mm)}</td>
+                            <td style={{ padding: '10px 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--color-text-primary)' }}>
+                              {s.unresolved ? '—' : units.lengthOut(s.id_mm)}
+                            </td>
+                            <td style={{ padding: '10px 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{units.lengthOut(s.ca_mm || 0)}</td>
                           </tr>
                         ))
                       )}
@@ -1610,8 +1809,8 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                     <table style={{ width: '100%', maxWidth: '600px', borderCollapse: 'collapse', fontSize: 'var(--fs-sm)' }}>
                       <thead>
                         <tr style={{ backgroundColor: 'var(--color-surface-light)', borderBottom: '2px solid var(--color-border)', textAlign: 'left' }}>
-                          <th style={{ padding: '8px 12px' }}>Temperature (°C)</th>
-                          <th style={{ padding: '8px 12px' }}>Maximum Pressure (bar)</th>
+                          <th style={{ padding: '8px 12px' }}>Temperature [{units.temperature}]</th>
+                          <th style={{ padding: '8px 12px' }}>Maximum pressure [{units.pressure}]</th>
                           <th style={{ padding: '8px 12px', textAlign: 'center', width: '80px' }}>Action</th>
                         </tr>
                       </thead>
@@ -1626,21 +1825,22 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                           formData.temp_pressures.map((tp, idx) => (
                             <tr key={idx} style={{ borderBottom: '1px solid var(--color-border)' }}>
                               <td style={{ padding: '6px 12px' }}>
-                                <input
-                                  type="number"
-                                  step="0.1"
-                                  value={tp.temp_c}
-                                  onChange={(e) => handleUpdateTempPressureRow(idx, 'temp_c', e.target.value)}
+                                <DraftNumberInput
+                                  aria-label={`P-T point ${idx + 1}: temperature`}
+                                  step="any"
+                                  displayValue={units.temperatureOut(tp.temp_c)}
+                                  onCommit={(text) => handleUpdateTempPressureRow(idx, 'temp_c', units.temperatureIn(text))}
                                   className="form-input"
                                   style={{ width: '120px', height: '28px' }}
                                 />
                               </td>
                               <td style={{ padding: '6px 12px' }}>
-                                <input
-                                  type="number"
-                                  step="0.1"
-                                  value={tp.press_bar}
-                                  onChange={(e) => handleUpdateTempPressureRow(idx, 'press_bar', e.target.value)}
+                                <DraftNumberInput
+                                  aria-label={`P-T point ${idx + 1}: maximum pressure`}
+                                  step="any"
+                                  min="0"
+                                  displayValue={units.pressureOut(tp.press_bar)}
+                                  onCommit={(text) => { const v = units.pressureIn(text); if (v === null || v >= 0) handleUpdateTempPressureRow(idx, 'press_bar', v); }}
                                   className="form-input"
                                   style={{ width: '120px', height: '28px' }}
                                 />
@@ -1667,14 +1867,14 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                     <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                       {activeClass.temp_pressures.map((tp, idx) => (
                         <div key={idx} style={{ padding: '10px 16px', borderRadius: '8px', backgroundColor: 'var(--color-surface-light)', border: '1px solid var(--color-border)', minWidth: '120px' }}>
-                          <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '700' }}>{tp.temp_c}°C</div>
-                          <div style={{ fontSize: 'var(--fs-lg)', fontWeight: '800', color: 'var(--color-brand-dark)', marginTop: '2px' }}>{tp.press_bar} bar</div>
+                          <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '700' }}>{units.temperatureOut(tp.temp_c)}{units.temperature}</div>
+                          <div style={{ fontSize: 'var(--fs-lg)', fontWeight: '800', color: 'var(--color-brand-dark)', marginTop: '2px' }}>{units.pressureOut(tp.press_bar)} {units.pressure}</div>
                         </div>
                       ))}
                     </div>
                   ) : (
                     <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-text-secondary)' }}>
-                      No P-T rating points defined for this specification.
+                      No P-T rating points defined for this pipe class.
                     </div>
                   )
                 )}
@@ -1683,7 +1883,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
             </>
           ) : (
             <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-text-secondary)' }}>
-              Select a pipe specification from the left sidebar to view details.
+              Select a pipe class from the left sidebar to view details.
             </div>
           )}
         </main>
@@ -1782,7 +1982,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                 </div>
 
                 <div>
-                  <h3 className="modal-title" style={{ margin: 0, fontSize: 'var(--fs-lg)' }}>Import Equinor TR2000 Specification</h3>
+                  <h3 className="modal-title" style={{ margin: 0, fontSize: 'var(--fs-lg)' }}>Import Equinor TR2000 Pipe Class</h3>
                   <p style={{ margin: '2px 0 0 0', fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
                     Fetch piping classes from Equinor's REST API into WalFlow
                   </p>
@@ -1817,7 +2017,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                 </div>
 
                 <div>
-                  <label className="form-label" style={{ fontSize: 'var(--fs-xs)', fontWeight: '700' }}>Filter specification code</label>
+                  <label className="form-label" style={{ fontSize: 'var(--fs-xs)', fontWeight: '700' }}>Filter pipe class code</label>
                   <form onSubmit={handleSearchTr2000Submit} style={{ display: 'flex', gap: '6px' }}>
                     <input
                       type="text"
@@ -1852,7 +2052,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                   style={{ marginTop: '3px', cursor: 'pointer' }}
                 />
                 <label htmlFor="equinorTermsCheckbox" style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-primary)', cursor: 'pointer', lineHeight: '1.4' }}>
-                  <strong>Equinor Terms & Conditions Acceptance:</strong> I acknowledge that TR2000 piping specifications are owned by Equinor. I have reviewed and agree to the{' '}
+                  <strong>Equinor Terms & Conditions Acceptance:</strong> I acknowledge that TR2000 pipe classes are owned by Equinor. I have reviewed and agree to the{' '}
                   <a
                     href="https://www.equinor.com/about-us/terms-and-conditions"
                     target="_blank"
@@ -1861,7 +2061,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                   >
                     Equinor Terms and Conditions
                   </a>
-                  {' '}for downloading, referencing, and maintaining these engineering specifications.
+                  {' '}for downloading, referencing, and maintaining these pipe classes.
                 </label>
               </div>
 
@@ -1870,7 +2070,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <h4 style={{ margin: 0, fontSize: 'var(--fs-sm)', fontWeight: '700', color: 'var(--color-brand-dark)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                      Available Specifications ({tr2000Results.length} found)
+                      Available Pipe Classes ({tr2000Results.length} found)
                     </h4>
                     {selectedTr2000Codes.size > 0 && (
                       <span style={{
@@ -1915,7 +2115,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                     </div>
                   ) : tr2000Results.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '30px', fontSize: 'var(--fs-sm)', color: 'var(--color-text-secondary)' }}>
-                      No specifications found for the current query in this plant.
+                      No pipe classes found for the current query in this plant.
                     </div>
                   ) : (
                     <table style={{ width: '100%', fontSize: 'var(--fs-sm)', borderCollapse: 'collapse' }}>
@@ -2050,7 +2250,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                     </span>
                   ) : (
                     <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
-                      {selectedTr2000Codes.size} specification{selectedTr2000Codes.size === 1 ? '' : 's'} selected for download.
+                      {selectedTr2000Codes.size} pipe class{selectedTr2000Codes.size === 1 ? '' : 'es'} selected for download.
                     </span>
                   )}
                 </div>
@@ -2089,7 +2289,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
         </div>
       )}
 
-      {/* DUPLICATE SPECIFICATION CONFLICT RESOLUTION MODAL */}
+      {/* DUPLICATE PIPE CLASS CONFLICT RESOLUTION MODAL */}
       {isConflictModalOpen && (
         <div className="modal-overlay" style={{ zIndex: 20000 }}>
           <div className="modal-container" ref={modalA11yRef} style={{ maxWidth: '600px' }}>
@@ -2110,9 +2310,9 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                 </div>
 
                 <div>
-                  <h3 className="modal-title" style={{ margin: 0, fontSize: 'var(--fs-lg)' }}>Duplicate Specifications Detected</h3>
+                  <h3 className="modal-title" style={{ margin: 0, fontSize: 'var(--fs-lg)' }}>Duplicate Pipe Classes Detected</h3>
                   <p style={{ margin: '2px 0 0 0', fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
-                    {conflictList.length} of your selected specification(s) already exist in your local library.
+                    {conflictList.length} of your selected pipe class(es) already exist in your local library.
                   </p>
                 </div>
               </div>
@@ -2181,7 +2381,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                                 backgroundColor: item.action === 'update' ? 'var(--color-brand-dark)' : 'transparent',
                                 color: item.action === 'update' ? '#ffffff' : 'var(--color-text-secondary)'
                               }}
-                              title="Overwrite/Update existing local specification"
+                              title="Overwrite/Update the existing local pipe class"
                             >
                               Update
                             </button>
@@ -2215,7 +2415,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                                 backgroundColor: item.action === 'skip' ? 'var(--color-brand-dark)' : 'transparent',
                                 color: item.action === 'skip' ? '#ffffff' : 'var(--color-text-secondary)'
                               }}
-                              title="Skip importing this specification"
+                              title="Skip importing this pipe class"
                             >
                               Skip
                             </button>
@@ -2273,7 +2473,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                 <div>
                   <h3 className="modal-title" style={{ margin: 0, fontSize: 'var(--fs-lg)' }}>Catalog Import Summary</h3>
                   <p style={{ margin: '2px 0 0 0', fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
-                    Results from importing piping specifications JSON
+                    Results from importing the pipe classes JSON
                   </p>
                 </div>
               </div>
@@ -2296,7 +2496,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                 <CheckCircleIcon size={20} color="#059669" />
                 <div>
                   <div style={{ fontWeight: '700', fontSize: 'var(--fs-sm)', color: '#065F46' }}>
-                    {importReport.imported_count} specifications successfully imported
+                    {importReport.imported_count} pipe classes successfully imported
                   </div>
                   {importReport.imported?.length > 0 && (
                     <div style={{ fontSize: 'var(--fs-xs)', color: '#047857', marginTop: '2px' }}>
@@ -2320,7 +2520,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <WarningIcon size={16} color="var(--color-warning-text-strong)" />
                     <strong style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-warning-text-strong)' }}>
-                      {importReport.skipped_duplicates.length} duplicate specifications were skipped (not imported):
+                      {importReport.skipped_duplicates.length} duplicate pipe classes were skipped (not imported):
                     </strong>
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '4px' }}>

@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { useUnits } from '../../context/UnitContext';
 import { resolvePipeSelection, findPipeClass, matchScheduleByInnerDiameter, manualSelectionPatch, classSelectionPatch, classSizePatch, schedulePatch } from '../../utils/pipeDefaults';
-import { getScheduleStandardOptions, getScheduleStandardName, getScheduleDataset, getScheduleBore, listSchedules } from '../../utils/pipe_schedules';
+import { getScheduleStandardOptions, getScheduleStandardName, getScheduleDataset, getScheduleBore, listSchedules, scheduleLabel, classScheduleCodes, classReducerCodes } from '../../utils/pipe_schedules';
 import { formatDnOption, normalizeReducerStandard, getReducerStandardOptions } from '../../utils/reducer_catalog';
 import { useFittingStandards } from '../../hooks/useFittingStandards';
 import DraftNumberInput from '../common/DraftNumberInput';
 
 /**
- * PipeSelector component supporting Pipe Specifications catalog and schedule presets of the
- * catalog's pipe schedule standards (ASME B36.10M / B36.19M, DIN EN 10220 / EN ISO 1127).
+ * PipeSelector: pick a pipe class and size, or manual dimensions from the pipe schedule catalogs
+ * (ASME B36.10M / B36.19M, DIN EN 10220 / EN ISO 1127), all read from the fitting catalog API.
  * Emits SI values (diameter in m, roughness_mm in mm).
  */
 const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPipes = true }) => {
@@ -36,7 +36,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
 
   const handleClassChange = (newClassId) => {
     const patch = newClassId === 'manual'
-      ? manualSelectionPatch(currentDn, currentSch, scheduleStandard, scheduleOptions)
+      ? (manualSelectionPatch(currentDn, currentSch, scheduleStandard, scheduleOptions) || { pipe_class_id: 'manual', pipe_class_code: 'CUSTOM' })
       : classSelectionPatch(findPipeClass(classList, newClassId), currentDn);
     if (patch) onChange(patch);
   };
@@ -53,7 +53,8 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
 
   // Another dimension standard: same DN (or nearest) and the counterpart schedule (STD ↔ Normal, XS ↔ Heavy)
   const handleScheduleStandardChange = (newCode) => {
-    onChange(manualSelectionPatch(currentDn, currentSch, newCode, scheduleOptions));
+    const patch = manualSelectionPatch(currentDn, currentSch, newCode, scheduleOptions);
+    if (patch) onChange(patch);
   };
 
   const reducerStandardName = (code) => reducerOptions.find(o => o.code === normalizeReducerStandard(code))?.name || code;
@@ -68,7 +69,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
       {/* Pipe Class Selection */}
       <div>
-        <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '600' }}>Piping spec</label>
+        <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '600' }}>Pipe class</label>
         <select
           className="form-select"
           style={{ width: '100%', height: '32px', fontSize: 'var(--fs-xs)' }}
@@ -106,7 +107,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
             >
               {selectedClass.sizes.map(s => (
                 <option key={s.dn} value={s.dn}>
-                  {formatDnOption(s.dn, s.nps)} - {s.sch || 'STD'}
+                  {formatDnOption(s.dn, s.nps)} - {scheduleLabel(s.sch)}
                 </option>
               ))}
             </select>
@@ -125,7 +126,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border)', paddingBottom: '4px' }}>
               <span style={{ fontWeight: '700', color: 'var(--color-brand-dark)' }}>
-                {formatDnOption(currentDn, selectedClass.sizes.find(s => s.dn === currentDn)?.nps)} • {data.standardSch || 'STD'}
+                {formatDnOption(currentDn, selectedClass.sizes.find(s => s.dn === currentDn)?.nps)} • {scheduleLabel(data.standardSch)}
               </span>
               <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
                 {selectedClass.code}
@@ -141,8 +142,8 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
               Mat: <span style={{ color: 'var(--color-text-primary)' }}>{selectedClass.material_grade} (ε={selectedClass.roughness_mm}mm)</span>
             </div>
             <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', marginTop: '4px', paddingTop: '4px', borderTop: '1px dashed var(--color-border)', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-              <span>Reducers: <strong style={{ color: 'var(--color-brand-dark)' }}>{reducerStandardName(selectedClass.reducer_standard_code || 'ASME_B16_9_REDUCERS')}</strong></span>
-              <span>Pipe dimensions: <strong style={{ color: 'var(--color-brand-dark)' }}>{getScheduleStandardName(selectedClass.schedule_standard_code || 'ASME_B36_10M_SCHEDULES', scheduleOptions)}</strong></span>
+              <span>Reducers: <strong style={{ color: 'var(--color-brand-dark)' }}>{classReducerCodes(selectedClass).map(reducerStandardName).join(', ')}</strong></span>
+              <span>Pipe dimensions: <strong style={{ color: 'var(--color-brand-dark)' }}>{classScheduleCodes(selectedClass).map(c => getScheduleStandardName(c, scheduleOptions)).join(', ')}</strong></span>
             </div>
           </div>
         </>
@@ -153,7 +154,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
       {isUnknownClass && (
         <>
           <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-warning-text)' }}>
-            Piping spec "{data.pipe_class_code || currentClassId}" is not available in the catalogue or this project. Showing the stored dimensions; choose another spec to change the size.
+            Pipe class "{data.pipe_class_code || currentClassId}" is not available in the catalogue or this project. Showing the stored dimensions; choose another pipe class to change the size.
           </div>
           <div style={{
             fontSize: 'var(--fs-xs)',
@@ -166,7 +167,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
             gap: '4px',
             color: 'var(--color-text-secondary)'
           }}>
-            <div>Size: <strong style={{ color: 'var(--color-text-primary)' }}>{formatDnOption(currentDn)} • {data.standardSch || 'STD'}</strong></div>
+            <div>Size: <strong style={{ color: 'var(--color-text-primary)' }}>{formatDnOption(currentDn)} • {scheduleLabel(data.standardSch)}</strong></div>
             <div>OD: <strong style={{ color: 'var(--color-text-primary)' }}>{isImperial ? `${(currentOdMm / 25.4).toFixed(3)} in` : `${currentOdMm.toFixed(1)} mm`}</strong></div>
             <div>WT: <strong style={{ color: 'var(--color-text-primary)' }}>{isImperial ? `${(currentWtMm / 25.4).toFixed(3)} in` : `${currentWtMm.toFixed(2)} mm`}</strong></div>
             <div>ID: <strong style={{ color: 'var(--color-primary-text)' }}>{isImperial ? `${(value * 39.3701).toFixed(3)} in` : `${(value * 1000).toFixed(2)} mm`}</strong></div>
@@ -217,7 +218,11 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
             </button>
           </div>
 
-          {manualMode === 'preset' ? (
+          {manualMode === 'preset' && scheduleOptions.length === 0 ? (
+            <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-warning-text)' }}>
+              Pipe schedule catalog not loaded. Use Free Dimensions, or check the connection to the server.
+            </div>
+          ) : manualMode === 'preset' ? (
             <>
               {/* Dimension Standard */}
               <div>
@@ -261,7 +266,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
                   >
                     {(currentSchedules.includes(currentSch) ? currentSchedules : [currentSch, ...currentSchedules]).map(schKey => (
                       <option key={schKey} value={schKey}>
-                        {schKey}
+                        {scheduleLabel(schKey)}
                       </option>
                     ))}
                   </select>
@@ -289,7 +294,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
                         cursor: 'pointer'
                       }}
                     >
-                      {schKey}
+                      {scheduleLabel(schKey)}
                     </button>
                   );
                 })}

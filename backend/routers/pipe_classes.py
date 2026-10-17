@@ -3,11 +3,17 @@ import logging
 from typing import List, Optional, Any, Dict
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from pydantic import BaseModel, Field, ConfigDict
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, object_session
 
 from db.database import get_db
-from db.models import PipeClass, FittingStandard, User
+from db.models import PipeClass, User, Project
 from auth import get_current_user, get_current_pipe_manager_user
+from routers.projects import _parse_allowed_pipe_classes
+from services.pipe_class_catalog import (
+    DEFAULT_REDUCER_CATALOG, DEFAULT_SCHEDULE_CATALOG, Catalogs, catalog_type_errors, custom_row,
+    load_schedule_catalogs, match_catalog_size, normalize_codes, reference_rows_from_dimensions,
+    resolve_sizes, size_errors, storage_row,
+)
 
 router = APIRouter(prefix="/api/pipe-classes", tags=["pipe-classes"])
 
@@ -15,18 +21,21 @@ router = APIRouter(prefix="/api/pipe-classes", tags=["pipe-classes"])
 # --- Pydantic Schemas ---
 
 class PipeSizeEntry(BaseModel):
-    dn: int = Field(..., description="Nominal diameter in mm")
-    nps: str = Field(..., description="Nominal pipe size in inches (e.g. 2, 1/2)")
-    od_mm: float = Field(..., gt=0, description="Outer diameter in mm")
-    wt_mm: float = Field(..., gt=0, description="Wall thickness in mm")
-    id_mm: Optional[float] = Field(None, description="Calculated internal diameter in mm (OD - 2*WT)")
-    sch: Optional[str] = Field("STD", description="Schedule designation (e.g. STD, 40, 80, 10S)")
+    """A size row: a reference (catalog + DN + sch) or, with `custom`, a size with its own dimensions.
+    Rows with dimensions but no catalog (older clients) are matched to the class's catalogs."""
+    dn: int = Field(..., gt=0, description="Nominal diameter in mm")
+    catalog: Optional[str] = Field(None, description="Pipe schedule catalog code the size is taken from")
+    sch: Optional[str] = Field(None, description="Schedule designation in the catalog (e.g. STD, 40, 10S)")
     ca_mm: Optional[float] = Field(0.0, ge=0, description="Size-specific corrosion allowance in mm")
+    custom: bool = Field(False, description="Size not taken from a catalog; nps/od_mm/wt_mm are stored")
+    nps: Optional[str] = Field(None, description="Nominal pipe size (custom rows)")
+    od_mm: Optional[float] = Field(None, gt=0, description="Outer diameter in mm (custom rows)")
+    wt_mm: Optional[float] = Field(None, gt=0, description="Wall thickness in mm (custom rows)")
 
 
 
 class TempPressureEntry(BaseModel):
-    temp_c: float = Field(..., description="Temperature point in Â°C")
+    temp_c: float = Field(..., description="Temperature point in °C")
     press_bar: float = Field(..., ge=0, description="Max allowable pressure in bar")
 
 
@@ -38,12 +47,14 @@ class PipeClassCreate(BaseModel):
     material_grade: str = Field(..., description="Material grade description (e.g. ASTM A106 Gr. B)")
     rating_class: str = Field(..., description="Rating class (e.g. CL150, CL300, PN16)")
     design_code: str = Field("ASME B31.3", description="Design code")
-    reducer_standard_code: Optional[str] = Field("ASME_B16_9_REDUCERS", description="Code of referenced Reducer fitting standard")
-    schedule_standard_code: Optional[str] = Field("ASME_B36_10M_SCHEDULES", description="Code of referenced Pipe Schedule standard")
+    reducer_standard_codes: Optional[List[str]] = Field(None, description="Reducer catalogs of the class, default first")
+    schedule_standard_codes: Optional[List[str]] = Field(None, description="Pipe schedule catalogs of the class, default first")
+    reducer_standard_code: Optional[str] = Field(None, description="Single reducer catalog (older clients)")
+    schedule_standard_code: Optional[str] = Field(None, description="Single pipe schedule catalog (older clients)")
     roughness_mm: float = Field(0.045, gt=0, description="Absolute surface roughness in mm")
     corrosion_allowance_mm: float = Field(0.0, ge=0, description="Base corrosion allowance in mm")
-    min_temp_c: Optional[float] = Field(None, description="Minimum allowable design temperature in Â°C")
-    max_temp_c: Optional[float] = Field(None, description="Maximum allowable design temperature in Â°C")
+    min_temp_c: Optional[float] = Field(None, description="Minimum allowable design temperature in °C")
+    max_temp_c: Optional[float] = Field(None, description="Maximum allowable design temperature in °C")
     revision: str = Field("1.0", description="Specification revision")
     rev_date: Optional[str] = Field(None, description="Specification revision date")
     source_plant_id: Optional[int] = Field(None, description="Equinor TR2000 plant ID if synced")
@@ -57,6 +68,8 @@ class PipeClassUpdate(BaseModel):
     material_grade: Optional[str] = None
     rating_class: Optional[str] = None
     design_code: Optional[str] = None
+    reducer_standard_codes: Optional[List[str]] = None
+    schedule_standard_codes: Optional[List[str]] = None
     reducer_standard_code: Optional[str] = None
     schedule_standard_code: Optional[str] = None
     roughness_mm: Optional[float] = Field(None, gt=0)
@@ -78,8 +91,10 @@ class PipeClassResponse(BaseModel):
     material_grade: str
     rating_class: str
     design_code: str
-    reducer_standard_code: Optional[str] = "ASME_B16_9_REDUCERS"
-    schedule_standard_code: Optional[str] = "ASME_B36_10M_SCHEDULES"
+    reducer_standard_codes: List[str]
+    schedule_standard_codes: List[str]
+    reducer_standard_code: str  # first of reducer_standard_codes (the default)
+    schedule_standard_code: str  # first of schedule_standard_codes (the default)
     roughness_mm: float
     corrosion_allowance_mm: float
     min_temp_c: Optional[float] = None
@@ -96,12 +111,35 @@ class PipeClassResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-def _serialize_pipe_class(item: PipeClass) -> Dict[str, Any]:
-    """Helper to convert PipeClass ORM model to dictionary with parsed JSON blobs."""
+def _stored_sizes(item: PipeClass) -> List[Dict[str, Any]]:
     try:
-        sizes = json.loads(item.sizes_json) if item.sizes_json else []
+        return json.loads(item.sizes_json) if item.sizes_json else []
     except Exception:
-        sizes = []
+        return []
+
+
+def _class_codes(item: PipeClass) -> tuple:
+    """(schedule catalog codes, reducer catalog codes) of a class."""
+    return (
+        normalize_codes(item.schedule_standard_codes or item.schedule_standard_code, DEFAULT_SCHEDULE_CATALOG),
+        normalize_codes(item.reducer_standard_codes or item.reducer_standard_code, DEFAULT_REDUCER_CATALOG),
+    )
+
+
+def _set_class_codes(item: PipeClass, schedule_codes: List[str], reducer_codes: List[str]) -> None:
+    item.schedule_standard_codes = json.dumps(schedule_codes)
+    item.schedule_standard_code = schedule_codes[0]
+    item.reducer_standard_codes = json.dumps(reducer_codes)
+    item.reducer_standard_code = reducer_codes[0]
+
+
+def _serialize_pipe_class(item: PipeClass, catalogs: Optional[Catalogs] = None) -> Dict[str, Any]:
+    """PipeClass as a dict; size rows carry NPS / OD / WT / ID looked up in the schedule catalogs."""
+    schedule_codes, reducer_codes = _class_codes(item)
+    stored = _stored_sizes(item)
+    if catalogs is None:
+        catalogs = load_schedule_catalogs(object_session(item), {r.get("catalog") for r in stored if r.get("catalog")})
+    sizes = resolve_sizes(stored, catalogs)
     try:
         temp_pressures = json.loads(item.temp_pressures_json) if item.temp_pressures_json else []
     except Exception:
@@ -116,8 +154,10 @@ def _serialize_pipe_class(item: PipeClass) -> Dict[str, Any]:
         "material_grade": item.material_grade,
         "rating_class": item.rating_class,
         "design_code": item.design_code,
-        "reducer_standard_code": getattr(item, 'reducer_standard_code', 'ASME_B16_9_REDUCERS') or 'ASME_B16_9_REDUCERS',
-        "schedule_standard_code": getattr(item, 'schedule_standard_code', 'ASME_B36_10M_SCHEDULES') or 'ASME_B36_10M_SCHEDULES',
+        "reducer_standard_codes": reducer_codes,
+        "schedule_standard_codes": schedule_codes,
+        "reducer_standard_code": reducer_codes[0],
+        "schedule_standard_code": schedule_codes[0],
         "roughness_mm": item.roughness_mm,
         "corrosion_allowance_mm": item.corrosion_allowance_mm,
         "min_temp_c": item.min_temp_c,
@@ -211,7 +251,7 @@ async def sync_tr2000_pipe_class(
             detail=(
                 "You must review and agree to Equinor's Terms and Conditions "
                 "(https://www.equinor.com/about-us/terms-and-conditions) to download "
-                "and maintain TR2000 piping specifications in WalFlow."
+                "and maintain TR2000 pipe classes in WalFlow."
             )
         )
 
@@ -236,6 +276,14 @@ async def sync_tr2000_pipe_class(
     db = SessionLocal()
     try:
         target_code = payload.custom_code.upper().strip() if payload.custom_code else normalized["code"]
+        # Sizes with catalog dimensions become references; the rest are imported as published (custom rows)
+        preferred = normalize_codes(normalized.get("schedule_standard_code"), DEFAULT_SCHEDULE_CATALOG)
+        size_rows, used_codes = reference_rows_from_dimensions(normalized["sizes"], load_schedule_catalogs(db), preferred)
+        schedule_codes = used_codes or preferred
+        reducer_codes = normalize_codes(normalized.get("reducer_standard_code"), DEFAULT_REDUCER_CATALOG)
+        custom_dns = [r["dn"] for r in size_rows if r.get("custom")]
+        if custom_dns:
+            logging.warning(f"TR2000 {payload.pcs_code}: sizes not listed in a schedule catalog kept as custom rows: {custom_dns}")
         
         # Check if this class code already exists in local DB
         existing = db.query(PipeClass).filter(PipeClass.code == target_code).first()
@@ -261,15 +309,15 @@ async def sync_tr2000_pipe_class(
             existing.material_grade = normalized["material_grade"]
             existing.rating_class = normalized["rating_class"]
             existing.design_code = normalized["design_code"]
-            existing.reducer_standard_code = normalized.get("reducer_standard_code", "ASME_B16_9_REDUCERS")
-            existing.schedule_standard_code = normalized.get("schedule_standard_code", "ASME_B36_10M_SCHEDULES")
+            _set_class_codes(existing, schedule_codes, reducer_codes)
             existing.roughness_mm = normalized["roughness_mm"]
             existing.corrosion_allowance_mm = normalized["corrosion_allowance_mm"]
             existing.min_temp_c = normalized["min_temp_c"]
             existing.max_temp_c = normalized["max_temp_c"]
             existing.revision = normalized["revision"]
+            existing.rev_date = normalized.get("rev_date")
             existing.source_plant_id = normalized["source_plant_id"]
-            existing.sizes_json = json.dumps(normalized["sizes"])
+            existing.sizes_json = json.dumps(size_rows)
             existing.temp_pressures_json = json.dumps(normalized["temp_pressures"])
             db.commit()
             db.refresh(existing)
@@ -284,18 +332,18 @@ async def sync_tr2000_pipe_class(
                 material_grade=normalized["material_grade"],
                 rating_class=normalized["rating_class"],
                 design_code=normalized["design_code"],
-                reducer_standard_code=normalized.get("reducer_standard_code", "ASME_B16_9_REDUCERS"),
-                schedule_standard_code=normalized.get("schedule_standard_code", "ASME_B36_10M_SCHEDULES"),
                 roughness_mm=normalized["roughness_mm"],
                 corrosion_allowance_mm=normalized["corrosion_allowance_mm"],
                 min_temp_c=normalized["min_temp_c"],
                 max_temp_c=normalized["max_temp_c"],
                 revision=normalized["revision"],
+                rev_date=normalized.get("rev_date"),
                 source_plant_id=normalized["source_plant_id"],
                 is_builtin=False,
-                sizes_json=json.dumps(normalized["sizes"]),
+                sizes_json=json.dumps(size_rows),
                 temp_pressures_json=json.dumps(normalized["temp_pressures"])
             )
+            _set_class_codes(new_class, schedule_codes, reducer_codes)
             db.add(new_class)
             db.commit()
             db.refresh(new_class)
@@ -330,7 +378,8 @@ def list_pipe_classes(
         )
     
     classes = query.order_by(PipeClass.is_builtin.desc(), PipeClass.code.asc()).all()
-    return [_serialize_pipe_class(c) for c in classes]
+    catalogs = load_schedule_catalogs(db)
+    return [_serialize_pipe_class(c, catalogs) for c in classes]
 
 
 @router.get("/{class_id}", response_model=PipeClassResponse)
@@ -347,21 +396,67 @@ def get_pipe_class(class_id: str, db: Session = Depends(get_db)):
     return _serialize_pipe_class(item)
 
 
-def _fitting_reference_errors(db: Session, reducer_code: Optional[str], schedule_code: Optional[str]) -> List[str]:
-    """Checks that referenced fitting standards exist in the catalog with the right fitting type."""
+def _codes_from(data: Dict[str, Any], list_field: str, single_field: str) -> Optional[List[str]]:
+    """Catalog codes sent as a list or (older clients) as a single code; None when neither is sent."""
+    if data.get(list_field) is not None:
+        return normalize_codes(data[list_field])
+    if data.get(single_field) is not None:
+        return normalize_codes(data[single_field])
+    return None
+
+
+def _catalog_errors(db: Session, schedule_codes: List[str], reducer_codes: List[str]) -> List[str]:
+    return (catalog_type_errors(db, reducer_codes, "reducer", "reducer_standard_codes")
+            + catalog_type_errors(db, schedule_codes, "pipe_schedule", "schedule_standard_codes"))
+
+
+def _prepare_sizes(db: Session, raw_sizes: List[Dict[str, Any]], schedule_codes: List[str]) -> tuple:
+    """Stored size rows for the request rows, and the problems found. A row with dimensions but no
+    catalog is matched to the class's catalogs (older clients); unmatched it must be marked custom."""
+    catalogs = load_schedule_catalogs(db, schedule_codes)
+    rows, errors = [], []
+    for raw in raw_sizes:
+        dn = int(raw.get("dn") or 0)
+        if raw.get("custom"):
+            if not raw.get("od_mm") or not raw.get("wt_mm"):
+                errors.append(f"DN{dn}: a custom size needs an outside diameter and a wall thickness.")
+                continue
+            rows.append(custom_row(raw))
+        elif raw.get("catalog"):
+            rows.append(storage_row(raw))
+        elif raw.get("od_mm") and raw.get("wt_mm"):
+            match = match_catalog_size(dn, float(raw["od_mm"]), float(raw["wt_mm"]), raw.get("sch"), catalogs, schedule_codes)
+            if not match:
+                errors.append(f"DN{dn}: OD {raw['od_mm']} / WT {raw['wt_mm']} mm is not listed in the selected catalogs; mark the size as custom.")
+                continue
+            rows.append({"dn": dn, "catalog": match[0], "sch": match[1], "ca_mm": float(raw.get("ca_mm") or 0.0)})
+        else:
+            errors.append(f"DN{dn}: choose a catalog and schedule, or mark the size as custom.")
+    return rows, errors + size_errors(rows, schedule_codes, catalogs)
+
+
+def _temp_pressure_errors(points: List[Dict[str, Any]], min_temp: Optional[float], max_temp: Optional[float]) -> List[str]:
+    """Checks the P-T curve and design temperature limits; `points` must be sorted by temperature."""
     errors = []
-    for code, expected_type, field in (
-        (reducer_code, "reducer", "reducer_standard_code"),
-        (schedule_code, "pipe_schedule", "schedule_standard_code"),
-    ):
-        if code is None:
-            continue
-        std = db.query(FittingStandard).filter(FittingStandard.code == code.strip().upper()).first()
-        if not std:
-            errors.append(f"{field} '{code}' does not exist in the fitting standards catalog.")
-        elif std.fitting_type != expected_type:
-            errors.append(f"{field} '{code}' is a '{std.fitting_type}' standard, expected '{expected_type}'.")
+    temps = [p["temp_c"] for p in points]
+    if len(set(temps)) != len(temps):
+        errors.append("P-T ratings list the same temperature more than once.")
+    if min_temp is not None and max_temp is not None and min_temp > max_temp:
+        errors.append(f"Minimum design temperature ({min_temp} °C) is above the maximum ({max_temp} °C).")
+    if temps:
+        if min_temp is not None and min_temp < temps[0]:
+            errors.append(f"Minimum design temperature ({min_temp} °C) is below the P-T curve ({temps[0]} °C).")
+        if max_temp is not None and max_temp > temps[-1]:
+            errors.append(f"Maximum design temperature ({max_temp} °C) is above the P-T curve ({temps[-1]} °C).")
     return errors
+
+
+def _sorted_temp_pressures(points: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """P-T points as {temp_c, press_bar} floats, sorted by temperature."""
+    return sorted(
+        ({"temp_c": float(p["temp_c"]), "press_bar": float(p["press_bar"])} for p in points),
+        key=lambda p: p["temp_c"]
+    )
 
 
 @router.post("", response_model=PipeClassResponse, status_code=status.HTTP_201_CREATED)
@@ -371,7 +466,10 @@ def create_pipe_class(
     current_user: User = Depends(get_current_pipe_manager_user)
 ):
     """Create a new custom pipe class (Requires admin or pipe_manager role)."""
-    ref_errors = _fitting_reference_errors(db, payload.reducer_standard_code, payload.schedule_standard_code)
+    data = payload.model_dump()
+    schedule_codes = _codes_from(data, "schedule_standard_codes", "schedule_standard_code") or [DEFAULT_SCHEDULE_CATALOG]
+    reducer_codes = _codes_from(data, "reducer_standard_codes", "reducer_standard_code") or [DEFAULT_REDUCER_CATALOG]
+    ref_errors = _catalog_errors(db, schedule_codes, reducer_codes)
     if ref_errors:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="; ".join(ref_errors))
 
@@ -382,20 +480,11 @@ def create_pipe_class(
             detail=f"A pipe class with code '{payload.code}' already exists."
         )
 
-    # Validate calculated IDs
-    size_dicts = []
-    for s in payload.sizes:
-        calculated_id = round(s.od_mm - 2 * s.wt_mm, 3)
-        if calculated_id <= 0:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid pipe dimensions for DN{s.dn}: OD ({s.od_mm}mm) must be greater than 2 * WT ({2 * s.wt_mm}mm)."
-            )
-        entry = s.model_dump()
-        entry["id_mm"] = calculated_id
-        size_dicts.append(entry)
-
-    tp_dicts = [tp.model_dump() for tp in (payload.temp_pressures or [])]
+    size_rows, spec_errors = _prepare_sizes(db, data["sizes"], schedule_codes)
+    tp_dicts = _sorted_temp_pressures([tp.model_dump() for tp in (payload.temp_pressures or [])])
+    spec_errors += _temp_pressure_errors(tp_dicts, payload.min_temp_c, payload.max_temp_c)
+    if spec_errors:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="; ".join(spec_errors))
 
     new_class = PipeClass(
         code=payload.code.upper().strip(),
@@ -405,8 +494,6 @@ def create_pipe_class(
         material_grade=payload.material_grade.strip(),
         rating_class=payload.rating_class.strip(),
         design_code=payload.design_code.strip(),
-        reducer_standard_code=(payload.reducer_standard_code or "ASME_B16_9_REDUCERS").strip().upper(),
-        schedule_standard_code=(payload.schedule_standard_code or "ASME_B36_10M_SCHEDULES").strip().upper(),
         roughness_mm=payload.roughness_mm,
         corrosion_allowance_mm=payload.corrosion_allowance_mm,
         min_temp_c=payload.min_temp_c,
@@ -415,10 +502,10 @@ def create_pipe_class(
         rev_date=payload.rev_date,
         source_plant_id=payload.source_plant_id,
         is_builtin=False,
-        sizes_json=json.dumps(size_dicts),
+        sizes_json=json.dumps(size_rows),
         temp_pressures_json=json.dumps(tp_dicts),
     )
-
+    _set_class_codes(new_class, schedule_codes, reducer_codes)
 
     db.add(new_class)
     db.commit()
@@ -443,35 +530,37 @@ def update_pipe_class(
             detail=f"Pipe class with identifier '{class_id}' not found."
         )
 
-
     update_data = payload.model_dump(exclude_unset=True)
-    for field in ("reducer_standard_code", "schedule_standard_code"):
-        if update_data.get(field) is not None:
-            update_data[field] = update_data[field].strip().upper()
-    ref_errors = _fitting_reference_errors(db, update_data.get("reducer_standard_code"), update_data.get("schedule_standard_code"))
+    current_schedule, current_reducer = _class_codes(item)
+    schedule_codes = _codes_from(update_data, "schedule_standard_codes", "schedule_standard_code") or current_schedule
+    reducer_codes = _codes_from(update_data, "reducer_standard_codes", "reducer_standard_code") or current_reducer
+    for field in ("schedule_standard_codes", "schedule_standard_code", "reducer_standard_codes", "reducer_standard_code"):
+        update_data.pop(field, None)
+    ref_errors = _catalog_errors(db, schedule_codes, reducer_codes)
     if ref_errors:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="; ".join(ref_errors))
 
-    if "sizes" in update_data and update_data["sizes"] is not None:
-        size_dicts = []
-        for s in update_data["sizes"]:
-            od = s.get("od_mm", 0)
-            wt = s.get("wt_mm", 0)
-            calc_id = round(od - 2 * wt, 3)
-            if calc_id <= 0:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Invalid pipe dimensions: OD ({od}mm) must be greater than 2 * WT ({2 * wt}mm)."
-                )
-            s["id_mm"] = calc_id
-            size_dicts.append(s)
-        item.sizes_json = json.dumps(size_dicts)
-        del update_data["sizes"]
+    # Checked against the values the class will have after the update
+    raw_sizes = update_data.pop("sizes", None)
+    if raw_sizes is None:
+        raw_sizes = _stored_sizes(item)
+    size_rows, spec_errors = _prepare_sizes(db, raw_sizes, schedule_codes)
+    tp_points = update_data.pop("temp_pressures", None)
+    try:
+        tp_dicts = _sorted_temp_pressures(tp_points if tp_points is not None else json.loads(item.temp_pressures_json or "[]"))
+    except ValueError:
+        tp_dicts = []
+    spec_errors += _temp_pressure_errors(
+        tp_dicts,
+        update_data["min_temp_c"] if "min_temp_c" in update_data else item.min_temp_c,
+        update_data["max_temp_c"] if "max_temp_c" in update_data else item.max_temp_c,
+    )
+    if spec_errors:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="; ".join(spec_errors))
 
-    if "temp_pressures" in update_data and update_data["temp_pressures"] is not None:
-        item.temp_pressures_json = json.dumps(update_data["temp_pressures"])
-        del update_data["temp_pressures"]
-
+    item.sizes_json = json.dumps(size_rows)
+    item.temp_pressures_json = json.dumps(tp_dicts)
+    _set_class_codes(item, schedule_codes, reducer_codes)
     for field, val in update_data.items():
         setattr(item, field, val)
 
@@ -486,7 +575,7 @@ def delete_pipe_class(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_pipe_manager_user)
 ):
-    """Delete a pipe class."""
+    """Delete a pipe class and remove it from the projects' allowed pipe classes."""
     item = db.query(PipeClass).filter(
         (PipeClass.id == class_id) | (PipeClass.code == class_id)
     ).first()
@@ -496,6 +585,14 @@ def delete_pipe_class(
             detail=f"Pipe class with identifier '{class_id}' not found."
         )
 
+    # Allow-lists may hold the class id or (older entries) its code
+    for project in db.query(Project).filter(Project.allowed_pipe_classes.isnot(None)).all():
+        allowed = _parse_allowed_pipe_classes(project.allowed_pipe_classes)
+        if allowed is None:
+            continue
+        remaining = [ref for ref in allowed if ref not in (item.id, item.code)]
+        if len(remaining) != len(allowed):
+            project.allowed_pipe_classes = json.dumps(remaining)
 
     db.delete(item)
     db.commit()
@@ -515,7 +612,8 @@ def export_pipe_classes_library(
 ):
     """Export all pipe classes from local database as a structured JSON library."""
     classes = db.query(PipeClass).order_by(PipeClass.code.asc()).all()
-    return [_serialize_pipe_class(c) for c in classes]
+    catalogs = load_schedule_catalogs(db)
+    return [_serialize_pipe_class(c, catalogs) for c in classes]
 
 
 @router.post("/import/library")
@@ -550,34 +648,20 @@ def import_pipe_classes_library(
                 invalid_entries.append({"reason": f"Class '{code}' has no valid sizes array", "item": item_data})
                 continue
 
-            normalized_sizes = []
-            valid_sizes = True
-            for s in raw_sizes:
-                od = float(s.get("od_mm") or 0.0)
-                wt = float(s.get("wt_mm") or 0.0)
-                calc_id = round(od - 2.0 * wt, 3)
-                if calc_id <= 0:
-                    valid_sizes = False
-                    break
-                normalized_sizes.append({
-                    "dn": int(s.get("dn") or 0),
-                    "nps": str(s.get("nps") or ""),
-                    "od_mm": od,
-                    "wt_mm": wt,
-                    "id_mm": calc_id,
-                    "sch": str(s.get("sch") or "STD"),
-                    "ca_mm": float(s.get("ca_mm") or 0.0)
-                })
+            tp_dicts = _sorted_temp_pressures(item_data.get("temp_pressures") or [])
+            min_temp = float(item_data["min_temp_c"]) if item_data.get("min_temp_c") is not None else None
+            max_temp = float(item_data["max_temp_c"]) if item_data.get("max_temp_c") is not None else None
 
-            if not valid_sizes:
-                invalid_entries.append({"reason": f"Class '{code}' has invalid size dimensions (OD <= 2*WT)", "item": item_data})
-                continue
-
-            raw_tp = item_data.get("temp_pressures") or []
-
-            reducer_code = str(item_data.get("reducer_standard_code") or "ASME_B16_9_REDUCERS").strip().upper()
-            schedule_code = str(item_data.get("schedule_standard_code") or "ASME_B36_10M_SCHEDULES").strip().upper()
-            ref_errors = _fitting_reference_errors(db, reducer_code, schedule_code)
+            # Older libraries carry dimensions only: matching catalog rows become references, others custom
+            preferred = _codes_from(item_data, "schedule_standard_codes", "schedule_standard_code") or [DEFAULT_SCHEDULE_CATALOG]
+            reducer_codes = _codes_from(item_data, "reducer_standard_codes", "reducer_standard_code") or [DEFAULT_REDUCER_CATALOG]
+            ref_errors = _catalog_errors(db, preferred, reducer_codes)
+            if not ref_errors:
+                catalogs = load_schedule_catalogs(db)
+                size_rows, used = reference_rows_from_dimensions(raw_sizes, catalogs, preferred)
+                schedule_codes = preferred + [c for c in used if c not in preferred]
+                ref_errors = (size_errors(size_rows, schedule_codes, catalogs)
+                              + _temp_pressure_errors(tp_dicts, min_temp, max_temp))
             if ref_errors:
                 invalid_entries.append({"reason": f"Class '{code}': " + "; ".join(ref_errors), "item": item_data})
                 continue
@@ -590,19 +674,18 @@ def import_pipe_classes_library(
                 material_grade=str(item_data.get("material_grade") or "Generic").strip(),
                 rating_class=str(item_data.get("rating_class") or "CL150").strip(),
                 design_code=str(item_data.get("design_code") or "ASME B31.3").strip(),
-                reducer_standard_code=reducer_code,
-                schedule_standard_code=schedule_code,
                 roughness_mm=float(item_data.get("roughness_mm") or 0.045),
                 corrosion_allowance_mm=float(item_data.get("corrosion_allowance_mm") or 0.0),
-                min_temp_c=float(item_data["min_temp_c"]) if item_data.get("min_temp_c") is not None else None,
-                max_temp_c=float(item_data["max_temp_c"]) if item_data.get("max_temp_c") is not None else None,
+                min_temp_c=min_temp,
+                max_temp_c=max_temp,
                 revision=str(item_data.get("revision") or "1.0").strip(),
                 rev_date=item_data.get("rev_date"),
                 source_plant_id=item_data.get("source_plant_id"),
                 is_builtin=False,
-                sizes_json=json.dumps(normalized_sizes),
-                temp_pressures_json=json.dumps(raw_tp)
+                sizes_json=json.dumps(size_rows),
+                temp_pressures_json=json.dumps(tp_dicts)
             )
+            _set_class_codes(new_class, schedule_codes, reducer_codes)
             db.add(new_class)
             imported.append(code)
         except (ValueError, TypeError, AttributeError) as e:
@@ -625,9 +708,9 @@ def seed_example_classes(
     current_user: User = Depends(get_current_pipe_manager_user)
 ):
     """
-    Seed the 4 standard example pipe classes (CS01, SS01, LT01, DX01) if not already present.
+    Restore Defaults: re-creates the example pipe classes (CS01, SS01, LT01, DX01) that are missing.
     """
-    from services.pipe_class_defaults import EXAMPLE_PIPE_CLASSES
+    from services.pipe_class_defaults import EXAMPLE_PIPE_CLASSES, example_to_pipe_class
 
     created_count = 0
     created = []
@@ -641,26 +724,7 @@ def seed_example_classes(
             skipped.append(raw["code"])
             continue
 
-        item = PipeClass(
-            id=raw["id"],
-            code=raw["code"],
-            name=raw["name"],
-            standard=raw["standard"],
-            material_group=raw["material_group"],
-            material_grade=raw["material_grade"],
-            rating_class=raw["rating_class"],
-            design_code=raw["design_code"],
-            roughness_mm=raw["roughness_mm"],
-            corrosion_allowance_mm=raw["corrosion_allowance_mm"],
-            min_temp_c=raw.get("min_temp_c"),
-            max_temp_c=raw.get("max_temp_c"),
-            revision=raw.get("revision", "1.0"),
-            rev_date=raw.get("rev_date"),
-            source_plant_id=raw.get("source_plant_id"),
-            is_builtin=False,
-            sizes_json=json.dumps(raw["sizes"]),
-            temp_pressures_json=json.dumps(raw.get("temp_pressures", []))
-        )
+        item = example_to_pipe_class(raw)
         db.add(item)
         created.append(raw["code"])
         created_count += 1
@@ -670,7 +734,7 @@ def seed_example_classes(
         "created_count": created_count,
         "created": created,
         "skipped": skipped,
-        "message": f"Created {created_count} example specifications ({len(skipped)} already existed)."
+        "message": f"Created {created_count} example pipe classes ({len(skipped)} already existed)."
     }
 
 

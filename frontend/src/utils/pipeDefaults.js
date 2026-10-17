@@ -15,6 +15,8 @@ export const DEFAULT_PIPE_DN = 50;
 export const DEFAULT_PIPE_SCH = 'STD';
 export const DEFAULT_PIPE_LENGTH_M = 25.0;
 export const DEFAULT_ROUGHNESS_MM = 0.045; // matches the solver fallback
+// Bore of a new manual pipe when no schedule catalog is loaded (backend unreachable)
+const FALLBACK_PIPE_ID_M = 0.05;
 
 // Stored IDs within this tolerance of a catalog schedule count as that schedule
 const ID_MATCH_TOLERANCE_MM = 0.05;
@@ -23,11 +25,7 @@ const classSizeToPipeData = (pc, size) => {
   const data = {
     pipe_class_id: pc.id,
     pipe_class_code: pc.code,
-    standardDn: size.dn,
-    standardSch: size.sch || 'STD',
-    outer_diameter_mm: size.od_mm,
-    wall_thickness_mm: size.wt_mm,
-    diameter: (size.od_mm - 2.0 * size.wt_mm) / 1000.0
+    ...sizeDimensions(size)
   };
   if (pc.roughness_mm !== undefined && pc.roughness_mm !== null) {
     data.roughness_mm = pc.roughness_mm;
@@ -41,14 +39,16 @@ const manualPipeData = (dn, sch) => {
   return {
     pipe_class_id: 'manual',
     pipe_class_code: 'CUSTOM',
-    ...scheduleDimensions(s),
+    ...(s ? scheduleDimensions(s) : { diameter: FALLBACK_PIPE_ID_M }),
     roughness_mm: DEFAULT_ROUGHNESS_MM,
     roughness: DEFAULT_ROUGHNESS_MM / 1000.0
   };
 };
 
-// Dimensions only (what changes when the size of the current class or the schedule changes)
+// Dimensions only (what changes when the size of the current class or the schedule changes).
+// The catalog of the class size is recorded so a switch to manual keeps the same wall series.
 const sizeDimensions = (size) => ({
+  schedule_standard_code: size.catalog || null,
   standardDn: size.dn,
   standardSch: size.sch || 'STD',
   outer_diameter_mm: size.od_mm,
@@ -78,15 +78,16 @@ function scheduleBoreFor(dn, sch, code, options) {
 // Each returns the patch to apply to the pipe, or null when the choice cannot be applied.
 
 /**
- * Switch to manual (custom) dimensions at the given size and schedule of a schedule standard
- * (default ASME B36.10M); the nearest listed size is used when the standard lacks the DN. Roughness stays as it is.
+ * Switch to manual (custom) dimensions at the given size and schedule of a schedule catalog
+ * (default ASME B36.10M); the nearest listed size is used when the catalog lacks the DN, and a schedule
+ * it does not list maps to its counterpart. Roughness stays as it is. Null when no catalog is loaded.
  */
 export function manualSelectionPatch(dn, sch, scheduleCode = DEFAULT_SCHEDULE_STANDARD, options) {
   const code = isKnownScheduleStandard(scheduleCode, options) ? scheduleCode : DEFAULT_SCHEDULE_STANDARD;
   const size = nearestListedDn(Number(dn) || DEFAULT_PIPE_DN, code, options);
   const s = scheduleBoreFor(size, sch || DEFAULT_PIPE_SCH, code, options)
-    || getScheduleBore(DEFAULT_PIPE_DN, DEFAULT_PIPE_SCH, DEFAULT_SCHEDULE_STANDARD);
-  return { pipe_class_id: 'manual', pipe_class_code: 'CUSTOM', ...scheduleDimensions(s) };
+    || getScheduleBore(DEFAULT_PIPE_DN, DEFAULT_PIPE_SCH, DEFAULT_SCHEDULE_STANDARD, options);
+  return s ? { pipe_class_id: 'manual', pipe_class_code: 'CUSTOM', ...scheduleDimensions(s) } : null;
 }
 
 /** A pipe class was chosen: keep the current size when the class has it, otherwise the class's first size. */
@@ -111,7 +112,7 @@ export function schedulePatch(dn, sch, scheduleCode = DEFAULT_SCHEDULE_STANDARD,
 /**
  * Pipe sizing for a newly connected hydraulic pipe: DN50 STD.
  * - First available pipe class, if it lists DN50.
- * - Otherwise manual ASME B36.10M DN50 STD.
+ * - Otherwise manual ASME B36.10M DN50 STD (a 50 mm bore when no catalog is loaded).
  * - If custom pipes are not allowed, the size closest to DN50 in the first class.
  */
 export function getDefaultPipeData(pipeClasses = [], allowCustomPipes = true) {
@@ -201,7 +202,7 @@ export function resolvePipeSelection(data = {}, options) {
   return { classId, dn: nearestDnByInnerDiameter(data.diameter, scheduleStandard, options), sch: null, isCustomId: true, scheduleStandard };
 }
 
-/** Schedule standard a manual pipe's size refers to (files without one are ASME B36.10M). */
+/** Schedule catalog a pipe's size refers to (files without one are ASME B36.10M). */
 export function pipeScheduleStandard(data = {}, options) {
   const code = data.schedule_standard_code;
   return code && isKnownScheduleStandard(code, options) ? code : DEFAULT_SCHEDULE_STANDARD;

@@ -1,6 +1,6 @@
 """
 Equinor TR2000 REST API Service for WalFlow.
-Provides querying, retrieval, normalization, and local database ingestion of Equinor TR2000 piping specifications.
+Provides querying, retrieval, normalization, and local database ingestion of Equinor TR2000 pipe classes.
 Reference Documentation: https://tr2000api.equinor.com/Home/Help
 Terms & Conditions: https://www.equinor.com/about-us/terms-and-conditions
 """
@@ -88,19 +88,36 @@ MATERIAL_ROUGHNESS_MAP: Dict[str, float] = {
     "GRP": 0.010,     # Glass Reinforced Plastic
 }
 
+# Material names used in TR2000 descriptions, matched as whole words
+_MATERIAL_WORDS: Dict[str, float] = {
+    "CARBON": 0.045,
+    "STAINLESS": 0.015,
+    "DUPLEX": 0.015,
+    "316": 0.015,
+    "316L": 0.015,
+    "304": 0.015,
+    "304L": 0.015,
+    "TITANIUM": 0.005,
+}
+
+DEFAULT_ROUGHNESS_MM = 0.045  # Standard commercial steel
+
+
 def get_material_roughness_mm(material_group: Optional[str], material_desc: Optional[str] = "") -> float:
-    """Infers hydraulic surface roughness (mm) from material code or description."""
-    if material_group:
-        mg_upper = material_group.upper().strip()
-        for key, val in MATERIAL_ROUGHNESS_MAP.items():
-            if key == mg_upper or key in mg_upper:
-                return val
-    if material_desc:
-        desc_upper = material_desc.upper()
-        for key, val in MATERIAL_ROUGHNESS_MAP.items():
-            if key in desc_upper:
-                return val
-    return 0.045  # Standard commercial steel default
+    """Infers hydraulic surface roughness (mm): exact material group code first, then whole words of the
+    group or description (so e.g. 'PLASTICS' does not match 'CS'); commercial steel when nothing matches."""
+    mg_upper = (material_group or "").upper().strip()
+    if mg_upper in MATERIAL_ROUGHNESS_MAP:
+        return MATERIAL_ROUGHNESS_MAP[mg_upper]
+    words = set(re.findall(r"[A-Z0-9-]+", f"{mg_upper} {(material_desc or '').upper()}"))
+    for key, val in MATERIAL_ROUGHNESS_MAP.items():
+        if key in words:
+            return val
+    for key, val in _MATERIAL_WORDS.items():
+        if key in words:
+            return val
+    logging.warning(f"TR2000: no roughness known for material {material_group!r} / {material_desc!r}; using {DEFAULT_ROUGHNESS_MM} mm")
+    return DEFAULT_ROUGHNESS_MM
 
 
 async def _fetch_get(path: str, client: Optional[httpx.AsyncClient] = None) -> Any:
@@ -231,9 +248,32 @@ def _map_reducer_standard(design_code: str) -> str:
     return "DIN_EN_10253_2_REDUCERS" if _EN_DESIGN_CODE.search(design_code or "") else "ASME_B16_9_REDUCERS"
 
 
-def _map_schedule_standard(design_code: str) -> str:
-    """Maps a TR2000 design code to the default pipe schedule standard (same rule as reducers)."""
-    return "DIN_EN_PIPE_SCHEDULES" if _EN_DESIGN_CODE.search(design_code or "") else "ASME_B36_10M_SCHEDULES"
+_S_SCHEDULES = ("5S", "10S", "40S", "80S")
+
+
+def _map_schedule_standard(design_code: str, sizes: Optional[List[Dict[str, Any]]] = None) -> str:
+    """Maps a TR2000 design code to the pipe schedule standard: DIN EN for European codes (same rule as
+    reducers), ASME B36.19M when every size uses an S-schedule, otherwise ASME B36.10M."""
+    if _EN_DESIGN_CODE.search(design_code or ""):
+        return "DIN_EN_PIPE_SCHEDULES"
+    schedules = [str(s.get("sch") or "").strip().upper() for s in (sizes or [])]
+    if schedules and all(sch in _S_SCHEDULES for sch in schedules):
+        return "ASME_B36_19M_SCHEDULES"
+    return "ASME_B36_10M_SCHEDULES"
+
+
+def _nps_to_dn(nom_str: str) -> int:
+    """DN for a TR2000 nominal size (NPS in inches); 0 when it cannot be read."""
+    if nom_str in NPS_TO_DN_MAP:
+        return NPS_TO_DN_MAP[nom_str]
+    try:
+        nps = float(nom_str)
+    except (ValueError, TypeError):
+        return 0
+    if nps <= 0:
+        return 0
+    # Above NPS 4 the nominal sizes follow DN = 25 x NPS (NPS 44 -> DN 1100)
+    return int(round(nps * 25)) if nps >= 4 else int(round(nps * 25.4))
 
 
 async def fetch_and_normalize_tr2000_pcs(
@@ -282,14 +322,10 @@ async def fetch_and_normalize_tr2000_pcs(
     for s in sizes_data:
         nom_str = str(s.get("NomSize") or s.get("DN") or s.get("Nps") or "").strip()
         
-        # Map NPS string to DN integer
-        if nom_str in NPS_TO_DN_MAP:
-            dn_val = NPS_TO_DN_MAP[nom_str]
-        else:
-            try:
-                dn_val = int(round(float(nom_str) * 25.4)) if float(nom_str) < 10 else int(float(nom_str))
-            except (ValueError, TypeError):
-                dn_val = 0
+        dn_val = _nps_to_dn(nom_str)
+        if dn_val <= 0:
+            logging.warning(f"TR2000 {pcs_code}: skipped size with unreadable nominal size {nom_str!r}")
+            continue
 
         nps_val = str(s.get("NomSize") or nom_str)
         od_val = float(s.get("OuterDiam") or s.get("OuterDiameter") or 0.0)
@@ -350,7 +386,7 @@ async def fetch_and_normalize_tr2000_pcs(
     description = pcs_header.get("Description") or f"{mat_group} {pcs_header.get('RatingClass', '')}".strip() or f"Equinor TR2000 {pcs_code}"
     design_code = pcs_header.get("DesignCode") or "ASME B31.3"
     reducer_standard = _map_reducer_standard(design_code)
-    schedule_standard = _map_schedule_standard(design_code)
+    schedule_standard = _map_schedule_standard(design_code, normalized_sizes)
 
     return {
         "code": pcs_code.upper().strip(),
@@ -368,6 +404,7 @@ async def fetch_and_normalize_tr2000_pcs(
         "min_temp_c": min_temp,
         "max_temp_c": max_temp,
         "revision": str(actual_rev),
+        "rev_date": pcs_header.get("RevDate") or None,
         "source_plant_id": plant_id,
         "sizes": normalized_sizes,
         "temp_pressures": normalized_pt

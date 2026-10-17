@@ -1,6 +1,6 @@
 // F3-12: settings exist on three levels.
 //   Drawing  (.wlf)             title, fluid, ambient, atmospheric pressure, solver settings (+ "use drawing solver settings")
-//   Project  (database)         pipe specs, custom pipes, solver settings (+ "use project solver settings")
+//   Project  (database)         pipe classes, custom pipes, solver settings (+ "use project solver settings")
 //   Global   (database / local) unit preference, solver settings (always active)
 // Solver precedence: Drawing (if ticked) > Project (if ticked) > Global. A ticked level replaces the whole group.
 

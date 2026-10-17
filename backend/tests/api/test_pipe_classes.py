@@ -111,6 +111,7 @@ class TestPipeClassesDatabase(unittest.TestCase):
             "roughness_mm": 0.005,
             "corrosion_allowance_mm": 0.0,
             "revision": "1.0",
+            "schedule_standard_codes": ["ASME_B36_19M_SCHEDULES"],
             "sizes": [
                 {"dn": 25, "nps": "1", "od_mm": 33.4, "wt_mm": 2.77, "id_mm": 27.86, "sch": "10S"},
                 {"dn": 50, "nps": "2", "od_mm": 60.3, "wt_mm": 2.77, "id_mm": 54.76, "sch": "10S"}
@@ -180,7 +181,8 @@ class TestPipeClassesDatabase(unittest.TestCase):
         """Verify updating and deleting a custom class."""
         self.client.post("/api/pipe-classes", json={
             "code": "CUST01", "name": "Custom", "material_group": "HAST", "material_grade": "B574", "rating_class": "CL150",
-            "sizes": [{"dn": 25, "nps": "1", "od_mm": 33.4, "wt_mm": 2.77}]}, headers=self.mgr_headers)
+            "sizes": [{"dn": 25, "catalog": "ASME_B36_19M_SCHEDULES", "sch": "10S"}],
+            "schedule_standard_codes": ["ASME_B36_19M_SCHEDULES"]}, headers=self.mgr_headers)
         # Update CUST01
         resp_put = self.client.put(
             "/api/pipe-classes/CUST01",

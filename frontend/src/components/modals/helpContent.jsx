@@ -8,7 +8,7 @@ export const GUIDE_SECTIONS = [
     items: [
       <>{b('Add components:')} drag pumps, tanks, valves, regulators, orifices, filters, heat exchangers, relief devices and junctions from the left sidebar onto the canvas. Right-click the canvas, a component or a pipe for a context menu.</>,
       <>{b('Connect ports:')} drag from an outlet handle to an inlet handle to create a pipe. A port takes one pipe; use a splitter or mixer to branch. Drag the signal handles for control connections.</>,
-      <>{b('Edit properties:')} click a component or pipe to open its inspector on the right. Pipe size, schedule and piping spec are also editable in the data list below the canvas.</>,
+      <>{b('Edit properties:')} click a component or pipe to open its inspector on the right. Pipe size, schedule and pipe class are also editable in the data list below the canvas.</>,
       <>{b('Layout:')} the data list below the canvas can be resized with its drag handle (arrow keys work too) and collapsed.</>,
     ],
   },
@@ -16,7 +16,7 @@ export const GUIDE_SECTIONS = [
     title: '2. Settings: Drawing, Project and Global',
     items: [
       <>{b('Drawing')} (saved in the .wlf file): title, description, fluid, ambient and atmospheric pressure, and the solver group when {b('use drawing solver settings')} is ticked.</>,
-      <>{b('Project')} (cloud projects): piping specs, whether custom pipes are allowed, and the solver group when {b('use project solver settings')} is ticked. Only the project owner edits it.</>,
+      <>{b('Project')} (cloud projects): pipe classes, whether custom pipes are allowed, and the solver group when {b('use project solver settings')} is ticked. Only the project owner edits it.</>,
       <>{b('Global')} (your account, or this browser when signed out): display units and the default solver group.</>,
       <>Precedence is Drawing, then Project, then Global; a group is taken whole from the highest level that has it ticked. A new drawing starts from the built-in defaults.</>,
     ],
@@ -76,7 +76,7 @@ export const MODEL_SECTIONS = [
   {
     title: 'Pipe friction',
     items: [
-      <>Pipe losses use the {b('Darcy-Weisbach')} equation. The friction factor comes from the Churchill (1977) correlation, which is continuous from laminar through transition to turbulent flow and uses the wall roughness of the piping spec.</>,
+      <>Pipe losses use the {b('Darcy-Weisbach')} equation. The friction factor comes from the Churchill (1977) correlation, which is continuous from laminar through transition to turbulent flow and uses the wall roughness of the pipe class.</>,
     ],
   },
   {

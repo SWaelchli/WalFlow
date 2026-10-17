@@ -791,10 +791,12 @@ export default function Sidebar({
     if (!activeProject) return;
     setSavingPipeSpecs(true);
     try {
-      let currentAllowed = activeProject.allowed_pipe_classes;
-      if (!currentAllowed) {
-        currentAllowed = pipeClasses.map(c => c.id);
-      }
+      // Allow-lists may hold class codes (older projects); toggle on ids so both forms are handled
+      const currentAllowed = activeProject.allowed_pipe_classes
+        ? pipeClasses
+          .filter(c => activeProject.allowed_pipe_classes.includes(c.id) || activeProject.allowed_pipe_classes.includes(c.code))
+          .map(c => c.id)
+        : pipeClasses.map(c => c.id);
       let nextAllowed;
       if (currentAllowed.includes(classId)) {
         nextAllowed = currentAllowed.filter(id => id !== classId);
@@ -815,7 +817,7 @@ export default function Sidebar({
         }));
       }
     } catch {
-      notify("Failed to update project pipe specifications.", 'error');
+      notify("Failed to update the project pipe classes.", 'error');
     } finally {
       setSavingPipeSpecs(false);
     }
@@ -836,7 +838,7 @@ export default function Sidebar({
         }));
       }
     } catch {
-      notify("Failed to update project pipe specifications.", 'error');
+      notify("Failed to update the project pipe classes.", 'error');
     } finally {
       setSavingPipeSpecs(false);
     }
@@ -1441,7 +1443,7 @@ export default function Sidebar({
                       )}
                     </div>
 
-                    {/* Available Pipe Specifications */}
+                    {/* Available pipe classes */}
                     <div style={{
                       backgroundColor: '#FFFFFF',
                       border: '1px solid #D8E2E1',
@@ -1453,7 +1455,7 @@ export default function Sidebar({
                     }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <h4 style={{ margin: 0, color: 'var(--color-primary-text)', fontSize: 'var(--fs-xs)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                          Available Pipe Specs
+                          Available Pipe Classes
                         </h4>
                         {isOwnerOfActiveProject && (
                           <div style={{ display: 'flex', gap: '4px' }}>
@@ -1481,17 +1483,17 @@ export default function Sidebar({
 
                       <p style={{ margin: 0, fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
                         {!activeProject.allowed_pipe_classes
-                          ? "All system pipe specifications are active for this project."
-                          : `${activeProject.allowed_pipe_classes.length} of ${pipeClasses.length} specifications enabled.`}
+                          ? "All pipe classes are active for this project."
+                          : `${activeProject.allowed_pipe_classes.length} of ${pipeClasses.length} pipe classes enabled.`}
                       </p>
 
-                      {/* Specification Search Filter */}
+                      {/* Pipe class search filter */}
                       <div>
                         <input
                           type="text"
                           value={pipeSpecSearch}
                           onChange={(e) => setPipeSpecSearch(e.target.value)}
-                          placeholder="Filter specs by code or name..."
+                          placeholder="Filter pipe classes by code or name..."
                           className="form-input"
                           style={{ width: '100%', height: '28px', fontSize: 'var(--fs-xs)', padding: '0 8px' }}
                         />
@@ -1500,7 +1502,7 @@ export default function Sidebar({
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '200px', overflowY: 'auto', paddingRight: '4px' }}>
                         {pipeClasses.length === 0 ? (
                           <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', textAlign: 'center', padding: '12px' }}>
-                            Loading pipe specifications...
+                            Loading pipe classes...
                           </div>
                         ) : (
                           pipeClasses
@@ -1514,7 +1516,7 @@ export default function Sidebar({
                               );
                             })
                             .map(pc => {
-                              const isAllowed = !activeProject.allowed_pipe_classes || activeProject.allowed_pipe_classes.includes(pc.id);
+                              const isAllowed = !activeProject.allowed_pipe_classes || activeProject.allowed_pipe_classes.includes(pc.id) || activeProject.allowed_pipe_classes.includes(pc.code);
                               return (
                                 <label
                                   key={pc.id}
@@ -1662,7 +1664,7 @@ export default function Sidebar({
                         Standalone Drawing
                       </h4>
                       <p style={{ margin: 0, fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', lineHeight: '1.4' }}>
-                        This drawing is not part of a cloud project. All standard pipe specifications and manual pipe dimensions are available.
+                        This drawing is not part of a cloud project. All pipe classes and manual pipe dimensions are available.
                       </p>
                     </div>
                     {isAuthenticated && onSaveAsClick && (

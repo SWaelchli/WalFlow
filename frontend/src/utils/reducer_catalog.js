@@ -1,18 +1,9 @@
-import {
-  ASME_B16_9_REDUCERS,
-  DIN_EN_10253_2_REDUCERS
-} from '../constants/asme_b16_9_data';
 import { findPipeClass } from './pipeDefaults';
-import { getScheduleBore, isKnownScheduleStandard, scheduleStandardForReducer } from './pipe_schedules';
+import { getScheduleBore, isKnownScheduleStandard, scheduleStandardForReducer, classScheduleCodes, classReducerCodes } from './pipe_schedules';
+import { getCachedFittingStandards } from '../hooks/useFittingStandards';
 
 export const DEFAULT_REDUCER_STANDARD = 'ASME_B16_9_REDUCERS';
 export const CUSTOM_REDUCER_STANDARD = 'CUSTOM';
-
-// Bundled fallbacks, used when the catalog API is unreachable.
-const BUNDLED_REDUCER_STANDARDS = [
-  { code: 'ASME_B16_9_REDUCERS', name: 'ASME B16.9 Buttweld Reducers', dimensions: ASME_B16_9_REDUCERS },
-  { code: 'DIN_EN_10253_2_REDUCERS', name: 'DIN EN 10253-2 Buttweld Reducers', dimensions: DIN_EN_10253_2_REDUCERS }
-];
 
 // Diagrams saved before the fitting catalog existed store short codes.
 const LEGACY_CODES = {
@@ -26,20 +17,16 @@ export function normalizeReducerStandard(code) {
   return LEGACY_CODES[code] || code;
 }
 
-/** Catalog reducer standards (API first, bundled datasets for any code the API did not return). */
-export function getReducerStandardOptions(apiStandards = []) {
-  const options = apiStandards
+/** Reducer catalogs of the API rows (`useFittingStandards('reducer')`); the loaded rows when none are passed. */
+export function getReducerStandardOptions(apiStandards) {
+  return (apiStandards || getCachedFittingStandards('reducer'))
     .filter(s => s.fitting_type === 'reducer' && Array.isArray(s.dimensions))
     .map(s => ({ code: s.code, name: s.name, dimensions: s.dimensions }));
-  BUNDLED_REDUCER_STANDARDS.forEach(b => {
-    if (!options.some(o => o.code === b.code)) options.push(b);
-  });
-  return options;
 }
 
 export function getReducerDataset(code, options) {
   const normalized = normalizeReducerStandard(code);
-  const match = options.find(o => o.code === normalized);
+  const match = (options || getReducerStandardOptions()).find(o => o.code === normalized);
   return match ? match.dimensions : [];
 }
 
@@ -70,13 +57,23 @@ export function getExactScheduleBore(dn, sch, scheduleCode, scheduleOptions) {
 }
 
 /**
- * Schedule standard for one reducer end: the line's pipe class standard when it has dimension data,
- * otherwise the one implied by the reducer standard (DIN EN reducers → DIN EN pipe dimensions).
+ * Schedule catalog for one reducer end: the catalog of the line's pipe class size at that DN, else the
+ * class's first loaded catalog, otherwise the one implied by the reducer standard (DIN EN reducers → DIN EN pipe).
  */
-export function endScheduleStandard(pipeClass, reducerCode, scheduleOptions) {
-  const classCode = pipeClass?.schedule_standard_code;
-  if (classCode && isKnownScheduleStandard(classCode, scheduleOptions)) return classCode;
+export function endScheduleStandard(pipeClass, reducerCode, scheduleOptions, dn) {
+  const row = dn !== undefined ? pipeClass?.sizes?.find(s => Number(s.dn) === Number(dn)) : null;
+  if (row?.catalog && isKnownScheduleStandard(row.catalog, scheduleOptions)) return row.catalog;
+  const classCode = classScheduleCodes(pipeClass).find(c => isKnownScheduleStandard(c, scheduleOptions));
+  if (classCode) return classCode;
   return scheduleStandardForReducer(normalizeReducerStandard(reducerCode));
+}
+
+/** Reducer catalogs a line may use: the pipe class's reducer catalogs when it has loaded ones, else all. */
+export function classReducerOptions(pipeClass, options) {
+  const all = options || getReducerStandardOptions();
+  const codes = classReducerCodes(pipeClass);
+  const allowed = all.filter(o => codes.includes(o.code));
+  return allowed.length ? allowed : all;
 }
 
 /** The pipe class assigned to a connected line, if any. */

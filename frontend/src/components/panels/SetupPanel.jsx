@@ -10,7 +10,6 @@ import { componentLabel } from '../../constants/componentLabels';
 
 import { useUnits } from '../../context/UnitContext';
 import { useFittingStandards } from '../../hooks/useFittingStandards';
-import { ASME_B36_10M_SCHEDULES } from '../../constants/asme_b16_9_data';
 import { DEFAULT_REDUCER_STANDARD, CUSTOM_REDUCER_STANDARD } from '../../utils/reducer_catalog';
 import DraftNumberInput from '../common/DraftNumberInput';
 import PropertyBadge from './PropertyBadge';
@@ -348,7 +347,7 @@ export default function SetupPanel({
                 />
               </div>
               <div>
-                {renderLabel('Pipe Specification & Dimensions', 'diameter')}
+                {renderLabel('Pipe Class & Dimensions', 'diameter')}
                 <PipeSelector 
                   data={data} 
                   availablePipeClasses={availablePipeClasses} 

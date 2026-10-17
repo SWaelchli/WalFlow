@@ -71,6 +71,7 @@ import { solverMessageKey } from './utils/graphSignature';
 import { mapCached } from './utils/itemMemo';
 import { useHeatmapSettings } from './hooks/useHeatmapSettings';
 import { usePipeClasses } from './hooks/usePipeClasses';
+import { useFittingStandards } from './hooks/useFittingStandards';
 import { useCanvasLoading } from './hooks/useCanvasLoading';
 import { useModalManager } from './hooks/useModalManager';
 import { useOperatingCases } from './hooks/useOperatingCases';
@@ -202,6 +203,9 @@ function WalFlowContent() {
   }, []);
 
   const { fetchPipeClasses, availablePipeClasses, allowCustomPipes } = usePipeClasses(activeProject);
+  // Load the fitting catalogs (database) early: new pipes and reducers take their sizes from them
+  useFittingStandards('pipe_schedule');
+  useFittingStandards('reducer');
 
 
   const { isCanvasLoading, canvasLoadingLabel, showCanvasLoading, hideCanvasLoading, scheduleLoad } = useCanvasLoading({ nodes, edges });

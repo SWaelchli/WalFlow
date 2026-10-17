@@ -18,6 +18,7 @@ from sqlalchemy import or_
 from db.database import get_db
 from db.models import FittingStandard, PipeClass, User
 from auth import get_current_user, get_current_pipe_manager_user
+from services.pipe_class_catalog import normalize_codes, references_to
 
 logger = logging.getLogger(__name__)
 
@@ -88,10 +89,41 @@ def _find_standard(db: Session, id_or_code: str) -> Optional[FittingStandard]:
 
 
 def _referencing_pipe_classes(db: Session, code: str) -> List[str]:
-    rows = db.query(PipeClass.code).filter(
-        or_(PipeClass.reducer_standard_code == code, PipeClass.schedule_standard_code == code)
-    ).all()
-    return sorted(r[0] for r in rows)
+    """Codes of the pipe classes that select catalog `code`."""
+    referencing = []
+    for pc in db.query(PipeClass).all():
+        if code in normalize_codes(pc.schedule_standard_codes or pc.schedule_standard_code)                 or code in normalize_codes(pc.reducer_standard_codes or pc.reducer_standard_code):
+            referencing.append(pc.code)
+    return sorted(referencing)
+
+
+def _dropped_references(db: Session, item: FittingStandard, new_type: str, new_dimensions: Any) -> List[str]:
+    """Problems when new data for catalog `item` would remove what pipe classes use: its fitting type,
+    or a DN / schedule a class size row references. Changed values are fine; they reach the classes."""
+    users = _referencing_pipe_classes(db, item.code)
+    if not users:
+        return []
+    if new_type != item.fitting_type:
+        return [f"'{item.code}' is used by pipe classes {', '.join(users)}; its fitting type cannot change."]
+    if new_dimensions is None or new_type != "pipe_schedule":
+        return []
+    listed = {
+        (int(r.get("dn") or 0), k.upper())
+        for r in new_dimensions if isinstance(r, dict)
+        for k in (r.get("schedules") or {})
+    }
+    errors = []
+    for pc in db.query(PipeClass).filter(PipeClass.code.in_(users)).all():
+        try:
+            rows = json.loads(pc.sizes_json or "[]")
+        except ValueError:
+            continue
+        missing = [f"DN{dn} {sch}" for dn, sch in references_to(rows, item.code) if (dn, sch.upper()) not in listed]
+        if missing:
+            errors.append(f"pipe class {pc.code} uses {', '.join(missing)} from '{item.code}'")
+    if errors:
+        return ["Sizes in use cannot be removed: " + "; ".join(errors) + "."]
+    return []
 
 
 # --- Pydantic Schemas ---
@@ -218,6 +250,10 @@ def import_fitting_standards_library(
         fitting_type = str(item.get("fitting_type") or "reducer").strip().lower()
         for err in _validate_standard_fields(code, fitting_type, item.get("dimensions", [])):
             errors.append(f"Entry {idx} ({code or 'no code'}): {err}")
+        existing = db.query(FittingStandard).filter(FittingStandard.code == code).first() if code else None
+        if existing and not existing.is_builtin:
+            for err in _dropped_references(db, existing, fitting_type, item.get("dimensions", [])):
+                errors.append(f"Entry {idx} ({code}): {err}")
     _raise_if_invalid(errors[:20])
 
     imported_count = 0
@@ -289,6 +325,14 @@ def reseed_fitting_defaults(
 
     seeded_count = 0
     restored_count = 0
+    if restore_builtins:
+        in_use = []
+        for ex in EXAMPLE_FITTING_STANDARDS:
+            existing = db.query(FittingStandard).filter(FittingStandard.code == ex["code"]).first()
+            if existing and existing.is_builtin:
+                in_use += _dropped_references(db, existing, ex["fitting_type"], ex["dimensions"])
+        if in_use:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="; ".join(in_use))
     for ex in EXAMPLE_FITTING_STANDARDS:
         existing = db.query(FittingStandard).filter(FittingStandard.code == ex["code"]).first()
         if existing and existing.is_builtin and restore_builtins:
@@ -434,6 +478,9 @@ def update_fitting_standard(
 
     new_type = payload.fitting_type.strip().lower() if payload.fitting_type is not None else item.fitting_type
     _raise_if_invalid(_validate_standard_fields(None, new_type, payload.dimensions))
+    in_use = _dropped_references(db, item, new_type, payload.dimensions)
+    if in_use:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="; ".join(in_use))
 
     if payload.name is not None:
         item.name = payload.name.strip()

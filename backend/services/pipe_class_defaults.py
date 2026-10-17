@@ -1,8 +1,8 @@
 """
 Default Example Pipe Classes for WalFlow (Clean Installation Seed)
 
-Defines 4 standard example industrial piping specifications based on
-ASME B36.10M / ASME B36.19M and ASME B16.5 rating classes:
+Defines 4 standard example pipe classes based on ASME B36.10M / ASME B36.19M pipe and
+ASME B16.5 rating classes. Sizes reference the seeded schedule catalogs (`fitting_defaults.py`):
 1. CS01 - Carbon Steel ASME 150# (ASTM A106 Gr. B)
 2. SS01 - Stainless Steel 316L ASME 150# (ASTM A312 TP316L)
 3. LT01 - Low-Temperature Carbon Steel ASME 300# (ASTM A333 Gr. 6)
@@ -26,27 +26,27 @@ EXAMPLE_PIPE_CLASSES = [
         "revision": "1.0",
         "rev_date": "2026-08-14",
         "source_plant_id": None,
-        "reducer_standard_code": "ASME_B16_9_REDUCERS",
-        "schedule_standard_code": "ASME_B36_10M_SCHEDULES",
+        "reducer_standard_codes": ["ASME_B16_9_REDUCERS"],
+        "schedule_standard_codes": ["ASME_B36_10M_SCHEDULES"],
         "is_builtin": True,
 
         "sizes": [
-            {"dn": 15,  "nps": "1/2",   "od_mm": 21.3,  "wt_mm": 2.77, "id_mm": 15.76, "sch": "STD", "ca_mm": 1.5},
-            {"dn": 20,  "nps": "3/4",   "od_mm": 26.7,  "wt_mm": 2.87, "id_mm": 20.96, "sch": "STD", "ca_mm": 1.5},
-            {"dn": 25,  "nps": "1",     "od_mm": 33.4,  "wt_mm": 3.38, "id_mm": 26.64, "sch": "STD", "ca_mm": 1.5},
-            {"dn": 32,  "nps": "1 1/4", "od_mm": 42.2,  "wt_mm": 3.56, "id_mm": 35.08, "sch": "STD", "ca_mm": 1.5},
-            {"dn": 40,  "nps": "1 1/2", "od_mm": 48.3,  "wt_mm": 3.68, "id_mm": 40.94, "sch": "STD", "ca_mm": 1.5},
-            {"dn": 50,  "nps": "2",     "od_mm": 60.3,  "wt_mm": 3.91, "id_mm": 52.48, "sch": "STD", "ca_mm": 3.0},
-            {"dn": 65,  "nps": "2 1/2", "od_mm": 73.0,  "wt_mm": 5.16, "id_mm": 62.68, "sch": "STD", "ca_mm": 3.0},
-            {"dn": 80,  "nps": "3",     "od_mm": 88.9,  "wt_mm": 5.49, "id_mm": 77.92, "sch": "STD", "ca_mm": 3.0},
-            {"dn": 100, "nps": "4",     "od_mm": 114.3, "wt_mm": 6.02, "id_mm": 102.26,"sch": "STD", "ca_mm": 3.0},
-            {"dn": 125, "nps": "5",     "od_mm": 141.3, "wt_mm": 6.55, "id_mm": 128.20,"sch": "STD", "ca_mm": 3.0},
-            {"dn": 150, "nps": "6",     "od_mm": 168.3, "wt_mm": 7.11, "id_mm": 154.08,"sch": "STD", "ca_mm": 3.0},
-            {"dn": 200, "nps": "8",     "od_mm": 219.1, "wt_mm": 8.18, "id_mm": 202.74,"sch": "STD", "ca_mm": 3.0},
-            {"dn": 250, "nps": "10",    "od_mm": 273.0, "wt_mm": 9.27, "id_mm": 254.46,"sch": "STD", "ca_mm": 3.0},
-            {"dn": 300, "nps": "12",    "od_mm": 323.8, "wt_mm": 9.53, "id_mm": 304.74,"sch": "STD", "ca_mm": 3.0},
-            {"dn": 350, "nps": "14",    "od_mm": 355.6, "wt_mm": 9.53, "id_mm": 336.54,"sch": "STD", "ca_mm": 3.0},
-            {"dn": 400, "nps": "16",    "od_mm": 406.4, "wt_mm": 9.53, "id_mm": 387.34,"sch": "STD", "ca_mm": 3.0}
+            {"dn": 15, "catalog": "ASME_B36_10M_SCHEDULES", "sch": "STD", "ca_mm": 1.5},
+            {"dn": 20, "catalog": "ASME_B36_10M_SCHEDULES", "sch": "STD", "ca_mm": 1.5},
+            {"dn": 25, "catalog": "ASME_B36_10M_SCHEDULES", "sch": "STD", "ca_mm": 1.5},
+            {"dn": 32, "catalog": "ASME_B36_10M_SCHEDULES", "sch": "STD", "ca_mm": 1.5},
+            {"dn": 40, "catalog": "ASME_B36_10M_SCHEDULES", "sch": "STD", "ca_mm": 1.5},
+            {"dn": 50, "catalog": "ASME_B36_10M_SCHEDULES", "sch": "STD", "ca_mm": 3.0},
+            {"dn": 65, "catalog": "ASME_B36_10M_SCHEDULES", "sch": "STD", "ca_mm": 3.0},
+            {"dn": 80, "catalog": "ASME_B36_10M_SCHEDULES", "sch": "STD", "ca_mm": 3.0},
+            {"dn": 100, "catalog": "ASME_B36_10M_SCHEDULES", "sch": "STD", "ca_mm": 3.0},
+            {"dn": 125, "catalog": "ASME_B36_10M_SCHEDULES", "sch": "STD", "ca_mm": 3.0},
+            {"dn": 150, "catalog": "ASME_B36_10M_SCHEDULES", "sch": "STD", "ca_mm": 3.0},
+            {"dn": 200, "catalog": "ASME_B36_10M_SCHEDULES", "sch": "STD", "ca_mm": 3.0},
+            {"dn": 250, "catalog": "ASME_B36_10M_SCHEDULES", "sch": "STD", "ca_mm": 3.0},
+            {"dn": 300, "catalog": "ASME_B36_10M_SCHEDULES", "sch": "STD", "ca_mm": 3.0},
+            {"dn": 350, "catalog": "ASME_B36_10M_SCHEDULES", "sch": "STD", "ca_mm": 3.0},
+            {"dn": 400, "catalog": "ASME_B36_10M_SCHEDULES", "sch": "STD", "ca_mm": 3.0}
         ],
         "temp_pressures": [
             {"temp_c": -29.0, "press_bar": 19.6},
@@ -63,7 +63,7 @@ EXAMPLE_PIPE_CLASSES = [
         "name": "Stainless Steel 316L ASME 150#",
         "standard": "WALFLOW_EXAMPLE",
         "material_group": "316SS",
-        "material_grade": "ASTM A312 TP316L",
+        "material_grade": "ASTM A312 TP316/316L",
         "rating_class": "CL150",
         "design_code": "ASME B31.3",
         "roughness_mm": 0.015,
@@ -73,23 +73,23 @@ EXAMPLE_PIPE_CLASSES = [
         "revision": "1.0",
         "rev_date": "2026-08-14",
         "source_plant_id": None,
-        "reducer_standard_code": "ASME_B16_9_REDUCERS",
-        "schedule_standard_code": "ASME_B36_10M_SCHEDULES",
+        "reducer_standard_codes": ["ASME_B16_9_REDUCERS"],
+        "schedule_standard_codes": ["ASME_B36_19M_SCHEDULES"],
         "is_builtin": True,
         "sizes": [
-            {"dn": 15,  "nps": "1/2",   "od_mm": 21.3,  "wt_mm": 2.11, "id_mm": 17.08, "sch": "10S", "ca_mm": 0.0},
-            {"dn": 20,  "nps": "3/4",   "od_mm": 26.7,  "wt_mm": 2.11, "id_mm": 22.48, "sch": "10S", "ca_mm": 0.0},
-            {"dn": 25,  "nps": "1",     "od_mm": 33.4,  "wt_mm": 2.77, "id_mm": 27.86, "sch": "10S", "ca_mm": 0.0},
-            {"dn": 32,  "nps": "1 1/4", "od_mm": 42.2,  "wt_mm": 2.77, "id_mm": 36.66, "sch": "10S", "ca_mm": 0.0},
-            {"dn": 40,  "nps": "1 1/2", "od_mm": 48.3,  "wt_mm": 2.77, "id_mm": 42.76, "sch": "10S", "ca_mm": 0.0},
-            {"dn": 50,  "nps": "2",     "od_mm": 60.3,  "wt_mm": 2.77, "id_mm": 54.76, "sch": "10S", "ca_mm": 0.0},
-            {"dn": 65,  "nps": "2 1/2", "od_mm": 73.0,  "wt_mm": 3.05, "id_mm": 66.90, "sch": "10S", "ca_mm": 0.0},
-            {"dn": 80,  "nps": "3",     "od_mm": 88.9,  "wt_mm": 3.05, "id_mm": 82.80, "sch": "10S", "ca_mm": 0.0},
-            {"dn": 100, "nps": "4",     "od_mm": 114.3, "wt_mm": 3.05, "id_mm": 108.20,"sch": "10S", "ca_mm": 0.0},
-            {"dn": 150, "nps": "6",     "od_mm": 168.3, "wt_mm": 3.40, "id_mm": 161.50,"sch": "10S", "ca_mm": 0.0},
-            {"dn": 200, "nps": "8",     "od_mm": 219.1, "wt_mm": 3.76, "id_mm": 211.58,"sch": "10S", "ca_mm": 0.0},
-            {"dn": 250, "nps": "10",    "od_mm": 273.0, "wt_mm": 4.19, "id_mm": 264.62,"sch": "10S", "ca_mm": 0.0},
-            {"dn": 300, "nps": "12",    "od_mm": 323.8, "wt_mm": 4.57, "id_mm": 314.66,"sch": "10S", "ca_mm": 0.0}
+            {"dn": 15, "catalog": "ASME_B36_19M_SCHEDULES", "sch": "10S", "ca_mm": 0.0},
+            {"dn": 20, "catalog": "ASME_B36_19M_SCHEDULES", "sch": "10S", "ca_mm": 0.0},
+            {"dn": 25, "catalog": "ASME_B36_19M_SCHEDULES", "sch": "10S", "ca_mm": 0.0},
+            {"dn": 32, "catalog": "ASME_B36_19M_SCHEDULES", "sch": "10S", "ca_mm": 0.0},
+            {"dn": 40, "catalog": "ASME_B36_19M_SCHEDULES", "sch": "10S", "ca_mm": 0.0},
+            {"dn": 50, "catalog": "ASME_B36_19M_SCHEDULES", "sch": "10S", "ca_mm": 0.0},
+            {"dn": 65, "catalog": "ASME_B36_19M_SCHEDULES", "sch": "10S", "ca_mm": 0.0},
+            {"dn": 80, "catalog": "ASME_B36_19M_SCHEDULES", "sch": "10S", "ca_mm": 0.0},
+            {"dn": 100, "catalog": "ASME_B36_19M_SCHEDULES", "sch": "10S", "ca_mm": 0.0},
+            {"dn": 150, "catalog": "ASME_B36_19M_SCHEDULES", "sch": "10S", "ca_mm": 0.0},
+            {"dn": 200, "catalog": "ASME_B36_19M_SCHEDULES", "sch": "10S", "ca_mm": 0.0},
+            {"dn": 250, "catalog": "ASME_B36_19M_SCHEDULES", "sch": "10S", "ca_mm": 0.0},
+            {"dn": 300, "catalog": "ASME_B36_19M_SCHEDULES", "sch": "10S", "ca_mm": 0.0}
         ],
         "temp_pressures": [
             {"temp_c": -196.0,"press_bar": 19.0},
@@ -116,23 +116,23 @@ EXAMPLE_PIPE_CLASSES = [
         "revision": "1.0",
         "rev_date": "2026-08-14",
         "source_plant_id": None,
-        "reducer_standard_code": "ASME_B16_9_REDUCERS",
-        "schedule_standard_code": "ASME_B36_10M_SCHEDULES",
+        "reducer_standard_codes": ["ASME_B16_9_REDUCERS"],
+        "schedule_standard_codes": ["ASME_B36_10M_SCHEDULES"],
         "is_builtin": True,
         "sizes": [
-            {"dn": 15,  "nps": "1/2",   "od_mm": 21.3,  "wt_mm": 3.73, "id_mm": 13.84, "sch": "80",  "ca_mm": 1.5},
-            {"dn": 20,  "nps": "3/4",   "od_mm": 26.7,  "wt_mm": 3.91, "id_mm": 18.88, "sch": "80",  "ca_mm": 1.5},
-            {"dn": 25,  "nps": "1",     "od_mm": 33.4,  "wt_mm": 4.55, "id_mm": 24.30, "sch": "80",  "ca_mm": 1.5},
-            {"dn": 32,  "nps": "1 1/4", "od_mm": 42.2,  "wt_mm": 4.85, "id_mm": 32.50, "sch": "80",  "ca_mm": 1.5},
-            {"dn": 40,  "nps": "1 1/2", "od_mm": 48.3,  "wt_mm": 5.08, "id_mm": 38.14, "sch": "80",  "ca_mm": 1.5},
-            {"dn": 50,  "nps": "2",     "od_mm": 60.3,  "wt_mm": 5.54, "id_mm": 49.22, "sch": "80",  "ca_mm": 3.0},
-            {"dn": 65,  "nps": "2 1/2", "od_mm": 73.0,  "wt_mm": 7.01, "id_mm": 58.98, "sch": "80",  "ca_mm": 3.0},
-            {"dn": 80,  "nps": "3",     "od_mm": 88.9,  "wt_mm": 7.62, "id_mm": 73.66, "sch": "80",  "ca_mm": 3.0},
-            {"dn": 100, "nps": "4",     "od_mm": 114.3, "wt_mm": 8.56, "id_mm": 97.18, "sch": "80",  "ca_mm": 3.0},
-            {"dn": 150, "nps": "6",     "od_mm": 168.3, "wt_mm": 10.97,"id_mm": 146.36,"sch": "80",  "ca_mm": 3.0},
-            {"dn": 200, "nps": "8",     "od_mm": 219.1, "wt_mm": 12.70,"id_mm": 193.70,"sch": "80",  "ca_mm": 3.0},
-            {"dn": 250, "nps": "10",    "od_mm": 273.0, "wt_mm": 15.09,"id_mm": 242.82,"sch": "80",  "ca_mm": 3.0},
-            {"dn": 300, "nps": "12",    "od_mm": 323.8, "wt_mm": 17.48,"id_mm": 288.84,"sch": "80",  "ca_mm": 3.0}
+            {"dn": 15, "catalog": "ASME_B36_10M_SCHEDULES", "sch": "80", "ca_mm": 1.5},
+            {"dn": 20, "catalog": "ASME_B36_10M_SCHEDULES", "sch": "80", "ca_mm": 1.5},
+            {"dn": 25, "catalog": "ASME_B36_10M_SCHEDULES", "sch": "80", "ca_mm": 1.5},
+            {"dn": 32, "catalog": "ASME_B36_10M_SCHEDULES", "sch": "80", "ca_mm": 1.5},
+            {"dn": 40, "catalog": "ASME_B36_10M_SCHEDULES", "sch": "80", "ca_mm": 1.5},
+            {"dn": 50, "catalog": "ASME_B36_10M_SCHEDULES", "sch": "80", "ca_mm": 3.0},
+            {"dn": 65, "catalog": "ASME_B36_10M_SCHEDULES", "sch": "80", "ca_mm": 3.0},
+            {"dn": 80, "catalog": "ASME_B36_10M_SCHEDULES", "sch": "80", "ca_mm": 3.0},
+            {"dn": 100, "catalog": "ASME_B36_10M_SCHEDULES", "sch": "80", "ca_mm": 3.0},
+            {"dn": 150, "catalog": "ASME_B36_10M_SCHEDULES", "sch": "80", "ca_mm": 3.0},
+            {"dn": 200, "catalog": "ASME_B36_10M_SCHEDULES", "sch": "80", "ca_mm": 3.0},
+            {"dn": 250, "catalog": "ASME_B36_10M_SCHEDULES", "sch": "80", "ca_mm": 3.0},
+            {"dn": 300, "catalog": "ASME_B36_10M_SCHEDULES", "sch": "80", "ca_mm": 3.0}
         ],
         "temp_pressures": [
             {"temp_c": -46.0, "press_bar": 51.1},
@@ -159,24 +159,24 @@ EXAMPLE_PIPE_CLASSES = [
         "revision": "1.0",
         "rev_date": "2026-08-14",
         "source_plant_id": None,
-        "reducer_standard_code": "ASME_B16_9_REDUCERS",
-        "schedule_standard_code": "ASME_B36_10M_SCHEDULES",
+        "reducer_standard_codes": ["ASME_B16_9_REDUCERS"],
+        "schedule_standard_codes": ["ASME_B36_19M_SCHEDULES"],
         "is_builtin": True,
 
         "sizes": [
-            {"dn": 15,  "nps": "1/2",   "od_mm": 21.3,  "wt_mm": 2.11, "id_mm": 17.08, "sch": "10S", "ca_mm": 0.0},
-            {"dn": 20,  "nps": "3/4",   "od_mm": 26.7,  "wt_mm": 2.11, "id_mm": 22.48, "sch": "10S", "ca_mm": 0.0},
-            {"dn": 25,  "nps": "1",     "od_mm": 33.4,  "wt_mm": 2.77, "id_mm": 27.86, "sch": "10S", "ca_mm": 0.0},
-            {"dn": 32,  "nps": "1 1/4", "od_mm": 42.2,  "wt_mm": 2.77, "id_mm": 36.66, "sch": "10S", "ca_mm": 0.0},
-            {"dn": 40,  "nps": "1 1/2", "od_mm": 48.3,  "wt_mm": 2.77, "id_mm": 42.76, "sch": "10S", "ca_mm": 0.0},
-            {"dn": 50,  "nps": "2",     "od_mm": 60.3,  "wt_mm": 2.77, "id_mm": 54.76, "sch": "10S", "ca_mm": 0.0},
-            {"dn": 65,  "nps": "2 1/2", "od_mm": 73.0,  "wt_mm": 3.05, "id_mm": 66.90, "sch": "10S", "ca_mm": 0.0},
-            {"dn": 80,  "nps": "3",     "od_mm": 88.9,  "wt_mm": 3.05, "id_mm": 82.80, "sch": "10S", "ca_mm": 0.0},
-            {"dn": 100, "nps": "4",     "od_mm": 114.3, "wt_mm": 3.05, "id_mm": 108.20,"sch": "10S", "ca_mm": 0.0},
-            {"dn": 150, "nps": "6",     "od_mm": 168.3, "wt_mm": 3.40, "id_mm": 161.50,"sch": "10S", "ca_mm": 0.0},
-            {"dn": 200, "nps": "8",     "od_mm": 219.1, "wt_mm": 3.76, "id_mm": 211.58,"sch": "10S", "ca_mm": 0.0},
-            {"dn": 250, "nps": "10",    "od_mm": 273.0, "wt_mm": 4.19, "id_mm": 264.62,"sch": "10S", "ca_mm": 0.0},
-            {"dn": 300, "nps": "12",    "od_mm": 323.8, "wt_mm": 4.57, "id_mm": 314.66,"sch": "10S", "ca_mm": 0.0}
+            {"dn": 15, "catalog": "ASME_B36_19M_SCHEDULES", "sch": "10S", "ca_mm": 0.0},
+            {"dn": 20, "catalog": "ASME_B36_19M_SCHEDULES", "sch": "10S", "ca_mm": 0.0},
+            {"dn": 25, "catalog": "ASME_B36_19M_SCHEDULES", "sch": "10S", "ca_mm": 0.0},
+            {"dn": 32, "catalog": "ASME_B36_19M_SCHEDULES", "sch": "10S", "ca_mm": 0.0},
+            {"dn": 40, "catalog": "ASME_B36_19M_SCHEDULES", "sch": "10S", "ca_mm": 0.0},
+            {"dn": 50, "catalog": "ASME_B36_19M_SCHEDULES", "sch": "10S", "ca_mm": 0.0},
+            {"dn": 65, "catalog": "ASME_B36_19M_SCHEDULES", "sch": "10S", "ca_mm": 0.0},
+            {"dn": 80, "catalog": "ASME_B36_19M_SCHEDULES", "sch": "10S", "ca_mm": 0.0},
+            {"dn": 100, "catalog": "ASME_B36_19M_SCHEDULES", "sch": "10S", "ca_mm": 0.0},
+            {"dn": 150, "catalog": "ASME_B36_19M_SCHEDULES", "sch": "10S", "ca_mm": 0.0},
+            {"dn": 200, "catalog": "ASME_B36_19M_SCHEDULES", "sch": "10S", "ca_mm": 0.0},
+            {"dn": 250, "catalog": "ASME_B36_19M_SCHEDULES", "sch": "10S", "ca_mm": 0.0},
+            {"dn": 300, "catalog": "ASME_B36_19M_SCHEDULES", "sch": "10S", "ca_mm": 0.0}
         ],
         "temp_pressures": [
             {"temp_c": -46.0, "press_bar": 20.0},
@@ -189,3 +189,34 @@ EXAMPLE_PIPE_CLASSES = [
         ]
     }
 ]
+
+
+def example_to_pipe_class(raw):
+    """Builds the PipeClass row for an example class (same row for startup seeding and /seed-examples)."""
+    import json
+    from db.models import PipeClass
+
+    return PipeClass(
+        id=raw["id"],
+        code=raw["code"],
+        name=raw["name"],
+        standard=raw["standard"],
+        material_group=raw["material_group"],
+        material_grade=raw["material_grade"],
+        rating_class=raw["rating_class"],
+        design_code=raw["design_code"],
+        reducer_standard_code=raw["reducer_standard_codes"][0],
+        schedule_standard_code=raw["schedule_standard_codes"][0],
+        reducer_standard_codes=json.dumps(raw["reducer_standard_codes"]),
+        schedule_standard_codes=json.dumps(raw["schedule_standard_codes"]),
+        roughness_mm=raw["roughness_mm"],
+        corrosion_allowance_mm=raw["corrosion_allowance_mm"],
+        min_temp_c=raw.get("min_temp_c"),
+        max_temp_c=raw.get("max_temp_c"),
+        revision=raw.get("revision", "1.0"),
+        rev_date=raw.get("rev_date"),
+        source_plant_id=raw.get("source_plant_id"),
+        is_builtin=raw.get("is_builtin", True),
+        sizes_json=json.dumps(raw["sizes"]),
+        temp_pressures_json=json.dumps(raw.get("temp_pressures", [])),
+    )

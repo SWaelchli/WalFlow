@@ -86,50 +86,33 @@ def init_db():
                 conn.execute(text("ALTER TABLE pipe_classes ADD COLUMN reducer_standard_code VARCHAR DEFAULT 'ASME_B16_9_REDUCERS'"))
             if "schedule_standard_code" not in pc_cols:
                 conn.execute(text("ALTER TABLE pipe_classes ADD COLUMN schedule_standard_code VARCHAR DEFAULT 'ASME_B36_10M_SCHEDULES'"))
+            if "reducer_standard_codes" not in pc_cols:
+                conn.execute(text("ALTER TABLE pipe_classes ADD COLUMN reducer_standard_codes TEXT"))
+            if "schedule_standard_codes" not in pc_cols:
+                conn.execute(text("ALTER TABLE pipe_classes ADD COLUMN schedule_standard_codes TEXT"))
 
         conn.commit()
 
 
+    # Seed default fitting standards (pipe classes reference them)
+    _seed_example_fitting_standards()
     # Seed default example pipe classes
     _seed_example_pipe_classes()
-    # Seed default fitting standards
-    _seed_example_fitting_standards()
+    # Classes saved before sizes referenced the catalog
+    _migrate_pipe_class_catalog_references()
 
 
 
 def _seed_example_pipe_classes():
-    """Seeds the 4 default built-in example pipe classes if they do not already exist."""
+    """Seeds the 4 example pipe classes on a fresh install (empty table), so deleted examples stay deleted."""
     from .models import PipeClass
-    from services.pipe_class_defaults import EXAMPLE_PIPE_CLASSES
+    from services.pipe_class_defaults import EXAMPLE_PIPE_CLASSES, example_to_pipe_class
 
     db = SessionLocal()
     try:
-        for ex in EXAMPLE_PIPE_CLASSES:
-            existing = db.query(PipeClass).filter(PipeClass.code == ex["code"]).first()
-            if not existing:
-                pipe_class = PipeClass(
-                    id=ex["id"],
-                    code=ex["code"],
-                    name=ex["name"],
-                    standard=ex["standard"],
-                    material_group=ex["material_group"],
-                    material_grade=ex["material_grade"],
-                    rating_class=ex["rating_class"],
-                    design_code=ex["design_code"],
-                    reducer_standard_code=ex.get("reducer_standard_code", "ASME_B16_9_REDUCERS"),
-                    schedule_standard_code=ex.get("schedule_standard_code", "ASME_B36_10M_SCHEDULES"),
-                    roughness_mm=ex["roughness_mm"],
-                    corrosion_allowance_mm=ex["corrosion_allowance_mm"],
-                    min_temp_c=ex["min_temp_c"],
-                    max_temp_c=ex["max_temp_c"],
-                    revision=ex["revision"],
-                    rev_date=ex["rev_date"],
-                    source_plant_id=ex["source_plant_id"],
-                    is_builtin=ex["is_builtin"],
-                    sizes_json=json.dumps(ex["sizes"]),
-                    temp_pressures_json=json.dumps(ex["temp_pressures"]),
-                )
-                db.add(pipe_class)
+        if db.query(PipeClass).count() == 0:
+            for ex in EXAMPLE_PIPE_CLASSES:
+                db.add(example_to_pipe_class(ex))
         db.commit()
     except Exception as e:
         db.rollback()
@@ -161,10 +144,68 @@ def _seed_example_fitting_standards():
                     dimensions_json=json.dumps(ex["dimensions"]),
                 )
                 db.add(standard)
+            elif existing.is_builtin and ex["fitting_type"] == "pipe_schedule":
+                # Existing installs pick up added sizes and schedules; values already stored are kept
+                existing.name = ex["name"]
+                existing.subtype = ex.get("subtype")
+                existing.description = ex.get("description")
+                merged = _merge_schedule_rows(json.loads(existing.dimensions_json or "[]"), ex["dimensions"])
+                existing.dimensions_json = json.dumps(merged)
         db.commit()
     except Exception as e:
         db.rollback()
         print(f"[Warning] Failed to seed example fitting standards: {e}")
+    finally:
+        db.close()
+
+
+def _merge_schedule_rows(stored, seed):
+    """Adds the seed's DN rows and schedule keys missing from `stored`; never overwrites stored values."""
+    by_dn = {row.get("dn"): row for row in stored}
+    for seed_row in seed:
+        row = by_dn.get(seed_row["dn"])
+        if row is None:
+            stored.append(json.loads(json.dumps(seed_row)))
+            continue
+        schedules = row.setdefault("schedules", {})
+        for sch, entry in seed_row["schedules"].items():
+            schedules.setdefault(sch, dict(entry))
+    stored.sort(key=lambda r: r.get("dn") or 0)
+    return stored
+
+
+def _migrate_pipe_class_catalog_references():
+    """Classes without catalog lists: size rows with catalog dimensions become references (catalogs
+    used are selected, the old single catalog first), other rows become custom rows."""
+    from .models import PipeClass
+    from services.pipe_class_catalog import (
+        DEFAULT_REDUCER_CATALOG, DEFAULT_SCHEDULE_CATALOG, load_schedule_catalogs,
+        normalize_codes, reference_rows_from_dimensions,
+    )
+
+    db = SessionLocal()
+    try:
+        pending = db.query(PipeClass).filter(PipeClass.schedule_standard_codes.is_(None)).all()
+        if pending:
+            catalogs = load_schedule_catalogs(db)
+            for pc in pending:
+                try:
+                    sizes = json.loads(pc.sizes_json or "[]")
+                except ValueError:
+                    sizes = []
+                old_code = normalize_codes(pc.schedule_standard_code, DEFAULT_SCHEDULE_CATALOG)
+                rows, used = reference_rows_from_dimensions(sizes, catalogs, preferred=old_code)
+                schedule_codes = used or old_code
+                reducer_codes = normalize_codes(pc.reducer_standard_codes or pc.reducer_standard_code, DEFAULT_REDUCER_CATALOG)
+                pc.sizes_json = json.dumps(rows)
+                pc.schedule_standard_codes = json.dumps(schedule_codes)
+                pc.schedule_standard_code = schedule_codes[0]
+                pc.reducer_standard_codes = json.dumps(reducer_codes)
+                pc.reducer_standard_code = reducer_codes[0]
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        print(f"[Warning] Failed to migrate pipe class sizes to catalog references: {e}")
     finally:
         db.close()
 

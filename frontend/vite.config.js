@@ -34,6 +34,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     include: ['src/**/*.test.{js,jsx}'],
+    setupFiles: ['src/test/setupCatalogs.js'],
     // Node 25+ ships its own (empty) localStorage global, which hides jsdom's.
     execArgv: ['--no-experimental-webstorage'],
   },

@@ -1,45 +1,63 @@
-"""F2-23: catalogue data against ASME B36.19M / B36.10M and between backend seed and bundled copy."""
-from walflow_paths import FRONTEND_SRC
+"""F2-23: seeded catalogue data against ASME B36.19M / B36.10M / DIN EN, and the example classes'
+references into it. The catalogs live only in the database (seeded from `fitting_defaults.py`)."""
 import pytest
 
 pytestmark = pytest.mark.audit("F2-23")
 
-import re
-from pathlib import Path
-
-from services.fitting_defaults import DIN_EN_10253_2_REDUCERS_DATA
+from services.fitting_defaults import DIN_EN_10253_2_REDUCERS_DATA, EXAMPLE_FITTING_STANDARDS
 from services.pipe_class_defaults import EXAMPLE_PIPE_CLASSES
+from services.pipe_class_catalog import resolve_sizes, size_errors
 
-FRONTEND = Path(FRONTEND_SRC)
+SEED_CATALOGS = {
+    s["code"]: {row["dn"]: row for row in s["dimensions"]}
+    for s in EXAMPLE_FITTING_STANDARDS if s["fitting_type"] == "pipe_schedule"
+}
+SEED_REDUCERS = {s["code"] for s in EXAMPLE_FITTING_STANDARDS if s["fitting_type"] == "reducer"}
 
 
-def _rows(sch):
+def test_example_classes_reference_seeded_catalogs():
     for cls in EXAMPLE_PIPE_CLASSES:
-        for row in cls.get("sizes", []) or []:
-            if row.get("sch") == sch:
-                yield cls.get("code"), row
+        assert size_errors(cls["sizes"], cls["schedule_standard_codes"], SEED_CATALOGS) == [], cls["code"]
+        assert set(cls["reducer_standard_codes"]) <= SEED_REDUCERS
 
 
 def test_f2_23_10s_walls_dn15_dn20_are_2_11_mm():
-    found = [(c, r) for c, r in _rows("10S") if r["dn"] in (15, 20)]
+    found = []
+    for cls in EXAMPLE_PIPE_CLASSES:
+        for r in resolve_sizes(cls["sizes"], SEED_CATALOGS):
+            if r["sch"] == "10S" and r["dn"] in (15, 20):
+                found.append(r)
     assert found, "seed classes with 10S DN15/DN20 expected"
-    for _, r in found:
+    for r in found:
         assert r["wt_mm"] == 2.11
         assert abs(r["id_mm"] - (r["od_mm"] - 2 * 2.11)) < 0.01
 
 
-def test_f2_23_bundled_standards_dn400_sch20_sch30():
-    text = (FRONTEND / "utils" / "standards_library.js").read_text(encoding="utf-8")
-    line = next(l for l in text.splitlines() if "dn: 400" in l)
-    assert '"20": 7.92' in line and '"30": 9.53' in line
+def test_s_schedule_seed_classes_use_b36_19m():
+    for cls in EXAMPLE_PIPE_CLASSES:
+        schedules = {row["sch"] for row in cls["sizes"]}
+        if schedules <= {"5S", "10S", "40S", "80S"}:
+            assert cls["schedule_standard_codes"] == ["ASME_B36_19M_SCHEDULES"], cls["code"]
 
 
-def test_f2_23_bundled_din_reducers_match_backend_seed():
-    text = (FRONTEND / "constants" / "asme_b16_9_data.js").read_text(encoding="utf-8")
-    block = text[text.index("export const DIN_EN_10253_2_REDUCERS"):]
-    pairs = re.findall(r"dn_large: (\d+),.*?dn_small: (\d+),", block.split("];")[0])
-    assert len(pairs) == len(DIN_EN_10253_2_REDUCERS_DATA) == 37
-    assert {(int(a), int(b)) for a, b in pairs} == {(r["dn_large"], r["dn_small"]) for r in DIN_EN_10253_2_REDUCERS_DATA}
+def test_f2_23_b36_10m_dn400_sch20_sch30():
+    from services.fitting_defaults import PIPE_SCHEDULES_DATA
+    dn400 = next(r for r in PIPE_SCHEDULES_DATA if r["dn"] == 400)["schedules"]
+    assert dn400["20"]["wt_mm"] == 7.92 and dn400["30"]["wt_mm"] == 9.53
+
+
+def test_b36_19m_bores_and_10s_walls():
+    from services.fitting_defaults import PIPE_SCHEDULES_B36_19M_DATA
+    for row in PIPE_SCHEDULES_B36_19M_DATA:
+        assert set(row["schedules"]) <= {"5S", "10S", "40S", "80S"}
+        for entry in row["schedules"].values():
+            assert abs(entry["id_mm"] - (row["od_mm"] - 2 * entry["wt_mm"])) < 0.006
+    by_dn = {r["dn"]: r["schedules"] for r in PIPE_SCHEDULES_B36_19M_DATA}
+    assert by_dn[15]["10S"]["wt_mm"] == by_dn[20]["10S"]["wt_mm"] == 2.11
+
+
+def test_din_reducer_seed_has_37_pairs():
+    assert len(DIN_EN_10253_2_REDUCERS_DATA) == 37
 
 
 def test_din_schedules_share_reducer_outside_diameters():
@@ -58,15 +76,3 @@ def test_din_schedule_walls_and_bores():
         assert s["ISO 1127"]["wt_mm"] < s["Normal"]["wt_mm"] < s["Heavy"]["wt_mm"]
         for entry in s.values():
             assert abs(entry["id_mm"] - (row["od_mm"] - 2 * entry["wt_mm"])) < 0.006
-
-
-def test_bundled_din_schedules_match_backend_seed():
-    from services.fitting_defaults import DIN_EN_PIPE_SCHEDULES_DATA
-    text = (FRONTEND / "constants" / "din_en_pipe_data.js").read_text(encoding="utf-8")
-    block = text[text.index("export const DIN_EN_PIPE_SCHEDULES"):].split("];")[0]
-    rows = re.findall(r"dn: (\d+),.*?od_mm: ([\d.]+),.*?Normal: \{ wt_mm: ([\d.]+),.*?Heavy: \{ wt_mm: ([\d.]+),.*?'ISO 1127': \{ wt_mm: ([\d.]+),", block)
-    bundled = {(int(dn), float(od), float(n), float(h), float(i)) for dn, od, n, h, i in rows}
-    seed = {(r["dn"], r["od_mm"], r["schedules"]["Normal"]["wt_mm"], r["schedules"]["Heavy"]["wt_mm"],
-             r["schedules"]["ISO 1127"]["wt_mm"]) for r in DIN_EN_PIPE_SCHEDULES_DATA}
-    assert len(rows) == len(DIN_EN_PIPE_SCHEDULES_DATA)
-    assert bundled == seed
