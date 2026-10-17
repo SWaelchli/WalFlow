@@ -6,7 +6,7 @@ Every new hydraulic equipment must be validated with automated unit and network 
 
 ## 1. Test File Structure
 
-Create `backend/tests/test_physics_<name>.py`.
+Create `backend/tests/unit/equipment/test_<name>.py`.
 
 ### Required Test Sections:
 1. **Calibration Point Test:** Verify equations match known baseline design points.
@@ -108,7 +108,7 @@ Execute the test suite and frontend linter:
 
 ```bash
 # 1. Run the specific component test
-pytest backend/tests/test_physics_<name>.py -v
+pytest backend/tests/unit/equipment/test_<name>.py -v
 
 # 2. Run the entire backend test suite
 pytest

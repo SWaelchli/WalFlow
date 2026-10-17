@@ -275,6 +275,12 @@ class Orifice(HydraulicNode):
         inlet = self.inlets[0]
         outlet = self.outlets[0]
 
+        # In reverse flow the fluid enters at the outlet port: the pressure drop must use its properties,
+        # not the (never populated) defaults of the inlet port.
+        if inlet.flow_rate < 0:
+            inlet.density = outlet.density
+            inlet.viscosity = outlet.viscosity
+
         # Calculate the pressure drop based on the current flow rate passing through
         dp = self.calculate_delta_p(inlet.flow_rate, inlet.density, inlet.viscosity)
 

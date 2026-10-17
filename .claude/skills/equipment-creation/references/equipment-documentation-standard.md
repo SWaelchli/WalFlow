@@ -42,7 +42,7 @@ Brief high-level description of what the equipment is, its role in a hydraulic P
 - Operating case overrides support.
 
 ## 7. Verification & Benchmarks
-- Reference test file: `backend/tests/test_physics_<name>.py`.
+- Reference test file: `backend/tests/unit/equipment/test_<name>.py`.
 - Benchmark calibration point values used in automated test assertions.
 ```
 
@@ -107,6 +107,6 @@ $$dT = \frac{|\Delta P|}{\rho \cdot C_p(T)}$$
 - **Operating Cases:** Supports node-level parameter overrides per operating scenario.
 
 ## 7. Verification & Benchmarks
-- **Test File:** `backend/tests/test_physics_calibrated_restriction.py`
+- **Test File:** `backend/tests/unit/equipment/test_calibrated_restriction.py`
 - **Benchmark:** Given $Q_0 = 10\text{ L/min}$, $P_{\text{in}} = 3.5\text{ bar}$, $P_{\text{out}} = 1.0\text{ bar}$ at $45^{\circ}\text{C}$, the solver reproduces $\Delta P = 2.5000\text{ bar} \pm 10^{-4}\text{ bar}$ and verified analytical Jacobian derivatives within $1\%$ of central finite differences.
 ```

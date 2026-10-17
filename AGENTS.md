@@ -59,6 +59,10 @@ The project has a clear process for adding new hydraulic components, which invol
 3.  Create a corresponding React component for the equipment in the frontend.
 4.  Register the new component in the frontend's `App.jsx` and `Sidebar.jsx`.
 
+### Backend Tests
+
+Run `cd backend && python -m pytest` before finishing backend work. Placement, naming, audit markers and bug-fix rules are in [TESTING.md](./TESTING.md); new equipment tests go in `backend/tests/unit/equipment/test_<name>.py`. CI blocks Docker publishing if tests, lint or build fail.
+
 ### Frontend Quality & Build Verification
 
 The frontend uses ESLint and Vite build checks. To verify code quality and ensure all routes (`/`, `/pipes`, modals) compile with valid references:

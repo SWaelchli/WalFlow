@@ -78,7 +78,7 @@ In `backend/simulation/graph_parser.py`:
    - Temperature: $^{\circ}\text{C} + 273.15 \to \text{K}$
 
 ### Step 4: Write Backend Unit & Physics Tests
-Create `backend/tests/test_physics_<name>.py`:
+Create `backend/tests/unit/equipment/test_<name>.py`:
 - Test physical equations at known calibration points.
 - Verify analytical derivatives against numerical central differences:
   $$\left|\frac{\partial \Delta P_{\text{analytical}}}{\partial Q} - \frac{\Delta P(Q+\delta) - \Delta P(Q-\delta)}{2\delta}\right| < \text{tol}$$
@@ -111,7 +111,7 @@ Update the following frontend files:
 ### Step 7: Verify Everything
 Run automated tests:
 ```bash
-pytest backend/tests/test_physics_<name>.py
+pytest backend/tests/unit/equipment/test_<name>.py
 pytest
 cd frontend && npm run lint
 ```
