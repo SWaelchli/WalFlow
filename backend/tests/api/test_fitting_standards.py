@@ -268,6 +268,73 @@ class TestFittingStandardsDatabase(unittest.TestCase):
         self.assertEqual(imp["reducer_standard_code"], "DIN_EN_10253_2_REDUCERS")
         self.client.delete(f"/api/pipe-classes/{imp['id']}", headers=headers)
 
+    def test_15_schedule_edit_recomputes_inside_diameter(self):
+        """Saved schedule rows carry ID = OD - 2 WT whatever ID the client sent, sorted by DN."""
+        headers = {"Authorization": f"Bearer {self.pipemgr_token}"}
+        res = self.client.post("/api/fitting-standards", json={
+            "code": "SCH_EDIT", "name": "Schedule edit", "fitting_type": "pipe_schedule",
+            "dimensions": [
+                {"dn": 80, "nps": "3", "od_mm": 88.9, "schedules": {"STD": {"wt_mm": 5.49, "id_mm": 1.0}}},
+                {"dn": 50, "nps": "2", "od_mm": 60.3, "schedules": {"STD": {"wt_mm": 3.91}}},
+            ]
+        }, headers=headers)
+        self.assertEqual(res.status_code, 201, res.text)
+        rows = res.json()["dimensions"]
+        self.assertEqual([r["dn"] for r in rows], [50, 80])
+        self.assertAlmostEqual(rows[0]["schedules"]["STD"]["id_mm"], 52.48, places=3)
+        self.assertAlmostEqual(rows[1]["schedules"]["STD"]["id_mm"], 77.92, places=3)
+
+        # Changing the OD moves the ID along
+        rows[0]["od_mm"] = 60.0
+        upd = self.client.put("/api/fitting-standards/SCH_EDIT", json={"dimensions": rows}, headers=headers)
+        self.assertEqual(upd.status_code, 200, upd.text)
+        self.assertAlmostEqual(upd.json()["dimensions"][0]["schedules"]["STD"]["id_mm"], 52.18, places=3)
+
+    def test_16_schedule_rows_are_validated(self):
+        headers = {"Authorization": f"Bearer {self.pipemgr_token}"}
+        base = {"code": "SCH_BAD", "name": "Bad", "fitting_type": "pipe_schedule"}
+        cases = [
+            ([{"dn": 50, "od_mm": 60.3, "schedules": {"STD": {"wt_mm": 31}}}], "less than half the OD"),
+            ([{"dn": 50, "od_mm": 60.3, "schedules": {}}, {"dn": 50, "od_mm": 60.3, "schedules": {}}], "more than once"),
+            ([{"dn": 50, "schedules": {}}], "numeric dn and od_mm"),
+            # NaN / infinity used to slip past the comparisons and crash the duplicate check (HTTP 500)
+            ([{"dn": "nan", "od_mm": 60.3, "schedules": {}}], "numeric dn and od_mm"),
+            ([{"dn": "inf", "od_mm": 60.3, "schedules": {}}], "numeric dn and od_mm"),
+            ([{"dn": 50, "od_mm": 60.3, "schedules": {"STD": {"wt_mm": "nan"}}}], "wt_mm must be a number"),
+            # A fractional DN used to be truncated silently
+            ([{"dn": 50.5, "od_mm": 60.3, "schedules": {}}], "whole number"),
+        ]
+        for dims, message in cases:
+            res = self.client.post("/api/fitting-standards", json={**base, "dimensions": dims}, headers=headers)
+            self.assertEqual(res.status_code, 400, dims)
+            self.assertIn(message, res.json()["detail"])
+
+    def test_17_reducer_edit_recomputes_cone_angle(self):
+        """Cone angle = 2 atan((OD_L - OD_S) / 2L); DN80x50, L=89: (88.9-60.3)/178 -> 18.26 deg."""
+        headers = {"Authorization": f"Bearer {self.pipemgr_token}"}
+        res = self.client.post("/api/fitting-standards", json={
+            "code": "RED_EDIT", "name": "Reducer edit", "fitting_type": "reducer",
+            "dimensions": [{"dn_large": 80, "od_large_mm": 88.9, "dn_small": 50, "od_small_mm": 60.3,
+                            "length_mm": 89, "cone_angle_deg": 99}]
+        }, headers=headers)
+        self.assertEqual(res.status_code, 201, res.text)
+        self.assertAlmostEqual(res.json()["dimensions"][0]["cone_angle_deg"], 18.26, places=2)
+
+    def test_18_reducer_rows_are_validated(self):
+        """The server enforces the same reducer rules as the editor: OD order and unique DN pairs."""
+        headers = {"Authorization": f"Bearer {self.pipemgr_token}"}
+        base = {"code": "RED_BAD", "name": "Bad", "fitting_type": "reducer"}
+        row = {"dn_large": 80, "od_large_mm": 88.9, "dn_small": 50, "od_small_mm": 60.3, "length_mm": 89}
+        cases = [
+            ([{**row, "od_large_mm": 50.0}], "od_large_mm (50) must exceed od_small_mm"),
+            ([row, dict(row)], "DN80 x DN50 listed more than once"),
+            ([{**row, "length_mm": "nan"}], "numeric dn_large, dn_small and length_mm"),
+        ]
+        for dims, message in cases:
+            res = self.client.post("/api/fitting-standards", json={**base, "dimensions": dims}, headers=headers)
+            self.assertEqual(res.status_code, 400, dims)
+            self.assertIn(message, res.json()["detail"])
+
     def test_14_restore_builtins(self):
         admin = {"Authorization": f"Bearer {self.admin_token}"}
         mgr = {"Authorization": f"Bearer {self.pipemgr_token}"}

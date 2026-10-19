@@ -9,7 +9,6 @@ import {
   PlusIcon, 
   TrashIcon, 
   CrossIcon, 
-  ExportIcon, 
   ImportIcon, 
   CrownIcon, 
   SignOutIcon, 
@@ -20,9 +19,12 @@ import {
   SpinnerIcon,
   ArrowLeftIcon,
   RulerIcon,
-  ClipboardIcon
+  ClipboardIcon,
+  CopyIcon,
+  EditIcon
 } from '../components/symbols/IconLibrary';
 import FittingStandardsTab from '../components/piping/FittingStandardsTab';
+import LibraryActions, { DetailToolbar } from '../components/piping/LibraryActions';
 import { useFittingStandards } from '../hooks/useFittingStandards';
 import {
   getScheduleStandardOptions,
@@ -56,7 +58,8 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
   const scheduleStandardOptions = getScheduleStandardOptions(useFittingStandards('pipe_schedule'));
   const reducerStandardOptions = getReducerStandardOptions(useFittingStandards('reducer'));
   const units = specUnits(isImperial);
-  const fittingTabRef = useRef(null);
+  // The fitting standards tab reports unsaved edits so tab switches can ask before discarding
+  const [isFittingDirty, setIsFittingDirty] = useState(false);
   const [pipeClasses, setPipeClasses] = useState([]);
 
   const [selectedClassId, setSelectedClassId] = useState(null);
@@ -77,6 +80,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
   const [isNewDraft, setIsNewDraft] = useState(false);
   const [formData, setFormData] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+  const hasUnsavedEdit = isEditing || isFittingDirty;
 
   // New Class Mini-Dialog state
   const [isNewClassModalOpen, setIsNewClassModalOpen] = useState(false);
@@ -715,6 +719,22 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
     }));
   };
 
+  const libraryActions = (
+    <LibraryActions
+      canManage={canManage}
+      newLabel="New pipe class"
+      onNew={handleStartNewClass}
+      onImportTr2000={handleOpenTr2000Modal}
+      onImport={() => fileInputRef.current?.click()}
+      importTitle="Import pipe classes from a JSON file"
+      onExport={handleExportLibrary}
+      exportTitle="Export all pipe classes as a JSON file"
+      onRestore={handleSeedExamples}
+      restoreTitle="Restore the example pipe classes (CS01, SS01, LT01, DX01)"
+      isRestoring={isSeedingExamples}
+    />
+  );
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', width: '100vw', height: '100vh', backgroundColor: 'var(--color-bg-canvas)', color: 'var(--color-text-primary)', overflow: 'hidden' }}>
       
@@ -774,7 +794,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
 
           <button
             onClick={async () => {
-              if (isEditing) {
+              if (hasUnsavedEdit) {
                 if (!(await confirmDiscard('return to the canvas'))) return;
               }
               onNavigateToCanvas();
@@ -804,8 +824,9 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
           }}>
             <button
               onClick={async () => {
-                if (isEditing && !(await confirmDiscard())) return;
-                setIsEditing(false);
+                if (activeTab === 'pipe_classes') return;
+                if (hasUnsavedEdit && !(await confirmDiscard('switch tabs'))) return;
+                handleCancelEdit();
                 setActiveTab('pipe_classes');
               }}
               style={{
@@ -826,8 +847,9 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
             </button>
             <button
               onClick={async () => {
-                if (isEditing && !(await confirmDiscard())) return;
-                setIsEditing(false);
+                if (activeTab === 'fitting_standards') return;
+                if (hasUnsavedEdit && !(await confirmDiscard('switch tabs'))) return;
+                handleCancelEdit();
                 setActiveTab('fitting_standards');
               }}
               style={{
@@ -851,136 +873,6 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
 
         {/* Right Side: Catalog Actions, Admin Hub, and User Profile */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {activeTab === 'pipe_classes' && (
-            <>
-              {canManage && (
-                <button
-                  onClick={handleSeedExamples}
-                  disabled={isSeedingExamples || isEditing}
-                  className="btn-secondary"
-                  style={{ height: '32px', padding: '0 10px', fontSize: 'var(--fs-xs)', fontWeight: '700' }}
-                  title="Restore the example pipe classes (CS01, SS01, LT01, DX01)"
-                >
-                  {isSeedingExamples ? 'Restoring...' : 'Restore Defaults'}
-                </button>
-              )}
-
-              <button
-                onClick={handleExportLibrary}
-                className="btn-secondary"
-                style={{ height: '32px', padding: '0 10px', fontSize: 'var(--fs-xs)', fontWeight: '700', gap: '4px' }}
-                title="Export catalog as JSON file"
-              >
-                <ExportIcon size={12} />
-                Export Library
-              </button>
-
-              {canManage && (
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isEditing}
-                  className="btn-secondary"
-                  style={{ height: '32px', padding: '0 10px', fontSize: 'var(--fs-xs)', fontWeight: '700', gap: '4px' }}
-                  title="Import pipe classes from a JSON file"
-                >
-                  <ImportIcon size={12} />
-                  Import Library
-                </button>
-              )}
-
-              {canManage && (
-                <>
-                  <button
-                    onClick={handleOpenTr2000Modal}
-                    className="btn-secondary"
-                    style={{
-                      height: '32px',
-                      padding: '0 12px',
-                      fontSize: 'var(--fs-xs)',
-                      fontWeight: '700',
-                      gap: '4px'
-                    }}
-                    title="Search and import pipe classes from Equinor TR2000"
-                  >
-                    <GlobeIcon size={12} />
-                    Import from TR2000
-                  </button>
-
-                  <button
-                    onClick={handleStartNewClass}
-                    className="btn-primary"
-                    style={{
-                      height: '32px',
-                      padding: '0 14px',
-                      borderRadius: '8px',
-                      fontSize: 'var(--fs-xs)',
-                      fontWeight: '700',
-                      gap: '6px'
-                    }}
-                  >
-                    <PlusIcon size={12} color="#FFFFFF" />
-                    New Pipe Class
-                  </button>
-                </>
-              )}
-            </>
-          )}
-
-          {activeTab === 'fitting_standards' && (
-            <>
-              {canManage && (
-                <button
-                  onClick={() => fittingTabRef.current?.seedDefaults()}
-                  className="btn-secondary"
-                  style={{ height: '32px', padding: '0 10px', fontSize: 'var(--fs-xs)', fontWeight: '700' }}
-                  title="Restore the built-in fitting catalogs (reducers and pipe schedules)"
-                >
-                  Restore Defaults
-                </button>
-              )}
-
-              <button
-                onClick={() => fittingTabRef.current?.exportLibrary()}
-                className="btn-secondary"
-                style={{ height: '32px', padding: '0 10px', fontSize: 'var(--fs-xs)', fontWeight: '700', gap: '4px' }}
-                title="Export fitting standards catalog as JSON file"
-              >
-                <ExportIcon size={12} />
-                Export Library
-              </button>
-
-              {canManage && (
-                <button
-                  onClick={() => fittingTabRef.current?.triggerImport()}
-                  className="btn-secondary"
-                  style={{ height: '32px', padding: '0 10px', fontSize: 'var(--fs-xs)', fontWeight: '700', gap: '4px' }}
-                  title="Import fitting standards from JSON file"
-                >
-                  <ImportIcon size={12} />
-                  Import Library
-                </button>
-              )}
-
-              {canManage && (
-                <button
-                  onClick={() => fittingTabRef.current?.openNewModal()}
-                  className="btn-primary"
-                  style={{
-                    height: '32px',
-                    padding: '0 14px',
-                    borderRadius: '8px',
-                    fontSize: 'var(--fs-xs)',
-                    fontWeight: '700',
-                    gap: '6px'
-                  }}
-                >
-                  <PlusIcon size={12} color="#FFFFFF" />
-                  New Fitting Standard
-                </button>
-              )}
-            </>
-          )}
-
           {isAdmin && (
             <button
               onClick={onOpenAdminHub}
@@ -1072,7 +964,7 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
 
       {/* Main Content Area: Pipe Classes Catalog vs Fitting Standards & Schedules */}
       {activeTab === 'fitting_standards' ? (
-        <FittingStandardsTab ref={fittingTabRef} currentUser={currentUser} canManage={canManage} />
+        <FittingStandardsTab currentUser={currentUser} canManage={canManage} onDirtyChange={setIsFittingDirty} />
       ) : (
 
         <div style={{ display: 'flex', flexGrow: 1, overflow: 'hidden' }}>
@@ -1235,6 +1127,39 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                 boxShadow: isEditing ? '0 0 0 3px rgba(250, 133, 7, 0.1)' : '0 1px 3px rgba(0,0,0,0.05)',
                 transition: 'border 0.2s, box-shadow 0.2s'
               }}>
+                {!isEditing && (
+                  <DetailToolbar library={libraryActions}>
+                    {canManage && (
+                      <>
+                        <button
+                          onClick={() => handleCloneClass(activeClass)}
+                          className="btn-secondary"
+                          style={{ height: '32px', padding: '0 12px', fontSize: 'var(--fs-xs)', fontWeight: '700', gap: '4px' }}
+                        >
+                          <CopyIcon size={12} />
+                          Clone / Duplicate
+                        </button>
+                        <button
+                          onClick={handleStartEdit}
+                          className="btn-secondary"
+                          style={{ height: '32px', padding: '0 12px', fontSize: 'var(--fs-xs)', fontWeight: '700', gap: '4px' }}
+                        >
+                          <EditIcon size={12} />
+                          Edit Pipe Class
+                        </button>
+                        <button aria-label="Delete class"
+                          onClick={() => handleDeleteClass(activeClass)}
+                          className="btn-danger-ghost"
+                          style={{ height: '32px', width: '32px', padding: 0, borderRadius: '6px' }}
+                          title="Delete Class"
+                        >
+                          <TrashIcon size={14} />
+                        </button>
+                      </>
+                    )}
+                  </DetailToolbar>
+                )}
+
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
                   
                   {isEditing ? (
@@ -1333,55 +1258,26 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
                     </div>
                   )}
 
-                  {/* Top-Right Action Controls */}
-                  {canManage && (
+                  {/* Save / discard while editing; view-mode actions sit in the toolbar above */}
+                  {canManage && isEditing && (
                     <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-                      {isEditing ? (
-                        <>
-                          <button
-                            type="button"
-                            onClick={handleCancelEdit}
-                            className="btn-secondary"
-                            style={{ height: '34px', padding: '0 14px', borderRadius: '8px', fontSize: 'var(--fs-sm)', fontWeight: '700' }}
-                          >
-                            Cancel / Discard
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleSaveEdit}
-                            disabled={isSaving}
-                            className="btn-primary"
-                            style={{ height: '34px', padding: '0 18px', borderRadius: '8px', fontSize: 'var(--fs-sm)', fontWeight: '700' }}
-                          >
-                            {isSaving ? 'Saving...' : 'Save Changes'}
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            onClick={() => handleCloneClass(activeClass)}
-                            className="btn-secondary"
-                            style={{ height: '32px', padding: '0 12px', borderRadius: '6px', fontSize: 'var(--fs-xs)', fontWeight: '700' }}
-                          >
-                            Clone / Duplicate
-                          </button>
-                          <button
-                            onClick={handleStartEdit}
-                            className="btn-primary"
-                            style={{ height: '32px', padding: '0 14px', borderRadius: '6px', fontSize: 'var(--fs-xs)', fontWeight: '700' }}
-                          >
-                            Edit Pipe Class
-                          </button>
-                          <button aria-label="Delete class"
-                            onClick={() => handleDeleteClass(activeClass)}
-                            className="btn-danger-ghost"
-                            style={{ height: '32px', width: '32px', padding: 0, borderRadius: '6px' }}
-                            title="Delete Class"
-                          >
-                            <TrashIcon size={14} />
-                          </button>
-                        </>
-                      )}
+                      <button
+                        type="button"
+                        onClick={handleCancelEdit}
+                        className="btn-secondary"
+                        style={{ height: '34px', padding: '0 14px', borderRadius: '8px', fontSize: 'var(--fs-sm)', fontWeight: '700' }}
+                      >
+                        Cancel / Discard
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSaveEdit}
+                        disabled={isSaving}
+                        className="btn-primary"
+                        style={{ height: '34px', padding: '0 18px', borderRadius: '8px', fontSize: 'var(--fs-sm)', fontWeight: '700' }}
+                      >
+                        {isSaving ? 'Saving...' : 'Save Changes'}
+                      </button>
                     </div>
                   )}
                 </div>
@@ -1882,8 +1778,11 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
 
             </>
           ) : (
-            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-text-secondary)' }}>
-              Select a pipe class from the left sidebar to view details.
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', padding: '40px', color: 'var(--color-text-secondary)' }}>
+              {loading ? 'Loading catalog...' : pipeClasses.length === 0
+                ? 'The pipe class library is empty. Create, import or restore pipe classes to get started.'
+                : 'Select a pipe class from the left sidebar to view details.'}
+              {!loading && libraryActions}
             </div>
           )}
         </main>

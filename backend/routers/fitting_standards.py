@@ -8,6 +8,7 @@ for standardized piping fittings (e.g., ASME B16.9 Reducers, ASME B36.10M Pipe S
 from typing import List, Optional, Dict, Any
 import json
 import logging
+import math
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
@@ -48,21 +49,102 @@ def _validate_dimensions(fitting_type: str, dimensions: Any) -> List[str]:
         if not isinstance(rec, dict):
             errors.append(f"dimensions[{i}] must be an object.")
         elif fitting_type == "reducer":
-            try:
-                dn_l = float(rec["dn_large"])
-                dn_s = float(rec["dn_small"])
-                length = float(rec["length_mm"])
-            except (KeyError, TypeError, ValueError):
-                errors.append(f"dimensions[{i}] needs numeric dn_large, dn_small and length_mm.")
-                continue
-            if dn_l <= dn_s:
-                errors.append(f"dimensions[{i}]: dn_large ({dn_l:g}) must exceed dn_small ({dn_s:g}).")
-            if length <= 0:
-                errors.append(f"dimensions[{i}]: length_mm must be positive.")
+            errors.extend(_reducer_row_errors(i, rec))
+        elif fitting_type == "pipe_schedule":
+            errors.extend(_schedule_row_errors(i, rec))
         if len(errors) >= 10:
             errors.append("further errors omitted")
             break
+    if errors:
+        return errors
+    if fitting_type == "pipe_schedule":
+        dns = [int(float(rec["dn"])) for rec in dimensions]
+        repeated = sorted({dn for dn in dns if dns.count(dn) > 1})
+        if repeated:
+            errors.append(f"DN {', '.join(str(dn) for dn in repeated)} listed more than once.")
+    elif fitting_type == "reducer":
+        pairs = [(float(rec["dn_large"]), float(rec["dn_small"])) for rec in dimensions]
+        repeated = sorted({p for p in pairs if pairs.count(p) > 1})
+        if repeated:
+            errors.append(f"{', '.join(f'DN{l:g} x DN{s:g}' for l, s in repeated)} listed more than once.")
     return errors
+
+
+def _finite(value: Any) -> Optional[float]:
+    """The value as a finite float, or None when it is missing, not numeric, NaN or infinite."""
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return number if math.isfinite(number) else None
+
+
+def _reducer_row_errors(i: int, rec: Dict[str, Any]) -> List[str]:
+    """Problems with one reducer row {dn_large, dn_small, length_mm, od_large_mm?, od_small_mm?}."""
+    dn_l, dn_s, length = (_finite(rec.get(k)) for k in ("dn_large", "dn_small", "length_mm"))
+    if dn_l is None or dn_s is None or length is None:
+        return [f"dimensions[{i}] needs numeric dn_large, dn_small and length_mm."]
+    errors = []
+    if dn_l <= dn_s:
+        errors.append(f"dimensions[{i}]: dn_large ({dn_l:g}) must exceed dn_small ({dn_s:g}).")
+    if length <= 0:
+        errors.append(f"dimensions[{i}]: length_mm must be positive.")
+    od_l, od_s = _finite(rec.get("od_large_mm")), _finite(rec.get("od_small_mm"))
+    if od_l is not None and od_s is not None and od_l <= od_s:
+        errors.append(f"dimensions[{i}]: od_large_mm ({od_l:g}) must exceed od_small_mm ({od_s:g}).")
+    return errors
+
+
+def _schedule_row_errors(i: int, rec: Dict[str, Any]) -> List[str]:
+    """Problems with one pipe schedule row {dn, nps, od_mm, schedules: {designation: {wt_mm}}}."""
+    dn, od = _finite(rec.get("dn")), _finite(rec.get("od_mm"))
+    if dn is None or od is None:
+        return [f"dimensions[{i}] needs numeric dn and od_mm."]
+    if dn <= 0 or od <= 0:
+        return [f"dimensions[{i}]: dn and od_mm must be positive."]
+    if not dn.is_integer():
+        return [f"dimensions[{i}]: dn ({dn:g}) must be a whole number."]
+    schedules = rec.get("schedules") or {}
+    if not isinstance(schedules, dict):
+        return [f"dimensions[{i}]: 'schedules' must be an object."]
+    errors = []
+    for key, wall in schedules.items():
+        wt = _finite(wall.get("wt_mm")) if isinstance(wall, dict) else None
+        if wt is None:
+            errors.append(f"DN{dn:g} {key}: wt_mm must be a number.")
+            continue
+        if wt <= 0 or 2 * wt >= od:
+            errors.append(f"DN{dn:g} {key}: wall thickness must be positive and less than half the OD ({od:g} mm).")
+    return errors
+
+
+def _normalize_dimensions(fitting_type: str, dimensions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Recomputes derived values so they always match the entered geometry:
+    schedule ID = OD - 2 WT, reducer cone angle from the two ODs and the length."""
+    if fitting_type == "pipe_schedule":
+        rows = []
+        for rec in dimensions:
+            od = float(rec["od_mm"])
+            walls = {
+                str(key): {**wall, "wt_mm": float(wall["wt_mm"]), "id_mm": round(od - 2 * float(wall["wt_mm"]), 3)}
+                for key, wall in (rec.get("schedules") or {}).items()
+            }
+            rows.append({**rec, "dn": int(float(rec["dn"])), "od_mm": od, "schedules": walls})
+        return sorted(rows, key=lambda r: r["dn"])
+    if fitting_type == "reducer":
+        rows = []
+        for rec in dimensions:
+            row = dict(rec)
+            try:
+                od_l, od_s, length = float(rec["od_large_mm"]), float(rec["od_small_mm"]), float(rec["length_mm"])
+            except (KeyError, TypeError, ValueError):
+                rows.append(row)
+                continue
+            if od_l > od_s and length > 0:
+                row["cone_angle_deg"] = round(2 * math.degrees(math.atan((od_l - od_s) / (2 * length))), 2)
+            rows.append(row)
+        return rows
+    return dimensions
 
 
 def _validate_standard_fields(code: Optional[str], fitting_type: Optional[str], dimensions: Any) -> List[str]:
@@ -108,8 +190,8 @@ def _dropped_references(db: Session, item: FittingStandard, new_type: str, new_d
     if new_dimensions is None or new_type != "pipe_schedule":
         return []
     listed = {
-        (int(r.get("dn") or 0), k.upper())
-        for r in new_dimensions if isinstance(r, dict)
+        (int(_finite(r.get("dn")) or 0), k.upper())
+        for r in new_dimensions if isinstance(r, dict) and isinstance(r.get("schedules") or {}, dict)
         for k in (r.get("schedules") or {})
     }
     errors = []
@@ -270,7 +352,7 @@ def import_fitting_standards_library(
             continue
 
         existing = db.query(FittingStandard).filter(FittingStandard.code == code).first()
-        dim_json = json.dumps(item.get("dimensions", []))
+        dim_json = json.dumps(_normalize_dimensions(fitting_type, item.get("dimensions", [])))
 
         if existing:
             if not existing.is_builtin:
@@ -386,7 +468,7 @@ def create_fitting_standard(
         subtype=payload.subtype.strip().lower() if payload.subtype else None,
         description=payload.description.strip() if payload.description else None,
         is_builtin=False,
-        dimensions_json=json.dumps(payload.dimensions)
+        dimensions_json=json.dumps(_normalize_dimensions(fitting_type_clean, payload.dimensions))
     )
     db.add(new_standard)
     db.commit()
@@ -493,7 +575,7 @@ def update_fitting_standard(
     if payload.description is not None:
         item.description = payload.description.strip()
     if payload.dimensions is not None:
-        item.dimensions_json = json.dumps(payload.dimensions)
+        item.dimensions_json = json.dumps(_normalize_dimensions(new_type, payload.dimensions))
 
     db.commit()
     db.refresh(item)

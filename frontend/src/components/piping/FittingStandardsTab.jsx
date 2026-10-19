@@ -1,23 +1,103 @@
-import React, { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
-import { confirmDialog, confirmDiscard } from '../../utils/dialogs';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { confirmDialog, confirmDiscard, askName } from '../../utils/dialogs';
 import axios from 'axios';
-import { 
-  PlusIcon, 
-  TrashIcon, 
-  CrossIcon, 
-  CopyIcon, 
+import {
+  PlusIcon,
+  TrashIcon,
+  CrossIcon,
+  CopyIcon,
   EditIcon,
   CheckCircleIcon,
   WarningIcon
 } from '../symbols/IconLibrary';
 import { useUnits } from '../../context/UnitContext';
 import { invalidateFittingStandards } from '../../hooks/useFittingStandards';
-import { orderSchedules, scheduleLabel } from '../../utils/pipe_schedules';
+import {
+  orderSchedules,
+  scheduleLabel,
+  getScheduleStandardOptions,
+  DIN_SCHEDULE_STANDARD,
+  DEFAULT_SCHEDULE_STANDARD
+} from '../../utils/pipe_schedules';
+import { coneAngleFromGeometry } from '../../utils/reducer_catalog';
+import { specUnits } from '../../utils/specUnits';
+import DraftNumberInput from '../common/DraftNumberInput';
+import LibraryActions, { DetailToolbar } from './LibraryActions';
 
 import { modalA11yRef } from '../../hooks/useModalA11y';
 import { clickableProps } from '../../utils/a11yProps';
-const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage, currentUser }, ref) {
+
+const STANDARD_GROUPS = ['ASME', 'DIN_EN', 'ISO', 'CUSTOM'];
+const GROUP_LABELS = { ASME: 'ASME', DIN_EN: 'DIN EN', ISO: 'ISO', CUSTOM: 'Custom' };
+const groupLabel = (g) => GROUP_LABELS[g] || g;
+const SUBTYPE_LABELS = { concentric: 'Concentric', eccentric: 'Eccentric', concentric_eccentric: 'Concentric & eccentric' };
+const subtypeLabel = (t) => SUBTYPE_LABELS[t] || String(t || '').replace(/_/g, ' ');
+
+/** Identifier for a catalog name: upper case, words joined by underscores (codes are what pipe classes reference). */
+const codeFromName = (name) => String(name || '').toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 50);
+
+const round = (v, decimals) => Number(Number(v).toFixed(decimals));
+const isPositive = (v) => Number.isFinite(Number(v)) && Number(v) > 0;
+
+/** Reducer row with the cone angle recomputed from the two ODs and the length (as the backend stores it). */
+const withConeAngle = (row) => {
+  const odL = Number(row.od_large_mm), odS = Number(row.od_small_mm), len = Number(row.length_mm);
+  if (!(odL > odS) || !(len > 0)) return row;
+  return { ...row, cone_angle_deg: round(coneAngleFromGeometry(odL, odS, len), 2) };
+};
+
+/** Schedule row with every wall's ID recomputed from the OD. */
+const withInsideDiameters = (row) => {
+  const od = Number(row.od_mm);
+  const schedules = Object.fromEntries(Object.entries(row.schedules || {}).map(([k, wall]) => [
+    k, { ...wall, id_mm: od > 0 ? round(od - 2 * Number(wall.wt_mm), 3) : wall.id_mm }
+  ]));
+  return { ...row, schedules };
+};
+
+/** First problem with an edited dimensions table, or null. */
+function dimensionError(type, rows) {
+  if (type === 'reducer') {
+    const seen = new Set();
+    for (const [i, r] of rows.entries()) {
+      const label = `Row ${i + 1}`;
+      if (!isPositive(r.dn_large) || !isPositive(r.dn_small)) return `${label}: enter both DN values.`;
+      if (Number(r.dn_large) <= Number(r.dn_small)) return `${label}: the large end DN must exceed the small end DN.`;
+      if (!isPositive(r.length_mm)) return `${label}: the length must be positive.`;
+      if (r.od_large_mm !== '' && r.od_small_mm !== '' && Number(r.od_large_mm) <= Number(r.od_small_mm)) {
+        return `${label}: the large end OD must exceed the small end OD.`;
+      }
+      const key = `${Number(r.dn_large)}x${Number(r.dn_small)}`;
+      if (seen.has(key)) return `DN${r.dn_large} x DN${r.dn_small} is listed more than once.`;
+      seen.add(key);
+    }
+    return null;
+  }
+  const seen = new Set();
+  for (const [i, r] of rows.entries()) {
+    if (!isPositive(r.dn) || !Number.isInteger(Number(r.dn))) return `Row ${i + 1}: enter a whole-number DN.`;
+    if (seen.has(Number(r.dn))) return `DN ${r.dn} is listed more than once.`;
+    seen.add(Number(r.dn));
+    if (!isPositive(r.od_mm)) return `DN ${r.dn}: enter the outside diameter.`;
+    for (const [sch, wall] of Object.entries(r.schedules || {})) {
+      if (!(Number(wall.wt_mm) > 0) || 2 * Number(wall.wt_mm) >= Number(r.od_mm)) {
+        return `DN ${r.dn} ${scheduleLabel(sch)}: the wall thickness must be positive and less than half the OD.`;
+      }
+    }
+  }
+  return null;
+}
+
+const thStyle = { padding: '8px 12px' };
+const cellStyle = { padding: '6px 8px' };
+const smallInput = (width) => ({ width, height: '28px', fontSize: 'var(--fs-sm)' });
+const fieldLabel = { display: 'block', fontSize: 'var(--fs-xs)', fontWeight: '700', color: 'var(--color-brand-dark)', marginBottom: '4px' };
+const toolbarBtn = { height: '32px', padding: '0 12px', fontSize: 'var(--fs-xs)', fontWeight: '700', gap: '4px' };
+
+const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUser, onDirtyChange }) {
   const { isImperial } = useUnits();
+  const units = specUnits(isImperial);
+  const isAdmin = currentUser?.role === 'admin';
 
   const [standards, setStandards] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
@@ -28,31 +108,32 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage,
   const [typeFilter, setTypeFilter] = useState('ALL'); // ALL | reducer | pipe_schedule
   const [standardFilter, setStandardFilter] = useState('ALL'); // ALL | ASME | DIN_EN | CUSTOM
 
-  // Action states
+  // Edit mode: a working copy of the standard, plus the schedule columns (a new column has no values yet)
   const [isEditing, setIsEditing] = useState(false);
   const [editFormData, setEditFormData] = useState(null);
+  const [editColumns, setEditColumns] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [editSnapshot, setEditSnapshot] = useState('');
+  const isDirty = isEditing && JSON.stringify([editFormData, editColumns]) !== editSnapshot;
 
-  // Clone Modal
+  // Clone / New dialogs: the code follows the name until it is edited by hand
   const [isCloneModalOpen, setIsCloneModalOpen] = useState(false);
-  const [cloneCode, setCloneCode] = useState('');
   const [cloneName, setCloneName] = useState('');
+  const [cloneCode, setCloneCode] = useState('');
+  const [cloneCodeTouched, setCloneCodeTouched] = useState(false);
 
-  // New Standard Modal
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
-  const [newStandardData, setNewStandardData] = useState({
-    code: '',
-    name: '',
-    standard: 'CUSTOM',
-    fitting_type: 'reducer',
-    subtype: 'concentric',
-    description: ''
-  });
+  const [newStandardData, setNewStandardData] = useState(null);
+  const [newCodeTouched, setNewCodeTouched] = useState(false);
 
   // Notification Toast state
   const [toastMessage, setToastMessage] = useState(null); // { type: 'success'|'error', text: '' }
 
   const fileInputRef = useRef(null);
+
+  // The page asks before switching tabs or leaving while this tab has unsaved edits
+  useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty, onDirtyChange]);
+  useEffect(() => () => onDirtyChange?.(false), [onDirtyChange]);
 
   const showToast = (text, type = 'success') => {
     setToastMessage({ text, type });
@@ -66,27 +147,37 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage,
     try {
       const res = await axios.get('/api/fitting-standards');
       setStandards(res.data);
-      // Canvas inspectors re-read the catalog after any create / edit / import here
-      invalidateFittingStandards();
-      if (res.data.length > 0 && !selectedId) {
-        setSelectedId(res.data[0].id);
-      }
+      setSelectedId(prev => prev ?? res.data[0]?.id ?? null);
+      return res.data;
     } catch {
       setError('Failed to fetch fitting standards and schedules catalog.');
+      return null;
     } finally {
       setLoading(false);
     }
-  }, [selectedId]);
+  }, []);
+
+  // After a create / edit / clone / delete / import / restore: canvas inspectors and the pipe class tab re-read the catalog
+  const refreshAfterChange = async () => {
+    invalidateFittingStandards();
+    return fetchStandards();
+  };
 
   useEffect(() => {
     fetchStandards();
   }, [fetchStandards]);
 
   const selectedStandard = standards.find(s => s.id === selectedId) || standards[0] || null;
-  // Schedule matrix columns: every designation the selected standard lists (e.g. STD / 40 or Normal / Heavy)
-  const scheduleColumns = selectedStandard?.fitting_type === 'pipe_schedule'
-    ? orderSchedules([...new Set((selectedStandard.dimensions || []).flatMap(row => Object.keys(row.schedules || {})))])
-    : [];
+  const shown = isEditing && editFormData ? editFormData : selectedStandard;
+  const isReducer = shown?.fitting_type === 'reducer';
+  const canEdit = (item) => !!item && canManage && (!item.is_builtin || isAdmin);
+  const scheduleOptions = getScheduleStandardOptions(standards);
+
+  // Schedule matrix columns: every designation the standard lists (e.g. STD / 40 or Normal / Heavy)
+  const columnsOf = (item) => (item?.fitting_type === 'pipe_schedule'
+    ? orderSchedules([...new Set((item.dimensions || []).flatMap(row => Object.keys(row.schedules || {})))])
+    : []);
+  const scheduleColumns = isEditing ? editColumns : columnsOf(selectedStandard);
 
   // Filtered standards for sidebar
   const filteredStandards = standards.filter(item => {
@@ -94,17 +185,22 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage,
     if (standardFilter !== 'ALL' && item.standard !== standardFilter) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      const matchCode = item.code.toLowerCase().includes(q);
-      const matchName = item.name.toLowerCase().includes(q);
-      const matchDesc = (item.description || '').toLowerCase().includes(q);
-      return matchCode || matchName || matchDesc;
+      return [item.code, item.name, item.description || ''].some(text => text.toLowerCase().includes(q));
     }
     return true;
   });
 
+  const askDiscard = async (action) => {
+    if (!isEditing) return true;
+    if (isDirty && !(await confirmDiscard(action))) return false;
+    setIsEditing(false);
+    setEditFormData(null);
+    return true;
+  };
+
   // Restore Defaults: re-adds missing built-in catalogs from the seed; admins may also reset edited built-ins
   const handleSeedDefaults = async () => {
-    const resetBuiltins = currentUser?.role === 'admin' && await confirmDialog({
+    const resetBuiltins = isAdmin && await confirmDialog({
       title: 'Restore default catalogs',
       message: 'Missing built-in catalogs are added again. Also reset edited built-in catalogs to the shipped data? Sizes that pipe classes use cannot be removed.',
       confirmLabel: 'Also reset edited',
@@ -113,8 +209,7 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage,
     try {
       const res = await axios.post('/api/fitting-standards/seed-defaults', null, { params: { restore_builtins: resetBuiltins } });
       showToast(`Default catalogs restored (${res.data.seeded_count || 0} added, ${res.data.restored_count || 0} reset).`);
-      invalidateFittingStandards();
-      fetchStandards();
+      refreshAfterChange();
     } catch (err) {
       showToast(err.response?.data?.detail || 'Failed to restore default fitting standards.', 'error');
     }
@@ -149,7 +244,7 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage,
         const payload = Array.isArray(parsed) ? parsed : [parsed];
         const res = await axios.post('/api/fitting-standards/import-library', payload);
         showToast(`Import completed! Imported: ${res.data.imported || 0}, Updated: ${res.data.updated || 0}, Skipped: ${res.data.skipped || 0}`);
-        fetchStandards();
+        refreshAfterChange();
       } catch (err) {
         showToast(`Failed to import JSON library: ${err?.response?.data?.detail || err.message}`, 'error');
       } finally {
@@ -159,25 +254,19 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage,
     reader.readAsText(file);
   };
 
-  // Expose header actions to parent via Ref
-  useImperativeHandle(ref, () => ({
-    seedDefaults: handleSeedDefaults,
-    exportLibrary: handleExportLibrary,
-    triggerImport: () => fileInputRef.current?.click(),
-    openNewModal: () => setIsNewModalOpen(true)
-  }));
-
-  // Start Clone
+  // --- Clone ---
   const handleOpenCloneModal = () => {
     if (!selectedStandard) return;
+    const name = `${selectedStandard.name} (Custom Copy)`;
+    setCloneName(name);
     setCloneCode(`${selectedStandard.code}_CUSTOM`);
-    setCloneName(`${selectedStandard.name} (Custom Copy)`);
+    setCloneCodeTouched(false);
     setIsCloneModalOpen(true);
   };
 
   const handleConfirmClone = async () => {
     if (!cloneCode.trim() || !cloneName.trim()) {
-      showToast('Please enter a valid unique code and descriptive name.', 'error');
+      showToast('Please enter a name and an identifier.', 'error');
       return;
     }
     try {
@@ -185,19 +274,26 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage,
         new_code: cloneCode.trim().toUpperCase(),
         new_name: cloneName.trim()
       });
-      showToast(`Cloned standard '${res.data.code}' created successfully.`);
+      showToast(`Created '${res.data.name}'.`);
       setIsCloneModalOpen(false);
-      await fetchStandards();
+      await refreshAfterChange();
       setSelectedId(res.data.id);
     } catch (err) {
       showToast(`Clone failed: ${err?.response?.data?.detail || err.message}`, 'error');
     }
   };
 
-  // Start Create New Standard
+  // --- New standard ---
+  const handleOpenNewModal = async () => {
+    if (!(await askDiscard('create a new standard'))) return;
+    setNewStandardData({ code: '', name: '', standard: 'CUSTOM', fitting_type: 'reducer', subtype: 'concentric', description: '' });
+    setNewCodeTouched(false);
+    setIsNewModalOpen(true);
+  };
+
   const handleCreateNewStandard = async () => {
     if (!newStandardData.code.trim() || !newStandardData.name.trim()) {
-      showToast('Please provide both standard code and name.', 'error');
+      showToast('Please enter a name and an identifier.', 'error');
       return;
     }
     try {
@@ -206,20 +302,22 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage,
         name: newStandardData.name.trim(),
         standard: newStandardData.standard,
         fitting_type: newStandardData.fitting_type,
-        subtype: newStandardData.subtype,
+        subtype: newStandardData.fitting_type === 'reducer' ? newStandardData.subtype : null,
         description: newStandardData.description,
         dimensions: []
       });
-      showToast(`Created custom standard '${res.data.code}'.`);
+      showToast(`Created '${res.data.name}'. Add its sizes and save.`);
       setIsNewModalOpen(false);
-      await fetchStandards();
+      await refreshAfterChange();
       setSelectedId(res.data.id);
+      // A new standard has no sizes yet: open it for editing straight away
+      startEdit(res.data);
     } catch (err) {
       showToast(`Creation failed: ${err?.response?.data?.detail || err.message}`, 'error');
     }
   };
 
-  // Delete Custom Standard
+  // --- Delete ---
   const handleDeleteStandard = async (item) => {
     if (item.is_builtin) {
       showToast('Built-in standard library components cannot be deleted.', 'error');
@@ -227,44 +325,60 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage,
     }
     const ok = await confirmDialog({
       title: 'Delete standard?',
-      message: `Permanently delete custom standard '${item.code}'?`,
+      message: `Permanently delete '${item.name}'?`,
       confirmLabel: 'Delete',
       danger: true,
     });
     if (!ok) return;
     try {
       await axios.delete(`/api/fitting-standards/${item.id}`);
-      showToast(`Standard '${item.code}' deleted.`);
-      await fetchStandards();
+      showToast(`'${item.name}' deleted.`);
       setSelectedId(null);
+      await refreshAfterChange();
     } catch (err) {
       showToast(`Delete failed: ${err?.response?.data?.detail || err.message}`, 'error');
     }
   };
 
-  // Start Inline Edit
-  const handleStartEdit = () => {
-    if (!selectedStandard || selectedStandard.is_builtin) return;
-    setEditFormData(JSON.parse(JSON.stringify(selectedStandard)));
+  // --- Edit ---
+  const startEdit = (item) => {
+    const copy = JSON.parse(JSON.stringify(item));
+    const columns = columnsOf(copy);
+    setEditFormData(copy);
+    setEditColumns(columns);
+    setEditSnapshot(JSON.stringify([copy, columns]));
     setIsEditing(true);
   };
 
+  const handleCancelEdit = () => { askDiscard('stop editing'); };
+
   const handleSaveEdit = async () => {
     if (!editFormData) return;
+    if (!editFormData.name.trim()) {
+      showToast('Please enter a name.', 'error');
+      return;
+    }
+    // The server recomputes the derived values (ID, cone angle); the edit handlers keep them current for the preview
+    const type = editFormData.fitting_type;
+    const rows = editFormData.dimensions;
+    const problem = dimensionError(type, rows);
+    if (problem) {
+      showToast(problem, 'error');
+      return;
+    }
     setIsSaving(true);
     try {
       const res = await axios.put(`/api/fitting-standards/${editFormData.id}`, {
-        name: editFormData.name,
+        name: editFormData.name.trim(),
         standard: editFormData.standard,
-        fitting_type: editFormData.fitting_type,
-        subtype: editFormData.subtype,
-        description: editFormData.description,
-        dimensions: editFormData.dimensions
+        subtype: type === 'reducer' ? (editFormData.subtype || 'concentric') : undefined,
+        description: editFormData.description || '',
+        dimensions: rows
       });
       showToast('Standard updated successfully.');
       setIsEditing(false);
       setEditFormData(null);
-      await fetchStandards();
+      await refreshAfterChange();
       setSelectedId(res.data.id);
     } catch (err) {
       showToast(`Save failed: ${err?.response?.data?.detail || err.message}`, 'error');
@@ -273,32 +387,132 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage,
     }
   };
 
-  // Add Reducer Dimension Row in Edit Mode
-  const handleAddReducerRow = () => {
-    if (!editFormData) return;
-    const newRow = {
-      dn_large: 50,
-      nps_large: "2",
-      od_large_mm: 60.3,
-      dn_small: 40,
-      nps_small: "1 1/2",
-      od_small_mm: 48.3,
-      length_mm: 76.0,
-      cone_angle_deg: 9.0
-    };
+  const setField = (field, value) => setEditFormData(prev => ({ ...prev, [field]: value }));
+
+  const updateRow = (idx, update) => {
     setEditFormData(prev => ({
       ...prev,
-      dimensions: [...(prev.dimensions || []), newRow]
+      dimensions: prev.dimensions.map((row, i) => (i === idx ? update(row) : row))
     }));
   };
 
   const handleRemoveDimensionRow = (idx) => {
-    if (!editFormData) return;
-    setEditFormData(prev => ({
-      ...prev,
-      dimensions: prev.dimensions.filter((_, i) => i !== idx)
+    setEditFormData(prev => ({ ...prev, dimensions: prev.dimensions.filter((_, i) => i !== idx) }));
+  };
+
+  // NPS and OD of a DN from the pipe dimension catalogs: the catalog matching the standard group first
+  const lookupPipeSize = (dn) => {
+    const preferred = editFormData?.standard === 'DIN_EN' || String(editFormData?.code || '').startsWith('DIN_EN')
+      ? DIN_SCHEDULE_STANDARD : DEFAULT_SCHEDULE_STANDARD;
+    const ordered = [...scheduleOptions].sort((a, b) => (b.code === preferred) - (a.code === preferred));
+    for (const option of ordered) {
+      const row = (option.dimensions || []).find(r => Number(r.dn) === Number(dn));
+      if (row) return { nps: row.nps, od_mm: row.od_mm };
+    }
+    return null;
+  };
+
+  // Reducer: a new DN fills NPS and OD from the pipe catalogs (both stay editable); the cone angle follows
+  const handleReducerDn = (idx, end, text) => {
+    const dn = parseInt(text, 10);
+    if (!(dn > 0)) return;
+    const size = lookupPipeSize(dn);
+    updateRow(idx, row => withConeAngle({
+      ...row,
+      [`dn_${end}`]: dn,
+      ...(size ? { [`nps_${end}`]: size.nps, [`od_${end}_mm`]: size.od_mm } : {})
     }));
   };
+
+  const handleAddReducerRow = () => {
+    setEditFormData(prev => {
+      const last = prev.dimensions[prev.dimensions.length - 1];
+      const large = lookupPipeSize(50), small = lookupPipeSize(40);
+      const row = last
+        ? { ...last }
+        : { dn_large: 50, nps_large: large?.nps ?? '2', od_large_mm: large?.od_mm ?? 60.3, dn_small: 40, nps_small: small?.nps ?? '1 1/2', od_small_mm: small?.od_mm ?? 48.3, length_mm: 76 };
+      return { ...prev, dimensions: [...prev.dimensions, withConeAngle(row)] };
+    });
+  };
+
+  // Schedules: a new size row gets the next catalog DN not yet listed, with its NPS and OD
+  const handleAddScheduleRow = () => {
+    setEditFormData(prev => {
+      // Blank or invalid DNs are ignored, so one unfinished row does not block further suggestions
+      const used = new Set(prev.dimensions.map(r => Number(r.dn)).filter(dn => dn > 0));
+      const last = Math.max(0, ...used);
+      const candidates = [...new Set(scheduleOptions.flatMap(o => (o.dimensions || []).map(r => Number(r.dn))))].sort((a, b) => a - b);
+      const dn = candidates.find(d => d > last && !used.has(d));
+      const size = dn ? lookupPipeSize(dn) : null;
+      const row = { dn: dn ?? '', nps: size?.nps ?? '', od_mm: size?.od_mm ?? '', schedules: {} };
+      return { ...prev, dimensions: [...prev.dimensions, row] };
+    });
+  };
+
+  // Schedules: a new DN fills NPS and OD from the pipe catalogs like the reducer table (both stay editable)
+  const handleScheduleDn = (idx, text) => {
+    const dn = parseInt(text, 10);
+    if (!(dn > 0)) return;
+    updateRow(idx, row => {
+      if (Number(row.dn) === dn) return row;
+      const size = lookupPipeSize(dn);
+      return withInsideDiameters({ ...row, dn, ...(size ? { nps: size.nps, od_mm: size.od_mm } : {}) });
+    });
+  };
+
+  const handleWall = (idx, sch, text) => {
+    if (String(text).trim() === '') {
+      updateRow(idx, row => {
+        const schedules = { ...(row.schedules || {}) };
+        delete schedules[sch];
+        return { ...row, schedules };
+      });
+      return;
+    }
+    const wt = units.lengthIn(text);
+    if (wt === null || wt <= 0) return;
+    updateRow(idx, row => withInsideDiameters({ ...row, schedules: { ...(row.schedules || {}), [sch]: { ...row.schedules?.[sch], wt_mm: round(wt, 3) } } }));
+  };
+
+  const handleAddScheduleColumn = async () => {
+    const name = await askName({ title: 'Add schedule', label: 'Schedule designation', placeholder: 'e.g. 80, XS, 40S, Heavy', confirmLabel: 'Add' });
+    if (!name) return;
+    const key = name.replace(/^sch\.?\s*/i, '').trim();
+    if (!key) return;
+    if (editColumns.some(c => c.toUpperCase() === key.toUpperCase())) {
+      showToast(`${scheduleLabel(key)} is already a column.`, 'error');
+      return;
+    }
+    setEditColumns(prev => [...prev, key]);
+  };
+
+  const handleRemoveScheduleColumn = (sch) => {
+    setEditColumns(prev => prev.filter(c => c !== sch));
+    setEditFormData(prev => ({
+      ...prev,
+      dimensions: prev.dimensions.map(row => {
+        const schedules = { ...(row.schedules || {}) };
+        delete schedules[sch];
+        return { ...row, schedules };
+      })
+    }));
+  };
+
+  const libraryActions = (
+    <LibraryActions
+      canManage={canManage}
+      newLabel="New fitting standard"
+      onNew={handleOpenNewModal}
+      onImport={() => fileInputRef.current?.click()}
+      importTitle="Import fitting standards from a JSON file"
+      onExport={handleExportLibrary}
+      exportTitle="Export all fitting standards and schedules as a JSON file"
+      onRestore={handleSeedDefaults}
+      restoreTitle="Restore the built-in fitting catalogs (reducers and pipe schedules)"
+    />
+  );
+
+  const dims = shown?.dimensions || [];
 
   return (
     <div style={{ display: 'flex', flexGrow: 1, overflow: 'hidden', position: 'relative' }}>
@@ -313,7 +527,7 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage,
 
       {/* Floating Toast Feedback */}
       {toastMessage && (
-        <div style={{
+        <div role="status" style={{
           position: 'absolute',
           top: '16px',
           right: '24px',
@@ -326,6 +540,7 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage,
           backgroundColor: toastMessage.type === 'error' ? '#FEF2F2' : '#F0FDF4',
           border: `1px solid ${toastMessage.type === 'error' ? '#FEE2E2' : '#DCFCE7'}`,
           boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+          maxWidth: '520px',
           animation: 'walflowFadeIn 0.2s ease-out'
         }}>
           {toastMessage.type === 'error' ? (
@@ -359,6 +574,7 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage,
             className="form-input"
             style={{ width: '100%', height: '34px', fontSize: 'var(--fs-sm)' }}
             placeholder="Search standards & schedules..."
+            aria-label="Search standards and schedules"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -373,6 +589,7 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage,
               <button
                 key={item.key}
                 onClick={() => setTypeFilter(item.key)}
+                aria-pressed={typeFilter === item.key}
                 style={{
                   flex: 1,
                   padding: '4px 6px',
@@ -392,15 +609,11 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage,
 
           {/* Standard Filter Pills */}
           <div style={{ display: 'flex', gap: '6px' }}>
-            {[
-              { key: 'ALL', label: 'All' },
-              { key: 'ASME', label: 'ASME' },
-              { key: 'DIN_EN', label: 'DIN EN' },
-              { key: 'CUSTOM', label: 'Custom' }
-            ].map(item => (
+            {['ALL', 'ASME', 'DIN_EN', 'CUSTOM'].map(key => (
               <button
-                key={item.key}
-                onClick={() => setStandardFilter(item.key)}
+                key={key}
+                onClick={() => setStandardFilter(key)}
+                aria-pressed={standardFilter === key}
                 style={{
                   flex: 1,
                   padding: '4px 6px',
@@ -408,18 +621,18 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage,
                   fontWeight: '700',
                   borderRadius: '6px',
                   border: '1px solid var(--color-border)',
-                  backgroundColor: standardFilter === item.key ? 'var(--color-brand-dark)' : 'var(--color-surface-light)',
-                  color: standardFilter === item.key ? '#FFFFFF' : 'var(--color-text-secondary)',
+                  backgroundColor: standardFilter === key ? 'var(--color-brand-dark)' : 'var(--color-surface-light)',
+                  color: standardFilter === key ? '#FFFFFF' : 'var(--color-text-secondary)',
                   cursor: 'pointer'
                 }}
               >
-                {item.label}
+                {key === 'ALL' ? 'All' : groupLabel(key)}
               </button>
             ))}
           </div>
         </div>
 
-        {/* List of Standards */}
+        {/* List of Standards: the name leads; the identifier is searchable but not shown */}
         <div style={{ flexGrow: 1, overflowY: 'auto', padding: '10px' }}>
           {error && (
             <div style={{ color: 'var(--color-danger-text)', fontSize: 'var(--fs-sm)', padding: '10px' }}>
@@ -427,7 +640,7 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage,
             </div>
           )}
 
-          {loading ? (
+          {loading && standards.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '20px', fontSize: 'var(--fs-sm)', color: 'var(--color-text-secondary)' }}>
               Loading catalog...
             </div>
@@ -437,16 +650,15 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage,
             </div>
           ) : (
             filteredStandards.map(item => {
-              const isSelected = item.id === selectedId;
+              const isSelected = item.id === selectedStandard?.id;
               const dimCount = Array.isArray(item.dimensions) ? item.dimensions.length : 0;
               return (
                 <div {...clickableProps}
                   key={item.id}
+                  title={item.code}
                   onClick={async () => {
-                    if (isEditing) {
-                      if (!(await confirmDiscard('switch'))) return;
-                      setIsEditing(false);
-                    }
+                    if (item.id === selectedStandard?.id) return;
+                    if (!(await askDiscard('switch'))) return;
                     setSelectedId(item.id);
                   }}
                   style={{
@@ -459,54 +671,30 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage,
                     transition: 'all 0.15s ease'
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', marginBottom: '4px' }}>
                     <span style={{
                       fontWeight: '800',
-                      fontSize: 'var(--fs-base)',
-                      color: isSelected ? 'var(--color-primary)' : 'var(--color-text-primary)'
+                      fontSize: 'var(--fs-sm)',
+                      lineHeight: 1.3,
+                      color: isSelected ? 'var(--color-primary-text)' : 'var(--color-text-primary)'
                     }}>
-                      {item.code}
+                      {item.name}
                     </span>
-                    <div style={{ display: 'flex', gap: '4px' }}>
-                      {item.is_builtin ? (
-                        <span style={{
-                          fontSize: 'var(--fs-xs)',
-                          fontWeight: '700',
-                          padding: '2px 6px',
-                          borderRadius: '4px',
-                          backgroundColor: '#E2E8F0',
-                          color: 'var(--color-text-secondary)'
-                        }}>
-                          BUILT-IN
-                        </span>
-                      ) : (
-                        <span style={{
-                          fontSize: 'var(--fs-xs)',
-                          fontWeight: '700',
-                          padding: '2px 6px',
-                          borderRadius: '4px',
-                          backgroundColor: 'rgba(250, 133, 7, 0.15)',
-                          color: 'var(--color-primary-text)'
-                        }}>
-                          CUSTOM
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div style={{
-                    fontSize: 'var(--fs-xs)',
-                    color: 'var(--color-text-secondary)',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    marginBottom: '4px'
-                  }}>
-                    {item.name}
+                    <span style={{
+                      flexShrink: 0,
+                      fontSize: 'var(--fs-xs)',
+                      fontWeight: '700',
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      backgroundColor: item.is_builtin ? '#E2E8F0' : 'rgba(16, 185, 129, 0.15)',
+                      color: item.is_builtin ? 'var(--color-text-secondary)' : '#059669'
+                    }}>
+                      {item.is_builtin ? 'Built-in' : 'Custom'}
+                    </span>
                   </div>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
-                    <span>{item.fitting_type === 'reducer' ? 'Reducer / Expander' : 'Pipe Schedules'}</span>
+                    <span>{item.fitting_type === 'reducer' ? 'Reducer / Expander' : 'Pipe Schedules'} • {groupLabel(item.standard)}</span>
                     <span>{dimCount} {item.fitting_type === 'reducer' ? 'sizes' : 'DN entries'}</span>
                   </div>
                 </div>
@@ -526,139 +714,176 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage,
         flexDirection: 'column',
         gap: '20px'
       }}>
-        {selectedStandard ? (
+        {shown ? (
           <>
-            {/* Card 1: Standard Header Banner */}
+            {/* Card 1: Standard Header */}
             <div style={{
               borderRadius: '12px',
               backgroundColor: '#FFFFFF',
-              border: '1px solid var(--color-border)',
+              border: isEditing ? '1.5px solid var(--color-primary)' : '1px solid var(--color-border)',
               padding: '20px 24px',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'flex-start'
+              boxShadow: isEditing ? '0 0 0 3px rgba(250, 133, 7, 0.1)' : '0 1px 3px rgba(0,0,0,0.05)',
+              transition: 'border 0.2s, box-shadow 0.2s'
             }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-                  <h2 style={{
-                    margin: 0,
-                    fontSize: 'var(--fs-2xl)',
-                    fontWeight: '800',
-                    color: 'var(--color-brand-dark)',
-                    fontFamily: 'inherit'
-                  }}>
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        className="form-input"
-                        style={{ fontSize: 'var(--fs-xl)', fontWeight: '800', height: '36px' }}
-                        value={editFormData?.name || ''}
-                        onChange={(e) => setEditFormData(prev => ({ ...prev, name: e.target.value }))}
-                      />
-                    ) : (
-                      selectedStandard.name
-                    )}
-                  </h2>
-                  <span style={{
-                    fontSize: 'var(--fs-xs)',
-                    fontWeight: '700',
-                    padding: '3px 8px',
-                    borderRadius: '6px',
-                    backgroundColor: 'var(--color-brand-dark)',
-                    color: '#FFFFFF'
-                  }}>
-                    {selectedStandard.code}
-                  </span>
-                  <span style={{
-                    fontSize: 'var(--fs-xs)',
-                    fontWeight: '600',
-                    padding: '3px 8px',
-                    borderRadius: '6px',
-                    backgroundColor: 'var(--color-surface-light)',
-                    color: 'var(--color-text-secondary)',
-                    border: '1px solid var(--color-border)'
-                  }}>
-                    {selectedStandard.standard}
-                  </span>
-                </div>
-
-                <p style={{
-                  margin: 0,
-                  fontSize: 'var(--fs-sm)',
-                  color: 'var(--color-text-secondary)',
-                  maxWidth: '700px'
-                }}>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      className="form-input"
-                      style={{ fontSize: 'var(--fs-sm)', width: '500px' }}
-                      value={editFormData?.description || ''}
-                      onChange={(e) => setEditFormData(prev => ({ ...prev, description: e.target.value }))}
-                      placeholder="Description of standard..."
-                    />
-                  ) : (
-                    selectedStandard.description || 'Standard engineering fitting dimensions table.'
-                  )}
-                </p>
-              </div>
-
-              {/* Action Buttons */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {isEditing ? (
-                  <>
-                    <button
-                      onClick={() => { setIsEditing(false); setEditFormData(null); }}
-                      className="btn-secondary"
-                      style={{ height: '32px', padding: '0 12px', fontSize: 'var(--fs-xs)', fontWeight: '700' }}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleSaveEdit}
-                      disabled={isSaving}
-                      className="btn-primary"
-                      style={{ height: '32px', padding: '0 16px', borderRadius: '8px', fontSize: 'var(--fs-xs)', fontWeight: '700' }}
-                    >
-                      {isSaving ? 'Saving...' : 'Save Changes'}
-                    </button>
-                  </>
-                ) : (
-                  <>
+              {!isEditing && (
+                <DetailToolbar library={libraryActions}>
+                  {canManage && (
                     <button
                       onClick={handleOpenCloneModal}
                       className="btn-secondary"
-                      style={{ height: '32px', padding: '0 12px', fontSize: 'var(--fs-xs)', fontWeight: '700', gap: '6px' }}
-                      title="Clone standard into an editable custom version"
+                      style={toolbarBtn}
+                      title="Clone into an editable custom version"
                     >
                       <CopyIcon size={12} />
                       Clone Standard
                     </button>
+                  )}
+                  {canEdit(selectedStandard) && (
+                    <button
+                      onClick={() => startEdit(selectedStandard)}
+                      className="btn-secondary"
+                      style={toolbarBtn}
+                    >
+                      <EditIcon size={12} />
+                      Edit Standard
+                    </button>
+                  )}
+                  {canManage && !selectedStandard.is_builtin && (
+                    <button aria-label="Delete standard"
+                      onClick={() => handleDeleteStandard(selectedStandard)}
+                      className="btn-danger-ghost"
+                      style={{ height: '32px', width: '32px', padding: 0, borderRadius: '6px' }}
+                      title="Delete standard"
+                    >
+                      <TrashIcon size={14} />
+                    </button>
+                  )}
+                </DetailToolbar>
+              )}
 
-                    {!selectedStandard.is_builtin && canManage && (
-                      <>
-                        <button
-                          onClick={handleStartEdit}
-                          className="btn-secondary"
-                          style={{ height: '32px', padding: '0 12px', fontSize: 'var(--fs-xs)', fontWeight: '700', gap: '6px' }}
+              {isEditing ? (
+                /* Editable header fields; the identifier stays fixed because pipe classes reference it */
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: '12px' }}>
+                    <div style={{ flexGrow: 1 }}>
+                      <label htmlFor="fs-name" style={fieldLabel}>Name *</label>
+                      <input
+                        id="fs-name"
+                        type="text"
+                        className="form-input"
+                        style={{ width: '100%', height: '34px', fontWeight: '700' }}
+                        value={editFormData.name}
+                        onChange={(e) => setField('name', e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="fs-group" style={fieldLabel}>Standard group</label>
+                      <select
+                        id="fs-group"
+                        className="form-select"
+                        style={{ height: '34px', fontSize: 'var(--fs-sm)' }}
+                        value={editFormData.standard}
+                        onChange={(e) => setField('standard', e.target.value)}
+                      >
+                        {[...new Set([...STANDARD_GROUPS, editFormData.standard])].map(g => (
+                          <option key={g} value={g}>{groupLabel(g)}</option>
+                        ))}
+                      </select>
+                    </div>
+                    {isReducer && (
+                      <div>
+                        <label htmlFor="fs-subtype" style={fieldLabel}>Reducer type</label>
+                        <select
+                          id="fs-subtype"
+                          className="form-select"
+                          style={{ height: '34px', fontSize: 'var(--fs-sm)' }}
+                          value={editFormData.subtype || 'concentric'}
+                          onChange={(e) => setField('subtype', e.target.value)}
                         >
-                          <EditIcon size={12} />
-                          Edit Table
-                        </button>
-                        <button
-                          onClick={() => handleDeleteStandard(selectedStandard)}
-                          className="btn-danger-ghost"
-                          style={{ height: '32px', padding: '0 12px', fontSize: 'var(--fs-xs)', fontWeight: '700', gap: '6px' }}
-                        >
-                          <TrashIcon size={12} />
-                          Delete
-                        </button>
-                      </>
+                          {[...new Set([...Object.keys(SUBTYPE_LABELS), editFormData.subtype || 'concentric'])].map(t => (
+                            <option key={t} value={t}>{subtypeLabel(t)}</option>
+                          ))}
+                        </select>
+                      </div>
                     )}
-                  </>
-                )}
-              </div>
+                    <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                      <button
+                        type="button"
+                        onClick={handleCancelEdit}
+                        className="btn-secondary"
+                        style={{ height: '34px', padding: '0 14px', borderRadius: '8px', fontSize: 'var(--fs-sm)', fontWeight: '700' }}
+                      >
+                        Cancel / Discard
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSaveEdit}
+                        disabled={isSaving}
+                        className="btn-primary"
+                        style={{ height: '34px', padding: '0 18px', borderRadius: '8px', fontSize: 'var(--fs-sm)', fontWeight: '700' }}
+                      >
+                        {isSaving ? 'Saving...' : 'Save Changes'}
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label htmlFor="fs-description" style={fieldLabel}>Description</label>
+                    <input
+                      id="fs-description"
+                      type="text"
+                      className="form-input"
+                      style={{ width: '100%', fontSize: 'var(--fs-sm)' }}
+                      value={editFormData.description || ''}
+                      onChange={(e) => setField('description', e.target.value)}
+                      placeholder="Source document, scope, notes..."
+                    />
+                  </div>
+                  <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-muted)' }}>
+                    Identifier <code title="Used by pipe classes and library files; it cannot be changed">{editFormData.code}</code>
+                    {editFormData.is_builtin && (
+                      <span style={{ marginLeft: '12px', color: 'var(--color-warning-text)', fontWeight: '600' }}>
+                        Built-in catalog: Restore defaults can reset your changes to the shipped data.
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '6px' }}>
+                    <h2 style={{ margin: 0, fontSize: 'var(--fs-2xl)', fontWeight: '800', color: 'var(--color-brand-dark)' }}>
+                      {shown.name}
+                    </h2>
+                    <span style={{
+                      fontSize: 'var(--fs-xs)',
+                      fontWeight: '600',
+                      padding: '3px 8px',
+                      borderRadius: '6px',
+                      backgroundColor: shown.is_builtin ? '#F1F5F9' : 'rgba(16, 185, 129, 0.12)',
+                      color: shown.is_builtin ? 'var(--color-text-secondary)' : '#059669',
+                      border: '1px solid var(--color-border)'
+                    }}>
+                      {shown.is_builtin ? 'Built-in' : 'Custom'}
+                    </span>
+                    <span style={{
+                      fontSize: 'var(--fs-xs)',
+                      fontWeight: '600',
+                      padding: '3px 8px',
+                      borderRadius: '6px',
+                      backgroundColor: 'var(--color-surface-light)',
+                      color: 'var(--color-text-secondary)',
+                      border: '1px solid var(--color-border)'
+                    }}>
+                      {groupLabel(shown.standard)} • {isReducer ? `Reducer${shown.subtype ? ` (${subtypeLabel(shown.subtype).toLowerCase()})` : ''}` : 'Pipe schedules'}
+                    </span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: 'var(--fs-sm)', color: 'var(--color-text-secondary)', maxWidth: '800px' }}>
+                    {shown.description || 'Standard engineering fitting dimensions table.'}
+                  </p>
+                  <div style={{ marginTop: '6px', fontSize: 'var(--fs-xs)', color: 'var(--color-text-muted)' }}>
+                    Identifier <code title="Used by pipe classes and library files">{shown.code}</code>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Card 2: Dimensional Table Card */}
@@ -672,199 +897,291 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage,
               flexDirection: 'column',
               gap: '16px'
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{
-                  margin: 0,
-                  fontSize: 'var(--fs-lg)',
-                  fontWeight: '800',
-                  color: 'var(--color-brand-dark)',
-                  fontFamily: 'inherit'
-                }}>
-                  {selectedStandard.fitting_type === 'reducer'
-                    ? `Standard reducer size combinations (${selectedStandard.name})`
-                    : `Nominal pipe dimensions & schedule matrix (${selectedStandard.name})`}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+                <h3 style={{ margin: 0, fontSize: 'var(--fs-lg)', fontWeight: '800', color: 'var(--color-brand-dark)' }}>
+                  {isReducer ? `Reducer size combinations (${dims.length})` : `Pipe dimensions & schedules (${dims.length})`}
                 </h3>
-                {isEditing && selectedStandard.fitting_type === 'reducer' && (
-                  <button
-                    onClick={handleAddReducerRow}
-                    className="btn-secondary"
-                    style={{ height: '28px', padding: '0 10px', fontSize: 'var(--fs-xs)', fontWeight: '700', gap: '4px' }}
-                  >
-                    <PlusIcon size={12} />
-                    Add Size Row
-                  </button>
+                {isEditing && (
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    {!isReducer && (
+                      <button onClick={handleAddScheduleColumn} className="btn-secondary" style={{ ...toolbarBtn, height: '28px', padding: '0 10px' }}>
+                        <PlusIcon size={12} />
+                        Add schedule
+                      </button>
+                    )}
+                    <button
+                      onClick={isReducer ? handleAddReducerRow : handleAddScheduleRow}
+                      className="btn-secondary"
+                      style={{ ...toolbarBtn, height: '28px', padding: '0 10px' }}
+                    >
+                      <PlusIcon size={12} />
+                      Add size
+                    </button>
+                  </div>
                 )}
               </div>
 
-              {selectedStandard.fitting_type === 'reducer' ? (
-                /* Reducer Dimensions Table */
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--fs-sm)' }}>
-                  <thead>
-                    <tr style={{
-                      borderBottom: '2px solid var(--color-border)',
-                      textAlign: 'left',
-                      color: 'var(--color-text-secondary)',
-                      fontSize: 'var(--fs-xs)',
-                      fontWeight: '700'
-                    }}>
-                      <th style={{ padding: '8px 12px' }}>Large End (DN)</th>
-                      <th style={{ padding: '8px 12px' }}>Large NPS</th>
-                      <th style={{ padding: '8px 12px' }}>Large OD ({isImperial ? 'in' : 'mm'})</th>
-                      <th style={{ padding: '8px 12px' }}>Small End (DN)</th>
-                      <th style={{ padding: '8px 12px' }}>Small NPS</th>
-                      <th style={{ padding: '8px 12px' }}>Small OD ({isImperial ? 'in' : 'mm'})</th>
-                      <th style={{ padding: '8px 12px' }}>Length H ({isImperial ? 'in' : 'mm'})</th>
-                      <th style={{ padding: '8px 12px' }}>Cone Angle (θ)</th>
-                      {isEditing && <th style={{ padding: '8px 12px', textAlign: 'center' }}>Action</th>}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(isEditing ? editFormData.dimensions : selectedStandard.dimensions || []).map((row, idx) => {
-                      const odLarge = isImperial ? (row.od_large_mm / 25.4).toFixed(3) : row.od_large_mm;
-                      const odSmall = isImperial ? (row.od_small_mm / 25.4).toFixed(3) : row.od_small_mm;
-                      const length = isImperial ? (row.length_mm / 25.4).toFixed(2) : row.length_mm;
+              {isEditing && (
+                <p style={{ margin: 0, fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
+                  {isReducer
+                    ? 'Entering a DN fills NPS and OD from the pipe dimension catalogs; both can be overwritten. The cone angle follows from the ODs and the length.'
+                    : 'ID is calculated as OD − 2 × wall thickness. Leave a wall thickness empty when the schedule does not exist for that size.'}
+                </p>
+              )}
 
-                      return (
-                        <tr key={idx} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                          <td style={{ padding: '8px 12px', fontWeight: '700', color: 'var(--color-text-primary)' }}>
-                            {isEditing ? (
-                              <input
-                                type="number"
-                                className="form-input"
-                                style={{ width: '60px', height: '26px' }}
-                                value={row.dn_large}
-                                onChange={(e) => {
-                                  const val = Number(e.target.value);
-                                  setEditFormData(prev => {
-                                    const dims = [...prev.dimensions];
-                                    dims[idx] = { ...dims[idx], dn_large: val };
-                                    return { ...prev, dimensions: dims };
-                                  });
+              <div style={{ overflowX: 'auto' }}>
+                {isReducer ? (
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--fs-sm)' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '2px solid var(--color-border)', textAlign: 'left', color: 'var(--color-text-secondary)', fontSize: 'var(--fs-xs)', fontWeight: '700' }}>
+                        <th style={thStyle}>Large end DN</th>
+                        <th style={thStyle}>Large NPS [in]</th>
+                        <th style={thStyle}>Large OD [{units.length}]</th>
+                        <th style={thStyle}>Small end DN</th>
+                        <th style={thStyle}>Small NPS [in]</th>
+                        <th style={thStyle}>Small OD [{units.length}]</th>
+                        <th style={thStyle}>Length H [{units.length}]</th>
+                        <th style={thStyle}>Cone angle θ</th>
+                        {isEditing && <th style={{ ...thStyle, textAlign: 'center' }}>Action</th>}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dims.map((row, idx) => {
+                        const label = `Row ${idx + 1}`;
+                        const angle = Number(row.cone_angle_deg);
+                        const npsText = (nps) => (nps ? (String(nps).toUpperCase().startsWith('DN') ? '—' : `${nps}"`) : '—');
+                        if (!isEditing) {
+                          return (
+                            <tr key={idx} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                              <td style={{ ...thStyle, fontWeight: '700' }}>DN{row.dn_large}</td>
+                              <td style={{ ...thStyle, color: 'var(--color-text-secondary)' }}>{npsText(row.nps_large)}</td>
+                              <td style={thStyle}>{units.lengthOut(row.od_large_mm)}</td>
+                              <td style={{ ...thStyle, fontWeight: '700' }}>DN{row.dn_small}</td>
+                              <td style={{ ...thStyle, color: 'var(--color-text-secondary)' }}>{npsText(row.nps_small)}</td>
+                              <td style={thStyle}>{units.lengthOut(row.od_small_mm)}</td>
+                              <td style={{ ...thStyle, fontWeight: '700', color: 'var(--color-brand-dark)' }}>{units.lengthOut(row.length_mm)}</td>
+                              <td style={{ ...thStyle, color: 'var(--color-text-secondary)' }}>{angle > 0 ? `${angle.toFixed(1)}°` : '—'}</td>
+                            </tr>
+                          );
+                        }
+                        return (
+                          <tr key={idx} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                            {['large', 'small'].map(end => (
+                              <React.Fragment key={end}>
+                                <td style={cellStyle}>
+                                  <DraftNumberInput
+                                    aria-label={`${label}: ${end} end DN`}
+                                    step="1"
+                                    min="1"
+                                    displayValue={row[`dn_${end}`]}
+                                    onCommit={(text) => handleReducerDn(idx, end, text)}
+                                    className="form-input"
+                                    style={smallInput('70px')}
+                                  />
+                                </td>
+                                <td style={cellStyle}>
+                                  <input
+                                    type="text"
+                                    aria-label={`${label}: ${end} end NPS`}
+                                    value={row[`nps_${end}`] ?? ''}
+                                    onChange={(e) => updateRow(idx, r => ({ ...r, [`nps_${end}`]: e.target.value }))}
+                                    className="form-input"
+                                    style={smallInput('64px')}
+                                  />
+                                </td>
+                                <td style={cellStyle}>
+                                  <DraftNumberInput
+                                    aria-label={`${label}: ${end} end OD`}
+                                    step="any"
+                                    min="0"
+                                    displayValue={units.lengthOut(row[`od_${end}_mm`])}
+                                    onCommit={(text) => {
+                                      const v = units.lengthIn(text);
+                                      if (v !== null && v > 0) updateRow(idx, r => withConeAngle({ ...r, [`od_${end}_mm`]: round(v, 3) }));
+                                    }}
+                                    className="form-input"
+                                    style={smallInput('80px')}
+                                  />
+                                </td>
+                              </React.Fragment>
+                            ))}
+                            <td style={cellStyle}>
+                              <DraftNumberInput
+                                aria-label={`${label}: length`}
+                                step="any"
+                                min="0"
+                                displayValue={units.lengthOut(row.length_mm)}
+                                onCommit={(text) => {
+                                  const v = units.lengthIn(text);
+                                  if (v !== null && v > 0) updateRow(idx, r => withConeAngle({ ...r, length_mm: round(v, 3) }));
                                 }}
-                              />
-                            ) : (
-                              `DN${row.dn_large}`
-                            )}
-                          </td>
-                          <td style={{ padding: '8px 12px', color: 'var(--color-text-secondary)' }}>
-                            {row.nps_large ? `${row.nps_large}"` : '-'}
-                          </td>
-                          <td style={{ padding: '8px 12px', color: 'var(--color-text-primary)' }}>{odLarge}</td>
-                          <td style={{ padding: '8px 12px', fontWeight: '700', color: 'var(--color-text-primary)' }}>
-                            {isEditing ? (
-                              <input
-                                type="number"
                                 className="form-input"
-                                style={{ width: '60px', height: '26px' }}
-                                value={row.dn_small}
-                                onChange={(e) => {
-                                  const val = Number(e.target.value);
-                                  setEditFormData(prev => {
-                                    const dims = [...prev.dimensions];
-                                    dims[idx] = { ...dims[idx], dn_small: val };
-                                    return { ...prev, dimensions: dims };
-                                  });
-                                }}
+                                style={smallInput('80px')}
                               />
-                            ) : (
-                              `DN${row.dn_small}`
-                            )}
-                          </td>
-                          <td style={{ padding: '8px 12px', color: 'var(--color-text-secondary)' }}>
-                            {row.nps_small ? `${row.nps_small}"` : '-'}
-                          </td>
-                          <td style={{ padding: '8px 12px', color: 'var(--color-text-primary)' }}>{odSmall}</td>
-                          <td style={{ padding: '8px 12px', fontWeight: '700', color: 'var(--color-brand-dark)' }}>
-                            {isEditing ? (
-                              <input
-                                type="number"
-                                className="form-input"
-                                style={{ width: '70px', height: '26px' }}
-                                value={row.length_mm}
-                                onChange={(e) => {
-                                  const val = Number(e.target.value);
-                                  setEditFormData(prev => {
-                                    const dims = [...prev.dimensions];
-                                    dims[idx] = { ...dims[idx], length_mm: val };
-                                    return { ...prev, dimensions: dims };
-                                  });
-                                }}
-                              />
-                            ) : (
-                              length
-                            )}
-                          </td>
-                          <td style={{ padding: '8px 12px', color: 'var(--color-text-secondary)' }}>
-                            {row.cone_angle_deg ? `${row.cone_angle_deg.toFixed(1)}°` : '-'}
-                          </td>
-                          {isEditing && (
-                            <td style={{ padding: '8px 12px', textAlign: 'center' }}>
-                              <button aria-label="Remove size row"
+                            </td>
+                            <td style={{ ...cellStyle, color: 'var(--color-text-secondary)', fontVariantNumeric: 'tabular-nums' }} title="Calculated from the ODs and the length">
+                              {angle > 0 ? `${angle.toFixed(1)}°` : '—'}
+                            </td>
+                            <td style={{ ...cellStyle, textAlign: 'center' }}>
+                              <button aria-label={`Remove ${label.toLowerCase()}`}
                                 onClick={() => handleRemoveDimensionRow(idx)}
                                 className="btn-danger-ghost"
-                                style={{ height: '24px', padding: '0 6px' }}
+                                style={{ height: '28px', padding: '0 8px' }}
                                 title="Remove size row"
                               >
                                 <TrashIcon size={12} />
                               </button>
                             </td>
-                          )}
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              ) : (
-                /* Pipe Schedule Matrix */
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--fs-sm)' }}>
-                  <thead>
-                    <tr style={{
-                      borderBottom: '2px solid var(--color-border)',
-                      textAlign: 'left',
-                      color: 'var(--color-text-secondary)',
-                      fontSize: 'var(--fs-xs)',
-                      fontWeight: '700'
-                    }}>
-                      <th style={{ padding: '8px 12px' }}>Nominal Size</th>
-                      <th style={{ padding: '8px 12px' }}>NPS</th>
-                      <th style={{ padding: '8px 12px' }}>OD ({isImperial ? 'in' : 'mm'})</th>
-                      {scheduleColumns.map(key => (
-                        <th key={key} style={{ padding: '8px 12px' }}>{scheduleLabel(key)} (WT / ID)</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(selectedStandard.dimensions || []).map((row, idx) => {
-                      const od = isImperial ? (row.od_mm / 25.4).toFixed(3) : row.od_mm;
-                      const schs = row.schedules || {};
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                ) : (
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--fs-sm)' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '2px solid var(--color-border)', textAlign: 'left', color: 'var(--color-text-secondary)', fontSize: 'var(--fs-xs)', fontWeight: '700' }}>
+                        <th style={thStyle}>Nominal size</th>
+                        <th style={thStyle}>NPS [in]</th>
+                        <th style={thStyle}>OD [{units.length}]</th>
+                        {scheduleColumns.map(key => (
+                          <th key={key} style={thStyle}>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
+                              {scheduleLabel(key)} {isEditing ? `WT [${units.length}]` : '(WT / ID)'}
+                              {isEditing && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveScheduleColumn(key)}
+                                  aria-label={`Remove schedule ${scheduleLabel(key)}`}
+                                  title={`Remove schedule ${scheduleLabel(key)}`}
+                                  className="btn-danger-ghost"
+                                  style={{ height: '22px', width: '22px', padding: 0 }}
+                                >
+                                  <CrossIcon size={10} />
+                                </button>
+                              )}
+                            </span>
+                          </th>
+                        ))}
+                        {isEditing && <th style={{ ...thStyle, textAlign: 'center' }}>Action</th>}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dims.map((row, idx) => {
+                        const schs = row.schedules || {};
+                        const isDnOnly = String(row.nps).toUpperCase().startsWith('DN');
+                        if (!isEditing) {
+                          return (
+                            <tr key={idx} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                              <td style={{ ...thStyle, fontWeight: '700' }}>DN {row.dn}</td>
+                              <td style={{ ...thStyle, color: 'var(--color-text-secondary)' }}>{isDnOnly || !row.nps ? '—' : `${row.nps}"`}</td>
+                              <td style={thStyle}>{units.lengthOut(row.od_mm)}</td>
+                              {scheduleColumns.map(key => {
+                                const entry = schs[key];
+                                return (
+                                  <td key={key} style={thStyle}>
+                                    {entry
+                                      ? <span>{units.lengthOut(entry.wt_mm)} / <strong>{units.lengthOut(entry.id_mm)}</strong></span>
+                                      : <span style={{ color: 'var(--color-border)' }}>—</span>}
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          );
+                        }
+                        const label = `DN ${row.dn || `row ${idx + 1}`}`;
+                        return (
+                          <tr key={idx} style={{ borderBottom: '1px solid var(--color-border)', verticalAlign: 'top' }}>
+                            <td style={cellStyle}>
+                              <DraftNumberInput
+                                aria-label={`Row ${idx + 1}: DN`}
+                                step="1"
+                                min="1"
+                                displayValue={row.dn}
+                                onCommit={(text) => handleScheduleDn(idx, text)}
+                                className="form-input"
+                                style={smallInput('72px')}
+                              />
+                            </td>
+                            <td style={cellStyle}>
+                              <input
+                                type="text"
+                                aria-label={`${label}: NPS`}
+                                value={row.nps ?? ''}
+                                onChange={(e) => updateRow(idx, r => ({ ...r, nps: e.target.value }))}
+                                className="form-input"
+                                style={smallInput('64px')}
+                              />
+                            </td>
+                            <td style={cellStyle}>
+                              <DraftNumberInput
+                                aria-label={`${label}: outside diameter`}
+                                step="any"
+                                min="0"
+                                displayValue={units.lengthOut(row.od_mm)}
+                                onCommit={(text) => {
+                                  const v = units.lengthIn(text);
+                                  if (v !== null && v > 0) updateRow(idx, r => withInsideDiameters({ ...r, od_mm: round(v, 3) }));
+                                }}
+                                className="form-input"
+                                style={smallInput('80px')}
+                              />
+                            </td>
+                            {scheduleColumns.map(key => {
+                              const entry = schs[key];
+                              const id = entry ? Number(row.od_mm) - 2 * Number(entry.wt_mm) : null;
+                              const invalid = entry && !(id > 0);
+                              return (
+                                <td key={key} style={cellStyle}>
+                                  <DraftNumberInput
+                                    aria-label={`${label}: ${scheduleLabel(key)} wall thickness`}
+                                    step="any"
+                                    min="0"
+                                    placeholder="—"
+                                    displayValue={entry ? units.lengthOut(entry.wt_mm) : ''}
+                                    onCommit={(text) => handleWall(idx, key, text)}
+                                    className="form-input"
+                                    style={{ ...smallInput('72px'), ...(invalid ? { borderColor: 'var(--color-danger)' } : {}) }}
+                                  />
+                                  {entry && (
+                                    <div style={{ fontSize: 'var(--fs-xs)', marginTop: '2px', color: invalid ? 'var(--color-danger-text)' : 'var(--color-text-secondary)', fontVariantNumeric: 'tabular-nums' }}>
+                                      {invalid ? 'WT ≥ OD/2' : <>ID <strong>{units.lengthOut(round(id, 3))}</strong></>}
+                                    </div>
+                                  )}
+                                </td>
+                              );
+                            })}
+                            <td style={{ ...cellStyle, textAlign: 'center' }}>
+                              <button aria-label={`Remove ${label}`}
+                                onClick={() => handleRemoveDimensionRow(idx)}
+                                className="btn-danger-ghost"
+                                style={{ height: '28px', padding: '0 8px' }}
+                                title="Remove size row"
+                              >
+                                <TrashIcon size={12} />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </div>
 
-                      const formatSch = (schKey) => {
-                        const entry = schs[schKey];
-                        if (!entry) return <span style={{ color: 'var(--color-border)' }}>—</span>;
-                        const wt = isImperial ? (entry.wt_mm / 25.4).toFixed(3) : entry.wt_mm.toFixed(2);
-                        const id = isImperial ? (entry.id_mm / 25.4).toFixed(3) : entry.id_mm.toFixed(2);
-                        return <span>{wt} / <strong>{id}</strong></span>;
-                      };
-
-                      return (
-                        <tr key={idx} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                          <td style={{ padding: '8px 12px', fontWeight: '700', color: 'var(--color-text-primary)' }}>DN {row.dn}</td>
-                          <td style={{ padding: '8px 12px', color: 'var(--color-text-secondary)' }}>{String(row.nps).toUpperCase().startsWith('DN') ? '—' : `${row.nps}"`}</td>
-                          <td style={{ padding: '8px 12px', color: 'var(--color-text-primary)' }}>{od}</td>
-                          {scheduleColumns.map(key => (
-                            <td key={key} style={{ padding: '8px 12px' }}>{formatSch(key)}</td>
-                          ))}
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+              {dims.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '16px', fontSize: 'var(--fs-sm)', color: 'var(--color-text-secondary)' }}>
+                  {isEditing ? 'No sizes yet. Use "Add size" to start the table.' : 'This standard has no sizes yet.'}
+                </div>
               )}
             </div>
           </>
         ) : (
-          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-text-secondary)' }}>
-            Select a fitting standard from the left sidebar to view details.
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', padding: '40px', color: 'var(--color-text-secondary)' }}>
+            {loading ? 'Loading catalog...' : standards.length === 0
+              ? 'The fitting catalog is empty. Restore the defaults, import a library or create a standard.'
+              : 'Select a fitting standard from the left sidebar to view details.'}
+            {!loading && libraryActions}
           </div>
         )}
       </main>
@@ -879,18 +1196,18 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage,
                   width: '32px',
                   height: '32px',
                   borderRadius: '8px',
-                  backgroundColor: 'rgba(250, 133, 7, 0.1)',
+                  backgroundColor: 'rgba(57, 82, 83, 0.08)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: 'var(--color-primary-text)'
+                  color: 'var(--color-brand-dark)'
                 }}>
                   <CopyIcon size={16} />
                 </div>
                 <div>
                   <h3 className="modal-title">Clone Fitting Standard</h3>
                   <p style={{ margin: 0, fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
-                    Create an editable custom copy of {selectedStandard?.code}
+                    Create an editable custom copy of {selectedStandard?.name}
                   </p>
                 </div>
               </div>
@@ -901,29 +1218,35 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage,
 
             <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: 'var(--fs-xs)', fontWeight: '700', color: 'var(--color-brand-dark)', marginBottom: '4px' }}>
-                  New standard code
-                </label>
+                <label htmlFor="clone-name" style={fieldLabel}>Name</label>
                 <input
-                  type="text"
-                  className="form-input"
-                  style={{ width: '100%' }}
-                  value={cloneCode}
-                  onChange={(e) => setCloneCode(e.target.value)}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: 'var(--fs-xs)', fontWeight: '700', color: 'var(--color-brand-dark)', marginBottom: '4px' }}>
-                  New standard name
-                </label>
-                <input
+                  id="clone-name"
                   type="text"
                   className="form-input"
                   style={{ width: '100%' }}
                   value={cloneName}
-                  onChange={(e) => setCloneName(e.target.value)}
+                  onChange={(e) => {
+                    setCloneName(e.target.value);
+                    if (!cloneCodeTouched) setCloneCode(codeFromName(e.target.value));
+                  }}
                 />
               </div>
+              <details>
+                <summary style={{ cursor: 'pointer', fontSize: 'var(--fs-xs)', fontWeight: '700', color: 'var(--color-text-secondary)' }}>
+                  Advanced: identifier <code>{cloneCode || '—'}</code>
+                </summary>
+                <div style={{ marginTop: '8px' }}>
+                  <label htmlFor="clone-code" style={fieldLabel}>Identifier (referenced by pipe classes and library files)</label>
+                  <input
+                    id="clone-code"
+                    type="text"
+                    className="form-input"
+                    style={{ width: '100%' }}
+                    value={cloneCode}
+                    onChange={(e) => { setCloneCode(e.target.value.toUpperCase()); setCloneCodeTouched(true); }}
+                  />
+                </div>
+              </details>
             </div>
 
             <div className="modal-footer">
@@ -939,7 +1262,7 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage,
       )}
 
       {/* CREATE NEW STANDARD MODAL */}
-      {isNewModalOpen && (
+      {isNewModalOpen && newStandardData && (
         <div className="modal-overlay">
           <div className="modal-container" ref={modalA11yRef} style={{ maxWidth: '480px' }}>
             <div className="modal-header">
@@ -948,18 +1271,18 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage,
                   width: '32px',
                   height: '32px',
                   borderRadius: '8px',
-                  backgroundColor: 'rgba(250, 133, 7, 0.1)',
+                  backgroundColor: 'rgba(57, 82, 83, 0.08)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: 'var(--color-primary-text)'
+                  color: 'var(--color-brand-dark)'
                 }}>
                   <PlusIcon size={16} />
                 </div>
                 <div>
-                  <h3 className="modal-title">Create Custom Fitting Standard</h3>
+                  <h3 className="modal-title">New Fitting Standard</h3>
                   <p style={{ margin: 0, fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
-                    Add a new standard catalog or schedule matrix
+                    Create an empty reducer table or pipe schedule matrix, then add its sizes
                   </p>
                 </div>
               </div>
@@ -970,35 +1293,25 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage,
 
             <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: 'var(--fs-xs)', fontWeight: '700', color: 'var(--color-brand-dark)', marginBottom: '4px' }}>
-                  Standard code (e.g. ISO_5251_REDUCERS)
-                </label>
+                <label htmlFor="new-std-name" style={fieldLabel}>Name</label>
                 <input
+                  id="new-std-name"
                   type="text"
                   className="form-input"
                   style={{ width: '100%' }}
-                  value={newStandardData.code}
-                  onChange={(e) => setNewStandardData(prev => ({ ...prev, code: e.target.value }))}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: 'var(--fs-xs)', fontWeight: '700', color: 'var(--color-brand-dark)', marginBottom: '4px' }}>
-                  Standard name
-                </label>
-                <input
-                  type="text"
-                  className="form-input"
-                  style={{ width: '100%' }}
+                  placeholder="e.g. ISO 5251 Buttweld Reducers"
                   value={newStandardData.name}
-                  onChange={(e) => setNewStandardData(prev => ({ ...prev, name: e.target.value }))}
+                  onChange={(e) => {
+                    const name = e.target.value;
+                    setNewStandardData(prev => ({ ...prev, name, code: newCodeTouched ? prev.code : codeFromName(name) }));
+                  }}
                 />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: 'var(--fs-xs)', fontWeight: '700', color: 'var(--color-brand-dark)', marginBottom: '4px' }}>
-                    Fitting type
-                  </label>
+                  <label htmlFor="new-std-type" style={fieldLabel}>Fitting type</label>
                   <select
+                    id="new-std-type"
                     className="form-select"
                     style={{ width: '100%', height: '34px' }}
                     value={newStandardData.fitting_type}
@@ -1009,23 +1322,22 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage,
                   </select>
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: 'var(--fs-xs)', fontWeight: '700', color: 'var(--color-brand-dark)', marginBottom: '4px' }}>
-                    Standard group
-                  </label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    style={{ width: '100%' }}
+                  <label htmlFor="new-std-group" style={fieldLabel}>Standard group</label>
+                  <select
+                    id="new-std-group"
+                    className="form-select"
+                    style={{ width: '100%', height: '34px' }}
                     value={newStandardData.standard}
                     onChange={(e) => setNewStandardData(prev => ({ ...prev, standard: e.target.value }))}
-                  />
+                  >
+                    {STANDARD_GROUPS.map(g => <option key={g} value={g}>{groupLabel(g)}</option>)}
+                  </select>
                 </div>
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 'var(--fs-xs)', fontWeight: '700', color: 'var(--color-brand-dark)', marginBottom: '4px' }}>
-                  Description
-                </label>
+                <label htmlFor="new-std-description" style={fieldLabel}>Description</label>
                 <input
+                  id="new-std-description"
                   type="text"
                   className="form-input"
                   style={{ width: '100%' }}
@@ -1033,6 +1345,22 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage,
                   onChange={(e) => setNewStandardData(prev => ({ ...prev, description: e.target.value }))}
                 />
               </div>
+              <details>
+                <summary style={{ cursor: 'pointer', fontSize: 'var(--fs-xs)', fontWeight: '700', color: 'var(--color-text-secondary)' }}>
+                  Advanced: identifier <code>{newStandardData.code || '—'}</code>
+                </summary>
+                <div style={{ marginTop: '8px' }}>
+                  <label htmlFor="new-std-code" style={fieldLabel}>Identifier (referenced by pipe classes and library files)</label>
+                  <input
+                    id="new-std-code"
+                    type="text"
+                    className="form-input"
+                    style={{ width: '100%' }}
+                    value={newStandardData.code}
+                    onChange={(e) => { setNewStandardData(prev => ({ ...prev, code: e.target.value.toUpperCase() })); setNewCodeTouched(true); }}
+                  />
+                </div>
+              </details>
             </div>
 
             <div className="modal-footer">
@@ -1048,6 +1376,6 @@ const FittingStandardsTab = forwardRef(function FittingStandardsTab({ canManage,
       )}
     </div>
   );
-});
+};
 
 export default FittingStandardsTab;
