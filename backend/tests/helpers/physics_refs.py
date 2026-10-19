@@ -38,16 +38,28 @@ def pipe_dp(q: float, length: float, d: float, rough: float, rho: float, mu: flo
     return darcy_friction(re, rough / d) * length / d * rho * v ** 2 / 2.0
 
 
-def pipe_flow(dp: float, length: float, d: float, rough: float, rho: float, mu: float) -> float:
-    """Flow (m³/s) that makes pipe_dp equal dp (bisection)."""
-    lo, hi = 0.0, 10.0
+def bisect_flow(total_dp, dp: float, hi: float = 10.0) -> float:
+    """Flow (m³/s) in [0, hi] at which the rising function total_dp(q) equals dp (bisection)."""
+    lo = 0.0
     for _ in range(200):
         mid = (lo + hi) / 2.0
-        if pipe_dp(mid, length, d, rough, rho, mu) < dp:
+        if total_dp(mid) < dp:
             lo = mid
         else:
             hi = mid
     return (lo + hi) / 2.0
+
+
+def reservoir_entry_dp(q: float, d: float, rho: float, k_entry: float = 0.5) -> float:
+    """Static pressure drop (Pa) where fluid leaves a reservoir into a pipe: acceleration from rest
+    plus the entrance loss, (1 + K) rho v² / 2 (Crane TP 410, sharp-edged entrance K = 0.5)."""
+    v = abs(q) / (math.pi * d ** 2 / 4.0)
+    return (1.0 + k_entry) * rho * v ** 2 / 2.0
+
+
+def reservoir_pipe_flow(dp: float, length: float, d: float, rough: float, rho: float, mu: float) -> float:
+    """Flow (m³/s) from one reservoir to another through one pipe: entry + friction equal dp (bisection)."""
+    return bisect_flow(lambda q: reservoir_entry_dp(q, d, rho) + pipe_dp(q, length, d, rough, rho, mu), dp)
 
 
 def throttling_dt(dp: float, rho: float, cp: float) -> float:

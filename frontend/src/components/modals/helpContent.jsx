@@ -77,6 +77,7 @@ export const MODEL_SECTIONS = [
     title: 'Pipe friction',
     items: [
       <>Pipe losses use the {b('Darcy-Weisbach')} equation. The friction factor comes from the Churchill (1977) correlation, which is continuous from laminar through transition to turbulent flow and uses the wall roughness of the pipe class.</>,
+      <>Tanks and pressure sources hold fluid {b('at rest')}. A pipe that the flow leaves them through also takes the entry velocity head, (1 + 0.5)·ρv²/2 (sharp-edged entrance). Flowing into a tank or source, the static pressure at the pipe end equals the reservoir pressure. Set a pressure source to a vessel or header pressure, not to a gauge reading inside a flowing line.</>,
     ],
   },
   {

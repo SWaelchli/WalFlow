@@ -1,5 +1,7 @@
 import pytest
 
+from physics_refs import reservoir_entry_dp
+
 # Add backend to path
 
 from simulation.schemas import ReactFlowGraph
@@ -47,9 +49,11 @@ def test_tap_has_no_pressure_drop_and_matches_an_unsplit_pipe():
     assert tap.inlets[0].flow_rate == pytest.approx(q_ref, rel=1e-4)
     assert tap.outlets[0].flow_rate == pytest.approx(q_ref, rel=1e-4)
     assert tap.inlets[0].pressure == pytest.approx(tap.outlets[0].pressure, abs=1.0)
-    # The tap sits halfway, so its pressure is halfway between the tank pressures (equal pipes, same flow)
+    # The tap sits halfway: equal pipes and flow split the friction evenly; the entry velocity head is
+    # taken where the fluid leaves t1, so all of it lies upstream of the tap
     p1, p2 = net.nodes["t1"].outlets[0].pressure, net.nodes["t2"].inlets[0].pressure
-    assert tap.inlets[0].pressure == pytest.approx((p1 + p2) / 2, rel=1e-3)
+    entry = reservoir_entry_dp(q_ref, 0.05, tap.inlets[0].density)
+    assert tap.inlets[0].pressure == pytest.approx(p2 + (p1 - p2 - entry) / 2, rel=1e-3)
 
 
 def test_instrument_bubble_and_its_signal_edge_do_not_enter_the_network():

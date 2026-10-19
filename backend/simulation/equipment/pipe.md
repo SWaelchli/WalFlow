@@ -6,6 +6,16 @@ A pipe connects two components and computes the friction pressure drop with Darc
 
 > Short description. The full description per the equipment documentation standard is on the ROADMAP ("Detailed Equipment Documentation").
 
+### Entry from a reservoir
+
+Tanks and pressure sources hold fluid at rest. Where the flow leaves one into the pipe, the static pressure drops by the velocity head of the acceleration from rest plus the entrance loss (Crane TP 410, sharp-edged entrance $K = 0.5$):
+
+$$\Delta P_{\text{entry}} = (1 + K)\,\frac{\rho\,v\,|v|}{2}$$
+
+The term is active only at a reservoir end that the flow leaves (inlet end for $Q > 0$, outlet end for $Q < 0$); value and slope are zero at $Q = 0$. Where the flow enters a reservoir, the kinetic energy is lost in the vessel (exit loss $K = 1$) and the static pressure at the pipe end equals the reservoir pressure, so no term is added. Only the $K$ part heats the fluid; the acceleration is reversible. The reported pipe pressure drop includes the entry term.
+
+Without it, an expander close to a reservoir would recover static pressure that was never deducted, and a short line source → expander → tank had no steady-state solution.
+
 ## Data Fields
 
 Pipe (edge) data. Field names follow the naming rule in [base_node.md](base_node.md).

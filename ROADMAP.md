@@ -125,9 +125,10 @@ u$):** cSt at the local temperature. Derived, not an ISA variable.
 
 ## 🐛 Bug Fixes & Refactoring Backlog
 
-- [ ] **🔀 Expander Solvability Near Reservoirs (Static Pressure Model)**
+- [x] **🔀 Expander Solvability Near Reservoirs (Static Pressure Model)**
   * **Problem**: With the static pressure model, only the Reducer node accounts for velocity head. An expander (e.g. DN50 → DN80) with a short pipe (< ~1.5 m) to a tank or pressure source recovers more static pressure than the system loses, so no steady-state solution exists and the solver reports non-convergence. Reducing flow (contraction) is unaffected.
   * **Fix to evaluate**: Add entry / exit losses and velocity-head handling at tanks and pressure sources (or an equivalent total-pressure formulation), then re-verify expander cases against hand calculations. Needs evaluation before implementing.
+  * **Done**: Tanks and pressure sources are reservoirs at rest. A pipe end the flow leaves a reservoir through takes (1 + K)·ρv²/2 with K = 0.5 (sharp-edged entrance); flow into a reservoir keeps static = reservoir pressure (exit loss K = 1). Verified against hand calculations for 0.1–5 m upstream pipes (`test_pipe_reservoir_entry.py`).
 
 - [x] **🔓 Public Read Access for Pipe Class Catalog**
   * **Problem**: `GET /api/pipe-classes` requires login, while the fitting standards catalog (`GET /api/fitting-standards`) does not.

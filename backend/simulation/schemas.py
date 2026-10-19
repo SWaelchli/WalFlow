@@ -144,4 +144,15 @@ class HydraulicNetwork(BaseModel):
     global_settings: Optional[GlobalSettings] = None
     active_case_id: Optional[str] = None
 
+    @model_validator(mode='after')
+    def _mark_reservoir_pipe_ends(self):
+        # Tanks and pressure sources hold fluid at rest: a pipe end on one adds the entry velocity head
+        for edge in self.edges:
+            pipe = edge.get('pipe')
+            if pipe is None or not hasattr(pipe, 'inlet_at_reservoir'):
+                continue
+            pipe.inlet_at_reservoir = getattr(self.nodes.get(edge['source']), 'is_pressure_boundary', False)
+            pipe.outlet_at_reservoir = getattr(self.nodes.get(edge['target']), 'is_pressure_boundary', False)
+        return self
+
 

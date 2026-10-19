@@ -5,7 +5,7 @@ pytestmark = pytest.mark.audit("F1-41")
 
 import pytest
 
-from physics_refs import pipe_flow, solve
+from physics_refs import reservoir_pipe_flow, solve
 from simulation.equipment.tank import Tank
 from simulation.equipment.pipe import Pipe
 from simulation.fluid_utils import FluidProperties
@@ -33,5 +33,5 @@ def test_reverse_flow_magnitude_and_temperature():
     rho_cold = FluidProperties.get_density(FLUID, t_cold)
     mu = FluidProperties.get_viscosity(FLUID, t_cold)
     dp_static = 9.81 * (rho_cold * 10.0 - rho_hot * 5.0)
-    q_ref = pipe_flow(dp_static, L, D, ROUGH, rho_cold, mu)
+    q_ref = reservoir_pipe_flow(dp_static, L, D, ROUGH, rho_cold, mu)
     assert abs(q) == pytest.approx(q_ref, rel=0.02)

@@ -114,4 +114,5 @@ All notable changes to the WälFlow project will be documented in this file.
 - **Reducers on pipe class lines**: Reducer standards are limited to the class's reducer catalogs, and each end reads its wall from the catalog of the class size.
 - **TR2000 sync**: Revision date is stored, NPS above 4" map to DN = 25 × NPS, unreadable sizes are skipped, material roughness matches whole words, and sizes matching a catalog become references (others custom rows).
 - **Naming**: "Pipe specification" / "Piping spec" is now "Pipe class" throughout the app; project allow-lists that store class codes show and toggle correctly in the sidebar.
+- **Expander next to a tank or pressure source**: Tanks and pressure sources now hold fluid at rest, so a pipe leaving one takes the entry velocity head and a short source → expander → tank line solves.
 - **Fitting standards edits**: Changing a reducer DN no longer leaves a stale OD and cone angle; saved schedule IDs and cone angles are recalculated by the server; unsaved fitting edits are no longer lost silently when switching tabs; the pipe class tab picks up catalog edits without a reload.

@@ -5,7 +5,7 @@ pytestmark = pytest.mark.audit("F1-06")
 
 import pytest
 
-from physics_refs import pipe_flow, solve
+from physics_refs import reservoir_pipe_flow, solve
 from simulation.equipment.pipe import Pipe
 from simulation.equipment.tank import Tank
 from simulation.fluid_utils import FluidProperties
@@ -34,7 +34,7 @@ def test_equal_levels_give_zero_flow(d):
 def test_small_level_difference_matches_reference(d, level_diff):
     rho = FluidProperties.get_density("water", 293.15)
     mu = FluidProperties.get_viscosity("water", 293.15)
-    q_ref = pipe_flow(rho * 9.81 * level_diff, 10.0, d, ROUGH, rho, mu) * 60000.0
+    q_ref = reservoir_pipe_flow(rho * 9.81 * level_diff, 10.0, d, ROUGH, rho, mu) * 60000.0
     assert _two_tanks(d, level_diff) == pytest.approx(q_ref, rel=0.02)
 
 
