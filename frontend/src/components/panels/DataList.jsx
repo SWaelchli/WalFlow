@@ -426,7 +426,7 @@ export default function DataList({
         const pStart = telemetry?.inlets?.[0]?.pressure ?? null;
         const pEnd = telemetry?.outlets?.[0]?.pressure ?? null;
         const flow = telemetry?.outlets?.[0]?.flow_rate ?? null;
-        const diaValue = edge.data.diameter || 0.1;
+        const diaValue = edge.data.diameter_m || 0.1;
         const area = Math.PI * Math.pow(diaValue, 2) / 4;
         return {
           ...ref, originalIndex: index, item: edge, label: edge.data.label || edge.id, displayType: 'Pipe',
@@ -434,7 +434,7 @@ export default function DataList({
           pStart: pStart != null ? pStart / 100000 : null, pEnd: pEnd != null ? pEnd / 100000 : null,
           temp: telemetry?.outlets?.[0]?.temperature ?? telemetry?.inlets?.[0]?.temperature ?? null,
           velocity: flow != null && area > 0 ? flow / area : null,
-          length: edge.data.length || 0
+          length: edge.data.length_m || 0
         };
       }
     }).filter(i => i !== null && (filterType === 'all' || i.type === filterType));
@@ -1078,7 +1078,7 @@ export default function DataList({
             {processedItems.map((entry, idx) => {
               const isNode = entry.type === 'node';
               const item = entry.item;
-              const diaValue = isNode ? (item.data.orifice_diameter || item.data.pipe_diameter || 0) : (item.data.diameter || 0);
+              const diaValue = isNode ? (item.data.orifice_diameter_m || item.data.pipe_diameter_m || 0) : (item.data.diameter_m || 0);
               // Pipes without a class reference (older files) show as Manual; display never rewrites data
               const pipeSel = isNode ? null : resolvePipeSelection(item.data, scheduleOptions);
               const scheduleStd = pipeSel?.scheduleStandard;
@@ -1132,7 +1132,7 @@ export default function DataList({
               const handleLengthCommit = (text) => {
                 const raw = parseFloat(text);
                 if (isNode || !onUpdateEdge || isNaN(raw) || raw <= 0) return; // reverts to the stored length
-                onUpdateEdge(item.id, { length: isImperial ? raw / 3.280839895 : raw });
+                onUpdateEdge(item.id, { length_m: isImperial ? raw / 3.280839895 : raw });
               };
 
               const baseBg = item.selected ? '#FFF4E5' : (idx % 2 === 0 ? '#ffffff' : '#F8FAFA');
@@ -1275,7 +1275,7 @@ export default function DataList({
                         <DraftNumberInput
                           step="0.1"
                           style={{ width: '55px', fontSize: 'var(--fs-xs)', border: '1px solid var(--color-border)', padding: '3px 6px', borderRadius: '5px', textAlign: 'right', fontWeight: '600', color: 'var(--color-brand-dark)', outline: 'none' }}
-                          displayValue={isImperial ? (item.data.length * 3.280839895).toFixed(1) : item.data.length}
+                          displayValue={isImperial ? ((item.data.length_m ?? 25) * 3.280839895).toFixed(1) : (item.data.length_m ?? 25)}
                           onCommit={handleLengthCommit}
                           onFocus={() => { handleRowClick(entry); setIsEditing(true); }}
                           onBlur={() => setIsEditing(false)}

@@ -76,9 +76,9 @@
       "data": {
         "label": "TANK_SUPPLY",
         "rotation": 0,
-        "level": 2.0,
-        "elevation": 0.0,
-        "temperature": 313.15
+        "level_m": 2.0,
+        "elevation_m": 0.0,
+        "temperature_k": 313.15
       }
     },
     {
@@ -91,9 +91,9 @@
       "data": {
         "label": "PUMP_HP_101",
         "rotation": 0,
-        "flow_rated": 120.0,
-        "motor_power": 7.5,
-        "efficiency": 85.0,
+        "flow_rated_lmin": 120.0,
+        "motor_power_kw": 7.5,
+        "efficiency_pct": 85.0,
         "sensing": {
           "outlet-0": true
         }
@@ -179,7 +179,7 @@
         "label": "RD-101 (Burst Diaphragm)",
         "rotation": 0,
         "bore_type": "reduced_bore",
-        "orifice_diameter": 0.01,
+        "orifice_diameter_m": 0.01,
         "forced_state": "auto",
         "burst_pressure_barg": 29.0
       }
@@ -218,7 +218,7 @@
       "data": {
         "label": "PROCESS_RESTRICTION",
         "rotation": 0,
-        "orifice_diameter": 0.004,
+        "orifice_diameter_m": 0.004,
         "standardDn": 50,
         "standardSch": "40"
       }
@@ -233,9 +233,9 @@
       "data": {
         "label": "TANK_RETURN",
         "rotation": 0,
-        "level": 2.0,
-        "elevation": 0.0,
-        "temperature": 313.15
+        "level_m": 2.0,
+        "elevation_m": 0.0,
+        "temperature_k": 313.15
       }
     },
     {
@@ -340,16 +340,15 @@
       "data": {
         "label": "Suction Line",
         "type": "PIPE",
-        "length": 10.0,
-        "diameter": 0.05248,
+        "length_m": 10.0,
+        "diameter_m": 0.05248,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 50,
         "standardSch": "STD",
         "outer_diameter_mm": 60.3,
         "wall_thickness_mm": 3.91,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -362,16 +361,15 @@
       "data": {
         "label": "Discharge Line",
         "type": "PIPE",
-        "length": 15.0,
-        "diameter": 0.05248,
+        "length_m": 15.0,
+        "diameter_m": 0.05248,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 50,
         "standardSch": "STD",
         "outer_diameter_mm": 60.3,
         "wall_thickness_mm": 3.91,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -384,16 +382,15 @@
       "data": {
         "label": "Process Line",
         "type": "PIPE",
-        "length": 20.0,
-        "diameter": 0.05248,
+        "length_m": 20.0,
+        "diameter_m": 0.05248,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 50,
         "standardSch": "STD",
         "outer_diameter_mm": 60.3,
         "wall_thickness_mm": 3.91,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -406,16 +403,15 @@
       "data": {
         "label": "Process Return",
         "type": "PIPE",
-        "length": 7.5,
-        "diameter": 0.05248,
+        "length_m": 7.5,
+        "diameter_m": 0.05248,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 50,
         "standardSch": "STD",
         "outer_diameter_mm": 60.3,
         "wall_thickness_mm": 3.91,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -428,16 +424,15 @@
       "data": {
         "label": "Process Return",
         "type": "PIPE",
-        "length": 7.5,
-        "diameter": 0.05248,
+        "length_m": 7.5,
+        "diameter_m": 0.05248,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 50,
         "standardSch": "STD",
         "outer_diameter_mm": 60.3,
         "wall_thickness_mm": 3.91,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -450,16 +445,15 @@
       "data": {
         "label": "Relief Header 1",
         "type": "PIPE",
-        "length": 10.0,
-        "diameter": 0.05248,
+        "length_m": 10.0,
+        "diameter_m": 0.05248,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 50,
         "standardSch": "STD",
         "outer_diameter_mm": 60.3,
         "wall_thickness_mm": 3.91,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -472,16 +466,15 @@
       "data": {
         "label": "PSV-101 Inlet",
         "type": "PIPE",
-        "length": 5.0,
-        "diameter": 0.05248,
+        "length_m": 5.0,
+        "diameter_m": 0.05248,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 50,
         "standardSch": "STD",
         "outer_diameter_mm": 60.3,
         "wall_thickness_mm": 3.91,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -494,16 +487,15 @@
       "data": {
         "label": "Relief Header 2",
         "type": "PIPE",
-        "length": 10.0,
-        "diameter": 0.05248,
+        "length_m": 10.0,
+        "diameter_m": 0.05248,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 50,
         "standardSch": "STD",
         "outer_diameter_mm": 60.3,
         "wall_thickness_mm": 3.91,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -516,16 +508,15 @@
       "data": {
         "label": "PSV-102 Inlet",
         "type": "PIPE",
-        "length": 5.0,
-        "diameter": 0.05248,
+        "length_m": 5.0,
+        "diameter_m": 0.05248,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 50,
         "standardSch": "STD",
         "outer_diameter_mm": 60.3,
         "wall_thickness_mm": 3.91,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -538,16 +529,15 @@
       "data": {
         "label": "RD-101 Inlet",
         "type": "PIPE",
-        "length": 5.0,
-        "diameter": 0.05248,
+        "length_m": 5.0,
+        "diameter_m": 0.05248,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 50,
         "standardSch": "STD",
         "outer_diameter_mm": 60.3,
         "wall_thickness_mm": 3.91,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -560,16 +550,15 @@
       "data": {
         "label": "RD-101 Relief Line",
         "type": "PIPE",
-        "length": 15.0,
-        "diameter": 0.05248,
+        "length_m": 15.0,
+        "diameter_m": 0.05248,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 50,
         "standardSch": "STD",
         "outer_diameter_mm": 60.3,
         "wall_thickness_mm": 3.91,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -582,16 +571,15 @@
       "data": {
         "label": "PSV-102 Relief Line",
         "type": "PIPE",
-        "length": 15.0,
-        "diameter": 0.05248,
+        "length_m": 15.0,
+        "diameter_m": 0.05248,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 50,
         "standardSch": "STD",
         "outer_diameter_mm": 60.3,
         "wall_thickness_mm": 3.91,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -604,16 +592,15 @@
       "data": {
         "label": "PSV-101 Relief Line",
         "type": "PIPE",
-        "length": 15.0,
-        "diameter": 0.05248,
+        "length_m": 15.0,
+        "diameter_m": 0.05248,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 50,
         "standardSch": "STD",
         "outer_diameter_mm": 60.3,
         "wall_thickness_mm": 3.91,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -626,16 +613,15 @@
       "data": {
         "label": "Relief Return Header",
         "type": "PIPE",
-        "length": 10.0,
-        "diameter": 0.05248,
+        "length_m": 10.0,
+        "diameter_m": 0.05248,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 50,
         "standardSch": "STD",
         "outer_diameter_mm": 60.3,
         "wall_thickness_mm": 3.91,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -648,16 +634,15 @@
       "data": {
         "label": "Common Relief Discharge",
         "type": "PIPE",
-        "length": 10.0,
-        "diameter": 0.05248,
+        "length_m": 10.0,
+        "diameter_m": 0.05248,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 50,
         "standardSch": "STD",
         "outer_diameter_mm": 60.3,
         "wall_thickness_mm": 3.91,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -670,16 +655,15 @@
       "data": {
         "label": "Common Relief Discharge",
         "type": "PIPE",
-        "length": 10.0,
-        "diameter": 0.05248,
+        "length_m": 10.0,
+        "diameter_m": 0.05248,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 50,
         "standardSch": "STD",
         "outer_diameter_mm": 60.3,
         "wall_thickness_mm": 3.91,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -692,16 +676,15 @@
       "data": {
         "label": "Common Return",
         "type": "PIPE",
-        "length": 1,
-        "diameter": 0.06268,
+        "length_m": 1,
+        "diameter_m": 0.06268,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 65,
         "standardSch": "STD",
         "outer_diameter_mm": 73.0,
         "wall_thickness_mm": 5.16,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {

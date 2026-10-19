@@ -25,6 +25,7 @@ import {
   scheduleLabel,
   classReducerCodes
 } from '../../utils/pipe_schedules';
+import { mToIn } from '../../utils/converters';
 
 /**
  * Inspector fields of a reducer / expander (standard, sizes, geometry). `ctx` carries the helpers of the
@@ -33,7 +34,7 @@ import {
 export default function ReducerSetup({ ctx }) {
   const {
     allEdges, availablePipeClasses, effectiveData, handleDraftChange, id, isImperial, localDrafts, onUpdate,
-    reducerNotice, reducerStandards, scheduleStandards, renderLabel, setReducerNotice, validateAndCommit,
+    reducerNotice, reducerStandards, scheduleStandards, renderLabel, setReducerNotice, smallLengthToM, validateAndCommit,
   } = ctx;
   return (() => {
             const isCustom = effectiveData.standard === CUSTOM_REDUCER_STANDARD;
@@ -64,8 +65,8 @@ export default function ReducerSetup({ ctx }) {
 
             const pipeInletDn = Number(connectedInletEdge?.data?.standardDn) || null;
             const pipeOutletDn = Number(connectedOutletEdge?.data?.standardDn) || null;
-            const pipeInletDiameterM = connectedInletEdge?.data?.diameter;
-            const pipeOutletDiameterM = connectedOutletEdge?.data?.diameter;
+            const pipeInletDiameterM = connectedInletEdge?.data?.diameter_m;
+            const pipeOutletDiameterM = connectedOutletEdge?.data?.diameter_m;
 
             // Large end sits on the inlet when reducing, on the outlet when expanding
             const largeClass = isExpanding ? outletClass : inletClass;
@@ -81,12 +82,12 @@ export default function ReducerSetup({ ctx }) {
             const smallSchFromClass = !!(smallBore && smallClass && smallBore.source === smallClass.code);
 
             const activeEntry = findReducerEntry(dataset, dnLarge, dnSmall);
-            const lengthMm = Number(effectiveData.length_mm || (effectiveData.length ? effectiveData.length * 1000 : 89.0));
+            const lengthMm = Number(effectiveData.length_m || 0.089) * 1000;
             const coneAngleDeg = Number(effectiveData.cone_angle_deg || 18.2);
 
             // The bores the solver actually uses
-            const dInMeters = Number(effectiveData.diameter_in || 0.07792);
-            const dOutMeters = Number(effectiveData.diameter_out || 0.05248);
+            const dInMeters = Number(effectiveData.diameter_in_m || 0.07792);
+            const dOutMeters = Number(effectiveData.diameter_out_m || 0.05248);
 
             const hasInletMismatch = pipeInletDiameterM && Math.abs(pipeInletDiameterM - dInMeters) > 0.0015;
             const hasOutletMismatch = pipeOutletDiameterM && Math.abs(pipeOutletDiameterM - dOutMeters) > 0.0015;
@@ -128,11 +129,10 @@ export default function ReducerSetup({ ctx }) {
                 sch_large: lBore.sch,
                 sch_small: sBore.sch,
                 orientation: expanding ? 'expanding' : 'reducing',
-                length: newLengthMm / 1000.0,
-                length_mm: newLengthMm,
+                length_m: newLengthMm / 1000.0,
                 cone_angle_deg: Number(newCone.toFixed(2)),
-                diameter_in: (expanding ? sBore.id_mm : lBore.id_mm) / 1000.0,
-                diameter_out: (expanding ? lBore.id_mm : sBore.id_mm) / 1000.0,
+                diameter_in_m: (expanding ? sBore.id_mm : lBore.id_mm) / 1000.0,
+                diameter_out_m: (expanding ? lBore.id_mm : sBore.id_mm) / 1000.0,
               });
 
               if (entry) {
@@ -503,52 +503,52 @@ export default function ReducerSetup({ ctx }) {
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
                         <span>Inlet ID (D₁):</span>
-                        <strong>{isImperial ? `${(dInMeters * 39.3701).toFixed(3)} in` : `${(dInMeters * 1000).toFixed(2)} mm`}</strong>
+                        <strong>{isImperial ? `${mToIn(dInMeters)} in` : `${(dInMeters * 1000).toFixed(2)} mm`}</strong>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                         <span>Outlet ID (D₂):</span>
-                        <strong>{isImperial ? `${(dOutMeters * 39.3701).toFixed(3)} in` : `${(dOutMeters * 1000).toFixed(2)} mm`}</strong>
+                        <strong>{isImperial ? `${mToIn(dOutMeters)} in` : `${(dOutMeters * 1000).toFixed(2)} mm`}</strong>
                       </div>
                     </div>
                   </>
                 ) : (
                   <>
                     <div>
-                      {renderLabel(`Inlet Diameter (${isImperial ? 'in' : 'mm'})`, 'diameter_in')}
+                      {renderLabel(`Inlet Diameter (${isImperial ? 'in' : 'mm'})`, 'diameter_in_m')}
                       <input
                         type="number"
                         step="0.1"
                         className="form-input"
                         style={{ width: '100%' }}
-                        value={localDrafts.diameter_in !== undefined ? localDrafts.diameter_in : (isImperial ? (Number(effectiveData.diameter_in || 0.07792) * 39.3701).toFixed(3) : (Number(effectiveData.diameter_in || 0.07792) * 1000).toFixed(2))}
-                        onChange={(e) => handleDraftChange('diameter_in', e.target.value)}
-                        onBlur={(e) => validateAndCommit('diameter_in', isImperial ? (Number(e.target.value) / 39.3701) : (Number(e.target.value) / 1000.0))}
+                        value={localDrafts.diameter_in_m !== undefined ? localDrafts.diameter_in_m : (isImperial ? mToIn(effectiveData.diameter_in_m || 0.07792) : (Number(effectiveData.diameter_in_m || 0.07792) * 1000).toFixed(2))}
+                        onChange={(e) => handleDraftChange('diameter_in_m', e.target.value)}
+                        onBlur={(e) => validateAndCommit('diameter_in_m', e.target.value, true, { toSi: smallLengthToM })}
                       />
                     </div>
 
                     <div>
-                      {renderLabel(`Outlet Diameter (${isImperial ? 'in' : 'mm'})`, 'diameter_out')}
+                      {renderLabel(`Outlet Diameter (${isImperial ? 'in' : 'mm'})`, 'diameter_out_m')}
                       <input
                         type="number"
                         step="0.1"
                         className="form-input"
                         style={{ width: '100%' }}
-                        value={localDrafts.diameter_out !== undefined ? localDrafts.diameter_out : (isImperial ? (Number(effectiveData.diameter_out || 0.05248) * 39.3701).toFixed(3) : (Number(effectiveData.diameter_out || 0.05248) * 1000).toFixed(2))}
-                        onChange={(e) => handleDraftChange('diameter_out', e.target.value)}
-                        onBlur={(e) => validateAndCommit('diameter_out', isImperial ? (Number(e.target.value) / 39.3701) : (Number(e.target.value) / 1000.0))}
+                        value={localDrafts.diameter_out_m !== undefined ? localDrafts.diameter_out_m : (isImperial ? mToIn(effectiveData.diameter_out_m || 0.05248) : (Number(effectiveData.diameter_out_m || 0.05248) * 1000).toFixed(2))}
+                        onChange={(e) => handleDraftChange('diameter_out_m', e.target.value)}
+                        onBlur={(e) => validateAndCommit('diameter_out_m', e.target.value, true, { toSi: smallLengthToM })}
                       />
                     </div>
 
                     <div>
-                      {renderLabel(`Transition Length (${isImperial ? 'in' : 'mm'})`, 'length')}
+                      {renderLabel(`Transition Length (${isImperial ? 'in' : 'mm'})`, 'length_m')}
                       <input
                         type="number"
                         step="1.0"
                         className="form-input"
                         style={{ width: '100%' }}
-                        value={localDrafts.length !== undefined ? localDrafts.length : (isImperial ? (Number(effectiveData.length || 0.089) * 39.3701).toFixed(2) : (Number(effectiveData.length || 0.089) * 1000).toFixed(1))}
-                        onChange={(e) => handleDraftChange('length', e.target.value)}
-                        onBlur={(e) => validateAndCommit('length', isImperial ? (Number(e.target.value) / 39.3701) : (Number(e.target.value) / 1000.0))}
+                        value={localDrafts.length_m !== undefined ? localDrafts.length_m : (isImperial ? mToIn(effectiveData.length_m || 0.089, 2) : (Number(effectiveData.length_m || 0.089) * 1000).toFixed(1))}
+                        onChange={(e) => handleDraftChange('length_m', e.target.value)}
+                        onBlur={(e) => validateAndCommit('length_m', e.target.value, true, { toSi: smallLengthToM })}
                       />
                     </div>
 

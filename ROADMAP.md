@@ -163,10 +163,16 @@ u$):** cSt at the local temperature. Derived, not an ISA variable.
   * **Problem**: The pressure of a branch with no flow behind a closed pump or relief device is not defined by the equations. It differs between solver methods (Newton vs LM) and previous runs.
   * **Fix to evaluate**: Define it explicitly (for example equal to the upstream connection) and mark such ports as "stagnant" in telemetry.
 
-- [ ] **🏷️ Unit-Consistent Node Data Field Names (Format Break)**
+- [x] **🏷️ Unit-Consistent Node Data Field Names (Format Break)**
   * **Problem**: Node `data` mixes units and naming (`set_pressure` in Pa vs `set_pressure_bar` / `source_pressure_bara` in bar, `flow_rated` vs `flow_rated_lmin`, tank `temperature` in K vs `set_temperature_c` in °C, `orifice_diameter` in m). Audit F1-20. B5 only documents the fields and tests the parser against that table; no renaming.
   * **Fix**: Rename to one convention (unit suffix on every dimensional field, e.g. `_pa`, `_bar`, `_lmin`, `_c`, `_m`), together with one `migrateDiagram` step for old files. Do it in the same release as the next unavoidable format break (at the latest the 1.0 format bump), not on its own, so users migrate only once.
   * **Benefit**: no silent unit mistakes when adding equipment, simpler parser and inspectors, one converter path.
+  * **Done**: Values keep their unit, only the names change (pipe `roughness` in m becomes `roughness_mm`). The file format stays 0.2; 0.2 was not released yet, so files with the old names are not converted. The field tables moved from `docs/node-fields.md` to the `## Data Fields` section of each `backend/simulation/equipment/<type>.md`.
+
+- [ ] **📚 Detailed Equipment Documentation**
+  * **Problem**: 16 of the equipment documents in `backend/simulation/equipment/` (tank, pumps, control valves, regulator, calibrated restriction, heat exchanger, filter, 3-way TCV, check valves, PSV, rupture disc, splitter, mixer, pipe, base node) are short stubs with an overview and the Data Fields table only.
+  * **Fix**: Complete each one per `.claude/skills/equipment-creation/references/equipment-documentation-standard.md` (governing standards, equations and derivatives, thermal balance, parameter table, model boundaries, verification benchmarks), as done for orifice, reducer, pressure source, flow source and measurement tap.
+  * **Benefit**: the physics behind every component is traceable for developers and engineering users.
 
 - [ ] **⚛️ Upgrade reactflow 11 to @xyflow/react 12**
   * **Problem**: `reactflow` 11 is the legacy package with a peer range of React 17/18, but the app runs on React 19. Audit F2-28.

@@ -22,15 +22,15 @@ def test_heat_exchanger_dp_is_odd_in_flow():
 def _graph(node_type, node_data=None, edge_data=None):
     return ReactFlowGraph(**{
         "nodes": [
-            {"id": "t1", "type": "tank", "position": {"x": 0, "y": 0}, "data": {"label": "T1", "level": 1.0}},
+            {"id": "t1", "type": "tank", "position": {"x": 0, "y": 0}, "data": {"label": "T1", "level_m": 1.0}},
             {"id": "n1", "type": node_type, "position": {"x": 1, "y": 0}, "data": {"label": "N1", **(node_data or {})}},
-            {"id": "t2", "type": "tank", "position": {"x": 2, "y": 0}, "data": {"label": "T2", "level": 1.0}},
+            {"id": "t2", "type": "tank", "position": {"x": 2, "y": 0}, "data": {"label": "T2", "level_m": 1.0}},
         ],
         "edges": [
             {"id": "e1", "source": "t1", "target": "n1", "sourceHandle": "outlet-0", "targetHandle": "inlet-0",
-             "data": {"length": 1.0, "diameter": 0.05, **(edge_data or {})}},
+             "data": {"length_m": 1.0, "diameter_m": 0.05, **(edge_data or {})}},
             {"id": "e2", "source": "n1", "target": "t2", "sourceHandle": "outlet-0", "targetHandle": "inlet-0",
-             "data": {"length": 1.0, "diameter": 0.05}},
+             "data": {"length_m": 1.0, "diameter_m": 0.05}},
         ],
     })
 
@@ -45,7 +45,7 @@ def test_zero_rated_flow_is_a_model_input_error():
         GraphParser.parse_graph(_graph("heat_exchanger", {"rated_flow_lmin": 0}))
 
 
-@pytest.mark.parametrize("edge_data,match", [({"diameter": 0}, "diameter"), ({"diameter": ""}, "Pipe"), ({"length": -1}, "negative")])
+@pytest.mark.parametrize("edge_data,match", [({"diameter_m": 0}, "diameter"), ({"diameter_m": ""}, "Pipe"), ({"length_m": -1}, "negative")])
 def test_bad_pipe_input_is_a_model_input_error(edge_data, match):
     with pytest.raises(ModelInputError, match=match):
         GraphParser.parse_graph(_graph("heat_exchanger", None, edge_data))

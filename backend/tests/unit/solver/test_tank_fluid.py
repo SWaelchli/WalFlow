@@ -9,7 +9,7 @@ from simulation.schemas import ReactFlowGraph
 
 
 def _tank(fluid_type):
-    data = {"label": "T", "level": 1.0, "elevation": 0.0, "temperature": 313.15}
+    data = {"label": "T", "level_m": 1.0, "elevation_m": 0.0, "temperature_k": 313.15}
     if fluid_type is not None:
         data["fluid_type"] = fluid_type
     graph = ReactFlowGraph(

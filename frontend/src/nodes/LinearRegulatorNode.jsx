@@ -13,8 +13,8 @@ export default function LinearRegulatorNode({ id, data, selected }) {
   const rotation = data.rotation || 0;
   const sensing = useMemo(() => data.sensing || {}, [data.sensing]);
   const telemetry = data.telemetry;
-  const opening = telemetry?.opening_pct ?? (data.opening ?? 100);
-  const setP = data.set_pressure ?? 500000;
+  const opening = telemetry?.opening_pct ?? (data.opening_pct ?? 100);
+  const setP = data.set_pressure_pa ?? 500000;
 
   return (
     <BaseNode

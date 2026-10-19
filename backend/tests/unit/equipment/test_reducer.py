@@ -144,7 +144,7 @@ def test_graph_parser_tolerates_null_reducer_fields():
 
     node = GraphParser.create_node(ReactFlowNode(
         id="r1", type="reducer", position={"x": 0, "y": 0},
-        data={"diameter_in": None, "diameter_out": 0.05248, "cone_angle_deg": None, "standard": "DIN_EN_10253_2_REDUCERS"}
+        data={"diameter_in_m": None, "diameter_out_m": 0.05248, "cone_angle_deg": None, "standard": "DIN_EN_10253_2_REDUCERS"}
     ))
     assert node.diameter_in == pytest.approx(0.07792)
     assert node.diameter_out == pytest.approx(0.05248)
@@ -267,3 +267,49 @@ def test_expander_network_with_dominant_pressure_recovery():
     dp_model = exp.calculate_delta_p(q, exp.inlets[0].density, exp.inlets[0].viscosity)
     assert dp_solved == pytest.approx(dp_model, rel=1e-3)
     assert dp_solved < 0.0  # net static pressure recovery
+
+
+def _reducer_graph(reducer_data):
+    from simulation.schemas import ReactFlowGraph
+    return ReactFlowGraph(**{
+        "nodes": [
+            {"id": "t1", "type": "tank", "position": {"x": 0, "y": 0}, "data": {"label": "T1"}},
+            {"id": "r1", "type": "reducer", "position": {"x": 1, "y": 0}, "data": {"label": "R-1", **reducer_data}},
+            {"id": "t2", "type": "tank", "position": {"x": 2, "y": 0}, "data": {"label": "T2"}},
+        ],
+        "edges": [
+            {"id": "e1", "source": "t1", "target": "r1", "sourceHandle": "outlet-0", "targetHandle": "inlet-0", "data": {"length_m": 1.0, "diameter_m": 0.07792}},
+            {"id": "e2", "source": "r1", "target": "t2", "sourceHandle": "outlet-0", "targetHandle": "inlet-0", "data": {"length_m": 1.0, "diameter_m": 0.05248}},
+        ],
+    })
+
+
+@pytest.mark.parametrize("field", ["diameter_in_m", "diameter_out_m", "length_m"])
+@pytest.mark.parametrize("value", [0.0, -0.05])
+def test_zero_or_negative_reducer_dimension_is_rejected(field, value):
+    from simulation.graph_parser import GraphParser, ModelInputError
+    with pytest.raises(ModelInputError, match=f"R-1.*{field}"):
+        GraphParser.parse_graph(_reducer_graph({field: value}))
+
+
+def test_missing_reducer_dimensions_use_the_dn80_dn50_defaults():
+    from simulation.graph_parser import GraphParser
+    red = GraphParser.parse_graph(_reducer_graph({})).nodes["r1"]
+    assert (red.diameter_in, red.diameter_out, red.length) == pytest.approx((0.07792, 0.05248, 0.089))
+
+
+def test_reducer_roughness_is_read_in_mm():
+    from simulation.graph_parser import GraphParser
+    assert GraphParser.parse_graph(_reducer_graph({"roughness_mm": 0.2})).nodes["r1"].roughness == pytest.approx(0.0002)
+    assert GraphParser.parse_graph(_reducer_graph({})).nodes["r1"].roughness == pytest.approx(0.000045)
+
+
+def test_zero_reducer_roughness_is_kept_as_smooth():
+    from simulation.graph_parser import GraphParser
+    assert GraphParser.parse_graph(_reducer_graph({"roughness_mm": 0})).nodes["r1"].roughness == 0.0
+
+
+def test_negative_reducer_roughness_is_rejected():
+    from simulation.graph_parser import GraphParser, ModelInputError
+    with pytest.raises(ModelInputError, match="R-1.*roughness_mm"):
+        GraphParser.parse_graph(_reducer_graph({"roughness_mm": -0.1}))

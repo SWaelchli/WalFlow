@@ -36,8 +36,8 @@ def test_graph_parser_check_valve_orifice():
             "label": "Check Valve w/ Orifice 1",
             "cv": 12.0,
             "cracking_pressure_bar": 0.08,
-            "pipe_diameter": 0.1,
-            "orifice_diameter": 0.015
+            "pipe_diameter_m": 0.1,
+            "orifice_diameter_m": 0.015
         }
     )
     parsed_node = GraphParser.create_node(node_data)

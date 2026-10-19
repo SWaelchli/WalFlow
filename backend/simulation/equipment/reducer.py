@@ -38,7 +38,8 @@ class Reducer(HydraulicNode):
         self.dn_small = int(dn_small or 50)
         self.sch_large = sch_large or "STD"
         self.sch_small = sch_small or "STD"
-        self.roughness = float(roughness or 0.000045)
+        # 0 is a valid (hydraulically smooth) roughness; only a missing value takes the default
+        self.roughness = 0.000045 if roughness is None else float(roughness)
 
         # Precompute areas and invariant terms
         self._update_geometry()

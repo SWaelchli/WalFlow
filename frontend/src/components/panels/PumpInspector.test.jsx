@@ -56,12 +56,12 @@ describe('D4 / D2: efficiency and stopped pump notes', () => {
 
 describe('D3: PD pump drive and warnings', () => {
   it('offers the drive type, defaulting to fixed speed', () => {
-    renderInspector(pumpNode({ flow_rated: 100, motor_power: 5, efficiency: 85 }, 'volumetric_pump'));
+    renderInspector(pumpNode({ flow_rated_lmin: 100, motor_power_kw: 5, efficiency_pct: 85 }, 'volumetric_pump'));
     expect(screen.getByDisplayValue('Fixed speed (motor overload flagged)')).toBeTruthy();
   });
 
   it('shows a motor overload warning from the results', () => {
-    const node = pumpNode({ flow_rated: 100, motor_power: 5, efficiency: 85, telemetry: {
+    const node = pumpNode({ flow_rated_lmin: 100, motor_power_kw: 5, efficiency_pct: 85, telemetry: {
       inlets: [{ flow_rate: 0.00166, pressure: 1e5, density: 1000 }], outlets: [{ pressure: 40e5 }],
       motor_overload: true, motor_load_pct: 154, shaft_power_kw: 7.7,
     } }, 'volumetric_pump');

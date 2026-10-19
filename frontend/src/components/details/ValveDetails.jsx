@@ -7,9 +7,9 @@ import { useUnits } from '../../context/UnitContext';
 const ValveDetails = memo(function ValveDetails({ node }) {
   const { labels, isImperial, formatPressurePa } = useUnits();
   const { type } = node;
-  const { max_cv, set_pressure, backpressure, telemetry, opening } = node.data;
+  const { max_cv, set_pressure_pa, backpressure, telemetry, opening_pct } = node.data;
   
-  const currentOpening = telemetry?.opening_pct ?? (opening ?? 100);
+  const currentOpening = telemetry?.opening_pct ?? (opening_pct ?? 100);
   const currentQ = telemetry?.inlets?.[0]?.flow_rate || 0;
   const pIn = telemetry?.inlets?.[0]?.pressure || 101325;
   const pOut = telemetry?.outlets?.[0]?.pressure || 101325;
@@ -17,7 +17,7 @@ const ValveDetails = memo(function ValveDetails({ node }) {
   const isRegulator = type === 'linear_regulator' || type === 'remote_control_valve';
   const sensedP = telemetry?.sensed_pressure !== undefined ? telemetry.sensed_pressure : (backpressure ? pIn : pOut);
   
-  const setPBar = (set_pressure || 500000) / 100000;
+  const setPBar = (set_pressure_pa || 500000) / 100000;
   const sensedPBar = sensedP / 100000;
   const rho = telemetry?.inlets?.[0]?.density || 1000;
   const K_CV_SI = 1.732e9;
@@ -116,7 +116,7 @@ const ValveDetails = memo(function ValveDetails({ node }) {
         {isRegulator && (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-text-secondary)', fontWeight: '500' }}>Target Setpoint:</span>
-            <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-text-primary)', fontWeight: '700', fontFamily: 'var(--font-mono)' }}>{formatPressurePa(set_pressure || 500000)} {labels.pressureAbs}</span>
+            <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-text-primary)', fontWeight: '700', fontFamily: 'var(--font-mono)' }}>{formatPressurePa(set_pressure_pa || 500000)} {labels.pressureAbs}</span>
           </div>
         )}
       </div>

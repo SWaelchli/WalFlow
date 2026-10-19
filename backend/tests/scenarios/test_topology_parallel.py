@@ -17,16 +17,16 @@ def test_parallel_circuit():
     """
     mock_graph = {
         "nodes": [
-            {"id": "t1", "type": "tank", "data": {"label": "Source", "level": 10.0, "elevation": 0.0}, "position": {"x":0,"y":0}},
+            {"id": "t1", "type": "tank", "data": {"label": "Source", "level_m": 10.0, "elevation_m": 0.0}, "position": {"x":0,"y":0}},
             {"id": "s1", "type": "splitter", "data": {"label": "Splitter"}, "position": {"x":100,"y":0}},
             {"id": "m1", "type": "mixer", "data": {"label": "Mixer"}, "position": {"x":300,"y":0}},
-            {"id": "t2", "type": "tank", "data": {"label": "Sink", "level": 1.0, "elevation": 0.0}, "position": {"x":400,"y":0}},
+            {"id": "t2", "type": "tank", "data": {"label": "Sink", "level_m": 1.0, "elevation_m": 0.0}, "position": {"x":400,"y":0}},
         ],
         "edges": [
-            {"id": "e_source", "source": "t1", "target": "s1", "data": {"length": 1.0, "diameter": 0.3}},
-            {"id": "e_path1", "source": "s1", "target": "m1", "data": {"length": 10.0, "diameter": 0.1}},
-            {"id": "e_path2", "source": "s1", "target": "m1", "data": {"length": 10.0, "diameter": 0.2}},
-            {"id": "e_sink", "source": "m1", "target": "t2", "data": {"length": 1.0, "diameter": 0.3}},
+            {"id": "e_source", "source": "t1", "target": "s1", "data": {"length_m": 1.0, "diameter_m": 0.3}},
+            {"id": "e_path1", "source": "s1", "target": "m1", "data": {"length_m": 10.0, "diameter_m": 0.1}},
+            {"id": "e_path2", "source": "s1", "target": "m1", "data": {"length_m": 10.0, "diameter_m": 0.2}},
+            {"id": "e_sink", "source": "m1", "target": "t2", "data": {"length_m": 1.0, "diameter_m": 0.3}},
         ]
     }
     

@@ -6,16 +6,16 @@ import { useUnits } from '../../context/UnitContext';
 
 const FilterDetails = memo(function FilterDetails({ node }) {
   const { labels, isImperial, formatPressurePa } = useUnits();
-  const { dp_clean, dp_terminal, flow_ref, clogging, telemetry } = node.data;
+  const { dp_clean_bar, dp_terminal_bar, flow_ref_lmin, clogging_pct, telemetry } = node.data;
   
   const currentQ = telemetry?.inlets?.[0]?.flow_rate || 0;
   const actualFlowLmin = Math.abs(currentQ) * 60000.0;
   const rho = telemetry?.inlets?.[0]?.density || 1000;
   
-  const dpCleanPa = (dp_clean || 0.2) * 100000.0;
-  const dpTerminalPa = (dp_terminal || 1.0) * 100000.0;
-  const qRefM3s = (flow_ref || 100.0) / 60000.0;
-  const clogFactor = (clogging || 0.0) / 100.0;
+  const dpCleanPa = (dp_clean_bar || 0.2) * 100000.0;
+  const dpTerminalPa = (dp_terminal_bar || 1.0) * 100000.0;
+  const qRefM3s = (flow_ref_lmin || 100.0) / 60000.0;
+  const clogFactor = (clogging_pct || 0.0) / 100.0;
 
   const kClean = dpCleanPa / (1000.0 * qRefM3s**2);
   const kTerminal = dpTerminalPa / (1000.0 * qRefM3s**2);
@@ -80,7 +80,7 @@ const FilterDetails = memo(function FilterDetails({ node }) {
       <div style={{ background: 'var(--color-surface-hover)', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-text-secondary)', fontWeight: '500' }}>Clogging:</span>
-          <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-text-primary)', fontWeight: '700', fontFamily: 'var(--font-mono)' }}>{clogging?.toFixed(1)} %</span>
+          <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-text-primary)', fontWeight: '700', fontFamily: 'var(--font-mono)' }}>{clogging_pct?.toFixed(1)} %</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-text-secondary)', fontWeight: '500' }}>Current ΔP:</span>

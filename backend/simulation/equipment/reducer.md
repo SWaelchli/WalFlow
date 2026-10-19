@@ -71,9 +71,9 @@ $$\Delta T = \frac{|\Delta P_{\text{loss}}|}{\rho \cdot C_p}$$
 
 | Parameter | Type | Unit | Default | Description |
 |---|---|---|---|---|
-| `diameter_in` | `float` | $\text{m}$ | `0.07792` | Inlet internal diameter ($ID_1$, ~DN80 STD) |
-| `diameter_out` | `float` | $\text{m}$ | `0.05248` | Outlet internal diameter ($ID_2$, ~DN50 STD) |
-| `length` | `float` | $\text{m}$ | `0.089` | ASME B16.9 end-to-end length $H$ |
+| `diameter_in_m` | `float` | $\text{m}$ | `0.07792` | Inlet internal diameter ($ID_1$, ~DN80 STD) |
+| `diameter_out_m` | `float` | $\text{m}$ | `0.05248` | Outlet internal diameter ($ID_2$, ~DN50 STD) |
+| `length_m` | `float` | $\text{m}$ | `0.089` | ASME B16.9 end-to-end length $H$ |
 | `cone_angle_deg` | `float` | $\text{deg}$ | `18.2` | Transition included angle $\theta$ |
 | `reducer_type` | `str` | — | `"concentric"` | `"concentric"` or `"eccentric"` |
 | `standard` | `str` | — | `"ASME_B16_9"` | `"ASME_B16_9"` or `"CUSTOM"` |
@@ -81,4 +81,22 @@ $$\Delta T = \frac{|\Delta P_{\text{loss}}|}{\rho \cdot C_p}$$
 | `dn_small` | `int` | $\text{mm}$ | `50` | Small end nominal diameter ($DN_2$) |
 | `sch_large` | `str` | — | `"STD"` | Large end schedule |
 | `sch_small` | `str` | — | `"STD"` | Small end schedule |
-| `roughness` | `float` | $\text{m}$ | `0.000045` | Material absolute surface roughness |
+| `roughness_mm` | `float` | $\text{mm}$ | `0.045` | Material absolute surface roughness |
+
+## Data Fields
+
+Node type: `reducer`, `expander`. Field names follow the naming rule in [base_node.md](base_node.md), which also lists the fields of every component.
+
+| Field | Unit in file | Default |
+|---|---|---|
+| `diameter_in_m` | m | 0.07792 (DN80 STD) |
+| `diameter_out_m` | m | 0.05248 (DN50 STD) |
+| `length_m` | m | 0.089 |
+| `roughness_mm` | mm | 0.045 |
+| `cone_angle_deg` | deg | 18.2 |
+| `reducer_type` | text (`concentric` / `eccentric`) | concentric |
+| `standard` | text (reducer catalogue code) | ASME_B16_9 |
+| `dn_large` | DN | 80 |
+| `dn_small` | DN | 50 |
+| `sch_large` | text | STD |
+| `sch_small` | text | STD |

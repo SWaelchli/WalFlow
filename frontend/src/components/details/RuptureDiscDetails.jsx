@@ -17,7 +17,7 @@ export default function RuptureDiscDetails({ node, unmitigatedTelemetry }) {
   const burstPressureBara = telemetry?.set_pressure_bara ?? (burstPressureBarg !== null ? burstPressureBarg + 1.01325 : null);
   const boreType = data.bore_type || 'full_bore';
   const cv = data.cv || 10.0;
-  const orificeDiameterM = data.orifice_diameter || 0.01;
+  const orificeDiameterM = data.orifice_diameter_m || 0.01;
   const status = telemetry.status || 'intact';
   const capacityPct = telemetry.capacity_utilization_pct || 0.0;
 

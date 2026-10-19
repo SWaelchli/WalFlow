@@ -15,7 +15,7 @@ export default function FilterNode({ id, data, selected }) {
   const rotation = data.rotation || 0;
   const sensing = useMemo(() => data.sensing || {}, [data.sensing]);
   const dP = pressureDrop(telemetry);
-  const clogging = data.clogging || 0;
+  const clogging = data.clogging_pct || 0;
   const dPFormatted = formatPressurePa(dP);
 
   return (

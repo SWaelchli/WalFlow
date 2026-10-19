@@ -64,6 +64,7 @@ Create `backend/simulation/equipment/<name>.md` detailing:
 4. Thermal & energy balance equations.
 5. Parameter and unit specification table.
 6. Assumptions, boundaries, and validation benchmarks.
+7. A `## Data Fields` table: every key the parser reads from the node's `data`, with its unit in the file and default (checked by `backend/tests/unit/solver/test_node_fields_documented.py`).
 
 📖 **Deep Dive Reference:** Read [references/equipment-documentation-standard.md](file:///c:/Users/c563871/Coding/WalFlow/.agents/skills/equipment-creation/references/equipment-documentation-standard.md).
 
@@ -76,6 +77,7 @@ In `backend/simulation/graph_parser.py`:
    - Flow: $\text{L/min} / 60\,000 \to \text{m}^3/\text{s}$
    - Power: $\text{kW} \times 1\,000 \to \text{W}$
    - Temperature: $^{\circ}\text{C} + 273.15 \to \text{K}$
+3. **Field names carry their unit**: `_pa`, `_bar`, `_barg`, `_bara`, `_lmin`, `_c`, `_k`, `_m`, `_mm`, `_kw`, `_w_k`, `_pct`, `_deg`, `_mpas`, e.g. `d.get('flow_rated_lmin', 100.0)`. Unitless fields (text, bool, Cv) have no suffix. Pipe (edge) fields are `length_m`, `diameter_m` and `roughness_mm` (see `backend/simulation/equipment/pipe.md`). Renaming an existing field: before a release, rename it everywhere (saved files are not converted). After a release, a rename is a file format incompatibility and follows the Versioning Policy in `AGENTS.md`.
 
 ### Step 4: Write Backend Unit & Physics Tests
 Create `backend/tests/unit/equipment/test_<name>.py`:
@@ -99,7 +101,7 @@ Create `frontend/src/nodes/<Name>Node.jsx`:
 Update the following frontend files:
 1. `frontend/src/App.jsx`:
    - Import node and add to `nodeTypes` object.
-   - Add default properties in `onDrop` handler.
+   - Add default properties to `DEFAULTS_BY_TYPE` in `frontend/src/utils/nodeDefaults.js` (same field names and defaults as the parser and the `## Data Fields` table).
 2. `frontend/src/components/panels/Sidebar.jsx`:
    - Add item to appropriate category in `categorizedEquipment`.
 3. `frontend/src/components/panels/SetupPanel.jsx`:

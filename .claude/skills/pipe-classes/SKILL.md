@@ -106,7 +106,7 @@ API responses add `nps`, `od_mm`, `wt_mm`, `id_mm` to every row (looked up in th
 
 ## 🎨 Diagram Format (.wlf v0.2) Edge Representation
 
-Hydraulic edges in WalFlow format version `0.2` store:
+Hydraulic edges in WalFlow format version `0.2` store (field list: `backend/simulation/equipment/pipe.md`):
 
 ```json
 {
@@ -117,14 +117,13 @@ Hydraulic edges in WalFlow format version `0.2` store:
   "targetHandle": "inlet-0",
   "data": {
     "label": "Pipe 101",
-    "length": 25.0,
-    "diameter": 0.05248,
+    "length_m": 25.0,
+    "diameter_m": 0.05248,
     "pipe_class_id": "walflow-cs01",
     "pipe_class_code": "CS01",
     "standardDn": 50,
     "standardSch": "STD",
     "roughness_mm": 0.045,
-    "roughness": 0.000045,
     "outer_diameter_mm": 60.3,
     "wall_thickness_mm": 3.91
   }

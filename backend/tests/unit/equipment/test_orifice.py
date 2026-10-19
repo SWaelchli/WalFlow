@@ -303,8 +303,8 @@ def test_graph_parser_orifice():
         position={"x": 10.0, "y": 20.0},
         data={
             "label": "Orifice 1",
-            "pipe_diameter": 0.1,
-            "orifice_diameter": 0.07,
+            "pipe_diameter_m": 0.1,
+            "orifice_diameter_m": 0.07,
             "standard": "classic_cd"
         }
     )
@@ -318,7 +318,7 @@ def test_graph_parser_orifice():
         id="ori_node_2",
         type="orifice",
         position={"x": 0.0, "y": 0.0},
-        data={"label": "Orifice 2", "pipe_diameter": 0.05248, "orifice_diameter": 0.02}
+        data={"label": "Orifice 2", "pipe_diameter_m": 0.05248, "orifice_diameter_m": 0.02}
     )
     parsed_default = GraphParser.create_node(node_data_default)
     assert parsed_default.standard == 'iso_5167'
@@ -336,18 +336,18 @@ def test_extract_telemetry_carries_solver_effective_geometry():
     gs = GlobalSettings(fluid_type="water")
     nodes = [
         ReactFlowNode(id="t1", type="tank", position={"x": 0, "y": 0},
-                      data={"label": "Source", "level": 5.0, "elevation": 0.0, "temperature": 293.15}),
+                      data={"label": "Source", "level_m": 5.0, "elevation_m": 0.0, "temperature_k": 293.15}),
         ReactFlowNode(id="ori", type="orifice", position={"x": 0, "y": 0},
-                      data={"label": "Orifice", "pipe_diameter": 0.05248, "orifice_diameter": 0.02,
+                      data={"label": "Orifice", "pipe_diameter_m": 0.05248, "orifice_diameter_m": 0.02,
                             "standard": "classic_cd"}),
         ReactFlowNode(id="t2", type="tank", position={"x": 0, "y": 0},
-                      data={"label": "Sink", "level": 1.0, "elevation": 0.0, "temperature": 293.15}),
+                      data={"label": "Sink", "level_m": 1.0, "elevation_m": 0.0, "temperature_k": 293.15}),
     ]
     edges = [
         ReactFlowEdge(id="e1", source="t1", target="ori", sourceHandle="outlet-0", targetHandle="inlet-0",
-                      data={"diameter": 0.08}),
+                      data={"diameter_m": 0.08}),
         ReactFlowEdge(id="e2", source="ori", target="t2", sourceHandle="outlet-0", targetHandle="inlet-0",
-                      data={"diameter": 0.08}),
+                      data={"diameter_m": 0.08}),
     ]
     graph = ReactFlowGraph(nodes=nodes, edges=edges, global_settings=gs)
     network = GraphParser.parse_graph(graph)

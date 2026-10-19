@@ -47,7 +47,7 @@ const PumpDetails = memo(function PumpDetails({ node }) {
   const { type, data } = node;
   const { 
     flow_rated_lmin, head_rated_m, rise_to_shutoff_pct, 
-    flow_rated, motor_power, efficiency, drive_type, max_discharge_pressure_bara, telemetry 
+    motor_power_kw, efficiency_pct, drive_type, max_discharge_pressure_bara, telemetry 
   } = data;
   const maxDischargeBara = parseFloat(max_discharge_pressure_bara ?? 50) || 50;
   const isFixedSpeed = (drive_type || 'fixed_speed') === 'fixed_speed';
@@ -64,7 +64,7 @@ const PumpDetails = memo(function PumpDetails({ node }) {
   const actualFlowLmin = Math.abs(currentQ) * 60000.0;
   const isVolumetric = type === 'volumetric_pump';
   
-  const ratedFlow = isVolumetric ? parseFloat(flow_rated || 100) : parseFloat(flow_rated_lmin || 100);
+  const ratedFlow = parseFloat(flow_rated_lmin || 100);
   const maxX_lmin = Math.max(200, ratedFlow * 1.5, actualFlowLmin * 1.2);
 
   const { chartData, maxX, maxY, opPoint } = useMemo(() => {
@@ -85,7 +85,7 @@ const PumpDetails = memo(function PumpDetails({ node }) {
       // Discharge limit of a PD pump is absolute: the rise is capped at limit − suction pressure
       const pumpBar = isVolumetric
         ? volumetricDpBar({
-            flowRatedLmin: flow_rated, motorPowerKw: motor_power, efficiencyPct: efficiency,
+            flowRatedLmin: flow_rated_lmin, motorPowerKw: motor_power_kw, efficiencyPct: efficiency_pct,
             fixedSpeed: isFixedSpeed, maxDischargeBara, suctionPa: currentPin || 101325,
           }, qM3s)
         : centrifugalDpBar({ flowRatedLmin: flow_rated_lmin, headRatedM: head_rated_m, risePct: rise_to_shutoff_pct }, qM3s, rho);
@@ -110,7 +110,7 @@ const PumpDetails = memo(function PumpDetails({ node }) {
       maxY: (localMaxY * pressMultiplier) * 1.1,
       opPoint: [{ q: opQ, p: opP }]
     };
-  }, [isVolumetric, isFixedSpeed, maxDischargeBara, currentPin, rho, flow_rated_lmin, head_rated_m, rise_to_shutoff_pct, flow_rated, motor_power, efficiency, currentQ, currentDpBar, maxX_lmin, isImperial, actualFlowLmin]);
+  }, [isVolumetric, isFixedSpeed, maxDischargeBara, currentPin, rho, flow_rated_lmin, head_rated_m, rise_to_shutoff_pct, motor_power_kw, efficiency_pct, currentQ, currentDpBar, maxX_lmin, isImperial, actualFlowLmin]);
 
   const xTicks = niceTicks(maxX, 5);
   const yTicks = niceTicks(maxY, 5);

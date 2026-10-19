@@ -32,9 +32,9 @@
       },
       "data": {
         "label": "Common Reservoir",
-        "level": 2.0,
-        "elevation": 0.0,
-        "temperature": 293.15
+        "level_m": 2.0,
+        "elevation_m": 0.0,
+        "temperature_k": 293.15
       }
     },
     {
@@ -61,7 +61,7 @@
       "data": {
         "label": "Throttling Valve (50%)",
         "max_cv": 8.0,
-        "opening": 50.0
+        "opening_pct": 50.0
       }
     },
     {
@@ -73,9 +73,9 @@
       },
       "data": {
         "label": "Centrifugal Train Discharge Tank",
-        "level": 0.5,
-        "elevation": 0.0,
-        "temperature": 293.15
+        "level_m": 0.5,
+        "elevation_m": 0.0,
+        "temperature_k": 293.15
       }
     },
     {
@@ -87,9 +87,9 @@
       },
       "data": {
         "label": "Volumetric Pump (Constant Flow)",
-        "flow_rated": 100.0,
-        "motor_power": 5.0,
-        "efficiency": 85.0
+        "flow_rated_lmin": 100.0,
+        "motor_power_kw": 5.0,
+        "efficiency_pct": 85.0
       }
     },
     {
@@ -102,7 +102,7 @@
       "data": {
         "label": "Safety PRV / Relief Dump",
         "max_cv": 8.0,
-        "set_pressure": 600000,
+        "set_pressure_pa": 600000,
         "backpressure": true
       }
     },
@@ -115,9 +115,9 @@
       },
       "data": {
         "label": "Volumetric Train Discharge Tank",
-        "level": 0.5,
-        "elevation": 0.0,
-        "temperature": 293.15
+        "level_m": 0.5,
+        "elevation_m": 0.0,
+        "temperature_k": 293.15
       }
     },
     {
@@ -142,16 +142,15 @@
       "targetHandle": "inlet-0",
       "data": {
         "label": "Centrifugal Suction",
-        "length": 2,
-        "diameter": 0.03528,
+        "length_m": 2,
+        "diameter_m": 0.03528,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 32,
         "standardSch": "STD",
         "outer_diameter_mm": 42.4,
         "wall_thickness_mm": 3.56,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -162,16 +161,15 @@
       "targetHandle": "inlet-0",
       "data": {
         "label": "Centrifugal Line",
-        "length": 2,
-        "diameter": 0.02664,
+        "length_m": 2,
+        "diameter_m": 0.02664,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 25,
         "standardSch": "STD",
         "outer_diameter_mm": 33.4,
         "wall_thickness_mm": 3.38,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -182,16 +180,15 @@
       "targetHandle": "inlet-0",
       "data": {
         "label": "Delivery 1",
-        "length": 2,
-        "diameter": 0.02664,
+        "length_m": 2,
+        "diameter_m": 0.02664,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 25,
         "standardSch": "STD",
         "outer_diameter_mm": 33.4,
         "wall_thickness_mm": 3.38,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -202,16 +199,15 @@
       "targetHandle": "inlet-0",
       "data": {
         "label": "Volumetric Suction",
-        "length": 2,
-        "diameter": 0.03528,
+        "length_m": 2,
+        "diameter_m": 0.03528,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 32,
         "standardSch": "STD",
         "outer_diameter_mm": 42.4,
         "wall_thickness_mm": 3.56,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -222,16 +218,15 @@
       "targetHandle": "inlet-0",
       "data": {
         "label": "PD Line",
-        "length": 2,
-        "diameter": 0.02664,
+        "length_m": 2,
+        "diameter_m": 0.02664,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 25,
         "standardSch": "STD",
         "outer_diameter_mm": 33.4,
         "wall_thickness_mm": 3.38,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -242,16 +237,15 @@
       "targetHandle": "inlet-0",
       "data": {
         "label": "Delivery 2",
-        "length": 2,
-        "diameter": 0.02664,
+        "length_m": 2,
+        "diameter_m": 0.02664,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 25,
         "standardSch": "STD",
         "outer_diameter_mm": 33.4,
         "wall_thickness_mm": 3.38,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -262,16 +256,15 @@
       "targetHandle": "inlet-0",
       "data": {
         "label": "Common Suction",
-        "length": 1,
-        "diameter": 0.04094,
+        "length_m": 1,
+        "diameter_m": 0.04094,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 40,
         "standardSch": "STD",
         "outer_diameter_mm": 48.3,
         "wall_thickness_mm": 3.68,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     }
   ],

@@ -16,7 +16,7 @@ const portValue = (mode, port, pipeData) => {
     case 'temperature': return port.temperature != null ? port.temperature - 273.15 : null;
     case 'volumeflow': return port.flow_rate != null ? Math.abs(port.flow_rate * 60000.0) : null;
     case 'velocity': {
-      const dia = pipeData?.diameter || 0.1;
+      const dia = pipeData?.diameter_m || 0.1;
       const area = (Math.PI * dia ** 2) / 4.0;
       return (port.flow_rate != null && area > 0) ? Math.abs(port.flow_rate) / area : null;
     }

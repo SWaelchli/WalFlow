@@ -116,7 +116,7 @@ def test_f2_13_batch_timeout_is_a_case_error(client, monkeypatch):
     graph = {
         "nodes": [{"id": "a", "type": "tank", "position": {"x": 0, "y": 0}, "data": {}},
                   {"id": "b", "type": "tank", "position": {"x": 1, "y": 0}, "data": {}}],
-        "edges": [{"id": "e", "source": "a", "target": "b", "data": {"length": 5, "diameter": 0.05}}],
+        "edges": [{"id": "e", "source": "a", "target": "b", "data": {"length_m": 5, "diameter_m": 0.05}}],
     }
     resp = client.post("/api/simulation/batch", json=graph)
     assert resp.status_code == 200

@@ -32,9 +32,9 @@
       },
       "data": {
         "label": "Warm Oil Reservoir (55\u00b0C)",
-        "level": 2.0,
-        "elevation": 0.0,
-        "temperature": 328.15
+        "level_m": 2.0,
+        "elevation_m": 0.0,
+        "temperature_k": 328.15
       }
     },
     {
@@ -108,7 +108,7 @@
       "data": {
         "label": "Process Throttling Valve",
         "max_cv": 15.0,
-        "opening": 70.0,
+        "opening_pct": 70.0,
         "sensing": {
           "inlet-0": true
         }
@@ -123,9 +123,9 @@
       },
       "data": {
         "label": "Header Return Tank",
-        "level": 1.0,
-        "elevation": 0.0,
-        "temperature": 318.15
+        "level_m": 1.0,
+        "elevation_m": 0.0,
+        "temperature_k": 318.15
       }
     },
     {
@@ -210,16 +210,15 @@
       "targetHandle": "inlet-0",
       "data": {
         "label": "Suction",
-        "length": 2,
-        "diameter": 0.04094,
+        "length_m": 2,
+        "diameter_m": 0.04094,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 40,
         "standardSch": "STD",
         "outer_diameter_mm": 48.3,
         "wall_thickness_mm": 3.68,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -230,16 +229,15 @@
       "targetHandle": "inlet-0",
       "data": {
         "label": "Discharge",
-        "length": 2,
-        "diameter": 0.03528,
+        "length_m": 2,
+        "diameter_m": 0.03528,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 32,
         "standardSch": "STD",
         "outer_diameter_mm": 42.4,
         "wall_thickness_mm": 3.56,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -250,16 +248,15 @@
       "targetHandle": "inlet-0",
       "data": {
         "label": "Cooler Feed",
-        "length": 2,
-        "diameter": 0.03528,
+        "length_m": 2,
+        "diameter_m": 0.03528,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 32,
         "standardSch": "STD",
         "outer_diameter_mm": 42.4,
         "wall_thickness_mm": 3.56,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -270,16 +267,15 @@
       "targetHandle": "inlet-1",
       "data": {
         "label": "Hot Bypass Line",
-        "length": 3,
-        "diameter": 0.03528,
+        "length_m": 3,
+        "diameter_m": 0.03528,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 32,
         "standardSch": "STD",
         "outer_diameter_mm": 42.4,
         "wall_thickness_mm": 3.56,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -290,16 +286,15 @@
       "targetHandle": "inlet-0",
       "data": {
         "label": "Cooled Stream",
-        "length": 2,
-        "diameter": 0.03528,
+        "length_m": 2,
+        "diameter_m": 0.03528,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 32,
         "standardSch": "STD",
         "outer_diameter_mm": 42.4,
         "wall_thickness_mm": 3.56,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -310,16 +305,15 @@
       "targetHandle": "inlet-0",
       "data": {
         "label": "Temp Controlled Supply",
-        "length": 3,
-        "diameter": 0.03528,
+        "length_m": 3,
+        "diameter_m": 0.03528,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 32,
         "standardSch": "STD",
         "outer_diameter_mm": 42.4,
         "wall_thickness_mm": 3.56,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -330,16 +324,15 @@
       "targetHandle": "inlet-0",
       "data": {
         "label": "Return Line",
-        "length": 3,
-        "diameter": 0.03528,
+        "length_m": 3,
+        "diameter_m": 0.03528,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 32,
         "standardSch": "STD",
         "outer_diameter_mm": 42.4,
         "wall_thickness_mm": 3.56,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -447,7 +440,7 @@
       "overrides": {
         "nodes": {
           "warm-reservoir": {
-            "temperature": 343.15
+            "temperature_k": 343.15
           }
         },
         "global_settings": {}
@@ -460,7 +453,7 @@
       "overrides": {
         "nodes": {
           "warm-reservoir": {
-            "temperature": 288.15
+            "temperature_k": 288.15
           }
         },
         "global_settings": {
@@ -488,7 +481,7 @@
       "overrides": {
         "nodes": {
           "process-heat-load": {
-            "opening": 30
+            "opening_pct": 30
           }
         },
         "global_settings": {}

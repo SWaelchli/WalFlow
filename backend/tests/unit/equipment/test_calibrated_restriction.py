@@ -104,8 +104,8 @@ def test_graph_parser_calibrated_restriction():
         data={
             "label": "Calibrated Restriction 1",
             "flow_base_lmin": 15.0,
-            "inlet_pressure_base_bar": 4.0,
-            "outlet_pressure_base_bar": 1.5,
+            "inlet_pressure_base_bara": 4.0,
+            "outlet_pressure_base_bara": 1.5,
             "temp_base_c": 50.0,
             "restriction_model": "laminar",
             "fluid_type": "iso_vg_46"

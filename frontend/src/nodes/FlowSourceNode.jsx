@@ -14,7 +14,7 @@ export default function FlowSourceNode({ id, data, selected }) {
   const sensing = useMemo(() => data.sensing || {}, [data.sensing]);
 
   const flowLmin = data.source_flow_lmin ?? 50.0;
-  const tempK = data.temperature ?? 293.15;
+  const tempK = data.temperature_k ?? 293.15;
 
   // Live telemetry (post-simulation) — prefer outlet telemetry
   const telemetryOutlet = data.telemetry?.outlets?.[0];

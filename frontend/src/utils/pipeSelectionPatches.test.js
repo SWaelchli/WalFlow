@@ -12,8 +12,8 @@ const pc = {
 describe('pipe selection patches (shared by the inspector and the pipe table)', () => {
   it('class change keeps the current size when the class has it, with the class roughness', () => {
     const patch = classSelectionPatch(pc, 80);
-    expect(patch).toMatchObject({ pipe_class_id: 'cs1', pipe_class_code: 'CS01', standardDn: 80, standardSch: 'STD', roughness_mm: 0.05, roughness: 0.00005 });
-    expect(patch.diameter).toBeCloseTo((88.9 - 2 * 5.49) / 1000, 9);
+    expect(patch).toMatchObject({ pipe_class_id: 'cs1', pipe_class_code: 'CS01', standardDn: 80, standardSch: 'STD', roughness_mm: 0.05 });
+    expect(patch.diameter_m).toBeCloseTo((88.9 - 2 * 5.49) / 1000, 9);
     expect(classSelectionPatch(pc, 999).standardDn).toBe(50);       // falls back to the first size
     expect(classSelectionPatch({ ...pc, sizes: [] }, 50)).toBeNull();
     expect(classSelectionPatch(undefined, 50)).toBeNull();
@@ -21,14 +21,14 @@ describe('pipe selection patches (shared by the inspector and the pipe table)', 
 
   it('size change only touches the dimensions', () => {
     const patch = classSizePatch(pc, 80);
-    expect(Object.keys(patch).sort()).toEqual(['diameter', 'outer_diameter_mm', 'schedule_standard_code', 'standardDn', 'standardSch', 'wall_thickness_mm']);
+    expect(Object.keys(patch).sort()).toEqual(['diameter_m', 'outer_diameter_mm', 'schedule_standard_code', 'standardDn', 'standardSch', 'wall_thickness_mm']);
     expect(classSizePatch(pc, 65)).toBeNull();
   });
 
   it('manual switch uses the B36.10M table and leaves roughness alone', () => {
     const patch = manualSelectionPatch(50, 'STD');
     expect(patch).toMatchObject({ pipe_class_id: 'manual', pipe_class_code: 'CUSTOM', standardDn: 50, standardSch: 'STD' });
-    expect(patch.diameter).toBeCloseTo(0.05248, 4);
+    expect(patch.diameter_m).toBeCloseTo(0.05248, 4);
     expect('roughness_mm' in patch).toBe(false);
     expect(manualSelectionPatch(undefined, undefined).standardDn).toBe(50);
   });

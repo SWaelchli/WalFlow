@@ -40,6 +40,7 @@ All notable changes to the WälFlow project will be documented in this file.
 
 ### Changed
 
+- **Unit in every field name**: Node and pipe data fields carry their unit (`level_m`, `temperature_k`, `set_pressure_pa`, `opening_pct`, pipe `length_m` / `diameter_m`, …). Old 0.2 pre-release files are not converted; the file format stays 0.2. The field list per component now lives in `backend/simulation/equipment/<type>.md`.
 - **Canvas labels**: The tag and readouts below every component are centred on its symbol, however long they are.
 - **UI/UX consistency pass**: One SVG icon set (Phosphor) replaces all emoji; Inter is bundled and a 7-step type scale (`--fs-*`) and warning colour tokens replace raw sizes and hex values; orange is reserved for the main action per area; tabs and segmented controls use dark teal; sentence-case labels and one set of component names (Pipe, Control valve, Drawing, "DN 20").
 - **Header**: File menu (New, Open, Save `Ctrl+S`, Save as, Import, Export), document name with save state, and the last run time in the status pill; operating cases are created only in the Operating cases tab.
@@ -81,6 +82,8 @@ All notable changes to the WälFlow project will be documented in this file.
 
 ### Fixed
 
+- **Custom reducer length in imperial units**: A transition length entered in inches is stored correctly (it was converted a second time as feet); the inspector shows the length the solver uses, and empty or zero reducer dimensions are rejected.
+- **Inspector defaults match the solver**: A 0 m pipe is shown as 0 m (not 25 m) and a tank without a level as 1 m (not 0 m). Reducer roughness of 0 mm is kept as smooth instead of falling back to 0.045 mm, and negative reducer roughness is rejected.
 - **Batch solve URL**: The batch solve matrix no longer uses a hardcoded `localhost` backend URL; it uses the relative `/api/simulation/batch` endpoint, fixing the CORS / `ERR_FAILED` error behind a reverse proxy (e.g. Cloudflare).
 - **Canvas loading race**: Fixed loading overlay race conditions on synchronous example diagrams (e.g. API 614) by deferring heavy state updates to the next event loop tick. The overlay now sets `pointerEvents` correctly to block clicks during loads.
 - **TR2000 client**: Response parsing unwraps dictionary envelopes (`getPlant`, `getPCS`, `getPipeSize`, `getTempPressure`), restoring live plant querying, spec search and specification synchronization.

@@ -60,3 +60,13 @@ $$T_{\text{outlet}} = T_{\text{set}}$$
 - `is_flow_boundary = False` (spring approach)
 - `blocks_flow_on_shutdown = False`
 - `use_mcp_formulation = False`
+
+## Data Fields
+
+Node type: `flow_source`. Field names follow the naming rule in [base_node.md](base_node.md), which also lists the fields of every component.
+
+| Field | Unit in file | Default |
+|---|---|---|
+| `source_flow_lmin` | L/min | 50 |
+| `temperature_k` | K | 293.15 |
+| `max_discharge_pressure_bara` | bar(a) | 50 |

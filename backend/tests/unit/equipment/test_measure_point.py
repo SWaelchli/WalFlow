@@ -14,7 +14,7 @@ def _node(id_, type_, data=None):
 
 def _pipe(id_, src, tgt, length, src_port="outlet-0", tgt_port="inlet-0"):
     return {"id": id_, "source": src, "target": tgt, "sourceHandle": src_port, "targetHandle": tgt_port,
-            "data": {"length": length, "diameter": 0.05}}
+            "data": {"length_m": length, "diameter_m": 0.05}}
 
 
 def _signal(id_, src, src_port, tgt, tgt_port):
@@ -29,7 +29,7 @@ def _solve(graph_dict):
     return network
 
 
-TANKS = [_node("t1", "tank", {"level": 20.0}), _node("t2", "tank", {"level": 1.0})]
+TANKS = [_node("t1", "tank", {"level_m": 20.0}), _node("t2", "tank", {"level_m": 1.0})]
 
 
 def test_tap_has_no_pressure_drop_and_matches_an_unsplit_pipe():
@@ -69,7 +69,7 @@ def test_remote_control_valve_senses_a_tap():
     # The RCV holds 1.2 bar(a) at the tap downstream of it (tap 1.29 bar(a) with the valve wide open, sink 1.11 bar(a))
     graph = {
         "nodes": TANKS + [
-            _node("rcv", "remote_control_valve", {"max_cv": 20.0, "set_pressure": 1.2e5}),
+            _node("rcv", "remote_control_valve", {"max_cv": 20.0, "set_pressure_pa": 1.2e5}),
             _node("tap", "measure_point"),
         ],
         "edges": [

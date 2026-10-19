@@ -158,7 +158,7 @@ describe('manual pipes with a DIN EN dimension standard', () => {
     expect(sized.schedule_standard_code).toBe(ASME_STAINLESS_SCHEDULE_STANDARD);
     const patch = manualSelectionPatch(50, '10S', sized.schedule_standard_code);
     expect(patch).toMatchObject({ schedule_standard_code: ASME_STAINLESS_SCHEDULE_STANDARD, standardDn: 50, standardSch: '10S', wall_thickness_mm: 2.77 });
-    expect(patch.diameter).toBeCloseTo(0.05476, 6);
+    expect(patch.diameter_m).toBeCloseTo(0.05476, 6);
   });
 
   it('manual switch is null when no catalog is loaded', () => {
@@ -171,8 +171,8 @@ describe('manual pipes with a DIN EN dimension standard', () => {
   });
 
   it('older pipes without a standard read as ASME; DIN pipes match DIN bores', () => {
-    expect(resolvePipeSelection({ diameter: 0.05248 }).scheduleStandard).toBe(ASME_SCHEDULE_STANDARD);
-    const sel = resolvePipeSelection({ pipe_class_id: 'manual', schedule_standard_code: DIN_SCHEDULE_STANDARD, diameter: 0.0545 });
+    expect(resolvePipeSelection({ diameter_m: 0.05248 }).scheduleStandard).toBe(ASME_SCHEDULE_STANDARD);
+    const sel = resolvePipeSelection({ pipe_class_id: 'manual', schedule_standard_code: DIN_SCHEDULE_STANDARD, diameter_m: 0.0545 });
     expect(sel).toMatchObject({ dn: 50, sch: 'Normal', isCustomId: false, scheduleStandard: DIN_SCHEDULE_STANDARD });
   });
 });

@@ -7,12 +7,12 @@ def test_text_bubble_ignored_by_graph_parser():
     Verify that text_bubble nodes are ignored by GraphParser.parse_graph and do not leak into hydraulic network nodes.
     """
     nodes = [
-        ReactFlowNode(id="tank1", type="tank", position={"x": 0, "y": 0}, data={"level": 2.0, "elevation": 0.0}),
+        ReactFlowNode(id="tank1", type="tank", position={"x": 0, "y": 0}, data={"level_m": 2.0, "elevation_m": 0.0}),
         ReactFlowNode(id="note1", type="text_bubble", position={"x": 100, "y": 100}, data={"title": "OPERATING NOTE", "text": "Check pump pressure before startup"}),
-        ReactFlowNode(id="tank2", type="tank", position={"x": 200, "y": 0}, data={"level": 0.5, "elevation": 0.0}),
+        ReactFlowNode(id="tank2", type="tank", position={"x": 200, "y": 0}, data={"level_m": 0.5, "elevation_m": 0.0}),
     ]
     edges = [
-        ReactFlowEdge(id="e1", source="tank1", target="tank2", data={"length": 10.0, "diameter": 0.05})
+        ReactFlowEdge(id="e1", source="tank1", target="tank2", data={"length_m": 10.0, "diameter_m": 0.05})
     ]
     
     graph = ReactFlowGraph(nodes=nodes, edges=edges)

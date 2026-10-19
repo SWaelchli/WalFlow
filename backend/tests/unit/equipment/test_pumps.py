@@ -132,16 +132,16 @@ def test_f1_36_kpi_power_is_shaft_power_and_stopped_pump_counts_zero():
     assert calculate_case_kpis(net, extract_telemetry(net), stats)["total_pump_power_kw"] == 0.0
 
 
-def _pump_graph(pump_data):
+def _pump_graph(pump_data, pump_type="centrifugal_pump"):
     return ReactFlowGraph(**{
         "nodes": [
-            {"id": "t1", "type": "tank", "position": {"x": 0, "y": 0}, "data": {"label": "T1", "level": 1.0}},
-            {"id": "p1", "type": "centrifugal_pump", "position": {"x": 1, "y": 0}, "data": {"label": "P-101", "flow_rated_lmin": 100.0, **pump_data}},
-            {"id": "t2", "type": "tank", "position": {"x": 2, "y": 0}, "data": {"label": "T2", "level": 1.0}},
+            {"id": "t1", "type": "tank", "position": {"x": 0, "y": 0}, "data": {"label": "T1", "level_m": 1.0}},
+            {"id": "p1", "type": pump_type, "position": {"x": 1, "y": 0}, "data": {"label": "P-101", "flow_rated_lmin": 100.0, **pump_data}},
+            {"id": "t2", "type": "tank", "position": {"x": 2, "y": 0}, "data": {"label": "T2", "level_m": 1.0}},
         ],
         "edges": [
-            {"id": "e1", "source": "t1", "target": "p1", "sourceHandle": "outlet-0", "targetHandle": "inlet-0", "data": {"length": 1.0, "diameter": 0.05}},
-            {"id": "e2", "source": "p1", "target": "t2", "sourceHandle": "outlet-0", "targetHandle": "inlet-0", "data": {"length": 1.0, "diameter": 0.05}},
+            {"id": "e1", "source": "t1", "target": "p1", "sourceHandle": "outlet-0", "targetHandle": "inlet-0", "data": {"length_m": 1.0, "diameter_m": 0.05}},
+            {"id": "e2", "source": "p1", "target": "t2", "sourceHandle": "outlet-0", "targetHandle": "inlet-0", "data": {"length_m": 1.0, "diameter_m": 0.05}},
         ],
     })
 
@@ -152,6 +152,16 @@ def test_d1_old_file_with_rated_pressure_only_is_blocked():
 
 
 def test_d4_efficiency_is_read_from_the_file():
-    net = GraphParser.parse_graph(_pump_graph({"head_rated_m": 50.0, "efficiency": 62.0}))
+    net = GraphParser.parse_graph(_pump_graph({"head_rated_m": 50.0, "efficiency_pct": 62.0}))
     assert net.nodes["p1"].efficiency == pytest.approx(0.62)
     assert GraphParser.parse_graph(_pump_graph({"head_rated_m": 50.0})).nodes["p1"].efficiency == pytest.approx(0.75)
+
+
+@pytest.mark.parametrize("pump_type,data", [
+    ("centrifugal_pump", {"head_rated_m": 50.0}),
+    ("volumetric_pump", {"motor_power_kw": 5.0}),
+])
+@pytest.mark.parametrize("eff_pct", [0.0, 0.5, 101.0])
+def test_efficiency_outside_1_to_100_pct_is_rejected(pump_type, data, eff_pct):
+    with pytest.raises(ModelInputError, match="P-101.*efficiency must be between 1 and 100"):
+        GraphParser.parse_graph(_pump_graph({**data, "efficiency_pct": eff_pct}, pump_type))

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { computeHeatmapRange } from './heatmapRange';
 
 const edge = (id, inP, outP, flow, dia = 0.05) => ({
-  id, data: { diameter: dia, telemetry: { inlets: [{ pressure: inP, flow_rate: flow, temperature: 300 }], outlets: [{ pressure: outP, flow_rate: flow, temperature: 305 }] } },
+  id, data: { diameter_m: dia, telemetry: { inlets: [{ pressure: inP, flow_rate: flow, temperature: 300 }], outlets: [{ pressure: outP, flow_rate: flow, temperature: 305 }] } },
 });
 const base = { cases: [{ id: 'case_base', is_base: true }], activeCaseId: 'case_base', telemetryMode: 'mitigated', allCases: false };
 

@@ -36,10 +36,10 @@
       "overrides": {
         "nodes": {
           "node_c2c3ec68": {
-            "temperature": 283.15
+            "temperature_k": 283.15
           },
           "node_8fd45f2a": {
-            "temperature": 283.15
+            "temperature_k": 283.15
           }
         },
         "global_settings": {}
@@ -53,10 +53,10 @@
       "overrides": {
         "nodes": {
           "node_c2c3ec68": {
-            "temperature": 293.15
+            "temperature_k": 293.15
           },
           "node_8fd45f2a": {
-            "temperature": 293.15
+            "temperature_k": 293.15
           }
         },
         "global_settings": {}
@@ -82,9 +82,9 @@
       "data": {
         "label": "TANK_330",
         "rotation": 0,
-        "level": 0.1,
-        "elevation": 0.1,
-        "temperature": 338.15
+        "level_m": 0.1,
+        "elevation_m": 0.1,
+        "temperature_k": 338.15
       }
     },
     {
@@ -105,9 +105,9 @@
       "data": {
         "label": "P-2358A",
         "rotation": 270,
-        "flow_rated": 505,
-        "motor_power": 18.5,
-        "efficiency": 63,
+        "flow_rated_lmin": 505,
+        "motor_power_kw": 18.5,
+        "efficiency_pct": 63,
         "active": true
       }
     },
@@ -129,9 +129,9 @@
       "data": {
         "label": "TANK_330_copy",
         "rotation": 0,
-        "level": 0.1,
-        "elevation": 0.1,
-        "temperature": 338.15
+        "level_m": 0.1,
+        "elevation_m": 0.1,
+        "temperature_k": 338.15
       }
     },
     {
@@ -152,9 +152,9 @@
       "data": {
         "label": "P-2358B",
         "rotation": 270,
-        "flow_rated": 505,
-        "motor_power": 18.5,
-        "efficiency": 63,
+        "flow_rated_lmin": 505,
+        "motor_power_kw": 18.5,
+        "efficiency_pct": 63,
         "active": false
       }
     },
@@ -346,9 +346,9 @@
       "data": {
         "label": "TANK_985",
         "rotation": 90,
-        "level": 0.1,
-        "elevation": 0.1,
-        "temperature": 338.15
+        "level_m": 0.1,
+        "elevation_m": 0.1,
+        "temperature_k": 338.15
       }
     },
     {
@@ -438,10 +438,10 @@
       "data": {
         "label": "FILTER_998",
         "rotation": 0,
-        "dp_clean": 0.3,
-        "dp_terminal": 1,
-        "flow_ref": 510,
-        "clogging": 0
+        "dp_clean_bar": 0.3,
+        "dp_terminal_bar": 1,
+        "flow_ref_lmin": 510,
+        "clogging_pct": 0
       }
     },
     {
@@ -511,8 +511,8 @@
       "data": {
         "label": "ORIFICE_604",
         "rotation": 90,
-        "pipe_diameter": 0.05248,
-        "orifice_diameter": 0.002,
+        "pipe_diameter_m": 0.05248,
+        "orifice_diameter_m": 0.002,
         "standardDn": 50,
         "standardSch": "40",
         "sensing": {
@@ -539,9 +539,9 @@
       "data": {
         "label": "TANK_603",
         "rotation": 90,
-        "level": 0.1,
-        "elevation": 0.1,
-        "temperature": 313.15
+        "level_m": 0.1,
+        "elevation_m": 0.1,
+        "temperature_k": 313.15
       }
     },
     {
@@ -582,8 +582,8 @@
       "data": {
         "label": "RO-2301A",
         "rotation": 270,
-        "pipe_diameter": 0.05248,
-        "orifice_diameter": 0.0082,
+        "pipe_diameter_m": 0.05248,
+        "orifice_diameter_m": 0.0082,
         "standardDn": 50,
         "standardSch": "40"
       }
@@ -606,8 +606,8 @@
       "data": {
         "label": "RO-2301A",
         "rotation": 270,
-        "pipe_diameter": 0.05248,
-        "orifice_diameter": 0.0082,
+        "pipe_diameter_m": 0.05248,
+        "orifice_diameter_m": 0.0082,
         "standardDn": 50,
         "standardSch": "40"
       }
@@ -670,8 +670,8 @@
       "data": {
         "label": "RO-2301C",
         "rotation": 90,
-        "pipe_diameter": 0.05248,
-        "orifice_diameter": 0.0325,
+        "pipe_diameter_m": 0.05248,
+        "orifice_diameter_m": 0.0325,
         "standardDn": 50,
         "standardSch": "40",
         "sensing": {
@@ -717,8 +717,8 @@
       "data": {
         "label": "RO-2301D",
         "rotation": 90,
-        "pipe_diameter": 0.05248,
-        "orifice_diameter": 0.0077,
+        "pipe_diameter_m": 0.05248,
+        "orifice_diameter_m": 0.0077,
         "standardDn": 50,
         "standardSch": "40"
       }
@@ -741,8 +741,8 @@
       "data": {
         "label": "RO-2301E",
         "rotation": 90,
-        "pipe_diameter": 0.05248,
-        "orifice_diameter": 0.0077,
+        "pipe_diameter_m": 0.05248,
+        "orifice_diameter_m": 0.0077,
         "standardDn": 50,
         "standardSch": "40"
       }
@@ -785,8 +785,8 @@
       "data": {
         "label": "Internal Orifice 1",
         "rotation": 90,
-        "pipe_diameter": 0.05248,
-        "orifice_diameter": 0.01,
+        "pipe_diameter_m": 0.05248,
+        "orifice_diameter_m": 0.01,
         "standardDn": 50,
         "standardSch": "40"
       }
@@ -809,8 +809,8 @@
       "data": {
         "label": "Internal Orifice 2",
         "rotation": 90,
-        "pipe_diameter": 0.05248,
-        "orifice_diameter": 0.01,
+        "pipe_diameter_m": 0.05248,
+        "orifice_diameter_m": 0.01,
         "standardDn": 50,
         "standardSch": "40"
       }
@@ -854,8 +854,8 @@
         "label": "Gearbox",
         "rotation": 90,
         "flow_base_lmin": 219,
-        "inlet_pressure_base_bar": 2.8,
-        "outlet_pressure_base_bar": 1,
+        "inlet_pressure_base_bara": 2.8,
+        "outlet_pressure_base_bara": 1,
         "temp_base_c": 45,
         "restriction_model": "laminar",
         "fluid_type": "system"
@@ -879,9 +879,9 @@
       "data": {
         "label": "TANK_985_copy",
         "rotation": 90,
-        "level": 0.1,
-        "elevation": 0.1,
-        "temperature": 338.15
+        "level_m": 0.1,
+        "elevation_m": 0.1,
+        "temperature_k": 338.15
       }
     },
     {
@@ -903,8 +903,8 @@
         "label": "Compressor DE",
         "rotation": 90,
         "flow_base_lmin": 30,
-        "inlet_pressure_base_bar": 1.8,
-        "outlet_pressure_base_bar": 1,
+        "inlet_pressure_base_bara": 1.8,
+        "outlet_pressure_base_bara": 1,
         "temp_base_c": 45,
         "restriction_model": "laminar",
         "fluid_type": "system",
@@ -932,8 +932,8 @@
         "label": "Compressor NDE",
         "rotation": 90,
         "flow_base_lmin": 30,
-        "inlet_pressure_base_bar": 1.8,
-        "outlet_pressure_base_bar": 1,
+        "inlet_pressure_base_bara": 1.8,
+        "outlet_pressure_base_bara": 1,
         "temp_base_c": 45,
         "restriction_model": "laminar",
         "fluid_type": "system"
@@ -957,9 +957,9 @@
       "data": {
         "label": "TANK_985_copy_copy",
         "rotation": 90,
-        "level": 0.1,
-        "elevation": 0.1,
-        "temperature": 338.15
+        "level_m": 0.1,
+        "elevation_m": 0.1,
+        "temperature_k": 338.15
       }
     },
     {
@@ -980,9 +980,9 @@
       "data": {
         "label": "TANK_985_copy_copy_copy",
         "rotation": 90,
-        "level": 0.1,
-        "elevation": 0.1,
-        "temperature": 338.15
+        "level_m": 0.1,
+        "elevation_m": 0.1,
+        "temperature_k": 338.15
       }
     },
     {
@@ -1004,8 +1004,8 @@
         "label": "Compressor Thrust 1",
         "rotation": 90,
         "flow_base_lmin": 27.9,
-        "inlet_pressure_base_bar": 3,
-        "outlet_pressure_base_bar": 1,
+        "inlet_pressure_base_bara": 3,
+        "outlet_pressure_base_bara": 1,
         "temp_base_c": 45,
         "restriction_model": "laminar",
         "fluid_type": "system"
@@ -1030,8 +1030,8 @@
         "label": "Compressor Thrust 2",
         "rotation": 0,
         "flow_base_lmin": 27.9,
-        "inlet_pressure_base_bar": 3,
-        "outlet_pressure_base_bar": 1,
+        "inlet_pressure_base_bara": 3,
+        "outlet_pressure_base_bara": 1,
         "temp_base_c": 45,
         "restriction_model": "laminar",
         "fluid_type": "system"
@@ -1055,9 +1055,9 @@
       "data": {
         "label": "TANK_985_copy_copy_copy_copy",
         "rotation": 90,
-        "level": 0.1,
-        "elevation": 0.1,
-        "temperature": 338.15
+        "level_m": 0.1,
+        "elevation_m": 0.1,
+        "temperature_k": 338.15
       }
     },
     {
@@ -1078,9 +1078,9 @@
       "data": {
         "label": "TANK_985_copy_copy_copy_copy_copy",
         "rotation": 0,
-        "level": 0.1,
-        "elevation": 0.1,
-        "temperature": 338.15
+        "level_m": 0.1,
+        "elevation_m": 0.1,
+        "temperature_k": 338.15
       }
     },
     {
@@ -1102,8 +1102,8 @@
         "label": "Motor NDE",
         "rotation": 270,
         "flow_base_lmin": 15,
-        "inlet_pressure_base_bar": 2.8,
-        "outlet_pressure_base_bar": 1,
+        "inlet_pressure_base_bara": 2.8,
+        "outlet_pressure_base_bara": 1,
         "temp_base_c": 45,
         "restriction_model": "laminar",
         "fluid_type": "system"
@@ -1128,8 +1128,8 @@
         "label": "Motor DE",
         "rotation": 270,
         "flow_base_lmin": 15,
-        "inlet_pressure_base_bar": 2.8,
-        "outlet_pressure_base_bar": 1,
+        "inlet_pressure_base_bara": 2.8,
+        "outlet_pressure_base_bara": 1,
         "temp_base_c": 45,
         "restriction_model": "laminar",
         "fluid_type": "system"
@@ -1153,9 +1153,9 @@
       "data": {
         "label": "Motor NDE Return",
         "rotation": 270,
-        "level": 0.1,
-        "elevation": 0.1,
-        "temperature": 338.15
+        "level_m": 0.1,
+        "elevation_m": 0.1,
+        "temperature_k": 338.15
       }
     },
     {
@@ -1176,9 +1176,9 @@
       "data": {
         "label": "Motor DE Return",
         "rotation": 270,
-        "level": 0.1,
-        "elevation": 0.1,
-        "temperature": 338.15
+        "level_m": 0.1,
+        "elevation_m": 0.1,
+        "temperature_k": 338.15
       }
     },
     {
@@ -1192,7 +1192,7 @@
         "label": "REMOTE_CONTROL_VALVE_976",
         "rotation": 90,
         "max_cv": 54,
-        "set_pressure": 300000,
+        "set_pressure_pa": 300000,
         "backpressure": true
       },
       "width": 131,
@@ -1304,16 +1304,15 @@
       "data": {
         "label": "Pipe 100",
         "type": "PIPE",
-        "length": 0.1,
-        "diameter": 0.07792,
+        "length_m": 0.1,
+        "diameter_m": 0.07792,
         "standardDn": 80,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 88.9,
         "wall_thickness_mm": 5.49,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -1330,16 +1329,15 @@
       "data": {
         "label": "Pipe 101",
         "type": "PIPE",
-        "length": 0.4,
-        "diameter": 0.07792,
+        "length_m": 0.4,
+        "diameter_m": 0.07792,
         "standardDn": 80,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 88.9,
         "wall_thickness_mm": 5.49,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -1356,16 +1354,15 @@
       "data": {
         "label": "Pipe 102",
         "type": "PIPE",
-        "length": 0.5,
-        "diameter": 0.07792,
+        "length_m": 0.5,
+        "diameter_m": 0.07792,
         "standardDn": 80,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 88.9,
         "wall_thickness_mm": 5.49,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -1382,16 +1379,15 @@
       "data": {
         "label": "Pipe 103",
         "type": "PIPE",
-        "length": 0.5,
-        "diameter": 0.07792,
+        "length_m": 0.5,
+        "diameter_m": 0.07792,
         "standardDn": 80,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 88.9,
         "wall_thickness_mm": 5.49,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -1408,16 +1404,15 @@
       "data": {
         "label": "Pipe 104",
         "type": "PIPE",
-        "length": 0.5,
-        "diameter": 0.07792,
+        "length_m": 0.5,
+        "diameter_m": 0.07792,
         "standardDn": 80,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 88.9,
         "wall_thickness_mm": 5.49,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -1434,16 +1429,15 @@
       "data": {
         "label": "Pipe 105",
         "type": "PIPE",
-        "length": 0.5,
-        "diameter": 0.07792,
+        "length_m": 0.5,
+        "diameter_m": 0.07792,
         "standardDn": 80,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 88.9,
         "wall_thickness_mm": 5.49,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -1460,16 +1454,15 @@
       "data": {
         "label": "Pipe 106",
         "type": "PIPE",
-        "length": 0.2,
-        "diameter": 0.07792,
+        "length_m": 0.2,
+        "diameter_m": 0.07792,
         "standardDn": 80,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 88.9,
         "wall_thickness_mm": 5.49,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -1486,16 +1479,15 @@
       "data": {
         "label": "Pipe 107",
         "type": "PIPE",
-        "length": 0.3,
-        "diameter": 0.07792,
+        "length_m": 0.3,
+        "diameter_m": 0.07792,
         "standardDn": 80,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 88.9,
         "wall_thickness_mm": 5.49,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -1512,16 +1504,15 @@
       "data": {
         "label": "Pipe 108",
         "type": "PIPE",
-        "length": 0.5,
-        "diameter": 0.07792,
+        "length_m": 0.5,
+        "diameter_m": 0.07792,
         "standardDn": 80,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 88.9,
         "wall_thickness_mm": 5.49,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -1538,16 +1529,15 @@
       "data": {
         "label": "Pipe 109",
         "type": "PIPE",
-        "length": 0.4,
-        "diameter": 0.07792,
+        "length_m": 0.4,
+        "diameter_m": 0.07792,
         "standardDn": 80,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 88.9,
         "wall_thickness_mm": 5.49,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -1564,16 +1554,15 @@
       "data": {
         "label": "Pipe 110",
         "type": "PIPE",
-        "length": 0.2,
-        "diameter": 0.07792,
+        "length_m": 0.2,
+        "diameter_m": 0.07792,
         "standardDn": 80,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 88.9,
         "wall_thickness_mm": 5.49,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -1590,16 +1579,15 @@
       "data": {
         "label": "Pipe 111",
         "type": "PIPE",
-        "length": 0.4,
-        "diameter": 0.07792,
+        "length_m": 0.4,
+        "diameter_m": 0.07792,
         "standardDn": 80,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 88.9,
         "wall_thickness_mm": 5.49,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -1616,16 +1604,15 @@
       "data": {
         "label": "Pipe 112",
         "type": "PIPE",
-        "length": 0.5,
-        "diameter": 0.07792,
+        "length_m": 0.5,
+        "diameter_m": 0.07792,
         "standardDn": 80,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 88.9,
         "wall_thickness_mm": 5.49,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -1642,16 +1629,15 @@
       "data": {
         "label": "Pipe 115",
         "type": "PIPE",
-        "length": 0.5,
-        "diameter": 0.07792,
+        "length_m": 0.5,
+        "diameter_m": 0.07792,
         "standardDn": 80,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 88.9,
         "wall_thickness_mm": 5.49,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -1668,16 +1654,15 @@
       "data": {
         "label": "Pipe 116",
         "type": "PIPE",
-        "length": 8,
-        "diameter": 0.07792,
+        "length_m": 8,
+        "diameter_m": 0.07792,
         "standardDn": 80,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 88.9,
         "wall_thickness_mm": 5.49,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -1694,16 +1679,15 @@
       "data": {
         "label": "Pipe 117",
         "type": "PIPE",
-        "length": 1,
-        "diameter": 0.07792,
+        "length_m": 1,
+        "diameter_m": 0.07792,
         "standardDn": 80,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 88.9,
         "wall_thickness_mm": 5.49,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -1720,16 +1704,15 @@
       "data": {
         "label": "Pipe 118",
         "type": "PIPE",
-        "length": 8,
-        "diameter": 0.07792,
+        "length_m": 8,
+        "diameter_m": 0.07792,
         "standardDn": 80,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 88.9,
         "wall_thickness_mm": 5.49,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -1746,16 +1729,15 @@
       "data": {
         "label": "Pipe 119",
         "type": "PIPE",
-        "length": 0.15,
-        "diameter": 0.07792,
+        "length_m": 0.15,
+        "diameter_m": 0.07792,
         "standardDn": 80,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 88.9,
         "wall_thickness_mm": 5.49,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -1772,16 +1754,15 @@
       "data": {
         "label": "Pipe 119",
         "type": "PIPE",
-        "length": 0.15,
-        "diameter": 0.07792,
+        "length_m": 0.15,
+        "diameter_m": 0.07792,
         "standardDn": 80,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 88.9,
         "wall_thickness_mm": 5.49,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -1798,16 +1779,15 @@
       "data": {
         "label": "Pipe 120",
         "type": "PIPE",
-        "length": 0.5,
-        "diameter": 0.07792,
+        "length_m": 0.5,
+        "diameter_m": 0.07792,
         "standardDn": 80,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 88.9,
         "wall_thickness_mm": 5.49,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -1824,16 +1804,15 @@
       "data": {
         "label": "Pipe 121",
         "type": "PIPE",
-        "length": 0.5,
-        "diameter": 0.07792,
+        "length_m": 0.5,
+        "diameter_m": 0.07792,
         "standardDn": 80,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 88.9,
         "wall_thickness_mm": 5.49,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -1850,16 +1829,15 @@
       "data": {
         "label": "Pipe 122",
         "type": "PIPE",
-        "length": 2,
-        "diameter": 0.02116,
+        "length_m": 2,
+        "diameter_m": 0.02116,
         "standardDn": 20,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 26.9,
         "wall_thickness_mm": 2.87,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -1876,16 +1854,15 @@
       "data": {
         "label": "Pipe 123",
         "type": "PIPE",
-        "length": 1,
-        "diameter": 0.02116,
+        "length_m": 1,
+        "diameter_m": 0.02116,
         "standardDn": 20,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 26.9,
         "wall_thickness_mm": 2.87,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -1902,16 +1879,15 @@
       "data": {
         "label": "Pipe 124",
         "type": "PIPE",
-        "length": 1,
-        "diameter": 0.07792,
+        "length_m": 1,
+        "diameter_m": 0.07792,
         "standardDn": 80,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 88.9,
         "wall_thickness_mm": 5.49,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -1928,16 +1904,15 @@
       "data": {
         "label": "Pipe 125",
         "type": "PIPE",
-        "length": 2,
-        "diameter": 0.02116,
+        "length_m": 2,
+        "diameter_m": 0.02116,
         "standardDn": 20,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 26.9,
         "wall_thickness_mm": 2.87,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -1954,16 +1929,15 @@
       "data": {
         "label": "Pipe 126",
         "type": "PIPE",
-        "length": 1,
-        "diameter": 0.02116,
+        "length_m": 1,
+        "diameter_m": 0.02116,
         "standardDn": 20,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 26.9,
         "wall_thickness_mm": 2.87,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -1980,16 +1954,15 @@
       "data": {
         "label": "Pipe 127",
         "type": "PIPE",
-        "length": 0.3,
-        "diameter": 0.02116,
+        "length_m": 0.3,
+        "diameter_m": 0.02116,
         "standardDn": 20,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 26.9,
         "wall_thickness_mm": 2.87,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -2006,16 +1979,15 @@
       "data": {
         "label": "Pipe 128",
         "type": "PIPE",
-        "length": 0.1,
-        "diameter": 0.07792,
+        "length_m": 0.1,
+        "diameter_m": 0.07792,
         "standardDn": 80,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 88.9,
         "wall_thickness_mm": 5.49,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -2032,16 +2004,15 @@
       "data": {
         "label": "Pipe 129",
         "type": "PIPE",
-        "length": 1,
-        "diameter": 0.02116,
+        "length_m": 1,
+        "diameter_m": 0.02116,
         "standardDn": 20,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 26.9,
         "wall_thickness_mm": 2.87,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -2058,16 +2029,15 @@
       "data": {
         "label": "Pipe 130",
         "type": "PIPE",
-        "length": 0.3,
-        "diameter": 0.02116,
+        "length_m": 0.3,
+        "diameter_m": 0.02116,
         "standardDn": 20,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 26.9,
         "wall_thickness_mm": 2.87,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -2084,16 +2054,15 @@
       "data": {
         "label": "Pipe 131",
         "type": "PIPE",
-        "length": 0.1,
-        "diameter": 0.07792,
+        "length_m": 0.1,
+        "diameter_m": 0.07792,
         "standardDn": 80,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 88.9,
         "wall_thickness_mm": 5.49,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -2110,16 +2079,15 @@
       "data": {
         "label": "Pipe 132",
         "type": "PIPE",
-        "length": 1,
-        "diameter": 0.07792,
+        "length_m": 1,
+        "diameter_m": 0.07792,
         "standardDn": 80,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 88.9,
         "wall_thickness_mm": 5.49,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -2136,16 +2104,15 @@
       "data": {
         "label": "Pipe 133",
         "type": "PIPE",
-        "length": 0.3,
-        "diameter": 0.07792,
+        "length_m": 0.3,
+        "diameter_m": 0.07792,
         "standardDn": 80,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 88.9,
         "wall_thickness_mm": 5.49,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -2162,16 +2129,15 @@
       "data": {
         "label": "Pipe 134",
         "type": "PIPE",
-        "length": 0.3,
-        "diameter": 0.07792,
+        "length_m": 0.3,
+        "diameter_m": 0.07792,
         "standardDn": 80,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 88.9,
         "wall_thickness_mm": 5.49,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -2188,16 +2154,15 @@
       "data": {
         "label": "Pipe 135",
         "type": "PIPE",
-        "length": 0.1,
-        "diameter": 0.07792,
+        "length_m": 0.1,
+        "diameter_m": 0.07792,
         "standardDn": 80,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 88.9,
         "wall_thickness_mm": 5.49,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -2214,16 +2179,15 @@
       "data": {
         "label": "Pipe 136",
         "type": "PIPE",
-        "length": 0.3,
-        "diameter": 0.04094,
+        "length_m": 0.3,
+        "diameter_m": 0.04094,
         "standardDn": 40,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 48.3,
         "wall_thickness_mm": 3.68,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -2240,16 +2204,15 @@
       "data": {
         "label": "Pipe 137",
         "type": "PIPE",
-        "length": 0.5,
-        "diameter": 0.04094,
+        "length_m": 0.5,
+        "diameter_m": 0.04094,
         "standardDn": 40,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 48.3,
         "wall_thickness_mm": 3.68,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -2266,16 +2229,15 @@
       "data": {
         "label": "Pipe 138",
         "type": "PIPE",
-        "length": 0.8,
-        "diameter": 0.04094,
+        "length_m": 0.8,
+        "diameter_m": 0.04094,
         "standardDn": 40,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 48.3,
         "wall_thickness_mm": 3.68,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -2292,16 +2254,15 @@
       "data": {
         "label": "Pipe 139",
         "type": "PIPE",
-        "length": 0.5,
-        "diameter": 0.04094,
+        "length_m": 0.5,
+        "diameter_m": 0.04094,
         "standardDn": 40,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 48.3,
         "wall_thickness_mm": 3.68,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -2318,16 +2279,15 @@
       "data": {
         "label": "Pipe 140",
         "type": "PIPE",
-        "length": 0.3,
-        "diameter": 0.04094,
+        "length_m": 0.3,
+        "diameter_m": 0.04094,
         "standardDn": 40,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 48.3,
         "wall_thickness_mm": 3.68,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -2344,16 +2304,15 @@
       "data": {
         "label": "Pipe 141",
         "type": "PIPE",
-        "length": 0.5,
-        "diameter": 0.04094,
+        "length_m": 0.5,
+        "diameter_m": 0.04094,
         "standardDn": 40,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 48.3,
         "wall_thickness_mm": 3.68,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -2370,16 +2329,15 @@
       "data": {
         "label": "Pipe 142",
         "type": "PIPE",
-        "length": 0.3,
-        "diameter": 0.04094,
+        "length_m": 0.3,
+        "diameter_m": 0.04094,
         "standardDn": 40,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 48.3,
         "wall_thickness_mm": 3.68,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -2396,16 +2354,15 @@
       "data": {
         "label": "Pipe 143",
         "type": "PIPE",
-        "length": 0.6,
-        "diameter": 0.02116,
+        "length_m": 0.6,
+        "diameter_m": 0.02116,
         "standardDn": 20,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 26.9,
         "wall_thickness_mm": 2.87,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -2422,16 +2379,15 @@
       "data": {
         "label": "Pipe 144",
         "type": "PIPE",
-        "length": 0.3,
-        "diameter": 0.02116,
+        "length_m": 0.3,
+        "diameter_m": 0.02116,
         "standardDn": 20,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 26.9,
         "wall_thickness_mm": 2.87,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -2448,16 +2404,15 @@
       "data": {
         "label": "Pipe 145",
         "type": "PIPE",
-        "length": 0.8,
-        "diameter": 0.02116,
+        "length_m": 0.8,
+        "diameter_m": 0.02116,
         "standardDn": 20,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 26.9,
         "wall_thickness_mm": 2.87,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -2474,16 +2429,15 @@
       "data": {
         "label": "Pipe 146",
         "type": "PIPE",
-        "length": 0.3,
-        "diameter": 0.02116,
+        "length_m": 0.3,
+        "diameter_m": 0.02116,
         "standardDn": 20,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 26.9,
         "wall_thickness_mm": 2.87,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -2500,16 +2454,15 @@
       "data": {
         "label": "Pipe 147",
         "type": "PIPE",
-        "length": 0.1,
-        "diameter": 0.10226,
+        "length_m": 0.1,
+        "diameter_m": 0.10226,
         "standardDn": 100,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 114.3,
         "wall_thickness_mm": 6.02,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -2526,16 +2479,15 @@
       "data": {
         "label": "Pipe 148",
         "type": "PIPE",
-        "length": 0.1,
-        "diameter": 0.10226,
+        "length_m": 0.1,
+        "diameter_m": 0.10226,
         "standardDn": 100,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 114.3,
         "wall_thickness_mm": 6.02,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -2552,16 +2504,15 @@
       "data": {
         "label": "Pipe 149",
         "type": "PIPE",
-        "length": 0.1,
-        "diameter": 0.10226,
+        "length_m": 0.1,
+        "diameter_m": 0.10226,
         "standardDn": 100,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 114.3,
         "wall_thickness_mm": 6.02,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -2578,16 +2529,15 @@
       "data": {
         "label": "Pipe 150",
         "type": "PIPE",
-        "length": 0.1,
-        "diameter": 0.10226,
+        "length_m": 0.1,
+        "diameter_m": 0.10226,
         "standardDn": 100,
         "standardSch": "STD",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "outer_diameter_mm": 114.3,
         "wall_thickness_mm": 6.02,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -2603,16 +2553,15 @@
       "data": {
         "label": "Pipe 151",
         "type": "PIPE",
-        "length": 25,
-        "diameter": 0.05248,
+        "length_m": 25,
+        "diameter_m": 0.05248,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 50,
         "standardSch": "STD",
         "outer_diameter_mm": 60.3,
         "wall_thickness_mm": 3.91,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       },
       "selected": false
     },
@@ -2629,16 +2578,15 @@
       "data": {
         "label": "Pipe 152",
         "type": "PIPE",
-        "length": 25,
-        "diameter": 0.05248,
+        "length_m": 25,
+        "diameter_m": 0.05248,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 50,
         "standardSch": "STD",
         "outer_diameter_mm": 60.3,
         "wall_thickness_mm": 3.91,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       },
       "selected": false
     },
@@ -2659,16 +2607,15 @@
       "data": {
         "label": "Signal 153",
         "type": "SIGNAL",
-        "length": 25,
-        "diameter": 0.05248,
+        "length_m": 25,
+        "diameter_m": 0.05248,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 50,
         "standardSch": "STD",
         "outer_diameter_mm": 60.3,
         "wall_thickness_mm": 3.91,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {

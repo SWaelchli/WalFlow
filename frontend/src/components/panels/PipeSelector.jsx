@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useUnits } from '../../context/UnitContext';
+import { mToIn } from '../../utils/converters';
 import { resolvePipeSelection, findPipeClass, matchScheduleByInnerDiameter, manualSelectionPatch, classSelectionPatch, classSizePatch, schedulePatch } from '../../utils/pipeDefaults';
 import { getScheduleStandardOptions, getScheduleStandardName, getScheduleDataset, getScheduleBore, listSchedules, scheduleLabel, classScheduleCodes, classReducerCodes } from '../../utils/pipe_schedules';
 import { formatDnOption, normalizeReducerStandard, getReducerStandardOptions } from '../../utils/reducer_catalog';
@@ -9,7 +10,7 @@ import DraftNumberInput from '../common/DraftNumberInput';
 /**
  * PipeSelector: pick a pipe class and size, or manual dimensions from the pipe schedule catalogs
  * (ASME B36.10M / B36.19M, DIN EN 10220 / EN ISO 1127), all read from the fitting catalog API.
- * Emits SI values (diameter in m, roughness_mm in mm).
+ * Emits SI values (diameter_m in m, roughness_mm in mm).
  */
 const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPipes = true }) => {
   const { isImperial } = useUnits();
@@ -27,7 +28,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
 
   const [manualMode, setManualMode] = useState(selection.isCustomId ? 'free' : 'preset'); // 'preset' | 'free'
 
-  const value = data.diameter || 0;
+  const value = data.diameter_m || 0;
   const currentDn = selection.dn;
   const currentSch = selection.sch || 'STD';
   const scheduleStandard = selection.scheduleStandard;
@@ -135,7 +136,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
               <div>OD: <strong style={{ color: 'var(--color-text-primary)' }}>{isImperial ? `${(currentOdMm / 25.4).toFixed(3)} in` : `${currentOdMm.toFixed(1)} mm`}</strong></div>
               <div>WT: <strong style={{ color: 'var(--color-text-primary)' }}>{isImperial ? `${(currentWtMm / 25.4).toFixed(3)} in` : `${currentWtMm.toFixed(2)} mm`}</strong></div>
-              <div>ID: <strong style={{ color: 'var(--color-primary-text)' }}>{isImperial ? `${(value * 39.3701).toFixed(3)} in` : `${(value * 1000).toFixed(2)} mm`}</strong></div>
+              <div>ID: <strong style={{ color: 'var(--color-primary-text)' }}>{isImperial ? `${mToIn(value)} in` : `${(value * 1000).toFixed(2)} mm`}</strong></div>
               <div>Area: <strong style={{ color: 'var(--color-text-primary)' }}>{isImperial ? `${flowAreaIn2.toFixed(2)} in²` : `${flowAreaCm2.toFixed(2)} cm²`}</strong></div>
             </div>
             <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
@@ -170,7 +171,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
             <div>Size: <strong style={{ color: 'var(--color-text-primary)' }}>{formatDnOption(currentDn)} • {scheduleLabel(data.standardSch)}</strong></div>
             <div>OD: <strong style={{ color: 'var(--color-text-primary)' }}>{isImperial ? `${(currentOdMm / 25.4).toFixed(3)} in` : `${currentOdMm.toFixed(1)} mm`}</strong></div>
             <div>WT: <strong style={{ color: 'var(--color-text-primary)' }}>{isImperial ? `${(currentWtMm / 25.4).toFixed(3)} in` : `${currentWtMm.toFixed(2)} mm`}</strong></div>
-            <div>ID: <strong style={{ color: 'var(--color-primary-text)' }}>{isImperial ? `${(value * 39.3701).toFixed(3)} in` : `${(value * 1000).toFixed(2)} mm`}</strong></div>
+            <div>ID: <strong style={{ color: 'var(--color-primary-text)' }}>{isImperial ? `${mToIn(value)} in` : `${(value * 1000).toFixed(2)} mm`}</strong></div>
             <div>Area: <strong style={{ color: 'var(--color-text-primary)' }}>{isImperial ? `${flowAreaIn2.toFixed(2)} in²` : `${flowAreaCm2.toFixed(2)} cm²`}</strong></div>
           </div>
         </>
@@ -314,7 +315,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
               }}>
                 <div>OD: <strong style={{ color: 'var(--color-text-primary)' }}>{isImperial ? `${(currentOdMm / 25.4).toFixed(3)} in` : `${currentOdMm.toFixed(1)} mm`}</strong></div>
                 <div>WT: <strong style={{ color: 'var(--color-text-primary)' }}>{isImperial ? `${(currentWtMm / 25.4).toFixed(3)} in` : `${currentWtMm.toFixed(2)} mm`}</strong></div>
-                <div>ID: <strong style={{ color: 'var(--color-primary-text)' }}>{isImperial ? `${(value * 39.3701).toFixed(3)} in` : `${(value * 1000).toFixed(2)} mm`}</strong></div>
+                <div>ID: <strong style={{ color: 'var(--color-primary-text)' }}>{isImperial ? `${mToIn(value)} in` : `${(value * 1000).toFixed(2)} mm`}</strong></div>
                 <div>Area: <strong style={{ color: 'var(--color-text-primary)' }}>{isImperial ? `${flowAreaIn2.toFixed(2)} in²` : `${flowAreaCm2.toFixed(2)} cm²`}</strong></div>
               </div>
             </>
@@ -335,7 +336,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
                   const match = matchScheduleByInnerDiameter(idM, scheduleStandard, scheduleOptions);
                   const sch = match ? getScheduleBore(match.dn, match.sch, scheduleStandard, scheduleOptions) : null;
                   onChange({
-                    diameter: idM,
+                    diameter_m: idM,
                     standardDn: sch ? sch.dn : null,
                     standardSch: sch ? sch.sch : null,
                     outer_diameter_mm: sch ? sch.od_mm : null,
@@ -358,10 +359,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
               onChange={(e) => {
                 const raw = parseFloat(e.target.value);
                 if (!isNaN(raw) && raw >= 0) {
-                  onChange({
-                    roughness_mm: raw,
-                    roughness: raw / 1000.0
-                  });
+                  onChange({ roughness_mm: raw });
                 }
               }}
             />

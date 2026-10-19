@@ -8,7 +8,7 @@ This document provides theoretical transparency, engineering standard citations,
 
 ## 📋 Required Structure for `<equipment>.md`
 
-Every `<equipment>.md` file must contain the following 7 standard sections:
+Every `<equipment>.md` file must contain the following 7 standard sections and a `## Data Fields` section (exact heading; a test reads it):
 
 ```markdown
 # [Equipment Name] (`node_type_string`)
@@ -44,7 +44,22 @@ Brief high-level description of what the equipment is, its role in a hydraulic P
 ## 7. Verification & Benchmarks
 - Reference test file: `backend/tests/unit/equipment/test_<name>.py`.
 - Benchmark calibration point values used in automated test assertions.
+
+## Data Fields
+
+Node type: `node_type_string`. Field names follow the naming rule in [base_node.md](base_node.md), which also lists the fields of every component.
+
+| Field | Unit in file | Default |
+|---|---|---|
+| `flow_base_lmin` | L/min | 10 |
+| `restriction_model` | text (`orifice` / `laminar` / `quadratic`) | orifice |
 ```
+
+### Data Fields rules
+
+- List exactly the keys `GraphParser._build_node` reads from the node's `data` for this type (fields of every component, such as `label` and `active`, are in `base_node.md`). `backend/tests/unit/solver/test_node_fields_documented.py` fails when the parser and the tables differ, or when a node type has no section.
+- Every dimensional field carries its unit in the name: `_pa`, `_bar`, `_barg`, `_bara`, `_lmin`, `_c`, `_k`, `_m`, `_mm`, `_kw`, `_w_k`, `_pct`, `_deg`, `_mpas`. The "Unit in file" column must match the suffix (the test checks it). Unitless fields (`text`, `bool`, `Cv`, `DN`, `index`, `catalogue id`) have no suffix.
+- Renaming an existing field: before a release, rename it everywhere (saved files are not converted). After a release, a rename is a file format incompatibility and follows the Versioning Policy in `AGENTS.md`.
 
 ---
 
@@ -96,8 +111,8 @@ $$dT = \frac{|\Delta P|}{\rho \cdot C_p(T)}$$
 | Parameter | UI Unit | Backend Var | SI Unit | Default | Range | Description |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | Baseline Flow | L/min | `flow_base_lmin` | $\text{m}^3/\text{s}$ | `10.0` | $> 0$ | Calibrated flow rate |
-| Inlet Pressure | bar | `inlet_pressure_base_bar` | Pa | `3.5` | $> 0$ | Calibrated inlet pressure |
-| Outlet Pressure | bar | `outlet_pressure_base_bar` | Pa | `1.0` | $> 0$ | Calibrated outlet pressure |
+| Inlet Pressure | bar(a) | `inlet_pressure_base_bara` | Pa | `3.5` | $> 0$ | Calibrated inlet pressure |
+| Outlet Pressure | bar(a) | `outlet_pressure_base_bara` | Pa | `1.0` | $> 0$ | Calibrated outlet pressure |
 | Base Temperature | °C | `temp_base_c` | K | `45.0` | $-50 \dots 200$ | Calibration fluid temp |
 | Model | - | `restriction_model` | str | `'orifice'` | `orifice, quadratic, laminar` | Calculation formula standard |
 

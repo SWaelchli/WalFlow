@@ -54,3 +54,7 @@ The class has no `calculate_delta_p`, so the solver treats it like a splitter or
 | `label` | `str` | — | `"Measurement Tap n"` | Tag shown on the drawing and in instrument locations |
 
 The tap has no hydraulic parameters.
+
+## Data Fields
+
+Node type: `measure_point`. No fields of its own; only the fields of every component in [base_node.md](base_node.md).

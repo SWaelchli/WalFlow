@@ -32,9 +32,9 @@
       },
       "data": {
         "label": "Feed Tank",
-        "level": 2.0,
-        "elevation": 0.0,
-        "temperature": 293.15
+        "level_m": 2.0,
+        "elevation_m": 0.0,
+        "temperature_k": 293.15
       }
     },
     {
@@ -72,7 +72,7 @@
       "data": {
         "label": "BPR (Upstream Set: 5 bar(a))",
         "max_cv": 8.0,
-        "set_pressure": 500000,
+        "set_pressure_pa": 500000,
         "backpressure": true
       }
     },
@@ -85,9 +85,9 @@
       },
       "data": {
         "label": "Overpressure Bypass Tank",
-        "level": 0.5,
-        "elevation": 0.0,
-        "temperature": 293.15
+        "level_m": 0.5,
+        "elevation_m": 0.0,
+        "temperature_k": 293.15
       }
     },
     {
@@ -100,7 +100,7 @@
       "data": {
         "label": "PRV (Downstream Set: 3 bar(a))",
         "max_cv": 8.0,
-        "set_pressure": 300000,
+        "set_pressure_pa": 300000,
         "backpressure": false
       }
     },
@@ -113,7 +113,7 @@
       },
       "data": {
         "label": "Process Load Orifice",
-        "orifice_diameter": 0.012
+        "orifice_diameter_m": 0.012
       }
     },
     {
@@ -125,9 +125,9 @@
       },
       "data": {
         "label": "Process Sink Tank",
-        "level": 0.5,
-        "elevation": 0.0,
-        "temperature": 293.15
+        "level_m": 0.5,
+        "elevation_m": 0.0,
+        "temperature_k": 293.15
       }
     }
   ],
@@ -140,16 +140,15 @@
       "targetHandle": "inlet-0",
       "data": {
         "label": "Suction",
-        "length": 2,
-        "diameter": 0.03528,
+        "length_m": 2,
+        "diameter_m": 0.03528,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 32,
         "standardSch": "STD",
         "outer_diameter_mm": 42.4,
         "wall_thickness_mm": 3.56,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -160,16 +159,15 @@
       "targetHandle": "inlet-0",
       "data": {
         "label": "Discharge",
-        "length": 2,
-        "diameter": 0.02664,
+        "length_m": 2,
+        "diameter_m": 0.02664,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 25,
         "standardSch": "STD",
         "outer_diameter_mm": 33.4,
         "wall_thickness_mm": 3.38,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -180,16 +178,15 @@
       "targetHandle": "inlet-0",
       "data": {
         "label": "BPR Branch",
-        "length": 2,
-        "diameter": 0.02664,
+        "length_m": 2,
+        "diameter_m": 0.02664,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 25,
         "standardSch": "STD",
         "outer_diameter_mm": 33.4,
         "wall_thickness_mm": 3.38,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -200,16 +197,15 @@
       "targetHandle": "inlet-0",
       "data": {
         "label": "Bypass Return",
-        "length": 3,
-        "diameter": 0.02664,
+        "length_m": 3,
+        "diameter_m": 0.02664,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 25,
         "standardSch": "STD",
         "outer_diameter_mm": 33.4,
         "wall_thickness_mm": 3.38,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -220,16 +216,15 @@
       "targetHandle": "inlet-0",
       "data": {
         "label": "PRV Branch",
-        "length": 2,
-        "diameter": 0.02664,
+        "length_m": 2,
+        "diameter_m": 0.02664,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 25,
         "standardSch": "STD",
         "outer_diameter_mm": 33.4,
         "wall_thickness_mm": 3.38,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -240,16 +235,15 @@
       "targetHandle": "inlet-0",
       "data": {
         "label": "Regulated Supply",
-        "length": 2,
-        "diameter": 0.02664,
+        "length_m": 2,
+        "diameter_m": 0.02664,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 25,
         "standardSch": "STD",
         "outer_diameter_mm": 33.4,
         "wall_thickness_mm": 3.38,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -260,16 +254,15 @@
       "targetHandle": "inlet-0",
       "data": {
         "label": "Sink Return",
-        "length": 2,
-        "diameter": 0.02664,
+        "length_m": 2,
+        "diameter_m": 0.02664,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 25,
         "standardSch": "STD",
         "outer_diameter_mm": 33.4,
         "wall_thickness_mm": 3.38,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     }
   ],

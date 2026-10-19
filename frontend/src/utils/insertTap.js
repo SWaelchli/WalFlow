@@ -20,7 +20,7 @@ export function splitEdgeWithTap({ nodes, edges, edgeId, position, tapId, tapDat
   if (!canInsertTap(edge)) return null;
 
   const { telemetry: _telemetry, ...pipeData } = edge.data || {};
-  const halfLength = Number(pipeData.length ?? DEFAULT_PIPE_LENGTH_M) / 2;
+  const halfLength = Number(pipeData.length_m ?? DEFAULT_PIPE_LENGTH_M) / 2;
 
   const tap = {
     id: tapId,
@@ -34,7 +34,7 @@ export function splitEdgeWithTap({ nodes, edges, edgeId, position, tapId, tapDat
     selected: false,
     target: tapId,
     targetHandle: 'inlet-0',
-    data: { ...pipeData, length: halfLength },
+    data: { ...pipeData, length_m: halfLength },
   };
   const downstream = {
     ...edge,
@@ -43,7 +43,7 @@ export function splitEdgeWithTap({ nodes, edges, edgeId, position, tapId, tapDat
     selected: false,
     source: tapId,
     sourceHandle: 'outlet-0',
-    data: { ...pipeData, label: downstreamLabel, length: halfLength },
+    data: { ...pipeData, label: downstreamLabel, length_m: halfLength },
   };
 
   return {

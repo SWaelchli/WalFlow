@@ -14,10 +14,10 @@ export default function RemoteControlValveNode({ id, data, selected }) {
   const telemetry = data.telemetry;
   const rotation = data.rotation || 0;
   const sensing = useMemo(() => data.sensing || {}, [data.sensing]);
-  const opening = telemetry?.opening_pct ?? (data.opening ?? 50.0);
+  const opening = telemetry?.opening_pct ?? (data.opening_pct ?? 50.0);
   const flow = telemetry?.outlets?.[0]?.flow_rate || 0;
   const flowFormatted = formatFlowM3s(flow);
-  const setPressureFormatted = formatPressurePa(data.set_pressure || 500000);
+  const setPressureFormatted = formatPressurePa(data.set_pressure_pa || 500000);
 
   return (
     <BaseNode

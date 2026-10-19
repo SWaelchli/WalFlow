@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getCaseTelemetrySet, getEffectiveNodeData, getEffectiveEdgeData, updateCaseTelemetry } from './case_resolver';
+import { areValuesEquivalent, getCaseTelemetrySet, getEffectiveNodeData, getEffectiveEdgeData, updateCaseTelemetry } from './case_resolver';
 
 const tel = (p) => ({ nodes: { psv: { inlets: [{ pressure: p }], outlets: [] } }, edges: {} });
 
@@ -44,5 +44,15 @@ describe('F2-07: results come from the case only', () => {
   it('stores the input hash with the results', () => {
     const [updated] = updateCaseTelemetry([solved], 'case_base', tel(1), { k: 1 }, null, null, 'h1');
     expect(updated.result_hash).toBe('h1');
+  });
+});
+
+describe('areValuesEquivalent fallbacks', () => {
+  it('uses the parser defaults for a missing tank level and source temperature', () => {
+    // graph_parser.py: level_m defaults to 1.0 m, temperature_k to 293.15 K
+    expect(areValuesEquivalent(undefined, 1.0, 'level_m')).toBe(true);
+    expect(areValuesEquivalent(undefined, 0.0, 'level_m')).toBe(false);
+    expect(areValuesEquivalent(null, 293.15, 'temperature_k')).toBe(true);
+    expect(areValuesEquivalent(null, 313.15, 'temperature_k')).toBe(false);
   });
 });

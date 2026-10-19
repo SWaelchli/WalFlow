@@ -25,7 +25,7 @@ export function getHeatmapColor(edgeData, heatmapMode = 'default', activeRange) 
   const avgQ_m3s = (q_in_m3s + q_out_m3s) / 2.0;
   const avgQ_lmin = avgQ_m3s * 60000.0;
 
-  const diaValue = edgeData?.diameter || 0.1;
+  const diaValue = edgeData?.diameter_m || 0.1;
   const area = (Math.PI * Math.pow(diaValue, 2)) / 4.0;
   const avgV = area > 0 ? avgQ_m3s / area : 0;
 

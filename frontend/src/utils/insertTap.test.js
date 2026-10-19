@@ -3,7 +3,7 @@ import { splitEdgeWithTap, canInsertTap } from './insertTap';
 
 const pipe = {
   id: 'e1', source: 'a', target: 'b', sourceHandle: 'outlet-0', targetHandle: 'inlet-0', label: 'Pipe 100',
-  data: { label: 'Pipe 100', type: 'PIPE', length: 30, diameter: 0.05248, roughness_mm: 0.045, pipeClass: 'CS', telemetry: { flow_rate: 1 } },
+  data: { label: 'Pipe 100', type: 'PIPE', length_m: 30, diameter_m: 0.05248, roughness_mm: 0.045, pipeClass: 'CS', telemetry: { flow_rate: 1 } },
 };
 const signal = { id: 's1', source: 'a', target: 'v', sourceHandle: 'signal-outlet-0', targetHandle: 'signal-in', data: { type: 'SIGNAL' } };
 const nodes = [{ id: 'a', type: 'tank', position: { x: 0, y: 0 }, data: {} }, { id: 'b', type: 'tank', position: { x: 200, y: 0 }, data: {} }];
@@ -23,8 +23,8 @@ describe('splitEdgeWithTap', () => {
     const down = e.find((x) => x.id === 'e2');
     expect(up).toMatchObject({ source: 'a', sourceHandle: 'outlet-0', target: 'tap', targetHandle: 'inlet-0', label: 'Pipe 100' });
     expect(down).toMatchObject({ source: 'tap', sourceHandle: 'outlet-0', target: 'b', targetHandle: 'inlet-0', label: 'Pipe 101' });
-    expect(up.data).toMatchObject({ label: 'Pipe 100', length: 15, diameter: 0.05248, roughness_mm: 0.045, pipeClass: 'CS' });
-    expect(down.data).toMatchObject({ label: 'Pipe 101', length: 15, diameter: 0.05248, roughness_mm: 0.045, pipeClass: 'CS' });
+    expect(up.data).toMatchObject({ label: 'Pipe 100', length_m: 15, diameter_m: 0.05248, roughness_mm: 0.045, pipeClass: 'CS' });
+    expect(down.data).toMatchObject({ label: 'Pipe 101', length_m: 15, diameter_m: 0.05248, roughness_mm: 0.045, pipeClass: 'CS' });
   });
 
   it('drops the old results and keeps other edges in place', () => {
@@ -36,7 +36,7 @@ describe('splitEdgeWithTap', () => {
 
   it('halves the default length when the pipe has none', () => {
     const { edges: e } = split({ edges: [{ ...pipe, data: { type: 'PIPE' } }] });
-    expect(e[0].data.length).toBe(12.5);
+    expect(e[0].data.length_m).toBe(12.5);
   });
 
   it('refuses signal lines and unknown edges', () => {

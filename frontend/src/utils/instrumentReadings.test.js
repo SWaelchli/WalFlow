@@ -11,8 +11,8 @@ const tel = {
   },
 };
 const edges = [
-  { id: 'p1', source: 'pump', target: 'tap', sourceHandle: 'outlet-0', targetHandle: 'inlet-0', data: { type: 'PIPE', diameter: 0.05 } },
-  { id: 'p2', source: 'tap', target: 'tank', sourceHandle: 'outlet-0', targetHandle: 'inlet-0', data: { type: 'PIPE', diameter: 0.08 } },
+  { id: 'p1', source: 'pump', target: 'tap', sourceHandle: 'outlet-0', targetHandle: 'inlet-0', data: { type: 'PIPE', diameter_m: 0.05 } },
+  { id: 'p2', source: 'tap', target: 'tank', sourceHandle: 'outlet-0', targetHandle: 'inlet-0', data: { type: 'PIPE', diameter_m: 0.08 } },
   { id: 's1', source: 'tap', target: 'i', sourceHandle: 'signal-inlet-0', targetHandle: 'signal-in', data: { type: 'SIGNAL' } },
   { id: 's2', source: 'f', target: 'd', sourceHandle: 'signal-inlet-0', targetHandle: 'signal-in', data: { type: 'SIGNAL' } },
   { id: 's3', source: 'f', target: 'd', sourceHandle: 'signal-outlet-0', targetHandle: 'signal-in-ref', data: { type: 'SIGNAL' } },

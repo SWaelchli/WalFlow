@@ -45,3 +45,12 @@ $$T_{\text{outlet}} = T_{\text{inlet}} = T_{\text{set}}$$
 - `is_flow_boundary = False`
 - `blocks_flow_on_shutdown = False`
 - `use_mcp_formulation = False`
+
+## Data Fields
+
+Node type: `pressure_source`. Field names follow the naming rule in [base_node.md](base_node.md), which also lists the fields of every component.
+
+| Field | Unit in file | Default |
+|---|---|---|
+| `source_pressure_bara` | bar(a) | 6 |
+| `temperature_k` | K | 293.15 |

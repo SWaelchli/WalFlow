@@ -14,7 +14,7 @@ const nodes = [
   { id: 'n2', type: 'tank', position: { x: 0, y: 100 }, data: { label: 'T-2' } },
 ];
 const edges = [
-  { id: 'e1', source: 'n1', target: 'n2', data: { type: 'PIPE', label: 'Pipe 1', length: 25, diameter: 0.1 } },
+  { id: 'e1', source: 'n1', target: 'n2', data: { type: 'PIPE', label: 'Pipe 1', length_m: 25, diameter_m: 0.1 } },
 ];
 
 const renderList = (onUpdateEdge = vi.fn(), unitSystem = UNIT_SYSTEMS.METRIC) => {
@@ -205,6 +205,6 @@ describe('F3-02 / F2-08: pipe rows', () => {
     fireEvent.focus(input);
     fireEvent.change(input, { target: { value: '40' } });
     fireEvent.blur(input);
-    expect(onUpdateEdge).toHaveBeenCalledWith('e1', { length: 40 });
+    expect(onUpdateEdge).toHaveBeenCalledWith('e1', { length_m: 40 });
   });
 });

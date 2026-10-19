@@ -29,13 +29,14 @@ def test_old_file_with_global_roughness_still_parses():
 
 
 def test_pipe_roughness_comes_from_the_edge_data():
-    for key, value, expected in (("roughness_mm", 0.2, 0.0002), ("roughness", 0.0003, 0.0003)):
+    # roughness_mm (mm) is read from the pipe; without it the default 0.045 mm applies
+    for data, expected in (({"roughness_mm": 0.2}, 0.0002), ({}, 0.000045)):
         graph = ReactFlowGraph(
             nodes=[{"id": "a", "type": "tank", "position": {"x": 0, "y": 0}, "data": {}},
                    {"id": "b", "type": "tank", "position": {"x": 0, "y": 0}, "data": {}}],
-            edges=[{"id": "e", "source": "a", "target": "b", "data": {key: value}}])
+            edges=[{"id": "e", "source": "a", "target": "b", "data": data}])
         pipe = GraphParser.parse_graph(graph).edges[0]["pipe"]
-        assert pipe.roughness == expected
+        assert pipe.roughness == pytest.approx(expected)
 
 
 def test_shipped_files_do_not_carry_global_roughness():

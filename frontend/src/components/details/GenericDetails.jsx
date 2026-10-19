@@ -103,8 +103,8 @@ export default function GenericDetails({ node, edge, allNodes = [], allEdges = [
   // Pipe details
   let pipeRows = null;
   if (isEdge) {
-    const diameter = data.diameter || 0.1;
-    const length = data.length || 25.0;
+    const diameter = data.diameter_m || 0.1;
+    const length = data.length_m ?? 25.0;
     const area = Math.PI * Math.pow(diameter, 2) / 4.0;
     const velocity = area > 0 ? Math.abs(flowM3s) / area : 0;
 

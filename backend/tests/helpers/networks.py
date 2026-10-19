@@ -36,11 +36,11 @@ def generate_stress_network(size=10):
     Each loop has: Splitter -> 2 Pipes -> Mixer.
     """
     nodes = [
-        {"id": "t_start", "type": "tank", "data": {"label": "Source", "level": 10.0}, "position": {"x":0,"y":0}},
+        {"id": "t_start", "type": "tank", "data": {"label": "Source", "level_m": 10.0}, "position": {"x":0,"y":0}},
         {"id": "p_main", "type": "centrifugal_pump", "data": {"label": "Main Pump", "head_rated_m": 51.0}, "position": {"x":100,"y":0}},
     ]
     edges = [
-        {"id": "e_start", "source": "t_start", "target": "p_main", "data": {"length": 1, "diameter": 0.1}}
+        {"id": "e_start", "source": "t_start", "target": "p_main", "data": {"length_m": 1, "diameter_m": 0.1}}
     ]
 
     prev_node = "p_main"
@@ -52,16 +52,16 @@ def generate_stress_network(size=10):
         nodes.append({"id": m_id, "type": "mixer", "data": {"label": f"M{i}"}, "position": {"x": 300 + i*200, "y": 0}})
         
         # Connect previous to splitter
-        edges.append({"id": f"e_pre_{i}", "source": prev_node, "target": s_id, "data": {"length": 1, "diameter": 0.1}})
+        edges.append({"id": f"e_pre_{i}", "source": prev_node, "target": s_id, "data": {"length_m": 1, "diameter_m": 0.1}})
         
         # Parallel paths
-        edges.append({"id": f"e_p1_{i}", "source": s_id, "target": m_id, "data": {"length": 10, "diameter": 0.05}})
-        edges.append({"id": f"e_p2_{i}", "source": s_id, "target": m_id, "data": {"length": 10, "diameter": 0.08}})
+        edges.append({"id": f"e_p1_{i}", "source": s_id, "target": m_id, "data": {"length_m": 10, "diameter_m": 0.05}})
+        edges.append({"id": f"e_p2_{i}", "source": s_id, "target": m_id, "data": {"length_m": 10, "diameter_m": 0.08}})
         
         prev_node = m_id
 
-    nodes.append({"id": "t_end", "type": "tank", "data": {"label": "Sink", "level": 1.0}, "position": {"x": 200 + size*200, "y": 0}})
-    edges.append({"id": "e_end", "source": prev_node, "target": "t_end", "data": {"length": 1, "diameter": 0.1}})
+    nodes.append({"id": "t_end", "type": "tank", "data": {"label": "Sink", "level_m": 1.0}, "position": {"x": 200 + size*200, "y": 0}})
+    edges.append({"id": "e_end", "source": prev_node, "target": "t_end", "data": {"length_m": 1, "diameter_m": 0.1}})
 
     return {"nodes": nodes, "edges": edges}
 

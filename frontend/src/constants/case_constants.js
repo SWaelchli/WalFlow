@@ -12,11 +12,11 @@ export const PROPERTY_TYPES = {
 // Set of property field keys that represent dynamic operating conditions
 export const CASE_VARIABLE_FIELDS = new Set([
   'active',            // Component active/inactive state (boolean)
-  'opening',           // Linear / Remote Control Valve opening percentage (%)
-  'clogging',          // Filter clogging / dirt factor (%)
-  'level',             // Tank fluid level (m)
-  'temperature',       // Tank fluid temperature (K or °C)
-  'set_pressure',      // Linear / Remote regulator set pressure (Pa)
+  'opening_pct',       // Linear / Remote Control Valve opening percentage (%)
+  'clogging_pct',      // Filter clogging / dirt factor (%)
+  'level_m',           // Tank fluid level (m)
+  'temperature_k',     // Tank / source fluid temperature (K)
+  'set_pressure_pa',   // Linear / Remote regulator set pressure (Pa)
   'set_temperature_c', // Three-way TCV set temperature (°C)
   'forced_state',      // Contingency Test Mode (auto / forced_closed / forced_open per case)
   'source_pressure_bara', // FluidSource: set pressure (bara), case-overridable per scenario

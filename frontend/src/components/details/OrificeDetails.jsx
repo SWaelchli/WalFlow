@@ -60,15 +60,15 @@ const calculateDp = (qM3s, density, viscosity, D, d, beta, standard) => {
 
 const OrificeDetails = memo(function OrificeDetails({ node }) {
   const { labels, isImperial, formatPressurePa } = useUnits();
-  const { pipe_diameter, orifice_diameter, telemetry } = node.data;
+  const { pipe_diameter_m, orifice_diameter_m, telemetry } = node.data;
   
   const currentQ = telemetry?.inlets?.[0]?.flow_rate || 0;
   const actualFlowLmin = Math.abs(currentQ) * 60000.0;
   const rho = telemetry?.inlets?.[0]?.density || 1000;
   const mu = telemetry?.inlets?.[0]?.viscosity || 0.001;
 
-  const D = (telemetry?.pipe_diameter ?? pipe_diameter) || 0.1;
-  const d = orifice_diameter || 0.07;
+  const D = (telemetry?.pipe_diameter ?? pipe_diameter_m) || 0.1;
+  const d = orifice_diameter_m || 0.07;
   const beta = d / D;
   const standard = telemetry?.standard ?? (node.data.standard || 'iso_5167');
 

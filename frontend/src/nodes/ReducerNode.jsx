@@ -5,6 +5,7 @@ import { SensingPin } from '../components/canvas/SensingPin';
 import BaseNode from './BaseNode';
 import { useUnits } from '../context/UnitContext';
 import { pressureDrop } from '../utils/nodeReadouts';
+import { mToIn } from '../utils/converters';
 
 /**
  * Reducer / Expander Component Node (ASME B16.9 / Custom)
@@ -21,8 +22,8 @@ export default function ReducerNode({ id, data, selected }) {
   const dPFormatted = formatPressurePa(dP);
 
   const isEccentric = data.reducer_type === 'eccentric';
-  const dIn = Number(data.diameter_in || 0.07792);
-  const dOut = Number(data.diameter_out || 0.05248);
+  const dIn = Number(data.diameter_in_m || 0.07792);
+  const dOut = Number(data.diameter_out_m || 0.05248);
   const isReducing = dIn >= dOut;
 
   // Pretty size label
@@ -31,15 +32,15 @@ export default function ReducerNode({ id, data, selected }) {
   const isMetricCatalog = String(data.nps_large || '').toUpperCase().startsWith('DN');
   const sizeLabel = data.standard !== 'CUSTOM'
     ? (isImperial && !isMetricCatalog ? `${data.nps_large || '3"' } × ${data.nps_small || '2"'}` : `DN ${dnLarge} → DN ${dnSmall}`)
-    : (isImperial ? `${(dIn * 39.3701).toFixed(1)}" → ${(dOut * 39.3701).toFixed(1)}"` : `${(dIn * 1000).toFixed(0)}mm → ${(dOut * 1000).toFixed(0)}mm`);
+    : (isImperial ? `${mToIn(dIn, 1)}" → ${mToIn(dOut, 1)}"` : `${(dIn * 1000).toFixed(0)}mm → ${(dOut * 1000).toFixed(0)}mm`);
 
   // Detect connected edges and check for size mismatches
   const edges = getEdges() || [];
   const edgeIn = edges.find(e => e.target === id && (e.targetHandle === 'inlet-0' || !e.targetHandle));
   const edgeOut = edges.find(e => e.source === id && (e.sourceHandle === 'outlet-0' || !e.sourceHandle));
 
-  const pipeInletDia = edgeIn?.data?.diameter;
-  const pipeOutletDia = edgeOut?.data?.diameter;
+  const pipeInletDia = edgeIn?.data?.diameter_m;
+  const pipeOutletDia = edgeOut?.data?.diameter_m;
 
   const hasInletMismatch = pipeInletDia && Math.abs(pipeInletDia - dIn) > 0.0015;
   const hasOutletMismatch = pipeOutletDia && Math.abs(pipeOutletDia - dOut) > 0.0015;

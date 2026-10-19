@@ -29,7 +29,6 @@ const classSizeToPipeData = (pc, size) => {
   };
   if (pc.roughness_mm !== undefined && pc.roughness_mm !== null) {
     data.roughness_mm = pc.roughness_mm;
-    data.roughness = pc.roughness_mm / 1000.0;
   }
   return data;
 };
@@ -39,9 +38,8 @@ const manualPipeData = (dn, sch) => {
   return {
     pipe_class_id: 'manual',
     pipe_class_code: 'CUSTOM',
-    ...(s ? scheduleDimensions(s) : { diameter: FALLBACK_PIPE_ID_M }),
+    ...(s ? scheduleDimensions(s) : { diameter_m: FALLBACK_PIPE_ID_M }),
     roughness_mm: DEFAULT_ROUGHNESS_MM,
-    roughness: DEFAULT_ROUGHNESS_MM / 1000.0
   };
 };
 
@@ -53,7 +51,7 @@ const sizeDimensions = (size) => ({
   standardSch: size.sch || 'STD',
   outer_diameter_mm: size.od_mm,
   wall_thickness_mm: size.wt_mm,
-  diameter: (size.od_mm - 2.0 * size.wt_mm) / 1000.0,
+  diameter_m: (size.od_mm - 2.0 * size.wt_mm) / 1000.0,
 });
 
 // Manual pipes also record which schedule standard their size and schedule refer to
@@ -64,7 +62,7 @@ function scheduleDimensions(s) {
     standardSch: s.sch,
     outer_diameter_mm: s.od_mm,
     wall_thickness_mm: s.wt_mm,
-    diameter: s.id_mm / 1000.0,
+    diameter_m: s.id_mm / 1000.0,
   };
 }
 
@@ -195,11 +193,11 @@ export function resolvePipeSelection(data = {}, options) {
   if (data.standardDn) {
     return { classId, dn: Number(data.standardDn), sch: data.standardSch || 'STD', isCustomId: false, scheduleStandard };
   }
-  const match = matchScheduleByInnerDiameter(data.diameter, scheduleStandard, options);
+  const match = matchScheduleByInnerDiameter(data.diameter_m, scheduleStandard, options);
   if (match) {
     return { classId, dn: match.dn, sch: match.sch, isCustomId: false, scheduleStandard };
   }
-  return { classId, dn: nearestDnByInnerDiameter(data.diameter, scheduleStandard, options), sch: null, isCustomId: true, scheduleStandard };
+  return { classId, dn: nearestDnByInnerDiameter(data.diameter_m, scheduleStandard, options), sch: null, isCustomId: true, scheduleStandard };
 }
 
 /** Schedule catalog a pipe's size refers to (files without one are ASME B36.10M). */

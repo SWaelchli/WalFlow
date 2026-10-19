@@ -117,8 +117,8 @@ applied to the fluid exiting the node (forward flow: inlet→outlet; reverse flo
 
 | Parameter | UI Unit | Backend Var | SI Unit | Default | Range | Description |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| Pipe Diameter | mm | `pipe_diameter` | m | `0.05248` (DN50) | $> 0$ | Connected-pipe internal diameter (auto-detected from the connected pipe when present) |
-| Orifice Diameter | mm | `orifice_diameter` | m | `0.07` | $> 0$ | Orifice plate bore diameter |
+| Pipe Diameter | mm | `pipe_diameter_m` | m | `0.1` | $> 0$ | Connected-pipe internal diameter (auto-detected from the connected pipe when present) |
+| Orifice Diameter | mm | `orifice_diameter_m` | m | `0.07` | $> 0$ | Orifice plate bore diameter |
 | Standard | — | `standard` | str | `'iso_5167'` | `iso_5167`, `classic_cd` | Calculation standard |
 
 ## 6. Operating Modes & Model Boundaries
@@ -142,3 +142,13 @@ applied to the fluid exiting the node (forward flow: inlet→outlet; reverse flo
 - Continuity: no jumps in $\Delta p$ or its derivative across the blend bands.
 - Legacy model: `classic_cd` reproduces the previous formula and derivative to $10^{-12}$.
 - Network solve: tank → pipe → orifice → pipe → tank converges with positive orifice $\Delta P$.
+
+## Data Fields
+
+Node type: `orifice`. Field names follow the naming rule in [base_node.md](base_node.md), which also lists the fields of every component.
+
+| Field | Unit in file | Default |
+|---|---|---|
+| `pipe_diameter_m` | m | 0.1 (replaced by the connected pipe's bore) |
+| `orifice_diameter_m` | m | 0.07 |
+| `standard` | text (`iso_5167` / `classic_cd`) | iso_5167 |

@@ -33,9 +33,9 @@
       },
       "data": {
         "label": "Barrier Reservoir (30L)",
-        "level": 1.5,
-        "elevation": 0,
-        "temperature": 303.15,
+        "level_m": 1.5,
+        "elevation_m": 0,
+        "temperature_k": 303.15,
         "rotation": 0
       },
       "width": 95,
@@ -67,10 +67,10 @@
       },
       "data": {
         "label": "Duplex Barrier Filter (10µm)",
-        "dp_clean": 0.15,
-        "dp_terminal": 1.5,
-        "flow_ref": 35,
-        "clogging": 0,
+        "dp_clean_bar": 0.15,
+        "dp_terminal_bar": 1.5,
+        "flow_ref_lmin": 35,
+        "clogging_pct": 0,
         "rotation": 0
       },
       "width": 119,
@@ -86,7 +86,7 @@
       "data": {
         "label": "Seal Supply PRV (10 bar)",
         "max_cv": 6,
-        "set_pressure": 1000000,
+        "set_pressure_pa": 1000000,
         "backpressure": false,
         "rotation": 0
       },
@@ -102,7 +102,7 @@
       },
       "data": {
         "label": "Seal Chamber Restriction",
-        "orifice_diameter": 0.008,
+        "orifice_diameter_m": 0.008,
         "rotation": 0
       },
       "width": 106,
@@ -118,7 +118,7 @@
       "data": {
         "label": "Seal Return BPR (8 bar)",
         "max_cv": 6,
-        "set_pressure": 800000,
+        "set_pressure_pa": 800000,
         "backpressure": true,
         "rotation": 180
       },
@@ -140,9 +140,9 @@
       },
       "data": {
         "label": "Barrier Return Tank",
-        "level": 1.5,
-        "elevation": 0,
-        "temperature": 305.15,
+        "level_m": 1.5,
+        "elevation_m": 0,
+        "temperature_k": 305.15,
         "rotation": 180
       },
       "width": 82,
@@ -164,16 +164,15 @@
       "targetHandle": "inlet-0",
       "data": {
         "label": "Suction",
-        "length": 1.5,
-        "diameter": 0.02664,
+        "length_m": 1.5,
+        "diameter_m": 0.02664,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 25,
         "standardSch": "STD",
         "outer_diameter_mm": 33.4,
         "wall_thickness_mm": 3.38,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       },
       "label": "Suction"
     },
@@ -185,16 +184,15 @@
       "targetHandle": "inlet-0",
       "data": {
         "label": "Pump Discharge",
-        "length": 2,
-        "diameter": 0.02116,
+        "length_m": 2,
+        "diameter_m": 0.02116,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 20,
         "standardSch": "STD",
         "outer_diameter_mm": 26.9,
         "wall_thickness_mm": 2.87,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       },
       "label": "Pump Discharge"
     },
@@ -206,16 +204,15 @@
       "targetHandle": "inlet-0",
       "data": {
         "label": "Filtered Flush",
-        "length": 3,
-        "diameter": 0.02116,
+        "length_m": 3,
+        "diameter_m": 0.02116,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 20,
         "standardSch": "STD",
         "outer_diameter_mm": 26.9,
         "wall_thickness_mm": 2.87,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       },
       "label": "Filtered Flush"
     },
@@ -227,16 +224,15 @@
       "targetHandle": "inlet-0",
       "data": {
         "label": "Seal Feed",
-        "length": 2,
-        "diameter": 0.01576,
+        "length_m": 2,
+        "diameter_m": 0.01576,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 15,
         "standardSch": "STD",
         "outer_diameter_mm": 21.3,
         "wall_thickness_mm": 2.77,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       },
       "label": "Seal Feed"
     },
@@ -248,16 +244,15 @@
       "targetHandle": "inlet-0",
       "data": {
         "label": "Seal Cavity Outlet",
-        "length": 1.5,
-        "diameter": 0.01576,
+        "length_m": 1.5,
+        "diameter_m": 0.01576,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 15,
         "standardSch": "STD",
         "outer_diameter_mm": 21.3,
         "wall_thickness_mm": 2.77,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       },
       "label": "Seal Cavity Outlet"
     },
@@ -269,16 +264,15 @@
       "targetHandle": "inlet-0",
       "data": {
         "label": "Barrier Return Line",
-        "length": 4,
-        "diameter": 0.02116,
+        "length_m": 4,
+        "diameter_m": 0.02116,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 20,
         "standardSch": "STD",
         "outer_diameter_mm": 26.9,
         "wall_thickness_mm": 2.87,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       },
       "label": "Barrier Return Line"
     }

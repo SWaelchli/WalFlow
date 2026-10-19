@@ -80,13 +80,13 @@ def test_graph_parser_signal_edge_handling():
     """Verify that GraphParser correctly attaches remote_sensing_config without creating hydraulic pipes."""
     rf_data = {
         "nodes": [
-            {"id": "tank_src", "type": "tank", "position": {"x": 0, "y": 0}, "data": {"elevation": 10.0, "fluid_level": 2.0, "fluid": "water", "temperature": 20.0}},
-            {"id": "rcv_1", "type": "remote_control_valve", "position": {"x": 100, "y": 0}, "data": {"max_cv": 50.0, "set_pressure": 2.5}},
-            {"id": "tank_dst", "type": "tank", "position": {"x": 200, "y": 0}, "data": {"elevation": 0.0, "fluid_level": 1.0, "fluid": "water", "temperature": 20.0}}
+            {"id": "tank_src", "type": "tank", "position": {"x": 0, "y": 0}, "data": {"elevation_m": 10.0, "level_m": 2.0, "temperature_k": 293.15}},
+            {"id": "rcv_1", "type": "remote_control_valve", "position": {"x": 100, "y": 0}, "data": {"max_cv": 50.0, "set_pressure_pa": 250000.0}},
+            {"id": "tank_dst", "type": "tank", "position": {"x": 200, "y": 0}, "data": {"elevation_m": 0.0, "level_m": 1.0, "temperature_k": 293.15}}
         ],
         "edges": [
-            {"id": "e_pipe1", "source": "tank_src", "target": "rcv_1", "type": "standard", "data": {"diameter": 0.05, "length": 10}},
-            {"id": "e_pipe2", "source": "rcv_1", "target": "tank_dst", "type": "standard", "data": {"diameter": 0.05, "length": 10}},
+            {"id": "e_pipe1", "source": "tank_src", "target": "rcv_1", "type": "standard", "data": {"diameter_m": 0.05, "length_m": 10}},
+            {"id": "e_pipe2", "source": "rcv_1", "target": "tank_dst", "type": "standard", "data": {"diameter_m": 0.05, "length_m": 10}},
             {
                 "id": "e_sig1",
                 "source": "tank_dst",
@@ -110,3 +110,7 @@ def test_graph_parser_signal_edge_handling():
     assert isinstance(rcv_node, RemoteControlValve)
     assert rcv_node.remote_sensing_config is not None
     assert rcv_node.remote_sensing_config["node_id"] == "tank_dst"
+    # Field units: set pressure in Pa, tank temperature in K, level in m
+    assert rcv_node.set_pressure == 250000.0
+    assert network.nodes["tank_src"].temperature == 293.15
+    assert network.nodes["tank_src"].fluid_level == 2.0

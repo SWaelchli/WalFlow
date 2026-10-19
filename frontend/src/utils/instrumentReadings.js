@@ -64,7 +64,7 @@ const pipeDiameterAt = (input, edges) => {
   const pipe = edges.find((e) => !isSignalEdge(e) && (isInlet
     ? e.target === input.nodeId && e.targetHandle === input.handle
     : e.source === input.nodeId && e.sourceHandle === input.handle));
-  const d = Number(pipe?.data?.diameter);
+  const d = Number(pipe?.data?.diameter_m);
   return d > 0 ? d : null;
 };
 

@@ -929,7 +929,7 @@ function WalFlowContent() {
         data: {
           label: label,
           type: isSignal ? 'SIGNAL' : 'PIPE',
-          length: DEFAULT_PIPE_LENGTH_M,
+          length_m: DEFAULT_PIPE_LENGTH_M,
           ...pipeData
         }
       };
@@ -1021,7 +1021,7 @@ function WalFlowContent() {
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {
       ws.current.send(JSON.stringify({ action: 'update_valve', value: parseFloat(newValue), node_id: nodeId }));
     }
-    updateNodeData(nodeId, { opening: newValue });
+    updateNodeData(nodeId, { opening_pct: newValue });
   }, [isReadOnly, ws, updateNodeData]);
 
   const updateEdgeData = useCallback((edgeId, newData) => {

@@ -13,7 +13,7 @@ export default function LinearControlValveNode({ id, data, selected }) {
   const telemetry = data.telemetry;
   const rotation = data.rotation || 0;
   const sensing = useMemo(() => data.sensing || {}, [data.sensing]);
-  const opening = data.opening ?? 50;
+  const opening = data.opening_pct ?? 50;
   const flow = telemetry?.outlets?.[0]?.flow_rate || 0;
   const flowFormatted = formatFlowM3s(flow);
 

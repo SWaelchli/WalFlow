@@ -32,9 +32,9 @@
       },
       "data": {
         "label": "Supply Reservoir",
-        "level": 2.0,
-        "elevation": 0.0,
-        "temperature": 293.15
+        "level_m": 2.0,
+        "elevation_m": 0.0,
+        "temperature_k": 293.15
       }
     },
     {
@@ -60,7 +60,7 @@
       },
       "data": {
         "label": "Header Pressure Sensor Orifice",
-        "orifice_diameter": 0.02,
+        "orifice_diameter_m": 0.02,
         "sensing": {
           "outlet-0": true
         }
@@ -76,8 +76,8 @@
       "data": {
         "label": "Remote Emergency Cutoff Valve",
         "max_cv": 12.0,
-        "opening": 100.0,
-        "set_pressure": 600000,
+        "opening_pct": 100.0,
+        "set_pressure_pa": 600000,
         "backpressure": true
       }
     },
@@ -90,9 +90,9 @@
       },
       "data": {
         "label": "Receiving Tank",
-        "level": 0.5,
-        "elevation": 0.0,
-        "temperature": 293.15
+        "level_m": 0.5,
+        "elevation_m": 0.0,
+        "temperature_k": 293.15
       }
     }
   ],
@@ -105,16 +105,15 @@
       "targetHandle": "inlet-0",
       "data": {
         "label": "Suction",
-        "length": 2,
-        "diameter": 0.04094,
+        "length_m": 2,
+        "diameter_m": 0.04094,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 40,
         "standardSch": "STD",
         "outer_diameter_mm": 48.3,
         "wall_thickness_mm": 3.68,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -125,16 +124,15 @@
       "targetHandle": "inlet-0",
       "data": {
         "label": "High-P Discharge",
-        "length": 2,
-        "diameter": 0.03528,
+        "length_m": 2,
+        "diameter_m": 0.03528,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 32,
         "standardSch": "STD",
         "outer_diameter_mm": 42.4,
         "wall_thickness_mm": 3.56,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -145,16 +143,15 @@
       "targetHandle": "inlet-0",
       "data": {
         "label": "Header Line",
-        "length": 3,
-        "diameter": 0.03528,
+        "length_m": 3,
+        "diameter_m": 0.03528,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 32,
         "standardSch": "STD",
         "outer_diameter_mm": 42.4,
         "wall_thickness_mm": 3.56,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -165,16 +162,15 @@
       "targetHandle": "inlet-0",
       "data": {
         "label": "Protected Delivery",
-        "length": 2,
-        "diameter": 0.03528,
+        "length_m": 2,
+        "diameter_m": 0.03528,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 32,
         "standardSch": "STD",
         "outer_diameter_mm": 42.4,
         "wall_thickness_mm": 3.56,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     },
     {
@@ -194,16 +190,15 @@
       "data": {
         "label": "Signal 100",
         "type": "SIGNAL",
-        "length": 25,
-        "diameter": 0.05248,
+        "length_m": 25,
+        "diameter_m": 0.05248,
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
         "standardDn": 50,
         "standardSch": "STD",
         "outer_diameter_mm": 60.3,
         "wall_thickness_mm": 3.91,
-        "roughness_mm": 0.045,
-        "roughness": 4.5e-05
+        "roughness_mm": 0.045
       }
     }
   ],

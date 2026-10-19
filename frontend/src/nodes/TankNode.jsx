@@ -12,8 +12,8 @@ export default function TankNode({ id, data, selected }) {
   const { toDisplayValue, labels, formatTemperatureK } = useUnits();
   const rotation = data.rotation || 0;
   const sensing = useMemo(() => data.sensing || {}, [data.sensing]);
-  const level = data.level || 0;
-  const tempK = (data.temperature !== undefined ? data.temperature : data.telemetry?.outlets?.[0]?.temperature) || 293.15;
+  const level = data.level_m ?? 1.0;
+  const tempK = (data.temperature_k !== undefined ? data.temperature_k : data.telemetry?.outlets?.[0]?.temperature) || 293.15;
 
   return (
     <BaseNode
@@ -25,7 +25,7 @@ export default function TankNode({ id, data, selected }) {
       footer={
         <>
           <div style={{ fontSize: '9px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>{data.label || 'TANK'}</div>
-          <div style={{ fontSize: '10px', fontWeight: 'bold', color: 'var(--color-brand-dark)' }}>{Number(toDisplayValue('level', level)).toFixed(2)} {labels.length}</div>
+          <div style={{ fontSize: '10px', fontWeight: 'bold', color: 'var(--color-brand-dark)' }}>{Number(toDisplayValue('level_m', level)).toFixed(2)} {labels.length}</div>
           <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)' }}>{formatTemperatureK(tempK)} {labels.temperature}</div>
         </>
       }

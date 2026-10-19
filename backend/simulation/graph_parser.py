@@ -178,15 +178,13 @@ class GraphParser:
             # Create a Pipe node for this hydraulic edge
             pipe_name = edge.label or edge_data.get('label') or f"Pipe {edge.id}"
             
-            # Determine roughness in meters: check roughness_mm or roughness (in m) or default to 0.000045
+            # Pipe data in the file: length_m (m), diameter_m (m), roughness_mm (mm; default 0.045)
             try:
                 roughness_m = 0.000045
-                if 'roughness_mm' in edge_data and edge_data['roughness_mm'] is not None:
+                if edge_data.get('roughness_mm') is not None:
                     roughness_m = float(edge_data['roughness_mm']) / 1000.0
-                elif 'roughness' in edge_data and edge_data['roughness'] is not None:
-                    roughness_m = float(edge_data['roughness'])
-                length = float(edge_data.get('length', 25.0))
-                diameter = float(edge_data.get('diameter', 0.1))
+                length = float(edge_data.get('length_m', 25.0))
+                diameter = float(edge_data.get('diameter_m', 0.1))
             except (ValueError, TypeError) as e:
                 raise ModelInputError(f"Pipe '{pipe_name}': length, diameter or roughness is empty or not a number ({e}).") from e
             if diameter <= 0.0:
@@ -276,9 +274,9 @@ class GraphParser:
 
             node = Tank(
                 name=name,
-                elevation=float(d.get('elevation', 0.0)),
-                fluid_level=float(d.get('level', 1.0)),
-                temperature=float(d.get('temperature', 293.15)),
+                elevation=float(d.get('elevation_m', 0.0)),
+                fluid_level=float(d.get('level_m', 1.0)),
+                temperature=float(d.get('temperature_k', 293.15)),
                 fluid_type=fluid_type
             )
         elif t == 'centrifugal_pump' or t == 'pump':
@@ -289,7 +287,7 @@ class GraphParser:
             head_m = d.get('head_rated_m')
             if head_m is None or float(head_m) <= 0:
                 raise ModelInputError(f"Pump '{name}': rated head missing. Enter the rated head (m) in the pump inspector.")
-            eff_pct = float(d.get('efficiency', 75.0))
+            eff_pct = float(d.get('efficiency_pct', 75.0))
             if not 1.0 <= eff_pct <= 100.0:
                 raise ModelInputError(f"Pump '{name}': efficiency must be between 1 and 100 %.")
 
@@ -303,16 +301,18 @@ class GraphParser:
                 npsh_margin_m=GraphParser._npsh_value(d, 'npsh_margin_m', 0.5, name)
             )
         elif t == 'volumetric_pump':
-            # flow_rated in L/min -> convert to m3/s
-            flow_lmin = float(d.get('flow_rated', 100.0))
+            # flow_rated_lmin in L/min -> convert to m3/s
+            flow_lmin = float(d.get('flow_rated_lmin', 100.0))
             flow_m3s = flow_lmin / 60000.0
             
-            # motor_power in kW -> convert to W
-            power_kw = float(d.get('motor_power', 5.0))
+            # motor_power_kw in kW -> convert to W
+            power_kw = float(d.get('motor_power_kw', 5.0))
             power_w = power_kw * 1000.0
             
-            # efficiency in % -> convert to decimal
-            eff_pct = float(d.get('efficiency', 85.0))
+            # efficiency_pct in % -> convert to decimal
+            eff_pct = float(d.get('efficiency_pct', 85.0))
+            if not 1.0 <= eff_pct <= 100.0:
+                raise ModelInputError(f"Pump '{name}': efficiency must be between 1 and 100 %.")
             eff_dec = eff_pct / 100.0
 
             node = VolumetricPump(
@@ -329,47 +329,53 @@ class GraphParser:
             node = LinearControlValve(
                 name=name,
                 max_cv=float(d.get('max_cv', 0.05)),
-                opening_pct=float(d.get('opening', 50.0))
+                opening_pct=float(d.get('opening_pct', 50.0))
             )
         elif t == 'remote_control_valve':
             node = RemoteControlValve(
                 name=name,
                 max_cv=float(d.get('max_cv', 0.05)),
-                set_pressure=float(d.get('set_pressure', 500000.0)),
+                set_pressure=float(d.get('set_pressure_pa', 500000.0)),
                 backpressure=bool(d.get('backpressure', False))
             )
         elif t == 'linear_regulator':
             node = LinearRegulator(
                 name=name,
                 max_cv=float(d.get('max_cv', 0.05)),
-                set_pressure=float(d.get('set_pressure', 500000.0)),
+                set_pressure=float(d.get('set_pressure_pa', 500000.0)),
                 backpressure=bool(d.get('backpressure', False))
             )
         elif t == 'orifice':
             node = Orifice(
                 name=name,
-                pipe_diameter=float(d.get('pipe_diameter', 0.1)),
-                orifice_diameter=float(d.get('orifice_diameter', 0.07)),
+                pipe_diameter=float(d.get('pipe_diameter_m', 0.1)),
+                orifice_diameter=float(d.get('orifice_diameter_m', 0.07)),
                 standard=str(d.get('standard', 'iso_5167'))
             )
         elif t == 'calibrated_restriction':
             node = CalibratedRestriction(
                 name=name,
                 flow_base_lmin=float(d.get('flow_base_lmin', 10.0)),
-                inlet_pressure_base_bar=float(d.get('inlet_pressure_base_bar', 3.5)),
-                outlet_pressure_base_bar=float(d.get('outlet_pressure_base_bar', 1.0)),
+                inlet_pressure_base_bar=float(d.get('inlet_pressure_base_bara', 3.5)),
+                outlet_pressure_base_bar=float(d.get('outlet_pressure_base_bara', 1.0)),
                 temp_base_c=float(d.get('temp_base_c', 45.0)),
                 restriction_model=str(d.get('restriction_model', 'orifice')),
                 fluid_type=str(d.get('fluid_type', 'system'))
             )
         elif t == 'reducer' or t == 'expander':
             # Diameters / length in meters. Missing or null values fall back to the
-            # Reducer defaults (DN80 x DN50 STD), which coerces each field itself.
+            # Reducer defaults (DN80 x DN50 STD), which coerces each field itself; 0 or below is an input error.
+            for field in ('diameter_in_m', 'diameter_out_m', 'length_m'):
+                if d.get(field) is not None and float(d[field]) <= 0.0:
+                    raise ModelInputError(f"Reducer '{name}': {field} must be above 0.")
+            roughness_mm = d.get('roughness_mm')
+            if roughness_mm is not None and float(roughness_mm) < 0.0:
+                raise ModelInputError(f"Reducer '{name}': roughness_mm must not be negative.")
             node = Reducer(
                 name=name,
-                diameter_in=d.get('diameter_in'),
-                diameter_out=d.get('diameter_out'),
-                length=d.get('length'),
+                diameter_in=d.get('diameter_in_m'),
+                diameter_out=d.get('diameter_out_m'),
+                length=d.get('length_m'),
                 cone_angle_deg=d.get('cone_angle_deg'),
                 reducer_type=d.get('reducer_type'),
                 standard=d.get('standard'),
@@ -377,7 +383,7 @@ class GraphParser:
                 dn_small=d.get('dn_small'),
                 sch_large=d.get('sch_large'),
                 sch_small=d.get('sch_small'),
-                roughness=d.get('roughness')
+                roughness=float(roughness_mm) / 1000.0 if roughness_mm is not None else None
             )
         elif t == 'heat_exchanger':
             # F2-04: a missing rated pressure drop means the inspector default (0.5 bar), not "no drop"
@@ -399,11 +405,11 @@ class GraphParser:
         elif t == 'filter':
             node = Filter(
                 name=name,
-                dp_clean_bar=float(d.get('dp_clean', 0.2)),
-                dp_terminal_bar=float(d.get('dp_terminal', 1.0)),
-                flow_ref_lmin=float(d.get('flow_ref', 100.0)),
-                clogging_pct=float(d.get('clogging', 0.0)),
-                ref_viscosity_mpas=(float(d['ref_viscosity']) if d.get('ref_viscosity') not in (None, '') else None)
+                dp_clean_bar=float(d.get('dp_clean_bar', 0.2)),
+                dp_terminal_bar=float(d.get('dp_terminal_bar', 1.0)),
+                flow_ref_lmin=float(d.get('flow_ref_lmin', 100.0)),
+                clogging_pct=float(d.get('clogging_pct', 0.0)),
+                ref_viscosity_mpas=(float(d['ref_viscosity_mpas']) if d.get('ref_viscosity_mpas') not in (None, '') else None)
             )
         elif t == 'splitter':
             # 1 inlet, 2 outlets
@@ -432,8 +438,8 @@ class GraphParser:
                 name=name,
                 cv=float(d.get('cv', 10.0)),
                 cracking_pressure_bar=float(d.get('cracking_pressure_bar', 0.05)),
-                pipe_diameter=float(d.get('pipe_diameter', 0.1)),
-                orifice_diameter=float(d.get('orifice_diameter', 0.01))
+                pipe_diameter=float(d.get('pipe_diameter_m', 0.1)),
+                orifice_diameter=float(d.get('orifice_diameter_m', 0.01))
             )
         elif t == 'pressure_safety_valve' or t == 'psv':
             node = PressureSafetyValve(
@@ -450,13 +456,13 @@ class GraphParser:
                 burst_pressure_barg=_relief_pressure_barg(d, 'burst_pressure_barg', name, "burst pressure"),
                 bore_type=str(d.get('bore_type', 'full_bore')),
                 cv=float(d.get('cv', 10.0)),
-                pipe_diameter=float(d.get('pipe_diameter', 0.05248)),
-                orifice_diameter=float(d.get('orifice_diameter', 0.01)),
+                pipe_diameter=float(d.get('pipe_diameter_m', 0.05248)),
+                orifice_diameter=float(d.get('orifice_diameter_m', 0.01)),
                 forced_state=str(d.get('forced_state', 'auto'))
             )
         elif t == 'pressure_source':
             source_pressure_pa = float(d.get('source_pressure_bara', 6.0)) * 100_000.0
-            temperature_k = float(d.get('temperature', 293.15))
+            temperature_k = float(d.get('temperature_k', 293.15))
             node = PressureSource(
                 name=name,
                 source_pressure=source_pressure_pa,
@@ -464,7 +470,7 @@ class GraphParser:
             )
         elif t == 'flow_source':
             source_flow_m3s = float(d.get('source_flow_lmin', 50.0)) / 60_000.0
-            temperature_k = float(d.get('temperature', 293.15))
+            temperature_k = float(d.get('temperature_k', 293.15))
             node = FlowSource(
                 name=name,
                 source_flow=source_flow_m3s,

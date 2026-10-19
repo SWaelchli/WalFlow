@@ -114,11 +114,11 @@ export const areValuesEquivalent = (val1, val2, propKey) => {
     if (k === 'active') return true;
     if (k === 'relief_ramp_enabled') return true;
     if (k === 'forced_state') return 'auto';
-    if (k === 'clogging') return 0.0;
-    if (k === 'opening') return 50.0;
-    if (k === 'level') return 0.0;
-    if (k === 'temperature') return 313.15;
-    if (k === 'set_pressure') return 500000.0;
+    if (k === 'clogging_pct') return 0.0;
+    if (k === 'opening_pct') return 50.0;
+    if (k === 'level_m') return 1.0;
+    if (k === 'temperature_k') return 293.15;
+    if (k === 'set_pressure_pa') return 500000.0;
     if (k === 'set_temperature_c') return 40.0;
     return undefined;
   };

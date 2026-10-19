@@ -19,17 +19,17 @@ def test_dual_source_to_sink():
     
     mock_graph = {
         "nodes": [
-            {"id": "t1", "type": "tank", "data": {"label": "Source High", "level": 10.0, "elevation": 0.0}, "position": {"x":0,"y":0}},
-            {"id": "t2", "type": "tank", "data": {"label": "Source Low", "level": 9.0, "elevation": 0.0}, "position": {"x":0,"y":200}},
+            {"id": "t1", "type": "tank", "data": {"label": "Source High", "level_m": 10.0, "elevation_m": 0.0}, "position": {"x":0,"y":0}},
+            {"id": "t2", "type": "tank", "data": {"label": "Source Low", "level_m": 9.0, "elevation_m": 0.0}, "position": {"x":0,"y":200}},
             {"id": "mix1", "type": "mixer", "data": {"label": "Mixer"}, "position": {"x":200,"y":100}},
-            {"id": "ori1", "type": "orifice", "data": {"label": "Restricting Orifice", "pipe_diameter": 0.1, "orifice_diameter": 0.08}, "position": {"x":400,"y":100}},
-            {"id": "t3", "type": "tank", "data": {"label": "Sink", "level": 1.0, "elevation": 0.0}, "position": {"x":600,"y":100}},
+            {"id": "ori1", "type": "orifice", "data": {"label": "Restricting Orifice", "pipe_diameter_m": 0.1, "orifice_diameter_m": 0.08}, "position": {"x":400,"y":100}},
+            {"id": "t3", "type": "tank", "data": {"label": "Sink", "level_m": 1.0, "elevation_m": 0.0}, "position": {"x":600,"y":100}},
         ],
         "edges": [
-            {"id": "e1", "source": "t1", "target": "mix1", "data": {"length": 5.0, "diameter": 0.1}},
-            {"id": "e2", "source": "t2", "target": "mix1", "data": {"length": 5.0, "diameter": 0.1}},
-            {"id": "e3", "source": "mix1", "target": "ori1", "data": {"length": 2.0, "diameter": 0.1}},
-            {"id": "e4", "source": "ori1", "target": "t3", "data": {"length": 5.0, "diameter": 0.1}},
+            {"id": "e1", "source": "t1", "target": "mix1", "data": {"length_m": 5.0, "diameter_m": 0.1}},
+            {"id": "e2", "source": "t2", "target": "mix1", "data": {"length_m": 5.0, "diameter_m": 0.1}},
+            {"id": "e3", "source": "mix1", "target": "ori1", "data": {"length_m": 2.0, "diameter_m": 0.1}},
+            {"id": "e4", "source": "ori1", "target": "t3", "data": {"length_m": 5.0, "diameter_m": 0.1}},
         ]
     }
     
@@ -70,15 +70,15 @@ def test_source_to_dual_sink():
     
     mock_graph = {
         "nodes": [
-            {"id": "t1", "type": "tank", "data": {"label": "High Source", "level": 10.0, "elevation": 0.0}, "position": {"x":0,"y":100}},
+            {"id": "t1", "type": "tank", "data": {"label": "High Source", "level_m": 10.0, "elevation_m": 0.0}, "position": {"x":0,"y":100}},
             {"id": "split1", "type": "splitter", "data": {"label": "Splitter"}, "position": {"x":200,"y":100}},
-            {"id": "t2", "type": "tank", "data": {"label": "Low Sink", "level": 2.0, "elevation": 0.0}, "position": {"x":400,"y":0}},
-            {"id": "t3", "type": "tank", "data": {"label": "High Sink", "level": 8.0, "elevation": 0.0}, "position": {"x":400,"y":200}},
+            {"id": "t2", "type": "tank", "data": {"label": "Low Sink", "level_m": 2.0, "elevation_m": 0.0}, "position": {"x":400,"y":0}},
+            {"id": "t3", "type": "tank", "data": {"label": "High Sink", "level_m": 8.0, "elevation_m": 0.0}, "position": {"x":400,"y":200}},
         ],
         "edges": [
-            {"id": "e_in", "source": "t1", "target": "split1", "data": {"length": 1.0, "diameter": 0.1}},
-            {"id": "e_out1", "source": "split1", "target": "t2", "data": {"length": 10.0, "diameter": 0.1}},
-            {"id": "e_out2", "source": "split1", "target": "t3", "data": {"length": 10.0, "diameter": 0.1}},
+            {"id": "e_in", "source": "t1", "target": "split1", "data": {"length_m": 1.0, "diameter_m": 0.1}},
+            {"id": "e_out1", "source": "split1", "target": "t2", "data": {"length_m": 10.0, "diameter_m": 0.1}},
+            {"id": "e_out2", "source": "split1", "target": "t3", "data": {"length_m": 10.0, "diameter_m": 0.1}},
         ]
     }
     

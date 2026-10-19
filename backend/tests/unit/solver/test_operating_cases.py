@@ -12,7 +12,7 @@ def test_resolve_graph_for_case_overrides():
         id="valve_1",
         type="linear_control_valve",
         position={"x": 0, "y": 0},
-        data={"label": "Control Valve", "opening": 50.0, "max_cv": 0.05}
+        data={"label": "Control Valve", "opening_pct": 50.0, "max_cv": 0.05}
     )
     
     global_settings = GlobalSettings(ambient_temperature=293.15)
@@ -31,7 +31,7 @@ def test_resolve_graph_for_case_overrides():
         is_base=False,
         overrides=OperatingCaseOverrides(
             global_settings={"ambient_temperature": 283.15},
-            nodes={"valve_1": {"opening": 100.0}}
+            nodes={"valve_1": {"opening_pct": 100.0}}
         )
     )
     
@@ -51,7 +51,7 @@ def test_resolve_graph_for_case_overrides():
     
     # Assert node opening was overridden (100.0)
     target_node = next(n for n in resolved.nodes if n.id == "valve_1")
-    assert target_node.data["opening"] == 100.0
+    assert target_node.data["opening_pct"] == 100.0
     # Global property max_cv remains untouched
     assert target_node.data["max_cv"] == 0.05
 
@@ -63,7 +63,7 @@ def test_parse_graph_with_operating_cases():
         id="tank_1",
         type="tank",
         position={"x": 0, "y": 0},
-        data={"label": "Main Tank", "temperature": 293.15, "level": 1.0}
+        data={"label": "Main Tank", "temperature_k": 293.15, "level_m": 1.0}
     )
     
     hot_case = OperatingCase(
@@ -71,7 +71,7 @@ def test_parse_graph_with_operating_cases():
         name="Hot Case",
         is_base=False,
         overrides=OperatingCaseOverrides(
-            nodes={"tank_1": {"temperature": 348.15}}
+            nodes={"tank_1": {"temperature_k": 348.15}}
         )
     )
     

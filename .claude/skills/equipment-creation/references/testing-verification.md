@@ -69,16 +69,16 @@ def test_network_equilibrium_solve():
     Tank1 -> Pump -> CustomEquipment -> Tank2
     """
     nodes = [
-        ReactFlowNode(id="t1", type="tank", data={"label": "Tank 1", "level": 2.0, "elevation": 0.0}),
-        ReactFlowNode(id="p1", type="centrifugal_pump", data={"label": "Pump 1", "flow_rated_lmin": 100.0, "pressure_rated_bar": 4.0}),
+        ReactFlowNode(id="t1", type="tank", data={"label": "Tank 1", "level_m": 2.0, "elevation_m": 0.0}),
+        ReactFlowNode(id="p1", type="centrifugal_pump", data={"label": "Pump 1", "flow_rated_lmin": 100.0, "head_rated_m": 40.0}),
         ReactFlowNode(id="eq1", type="custom_equipment", data={"label": "Custom Eq", "param1": 100.0}),
-        ReactFlowNode(id="t2", type="tank", data={"label": "Tank 2", "level": 1.0, "elevation": 0.0}),
+        ReactFlowNode(id="t2", type="tank", data={"label": "Tank 2", "level_m": 1.0, "elevation_m": 0.0}),
     ]
     
     edges = [
-        ReactFlowEdge(id="e1", source="t1", target="p1", data={"diameter": 0.05248, "length": 5.0}),
-        ReactFlowEdge(id="e2", source="p1", target="eq1", data={"diameter": 0.05248, "length": 5.0}),
-        ReactFlowEdge(id="e3", source="eq1", target="t2", data={"diameter": 0.05248, "length": 5.0}),
+        ReactFlowEdge(id="e1", source="t1", target="p1", data={"diameter_m": 0.05248, "length_m": 5.0}),
+        ReactFlowEdge(id="e2", source="p1", target="eq1", data={"diameter_m": 0.05248, "length_m": 5.0}),
+        ReactFlowEdge(id="e3", source="eq1", target="t2", data={"diameter_m": 0.05248, "length_m": 5.0}),
     ]
     
     graph = ReactFlowGraph(nodes=nodes, edges=edges)
