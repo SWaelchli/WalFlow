@@ -147,9 +147,10 @@ u$):** cSt at the local temperature. Derived, not an ISA variable.
     - Always use the correct fluid properties (density, specific heat) for the current temperature and pressure.
     - Minimize performance impact by avoiding expensive calculations in iterative methods.
   * **Important**: The above methodology is only a suggestion and needs to be properly evaluated and adjusted as necessary. Do not implement blindly.
-- [ ] **⚖️ Parallel Controllers at the Same Setpoint (Non-Unique Flow Split)**
+- [x] **⚖️ Parallel Controllers at the Same Setpoint (Non-Unique Flow Split)**
   * **Problem**: Two identical pressure regulators (PRV or BPR) in parallel with the same setpoint have no unique flow split. The controller solve picks one split (least squares), so the result for the two valves is arbitrary although the total is correct.
   * **Fix to evaluate**: Report the pair as "shared control" with an equal split, or add a proportional band (droop) to the regulator model so the split is determined. Needs evaluation before implementing.
+  * **Done**: Self-sensing regulators were not affected (the pipe to the shared header fixes the split). Remote control valves sensing the same point now form tiers by setpoint: equal setpoints share one opening (one controller output), the highest PRV / lowest BPR tier regulates, tiers before it run wide open, tiers after it close. Different setpoints used to not converge. No droop, no extra report (`test_regulator_shared_sensing.py`).
 
 - [ ] **🌡️ Controller Sensitivity With Temperature-Coupled Loops**
   * **Problem**: The pressure-controller Jacobian is measured with fluid properties frozen. In strongly temperature-coupled loops (large throttling heat in oil systems) the loop converges linearly and needs a few extra iterations, and the solve is slower on the largest diagrams (about 2 s for `walflow-diagram (8)`).

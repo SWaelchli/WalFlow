@@ -243,12 +243,28 @@ class NetworkSolver:
         node.sensed_pressure = sensed
         return sensed
 
+    def _sensing_point(self, idx):
+        """(node id, port type, port index) of the pressure the controller holds, as _sensed_pressure reads it."""
+        node = self.nodes_list[idx]
+        own = self.node_ids[idx]
+        if isinstance(node, LinearRegulator):
+            return (own, "inlet" if node.backpressure else "outlet", 0)
+        config = node.remote_sensing_config
+        if config and config["node_id"] in self.network.nodes:
+            remote_node = self.network.nodes[config["node_id"]]
+            ports = {"inlet": remote_node.inlets, "outlet": remote_node.outlets}.get(config["port_type"], [])
+            if config["port_idx"] < len(ports):
+                return (config["node_id"], config["port_type"], config["port_idx"])
+        return (own, "outlet", 0)
+
     def _init_controller(self, idx):
         node = self.nodes_list[idx]
         node.opening_pct = 50.0
         node.locked_up = False
         return {
             "node": node,
+            "point": self._sensing_point(idx),
+            "tie": None,             # first controller of a group sharing one setpoint at one point
             "sign": -1.0 if node.backpressure else 1.0,
             "state": "regulating",   # regulating | open | closed | lockup
             "done": False,
@@ -274,10 +290,78 @@ class NetworkSolver:
             return "open"
         return "regulating"
 
+    def _share_sensing_points(self, controllers) -> bool:
+        """
+        Controllers that hold the same point in the same mode have no unique opening each: only the point's
+        pressure is fixed. Their setpoints form tiers, highest PRV (lowest BPR) setpoint first. One tier
+        regulates; the tiers before it are wide open (they cannot reach their higher setpoint) and the tiers
+        after it are closed. Equal setpoints share control at one common opening (one controller output on all).
+        Returns True when an opening was moved, so the hydraulic state no longer matches.
+        """
+        tol = self.CONTROL_TOL_BAR
+        tie_pa = 0.5 * tol * 100000.0   # tied setpoints this close: at their mean every member is within tol
+        groups = {}
+        for st in controllers.values():
+            st["tie"] = None
+            if st["state"] != "lockup":
+                groups.setdefault((st["point"], st["sign"]), []).append(st)
+        moved = False
+
+        def pin(st, opening, state):
+            nonlocal moved
+            if st["node"].opening_pct != opening:
+                st["node"].opening_pct = opening
+                moved = True
+            st.update(state=state, done=True)
+
+        for (_, sign), members in groups.items():
+            for st in members:
+                st["grouped"] = len(members) > 1
+            if len(members) < 2:
+                continue
+            tiers = []
+            for st in sorted(members, key=lambda s: -sign * s["node"].set_pressure):
+                if tiers and sign * (tiers[-1][0]["node"].set_pressure - st["node"].set_pressure) <= tie_pa:
+                    tiers[-1].append(st)
+                else:
+                    tiers.append([st])
+            # The regulating tier is remembered by its setpoint, not its index: membership can change
+            held = next((st["held_set"] for st in members if "held_set" in st), None)
+            level = 0 if held is None else min(
+                sum(sign * (tier[0]["node"].set_pressure - held) > tie_pa for tier in tiers), len(tiers) - 1)
+            lead = tiers[level][0]
+            if lead["state"] == "open" and level + 1 < len(tiers):
+                level += 1          # wide open and still short of its setpoint: the next tier takes over
+            elif lead["state"] == "closed" and level > 0 and tiers[level - 1][0]["error_bar"] > tol:
+                level -= 1          # closed and still above, while the tier before is above its own setpoint
+            for st in members:
+                st["held_set"] = tiers[level][0]["node"].set_pressure
+            for k, tier in enumerate(tiers):
+                if k < level:
+                    for st in tier:
+                        pin(st, self.OPENING_MAX_PCT, "open")
+                elif k > level:
+                    for st in tier:
+                        pin(st, st["o_min"], "closed")
+            lead = tiers[level][0]
+            o_min = min(st["o_min"] for st in tiers[level])     # one opening, one end stop
+            for st in tiers[level]:
+                st["o_min"] = o_min
+            for st in tiers[level][1:]:
+                st["tie"] = lead
+                if st["node"].opening_pct != lead["node"].opening_pct:
+                    st["node"].opening_pct = lead["node"].opening_pct
+                    moved = True
+                st.update(state=lead["state"], done=lead["done"])
+            if len(tiers[level]) > 1:
+                lead["tie"] = lead
+        return moved
+
     def _may_lock_up(self, st) -> bool:
         node = st["node"]
+        # A closed member of a shared sensing point is simply closed: the regulating member holds the point
         return isinstance(node, LinearRegulator) and not node.backpressure \
-            and st["lockup_exits"] < self.MAX_LOCKUP_EXITS
+            and st["lockup_exits"] < self.MAX_LOCKUP_EXITS and not st.get("grouped")
 
     def _control_step(self, controllers, evaluate, memo) -> Tuple[bool, bool]:
         """
@@ -331,6 +415,7 @@ class NetworkSolver:
                 continue
             st["state"] = state
             st["done"] = state != "regulating" or abs(f) < tol
+        changed_mode = self._share_sensing_points(controllers) or changed_mode
 
         active = [st for st in controllers.values() if st["state"] == "regulating"]
         if not changed_mode and all(st["done"] for st in controllers.values()) and \
@@ -340,8 +425,23 @@ class NetworkSolver:
             memo.clear()
             return False, False
 
-        F = np.array([st["error_bar"] for st in active])
-        keys = tuple(id(st["node"]) for st in active)
+        # One unknown per unit: a controller, or a group sharing control (all members at one opening)
+        units = {}
+        for st in active:
+            units.setdefault(id(st["tie"] or st), []).append(st)
+        units = list(units.values())
+        active = [unit[0] for unit in units]
+
+        def set_opening(k, opening):
+            for st in units[k]:
+                st["node"].opening_pct = opening
+
+        def unit_error(unit):
+            # Tied setpoints differ by up to half the tolerance: the unit holds their mean
+            return sum(self._controller_error(st) for st in unit) / len(unit)
+
+        F = np.array([sum(st["error_bar"] for st in unit) / len(unit) for unit in units])
+        keys = tuple(tuple(id(st["node"]) for st in unit) for unit in units)
 
         # Backtrack only when the last Newton step overshot: an error changed sign AND grew. An error that
         # grows with the same sign comes from the fluid properties still settling between iterations
@@ -354,8 +454,8 @@ class NetworkSolver:
                 prev["halvings"] += 1
                 prev["step"] = 0.5 * prev["step"]
                 for k, st in enumerate(active):
-                    st["node"].opening_pct = float(np.clip(math.exp(prev["v"][k] + prev["step"][k]),
-                                                           st["o_min"], self.OPENING_MAX_PCT))
+                    set_opening(k, float(np.clip(math.exp(prev["v"][k] + prev["step"][k]),
+                                                 st["o_min"], self.OPENING_MAX_PCT)))
                 return False, False
 
         # Finite-difference Jacobian of f with respect to v = ln(opening), active controllers only
@@ -365,12 +465,12 @@ class NetworkSolver:
         for k, sk in enumerate(active):
             o0 = sk["node"].opening_pct
             h = -self.FD_STEP_LN if o0 >= self.OPENING_MAX_PCT * 0.99 else self.FD_STEP_LN
-            sk["node"].opening_pct = min(self.OPENING_MAX_PCT, o0 * math.exp(h))
+            set_opening(k, min(self.OPENING_MAX_PCT, o0 * math.exp(h)))
             h_eff = math.log(sk["node"].opening_pct / o0)
             if evaluate() and abs(h_eff) > 1e-12:
-                for i, si in enumerate(active):
-                    J[i, k] = (self._controller_error(si) - F[i]) / h_eff
-            sk["node"].opening_pct = o0
+                for i, unit in enumerate(units):
+                    J[i, k] = (unit_error(unit) - F[i]) / h_eff
+            set_opening(k, o0)
 
         # Controllers whose own opening does not move their error (no authority) walk towards the end
         # stop that their error asks for until it shows an effect or reaches saturation
@@ -379,7 +479,8 @@ class NetworkSolver:
             if J[k, k] < -1e-9:
                 # Opening it moves the sensed pressure the wrong way (e.g. downstream mode sensing a point
                 # upstream of the valve): like a real wrong-acting loop it runs to an end stop; say why.
-                active[k]["reverse_acting"] = True
+                for st in units[k]:
+                    st["reverse_acting"] = True
         dv = np.array([0.0 if k in authority else -math.copysign(self.MAX_STEP_LN, F[k]) for k in range(n)])
         if authority:
             Ja = J[np.ix_(authority, authority)]
@@ -390,8 +491,7 @@ class NetworkSolver:
             dv *= self.MAX_STEP_LN / biggest
         memo["prev"] = {"keys": keys, "F": F.copy(), "v": v0, "step": dv.copy(), "halvings": 0}
         for k, st in enumerate(active):
-            st["node"].opening_pct = float(np.clip(math.exp(v0[k] + dv[k]),
-                                                   st["o_min"], self.OPENING_MAX_PCT))
+            set_opening(k, float(np.clip(math.exp(v0[k] + dv[k]), st["o_min"], self.OPENING_MAX_PCT)))
         return False, True
 
     def _controller_report(self, states) -> Tuple[bool, List[Dict[str, Any]]]:

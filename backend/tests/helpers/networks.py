@@ -2,7 +2,11 @@
 import pytest
 
 from simulation.equipment.linear_control_valve import LinearControlValve
+from simulation.equipment.mixer import Mixer
 from simulation.equipment.pipe import Pipe
+from simulation.equipment.pressure_source import PressureSource
+from simulation.equipment.remote_control_valve import RemoteControlValve
+from simulation.equipment.splitter import Splitter
 from simulation.equipment.tank import Tank
 from simulation.schemas import HydraulicNetwork
 
@@ -68,6 +72,42 @@ def generate_stress_network(size=10):
 
 
 ID_1IN = 0.0266
+
+
+def parallel_remote_valves(set_a_bar, set_b_bar, cv_a=5.0, cv_b=5.0, len_a=1.0, len_b=1.0, consumer=30.0,
+                           backpressure=False):
+    """10 bar supply -> two remote valves "a"/"b" in parallel -> consumer valve -> tank; both sense one header.
+    PRV: the header is the mixer outlet after the valves. BPR: the header is the splitter inlet before them.
+    Returns (nodes, edges)."""
+    nodes = {
+        "src": PressureSource("Supply", source_pressure=10.0e5),
+        "sp": Splitter("Split"),
+        "a": RemoteControlValve("A", max_cv=cv_a, set_pressure=set_a_bar * 1e5, backpressure=backpressure),
+        "b": RemoteControlValve("B", max_cv=cv_b, set_pressure=set_b_bar * 1e5, backpressure=backpressure),
+        "mx": Mixer("Join"),
+        "cv": LinearControlValve("Consumer", max_cv=2.0, opening_pct=consumer),
+        "t": Tank("Sink", fluid_level=0.0),
+    }
+    header = {"node_id": "sp", "port_type": "inlet", "port_idx": 0} if backpressure else         {"node_id": "mx", "port_type": "outlet", "port_idx": 0}
+    nodes["a"].remote_sensing_config = dict(header)
+    nodes["b"].remote_sensing_config = dict(header)
+    branches = [
+        {"source": "sp", "source_port": "outlet-0", "target": "a", "pipe": Pipe("pa", len_a, ID_1IN)},
+        {"source": "sp", "source_port": "outlet-1", "target": "b", "pipe": Pipe("pb", len_b, ID_1IN)},
+        {"source": "a", "target": "mx", "target_port": "inlet-0", "pipe": Pipe("pa2", 1, ID_1IN)},
+        {"source": "b", "target": "mx", "target_port": "inlet-1", "pipe": Pipe("pb2", 1, ID_1IN)},
+    ]
+    if backpressure:
+        edges = [{"source": "src", "target": "cv", "pipe": Pipe("p0", 1, ID_1IN)},
+                 {"source": "cv", "target": "sp", "pipe": Pipe("p1", 1, ID_1IN)},
+                 *branches,
+                 {"source": "mx", "target": "t", "pipe": Pipe("p2", 1, ID_1IN)}]
+    else:
+        edges = [{"source": "src", "target": "sp", "pipe": Pipe("p0", 1, ID_1IN)},
+                 *branches,
+                 {"source": "mx", "target": "cv", "pipe": Pipe("p1", 1, ID_1IN)},
+                 {"source": "cv", "target": "t", "pipe": Pipe("p2", 1, ID_1IN)}]
+    return nodes, edges
 
 
 ATM = 101325.0

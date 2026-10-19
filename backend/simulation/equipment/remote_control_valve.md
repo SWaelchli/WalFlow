@@ -4,6 +4,12 @@
 
 Control valve that holds a set pressure at a remote point. The solver adjusts the opening until the pressure at the sensed port (connected by a signal line) reaches the set pressure; `backpressure` reverses the control action (the valve opens as the sensed pressure rises).
 
+Several valves sensing the same port in the same mode fix only that one pressure, not each opening. The solver then acts like one controller per setpoint:
+- Equal setpoints share control at one common opening, so flow splits by Cv and branch resistance.
+- With different setpoints, the highest PRV (lowest BPR) setpoint regulates and the others close. If it cannot reach its setpoint wide open, it stays wide open and the next setpoint takes over.
+
+Valves are grouped only when they sense the exact same port. Valves that sense different ports, even with almost no loss between them, are controlled separately; the pipe loss between those ports still decides the split.
+
 > Short description. The full description per the equipment documentation standard is on the ROADMAP ("Detailed Equipment Documentation").
 
 ## Data Fields
