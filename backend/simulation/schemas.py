@@ -17,7 +17,10 @@ class Port(BaseModel):
 
     # Fluid Properties (Defaulting to water at standard conditions)
     density: float = 1000.0     
-    viscosity: float = 0.001    
+    viscosity: float = 0.001
+
+    # No flow and no pressure reference: the solver set the pressure from the section's leak path
+    stagnant: bool = False
 
     # Network Tracking: Which port on another piece of equipment is this connected to?
     connected_to_port_id: Optional[str] = None

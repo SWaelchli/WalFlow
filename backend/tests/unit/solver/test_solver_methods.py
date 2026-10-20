@@ -26,8 +26,8 @@ def test_lm_solves_the_examples_newton_solves(example, case):
             continue
         m = net_l.nodes[nid]
         assert m.outlets[0].flow_rate == pytest.approx(n.outlets[0].flow_rate, rel=5e-3, abs=2e-6)   # 0.12 L/min
-        if abs(n.outlets[0].flow_rate) > 1e-6:       # the pressure of a stagnant, floating branch is not defined
-            assert m.outlets[0].pressure == pytest.approx(n.outlets[0].pressure, rel=2e-3, abs=2000.0)    # 0.02 bar
+        # Stagnant branches included: their pressure comes from the leak path, not from the method
+        assert m.outlets[0].pressure == pytest.approx(n.outlets[0].pressure, rel=2e-3, abs=2000.0)    # 0.02 bar
 
 
 def test_non_physical_newton_result_is_replaced_by_a_physical_one_when_available():

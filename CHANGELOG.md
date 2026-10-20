@@ -85,6 +85,7 @@ All notable changes to the WälFlow project will be documented in this file.
 
 ### Fixed
 
+- **Pressure in stagnant branches**: A section shut in by a stopped PD pump, a closed check valve or a closed relief device now takes the pressure of its leak path (usually the pump suction) instead of a value that changed with the solver method, and is flagged `stagnant` in the telemetry.
 - **3-way TCV loop**: The thermal valve now settles within 0.01 K of its setpoint, or exactly at its end stop, independent of the start and in fewer iterations; the unused damping factor setting is removed (older files are still accepted).
 - **Custom reducer length in imperial units**: A transition length entered in inches is stored correctly (it was converted a second time as feet); the inspector shows the length the solver uses, and empty or zero reducer dimensions are rejected.
 - **Inspector defaults match the solver**: A 0 m pipe is shown as 0 m (not 25 m) and a tank without a level as 1 m (not 0 m). Reducer roughness of 0 mm is kept as smooth instead of falling back to 0.045 mm, and negative reducer roughness is rejected.

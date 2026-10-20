@@ -1,4 +1,5 @@
 import copy
+from collections import defaultdict, deque
 import numpy as np
 import math
 import threading
@@ -22,6 +23,20 @@ from simulation.equipment.three_way_tcv import ThreeWayTCV
 from simulation.fluid_utils import FluidProperties
 from simulation.limits import check_deadline
 from simulation.equipment.relief_device import is_closed_relief
+
+
+def is_stopped_blocking(node) -> bool:
+    """A stopped pump that blocks flow (PD pump): removed from the solve, no pressure passes through it."""
+    return not getattr(node, 'active', True) and getattr(node, 'blocks_flow_on_shutdown', False)
+
+
+def blocks_at_rest(node) -> bool:
+    return is_closed_relief(node) or is_stopped_blocking(node)
+
+
+def is_pressure_reference(node) -> bool:
+    """A node that fixes the pressure (or the flow) of the circuit it sits in (topology pruning)."""
+    return getattr(node, 'is_pressure_boundary', False) or getattr(node, 'node_type', None) == 'flow_source'
 
 class NetworkSolver:
     """
@@ -51,6 +66,7 @@ class NetworkSolver:
         self.node_to_key = {id(n): nid for nid, n in network.nodes.items()}
         
         self.last_prop_iters = 0
+        self.held_closed_ids = set()   # auto relief devices the relief passes hold closed (leakage does not lift them)
         self.active_case_id = getattr(network, 'active_case_id', None) or 'default'
         self.warm_start_status = "Cold Start"
         self.persist_warm_start = True   # False for auxiliary solves (relief ramp) that must not overwrite the cache
@@ -62,9 +78,10 @@ class NetworkSolver:
         # 1. Identify inactive nodes
         inactive_node_ids = set()
         for node_id, node in self.network.nodes.items():
-            is_inactive_pump = (not getattr(node, 'active', True) and getattr(node, 'blocks_flow_on_shutdown', False))
-            is_closed_relief = (getattr(node, 'forced_state', '') == 'forced_closed' and getattr(node, 'node_type', '') in RELIEF_NODE_TYPES)
-            if is_inactive_pump or is_closed_relief:
+            is_inactive_pump = is_stopped_blocking(node)
+            # Only forced-closed relief devices are removed; one closed in 'auto' stays in the solve as q = 0
+            is_forced_closed = (getattr(node, 'forced_state', '') == 'forced_closed' and getattr(node, 'node_type', '') in RELIEF_NODE_TYPES)
+            if is_inactive_pump or is_forced_closed:
                 inactive_node_ids.add(node_id)
                 
         # 2. Prune connected edges
@@ -93,18 +110,12 @@ class NetworkSolver:
                     if v not in seen:
                         seen.add(v)
                         stack.append(v)
-            has_reference = any(
-                getattr(self.network.nodes[n], 'is_pressure_boundary', False) or getattr(self.network.nodes[n], 'node_type', None) == 'flow_source'
-                for n in group
-            )
+            has_reference = any(is_pressure_reference(self.network.nodes[n]) for n in group)
             if len(group) >= 2 and not has_reference:
                 self.island_groups.append(sorted(group))
 
         # 3. Reachability Analysis (undirected DFS from pressure boundaries or flow sources)
-        boundary_ids = [
-            nid for nid, node in self.network.nodes.items()
-            if getattr(node, 'is_pressure_boundary', False) or getattr(node, 'node_type', None) == 'flow_source'
-        ]
+        boundary_ids = [nid for nid, node in self.network.nodes.items() if is_pressure_reference(node)]
         
         adj = {nid: set() for nid in self.all_node_ids}
         for edge in active_edges:
@@ -138,8 +149,7 @@ class NetworkSolver:
             leaves = []
             for nid in reachable_node_ids:
                 node = self.network.nodes[nid]
-                is_boundary = getattr(node, 'is_pressure_boundary', False) or getattr(node, 'node_type', None) == 'flow_source'
-                if not is_boundary and degree[nid] <= 1:
+                if not is_pressure_reference(node) and degree[nid] <= 1:
                     leaves.append(nid)
                     
             if not leaves:
@@ -588,6 +598,7 @@ class NetworkSolver:
 
     def solve(self, method=None):
         self.prune_topology()
+        self._clear_stagnant_flags()   # a failed solve leaves no flags from the previous run
         start_time = time.perf_counter()
         max_outer_iterations = 100
 
@@ -1427,89 +1438,22 @@ class NetworkSolver:
                 if isinstance(node, ThreeWayTCV):
                     node.calculate()
 
-        # 6b. Bidirectional pressure propagation to pruned/inactive components
-        for _ in range(5):
-            for edge in self.all_edges_list:
-                src_node = self.network.nodes[edge['source']]
-                tgt_node = self.network.nodes[edge['target']]
-                
-                src_key = self.node_to_key[id(src_node)]
-                tgt_key = self.node_to_key[id(tgt_node)]
-                
-                # Case 1: Propagate downstream (src is active, tgt is pruned)
-                if src_key not in self.pruned_node_ids and tgt_key in self.pruned_node_ids:
-                    # Closed relief nodes block pressure propagation from inlet to outlet
-                    if is_closed_relief(src_node):
-                        continue
-                    src_port_idx = self._parse_port_idx(edge.get('source_port', 'outlet-0'))
-                    if src_port_idx < len(src_node.outlets):
-                        p_src_out = src_node.outlets[src_port_idx].pressure
-                        tgt_idx = self.all_node_id_to_idx[tgt_key]
-                        p_in_all[tgt_idx] = p_src_out
-                        for port in tgt_node.inlets: port.pressure = p_src_out
-                        if not is_closed_relief(tgt_node):
-                            p_out = self._get_node_p_out(tgt_node, p_src_out, 0.0, 0.0, update_state=True)
-                            for port in tgt_node.outlets: port.pressure = p_out
+        # 6b. Sides left out of the solve take their pressure from the solved sides they connect to
+        links = self._side_links()
+        self._fill_pruned_pressures(links, atm_p)
 
-                # Case 2: Propagate upstream (tgt is active, src is pruned)
-                elif tgt_key not in self.pruned_node_ids and src_key in self.pruned_node_ids:
-                    # Closed relief nodes block pressure propagation from outlet to inlet
-                    if is_closed_relief(tgt_node):
-                        continue
-                    tgt_port_idx = self._parse_port_idx(edge.get('target_port', 'inlet-0'))
-                    if tgt_port_idx < len(tgt_node.inlets):
-                        p_tgt_in = tgt_node.inlets[tgt_port_idx].pressure
-                        src_idx = self.all_node_id_to_idx[src_key]
-                        p_in_all[src_idx] = p_tgt_in
-                        for port in src_node.outlets: port.pressure = p_tgt_in
-                        if not is_closed_relief(src_node):
-                            for port in src_node.inlets: port.pressure = p_tgt_in
-
-                # Case 3: Both pruned -> propagate from updated node to unupdated node (relative to atmospheric pressure)
-                elif src_key in self.pruned_node_ids and tgt_key in self.pruned_node_ids:
-                    src_idx = self.all_node_id_to_idx[src_key]
-                    tgt_idx = self.all_node_id_to_idx[tgt_key]
-                    p_src = p_in_all[src_idx]
-                    p_tgt = p_in_all[tgt_idx]
-                    
-                    if abs(p_src - atm_p) > abs(p_tgt - atm_p):
-                        if is_closed_relief(src_node):
-                            continue
-                        src_port_idx = self._parse_port_idx(edge.get('source_port', 'outlet-0'))
-                        if src_port_idx < len(src_node.outlets):
-                            p_src_out = src_node.outlets[src_port_idx].pressure
-                            p_in_all[tgt_idx] = p_src_out
-                            for port in tgt_node.inlets: port.pressure = p_src_out
-                            if not is_closed_relief(tgt_node):
-                                p_out = self._get_node_p_out(tgt_node, p_src_out, 0.0, 0.0, update_state=True)
-                                for port in tgt_node.outlets: port.pressure = p_out
-                    elif abs(p_tgt - atm_p) > abs(p_src - atm_p):
-                        if is_closed_relief(tgt_node):
-                            continue
-                        tgt_port_idx = self._parse_port_idx(edge.get('target_port', 'inlet-0'))
-                        if tgt_port_idx < len(tgt_node.inlets):
-                            p_tgt_in = tgt_node.inlets[tgt_port_idx].pressure
-                            p_in_all[src_idx] = p_tgt_in
-                            for port in src_node.outlets: port.pressure = p_tgt_in
-                            if not is_closed_relief(src_node):
-                                for port in src_node.inlets: port.pressure = p_tgt_in
-
-        # 7. Special handling for closed/pruned relief nodes (PSV & Rupture Disc)
+        # 7. Closed relief devices pass no flow
         for node in self.all_nodes_list:
-            if getattr(node, 'node_type', '') in RELIEF_NODE_TYPES:
-                if is_closed_relief(node):
-                    node_id = self.node_to_key[id(node)]
-                    ds_p = node.inlets[0].pressure if node.inlets else 101325.0
-                    for edge in self.all_edges_list:
-                        if edge['source'] == node_id:
-                            tgt_id = edge['target']
-                            tgt_idx = self.all_node_id_to_idx[tgt_id]
-                            ds_p = p_in_all[tgt_idx]
-                            break
-                    for port in node.inlets: port.flow_rate = 0.0
-                    for port in node.outlets:
-                        port.flow_rate = 0.0
-                        port.pressure = ds_p
+            if is_closed_relief(node):
+                for port in node.inlets + node.outlets: port.flow_rate = 0.0
+
+        stagnant_ids = self._assign_stagnant_pressures(q_edges, links)
+
+        # 7b. Device state (opening, status) from the final pressures of the sides set in 6b and 7
+        for nid in self.pruned_node_ids | stagnant_ids:
+            node = self.network.nodes[nid]
+            if node.inlets and not blocks_at_rest(node):
+                self._get_node_p_out(node, node.inlets[0].pressure, 0.0, 0.0, update_state=True)
 
         # 8. Populate all edges' pipe flows and pressures
         active_edge_pos = {id(e): j for j, e in enumerate(self.edges_list)}
@@ -1544,6 +1488,208 @@ class NetworkSolver:
                 pipe.inlets[0].flow_rate = q
                 pipe.outlets[0].pressure = tgt_port.pressure
                 pipe.outlets[0].flow_rate = q
+
+    def _side_ports(self, nid, side):
+        node = self.network.nodes[nid]
+        return node.inlets if side == 'in' else node.outlets
+
+    def _side_links(self):
+        """side -> [(port of this side on the edge, side at the other end)]"""
+        nodes = self.network.nodes
+        links = defaultdict(list)
+        for edge in self.all_edges_list:
+            src, tgt = edge['source'], edge['target']
+            links[(src, 'out')].append((self._src_port(edge, nodes[src]), (tgt, 'in')))
+            links[(tgt, 'in')].append((self._tgt_port(edge, nodes[tgt]), (src, 'out')))
+        return links
+
+    def _p_in_at_rest(self, node, p_out):
+        """Inlet pressure that gives p_out at zero flow (exact for a rise or drop that does not depend on p_in)."""
+        p_in = p_out
+        for _ in range(3):
+            p_in = p_out - (self._get_node_p_out(node, p_in, 0.0, 0.0) - p_in)
+        return p_in
+
+    def _carry_at_rest(self, seeds, links, todo, passes):
+        """Carries the pressure of the seed sides at zero flow to the sides in `todo` they reach (removed from
+        it): unchanged along a pipe, across a device with passes(nid) by its zero-flow rise or drop (pump
+        shutoff head, regulator lock-up) in either direction."""
+        queue = deque(seeds)
+
+        def set_side(side, p):
+            for port in self._side_ports(*side):
+                port.pressure = p
+            todo.discard(side)
+            queue.append(side)
+
+        while queue:
+            nid, side = queue.popleft()
+            for port, other in links[(nid, side)]:
+                if other in todo:
+                    set_side(other, port.pressure)
+            other = (nid, 'out' if side == 'in' else 'in')
+            ports = self._side_ports(nid, side)
+            if other in todo and ports and passes(nid):
+                node = self.network.nodes[nid]
+                p = ports[0].pressure
+                set_side(other, self._get_node_p_out(node, p, 0.0, 0.0) if side == 'in' else self._p_in_at_rest(node, p))
+
+    def _fill_pruned_pressures(self, links, atm_p):
+        """Pressure of the sides left out of the solve (dead legs, stopped PD pumps, closed relief devices).
+
+        Each node has an inlet side and an outlet side. From the solved sides the pressure is carried at zero
+        flow (_carry_at_rest). A blocking device (blocks_at_rest) passes no pressure from one side to the
+        other, so each of its sides takes the pressure of its own neighbour; the outlet of a closed relief
+        device takes its downstream pressure. A side no solved pressure reaches is set to atmospheric
+        pressure; _assign_stagnant_pressures then gives it its leak-path pressure."""
+        nodes = self.network.nodes
+        seeds = []
+        for nid, node in nodes.items():
+            if nid not in self.pruned_node_ids:
+                seeds += [(nid, 'in')] if is_closed_relief(node) else [(nid, 'in'), (nid, 'out')]
+        todo = {(nid, side) for nid in nodes for side in ('in', 'out')} - set(seeds)
+        self._carry_at_rest(seeds, links, todo, lambda nid: not blocks_at_rest(nodes[nid]))
+        for side in todo:
+            for port in self._side_ports(*side):
+                port.pressure = atm_p
+
+    def _clear_stagnant_flags(self):
+        ports = [p for node in self.network.nodes.values() for p in node.inlets + node.outlets]
+        ports += [p for edge in self.all_edges_list for p in edge['pipe'].inlets + edge['pipe'].outlets]
+        for port in ports:
+            port.stagnant = False
+
+    def _assign_stagnant_pressures(self, q_edges, links):
+        """Pressure of sections shut in by blocking devices (ROADMAP "Undefined Pressure in Stagnant Branches").
+
+        Each node has an inlet side and an outlet side. Pipes and open devices tie sides together; a blocking
+        device (stopped PD pump, check valve without flow, closed relief device) does not. A group of sides
+        without a pressure boundary carries no flow and the equations leave its pressure free: it takes the
+        pressure behind its strongest leak path (LEAK_*, the highest one on a tie), carried through the group
+        at zero flow (an open device keeps its zero-flow rise or drop), and shifted where a check valve on its
+        edge would open or a relief device would lift. Its ports and pipes are flagged stagnant.
+
+        Relief device seat: leakage alone never lifts a closed PSV or bursts a disc. Physically a leak into a
+        shut-in section would slowly bring it up to the set pressure and the device would simmer there at a
+        negligible flow, so the section is held just below the set pressure and the relief passes see no
+        breach (no opening at zero flow). This holds for devices in 'auto', also while the relief passes hold
+        them closed (held_closed_ids), but not for the unmitigated pass or a device the user forced closed:
+        there the device has failed and the leak brings the section to the full leak-path pressure.
+
+        Returns the ids of the nodes in a stagnant group."""
+        nodes = self.network.nodes
+        parent = {}
+
+        def find(k):
+            parent.setdefault(k, k)
+            while parent[k] != k:
+                parent[k] = parent[parent[k]]
+                k = parent[k]
+            return k
+
+        leak_rank = {}
+        for nid, node in nodes.items():
+            if is_stopped_blocking(node):
+                leak_rank[nid] = LEAK_STOPPED_PUMP
+            elif is_closed_relief(node):
+                leak_rank[nid] = LEAK_RELIEF_SEAT
+            elif node.node_type in CHECK_VALVE_TYPES and abs(node.inlets[0].flow_rate) <= Q_STAGNANT:
+                leak_rank[nid] = LEAK_CHECK_VALVE
+            else:
+                parent[find((nid, 'in'))] = find((nid, 'out'))
+        for edge in self.all_edges_list:
+            parent[find((edge['source'], 'out'))] = find((edge['target'], 'in'))
+
+        # A flow source at zero flow fixes nothing; one with flow is anchored by its edge flow
+        anchored = set()
+        for nid, node in nodes.items():
+            if getattr(node, 'is_pressure_boundary', False):
+                anchored |= {find((nid, 'in')), find((nid, 'out'))}
+        for j, edge in enumerate(self.edges_list):
+            if abs(q_edges[j]) > Q_STAGNANT:
+                anchored.add(find((edge['source'], 'out')))   # flow implies a reference; never override it
+
+        groups = {}
+        for nid in nodes:
+            for side in ('in', 'out'):
+                root = find((nid, side))
+                if root not in anchored:
+                    groups.setdefault(root, []).append((nid, side))
+
+        # solve() cleared the flags
+        for edge in self.all_edges_list:
+            stagnant = find((edge['source'], 'out')) in groups
+            for port in edge['pipe'].inlets + edge['pipe'].outlets:
+                port.stagnant = stagnant
+        for members in groups.values():
+            for nid, side in members:
+                for port in self._side_ports(nid, side):
+                    port.stagnant = True
+
+        # A section can lean on another one shut in behind it: resolve them in turn. A section waits while a
+        # leak path at least as strong leads into one still unresolved, so the result does not depend on the
+        # node order. Sections that wait on each other (a ring) start from the strongest known leak path of all.
+        unresolved = dict(groups)
+
+        def evaluate(members):
+            """(best leak path as (rank, -pressure, side), strongest rank still waiting, [(side, lo, hi)])"""
+            best, pending, bounds = None, None, []
+            for nid, side in members:
+                rank = leak_rank.get(nid)
+                if rank is None:
+                    continue
+                node = nodes[nid]
+                if rank == LEAK_RELIEF_SEAT and side == 'in' and \
+                        (node.forced_state == 'auto' or nid in self.held_closed_ids):
+                    bounds.append(((nid, side), -math.inf, node.set_pressure_pa - RELIEF_SEAT_MARGIN_PA))
+                other = 'out' if side == 'in' else 'in'
+                other_ports = self._side_ports(nid, other)
+                if not other_ports:
+                    continue
+                if find((nid, other)) in unresolved:
+                    pending = rank if pending is None else min(pending, rank)
+                    continue
+                p_other = other_ports[0].pressure
+                if rank == LEAK_CHECK_VALVE:
+                    crack = node.cracking_pressure_bar * 100000.0
+                    bounds.append(((nid, side), -math.inf, p_other + crack) if side == 'in'
+                                  else ((nid, side), p_other - crack, math.inf))
+                if best is None or (rank, -p_other) < best[:2]:
+                    best = (rank, -p_other, (nid, side))
+            return best, pending, bounds
+
+        def passes(nid):
+            return nid not in leak_rank
+
+        def settle(entry, p, members):
+            for port in self._side_ports(*entry):
+                port.pressure = p
+            self._carry_at_rest([entry], links, set(members) - {entry}, passes)
+
+        while unresolved:
+            evals = {root: evaluate(members) for root, members in unresolved.items()}
+            ready = [r for r, (best, pending, _) in evals.items()
+                     if best is not None and (pending is None or pending > best[0])]
+            if not ready:
+                candidates = [r for r, e in evals.items() if e[0] is not None]
+                if not candidates:
+                    break   # no leak path to a known pressure: the value from _fill_pruned_pressures stays
+                ready = [min(candidates, key=lambda r: evals[r][0])]
+            for root in ready:
+                best, _, bounds = evals[root]
+                members = unresolved.pop(root)
+                settle(best[2], -best[1], members)
+                if not bounds:
+                    continue
+                # Shift the section to its limits, each taken at its own port. lo above hi: a check valve pushes
+                # the section above a relief set pressure. lo wins, so the breach stays visible and the relief
+                # passes open the device
+                at = [self._side_ports(*side)[0].pressure for side, _, _ in bounds]
+                shift = max(min(0.0, min(hi - p for (_, _, hi), p in zip(bounds, at))),
+                            max(lo - p for (_, lo, _), p in zip(bounds, at)))
+                if shift != 0.0:
+                    settle(best[2], -best[1] + shift, members)
+        return {nid for members in groups.values() for nid, _ in members}
 
     def _parse_port_idx(self, port_str: str) -> int:
         try:
@@ -1643,6 +1789,11 @@ class NetworkSolver:
                 port.pressure = p
 
 RELIEF_NODE_TYPES = ('pressure_safety_valve', 'rupture_disc')
+CHECK_VALVE_TYPES = ('check_valve', 'check_valve_orifice')
+# Leak paths out of a shut-in section, strongest first (ROADMAP "Undefined Pressure in Stagnant Branches")
+LEAK_STOPPED_PUMP, LEAK_CHECK_VALVE, LEAK_RELIEF_SEAT = 0, 1, 2
+Q_STAGNANT = 1e-7               # m³/s (6 mL/min): a check valve below this flow is closed
+RELIEF_SEAT_MARGIN_PA = 1.0     # a stagnant section stays this far below a closed relief device's set pressure
 RELIEF_RAMP_MAX_SOLVES = 24     # bisection steps per opening (λ resolution 2⁻²⁴)
 RELIEF_RAMP_TOL_PA = 100.0      # 1 mbar: inlet pressure at the opening snapshot vs set pressure
 RELIEF_RAMP_TOL_LAM = 1e-4
@@ -1688,6 +1839,7 @@ def _find_relief_openings(network, opening_groups, auto_ids, original_states, ex
 
     ramp_solver = NetworkSolver(net)
     ramp_solver.persist_warm_start = False
+    ramp_solver.held_closed_ids = set(auto_ids)
     openings = []
     try:
         for g_idx, group_ids in enumerate(opening_groups):
@@ -1755,6 +1907,7 @@ def run_sequential_relief_simulation(network, solver, extract_telemetry_fn):
     finally:
         for k, state in saved.items():
             network.nodes[k].forced_state = state
+        solver.held_closed_ids = set()
 
 
 def _run_sequential_relief_passes(network, solver, extract_telemetry_fn):
@@ -1801,6 +1954,7 @@ def _run_sequential_relief_passes(network, solver, extract_telemetry_fn):
     for node in auto_psv_nodes:
         node.forced_state = "forced_closed"
         node.reset_run_state()
+    solver.held_closed_ids = set(auto_ids_all)   # still 'auto' for the user: leakage alone does not lift them
 
     stats = None
     max_passes = len(auto_psv_nodes) + 1

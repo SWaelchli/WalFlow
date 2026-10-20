@@ -32,8 +32,8 @@ FLOW_ABS_LMIN, FLOW_REL = 0.05, 0.005
 P_ABS_BAR, P_REL = 0.005, 0.002
 T_ABS_K = 0.05
 OPENING_ABS_PCT = 0.5
-# Pressure in a branch without flow is not defined by the equations (ROADMAP "Undefined Pressure
-# in Stagnant Branches"), so it is only compared where the port carries flow.
+# Temperature in a branch without flow is not defined by the equations, so it is only compared where
+# the port carries flow. Pressure there is set from the leak path (solver._assign_stagnant_pressures).
 STAGNANT_LMIN = 0.01
 KPI_KEYS = ("max_pressure_bar", "min_pressure_bar", "total_flow_lmin", "total_pump_power_kw",
             "has_cavitation_warning", "relieved_pressure_bara", "peak_pressure_bara",
@@ -85,7 +85,7 @@ def _compare_ports(where, got, want, problems):
     for i, ((p, t, q), (p0, t0, q0)) in enumerate(zip(got, want)):
         if not _close(q, q0, FLOW_ABS_LMIN, FLOW_REL):
             problems.append(f"{where} port {i}: flow {q:.3f} L/min, expected {q0:.3f}")
-        if abs(q0) > STAGNANT_LMIN and not _close(p, p0, P_ABS_BAR, P_REL):
+        if not _close(p, p0, P_ABS_BAR, P_REL):
             problems.append(f"{where} port {i}: pressure {p:.4f} bar(a), expected {p0:.4f}")
         if abs(q0) > STAGNANT_LMIN and not _close(t, t0, T_ABS_K):
             problems.append(f"{where} port {i}: temperature {t:.2f} C, expected {t0:.2f}")
