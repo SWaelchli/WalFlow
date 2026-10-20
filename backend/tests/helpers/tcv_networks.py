@@ -1,6 +1,6 @@
 """3-way TCV scenario networks (ROADMAP "Thermal Control Valve Loop"), built as ReactFlow graphs so they
 take the same parser path as the app. Used by the TCV loop scenario tests and bench_tcv_loop.py."""
-from simulation.schemas import ReactFlowGraph
+from simulation.schemas import GlobalSettings, ReactFlowGraph
 
 PIPE = {"length_m": 3.0, "diameter_m": 0.05}
 
@@ -15,14 +15,14 @@ class _Graph:
                            "data": {"label": node_id, **data}})
         return node_id
 
-    def pipe(self, src, tgt, src_port=0, tgt_port=0, **data):
+    def pipe(self, src, tgt, src_port=0, tgt_port=0, data=None):
         self.edges.append({"id": f"e{len(self.edges)}", "source": src, "target": tgt,
                            "sourceHandle": f"outlet-{src_port}", "targetHandle": f"inlet-{tgt_port}",
-                           "data": {**PIPE, **data}})
+                           "data": {**PIPE, **(data or {})}})
 
     def graph(self):
         return ReactFlowGraph(nodes=self.nodes, edges=self.edges,
-                              global_settings={"fluid_type": self.fluid, "solver_method": "sparse_newton"})
+                              global_settings=GlobalSettings(fluid_type=self.fluid, solver_method="sparse_newton"))
 
 
 def mixing_graph(t_hot_c=80.0, t_cold_c=20.0, set_c=40.0, fluid="water", max_cv=10.0, hot_port_idx=0,
@@ -36,13 +36,13 @@ def mixing_graph(t_hot_c=80.0, t_cold_c=20.0, set_c=40.0, fluid="water", max_cv=
     g.node("tcv", "three_way_tcv", max_cv=max_cv, set_temperature_c=set_c, hot_port_idx=hot_port_idx)
     g.node("load", "linear_control_valve", max_cv=load_cv, opening_pct=load_opening)
     g.node("sink", "pressure_source", source_pressure_bara=1.0, temperature_k=293.15)
-    g.pipe("hot", "tcv", tgt_port=hot_port_idx, **(hot_pipe or {}))
+    g.pipe("hot", "tcv", tgt_port=hot_port_idx, data=hot_pipe)
     if cold_check_valve:
         g.node("cv_cold", "check_valve", cv=15.0, cracking_pressure_bar=0.1)
         g.pipe("cold", "cv_cold")
-        g.pipe("cv_cold", "tcv", tgt_port=1 - hot_port_idx, **(cold_pipe or {}))
+        g.pipe("cv_cold", "tcv", tgt_port=1 - hot_port_idx, data=cold_pipe)
     else:
-        g.pipe("cold", "tcv", tgt_port=1 - hot_port_idx, **(cold_pipe or {}))
+        g.pipe("cold", "tcv", tgt_port=1 - hot_port_idx, data=cold_pipe)
     if prv_bara is not None:
         g.node("prv", "linear_regulator", max_cv=10.0, set_pressure_pa=prv_bara * 1e5, backpressure=False)
         g.pipe("tcv", "prv")
@@ -114,33 +114,33 @@ def cooler_loop_graph(t_supply_c=55.0, set_c=45.0, fluid="iso_vg_46", max_cv=25.
     g.node("load", "linear_control_valve", max_cv=load_cv, opening_pct=load_opening)
     g.node("ret", "tank", level_m=1.0, elevation_m=0.0, temperature_k=318.15)
     pipe = {"diameter_m": 0.035}
-    g.pipe("supply", "pump", **pipe)
+    g.pipe("supply", "pump", data=pipe)
     head = "pump"
     if bpr_bara is not None or psv_barg is not None:
         g.node("hdr", "splitter")
-        g.pipe("pump", "hdr", **pipe)
+        g.pipe("pump", "hdr", data=pipe)
         head = "hdr"
         if bpr_bara is not None:
             g.node("bpr", "linear_regulator", max_cv=4.0, set_pressure_pa=bpr_bara * 1e5, backpressure=True)
             g.node("spill", "tank", level_m=1.0, elevation_m=0.0, temperature_k=318.15)
-            g.pipe("hdr", "bpr", src_port=1, **pipe)
-            g.pipe("bpr", "spill", **pipe)
+            g.pipe("hdr", "bpr", src_port=1, data=pipe)
+            g.pipe("bpr", "spill", data=pipe)
         else:
             g.node("psv", "pressure_safety_valve", cv=2.0, action_mode="modulating", set_pressure_barg=psv_barg)
             g.node("relief", "tank", level_m=1.0, elevation_m=0.0, temperature_k=318.15)
-            g.pipe("hdr", "psv", src_port=1, **pipe)
-            g.pipe("psv", "relief", **pipe)
-    g.pipe(head, "split", **pipe)
-    g.pipe("split", "cooler", src_port=0, **pipe)
-    g.pipe("split", "tcv", src_port=1, tgt_port=hot_port_idx, **pipe)
-    g.pipe("cooler", "tcv", tgt_port=1 - hot_port_idx, **pipe)
+            g.pipe("hdr", "psv", src_port=1, data=pipe)
+            g.pipe("psv", "relief", data=pipe)
+    g.pipe(head, "split", data=pipe)
+    g.pipe("split", "cooler", src_port=0, data=pipe)
+    g.pipe("split", "tcv", src_port=1, tgt_port=hot_port_idx, data=pipe)
+    g.pipe("cooler", "tcv", tgt_port=1 - hot_port_idx, data=pipe)
     if prv_bara is not None:
         g.node("prv", "linear_regulator", max_cv=15.0, set_pressure_pa=prv_bara * 1e5, backpressure=False)
-        g.pipe("tcv", "prv", **pipe)
-        g.pipe("prv", "load", **pipe)
+        g.pipe("tcv", "prv", data=pipe)
+        g.pipe("prv", "load", data=pipe)
     else:
-        g.pipe("tcv", "load", **pipe)
-    g.pipe("load", "ret", **pipe)
+        g.pipe("tcv", "load", data=pipe)
+    g.pipe("load", "ret", data=pipe)
     return g.graph()
 
 
