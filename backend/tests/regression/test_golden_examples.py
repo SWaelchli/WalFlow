@@ -26,10 +26,11 @@ GOLDEN = GOLDEN_FILE
 UPDATE = os.environ.get("WALFLOW_UPDATE_GOLDEN") == "1"
 
 # Tolerances: well above run-to-run noise (the solve is deterministic, F1-14), well below any
-# change worth noticing. The TCV loop stops within 0.1 K of its setpoint (ROADMAP), hence 0.15 K.
+# change worth noticing. Temperatures converge to 0.05 K (property check of the outer loop), hence 0.05 K;
+# the TCV setpoint accuracy (0.01 K) is checked by scenarios/test_tcv_loop_convergence.py.
 FLOW_ABS_LMIN, FLOW_REL = 0.05, 0.005
 P_ABS_BAR, P_REL = 0.005, 0.002
-T_ABS_K = 0.15
+T_ABS_K = 0.05
 OPENING_ABS_PCT = 0.5
 # Pressure in a branch without flow is not defined by the equations (ROADMAP "Undefined Pressure
 # in Stagnant Branches"), so it is only compared where the port carries flow.

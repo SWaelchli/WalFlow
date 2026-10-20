@@ -33,7 +33,7 @@ class GlobalSettings(BaseModel):
     control_iterations: int = 100 # Max steps for the regulator control loop
     solver_method: str = "sparse_newton" # "sparse_newton" or "lm"
     warm_start: bool = True
-    damping_factor: float = 0.25
+    # damping_factor (TCV loop) is no longer used; older files still carry it and it is ignored
 
     @model_validator(mode='before')
     @classmethod
@@ -48,7 +48,6 @@ class GlobalSettings(BaseModel):
                 'controlIterations': 'control_iterations',
                 'solverMethod': 'solver_method',
                 'warmStart': 'warm_start',
-                'dampingFactor': 'damping_factor'
             }
             for camel, snake in mapping.items():
                 if camel in values and snake not in values:

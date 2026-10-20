@@ -8,6 +8,7 @@ __pycache__/
 walflow.db
 test_walflow.db
 performance_log.md
+bench_tcv_loop.md
 
 .kilo/
 .vscode/

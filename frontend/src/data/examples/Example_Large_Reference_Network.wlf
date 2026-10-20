@@ -2705,7 +2705,6 @@
     "control_iterations": 100,
     "solver_method": "sparse_newton",
     "warm_start": true,
-    "damping_factor": 0.25,
     "max_iterations": 1000
   }
 }

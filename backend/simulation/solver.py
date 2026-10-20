@@ -207,6 +207,74 @@ class NetworkSolver:
     MAX_STEP_LN = math.log(10.0)    # trust region: opening changes by at most a factor 10 per iteration
     FD_STEP_LN = 0.03
 
+    # 3-way TCV loop: unknown z = logit(mix ratio), secant step on the outlet error, one step per outer iteration
+    TCV_TOL_K = 0.01                # outlet error accepted as "at setpoint"
+    TCV_MIX_MIN, TCV_MIX_MAX = 0.001, 0.999
+    TCV_START_MIX = 0.5
+    TCV_MAX_STEP = 3.0              # trust region in z (odds change by at most a factor 20 per iteration)
+
+    @staticmethod
+    def _logit(mix: float) -> float:
+        return math.log(mix / (1.0 - mix))
+
+    @staticmethod
+    def _sigmoid(z: float) -> float:
+        return 1.0 / (1.0 + math.exp(-z))
+
+    def _clamp_mix(self, mix: float) -> float:
+        return max(self.TCV_MIX_MIN, min(self.TCV_MIX_MAX, mix))
+
+    def _tcv_step(self, node, tm) -> float:
+        """
+        One mix ratio update of a 3-way TCV from the solved state; returns the outlet error [K].
+        Slope dT_out/dz: secant from the previous iteration, which includes density, throttling heat and the
+        temperature coupling of the inlets. Before there is one (or when it is not plausible) the mass-weighted
+        mixing balance gives (T_hot - T_cold)·w·(1 - w), w = hot mass fraction, as if the valve alone set the
+        split; the secant only spans two regular steps. The step factor halves when the error changes sign
+        without at least halving (overshoot) and recovers while the error falls with the same sign. tm: per-TCV memory across outer iterations.
+        """
+        t_err = node.outlets[0].temperature - node.set_temperature
+        prev_err, prev_kind, z_prev = tm.get("err"), tm.get("kind"), tm.get("z")
+        hot, cold = node.inlets[node.hot_port_idx], node.inlets[1 - node.hot_port_idx]
+        t_hot, t_cold, t_set = hot.temperature, cold.temperature, node.set_temperature
+        z = self._logit(self._clamp_mix(node.mix_ratio))
+        forward = hot.flow_rate > 1e-9 and cold.flow_rate > 1e-9
+        span = t_hot - t_cold
+        regular = forward and span > 2.0 * self.TCV_TOL_K and t_cold < t_set < t_hot
+        if regular and prev_kind == "secant":
+            same_sign = math.copysign(1.0, t_err) == math.copysign(1.0, prev_err)
+            if not same_sign and abs(t_err) > 0.5 * abs(prev_err):
+                tm["alpha"] = max(1.0 / 16.0, 0.5 * tm["alpha"])
+            elif same_sign and abs(t_err) < abs(prev_err):
+                tm["alpha"] = min(1.0, 2.0 * tm["alpha"])
+        tm.update(err=t_err, z=z, kind="secant" if regular else "other")
+
+        if regular:
+            tm["z_regular"] = z
+            m_hot, m_cold = hot.flow_rate * hot.density, cold.flow_rate * cold.density
+            w = m_hot / (m_hot + m_cold)
+            slope = span * max(w * (1.0 - w), 1e-4)
+            if prev_kind == "secant" and abs(z - z_prev) > 1e-6:
+                secant = (t_err - prev_err) / (z - z_prev)
+                if 0.05 * slope < secant < 20.0 * slope:
+                    slope = secant
+            dz = float(np.clip(-tm["alpha"] * t_err / slope, -self.TCV_MAX_STEP, self.TCV_MAX_STEP))
+            new_mix = self._sigmoid(z + dz)
+        elif forward and span > 2.0 * self.TCV_TOL_K:
+            # Setpoint outside the inlet span: straight to the end stop
+            new_mix = self.TCV_MIX_MAX if t_set >= t_hot else self.TCV_MIX_MIN
+        elif forward and span < -2.0 * self.TCV_TOL_K:
+            # Inversion (hot port colder): direct action by port role runs to an end stop
+            new_mix = self.TCV_MIX_MAX if t_err < 0 else self.TCV_MIX_MIN
+        elif not forward and prev_kind == "secant":
+            # The last regular step went too far (a port lost its forward flow): back halfway to where it started
+            new_mix = self._sigmoid(0.5 * (z + tm["z_regular"]))
+        else:
+            # No forward flow (also at an end stop), or equal inlet temperatures: incremental, direct action
+            new_mix = node.mix_ratio - 0.05 * t_err
+        node.mix_ratio = self._clamp_mix(new_mix)
+        return t_err
+
     @staticmethod
     def _opening_for_dp(node, q, dp_target, density, viscosity) -> float:
         """Opening (%) at which the node drops dp_target at flow q (bisection; dp falls with opening)."""
@@ -522,12 +590,10 @@ class NetworkSolver:
         self.prune_topology()
         start_time = time.perf_counter()
         max_outer_iterations = 100
-        tolerance_temp = 0.1 # 0.1K target
 
         gs = getattr(self.network, 'global_settings', None)
         if gs:
             max_outer_iterations = getattr(gs, 'control_iterations', 100)
-        damping_factor = getattr(gs, 'damping_factor', 0.25) if gs else 0.25  # thermal (TCV) loop only
 
         if method is None:
             method = getattr(gs, 'solver_method', 'sparse_newton') if gs else 'sparse_newton'
@@ -583,7 +649,8 @@ class NetworkSolver:
 
         controllers = {idx: self._init_controller(idx) for idx in self.control_node_indices}
         for idx in self.tcv_node_indices:
-            self.nodes_list[idx].mix_ratio = 0.5
+            self.nodes_list[idx].mix_ratio = self.TCV_START_MIX
+        tcv_memo = {idx: {"alpha": 1.0} for idx in self.tcv_node_indices}
 
         outer_iterations = 0
         relief_changed = False
@@ -633,71 +700,17 @@ class NetworkSolver:
             else:
                 controls_converged = True
 
-            # 2. 3-Way Thermal Control Valves
-            # Physical Direction: The mix_ratio is tied STRICTLY to the user-selected HOT port.
+            # 2. 3-Way Thermal Control Valves (mix_ratio is the opening of the user-designated HOT port)
             max_err_temp = 0.0
             for idx in self.tcv_node_indices:
-                node = self.nodes_list[idx]
-                t_out = node.outlets[0].temperature
-                t_err = t_out - node.set_temperature
-                max_err_temp = max(max_err_temp, abs(t_err))
-
-                t_hot_port = node.inlets[node.hot_port_idx].temperature
-                t_cold_port = node.inlets[1 - node.hot_port_idx].temperature
-
-                q_hot = node.inlets[node.hot_port_idx].flow_rate
-                q_cold = node.inlets[1 - node.hot_port_idx].flow_rate
-
-                t_diff = t_hot_port - t_cold_port
-
-                # Check if we have positive flow on both ports and a valid temperature diff
-                if q_hot > 1e-9 and q_cold > 1e-9 and abs(t_diff) > 0.5:
-                    if t_hot_port >= t_cold_port:
-                        # Standard case: Hot port is warmer than cold port
-                        t_min = min(t_hot_port, t_cold_port)
-                        t_max = max(t_hot_port, t_cold_port)
-                        if node.set_temperature >= t_max:
-                            # Target is hotter than or equal to both inlets, open hot port fully
-                            target_mix = 1.0
-                        elif node.set_temperature <= t_min:
-                            # Target is colder than or equal to both inlets, open cold port fully
-                            target_mix = 0.0
-                        else:
-                            num = node.set_temperature - t_cold_port
-                            den = t_hot_port - node.set_temperature
-                            if abs(den) > 0.01:
-                                # R_target = (T_set - T_cold) / (T_hot - T_set)
-                                R_target = num / den
-                                # R_actual = Q_hot / Q_cold
-                                R_actual = q_hot / q_cold
-                                r_curr = node.mix_ratio
-                                X = (r_curr / max(0.0001, 1.0 - r_curr)) * (R_target / max(1e-10, R_actual))
-                                target_mix = X / (1.0 + X)
-                            else:
-                                target_mix = 0.5
-                    else:
-                        # Inversion case: Hot port is colder than cold port
-                        # Sensed temperature below setpoint -> open hot port fully (mix_ratio -> 1.0)
-                        # Sensed temperature above setpoint -> open cold port fully (mix_ratio -> 0.0)
-                        target_mix = 1.0 if t_out < node.set_temperature else 0.0
-
-                    target_mix = max(0.001, min(0.999, target_mix))
-                    # Damped update for stability
-                    node.mix_ratio = node.mix_ratio + damping_factor * (target_mix - node.mix_ratio)
-                else:
-                    # Fallback to incremental adjustment if temperatures are close or negative flow is active.
-                    # Always direct action feedback: sensed temp below setpoint -> open hot port (increase mix_ratio).
-                    direction = -1.0
-                    adjustment = direction * 0.05 * t_err
-                    node.mix_ratio = max(0.001, min(0.999, node.mix_ratio + adjustment))
-                node.mix_ratio = max(0.001, min(0.999, node.mix_ratio))
+                max_err_temp = max(max_err_temp, abs(self._tcv_step(self.nodes_list[idx], tcv_memo[idx])))
 
             properties_converged = (max_temp_change < 0.05)
 
             if self.tcv_node_indices:
                 max_mix_change = max(abs(self.nodes_list[idx].mix_ratio - base_states[f"tcv_{idx}"])
                                      for idx in self.tcv_node_indices)
-                tcv_settled = (max_err_temp < tolerance_temp) or (it >= 2 and max_mix_change < 0.001)
+                tcv_settled = (max_err_temp < self.TCV_TOL_K) or (it >= 2 and max_mix_change < 1e-6)
 
             if controls_converged and tcv_settled and properties_converged and not relief_changed:
                 break

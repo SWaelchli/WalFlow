@@ -111,8 +111,6 @@ export default function SolverSettingsGroup({ values, onChange, toggle, inherite
           <p style={hintStyle}>Reuses the last solved state as an initial guess. Speeds up real-time slider updates.</p>
         </div>
 
-        {/* damping_factor is still read from older files but the solver no longer uses it, so it is not shown */}
-
         <div>
           <label style={labelStyle}>Control iterations</label>
           <DraftNumberInput

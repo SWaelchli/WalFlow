@@ -32,12 +32,11 @@ def test_api_682_prv_and_bpr_hold_both_setpoints():
 
 
 @pytest.mark.parametrize("settings", [
-    {"damping_factor": 0.02, "control_iterations": 3000},
-    {"damping_factor": 0.5},
+    {"control_iterations": 3000},
     {"control_iterations": 30},
     {"warm_start": False},
 ])
-def test_result_does_not_depend_on_damping_iteration_limit_or_warm_start(settings):
+def test_result_does_not_depend_on_iteration_limit_or_warm_start(settings):
     ref_net, _ = solve_example(API682)
     net, stats = solve_example(API682, **settings)
     assert stats["controls_converged"]

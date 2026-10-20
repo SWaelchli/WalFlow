@@ -5,14 +5,13 @@
 // Solver precedence: Drawing (if ticked) > Project (if ticked) > Global. A ticked level replaces the whole group.
 
 export const SOLVER_KEYS = [
-  'solver_method', 'warm_start', 'damping_factor', 'control_iterations',
+  'solver_method', 'warm_start', 'control_iterations',
   'property_iterations', 'tolerance', 'inner_iterations',
 ];
 
 export const BUILTIN_SOLVER_SETTINGS = {
   solver_method: 'sparse_newton',
   warm_start: true,
-  damping_factor: 0.25,
   control_iterations: 100,
   property_iterations: 5,
   tolerance: 1e-6,

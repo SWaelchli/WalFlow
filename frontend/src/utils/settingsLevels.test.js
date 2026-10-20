@@ -5,8 +5,8 @@ import {
 import { computeCaseInputHash } from './resultHash';
 
 const user = { solver: { tolerance: 1e-8, solver_method: 'lm' } };
-const project = { use_project_solver: true, solver: { tolerance: 1e-4, damping_factor: 0.5 } };
-const drawing = { use_drawing_solver: true, tolerance: 1e-5, damping_factor: 0.9, fluid_type: 'water' };
+const project = { use_project_solver: true, solver: { tolerance: 1e-4, control_iterations: 50 } };
+const drawing = { use_drawing_solver: true, tolerance: 1e-5, control_iterations: 90, fluid_type: 'water' };
 
 describe('F3-12 solver precedence: Drawing > Project > Global', () => {
   // every combination of the two checkboxes, with and without a project open
@@ -32,7 +32,7 @@ describe('F3-12 solver precedence: Drawing > Project > Global', () => {
 
   it('a ticked level replaces the whole group, not single fields', () => {
     const r = resolveSolverSettings({ drawing: { use_drawing_solver: false }, project, user });
-    expect(r.values.damping_factor).toBe(0.5);
+    expect(r.values.control_iterations).toBe(50);
     // global's solver_method ('lm') is not mixed in while the project group is in force
     expect(r.values.solver_method).toBe('sparse_newton');
   });

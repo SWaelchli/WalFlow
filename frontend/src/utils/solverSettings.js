@@ -1,7 +1,6 @@
 // F2-17: allowed ranges of the numeric solver settings. A value outside the range, or an empty field, is
 // not stored (the input shows the previous value again), so the backend never receives null or NaN.
 export const SOLVER_SETTING_RANGES = {
-  damping_factor: { min: 0.05, max: 1, integer: false },
   control_iterations: { min: 1, max: 1000, integer: true },
   property_iterations: { min: 1, max: 100, integer: true },
   tolerance: { min: 1e-9, max: 1e-2, integer: false },

@@ -85,6 +85,7 @@ All notable changes to the WälFlow project will be documented in this file.
 
 ### Fixed
 
+- **3-way TCV loop**: The thermal valve now settles within 0.01 K of its setpoint, or exactly at its end stop, independent of the start and in fewer iterations; the unused damping factor setting is removed (older files are still accepted).
 - **Custom reducer length in imperial units**: A transition length entered in inches is stored correctly (it was converted a second time as feet); the inspector shows the length the solver uses, and empty or zero reducer dimensions are rejected.
 - **Inspector defaults match the solver**: A 0 m pipe is shown as 0 m (not 25 m) and a tank without a level as 1 m (not 0 m). Reducer roughness of 0 mm is kept as smooth instead of falling back to 0.045 mm, and negative reducer roughness is rejected.
 - **Batch solve URL**: The batch solve matrix no longer uses a hardcoded `localhost` backend URL; it uses the relative `/api/simulation/batch` endpoint, fixing the CORS / `ERR_FAILED` error behind a reverse proxy (e.g. Cloudflare).

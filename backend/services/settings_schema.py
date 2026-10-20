@@ -7,7 +7,7 @@ backend only validates and stores them. Fluid, ambient and atmospheric pressure 
 import json
 from typing import Literal, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class SolverSettings(BaseModel):
@@ -16,11 +16,18 @@ class SolverSettings(BaseModel):
 
     solver_method: Literal["sparse_newton", "lm"] = "sparse_newton"
     warm_start: bool = True
-    damping_factor: float = Field(0.25, ge=0.05, le=1)
     control_iterations: int = Field(100, ge=1, le=1000)
     property_iterations: int = Field(5, ge=1, le=100)
     tolerance: float = Field(1e-6, ge=1e-9, le=1e-2)
     inner_iterations: int = Field(1000, ge=1, le=10000)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _drop_retired_keys(cls, values):
+        # damping_factor (TCV loop) was retired: stored rows and older clients still send it
+        if isinstance(values, dict) and "damping_factor" in values:
+            values = {k: v for k, v in values.items() if k != "damping_factor"}
+        return values
 
 
 class UserSettings(BaseModel):

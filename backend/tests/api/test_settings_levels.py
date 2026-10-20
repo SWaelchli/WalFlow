@@ -51,7 +51,7 @@ class TestSettingsLevels(unittest.TestCase):
         self.assertEqual(r.json()["solver"]["solver_method"], "sparse_newton")
         self.assertFalse(r.json()["stored"])
 
-        body = {"unit_system": "imperial", "solver": {"tolerance": 1e-8, "damping_factor": 0.5}}
+        body = {"unit_system": "imperial", "solver": {"tolerance": 1e-8, "control_iterations": 50}}
         r = self.client.put("/api/settings", json=body, headers=self.owner)
         self.assertEqual(r.status_code, 200)
         r = self.client.get("/api/settings", headers=self.owner)
@@ -66,9 +66,17 @@ class TestSettingsLevels(unittest.TestCase):
         self.assertIn(self.client.get("/api/settings").status_code, (401, 403))
 
     def test_user_settings_reject_out_of_range_values(self):
-        for solver in ({"tolerance": 1.0}, {"damping_factor": 0}, {"inner_iterations": 0}, {"solver_method": "x"}, {"unknown": 1}):
+        for solver in ({"tolerance": 1.0}, {"inner_iterations": 0}, {"solver_method": "x"}, {"unknown": 1}):
             r = self.client.put("/api/settings", json={"solver": solver}, headers=self.owner)
             self.assertEqual(r.status_code, 422, solver)
+
+    def test_retired_damping_factor_is_accepted_and_dropped(self):
+        # Older clients and stored rows still carry the retired TCV damping factor
+        r = self.client.put("/api/settings", json={"solver": {"damping_factor": 0.5, "tolerance": 1e-7}}, headers=self.owner)
+        self.assertEqual(r.status_code, 200)
+        solver = self.client.get("/api/settings", headers=self.owner).json()["solver"]
+        self.assertEqual(solver["tolerance"], 1e-7)
+        self.assertNotIn("damping_factor", solver)
 
     def test_project_settings_default_roundtrip_and_owner_only(self):
         pid = self.client.post("/api/projects", json={"title": "F3-12"}, headers=self.owner).json()["id"]
