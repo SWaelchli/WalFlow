@@ -123,7 +123,7 @@ def test_relieved_network_and_drivers_are_untouched_by_the_ramp():
     stats, tel, *_ = _run(net)
     pump = net.nodes["pump"]
     assert pump.flow_rated == 0.002
-    assert psv.status in ("cracked", "cycling", "overcapacity")
+    assert psv.status in ("modulating", "open", "cycling", "overcapacity")
     # Network ports still hold the relieved solution (KPIs read them after the call)
     assert math.isclose(psv.inlets[0].pressure, tel["nodes"]["psv"]["inlets"][0]["pressure"])
 

@@ -34,7 +34,7 @@ def standby_branch(with_pump=True, psv_set_barg=10.0):
     nodes = {
         "suction": Tank("Suction", fluid_level=2.0),
         "tee": Splitter("Discharge tee"),
-        "psv": PressureSafetyValve("PSV", set_pressure_barg=psv_set_barg),
+        "psv": PressureSafetyValve("PSV", set_pressure_barg=psv_set_barg, valve_type="balanced_bellows"),
         "nrv": CheckValve("NRV"),
         "header": PressureSource("Header", source_pressure=HEADER_PA),
         "mix": Mixer("Header tee"),
@@ -208,7 +208,7 @@ def test_check_valve_push_above_a_relief_set_pressure_stays_visible():
     # the check valve wins, so the section shows the breach instead of hiding it below the set pressure
     NetworkSolver.clear_warm_start_cache()
     nodes = {"header": PressureSource("Header", source_pressure=8e5), "nrv": CheckValve("NRV"),
-             "psv": PressureSafetyValve("PSV", set_pressure_barg=5.0), "return": Tank("Return", fluid_level=0.0)}
+             "psv": PressureSafetyValve("PSV", set_pressure_barg=5.0, valve_type="balanced_bellows"), "return": Tank("Return", fluid_level=0.0)}
     edges = [{"id": "e_in", "source": "header", "target": "nrv", "pipe": Pipe("header", 1, ID)},
              {"id": "e_mid", "source": "nrv", "target": "psv", "pipe": Pipe("NRV to PSV", 1, ID)},
              {"id": "e_out", "source": "psv", "target": "return", "pipe": Pipe("relief outlet", 1, ID)}]

@@ -36,7 +36,7 @@ export default function ResultsPanel({ selectedNode, selectedEdge, allNodes, all
         return <ValveDetails node={selectedNode} />;
       case 'pressure_safety_valve':
       case 'psv':
-        return <PressureSafetyValveDetails node={selectedNode} unmitigatedTelemetry={unmitigatedTelemetry} />;
+        return <PressureSafetyValveDetails node={selectedNode} unmitigatedTelemetry={unmitigatedTelemetry} allNodes={allNodes} />;
       case 'rupture_disc':
         return <RuptureDiscDetails node={selectedNode} unmitigatedTelemetry={unmitigatedTelemetry} />;
       case 'filter':

@@ -51,10 +51,10 @@ class RuptureDisc(ReliefDevice):
             return "full"
         return "closed"
 
-    def update_relief_state(self, p_in_pa: float) -> bool:
+    def update_relief_state(self, p_in_pa=None, p_out_pa=None, p_sense_pa=None) -> bool:
         if self.forced_state != "auto" or self.is_burst:
             return False
-        if p_in_pa >= self.set_pressure_pa:
+        if self.opening_margin_pa(p_in_pa, p_out_pa, p_sense_pa) >= 0.0:
             self.is_burst = True
             return True
         return False

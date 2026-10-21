@@ -168,7 +168,11 @@ class NetworkSolver:
         self.node_ids = sorted(list(self.active_node_ids))
         self.edges_list = active_edges
         self.node_id_to_idx = {node_id: i for i, node_id in enumerate(self.node_ids)}
-        
+        # A pilot whose sensing point is left out of the solve senses its own inlet
+        for node in self.network.nodes.values():
+            if getattr(node, 'pilot_source', None) is not None:
+                node.pilot_in_solve = node.remote_sensing_config["node_id"] in self.node_id_to_idx
+
         self.fixed_pressure_nodes = {}
         self.internal_node_indices = []
         self.control_node_indices = [] # Pressure regulators
@@ -647,7 +651,7 @@ class NetworkSolver:
             # Held fixed inside each Newton solve; changed only here from the solved inlet pressures
             changed = False
             for n in relief_nodes:
-                changed = n.update_relief_state(n.inlets[0].pressure) or changed
+                changed = n.update_relief_state() or changed
             if changed and state["sol"] is not None:
                 # A device that opens leaves branches at exactly zero flow, where pump curves and pipe losses
                 # have zero slope (singular Newton step); restart those flows from the initial flow guess
@@ -1018,7 +1022,7 @@ class NetworkSolver:
                 tgt_node_obj = self.network.nodes[tgt_id]
                 tcv_port = self._parse_port_idx(edge.get('target_port', 'inlet-0')) if isinstance(tgt_node_obj, ThreeWayTCV) else None
 
-                def row_residual(p_src, p_tgt, q):
+                def row_residual(p_src, p_tgt, q, sense=None):
                     # Same function as the objective's row for this edge
                     dp_pipe_ = pipe.calculate_delta_p(q, pipe_density, pipe_viscosity)
                     dp_tcv_ = 0.0
@@ -1026,11 +1030,42 @@ class NetworkSolver:
                         port = tgt_node_obj.inlets[tcv_port]
                         dp_tcv_ = tgt_node_obj.calculate_path_dp(q, port.density, tcv_port, port.viscosity)
                     dp_node_ = src_node.calculate_delta_p(q, density, viscosity, p_in_pa=p_src,
-                                                          p_out_pa=p_tgt + dp_pipe_ + dp_tcv_, update_state=False)
+                                                          p_out_pa=p_tgt + dp_pipe_ + dp_tcv_, update_state=False,
+                                                          **sense or {})
                     return ((p_src - dp_node_) - p_tgt - dp_pipe_ - dp_tcv_) / p_scale
 
                 p_src0, p_tgt0, q0 = p_in_all[src_idx], p_in_all[tgt_idx], q_edges[j]
                 h_p, h_q = 1.0, 1e-9
+                pilot = self._pilot_point(src_node)
+                if pilot is not None:
+                    # A pilot sensing a remote point: the row also depends on that point's pressure (and, at an
+                    # outlet port, on the flows through its node), so differentiate over every variable involved
+                    def row_full(pa, qe):
+                        return row_residual(pa[src_idx], pa[tgt_idx], qe[j],
+                                            {"p_sense_pa": self._pilot_sense_pa(src_node, pa, qe)})
+                    p_vars = {internal_pos[k] : k for k in (src_idx, tgt_idx, pilot[0]) if k in internal_pos}
+                    q_vars = {j}
+                    if pilot[2] == "outlet":
+                        q_vars |= set(self.node_incoming_edge_indices.get(pilot[1], []))
+                        q_vars |= set(self.node_outgoing_edge_indices.get(pilot[1], []))
+                    # Perturb one entry in place and restore it, so no array is copied
+                    def central(arr, k, h):
+                        x0 = arr[k]
+                        arr[k] = x0 + h
+                        f_hi = row_full(p_in_all, q_edges)
+                        arr[k] = x0 - h
+                        f_lo = row_full(p_in_all, q_edges)
+                        arr[k] = x0
+                        return (f_hi - f_lo) / (2 * h)
+                    for col, k in p_vars.items():
+                        rows.append(a_row)
+                        cols.append(col)
+                        data.append(central(p_in_all, k, h_p) * p_scale)
+                    for k in sorted(q_vars):
+                        rows.append(a_row)
+                        cols.append(num_internal + k)
+                        data.append(central(q_edges, k, h_q) * q_scale)
+                    continue
                 if src_internal_idx != -1:
                     rows.append(a_row)
                     cols.append(src_internal_idx)
@@ -1252,7 +1287,10 @@ class NetworkSolver:
                     inlet = src_node.inlets[0] if src_node.inlets else None
                     density = inlet.density if inlet else 1000.0
                     viscosity = inlet.viscosity if inlet else 0.001
-                    dp_node = src_node.calculate_delta_p(q_edges[j], density, viscosity, p_in_pa=p_in_all[src_idx], p_out_pa=p_out_est, update_state=False)
+                    sense = {}
+                    if self._pilot_point(src_node) is not None:
+                        sense = {"p_sense_pa": self._pilot_sense_pa(src_node, p_in_all, q_edges)}
+                    dp_node = src_node.calculate_delta_p(q_edges[j], density, viscosity, p_in_pa=p_in_all[src_idx], p_out_pa=p_out_est, update_state=False, **sense)
                     p_src_out = p_in_all[src_idx] - dp_node
                 else:
                     p_src_out = self._get_node_p_out(src_node, p_in_all[src_idx], q_edges[j], q_edges[j])
@@ -1336,6 +1374,24 @@ class NetworkSolver:
             msg = getattr(sol, 'message', 'Residuals did not converge to tolerance')
             raise ValueError(f"Solver failed to converge: message='{msg}', max_residual={max_res:.6f} (scaled)")
 
+
+    def _pilot_point(self, node):
+        """(node index, node id, port type) of a pilot PSV's remote sensing point in the solve, else None."""
+        if not getattr(node, 'has_remote_pilot', False):
+            return None
+        config = node.remote_sensing_config
+        idx = self.node_id_to_idx.get(config["node_id"])
+        return None if idx is None else (idx, config["node_id"], config["port_type"])
+
+    def _pilot_sense_pa(self, node, p_in_all, q_edges):
+        """Pressure at a pilot PSV's sensing point for the current iterate."""
+        idx, nid, port_type = self._pilot_point(node)
+        p = p_in_all[idx]
+        if port_type == "outlet":
+            q_in = sum(q_edges[k] for k in self.node_incoming_edge_indices.get(nid, []))
+            q_out = sum(q_edges[k] for k in self.node_outgoing_edge_indices.get(nid, []))
+            p = self._get_node_p_out(self.nodes_list[idx], p, q_in, q_out)
+        return p
 
     def _use_mcp_for_node(self, node) -> bool:
         if getattr(node, 'use_mcp_formulation', False):
@@ -1424,8 +1480,9 @@ class NetworkSolver:
             if tgt_port_idx < len(tgt_node.inlets):
                 tgt_node.inlets[tgt_port_idx].flow_rate += q
 
-        # 6. First pass: Populate active node pressures and update active node states
-        for node in self.all_nodes_list:
+        # 6. First pass: Populate active node pressures and update active node states. Pilot PSVs come last,
+        # so the port they sense already holds its solved pressure
+        for node in sorted(self.all_nodes_list, key=lambda n: getattr(n, 'has_remote_pilot', False)):
             node_key = self.node_to_key[id(node)]
             if node_key in self.active_node_ids:
                 all_idx = self.all_node_id_to_idx[node_key]
@@ -1631,7 +1688,7 @@ class NetworkSolver:
         # node order. Sections that wait on each other (a ring) start from the strongest known leak path of all.
         unresolved = dict(groups)
 
-        def evaluate(members):
+        def evaluate(members, wait_on_outlet=True):
             """(best leak path as (rank, -pressure, side), strongest rank still waiting, [(side, lo, hi)])"""
             best, pending, bounds = None, None, []
             for nid, side in members:
@@ -1639,10 +1696,16 @@ class NetworkSolver:
                 if rank is None:
                     continue
                 node = nodes[nid]
+                other = 'out' if side == 'in' else 'in'
                 if rank == LEAK_RELIEF_SEAT and side == 'in' and \
                         (node.forced_state == 'auto' or nid in self.held_closed_ids):
-                    bounds.append(((nid, side), -math.inf, node.set_pressure_pa - RELIEF_SEAT_MARGIN_PA))
-                other = 'out' if side == 'in' else 'in'
+                    if wait_on_outlet and getattr(node, 'opening_depends_on_outlet', False) and find((nid, other)) in unresolved:
+                        # The opening pressure follows the outlet: wait until the outlet section is resolved
+                        pending = -math.inf
+                        continue
+                    p_open = node.inlet_opening_pressure_pa()
+                    if p_open is not None:
+                        bounds.append(((nid, side), -math.inf, p_open - RELIEF_SEAT_MARGIN_PA))
                 other_ports = self._side_ports(nid, other)
                 if not other_ports:
                     continue
@@ -1675,6 +1738,7 @@ class NetworkSolver:
                 if not candidates:
                     break   # no leak path to a known pressure: the value from _fill_pruned_pressures stays
                 ready = [min(candidates, key=lambda r: evals[r][0])]
+                evals[ready[0]] = evaluate(unresolved[ready[0]], wait_on_outlet=False)
             for root in ready:
                 best, _, bounds = evals[root]
                 members = unresolved.pop(root)
@@ -1817,6 +1881,45 @@ def _inlet_pressure_bara(tel, node_id):
     return round(p / 100000.0, 3) if isinstance(p, (int, float)) else None
 
 
+def _outlet_pressure_barg(tel, node_id, p_atm):
+    outlets = (tel or {}).get("nodes", {}).get(node_id, {}).get("outlets") or []
+    p = outlets[0].get("pressure") if outlets else None
+    return (p - p_atm) / 100000.0 if isinstance(p, (int, float)) else None
+
+
+# Backpressure limit (% of set) per PSV type: conventional on the built-up, balanced bellows on the total
+# backpressure; a pilot valve is independent of backpressure
+BACKPRESSURE_LIMITS = {"conventional": ("built_up", 10.0), "balanced_bellows": ("total", 50.0)}
+
+
+def _backpressure_result(node, k, tel_relieved, tel_closed):
+    """Superimposed (device closed), built-up (relieving) and total backpressure of a PSV, in barg and % of set."""
+    valve_type = getattr(node, "valve_type", None)
+    if valve_type is None:
+        return {}
+    p_atm = node.p_atm
+    total = _outlet_pressure_barg(tel_relieved, k, p_atm)
+    relieving = node.status not in ("closed", "intact")
+    # A closed valve sees the final outlet pressure, including what other devices relieve into its header
+    superimposed = _outlet_pressure_barg(tel_closed, k, p_atm) if relieving else total
+    if total is None or superimposed is None:
+        return {}
+    built_up = max(0.0, total - superimposed) if relieving else 0.0
+    basis, limit = BACKPRESSURE_LIMITS.get(valve_type, (None, None))
+    pct = None
+    if basis is not None:
+        pct = 100.0 * (built_up if basis == "built_up" else total) / node.set_pressure_barg
+    return {
+        "superimposed_bp_barg": round(superimposed, 4),
+        "built_up_bp_barg": round(built_up, 4),
+        "total_bp_barg": round(total if relieving else superimposed, 4),
+        "bp_basis": basis,
+        "bp_pct_of_set": round(pct, 2) if pct is not None else None,
+        "bp_limit_pct": limit,
+        "bp_exceeded": bool(relieving and pct is not None and pct > limit),
+    }
+
+
 def _find_relief_openings(network, opening_groups, auto_ids, original_states, extract_telemetry_fn):
     """
     F1-08: steady state at the moment each relief device opens.
@@ -1858,7 +1961,7 @@ def _find_relief_openings(network, opening_groups, auto_ids, original_states, ex
                 stats = ramp_solver.solve()
                 if not stats.get("success"):
                     return None
-                return max(node.inlets[0].pressure - node.set_pressure_pa for _, node in group_nodes)
+                return max(node.opening_margin_pa() for _, node in group_nodes)
 
             # The group breached its set pressure at λ = 1 (that is why it opened); below its
             # set pressure at λ = 0 (drivers at rest).
@@ -1968,9 +2071,9 @@ def _run_sequential_relief_passes(network, solver, extract_telemetry_fn):
         breached_nodes = []
         for node in auto_psv_nodes:
             if node.forced_state == "forced_closed":
-                p_in_bar = (node.inlets[0].pressure / 100000.0) if node.inlets else 0.0
-                set_p = node.set_pressure_bara   # F1-09: inlet gauge pressure reaches the set pressure
-                if p_in_bar >= set_p:
+                set_p = node.set_pressure_bara
+                # F1-09: the opening driver (inlet gauge, differential or pilot pressure) reaches its threshold
+                if node.inlets and node.opening_margin_pa() >= 0.0:
                     breached_nodes.append((set_p, node))
 
         # 3. If no closed relief devices breached set pressure, steady-state equilibrium achieved!
@@ -2043,6 +2146,10 @@ def _run_sequential_relief_passes(network, solver, extract_telemetry_fn):
         outlets = node_tel.get("outlets") or []
         flow = outlets[0].get("flow_rate", 0.0) if outlets else 0.0
         order, op = opening_by_id.get(k, (None, None))
+        # Superimposed backpressure: the outlet while the device is still closed, at its opening snapshot
+        backpressure = _backpressure_result(node, k, telemetry_mitigated, op["telemetry"] if op else telemetry_unmitigated)
+        if backpressure and k in telemetry_mitigated.get("nodes", {}):
+            telemetry_mitigated["nodes"][k]["backpressure"] = backpressure
         devices[k] = {
             "set_pressure_barg": node.set_pressure_barg,
             "set_pressure_bara": round(node.set_pressure_bara, 5),
@@ -2054,6 +2161,11 @@ def _run_sequential_relief_passes(network, solver, extract_telemetry_fn):
             "inlet_relieved_bara": _inlet_pressure_bara(telemetry_mitigated, k),
             "inlet_unmitigated_bara": _inlet_pressure_bara(telemetry_unmitigated, k),
             "relief_flow_lmin": round(abs(flow) * 60000.0, 2),
+            "lift_pct": node_tel.get("lift_pct"),
+            "cycle_low_barg": node_tel.get("cycle_low_barg"),
+            "cycle_high_barg": node_tel.get("cycle_high_barg"),
+            "valve_type": node_tel.get("valve_type"),
+            **backpressure,
         }
     telemetry_mitigated["relief"] = {"peak": peak, "devices": devices}
 

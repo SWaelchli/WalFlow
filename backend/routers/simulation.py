@@ -189,6 +189,14 @@ def extract_telemetry(network) -> Dict[str, Any]:
             node_tel["lift_pct"] = node.lift_pct
             if hasattr(node, 'reseat_pressure_barg'):
                 node_tel["reseat_pressure_barg"] = node.reseat_pressure_barg
+            if hasattr(node, 'valve_type'):
+                # PSV type, conventional spring setting, pilot sensing point and the cycling inlet range
+                node_tel["valve_type"] = node.valve_type
+                node_tel["cdtp_barg"] = node.cdtp_barg
+                node_tel["opening_pressure_barg"] = node.opening_pressure_barg
+                node_tel["pilot_sensing_node_id"] = (node.remote_sensing_config or {}).get("node_id") if node.has_remote_pilot else None
+                node_tel["cycle_low_barg"] = node.cycle_low_barg
+                node_tel["cycle_high_barg"] = node.cycle_high_barg
         if hasattr(node, 'forced_state'):
             node_tel["forced_state"] = node.forced_state
         if hasattr(node, 'cv'):

@@ -20,6 +20,7 @@ describe('defaultNodeData', () => {
     expect(defaultNodeData('text_bubble', ctx)).toMatchObject({ label: 'Note', title: 'NOTE', fontSize: 'md' });
     expect(defaultNodeData('centrifugal_pump', ctx)).toMatchObject({ flow_rated_lmin: 100, head_rated_m: 50, efficiency_pct: 75, active: true });
     expect(defaultNodeData('psv', ctx).set_pressure_barg).toBe(20);
+    expect(defaultNodeData('pressure_safety_valve', ctx)).toMatchObject({ valve_type: 'conventional', design_superimposed_bp_barg: 0, action_mode: 'pop_action' });
   });
 
   it('only sets fields the backend reads (Data Fields tables in backend/simulation/equipment/*.md)', () => {

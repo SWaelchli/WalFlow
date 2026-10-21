@@ -111,12 +111,13 @@ const reliefBadge = (result) => {
   if (result.forced_state === 'forced_closed') return { label: 'Forced closed', ...RELIEF_BADGES.closed };
   if (result.status === 'overcapacity') return { label: 'Overcapacity', ...RELIEF_BADGES.overcapacity };
   if (result.status === 'burst') return { label: 'Burst', ...RELIEF_BADGES.open };
-  if (result.status === 'cycling') return { label: 'Cycling', ...RELIEF_BADGES.open, title: 'Pop valve oversized for this load: it would cycle between reseat and set pressure. Shown with the inlet held near set pressure.' };
-  if (result.status === 'cracked') return { label: result.forced_state === 'forced_open' ? 'Forced open' : 'Open', ...RELIEF_BADGES.open };
+  if (result.status === 'cycling') return { label: 'Cycling', ...RELIEF_BADGES.open, title: 'Pop valve oversized for this load: the inlet cycles between reseat and set pressure. The flow is the average relief load.' };
+  if (result.status === 'modulating') return { label: result.lift_pct != null ? `Modulating ${Math.round(result.lift_pct)} %` : 'Modulating', ...RELIEF_BADGES.open };
+  if (result.status === 'open' || result.status === 'cracked') return { label: result.forced_state === 'forced_open' ? 'Forced open' : 'Open', ...RELIEF_BADGES.open };
   return { label: 'Closed', ...RELIEF_BADGES.closed };
 };
 
-function ReliefDeviceResult({ result, hasResults, formatPressure, unit }) {
+function ReliefDeviceResult({ result, hasResults, formatPressure, unit, formatPressureGauge, formatFlow, flowUnit }) {
   const muted = { fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' };
   if (!hasResults) return <div style={{ ...muted, marginTop: '4px' }}>Run the simulation for results</div>;
   if (!result) return null;
@@ -140,6 +141,20 @@ function ReliefDeviceResult({ result, hasResults, formatPressure, unit }) {
         {opens && `Opens ${formatPressure(result.inlet_at_opening_bara)} · `}
         Final {result.inlet_relieved_bara != null ? formatPressure(result.inlet_relieved_bara) : '—'} {unit}
       </span>
+      {result.status === 'cycling' && result.cycle_low_barg != null && formatPressureGauge && (
+        <span style={{ ...muted, whiteSpace: 'nowrap' }}>
+          Cycles {formatPressureGauge(result.cycle_low_barg)}–{formatPressureGauge(result.cycle_high_barg)} · avg {formatFlow(result.relief_flow_lmin)} {flowUnit}
+        </span>
+      )}
+      {result.bp_exceeded && (
+        <span
+          title={result.bp_basis === 'built_up' ? 'Built-up backpressure above 10 % of set (conventional valve)' : 'Total backpressure above 50 % of set (balanced bellows valve)'}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: 'var(--fs-xs)', fontWeight: '700', color: 'var(--color-danger-text)', whiteSpace: 'nowrap' }}
+        >
+          <WarningIcon size={11} color="var(--color-danger-text)" />
+          BP {result.bp_pct_of_set.toFixed(0)} % &gt; {result.bp_limit_pct} %
+        </span>
+      )}
     </div>
   );
 }
@@ -920,6 +935,9 @@ export default function DataList({
                                 hasResults={Boolean(c.telemetry?.relief)}
                                 formatPressure={formatPressure}
                                 unit={labels.pressureAbs}
+                                formatPressureGauge={formatPressureGauge}
+                                formatFlow={formatFlow}
+                                flowUnit={labels.flow}
                               />
                             </td>
                           );

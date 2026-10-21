@@ -781,6 +781,8 @@ function WalFlowContent() {
           data: {
             ...node.data,
             rotation: node.data?.rotation || 0,
+            // Old files store the latching PSV mode as 'rupture_disc'
+            ...(node.data?.action_mode === 'rupture_disc' && { action_mode: 'pop_latching' }),
             onRotate: handleRotation,
             onChange: (node.type === 'linear_control_valve' || node.type === 'remote_control_valve') ? handleValveChange : undefined
           }
@@ -904,6 +906,12 @@ function WalFlowContent() {
     const targetIsInstrument = nodes.some(n => n.id === params.target && n.type === 'instrument');
     if (isSignal && targetIsInstrument && edges.some(e => e.target === params.target && e.targetHandle === params.targetHandle)) {
       notify('This instrument input is already wired. Delete its signal line first.', 'warning');
+      return;
+    }
+    // A PSV pilot senses one point
+    const targetIsPsv = nodes.some(n => n.id === params.target && (n.type === 'pressure_safety_valve' || n.type === 'psv'));
+    if (isSignal && targetIsPsv && edges.some(e => e.target === params.target && e.targetHandle === 'signal-in')) {
+      notify('This pilot is already connected. Delete its sensing line first.', 'warning');
       return;
     }
     if (!isSignal && !checkNewConnection(edges, params).ok) {

@@ -20,8 +20,11 @@ class ReliefDevice(HydraulicNode):
 
         Q = lift · √(Δp / c(Q)),   Δp = P_in − P_out > 0,  c(Q) = Δp_open(Q) / Q²
 
-    with lift 0 (closed), 1 (full lift) or the modulating lift from the inlet overpressure. A closed device
+    with lift 0 (closed), 1 (full lift) or the modulating lift from the overpressure. A closed device
     passes exactly no flow and a device never passes reverse flow.
+
+    Opening is decided on the margin driver − threshold. Here the driver is the inlet gauge pressure and the
+    threshold the set pressure; a PSV overrides both for its valve type (backpressure, pilot sensing).
     """
 
     def __init__(self, name: str, node_type: str, set_pressure_barg: float, forced_state: str):
@@ -52,6 +55,35 @@ class ReliefDevice(HydraulicNode):
     def full_lift_overpressure_pa(self) -> float:
         return max(1000.0, RATED_OVERPRESSURE * self.set_pressure_barg * P_SCALE)
 
+    # --- opening margin --------------------------------------------------------------------------
+    def port_pressures(self, p_in_pa=None, p_out_pa=None, p_sense_pa=None) -> tuple:
+        """(p_in, p_out, p_sense) with the solved port pressures filled in where not given."""
+        p_in = p_in_pa if p_in_pa is not None else self.inlets[0].pressure
+        p_out = p_out_pa if p_out_pa is not None else self.outlets[0].pressure
+        p_sense = p_sense_pa if p_sense_pa is not None else self.sensed_port_pressure(p_in)
+        return p_in, p_out, p_sense
+
+    def sensed_port_pressure(self, p_in_pa: float) -> float:
+        """Pressure the device senses between solves (own inlet unless overridden)."""
+        return p_in_pa
+
+    def driver_pa(self, p_in_pa: float, p_out_pa: float, p_sense_pa: float) -> float:
+        """Pressure that opens the device (Pa, gauge or differential)."""
+        return p_in_pa - self.p_atm
+
+    @property
+    def threshold_pa(self) -> float:
+        """Driver at which the device opens (Pa)."""
+        return self.set_pressure_barg * P_SCALE
+
+    def opening_margin_pa(self, p_in_pa=None, p_out_pa=None, p_sense_pa=None) -> float:
+        """driver − threshold: the device opens at a margin of zero or more."""
+        return self.driver_pa(*self.port_pressures(p_in_pa, p_out_pa, p_sense_pa)) - self.threshold_pa
+
+    def inlet_opening_pressure_pa(self):
+        """Absolute inlet pressure at which the closed device opens, or None when the inlet does not decide it."""
+        return self.set_pressure_pa
+
     # --- to be provided by the device ------------------------------------------------------------
     def open_dp(self, flow_rate: float, density: float, viscosity: float) -> float:
         """Pressure loss of the fully open device at flow_rate (Pa)."""
@@ -61,8 +93,8 @@ class ReliefDevice(HydraulicNode):
         """'closed', 'full' or 'modulating' for the current (held) device state."""
         raise NotImplementedError
 
-    def update_relief_state(self, p_in_pa: float) -> bool:
-        """Between hydraulic solves: change the held state from the solved inlet pressure. True if changed."""
+    def update_relief_state(self, p_in_pa=None, p_out_pa=None, p_sense_pa=None) -> bool:
+        """Between hydraulic solves: change the held state from the solved pressures. True if changed."""
         return False
 
     def reset_run_state(self):
@@ -71,20 +103,25 @@ class ReliefDevice(HydraulicNode):
         self.lift_pct = 0.0
 
     # --- flow equation ---------------------------------------------------------------------------
-    def lift(self, p_in_pa: float) -> float:
+    def lift(self, p_in_pa: float, p_out_pa: float = None, p_sense_pa: float = None) -> float:
         mode = self.lift_mode()
         if mode == "closed":
             return 0.0
         if mode == "full":
             return 1.0
-        return min(1.0, max(0.0, (p_in_pa - self.set_pressure_pa) / self.full_lift_overpressure_pa))
+        margin = self.opening_margin_pa(p_in_pa, p_out_pa, p_sense_pa)
+        return min(1.0, max(0.0, margin / self.modulating_band_pa()))
+
+    def modulating_band_pa(self) -> float:
+        """Margin over which a modulating lift goes from closed to full lift."""
+        return self.full_lift_overpressure_pa
 
     def _loss_coefficient(self, flow_rate: float, density: float, viscosity: float) -> float:
         q = max(abs(flow_rate), Q_COEFF_MIN)
         return self.open_dp(q, density, viscosity) / (q * q)
 
-    def model_flow(self, flow_rate, density, viscosity, p_in_pa, p_out_pa) -> float:
-        lift = self.lift(p_in_pa)
+    def model_flow(self, flow_rate, density, viscosity, p_in_pa, p_out_pa, p_sense_pa=None) -> float:
+        lift = self.lift(p_in_pa, p_out_pa, p_sense_pa)
         dp = p_in_pa - p_out_pa
         if lift <= 0.0 or dp <= 0.0:
             return 0.0
@@ -103,13 +140,13 @@ class ReliefDevice(HydraulicNode):
         return q_rated
 
     def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001,
-                          p_in_pa: float = None, p_out_pa: float = None, update_state: bool = True) -> float:
-        p_in = p_in_pa if p_in_pa is not None else self.inlets[0].pressure
-        p_out = p_out_pa if p_out_pa is not None else self.outlets[0].pressure
+                          p_in_pa: float = None, p_out_pa: float = None, update_state: bool = True,
+                          p_sense_pa: float = None) -> float:
+        p_in, p_out, p_sense = self.port_pressures(p_in_pa, p_out_pa, p_sense_pa)
         dp_valve = p_in - p_out
-        g = (flow_rate - self.model_flow(flow_rate, density, viscosity, p_in, p_out)) / Q_SCALE
+        g = (flow_rate - self.model_flow(flow_rate, density, viscosity, p_in, p_out, p_sense)) / Q_SCALE
         if update_state:
-            self.report(flow_rate, density, viscosity, p_in, p_out)
+            self.report(flow_rate, density, viscosity, p_in, p_out, p_sense)
         # The solver's edge row for this device then reads g = 0 (flow form, see class docstring)
         return dp_valve - P_SCALE * g
 
@@ -118,10 +155,10 @@ class ReliefDevice(HydraulicNode):
         return P_SCALE / Q_SCALE
 
     # --- reporting -------------------------------------------------------------------------------
-    def report(self, flow_rate, density, viscosity, p_in_pa, p_out_pa):
+    def report(self, flow_rate, density, viscosity, p_in_pa, p_out_pa, p_sense_pa=None):
         """Status, capacity and lift for telemetry; never changes the held open/closed state."""
         q = max(0.0, flow_rate)
-        self.lift_pct = 100.0 * self.lift(p_in_pa)
+        self.lift_pct = 100.0 * self.lift(p_in_pa, p_out_pa, p_sense_pa)
         if self.lift_pct <= 0.0:
             self.capacity_utilization_pct = 0.0
             self.rated_flow_lmin = 0.0
@@ -145,7 +182,7 @@ class ReliefDevice(HydraulicNode):
         return "closed"
 
     def open_status(self) -> str:
-        return "cracked"
+        return "open"
 
     def is_closed(self) -> bool:
         return self.forced_state == "forced_closed" or self.status in ("closed", "intact")

@@ -168,6 +168,7 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
 
       // Pressures (base: bar)
       case 'set_pressure_barg':
+      case 'design_superimposed_bp_barg':
       case 'burst_pressure_barg':
       case 'dp_clean_bar':
       case 'dp_terminal_bar':
@@ -253,6 +254,7 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
 
       // Pressures (input: psi -> base: bar)
       case 'set_pressure_barg':
+      case 'design_superimposed_bp_barg':
       case 'burst_pressure_barg':
       case 'dp_clean_bar':
       case 'dp_terminal_bar':

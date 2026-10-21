@@ -78,7 +78,7 @@ def test_f1_09_set_10_barg_opens_at_11_013_bara(p_src_bara, opens):
     assert math.isclose(psv.set_pressure_bara, 11.01325)
     q = psv.inlets[0].flow_rate
     assert (q > 1e-6) == opens
-    assert psv.status == ("cracked" if opens else "closed")
+    assert psv.status == ("modulating" if opens else "closed")
 
 
 def test_f1_09_opening_follows_the_atmospheric_pressure_setting():
@@ -102,7 +102,7 @@ def test_f1_09_pop_opening_snapshot_in_gauge():
 
 def test_f1_38_capacity_is_100_pct_at_10_pct_overpressure():
     """Audit C4: set 20 barg, Cv 10, inlet at 22 barg relieving to atmosphere = full lift, rated flow."""
-    psv = PressureSafetyValve("PSV", set_pressure_barg=20.0, cv=10.0, action_mode="modulating")
+    psv = PressureSafetyValve("PSV", set_pressure_barg=20.0, cv=10.0, action_mode="modulating", valve_type="balanced_bellows")
     _, _, stats = _header_to_drain(psv, P_ATM + 22.0e5)
     assert stats["success"]
     rho = FluidProperties.get_density("water", 293.15)
@@ -110,7 +110,7 @@ def test_f1_38_capacity_is_100_pct_at_10_pct_overpressure():
     assert math.isclose(psv.inlets[0].flow_rate, q_rated, rel_tol=0.005)
     assert math.isclose(psv.rated_flow_lmin, q_rated * 60000.0, rel_tol=0.005)
     assert abs(psv.capacity_utilization_pct - 100.0) < 0.5
-    assert psv.status == "cracked" and psv.lift_pct > 99.9
+    assert psv.status == "open" and psv.lift_pct > 99.9
 
 
 def test_f1_38_overcapacity_above_rated_flow():
@@ -156,7 +156,11 @@ def test_f1_04_oversized_pop_valve_cycles_near_set_pressure():
     p_in_g = (psv.inlets[0].pressure - P_ATM) / 1e5
     assert 3.0 <= p_in_g <= 3.3
     assert psv.inlets[0].flow_rate > 1e-4
-    assert math.isclose(psv.reseat_pressure_barg, 3.0 * 0.93)
+    # Conventional: reseat and opening are inlet pressures, shifted by the outlet backpressure
+    p_out_g = (psv.outlets[0].pressure - P_ATM) / 1e5
+    assert math.isclose(psv.reseat_pressure_barg, 3.0 * 0.93 + p_out_g)
+    assert math.isclose(psv.reseat_pressure_barg, psv.cycle_low_barg, abs_tol=0.005)
+    assert math.isclose(psv.opening_pressure_barg, psv.cycle_high_barg, abs_tol=0.005)
 
 
 def test_f1_04_result_does_not_depend_on_the_previous_run():
@@ -183,7 +187,7 @@ def test_f1_03_forced_open_relieves_below_set_pressure(make):
     stats, tel, tel_unmit, *_ = run_sequential_relief_simulation(net, NetworkSolver(net), extract_telemetry)
     assert stats["success"] and dev.forced_state == "forced_open"
     assert tel["nodes"]["psv"]["outlets"][0]["flow_rate"] > 1e-4
-    assert tel["nodes"]["psv"]["status"] in ("cracked", "burst", "overcapacity")
+    assert tel["nodes"]["psv"]["status"] in ("open", "burst", "overcapacity")
     # The unmitigated reference still holds every device closed
     assert tel_unmit["nodes"]["psv"]["outlets"][0]["flow_rate"] == 0.0
     assert tel["relief"]["devices"]["psv"]["forced_state"] == "forced_open"

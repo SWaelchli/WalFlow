@@ -18,16 +18,25 @@ export default function PressureSafetyValveNode({ id, data, selected }) {
   const flow = telemetry?.outlets?.[0]?.flow_rate || 0;
   const flowFormatted = formatFlowM3s(Math.abs(flow));
   
-  const status = telemetry?.status || 'closed'; // 'closed', 'cracked', 'cycling', 'overcapacity'
+  const status = telemetry?.status || 'closed'; // 'closed', 'modulating', 'open', 'cycling', 'overcapacity'
   const setPressureFormatted = data.set_pressure_barg ? formatPressureGauge(Number(data.set_pressure_barg)) : 'missing';
+  const valveType = data.valve_type || 'conventional';
+  const liftPct = telemetry?.lift_pct;
+  const cycleLow = telemetry?.cycle_low_barg;
+  const cycleHigh = telemetry?.cycle_high_barg;
+  const isCycling = status === 'cycling' && cycleLow != null && cycleHigh != null;
 
   let statusText = 'CLOSED';
   let statusColor = 'var(--color-text-secondary)'; // Muted Slate
   let badgeBg = 'var(--color-surface-hover)';
 
-  if (status === 'cracked') {
-    statusText = 'CRACKED';
+  if (status === 'modulating') {
+    statusText = liftPct != null ? `MODULATING ${Math.round(liftPct)} %` : 'MODULATING';
     statusColor = 'var(--color-warning)'; // Amber / Orange
+    badgeBg = 'rgba(245, 158, 11, 0.12)';
+  } else if (status === 'open' || status === 'cracked') {
+    statusText = 'OPEN';
+    statusColor = 'var(--color-warning)';
     badgeBg = 'rgba(245, 158, 11, 0.12)';
   } else if (status === 'cycling') {
     // Pop valve oversized for the load: it would cycle between set and reseat pressure (F1-04)
@@ -67,7 +76,9 @@ export default function PressureSafetyValveNode({ id, data, selected }) {
             {statusText}
           </div>
           <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)', marginTop: '1px' }}>
-            Set: {setPressureFormatted} | {flowFormatted} {labels.flow}
+            {isCycling
+              ? <>{formatPressureGauge(cycleLow)}–{formatPressureGauge(cycleHigh)} | avg {flowFormatted} {labels.flow}</>
+              : <>Set: {setPressureFormatted} | {flowFormatted} {labels.flow}</>}
           </div>
         </>
       }
@@ -86,11 +97,43 @@ export default function PressureSafetyValveNode({ id, data, selected }) {
         {/* Top Bonnet / Spring Box */}
         <line x1="35" y1="35" x2="35" y2="12" stroke="var(--color-brand-dark)" strokeWidth="2" />
         <rect x="29" y="8" width="12" height="10" fill="var(--color-surface-hover)" stroke="var(--color-brand-dark)" strokeWidth="1.8" rx="2" />
-        {/* Spring Coil Lines */}
-        <line x1="32" y1="11" x2="38" y2="11" stroke="var(--color-brand-dark)" strokeWidth="1.5" />
-        <line x1="32" y1="13.5" x2="38" y2="13.5" stroke="var(--color-brand-dark)" strokeWidth="1.5" />
-        <line x1="32" y1="16" x2="38" y2="16" stroke="var(--color-brand-dark)" strokeWidth="1.5" />
+        {valveType === 'pilot' ? (
+          // Pilot-operated: pilot box marked "P"
+          <text x="35" y="16.2" textAnchor="middle" fontSize="8" fontWeight="700" fill="var(--color-brand-dark)">P</text>
+        ) : (
+          <>
+            {/* Spring Coil Lines */}
+            <line x1="32" y1="11" x2="38" y2="11" stroke="var(--color-brand-dark)" strokeWidth="1.5" />
+            <line x1="32" y1="13.5" x2="38" y2="13.5" stroke="var(--color-brand-dark)" strokeWidth="1.5" />
+            <line x1="32" y1="16" x2="38" y2="16" stroke="var(--color-brand-dark)" strokeWidth="1.5" />
+          </>
+        )}
+        {valveType === 'balanced_bellows' && (
+          // Bellows on the stem
+          <polyline points="35,19 31,21 39,24 31,27 39,30 35,32" fill="none" stroke="var(--color-brand-dark)" strokeWidth="1.3" strokeLinejoin="round" />
+        )}
       </svg>
+
+      {valveType === 'pilot' && (
+        // Pilot sensing connection: a signal line from a sensing pin or tap (none: the pilot senses the inlet)
+        <Handle
+          type="target"
+          position={Position.Top}
+          id="signal-in"
+          className="handle-signal"
+          title="Pilot sensing connection"
+          style={{
+            top: '5px',
+            left: '35px',
+            transform: 'translate(-50%, -50%)',
+            background: 'var(--color-primary)',
+            width: '8px',
+            height: '8px',
+            border: '1.5px solid var(--color-primary-hover)',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.2)'
+          }}
+        />
+      )}
 
       <Handle
         type="target"

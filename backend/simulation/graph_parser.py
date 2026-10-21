@@ -43,6 +43,15 @@ def _relief_pressure_barg(d: dict, key: str, name: str, what: str) -> float:
         raise ModelInputError(f"'{name}': {what} must be above 0 barg.")
     return value
 
+def _parse_signal_handle(handle) -> tuple:
+    """(port type, port index) of a signal line's source handle, e.g. "signal-inlet-0" or "inlet-0";
+    anything else senses outlet 0 (legacy node-level sensing)."""
+    parts = str(handle or "").split('-')
+    if len(parts) >= 2 and parts[-1].isdigit() and parts[-2] in ("inlet", "outlet"):
+        return parts[-2], int(parts[-1])
+    return "outlet", 0
+
+
 class GraphParser:
     @staticmethod
     def _npsh_value(d: dict, key: str, default: float, name: str) -> float:
@@ -154,25 +163,22 @@ class GraphParser:
             if edge_type == 'SIGNAL':
                 source_node = nodes_dict.get(edge.source)
                 target_node = nodes_dict.get(edge.target)
-                if isinstance(target_node, RemoteControlValve):
-                    # Handle IDs like "signal-inlet-0" or just "inlet-0"
-                    handle_id = str(edge.sourceHandle or "")
-                    parts = handle_id.split('-')
-                    if len(parts) >= 2:
-                        port_type = parts[-2] # "inlet" or "outlet"
-                        port_idx = int(parts[-1])
-                        target_node.remote_sensing_config = {
-                            "node_id": edge.source,
-                            "port_type": port_type,
-                            "port_idx": port_idx
-                        }
-                    else:
-                        # Fallback to node-level sensing (legacy)
-                        target_node.remote_sensing_config = {
-                            "node_id": edge.source,
-                            "port_type": "outlet", # Default
-                            "port_idx": 0
-                        }
+                if isinstance(target_node, PressureSafetyValve):
+                    # Pilot sensing line
+                    # (only a pilot-operated valve reads it; the first line wins, as the setup panel shows it)
+                    if target_node.valve_type == 'pilot' and source_node is not None and target_node.pilot_source is None:
+                        port_type, port_idx = _parse_signal_handle(edge.sourceHandle)
+                        ports = source_node.inlets if port_type == "inlet" else source_node.outlets
+                        if port_idx < len(ports) and source_node is not target_node:
+                            target_node.remote_sensing_config = {"node_id": edge.source, "port_type": port_type, "port_idx": port_idx}
+                            target_node.pilot_source = (source_node, port_type, port_idx)
+                elif isinstance(target_node, RemoteControlValve):
+                    port_type, port_idx = _parse_signal_handle(edge.sourceHandle)
+                    target_node.remote_sensing_config = {
+                        "node_id": edge.source,
+                        "port_type": port_type,
+                        "port_idx": port_idx
+                    }
                 continue # Do not create a Pipe for signal edges
 
             # Create a Pipe node for this hydraulic edge
@@ -448,7 +454,9 @@ class GraphParser:
                 cv=float(d.get('cv', 10.0)),
                 action_mode=str(d.get('action_mode', 'pop_action')),
                 blowdown_pct=float(d.get('blowdown_pct', 7.0)),
-                forced_state=str(d.get('forced_state', 'auto'))
+                forced_state=str(d.get('forced_state', 'auto')),
+                valve_type=str(d.get('valve_type', 'conventional')),
+                design_superimposed_bp_barg=float(d.get('design_superimposed_bp_barg') or 0.0)
             )
         elif t == 'rupture_disc':
             node = RuptureDisc(

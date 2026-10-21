@@ -60,6 +60,12 @@ export default function SetupPanel({
 
   if (!node && !edge) return null;
 
+  // PSV: a pilot reads the node its signal line comes from
+  const psvValveType = effectiveData.valve_type || 'conventional';
+  const psvActionMode = effectiveData.action_mode || 'pop_action';
+  const psvPilotLine = allEdges.find(e => e.target === id && e.targetHandle === 'signal-in');
+  const psvPilotSource = psvPilotLine ? allNodes.find(n => n.id === psvPilotLine.source) : null;
+
   const renderLabel = (labelStr, propKey) => (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
       <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>{labelStr}</label>
@@ -789,17 +795,59 @@ export default function SetupPanel({
                 />
               </div>
               <div>
+                {renderLabel('Valve Type', 'valve_type')}
+                <select
+                  style={{ width: '100%', fontSize: 'var(--fs-sm)', padding: '4px' }}
+                  value={psvValveType}
+                  onChange={(e) => onUpdate(id, { valve_type: e.target.value })}
+                >
+                  <option value="conventional">Conventional (spring)</option>
+                  <option value="balanced_bellows">Balanced bellows</option>
+                  <option value="pilot">Pilot-operated</option>
+                </select>
+                <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
+                  {psvValveType === 'conventional' && 'Opens on inlet minus outlet pressure: backpressure shifts the opening and reduces the lift. Built-up backpressure limit 10 % of set.'}
+                  {psvValveType === 'balanced_bellows' && 'Opens on inlet gauge pressure, independent of backpressure. Backpressure limit 50 % of set.'}
+                  {psvValveType === 'pilot' && (psvPilotSource
+                    ? `Pilot senses ${psvPilotSource.data?.label || psvPilotSource.id} through its pilot line.`
+                    : 'Pilot senses the valve inlet. To sense elsewhere, drag a signal line from a sensing pin or tap to the pilot connection on top of the valve.')}
+                </p>
+              </div>
+              {psvValveType === 'conventional' && (
+                <div>
+                  {renderLabel(`Design Superimposed Backpressure (${isImperial ? 'psig' : 'barg'})`, 'design_superimposed_bp_barg')}
+                  <input
+                    type="number" step="0.1" min="0"
+                    className="form-input" style={{ width: '100%' }}
+                    value={localDrafts.design_superimposed_bp_barg !== undefined ? localDrafts.design_superimposed_bp_barg : (isImperial ? (Number(effectiveData.design_superimposed_bp_barg ?? 0) * 14.5037738).toFixed(1) : (effectiveData.design_superimposed_bp_barg ?? 0))}
+                    onChange={(e) => handleDraftChange('design_superimposed_bp_barg', e.target.value)}
+                    onBlur={(e) => validateAndCommit('design_superimposed_bp_barg', e.target.value)}
+                  />
+                  {effectiveData.set_pressure_barg ? (
+                    <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
+                      Spring set (CDTP) {formatPressureGauge(Math.max(0.01, Number(effectiveData.set_pressure_barg) - Number(effectiveData.design_superimposed_bp_barg ?? 0)))}: opens at set pressure when the actual backpressure equals this value.
+                    </p>
+                  ) : null}
+                </div>
+              )}
+              <div>
                 {renderLabel('Relief Action Mode', 'action_mode')}
-                <select 
-                  style={{ width: '100%', fontSize: 'var(--fs-sm)', padding: '4px' }} 
-                  value={effectiveData.action_mode || 'pop_action'} 
+                <select
+                  style={{ width: '100%', fontSize: 'var(--fs-sm)', padding: '4px' }}
+                  value={psvActionMode}
                   onChange={(e) => onUpdate(id, { action_mode: e.target.value })}
                 >
-                  <option value="pop_action">Pop Action (Snap-Open)</option>
-                  <option value="modulating">Modulating (Proportional)</option>
+                  <option value="pop_action">Pop action – reseats (blowdown)</option>
+                  <option value="pop_latching">Pop action – latching (stays open)</option>
+                  <option value="modulating">Modulating (proportional)</option>
                 </select>
+                {psvActionMode === 'pop_latching' && (
+                  <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
+                    Once popped, stays at full lift for the run (no reseat).
+                  </p>
+                )}
               </div>
-              {(effectiveData.action_mode === 'pop_action' || !effectiveData.action_mode) && (
+              {psvActionMode === 'pop_action' && (
                 <div>
                   {renderLabel('Blowdown (% of set)', 'blowdown_pct')}
                   <input 
@@ -811,7 +859,10 @@ export default function SetupPanel({
                   />
                   {effectiveData.set_pressure_barg ? (
                     <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
-                      Reseats at {formatPressureGauge(Number(effectiveData.set_pressure_barg) * (1 - Number(effectiveData.blowdown_pct ?? 7.0) / 100))}. If the open valve would drop its inlet below that, it would open and close cyclically and is reported as cycling.
+                      {/* blowdown applies to the opening driver: the spring setting (CDTP) of a conventional valve */}
+                      Reseats at {formatPressureGauge(Number(effectiveData.set_pressure_barg) - (psvValveType === 'conventional'
+                        ? Math.max(0.01, Number(effectiveData.set_pressure_barg) - Number(effectiveData.design_superimposed_bp_barg ?? 0))
+                        : Number(effectiveData.set_pressure_barg)) * Number(effectiveData.blowdown_pct ?? 7.0) / 100)}{psvValveType === 'conventional' ? ' at the design backpressure' : ''}. If full lift would drop the inlet below that, the valve cycles between reseat and set; the result shows the average relief load.
                     </p>
                   ) : null}
                 </div>

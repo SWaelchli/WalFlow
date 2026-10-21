@@ -86,11 +86,23 @@ describe('F1-08: relief analysis matrix', () => {
   it('F1-09 / F1-04: shows the set pressure in barg and a cycling result as text', () => {
     renderRelief([reliefCase({
       peak: { available: true, pressure_bara: 4.2, source: 'relieved', device_ids: [] },
-      devices: { psv: { status: 'cycling', forced_state: 'auto', opening_order: 1, opening_ramp_pct: 62.3, inlet_at_opening_bara: 4.0, inlet_relieved_bara: 4.21 } },
+      devices: { psv: { status: 'cycling', forced_state: 'auto', opening_order: 1, opening_ramp_pct: 62.3, inlet_at_opening_bara: 4.0, inlet_relieved_bara: 4.21,
+        cycle_low_barg: 2.78, cycle_high_barg: 2.99, relief_flow_lmin: 12.0, lift_pct: null } },
     })]);
     expect(screen.getByText('2.99 barg')).toBeTruthy();
     const badge = screen.getByText('Cycling #1');
-    expect(badge.closest('div[title]').title).toMatch(/would cycle between reseat and set pressure/);
+    expect(badge.closest('div[title]').title).toMatch(/cycles between reseat and set pressure/);
+    expect(screen.getByText('Cycles 2.78 barg–2.99 barg · avg 12.0 L/min')).toBeTruthy();
+  });
+
+  it('shows the lift of a modulating valve and a backpressure limit breach', () => {
+    renderRelief([reliefCase({
+      peak: { available: true, pressure_bara: 4.2, source: 'relieved', device_ids: [] },
+      devices: { psv: { status: 'modulating', lift_pct: 67.6, forced_state: 'auto', opening_order: 1, opening_ramp_pct: 62.3, inlet_at_opening_bara: 4.0, inlet_relieved_bara: 4.21,
+        bp_exceeded: true, bp_basis: 'built_up', bp_pct_of_set: 13.9, bp_limit_pct: 10.0 } },
+    })]);
+    expect(screen.getByText('Modulating 68 % #1')).toBeTruthy();
+    expect(screen.getByText(/BP 14 % > 10 %/)).toBeTruthy();
   });
 
   it('shows "missing" for a device from an older file without a gauge set pressure', () => {

@@ -4,7 +4,7 @@
 
 `ReliefDevice` is the shared model of the two pressure relief components:
 
-- [pressure safety valve](pressure_safety_valve.md) (`pressure_safety_valve`): pop action, modulating, or rupture-disc behaviour;
+- [pressure safety valve](pressure_safety_valve.md) (`pressure_safety_valve`): pop action (reseating or latching) or modulating, as a conventional, balanced bellows or pilot-operated valve;
 - [rupture disc](rupture_disc.md) (`rupture_disc`): bursts once and stays open.
 
 This document covers what both share: gauge set pressure, the held open/closed state, the flow equation, rated capacity, forced states, and the relief analysis (unmitigated, relieved and peak pressures). The component documents cover only their own opening logic and open-device pressure loss.
@@ -25,9 +25,15 @@ $$P_{\text{set,abs}} = P_{\text{set,g}} \cdot 10^5 + P_{\text{atm}}$$
 
 $P_{\text{atm}}$ is the atmospheric pressure from the global settings. A set pressure below 0.01 barg is raised to 0.01 barg. Older files with an absolute set pressure under another key are not converted; the parser asks for the gauge value.
 
+A device opens on its **opening margin** (`opening_margin_pa`):
+
+$$m = \text{driver} - \text{threshold} \ge 0$$
+
+For the rupture disc (and this base class) the driver is the inlet gauge pressure $P_{\text{in}} - P_{\text{atm}}$ and the threshold is the set pressure. A PSV replaces both according to its valve type (conventional: differential against the CDTP; pilot: the sensed pressure); see [pressure_safety_valve.md](pressure_safety_valve.md#32-opening-driver-by-valve-type). Every opening decision (held state, relief passes, opening snapshots) and the modulating lift use this margin. `inlet_opening_pressure_pa` gives the inlet pressure at which a closed device opens (used to hold a stagnant section just below it), or none for a pilot sensing a remote point.
+
 ### 3.2 Held state
 
-Whether a device is open is decided **between** hydraulic solves (`update_relief_state`, from the solved inlet pressure) and held fixed **during** each Newton solve, so its branch never flips mid-iteration. Every run starts with every device closed or intact (`reset_run_state`). When a device changes state, the solver re-solves; branches left at exactly zero flow restart from the initial flow guess so the Newton step is not singular.
+Whether a device is open is decided **between** hydraulic solves (`update_relief_state`, from the solved pressures) and held fixed **during** each Newton solve, so its branch never flips mid-iteration. Every run starts with every device closed or intact (`reset_run_state`). When a device changes state, the solver re-solves; branches left at exactly zero flow restart from the initial flow guess so the Newton step is not singular.
 
 ### 3.3 Flow equation (`model_flow`, `calculate_delta_p`)
 
@@ -51,11 +57,11 @@ with $P_{\text{out}}$ estimated as the downstream node pressure plus the outlet 
 | :--- | :--- |
 | `closed` | 0 |
 | `full` | 1 |
-| `modulating` | $\min\!\big(1,\ \max(0,\ (P_{\text{in}} - P_{\text{set,abs}}) / \Delta P_{\text{ol}})\big)$ |
+| `modulating` | $\min\!\big(1,\ \max(0,\ m / \Delta P_{\text{band}})\big)$, $m$ the opening margin |
 
 $$\Delta P_{\text{ol}} = \max(1000\ \text{Pa},\ 0.10 \cdot P_{\text{set,g}} \cdot 10^5)$$
 
-is the full-lift overpressure: 10 % of the gauge set pressure (`RATED_OVERPRESSURE`, API 520 liquid service), at least 10 mbar. Each component decides which mode applies.
+is the full-lift overpressure: 10 % of the gauge set pressure (`RATED_OVERPRESSURE`, API 520 liquid service), at least 10 mbar. The band $\Delta P_{\text{band}}$ (`modulating_band_pa`) is $\Delta P_{\text{ol}}$; a cycling PSV narrows it (see [pressure_safety_valve.md](pressure_safety_valve.md)). Each component decides which mode applies.
 
 ### 3.5 Rated capacity (audit F1-38)
 
@@ -67,7 +73,7 @@ $$Q_{\text{rated}} = \sqrt{\frac{P_{\text{set,abs}} + \Delta P_{\text{ol}} - P_{
 
 - `capacity_utilization_pct` $= 100\, Q / Q_{\text{rated}}$ (capped at 999 %);
 - `rated_flow_lmin`, `lift_pct`;
-- `status`: closed / intact, cracked / burst / cycling (open), or `overcapacity` above 100 %. An open device without flow (no pressure difference) is reported open with 0 % utilisation.
+- `status`: `closed` / `intact`; when open, `modulating` (PSV, lift below 99.9 %), `open` (full lift) / `burst`, or `cycling` (PSV); `overcapacity` above 100 %. An open device without flow (no pressure difference) is reported open with 0 % utilisation.
 
 ### 3.6 Forced states (audit F1-03)
 
@@ -82,8 +88,8 @@ $$Q_{\text{rated}} = \sqrt{\frac{P_{\text{set,abs}} + \Delta P_{\text{ol}} - P_{
 A network with relief devices runs three kinds of solves. All are steady states; none is a time simulation.
 
 1. **Unmitigated:** every device held closed. Gives the pressure the system would reach without protection.
-2. **Relieved (sequential passes):** user-forced devices return to their forced state; `auto` devices start held closed. After each solve, the closed `auto` devices whose inlet reached the set pressure are found; the group with the lowest set pressure is released (state `auto`) and the network is solved again. Higher-set devices are released only if the lower ones cannot hold the pressure. Leakage alone (a stagnant section's pressure) does not lift a held device.
-3. **Opening snapshots (audit F1-08):** for each released group, the relief drivers (pumps and sources with `is_relief_driver` and "Ramp during relief analysis" on) are scaled by a factor $\lambda$ from 0 to their case value. $\lambda$ is bisected (up to 24 solves, until the margin is below 1 mbar or $\Delta\lambda < 10^{-4}$) until the group's inlet is exactly at set pressure, with earlier groups free to relieve and later devices held closed. This runs on a copy of the network.
+2. **Relieved (sequential passes):** user-forced devices return to their forced state; `auto` devices start held closed. After each solve, the closed `auto` devices whose opening margin reached zero are found; the group with the lowest set pressure is released (state `auto`) and the network is solved again. Higher-set devices are released only if the lower ones cannot hold the pressure. Leakage alone (a stagnant section's pressure) does not lift a held device.
+3. **Opening snapshots (audit F1-08):** for each released group, the relief drivers (pumps and sources with `is_relief_driver` and "Ramp during relief analysis" on) are scaled by a factor $\lambda$ from 0 to their case value. $\lambda$ is bisected (up to 24 solves, until the margin is below 1 mbar or $\Delta\lambda < 10^{-4}$) until the group's opening margin is zero (for an inlet-gauge device, the inlet is exactly at set pressure), with earlier groups free to relieve and later devices held closed. This runs on a copy of the network.
 
 | Driver | Ramp $\lambda$ |
 | :--- | :--- |
@@ -100,7 +106,17 @@ Reported pressures (bar(a), the maximum over all ports):
 | `relieved_pressure_bara` | final relieved steady state |
 | `peak_pressure_bara` | highest of the opening snapshots and the relieved state; unavailable if no driver is ramped |
 
-Per device: opening order, ramp at opening, inlet pressure at opening, relieved and unmitigated, and relief flow.
+Per device: opening order, ramp at opening, inlet pressure at opening, relieved and unmitigated, relief flow, `lift_pct`, and for a cycling PSV `cycle_low_barg` / `cycle_high_barg`.
+
+PSV backpressure (`_backpressure_result`, gauge at the valve outlet; also on the PSV's node telemetry as `backpressure`):
+
+| Field | Meaning |
+| :--- | :--- |
+| `superimposed_bp_barg` | outlet while the valve is still closed: its opening snapshot, else the unmitigated pass; a valve that stays closed takes the final outlet (including what other devices relieve into its header) |
+| `built_up_bp_barg` | relieved outlet − superimposed (0 while closed) |
+| `total_bp_barg` | outlet in the relieved state |
+| `bp_basis`, `bp_pct_of_set`, `bp_limit_pct` | conventional: built-up, limit 10 % of set; balanced bellows: total, limit 50 %; pilot: none |
+| `bp_exceeded` | relieving and above the limit |
 
 ## 4. Thermal & Energy Balance
 
@@ -125,7 +141,7 @@ Shared inputs (the component documents list the full tables):
 - **Steady state:** opening, lift and relief are equilibrium states. Valve chatter, pop dynamics, disc burst dynamics and pressure transients are not modelled ($\Delta t = 0$). A pop-action valve that would chatter is reported as `cycling` (see [pressure_safety_valve.md](pressure_safety_valve.md)).
 - **Solver flags:** `use_mcp_formulation = False`, but the solver gives every relief device the flow-equation row of section 3.3 by its node type. `is_pressure_boundary`, `is_flow_boundary`, `blocks_flow_on_shutdown` are `False`; a closed device blocks through `is_closed_relief` (pruning and stagnant sections).
 - **Reverse flow:** never; a device with $\Delta p \le 0$ passes no flow.
-- **Liquid service only:** no gas or two-phase relief sizing (API 520 gas equations, HEM / Omega method), no backpressure correction factor $K_w$, no viscosity correction $K_v$ beyond the Cv model.
+- **Liquid service only:** no gas or two-phase relief sizing (API 520 gas equations, HEM / Omega method), no backpressure capacity correction $K_w$ (balanced bellows valves get only the 50 % warning), no viscosity correction $K_v$ beyond the Cv model.
 - **Operating cases:** set pressure, Cv and forced state can be overridden per case.
 
 ## 7. Verification & Benchmarks
