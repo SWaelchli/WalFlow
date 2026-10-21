@@ -76,22 +76,19 @@ class ThreeWayTCV(HydraulicNode):
         m_tot = m0 + m1 + m_out_rev
         
         if m_tot > 1e-10:
-            inward_temps = []
-            if inlet_0.flow_rate > 0:
-                inward_temps.append((m0, inlet_0.temperature))
-            if inlet_1.flow_rate > 0:
-                inward_temps.append((m1, inlet_1.temperature))
-            if outlet.flow_rate < 0:
-                inward_temps.append((m_out_rev, outlet.temperature))
-            mix_temp = sum(m * t for m, t in inward_temps) / m_tot
+            inward = [(m, p.temperature) for m, p in ((m0, inlet_0), (m1, inlet_1), (m_out_rev, outlet)) if m > 0.0]
             # Throttling heat of both forward paths (F1-16): power Q·ΔP ends up in the mixed stream
             heat_w = 0.0
             for port, idx in ((inlet_0, 0), (inlet_1, 1)):
                 if port.flow_rate > 0:
                     heat_w += port.flow_rate * max(0.0, self.calculate_path_dp(port.flow_rate, port.density, idx, port.viscosity))
-            if heat_w > 0.0 and outlet.flow_rate >= 0:
-                fluid = getattr(self.global_settings, 'fluid_type', 'water')
-                mix_temp += heat_w / (m_tot * FluidProperties.get_specific_heat(fluid, mix_temp))
+            if outlet.flow_rate < 0:
+                heat_w = 0.0
+            # Enthalpy balance with cp(T) (D-04, as F1-42): sum(m h) + heat = m_tot * h_mix
+            fluid = getattr(self.global_settings, 'fluid_type', 'water')
+            h_mix = (sum(m * FluidProperties.get_enthalpy(fluid, t) for m, t in inward) + heat_w) / m_tot
+            mix_temp = FluidProperties.get_temperature_from_enthalpy(
+                fluid, h_mix, sum(m * t for m, t in inward) / m_tot)
         else:
             mix_temp = inlet_0.temperature
             

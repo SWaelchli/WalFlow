@@ -46,13 +46,13 @@ The solver finds the mix ratio between hydraulic solves, one step per outer iter
 
 ## 4. Thermal & Energy Balance
 
-The outlet temperature (`calculate`) is the mass-weighted mean of the inward streams plus the throttling heat of both forward paths (audit F1-16):
+The outlet temperature (`calculate`) follows the enthalpy balance of the inward streams with $c_p(T)$, as the [mixer](mixer.md#4-thermal--energy-balance) and the default node mixing (audit F1-42, D-04). The throttling heat of both forward paths is added as enthalpy (audit F1-16):
 
-$$T_{\text{out}} = \frac{\sum_k \dot m_k\, T_k}{\sum_k \dot m_k} + \frac{\sum_{\text{paths}} Q\, \Delta P_{\text{path}}}{\big(\sum_k \dot m_k\big)\, c_p(T)}$$
+$$h(T_{\text{out}}) = \frac{\sum_k \dot m_k\, h(T_k) + \sum_{\text{paths}} Q\, \Delta P_{\text{path}}}{\sum_k \dot m_k}, \qquad h(T) = \int_{273.15\,\text{K}}^{T} c_p\, dT$$
 
-Inward streams are inlets with $Q > 0$ and the outlet with reverse flow. A port without forward flow receives the mixed temperature.
+$T_{\text{out}}$ is found with `FluidProperties.get_temperature_from_enthalpy`. Inward streams are inlets with $Q > 0$ and the outlet with reverse flow; with reverse flow on the outlet no throttling heat is added. A port without forward flow receives the mixed temperature.
 
-The mean uses a constant $c_p$; the [mixer](mixer.md#4-thermal--energy-balance) and the default node mixing use the enthalpy balance with $c_p(T)$ (audit F1-42). For equal mass flows at 80 °C and 20 °C the enthalpy mix is 0.02 K above the mean for water, 0.66 K for 50 % glycol and 0.87 K for ISO VG 46.
+For equal mass flows at 80 °C and 20 °C the enthalpy mix is 0.02 K above the mass-weighted mean for water, 0.66 K for 50 % glycol and 0.87 K for ISO VG 46. The controller holds the setpoint on this energy-balanced temperature.
 
 ## 5. Parameter & Unit Specification Table
 
@@ -82,6 +82,7 @@ The mix ratio (`self.mix_ratio`) is a result.
 | `test_tcv_loop_convergence.py::test_tcv_result_does_not_depend_on_the_start` | Different start mix ratios: outlet temperatures within 0.02 K, minority branch flow within 1 % |
 | `backend/tests/unit/equipment/test_three_way_tcv.py` | ISO VG 46, 80 °C / 20 °C → 40 °C within 0.5 K; hot saturated (cold source too warm) ends at 45 °C; cold saturated at 35 °C; hot port 1; hot at 10 bar vs cold at 1.2 bar; inversion; tiny Cv; downstream network reaches 45 °C within 0.5 K |
 | `backend/tests/unit/equipment/test_three_way_tcv_viscosity.py::test_f1_05_tcv_paths_consistent_with_viscous_dp` | VG 46 at 60 °C / 15 °C: each inlet pressure minus the outlet pressure equals its path $\Delta P$ within 0.1 % |
+| `backend/tests/unit/equipment/test_three_way_tcv_mixing.py` | Water, 50 % glycol and VG 46, equal mass flows at 80 °C / 20 °C: outlet matches an independent enthalpy balance (trapezoidal $\int c_p\,dT$) within 0.05 K; VG 46 mix 0.87 K above 50 °C within 0.1 K; with several kW of throttling heat still within 0.05 K |
 
 ## Data Fields
 

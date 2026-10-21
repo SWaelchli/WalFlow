@@ -20,7 +20,7 @@ Status: `open` / `fixed` / `rejected`. "Confirmed" means it was reproduced by ru
 | D-01 | Splitter | Mixed temperature overwritten by the inlet temperature | High (wrong result) | Confirmed | fixed |
 | D-02 | Heat exchanger | Thermal calculation ignores the flow direction | High (wrong result) | Confirmed | fixed |
 | D-03 | Heat exchanger | Rated ΔP only reproduced for water; UA rated with the operating $c_p$ | Medium | Confirmed | fixed |
-| D-04 | 3-way TCV | Mass-weighted mixing instead of the enthalpy balance | Medium | Confirmed | open |
+| D-04 | 3-way TCV | Mass-weighted mixing instead of the enthalpy balance | Medium | Confirmed | fixed |
 | D-05 | Valves (all Cv devices) | Viscosity factor $F_R$ is not IEC 60534-2-1; no laminar valve flow | Medium | Code reading + numbers | open |
 | D-06 | Pipe | Roughness 0 replaced by 0.045 mm | Medium | Code reading | open |
 | D-07 | Reducer vs pipe | Two different friction factor functions | Low | Code reading | open |
