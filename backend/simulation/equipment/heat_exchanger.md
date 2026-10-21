@@ -36,7 +36,7 @@ $\varepsilon_d$ is clamped to $10^{-5} \dots 0.999$ for the calculation. The unc
 | `high_effectiveness` | $0.95 < \varepsilon_d < 1$ | needs a very large exchanger |
 | `infeasible` | $\varepsilon_d \ge 1$ | the rated duty needs the fluid colder than the medium |
 
-$c_p$ is evaluated at the current inlet temperature.
+$c_p$ and $\rho$ are evaluated in the system fluid at the design inlet temperature, so $UA_r$ is a fixed property of the exchanger and does not drift with the operating temperature (audit D-03). The rating is cached and recomputed only when an input changes.
 
 ### 3.2 UA at the operating flow
 
@@ -52,19 +52,23 @@ $$\dot Q = \dot m\, c_p\, (T_{\text{in}} - T_{\text{out}})$$
 
 ### 3.4 Pressure drop (`calculate_delta_p`)
 
-$$\Delta P = k\, Q|Q|\, \frac{\rho}{1000}\, f(\mathrm{Re}_{hx}), \qquad k = \frac{\Delta P_r}{Q_r^2}$$
+$$\Delta P = k\, \rho\, Q|Q|\, f(\mathrm{Re}_{hx}), \qquad k = \frac{\Delta P_r}{\rho_{\text{ref}}\, Q_r^2\, f(\mathrm{Re}_{\text{ref}})}$$
 
 $$\mathrm{Re}_{hx} = \frac{\rho\, (|Q| / A_{hx})\, d_{hx}}{\mu}, \qquad d_{hx} = 10\ \text{mm}, \quad A_{hx} = \max(10^{-4},\ Q_r / 2)\ \text{m}^2$$
 
 $f$ is the viscosity factor of the [filter](filter.md#33-viscosity-factor-fluidpropertiesget_filter_viscosity_factor) ($1 + 100/\mathrm{Re}$ in the laminar range). $A_{hx}$ gives 2 m/s in the channels at rated flow.
 
-The rated drop is therefore reproduced for a fluid of 1000 kg/m³ in turbulent flow. For other fluids it scales with density and viscosity:
+The reference state is the system fluid at the design inlet temperature: $\rho_{\text{ref}}$, $\mu_{\text{ref}}$ and $\mathrm{Re}_{\text{ref}}$ at $Q_r$ (audit D-03, the same calibration as the [filter](filter.md)). The rated drop is reproduced exactly at the rating point in any fluid; away from it the drop follows density and viscosity. Default exchanger (0.5 bar at 500 L/min, design inlet 50 °C):
 
-| Fluid at rated flow (0.5 bar rated) | $\Delta P$ |
+| Fluid at rated flow | $\Delta P$ |
 | :--- | :--- |
-| Water, 20 °C | 0.499 bar |
-| ISO VG 46, 40 °C | 0.529 bar |
-| ISO VG 46, 20 °C | 0.728 bar |
+| Water, 50 °C (reference) | 0.500 bar |
+| Water, 20 °C | 0.505 bar |
+| ISO VG 46, 50 °C (reference) | 0.500 bar |
+| ISO VG 46, 40 °C | 0.539 bar |
+| ISO VG 46, 20 °C | 0.741 bar |
+
+A `pressure_drop_factor` passed to the constructor (tests only, not a data field) replaces $k$ by `pressure_drop_factor / 1000` without calibration.
 
 ### 3.5 Worked example
 
@@ -80,7 +84,7 @@ Default rating: 300 kW at 500 L/min, design inlet 50 °C, water-cooled at 10 °C
 
 ### 3.6 Derivative (`calculate_dp_derivative`)
 
-With $c_2 = k \rho / 1000$:
+With $c_2 = k \rho$:
 
 $$\frac{\partial \Delta P}{\partial Q} = \begin{cases} c_2\,(2|Q| + c_{\text{lam}}), \quad c_{\text{lam}} = \dfrac{100\, A_{hx}\, \mu}{\rho\, d_{hx}} & \mathrm{Re}_{hx} < 2000 \\ 2\, c_2\, |Q| & \mathrm{Re}_{hx} > 4000 \end{cases}$$
 
@@ -113,10 +117,10 @@ A missing rated drop is 0.5 bar, not zero (audit F2-04). The parser rejects a ra
 - **Solver flags:** all `False` (`is_pressure_boundary`, `is_flow_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation`).
 - **Inactive:** no heat transfer ($T_{\text{out}} = T_{\text{in}}$, duty 0); the pressure drop stays.
 - **Zero flow:** no heat transfer.
-- **Reverse flow:** the hydraulic drop is symmetric, but the thermal calculation always takes the inlet port as the entering stream. In reverse flow the outlet temperature is computed from the inlet port, which is not the entering fluid, so the reported temperatures and duty are not valid.
+- **Reverse flow:** the hydraulic drop is symmetric. The thermal calculation takes the port the fluid enters by (the outlet port in reverse flow) and writes the cooled temperature to the port it leaves by, so duty and temperatures are the same as in forward flow (audit D-02).
 - **Air-cooled:** the rating uses 20 °C ambient; operation uses the drawing's ambient temperature. The medium temperature field is not used.
 - **Operating cases:** status, rating and medium temperature can be overridden per case (e.g. summer and winter cooling water).
-- **Not modelled:** the utility side (its flow, temperature rise and pressure drop), fouling, phase change, the pressure drop referenced to the system fluid (section 3.4), throttling heat of the pressure drop.
+- **Not modelled:** the utility side (its flow, temperature rise and pressure drop), fouling, phase change, throttling heat of the pressure drop.
 
 ## 7. Verification & Benchmarks
 
@@ -126,7 +130,10 @@ A missing rated drop is 0.5 bar, not zero (audit F2-04). The parser rejects a ra
 | `test_thermal.py::test_water_and_air_coolers` | Water- and air-cooled, cooling and heating: outlet between inlet and medium |
 | `backend/tests/unit/equipment/test_heat_exchanger_rating.py::test_f1_40_audit_case_is_infeasible` | 300 kW from 100 L/min of oil with 40 K available: `infeasible`, $\varepsilon_d > 1$ |
 | `test_heat_exchanger_rating.py::test_f1_40_modest_rating_is_ok` | 30 kW: `ok`, $0 < \varepsilon_d < 0.95$ |
-| `backend/tests/unit/equipment/test_heat_exchanger_default.py` | Missing rated drop: 0.5 bar at rated flow within 1 Pa; an explicit value is kept |
+| `backend/tests/unit/equipment/test_heat_exchanger_default.py` | Missing rated drop: 0.5 bar at rated flow in water at 50 °C within 0.1 %; an explicit value is kept |
+| `test_heat_exchanger_default.py::test_d03_rated_dp_is_reproduced_at_the_design_inlet_temperature` | Water and ISO VG 46 at the design inlet temperature: rated drop at rated flow within 0.1 % |
+| `test_heat_exchanger_default.py::test_d03_rated_ua_uses_the_design_inlet_state_not_the_operating_temperature` | ISO VG 46 at 80 °C, rating at 50 °C: outlet equals an independent ε-NTU calculation with $UA_r$ from the design state within 0.01 K |
+| `backend/tests/unit/equipment/test_heat_exchanger_flow_direction.py` | Mirrored forward and reverse networks: duty equal within 1 % |
 | `backend/tests/unit/solver/test_active_inactive.py::test_inactive_heat_exchanger` | Inactive: $T_{\text{out}} = T_{\text{in}}$ within $10^{-6}$ K, duty 0 |
 | `backend/tests/unit/solver/test_basic_components.py::test_heat_exchanger` | Network solve: outlet colder than inlet |
 
