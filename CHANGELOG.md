@@ -86,6 +86,7 @@ All notable changes to the WälFlow project will be documented in this file.
 
 ### Fixed
 
+- **Splitter mixing**: When the inlet and one outlet both feed a splitter, the remaining outlet now carries the energy-balanced mixed temperature instead of the inlet temperature.
 - **Pressure in stagnant branches**: A section shut in by a stopped PD pump, a closed check valve or a closed relief device now takes the pressure of its leak path (usually the pump suction) instead of a value that changed with the solver method, and is flagged `stagnant` in the telemetry.
 - **3-way TCV loop**: The thermal valve now settles within 0.01 K of its setpoint, or exactly at its end stop, independent of the start and in fewer iterations; the unused damping factor setting is removed (older files are still accepted).
 - **Custom reducer length in imperial units**: A transition length entered in inches is stored correctly (it was converted a second time as feet); the inspector shows the length the solver uses, and empty or zero reducer dimensions are rejected.

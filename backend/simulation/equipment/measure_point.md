@@ -39,7 +39,7 @@ Not applicable — the tap adds no pressure term.
 
 ## 4. Thermal & Energy Balance
 
-Density, viscosity and temperature pass from inlet to outlet unchanged ($\Delta T = 0$). No energy is added or dissipated. With reverse flow the outlet state reaches the inlet (direction-aware mixing, see [base_node.md](base_node.md#41-default-mixing-calculate_temperature)).
+Temperature passes from the entering to the leaving port unchanged ($\Delta T = 0$), and the leaving port gets density and viscosity at that temperature. No energy is added or dissipated. With reverse flow the outlet state reaches the inlet (direction-aware mixing, see [base_node.md](base_node.md#41-default-mixing-calculate_temperature)). Without flow the outlet takes the inlet temperature.
 
 ## 5. Parameter & Unit Specification Table
 

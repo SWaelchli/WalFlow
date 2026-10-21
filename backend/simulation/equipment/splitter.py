@@ -15,15 +15,15 @@ class Splitter(HydraulicNode):
 
     def calculate(self):
         """
-        Updates outlet states based on inlet state.
-        In the final solver, the splitter acts as a constraint node.
+        Equal pressure at all ports. Temperatures come from calculate_temperature (enthalpy mix of the
+        ports with inward flow) and are not overwritten here (D-01); the outward ports get density and
+        viscosity at that temperature. Flow distribution is set by the connected resistances.
         """
         inlet = self.inlets[0]
+        stagnant = not self.has_inflow()
         for outlet in self.outlets:
             outlet.pressure = inlet.pressure
-            outlet.density = inlet.density
-            outlet.viscosity = inlet.viscosity
-            outlet.temperature = inlet.temperature
-            # Flow distribution is determined by the downstream resistance, 
-            # not by the splitter itself.
+            if stagnant:
+                outlet.temperature = inlet.temperature
+        self.update_outward_properties()
         return 0.0

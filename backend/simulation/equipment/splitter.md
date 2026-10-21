@@ -41,11 +41,9 @@ The splitter has no branch or run loss coefficient. For a tee whose loss matters
 Two steps run during property propagation (see [base_node.md](base_node.md#4-thermal--energy-balance)):
 
 1. `calculate_temperature`: the enthalpy balance of all ports with flow into the splitter sets the temperature of the ports with flow out of it.
-2. `calculate`: the inlet port's pressure, temperature, density and viscosity are copied to both outlets.
+2. `calculate`: the inlet pressure is copied to both outlets, and the ports with flow out of the splitter get density and viscosity at their (mixed) temperature. The temperature itself is not overwritten (audit D-01).
 
-In normal forward flow (into the inlet, out of both outlets) both outlets carry the inlet temperature. With reverse flow on the inlet (fed from one or both outlets), the inlet receives the mixed temperature and the outlets then take it as well.
-
-Limitation: when the inlet **and** one outlet both feed the splitter and only the other outlet leaves it, step 2 overwrites the mixed temperature with the inlet temperature. That outlet then shows the inlet temperature instead of the enthalpy mix.
+In normal forward flow (into the inlet, out of both outlets) both outlets carry the inlet temperature. With reverse flow on the inlet (fed from one or both outlets), the inlet receives the mixed temperature. When the inlet **and** one outlet both feed the splitter, the other outlet carries the enthalpy mix of the two streams. Without any inflow (stagnant splitter) the outlets take the inlet temperature.
 
 ## 5. Parameter & Unit Specification Table
 

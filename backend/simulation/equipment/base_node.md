@@ -96,6 +96,8 @@ $T_{\text{mix}}$ is found by inverting $h(T)$ (`FluidProperties.get_temperature_
 
 Components with their own thermal effect (throttling heat, pump waste heat, heat exchanger duty) set their outlet temperature themselves.
 
+Junctions without their own thermal effect (splitter, measure point) keep the mixed temperature and only call `update_outward_properties()` in `calculate()`, which evaluates density and viscosity of each outward port at its temperature. `has_inflow()` tells whether any port feeds the node.
+
 ### 4.2 Property propagation
 
 After each hydraulic solve, `NetworkSolver._propagate_properties` passes temperature, density and viscosity along the solved flows: pipe by pipe from the upstream port, then node by node (`calculate_temperature`, then `calculate()`). It repeats up to `property_iterations` (default 5) passes and stops when no port temperature changes by more than 0.01 K. Solved pressures are saved before and restored after, so this step changes only the fluid state.

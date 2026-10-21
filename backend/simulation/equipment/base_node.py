@@ -90,6 +90,20 @@ class HydraulicNode:
         for port in outward_ports:
             port.temperature = mix_temp
 
+    def has_inflow(self) -> bool:
+        """True when any port has flow into the node (the sources of calculate_temperature)."""
+        return any(p.flow_rate > 0 for p in self.inlets) or any(p.flow_rate < 0 for p in self.outlets)
+
+    def update_outward_properties(self) -> None:
+        """Density and viscosity of the ports with outward flow at their own temperature (junctions, D-01)."""
+        if not self.global_settings:
+            return
+        fluid_type = self.global_settings.fluid_type
+        outward = [p for p in self.inlets if p.flow_rate <= 0] + [p for p in self.outlets if p.flow_rate >= 0]
+        for port in outward:
+            port.density = FluidProperties.get_density(fluid_type, port.temperature)
+            port.viscosity = FluidProperties.get_viscosity(fluid_type, port.temperature)
+
     def update_npsh(self, inlet) -> None:
         """NPSHa = (P_in - Pv)/(rho g) at a pump suction (F1-28), always reported. The cavitation warning is
         raised when NPSHa < NPSHr + margin (NPSHr 0 when no datasheet value is entered)."""

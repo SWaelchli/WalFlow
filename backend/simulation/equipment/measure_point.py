@@ -13,11 +13,12 @@ class MeasurePoint(HydraulicNode):
         self.add_outlet()
 
     def calculate(self):
-        """Passes the inlet state to the outlet unchanged."""
+        """Passes the inlet pressure to the outlet. The temperature follows the flow (calculate_temperature),
+        as in the splitter (D-01); density and viscosity of the outward port at its temperature."""
         inlet = self.inlets[0]
         outlet = self.outlets[0]
         outlet.pressure = inlet.pressure
-        outlet.density = inlet.density
-        outlet.viscosity = inlet.viscosity
-        outlet.temperature = inlet.temperature
+        if not self.has_inflow():
+            outlet.temperature = inlet.temperature
+        self.update_outward_properties()
         return 0.0
