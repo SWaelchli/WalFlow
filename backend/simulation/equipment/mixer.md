@@ -1,10 +1,75 @@
 # Mixer (`mixer`)
 
-## 1. Functional Overview
+## 1. Overview & Purpose
 
-Junction that combines two inlets into one outlet at equal pressure (no internal friction); the outlet temperature is the mixed temperature of the inflows.
+A mixer is a tee that combines two inlet streams into one outlet stream. All three connections are at the same pressure; the mixer has no pressure loss of its own. The outlet temperature is the enthalpy-weighted mix of the incoming streams.
 
-> Short description. The full description per the equipment documentation standard is on the ROADMAP ("Detailed Equipment Documentation").
+Use it where two lines join, for example a hot and a cold supply, or a bypass rejoining a main line. With reverse flow on its ports it divides a stream like a [splitter](splitter.md).
+
+## 2. Governing Standards & Reference Literature
+
+No engineering standard applies. The mixer is an ideal adiabatic junction: conservation of mass and of enthalpy at one common pressure.
+
+## 3. Physical & Mathematical Implementation
+
+### 3.1 Pressure
+
+The mixer is one node with one pressure unknown $p$:
+
+$$P_{\text{inlet},0} = P_{\text{inlet},1} = P_{\text{outlet}} = p$$
+
+The mixer has no `calculate_delta_p`, so in the edge pressure balance its outlet pressure equals its inlet pressure (see [base_node.md](base_node.md#32-how-a-component-enters-the-equations)).
+
+### 3.2 Mass balance
+
+One mass balance row for the node (volume flows, see [base_node.md](base_node.md#31-unknowns-and-equations)):
+
+$$q_{\text{inlet},0} + q_{\text{inlet},1} - q_{\text{outlet}} = 0$$
+
+Flows are signed: a negative inlet flow is flow out of the mixer.
+
+### 3.3 Derivative
+
+Not applicable — the mixer adds no pressure term. The mass balance row is linear in the edge flows.
+
+### 3.4 Tee losses
+
+The mixer has no branch or run loss coefficient. For a junction whose loss matters, add a resistance on the branch.
+
+## 4. Thermal & Energy Balance
+
+The outlet temperature follows from the enthalpy balance of the incoming streams (audit F1-42):
+
+$$\dot m_0\, h(T_0) + \dot m_1\, h(T_1) = (\dot m_0 + \dot m_1)\, h(T_{\text{out}}), \qquad h(T) = \int c_p\, dT$$
+
+with $\dot m_k = |q_k|\, \rho_k$. See [base_node.md](base_node.md#41-default-mixing-calculate_temperature) for the direction-aware selection of incoming ports.
+
+After mixing, the outlet density and viscosity are evaluated at $T_{\text{out}}$, not taken from inlet 0. With reverse flow out of the mixer's inlets, both inlet pipes receive the mixed temperature.
+
+Example: ISO VG 46 from a hot tank at 80 °C and a cold tank at 20 °C; the outlet temperature lies between the two at the point where the heat given by the hot stream equals the heat taken by the cold stream with $c_p(T)$.
+
+## 5. Parameter & Unit Specification Table
+
+Not applicable — the mixer has no parameters of its own. The number of inlets is fixed at two (`num_inlets = 2` in the parser). Only the fields of every component apply (see [base_node.md](base_node.md)).
+
+## 6. Operating Modes & Model Boundaries
+
+- **Steady state:** algebraic junction ($\Delta t = 0$).
+- **Solver flags:** all `False` (`is_pressure_boundary`, `is_flow_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation`).
+- **Inactive:** `active` has no effect; the mixer always joins its connections.
+- **Reverse flow:** supported on every port; temperatures follow the actual flow direction.
+- **Unused inlet:** an inlet with no pipe is ignored.
+- **Operating cases:** nothing to override.
+- **Not modelled:** branch and run losses of a real tee, incomplete mixing, and heat exchange with the surroundings.
+
+## 7. Verification & Benchmarks
+
+| Test | Benchmark |
+| :--- | :--- |
+| `backend/tests/unit/fluids/test_mixing.py::test_f1_42_mixing_conserves_enthalpy_with_variable_cp` | ISO VG 46 from tanks at 80 °C (level 10 m) and 20 °C (level 5 m): outlet temperature matches an independent enthalpy balance with $c_p(T)$ within 0.1 K; outlet mass flow equals the sum of inlet mass flows within 0.5 % |
+| `test_mixing.py::test_thermal_mixing_balances` | Same network, within 1 K |
+| `backend/tests/unit/solver/test_basic_components.py::test_mass_balance` | Two tanks (10 m and 8 m) through a mixer and a valve: outlet flow equals the sum of inlet flows within $10^{-10}$ m³/s |
+| `backend/tests/unit/solver/test_port_transport.py::test_reverse_flow_through_a_mixer_reaches_both_inlet_pipes_at_the_outlet_temperature` | Hot tank (60 °C) on the outlet feeds backwards: both inlet pipes carry 60 °C within 0.5 K |
 
 ## Data Fields
 

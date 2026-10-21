@@ -1,87 +1,135 @@
 # Reducer / Expander (`reducer`)
 
-The **Reducer / Expander** is a passive in-line piping component that models the fluid dynamic transition between two different nominal pipe diameters (e.g., $DN\ 80 \to DN\ 50$ or $3'' \to 2''$).
+## 1. Overview & Purpose
 
----
+A reducer or expander is a conical fitting between two pipe sizes (e.g. DN80 → DN50 or 3" → 2"). It is a passive resistance with an area change: the static pressure across it is the sum of an irreversible loss (form and wall friction) and a reversible Bernoulli term from the change in velocity.
 
-## 1. Functional Overview
-* **Component Type:** Passive In-line Resistance & Area Transition (`reducer`)
-* **Ports:** 1 Inlet (`inlet-0`) and 1 Outlet (`outlet-0`)
-* **Governing Dimensional Standard:** **ASME B16.9** (Factory-Made Wrought Buttwelding Fittings — Concentric & Eccentric Reducers) and **ASME B36.10M / B36.19M** (Pipe Schedules); **DIN EN 10253-2** reducers with **DIN EN 10220 / EN ISO 1127** pipe dimensions. Each reducer end takes its wall from the connected line's pipe class (size grid, then its schedule standard), otherwise from the schedule standard matching the reducer standard.
-* **Governing Hydraulic Standard:** **Crane Technical Paper No. 410 (Crane TP 410)** / Miller / Idelchik formulas for conical contractions and conical diffusers.
+- **Ports:** one inlet (`inlet-0`, diameter $D_1$) and one outlet (`outlet-0`, diameter $D_2$).
+- **Reducer** ($D_1 > D_2$): the fluid accelerates; the static pressure falls by more than the loss.
+- **Expander** ($D_1 < D_2$): the fluid decelerates; part of the velocity head is recovered as static pressure, so the static pressure can **rise** across it.
+- Node types `reducer` and `expander` build the same model; the direction follows from $D_1$ and $D_2$.
 
----
+## 2. Governing Standards & Reference Literature
 
-## 2. Mathematical Modeling & Physics
+- **Crane Technical Paper No. 410 (A-26):** loss coefficients of gradual contractions and enlargements, referenced to the small bore.
+- **Idelchik, I.E.:** *Handbook of Hydraulic Resistance*, and **Miller, D.S.:** *Internal Flow Systems* — background for conical contractions and diffusers.
+- **Swamee-Jain (1976):** explicit Darcy friction factor for the transition wall friction.
+- **Dimensional standards** (geometry from the inspector catalogue, not used in the hydraulics):
+  - ASME B16.9 (wrought buttwelding reducers) with ASME B36.10M / B36.19M pipe schedules;
+  - DIN EN 10253-2 reducers with DIN EN 10220 / EN ISO 1127 pipe dimensions.
 
-### A. Total Static Pressure Change ($\Delta P$)
-The total static pressure drop across the reducer from inlet port $1$ to outlet port $2$ is the superposition of irreversible dissipation (head loss) and reversible kinetic energy conversion (Bernoulli effect):
+  Each reducer end takes its wall from the connected line's pipe class (size grid, then its schedule standard), otherwise from the schedule standard matching the reducer standard.
 
-$$\Delta P_{\text{total}} = P_1 - P_2 = \Delta P_{\text{loss}} + \Delta P_{\text{Bernoulli}}$$
+## 3. Physical & Mathematical Implementation
 
-### B. Bernoulli Dynamic Pressure Shift ($\Delta P_{\text{Bernoulli}}$)
-For an incompressible fluid of density $\rho$ with volumetric flow rate $Q$:
+All quantities in SI units. $A_1, A_2$ are the inlet and outlet bore areas, $A_s$ the small-bore area, $\beta = D_{\text{small}}/D_{\text{large}}$, $\theta$ the included cone angle, $H$ the fitting length.
 
-$$\Delta P_{\text{Bernoulli}} = \frac{1}{2} \rho (v_2^2 - v_1^2) = \frac{1}{2} \rho Q |Q| \left( \frac{1}{A_2^2} - \frac{1}{A_1^2} \right)$$
+### 3.1 Total static pressure change (`calculate_losses`)
 
-* **Contraction ($D_1 > D_2$):** Fluid accelerates ($v_2 > v_1$), dynamic pressure increases, static pressure drops ($\Delta P_{\text{Bernoulli}} > 0$).
-* **Diffuser / Expander ($D_1 < D_2$):** Fluid decelerates ($v_2 < v_1$), dynamic pressure recovers into static pressure ($\Delta P_{\text{Bernoulli}} < 0$).
+$$\Delta P = P_1 - P_2 = \Delta P_{\text{loss}} + \Delta P_{\text{Bernoulli}}$$
 
-### C. Crane TP 410 Form & Friction Losses ($\Delta P_{\text{loss}}$)
+### 3.2 Bernoulli term
 
-#### 1. Gradual Conical Contraction ($D_{\text{large}} \to D_{\text{small}}$, $\beta = D_{\text{small}} / D_{\text{large}} < 1$)
-Referenced to the smaller diameter outlet velocity $v_2$:
-* For total included cone angle $\theta \le 45^\circ$:
-  $$K_{\text{form}, 2} = 0.8 \sin\left(\frac{\theta}{2}\right) (1 - \beta^2)$$
-* For $45^\circ < \theta \le 180^\circ$:
-  $$K_{\text{form}, 2} = 0.5 (1 - \beta^2) \sqrt{\sin\left(\frac{\theta}{2}\right)}$$
+$$\Delta P_{\text{Bernoulli}} = \frac{\rho}{2}\,(v_2^2 - v_1^2) = \frac{\rho\, Q^2}{2}\left(\frac{1}{A_2^2} - \frac{1}{A_1^2}\right)$$
 
-#### 2. Gradual Conical Diffuser / Expansion ($D_{\text{small}} \to D_{\text{large}}$, $\beta = D_{\text{small}} / D_{\text{large}} < 1$)
-Referenced to the smaller diameter inlet velocity $v_1$:
-* For total included cone angle $\theta \le 45^\circ$:
-  $$K_{\text{form}, 1} = 2.6 \sin\left(\frac{\theta}{2}\right) (1 - \beta^2)^2$$
-* For $45^\circ < \theta \le 180^\circ$:
-  $$K_{\text{form}, 1} = 1.0 (1 - \beta^2)^2 \quad (\text{Borda-Carnot sudden expansion limit})$$
+It depends on $Q^2$, not $Q|Q|$: the static pressure is always lower at the small bore, whatever the flow direction.
 
-#### 3. Transition Wall Friction
-Across the reducer fitting length $H$ with average diameter $D_{\text{avg}} = \frac{D_1 + D_2}{2}$:
-$$K_{\text{fric}} = \frac{f \cdot H}{D_{\text{avg}}}$$
-where Darcy friction factor $f$ is evaluated at $Re_{\text{avg}} = \frac{\rho |v_{\text{avg}}| D_{\text{avg}}}{\mu}$.
+### 3.3 Form loss (`_get_form_loss_k`)
 
-#### 4. Total Irreversible Loss
+The coefficient is referenced to the small-bore velocity and chosen by the **actual** flow direction: flow from the small to the large bore is an enlargement, the other way a contraction. A reducer in reverse flow is therefore an expander.
+
+| Case | $\theta \le 45°$ | $45° < \theta \le 180°$ |
+| :--- | :--- | :--- |
+| Contraction | $K = 0.8 \sin(\theta/2)\,(1 - \beta^2)$ | $K = 0.5\,(1 - \beta^2)\sqrt{\sin(\theta/2)}$ |
+| Enlargement | $K = 2.6 \sin(\theta/2)\,(1 - \beta^2)^2$ | $K = (1 - \beta^2)^2$ (Borda-Carnot) |
+
+$\theta$ is clamped to 1°-180° inside the sine. A cone angle $\le 0$ is computed from the geometry: $\theta = 2 \arctan\!\big(|D_1 - D_2| / (2H)\big)$. Equal diameters give $K = 0$.
+
+$$\Delta P_{\text{form}} = K\,\frac{\rho\, Q|Q|}{2 A_s^2}$$
+
+### 3.4 Wall friction over the fitting
+
+Evaluated at the mean diameter $D_{\text{avg}} = (D_1 + D_2)/2$, area $A_{\text{avg}}$:
+
+$$\Delta P_{\text{fric}} = f\,\frac{H}{D_{\text{avg}}}\,\frac{\rho\, Q|Q|}{2 A_{\text{avg}}^2}, \qquad \mathrm{Re} = \frac{\rho\,|Q|\,D_{\text{avg}}}{A_{\text{avg}}\,\max(10^{-7}, \mu)}$$
+
+| Re | $f$ |
+| :--- | :--- |
+| $< 1$ | 64 |
+| $1 \dots 2000$ | $64/\mathrm{Re}$ |
+| $2000 \dots 4000$ | linear blend $(1 - w) f_{\text{lam}} + w f_{\text{turb}}$, $w = (\mathrm{Re} - 2000)/2000$ |
+| $> 4000$ | Swamee-Jain $f = 0.25 / \log_{10}^2\!\big(\varepsilon/(3.7 D_{\text{avg}}) + 5.74/\mathrm{Re}^{0.9}\big)$ |
+
+The blend is $C^0$ but not $C^1$ at Re 2000 and 4000. This differs from the pipe, which uses the continuous Churchill equation ([pipe.md](pipe.md#33-friction-factor-_friction_factor-churchill-1977)). The fitting is short, so friction is a small part of the loss.
+
 $$\Delta P_{\text{loss}} = \Delta P_{\text{form}} + \Delta P_{\text{fric}}$$
 
----
+### 3.5 Worked example
 
-## 3. Analytical Jacobians for Solver Stability
-To guarantee quadratic convergence in the Newton-Raphson solver, the analytical derivative is computed exactly:
+Water at 20 °C, 3" × 2" STD ($D$ = 77.9 / 52.5 mm, $H$ = 89 mm, $\theta$ = 18.2°):
 
-$$\frac{\partial \Delta P_{\text{total}}}{\partial Q} = \rho |Q| \left( \frac{K_{\text{form}}}{A_{\text{ref}}^2} + \frac{K_{\text{fric}}}{A_{\text{avg}}^2} + \left(\frac{1}{A_2^2} - \frac{1}{A_1^2}\right) \right)$$
+| Flow | Small-bore velocity | Fitting | Loss | Bernoulli | Total $P_1 - P_2$ |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 100 L/min | 0.77 m/s | Reducer | 0.25 mbar | +2.35 mbar | +2.6 mbar |
+| 100 L/min | 0.77 m/s | Expander | 0.41 mbar | −2.35 mbar | −1.95 mbar |
+| 300 L/min | 2.31 m/s | Reducer | 2.2 mbar | +21.2 mbar | +23.4 mbar |
+| 300 L/min | 2.31 m/s | Expander | 3.6 mbar | −21.2 mbar | −17.6 mbar |
 
----
+The Bernoulli term dominates: an expander shows a static pressure rise, a reducer a drop about ten times its loss.
 
-## 4. Thermal Balance & Viscous Dissipation
-Reversible Bernoulli pressure shifts do not cause thermal entropy generation. Only irreversible head losses dissipate into fluid thermal energy:
+### 3.6 Derivative (`calculate_dp_derivative`)
 
-$$\Delta T = \frac{|\Delta P_{\text{loss}}|}{\rho \cdot C_p}$$
+$$\frac{\partial \Delta P}{\partial Q} = \rho\,|Q|\left(\frac{K}{A_s^2} + \frac{f H / D_{\text{avg}}}{A_{\text{avg}}^2}\right) + \rho\, Q \left(\frac{1}{A_2^2} - \frac{1}{A_1^2}\right)$$
 
----
+$K$ and $f$ are held constant (their change with $Q$ is not differentiated). The slope is **negative** wherever the Bernoulli recovery outweighs the loss (expander in forward flow, reducer in reverse flow); the sign is kept so Newton steps point the right way. Only a magnitude below 100 Pa·s/m³ is replaced by +100 Pa·s/m³ to avoid a zero slope at $Q = 0$.
 
-## 5. Parameter Reference
+In the network Jacobian the solver differentiates the outlet pressure numerically (see [base_node.md](base_node.md#33-jacobian)).
 
-| Parameter | Type | Unit | Default | Description |
-|---|---|---|---|---|
-| `diameter_in_m` | `float` | $\text{m}$ | `0.07792` | Inlet internal diameter ($ID_1$, ~DN80 STD) |
-| `diameter_out_m` | `float` | $\text{m}$ | `0.05248` | Outlet internal diameter ($ID_2$, ~DN50 STD) |
-| `length_m` | `float` | $\text{m}$ | `0.089` | ASME B16.9 end-to-end length $H$ |
-| `cone_angle_deg` | `float` | $\text{deg}$ | `18.2` | Transition included angle $\theta$ |
-| `reducer_type` | `str` | — | `"concentric"` | `"concentric"` or `"eccentric"` |
-| `standard` | `str` | — | `"ASME_B16_9"` | `"ASME_B16_9"` or `"CUSTOM"` |
-| `dn_large` | `int` | $\text{mm}$ | `80` | Large end nominal diameter ($DN_1$) |
-| `dn_small` | `int` | $\text{mm}$ | `50` | Small end nominal diameter ($DN_2$) |
-| `sch_large` | `str` | — | `"STD"` | Large end schedule |
-| `sch_small` | `str` | — | `"STD"` | Small end schedule |
-| `roughness_mm` | `float` | $\text{mm}$ | `0.045` | Material absolute surface roughness |
+## 4. Thermal & Energy Balance
+
+The Bernoulli term is reversible and adds no heat. Only the irreversible loss heats the fluid:
+
+$$\Delta T = \frac{|\Delta P_{\text{loss}}|}{\rho\, c_p(T)}$$
+
+applied to the downstream end (the outlet for $Q \ge 0$, the inlet for $Q < 0$), with density and viscosity re-evaluated at both ends.
+
+## 5. Parameter & Unit Specification Table
+
+| Parameter (UI Label) | UI Unit | Backend Var | SI Unit | Default | Valid Range | Description |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| Inlet bore | m (from the catalogue) | `self.diameter_in` | m | 0.07792 (DN80 STD) | $> 0$ | Internal diameter $D_1$ |
+| Outlet bore | m (from the catalogue) | `self.diameter_out` | m | 0.05248 (DN50 STD) | $> 0$ | Internal diameter $D_2$ |
+| Length | m | `self.length` | m | 0.089 | $> 0$ | End-to-end length $H$ |
+| Cone angle | deg | `self.cone_angle_deg` | deg | 18.2 | $\le 0$: from geometry; else 1-180 | Included angle $\theta$ |
+| Roughness | mm | `self.roughness` | m | 0.045 mm | $\ge 0$ (0 = smooth) | Wall roughness for the friction term |
+| Type | text | `self.reducer_type` | - | concentric | concentric, eccentric | Inspector only; no hydraulic effect |
+| Standard | text | `self.standard` | - | ASME_B16_9 | catalogue code | Inspector only |
+| DN large / small, schedule | DN, text | `self.dn_large`, `self.dn_small`, `self.sch_large`, `self.sch_small` | - | 80 / 50, STD | catalogue | Inspector only; the bores carry the hydraulics |
+
+The parser rejects a bore or length $\le 0$ and a negative roughness. Missing values take the defaults.
+
+## 6. Operating Modes & Model Boundaries
+
+- **Steady state:** algebraic relation ($\Delta t = 0$).
+- **Solver flags:** all `False` (`is_pressure_boundary`, `is_flow_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation`).
+- **Inactive:** `active` has no effect.
+- **Reverse flow:** supported. The form loss is odd in $Q$ and switches between contraction and enlargement with the flow direction; the Bernoulli term keeps its sign. Reverse flow through a 3" × 2" reducer is the mirror of forward flow through a 2" × 3" expander: $\Delta P_{\text{reverse}} = -\Delta P_{\text{forward}}$.
+- **Next to a reservoir:** an expander right at a tank or pressure source only has a steady state because the pipe from the reservoir takes the entry velocity head, see [pipe.md](pipe.md#34-entry-from-a-reservoir).
+- **Operating cases:** all fields can be overridden per case.
+- **Not modelled:** eccentric versus concentric shape, flow separation in wide diffusers beyond the Crane coefficients, and cavitation at the small bore.
+
+## 7. Verification & Benchmarks
+
+| Test | Benchmark |
+| :--- | :--- |
+| `backend/tests/unit/equipment/test_reducer.py::test_reducer_crane_k_factors` | 3" × 2" ($\beta$ = 0.6735): at 18.2° $K_c = 0.8 \cdot 0.158158 \cdot 0.54638$, $K_e = 2.6 \cdot 0.158158 \cdot 0.54638^2$; at 90° $K_c = 0.5\sqrt{0.707107} \cdot 0.54638$, $K_e = 0.54638^2$; all within 0.01 %, referenced to the small bore |
+| `test_reducer.py::test_reducer_contraction_losses_and_bernoulli` | 3" × 2" reducer, 100 L/min water: loss > 0, Bernoulli > 0, total = loss + Bernoulli within $10^{-5}$ |
+| `test_reducer.py::test_reducer_expander_diffuser_recovery` | 2" × 3" expander: Bernoulli < 0, loss > 0 |
+| `test_reducer.py::test_reducer_analytical_derivative`, `test_reducer_derivative_sign_with_pressure_recovery` | Derivative within 5 % of a central difference, including the negative slopes at ±100 and ±1000 L/min |
+| `test_reducer.py::test_reducer_reverse_flow_symmetry` | Reverse $\Delta P$ = −forward $\Delta P$ within 0.01 % for the tested case |
+| `test_reducer.py::test_expander_network_with_dominant_pressure_recovery` | Source 1.5 bar(a) → 5 m DN50 → expander → 0.05 m DN80 → tank: converges with a negative edge slope; solved $\Delta P$ matches the model within 0.1 % and is negative |
+| `test_reducer.py::test_zero_reducer_roughness_is_kept_as_smooth`, `test_reducer_roughness_is_read_in_mm` | 0.2 mm → 0.0002 m; missing → 0.045 mm; 0 stays 0 |
+| `backend/tests/unit/equipment/test_pipe_reservoir_entry.py::test_expander_between_reservoirs_with_short_pipes` | Expander 0.1-5 m from a reservoir: flow matches an independent Crane + Bernoulli + entry sum within 1 % |
 
 ## Data Fields
 

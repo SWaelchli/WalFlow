@@ -175,10 +175,11 @@ u$):** cSt at the local temperature. Derived, not an ISA variable.
   * **Benefit**: no silent unit mistakes when adding equipment, simpler parser and inspectors, one converter path.
   * **Done**: Values keep their unit, only the names change (pipe `roughness` in m becomes `roughness_mm`). The file format stays 0.2; 0.2 was not released yet, so files with the old names are not converted. The field tables moved from `docs/node-fields.md` to the `## Data Fields` section of each `backend/simulation/equipment/<type>.md`.
 
-- [ ] **📚 Detailed Equipment Documentation**
+- [x] **📚 Detailed Equipment Documentation**
   * **Problem**: 16 of the equipment documents in `backend/simulation/equipment/` (tank, pumps, control valves, regulator, calibrated restriction, heat exchanger, filter, 3-way TCV, check valves, PSV, rupture disc, splitter, mixer, pipe, base node) are short stubs with an overview and the Data Fields table only.
   * **Fix**: Complete each one per `.claude/skills/equipment-creation/references/equipment-documentation-standard.md` (governing standards, equations and derivatives, thermal balance, parameter table, model boundaries, verification benchmarks), as done for orifice, reducer, pressure source, flow source and measurement tap.
   * **Benefit**: the physics behind every component is traceable for developers and engineering users.
+  * **Done (2026-10-21)**: Documentation standard and equipment-creation skill updated (fixed headings, a line for sections that do not apply, benchmarks only from existing test assertions, shared documents). All 22 component documents follow it; new `relief_device.md` holds the shared PSV / rupture disc model and the relief analysis; `base_node.md` holds the solver contract (unknowns, residuals, Jacobian, outer loops, pruning). The open findings are tracked in `EQUIPMENT_FINDINGS.md` until fixed.
 
 - [ ] **⚛️ Upgrade reactflow 11 to @xyflow/react 12**
   * **Problem**: `reactflow` 11 is the legacy package with a peer range of React 17/18, but the app runs on React 19. Audit F2-28.

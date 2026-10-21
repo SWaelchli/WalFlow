@@ -54,19 +54,22 @@ Create `backend/simulation/equipment/<name>.py` inheriting from `HydraulicNode`:
 - Implement `calculate_delta_p(flow_rate, density, viscosity)` and `calculate_dp_derivative(flow_rate, density, viscosity)`.
 - Implement `calculate()` to propagate outlet pressure, flow rate, and thermal effects ($dT = \frac{|\Delta P|}{\rho \cdot C_p}$).
 
-📖 **Deep Dive Reference:** Read [references/backend-physics.md](file:///c:/Users/c563871/Coding/WalFlow/.agents/skills/equipment-creation/references/backend-physics.md) and [references/solver-stability.md](file:///c:/Users/c563871/Coding/WalFlow/.agents/skills/equipment-creation/references/solver-stability.md).
+📖 **Deep Dive Reference:** Read [references/backend-physics.md](references/backend-physics.md) and [references/solver-stability.md](references/solver-stability.md).
 
 ### Step 2b: Create Companion Documentation (`<name>.md`)
-Create `backend/simulation/equipment/<name>.md` detailing:
-1. Short functional overview & role.
-2. Governing calculation standards (e.g., ISO, IEC, API, Crane TP 410) and model selection options.
-3. Exact mathematical implementation (equations, smooth regime blending, analytical derivatives).
-4. Thermal & energy balance equations.
-5. Parameter and unit specification table.
-6. Assumptions, boundaries, and validation benchmarks.
-7. A `## Data Fields` table: every key the parser reads from the node's `data`, with its unit in the file and default (checked by `backend/tests/unit/solver/test_node_fields_documented.py`).
+Create `backend/simulation/equipment/<name>.md` with exactly these headings (reference example: `orifice.md`):
+1. `## 1. Overview & Purpose`
+2. `## 2. Governing Standards & Reference Literature`
+3. `## 3. Physical & Mathematical Implementation` (equations as the code implements them, regime blending, analytical derivative, solver formulation)
+4. `## 4. Thermal & Energy Balance`
+5. `## 5. Parameter & Unit Specification Table`
+6. `## 6. Operating Modes & Model Boundaries` (including the solver flags)
+7. `## 7. Verification & Benchmarks` (values taken only from existing test assertions)
+8. `## Data Fields` last: every key the parser reads from the node's `data`, with its unit in the file and default (checked by `backend/tests/unit/solver/test_node_fields_documented.py`).
 
-📖 **Deep Dive Reference:** Read [references/equipment-documentation-standard.md](file:///c:/Users/c563871/Coding/WalFlow/.agents/skills/equipment-creation/references/equipment-documentation-standard.md).
+A section that does not apply keeps its heading with one line saying why. Shared physics (e.g. `relief_device.md`) gets its own document that the component documents link to.
+
+📖 **Deep Dive Reference:** Read [references/equipment-documentation-standard.md](references/equipment-documentation-standard.md).
 
 
 ### Step 3: Register in Graph Parser
@@ -86,7 +89,7 @@ Create `backend/tests/unit/equipment/test_<name>.py`:
   $$\left|\frac{\partial \Delta P_{\text{analytical}}}{\partial Q} - \frac{\Delta P(Q+\delta) - \Delta P(Q-\delta)}{2\delta}\right| < \text{tol}$$
 - Test full network equilibrium solve with `HydraulicNetwork` and `NewtonRaphsonSolver`.
 
-📖 **Deep Dive Reference:** Read [references/testing-verification.md](file:///c:/Users/c563871/Coding/WalFlow/.agents/skills/equipment-creation/references/testing-verification.md).
+📖 **Deep Dive Reference:** Read [references/testing-verification.md](references/testing-verification.md).
 
 ### Step 5: Build Frontend Node Component
 Create `frontend/src/nodes/<Name>Node.jsx`:
@@ -95,7 +98,7 @@ Create `frontend/src/nodes/<Name>Node.jsx`:
 - Add `<Handle>` elements with rotation compensation (`getRotatedPosition(Position.Left, rotation)`).
 - Add `<SensingPin>` for signal telemetry if applicable.
 
-📖 **Deep Dive Reference:** Read [references/frontend-integration.md](file:///c:/Users/c563871/Coding/WalFlow/.agents/skills/equipment-creation/references/frontend-integration.md).
+📖 **Deep Dive Reference:** Read [references/frontend-integration.md](references/frontend-integration.md).
 
 ### Step 6: Register Frontend Wiring
 Update the following frontend files:
@@ -124,21 +127,21 @@ cd frontend && npm run lint
 
 | Archetype | Examples | Key Base Flags | Reference |
 | :--- | :--- | :--- | :--- |
-| **Passive In-line Resistors** | Orifice, Filter, Calibrated Restriction | Defaults (`False`) | [equipment-archetypes.md#archetype-1](file:///c:/Users/c563871/Coding/WalFlow/.agents/skills/equipment-creation/references/equipment-archetypes.md) |
-| **Active Flow Sources** | Centrifugal Pump, Volumetric Pump | `is_flow_boundary = True` (or $H(Q)$ curve), `blocks_flow_on_shutdown = True` | [equipment-archetypes.md#archetype-2](file:///c:/Users/c563871/Coding/WalFlow/.agents/skills/equipment-creation/references/equipment-archetypes.md) |
-| **Dynamic Closed / MCP Valves** | Check Valve, Relief Valve (PSV), Rupture Disc | `use_mcp_formulation = True` | [equipment-archetypes.md#archetype-3](file:///c:/Users/c563871/Coding/WalFlow/.agents/skills/equipment-creation/references/equipment-archetypes.md) |
-| **Pressure Boundaries** | Tank, Reservoir, Fixed Pressure Point | `is_pressure_boundary = True` | [equipment-archetypes.md#archetype-4](file:///c:/Users/c563871/Coding/WalFlow/.agents/skills/equipment-creation/references/equipment-archetypes.md) |
-| **Multi-port Flow Junctions** | Splitter, Mixer, 3-Way TCV | Direction-aware mixing | [equipment-archetypes.md#archetype-5](file:///c:/Users/c563871/Coding/WalFlow/.agents/skills/equipment-creation/references/equipment-archetypes.md) |
-| **Thermal Units** | Heat Exchanger, Cooler | Thermal duty / effectiveness | [equipment-archetypes.md#archetype-6](file:///c:/Users/c563871/Coding/WalFlow/.agents/skills/equipment-creation/references/equipment-archetypes.md) |
+| **Passive In-line Resistors** | Orifice, Filter, Calibrated Restriction | Defaults (`False`) | [equipment-archetypes.md#archetype-1](references/equipment-archetypes.md) |
+| **Active Flow Sources** | Centrifugal Pump, Volumetric Pump | $H(Q)$ curve or displacement spring, `is_relief_driver = True`; PD pump `blocks_flow_on_shutdown = True` | [equipment-archetypes.md#archetype-2](references/equipment-archetypes.md) |
+| **Dynamic Closed / MCP Valves** | Check Valve, Relief Valve (PSV), Rupture Disc | `use_mcp_formulation = True` | [equipment-archetypes.md#archetype-3](references/equipment-archetypes.md) |
+| **Pressure Boundaries** | Tank, Reservoir, Fixed Pressure Point | `is_pressure_boundary = True` | [equipment-archetypes.md#archetype-4](references/equipment-archetypes.md) |
+| **Multi-port Flow Junctions** | Splitter, Mixer, 3-Way TCV | Direction-aware mixing | [equipment-archetypes.md#archetype-5](references/equipment-archetypes.md) |
+| **Thermal Units** | Heat Exchanger, Cooler | Thermal duty / effectiveness | [equipment-archetypes.md#archetype-6](references/equipment-archetypes.md) |
 
 ---
 
 ## 📚 Detailed Reference Guides
 
-* 📐 **[backend-physics.md](file:///c:/Users/c563871/Coding/WalFlow/.agents/skills/equipment-creation/references/backend-physics.md):** Base class architecture, ports, energy balance, and fluid properties.
-* 📄 **[equipment-documentation-standard.md](file:///c:/Users/c563871/Coding/WalFlow/.agents/skills/equipment-creation/references/equipment-documentation-standard.md):** Template and engineering standard citation requirements for `<equipment>.md`.
-* ⚡ **[solver-stability.md](file:///c:/Users/c563871/Coding/WalFlow/.agents/skills/equipment-creation/references/solver-stability.md):** Newton solver guidelines, derivatives, MCP formulation, and topology reduction.
-* 📦 **[equipment-archetypes.md](file:///c:/Users/c563871/Coding/WalFlow/.agents/skills/equipment-creation/references/equipment-archetypes.md):** Complete code templates for all 6 equipment archetypes.
-* 🖥️ **[frontend-integration.md](file:///c:/Users/c563871/Coding/WalFlow/.agents/skills/equipment-creation/references/frontend-integration.md):** ReactFlow component creation, handle rotation, sidebar registration, and property editor forms.
-* 🧪 **[testing-verification.md](file:///c:/Users/c563871/Coding/WalFlow/.agents/skills/equipment-creation/references/testing-verification.md):** Testing methodology, calibration validation, and derivative checks.
+* 📐 **[backend-physics.md](references/backend-physics.md):** Base class architecture, ports, energy balance, and fluid properties.
+* 📄 **[equipment-documentation-standard.md](references/equipment-documentation-standard.md):** Template and engineering standard citation requirements for `<equipment>.md`.
+* ⚡ **[solver-stability.md](references/solver-stability.md):** Newton solver guidelines, derivatives, MCP formulation, and topology reduction.
+* 📦 **[equipment-archetypes.md](references/equipment-archetypes.md):** Complete code templates for all 6 equipment archetypes.
+* 🖥️ **[frontend-integration.md](references/frontend-integration.md):** ReactFlow component creation, handle rotation, sidebar registration, and property editor forms.
+* 🧪 **[testing-verification.md](references/testing-verification.md):** Testing methodology, calibration validation, and derivative checks.
 

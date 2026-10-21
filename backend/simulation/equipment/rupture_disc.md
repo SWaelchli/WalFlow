@@ -1,10 +1,97 @@
 # Rupture Disc (`rupture_disc`)
 
-## 1. Functional Overview
+## 1. Overview & Purpose
 
-Burst diaphragm: intact at the start of each run, bursts and stays open when the inlet gauge pressure reaches the burst pressure. Full bore is Cv-governed, reduced bore is orifice-governed (pipe bore defaults to the connected pipe).
+A bursting disc (rupture disc): a non-reclosing pressure relief device. It is intact (no flow) at the start of each run. When the inlet gauge pressure reaches the burst pressure it bursts and stays fully open for the rest of the run, even if the pressure falls again.
 
-> Short description. The full description per the equipment documentation standard is on the ROADMAP ("Detailed Equipment Documentation").
+| `bore_type` | Open pressure loss |
+| :--- | :--- |
+| `full_bore` (default) | Cv restriction (disc holder and burst membrane) |
+| `reduced_bore` | Sharp-edged orifice in the connected pipe (restricted disc or orifice in the relief line) |
+
+The shared relief model (gauge set pressure, held state, flow equation, rated capacity, forced states, relief analysis) is in [relief_device.md](relief_device.md). This document covers the disc's burst logic and its open pressure loss.
+
+## 2. Governing Standards & Reference Literature
+
+- **ISO 4126-2 / ISO 4126-6:** bursting disc safety devices: burst pressure, application and sizing.
+- **ASME BPVC Section VIII Div. 1 (UG-127):** rupture disc devices.
+- **API 520 Part I:** 10 % overpressure for liquid relief capacity; flow resistance method ($K_R$) for discs.
+- **ISO 5167-2:** orifice flow equation for the reduced bore, as for the [calibrated restriction](calibrated_restriction.md#32-pressure-drop-calculate_delta_p).
+- **IEC 60534-2-1:** liquid Cv equation for the full bore.
+
+## 3. Physical & Mathematical Implementation
+
+### 3.1 Burst logic (`update_relief_state`, `lift_mode`)
+
+| State | Lift | Changes to | When |
+| :--- | :--- | :--- | :--- |
+| intact | 0 | burst | $P_{\text{in}} \ge P_{\text{burst,abs}}$ |
+| burst | full | (latched for the run) | |
+
+$P_{\text{burst,abs}} = P_{\text{burst,g}} \cdot 10^5 + P_{\text{atm}}$. `forced_open` is a burst disc from the start; `forced_closed` removes it from the solve. Every run starts intact (`reset_run_state`).
+
+### 3.2 Open pressure loss (`open_dp`)
+
+**Full bore:**
+
+$$\Delta P_{\text{open}} = \frac{K_{Cv}\, \rho\, Q|Q|}{\big(\max(10^{-4},\ C_v F_R)\big)^2}, \qquad K_{Cv} = 1.732 \times 10^9$$
+
+with the viscosity correction $F_R$ of the [linear control valve](linear_control_valve.md#33-viscosity-correction-f_r-fluidpropertiesget_valve_fr).
+
+**Reduced bore**, with $D$ the connected pipe bore and $d$ the orifice, $\beta = \min(0.99,\ d/D)$ ($d$ limited to $0.99 D$):
+
+$$\Delta P_{\text{open}} = \frac{\rho\, v_1|v_1|}{2} \cdot \frac{1 - \beta^4}{C_d^2\, \beta^4} \cdot (1 - \beta^2), \qquad C_d = 0.60 \tanh\!\left(\frac{0.2\sqrt{\mathrm{Re}_o}}{0.60}\right)$$
+
+$v_1$ is the pipe velocity, $\mathrm{Re}_o$ the orifice Reynolds number. The parser sets $D$ from the connected pipe (upstream first), overriding `pipe_diameter_m`.
+
+The open loss enters the flow equation $Q = \text{lift}\sqrt{\Delta p / c(Q)}$ of [relief_device.md](relief_device.md#33-flow-equation-model_flow-calculate_delta_p).
+
+### 3.3 Derivative
+
+`calculate_open_friction_and_deriv` returns the analytical slopes:
+
+$$\text{full bore: } \frac{2 K_{Cv} \rho |Q|}{(C_v F_R)^2}, \qquad \text{reduced bore: } \frac{\rho\, |v_1|}{A_1} \cdot \frac{(1 - \beta^4)(1 - \beta^2)}{C_d^2 \beta^4} \left(1 - \frac{d \ln C_d}{d \ln \mathrm{Re}}\right)$$
+
+The solver differentiates the device's edge row numerically (audit F1-12).
+
+## 4. Thermal & Energy Balance
+
+A burst disc with forward flow throttles: $\Delta T = \max(0, \Delta p)/(\rho\, c_p)$, applied to the outlet (see [relief_device.md](relief_device.md#4-thermal--energy-balance)). An intact disc passes no flow and adds no heat.
+
+## 5. Parameter & Unit Specification Table
+
+| Parameter (UI Label) | UI Unit | Backend Var | SI Unit | Default | Valid Range | Description |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| Burst Pressure | barg (psig) | `self.burst_pressure_barg` | barg (→ Pa abs) | required (new disc in the UI: 25 barg) | $> 0$ | Burst pressure, gauge |
+| Bore Configuration | text | `self.bore_type` | - | full_bore | full_bore, reduced_bore | Open loss model |
+| Flow Coefficient (Cv) | Cv | `self.cv` | Cv | 10 | $\ge 0.001$ | Cv of the burst disc (full bore) |
+| Orifice Restriction Diameter | mm (in) | `self.orifice_diameter` | m | 10 mm | $\ge 1$ mm, $< D$ | Restriction bore (reduced bore) |
+| Pipe bore | from the connected pipe | `self.pipe_diameter` | m | DN50 (52.48 mm) | $\ge 1$ mm | Line bore around the restriction (reduced bore) |
+| Contingency Test Mode | text | `self.forced_state` | - | auto | auto, forced_closed, forced_open | Override for contingency cases |
+
+An unknown bore type is read as `full_bore`. A missing burst pressure is an input error.
+
+## 6. Operating Modes & Model Boundaries
+
+- **Steady state:** the burst is a state change between solves; no burst dynamics or pressure wave ($\Delta t = 0$).
+- **Solver flags:** see [relief_device.md](relief_device.md#6-operating-modes--model-boundaries).
+- **Status:** `intact`, `burst`, `overcapacity` (flow above the rated flow at 110 % of burst pressure).
+- **Non-reclosing:** once burst, open for the rest of the run; a new run starts intact.
+- **Reverse flow:** none.
+- **Operating cases:** all fields can be overridden per case.
+- **Not modelled:** burst tolerance and manufacturing range, reverse-acting versus forward-acting discs, disc fragments, the API 520 $K_R$ resistance factor (the Cv or orifice stands in for it), gas or two-phase relief.
+
+## 7. Verification & Benchmarks
+
+| Test | Benchmark |
+| :--- | :--- |
+| `backend/tests/unit/equipment/test_rupture_disc.py::test_rupture_disc_intact_and_burst` | 15 barg disc: intact at 14.99 barg, bursts at 15.00 barg, stays burst at atmospheric pressure; reset gives `intact` |
+| `test_rupture_disc.py::test_burst_full_bore_disc_follows_the_cv_definition` | 10 bar(a) header → 5 barg disc (Cv 10) → drain, DN200: disc $\Delta p$ = header − atmospheric within 200 Pa; flow = Cv flow at that $\Delta p$ within 0.5 % |
+| `test_rupture_disc.py::test_rupture_disc_full_bore_vs_reduced_bore` | Oil at 60 L/min: reduced bore (8 mm in DN50) drop above full bore (Cv 10) drop, both positive |
+| `backend/tests/unit/equipment/test_relief_devices.py::test_f1_38_reduced_bore_disc_capacity` | 10 barg reduced bore (20 mm in DN50) at 12.1 barg: utilisation $100\sqrt{\Delta p / 11\ \text{bar}}$ within 0.5 %, `overcapacity` |
+| `test_relief_devices.py::test_open_device_without_flow_is_not_reported_closed` | Forced-open disc without flow: not `intact`, utilisation 0 % |
+| `backend/tests/scenarios/test_relief_peak.py::test_rupture_disc_on_pressure_source` | Disc on a ramped pressure source: opening snapshot at 5.0 bar(a) within 10 mbar |
+| `backend/tests/unit/fluids/test_throttling_heat.py::test_f1_16_throttling_heat_magnitude` | Burst disc: outlet temperature rise $= \Delta P/(\rho c_p)$ within 2 % |
 
 ## Data Fields
 

@@ -150,5 +150,5 @@ Every backend equipment file `backend/simulation/equipment/<name>.py` **must** b
 
 This documentation ensures full traceability between physics standards (e.g. ISO 5167, ISO 4126, IEC 60534, Crane TP 410) and code implementation.
 
-See **[references/equipment-documentation-standard.md](file:///c:/Users/c563871/Coding/WalFlow/.agents/skills/equipment-creation/references/equipment-documentation-standard.md)** for the complete format template and guidelines.
+See **[references/equipment-documentation-standard.md](equipment-documentation-standard.md)** for the complete format template and guidelines.
 

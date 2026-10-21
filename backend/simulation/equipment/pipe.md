@@ -1,20 +1,135 @@
 # Pipe (edge)
 
-## 1. Functional Overview
+## 1. Overview & Purpose
 
-A pipe connects two components and computes the friction pressure drop with Darcy-Weisbach (Churchill 1977 friction factor, continuous from laminar to turbulent flow), plus the temperature rise from viscous dissipation. Each hydraulic edge of a `.wlf` file becomes one `Pipe`; edges of type `SIGNAL` are sensing links and create no pipe.
+A pipe connects two components. It computes the friction pressure drop along its length and the temperature rise from viscous dissipation. Each hydraulic edge of a `.wlf` file becomes one `Pipe`; edges of type `SIGNAL` are sensing links and create no pipe.
 
-> Short description. The full description per the equipment documentation standard is on the ROADMAP ("Detailed Equipment Documentation").
+In the network a pipe is a passive resistance: its pressure drop rises roughly with the square of the flow in turbulent flow and linearly in laminar flow. Where the flow leaves a tank or pressure source into the pipe, the pipe also takes the entry velocity head (section 3.4).
 
-### Entry from a reservoir
+## 2. Governing Standards & Reference Literature
 
-Tanks and pressure sources hold fluid at rest. Where the flow leaves one into the pipe, the static pressure drops by the velocity head of the acceleration from rest plus the entrance loss (Crane TP 410, sharp-edged entrance $K = 0.5$):
+- **Darcy-Weisbach equation** for the friction pressure drop.
+- **Churchill, S.W. (1977):** "Friction-factor equation spans all fluid-flow regimes", *Chemical Engineering* 84(24), 91-92. One continuous expression for laminar, transition and turbulent flow.
+- **Colebrook-White (1939):** the turbulent limit that Churchill reproduces; used as the independent reference in the tests.
+- **Crane Technical Paper No. 410:** sharp-edged pipe entrance, $K = 0.5$ (A-29).
+
+## 3. Physical & Mathematical Implementation
+
+### 3.1 Geometry
+
+$$A = \frac{\pi D^2}{4}, \qquad v = \frac{Q}{A}, \qquad \mathrm{Re} = \frac{\rho\, |v|\, D}{\mu}$$
+
+$D$ is the internal diameter [m], $L$ the length [m], $\varepsilon$ the absolute roughness [m].
+
+### 3.2 Friction pressure drop (`_friction_dp`)
+
+$$\Delta P_{\text{f}} = f(\mathrm{Re})\, \frac{L}{D}\, \frac{\rho\, v\, |v|}{2}$$
+
+The $v|v|$ form keeps the sign of the flow: reverse flow gives a negative drop of the same size. At $Q = 0$ (or $\mu = 0$) the drop is zero.
+
+### 3.3 Friction factor (`_friction_factor`, Churchill 1977)
+
+$$f = 8\left[\left(\frac{8}{\mathrm{Re}}\right)^{12} + \frac{1}{(a + b)^{1.5}}\right]^{1/12}$$
+
+$$a = \left[2.457 \ln\frac{1}{(7/\mathrm{Re})^{0.9} + 0.27\,\varepsilon/D}\right]^{16}, \qquad b = \left(\frac{37530}{\mathrm{Re}}\right)^{16}$$
+
+- Laminar limit: $f \to 64/\mathrm{Re}$. Below $\mathrm{Re} = 10$ the code uses $64/\mathrm{Re}$ directly (Churchill gives the same value there).
+- Turbulent limit: Colebrook-White within about 2 %.
+- Transition (Re 2000-4000): one smooth curve, so the solver never sees a switch or a blend band (audit F1-21). It differs from a "64/Re, then Colebrook" reference by a few percent in this band.
+
+Typical values, 100 m of steel pipe ($\varepsilon$ = 0.045 mm) at 20 °C:
+
+| Fluid | Pipe | Velocity | Flow | Re | $f$ | $\Delta P$ per 100 m |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| Water | DN50 (52.5 mm) | 1 m/s | 130 L/min | 52 000 | 0.024 | 0.23 bar |
+| Water | DN50 (52.5 mm) | 2 m/s | 260 L/min | 105 000 | 0.022 | 0.83 bar |
+| Water | DN100 (102.3 mm) | 2 m/s | 986 L/min | 204 000 | 0.019 | 0.36 bar |
+| ISO VG 46 | DN50 (52.5 mm) | 1 m/s | 130 L/min | 390 (laminar) | 0.163 | 1.36 bar |
+| ISO VG 46 | DN100 (102.3 mm) | 2 m/s | 986 L/min | 1 530 (laminar) | 0.042 | 0.71 bar |
+
+### 3.4 Entry from a reservoir
+
+Tanks and pressure sources hold fluid at rest. Where the flow leaves one into the pipe, the static pressure drops by the velocity head of the acceleration from rest plus the entrance loss (Crane TP 410, sharp-edged entrance $K = 0.5$, `RESERVOIR_ENTRY_K`):
 
 $$\Delta P_{\text{entry}} = (1 + K)\,\frac{\rho\,v\,|v|}{2}$$
 
-The term is active only at a reservoir end that the flow leaves (inlet end for $Q > 0$, outlet end for $Q < 0$); value and slope are zero at $Q = 0$. Where the flow enters a reservoir, the kinetic energy is lost in the vessel (exit loss $K = 1$) and the static pressure at the pipe end equals the reservoir pressure, so no term is added. Only the $K$ part heats the fluid; the acceleration is reversible. The reported pipe pressure drop includes the entry term.
+- The term is active only at a reservoir end that the flow leaves: the inlet end for $Q > 0$, the outlet end for $Q < 0$. Value and slope are zero at $Q = 0$, so switching between the two ends is $C^1$-continuous.
+- Where the flow enters a reservoir, the kinetic energy is lost in the vessel (exit loss $K = 1$) and the static pressure at the pipe end equals the reservoir pressure. No term is added.
+- `HydraulicNetwork` sets the flags `inlet_at_reservoir` and `outlet_at_reservoir` from the topology when the network is built (a node with `is_pressure_boundary = True` at that end).
+- The reported pipe pressure drop includes the entry term.
 
-Without it, an expander close to a reservoir would recover static pressure that was never deducted, and a short line source → expander → tank had no steady-state solution.
+Without it, an expander close to a reservoir would recover static pressure that was never deducted, and a short line source → expander → tank had no steady-state solution. For why reservoir pressures are stagnation pressures, see [pressure_source.md](pressure_source.md#32-stagnation-pressure-not-line-pressure).
+
+### 3.5 Total pressure drop
+
+$$\Delta P_{\text{pipe}} = \Delta P_{\text{f}} + \Delta P_{\text{entry}}$$
+
+This enters the edge pressure balance of the network, see [base_node.md](base_node.md#31-unknowns-and-equations).
+
+### 3.6 Derivative (`calculate_dp_derivative`)
+
+Friction, with $\mathrm{Re} \propto |Q|$:
+
+$$\frac{\partial \Delta P_{\text{f}}}{\partial Q} = \frac{L}{D}\, \frac{\rho\, |Q|}{2 A^2} \left(2 f + \frac{df}{d \ln \mathrm{Re}}\right)$$
+
+$df/d\ln\mathrm{Re}$ is a central difference of the Churchill expression with a relative step of $10^{-4}$. At $Q = 0$ the slope is the laminar (Hagen-Poiseuille) limit instead of zero, so a dead leg keeps a usable Jacobian:
+
+$$\left.\frac{\partial \Delta P_{\text{f}}}{\partial Q}\right|_{Q=0} = \frac{32\, \mu\, L}{D^2 A}$$
+
+Entry term:
+
+$$\frac{\partial \Delta P_{\text{entry}}}{\partial Q} = (1 + K)\, \frac{\rho\, |Q|}{A^2}$$
+
+The solver uses this derivative directly and floors it at $10^{-3}$ Pa·s/m³.
+
+## 4. Thermal & Energy Balance
+
+Friction and the entrance loss become heat in the fluid. The acceleration from rest is reversible, so only the $K$ part of the entry term heats:
+
+$$\Delta P_{\text{loss}} = \Delta P_{\text{f}} + \Delta P_{\text{entry}}\, \frac{K}{1 + K}, \qquad \Delta T = \frac{|\Delta P_{\text{loss}}|}{\rho\, c_p(T)}$$
+
+The temperature rise is applied to the downstream end: the outlet for $Q \ge 0$, the inlet for $Q < 0$. Density and viscosity at both ends are then re-evaluated at their temperatures. There is no heat exchange with the surroundings (adiabatic pipe).
+
+For water, $\Delta T \approx 0.024$ K per bar of friction loss.
+
+## 5. Parameter & Unit Specification Table
+
+| Parameter (UI Label) | UI Unit | Backend Var | SI Unit | Default | Valid Range | Description |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| Pipe Length | m (ft) | `self.length` | m | 25 | $\ge 0$ | Developed length |
+| Pipe Class & Dimensions | DN / schedule, or m | `self.diameter` | m | 0.1 | $> 0$ | Internal diameter (from the pipe class and schedule, or entered) |
+| Roughness | mm | `self.roughness` | m | 0.045 mm | $> 0$ | Absolute wall roughness; 0 is replaced by 0.045 mm |
+
+The parser rejects a diameter $\le 0$ and a negative length or roughness (`ModelInputError`).
+
+## 6. Operating Modes & Model Boundaries
+
+- **Steady state:** algebraic relation, no water hammer or line packing ($\Delta t = 0$).
+- **Solver flags:** all `False` (`is_pressure_boundary`, `is_flow_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation`). A pipe is not a node; it is the edge term of the pressure balance.
+- **Inactive:** a pipe has no `active` switch.
+- **Reverse flow:** fully supported; friction and entry terms are odd in $Q$.
+- **Operating cases:** pipe data is not overridden per case (case overrides apply to nodes).
+- **Not modelled:**
+  - elevation change along the pipe (no static head term; static head enters only at tanks, see [tank.md](tank.md));
+  - fittings, bends and valves inside the pipe (add them as components);
+  - heat loss to the surroundings;
+  - compressibility, two-phase flow and cavitation in the pipe.
+- **Roughness 0:** the model replaces a roughness $\le 0$ by 0.045 mm, so a hydraulically smooth pipe is not available; enter a small value (e.g. 0.0015 mm for drawn tubing or plastic) instead.
+- The pipe class reference and sizing fields are stored for the inspector only (see Data Fields).
+
+## 7. Verification & Benchmarks
+
+| Test | Benchmark |
+| :--- | :--- |
+| `backend/tests/unit/fluids/test_pipe_friction.py::test_f1_21_laminar_limit` | $f = 64/\mathrm{Re}$ within 0.1 % at Re 1, 100, 1000 |
+| `test_pipe_friction.py::test_f1_21_turbulent_matches_colebrook` | Colebrook-White within 2 % at Re $10^4$ to $10^7$ ($D$ = 50 mm, $\varepsilon$ = 0.045 mm) |
+| `test_pipe_friction.py::test_f1_21_transition_is_continuous_and_between_limits` | Re 1500-5450 in steps of 50: no step above 5 %; at Re 3000 within 10 % of Colebrook |
+| `test_pipe_friction.py::test_f1_21_derivative_matches_numerical` | Derivative within 0.01 % of a central difference ($\rho$ = 870, $\mu$ = 0.04 Pa·s, $Q$ = $10^{-6}$ to 0.02 m³/s) |
+| `test_pipe_friction.py::test_f1_21_zero_flow_derivative_is_laminar_limit` | Slope at $Q = 0$ equals $32 \mu L / (D^2 A)$ |
+| `backend/tests/unit/fluids/test_pipe_friction_oil.py::test_pipe_flow_matches_darcy_colebrook` | ISO VG 46, tanks 12 m and 2 m level, 100 m × 50 mm: gravity flow matches Darcy-Weisbach / Colebrook with entry loss within 1 % at 20 °C, 10 % at 60 °C (transition band) |
+| `backend/tests/unit/equipment/test_pipe_reservoir_entry.py` | 0.5 bar from a tank or pressure source through 10 m DN50 to a tank: flow matches entry + friction within 1 %; entry term only at the end the flow leaves; only the $K$ part heats the fluid |
+| `test_pipe_reservoir_entry.py::test_expander_between_reservoirs_with_short_pipes` | Reservoir → 0.1-5 m DN50 → 2"×3" expander → DN80 → tank solves and matches an independent loss sum within 1 % |
+| `backend/tests/unit/fluids/test_reverse_flow.py` | Reverse flow: magnitude within 2 % of the forward reference; temperature carried from the supplying end |
 
 ## Data Fields
 

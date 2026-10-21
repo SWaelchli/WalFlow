@@ -1,50 +1,90 @@
 # Equipment Documentation Standard (`<equipment>.md`)
 
-Every equipment class in the backend (`backend/simulation/equipment/<name>.py`) **must** have a corresponding documentation file in the same directory (`backend/simulation/equipment/<name>.md`).
+Every equipment class in the backend (`backend/simulation/equipment/<name>.py`) **must** have a documentation file in the same directory (`backend/simulation/equipment/<name>.md`).
 
-This document provides theoretical transparency, engineering standard citations, physical equations, unit conversions, and validation benchmarks for developers and engineering users.
+The document makes the physics traceable for developers and engineering users: what the model is, which standard it follows, the exact equations the code solves, units, limits and the tests that prove it.
+
+**Reference example:** [orifice.md](../../../../backend/simulation/equipment/orifice.md). When in doubt, copy its structure.
 
 ---
 
-## 📋 Required Structure for `<equipment>.md`
+## 📋 Required Structure
 
-Every `<equipment>.md` file must contain the following 7 standard sections and a `## Data Fields` section (exact heading; a test reads it):
+Every document uses exactly these headings, in this order. Subsections (`### 3.1 ...`) are free.
 
 ```markdown
-# [Equipment Name] (`node_type_string`)
+# <Equipment Name> (`<node_type>`)
 
 ## 1. Overview & Purpose
-Brief high-level description of what the equipment is, its role in a hydraulic P&ID, and its basic operating principles.
-
 ## 2. Governing Standards & Reference Literature
-- **Primary Engineering Standards:** (e.g. ISO 5167, ISO 4126, IEC 60534, ANSI/ISA-75, API 520, Crane TP 410).
-- **Secondary / Reference Literature:** (e.g. Idelchik, Miller, manufacturer technical white papers).
-- **Standard Selection / Options:** (If multiple standards or rating methods are supported, describe each option).
-
 ## 3. Physical & Mathematical Implementation
-- **Primary Hydraulic Equation:** Exact formula for pressure drop $\Delta P(Q, \rho, \mu)$ implemented in Python.
-- **Flow Regimes & Blending:** How laminar, transitional, and turbulent regimes are computed and blended smoothly ($C^0$ and $C^1$ continuity).
-- **Analytical Derivative:** Formula for $\frac{\partial \Delta P}{\partial Q}$ supplied to the Newton-Raphson Jacobian.
-- **Solver Formulation:** MCP Fischer-Burmeister complementarity equations, dynamic shutdown flags, or boundary definitions.
-
 ## 4. Thermal & Energy Balance
-- Formulas for temperature change ($dT$), Joule-Thomson throttling heating ($dT = \frac{|\Delta P|}{\rho \cdot C_p}$), mechanical heat dissipation, or heat exchanger effectiveness.
-
 ## 5. Parameter & Unit Specification Table
-| Parameter (UI Label) | UI Unit | Backend Var | SI Unit | Default | Valid Range | Description |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| ... | ... | ... | ... | ... | ... | ... |
-
 ## 6. Operating Modes & Model Boundaries
-- Steady-state assumption ($\Delta t = 0$, instantaneous algebraic equilibrium).
-- Active vs. Inactive shutdown behavior (`blocks_flow_on_shutdown`).
-- Reverse flow handling.
-- Operating case overrides support.
-
 ## 7. Verification & Benchmarks
-- Reference test file: `backend/tests/unit/equipment/test_<name>.py`.
-- Benchmark calibration point values used in automated test assertions.
+## Data Fields
+```
 
+`## Data Fields` is always the last section (a test reads it up to the end of the file).
+
+### What goes in each section
+
+1. **Overview & Purpose** — what the equipment is, its role in a P&ID, how it behaves in the network (resistance, flow boundary, pressure boundary, junction, thermal unit). Selectable models or standards listed in one short list.
+2. **Governing Standards & Reference Literature** — the standards and books the equations come from (e.g. ISO 5167, ISO 4126, IEC 60534, API 520, Crane TP 410, Idelchik). If several models are selectable, a table `value | model | notes`. If the component is a mathematical idealisation with no standard, say so in one line.
+3. **Physical & Mathematical Implementation** — the equations **as the code implements them**, not as a textbook states them. Cover:
+   - the primary relation ($\Delta P(Q, \rho, \mu)$, $H(Q)$, fixed $P$ or $Q$, mass balance, ...);
+   - flow regimes and how they are blended ($C^0$ / $C^1$ continuity);
+   - the analytical derivative supplied to the Newton Jacobian;
+   - the solver formulation (residual form, MCP Fischer-Burmeister, between-solve state updates);
+   - clamps, regularisations and constants with their values.
+   Name the method (`calculate_delta_p`, `_cd_rg_iso5167`, ...) where it helps a developer find the code.
+4. **Thermal & Energy Balance** — the temperature change across the component (throttling $dT = |\Delta P| / (\rho\, C_p)$, pump waste heat, heat exchanger duty, adiabatic mixing, stamped boundary temperature).
+5. **Parameter & Unit Specification Table** — the user inputs, with this table:
+
+   | Parameter (UI Label) | UI Unit | Backend Var | SI Unit | Default | Valid Range | Description |
+   | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+
+   `Backend Var` is the attribute on the equipment object (e.g. `self.flow_base`); the file field name is in `## Data Fields`.
+6. **Operating Modes & Model Boundaries** — always cover:
+   - steady state ($\Delta t = 0$, instantaneous algebraic equilibrium);
+   - **solver flags** as a list: `is_pressure_boundary`, `is_flow_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation` with their values;
+   - inactive / shutdown behaviour;
+   - reverse flow;
+   - operating case overrides;
+   - what the model does **not** cover (validity range, fluids, effects left out) and design decisions behind it.
+7. **Verification & Benchmarks** — the test files and test names that check the component, and the benchmark values **taken from the assertions in those tests** (input → expected result, tolerance). Never invent a number for the document. If no test checks the component with numbers, write `No dedicated benchmark.` and name the tests that cover it indirectly, if any.
+
+### Sections that do not apply
+
+Keep the heading and write one line saying why, e.g. `Not applicable — the splitter has no pressure loss; its ports share one pressure.` Never drop a heading.
+
+### Shared models
+
+- When several components share one model (PSV and rupture disc share `relief_device.py`), the shared physics lives in its own document (`relief_device.md`) and each component document links to it and covers only its own differences.
+- `base_node.md` documents the `HydraulicNode` contract (ports, solver flags, `calculate()` / residual / Jacobian contract) and the field naming rule, using the same headings. Its section 3 describes the contract instead of an equation.
+- A document for a class that is not a node type (e.g. `relief_device.md`) has no `## Data Fields` section.
+- Link to another document for anything it already explains (e.g. reservoir entry losses in [pipe.md](../../../../backend/simulation/equipment/pipe.md)) instead of repeating it.
+
+---
+
+## ✍️ Writing Style
+
+The readers are developers and engineering users.
+
+- Short, plain sentences. One fact per sentence.
+- Equations in LaTeX (`$...$` inline, `$$...$$` display), SI units inside equations.
+- Define every symbol the first time it appears.
+- A small worked numeric table where it helps the reader judge magnitude (e.g. the entry-loss table in `pressure_source.md`).
+- State a design decision and its reason where a reader would otherwise ask "why not ...?".
+- No marketing words, no emojis in the equipment documents.
+
+---
+
+## Data Fields
+
+The section starts with the node type line, then the table:
+
+```markdown
 ## Data Fields
 
 Node type: `node_type_string`. Field names follow the naming rule in [base_node.md](base_node.md), which also lists the fields of every component.
@@ -55,73 +95,8 @@ Node type: `node_type_string`. Field names follow the naming rule in [base_node.
 | `restriction_model` | text (`orifice` / `laminar` / `quadratic`) | orifice |
 ```
 
-### Data Fields rules
+Rules:
 
 - List exactly the keys `GraphParser._build_node` reads from the node's `data` for this type (fields of every component, such as `label` and `active`, are in `base_node.md`). `backend/tests/unit/solver/test_node_fields_documented.py` fails when the parser and the tables differ, or when a node type has no section.
 - Every dimensional field carries its unit in the name: `_pa`, `_bar`, `_barg`, `_bara`, `_lmin`, `_c`, `_k`, `_m`, `_mm`, `_kw`, `_w_k`, `_pct`, `_deg`, `_mpas`. The "Unit in file" column must match the suffix (the test checks it). Unitless fields (`text`, `bool`, `Cv`, `DN`, `index`, `catalogue id`) have no suffix.
 - Renaming an existing field: before a release, rename it everywhere (saved files are not converted). After a release, a rename is a file format incompatibility and follows the Versioning Policy in `AGENTS.md`.
-
----
-
-## 📝 Example: `backend/simulation/equipment/calibrated_restriction.md`
-
-Here is an example showing how to write a complete companion documentation file:
-
-```markdown
-# Calibrated Restriction (`calibrated_restriction`)
-
-## 1. Overview & Purpose
-The Calibrated Restriction component represents fixed hydraulic restrictors, internal clearances, bypasses, and calibration orifices where the flow-versus-pressure drop characteristics are calibrated at a known design operating point $(Q_0, \Delta P_0, T_0)$.
-
-## 2. Governing Standards & Reference Literature
-- **ISO 5167-2:2003:** Measurement of fluid flow by means of pressure differential devices inserted in circular cross-section conduits (Orifice plates).
-- **Crane Technical Paper No. 410 (TP 410):** Flow of Fluids Through Valves, Fittings, and Pipe (Resistance coefficient method).
-- **Idelchik, I.E.:** Handbook of Hydraulic Resistance (4th Edition, Section 4: Resistance to Flow in Throttling Devices).
-
-### Available Calculation Models
-1. **Orifice Model (Default):** Square-root scaling with Reynolds-dependent discharge coefficient $C_d(\text{Re})$ and smooth laminar blending.
-2. **Quadratic Model:** Fixed turbulent loss coefficient $K$ across all flow rates ($dP \propto \rho Q^2$).
-3. **Laminar Model:** Linear viscous loss scaling with dynamic viscosity $\mu$ ($dP \propto \mu Q$).
-
-## 3. Physical & Mathematical Implementation
-
-### 3.1 Base Calibration Factor
-At the baseline calibration point $(Q_0, \Delta P_0, \rho_0, \mu_0)$:
-$$K_{\text{base}} = \frac{\Delta P_0}{\rho_0 \cdot Q_0^2}$$
-
-### 3.2 Operating Pressure Drop
-For the Orifice model:
-$$\Delta P = K_{\text{base}} \cdot \rho \cdot Q |Q| \cdot \psi(\text{Re})$$
-where $\psi(\text{Re})$ provides smooth transitional blending:
-$$\psi(\text{Re}) = \begin{cases} 
-1.0 + \frac{C_{\text{lam}}}{\text{Re}} & \text{Re} \le 2000 \\ 
-1.0 & \text{Re} \ge 4000 \\ 
-(1 - w) \cdot \left(1.0 + \frac{C_{\text{lam}}}{\text{Re}}\right) + w \cdot 1.0 & 2000 < \text{Re} < 4000 
-\end{cases}$$
-with $w = \frac{\text{Re} - 2000}{2000}$.
-
-### 3.3 Analytical Derivative
-$$\frac{\partial \Delta P}{\partial Q} = 2 K_{\text{base}} \rho |Q| \cdot \psi(\text{Re}) + K_{\text{base}} \rho Q^2 \frac{\partial \psi}{\partial Q}$$
-
-## 4. Thermal & Energy Balance
-Throttling friction dissipation converts kinetic/pressure energy into fluid thermal enthalpy:
-$$dT = \frac{|\Delta P|}{\rho \cdot C_p(T)}$$
-
-## 5. Parameter & Unit Specification Table
-| Parameter | UI Unit | Backend Var | SI Unit | Default | Range | Description |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| Baseline Flow | L/min | `flow_base_lmin` | $\text{m}^3/\text{s}$ | `10.0` | $> 0$ | Calibrated flow rate |
-| Inlet Pressure | bar(a) | `inlet_pressure_base_bara` | Pa | `3.5` | $> 0$ | Calibrated inlet pressure |
-| Outlet Pressure | bar(a) | `outlet_pressure_base_bara` | Pa | `1.0` | $> 0$ | Calibrated outlet pressure |
-| Base Temperature | °C | `temp_base_c` | K | `45.0` | $-50 \dots 200$ | Calibration fluid temp |
-| Model | - | `restriction_model` | str | `'orifice'` | `orifice, quadratic, laminar` | Calculation formula standard |
-
-## 6. Operating Modes & Model Boundaries
-- **Steady-State Solver:** Static algebraic equation ($\Delta t = 0$).
-- **Bidirectional Flow:** Handles reverse flow continuously ($Q < 0 \implies \Delta P < 0$).
-- **Operating Cases:** Supports node-level parameter overrides per operating scenario.
-
-## 7. Verification & Benchmarks
-- **Test File:** `backend/tests/unit/equipment/test_calibrated_restriction.py`
-- **Benchmark:** Given $Q_0 = 10\text{ L/min}$, $P_{\text{in}} = 3.5\text{ bar}$, $P_{\text{out}} = 1.0\text{ bar}$ at $45^{\circ}\text{C}$, the solver reproduces $\Delta P = 2.5000\text{ bar} \pm 10^{-4}\text{ bar}$ and verified analytical Jacobian derivatives within $1\%$ of central finite differences.
-```

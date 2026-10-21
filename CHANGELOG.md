@@ -41,6 +41,7 @@ All notable changes to the WälFlow project will be documented in this file.
 ### Changed
 
 - **Unit in every field name**: Node and pipe data fields carry their unit (`level_m`, `temperature_k`, `set_pressure_pa`, `opening_pct`, pipe `length_m` / `diameter_m`, …). Old 0.2 pre-release files are not converted; the file format stays 0.2. The field list per component now lives in `backend/simulation/equipment/<type>.md`.
+- **Equipment documentation**: Every component document in `backend/simulation/equipment/` follows one 7-section standard (equations as implemented, thermal balance, parameters, model limits, benchmarks from the tests), with a new shared `relief_device.md`.
 - **Canvas labels**: The tag and readouts below every component are centred on its symbol, however long they are.
 - **UI/UX consistency pass**: One SVG icon set (Phosphor) replaces all emoji; Inter is bundled and a 7-step type scale (`--fs-*`) and warning colour tokens replace raw sizes and hex values; orange is reserved for the main action per area; tabs and segmented controls use dark teal; sentence-case labels and one set of component names (Pipe, Control valve, Drawing, "DN 20").
 - **Header**: File menu (New, Open, Save `Ctrl+S`, Save as, Import, Export), document name with save state, and the last run time in the status pill; operating cases are created only in the Operating cases tab.
