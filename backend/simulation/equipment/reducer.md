@@ -13,7 +13,7 @@ A reducer or expander is a conical fitting between two pipe sizes (e.g. DN80 →
 
 - **Crane Technical Paper No. 410 (A-26):** loss coefficients of gradual contractions and enlargements, referenced to the small bore.
 - **Idelchik, I.E.:** *Handbook of Hydraulic Resistance*, and **Miller, D.S.:** *Internal Flow Systems* — background for conical contractions and diffusers.
-- **Swamee-Jain (1976):** explicit Darcy friction factor for the transition wall friction.
+- **Churchill, S.W. (1977):** Darcy friction factor for the transition wall friction, shared with the [pipe](pipe.md#33-friction-factor-_friction_factor-churchill-1977).
 - **Dimensional standards** (geometry from the inspector catalogue, not used in the hydraulics):
   - ASME B16.9 (wrought buttwelding reducers) with ASME B36.10M / B36.19M pipe schedules;
   - DIN EN 10253-2 reducers with DIN EN 10220 / EN ISO 1127 pipe dimensions.
@@ -53,14 +53,7 @@ Evaluated at the mean diameter $D_{\text{avg}} = (D_1 + D_2)/2$, area $A_{\text{
 
 $$\Delta P_{\text{fric}} = f\,\frac{H}{D_{\text{avg}}}\,\frac{\rho\, Q|Q|}{2 A_{\text{avg}}^2}, \qquad \mathrm{Re} = \frac{\rho\,|Q|\,D_{\text{avg}}}{A_{\text{avg}}\,\max(10^{-7}, \mu)}$$
 
-| Re | $f$ |
-| :--- | :--- |
-| $< 1$ | 64 |
-| $1 \dots 2000$ | $64/\mathrm{Re}$ |
-| $2000 \dots 4000$ | linear blend $(1 - w) f_{\text{lam}} + w f_{\text{turb}}$, $w = (\mathrm{Re} - 2000)/2000$ |
-| $> 4000$ | Swamee-Jain $f = 0.25 / \log_{10}^2\!\big(\varepsilon/(3.7 D_{\text{avg}}) + 5.74/\mathrm{Re}^{0.9}\big)$ |
-
-The blend is $C^0$ but not $C^1$ at Re 2000 and 4000. This differs from the pipe, which uses the continuous Churchill equation ([pipe.md](pipe.md#33-friction-factor-_friction_factor-churchill-1977)). The fitting is short, so friction is a small part of the loss.
+$f$ is the Churchill (1977) friction factor with $\varepsilon / D_{\text{avg}}$, the same function as the pipe (`FluidProperties.get_darcy_friction_factor`, audit D-07; see [pipe.md](pipe.md#33-friction-factor-_friction_factor-churchill-1977)): $64/\mathrm{Re}$ in laminar flow, Colebrook-like in turbulent flow, one smooth curve in between. Roughness 0 is a smooth wall. The fitting is short, so friction is a small part of the loss.
 
 $$\Delta P_{\text{loss}} = \Delta P_{\text{form}} + \Delta P_{\text{fric}}$$
 
@@ -79,9 +72,9 @@ The Bernoulli term dominates: an expander shows a static pressure rise, a reduce
 
 ### 3.6 Derivative (`calculate_dp_derivative`)
 
-$$\frac{\partial \Delta P}{\partial Q} = \rho\,|Q|\left(\frac{K}{A_s^2} + \frac{f H / D_{\text{avg}}}{A_{\text{avg}}^2}\right) + \rho\, Q \left(\frac{1}{A_2^2} - \frac{1}{A_1^2}\right)$$
+$$\frac{\partial \Delta P}{\partial Q} = \rho\,|Q|\left(\frac{K}{A_s^2} + \frac{H}{D_{\text{avg}}}\,\frac{f + \tfrac{1}{2}\, df/d\ln\mathrm{Re}}{A_{\text{avg}}^2}\right) + \rho\, Q \left(\frac{1}{A_2^2} - \frac{1}{A_1^2}\right)$$
 
-$K$ and $f$ are held constant (their change with $Q$ is not differentiated). The slope is **negative** wherever the Bernoulli recovery outweighs the loss (expander in forward flow, reducer in reverse flow); the sign is kept so Newton steps point the right way. Only a magnitude below 100 Pa·s/m³ is replaced by +100 Pa·s/m³ to avoid a zero slope at $Q = 0$.
+The friction term uses the same $2f + df/d\ln\mathrm{Re}$ form as the pipe (audit D-07); at $Q = 0$ it is the laminar limit $32 \mu H / (D_{\text{avg}}^2 A_{\text{avg}})$. $K$ is constant on each side of $Q = 0$ (it switches with the flow direction). The slope is **negative** wherever the Bernoulli recovery outweighs the loss (expander in forward flow, reducer in reverse flow); the sign is kept so Newton steps point the right way. Only a magnitude below 100 Pa·s/m³ is replaced by +100 Pa·s/m³ to avoid a zero slope at $Q = 0$.
 
 In the network Jacobian the solver differentiates the outlet pressure numerically (see [base_node.md](base_node.md#33-jacobian)).
 
@@ -129,6 +122,8 @@ The parser rejects a bore or length $\le 0$ and a negative roughness. Missing va
 | `test_reducer.py::test_reducer_reverse_flow_symmetry` | Reverse $\Delta P$ = −forward $\Delta P$ within 0.01 % for the tested case |
 | `test_reducer.py::test_expander_network_with_dominant_pressure_recovery` | Source 1.5 bar(a) → 5 m DN50 → expander → 0.05 m DN80 → tank: converges with a negative edge slope; solved $\Delta P$ matches the model within 0.1 % and is negative |
 | `test_reducer.py::test_zero_reducer_roughness_is_kept_as_smooth`, `test_reducer_roughness_is_read_in_mm` | 0.2 mm → 0.0002 m; missing → 0.045 mm; 0 stays 0 |
+| `test_reducer.py::test_d07_reducer_friction_equals_pipe_friction` | Equal bores, 50 mm × 0.5 m, oil ($\rho$ = 870, $\mu$ = 0.03 Pa·s), $Q = 10^{-6}$ to $10^{-2}$ m³/s (laminar to turbulent), roughness 0 and 0.045 mm: $\Delta P$ equals a pipe of the same size within $10^{-9}$ |
+| `test_reducer.py::test_d07_reducer_derivative_includes_the_friction_slope`, `test_d07_reducer_zero_flow_derivative_is_the_laminar_limit` | 3" × 2" × 0.5 m, same oil, 0.5 to 300 L/min and −60 L/min: derivative within 0.01 % of a central difference; at $Q = 0$ the laminar limit |
 | `backend/tests/unit/equipment/test_pipe_reservoir_entry.py::test_expander_between_reservoirs_with_short_pipes` | Expander 0.1-5 m from a reservoir: flow matches an independent Crane + Bernoulli + entry sum within 1 % |
 
 ## Data Fields

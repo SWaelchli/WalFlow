@@ -313,3 +313,34 @@ def test_negative_reducer_roughness_is_rejected():
     from simulation.graph_parser import GraphParser, ModelInputError
     with pytest.raises(ModelInputError, match="R-1.*roughness_mm"):
         GraphParser.parse_graph(_reducer_graph({"roughness_mm": -0.1}))
+
+
+@pytest.mark.audit("D-07")
+@pytest.mark.parametrize("roughness", [0.0, 0.000045])
+@pytest.mark.parametrize("q", [1e-6, 2e-5, 5e-5, 1e-4, 1e-3, 1e-2])
+def test_d07_reducer_friction_equals_pipe_friction(roughness, q):
+    # Equal bores: no form loss and no Bernoulli term, only wall friction over the length
+    d, length, rho, mu = 0.05, 0.5, 870.0, 0.03
+    red = Reducer("R", diameter_in=d, diameter_out=d, length=length, roughness=roughness)
+    pipe = Pipe("P", length, d, roughness)
+    assert red.calculate_delta_p(q, rho, mu) == pytest.approx(pipe.calculate_delta_p(q, rho, mu), rel=1e-9)
+
+
+@pytest.mark.audit("D-07")
+@pytest.mark.parametrize("q_lmin", [0.5, 5.0, 20.0, 60.0, 300.0, -60.0])
+def test_d07_reducer_derivative_includes_the_friction_slope(q_lmin):
+    # Viscous oil puts the friction in the laminar and transition range, where df/dRe matters
+    red = Reducer("R", diameter_in=0.07792, diameter_out=0.05248, length=0.5, cone_angle_deg=18.2)
+    rho, mu = 870.0, 0.03
+    q = q_lmin / 60000.0
+    h = abs(q) * 1e-5
+    num = (red.calculate_delta_p(q + h, rho, mu) - red.calculate_delta_p(q - h, rho, mu)) / (2 * h)
+    assert red.calculate_dp_derivative(q, rho, mu) == pytest.approx(num, rel=1e-4)
+
+
+@pytest.mark.audit("D-07")
+def test_d07_reducer_zero_flow_derivative_is_the_laminar_limit():
+    red = Reducer("R", diameter_in=0.07792, diameter_out=0.05248, length=0.5)
+    mu = 0.03
+    assert red.calculate_dp_derivative(0.0, 870.0, mu) == pytest.approx(
+        32.0 * mu * red.length / (red.d_avg ** 2 * red.area_avg), rel=1e-9)

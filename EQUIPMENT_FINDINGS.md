@@ -22,8 +22,8 @@ Status: `open` / `fixed` / `rejected`. "Confirmed" means it was reproduced by ru
 | D-03 | Heat exchanger | Rated ΔP only reproduced for water; UA rated with the operating $c_p$ | Medium | Confirmed | fixed |
 | D-04 | 3-way TCV | Mass-weighted mixing instead of the enthalpy balance | Medium | Confirmed | fixed |
 | D-05 | Valves (all Cv devices) | Viscosity factor $F_R$ is not IEC 60534-2-1; no laminar valve flow | Medium | Code reading + numbers | open |
-| D-06 | Pipe | Roughness 0 replaced by 0.045 mm | Medium | Code reading | open |
-| D-07 | Reducer vs pipe | Two different friction factor functions | Low | Code reading | open |
+| D-06 | Pipe | Roughness 0 replaced by 0.045 mm | Medium | Code reading | fixed |
+| D-07 | Reducer vs pipe | Two different friction factor functions | Low | Code reading | fixed |
 | D-08 | Calibrated restriction | Calibrates before the parser sets bore and fluid; recalibrates every call; zero inputs replaced | Low | Confirmed | open |
 | D-09 | Check valve with orifice | Ranked as a closed check valve in shut-in sections; model simplifications | Low (to verify) | Code reading | open |
 | D-10 | Pumps | Efficiency floors differ between power and heat; braking PD pump heat | Low | Code reading | open |
@@ -31,7 +31,7 @@ Status: `open` / `fixed` / `rejected`. "Confirmed" means it was reproduced by ru
 | D-12 | Check valves (UI) | Cracking pressure labelled barg / psig but is a difference | Low (UI) | Code reading | open |
 | D-13 | Solver / all components | Analytical `calculate_dp_derivative` unused except pipes and pumps | Info | Code reading | open |
 | D-14 | Base node | `is_flow_boundary` is a dead flag | Cleanup | Code reading | open |
-| D-15 | Pipe | `friction_factor` constructor argument unused | Cleanup | Code reading | open |
+| D-15 | Pipe | `friction_factor` constructor argument unused | Cleanup | Code reading | fixed |
 | D-16 | Tank | Default level 2 m in the UI, 1 m in the parser | Cleanup | Code reading | open |
 | D-17 | PSV | `action_mode = rupture_disc` duplicates the rupture disc component | Cleanup / decision | Code reading | open |
 

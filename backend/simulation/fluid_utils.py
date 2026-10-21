@@ -331,6 +331,35 @@ class FluidProperties:
         return 0.5 if u < 1e-6 else min(0.5, u / math.sinh(2.0 * u)) if u < 300 else 0.0
 
     @staticmethod
+    def get_darcy_friction_factor(reynolds_number: float, rel_roughness: float) -> float:
+        """Darcy friction factor from the Churchill (1977) equation (F1-21, D-07): one continuous expression
+        for laminar (64/Re), transition and turbulent (Colebrook-like) flow. rel_roughness = eps/D, 0 = smooth."""
+        re = max(1e-6, abs(reynolds_number))
+        if re < 10.0:
+            return 64.0 / re
+        a = (2.457 * math.log(1.0 / ((7.0 / re) ** 0.9 + 0.27 * rel_roughness))) ** 16
+        b = (37530.0 / re) ** 16
+        return 8.0 * ((8.0 / re) ** 12 + 1.0 / (a + b) ** 1.5) ** (1.0 / 12.0)
+
+    @staticmethod
+    def get_darcy_friction_slope(reynolds_number: float, rel_roughness: float) -> float:
+        """Exact df/dln(Re) of get_darcy_friction_factor (-f in the laminar range)."""
+        re = max(1e-6, abs(reynolds_number))
+        if re < 10.0:
+            return -64.0 / re
+        r7 = (7.0 / re) ** 0.9
+        x = r7 + 0.27 * rel_roughness
+        ln_inv_x = math.log(1.0 / x)
+        a = (2.457 * ln_inv_x) ** 16
+        b = (37530.0 / re) ** 16
+        c = (8.0 / re) ** 12
+        s = c + 1.0 / (a + b) ** 1.5
+        f = 8.0 * s ** (1.0 / 12.0)
+        da = 16.0 * a * (0.9 * r7 / x) / ln_inv_x
+        ds = -12.0 * c - 1.5 * (da - 16.0 * b) / (a + b) ** 2.5
+        return f * ds / (12.0 * s)
+
+    @staticmethod
     def get_valve_fr(reynolds_number: float) -> float:
         """
         Calculates IEC 60534-2-1 valve viscosity correction factor Fr.

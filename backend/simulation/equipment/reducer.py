@@ -93,26 +93,13 @@ class Reducer(HydraulicNode):
             return self._crane_expansion_k(beta), small_area
         return self._crane_contraction_k(beta), small_area
 
-    def _get_friction_factor(self, flow_rate: float, density: float, viscosity: float) -> float:
-        """Calculates Darcy friction factor over average diameter."""
-        abs_v = abs(flow_rate) / self.area_avg
-        mu = max(1e-7, viscosity)
-        re = (density * abs_v * self.d_avg) / mu
+    def _reynolds(self, flow_rate: float, density: float, viscosity: float) -> float:
+        """Reynolds number over the average diameter."""
+        return density * abs(flow_rate) / self.area_avg * self.d_avg / max(1e-7, viscosity)
 
-        if re < 1.0:
-            return 64.0
-        elif re < 2000.0:
-            return 64.0 / re
-        elif re > 4000.0:
-            eps_term = self.roughness / (3.7 * self.d_avg)
-            return 0.25 / (math.log10(eps_term + 5.74 / (re ** 0.9))) ** 2
-        else:
-            # Smooth blend 2000..4000
-            f_lam = 64.0 / re
-            eps_term = self.roughness / (3.7 * self.d_avg)
-            f_turb = 0.25 / (math.log10(eps_term + 5.74 / (re ** 0.9))) ** 2
-            w = (re - 2000.0) / 2000.0
-            return (1.0 - w) * f_lam + w * f_turb
+    def _get_friction_factor(self, re: float) -> float:
+        """Darcy friction factor over the average diameter, Churchill (1977) shared with the pipe (D-07)."""
+        return FluidProperties.get_darcy_friction_factor(re, self.roughness / self.d_avg)
 
     def calculate_losses(self, flow_rate: float, density: float, viscosity: float) -> tuple[float, float, float]:
         """
@@ -121,7 +108,7 @@ class Reducer(HydraulicNode):
         """
         self._update_geometry()
         k_form, ref_area = self._get_form_loss_k(flow_rate)
-        f_fric = self._get_friction_factor(flow_rate, density, viscosity)
+        f_fric = self._get_friction_factor(self._reynolds(flow_rate, density, viscosity))
         k_fric = f_fric * (self.length / self.d_avg)
 
         # Dynamic heads
@@ -153,7 +140,8 @@ class Reducer(HydraulicNode):
         """
         self._update_geometry()
         k_form, ref_area = self._get_form_loss_k(flow_rate)
-        f_fric = self._get_friction_factor(flow_rate, density, viscosity)
+        re = self._reynolds(flow_rate, density, viscosity)
+        f_fric = self._get_friction_factor(re)
         k_fric = f_fric * (self.length / self.d_avg)
 
         abs_q = abs(flow_rate)
@@ -162,9 +150,16 @@ class Reducer(HydraulicNode):
         c_fric = k_fric / (self.area_avg ** 2)
         c_bern = (1.0 / (self.area_out ** 2)) - (1.0 / (self.area_in ** 2))
 
-        # d(dp_loss)/dQ = rho * |Q| * (c_form + c_fric)
+        # d(dp_form)/dQ = rho * |Q| * c_form
+        # d(dp_fric)/dQ = rho * |Q| / A_avg^2 * (L/D_avg) * (f + df/dlnRe / 2)  (Re ~ |Q|, as the pipe)
         # d(dp_bern)/dQ = rho * Q * c_bern
-        deriv_loss = density * abs_q * (c_form + c_fric)
+        if abs_q > 0:
+            dfdlnre = FluidProperties.get_darcy_friction_slope(re, self.roughness / self.d_avg)
+            d_fric = density * abs_q * (c_fric + 0.5 * dfdlnre * (self.length / self.d_avg) / (self.area_avg ** 2))
+        else:
+            # Zero flow: laminar limit of the wall friction, 32 mu L / (D^2 A)
+            d_fric = 32.0 * max(1e-7, viscosity) * self.length / (self.d_avg ** 2 * self.area_avg)
+        deriv_loss = density * abs_q * c_form + d_fric
         deriv_bern = density * flow_rate * c_bern
         deriv = deriv_loss + deriv_bern
 

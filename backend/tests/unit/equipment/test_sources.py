@@ -112,9 +112,9 @@ class TestNetworkSolve:
         t.global_settings = self._gs()
         return t
 
-    def _make_pipe(self, name='pipe', friction=0.02) -> Pipe:
+    def _make_pipe(self, name='pipe') -> Pipe:
         from simulation.equipment.pipe import Pipe
-        p = Pipe(name=name, length=10.0, diameter=0.05, friction_factor=friction)
+        p = Pipe(name=name, length=10.0, diameter=0.05)
         p.global_settings = self._gs()
         return p
 

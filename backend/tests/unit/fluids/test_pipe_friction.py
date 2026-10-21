@@ -52,3 +52,44 @@ def test_f1_21_zero_flow_derivative_is_laminar_limit():
     pipe = Pipe("p", L, D, ROUGH)
     mu = 0.04
     assert pipe.calculate_dp_derivative(0.0, 870.0, mu) == pytest.approx(32.0 * mu * L / (D ** 2 * pipe.area), rel=1e-9)
+
+
+@pytest.mark.audit("D-06")
+def test_d06_zero_roughness_is_a_smooth_pipe():
+    re = 1e5
+    smooth = Pipe("p", L, D, 0.0)._friction_factor(re)
+    assert smooth == pytest.approx(_colebrook(re, 0.0), rel=0.02)
+    assert smooth < 0.95 * Pipe("p", L, D, ROUGH)._friction_factor(re)
+
+
+@pytest.mark.audit("D-06")
+def test_d06_missing_roughness_takes_the_default():
+    assert Pipe("p", L, D, None)._friction_factor(1e5) == pytest.approx(Pipe("p", L, D, ROUGH)._friction_factor(1e5))
+
+
+@pytest.mark.audit("D-06")
+def test_d06_missing_roughness_is_stored_as_the_default():
+    assert Pipe("p", L, D, None).roughness == pytest.approx(0.000045)
+
+
+@pytest.mark.audit("D-15")
+def test_d15_pipe_has_no_friction_factor_argument():
+    with pytest.raises(TypeError):
+        Pipe("p", L, D, ROUGH, friction_factor=0.02)
+
+
+@pytest.mark.audit("D-07")
+@pytest.mark.parametrize("eps_d", [0.0, 0.0009, 0.01])
+@pytest.mark.parametrize("re", [0.5, 9.9, 10.1, 500.0, 2000.0, 2500.0, 3000.0, 4000.0, 1e4, 1e5, 1e7])
+def test_d07_friction_slope_is_the_exact_derivative(eps_d, re):
+    from simulation.fluid_utils import FluidProperties as FP
+    h = 1e-6
+    num = (FP.get_darcy_friction_factor(re * (1 + h), eps_d) - FP.get_darcy_friction_factor(re * (1 - h), eps_d)) / (2 * h)
+    assert FP.get_darcy_friction_slope(re, eps_d) == pytest.approx(num, rel=1e-5, abs=1e-9)
+
+
+@pytest.mark.audit("D-07")
+@pytest.mark.parametrize("re", [0.0, 1e-9, 1.0])
+def test_d07_friction_slope_laminar_limit_is_minus_f(re):
+    from simulation.fluid_utils import FluidProperties as FP
+    assert FP.get_darcy_friction_slope(re, 0.001) == pytest.approx(-FP.get_darcy_friction_factor(re, 0.001), rel=1e-12)

@@ -16,21 +16,20 @@ class Pipe(HydraulicNode):
         name: str,
         length: float,
         diameter: float,
-        roughness: float = 0.000045,
-        friction_factor: float = 0.02
+        roughness: float = 0.000045
     ):
         # Call the parent class constructor to set up the ID and lists        
         super().__init__(name, node_type="pipe")
         
         self.length = length                    # Pipe length (meters)
         self.diameter = diameter                # Internal diameter (meters)
-        self.roughness = roughness              # Absolute surface roughness (meters)
-        self.friction_factor = friction_factor  # Darcy friction factor (f)
+        # Absolute surface roughness (meters); 0 is a valid (hydraulically smooth) roughness,
+        # only a missing value takes the default (D-06)
+        self.roughness = 0.000045 if roughness is None else roughness
         
         # Precalculate invariant geometric terms
         self.area = math.pi * (self.diameter / 2.0)**2 if self.diameter > 0 else 1e-6
-        eps = self.roughness if (self.roughness is not None and self.roughness > 0) else 0.000045
-        self.rel_roughness_term = eps / (3.7 * self.diameter) if self.diameter > 0 else 0.0
+        self.rel_roughness = self.roughness / self.diameter if self.diameter > 0 else 0.0
 
         # Set by HydraulicNetwork for the ends connected to a pressure boundary
         self.inlet_at_reservoir = False
@@ -41,14 +40,8 @@ class Pipe(HydraulicNode):
         self.add_outlet()
 
     def _friction_factor(self, re: float) -> float:
-        """Darcy friction factor from the Churchill (1977) equation (F1-21): one continuous expression for
-        laminar (64/Re), transition and turbulent (Colebrook-like) flow, so the solver sees no blend band."""
-        if re < 10.0:
-            return 64.0 / re
-        eps_over_d = self.rel_roughness_term * 3.7
-        a = (2.457 * math.log(1.0 / ((7.0 / re) ** 0.9 + 0.27 * eps_over_d))) ** 16
-        b = (37530.0 / re) ** 16
-        return 8.0 * ((8.0 / re) ** 12 + 1.0 / (a + b) ** 1.5) ** (1.0 / 12.0)
+        """Darcy friction factor, Churchill (1977) shared with the reducer (F1-21, D-07)."""
+        return FluidProperties.get_darcy_friction_factor(re, self.rel_roughness)
 
     def _leaves_reservoir(self, flow_rate: float) -> bool:
         """True when the flow enters the pipe from a reservoir end (inlet side for q > 0, outlet side for q < 0)."""
@@ -138,8 +131,7 @@ class Pipe(HydraulicNode):
 
             # dP = f(Re) (L/D) rho Q|Q| / (2 A^2), Re ~ |Q|  ->  dP/dQ = (L/D) rho |Q| / (2 A^2) (2 f + dF/dlnRe)
             f = self._friction_factor(re)
-            h = 1e-4
-            dfdlnre = (self._friction_factor(re * (1.0 + h)) - self._friction_factor(re * (1.0 - h))) / (2.0 * h)
+            dfdlnre = FluidProperties.get_darcy_friction_slope(re, self.rel_roughness)
             return (self.length / self.diameter) * density * abs(flow_rate) / (2.0 * self.area ** 2) * (2.0 * f + dfdlnre)
         elif viscosity > 0:
             # Zero flow: laminar limit instead of a zero slope, so a dead leg keeps a usable Jacobian

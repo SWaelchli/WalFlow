@@ -89,6 +89,7 @@ All notable changes to the WälFlow project will be documented in this file.
 
 - **Heat exchanger**: Reverse flow now cools the stream that actually enters. The rated pressure drop is reproduced in the system fluid at the design inlet temperature (previously only for water), and the rated UA no longer drifts with the operating temperature.
 - **3-way TCV mixing**: The mixed outlet temperature follows the enthalpy balance with temperature-dependent heat capacity, like the mixer (up to about 0.9 K warmer in oil).
+- **Pipe and reducer friction**: A pipe roughness of 0 is now a smooth wall instead of 0.045 mm. The reducer uses the same Churchill friction factor as the pipe, with a consistent derivative.
 - **Splitter mixing**: When the inlet and one outlet both feed a splitter, the remaining outlet now carries the energy-balanced mixed temperature instead of the inlet temperature.
 - **Pressure in stagnant branches**: A section shut in by a stopped PD pump, a closed check valve or a closed relief device now takes the pressure of its leak path (usually the pump suction) instead of a value that changed with the solver method, and is flagged `stagnant` in the telemetry.
 - **3-way TCV loop**: The thermal valve now settles within 0.01 K of its setpoint, or exactly at its end stop, independent of the start and in fewer iterations; the unused damping factor setting is removed (older files are still accepted).

@@ -29,6 +29,8 @@ The $v|v|$ form keeps the sign of the flow: reverse flow gives a negative drop o
 
 ### 3.3 Friction factor (`_friction_factor`, Churchill 1977)
 
+The function is `FluidProperties.get_darcy_friction_factor(Re, ε/D)`, shared with the [reducer](reducer.md#34-wall-friction-over-the-fitting) (audit D-07).
+
 $$f = 8\left[\left(\frac{8}{\mathrm{Re}}\right)^{12} + \frac{1}{(a + b)^{1.5}}\right]^{1/12}$$
 
 $$a = \left[2.457 \ln\frac{1}{(7/\mathrm{Re})^{0.9} + 0.27\,\varepsilon/D}\right]^{16}, \qquad b = \left(\frac{37530}{\mathrm{Re}}\right)^{16}$$
@@ -72,7 +74,7 @@ Friction, with $\mathrm{Re} \propto |Q|$:
 
 $$\frac{\partial \Delta P_{\text{f}}}{\partial Q} = \frac{L}{D}\, \frac{\rho\, |Q|}{2 A^2} \left(2 f + \frac{df}{d \ln \mathrm{Re}}\right)$$
 
-$df/d\ln\mathrm{Re}$ is a central difference of the Churchill expression with a relative step of $10^{-4}$. At $Q = 0$ the slope is the laminar (Hagen-Poiseuille) limit instead of zero, so a dead leg keeps a usable Jacobian:
+$df/d\ln\mathrm{Re}$ is the exact derivative of the Churchill expression (`FluidProperties.get_darcy_friction_slope`, $-f$ in the laminar range). At $Q = 0$ the slope is the laminar (Hagen-Poiseuille) limit instead of zero, so a dead leg keeps a usable Jacobian:
 
 $$\left.\frac{\partial \Delta P_{\text{f}}}{\partial Q}\right|_{Q=0} = \frac{32\, \mu\, L}{D^2 A}$$
 
@@ -98,7 +100,7 @@ For water, $\Delta T \approx 0.024$ K per bar of friction loss.
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | Pipe Length | m (ft) | `self.length` | m | 25 | $\ge 0$ | Developed length |
 | Pipe Class & Dimensions | DN / schedule, or m | `self.diameter` | m | 0.1 | $> 0$ | Internal diameter (from the pipe class and schedule, or entered) |
-| Roughness | mm | `self.roughness` | m | 0.045 mm | $> 0$ | Absolute wall roughness; 0 is replaced by 0.045 mm |
+| Roughness | mm | `self.roughness` | m | 0.045 mm | $\ge 0$ (0 = smooth) | Absolute wall roughness; only a missing value takes 0.045 mm |
 
 The parser rejects a diameter $\le 0$ and a negative length or roughness (`ModelInputError`).
 
@@ -114,7 +116,7 @@ The parser rejects a diameter $\le 0$ and a negative length or roughness (`Model
   - fittings, bends and valves inside the pipe (add them as components);
   - heat loss to the surroundings;
   - compressibility, two-phase flow and cavitation in the pipe.
-- **Roughness 0:** the model replaces a roughness $\le 0$ by 0.045 mm, so a hydraulically smooth pipe is not available; enter a small value (e.g. 0.0015 mm for drawn tubing or plastic) instead.
+- **Roughness 0:** a hydraulically smooth wall (smooth-pipe Colebrook limit), e.g. for plastic or drawn tubing (audit D-06).
 - The pipe class reference and sizing fields are stored for the inspector only (see Data Fields).
 
 ## 7. Verification & Benchmarks
@@ -126,6 +128,9 @@ The parser rejects a diameter $\le 0$ and a negative length or roughness (`Model
 | `test_pipe_friction.py::test_f1_21_transition_is_continuous_and_between_limits` | Re 1500-5450 in steps of 50: no step above 5 %; at Re 3000 within 10 % of Colebrook |
 | `test_pipe_friction.py::test_f1_21_derivative_matches_numerical` | Derivative within 0.01 % of a central difference ($\rho$ = 870, $\mu$ = 0.04 Pa·s, $Q$ = $10^{-6}$ to 0.02 m³/s) |
 | `test_pipe_friction.py::test_f1_21_zero_flow_derivative_is_laminar_limit` | Slope at $Q = 0$ equals $32 \mu L / (D^2 A)$ |
+| `test_pipe_friction.py::test_d06_zero_roughness_is_a_smooth_pipe`, `test_d06_missing_roughness_takes_the_default`, `test_d06_missing_roughness_is_stored_as_the_default` | Roughness 0 at Re $10^5$: smooth Colebrook within 2 % and more than 5 % below 0.045 mm; missing roughness = 0.045 mm, stored as such |
+| `test_pipe_friction.py::test_d07_friction_slope_is_the_exact_derivative`, `test_d07_friction_slope_laminar_limit_is_minus_f` | $df/d\ln\mathrm{Re}$ within $10^{-5}$ of a central difference at Re 0.5 to $10^7$ (including both sides of Re 10 and the transition band), $\varepsilon/D$ = 0, 0.0009, 0.01; $-f$ at Re 0, $10^{-9}$, 1 |
+| `test_pipe_friction.py::test_d15_pipe_has_no_friction_factor_argument` | `Pipe(..., friction_factor=0.02)` raises `TypeError` |
 | `backend/tests/unit/fluids/test_pipe_friction_oil.py::test_pipe_flow_matches_darcy_colebrook` | ISO VG 46, tanks 12 m and 2 m level, 100 m × 50 mm: gravity flow matches Darcy-Weisbach / Colebrook with entry loss within 1 % at 20 °C, 10 % at 60 °C (transition band) |
 | `backend/tests/unit/equipment/test_pipe_reservoir_entry.py` | 0.5 bar from a tank or pressure source through 10 m DN50 to a tank: flow matches entry + friction within 1 %; entry term only at the end the flow leaves; only the $K$ part heats the fluid |
 | `test_pipe_reservoir_entry.py::test_expander_between_reservoirs_with_short_pipes` | Reservoir → 0.1-5 m DN50 → 2"×3" expander → DN80 → tank solves and matches an independent loss sum within 1 % |
