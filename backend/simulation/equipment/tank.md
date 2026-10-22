@@ -58,7 +58,7 @@ $$T_{\text{port}} = T_{\text{tank}}$$
 
 | Parameter (UI Label) | UI Unit | Backend Var | SI Unit | Default | Valid Range | Description |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| Fluid Level | m (ft) | `self.fluid_level` | m | 1.0 (new tank in the UI: 2.0) | $\ge 0$ | Liquid level above the tank bottom |
+| Fluid Level | m (ft) | `self.fluid_level` | m | 1.0 | $\ge 0$ | Liquid level above the tank bottom |
 | Elevation | m (ft) | `self.elevation` | m | 0.0 | any | Tank bottom above the common datum |
 | Temp | °C (°F) | `self.temperature` | K | 293.15 K (new tank in the UI: the drawing's ambient temperature) | fluid validity range | Liquid temperature |
 

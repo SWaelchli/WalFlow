@@ -94,6 +94,8 @@ All notable changes to the WälFlow project will be documented in this file.
 - **Check valve with orifice**: Above cracking, seat and orifice now share one pressure drop, and the seat gets the viscosity correction of the plain check valve. A section shut in behind it takes the pressure of the other side, since the orifice always connects both.
 - **Calibrated restriction**: Calibrates with the connected pipe bore and the system fluid from the first solver iteration, and only again after a change. A calibration temperature of 0 °C is kept instead of becoming 45 °C; an invalid calibration point (no flow, no pressure drop) is reported as an input error.
 - **Linear control valve**: An opening below 0.1 % now closes the valve, like 0 %, instead of acting as 0.1 %.
+- **Check valves**: The cracking pressure is labelled `Cracking ΔP` in bar (psi), as a pressure difference, not barg (psig).
+- **Tank**: A new tank starts at 1 m level, the same default the backend uses for files without a level.
 - **Pipe and reducer friction**: A pipe roughness of 0 is now a smooth wall instead of 0.045 mm. The reducer uses the same Churchill friction factor as the pipe, with a consistent derivative.
 - **Splitter mixing**: When the inlet and one outlet both feed a splitter, the remaining outlet now carries the energy-balanced mixed temperature instead of the inlet temperature.
 - **Pressure in stagnant branches**: A section shut in by a stopped PD pump, a closed check valve or a closed relief device now takes the pressure of its leak path (usually the pump suction) instead of a value that changed with the solver method, and is flagged `stagnant` in the telemetry.

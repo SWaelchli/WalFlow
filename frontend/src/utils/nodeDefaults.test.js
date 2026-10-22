@@ -12,8 +12,8 @@ describe('defaultNodeData', () => {
     expect(defaultNodeData('linear_control_valve', ctx).onChange).toBe(ctx.onChange);
   });
 
-  it('starts a tank at the ambient temperature of the drawing', () => {
-    expect(defaultNodeData('tank', ctx)).toMatchObject({ level_m: 2.0, elevation_m: 0.0, temperature_k: 300 });
+  it('starts a tank at the ambient temperature of the drawing and the parser default level of 1 m (D-16)', () => {
+    expect(defaultNodeData('tank', ctx)).toMatchObject({ level_m: 1.0, elevation_m: 0.0, temperature_k: 300 });
   });
 
   it('keeps the note text and the pump defaults the parser needs', () => {

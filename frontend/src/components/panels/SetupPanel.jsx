@@ -973,7 +973,7 @@ export default function SetupPanel({
                 />
               </div>
               <div>
-                {renderLabel(`Cracking Pressure (${isImperial ? 'psig' : 'barg'})`, 'cracking_pressure_bar')}
+                {renderLabel(`Cracking ΔP (${isImperial ? 'psi' : 'bar'})`, 'cracking_pressure_bar')}
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
@@ -1000,7 +1000,7 @@ export default function SetupPanel({
                 />
               </div>
               <div>
-                {renderLabel(`Cracking Pressure (${isImperial ? 'psig' : 'barg'})`, 'cracking_pressure_bar')}
+                {renderLabel(`Cracking ΔP (${isImperial ? 'psi' : 'bar'})`, 'cracking_pressure_bar')}
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 

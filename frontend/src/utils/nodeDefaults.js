@@ -44,7 +44,7 @@ export function defaultNodeData(type, { label, ambientTemperature, onRotate, onC
     onRotate,
     onChange: type === 'linear_control_valve' ? onChange : undefined,
     // a new tank starts at the drawing's ambient temperature
-    ...(type === 'tank' && { level_m: 2.0, elevation_m: 0.0, temperature_k: ambientTemperature }),
+    ...(type === 'tank' && { level_m: 1.0, elevation_m: 0.0, temperature_k: ambientTemperature }),
     ...DEFAULTS_BY_TYPE[type],
   };
 }
