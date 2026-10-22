@@ -128,3 +128,97 @@ def pumps(draw, node_type: str):
     """(built pump, fluid state) of one pump type, running or stopped."""
     state = draw(fluid_states())
     return build(node_type, draw(PUMP_DATA[node_type]), state[0]), state
+
+
+# --- networks ------------------------------------------------------------------------------------
+
+# Components placed inside generated networks. Their behaviour is a function of the local flow only,
+# so every generated network has exactly one steady state; controllers, relief devices and the 3-way TCV
+# have their own scenarios. The reducer is left out (D-19): a junction joining pipes of different
+# diameters keeps one static pressure and so gains kinetic energy for free, which a reducer turns back
+# into static pressure; such a loop can have no steady state.
+NETWORK_COMPONENTS = {
+    "orifice": RESISTANCE_DATA["orifice"],
+    "linear_control_valve": st.fixed_dictionaries({
+        "max_cv": log_uniform(0.5, 50.0), "opening_pct": st.floats(5.0, 100.0)}),
+    "filter": RESISTANCE_DATA["filter"],
+    "heat_exchanger": RESISTANCE_DATA["heat_exchanger"].flatmap(lambda d: st.fixed_dictionaries({
+        **{k: st.just(v) for k, v in d.items()}, "medium_temp_c": st.floats(5.0, 60.0)})),
+    "check_valve": st.fixed_dictionaries({"cv": log_uniform(0.5, 50.0), "cracking_pressure_bar": st.floats(0.0, 0.3)}),
+    "measure_point": st.just({}),
+}
+# Components that add no heat source or sink of their own other than dissipation
+DISSIPATIVE_ONLY = set(NETWORK_COMPONENTS) - {"heat_exchanger"}
+
+
+def _pipe_data():
+    return st.fixed_dictionaries({"length_m": log_uniform(0.5, 200.0), "diameter_m": log_uniform(0.015, 0.2),
+                                  "roughness_mm": st.sampled_from([0.0, 0.045, 0.5])})
+
+
+@st.composite
+def networks(draw, max_depth: int = 3, components=tuple(sorted(NETWORK_COMPONENTS))):
+    """A saved-file graph (dict for ReactFlowGraph): a pressure source, a tank with a centrifugal pump, or two
+    pressure sources at different temperatures joined in a mixer, feeding a random series-parallel arrangement
+    of components (splitter / mixer pairs) into a tank. Every edge is a pipe with its own geometry.
+    Node ids are n0, n1, ... in creation order."""
+    nodes, edges = [], []
+
+    def add_node(node_type, data):
+        node_id = f"n{len(nodes)}"
+        nodes.append({"id": node_id, "type": node_type, "position": {"x": 0, "y": 0},
+                      "data": {"label": node_id, **data}})
+        return node_id
+
+    def connect(src, dst):
+        (s, s_port), (t, t_port) = src, dst
+        edges.append({"id": f"e{len(edges)}", "source": s, "target": t, "sourceHandle": s_port,
+                      "targetHandle": t_port, "data": draw(_pipe_data())})
+
+    def place(src, dst, depth):
+        """Connect port src to port dst through a random sub-network."""
+        kind = draw(st.sampled_from(["pipe", "component", "series", "parallel"] if depth < max_depth
+                                    else ["pipe", "component"]))
+        if kind == "pipe":
+            connect(src, dst)
+        elif kind == "component":
+            node_type = draw(st.sampled_from(components))
+            node = add_node(node_type, draw(NETWORK_COMPONENTS[node_type]))
+            connect(src, (node, "inlet-0"))
+            connect((node, "outlet-0"), dst)
+        elif kind == "series":
+            node_type = draw(st.sampled_from(components))
+            node = add_node(node_type, draw(NETWORK_COMPONENTS[node_type]))
+            place(src, (node, "inlet-0"), depth + 1)
+            place((node, "outlet-0"), dst, depth + 1)
+        else:
+            split, mix = add_node("splitter", {}), add_node("mixer", {})
+            connect(src, (split, "inlet-0"))
+            place((split, "outlet-0"), (mix, "inlet-0"), depth + 1)
+            place((split, "outlet-1"), (mix, "inlet-1"), depth + 1)
+            connect((mix, "outlet-0"), dst)
+
+    fluid, temp_k, _, _ = draw(fluid_states())
+    supply = draw(st.sampled_from(["source", "pump", "two_sources"]))
+    if supply == "source":
+        source = add_node("pressure_source", {"source_pressure_bara": draw(st.floats(1.5, 20.0)),
+                                              "temperature_k": temp_k})
+        start = (source, "outlet-0")
+    elif supply == "two_sources":
+        # Streams at different temperatures meet: the mixing energy balance is only visible this way
+        _, other_temp_k, _, _ = draw(fluid_states(fluids=[fluid]))
+        mix = add_node("mixer", {})
+        for k, t in enumerate((temp_k, other_temp_k)):
+            source = add_node("pressure_source", {"source_pressure_bara": draw(st.floats(1.5, 20.0)),
+                                                  "temperature_k": t})
+            place((source, "outlet-0"), (mix, f"inlet-{k}"), max_depth)
+        start = (mix, "outlet-0")
+    else:
+        feed = add_node("tank", {"level_m": draw(st.floats(0.5, 5.0)), "temperature_k": temp_k})
+        pump = add_node("centrifugal_pump", {"flow_rated_lmin": draw(log_uniform(20.0, 2000.0)),
+                                             "head_rated_m": draw(log_uniform(10.0, 120.0))})
+        connect((feed, "outlet-0"), (pump, "inlet-0"))
+        start = (pump, "outlet-0")
+    sink = add_node("tank", {"level_m": draw(st.floats(0.5, 5.0)), "temperature_k": temp_k})
+    place(start, (sink, "inlet-0"), 0)
+    return {"nodes": nodes, "edges": edges, "globalSettings": {"fluid_type": fluid}}

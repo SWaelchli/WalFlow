@@ -97,7 +97,7 @@ $T_{\text{mix}}$ is found by inverting $h(T)$ (`FluidProperties.get_temperature_
 
 Components with their own thermal effect (throttling heat, pump waste heat, heat exchanger duty) set their outlet temperature themselves.
 
-Junctions without their own thermal effect (splitter, measure point) keep the mixed temperature and only call `update_outward_properties()` in `calculate()`, which evaluates density and viscosity of each outward port at its temperature. `has_inflow()` tells whether any port feeds the node.
+Junctions without their own thermal effect (splitter, mixer, measure point) keep the mixed temperature and only call `update_outward_properties()` in `calculate()`, which evaluates density and viscosity of each outward port at its temperature. `has_inflow()` tells whether any port feeds the node.
 
 ### 4.2 Property propagation
 
