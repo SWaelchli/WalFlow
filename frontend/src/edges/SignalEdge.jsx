@@ -21,18 +21,22 @@ export default function SignalEdge({
     targetPosition,
   });
 
+  // Old saved files carry a yellow stroke/dash in style; ignore it so every signal line renders the same way.
+  // eslint-disable-next-line no-unused-vars
+  const { stroke, strokeWidth, strokeDasharray, ...restStyle } = style;
+
   return (
     <>
       <path
         id={id}
         d={edgePath}
         fill="none"
-        stroke="var(--color-primary)"
+        stroke={selected ? 'var(--color-primary)' : 'var(--color-signal)'}
         strokeWidth={selected ? 2.8 : 2.0}
         strokeDasharray="5 5"
         style={{
           transition: 'stroke 0.2s ease',
-          ...style
+          ...restStyle
         }}
       />
       <path
@@ -42,17 +46,6 @@ export default function SignalEdge({
         strokeOpacity={0}
         strokeWidth={16}
         className="react-flow__edge-interaction"
-      />
-      <path
-        d={edgePath}
-        fill="none"
-        stroke="rgba(250, 133, 7, 0.5)"
-        strokeWidth={1.5}
-        strokeDasharray="3 9"
-        style={{
-          animation: 'signalPulse 1.2s linear infinite',
-          pointerEvents: 'none'
-        }}
       />
     </>
   );

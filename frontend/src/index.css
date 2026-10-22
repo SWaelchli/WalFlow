@@ -1,6 +1,7 @@
 /* WalFlow Design System - Brand Theme (#FA8507 & #395253) */
 :root {
   --color-primary: #FA8507;
+  --color-signal: #587071; /* signal (sensing) lines: muted slate */
   --color-primary-hover: #E87F00;
   --color-primary-active: #DE7500;
   --color-primary-text: #B45309; /* orange as text on light surfaces: 5.0:1 on white (#FA8507 is only 2.49:1) */
