@@ -18,36 +18,13 @@ The application allows users to drag various hydraulic components (pumps, valves
 
 ## Building and Running
 
-### Backend (Python)
-
-1.  **Install Dependencies:**
-    It is recommended to use a virtual environment.
-    ```bash
-    pip install -r requirements.txt
-    ```
-
-2.  **Run the Server:**
-    The backend server is a FastAPI application run with uvicorn.
-    ```bash
-    uvicorn main:app --app-dir backend --reload --port 8000
-    ```
-    The server will be available at `http://localhost:8000`.
-
-### Frontend (React)
-
-1.  **Install Dependencies:**
-    Navigate to the `frontend` directory.
-    ```bash
-    cd frontend
-    npm install
-    ```
-
-2.  **Run the Development Server:**
-    This command starts the Vite development server.
-    ```bash
-    npm run dev
-    ```
-    The frontend will be available at `http://localhost:5173` by default and will connect to the backend WebSocket at `ws://localhost:8000/ws/simulate`.
+```bash
+# Backend (FastAPI, use a virtual environment): http://localhost:8000
+pip install -r requirements-dev.txt
+uvicorn main:app --app-dir backend --reload --port 8000
+# Frontend (Vite): http://localhost:5173, connects to ws://localhost:8000/ws/simulate
+cd frontend && npm install && npm run dev
+```
 
 ## Development Conventions
 
@@ -63,12 +40,39 @@ The project has a clear process for adding new hydraulic components, which invol
 
 Always read and follow the `walflow-qa` skill ([.claude/skills/walflow-qa/SKILL.md](./.claude/skills/walflow-qa/SKILL.md)) before writing, changing or deleting any test, fixing a bug, or adding equipment. It holds the test strategy (test pyramid, property tests with hypothesis), where each test belongs, the bug-fix decision tree, naming and audit-marker rules, and the gate. Prefer strengthening an existing property or adding a reference-table row over adding a new test function.
 
-Run the gate before finishing any change:
+Run the gate before finishing any change (via `walflow-gate-runner`, see below):
 ```bash
 cd backend && python -m pytest
 cd frontend && npm run lint && npm test && npm run build
 ```
 GitHub Actions runs the same gate only when a release tag is pushed, and blocks Docker publishing if it fails; pushes to `main` are not checked in CI.
+
+## Orchestrator Delegation Protocol
+
+The main session (Opus) is the orchestrator. It keeps the user conversation, decisions and physics; noisy or
+specialised work goes to the subagents in `.claude/agents/`, which return short reports, not logs.
+
+**The orchestrator keeps:** clarifying requirements and getting confirmation; all changes to `backend/simulation/`
+(solver, graph parser, equipment, fluids) and their equipment `.md` docs; backend API/service code; cross-cutting
+design; `CHANGELOG.md`, versions and git commits.
+
+| Task | Delegate to |
+|---|---|
+| Find code across 3+ files or in unfamiliar areas | `walflow-scout` |
+| Run the gate or any test/lint/build subset | `walflow-gate-runner` |
+| Write, change, move or delete tests; red test for a bug fix | `walflow-test-author` |
+| Frontend UI/UX implementation in `frontend/src/` | `walflow-frontend-dev` |
+| Review a change in `backend/simulation/` | `walflow-physics-reviewer` |
+
+Rules:
+1. A single Grep, or a Read of a known file, stays inline. Delegate when the search spans 3+ files or the output is noisy.
+2. Never run the gate or a test suite inline; never edit tests or frontend components inline (small one-line fixes excepted).
+3. Briefs are self-contained: goal, target paths, acceptance criteria, the skill to load. Subagents do not see the chat.
+4. Trust the report; do not re-run or re-read what a subagent already reported unless it is contradictory.
+5. Typical flow: confirm requirements -> scout -> implement (orchestrator or frontend-dev) -> physics-reviewer if
+   `backend/simulation/` changed -> test-author -> gate-runner -> report to user.
+6. Write scopes are enforced by `.claude/hooks/scope-guard.mjs`: test-author writes only tests, frontend-dev only
+   `frontend/src` (no tests) and `frontend/public`, the other agents nothing.
 
 
 ## Interaction with User
