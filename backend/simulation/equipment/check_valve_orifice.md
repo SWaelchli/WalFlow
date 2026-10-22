@@ -69,11 +69,9 @@ applied to the outlet for $Q \ge 0$ and to the inlet for $Q < 0$.
 | Parameter (UI Label) | UI Unit | Backend Var | SI Unit | Default | Valid Range | Description |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | Flow Coefficient (Cv) | Cv | `self.cv` | Cv | 10 | $\ge 0.001$ | Cv of the open seat |
-| Cracking Pressure | bar (psi) | `self.cracking_pressure_bar` | bar (→ Pa) | 0.05 | $\ge 0$ | Pressure difference to open the seat |
+| Cracking ΔP | bar (psi) | `self.cracking_pressure_bar` | bar (→ Pa) | 0.05 | $\ge 0$ | Pressure difference to open the seat |
 | Orifice Diameter | mm (in) | `self.orifice_diameter` | m | 10 mm | $\ge 0.1$ mm, $< D$ | Bypass bore |
 | Pipe bore | from the connected pipe | `self.pipe_diameter` | m | 0.1 m | $\ge 1$ mm | Line bore around the orifice |
-
-The inspector labels the cracking pressure in barg/psig; the value is a pressure difference.
 
 ## 6. Operating Modes & Model Boundaries
 

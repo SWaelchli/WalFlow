@@ -28,11 +28,11 @@ Status: `open` / `fixed` / `rejected`. "Confirmed" means it was reproduced by ru
 | D-09 | Check valve with orifice | Ranked as a closed check valve in shut-in sections; model simplifications | Low | Confirmed | fixed |
 | D-10 | Pumps | Efficiency floors differ between power and heat; braking PD pump heat | Low | Code reading | fixed |
 | D-11 | Linear control valve | Jump between 0 % and 0.1 % opening | Low | Code reading | fixed |
-| D-12 | Check valves (UI) | Cracking pressure labelled barg / psig but is a difference | Low (UI) | Code reading | open |
+| D-12 | Check valves (UI) | Cracking pressure labelled barg / psig but is a difference | Low (UI) | Code reading | fixed |
 | D-13 | Solver / all components | Analytical `calculate_dp_derivative` unused except pipes and pumps | Info | Code reading | open |
 | D-14 | Base node | `is_flow_boundary` is a dead flag | Cleanup | Code reading | open |
 | D-15 | Pipe | `friction_factor` constructor argument unused | Cleanup | Code reading | fixed |
-| D-16 | Tank | Default level 2 m in the UI, 1 m in the parser | Cleanup | Code reading | open |
+| D-16 | Tank | Default level 2 m in the UI, 1 m in the parser | Cleanup | Code reading | fixed |
 | D-17 | PSV | `action_mode = rupture_disc` duplicates the rupture disc component | Cleanup / decision | Code reading | open |
 
 ---

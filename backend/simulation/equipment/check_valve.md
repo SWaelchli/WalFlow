@@ -72,9 +72,7 @@ applied to the outlet for $Q \ge 0$ and to the inlet for $Q < 0$. A closed valve
 | Parameter (UI Label) | UI Unit | Backend Var | SI Unit | Default | Valid Range | Description |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | Flow Coefficient (Cv) | Cv | `self.cv` | Cv | 10 | $\ge 0.001$ | Cv of the open valve |
-| Cracking Pressure | bar (psi) | `self.cracking_pressure_bar` | bar (→ Pa) | 0.05 | $\ge 0$ | Pressure difference to open |
-
-The labels say barg/psig in the inspector, but the value is a pressure **difference** across the valve (`_bar`).
+| Cracking ΔP | bar (psi) | `self.cracking_pressure_bar` | bar (→ Pa) | 0.05 | $\ge 0$ | Pressure difference to open |
 
 ## 6. Operating Modes & Model Boundaries
 
