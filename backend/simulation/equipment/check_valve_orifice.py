@@ -1,6 +1,8 @@
 import math
+from scipy.optimize import brentq
 from simulation.equipment.base_node import HydraulicNode
 from simulation.fluid_utils import FluidProperties
+from simulation.equipment.check_valve import open_seat_dp
 
 class CheckValveOrifice(HydraulicNode):
     """
@@ -48,33 +50,24 @@ class CheckValveOrifice(HydraulicNode):
     def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
         """
         Calculates total pressure drop across Check Valve w/ Orifice.
-        Sub-cracking or reverse flow (Q < 0): All flow passes through the orifice.
-        Forward flow above cracking pressure (Q > 0): Parallel flow across main seat and orifice.
-        Smoothly blended at the transition point using a sigmoid tanh function.
+        Reverse flow, or forward flow whose orifice drop stays below the cracking pressure: all flow through the orifice.
+        Above cracking: seat and orifice in parallel at one valve drop (D-09),
+        Q = Q_ori(dP) + Q_seat(dP - P_crack), solved for the orifice share of the flow.
         """
-        K_CV_SI = 1.732e9
         cracking_pa = self.cracking_pressure_bar * 100000.0
         dp_ori = self._calculate_orifice_dp(flow_rate, density, viscosity)
+        # Seat shut; a non-finite state (diverged iterate) passes through as NaN for the solver to reject
+        if not (flow_rate > 0 and dp_ori > cracking_pa and math.isfinite(density) and math.isfinite(viscosity)):
+            return dp_ori
 
-        # Sigmoid blend factor based on how much the orifice dP exceeds cracking pressure
-        # Center of transition is dp_ori = cracking_pa, width scale is 1000 Pa (0.01 bar)
-        scale = 1000.0
-        s = 0.5 * (1.0 + math.tanh((dp_ori - cracking_pa) / scale))
+        # Orifice drop rises and seat drop falls with the orifice share q_o: one root on (0, Q)
+        def mismatch(q_o):
+            return (self._calculate_orifice_dp(q_o, density, viscosity) - cracking_pa
+                    - open_seat_dp(self.cv, flow_rate - q_o, density, viscosity)[0])
 
-        if flow_rate <= 0:
-            s = 0.0
-
-        # Closed seat dP (all flow through orifice)
-        dp_closed = dp_ori
-
-        # Open seat dP (parallel flow conducting through main seat + orifice bypass)
-        k_v = self.cv / math.sqrt(K_CV_SI * density)
-        k_o = abs(flow_rate) / math.sqrt(max(1.0, abs(dp_ori)))
-        k_total = k_v + k_o
-        dp_parallel = cracking_pa + (flow_rate / k_total)**2
-
-        # Smooth blend of closed and parallel flow
-        return (1.0 - s) * dp_closed + s * dp_parallel
+        # 1e-12 of the flow: far below the solver's finite-difference step, with a floor for denormal flows
+        q_o = brentq(mismatch, 0.0, flow_rate, xtol=max(1e-12 * flow_rate, 1e-300), rtol=1e-12)
+        return self._calculate_orifice_dp(q_o, density, viscosity)
 
     def calculate(self):
         """Updates outlet port conditions and thermal enthalpy balance."""

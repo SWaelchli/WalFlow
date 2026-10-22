@@ -24,37 +24,37 @@ $$\Delta P_{\text{ori}} = \frac{\rho\, v_1|v_1|}{2} \cdot \frac{1 - \beta^4}{C_d
 
 $v_1$ is the pipe velocity, $\mathrm{Re}_o$ the orifice Reynolds number. The parser sets $D$ from the connected pipe (upstream first), overriding `pipe_diameter_m`.
 
-### 3.2 Seat open: parallel paths
+### 3.2 Seat (`open_seat_dp`, shared with the check valve)
 
-Conductances in the form $Q = k\sqrt{\Delta P}$:
+Above the cracking pressure the seat behaves like the plain check valve: Cv with the IEC 60534 viscosity factor $F_R(\mathrm{Re}_v)$, $\mathrm{Re}_v$ over the nominal seat bore $d_v = \max(2\ \text{mm},\ 0.01\sqrt{C_v})$:
 
-$$k_v = \frac{C_v}{\sqrt{K_{Cv}\, \rho}}, \qquad k_o = \frac{|Q|}{\sqrt{\max(1,\ |\Delta P_{\text{ori}}(Q)|)}}, \qquad \Delta P_{\text{par}} = P_{\text{crack}} + \left(\frac{Q}{k_v + k_o}\right)^2$$
+$$\Delta P_{\text{seat}}(q_s) = \frac{K_{Cv}\, \rho\, q_s|q_s|}{(C_v F_R)^2}, \qquad K_{Cv} = 1.732 \times 10^9$$
 
-$K_{Cv} = 1.732 \times 10^9$. $k_o$ is the orifice conductance evaluated at the total flow. The seat has no viscosity correction.
+### 3.3 Paths (`calculate_delta_p`)
 
-### 3.3 Blend (`calculate_delta_p`)
+- **Reverse flow, or forward flow with $\Delta P_{\text{ori}}(Q) \le P_{\text{crack}}$:** the seat is shut, all flow passes the orifice, $\Delta P = \Delta P_{\text{ori}}(Q)$.
+- **Forward flow above cracking:** seat and orifice in parallel at **one** valve drop (D-09):
 
-$$s = \begin{cases} \tfrac{1}{2}\left(1 + \tanh\dfrac{\Delta P_{\text{ori}} - P_{\text{crack}}}{1000\ \text{Pa}}\right) & Q > 0 \\ 0 & Q \le 0 \end{cases}, \qquad \Delta P = (1 - s)\,\Delta P_{\text{ori}} + s\,\Delta P_{\text{par}}$$
+$$Q = q_o + q_s, \qquad \Delta P = \Delta P_{\text{ori}}(q_o) = P_{\text{crack}} + \Delta P_{\text{seat}}(q_s)$$
 
-- **Reverse flow and low forward flow:** all flow through the orifice.
-- **Forward flow above cracking:** seat and orifice in parallel.
-- The transition is centred where the orifice drop equals the cracking pressure, with a width of about 10 mbar.
+The orifice share $q_o \in (0, Q)$ is the single root of $\Delta P_{\text{ori}}(q_o) - P_{\text{crack}} - \Delta P_{\text{seat}}(Q - q_o)$ (Brent, tolerance $10^{-12}$ of the flow); the orifice drop rises and the seat drop falls with $q_o$. The drop is continuous everywhere and monotonic in $Q$; its slope has a kink where the seat cracks (the seat takes the extra flow at almost no extra drop), as a real check valve does.
 
 ### 3.4 Worked example
 
-Cv 10, cracking 0.05 bar, 5 mm orifice in DN50 (52.5 mm), water at 20 °C:
+Cv 10, cracking 0.05 bar, 5 mm orifice in DN50 (52.5 mm), water at 20 °C. The orifice alone reaches the cracking pressure at about 2.25 L/min:
 
 | Flow | $\Delta P$ | Path |
 | :--- | :--- | :--- |
 | −20 L/min | −3.96 bar | orifice (reverse) |
 | 1 L/min | 0.010 bar | orifice |
-| 5 L/min | 0.051 bar | transition |
-| 10 L/min | 0.054 bar | seat + orifice |
-| 60 L/min | 0.201 bar | seat + orifice |
+| 2.5 L/min | 0.050 bar | seat just open |
+| 5 L/min | 0.050 bar | seat + orifice |
+| 10 L/min | 0.053 bar | seat + orifice |
+| 60 L/min | 0.200 bar | seat + orifice |
 
 ### 3.5 Derivative
 
-The class has no `calculate_dp_derivative` of its own; the solver differentiates the outlet pressure numerically (see [base_node.md](base_node.md#33-jacobian)). The blend is smooth for $Q > 0$; at $Q = 0$ the slope of $s$ changes (with a small cracking pressure, $s$ jumps from 0 to about 0.5 while both drops are near zero).
+The class has no `calculate_dp_derivative` of its own; the solver differentiates the outlet pressure numerically (see [base_node.md](base_node.md#33-jacobian)).
 
 ## 4. Thermal & Energy Balance
 
@@ -81,9 +81,9 @@ The inspector labels the cracking pressure in barg/psig; the value is a pressure
 - **Solver flags:** all `False` (`is_pressure_boundary`, `is_flow_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation`).
 - **Inactive:** `active` has no effect.
 - **Reverse flow:** passes through the orifice; $\Delta P$ is negative.
-- **Shut-in sections:** with $|Q| \le 10^{-7}$ m³/s it is ranked as a check-valve leak path like the plain check valve, although its orifice connects both sides.
+- **Shut-in sections:** the orifice always connects both sides, so it is no leak path in the stagnant-pressure ranking: at zero flow both sides share one pressure (D-09).
 - **Operating cases:** all fields can be overridden per case.
-- **Not modelled:** the orifice seeing the full valve $\Delta p$ when the seat is open (it is combined as a conductance), viscosity correction of the seat, partial lift.
+- **Not modelled:** partial lift (the seat is a fixed Cv once cracked), seat leakage in reverse flow.
 
 ## 7. Verification & Benchmarks
 
@@ -92,8 +92,12 @@ The inspector labels the cracking pressure in barg/psig; the value is a pressure
 | `backend/tests/unit/equipment/test_check_valve_orifice.py::test_check_valve_orifice_physics` | Cv 10, 0.05 bar, 10 mm orifice in 100 mm: positive drop at 6 L/min, negative drop at −6 L/min, at least 0.05 bar at 60 L/min |
 | `test_check_valve_orifice.py::test_graph_parser_check_valve_orifice` | Parser reads Cv 12, cracking 0.08 bar, orifice 15 mm |
 | `backend/tests/unit/fluids/test_throttling_heat.py::test_f1_16_throttling_heat_magnitude` | Outlet temperature rise $= \Delta P/(\rho c_p)$ within 2 % |
-
-No dedicated benchmark of the parallel-path drop against an independent calculation.
+| `test_check_valve_orifice.py::test_d09_flow_splits_between_seat_and_orifice_at_one_valve_drop` | Water and oil, cracking 0 / 0.05 / 0.3 bar, −20 to 200 L/min: inverted orifice flow plus plain check valve seat flow at the returned drop equals $Q$ ($10^{-8}$) |
+| `test_check_valve_orifice.py::test_d09_seat_has_the_viscosity_correction` | Open seat in viscous oil needs more drop than at water viscosity |
+| `test_check_valve_orifice.py::test_d09_drop_is_continuous_and_monotonic_through_zero_and_cracking` | Zero drop at zero flow, strictly rising, no jump at $Q = 0$ or at cracking |
+| `test_check_valve_orifice.py::test_d09_non_finite_state_does_not_raise` | NaN flow, density or viscosity passes through (NaN or the orifice drop), no exception |
+| `test_check_valve_orifice.py::test_d09_tiny_forward_flow_with_zero_cracking_does_not_raise` | Denormal forward flow with zero cracking pressure returns a drop between 0 and the orifice drop |
+| `backend/tests/unit/solver/test_stagnant_branches.py::test_d09_section_behind_a_check_valve_with_orifice_takes_the_header_pressure` | Section between a stopped PD pump and the valve sits at header pressure (1 Pa), both solver methods |
 
 ## Data Fields
 

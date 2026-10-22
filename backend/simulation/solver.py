@@ -1853,7 +1853,8 @@ class NetworkSolver:
                 port.pressure = p
 
 RELIEF_NODE_TYPES = ('pressure_safety_valve', 'rupture_disc')
-CHECK_VALVE_TYPES = ('check_valve', 'check_valve_orifice')
+# The check valve with orifice is no leak path: its bypass orifice always ties both sides together (D-09)
+CHECK_VALVE_TYPES = ('check_valve',)
 # Leak paths out of a shut-in section, strongest first (ROADMAP "Undefined Pressure in Stagnant Branches")
 LEAK_STOPPED_PUMP, LEAK_CHECK_VALVE, LEAK_RELIEF_SEAT = 0, 1, 2
 Q_STAGNANT = 1e-7               # m³/s (6 mL/min): a check valve below this flow is closed

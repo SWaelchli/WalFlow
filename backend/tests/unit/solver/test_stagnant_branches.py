@@ -9,6 +9,7 @@ import pytest
 from physics_refs import solve
 from simulation.equipment.centrifugal_pump import CentrifugalPump
 from simulation.equipment.check_valve import CheckValve
+from simulation.equipment.check_valve_orifice import CheckValveOrifice
 from simulation.equipment.flow_source import FlowSource
 from simulation.equipment.linear_control_valve import LinearControlValve
 from simulation.equipment.linear_regulator import LinearRegulator
@@ -304,3 +305,26 @@ def test_flow_source_at_zero_flow_is_no_pressure_reference(method):
     source = nodes["source"].outlets[0]
     assert source.stagnant
     assert source.pressure == pytest.approx(nodes["nrv"].outlets[0].pressure, abs=1.0)
+
+
+@pytest.mark.audit("D-09")
+@pytest.mark.parametrize("method", METHODS)
+def test_d09_section_behind_a_check_valve_with_orifice_takes_the_header_pressure(method):
+    # The bypass orifice always connects both sides: at zero flow it has no pressure drop, so the section
+    # between the stopped PD pump and the valve sits at header pressure, not at the pump suction pressure
+    NetworkSolver.clear_warm_start_cache()
+    pump = VolumetricPump("Standby pump", flow_rated=30.0 / 60000.0, motor_power=3000.0, efficiency=0.85)
+    pump.active = False
+    nodes = {"suction": Tank("Suction", fluid_level=2.0), "pump": pump,
+             "nrv": CheckValveOrifice("NRV", pipe_diameter=ID, orifice_diameter=0.003)}
+    edges = [{"id": "e_suction", "source": "suction", "target": "pump", "pipe": Pipe("suction", 1, ID)},
+             {"id": "e_discharge", "source": "pump", "target": "nrv", "pipe": Pipe("discharge", 1, ID)},
+             {"id": "e_nrv", "source": "nrv", "target": "mix", "target_port": "inlet-1", "pipe": Pipe("NRV outlet", 1, ID)}]
+    _header_and_consumer(nodes, edges)
+    stats = solve(nodes, edges, solver_method=method)
+    assert stats["success"], stats.get("error")
+    p_header_side = nodes["nrv"].outlets[0].pressure
+    assert p_header_side > nodes["suction"].outlets[0].pressure + 1e5
+    for port in (nodes["nrv"].inlets[0], pump.outlets[0]):
+        assert port.flow_rate == pytest.approx(0.0, abs=1e-9)
+        assert port.pressure == pytest.approx(p_header_side, abs=1.0)

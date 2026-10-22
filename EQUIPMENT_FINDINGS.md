@@ -25,7 +25,7 @@ Status: `open` / `fixed` / `rejected`. "Confirmed" means it was reproduced by ru
 | D-06 | Pipe | Roughness 0 replaced by 0.045 mm | Medium | Code reading | fixed |
 | D-07 | Reducer vs pipe | Two different friction factor functions | Low | Code reading | fixed |
 | D-08 | Calibrated restriction | Calibrates before the parser sets bore and fluid; recalibrates every call; zero inputs replaced | Low | Confirmed | fixed |
-| D-09 | Check valve with orifice | Ranked as a closed check valve in shut-in sections; model simplifications | Low (to verify) | Code reading | open |
+| D-09 | Check valve with orifice | Ranked as a closed check valve in shut-in sections; model simplifications | Low | Confirmed | fixed |
 | D-10 | Pumps | Efficiency floors differ between power and heat; braking PD pump heat | Low | Code reading | open |
 | D-11 | Linear control valve | Jump between 0 % and 0.1 % opening | Low | Code reading | open |
 | D-12 | Check valves (UI) | Cracking pressure labelled barg / psig but is a difference | Low (UI) | Code reading | open |

@@ -2,6 +2,19 @@ from simulation.equipment.base_node import HydraulicNode
 from simulation.fluid_utils import FluidProperties
 import math
 
+def open_seat_dp(cv: float, flow_rate: float, density: float, viscosity: float = 0.001) -> tuple:
+    """Open seat friction drop and its slope: Cv with the IEC 60534 viscosity factor F_R over the nominal seat bore.
+    Shared with the check valve with orifice (D-09)."""
+    K_CV_SI = 1.732e9
+    d_v = max(0.002, 0.01 * math.sqrt(cv))
+    v_v = flow_rate / (0.25 * math.pi * d_v**2)
+    re_v = (density * abs(v_v) * d_v) / max(1e-7, viscosity)
+    cv_adj = max(0.0001, cv * FluidProperties.get_valve_fr(re_v))
+    dp_friction = (K_CV_SI * density * flow_rate * abs(flow_rate)) / (cv_adj ** 2)
+    deriv = (2.0 * K_CV_SI * density * abs(flow_rate)) / (cv_adj ** 2)
+    return dp_friction, deriv
+
+
 class CheckValve(HydraulicNode):
     """
     A check valve (non-return valve) that permits fluid flow in only one direction.
@@ -20,17 +33,7 @@ class CheckValve(HydraulicNode):
         """
         Computes check valve open pressure drop and its analytical derivative w.r.t. flow rate.
         """
-        K_CV_SI = 1.732e9
-        effective_cv = self.cv
-        d_v = max(0.002, 0.01 * math.sqrt(effective_cv))
-        v_v = flow_rate / (0.25 * math.pi * d_v**2) if d_v > 0 else 0.0
-        re_v = (density * abs(v_v) * d_v) / max(1e-7, viscosity)
-        fr = FluidProperties.get_valve_fr(re_v)
-        cv_adj = max(0.0001, effective_cv * fr)
-
-        dp_friction = (K_CV_SI * density * flow_rate * abs(flow_rate)) / (cv_adj ** 2)
-        deriv = (2.0 * K_CV_SI * density * abs(flow_rate)) / (cv_adj ** 2)
-        return dp_friction, deriv
+        return open_seat_dp(self.cv, flow_rate, density, viscosity)
 
     def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001, p_in_pa: float = None, p_out_pa: float = None, update_state: bool = True) -> float:
         """
