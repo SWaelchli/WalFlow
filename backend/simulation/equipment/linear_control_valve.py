@@ -2,6 +2,10 @@ from simulation.equipment.base_node import HydraulicNode
 from simulation.fluid_utils import FluidProperties
 import math
 
+# Smallest Cv-controlled opening; below it the valve is closed (D-11)
+MIN_OPENING_PCT = 0.1
+CLOSED_STIFFNESS = 1e12  # Pa s/m^3, linear resistance of a closed valve
+
 class LinearControlValve(HydraulicNode):
     """
     A control valve with a linear trim characteristic.
@@ -20,14 +24,11 @@ class LinearControlValve(HydraulicNode):
         Calculates pressure drop across the valve based on its current position.
         Uses the liquid Cv formula with IEC 60534-2-1 viscosity correction (Fr).
         """
-        if self.opening_pct == 0.0:
-            # Block flow completely using a very high linear resistance
-            stiffness = 1e12
-            return stiffness * flow_rate
+        if self.opening_pct < MIN_OPENING_PCT:
+            # Closed below the minimum opening: block flow with a very high linear resistance
+            return CLOSED_STIFFNESS * flow_rate
 
-        # Prevent division by zero mathematically. 
-        # A "closed" valve is just simulated as having an incredibly small opening.
-        effective_opening = max(0.001, self.opening_pct / 100.0)
+        effective_opening = self.opening_pct / 100.0
         
         # Calculate the effective Cv (assuming a linear trim)
         cv_eff = self.max_cv * effective_opening
@@ -48,9 +49,9 @@ class LinearControlValve(HydraulicNode):
         return dp
 
     def calculate_dp_derivative(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
-        if self.opening_pct == 0.0:
-            return 1e12
-        effective_opening = max(0.001, self.opening_pct / 100.0)
+        if self.opening_pct < MIN_OPENING_PCT:
+            return CLOSED_STIFFNESS
+        effective_opening = self.opening_pct / 100.0
         cv_eff = self.max_cv * effective_opening
         d_v = max(0.002, 0.01 * math.sqrt(cv_eff))
         v_v = flow_rate / (0.25 * math.pi * d_v**2)

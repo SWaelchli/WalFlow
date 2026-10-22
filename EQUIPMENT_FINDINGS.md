@@ -27,7 +27,7 @@ Status: `open` / `fixed` / `rejected`. "Confirmed" means it was reproduced by ru
 | D-08 | Calibrated restriction | Calibrates before the parser sets bore and fluid; recalibrates every call; zero inputs replaced | Low | Confirmed | fixed |
 | D-09 | Check valve with orifice | Ranked as a closed check valve in shut-in sections; model simplifications | Low | Confirmed | fixed |
 | D-10 | Pumps | Efficiency floors differ between power and heat; braking PD pump heat | Low | Code reading | fixed |
-| D-11 | Linear control valve | Jump between 0 % and 0.1 % opening | Low | Code reading | open |
+| D-11 | Linear control valve | Jump between 0 % and 0.1 % opening | Low | Code reading | fixed |
 | D-12 | Check valves (UI) | Cracking pressure labelled barg / psig but is a difference | Low (UI) | Code reading | open |
 | D-13 | Solver / all components | Analytical `calculate_dp_derivative` unused except pipes and pumps | Info | Code reading | open |
 | D-14 | Base node | `is_flow_boundary` is a dead flag | Cleanup | Code reading | open |

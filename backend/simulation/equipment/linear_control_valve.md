@@ -17,9 +17,9 @@ The Cv equation is the standard one. The viscosity correction is a smooth approx
 
 ### 3.1 Effective Cv (linear trim)
 
-$$C_{v,\text{eff}} = C_{v,\max} \cdot \max\!\left(0.001,\ \frac{\text{opening}}{100}\right)$$
+$$C_{v,\text{eff}} = C_{v,\max} \cdot \frac{\text{opening}}{100}, \qquad \text{opening} \ge 0.1\,\%$$
 
-$C_v$ is in US units (US gpm at 1 psi with water). An opening between 0 and 0.1 % is treated as 0.1 %.
+$C_v$ is in US units (US gpm at 1 psi with water). 0.1 % (`MIN_OPENING_PCT`) is the smallest Cv-controlled opening; below it the valve is closed (section 3.2).
 
 ### 3.2 Pressure drop (`calculate_delta_p`)
 
@@ -27,7 +27,7 @@ $$\Delta P = \frac{K_{Cv}\, \rho\, Q\,|Q|}{\big(C_{v,\text{eff}}\, F_R\big)^2}, 
 
 with $\Delta P$ in Pa, $Q$ in m³/s and $\rho$ in kg/m³. $K_{Cv} = 15\,850.32^2 \times 6894.76 / 1000$ converts the US Cv definition $Q_{\text{gpm}} = C_v \sqrt{\Delta P_{\text{psi}} / SG}$ to SI with $SG = \rho / 1000$. $C_{v,\text{eff}} F_R$ is kept at least $10^{-4}$.
 
-**Exactly 0 % opening** is a closed valve: $\Delta P = 10^{12}\, Q$, a linear stiffness that blocks the flow (leakage below $10^{-7}$ L/min per bar).
+**An opening below 0.1 %** (including 0 %) is a closed valve: $\Delta P = 10^{12}\, Q$, a linear stiffness that blocks the flow (leakage below $10^{-7}$ L/min per bar).
 
 ### 3.3 Viscosity correction $F_R$ (`FluidProperties.get_valve_fr`)
 
@@ -55,7 +55,7 @@ $C_{v,\max}$ = 10, 100 L/min at 40 °C:
 
 $$\frac{\partial \Delta P}{\partial Q} = \frac{2\, K_{Cv}\, \rho\, |Q|}{\big(C_{v,\text{eff}} F_R\big)^2}$$
 
-$F_R$ is held constant. At 0 % opening the slope is $10^{12}$ Pa·s/m³. In the network Jacobian the solver differentiates the outlet pressure numerically, so the change of $F_R$ with $Q$ is included (see [base_node.md](base_node.md#33-jacobian)).
+$F_R$ is held constant. Below 0.1 % opening the slope is $10^{12}$ Pa·s/m³. In the network Jacobian the solver differentiates the outlet pressure numerically, so the change of $F_R$ with $Q$ is included (see [base_node.md](base_node.md#33-jacobian)).
 
 ## 4. Thermal & Energy Balance
 
@@ -70,13 +70,13 @@ applied to the outlet for $Q \ge 0$ and to the inlet for $Q < 0$, with density a
 | Parameter (UI Label) | UI Unit | Backend Var | SI Unit | Default | Valid Range | Description |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | Max Cv | Cv (US gpm/psi^0.5) | `self.max_cv` | Cv | 0.05 | $> 0$ | Flow coefficient at 100 % opening |
-| Opening | % | `self.opening_pct` | % | 50 | 0-100 | Valve position; 0 = closed |
+| Opening | % | `self.opening_pct` | % | 50 | 0-100 | Valve position; below 0.1 % = closed |
 
 ## 6. Operating Modes & Model Boundaries
 
 - **Steady state:** fixed position, no stroking time ($\Delta t = 0$).
 - **Solver flags:** all `False` (`is_pressure_boundary`, `is_flow_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation`).
-- **Inactive:** `active` has no effect; close the valve with 0 % opening.
+- **Inactive:** `active` has no effect; close the valve with an opening below 0.1 %.
 - **Reverse flow:** symmetric; $\Delta P$ is odd in $Q$.
 - **Operating cases:** opening and Cv can be overridden per case.
 - **Not modelled:**
@@ -84,7 +84,7 @@ applied to the outlet for $Q \ge 0$ and to the inlet for $Q < 0$, with density a
   - choked flow and cavitation ($F_L$, $x_{FZ}$); `flashing_warning` flags an outlet below vapour pressure, but the flow is not limited;
   - piping geometry factor $F_P$ (reducers around the valve);
   - laminar valve flow (section 3.3);
-  - rangeability: the trim stays linear down to 0.1 %.
+  - rangeability: the trim stays linear down to 0.1 %, and the drop jumps there from the Cv law to the closed stiffness (no gradual seat closure).
 
 ## 7. Verification & Benchmarks
 
@@ -93,6 +93,8 @@ applied to the outlet for $Q \ge 0$ and to the inlet for $Q < 0$, with density a
 | `backend/tests/unit/fluids/test_throttling_heat.py::test_f1_16_throttling_heat_magnitude` | Cv 1 at 50 %, drop above 0.5 bar: outlet temperature rise $= \Delta P/(\rho c_p)$ within 2 % |
 | `backend/tests/unit/fluids/test_npsh.py::test_f1_28_valve_outlet_below_vapor_pressure_is_flagged`, `test_f1_28_cold_valve_is_not_flagged` | Cv 5 at 50 % between a 5 m tank and an open tank: water at 120 °C sets `flashing_warning`, at 20 °C it does not |
 | `backend/tests/unit/solver/test_basic_components.py::test_mass_balance` | Valve as the load of a mixer network; flows balance within $10^{-10}$ m³/s |
+| `backend/tests/unit/equipment/test_linear_control_valve.py::test_d11_opening_below_minimum_is_closed` | 0, 0.05 and 0.0999 % are closed: $\Delta P = 10^{12} Q$, slope $10^{12}$ |
+| `test_linear_control_valve.py::test_d11_minimum_opening_follows_the_cv_law` | 0.1 % follows the Cv law: twice the flow gives four times the drop (5 %), slope $2\Delta P/Q$ |
 
 No dedicated benchmark of the Cv equation or $F_R$; the same equation is checked through the regulator and remote control valve tests (`test_demand_flow_through_the_locked_regulator_matches_the_valve_equation`, `test_remote_control_valve_init_and_derivatives`).
 
