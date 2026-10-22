@@ -1,5 +1,4 @@
 from simulation.equipment.base_node import HydraulicNode
-from simulation.fluid_utils import FluidProperties
 
 class Mixer(HydraulicNode):
     """
@@ -28,15 +27,11 @@ class Mixer(HydraulicNode):
         # All inlets must be at the same pressure as the outlet
         # In the solver, this will be used to calculate the residual error.
         outlet.pressure = self.inlets[0].pressure
-        outlet.density = self.inlets[0].density
-        outlet.viscosity = self.inlets[0].viscosity
         
         self.calculate_temperature()
 
-        # Report outlet properties at the mixed temperature (not inlet 0's)
-        if outlet.flow_rate >= 0 and self.global_settings:
-            fluid_type = self.global_settings.fluid_type
-            outlet.density = FluidProperties.get_density(fluid_type, outlet.temperature)
-            outlet.viscosity = FluidProperties.get_viscosity(fluid_type, outlet.temperature)
-        
+        # Every port with outward flow reports density and viscosity at the mixed temperature: the outlet,
+        # and inlets that carry reverse flow back to their pipe (D-18)
+        self.update_outward_properties()
+
         return 0.0

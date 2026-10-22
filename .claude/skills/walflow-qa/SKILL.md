@@ -24,6 +24,7 @@ From the base (most checks, cheapest) to the top (fewest):
 | 0 Static | Lint, build, shipped-file schema | `npm run lint`, `npm run build`, `regression/test_shipped_files.py` | ESLint, Vite, pytest |
 | 1 Contracts | Laws every equipment model keeps, over generated parameters, fluids and flows | `unit/equipment/test_equipment_contracts.py` | hypothesis |
 | 2 Reference | One component's numbers against an independent reference (closed form, standard, datasheet) | `unit/equipment/test_<name>.py`, `unit/fluids`, `unit/solver` | pytest parametrize |
+| 3 Networks | Laws every solved network obeys (mass, energy, pressure, order and warm-start independence) on generated networks | `scenarios/test_network_invariants.py` | hypothesis |
 | 3 Scenarios | Interactions only a specific topology shows (controllers, relief, islands) | `scenarios/` | pytest |
 | 4 Golden | Every shipped example against reviewed results | `regression/test_golden_examples.py` | golden JSON |
 | 5 API | HTTP / WebSocket / database behaviour | `api/` | pytest, httpx |
@@ -102,6 +103,25 @@ Read [references/property-testing.md](references/property-testing.md) before wri
   to a limit. Absolute ranges over many decades rarely reach those branches.
 - Profiles: `default` (60 examples, derandomized, used by the gate) and `explore`
   (`HYPOTHESIS_PROFILE=explore`, 2000 random examples) to hunt for new failures after a physics change.
+
+### Network properties
+
+`helpers/strategies.networks()` generates saved-file graphs: one of three supplies (pressure source, tank and
+centrifugal pump, or two sources at different temperatures meeting in a mixer) feeding a random series-parallel
+arrangement of `NETWORK_COMPONENTS` into a tank. Each one has exactly one steady state, so the solver must find it.
+`test_network_invariants.py` checks on every solved network: convergence to finite values, mass balance, pressure
+continuity and fall along the flow, dissipation never cools, enthalpy balance at junctions, independence of ids and
+list order, and warm start equal to cold start.
+
+A component belongs in `NETWORK_COMPONENTS` when its behaviour depends only on its local flow. Controllers,
+relief devices and the 3-way TCV have several states or outer loops and stay in their own scenarios. A
+generated network the solver cannot solve is a finding: either the solver is wrong, or the generator produced
+a case the model does not cover. Then log it in `EQUIPMENT_FINDINGS.md` with the shrunk network, constrain the
+generator and say why in a comment (the reducer is out until D-19 is fixed).
+
+If a property fails only in the full run, it is still a real case: hypothesis mixes constants from the imported
+source into generation, so the full suite draws other examples than one file alone. Reproduce the failing
+example from the report, not by re-running the file.
 
 ### New equipment
 

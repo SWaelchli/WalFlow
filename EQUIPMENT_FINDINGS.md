@@ -34,6 +34,11 @@ Status: `open` / `fixed` / `rejected`. "Confirmed" means it was reproduced by ru
 | D-15 | Pipe | `friction_factor` constructor argument unused | Cleanup | Code reading | fixed |
 | D-16 | Tank | Default level 2 m in the UI, 1 m in the parser | Cleanup | Code reading | fixed |
 | D-17 | PSV | `action_mode = rupture_disc` duplicates the rupture disc component | Cleanup / decision | Code reading | open |
+| D-18 | Mixer | Inlet with reverse flow reports default density / stale viscosity | Low | Confirmed (property test) | fixed |
+| D-19 | Junctions / reducer | Junction joining different pipe diameters gains kinetic energy; with a reducer the network can have no steady state | Medium | Confirmed (property test) | open |
+| D-20 | Solver | Reported pressures lag the last property update; a pipe after a viscous drop can show a small static rise | Low | Confirmed (property test) | open |
+| D-21 | Solver / warm start | Exact-hit warm start leaves stagnant branches at the 20 °C port default | Low | Confirmed (property test) | open |
+| D-22 | Solver | Junctions balance volume flow, not mass flow; mixing at different temperatures loses ~0.4 % mass | Low / decision | Confirmed (property test) | open |
 
 ---
 
@@ -381,3 +386,59 @@ The analytical `calculate_dp_derivative` methods of those components are only ex
 **Fix direction:** a product decision. Either keep it (document as a convenience) or deprecate the mode: keep reading it for existing files, hide it in the UI, and point users to the rupture disc. Removing it from files is a format change (Versioning Policy in `AGENTS.md`).
 
 **Docs to update:** `pressure_safety_valve.md` sections 1 and 3.2.
+
+---
+
+## D-18 Mixer inlet with reverse flow reports the default density
+
+**Where:** `backend/simulation/equipment/mixer.py` (`calculate`). Found by `tests/scenarios/test_network_invariants.py::test_junctions_conserve_energy` (two pressure sources at different pressures, one inlet flows backwards).
+
+**What happened:** `Mixer.calculate` refreshed density and viscosity only on its outlet. An inlet carrying reverse flow (outward) kept the `Port` default 1000 kg/m³ and a stale viscosity, so its telemetry and any mass-weighted balance over it were wrong (heavy crude: 1000 instead of 933.7 kg/m³). Temperatures and flows were correct.
+
+**Fix:** the mixer calls `update_outward_properties()` like the splitter and measure point (D-01), and no longer copies inlet 0's density and viscosity onto an outlet with reverse flow (found in review). Doc: `mixer.md` section 4.
+
+---
+
+## D-19 Junction with different pipe diameters plus a reducer has no steady state
+
+**Where:** the static-pressure node model (`backend/simulation/solver.py`, splitter / mixer / any node joining pipes) together with the reducer's Bernoulli term (`reducer.py`, `calculate_losses`). Found by `tests/scenarios/test_network_invariants.py` (convergence and mass properties) in the full run.
+
+**What happens:** every port of a node is at one static pressure. Where a large pipe feeds a small one at a node, the flow accelerates with no loss, so it gains kinetic energy for free. The reducer, modelled in static pressure, converts velocity head back into static pressure. Around a loop this gain grows with the flow faster than friction, so above a threshold there is no steady state and Newton fails ("Backtracking line search failed to decrease residual"). Without the reducer the free kinetic energy is only dissipated and the same networks solve.
+
+**Reproducers** (pipes 1 m long, smooth; water or heavy crude; tank level 1 m, 10 °C):
+1. Pressure source 2.0 bara (pipe DN 135 mm) and pressure source 1.5 bara (pipe 135 mm → reducer 135 → 50 mm, length 0.37 m → pipe 50 mm) into a mixer, mixer → pipe 50 mm → tank. Flow runs backwards through the reducer. Solves at 1.9 bara, fails at 1.7 bara and below.
+2. Two pressure sources 2.0 bara into a mixer, pipe 135 mm to a splitter; branch A: check valve (Cv 1); branch B: pipe 50 mm → reducer 50 → 135 mm → pipe 135 mm; both into a mixer → tank.
+
+**Fix direction:** account for kinetic energy where pipes of different diameters meet (total pressure at nodes, or a sudden contraction / expansion loss at each mismatched port), so a junction can no longer gain energy. This is a solver physics change and moves golden results. Until then the reducer is left out of the generated networks (`helpers/strategies.NETWORK_COMPONENTS`); its contract and reference tests still run.
+
+**Docs to update:** `reducer.md` section 6, `splitter.md` / `mixer.md` section 3.4.
+
+---
+
+## D-20 Reported pressures lag the last property update
+
+**Where:** `backend/simulation/solver.py`, outer property loop (`properties_converged = max_temp_change < 0.05`). Found by `tests/scenarios/test_network_invariants.py::test_pressure_is_continuous_and_falls_along_the_flow` (explore profile).
+
+**What happens:** Newton solves the pressures with the densities and viscosities of the previous outer iteration. The loop stops when temperatures change less than 0.05 K, and the final `calculate()` sets port pressures from the updated properties. Each component then matches its own model, but a pipe's equation holds only for the old properties. With heavy crude (viscosity ~4 %/K) a 0.05 K step moves a viscous drop by ~0.2 %. Example: tank → pump (20 l/min, 20 m) → pipe 18 mm → heat exchanger (rated 20 l/min / 1 bar, 1.7 bar actual) → pipe 135 mm → tank, all 1 m, heavy crude at 10 °C: the last pipe shows a 37–50 Pa static rise in the flow direction where its model gives a 4–16 Pa drop.
+
+**Fix direction:** after the properties converge, run one more Newton solve with the final properties (cheap with the warm start), so reported pressures and every pipe equation agree. Until then the network property allows a lag of 0.2 % of the network's pressure span (`PRESSURE_LAG`); remove it with the fix.
+
+---
+
+## D-21 Exact-hit warm start leaves stagnant branches at the default temperature
+
+**Where:** `backend/simulation/solver.py`, warm-start path ("Exact Hit"). Found by `tests/scenarios/test_network_invariants.py::test_warm_start_reaches_the_cold_start_state` (explore profile).
+
+**What happens:** pressure source 15 bara and pressure source 9 bara → check valve (Cv 1) into a mixer → tank, heavy crude at 10 °C. The check valve closes (flow ~1e-12 m³/s). After a cold start the dead branch shows 283.21 K (its neighbour); after an exact-hit warm start of the same file it shows 293.15 K, the `Port` default. Pressures, flows and all flowing temperatures agree. The user sees a dead leg at 20 °C or 10 °C depending on whether the run is the first one.
+
+**Fix direction:** the warm-start path must run the same stagnant-port temperature fill as the cold start (or restore cached temperatures with the cached state). Until then the warm-start property compares temperatures only at flowing ports; remove that with the fix.
+
+---
+
+## D-22 Junctions balance volume flow, not mass flow
+
+**Where:** node mass rows in `backend/simulation/solver.py` (`q_in - q_out`, volume flows, see `base_node.md` section 3.1). Found while checking `test_junctions_conserve_energy`.
+
+**What happens:** every node conserves volume flow. Where streams of different temperature mix, densities differ, so mass is not conserved: seawater at 0 °C (1028 kg/m³) and 55 °C (1009 kg/m³) mixed 1:1 leaves the mixer with ~0.4 % less mass than enters. Temperatures are right (the mixer mixes by mass), so the effect is a small inconsistency in mass flow telemetry and in the flow split, largest for big temperature differences and fluids with a strong thermal expansion.
+
+**Fix direction:** a modelling decision. Either keep the volume balance (document it as a limit of the incompressible model in `base_node.md` section 6) or balance mass flow (`rho_in q_in - rho_out q_out`), which couples the hydraulic rows to the property loop. The network properties compare specific enthalpies, not absolute enthalpy flows, so they hold either way.
