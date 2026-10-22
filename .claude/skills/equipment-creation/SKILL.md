@@ -83,11 +83,10 @@ In `backend/simulation/graph_parser.py`:
 3. **Field names carry their unit**: `_pa`, `_bar`, `_barg`, `_bara`, `_lmin`, `_c`, `_k`, `_m`, `_mm`, `_kw`, `_w_k`, `_pct`, `_deg`, `_mpas`, e.g. `d.get('flow_rated_lmin', 100.0)`. Unitless fields (text, bool, Cv) have no suffix. Pipe (edge) fields are `length_m`, `diameter_m` and `roughness_mm` (see `backend/simulation/equipment/pipe.md`). Renaming an existing field: before a release, rename it everywhere (saved files are not converted). After a release, a rename is a file format incompatibility and follows the Versioning Policy in `AGENTS.md`.
 
 ### Step 4: Write Backend Unit & Physics Tests
-Create `backend/tests/unit/equipment/test_<name>.py`:
-- Test physical equations at known calibration points.
-- Verify analytical derivatives against numerical central differences:
-  $$\left|\frac{\partial \Delta P_{\text{analytical}}}{\partial Q} - \frac{\Delta P(Q+\delta) - \Delta P(Q-\delta)}{2\delta}\right| < \text{tol}$$
-- Test full network equilibrium solve with `HydraulicNetwork` and `NewtonRaphsonSolver`.
+Follow the `walflow-qa` skill (section "New equipment"):
+- Add the component's node `data` strategy to `RESISTANCE_DATA` or `PUMP_DATA` in `backend/tests/helpers/strategies.py`; the contract suite (`test_equipment_contracts.py`) then checks zero-flow, sign, monotonicity and purity automatically.
+- Create `backend/tests/unit/equipment/test_<name>.py` with reference rows for the component's own numbers (calibration point, standard, worked example) against an independent reference.
+- Add a network scenario only if the component interacts with controllers, relief or topology handling.
 
 📖 **Deep Dive Reference:** Read [references/testing-verification.md](references/testing-verification.md).
 
@@ -114,11 +113,10 @@ Update the following frontend files:
 5. *(Optional)* `frontend/src/components/details/<Name>Details.jsx` and `ResultsPanel.jsx` for dedicated live charts/telemetry.
 
 ### Step 7: Verify Everything
-Run automated tests:
+Run the gate from the `walflow-qa` skill:
 ```bash
-pytest backend/tests/unit/equipment/test_<name>.py
-pytest
-cd frontend && npm run lint
+cd backend && python -m pytest
+cd frontend && npm run lint && npm test && npm run build
 ```
 
 ---

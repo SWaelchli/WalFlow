@@ -59,18 +59,16 @@ The project has a clear process for adding new hydraulic components, which invol
 3.  Create a corresponding React component for the equipment in the frontend.
 4.  Register the new component in the frontend's `App.jsx` and `Sidebar.jsx`.
 
-### Backend Tests
+### Testing
 
-Run `cd backend && python -m pytest` before finishing backend work. Placement, naming, audit markers and bug-fix rules are in [TESTING.md](./TESTING.md); new equipment tests go in `backend/tests/unit/equipment/test_<name>.py`. CI blocks Docker publishing if tests, lint or build fail.
+Always read and follow the `walflow-qa` skill ([.claude/skills/walflow-qa/SKILL.md](./.claude/skills/walflow-qa/SKILL.md)) before writing, changing or deleting any test, fixing a bug, or adding equipment. It holds the test strategy (test pyramid, property tests with hypothesis), where each test belongs, the bug-fix decision tree, naming and audit-marker rules, and the gate. Prefer strengthening an existing property or adding a reference-table row over adding a new test function.
 
-### Frontend Quality & Build Verification
-
-The frontend uses ESLint and Vite build checks. To verify code quality and ensure all routes (`/`, `/pipes`, modals) compile with valid references:
+Run the gate before finishing any change:
 ```bash
-cd frontend
-npm run lint
-npm run build
+cd backend && python -m pytest
+cd frontend && npm run lint && npm test && npm run build
 ```
+GitHub Actions runs the same gate only when a release tag is pushed, and blocks Docker publishing if it fails; pushes to `main` are not checked in CI.
 
 
 ## Interaction with User

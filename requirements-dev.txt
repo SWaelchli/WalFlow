@@ -1,0 +1,4 @@
+-r requirements.txt
+pytest>=9.0
+pytest-randomly>=3.16
+hypothesis>=6.170

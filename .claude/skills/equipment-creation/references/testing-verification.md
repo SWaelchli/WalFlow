@@ -1,118 +1,34 @@
 # Testing & Verification Guide
 
-Every new hydraulic equipment must be validated with automated unit and network simulation tests.
+The test strategy, layout and rules are in the `walflow-qa` skill (`.claude/skills/walflow-qa/SKILL.md`). For new equipment:
 
----
-
-## 1. Test File Structure
-
-Create `backend/tests/unit/equipment/test_<name>.py`.
-
-### Required Test Sections:
-1. **Calibration Point Test:** Verify equations match known baseline design points.
-2. **Derivative Accuracy Test:** Compare analytical derivative against numerical central finite differences.
-3. **End-to-End Network Solve:** Connect component into a complete hydraulic loop (Tank $\to$ Pump $\to$ Equipment $\to$ Tank) and solve with `NewtonRaphsonSolver`.
-
----
-
-## 2. Complete Test Template
+1. **Contracts (automatic).** Add the node `data` strategy to `RESISTANCE_DATA` (two-port resistance) or `PUMP_DATA`
+   in `backend/tests/helpers/strategies.py`. `test_equipment_contracts.py` then checks the component over generated
+   parameters, fluids and flows. `test_every_canvas_type_builds_a_specific_model` fails until the parser builds the type.
+2. **Reference rows.** `backend/tests/unit/equipment/test_<name>.py`: the component's own numbers against an
+   independent reference (closed form, standard, datasheet), as one parametrized table:
 
 ```python
-import sys
-import os
-import math
 import pytest
+from strategies import build
 
-# Ensure backend directory is in python path
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+CASES = [
+    # node data, flow L/min, fluid, expected dP bar (source of the value)
+    pytest.param({"param1_bar": 1.0}, 60.0, "water", 0.50, id="datasheet-point"),
+    pytest.param({"param1_bar": 1.0}, 120.0, "water", 2.00, id="square-law"),
+]
 
-from simulation.equipment.custom_equipment import CustomEquipment
-from simulation.equipment.tank import Tank
-from simulation.equipment.pipe import Pipe
-from simulation.equipment.centrifugal_pump import CentrifugalPump
-from simulation.fluid_utils import FluidProperties
-from simulation.schemas import ReactFlowNode, ReactFlowGraph, ReactFlowEdge
-from simulation.graph_parser import GraphParser
-from simulation.solver import NewtonRaphsonSolver
 
-def test_component_calibration_and_derivative():
-    """
-    1. Verify pressure drop at known design flow.
-    2. Verify analytical derivative matches numerical finite difference.
-    """
-    flow_lmin = 60.0
-    q0 = flow_lmin / 60000.0  # 0.001 m3/s
-    rho0 = 1000.0             # kg/m3 (water)
-    mu0 = 0.001               # Pa.s
-    
-    eq = CustomEquipment(name="TestEq", param1=100.0)
-    
-    # 1. Test pressure drop
-    dp = eq.calculate_delta_p(q0, rho0, mu0)
-    assert dp > 0, "Pressure drop must be positive for positive flow"
-    
-    # 2. Test analytical derivative vs numerical central difference
-    analytical_deriv = eq.calculate_dp_derivative(q0, rho0, mu0)
-    
-    dq = 1e-6
-    dp_plus = eq.calculate_delta_p(q0 + dq, rho0, mu0)
-    dp_minus = eq.calculate_delta_p(q0 - dq, rho0, mu0)
-    numerical_deriv = (dp_plus - dp_minus) / (2.0 * dq)
-    
-    assert math.isclose(analytical_deriv, numerical_deriv, rel_tol=1e-2), (
-        f"Analytical derivative ({analytical_deriv}) differs from numerical ({numerical_deriv})"
-    )
-
-def test_network_equilibrium_solve():
-    """
-    Build a closed loop ReactFlow graph and solve steady-state equilibrium.
-    Tank1 -> Pump -> CustomEquipment -> Tank2
-    """
-    nodes = [
-        ReactFlowNode(id="t1", type="tank", data={"label": "Tank 1", "level_m": 2.0, "elevation_m": 0.0}),
-        ReactFlowNode(id="p1", type="centrifugal_pump", data={"label": "Pump 1", "flow_rated_lmin": 100.0, "head_rated_m": 40.0}),
-        ReactFlowNode(id="eq1", type="custom_equipment", data={"label": "Custom Eq", "param1": 100.0}),
-        ReactFlowNode(id="t2", type="tank", data={"label": "Tank 2", "level_m": 1.0, "elevation_m": 0.0}),
-    ]
-    
-    edges = [
-        ReactFlowEdge(id="e1", source="t1", target="p1", data={"diameter_m": 0.05248, "length_m": 5.0}),
-        ReactFlowEdge(id="e2", source="p1", target="eq1", data={"diameter_m": 0.05248, "length_m": 5.0}),
-        ReactFlowEdge(id="e3", source="eq1", target="t2", data={"diameter_m": 0.05248, "length_m": 5.0}),
-    ]
-    
-    graph = ReactFlowGraph(nodes=nodes, edges=edges)
-    network = GraphParser.parse_graph(graph)
-    solver = NewtonRaphsonSolver(network)
-    
-    converged = solver.solve()
-    assert converged, "Solver failed to converge on network containing custom equipment"
-    
-    # Verify telemetry results are physical
-    results = solver.get_telemetry()
-    assert results is not None
-    assert "nodes" in results
-    eq_telemetry = results["nodes"].get("eq1")
-    assert eq_telemetry is not None
-    
-    p_in = eq_telemetry["inlets"][0]["pressure"]
-    p_out = eq_telemetry["outlets"][0]["pressure"]
-    assert p_in > p_out, "Inlet pressure must be greater than outlet pressure"
+@pytest.mark.parametrize("data, flow_lmin, fluid, dp_bar", CASES)
+def test_custom_equipment_pressure_drop(data, flow_lmin, fluid, dp_bar):
+    from simulation.fluid_utils import FluidProperties
+    node = build("custom_equipment", data, fluid)
+    rho, mu = FluidProperties.get_density(fluid, 293.15), FluidProperties.get_viscosity(fluid, 293.15)
+    assert node.calculate_delta_p(flow_lmin / 60000.0, rho, mu) / 1e5 == pytest.approx(dp_bar, rel=1e-3)
 ```
 
----
+3. **Scenario (only if needed).** If the component interacts with controllers, relief or topology handling, add a
+   network case in `backend/tests/scenarios/` using the builders in `tests/helpers/networks.py`.
 
-## 3. Running Verification Commands
-
-Execute the test suite and frontend linter:
-
-```bash
-# 1. Run the specific component test
-pytest backend/tests/unit/equipment/test_<name>.py -v
-
-# 2. Run the entire backend test suite
-pytest
-
-# 3. Verify frontend code quality & syntax
-cd frontend && npm run lint
-```
+Analytic derivatives: the solver uses `calculate_dp_derivative` only for pipes and pumps and differentiates every
+other component numerically (finding D-13), so a new resistance does not need a derivative test.

@@ -6,7 +6,7 @@ Found while writing the equipment documentation (ROADMAP "Detailed Equipment Doc
 
 How to work through it:
 
-- Fix test-first (`TESTING.md` rule 3): write the failing test next to the component's tests, then fix. Mark the file with `pytestmark = pytest.mark.audit("D-xx")`.
+- Fix test-first, following the bug-fix decision tree in the `walflow-qa` skill: strengthen a contract property or add a reference row with `pytest.param(..., id="D-xx")` before adding a new test function; mark a new file with `pytestmark = pytest.mark.audit("D-xx")`.
 - After a fix that changes physics, check `tests/regression/test_golden_examples.py` and regenerate the golden file only for an intended change.
 - Update the component's `.md` in `backend/simulation/equipment/`: several documents describe the current (wrong) behaviour as a model boundary and must be corrected with the fix.
 - Run `cd backend && python -m pytest` before finishing.
