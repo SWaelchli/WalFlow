@@ -23,7 +23,7 @@ from simulation.equipment.reducer import Reducer
 from simulation.equipment.pressure_source import PressureSource
 
 from simulation.equipment.flow_source import FlowSource
-from simulation.equipment.base_node import HydraulicNode
+from simulation.equipment.base_node import HydraulicNode, MIN_PUMP_EFFICIENCY
 from simulation.fluid_utils import FluidProperties
 
 
@@ -306,8 +306,8 @@ class GraphParser:
             if head_m is None or float(head_m) <= 0:
                 raise ModelInputError(f"Pump '{name}': rated head missing. Enter the rated head (m) in the pump inspector.")
             eff_pct = float(d.get('efficiency_pct', 75.0))
-            if not 1.0 <= eff_pct <= 100.0:
-                raise ModelInputError(f"Pump '{name}': efficiency must be between 1 and 100 %.")
+            if not 100.0 * MIN_PUMP_EFFICIENCY <= eff_pct <= 100.0:
+                raise ModelInputError(f"Pump '{name}': efficiency must be between {100.0 * MIN_PUMP_EFFICIENCY:g} and 100 %.")
 
             node = CentrifugalPump(
                 name=name,
@@ -329,8 +329,8 @@ class GraphParser:
             
             # efficiency_pct in % -> convert to decimal
             eff_pct = float(d.get('efficiency_pct', 85.0))
-            if not 1.0 <= eff_pct <= 100.0:
-                raise ModelInputError(f"Pump '{name}': efficiency must be between 1 and 100 %.")
+            if not 100.0 * MIN_PUMP_EFFICIENCY <= eff_pct <= 100.0:
+                raise ModelInputError(f"Pump '{name}': efficiency must be between {100.0 * MIN_PUMP_EFFICIENCY:g} and 100 %.")
             eff_dec = eff_pct / 100.0
 
             node = VolumetricPump(

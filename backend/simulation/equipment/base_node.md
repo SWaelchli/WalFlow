@@ -7,7 +7,8 @@
 - the inlet and outlet ports (`Port` objects with pressure, flow rate, temperature, density and viscosity);
 - the solver flags that tell the network solver how to treat the component;
 - the `calculate()` contract and the default enthalpy mixing (`calculate_temperature`);
-- shared helpers: NPSH at a pump suction (`update_npsh`) and the relief-analysis ramp hooks.
+- shared helpers: NPSH at a pump suction (`update_npsh`) and the relief-analysis ramp hooks;
+- pump module functions: shaft power (`pump_shaft_power`) and the share of the pump pressure change that heats the fluid (`pump_heat_factor`), both with the efficiency floor `MIN_PUMP_EFFICIENCY` = 1 %, which is also the parser's input minimum.
 
 `GraphParser._build_node` turns each node of a `.wlf` file into one equipment instance. A node type without its own branch in the parser becomes a plain `HydraulicNode`. The other equipment documents describe their own equations; this document describes how every component fits into the network solve, so the component documents link here instead of repeating it.
 

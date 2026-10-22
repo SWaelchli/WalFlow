@@ -1,4 +1,4 @@
-from simulation.equipment.base_node import HydraulicNode
+from simulation.equipment.base_node import HydraulicNode, pump_heat_factor, pump_shaft_power
 from simulation.fluid_utils import FluidProperties
 import math
 
@@ -139,7 +139,7 @@ class VolumetricPump(HydraulicNode):
 
     def _update_warnings(self, flow_rate: float, dp: float, p_out: float):
         active = getattr(self, 'active', True)
-        shaft_w = max(0.0, flow_rate * dp) / max(0.05, self.efficiency) if active else 0.0
+        shaft_w = pump_shaft_power(flow_rate, dp, self.efficiency, active)
         self.motor_load_pct = 100.0 * shaft_w / self.motor_power if self.motor_power > 0 else 0.0
         # bool(): flow_rate/dp are numpy floats, and numpy.bool_ is not JSON serializable
         self.motor_overload = bool(active and self.drive_type == DRIVE_FIXED_SPEED and self.motor_power > 0
@@ -155,12 +155,11 @@ class VolumetricPump(HydraulicNode):
                                   self.outlets[0].pressure)
 
     def shaft_power(self) -> float:
-        """Shaft power Q·ΔP/η (W) at the current operating point; 0 when stopped."""
-        if not getattr(self, 'active', True) or not self.inlets or not self.outlets:
+        """Shaft power |Q|·ΔP/η (W) at the current operating point (`pump_shaft_power`); 0 when stopped."""
+        if not self.inlets or not self.outlets:
             return 0.0
-        q = self.inlets[0].flow_rate
-        dp = self.outlets[0].pressure - self.inlets[0].pressure
-        return max(0.0, q * dp) / max(0.05, self.efficiency)
+        return pump_shaft_power(self.inlets[0].flow_rate, self.outlets[0].pressure - self.inlets[0].pressure,
+                                self.efficiency, getattr(self, 'active', True))
 
     def calculate(self):
 
@@ -179,11 +178,10 @@ class VolumetricPump(HydraulicNode):
         outlet.density = inlet.density
         outlet.viscosity = inlet.viscosity
 
-        # Pump Waste Heat: dT = (dP / (rho * Cp)) * ((1 - eta) / eta)
-        # Apply heat to the EXITING port
+        # Pump Waste Heat: dT = (dP / (rho * Cp)) * ((1 - eta) / eta) while the pump raises the pressure; a braking
+        # pump (driven by the fluid, dP < 0) turns all of |dP| into heat. Apply heat to the EXITING port
         cp = FluidProperties.get_specific_heat(fluid_type, inlet.temperature)
-        eff_factor = (1.0 - self.efficiency) / max(0.1, self.efficiency)
-        dt = (abs(dp) / (inlet.density * cp)) * eff_factor
+        dt = (abs(dp) / (inlet.density * cp)) * pump_heat_factor(dp, self.efficiency, getattr(self, 'active', True))
 
         if inlet.flow_rate >= 0:
             outlet.temperature = inlet.temperature + dt

@@ -5,6 +5,27 @@ import uuid
 from simulation.schemas import Port
 from simulation.fluid_utils import FluidProperties
 
+# Lowest pump efficiency the parser accepts (1 %); guards shaft power and heat against division by zero (D-10)
+MIN_PUMP_EFFICIENCY = 0.01
+
+
+def pump_shaft_power(flow_rate: float, dp_rise: float, efficiency: float, active: bool = True) -> float:
+    """Shaft power (W) of a pump (D-10): |Q|·dP/eta while it raises the pressure (dP > 0), in reverse flow too,
+    where the motor still drives the impeller; 0 when it is stopped or braking (dP <= 0)."""
+    if not active or dp_rise <= 0:
+        return 0.0
+    return abs(flow_rate) * dp_rise / max(MIN_PUMP_EFFICIENCY, efficiency)
+
+
+def pump_heat_factor(dp_rise: float, efficiency: float, active: bool = True) -> float:
+    """Share of the pump |dP| that heats the fluid (D-10): (1 - eta)/eta while it raises the pressure, so the heat
+    is P_shaft - |Q|·dP; 1 when it is stopped or braking (dP < 0), as in a throttle. Depends on the sign of dP
+    only, so the heat does not jump when a dead-headed pump's flow changes sign."""
+    if not active or dp_rise < 0:
+        return 1.0
+    eta = max(MIN_PUMP_EFFICIENCY, efficiency)
+    return (1.0 - eta) / eta
+
 class HydraulicNode:
     """
     This is the parent class for ALL equipment in WalFlow. 

@@ -64,9 +64,9 @@ The running slope is zero at $Q = 0$ and symmetric in $\pm Q$. The solver uses t
 
 ### 3.4 Shaft power (`shaft_power`)
 
-$$P_{\text{shaft}} = \frac{\max(0,\ Q\, \Delta P)}{\max(0.05,\ \eta)}$$
+$$P_{\text{shaft}} = \begin{cases} \dfrac{|Q|\, \Delta P}{\max(0.01,\ \eta)} & \Delta P > 0 \ 0 & \Delta P \le 0 \end{cases}$$
 
-$\eta$ is the hydraulic pump efficiency (motor losses not included). A stopped pump has zero shaft power. The case KPI sums this power.
+$\eta$ is the hydraulic pump efficiency (motor losses not included). A running pump with reverse flow and $\Delta P > 0$ (a stronger parallel pump pushes flow back through it) still draws $|Q|\,\Delta P/\eta$: the motor drives the impeller, and the power goes to 0 smoothly at $Q = 0$. A stopped or braking pump has zero shaft power (`pump_shaft_power` in [base_node.py](base_node.py)). The case KPI sums this power.
 
 ### 3.5 NPSH (`update_npsh`, audit F1-28)
 
@@ -86,9 +86,11 @@ The pump is a relief driver. `apply_relief_ramp(λ)` scales the speed by the aff
 
 The share of the shaft power that is not hydraulic power heats the fluid:
 
-$$\Delta T = \frac{|\Delta P|}{\rho\, c_p(T_{\text{in}})} \cdot \frac{1 - \eta}{\max(0.1,\ \eta)}$$
+$$\Delta T = \frac{|\Delta P|}{\rho\, c_p(T_{\text{in}})} \cdot \frac{1 - \eta}{\eta}$$
 
-A stopped pump is a pure resistance: all its pressure loss becomes heat ($\Delta T = |\Delta P| / (\rho c_p)$). The rise is applied to the outlet for $Q \ge 0$ and to the inlet for $Q < 0$; density and viscosity are then re-evaluated at both ends.
+with $\eta \ge 1$ % (the input minimum, also used for the shaft power), so the heat is exactly $P_{\text{shaft}} - |Q|\,\Delta P$ (D-10). The factor depends on the sign of $\Delta P$ only, so the heat does not jump when the flow of a dead-headed pump changes sign. In reverse flow this leaves out the throttling loss of the backflow (no four-quadrant characteristic); it is an approximation.
+
+A stopped pump, and a running pump the fluid drives through it ($\Delta P < 0$, beyond runout), is a pure resistance: all its pressure loss becomes heat ($\Delta T = |\Delta P| / (\rho c_p)$, `pump_heat_factor` in [base_node.py](base_node.py)). The rise is applied to the outlet for $Q \ge 0$ and to the inlet for $Q < 0$; density and viscosity are then re-evaluated at both ends.
 
 Example: water, 50 m head (4.9 bar), $\eta$ = 75 %: $\Delta T \approx 0.04$ K.
 
@@ -138,6 +140,10 @@ The parser rejects a missing or non-positive rated head (older files with only `
 | `test_pumps.py::test_d1_old_file_with_rated_pressure_only_is_blocked`, `test_efficiency_outside_1_to_100_pct_is_rejected` | Missing rated head and efficiency outside 1-100 % are input errors |
 | `backend/tests/unit/equipment/test_pump_waste_heat.py::test_centrifugal_pump_heats_the_fluid_by_its_inefficiency` | VG 46, $\eta$ = 50 %: $\Delta T = \Delta P/(\rho c_p) \cdot (1-\eta)/\eta$ within 0.2 % |
 | `test_pump_waste_heat.py::test_perfect_pump_adds_no_heat` | $\eta$ = 100 %: $\Delta T$ below 1 mK (pipe friction only) |
+| `test_pump_waste_heat.py::test_d10_heat_is_shaft_power_minus_hydraulic_power_at_low_efficiency` | $\eta$ = 2, 5, 8 %: shaft power $Q\Delta P/\eta$ ($10^{-9}$), heat $= P_{\text{shaft}} - Q\Delta P$ within 0.2 % |
+| `test_pump_waste_heat.py::test_d10_braking_pump_turns_all_its_pressure_drop_into_heat` | 60 m head drives flow beyond runout: $\Delta T = |\Delta P|/(\rho c_p)$ within 0.2 %, zero shaft power |
+| `test_pump_waste_heat.py::test_d10_heat_does_not_depend_on_the_sign_of_a_near_zero_flow` | Dead-headed pump at $Q = \pm 10^{-12}$ m³/s: same $\Delta T$ ($10^{-6}$) |
+| `test_pump_waste_heat.py::test_d10_running_pump_in_reverse_flow_still_draws_shaft_power` | $Q$ = −2 L/s, $\eta$ = 50 %: shaft power $|Q|\Delta P/\eta$, $\Delta T = \Delta P/(\rho c_p)\cdot(1-\eta)/\eta$ on the inlet ($10^{-9}$) |
 | `backend/tests/unit/fluids/test_npsh.py::test_f1_28_npsha_matches_hand_calculation` | Supply tank 3 m level: NPSHa $= (P_{\text{in}} - P_v)/(\rho g)$ within $10^{-9}$, between 9 and 13 m |
 | `test_npsh.py::test_f1_28_warns_when_npsha_below_npshr_plus_margin`, `test_f1_28_margin_is_editable` | Warning with NPSHr 20 m; none with NPSHr 3 m + 0.5 m; a margin equal to NPSHa triggers it |
 | `backend/tests/unit/solver/test_active_inactive.py::test_f3_16_stopped_pump_between_equal_heads_passes_no_flow` | A stopped pump between equal heads passes no flow |

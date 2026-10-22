@@ -1,4 +1,4 @@
-from simulation.equipment.base_node import HydraulicNode
+from simulation.equipment.base_node import HydraulicNode, pump_heat_factor, pump_shaft_power
 from simulation.fluid_utils import FluidProperties
 
 GRAVITY = 9.81  # m/s², same value as Tank
@@ -93,12 +93,11 @@ class CentrifugalPump(HydraulicNode):
         return 2.0 * rho_g * self.C_coeff * abs(flow_rate)
 
     def shaft_power(self) -> float:
-        """Hydraulic power / efficiency (W) at the current operating point; 0 when stopped."""
-        if not getattr(self, 'active', True) or not self.inlets or not self.outlets:
+        """Shaft power (W) at the current operating point (`pump_shaft_power`); 0 when stopped."""
+        if not self.inlets or not self.outlets:
             return 0.0
-        q = self.inlets[0].flow_rate
-        dp = self.outlets[0].pressure - self.inlets[0].pressure
-        return max(0.0, q * dp) / max(0.05, self.efficiency)
+        return pump_shaft_power(self.inlets[0].flow_rate, self.outlets[0].pressure - self.inlets[0].pressure,
+                                self.efficiency, getattr(self, 'active', True))
 
     def calculate(self):
         """
@@ -120,14 +119,10 @@ class CentrifugalPump(HydraulicNode):
         outlet.density = inlet.density
         outlet.viscosity = inlet.viscosity
 
-        # Pump heat: running pump dT = |dP|/(rho·cp)·(1−η)/η; a stopped pump is a pure
-        # resistance, so all its pressure loss becomes heat (throttling).
+        # Pump heat: dT = |dP|/(rho·cp)·(1−η)/η while the pump raises the pressure; a stopped or braking
+        # pump (dP < 0) is a pure resistance, so all its pressure loss becomes heat (throttling)
         cp = FluidProperties.get_specific_heat(fluid_type, inlet.temperature)
-        if getattr(self, 'active', True):
-            eff_factor = (1.0 - self.efficiency) / max(0.1, self.efficiency)
-        else:
-            eff_factor = 1.0
-        dt = (abs(dp) / (inlet.density * cp)) * eff_factor
+        dt = (abs(dp) / (inlet.density * cp)) * pump_heat_factor(dp, self.efficiency, getattr(self, 'active', True))
 
         if inlet.flow_rate >= 0:
             outlet.temperature = inlet.temperature + dt

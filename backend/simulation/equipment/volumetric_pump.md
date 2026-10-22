@@ -71,9 +71,9 @@ $$\frac{\partial P_{\text{out}}}{\partial P_{\text{in}}} = s, \quad \frac{\parti
 
 ### 3.5 Shaft power, motor load
 
-$$P_{\text{shaft}} = \frac{\max(0,\ Q\, \Delta P)}{\max(0.05,\ \eta)}, \qquad \text{motor load} = 100 \cdot \frac{P_{\text{shaft}}}{P_m}\ \%$$
+$$P_{\text{shaft}} = \begin{cases} \dfrac{|Q|\, \Delta P}{\max(0.01,\ \eta)} & \Delta P > 0 \ 0 & \Delta P \le 0 \end{cases}, \qquad \text{motor load} = 100 \cdot \frac{P_{\text{shaft}}}{P_m}\ \%$$
 
-$\eta$ is the pump efficiency (motor losses not included); $P_m$ is the motor rating. A stopped pump has zero shaft power.
+$\eta$ is the pump efficiency (motor losses not included); $P_m$ is the motor rating. A stopped or braking pump has zero shaft power (`pump_shaft_power` in [base_node.py](base_node.py)).
 
 ### 3.6 NPSH
 
@@ -87,9 +87,11 @@ The pump is a relief driver. `apply_relief_ramp(λ)` scales the displacement wit
 
 The share of the shaft power that is not hydraulic power heats the fluid:
 
-$$\Delta T = \frac{|\Delta P|}{\rho\, c_p(T_{\text{in}})} \cdot \frac{1 - \eta}{\max(0.1,\ \eta)}$$
+$$\Delta T = \frac{|\Delta P|}{\rho\, c_p(T_{\text{in}})} \cdot \frac{1 - \eta}{\eta}$$
 
-applied to the outlet for $Q \ge 0$ and to the inlet for $Q < 0$. The same formula is used when the pump brakes ($\Delta P < 0$). Recirculation over the pressure limit adds no extra heat.
+applied to the outlet for $Q \ge 0$ and to the inlet for $Q < 0$, with $\eta \ge 1$ % (the input minimum, also used for the shaft power), so the heat is exactly $P_{\text{shaft}} - |Q|\,\Delta P$ (D-10). The factor depends on the sign of $\Delta P$ only, so the heat does not jump when the flow of a dead-headed pump changes sign.
+
+A braking pump (the fluid drives it, $\Delta P < 0$, e.g. fed from a header above its displacement) is a pure resistance like a throttle: all of $Q|\Delta P|$ becomes heat, $\Delta T = |\Delta P|/(\rho c_p)$, and no motor regeneration is assumed (`pump_heat_factor` in [base_node.py](base_node.py)). Recirculation over the pressure limit adds no extra heat. A stopped pump is removed from the solve (section 6) and adds no heat.
 
 ## 5. Parameter & Unit Specification Table
 
@@ -136,6 +138,9 @@ An unknown `drive_type` is read as `fixed_speed`. The parser rejects an efficien
 | `backend/tests/unit/equipment/test_pumps.py::test_f1_35_pushed_pd_pump_passes_its_displacement` | 10 bar(a) header → pump → tank: flow 100 L/min within 1 %, outlet below inlet (pump brakes) |
 | `test_pumps.py::test_f1_36_fixed_speed_keeps_flow_and_flags_overload`, `test_f1_36_vfd_power_limit_reduces_flow_and_flags_it` | 400 m lift with 5 kW: fixed speed keeps 100 L/min and flags overload; VFD drops below 80 L/min at 5 kW shaft power (2 %) |
 | `backend/tests/unit/equipment/test_pump_waste_heat.py::test_volumetric_pump_heats_the_fluid_by_its_inefficiency` | $\eta$ = 10 %: $\Delta T = \Delta P/(\rho c_p) \cdot (1-\eta)/\eta$ within 0.2 % |
+| `test_pump_waste_heat.py::test_d10_heat_is_shaft_power_minus_hydraulic_power_at_low_efficiency` | $\eta$ = 2, 5, 8 %: shaft power $Q\Delta P/\eta$ ($10^{-9}$), heat $= P_{\text{shaft}} - Q\Delta P$ within 0.2 % |
+| `test_pump_waste_heat.py::test_d10_heat_does_not_depend_on_the_sign_of_a_near_zero_flow` | Dead-headed pump at $Q = \pm 10^{-12}$ m³/s: same $\Delta T$ ($10^{-6}$) |
+| `test_pump_waste_heat.py::test_d10_braking_pump_turns_all_its_pressure_drop_into_heat` | Header drives flow above displacement: $\Delta T = |\Delta P|/(\rho c_p)$ within 0.2 %, zero shaft power |
 | `backend/tests/unit/solver/test_active_inactive.py::test_inactive_volumetric_pump` | Stopped pump between a 5 m and a 1 m tank: flow below $10^{-6}$ m³/s |
 
 ## Data Fields

@@ -89,6 +89,7 @@ All notable changes to the WälFlow project will be documented in this file.
 
 - **Heat exchanger**: Reverse flow now cools the stream that actually enters. The rated pressure drop is reproduced in the system fluid at the design inlet temperature (previously only for water), and the rated UA no longer drifts with the operating temperature.
 - **3-way TCV mixing**: The mixed outlet temperature follows the enthalpy balance with temperature-dependent heat capacity, like the mixer (up to about 0.9 K warmer in oil).
+- **Pump heat**: Shaft power and waste heat use the entered efficiency down to 1 % (previously clamped at 5 % and 10 %). A pump driven by the fluid (braking) turns its whole pressure drop into heat, like a throttle. A running pump with reverse flow still draws shaft power.
 - **Check valve with orifice**: Above cracking, seat and orifice now share one pressure drop, and the seat gets the viscosity correction of the plain check valve. A section shut in behind it takes the pressure of the other side, since the orifice always connects both.
 - **Calibrated restriction**: Calibrates with the connected pipe bore and the system fluid from the first solver iteration, and only again after a change. A calibration temperature of 0 °C is kept instead of becoming 45 °C; an invalid calibration point (no flow, no pressure drop) is reported as an input error.
 - **Pipe and reducer friction**: A pipe roughness of 0 is now a smooth wall instead of 0.045 mm. The reducer uses the same Churchill friction factor as the pipe, with a consistent derivative.
