@@ -27,6 +27,8 @@ $$q_0 = \max\!\left(10^{-6},\ \frac{Q_{0,\text{L/min}}}{60\,000}\right), \qquad 
 
 Only the pressure **difference** of the calibration point matters. The calibration fluid is the system fluid (`system`) or a catalogue fluid, for example a datasheet measured with water.
 
+Calibration is lazy (`_ensure_calibrated`): it runs at the first `calculate_delta_p`, `calculate_dp_derivative` or `calculate` call, after the parser has set the connected pipe bore and the global settings, and again only when one of its inputs changes (calibration point, model, resolved fluid, pipe bore).
+
 | Model | Calibrated constant |
 | :--- | :--- |
 | `laminar` | $K_{\text{lam}} = \Delta P_0 / (\mu_0\, q_0)$ |
@@ -87,7 +89,7 @@ applied to the outlet for $Q \ge 0$ and to the inlet for $Q < 0$.
 | Baseline Temp | °C (°F) | `self.temp_base_c` | °C (→ K) | 45 | fluid validity range | Calibration temperature $T_0$ |
 | Calibration Fluid | catalogue | `self.fluid_type` | - | system | system, catalogue id | Fluid of the calibration point |
 
-A zero entered for flow, pressures or temperature is replaced by its default (`float(x or default)`). A calibration drop below 1 Pa is raised to 1 Pa.
+Only a missing value takes the default; 0 °C is a valid calibration temperature. The parser rejects a flow ≤ 0, an outlet pressure ≤ 0 bar(a), an inlet pressure not above the outlet pressure and a temperature at or below absolute zero (`ModelInputError`). A calibration temperature below 0 °C is evaluated at 0 °C.
 
 ## 6. Operating Modes & Model Boundaries
 
@@ -95,7 +97,7 @@ A zero entered for flow, pressures or temperature is replaced by its default (`f
 - **Solver flags:** all `False` (`is_pressure_boundary`, `is_flow_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation`).
 - **Inactive:** `active` has no effect.
 - **Reverse flow:** symmetric in all three models ($\Delta P$ is odd in $Q$).
-- **Recalibration:** `calculate()` recalibrates on every call, so the pipe bore and the system fluid set by the parser after construction are used. The very first Newton solve still uses the constructor calibration (DN50, water for `system`); the outer loop corrects it.
+- **Recalibration:** only when a calibration input changes (see 3.1), so the first Newton solve already uses the connected pipe bore and the system fluid.
 - **Orifice limit:** $\beta$ is capped at 0.99. A calibration drop smaller than a $\beta = 0.99$ orifice gives at $Q_0$ cannot be reproduced; use the quadratic model.
 - **Operating cases:** all fields can be overridden per case.
 - **Not modelled:** cavitation and choking in the restriction, compressibility, and a law between laminar and quadratic other than the orifice $C_d(\mathrm{Re})$.
@@ -108,6 +110,10 @@ A zero entered for flow, pressures or temperature is replaced by its default (`f
 | `test_calibrated_restriction.py::test_laminar_scaling` | Laminar: twice the flow or twice the viscosity gives twice the drop ($10^{-5}$) |
 | `test_calibrated_restriction.py::test_quadratic_scaling` | Quadratic: twice the flow gives four times the drop ($10^{-5}$) |
 | `test_calibrated_restriction.py::test_graph_parser_calibrated_restriction` | Parser reads 15 L/min, 4.0 / 1.5 bar(a), 50 °C, laminar, ISO VG 46 |
+| `test_calibrated_restriction.py::test_d08_parsed_restriction_reproduces_calibration_at_first_call` | Parsed node, system fluid ISO VG 46, DN25 line: 2.5 bar at 10 L/min on the first call, all three models ($10^{-4}$) |
+| `test_calibrated_restriction.py::test_d08_calibration_runs_once_and_again_only_after_a_change` | Repeated calls calibrate once; a new pipe bore triggers one recalibration |
+| `test_calibrated_restriction.py::test_d08_zero_calibration_temperature_is_kept` | 0 °C stays 0 °C (constructor and parser) |
+| `test_calibrated_restriction.py::test_d08_invalid_calibration_point_is_an_input_error` | Flow ≤ 0, inlet ≤ outlet, outlet ≤ 0 bar(a), temperature below absolute zero: `ModelInputError` naming the component |
 
 No network benchmark at the calibration point and no throttling heat test for this component.
 

@@ -24,7 +24,7 @@ Status: `open` / `fixed` / `rejected`. "Confirmed" means it was reproduced by ru
 | D-05 | Valves (all Cv devices) | Viscosity factor $F_R$ is not IEC 60534-2-1; no laminar valve flow | Medium | Code reading + numbers | open |
 | D-06 | Pipe | Roughness 0 replaced by 0.045 mm | Medium | Code reading | fixed |
 | D-07 | Reducer vs pipe | Two different friction factor functions | Low | Code reading | fixed |
-| D-08 | Calibrated restriction | Calibrates before the parser sets bore and fluid; recalibrates every call; zero inputs replaced | Low | Confirmed | open |
+| D-08 | Calibrated restriction | Calibrates before the parser sets bore and fluid; recalibrates every call; zero inputs replaced | Low | Confirmed | fixed |
 | D-09 | Check valve with orifice | Ranked as a closed check valve in shut-in sections; model simplifications | Low (to verify) | Code reading | open |
 | D-10 | Pumps | Efficiency floors differ between power and heat; braking PD pump heat | Low | Code reading | open |
 | D-11 | Linear control valve | Jump between 0 % and 0.1 % opening | Low | Code reading | open |

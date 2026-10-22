@@ -20,10 +20,11 @@ class CalibratedRestriction(HydraulicNode):
     ):
         super().__init__(name, node_type="calibrated_restriction")
         
-        self.flow_base_lmin = float(flow_base_lmin or 10.0)
-        self.inlet_pressure_base_bar = float(inlet_pressure_base_bar or 3.5)
-        self.outlet_pressure_base_bar = float(outlet_pressure_base_bar or 1.0)
-        self.temp_base_c = float(temp_base_c or 45.0)
+        # Only a missing value takes the default; 0 °C is a valid calibration temperature (D-08)
+        self.flow_base_lmin = 10.0 if flow_base_lmin is None else float(flow_base_lmin)
+        self.inlet_pressure_base_bar = 3.5 if inlet_pressure_base_bar is None else float(inlet_pressure_base_bar)
+        self.outlet_pressure_base_bar = 1.0 if outlet_pressure_base_bar is None else float(outlet_pressure_base_bar)
+        self.temp_base_c = 45.0 if temp_base_c is None else float(temp_base_c)
         self.restriction_model = restriction_model or "orifice"
         self.fluid_type = fluid_type or "system"
         
@@ -33,8 +34,9 @@ class CalibratedRestriction(HydraulicNode):
         self.add_inlet()
         self.add_outlet()
         
-        # Calibrate coefficients
-        self._calibrate()
+        # Calibrated lazily at first use: the parser sets the pipe bore and the
+        # global settings (system fluid) only after construction (D-08)
+        self._calibration_key = None
 
     def _get_calibration_fluid(self) -> str:
         """Helper to resolve the fluid type at calibration time."""
@@ -43,6 +45,14 @@ class CalibratedRestriction(HydraulicNode):
         if self.fluid_type == "system":
             return "water"
         return self.fluid_type
+
+    def _ensure_calibrated(self):
+        """Calibrates on first use and again only when an input of the calibration changed."""
+        key = (self.flow_base_lmin, self.inlet_pressure_base_bar, self.outlet_pressure_base_bar,
+               self.temp_base_c, self.restriction_model, self._get_calibration_fluid(), self.pipe_diameter)
+        if key != self._calibration_key:
+            self._calibrate()
+            self._calibration_key = key
 
     def _calibrate(self):
         """Calibrates coefficients based on baseline case."""
@@ -119,13 +129,7 @@ class CalibratedRestriction(HydraulicNode):
             self.eq_diameter = max(1e-4, min(10.0, self.eq_diameter))
 
     def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
-        # Re-run calibration if settings have changed or were not initialized
-        if self.restriction_model == "laminar" and not hasattr(self, 'k_lam'):
-            self._calibrate()
-        elif self.restriction_model == "quadratic" and not hasattr(self, 'k_quad'):
-            self._calibrate()
-        elif self.restriction_model == "orifice" and not hasattr(self, 'eq_diameter'):
-            self._calibrate()
+        self._ensure_calibrated()
 
         # Handle flow direction
         sign_q = 1.0 if flow_rate >= 0 else -1.0
@@ -163,13 +167,7 @@ class CalibratedRestriction(HydraulicNode):
             return perm_delta_p
 
     def calculate_dp_derivative(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
-        # Re-run calibration if needed
-        if self.restriction_model == "laminar" and not hasattr(self, 'k_lam'):
-            self._calibrate()
-        elif self.restriction_model == "quadratic" and not hasattr(self, 'k_quad'):
-            self._calibrate()
-        elif self.restriction_model == "orifice" and not hasattr(self, 'eq_diameter'):
-            self._calibrate()
+        self._ensure_calibrated()
 
         if self.restriction_model == "laminar":
             return self.k_lam * viscosity
@@ -194,8 +192,7 @@ class CalibratedRestriction(HydraulicNode):
             return c_const * 2.0 * q_eff / cd_val**2 * (1.0 - FluidProperties.get_orifice_cd_slope(re_orifice))
 
     def calculate(self):
-        # Trigger calibration just in case
-        self._calibrate()
+        self._ensure_calibrated()
         
         inlet = self.inlets[0]
         outlet = self.outlets[0]

@@ -268,6 +268,18 @@ class GraphParser:
             raise ModelInputError(f"'{name}': rated flow must be above 0 L/min.")
 
     @staticmethod
+    def _check_calibration_point(node: CalibratedRestriction, name: str) -> None:
+        """A calibrated restriction needs a positive flow and a positive pressure drop at the calibration point (D-08)."""
+        if node.flow_base_lmin <= 0:
+            raise ModelInputError(f"'{name}': calibration flow must be above 0 L/min.")
+        if node.outlet_pressure_base_bar <= 0:
+            raise ModelInputError(f"'{name}': calibration outlet pressure must be above 0 bar(a).")
+        if node.inlet_pressure_base_bar <= node.outlet_pressure_base_bar:
+            raise ModelInputError(f"'{name}': calibration inlet pressure must be above the outlet pressure.")
+        if node.temp_base_c <= -273.15:
+            raise ModelInputError(f"'{name}': calibration temperature must be above absolute zero.")
+
+    @staticmethod
     def _build_node(node_data: ReactFlowNode, global_settings: Any = None) -> HydraulicNode:
         t = node_data.type
         d = node_data.data
@@ -368,6 +380,7 @@ class GraphParser:
                 restriction_model=str(d.get('restriction_model', 'orifice')),
                 fluid_type=str(d.get('fluid_type', 'system'))
             )
+            GraphParser._check_calibration_point(node, name)
         elif t == 'reducer' or t == 'expander':
             # Diameters / length in meters. Missing or null values fall back to the
             # Reducer defaults (DN80 x DN50 STD), which coerces each field itself; 0 or below is an input error.
