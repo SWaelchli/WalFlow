@@ -592,9 +592,8 @@ function WalFlowContent() {
       target: instrument.id,
       targetHandle: 'signal-in',
       label,
-      animated: true,
       type: 'step',
-      style: { stroke: '#fde047', strokeWidth: 3, strokeDasharray: '5,5' },
+      style: {},
       data: { label, type: 'SIGNAL' },
     };
     setNodes(nds => nds.map(n => ({ ...n, selected: false })).concat(instrument));
@@ -743,10 +742,8 @@ function WalFlowContent() {
         const isSignal = e.data?.type === 'SIGNAL';
         let style = {};
 
-        if (e.selected) {
+        if (e.selected && !isSignal) {
           style = { stroke: '#3b82f6', strokeWidth: 3 };
-        } else if (isSignal) {
-          style = { stroke: '#fde047', strokeWidth: 3, strokeDasharray: '5,5' };
         }
 
         return { ...e, style };
@@ -929,11 +926,9 @@ function WalFlowContent() {
         ...params, 
         id: newId,
         label: label,
-        animated: true, 
+        animated: !isSignal,
         type: isSignal ? 'step' : 'default',
-        style: isSignal 
-          ? { stroke: '#fde047', strokeWidth: 3, strokeDasharray: '5,5' }
-          : {},
+        style: {},
         data: {
           label: label,
           type: isSignal ? 'SIGNAL' : 'PIPE',
@@ -1341,7 +1336,7 @@ function WalFlowContent() {
       return {
         ...edge,
         type: isSignal ? 'signal' : 'pipe',
-        animated: isSignal && hasFlow,
+        animated: false,
         className: (isSignal && hasFlow) ? 'simulating' : '',
         data: {
           ...edge.data,
