@@ -133,6 +133,27 @@ def calculate_case_kpis(network, telemetry: Dict[str, Any], stats: Dict[str, Any
 
     return kpi_res
 
+VALVE_CURVE_TYPES = {"linear_control_valve", "linear_regulator", "remote_control_valve"}
+VALVE_CURVE_POINTS = 61
+VALVE_CURVE_MIN_FLOW = 0.005  # m^3/s (300 L/min), smallest flow range of the curve
+
+
+def valve_curves(node) -> Dict[str, List[float]]:
+    """Δp over flow at the current and the full opening, from the valve's own calculate_delta_p (D-33).
+
+    Uses the solved inlet fluid, so F_R, F_L, F_d and the valve size match the solve. Range 0 to
+    max(300 L/min, 2 × the current flow).
+    """
+    inlet = node.inlets[0]
+    q_max = max(VALVE_CURVE_MIN_FLOW, 2.0 * abs(inlet.flow_rate))
+    flows = [q_max * i / (VALVE_CURVE_POINTS - 1) for i in range(VALVE_CURVE_POINTS)]
+    return {
+        "flow_m3s": flows,
+        "dp_current_pa": [node.calculate_delta_p(q, inlet.density, inlet.viscosity) for q in flows],
+        "dp_full_open_pa": [node.calculate_delta_p(q, inlet.density, inlet.viscosity, opening_pct=100.0) for q in flows],
+    }
+
+
 def extract_telemetry(network) -> Dict[str, Any]:
     """Canonical telemetry extraction function for both REST and WebSocket simulation runs."""
     telemetry = {"nodes": {}, "edges": {}}
@@ -207,6 +228,8 @@ def extract_telemetry(network) -> Dict[str, Any]:
             node_tel["pipe_diameter"] = node.pipe_diameter
         if hasattr(node, 'standard'):
             node_tel["standard"] = node.standard
+        if node.node_type in VALVE_CURVE_TYPES:
+            node_tel["valve_curves"] = valve_curves(node)
         telemetry["nodes"][node_id] = node_tel
 
     for edge in network.edges:

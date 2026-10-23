@@ -23,16 +23,19 @@ class LinearControlValve(HydraulicNode):
         self.add_inlet()
         self.add_outlet()
 
-    def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
+    def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001,
+                          opening_pct: float | None = None) -> float:
         """
-        Calculates pressure drop across the valve based on its current position.
+        Calculates pressure drop across the valve at its current position, or at opening_pct if given.
         Uses the liquid Cv formula with the IEC 60534-2-1 Annex A Reynolds number factor (F_R).
         """
-        if self.opening_pct < MIN_OPENING_PCT:
+        if opening_pct is None:
+            opening_pct = self.opening_pct
+        if opening_pct < MIN_OPENING_PCT:
             # Closed below the minimum opening: block flow with a very high linear resistance
             return CLOSED_STIFFNESS * flow_rate
 
-        effective_opening = self.opening_pct / 100.0
+        effective_opening = opening_pct / 100.0
         
         # Calculate the effective Cv (assuming a linear trim)
         cv_eff = self.max_cv * effective_opening

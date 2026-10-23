@@ -30,10 +30,13 @@ class RemoteControlValve(HydraulicNode):
         self.add_inlet()
         self.add_outlet()
 
-    def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
-        """Standard Cv-based dP using current opening_pct with the IEC 60534-2-1 Annex A F_R."""
+    def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001,
+                          opening_pct: float | None = None) -> float:
+        """Standard Cv-based dP at the current opening_pct (or the given one) with the IEC 60534-2-1 Annex A F_R."""
+        if opening_pct is None:
+            opening_pct = self.opening_pct
         # Clamp opening to physical limits
-        eff_opening = max(0.001, min(100.0, self.opening_pct)) / 100.0
+        eff_opening = max(0.001, min(100.0, opening_pct)) / 100.0
         cv_eff = self.max_cv * eff_opening
 
         # Reynolds number factor, IEC 60534-2-1 Annex A (D-29)

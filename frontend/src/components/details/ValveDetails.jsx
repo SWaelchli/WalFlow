@@ -5,10 +5,26 @@ import {
 import { useUnits } from '../../context/UnitContext';
 import { niceTicks, formatTick } from '../../utils/chartTicks';
 
+// Legend with an inline SVG icon per entry type (line, cross)
+const LEGEND_ICON = {
+  plainline: (c) => <line x1="0" y1="7" x2="14" y2="7" stroke={c} strokeWidth="2" />,
+  cross: (c) => <path d="M7 1V13M1 7H13" stroke={c} strokeWidth="2.5" />
+};
+const ValveLegend = ({ payload }) => (
+  <div style={{ display: 'flex', justifyContent: 'flex-end', flexWrap: 'wrap', gap: '10px', fontSize: 'var(--fs-xs)' }}>
+    {payload.map((e) => (
+      <span key={e.value} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: e.color }}>
+        <svg width="14" height="14" viewBox="0 0 14 14">{LEGEND_ICON[e.type](e.color)}</svg>
+        {e.value}
+      </span>
+    ))}
+  </div>
+);
+
 const ValveDetails = memo(function ValveDetails({ node }) {
   const { labels, isImperial, formatPressurePa } = useUnits();
   const { type } = node;
-  const { max_cv, set_pressure_pa, backpressure, telemetry, opening_pct } = node.data;
+  const { set_pressure_pa, backpressure, telemetry, opening_pct } = node.data;
   
   const currentOpening = telemetry?.opening_pct ?? (opening_pct ?? 100);
   const currentQ = telemetry?.inlets?.[0]?.flow_rate || 0;
@@ -20,8 +36,6 @@ const ValveDetails = memo(function ValveDetails({ node }) {
   
   const setPBar = (set_pressure_pa || 500000) / 100000;
   const sensedPBar = sensedP / 100000;
-  const rho = telemetry?.inlets?.[0]?.density || 1000;
-  const K_CV_SI = 1.732e9;
 
   const status = useMemo(() => {
     if (!isRegulator) return "ACTIVE";
@@ -31,51 +45,57 @@ const ValveDetails = memo(function ValveDetails({ node }) {
   }, [isRegulator, sensedPBar, setPBar, currentOpening]);
 
   const actualFlowLmin = Math.abs(currentQ) * 60000.0;
-  const maxX_lmin = Math.max(300, actualFlowLmin * 2);
 
   const flowMultiplier = isImperial ? 0.264172052 : 1.0;
   const pressMultiplier = isImperial ? 14.5037738 : 1.0;
-  const xMaxDisplay = niceTicks(maxX_lmin * flowMultiplier, 5).pop();
-  const xMaxLmin = xMaxDisplay / flowMultiplier;
+
+  // Valve curves come from the backend (SI: m3/s, Pa), only converted to display units here
+  const curves = telemetry?.valve_curves;
 
   const chartData = useMemo(() => {
-    const data = [];
-    const steps = 60; 
-    const safeMaxCv = Math.max(0.0001, max_cv || 0.05);
-    const currentCv = (currentOpening / 100) * safeMaxCv;
-
-    for (let i = 0; i <= steps; i++) {
-      const qLmin = (xMaxLmin * i) / steps;
-      const qM3s = qLmin / 60000;
-      
-      const dpFullOpen = (K_CV_SI * rho * (qM3s**2)) / (safeMaxCv**2);
-      const limitPBar = backpressure ? (pOut / 100000) + (dpFullOpen / 100000) : (pIn / 100000) - (dpFullOpen / 100000);
-
-      const dpCurrent = (K_CV_SI * rho * (qM3s**2)) / (currentCv**2);
-      const currentPBar = backpressure ? (pOut / 100000) + (dpCurrent / 100000) : (pIn / 100000) - (dpCurrent / 100000);
-
-      data.push({
-        q: qLmin * flowMultiplier,
+    if (!curves?.flow_m3s?.length) return null;
+    return curves.flow_m3s.map((qM3s, i) => {
+      const dpFullOpen = curves.dp_full_open_pa[i];
+      const dpCurrent = curves.dp_current_pa[i];
+      const limitPBar = backpressure ? (pOut + dpFullOpen) / 100000 : (pIn - dpFullOpen) / 100000;
+      const currentPBar = backpressure ? (pOut + dpCurrent) / 100000 : (pIn - dpCurrent) / 100000;
+      return {
+        q: qM3s * 60000 * flowMultiplier,
         limit: limitPBar * pressMultiplier,
         currentCurve: currentPBar * pressMultiplier,
         setpoint: isRegulator ? setPBar * pressMultiplier : null
-      });
-    }
-    return data;
-  }, [max_cv, setPBar, pIn, pOut, backpressure, rho, xMaxLmin, isRegulator, currentOpening, flowMultiplier, pressMultiplier]);
+      };
+    });
+  }, [curves, setPBar, pIn, pOut, backpressure, isRegulator, flowMultiplier, pressMultiplier]);
 
+  // Axis ends at the last curve point; round ticks stay within it
+  const xMaxDisplay = chartData ? chartData[chartData.length - 1].q : 0;
+  const xTicks = useMemo(
+    () => (xMaxDisplay > 0 ? niceTicks(xMaxDisplay, 5).filter((t) => t <= xMaxDisplay * (1 + 1e-9)) : undefined),
+    [xMaxDisplay]
+  );
+
+  // Operating point sits on the valve's own curve: inlet pressure for backpressure, outlet otherwise
+  const ownPBar = (backpressure ? pIn : pOut) / 100000;
   const opPoint = useMemo(() => [{
     q: actualFlowLmin * flowMultiplier,
-    p: sensedPBar * pressMultiplier
-  }], [actualFlowLmin, sensedPBar, flowMultiplier, pressMultiplier]);
+    p: ownPBar * pressMultiplier
+  }], [actualFlowLmin, ownPBar, flowMultiplier, pressMultiplier]);
+
+  const legendPayload = [
+    ...(isRegulator ? [{ value: 'Setpoint', type: 'plainline', color: 'var(--color-primary)' }] : []),
+    { value: 'Current Pos', type: 'plainline', color: 'var(--color-brand-dark)' },
+    { value: 'Max Open', type: 'plainline', color: 'var(--color-border-hover)' },
+    ...(telemetry ? [{ value: 'Operating Point', type: 'cross', color: 'var(--color-primary)' }] : [])
+  ];
 
   const yDomain = useMemo(() => {
-    const vals = isRegulator ? [setPBar * pressMultiplier, sensedPBar * pressMultiplier] : [sensedPBar * pressMultiplier];
+    const vals = (isRegulator ? [setPBar, ownPBar] : [ownPBar]).map((v) => v * pressMultiplier);
     const margin = isImperial ? 30 : 2;
     const minV = Math.max(0, Math.min(...vals) - margin);
     const maxV = Math.max(...vals) + margin;
     return [Math.floor(minV), Math.ceil(maxV)];
-  }, [isRegulator, setPBar, sensedPBar, pressMultiplier, isImperial]);
+  }, [isRegulator, setPBar, ownPBar, pressMultiplier, isImperial]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
@@ -91,22 +111,28 @@ const ValveDetails = memo(function ValveDetails({ node }) {
       </div>
       
       <div style={{ width: '100%', height: '240px', background: 'var(--color-surface)' }}>
+        {!chartData ? (
+          <div style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--fs-sm)', fontStyle: 'italic', padding: '10px 0', textAlign: 'center' }}>
+            Run a simulation to see the valve curves
+          </div>
+        ) : (
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 4, bottom: 10 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
-            <XAxis dataKey="q" type="number" domain={[0, xMaxDisplay]} fontSize={10} tickCount={6} tickFormatter={formatTick} height={36}
+            <XAxis dataKey="q" type="number" domain={[0, xMaxDisplay]} ticks={xTicks} fontSize={10} tickFormatter={formatTick} height={36}
               label={{ value: labels.flow, position: 'insideBottomRight', offset: -2, fontSize: 10, fill: 'var(--color-text-secondary)' }} />
             <YAxis type="number" domain={yDomain} fontSize={10} tickCount={6} tickFormatter={formatTick} width={45}
               label={{ value: labels.pressureAbs, angle: -90, position: 'insideLeft', offset: 10, fontSize: 10, fill: 'var(--color-text-secondary)', style: { textAnchor: 'middle' } }} />
-            <Legend verticalAlign="top" align="right" height={40} iconType="plainline" wrapperStyle={{ fontSize: 'var(--fs-xs)' }} />
+            <Legend verticalAlign="top" align="right" height={40} content={() => <ValveLegend payload={legendPayload} />} />
             
-            {isRegulator && <Line dataKey="setpoint" stroke="var(--color-primary)" strokeWidth={2} dot={false} name="Setpoint" isAnimationActive={false} />}
-            <Line dataKey="currentCurve" stroke="var(--color-brand-dark)" strokeWidth={2.5} dot={false} name="Current Pos" isAnimationActive={false} />
-            <Line dataKey="limit" stroke="var(--color-border-hover)" strokeWidth={1} dot={false} name="Max Open" isAnimationActive={false} />
+            {isRegulator && <Line dataKey="setpoint" stroke="var(--color-primary)" strokeWidth={2} dot={false} name="Setpoint" legendType="plainline" activeDot={false} isAnimationActive={false} />}
+            <Line dataKey="currentCurve" stroke="var(--color-brand-dark)" strokeWidth={2.5} dot={false} name="Current Pos" legendType="plainline" activeDot={false} isAnimationActive={false} />
+            <Line dataKey="limit" stroke="var(--color-border-hover)" strokeWidth={1} dot={false} name="Max Open" legendType="plainline" activeDot={false} isAnimationActive={false} />
             
-            {telemetry && <Scatter name="Operating Point" dataKey="p" data={opPoint} fill="var(--color-primary)" isAnimationActive={false} shape="cross" />}
+            {telemetry && <Scatter name="Operating Point" dataKey="p" data={opPoint} fill="var(--color-primary)" isAnimationActive={false} shape="cross" activeShape="cross" legendType="cross" />}
           </ComposedChart>
         </ResponsiveContainer>
+        )}
       </div>
 
       <div style={{ background: 'var(--color-surface-hover)', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: '4px' }}>

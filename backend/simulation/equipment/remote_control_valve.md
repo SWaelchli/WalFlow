@@ -31,6 +31,8 @@ $$\Delta P = \frac{K_{Cv}\, \rho\, Q|Q|}{\big(C_{v,\max} \cdot \tfrac{\text{open
 
 with the opening clamped to 0.1-100 % and the IEC 60534-2-1 Annex A Reynolds number factor $F_R$ of the [linear control valve](linear_control_valve.md#33-reynolds-number-factor-f_r-fluidpropertiesget_iec_valve_fr): same $F_L$, $F_d$ defaults, valve size from the connected pipe (D-29).
 
+The Results tab chart draws this equation at the current and the full opening; the curve points come from `calculate_delta_p` with the results (`valve_curves`, D-33).
+
 ### 3.2 Sensed pressure
 
 The parser builds `remote_sensing_config = {node_id, port_type, port_idx}` from the signal line's source handle (e.g. `signal-inlet-0` → inlet 0). The sensed pressure is that port's pressure after each hydraulic solve. A legacy signal line without a port in its handle senses the source node's outlet 0; no signal line, or a missing node, means the valve's own outlet.

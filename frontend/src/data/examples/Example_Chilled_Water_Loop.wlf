@@ -165,7 +165,10 @@
       "data": {
         "label": "AHU Throttling Valve",
         "max_cv": 15.0,
-        "opening_pct": 65.0
+        "opening_pct": 65.0,
+        "valve_style_id": "IEC_60534_2_1_TABLE_D2:ball_segmented",
+        "fl": 0.6,
+        "fd": 0.98
       }
     },
     {

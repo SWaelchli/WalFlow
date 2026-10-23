@@ -99,7 +99,10 @@
       "data": {
         "label": "FCV-101 Flow Control",
         "opening_pct": 80.0,
-        "max_cv": 10.0
+        "max_cv": 10.0,
+        "valve_style_id": "IEC_60534_2_1_TABLE_D2:globe_single_contoured_open",
+        "fl": 0.9,
+        "fd": 0.46
       }
     },
     {

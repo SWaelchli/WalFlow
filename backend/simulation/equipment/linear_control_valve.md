@@ -35,6 +35,8 @@ with $\Delta P$ in Pa, $Q$ in m³/s and $\rho$ in kg/m³. $K_{Cv} = 15\,850.32^2
 
 **An opening below 0.1 %** (including 0 %) is a closed valve: $\Delta P = 10^{12}\, Q$, a linear stiffness that blocks the flow (leakage below $10^{-7}$ L/min per bar).
 
+The Results tab chart draws this equation at the current and the full opening; the curve points come from `calculate_delta_p` with the results (`valve_curves`, D-33).
+
 ### 3.3 Reynolds number factor $F_R$ (`FluidProperties.get_iec_valve_fr`)
 
 IEC 60534-2-1:2011 Annex A (D-29). The valve Reynolds number, Eq. (23) / (A.1):

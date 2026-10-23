@@ -78,7 +78,10 @@
         "max_cv": 12.0,
         "opening_pct": 100.0,
         "set_pressure_pa": 600000,
-        "backpressure": true
+        "backpressure": true,
+        "valve_style_id": "IEC_60534_2_1_TABLE_D2:ball_full_bore_70",
+        "fl": 0.74,
+        "fd": 0.99
       }
     },
     {
