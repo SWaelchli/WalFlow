@@ -19,6 +19,7 @@ Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_RE
 | :--- | :--- | :--- | :--- | :--- |
 | RCV-01 | Standard | IEC 60534-2-1:2011; ANSI/ISA-75.01.01-2012 | Liquid Cv equation, as in the [linear control valve](linear_control_valve.md#3-physical--mathematical-implementation) | ✅ IEC 60534-2-1:2011 §6.1 Eq. (1) |
 | RCV-02 | Standard | ANSI/ISA-5.1-2024 | PC → PCV loop notation | ⚪ Unverified |
+| RCV-03 | Standard | IEC 60534-2-1:2011 | Reynolds number factor $F_R$ (Annex A) and default $F_L$, $F_d$ (Table D.2), as in the [linear control valve](linear_control_valve.md#33-reynolds-number-factor-f_r-fluidpropertiesget_iec_valve_fr) | ✅ IEC 60534-2-1:2011 §9 Eq. (23), Annex A, Table D.2 |
 
 The control loop is an ideal steady-state controller (no tuning, no offset), as a pressure control loop would settle with integral action.
 
@@ -28,7 +29,7 @@ The control loop is an ideal steady-state controller (no tuning, no offset), as 
 
 $$\Delta P = \frac{K_{Cv}\, \rho\, Q|Q|}{\big(C_{v,\max} \cdot \tfrac{\text{opening}}{100} \cdot F_R\big)^2}, \qquad K_{Cv} = 1.732 \times 10^9$$
 
-with the opening clamped to 0.1-100 % and the viscosity correction $F_R$ of the [linear control valve](linear_control_valve.md#33-viscosity-correction-f_r-fluidpropertiesget_valve_fr).
+with the opening clamped to 0.1-100 % and the IEC 60534-2-1 Annex A Reynolds number factor $F_R$ of the [linear control valve](linear_control_valve.md#33-reynolds-number-factor-f_r-fluidpropertiesget_iec_valve_fr): same $F_L$, $F_d$ defaults, valve size from the connected pipe (D-29).
 
 ### 3.2 Sensed pressure
 
@@ -73,6 +74,9 @@ applied to the outlet for $Q \ge 0$ and to the inlet for $Q < 0$.
 | Max Cv | Cv | `self.max_cv` | Cv | 0.05 | $> 0$ | Flow coefficient at 100 % |
 | Mode | text | `self.backpressure` | bool | Pressure Reducing (Downstream Remote) | Pressure Reducing / Backpressure | Control action |
 | Set Point | bar(a) (psi(a)) | `self.set_pressure` | Pa (absolute) | 5.0 bar(a) | $> 0$ | Pressure held at the sensed port |
+| — (node data `fl`, no UI yet) | – | `self.fl` | – | 0.9 | $(0, 1]$ | Liquid pressure recovery factor $F_L$ (Table D.2) |
+| — (node data `fd`, no UI yet) | – | `self.fd` | – | 0.46 | $> 0$ | Valve style modifier $F_d$ (Table D.2) |
+| — (from connected pipe) | – | `self.pipe_diameter` | m | 0.05248 | $> 0$ | Valve size $d = D$ for $F_R$ |
 | Signal line | drawing | `self.remote_sensing_config` | - | none (own outlet) | any port | Sensed port |
 
 The opening (`self.opening_pct`) and the sensed pressure (`self.sensed_pressure`) are results.
@@ -106,3 +110,5 @@ Node type: `remote_control_valve`. Field names follow the naming rule in [base_n
 | `max_cv` | Cv | 0.05 |
 | `set_pressure_pa` | Pa | 500000 |
 | `backpressure` | bool | false |
+| `fl` | factor $F_L$ (IEC 60534-2-1) | 0.9 |
+| `fd` | factor $F_d$ (IEC 60534-2-1) | 0.46 |

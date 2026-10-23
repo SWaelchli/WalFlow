@@ -29,7 +29,7 @@ The regulator is an ideal controller: no droop (proportional band), no hysteresi
 
 ### 3.1 Valve equation (`calculate_delta_p`)
 
-The same Cv equation and viscosity correction as the [linear control valve](linear_control_valve.md#32-pressure-drop-calculate_delta_p):
+The same Cv equation as the [linear control valve](linear_control_valve.md#32-pressure-drop-calculate_delta_p), but with the smooth viscosity correction of the [check valve](check_valve.md#31-open-valve-loss-open_seat_dp) (`FluidProperties.get_valve_fr`), not the IEC 60534-2-1 Annex A factor of the control valves (D-29). A regulator standard may replace it later.
 
 $$\Delta P = \frac{K_{Cv}\, \rho\, Q|Q|}{\big(C_{v,\max} \cdot \tfrac{\text{opening}}{100} \cdot F_R\big)^2}, \qquad K_{Cv} = 1.732 \times 10^9$$
 

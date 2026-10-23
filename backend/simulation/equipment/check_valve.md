@@ -22,7 +22,11 @@ Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_RE
 
 $$\Delta P_{\text{fric}}(Q) = \frac{K_{Cv}\, \rho\, Q|Q|}{\big(\max(10^{-4},\ C_v F_R)\big)^2}, \qquad K_{Cv} = 1.732 \times 10^9$$
 
-with the viscosity correction $F_R$ of the [linear control valve](linear_control_valve.md#33-viscosity-correction-f_r-fluidpropertiesget_valve_fr).
+with a smooth viscosity correction $F_R$ (`FluidProperties.get_valve_fr`). It is not the IEC 60534-2-1 Annex A factor of the control valves (D-29): a check valve is outside the scope of IEC 60534. An equivalent trim diameter and a valve Reynolds number:
+
+$$d_v = \max\!\left(0.002,\ 0.01\sqrt{C_v}\right)\ \text{m}, \qquad \mathrm{Re}_v = \frac{\rho\, |Q|\, d_v}{\mu\, \pi d_v^2 / 4}, \qquad F_R = \min\!\left(1,\ \max\!\left(0.4,\ \frac{\mathrm{Re}_v + 200}{\mathrm{Re}_v + 400}\right)\right)$$
+
+$F_R$ falls from 1 (turbulent) to 0.5 at zero flow, so the loss stays quadratic in $Q$ (at most four times the turbulent value); laminar valve flow ($\Delta P \propto \mu Q$) is not reproduced.
 
 ### 3.2 Complementarity condition
 

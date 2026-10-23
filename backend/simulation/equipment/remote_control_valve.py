@@ -1,6 +1,5 @@
 from simulation.equipment.base_node import HydraulicNode
 from simulation.fluid_utils import FluidProperties
-import math
 
 class RemoteControlValve(HydraulicNode):
     """
@@ -8,12 +7,18 @@ class RemoteControlValve(HydraulicNode):
     Its opening_pct is adjusted by the solver to reach the target pressure
     at the connected SensingNode.
     """
-    def __init__(self, name: str, max_cv: float, set_pressure: float = 500000.0, backpressure: bool = False):
+    def __init__(self, name: str, max_cv: float, set_pressure: float = 500000.0, backpressure: bool = False,
+                 fl: float = 0.9, fd: float = 0.46):
         super().__init__(name, node_type="remote_control_valve")
         self.max_cv = max_cv
         self.set_pressure = set_pressure
         self.backpressure = backpressure
-        
+        # IEC 60534-2-1 Table D.2 style factors; default globe single port, contoured plug, flow to open
+        self.fl = fl
+        self.fd = fd
+        # Valve size for F_R, set by the graph parser from the connected pipe; default DN50
+        self.pipe_diameter = 0.05248
+
         # Configuration for remote sensing: {"node_id": str, "port_type": "inlet"|"outlet", "port_idx": int}
         self.remote_sensing_config = None
         
@@ -26,18 +31,15 @@ class RemoteControlValve(HydraulicNode):
         self.add_outlet()
 
     def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
-        """Standard Cv-based dP using current opening_pct with IEC viscosity correction."""
+        """Standard Cv-based dP using current opening_pct with the IEC 60534-2-1 Annex A F_R."""
         # Clamp opening to physical limits
         eff_opening = max(0.001, min(100.0, self.opening_pct)) / 100.0
         cv_eff = self.max_cv * eff_opening
-        
-        # Viscosity correction via Valve Reynolds number (IEC 60534-2-1 principle)
-        d_v = max(0.002, 0.01 * math.sqrt(cv_eff))
-        v_v = flow_rate / (0.25 * math.pi * d_v**2)
-        re_v = (density * abs(v_v) * d_v) / max(1e-7, viscosity)
-        
-        fr = FluidProperties.get_valve_fr(re_v)
-        cv_eff_adj = max(0.0001, cv_eff * fr)
+
+        # Reynolds number factor, IEC 60534-2-1 Annex A (D-29)
+        fr = FluidProperties.get_iec_valve_fr(flow_rate, viscosity / density, cv_eff, self.max_cv,
+                                              self.fl, self.fd, self.pipe_diameter)
+        cv_eff_adj = max(1e-10, cv_eff * fr)  # F_R is floored; keeps laminar Δp linear in Q (D-29)
         
         K_CV_SI = 1.732e9
         dp = (K_CV_SI * density * flow_rate * abs(flow_rate)) / (cv_eff_adj**2)

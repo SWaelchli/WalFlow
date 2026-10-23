@@ -223,7 +223,10 @@ class GraphParser:
 
         # Auto-detect connected pipe diameter for Orifice, CheckValveOrifice, and RuptureDisc nodes
         for node_id, node in nodes_dict.items():
-            if hasattr(node, 'orifice_diameter') or node.node_type == 'calibrated_restriction' or getattr(node, 'bore_type', '') == 'reduced_bore':
+            if (hasattr(node, 'orifice_diameter') or node.node_type == 'calibrated_restriction'
+                    or getattr(node, 'bore_type', '') == 'reduced_bore'
+                    # IEC 60534-2-1 Annex A F_R takes the valve size from the line (D-29)
+                    or node.node_type in ('linear_control_valve', 'remote_control_valve', 'three_way_tcv')):
                 connected_d = None
                 # Check connected inlet pipes (upstream pipe diameter takes precedence)
                 for edge_info in parsed_edges:
@@ -266,6 +269,12 @@ class GraphParser:
         name = (node_data.data or {}).get('label') or f"{node_data.type}_{node_data.id}"
         if node_data.type == 'heat_exchanger' and node.rated_flow_lmin <= 0.0:
             raise ModelInputError(f"'{name}': rated flow must be above 0 L/min.")
+        if node_data.type in ('linear_control_valve', 'remote_control_valve', 'three_way_tcv'):
+            # IEC 60534-2-1 style factors divide and take roots in F_R (D-29)
+            if not 0.0 < node.fl <= 1.0:
+                raise ModelInputError(f"'{name}': F_L must be above 0 and at most 1.")
+            if node.fd <= 0.0:
+                raise ModelInputError(f"'{name}': F_d must be above 0.")
 
     @staticmethod
     def _check_calibration_point(node: CalibratedRestriction, name: str) -> None:
@@ -347,14 +356,18 @@ class GraphParser:
             node = LinearControlValve(
                 name=name,
                 max_cv=float(d.get('max_cv', 0.05)),
-                opening_pct=float(d.get('opening_pct', 50.0))
+                opening_pct=float(d.get('opening_pct', 50.0)),
+                fl=float(d.get('fl', 0.9)),
+                fd=float(d.get('fd', 0.46))
             )
         elif t == 'remote_control_valve':
             node = RemoteControlValve(
                 name=name,
                 max_cv=float(d.get('max_cv', 0.05)),
                 set_pressure=float(d.get('set_pressure_pa', 500000.0)),
-                backpressure=bool(d.get('backpressure', False))
+                backpressure=bool(d.get('backpressure', False)),
+                fl=float(d.get('fl', 0.9)),
+                fd=float(d.get('fd', 0.46))
             )
         elif t == 'linear_regulator':
             node = LinearRegulator(
@@ -444,7 +457,9 @@ class GraphParser:
                 name=name,
                 max_cv=float(d.get('max_cv', 0.1)),
                 set_temperature=float(d.get('set_temperature_c', 40.0)) + 273.15,
-                hot_port_idx=int(d.get('hot_port_idx', 0))
+                hot_port_idx=int(d.get('hot_port_idx', 0)),
+                fl=float(d.get('fl', 0.9)),
+                fd=float(d.get('fd', 0.46))
             )
         elif t == 'check_valve':
             node = CheckValve(

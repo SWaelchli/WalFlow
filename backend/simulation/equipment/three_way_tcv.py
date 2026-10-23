@@ -1,6 +1,5 @@
 from simulation.equipment.base_node import HydraulicNode
 from simulation.fluid_utils import FluidProperties
-import math
 
 class ThreeWayTCV(HydraulicNode):
     """
@@ -10,9 +9,16 @@ class ThreeWayTCV(HydraulicNode):
     - mix_ratio (0.0 to 1.0) is strictly the opening of the user-designated HOT port.
     - 1.0 - mix_ratio is strictly the opening of the COLD port.
     """
-    def __init__(self, name: str, max_cv: float, set_temperature: float, hot_port_idx: int = 0):
+    def __init__(self, name: str, max_cv: float, set_temperature: float, hot_port_idx: int = 0,
+                 fl: float = 0.9, fd: float = 0.46):
         super().__init__(name, node_type="three_way_tcv")
         self.max_cv = max_cv
+        # IEC 60534-2-1 Table D.2 style factors per path (the table has no 3-way row);
+        # default globe single port, contoured plug, flow to open
+        self.fl = fl
+        self.fd = fd
+        # Valve size for F_R, set by the graph parser from the connected pipe; default DN50
+        self.pipe_diameter = 0.05248
         self.set_temperature = set_temperature 
         self.hot_port_idx = hot_port_idx       # 0 or 1
         self.mix_ratio = 0.5                   
@@ -35,11 +41,10 @@ class ThreeWayTCV(HydraulicNode):
         if abs(flow) < 1e-10:
             return 0.0
             
-        d_v = max(0.002, 0.01 * math.sqrt(eff_cv))
-        v_v = flow / (0.25 * math.pi * d_v**2)
-        re_v = (density * abs(v_v) * d_v) / max(1e-7, viscosity)
-        fr = FluidProperties.get_valve_fr(re_v)
-        cv_adj = max(0.0001, eff_cv * fr)
+        # Reynolds number factor, IEC 60534-2-1 Annex A (D-29)
+        fr = FluidProperties.get_iec_valve_fr(flow, viscosity / density, eff_cv, self.max_cv,
+                                              self.fl, self.fd, self.pipe_diameter)
+        cv_adj = max(1e-10, eff_cv * fr)  # F_R is floored; keeps laminar Δp linear in Q (D-29)
 
         K_CV_SI = 1.732e9
         dp = (K_CV_SI * density * flow * abs(flow)) / (cv_adj**2)
