@@ -56,11 +56,9 @@ $C_{v,\max}$ = 10, 100 L/min at 40 °C:
 | ISO VG 46 | 100 % | 1 460 | 0.892 | 0.52 bar |
 | ISO VG 46 | 10 % | 4 610 | 0.960 | 44.9 bar |
 
-### 3.5 Derivative (`calculate_dp_derivative`)
+### 3.5 Derivative
 
-$$\frac{\partial \Delta P}{\partial Q} = \frac{2\, K_{Cv}\, \rho\, |Q|}{\big(C_{v,\text{eff}} F_R\big)^2}$$
-
-$F_R$ is held constant. Below 0.1 % opening the slope is $10^{12}$ Pa·s/m³. In the network Jacobian the solver differentiates the outlet pressure numerically, so the change of $F_R$ with $Q$ is included (see [base_node.md](base_node.md#33-jacobian)).
+The class has no analytical derivative; the solver differentiates the outlet pressure numerically (see [base_node.md](base_node.md#33-jacobian), D-23).
 
 ## 4. Thermal & Energy Balance
 
@@ -98,10 +96,10 @@ applied to the outlet for $Q \ge 0$ and to the inlet for $Q < 0$, with density a
 | `backend/tests/unit/fluids/test_throttling_heat.py::test_f1_16_throttling_heat_magnitude` | Cv 1 at 50 %, drop above 0.5 bar: outlet temperature rise $= \Delta P/(\rho c_p)$ within 2 % |
 | `backend/tests/unit/fluids/test_npsh.py::test_f1_28_valve_outlet_below_vapor_pressure_is_flagged`, `test_f1_28_cold_valve_is_not_flagged` | Cv 5 at 50 % between a 5 m tank and an open tank: water at 120 °C sets `flashing_warning`, at 20 °C it does not |
 | `backend/tests/unit/solver/test_basic_components.py::test_mass_balance` | Valve as the load of a mixer network; flows balance within $10^{-10}$ m³/s |
-| `backend/tests/unit/equipment/test_linear_control_valve.py::test_d11_opening_below_minimum_is_closed` | 0, 0.05 and 0.0999 % are closed: $\Delta P = 10^{12} Q$, slope $10^{12}$ |
-| `test_linear_control_valve.py::test_d11_minimum_opening_follows_the_cv_law` | 0.1 % follows the Cv law: twice the flow gives four times the drop (5 %), slope $2\Delta P/Q$ |
+| `backend/tests/unit/equipment/test_linear_control_valve.py::test_d11_opening_below_minimum_is_closed` | 0, 0.05 and 0.0999 % are closed: $\Delta P = 10^{12} Q$ |
+| `test_linear_control_valve.py::test_d11_minimum_opening_follows_the_cv_law` | 0.1 % follows the Cv law: twice the flow gives four times the drop (5 %) |
 
-No dedicated benchmark of the Cv equation or $F_R$; the same equation is checked through the regulator and remote control valve tests (`test_demand_flow_through_the_locked_regulator_matches_the_valve_equation`, `test_remote_control_valve_init_and_derivatives`).
+No dedicated benchmark of the Cv equation or $F_R$; the same equation is checked through the regulator test `test_demand_flow_through_the_locked_regulator_matches_the_valve_equation`.
 
 ## Data Fields
 

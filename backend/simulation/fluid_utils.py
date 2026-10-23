@@ -324,11 +324,29 @@ class FluidProperties:
         return cd_t * math.tanh(0.2 * math.sqrt(re_safe) / cd_t)
 
     @staticmethod
-    def get_orifice_cd_slope(reynolds_number: float) -> float:
-        """dln(Cd)/dln(Re) of get_orifice_cd (0.5 in the laminar limit, 0 in the turbulent limit)."""
-        re_safe = max(1e-6, abs(reynolds_number))
-        u = 0.2 * math.sqrt(re_safe) / FluidProperties._CD_TURBULENT
-        return 0.5 if u < 1e-6 else min(0.5, u / math.sinh(2.0 * u)) if u < 300 else 0.0
+    def get_orifice_permanent_loss_ratio(cd: float, beta: float) -> float:
+        """
+        Permanent pressure loss / tap differential pressure of an orifice, ISO 5167-2:2022 §5.4 Formula (7) (D-28).
+        cd is the discharge coefficient C_d, not the meter coefficient C_d / sqrt(1 - beta^4).
+        """
+        s = math.sqrt(1.0 - beta ** 4 * (1.0 - cd ** 2))
+        return (s - cd * beta ** 2) / (s + cd * beta ** 2)
+
+    @staticmethod
+    def get_classic_orifice_dp(flow_rate: float, density: float, viscosity: float, pipe_d: float, orif_d: float) -> float:
+        """
+        Permanent pressure drop of a sharp-edged orifice (bore orif_d in a pipe of bore pipe_d, both in m):
+        tap differential with the tanh C_d law of get_orifice_cd times the Formula (7) loss ratio, beta = min(0.99, d/D).
+        Shared by the calibrated restriction, check valve orifice, reduced-bore rupture disc and classic orifice model.
+        """
+        beta = min(0.99, orif_d / pipe_d)
+        velocity = flow_rate / max(1e-9, math.pi * (pipe_d / 2.0) ** 2)
+        dynamic_pressure = 0.5 * density * velocity * abs(velocity)
+        v_orifice = flow_rate / max(1e-9, math.pi * (orif_d / 2.0) ** 2)
+        re_orifice = (density * abs(v_orifice) * orif_d) / max(1e-7, viscosity)
+        cd = FluidProperties.get_orifice_cd(re_orifice)
+        tap_dp = dynamic_pressure * (1.0 - beta ** 4) / (cd ** 2 * beta ** 4)
+        return tap_dp * FluidProperties.get_orifice_permanent_loss_ratio(cd, beta)
 
     @staticmethod
     def get_darcy_friction_factor(reynolds_number: float, rel_roughness: float) -> float:

@@ -34,13 +34,6 @@ def test_f1_25_turbulent_limit_and_monotonic():
     assert max(cds) <= 0.60 + 1e-12
 
 
-@pytest.mark.parametrize("re", [0.01, 5.0, 50.0, 300.0, 3000.0, 1e5])
-def test_f1_25_slope_matches_finite_difference(re):
-    h = 1e-5
-    num = (math.log(FP.get_orifice_cd(re * (1 + h))) - math.log(FP.get_orifice_cd(re * (1 - h)))) / (
-        math.log(1 + h) - math.log(1 - h))
-    assert FP.get_orifice_cd_slope(re) == pytest.approx(num, abs=1e-5)
-
 
 
 

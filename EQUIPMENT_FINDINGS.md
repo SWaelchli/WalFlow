@@ -21,7 +21,7 @@ Status: `open` / `fixed` / `rejected`. "Confirmed" means it was reproduced by ru
 | D-02 | Heat exchanger | Thermal calculation ignores the flow direction | High (wrong result) | Confirmed | fixed |
 | D-03 | Heat exchanger | Rated ΔP only reproduced for water; UA rated with the operating $c_p$ | Medium | Confirmed | fixed |
 | D-04 | 3-way TCV | Mass-weighted mixing instead of the enthalpy balance | Medium | Confirmed | fixed |
-| D-05 | Valves (all Cv devices) | Viscosity factor $F_R$ is not IEC 60534-2-1; no laminar valve flow | Medium | Code reading + numbers | open |
+| D-05 | Valves (all Cv devices) | Viscosity factor $F_R$ is not IEC 60534-2-1; no laminar valve flow | Medium | Code reading + numbers | rejected |
 | D-06 | Pipe | Roughness 0 replaced by 0.045 mm | Medium | Code reading | fixed |
 | D-07 | Reducer vs pipe | Two different friction factor functions | Low | Code reading | fixed |
 | D-08 | Calibrated restriction | Calibrates before the parser sets bore and fluid; recalibrates every call; zero inputs replaced | Low | Confirmed | fixed |
@@ -39,13 +39,14 @@ Status: `open` / `fixed` / `rejected`. "Confirmed" means it was reproduced by ru
 | D-20 | Solver | Reported pressures lag the last property update; a pipe after a viscous drop can show a small static rise | Low | Confirmed (property test) | open |
 | D-21 | Solver / warm start | Exact-hit warm start leaves stagnant branches at the 20 °C port default | Low | Confirmed (property test) | open |
 | D-22 | Solver | Junctions balance volume flow, not mass flow; mixing at different temperatures loses ~0.4 % mass | Low / decision | Confirmed (property test) | open |
-| D-23 | Solver / equipment | Analytical dp derivatives of most components are never used by the solver (dead code) | Low / cleanup | Mutation testing | open |
+| D-23 | Solver / equipment | Analytical dp derivatives of most components are never used by the solver (dead code) | Low / cleanup | Mutation testing | fixed |
 | D-24 | Solver / junctions | A junction downstream of two hot supplies reports ~1 K below the coldest supply without any cooler | Medium | Confirmed (property test, explore) | open |
 | D-25 | Frontend / file format | The `.wlf` header is written by hand in three places instead of by `serializeDiagram`, so it can drift when the format changes | Low / cleanup | Code review | open |
-| D-26 | Orifice | ISO Reynolds limit for β > 0.56 is a flat 16 000 instead of 16 000·β² (ISO 5167-2:2022 §5.3.1); up to +12 % permanent loss in the ISO-valid range | Medium (wrong result) | Confirmed (standard + calculation) | open |
-| D-27 | Orifice / docs | `orifice.md` §3.1 describes the old β and d clamps (0.1-0.75, d ≥ 12.5 mm); the code uses 0.01-0.99 and no d clamp | Low / docs | Code reading | open |
-| D-28 | Calibrated restriction, check valve orifice, rupture disc / docs | Permanent loss ratio (1 − β²) is attributed to ISO 5167-2, which gives only Formula (7) and 1 − β^1.9 | Low / decision | Confirmed (standard) | open |
+| D-26 | Orifice | ISO Reynolds limit for β > 0.56 is a flat 16 000 instead of 16 000·β² (ISO 5167-2:2022 §5.3.1); up to +12 % permanent loss in the ISO-valid range | Medium (wrong result) | Confirmed (standard + calculation) | fixed |
+| D-27 | Orifice / docs | `orifice.md` §3.1 describes the old β and d clamps (0.1-0.75, d ≥ 12.5 mm); the code uses 0.01-0.99 and no d clamp | Low / docs | Code reading | fixed |
+| D-28 | Calibrated restriction, check valve orifice, rupture disc / docs | Permanent loss ratio (1 − β²) is attributed to ISO 5167-2, which gives only Formula (7) and 1 − β^1.9 | Low / decision | Confirmed (standard) | fixed |
 | D-29 | Cv valves (all) | Viscosity factor $F_R$ floors at 0.5: no laminar range of IEC 60534-2-1 Annex A; Δp 1-2+ orders too low below Re_V ≈ 20 | Medium (wrong result, viscous fluids) | Confirmed (standard + calculation) | open |
+| D-30 | Calibrated restriction, reducer, fluid properties | Unused local variables `sign_q`, `dp_bern`, `t_c` | Cleanup | Code reading (AST check) | open |
 
 ---
 
@@ -207,6 +208,8 @@ Example, Cv 10 valve at 100 L/min, 40 °C: water Re 102 000 → $F_R$ 0.998; ISO
 **Golden examples:** every valve in a viscous fluid changes.
 
 **Docs to update:** `linear_control_valve.md` section 3.3 (and the "Not modelled: laminar valve flow" bullets in the valve documents).
+
+**Resolution (rejected, duplicate):** merged into D-29, which checks the same `get_valve_fr` approximation against the IEC 60534-2-1 text. The fix is tracked there.
 
 ---
 
@@ -472,6 +475,8 @@ The analytical `calculate_dp_derivative` methods of those components are only ex
 
 **Fix direction:** a cleanup decision. Either delete the unused methods (and the `.md` sections that describe them), leaving the base-class default if something still dispatches on it, or deliberately switch the solver to the analytical derivatives for speed, then test them with a contract property (analytical vs. numerical slope for every two-port in `RESISTANCE_DATA`) instead of per-component tests. Rerun the gate and the golden examples either way; a mutation run on the touched modules confirms nothing live was removed.
 
+**Resolution (fixed):** deleted. The analytical derivatives of calibrated restriction, check valve, filter, heat exchanger, linear regulator, linear and remote control valve, flow source, reducer, relief device, orifice (with `_iso_ratio_derivative_wrt_cd`, `_dc_dre`) and the three-way TCV path are gone, and `FluidProperties.get_orifice_cd_slope` with them. `calculate_open_friction_and_deriv` of the check valve, PSV and rupture disc is replaced by the value-only `open_seat_dp` / `open_dp`. Pumps, the pipe and the base-class numerical fallback stay. Derivative tests and the `.md` derivative sections are removed or reduced to a note.
+
 ---
 
 ## D-24 Junction colder than every supply
@@ -504,6 +509,8 @@ The analytical `calculate_dp_derivative` methods of those components are only ex
 
 **Fix direction:** return `16000.0 * beta ** 2` for β > 0.56 (continuous with 5 000 at β = 0.56 within 0.4 %), update `orifice.md` §3.5, and add a reference row at β = 0.75, Re_D just above 9 000 expecting the pure RG coefficient. Check the golden examples for orifices with β > 0.56.
 
+**Resolution (fixed):** `_re_valid` returns 16 000·β² for β > 0.56; `orifice.md` §3.2 and §6 updated; reference test `test_d26_reynolds_limit_above_beta_056_is_16000_beta_squared` (β 0.75, Re_D 9 100 and 8 500). No golden example changed.
+
 ---
 
 ## D-27 Orifice document describes the old clamps
@@ -513,6 +520,8 @@ The analytical `calculate_dp_derivative` methods of those components are only ex
 **What happens:** the document says the RG inputs are clamped to β 0.1-0.75 and d ≥ 12.5 mm. Since F1-39 the code uses the true β, guarded only to 0.01-0.99 (`_beta_eff`), with no d clamp, and reports the ISO limits through `iso_validity_issues`.
 
 **Fix direction:** correct the document; no code change.
+
+**Resolution (fixed):** `orifice.md` §3.1 and §6 describe the true-β guard (0.01-0.99), no d clamp and the `iso_validity_issues` report. The C_low formula in §3.2 now shows the tanh $C_d$ law the code uses.
 
 ---
 
@@ -524,6 +533,8 @@ The analytical `calculate_dp_derivative` methods of those components are only ex
 
 **Fix direction:** a decision: (a) use Formula (7) with the model's C_d, as the orifice does; (b) use §5.4.2, 1 − β^1.9; or (c) keep 1 − β² and cite a source that gives it. (a) or (b) changes results by up to 2.5 %.
 
+**Resolution (fixed):** option (a). `FluidProperties.get_orifice_permanent_loss_ratio` (Formula (7)) with the component's $C_d$ is used by the calibrated restriction (calibration and drop), the check valve orifice, the reduced-bore rupture disc and the orifice `classic_cd` model; the ISO orifice model delegates to it. Reference test `test_d28_permanent_loss_is_tap_dp_times_formula_7`. Golden examples regenerated: `Example_Multi_PSV_Protection` (both PSVs blocked) −0.031 bar (−0.45 %), `Example_Parallel_Pumps` (check valve orifice bypasses) flows +0.08 %.
+
 ## D-29 Valve viscosity factor F_R has no laminar range
 
 **Where:** `fluid_utils.py::FluidProperties.get_valve_fr`, used by every Cv-based component (linear control valve, regulator, remote control valve, three-way TCV, check valve, check valve with orifice, PSV, rupture disc); claim LCV-02 in the register. Found by verifying against IEC 60534-2-1:2011 (read as DIN EN 60534-2-1:2012-01) on 2026-10-23.
@@ -531,3 +542,16 @@ The analytical `calculate_dp_derivative` methods of those components are only ex
 **What happens:** WalFlow uses F_R = (Re_v + 200)/(Re_v + 400), clamped to 0.4-1, with Re_v over an equivalent bore 0.01·√Cv. The standard (Annex A, Eq. A.6-A.8b, with Re_V from Eq. 23) lets F_R fall as √Re_V in laminar flow, so Δp ∝ μQ. WalFlow's F_R never drops below 0.5, so its Δp is at most four times the turbulent value. Compared with Annex A for globe and ball valves (water, 46 and 500 cSt): Δp within −13 % … +11 % for Re_V ≈ 40 to 10⁵; below Re_V ≈ 20 (viscous oil, small Cv, low flow) Δp is 1 to 2+ orders of magnitude too low. At Re_V ≥ 10 000 the standard has F_R = 1, WalFlow 0.98-0.999 (Δp +0.1 … +9 %). The documents state the simplification; the docstring calls it the IEC factor.
 
 **Fix direction:** implement Eq. (23) and Annex A with defaults for F_L and F_d (e.g. a globe valve from Table D.2), and the valve size (or C/d²) as an input, keeping F_R smooth for the solver; or keep the approximation and add a warning when Re_V < ~20. Changes results only in laminar and transitional valve flow.
+
+---
+
+## D-30 Unused local variables
+
+**Where:** found by an AST check for unused names while removing the analytical derivatives (D-23), 2026-10-23:
+- `calibrated_restriction.py::calculate_delta_p`: `sign_q` is computed and never used (the drop takes its sign from `flow_rate`).
+- `reducer.py::calculate`: `dp_bern` from `calculate_losses` is unpacked and never used.
+- `fluid_utils.py::FluidProperties.get_vapor_pressure`: `t_c` is computed before the model branch and never used.
+
+**What happens:** nothing; dead code that a reader may take for a missing step.
+
+**Fix direction:** a cleanup. Delete the three names (unpack `dp_bern` as `_`). Check each branch first, so no model was meant to use them.

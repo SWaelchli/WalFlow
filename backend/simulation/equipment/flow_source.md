@@ -49,9 +49,7 @@ $$-\left(P_{\text{max}} - P_{\text{atm}}\right) \le \Delta P \le 20\ \text{MPa}$
 
 ### 3.4 Derivative
 
-$$\frac{\partial \Delta P}{\partial Q} = \begin{cases} k & \text{between the limits} \\ 0 & \text{on a limit} \end{cases}$$
-
-In the network Jacobian the solver differentiates the outlet pressure numerically (see [base_node.md](base_node.md#33-jacobian)); the analytical value above is checked against it in the tests.
+The class has no analytical derivative; the solver differentiates the outlet pressure numerically (see [base_node.md](base_node.md#33-jacobian), D-23). The slope is $k$ between the limits and 0 on a limit.
 
 ### 3.5 Relief analysis ramp
 
@@ -94,7 +92,6 @@ The parser rejects a maximum discharge pressure $\le 1$ bar(a).
 | Test | Benchmark |
 | :--- | :--- |
 | `backend/tests/unit/equipment/test_sources.py::TestFlowSource` | $\Delta P = 0$ at the set flow (within $10^{-7}$ Pa); negative below it, positive above it; never beyond 20 MPa |
-| `test_sources.py::TestFlowSourceDerivative::test_analytical_vs_numerical` | Analytical derivative within 1 Pa·s/m³ of a central difference, set flows 10-500 L/min, at and off the set flow |
 | `test_sources.py::TestNetworkSolve::test_flow_source_network_solve` | 45 L/min → 10 m × 50 mm pipe → tank: delivered flow within 1 L/min; outlet pressure $= P_{\text{atm}} - \Delta P$ within 1 Pa |
 | `backend/tests/unit/equipment/test_flow_source_pressure_cap.py::test_f1_24_cap_flag_set_when_limit_binds` | 100 L/min through 200 m × 15 mm with a 3 bar(a) limit: flag set, flow below 100 L/min |
 | `test_flow_source_pressure_cap.py::test_f1_24_cap_flag_clear_in_normal_operation` | Same flow through 200 m × 80 mm with a 50 bar(a) limit: flag clear, flow within 1 % of 100 L/min |

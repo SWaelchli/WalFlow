@@ -73,13 +73,9 @@ Water at 20 °C, 3" × 2" STD ($D$ = 77.9 / 52.5 mm, $H$ = 89 mm, $\theta$ = 18.
 
 The Bernoulli term dominates: an expander shows a static pressure rise, a reducer a drop about ten times its loss.
 
-### 3.6 Derivative (`calculate_dp_derivative`)
+### 3.6 Derivative
 
-$$\frac{\partial \Delta P}{\partial Q} = \rho\,|Q|\left(\frac{K}{A_s^2} + \frac{H}{D_{\text{avg}}}\,\frac{f + \tfrac{1}{2}\, df/d\ln\mathrm{Re}}{A_{\text{avg}}^2}\right) + \rho\, Q \left(\frac{1}{A_2^2} - \frac{1}{A_1^2}\right)$$
-
-The friction term uses the same $2f + df/d\ln\mathrm{Re}$ form as the pipe (audit D-07); at $Q = 0$ it is the laminar limit $32 \mu H / (D_{\text{avg}}^2 A_{\text{avg}})$. $K$ is constant on each side of $Q = 0$ (it switches with the flow direction). The slope is **negative** wherever the Bernoulli recovery outweighs the loss (expander in forward flow, reducer in reverse flow); the sign is kept so Newton steps point the right way. Only a magnitude below 100 Pa·s/m³ is replaced by +100 Pa·s/m³ to avoid a zero slope at $Q = 0$.
-
-In the network Jacobian the solver differentiates the outlet pressure numerically (see [base_node.md](base_node.md#33-jacobian)).
+The class has no analytical derivative; the solver differentiates the outlet pressure numerically (see [base_node.md](base_node.md#33-jacobian), D-23).
 
 ## 4. Thermal & Energy Balance
 
@@ -121,12 +117,9 @@ The parser rejects a bore or length $\le 0$ and a negative roughness. Missing va
 | `backend/tests/unit/equipment/test_reducer.py::test_reducer_crane_k_factors` | 3" × 2" ($\beta$ = 0.6735): at 18.2° $K_c = 0.8 \cdot 0.158158 \cdot 0.54638$, $K_e = 2.6 \cdot 0.158158 \cdot 0.54638^2$; at 90° $K_c = 0.5\sqrt{0.707107} \cdot 0.54638$, $K_e = 0.54638^2$; all within 0.01 %, referenced to the small bore |
 | `test_reducer.py::test_reducer_contraction_losses_and_bernoulli` | 3" × 2" reducer, 100 L/min water: loss > 0, Bernoulli > 0, total = loss + Bernoulli within $10^{-5}$ |
 | `test_reducer.py::test_reducer_expander_diffuser_recovery` | 2" × 3" expander: Bernoulli < 0, loss > 0 |
-| `test_reducer.py::test_reducer_analytical_derivative`, `test_reducer_derivative_sign_with_pressure_recovery` | Derivative within 5 % of a central difference, including the negative slopes at ±100 and ±1000 L/min |
 | `test_reducer.py::test_reducer_reverse_flow_symmetry` | Reverse $\Delta P$ = −forward $\Delta P$ within 0.01 % for the tested case |
-| `test_reducer.py::test_expander_network_with_dominant_pressure_recovery` | Source 1.5 bar(a) → 5 m DN50 → expander → 0.05 m DN80 → tank: converges with a negative edge slope; solved $\Delta P$ matches the model within 0.1 % and is negative |
 | `test_reducer.py::test_zero_reducer_roughness_is_kept_as_smooth`, `test_reducer_roughness_is_read_in_mm` | 0.2 mm → 0.0002 m; missing → 0.045 mm; 0 stays 0 |
 | `test_reducer.py::test_d07_reducer_friction_equals_pipe_friction` | Equal bores, 50 mm × 0.5 m, oil ($\rho$ = 870, $\mu$ = 0.03 Pa·s), $Q = 10^{-6}$ to $10^{-2}$ m³/s (laminar to turbulent), roughness 0 and 0.045 mm: $\Delta P$ equals a pipe of the same size within $10^{-9}$ |
-| `test_reducer.py::test_d07_reducer_derivative_includes_the_friction_slope`, `test_d07_reducer_zero_flow_derivative_is_the_laminar_limit` | 3" × 2" × 0.5 m, same oil, 0.5 to 300 L/min and −60 L/min: derivative within 0.01 % of a central difference; at $Q = 0$ the laminar limit |
 | `backend/tests/unit/equipment/test_pipe_reservoir_entry.py::test_expander_between_reservoirs_with_short_pipes` | Expander 0.1-5 m from a reservoir: flow matches an independent Crane + Bernoulli + entry sum within 1 % |
 
 ## Data Fields

@@ -63,7 +63,7 @@ Instead, use the Mixed Complementarity Problem (MCP) formulation:
    ```python
    self.use_mcp_formulation = True
    ```
-2. Implement `calculate_open_friction_and_deriv(flow_rate, density, viscosity)` to compute the fully open pressure drop and its derivative.
+2. Compute the fully open pressure drop as a value only: a Cv seat uses `open_seat_dp(cv, flow_rate, density, viscosity)` from `check_valve.py`; a relief device implements `open_dp(flow_rate, density, viscosity)`. No derivative is needed; the solver differentiates the row numerically.
 3. In `calculate_delta_p(...)`, evaluate the smooth Fischer-Burmeister C-function when node pressures are provided:
    $$\Phi(a, b) = \sqrt{a^2 + b^2 + \epsilon^2} - (a + b) = 0$$
    where:
@@ -79,7 +79,7 @@ def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float =
         
         cracking_pa = self.cracking_pressure_bar * 100000.0
         dp_valve = p_in_pa - p_out_pa
-        dp_friction, _ = self.calculate_open_friction_and_deriv(flow_rate, density, viscosity)
+        dp_friction = open_seat_dp(self.cv, flow_rate, density, viscosity)
         
         a = flow_rate / q_scale
         b = (cracking_pa + dp_friction - dp_valve) / p_scale
@@ -90,8 +90,7 @@ def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float =
     # Fallback when solving without MCP node pressures (e.g. standalone test)
     # Use hyperbolic tangent smoothing:
     scale = 1e-5
-    s = 0.5 * (1.0 + math.tanh(flow_rate / scale))
-    dp_friction, _ = self.calculate_open_friction_and_deriv(flow_rate, density, viscosity)
+    dp_friction = open_seat_dp(self.cv, flow_rate, density, viscosity)
     return self.cracking_pressure_bar * 1e5 * math.tanh(flow_rate / scale) + dp_friction
 ```
 

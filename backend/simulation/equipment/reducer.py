@@ -134,45 +134,6 @@ class Reducer(HydraulicNode):
         _, _, dp_total = self.calculate_losses(flow_rate, density, viscosity)
         return dp_total
 
-    def calculate_dp_derivative(self, flow_rate: float, density: float, viscosity: float) -> float:
-        """
-        Analytical derivative d(Delta P) / dQ for rapid Newton-Raphson solver convergence.
-        """
-        self._update_geometry()
-        k_form, ref_area = self._get_form_loss_k(flow_rate)
-        re = self._reynolds(flow_rate, density, viscosity)
-        f_fric = self._get_friction_factor(re)
-        k_fric = f_fric * (self.length / self.d_avg)
-
-        abs_q = abs(flow_rate)
-
-        c_form = k_form / (ref_area ** 2)
-        c_fric = k_fric / (self.area_avg ** 2)
-        c_bern = (1.0 / (self.area_out ** 2)) - (1.0 / (self.area_in ** 2))
-
-        # d(dp_form)/dQ = rho * |Q| * c_form
-        # d(dp_fric)/dQ = rho * |Q| / A_avg^2 * (L/D_avg) * (f + df/dlnRe / 2)  (Re ~ |Q|, as the pipe)
-        # d(dp_bern)/dQ = rho * Q * c_bern
-        if abs_q > 0:
-            dfdlnre = FluidProperties.get_darcy_friction_slope(re, self.roughness / self.d_avg)
-            d_fric = density * abs_q * (c_fric + 0.5 * dfdlnre * (self.length / self.d_avg) / (self.area_avg ** 2))
-        else:
-            # Zero flow: laminar limit of the wall friction, 32 mu L / (D^2 A)
-            d_fric = 32.0 * max(1e-7, viscosity) * self.length / (self.d_avg ** 2 * self.area_avg)
-        deriv_loss = density * abs_q * c_form + d_fric
-        deriv_bern = density * flow_rate * c_bern
-        deriv = deriv_loss + deriv_bern
-
-        # Static pressure model: Bernoulli recovery can make dP/dQ negative (expander
-        # forward flow, reducer reverse flow). Keep the true sign so Newton steps point
-        # the right way; only regularize the near-zero-flow singularity.
-        min_deriv = 100.0  # Pa / (m^3/s)
-        if abs(deriv) < min_deriv:
-            deriv = min_deriv
-
-        return deriv
-
-
     def calculate(self):
         """Propagates pressure, flow, and thermal viscous dissipation to ports."""
         inlet = self.inlets[0]

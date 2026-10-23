@@ -98,7 +98,7 @@ def test_orifice_permanent_loss_against_iso5167(orif_d, cm_gap):
 
 
 def test_continuity_across_blend_bands():
-    """No jumps in dP or its derivative across the blend band [Re_lo, Re_valid]."""
+    """No jumps in dP across the blend band [Re_lo, Re_valid]."""
     rho, mu = WATER_RHO, WATER_MU
     pipe_d = 0.05248
 
@@ -109,22 +109,78 @@ def test_continuity_across_blend_bands():
         re_lo = 0.4 * re_valid
 
         dp_prev = None
-        deriv_prev = None
         n = 100
         rel_re_step = (re_valid - re_lo) / re_lo / n
         dp_tol = 2.0 * rel_re_step + 0.005
-        deriv_tol = rel_re_step + 0.02
         for i in range(n + 1):
             re_pipe = re_lo + (re_valid - re_lo) * i / n
             q = flow_from_re(re_pipe, rho, mu, pipe_d)
             dp = ori.calculate_delta_p(q, rho, mu)
-            deriv = ori.calculate_dp_derivative(q, rho, mu)
-            assert dp > 0 and deriv > 0, f"beta={beta} Re={re_pipe}: dP={dp}, deriv={deriv} must be positive"
+            assert dp > 0, f"beta={beta} Re={re_pipe}: dP={dp} must be positive"
             if dp_prev is not None:
                 assert abs(dp - dp_prev) / dp_prev < dp_tol, f"beta={beta} Re={re_pipe}: dP jump"
-                assert abs(deriv - deriv_prev) / abs(deriv_prev) < deriv_tol, f"beta={beta} Re={re_pipe}: deriv jump"
             dp_prev = dp
-            deriv_prev = deriv
+
+
+@pytest.mark.audit("D-26")
+@pytest.mark.parametrize("re_pipe, in_iso_range", [
+    pytest.param(9100.0, True, id="D-26-above-16000-beta-sq"),
+    pytest.param(8500.0, False, id="D-26-below-16000-beta-sq"),
+])
+def test_d26_reynolds_limit_above_beta_056_is_16000_beta_squared(re_pipe, in_iso_range):
+    """beta 0.75: ISO 5167-2:2022 5.3.1 limit is 16000*beta^2 = 9000, not a flat 16000. Above it the
+    meter is the pure Reader-Harris/Gallagher value (no viscous blend) and no Reynolds issue is reported."""
+    rho, mu, pipe_d, beta = WATER_RHO, WATER_MU, 0.05248, 0.75
+    orif_d = beta * pipe_d
+    ori = Orifice("D26", pipe_diameter=pipe_d, orifice_diameter=orif_d)
+    issues = [i for i in ori.iso_validity_issues(re_pipe) if "Re_D" in i]
+    assert (issues == []) is in_iso_range
+    if in_iso_range:
+        q = flow_from_re(re_pipe, rho, mu, pipe_d)
+        c_d = rg_c(beta, pipe_d, re_pipe)
+        tap = 0.5 * rho * q * q * (1 - beta ** 4) / ((math.pi * orif_d ** 2 / 4) ** 2 * c_d ** 2)
+        assert math.isclose(ori.calculate_delta_p(q, rho, mu), tap * rg_loss_ratio(c_d, beta), rel_tol=1e-9)
+
+
+def _calibrated_restriction(pipe_d, orif_d):
+    from simulation.equipment.calibrated_restriction import CalibratedRestriction
+    node = CalibratedRestriction("CR", restriction_model="orifice", fluid_type="water")
+    node.pipe_diameter = pipe_d
+    node._ensure_calibrated()
+    node.eq_diameter = orif_d  # the formula is under test, not the bisection that picks the bore
+    return node
+
+
+def _check_valve_orifice(pipe_d, orif_d):
+    from simulation.equipment.check_valve_orifice import CheckValveOrifice
+    node = CheckValveOrifice("CVO", cv=10.0, cracking_pressure_bar=0.0, pipe_diameter=pipe_d, orifice_diameter=orif_d)
+    return node
+
+
+def _rupture_disc(pipe_d, orif_d):
+    from simulation.equipment.rupture_disc import RuptureDisc
+    return RuptureDisc("RD", burst_pressure_barg=10.0, bore_type="reduced_bore", pipe_diameter=pipe_d,
+                       orifice_diameter=orif_d)
+
+
+@pytest.mark.audit("D-28")
+@pytest.mark.parametrize("build, drop", [
+    pytest.param(lambda D, d: Orifice("O", pipe_diameter=D, orifice_diameter=d, standard="classic_cd"),
+                 lambda n, q, r, m: n.calculate_delta_p(q, r, m), id="D-28-orifice-classic_cd"),
+    pytest.param(_calibrated_restriction, lambda n, q, r, m: n.calculate_delta_p(q, r, m),
+                 id="D-28-calibrated_restriction"),
+    pytest.param(_check_valve_orifice, lambda n, q, r, m: n._calculate_orifice_dp(q, r, m),
+                 id="D-28-check_valve_orifice"),
+    pytest.param(_rupture_disc, lambda n, q, r, m: n.open_dp(q, r, m), id="D-28-rupture_disc-reduced_bore"),
+])
+def test_d28_permanent_loss_is_tap_dp_times_formula_7(build, drop):
+    """Water 20 C, beta 0.5, turbulent: drop = tap differential * ISO 5167-2 Formula (7) ratio with C_d."""
+    rho, mu, pipe_d, beta = WATER_RHO, WATER_MU, 0.05248, 0.5
+    orif_d = beta * pipe_d
+    q = flow_from_re(1e5, rho, mu, pipe_d)
+    cd = FluidProperties.get_orifice_cd(rho * (q / (math.pi * orif_d ** 2 / 4)) * orif_d / mu)
+    tap = 0.5 * rho * q * q * (1 - beta ** 4) / ((math.pi * orif_d ** 2 / 4) ** 2 * cd ** 2)
+    assert math.isclose(drop(build(pipe_d, orif_d), q, rho, mu), tap * rg_loss_ratio(cd, beta), rel_tol=1e-9)
 
 
 def test_bidirectional_symmetry():
@@ -149,18 +205,11 @@ def legacy_dp(flow_rate, density, viscosity, pipe_d, orif_d):
     re_orifice = (density * abs(v_orifice) * orif_d) / max(1e-7, viscosity)
     cd = FluidProperties.get_orifice_cd(re_orifice)
     geometry_factor = (1 - beta_ratio ** 4) / (cd ** 2 * beta_ratio ** 4)
-    return dynamic_pressure * geometry_factor * (1 - beta_ratio ** 2)
+    return dynamic_pressure * geometry_factor * rg_loss_ratio(cd, beta_ratio)
 
 
-def legacy_deriv(flow_rate, density, viscosity, pipe_d, orif_d):
-    """Derivative of the classic-Cd formula by central difference (independent of the analytic code)."""
-    h = 1e-6 * max(abs(flow_rate), 1e-6)
-    return (legacy_dp(flow_rate + h, density, viscosity, pipe_d, orif_d)
-            - legacy_dp(flow_rate - h, density, viscosity, pipe_d, orif_d)) / (2.0 * h)
-
-
-def test_legacy_model_unchanged():
-    """classic_cd: dP follows the Cd(Re) formula, the analytic derivative matches a numerical one."""
+def test_classic_cd_model_is_tanh_cd_with_formula_7():
+    """classic_cd: dP follows the tanh Cd(Re) law times the ISO 5167-2 Formula (7) permanent-loss ratio."""
     rho, mu = WATER_RHO, WATER_MU
     pipe_d, orif_d = 0.05248, 0.01
     ori = Orifice("Legacy", pipe_diameter=pipe_d, orifice_diameter=orif_d, standard='classic_cd')
@@ -170,11 +219,6 @@ def test_legacy_model_unchanged():
         dp_ref = legacy_dp(q, rho, mu, pipe_d, orif_d)
         assert math.isclose(dp_impl, dp_ref, rel_tol=1e-12, abs_tol=1e-20), \
             f"legacy dP mismatch at Q={q}: {dp_impl} vs {dp_ref}"
-
-        deriv_impl = ori.calculate_dp_derivative(q, rho, mu)
-        deriv_ref = legacy_deriv(q, rho, mu, pipe_d, orif_d)
-        assert math.isclose(deriv_impl, deriv_ref, rel_tol=1e-6, abs_tol=1e-20), \
-            f"legacy derivative mismatch at Q={q}: {deriv_impl} vs {deriv_ref}"
 
 
 def test_standard_defaults_and_folding():
@@ -268,10 +312,9 @@ if __name__ == "__main__":
     test_rg_formula_roundtrip()
     test_high_re_analytic_limit()
     test_orifice_permanent_loss_against_iso5167(0.02, None)
-    test_derivative_vs_numerical()
     test_continuity_across_blend_bands()
     test_bidirectional_symmetry()
-    test_legacy_model_unchanged()
+    test_classic_cd_model_is_tanh_cd_with_formula_7()
     test_standard_defaults_and_folding()
     test_network_solve()
     test_graph_parser_orifice()

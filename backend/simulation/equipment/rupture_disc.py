@@ -1,6 +1,6 @@
 from simulation.equipment.relief_device import ReliefDevice
+from simulation.equipment.check_valve import open_seat_dp
 from simulation.fluid_utils import FluidProperties
-import math
 
 
 class RuptureDisc(ReliefDevice):
@@ -65,42 +65,11 @@ class RuptureDisc(ReliefDevice):
     def open_status(self) -> str:
         return "burst"
 
-    def open_dp(self, flow_rate: float, density: float, viscosity: float) -> float:
-        dp, _ = self.calculate_open_friction_and_deriv(flow_rate, density, viscosity)
-        return dp
-
-    def calculate_open_friction_and_deriv(self, flow_rate: float, density: float, viscosity: float = 0.001) -> tuple:
-        """Computes rupture disc open pressure drop and its analytical derivative w.r.t. flow rate."""
+    def open_dp(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
+        """Burst disc pressure drop: orifice (reduced bore) or Cv (full bore)."""
         if self.bore_type == "reduced_bore":
             pipe_d = max(0.001, getattr(self, 'pipe_diameter', 0.05248))
             orif_d = max(0.0001, min(pipe_d * 0.99, self.orifice_diameter))
-            beta_ratio = min(0.99, orif_d / pipe_d)
-
-            area_pipe = math.pi * (pipe_d / 2.0)**2
-            velocity = flow_rate / max(1e-9, area_pipe)
-            dynamic_pressure = 0.5 * density * velocity * abs(velocity)
-
-            area_orifice = math.pi * (orif_d / 2.0)**2
-            v_orifice = flow_rate / max(1e-9, area_orifice)
-            re_orifice = (density * abs(v_orifice) * orif_d) / max(1e-7, viscosity)
-
-            discharge_coefficient = FluidProperties.get_orifice_cd(re_orifice)
-            geometry_factor = (1.0 - beta_ratio**4) / (discharge_coefficient**2 * beta_ratio**4)
-            rec_delta_p = dynamic_pressure * geometry_factor
-            dp = rec_delta_p * (1.0 - beta_ratio**2)
-
-            # Derivative w.r.t. flow rate
-            deriv = (density * abs(velocity) / area_pipe * geometry_factor * (1.0 - beta_ratio**2)
-                     * (1.0 - FluidProperties.get_orifice_cd_slope(re_orifice)))
-            return dp, deriv
-        else: # "full_bore"
-            K_CV_SI = 1.732e9
-            d_v = max(0.002, 0.01 * math.sqrt(self.cv))
-            v_v = flow_rate / (0.25 * math.pi * d_v**2) if d_v > 0 else 0.0
-            re_v = (density * abs(v_v) * d_v) / max(1e-7, viscosity)
-            fr = FluidProperties.get_valve_fr(re_v)
-            cv_adj = max(0.0001, self.cv * fr)
-
-            dp = (K_CV_SI * density * flow_rate * abs(flow_rate)) / (cv_adj ** 2)
-            deriv = (2.0 * K_CV_SI * density * abs(flow_rate)) / (cv_adj ** 2)
-            return dp, deriv
+            return FluidProperties.get_classic_orifice_dp(flow_rate, density, viscosity, pipe_d, orif_d)
+        # "full_bore": the Cv seat of the check valve
+        return open_seat_dp(self.cv, flow_rate, density, viscosity)

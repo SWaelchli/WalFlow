@@ -86,13 +86,9 @@ Default rating: 300 kW at 500 L/min, design inlet 50 °C, water-cooled at 10 °C
 | ISO VG 46 | 250 L/min | 0.512 | 27.6 °C | 165 kW |
 | ISO VG 46 | 500 L/min (rated) | 0.512 | 29.5 °C | 300 kW |
 
-### 3.6 Derivative (`calculate_dp_derivative`)
+### 3.6 Derivative
 
-With $c_2 = k \rho$:
-
-$$\frac{\partial \Delta P}{\partial Q} = \begin{cases} c_2\,(2|Q| + c_{\text{lam}}), \quad c_{\text{lam}} = \dfrac{100\, A_{hx}\, \mu}{\rho\, d_{hx}} & \mathrm{Re}_{hx} < 2000 \\ 2\, c_2\, |Q| & \mathrm{Re}_{hx} > 4000 \end{cases}$$
-
-and a linear blend in between. In the network Jacobian the solver differentiates the outlet pressure numerically (see [base_node.md](base_node.md#33-jacobian)).
+The class has no analytical derivative; the solver differentiates the outlet pressure numerically (see [base_node.md](base_node.md#33-jacobian), D-23).
 
 ## 4. Thermal & Energy Balance
 

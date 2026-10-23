@@ -29,13 +29,13 @@ def test_graph_parser_check_valve_orifice():
 def _reference_flow(cvo, dp, rho, mu):
     """Flow at valve drop dp: orifice flow plus, above cracking, the plain check valve seat flow (Cv with F_R)."""
     from scipy.optimize import brentq
-    from simulation.equipment.check_valve import CheckValve
+    from simulation.equipment.check_valve import CheckValve, open_seat_dp
     q_ori = brentq(lambda q: cvo._calculate_orifice_dp(q, rho, mu) - dp, -1.0, 1.0, xtol=1e-15, rtol=1e-14)
     excess = dp - cvo.cracking_pressure_bar * 1e5
     if excess <= 0:
         return q_ori
     seat = CheckValve("seat", cv=cvo.cv)
-    q_seat = brentq(lambda q: seat.calculate_open_friction_and_deriv(q, rho, mu)[0] - excess, 0.0, 1.0,
+    q_seat = brentq(lambda q: open_seat_dp(seat.cv, q, rho, mu) - excess, 0.0, 1.0,
                     xtol=1e-15, rtol=1e-14)
     return q_ori + q_seat
 

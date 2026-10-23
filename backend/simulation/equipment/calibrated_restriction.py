@@ -1,6 +1,5 @@
 from simulation.equipment.base_node import HydraulicNode
 from simulation.fluid_utils import FluidProperties
-import math
 
 class CalibratedRestriction(HydraulicNode):
     """
@@ -81,20 +80,7 @@ class CalibratedRestriction(HydraulicNode):
             pipe_d = max(0.001, getattr(self, 'pipe_diameter', 0.05248))
             
             def calculate_dp_for_d(d_val):
-                beta = min(0.99, d_val / pipe_d)
-                area_pipe = math.pi * (pipe_d / 2.0)**2
-                velocity = q0 / max(1e-9, area_pipe)
-                dynamic_pressure = 0.5 * rho0 * velocity * abs(velocity)
-                
-                area_orifice = math.pi * (d_val / 2.0)**2
-                v_orifice = q0 / max(1e-9, area_orifice)
-                re_orifice = (rho0 * abs(v_orifice) * d_val) / max(1e-7, mu0)
-                
-                cd = FluidProperties.get_orifice_cd(re_orifice)
-                geometry_factor = (1.0 - beta**4) / (cd**2 * beta**4)
-                rec_delta_p = dynamic_pressure * geometry_factor
-                perm_delta_p = rec_delta_p * (1.0 - beta**2)
-                return perm_delta_p
+                return FluidProperties.get_classic_orifice_dp(q0, rho0, mu0, pipe_d, d_val)
             
             x_low = 1e-6
             x_high = 10.0
@@ -144,52 +130,7 @@ class CalibratedRestriction(HydraulicNode):
         else: # orifice
             pipe_d = max(0.001, getattr(self, 'pipe_diameter', 0.05248))
             orif_d = max(0.0001, getattr(self, 'eq_diameter', 0.01))
-            beta_ratio = min(0.99, orif_d / pipe_d)
-
-            # velocity of the pipe upstream of the orifice (v1 = Q / A1)
-            area_pipe = math.pi * (pipe_d / 2.0)**2
-            velocity = flow_rate / max(1e-9, area_pipe)
-
-            # Dynamic Pressure term (0.5 * rho * v^2)
-            dynamic_pressure = 0.5 * density * velocity * abs(velocity)
-
-            # Orifice Reynolds number and dynamic Discharge Coefficient (C_d)
-            area_orifice = math.pi * (orif_d / 2)**2
-            v_orifice = flow_rate / max(1e-9, area_orifice)
-            re_orifice = (density * abs(v_orifice) * orif_d) / max(1e-7, viscosity)
-            
-            discharge_coefficient = FluidProperties.get_orifice_cd(re_orifice)
-            geometry_factor = (1.0 - beta_ratio**4) / (discharge_coefficient**2 * beta_ratio**4)
-            
-            rec_delta_p = dynamic_pressure * geometry_factor
-            perm_delta_p = rec_delta_p * (1.0 - beta_ratio**2)
-
-            return perm_delta_p
-
-    def calculate_dp_derivative(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
-        self._ensure_calibrated()
-
-        if self.restriction_model == "laminar":
-            return self.k_lam * viscosity
-            
-        elif self.restriction_model == "quadratic":
-            return 2.0 * self.k_quad * density * abs(flow_rate)
-            
-        else: # orifice
-            pipe_d = max(0.001, getattr(self, 'pipe_diameter', 0.05248))
-            orif_d = max(0.0001, getattr(self, 'eq_diameter', 0.01))
-            beta_ratio = min(0.99, orif_d / pipe_d)
-            area_pipe = math.pi * (pipe_d / 2.0)**2
-            
-            area_orifice = math.pi * (orif_d / 2.0)**2
-            v_orifice = flow_rate / max(1e-9, area_orifice)
-            re_orifice = (density * abs(v_orifice) * orif_d) / max(1e-7, viscosity)
-            
-            # dP = K*Q|Q|/Cd(Re)^2 with Re ~ |Q|:  dP/dQ = 2*K*|Q|/Cd^2 * (1 - dlnCd/dlnRe)
-            cd_val = FluidProperties.get_orifice_cd(re_orifice)
-            c_const = 0.5 * density / (area_pipe ** 2) * (1.0 - beta_ratio**4) / (beta_ratio**4) * (1.0 - beta_ratio**2)
-            q_eff = max(abs(flow_rate), 1e-6 * area_orifice * max(1e-7, viscosity) / (density * orif_d))
-            return c_const * 2.0 * q_eff / cd_val**2 * (1.0 - FluidProperties.get_orifice_cd_slope(re_orifice))
+            return FluidProperties.get_classic_orifice_dp(flow_rate, density, viscosity, pipe_d, orif_d)
 
     def calculate(self):
         self._ensure_calibrated()

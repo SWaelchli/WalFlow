@@ -2,17 +2,15 @@ from simulation.equipment.base_node import HydraulicNode
 from simulation.fluid_utils import FluidProperties
 import math
 
-def open_seat_dp(cv: float, flow_rate: float, density: float, viscosity: float = 0.001) -> tuple:
-    """Open seat friction drop and its slope: Cv with the IEC 60534 viscosity factor F_R over the nominal seat bore.
+def open_seat_dp(cv: float, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
+    """Open seat friction drop: Cv with the IEC 60534 viscosity factor F_R over the nominal seat bore.
     Shared with the check valve with orifice (D-09)."""
     K_CV_SI = 1.732e9
     d_v = max(0.002, 0.01 * math.sqrt(cv))
     v_v = flow_rate / (0.25 * math.pi * d_v**2)
     re_v = (density * abs(v_v) * d_v) / max(1e-7, viscosity)
     cv_adj = max(0.0001, cv * FluidProperties.get_valve_fr(re_v))
-    dp_friction = (K_CV_SI * density * flow_rate * abs(flow_rate)) / (cv_adj ** 2)
-    deriv = (2.0 * K_CV_SI * density * abs(flow_rate)) / (cv_adj ** 2)
-    return dp_friction, deriv
+    return (K_CV_SI * density * flow_rate * abs(flow_rate)) / (cv_adj ** 2)
 
 
 class CheckValve(HydraulicNode):
@@ -29,12 +27,6 @@ class CheckValve(HydraulicNode):
         self.add_inlet()
         self.add_outlet()
 
-    def calculate_open_friction_and_deriv(self, flow_rate: float, density: float, viscosity: float = 0.001) -> tuple:
-        """
-        Computes check valve open pressure drop and its analytical derivative w.r.t. flow rate.
-        """
-        return open_seat_dp(self.cv, flow_rate, density, viscosity)
-
     def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001, p_in_pa: float = None, p_out_pa: float = None, update_state: bool = True) -> float:
         """
         Calculates pressure drop across the check valve with viscosity correction.
@@ -48,7 +40,7 @@ class CheckValve(HydraulicNode):
             
             cracking_pa = self.cracking_pressure_bar * 100000.0
             dp_valve = p_in_pa - p_out_pa
-            dp_friction, _ = self.calculate_open_friction_and_deriv(flow_rate, density, viscosity)
+            dp_friction = open_seat_dp(self.cv, flow_rate, density, viscosity)
             
             a = flow_rate / q_scale
             b = (cracking_pa + dp_friction - dp_valve) / p_scale
@@ -80,27 +72,6 @@ class CheckValve(HydraulicNode):
 
         dp_friction = (K_CV_SI * density * flow_rate * abs(flow_rate)) / (cv_blended ** 2)
         return cracking_term + dp_friction
-
-    def calculate_dp_derivative(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
-        """
-        Analytical derivative of CheckValve pressure drop with respect to flow rate.
-        """
-        scale = 1e-5
-        cracking_pa = self.cracking_pressure_bar * 100000.0
-        dtanh = cracking_pa * (1.0 - math.tanh(flow_rate / scale)**2) / scale
-
-        s = 0.5 * (1.0 + math.tanh(flow_rate / scale))
-        effective_cv = self.cv
-        d_v = max(0.002, 0.01 * math.sqrt(effective_cv))
-        v_v = flow_rate / (0.25 * math.pi * d_v**2) if d_v > 0 else 0.0
-        re_v = (density * abs(v_v) * d_v) / max(1e-7, viscosity)
-        fr = FluidProperties.get_valve_fr(re_v)
-        cv_adj = max(0.0001, effective_cv * fr)
-        cv_blended = s * cv_adj + (1.0 - s) * 1e-4
-
-        K_CV_SI = 1.732e9
-        dfriction = (2.0 * K_CV_SI * density * abs(flow_rate)) / (cv_blended ** 2)
-        return dtanh + dfriction
 
     def calculate(self):
 

@@ -18,7 +18,7 @@ Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_RE
 
 ## 3. Physical & Mathematical Implementation
 
-### 3.1 Open valve loss (`calculate_open_friction_and_deriv`)
+### 3.1 Open valve loss (`open_seat_dp`)
 
 $$\Delta P_{\text{fric}}(Q) = \frac{K_{Cv}\, \rho\, Q|Q|}{\big(\max(10^{-4},\ C_v F_R)\big)^2}, \qquad K_{Cv} = 1.732 \times 10^9$$
 
@@ -49,7 +49,7 @@ Outside the Newton system (property propagation, thermal balance) the valve uses
 
 $$\Delta P = P_{\text{crack}} \tanh\!\left(\frac{Q}{q_s}\right) + \frac{K_{Cv}\, \rho\, Q|Q|}{C_{v,b}^2}, \qquad C_{v,b} = s\, C_v F_R + (1 - s) \cdot 10^{-4}, \quad s = \tfrac{1}{2}\big(1 + \tanh(Q / q_s)\big)$$
 
-with $q_s = 10^{-5}$ m³/s (0.6 L/min). Reverse flow sees a closed-valve leak Cv of $10^{-4}$. `calculate_dp_derivative` is the analytical slope of this curve.
+with $q_s = 10^{-5}$ m³/s (0.6 L/min). Reverse flow sees a closed-valve leak Cv of $10^{-4}$.
 
 ### 3.5 Worked example
 

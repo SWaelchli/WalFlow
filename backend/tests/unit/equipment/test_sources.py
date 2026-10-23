@@ -63,32 +63,6 @@ class TestFlowSource:
         dp = source.calculate_delta_p(0.0, 1000.0)
         assert abs(dp) <= 20_000_000.0
 
-class TestFlowSourceDerivative:
-    @pytest.mark.parametrize("flow_lmin, test_flow_m3s", [
-        (50.0, 50.0 / 60000.0),
-        (50.0, 25.0 / 60000.0),
-        (50.0, 75.0 / 60000.0),
-        (10.0, 10.0 / 60000.0),
-        (500.0, 500.0 / 60000.0),
-    ])
-    def test_analytical_vs_numerical(self, flow_lmin, test_flow_m3s):
-        source = _make_flow_source(flow_lmin=flow_lmin)
-        density = 1000.0
-        viscosity = 0.001
-        
-        # Analytical
-        d_analytical = source.calculate_dp_derivative(test_flow_m3s, density, viscosity)
-        
-        # Numerical central difference
-        delta = 1e-7
-        dp_plus = source.calculate_delta_p(test_flow_m3s + delta, density, viscosity)
-        dp_minus = source.calculate_delta_p(test_flow_m3s - delta, density, viscosity)
-        d_numerical = (dp_plus - dp_minus) / (2.0 * delta)
-        
-        assert abs(d_analytical - d_numerical) < 1.0, (
-            f"Derivative mismatch: analytical={d_analytical}, numerical={d_numerical}"
-        )
-
 class TestNetworkSolve:
     def _gs(self):
         from simulation.schemas import GlobalSettings

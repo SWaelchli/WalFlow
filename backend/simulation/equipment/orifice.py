@@ -18,8 +18,8 @@ class Orifice(HydraulicNode):
       Formula (7) is called.
       Below the Reynolds validity limit C_m is smoothly blended to a viscous extension so
       the Newton solver stays continuous down to zero flow.
-    - `'classic_cd'`: legacy Reynolds-corrected discharge coefficient model (C_d from
-      `FluidProperties.get_orifice_cd`), retained byte-for-byte.
+    - `'classic_cd'`: Reynolds-corrected discharge coefficient model (C_d from
+      `FluidProperties.get_orifice_cd`) with the Formula (7) loss ratio (`get_classic_orifice_dp`, D-28).
     """
     VALID_STANDARDS = ('iso_5167', 'classic_cd')
 
@@ -72,8 +72,8 @@ class Orifice(HydraulicNode):
 
     @staticmethod
     def _re_valid(beta: float) -> float:
-        """ISO 5167-2:2022 §5.3.1 lower Reynolds validity limit (corner taps)."""
-        return 5000.0 if beta <= 0.56 else 16000.0
+        """ISO 5167-2:2022 §5.3.1 lower Reynolds validity limit (corner taps), 16 000·β² above β 0.56 (D-26)."""
+        return 5000.0 if beta <= 0.56 else 16000.0 * beta ** 2
 
     @classmethod
     def _cd_rg_iso5167(cls, beta: float, pipe_d: float, re_pipe: float) -> float:
@@ -140,39 +140,6 @@ class Orifice(HydraulicNode):
 
         return self._c_meter_from_re(re_pipe, pipe_d, beta_eff)
 
-    @staticmethod
-    def _iso_permanent_loss_ratio(cd: float, beta: float) -> float:
-        """
-        Permanent pressure loss ratio r = delta_p_perm / delta_p_tap.
-        ISO 5167-2:2022 §5.4 Formula (7).
-        IMPORTANT: cd must be the discharge coefficient C_d, not the meter coefficient
-        C_m = C_d / sqrt(1 - beta^4). Passing C_m here gives an incorrect loss ratio.
-        """
-        s = math.sqrt(1.0 - beta ** 4 * (1.0 - cd ** 2))
-        return (s - cd * beta ** 2) / (s + cd * beta ** 2)
-
-    @staticmethod
-    def _iso_ratio_derivative_wrt_cd(cd: float, beta: float) -> float:
-        """dr/dC_d for the ISO 5167-2:2022 §5.4 Formula (7) permanent loss ratio."""
-        s = math.sqrt(1.0 - beta ** 4 * (1.0 - cd ** 2))
-        den = s + cd * beta ** 2
-        return -2.0 * beta ** 2 * (1.0 - beta ** 4) / (s * den * den)
-
-    def _dc_dre(self, re_pipe: float, pipe_d: float, beta_eff: float) -> float:
-        """
-        dC/dRe_D of the closed-form effective meter coefficient.
-        Central difference with relative step 1e-4 (absolute floor 1e-3),
-        falling back to a forward difference when Re_D is below the step.
-        """
-        step = max(1e-4 * re_pipe, 1e-3)
-        if re_pipe >= step:
-            c_plus = self._c_meter_from_re(re_pipe + step, pipe_d, beta_eff)
-            c_minus = self._c_meter_from_re(re_pipe - step, pipe_d, beta_eff)
-            return (c_plus - c_minus) / (2.0 * step)
-        c_plus = self._c_meter_from_re(re_pipe + step, pipe_d, beta_eff)
-        c_zero = self._c_meter_from_re(re_pipe, pipe_d, beta_eff)
-        return (c_plus - c_zero) / step
-
     def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
         """
         Calculates the permanent pressure drop (network pressure loss).
@@ -185,20 +152,7 @@ class Orifice(HydraulicNode):
         beta_ratio = orif_d / pipe_d
 
         if self.standard == 'classic_cd':
-            # Classic Cd model
-            beta_ratio = min(0.99, beta_ratio)
-            area_pipe = math.pi * (pipe_d / 2.0) ** 2
-            velocity = flow_rate / max(1e-9, area_pipe)
-            dynamic_pressure = 0.5 * density * velocity * abs(velocity)  # abs to preserve direction of flow for pressure drop sign
-
-            area_orifice = math.pi * (orif_d / 2.0) ** 2
-            v_orifice = flow_rate / max(1e-9, area_orifice)
-            re_orifice = (density * abs(v_orifice) * orif_d) / max(1e-7, viscosity)
-
-            discharge_coefficient = FluidProperties.get_orifice_cd(re_orifice)
-            geometry_factor = (1 - beta_ratio ** 4) / (discharge_coefficient ** 2 * beta_ratio ** 4)
-            rec_delta_p = dynamic_pressure * geometry_factor
-            return rec_delta_p * (1 - beta_ratio ** 2)
+            return FluidProperties.get_classic_orifice_dp(flow_rate, density, viscosity, pipe_d, orif_d)
 
         # ISO 5167 model
         beta_eff = self._beta_eff(beta_ratio)
@@ -213,59 +167,8 @@ class Orifice(HydraulicNode):
         # 3. Permanent pressure loss (ISO 5167-2:2022 §5.4 Formula (7)).
         #    Formula (7) is defined in terms of C_d, not C_m. Recover C_d here.
         cd = c_meter * math.sqrt(1.0 - beta_eff ** 4)
-        ratio = self._iso_permanent_loss_ratio(cd, beta_eff)
+        ratio = FluidProperties.get_orifice_permanent_loss_ratio(cd, beta_eff)
         return ratio * tap_dp
-
-    def calculate_dp_derivative(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
-        pipe_d = max(0.001, getattr(self, 'pipe_diameter', 0.05248))
-        orif_d = max(0.0001, self.orifice_diameter)
-        beta_ratio = orif_d / pipe_d
-        area_pipe = math.pi * (pipe_d / 2.0) ** 2
-        area_orifice = math.pi * (orif_d / 2.0) ** 2
-        mu = max(1e-7, viscosity)
-
-        if self.standard == 'classic_cd':
-            # Classic Cd model: analytic derivative
-            beta_ratio = min(0.99, beta_ratio)
-            v_orifice = flow_rate / max(1e-9, area_orifice)
-            re_orifice = (density * abs(v_orifice) * orif_d) / max(1e-7, viscosity)
-
-            # dP = K*Q|Q|/Cd(Re)^2 with Re ~ |Q|:  dP/dQ = 2*K*|Q|/Cd^2 * (1 - dlnCd/dlnRe)
-            cd_val = FluidProperties.get_orifice_cd(re_orifice)
-            c_const = 0.5 * density / (area_pipe ** 2) * (1.0 - beta_ratio ** 4) / (beta_ratio ** 4) * (1.0 - beta_ratio ** 2)
-            q_eff = max(abs(flow_rate), 1e-6 * area_orifice * mu / (density * orif_d))
-            return c_const * 2.0 * q_eff / cd_val ** 2 * (1.0 - FluidProperties.get_orifice_cd_slope(re_orifice))
-
-        # ISO 5167 model: semi-analytic chain rule through the closed-form meter coefficient
-        beta_eff = self._beta_eff(beta_ratio)
-        c_meter = self._effective_c_meter(flow_rate, density, mu, pipe_d, beta_eff)
-        # Recover C_d for Formula (7); C_m = C_d/sqrt(1-beta^4) so C_d = C_m*sqrt(1-beta^4)
-        sqrt_one_minus_b4 = math.sqrt(1.0 - beta_eff ** 4)
-        cd = c_meter * sqrt_one_minus_b4
-        ratio = self._iso_permanent_loss_ratio(cd, beta_eff)
-        tap_dp = 0.5 * density * flow_rate * abs(flow_rate) / (area_orifice ** 2 * c_meter ** 2)
-
-        # Small-|q| laminar limit: C_m ~ sqrt(Re_o) so d(tap_dp)/dq tends to a positive constant
-        if abs(flow_rate) < 1e-12:
-            c_re = density * pipe_d / (area_pipe * mu)
-            slope = (0.5 * density * (1.0 - beta_eff ** 4) * beta_eff
-                     / (area_orifice ** 2 * 0.04 * c_re))   # Cd = 0.2*sqrt(Re_o) (Wuest) at Re -> 0
-            return ratio * slope
-
-        re_pipe = self._pipe_reynolds(flow_rate, density, mu, pipe_d)
-        dc_m_dre = self._dc_dre(re_pipe, pipe_d, beta_eff)  # dC_m/dRe_D
-        d_re_dq = density * pipe_d / (area_pipe * mu)
-        sign = 1.0 if flow_rate >= 0 else -1.0
-        dc_m_dq = dc_m_dre * d_re_dq * sign                 # dC_m/dq
-
-        # d(tap_dp)/dq via quotient rule: tap_dp = k*q*|q| / C_m^2
-        d_tap_dq = tap_dp * (2.0 / flow_rate - 2.0 * dc_m_dq / c_meter)
-
-        # d(ratio)/dq via chain rule: ratio = r(C_d), C_d = C_m * sqrt(1-beta^4)
-        #   dr/dq = dr/dCd * dCd/dq = dr/dCd * sqrt(1-beta^4) * dCm/dq
-        dr_dcd = self._iso_ratio_derivative_wrt_cd(cd, beta_eff)
-        dcd_dq = dc_m_dq * sqrt_one_minus_b4
-        return ratio * d_tap_dq + tap_dp * dr_dcd * dcd_dq
 
     def calculate(self):
 
