@@ -26,7 +26,7 @@ All notable changes to the WälFlow project will be documented in this file.
 - **Pipe schedule presets for custom lines**: Integrated standard nominal size (DN15–DN600) and schedule (STD, 40, 80, XS, 160) quick-pick selectors with live outer diameter, wall thickness, inner diameter, and flow area previews in both inspector and DataList table.
 - **Smart reducer auto-inheritance and mismatch detection**: Added 1-click auto-detection of connected pipe sizes and schedules on Reducer nodes, plus real-time mismatch warning alerts in the inspector and on canvas nodes.
 - **Multi-standard support**: Seeded European DIN EN 10253-2 buttweld reducers alongside ASME B16.9 and mapped TR2000 specifications to their authorized default fitting standard.
-- **Enhanced equipment categorization**: Reorganized sidebar into dedicated *Piping & Fittings* and *Distribution & Manifolds* sections, and added velocity color-coding in DataList.
+- **Enhanced equipment categorization**: Reorganized sidebar into dedicated *Piping & Fittings* and *Distribution & Manifolds* sections.
 - **AI agent skill** (`.agents/skills/pipe-classes`): Added dedicated skill documentation for AI pair programmers and LLM agents.
 - **Catalog-driven reducer inspector**: Reducer sizes now come from the fitting standards catalog (incl. DIN EN 10253-2 and custom standards), follow the connected line's pipe class standard and wall thickness, and report missing data inline instead of guessing.
 - **Fitting standard validation and restore**: Fitting standard create/update/import is validated (atomic import), deletion is blocked while pipe classes reference a standard, and admins can restore edited built-in standards to factory data.
