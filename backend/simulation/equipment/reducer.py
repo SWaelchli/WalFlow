@@ -139,7 +139,7 @@ class Reducer(HydraulicNode):
         inlet = self.inlets[0]
         outlet = self.outlets[0]
 
-        dp_loss, dp_bern, dp_total = self.calculate_losses(inlet.flow_rate, inlet.density, inlet.viscosity)
+        dp_loss, _, dp_total = self.calculate_losses(inlet.flow_rate, inlet.density, inlet.viscosity)
 
         outlet.pressure = inlet.pressure - dp_total
         outlet.flow_rate = inlet.flow_rate
