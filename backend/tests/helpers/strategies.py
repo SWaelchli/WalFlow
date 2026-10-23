@@ -208,9 +208,12 @@ def networks(draw, max_depth: int = 3, components=tuple(sorted(NETWORK_COMPONENT
         # Streams at different temperatures meet: the mixing energy balance is only visible this way
         _, other_temp_k, _, _ = draw(fluid_states(fluids=[fluid]))
         mix = add_node("mixer", {})
+        # A source is sometimes low (down to 1 bara) so the sink tank can sit above it: flow then runs backwards
+        # through the mixer outlet and an inlet (D-18)
         for k, t in enumerate((temp_k, other_temp_k)):
-            source = add_node("pressure_source", {"source_pressure_bara": draw(st.floats(1.5, 20.0)),
-                                                  "temperature_k": t})
+            source = add_node("pressure_source", {
+                "source_pressure_bara": draw(st.one_of(st.floats(1.5, 20.0), st.floats(1.0, 1.6))),
+                "temperature_k": t})
             place((source, "outlet-0"), (mix, f"inlet-{k}"), max_depth)
         start = (mix, "outlet-0")
     else:

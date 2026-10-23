@@ -9,7 +9,7 @@ import io
 import math
 
 import pytest
-from hypothesis import given, strategies as st
+from hypothesis import example, given, strategies as st
 
 from strategies import DISSIPATIVE_ONLY, networks
 from simulation.fluid_utils import FluidProperties
@@ -24,6 +24,9 @@ PRESSURE_TOL = 5.0       # Pa
 # Reported pressures lag the last property update (D-20): a 0.05 K step of heavy crude moves its viscosity
 # ~0.2 %, so a pipe after a large viscous drop can show a small rise. Relative to the network's pressure span.
 PRESSURE_LAG = 2e-3
+# K; a port's density / viscosity belong to the last property update, which can trail the reported T by the throttle
+# warming dp/(rho*cp): ~1.2 K at the ~20 bar the networks drop, lightest fluid. Removed with the D-20 fix.
+PROPERTY_LAG_K = 1.5
 TEMPERATURE_TOL = 0.1    # K; the property loop stops at 0.01-0.05 K changes
 
 
@@ -67,11 +70,44 @@ def assert_same_state(a: dict, b: dict):
                 assert ta == pytest.approx(tb, abs=TEMPERATURE_TOL), key
 
 
+def _reverse_flow_graph():
+    """Two sources below the sink: the sink pushes flow back through the mixer, the mixer outlet and both
+    inlets carry reverse flow (D-18). Hypothesis rarely draws a sink above both supplies, so it is pinned."""
+    def node(node_id, node_type, **data):
+        return {"id": node_id, "type": node_type, "position": {"x": 0, "y": 0}, "data": {"label": node_id, **data}}
+
+    def edge(edge_id, source, source_port, target, target_port):
+        return {"id": edge_id, "source": source, "target": target, "sourceHandle": source_port,
+                "targetHandle": target_port, "data": {"length_m": 10.0, "diameter_m": 0.05, "roughness_mm": 0.045}}
+    return {"nodes": [node("n0", "mixer"),
+                      node("n1", "pressure_source", source_pressure_bara=1.0, temperature_k=283.15),
+                      node("n2", "pressure_source", source_pressure_bara=1.2, temperature_k=333.15),
+                      node("n3", "tank", level_m=5.0, temperature_k=293.15)],
+            "edges": [edge("e0", "n1", "outlet-0", "n0", "inlet-0"), edge("e1", "n2", "outlet-0", "n0", "inlet-1"),
+                      edge("e2", "n0", "outlet-0", "n3", "inlet-0")],
+            "globalSettings": {"fluid_type": "iso_vg_46"}}
+
+
+@example(_reverse_flow_graph())
 @given(networks())
-def test_well_posed_network_reaches_a_finite_steady_state(graph):
+def test_well_posed_network_reaches_a_finite_steady_state_with_fluid_properties(graph):
+    """Every port value is finite, and every port that carries flow, in either direction, reports the density
+    and viscosity of the system fluid at the port's own temperature (D-18: a junction used to leave the default
+    density or a stale viscosity on a port with reverse flow)."""
     network = solved(graph)
     for key, ports in snapshot(network).items():
         assert all(v == v and abs(v) != float("inf") for port in ports for v in port), key
+    fluid = graph["globalSettings"]["fluid_type"]
+    objects = dict(network.nodes)
+    objects.update({edge["id"]: edge["pipe"] for edge in network.edges})
+    for key, obj in objects.items():
+        for port in [*obj.inlets, *obj.outlets]:
+            if abs(port.flow_rate) <= FLOW_TOL:
+                continue
+            for value, lookup in ((port.density, FluidProperties.get_density), (port.viscosity, FluidProperties.get_viscosity)):
+                # Within the temperature lag of the property loop (D-20; up to ~0.2 K at a throttle of heavy crude); the D-18 bug was off by the temperature difference of the streams
+                near = [lookup(fluid, port.temperature + d) for d in (-PROPERTY_LAG_K, 0.0, PROPERTY_LAG_K)]
+                assert min(near) * (1 - 1e-9) <= value <= max(near) * (1 + 1e-9), key
 
 
 @given(networks())
@@ -122,16 +158,22 @@ def test_dissipation_never_cools_and_mixing_stays_between_its_streams(graph):
     outlet lies between its inlet temperatures."""
     network = solved(graph)
     types = node_types(graph)
-    t_supply = min(n["data"]["temperature_k"] for n in graph["nodes"] if "temperature_k" in n["data"])
+    # What each source and tank supplies, defaults included (a tank above a source feeds reverse flow)
+    t_supply = min(node.temperature for node_id, node in network.nodes.items() if types[node_id] in {"tank", "pressure_source"})
     for node_id, node in network.nodes.items():
         if types[node_id] in BOUNDARY_TYPES:
             continue
         for port in [*node.inlets, *node.outlets]:
             assert port.temperature >= t_supply - TEMPERATURE_TOL, node_id
         if types[node_id] == "mixer":
-            feeding = [p.temperature for p in node.inlets if p.flow_rate > 1e-7]
-            if feeding:
-                assert min(feeding) - TEMPERATURE_TOL <= node.outlets[0].temperature <= max(feeding) + TEMPERATURE_TOL
+            # Streams arrive through inlets with forward flow and through the outlet with reverse flow
+            arriving = [p.temperature for p in node.inlets if p.flow_rate > 1e-7]
+            arriving += [p.temperature for p in node.outlets if p.flow_rate < -1e-7]
+            leaving = [p.temperature for p in node.inlets if p.flow_rate < -1e-7]
+            leaving += [p.temperature for p in node.outlets if p.flow_rate > 1e-7]
+            if arriving:
+                for temperature in leaving:
+                    assert min(arriving) - TEMPERATURE_TOL <= temperature <= max(arriving) + TEMPERATURE_TOL
 
 
 @given(networks())
