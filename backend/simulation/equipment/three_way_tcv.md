@@ -12,7 +12,7 @@ Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_RE
 
 | Claim | Type | Source (edition) | Used for | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| TCV-01 | Standard | IEC 60534-2-1:2011; ANSI/ISA-75.01.01-2012 | Liquid Cv equation per path, as in the [linear control valve](linear_control_valve.md#3-physical--mathematical-implementation) | ⚪ Unverified |
+| TCV-01 | Standard | IEC 60534-2-1:2011; ANSI/ISA-75.01.01-2012 | Liquid Cv equation per path, as in the [linear control valve](linear_control_valve.md#3-physical--mathematical-implementation) | ✅ IEC 60534-2-1:2011 §6.1 Eq. (1) |
 | TCV-02 | Standard | ANSI/ISA-75.11.01-2013 | Linear complementary characteristic (hot opening $x$, cold opening $1 - x$) of a 3-way mixing valve | ⚪ Unverified |
 
 The control loop is an ideal steady-state temperature controller (TC → TCV): no thermostat element, no time constant.

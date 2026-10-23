@@ -12,7 +12,7 @@ Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_RE
 
 | Claim | Type | Source (edition) | Used for | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| CV-01 | Standard | IEC 60534-2-1:2011 | Liquid Cv equation for the open valve loss | ⚪ Unverified |
+| CV-01 | Standard | IEC 60534-2-1:2011 | Liquid Cv equation for the open valve loss | ✅ IEC 60534-2-1:2011 §6.1 Eq. (1) |
 | CV-02 | Standard | API Std 594, 9th ed. (2022); API Spec 6D, 25th ed. (2021) | Cracking pressure, non-return function | ⚪ Unverified |
 | CV-03 | Literature | Fischer (1992), *Optimization* 24(3–4), 269–284 | Fischer-Burmeister function for complementarity problems | ⚪ Unverified |
 

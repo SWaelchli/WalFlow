@@ -34,7 +34,7 @@ Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_RE
 | PSV-06 | Standard | API Std 520 Part II, 7th ed. (2020); API Std 521, 7th ed. (2020) | Balanced bellows valves usable up to about 50 % of set | ⚪ Unverified |
 | PSV-07 | Standard | API Std 526, 8th ed. (2023) | Orifice designations, which the Cv stands in for | ⚪ Unverified |
 | PSV-08 | Standard | API Std 527, 5th ed. (2020) | Seat tightness: the closed valve passes no flow (an idealisation of the allowed leakage) | ⚪ Unverified |
-| PSV-09 | Standard | IEC 60534-2-1:2011 | Liquid Cv equation for the open valve loss | ⚪ Unverified |
+| PSV-09 | Standard | IEC 60534-2-1:2011 | Liquid Cv equation for the open valve loss | ✅ IEC 60534-2-1:2011 §6.1 Eq. (1) |
 
 ## 3. Physical & Mathematical Implementation
 
