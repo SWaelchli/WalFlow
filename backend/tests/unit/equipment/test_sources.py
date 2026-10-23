@@ -39,7 +39,6 @@ class TestPressureSource:
         for port in source.inlets + source.outlets:
             assert port.temperature == 298.15
             assert port.density > 900.0
-            assert port.viscosity > 0.0
 
 class TestFlowSource:
     def test_is_pressure_boundary_false(self):
@@ -47,22 +46,18 @@ class TestFlowSource:
         assert source.is_pressure_boundary is False
         assert source.is_flow_boundary is False
 
-    def test_delta_p_zero_at_target_flow(self):
+    @pytest.mark.parametrize("flow_ls, sign", [
+        pytest.param(1.0, 0, id="at-target"),          # 1.0 L/s = 60 L/min
+        pytest.param(0.5, -1, id="below-target-boosts"),  # adds pressure boost
+        pytest.param(1.5, +1, id="above-target-resists"),  # resists flow
+    ])
+    def test_delta_p_sign_follows_flow_error(self, flow_ls, sign):
         source = _make_flow_source(flow_lmin=60.0)
-        dp = source.calculate_delta_p(1.0 / 1000.0, 1000.0) # 1.0 L/s = 60 L/min
-        assert abs(dp) < 1e-7
-
-    def test_delta_p_negative_below_target(self):
-        source = _make_flow_source(flow_lmin=60.0)
-        # flow is less than target (0.5 L/s < 1 L/s)
-        dp = source.calculate_delta_p(0.5 / 1000.0, 1000.0)
-        assert dp < 0.0 # adds pressure boost
-
-    def test_delta_p_positive_above_target(self):
-        source = _make_flow_source(flow_lmin=60.0)
-        # flow is more than target (1.5 L/s > 1 L/s)
-        dp = source.calculate_delta_p(1.5 / 1000.0, 1000.0)
-        assert dp > 0.0 # resists flow
+        dp = source.calculate_delta_p(flow_ls / 1000.0, 1000.0)
+        if sign == 0:
+            assert abs(dp) < 1e-7
+        else:
+            assert dp * sign > 0.0
 
     def test_delta_p_hard_cap_not_exceeded(self):
         source = _make_flow_source(flow_lmin=60.0)

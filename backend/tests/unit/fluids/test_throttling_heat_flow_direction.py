@@ -50,11 +50,11 @@ def run_test(name, gs, t1_elev, t2_elev, expect_forward):
         assert t_out == pytest.approx(t_up, abs=1e-3)      # upstream is now the outlet port
         assert t_in - t_out == pytest.approx(dt_ref, rel=1e-3)
 
-def test_forward_flow_heats_the_outlet():
-    """Tank1 above Tank2: flow runs inlet -> outlet and the outlet port gets the throttling heat."""
-    run_test("Forward Flow Heat", GlobalSettings(fluid_type="iso_vg_46"), 1000.0, 0.0, expect_forward=True)
-
-
-def test_reverse_flow_heats_the_inlet():
-    """Tank2 above Tank1: flow runs outlet -> inlet and the inlet port gets the throttling heat."""
-    run_test("Reverse Flow Heat", GlobalSettings(fluid_type="iso_vg_46"), 0.0, 1000.0, expect_forward=False)
+@pytest.mark.parametrize("t1_elev, t2_elev, expect_forward", [
+    # Tank1 above Tank2: flow runs inlet to outlet and the outlet port gets the throttling heat
+    pytest.param(1000.0, 0.0, True, id="forward-flow-heats-the-outlet"),
+    # Tank2 above Tank1: flow runs outlet to inlet and the inlet port gets the throttling heat
+    pytest.param(0.0, 1000.0, False, id="reverse-flow-heats-the-inlet"),
+])
+def test_throttling_heats_the_downstream_port(t1_elev, t2_elev, expect_forward):
+    run_test("Throttling Heat", GlobalSettings(fluid_type="iso_vg_46"), t1_elev, t2_elev, expect_forward)

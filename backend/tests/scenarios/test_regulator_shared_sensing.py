@@ -21,13 +21,18 @@ def _saturated(stats):
     return [(s["name"], s["state"]) for s in stats["saturated_controllers"]]
 
 
-@pytest.mark.parametrize("consumer", [30.0, 100.0])
-def test_equal_setpoints_share_control_at_one_opening(consumer):
+@pytest.mark.parametrize("set_bar, backpressure, consumer, flow_follows_friction", [
     # A shorter branch used to get less flow than a longer one, depending on the consumer opening
-    nodes, stats, header = _parallel(5.0, 5.0, len_a=1.0, len_b=10.0, consumer=consumer)
-    assert header == pytest.approx(5.0, abs=1e-3)
+    pytest.param(5.0, False, 30.0, True, id="prv-consumer-30"),
+    pytest.param(5.0, False, 100.0, True, id="prv-consumer-100"),
+    pytest.param(7.0, True, 100.0, False, id="bpr"),
+])
+def test_equal_setpoints_share_control_at_one_opening(set_bar, backpressure, consumer, flow_follows_friction):
+    nodes, stats, header = _parallel(set_bar, set_bar, len_a=1.0, len_b=10.0, backpressure=backpressure, consumer=consumer)
+    assert header == pytest.approx(set_bar, abs=1e-3)
     assert nodes["a"].opening_pct == pytest.approx(nodes["b"].opening_pct, rel=1e-9)
-    assert _flow(nodes["a"]) > _flow(nodes["b"])          # same opening, less pipe friction
+    if flow_follows_friction:
+        assert _flow(nodes["a"]) > _flow(nodes["b"])          # same opening, less pipe friction
     assert not stats["saturated_controllers"]
 
 
@@ -49,18 +54,19 @@ def test_prv_with_the_higher_setpoint_regulates_the_other_closes(set_a, set_b, r
     assert stats["outer_iterations"] <= 25
 
 
-def test_setpoints_closer_than_half_the_tolerance_share_control_at_their_mean():
+@pytest.mark.parametrize("set_b, shared", [
     # 4 Pa apart: one opening holds the header within the 10 Pa tolerance of both setpoints
-    nodes, stats, header = _parallel(5.0, 5.00004)
-    assert abs(header - 5.0) < 1e-4 and abs(header - 5.00004) < 1e-4
-    assert nodes["a"].opening_pct == pytest.approx(nodes["b"].opening_pct, rel=1e-9)
-    assert stats["outer_iterations"] <= 25
-
-
-def test_setpoints_just_beyond_half_the_tolerance_converge():
+    pytest.param(5.00004, True, id="closer-than-half-the-tolerance-share-the-mean"),
     # 9 Pa apart: separate tiers, the higher setpoint regulates
-    _, stats, header = _parallel(5.0, 5.00009)
-    assert header == pytest.approx(5.00009, abs=1e-4)
+    pytest.param(5.00009, False, id="just-beyond-half-the-tolerance-converge"),
+])
+def test_setpoints_near_the_tolerance_share_control_or_converge(set_b, shared):
+    nodes, stats, header = _parallel(5.0, set_b)
+    if shared:
+        assert abs(header - 5.0) < 1e-4 and abs(header - set_b) < 1e-4
+        assert nodes["a"].opening_pct == pytest.approx(nodes["b"].opening_pct, rel=1e-9)
+    else:
+        assert header == pytest.approx(set_b, abs=1e-4)
     assert stats["outer_iterations"] <= 25
 
 
@@ -78,10 +84,3 @@ def test_bpr_with_the_lower_setpoint_regulates_the_other_closes():
     assert header == pytest.approx(7.0, abs=1e-3)
     assert _saturated(stats) == [("A", "closed")]
     assert _flow(nodes["a"]) < 0.1
-
-
-def test_equal_bpr_setpoints_share_control_at_one_opening():
-    nodes, stats, header = _parallel(7.0, 7.0, len_a=1.0, len_b=10.0, backpressure=True, consumer=100.0)
-    assert header == pytest.approx(7.0, abs=1e-3)
-    assert nodes["a"].opening_pct == pytest.approx(nodes["b"].opening_pct, rel=1e-9)
-    assert not stats["saturated_controllers"]

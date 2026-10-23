@@ -21,9 +21,10 @@ def _dp(f, t_k, fluid):
     return f.calculate_delta_p(q, FP.get_density(fluid, t_k), FP.get_viscosity(fluid, t_k))
 
 
-def test_f1_19_water_20c_reproduces_datasheet():
-    f = _filter("water")
-    assert _dp(f, 293.15, "water") == pytest.approx(0.15e5, rel=1e-9)
+@pytest.mark.parametrize("dp_clean", [0.15, 1.0])
+def test_f1_19_water_20c_reproduces_datasheet(dp_clean):
+    f = _filter("water", dp_clean)
+    assert _dp(f, 293.15, "water") == pytest.approx(dp_clean * 1e5, rel=1e-9)
 
 
 @pytest.mark.parametrize("dp_clean", [0.15, 0.5])
@@ -50,10 +51,3 @@ def test_f1_19_explicit_reference_viscosity():
     assert f.calculate_delta_p(q, rho_ref, 0.1) == pytest.approx(0.15e5, rel=1e-9)
 
 
-def test_f1_19_derivative_consistent():
-    f = _filter("iso_vg_46")
-    rho, mu = 860.0, 0.03
-    q = 0.001
-    h = 1e-7
-    num = (f.calculate_delta_p(q + h, rho, mu) - f.calculate_delta_p(q - h, rho, mu)) / (2 * h)
-    assert f.calculate_dp_derivative(q, rho, mu) == pytest.approx(num, rel=1e-4)

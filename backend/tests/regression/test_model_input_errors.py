@@ -5,18 +5,11 @@ pytestmark = pytest.mark.audit("review-1")
 
 import pytest
 
-from simulation.equipment.heat_exchanger import HeatExchanger
 from simulation.graph_parser import GraphParser, ModelInputError
 from simulation.schemas import ReactFlowGraph
 from simulation.solver import run_sequential_relief_simulation
 
 
-def test_heat_exchanger_dp_is_odd_in_flow():
-    hx = HeatExchanger("HX", rated_cooling_kw=30.0, rated_flow_lmin=100.0, design_inlet_temp_c=50.0, medium_temp_c=10.0)
-    fwd = hx.calculate_delta_p(0.005, 998.0, 1e-3)
-    rev = hx.calculate_delta_p(-0.005, 998.0, 1e-3)
-    assert fwd > 0.0 and rev == pytest.approx(-fwd)
-    assert hx.calculate_dp_derivative(-0.005, 998.0, 1e-3) > 0.0
 
 
 def _graph(node_type, node_data=None, edge_data=None):

@@ -1,0 +1,27 @@
+# Mutation testing (walflow-qa skill, "Mutation testing"). Run from backend/:
+#   cosmic-ray init cosmic-ray.toml cr.sqlite && python cosmic-ray-filter.py cr.sqlite
+#   cosmic-ray exec cosmic-ray.toml cr.sqlite && cr-report cr.sqlite
+# Mutants are applied to the files in place: do not edit simulation/ while a run is going.
+# Windows: replace "python" in test-command with the absolute path of the venv python.exe (no shell is used).
+[cosmic-ray]
+module-path = [
+    "simulation/equipment/orifice.py",
+    "simulation/equipment/filter.py",
+    "simulation/equipment/check_valve.py",
+    "simulation/equipment/check_valve_orifice.py",
+    "simulation/equipment/reducer.py",
+    "simulation/equipment/flow_source.py",
+    "simulation/equipment/pressure_source.py",
+    "simulation/equipment/calibrated_restriction.py",
+    "simulation/equipment/volumetric_pump.py",
+    "simulation/equipment/splitter.py",
+    "simulation/equipment/mixer.py",
+    "simulation/equipment/base_node.py",
+    "simulation/fluid_utils.py",
+]
+timeout = 300.0
+excluded-modules = []
+test-command = "python -m pytest -x -q -p no:randomly -p no:cacheprovider tests/unit tests/scenarios tests/regression"
+
+[cosmic-ray.distributor]
+name = "local"

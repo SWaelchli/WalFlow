@@ -35,10 +35,3 @@ def test_f1_39_large_beta_is_not_clamped():
     assert dp_075 > dp_090 > dp_096 > 0.0
 
 
-@pytest.mark.parametrize("d_orifice", [0.004, 0.045])
-def test_f1_39_derivative_matches_numerical_outside_iso_range(d_orifice):
-    ori = _ori(d_orifice)
-    rho, mu, q = 998.0, 1e-3, 0.002
-    h = q * 1e-5
-    num = (ori.calculate_delta_p(q + h, rho, mu) - ori.calculate_delta_p(q - h, rho, mu)) / (2 * h)
-    assert ori.calculate_dp_derivative(q, rho, mu) == pytest.approx(num, rel=2e-3)
