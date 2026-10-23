@@ -3,6 +3,7 @@ import {
   ComposedChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Scatter, Legend
 } from 'recharts';
 import { useUnits } from '../../context/UnitContext';
+import { niceTicks, formatTick } from '../../utils/chartTicks';
 
 const FilterDetails = memo(function FilterDetails({ node }) {
   const { labels, isImperial, formatPressurePa } = useUnits();
@@ -31,12 +32,14 @@ const FilterDetails = memo(function FilterDetails({ node }) {
 
   const flowMultiplier = isImperial ? 0.264172052 : 1.0;
   const pressMultiplier = isImperial ? 14.5037738 : 1.0;
+  const xMaxDisplay = niceTicks(maxX_lmin * flowMultiplier, 5).pop();
+  const xMaxLmin = xMaxDisplay / flowMultiplier;
 
   const chartData = useMemo(() => {
     const data = [];
     const steps = 60; 
     for (let i = 0; i <= steps; i++) {
-      const qLmin = (maxX_lmin * i) / steps;
+      const qLmin = (xMaxLmin * i) / steps;
       const qM3s = qLmin / 60000;
       data.push({
         q: qLmin * flowMultiplier,
@@ -46,7 +49,7 @@ const FilterDetails = memo(function FilterDetails({ node }) {
       });
     }
     return data;
-  }, [kClean, kTerminal, kCurr, rho, fluidScale, maxX_lmin, flowMultiplier, pressMultiplier]);
+  }, [kClean, kTerminal, kCurr, rho, fluidScale, xMaxLmin, flowMultiplier, pressMultiplier]);
 
   const currentDpPa = Math.abs((telemetry?.inlets?.[0]?.pressure || 0) - (telemetry?.outlets?.[0]?.pressure || 0));
   const currentDpBar = currentDpPa / 100000;
@@ -64,10 +67,12 @@ const FilterDetails = memo(function FilterDetails({ node }) {
       
       <div style={{ width: '100%', height: '240px', background: 'var(--color-surface)' }}>
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: -20, bottom: 10 }}>
+          <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 4, bottom: 10 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
-            <XAxis dataKey="q" type="number" domain={[0, maxX_lmin * flowMultiplier]} fontSize={10} tickCount={6} unit={` ${labels.flow}`} />
-            <YAxis type="number" fontSize={10} tickCount={6} unit={` ${labels.pressureDiff}`} />
+            <XAxis dataKey="q" type="number" domain={[0, xMaxDisplay]} fontSize={10} tickCount={6} tickFormatter={formatTick} height={36}
+              label={{ value: labels.flow, position: 'insideBottomRight', offset: -2, fontSize: 10, fill: 'var(--color-text-secondary)' }} />
+            <YAxis type="number" fontSize={10} tickCount={6} tickFormatter={formatTick} width={45}
+              label={{ value: labels.pressureDiff, angle: -90, position: 'insideLeft', offset: 10, fontSize: 10, fill: 'var(--color-text-secondary)', style: { textAnchor: 'middle' } }} />
             <Legend verticalAlign="top" align="right" height={40} iconType="plainline" wrapperStyle={{ fontSize: 'var(--fs-xs)' }} />
             <Line dataKey="clean" stroke="var(--color-success)" strokeWidth={1.5} dot={false} name="Clean" isAnimationActive={false} />
             <Line dataKey="current" stroke="var(--color-primary)" strokeWidth={2.5} dot={false} name="Current" isAnimationActive={false} />
