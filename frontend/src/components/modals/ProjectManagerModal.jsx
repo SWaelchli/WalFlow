@@ -3,7 +3,8 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { notify, confirmDialog } from '../../utils/dialogs';
 import axios from 'axios';
 import { useAuth } from '../../hooks/useAuth';
-import { FILE_FORMAT_VERSION, APP_VERSION, FILE_EXTENSION } from '../../constants';
+import { FILE_EXTENSION } from '../../constants';
+import { serializeDiagram } from '../../utils/diagramFile';
 import { CloudIcon, ExportIcon, ImportIcon, TrashIcon, CrossIcon, PlusIcon } from '../symbols/IconLibrary';
 
 import { modalA11yRef } from '../../hooks/useModalA11y';
@@ -179,17 +180,13 @@ const ProjectManagerModal = ({
     if (!newDiagramTitle.trim() || !projectDetail) return;
     setIsCreatingDiagram(true);
     try {
-      const emptyPayload = {
-        version: FILE_FORMAT_VERSION,
-        app_version: APP_VERSION,
-        format: 'walflow',
-        created_at: new Date().toISOString(),
+      const emptyPayload = serializeDiagram({
         nodes: currentFlowData.nodes || [],
         edges: currentFlowData.edges || [],
         globalSettings: currentFlowData.globalSettings || {},
         cases: currentFlowData.cases || [],
-        active_case_id: currentFlowData.activeCaseId || 'case_base'
-      };
+        activeCaseId: currentFlowData.activeCaseId || 'case_base'
+      });
 
       const response = await axios.post('/api/diagrams', {
         title: newDiagramTitle.trim(),

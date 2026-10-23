@@ -41,7 +41,7 @@ Status: `open` / `fixed` / `rejected`. "Confirmed" means it was reproduced by ru
 | D-22 | Solver | Junctions balance volume flow, not mass flow; mixing at different temperatures loses ~0.4 % mass | Low / decision | Confirmed (property test) | open |
 | D-23 | Solver / equipment | Analytical dp derivatives of most components are never used by the solver (dead code) | Low / cleanup | Mutation testing | fixed |
 | D-24 | Solver / junctions | A junction downstream of two hot supplies reports ~1 K below the coldest supply without any cooler | Medium | Confirmed (property test, explore) | open |
-| D-25 | Frontend / file format | The `.wlf` header is written by hand in three places instead of by `serializeDiagram`, so it can drift when the format changes | Low / cleanup | Code review | open |
+| D-25 | Frontend / file format | The `.wlf` header is written by hand in three places instead of by `serializeDiagram`, so it can drift when the format changes | Low / cleanup | Code review | fixed |
 | D-26 | Orifice | ISO Reynolds limit for β > 0.56 is a flat 16 000 instead of 16 000·β² (ISO 5167-2:2022 §5.3.1); up to +12 % permanent loss in the ISO-valid range | Medium (wrong result) | Confirmed (standard + calculation) | fixed |
 | D-27 | Orifice / docs | `orifice.md` §3.1 describes the old β and d clamps (0.1-0.75, d ≥ 12.5 mm); the code uses 0.01-0.99 and no d clamp | Low / docs | Code reading | fixed |
 | D-28 | Calibrated restriction, check valve orifice, rupture disc / docs | Permanent loss ratio (1 − β²) is attributed to ISO 5167-2, which gives only Formula (7) and 1 − β^1.9 | Low / decision | Confirmed (standard) | fixed |
@@ -498,6 +498,8 @@ The analytical `calculate_dp_derivative` methods of those components are only ex
 **What happens:** nothing today; all three write format 0.2. When the file format changes, these copies can drift from `serializeDiagram` and write files that `checkDiagramFile` rejects or that miss new fields. The round-trip test in `diagramFile.test.js` covers only `serializeDiagram`.
 
 **Fix direction:** a cleanup. Build those payloads with `serializeDiagram` (empty nodes and edges where needed), so one function owns the header.
+
+**Resolution (fixed):** App.jsx (blank cloud diagram), ProjectManagerModal.jsx (new diagram) and Sidebar.jsx (blank diagram after deleting the open drawing) build their payload with `serializeDiagram`; no hand-written header remains.
 
 ---
 
