@@ -91,6 +91,8 @@ All notable changes to the WälFlow project will be documented in this file.
 
 ### Fixed
 
+- **Control valve viscosity correction (IEC 60534-2-1)**: The linear control valve, remote control valve and three-way TCV use the Annex A Reynolds number factor, sized from the connected pipe, so viscous low-flow cases give the laminar pressure drop (previously up to two orders of magnitude too low).
+- **3-way TCV control loop**: The mix ratio no longer cycles when the outlet temperature responds steeply (e.g. viscous laminar paths), and a TCV that misses its setpoint is reported as not settled instead of converged.
 - **Orifice losses (ISO 5167-2)**: The orifice's Reynolds validity limit above β 0.56 is 16 000·β² instead of 16 000. The calibrated restriction, check valve orifice, reduced-bore rupture disc and classic orifice model use the permanent loss of ISO Formula (7) instead of 1 − β² (results change by up to 2.5 %).
 - **Heat exchanger**: Reverse flow now cools the stream that actually enters. The rated pressure drop is reproduced in the system fluid at the design inlet temperature (previously only for water), and the rated UA no longer drifts with the operating temperature.
 - **Mixer with reverse flow**: An inlet that carries flow back into its pipe reports density and viscosity at the mixed temperature (previously the default 1000 kg/m³ and a stale viscosity).

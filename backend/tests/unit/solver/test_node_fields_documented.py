@@ -13,7 +13,7 @@ PARSER = os.path.join(REPO_ROOT, "backend", "simulation", "graph_parser.py")
 EQUIPMENT_DIR = os.path.join(REPO_ROOT, "backend", "simulation", "equipment")
 
 # Units of fields that are not dimensional (no suffix needed)
-UNITLESS = ("text", "bool", "Cv", "DN", "index", "catalogue id")
+UNITLESS = ("text", "bool", "Cv", "DN", "index", "catalogue id", "factor")
 # Unit in the table -> suffixes a field with that unit may end with
 SUFFIX_FOR_UNIT = {
     "Pa": ("_pa",), "bar": ("_bar",), "barg": ("_barg",), "bar(a)": ("_bara",), "L/min": ("_lmin",),

@@ -1,5 +1,6 @@
 
 # Add backend to path
+import pytest
 
 from simulation.schemas import HydraulicNetwork, GlobalSettings
 from simulation.solver import NetworkSolver
@@ -10,7 +11,7 @@ from simulation.equipment.linear_control_valve import LinearControlValve
 
 def build_tcv_network(hot_temp=353.15, cold_temp=293.15, set_temp=313.15, 
                       hot_p=2.0, cold_p=2.0, sink_p=1.0, 
-                      hot_port_idx=0, max_cv=0.1):
+                      hot_port_idx=0, max_cv=0.1, load_cv=0.01, control_iterations=None):
     """
     Helper to build a 2-source, 1-sink network with a TCV.
     """
@@ -24,7 +25,7 @@ def build_tcv_network(hot_temp=353.15, cold_temp=293.15, set_temp=313.15,
     tcv = ThreeWayTCV("TCV", max_cv=max_cv, set_temperature=set_temp, hot_port_idx=hot_port_idx)
     
     # Load (Restriction to limit flow)
-    v_load = LinearControlValve("Load", max_cv=0.01, opening_pct=100.0)
+    v_load = LinearControlValve("Load", max_cv=load_cv, opening_pct=100.0)
     
     # Sink
     t_sink = Tank("Sink", fluid_level=0, elevation=(sink_p-1.01325)*10.2, temperature=293.15, fluid_type="iso_vg_46")
@@ -40,6 +41,8 @@ def build_tcv_network(hot_temp=353.15, cold_temp=293.15, set_temp=313.15,
     ]
     
     network = HydraulicNetwork(nodes=nodes, edges=edges)
+    if control_iterations is not None:
+        network.global_settings = GlobalSettings(fluid_type="iso_vg_46", control_iterations=control_iterations)
     for n in nodes.values(): n.global_settings = gs
     for e in edges: e['pipe'].global_settings = gs
     
@@ -145,3 +148,27 @@ def test_tcv_downstream_network_integration():
     assert tcv.outlets[0].pressure > 100000.0, "TCV outlet pressure must remain realistic and positive"
     assert abs(tcv.outlets[0].temperature - 318.15) < 0.5, f"TCV target 45C (318.15K) missed, got {tcv.outlets[0].temperature}K"
 
+
+@pytest.mark.audit("D-31")
+@pytest.mark.parametrize("tcv_cv", [
+    pytest.param(1.0, id="laminar-s-curve-cv1"),    # cycled between brackets before the bisecting mix loop
+    pytest.param(0.5, id="cv0.5"),                  # hydraulic failure from the F_R jump at Re_V = 10
+    pytest.param(0.05, id="cv0.05"),
+])
+def test_tcv_laminar_oil_settles_on_the_setpoint(tcv_cv):
+    """ISO VG 46 at 30..60 degC through small valves runs laminar: the outlet temperature is an S-curve of the
+    mix ratio. The loop must settle on 45 degC (not cycle) and report it."""
+    net, tcv = build_tcv_network(hot_temp=333.15, cold_temp=303.15, set_temp=318.15, max_cv=tcv_cv, load_cv=0.1)
+    stats = NetworkSolver(net).solve()
+    assert stats["success"] and stats["controls_converged"], stats.get("error")
+    assert tcv.outlets[0].temperature == pytest.approx(318.15, abs=0.01)
+
+
+@pytest.mark.audit("D-31")
+def test_tcv_iteration_limit_is_reported_not_hidden():
+    """A TCV still moving at the outer iteration limit must not report converged controls."""
+    net, _ = build_tcv_network(hot_temp=333.15, cold_temp=303.15, set_temp=318.15, max_cv=1.0, load_cv=0.1,
+                               control_iterations=1)
+    stats = NetworkSolver(net).solve()
+    assert stats["success"]
+    assert stats["controls_converged"] is False

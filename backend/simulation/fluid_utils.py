@@ -1,4 +1,47 @@
 import math
+from functools import lru_cache
+
+# Largest d(ln F_R)/d(ln Re_V) allowed for control valves: the drop rises at least as sqrt(Q) (D-29)
+IEC_FR_MAX_SLOPE = 0.75
+
+
+def _iec_fr_held(re_v: float, n: float, fl: float) -> float:
+    """IEC 60534-2-1 Annex A F_R, Eq. (A.6)/(A.7), held at the (A.6) value of Re_V = 10 instead of jumping down."""
+    f_lam = 0.026 / fl * math.sqrt(n * re_v)
+    if re_v < 10.0:
+        return min(f_lam, 1.0)
+    f_trans = 1.0 + 0.33 * math.sqrt(fl) / n ** 0.25 * math.log10(re_v / 10000.0)
+    f_lam_10 = 0.026 / fl * math.sqrt(n * 10.0)
+    return min(max(f_trans, f_lam_10), f_lam, 1.0)
+
+
+@lru_cache(maxsize=1024)
+def _iec_fr_knee(n: float, fl: float):
+    """
+    Start (Re_V, F_R) of the (A.7) branch when F_R grows faster than IEC_FR_MAX_SLOPE there, else None.
+    On the (A.7) branch d(ln F_R)/d(ln Re_V) = a / (ln 10 * F_R) falls as F_R rises, so only its start can
+    be too steep. Depends only on the valve geometry and style: computed once per valve.
+    """
+    a = 0.33 * math.sqrt(fl) / n ** 0.25
+    f_lam_10 = 0.026 / fl * math.sqrt(n * 10.0)
+    if 1.0 - 3.0 * a < f_lam_10:
+        # (A.7) starts below (A.6): the branch starts where it leaves the held value
+        re_s, f_s = 10000.0 * 10.0 ** ((f_lam_10 - 1.0) / a), f_lam_10
+    else:
+        # (A.7) starts above (A.6): the branch starts where (A.7) crosses below the laminar term
+        def h(log_re):
+            return (1.0 + a * (log_re - 4.0)) - 0.026 / fl * math.sqrt(n * 10.0 ** log_re)
+        lo, hi = 1.0, 4.0
+        if h(hi) >= 0.0:
+            return None
+        for _ in range(60):
+            mid = 0.5 * (lo + hi)
+            lo, hi = (mid, hi) if h(mid) >= 0.0 else (lo, mid)
+        re_s = 10.0 ** hi
+        f_s = 1.0 + a * (hi - 4.0)
+    if f_s >= 1.0 or a / (math.log(10.0) * f_s) <= IEC_FR_MAX_SLOPE:
+        return None
+    return re_s, f_s
 
 
 class UnknownFluidError(ValueError):
@@ -380,13 +423,56 @@ class FluidProperties:
     @staticmethod
     def get_valve_fr(reynolds_number: float) -> float:
         """
-        Calculates IEC 60534-2-1 valve viscosity correction factor Fr.
-        Scales effective Cv down smoothly when flow is in transition or laminar regime.
-        Continuous and smooth across all regimes.
+        Smooth viscosity correction factor Fr for valves outside the scope of IEC 60534
+        (check valves, regulators). Not the standard's formula: control valves use
+        get_iec_valve_fr (D-29). Scales effective Cv down smoothly in the transition
+        and laminar regimes, with a floor of 0.4.
         """
         re_safe = max(1e-6, abs(reynolds_number))
         fr = (re_safe + 200.0) / (re_safe + 400.0)
         return max(0.4, min(1.0, fr))
+
+    @staticmethod
+    def get_iec_valve_reynolds(flow_rate: float, kinematic_viscosity: float, cv: float,
+                               fl: float, fd: float, diameter: float) -> float:
+        """
+        Valve Reynolds number Re_V, IEC 60534-2-1:2011 Eq. (23) / (A.1), Cv constants of Table 1.
+        flow_rate in m^3/s, kinematic_viscosity in m^2/s, diameter (pipe bore D) in m.
+        """
+        n2, n4 = 2.14e-3, 7.60e-2
+        q_m3h = abs(flow_rate) * 3600.0
+        d_mm = max(1e-3, diameter) * 1000.0
+        c = max(1e-9, cv)
+        return (n4 * fd * q_m3h / (max(1e-12, kinematic_viscosity) * math.sqrt(c * fl))
+                * ((fl * fl * c * c) / (n2 * d_mm ** 4) + 1.0) ** 0.25)
+
+    @staticmethod
+    def get_iec_valve_fr(flow_rate: float, kinematic_viscosity: float, cv: float, cv_rated: float,
+                         fl: float, fd: float, diameter: float) -> float:
+        """
+        Reynolds number factor F_R of IEC 60534-2-1:2011 Annex A (D-29).
+        Laminar (Re_V < 10): Eq. (A.6); transitional (Re_V >= 10): Eq. (A.7); n from Eq. (A.8a)
+        for full-size trim (C_rated/(N18 d^2) >= 0.016), otherwise Eq. (A.8b).
+        The valve is taken as line-size (Annex A.4): d = D = pipe bore. F_R stays above zero so
+        the Cv law gives a finite drop, linear in Q at low flow.
+        Deviations (D-29), both only for valves very small or very large for the line (n <~ 1.2):
+        - No jump: for Re_V >= 10, F_R is not allowed below the laminar value at Re_V = 10. Where (A.7)
+          starts below (A.6), the standard's F_R jumps down there and the pressure drop has a gap with
+          no flow; here F_R holds that value until (A.7) rises past it.
+        - Growth cap: where (A.7) takes over at a small F_R it rises faster than Re_V, so the standard's
+          pressure drop falls with rising flow (a negative resistance the solver cannot converge on).
+          F_R may grow at most as Re_V**IEC_FR_MAX_SLOPE, so the drop rises at least as sqrt(Q).
+        """
+        n2, n18, n32 = 2.14e-3, 1.00, 1.27e2
+        re_v = FluidProperties.get_iec_valve_reynolds(flow_rate, kinematic_viscosity, cv, fl, fd, diameter)
+        d_mm = max(1e-3, diameter) * 1000.0
+        cd2 = max(1e-12, cv_rated) / d_mm ** 2
+        n = n2 / cd2 ** 2 if cd2 / n18 >= 0.016 else 1.0 + n32 * cd2 ** (2.0 / 3.0)
+        fr = _iec_fr_held(re_v, n, fl)
+        knee = _iec_fr_knee(n, fl)
+        if knee is not None and re_v > knee[0]:
+            fr = min(fr, knee[1] * (re_v / knee[0]) ** IEC_FR_MAX_SLOPE)
+        return max(1e-9, fr)
 
     @staticmethod
     def get_filter_viscosity_factor(reynolds_number: float) -> float:

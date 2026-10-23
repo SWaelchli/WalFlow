@@ -226,6 +226,7 @@ class NetworkSolver:
     TCV_MIX_MIN, TCV_MIX_MAX = 0.001, 0.999
     TCV_START_MIX = 0.5
     TCV_MAX_STEP = 3.0              # trust region in z (odds change by at most a factor 20 per iteration)
+    TCV_BRACKET_AGE = 4             # regular steps a bracket end stays valid without being refreshed (D-31)
 
     @staticmethod
     def _logit(mix: float) -> float:
@@ -245,7 +246,11 @@ class NetworkSolver:
         temperature coupling of the inlets. Before there is one (or when it is not plausible) the mass-weighted
         mixing balance gives (T_hot - T_cold)·w·(1 - w), w = hot mass fraction, as if the valve alone set the
         split; the secant only spans two regular steps. The step factor halves when the error changes sign
-        without at least halving (overshoot) and recovers while the error falls with the same sign. tm: per-TCV memory across outer iterations.
+        without at least halving (overshoot) and recovers while the error falls with the same sign.
+        Once regular steps have seen both signs of the error, the latest mix on each side brackets the
+        setpoint; a step that would leave the bracket bisects it instead (D-31: an S-shaped T_out(z), e.g.
+        laminar paths, otherwise lets the flat-region secant overshoot into a cycle). tm: per-TCV memory
+        across outer iterations.
         """
         t_err = node.outlets[0].temperature - node.set_temperature
         prev_err, prev_kind, z_prev = tm.get("err"), tm.get("kind"), tm.get("z")
@@ -262,9 +267,20 @@ class NetworkSolver:
             elif same_sign and abs(t_err) < abs(prev_err):
                 tm["alpha"] = min(1.0, 2.0 * tm["alpha"])
         tm.update(err=t_err, z=z, kind="secant" if regular else "other")
+        if not regular:
+            tm.pop("lo", None)    # a bracket only holds between regular steps
+            tm.pop("hi", None)
 
         if regular:
             tm["z_regular"] = z
+            # Bracket ends: latest regular z with a too-cold (lo) and a too-hot (hi) outlet, with the step
+            # they were seen at. An end not refreshed for TCV_BRACKET_AGE steps expires: early errors belong
+            # to unsettled inlet temperatures and properties, and would hold a stale bracket.
+            tm["k"] = tm.get("k", 0) + 1
+            tm["hi" if t_err > 0 else "lo"] = (z, tm["k"])
+            for end in ("lo", "hi"):
+                if end in tm and tm["k"] - tm[end][1] > self.TCV_BRACKET_AGE:
+                    del tm[end]
             m_hot, m_cold = hot.flow_rate * hot.density, cold.flow_rate * cold.density
             w = m_hot / (m_hot + m_cold)
             slope = span * max(w * (1.0 - w), 1e-4)
@@ -273,7 +289,14 @@ class NetworkSolver:
                 if 0.05 * slope < secant < 20.0 * slope:
                     slope = secant
             dz = float(np.clip(-tm["alpha"] * t_err / slope, -self.TCV_MAX_STEP, self.TCV_MAX_STEP))
-            new_mix = self._sigmoid(z + dz)
+            z_new = z + dz
+            if "lo" in tm and "hi" in tm:
+                z_a, z_b = sorted((tm["lo"][0], tm["hi"][0]))
+                if z_b - z_a < 1e-6:
+                    del tm["lo"], tm["hi"]    # both signs at one mix: the setpoint moved, the bracket is void
+                elif not z_a < z_new < z_b:
+                    z_new = 0.5 * (z_a + z_b)
+            new_mix = self._sigmoid(z_new)
         elif forward and span > 2.0 * self.TCV_TOL_K:
             # Setpoint outside the inlet span: straight to the end stop
             new_mix = self.TCV_MIX_MAX if t_set >= t_hot else self.TCV_MIX_MIN
@@ -770,6 +793,8 @@ class NetworkSolver:
                 for st in controllers.values():
                     if st["state"] == "lockup":
                         st["node"].opening_pct = 0.0    # closed tight; the solver pinned its outlet at the setpoint
+            # A 3-way TCV off its setpoint at the iteration limit is a control loop that did not settle (D-31)
+            controls_converged = controls_converged and tcv_settled
 
         final_sol_x = state["sol"]
         last_residuals = state["residuals"]

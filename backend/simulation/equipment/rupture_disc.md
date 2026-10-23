@@ -41,7 +41,7 @@ $P_{\text{burst,abs}} = P_{\text{burst,g}} \cdot 10^5 + P_{\text{atm}}$. `forced
 
 $$\Delta P_{\text{open}} = \frac{K_{Cv}\, \rho\, Q|Q|}{\big(\max(10^{-4},\ C_v F_R)\big)^2}, \qquad K_{Cv} = 1.732 \times 10^9$$
 
-with the viscosity correction $F_R$ of the [linear control valve](linear_control_valve.md#33-viscosity-correction-f_r-fluidpropertiesget_valve_fr).
+with the smooth viscosity correction $F_R$ of the [check valve](check_valve.md#31-open-valve-loss-open_seat_dp) (not the IEC 60534-2-1 Annex A factor of the control valves).
 
 **Reduced bore**, with $D$ the connected pipe bore and $d$ the orifice, $\beta = \min(0.99,\ d/D)$ ($d$ limited to $0.99 D$):
 

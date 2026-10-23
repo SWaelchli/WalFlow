@@ -53,9 +53,11 @@ RESISTANCE_DATA = {
         "pipe_diameter_m": st.just(d[0]), "orifice_diameter_m": st.just(d[1]),
         "standard": st.sampled_from(["iso_5167", "classic_cd"])})),
     "linear_control_valve": st.fixed_dictionaries({
-        "max_cv": log_uniform(0.01, 50.0), "opening_pct": st.floats(0.0, 100.0)}),
+        "max_cv": log_uniform(0.01, 50.0), "opening_pct": st.floats(0.0, 100.0),
+        "fl": st.floats(0.3, 1.0), "fd": st.floats(0.1, 1.0)}),
     "linear_regulator": st.fixed_dictionaries({"max_cv": log_uniform(0.01, 50.0)}),
-    "remote_control_valve": st.fixed_dictionaries({"max_cv": log_uniform(0.01, 50.0)}),
+    "remote_control_valve": st.fixed_dictionaries({
+        "max_cv": log_uniform(0.01, 50.0), "fl": st.floats(0.3, 1.0), "fd": st.floats(0.1, 1.0)}),
     "filter": log_uniform(0.02, 1.0).flatmap(lambda clean: st.fixed_dictionaries({
         "dp_clean_bar": st.just(clean), "dp_terminal_bar": st.floats(1.5, 10.0).map(lambda k: clean * k),
         "flow_ref_lmin": log_uniform(10.0, 2000.0), "clogging_pct": st.floats(0.0, 100.0)})),

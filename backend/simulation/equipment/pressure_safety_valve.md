@@ -40,7 +40,7 @@ Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_RE
 
 ### 3.1 Open pressure loss (`open_dp`)
 
-At full lift the valve is a Cv restriction with the viscosity correction of the [linear control valve](linear_control_valve.md#33-viscosity-correction-f_r-fluidpropertiesget_valve_fr):
+At full lift the valve is a Cv restriction with the smooth viscosity correction of the [check valve](check_valve.md#31-open-valve-loss-open_seat_dp) (not the IEC 60534-2-1 Annex A factor of the control valves):
 
 $$\Delta P_{\text{open}} = \frac{K_{Cv}\, \rho\, Q|Q|}{\big(\max(10^{-4},\ C_v F_R)\big)^2}, \qquad K_{Cv} = 1.732 \times 10^9$$
 

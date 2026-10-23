@@ -1,6 +1,5 @@
 from simulation.equipment.base_node import HydraulicNode
 from simulation.fluid_utils import FluidProperties
-import math
 
 # Smallest Cv-controlled opening; below it the valve is closed (D-11)
 MIN_OPENING_PCT = 0.1
@@ -11,18 +10,23 @@ class LinearControlValve(HydraulicNode):
     A control valve with a linear trim characteristic.
     Effective Cv = Max Cv * (Opening / 100)
     """
-    def __init__(self, name: str, max_cv: float, opening_pct: float = 100.0):
+    def __init__(self, name: str, max_cv: float, opening_pct: float = 100.0, fl: float = 0.9, fd: float = 0.46):
         super().__init__(name, node_type="linear_control_valve")
         self.max_cv = max_cv            # Maximum flow coefficient capacity
         self.opening_pct = opening_pct  # 0.0 (closed) to 100.0 (fully open)
-        
+        # IEC 60534-2-1 Table D.2 style factors; default globe single port, contoured plug, flow to open
+        self.fl = fl
+        self.fd = fd
+        # Valve size for F_R, set by the graph parser from the connected pipe; default DN50
+        self.pipe_diameter = 0.05248
+
         self.add_inlet()
         self.add_outlet()
 
     def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
         """
         Calculates pressure drop across the valve based on its current position.
-        Uses the liquid Cv formula with IEC 60534-2-1 viscosity correction (Fr).
+        Uses the liquid Cv formula with the IEC 60534-2-1 Annex A Reynolds number factor (F_R).
         """
         if self.opening_pct < MIN_OPENING_PCT:
             # Closed below the minimum opening: block flow with a very high linear resistance
@@ -33,13 +37,10 @@ class LinearControlValve(HydraulicNode):
         # Calculate the effective Cv (assuming a linear trim)
         cv_eff = self.max_cv * effective_opening
         
-        # Viscosity correction via Valve Reynolds number (IEC 60534-2-1 principle)
-        d_v = max(0.002, 0.01 * math.sqrt(cv_eff))
-        v_v = flow_rate / (0.25 * math.pi * d_v**2)
-        re_v = (density * abs(v_v) * d_v) / max(1e-7, viscosity)
-        
-        fr = FluidProperties.get_valve_fr(re_v)
-        cv_eff_adj = max(0.0001, cv_eff * fr)
+        # Reynolds number factor, IEC 60534-2-1 Annex A (D-29)
+        fr = FluidProperties.get_iec_valve_fr(flow_rate, viscosity / density, cv_eff, self.max_cv,
+                                              self.fl, self.fd, self.pipe_diameter)
+        cv_eff_adj = max(1e-10, cv_eff * fr)  # F_R is floored; keeps laminar Δp linear in Q (D-29)
         
         # Conversion constant: (15850.32^2 * 6894.76 / 1000) approx 1.732e9
         K_CV_SI = 1.732e9

@@ -45,8 +45,10 @@ Status: `open` / `fixed` / `rejected`. "Confirmed" means it was reproduced by ru
 | D-26 | Orifice | ISO Reynolds limit for β > 0.56 is a flat 16 000 instead of 16 000·β² (ISO 5167-2:2022 §5.3.1); up to +12 % permanent loss in the ISO-valid range | Medium (wrong result) | Confirmed (standard + calculation) | fixed |
 | D-27 | Orifice / docs | `orifice.md` §3.1 describes the old β and d clamps (0.1-0.75, d ≥ 12.5 mm); the code uses 0.01-0.99 and no d clamp | Low / docs | Code reading | fixed |
 | D-28 | Calibrated restriction, check valve orifice, rupture disc / docs | Permanent loss ratio (1 − β²) is attributed to ISO 5167-2, which gives only Formula (7) and 1 − β^1.9 | Low / decision | Confirmed (standard) | fixed |
-| D-29 | Cv valves (all) | Viscosity factor $F_R$ floors at 0.5: no laminar range of IEC 60534-2-1 Annex A; Δp 1-2+ orders too low below Re_V ≈ 20 | Medium (wrong result, viscous fluids) | Confirmed (standard + calculation) | open |
+| D-29 | Cv valves (all) | Viscosity factor $F_R$ floors at 0.5: no laminar range of IEC 60534-2-1 Annex A; Δp 1-2+ orders too low below Re_V ≈ 20 | Medium (wrong result, viscous fluids) | Confirmed (standard + calculation) | fixed (D-29a); catalogue D-29b open |
 | D-30 | Calibrated restriction, reducer, fluid properties | Unused local variables `sign_q`, `dp_bern`, `t_c` | Cleanup | Code reading (AST check) | fixed |
+| D-31 | Solver / 3-way TCV | Mix-ratio loop cycles on an S-shaped outlet temperature (laminar paths) and still reports `controls_converged` | Medium (wrong result reported as converged) | Test (D-29a), trace | fixed |
+| D-32 | Solver | Hydraulic solve fails for flows below about 1e-7 m³/s (e.g. Cv 0.1 TCV with a Cv 0.01 load on ISO VG 46) | Low (micro flows) | Test (D-29a), trace | rejected (cause was D-29) |
 
 ---
 
@@ -545,6 +547,8 @@ The analytical `calculate_dp_derivative` methods of those components are only ex
 
 **Fix direction:** implement Eq. (23) and Annex A with defaults for F_L and F_d (e.g. a globe valve from Table D.2), and the valve size (or C/d²) as an input, keeping F_R smooth for the solver; or keep the approximation and add a warning when Re_V < ~20. Changes results only in laminar and transitional valve flow.
 
+**Resolution (fixed, D-29a):** the three control valves (linear control valve, remote control valve, three-way TCV per path) use the Annex A factor as written (`FluidProperties.get_iec_valve_fr`): Re_V from Eq. (23), F_R from Eq. (A.6)/(A.7), n from Eq. (A.8a)/(A.8b), Cv constants of Table 1. The valve is line-size (A.4): the parser passes the connected pipe bore. F_L = 0.9 and F_d = 0.46 (Table D.2, globe single port, contoured plug, flow to open) are node properties `fl`, `fd`, validated by the parser. F_R is kept above zero, so Δp is linear in Q in laminar flow. One deliberate deviation, agreed with the user: where (A.7) starts below (A.6) at Re_V = 10 (valves very small or very large for the line, e.g. Cv < 0.15 or Cv > 117 on DN50 with F_L 0.9), the standard's F_R jumps down and the pressure drop has a gap with no flow, which made the hydraulic solve fail (TCV test network, a property-test network with heavy crude). From Re_V = 10, F_R is held at least at the (A.6) value at Re_V = 10. Just after, where (A.7) takes over at a small F_R, the standard's Δp falls with rising flow (a glycol property-test network failed there), so F_R may grow at most as Re_V^0.75 (`IEC_FR_MAX_SLOPE`): Δp rises at least as √Q. Within scope Δp is then up to +20 % (F_L 0.9) / +43 % (F_L 0.98) above the standard, over Re_V ≈ 10-40. Documented with examples in [linear_control_valve.md](backend/simulation/equipment/linear_control_valve.md) §3.3. The check valves, PSV, rupture disc and regulator are outside IEC 60534 and keep `get_valve_fr`; their own standards may replace it later. **D-29b (open):** a Table D.2 valve style catalogue on the `/pipes` page and a style selector in the valve inspectors.
+
 ---
 
 ## D-30 Unused local variables
@@ -559,3 +563,27 @@ The analytical `calculate_dp_derivative` methods of those components are only ex
 **Fix direction:** a cleanup. Delete the three names (unpack `dp_bern` as `_`). Check each branch first, so no model was meant to use them.
 
 **Resolution (fixed):** the three names are removed (`dp_bern` unpacked as `_`). No branch needed them: the drop takes its sign from `flow_rate`, the reducer heats only with `dp_loss`, and the vapour-pressure models work in kelvin.
+
+---
+
+## D-31 3-way TCV loop cycles on an S-shaped outlet temperature
+
+**Where:** `solver.py::NetworkSolver._tcv_step` and the reporting at the end of `solve`. Found when D-29a made laminar valve paths possible: `test_three_way_tcv.py::test_tcv_downstream_network_integration` (ISO VG 46, TCV Cv 0.1, load Cv 0.01), 2026-10-23.
+
+**What happens:** with laminar paths the split goes with opening^1.5 divided by viscosity, so the outlet temperature against the mix ratio is S-shaped. The secant between two points on the flat part underestimates the slope near the setpoint, the step overshoots to the other flat part, and the step factor (halved on overshoot, doubled on progress) locks into a 4-step cycle (mix 0.66 → 0.09 → 0.17 → 0.81, error ±11-13 K) for all 100 iterations. The solve then returns `success` and `controls_converged = True`: `controls_converged` only covered the pressure controllers.
+
+**Fix direction:** keep the secant, but bracket the setpoint once the error has changed sign and bisect when a step would leave the bracket; report an unsettled TCV.
+
+**Resolution (fixed):** regular steps keep the latest mix on each side of the setpoint (a too-cold and a too-hot end); a step that would leave the bracket bisects it. An end not refreshed for more than 4 regular steps (`TCV_BRACKET_AGE`) expires; a bracket whose ends share one mix (the setpoint moved) is dropped: the first iterations run before the inlet temperatures and properties settle, and a stale end held the mix at 0.5, 6 K off. A TCV still off its setpoint at the iteration limit sets `controls_converged = False`, which the UI shows as "Control loops did not settle". With D-29a, TCV Cv 0.5 to 10 settle within 0.01 K in 7-17 iterations.
+
+---
+
+## D-32 Hydraulic solve fails for micro flows
+
+**Where:** `solver.py` (Newton / line search; flows below 1e-7 m³/s are reset to the initial guess in the warm-start handling of `solve`, and the TCV treats paths below 1e-9 m³/s as stagnant). Found with D-29a, 2026-10-23.
+
+**What happens:** the TCV test network with a Cv 0.1 TCV and a Cv 0.01 load on ISO VG 46 now flows about 0.016 L/min (2.6e-7 m³/s, laminar). The hydraulic solve fails with "Backtracking line search failed to decrease residual". It is reported as a failure, not hidden. Before D-29a the floor F_R ≥ 0.5 gave about 0.08 L/min.
+
+**Fix direction:** review the solver's absolute flow thresholds and the residual scaling for very small flows, together with the solver findings D-19 to D-24.
+
+**Resolution (rejected, misdiagnosed):** not a solver limit. The Cv 0.01 load on DN50 is a valve far too small for its line, where the standard's F_R made the pressure drop fall with rising flow (D-29). With the F_R growth cap of D-29 the network solves (0.010 L/min, 45.00 °C in 20 iterations), although its flow is close to the 1e-7 m³/s threshold.

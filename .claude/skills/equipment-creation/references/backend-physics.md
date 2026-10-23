@@ -136,7 +136,8 @@ WalFlow includes thermo-physical property tables in `backend/simulation/fluid_ut
 - `FluidProperties.get_density(fluid_type: str, temp_k: float) -> float`
 - `FluidProperties.get_viscosity(fluid_type: str, temp_k: float) -> float`
 - `FluidProperties.get_specific_heat(fluid_type: str, temp_k: float) -> float`
-- `FluidProperties.get_valve_fr(reynolds: float) -> float` (viscous laminar correction for valves)
+- `FluidProperties.get_iec_valve_fr(flow_rate, kinematic_viscosity, cv, cv_rated, fl, fd, diameter) -> float` (IEC 60534-2-1 Annex A Reynolds number factor for control valves)
+- `FluidProperties.get_valve_fr(reynolds: float) -> float` (smooth viscous correction for valves outside IEC 60534: check valves, PSV, regulator)
 - `FluidProperties.get_filter_viscosity_factor(reynolds: float) -> float`
 
 Supported fluid types include `'water'`, `'iso_vg_32'`, `'iso_vg_46'`, `'iso_vg_68'`, `'glycol_50'`, `'diesel'`, etc.

@@ -106,3 +106,12 @@ def solve_example(name: str, case_prefix: str = None, **settings):
 
 def node_named(network, name: str):
     return next(n for n in network.nodes.values() if n.name == name)
+
+
+def iec_flow_for_reynolds(re_v: float, nu: float, cv: float, fl: float, fd: float, d_m: float) -> float:
+    """Flow (m³/s) at which the IEC 60534-2-1:2011 valve Reynolds number (Eq. 23, Cv constants of Table 1:
+    N2 = 2.14e-3, N4 = 7.60e-2) equals re_v: the equation solved for Q. nu in m²/s, d_m = line size in m."""
+    n2, n4 = 2.14e-3, 7.60e-2
+    d_mm = d_m * 1000.0
+    shape = ((fl * cv) ** 2 / (n2 * d_mm ** 4) + 1.0) ** 0.25
+    return re_v * nu * math.sqrt(cv * fl) / (n4 * fd * shape) / 3600.0
