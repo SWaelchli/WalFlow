@@ -194,7 +194,10 @@
         "max_cv": 40,
         "set_pressure_pa": 650000,
         "backpressure": true,
-        "rotation": 0
+        "rotation": 0,
+        "valve_style_id": "IEC_60534_2_1_TABLE_D2:globe_single_contoured_open",
+        "fl": 0.9,
+        "fd": 0.46
       },
       "width": 66,
       "height": 114,
@@ -627,7 +630,10 @@
         "rotation": 0,
         "max_cv": 40,
         "set_temperature_c": 45,
-        "hot_port_idx": 1
+        "hot_port_idx": 1,
+        "valve_style_id": "IEC_60534_2_1_TABLE_D2:globe_double_contoured",
+        "fl": 0.85,
+        "fd": 0.32
       },
       "width": 113,
       "height": 101,

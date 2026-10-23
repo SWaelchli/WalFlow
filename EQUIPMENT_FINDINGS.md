@@ -49,6 +49,7 @@ Status: `open` / `fixed` / `rejected`. "Confirmed" means it was reproduced by ru
 | D-30 | Calibrated restriction, reducer, fluid properties | Unused local variables `sign_q`, `dp_bern`, `t_c` | Cleanup | Code reading (AST check) | fixed |
 | D-31 | Solver / 3-way TCV | Mix-ratio loop cycles on an S-shaped outlet temperature (laminar paths) and still reports `controls_converged` | Medium (wrong result reported as converged) | Test (D-29a), trace | fixed |
 | D-32 | Solver | Hydraulic solve fails for flows below about 1e-7 m³/s (e.g. Cv 0.1 TCV with a Cv 0.01 load on ISO VG 46) | Low (micro flows) | Test (D-29a), trace | rejected (cause was D-29) |
+| D-33 | Linear control valve, remote control valve, regulator (Results tab) | Valve chart draws the bare Cv equation in the browser, without $F_R$ and the valve style | Low (display only) | User question | fixed |
 
 ---
 
@@ -587,3 +588,14 @@ The analytical `calculate_dp_derivative` methods of those components are only ex
 **Fix direction:** review the solver's absolute flow thresholds and the residual scaling for very small flows, together with the solver findings D-19 to D-24.
 
 **Resolution (rejected, misdiagnosed):** not a solver limit. The Cv 0.01 load on DN50 is a valve far too small for its line, where the standard's F_R made the pressure drop fall with rising flow (D-29). With the F_R growth cap of D-29 the network solves (0.010 L/min, 45.00 °C in 20 iterations), although its flow is close to the 1e-7 m³/s threshold.
+
+---
+
+## D-33 Valve chart ignores F_R and the valve style
+
+**Where:** `frontend/src/components/details/ValveDetails.jsx` (Results tab of the linear control valve, remote control valve and regulator). Found by a user question after D-29b, 2026-10-23.
+
+**What happens:** the chart computed its curves itself with $\Delta P = K_{Cv} \rho Q^2 / C_v^2$. It left out $F_R$, so two valve styles drew the same curve, and at low Reynolds numbers the curve did not pass through the solved operating point.
+
+**Resolution (fixed):** the telemetry of the three valves carries `valve_curves` (`routers/simulation.py::valve_curves`): flow and $\Delta P$ at the current and at the full opening from the valve's own `calculate_delta_p`, with the solved inlet fluid, 61 points from 0 to max(300 L/min, 2 × the current flow). The chart draws these points and no longer computes $\Delta P$. The operating point is drawn at the valve's own pressure (inlet for backpressure, outlet otherwise), so it lies on the curve. A valve sensing elsewhere (e.g. the API 614 spill-over valve: inlet 7.66 bar(a), header 6.50 bar(a)) shows its sensed pressure in the values below the chart; the setpoint line marks the target.
+

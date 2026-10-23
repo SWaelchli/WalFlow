@@ -95,7 +95,10 @@
         "label": "3-Way TCV (Target: 45\u00b0C)",
         "max_cv": 25.0,
         "set_temperature_c": 45.0,
-        "hot_port_idx": 1
+        "hot_port_idx": 1,
+        "valve_style_id": "IEC_60534_2_1_TABLE_D2:globe_double_contoured",
+        "fl": 0.85,
+        "fd": 0.32
       }
     },
     {
@@ -111,7 +114,10 @@
         "opening_pct": 70.0,
         "sensing": {
           "inlet-0": true
-        }
+        },
+        "valve_style_id": "IEC_60534_2_1_TABLE_D2:rotary_eccentric_spherical_open",
+        "fl": 0.85,
+        "fd": 0.42
       }
     },
     {

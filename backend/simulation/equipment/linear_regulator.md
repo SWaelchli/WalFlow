@@ -35,6 +35,8 @@ $$\Delta P = \frac{K_{Cv}\, \rho\, Q|Q|}{\big(C_{v,\max} \cdot \tfrac{\text{open
 
 The opening is clamped to 0.1-100 % inside the equation; a closed regulator is represented by lock-up (3.4), not by 0 %.
 
+The Results tab chart draws this equation at the current and the full opening; the curve points come from `calculate_delta_p` with the results (`valve_curves`, D-33).
+
 ### 3.2 Control error
 
 $$f = s \cdot \frac{P_{\text{sensed}} - P_{\text{set}}}{10^5}\ \text{[bar]}, \qquad s = \begin{cases} +1 & \text{PRV (outlet sensed)} \\ -1 & \text{BPR (inlet sensed)} \end{cases}$$
