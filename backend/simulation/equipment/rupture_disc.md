@@ -13,11 +13,16 @@ The shared relief model (gauge set pressure, held state, flow equation, rated ca
 
 ## 2. Governing Standards & Reference Literature
 
-- **ISO 4126-2 / ISO 4126-6:** bursting disc safety devices: burst pressure, application and sizing.
-- **ASME BPVC Section VIII Div. 1 (UG-127):** rupture disc devices.
-- **API 520 Part I:** 10 % overpressure for liquid relief capacity; flow resistance method ($K_R$) for discs.
-- **ISO 5167-2:** orifice flow equation for the reduced bore, as for the [calibrated restriction](calibrated_restriction.md#32-pressure-drop-calculate_delta_p).
-- **IEC 60534-2-1:** liquid Cv equation for the full bore.
+Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_REGISTER.md) with the edition and clause it was verified against. ⚪ unverified (LLM-cited, not yet checked against the source), ✅ verified, ⚠️ deviation, ➖ textbook principle, 🚩 open pre-check flag.
+
+| Claim | Type | Source (edition) | Used for | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| RD-01 | Standard | ISO 4126-2:2018; ISO 4126-6:2014 | Bursting disc safety devices: burst pressure, application and sizing | ⚪ Unverified |
+| RD-02 | Standard | ASME BPVC Section VIII Div. 1, UG-127 (edition not fixed; moved to Section XIII from 2021) | Rupture disc devices | ⚪ Unverified 🚩 |
+| RD-03 | Standard | API Std 520 Part I, 10th ed. (2020) | 10 % overpressure for liquid relief capacity | ⚪ Unverified |
+| RD-04 | Standard | API Std 520 Part I, 10th ed. (2020) | Flow resistance method ($K_R$) for discs | ⚪ Unverified |
+| RD-05 | Standard | ISO 5167-2:2022 | Orifice flow equation for the reduced bore, as for the [calibrated restriction](calibrated_restriction.md#32-pressure-drop-calculate_delta_p) | ⚪ Unverified |
+| RD-06 | Standard | IEC 60534-2-1:2011 | Liquid Cv equation for the full bore | ⚪ Unverified |
 
 ## 3. Physical & Mathematical Implementation
 

@@ -15,8 +15,13 @@ The opening search described here (section 3.3) is shared with the [remote contr
 
 ## 2. Governing Standards & Reference Literature
 
-- **Valve equation:** IEC 60534-2-1 / ANSI/ISA-75.01.01 liquid Cv equation, as in the [linear control valve](linear_control_valve.md#3-physical--mathematical-implementation).
-- **Regulator behaviour:** ISA-75.11.01 (linear inherent characteristic); lock-up as defined for pressure reducing regulators in **EN 334** (lock-up pressure, closed tight at zero demand).
+Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_REGISTER.md) with the edition and clause it was verified against. ⚪ unverified (LLM-cited, not yet checked against the source), ✅ verified, ⚠️ deviation, ➖ textbook principle, 🚩 open pre-check flag.
+
+| Claim | Type | Source (edition) | Used for | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| REG-01 | Standard | IEC 60534-2-1:2011; ANSI/ISA-75.01.01-2012 | Liquid Cv equation, as in the [linear control valve](linear_control_valve.md#3-physical--mathematical-implementation) | ⚪ Unverified |
+| REG-02 | Standard | ANSI/ISA-75.11.01-2013 | Linear inherent characteristic | ⚪ Unverified |
+| REG-03 | Standard | EN 334:2019+A1:2024 | Lock-up: closed tight at zero demand (EN 334 covers fuel-gas regulators) | ⚪ Unverified 🚩 |
 
 The regulator is an ideal controller: no droop (proportional band), no hysteresis. It holds the setpoint exactly whenever the trim can.
 

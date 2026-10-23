@@ -22,11 +22,19 @@ Node types `pressure_safety_valve` and `psv` build the same model.
 
 ## 2. Governing Standards & Reference Literature
 
-- **API 520 Part I / ISO 4126-1:** set pressure, 10 % overpressure for liquid service, blowdown and reseat pressure, cold differential test pressure (CDTP) of conventional valves.
-- **API 520 Part II / API 521:** backpressure limits: built-up backpressure of conventional valves at most 10 % of set; balanced bellows valves usable up to about 50 % of set.
-- **API 526:** flanged steel pressure relief valves (orifice designations, which the Cv stands in for).
-- **API 527:** seat tightness: the closed valve passes no flow.
-- **IEC 60534-2-1:** liquid Cv equation for the open valve loss.
+Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_REGISTER.md) with the edition and clause it was verified against. ⚪ unverified (LLM-cited, not yet checked against the source), ✅ verified, ⚠️ deviation, ➖ textbook principle, 🚩 open pre-check flag.
+
+| Claim | Type | Source (edition) | Used for | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| PSV-01 | Standard | API Std 520 Part I, 10th ed. (2020); ISO 4126-1:2013 + Amd 1:2016 | Set pressure (gauge) | ⚪ Unverified |
+| PSV-02 | Standard | API Std 520 Part I, 10th ed. (2020); ISO 4126-1:2013 + Amd 1:2016 | 10 % overpressure for liquid service | ⚪ Unverified |
+| PSV-03 | Standard | API Std 520 Part I, 10th ed. (2020); ISO 4126-1:2013 + Amd 1:2016 | Blowdown and reseat pressure | ⚪ Unverified |
+| PSV-04 | Standard | API Std 520 Part I, 10th ed. (2020) | Cold differential test pressure (CDTP) of conventional valves | ⚪ Unverified |
+| PSV-05 | Standard | API Std 520 Part II, 7th ed. (2020); API Std 521, 7th ed. (2020) | Built-up backpressure of conventional valves at most 10 % of set | ⚪ Unverified |
+| PSV-06 | Standard | API Std 520 Part II, 7th ed. (2020); API Std 521, 7th ed. (2020) | Balanced bellows valves usable up to about 50 % of set | ⚪ Unverified |
+| PSV-07 | Standard | API Std 526, 8th ed. (2023) | Orifice designations, which the Cv stands in for | ⚪ Unverified |
+| PSV-08 | Standard | API Std 527, 5th ed. (2020) | Seat tightness: the closed valve passes no flow (an idealisation of the allowed leakage) | ⚪ Unverified |
+| PSV-09 | Standard | IEC 60534-2-1:2011 | Liquid Cv equation for the open valve loss | ⚪ Unverified |
 
 ## 3. Physical & Mathematical Implementation
 

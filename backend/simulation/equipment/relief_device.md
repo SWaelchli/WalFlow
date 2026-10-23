@@ -11,9 +11,13 @@ This document covers what both share: gauge set pressure, the held open/closed s
 
 ## 2. Governing Standards & Reference Literature
 
-- **API 520 Part I** (sizing of pressure-relieving devices) and **ISO 4126-1**: set pressure in gauge, 10 % overpressure for liquid service at rated capacity, blowdown and reseat pressure.
-- **API 521 / ISO 23251** (pressure-relieving and depressuring systems): relieved pressure, accumulation and overpressure scenarios.
-- **ISO 4126-2 / ASME BPVC Section VIII**: bursting disc devices (burst pressure, open after burst).
+Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_REGISTER.md) with the edition and clause it was verified against. ⚪ unverified (LLM-cited, not yet checked against the source), ✅ verified, ⚠️ deviation, ➖ textbook principle, 🚩 open pre-check flag.
+
+| Claim | Type | Source (edition) | Used for | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| RLF-01 | Standard | API Std 520 Part I, 10th ed. (2020); ISO 4126-1:2013 + Amd 1:2016 | Set pressure in gauge, 10 % overpressure for liquid service at rated capacity, blowdown and reseat pressure | ⚪ Unverified |
+| RLF-02 | Standard | API Std 521, 7th ed. (2020); ISO 23251:2019 | Relieved pressure, accumulation and overpressure scenarios | ⚪ Unverified |
+| RLF-03 | Standard | ISO 4126-2:2018; ASME BPVC Section VIII Div. 1, UG-127 (edition not fixed; moved to Section XIII from 2021) | Bursting disc devices: burst pressure, open after burst | ⚪ Unverified 🚩 |
 
 ## 3. Physical & Mathematical Implementation
 

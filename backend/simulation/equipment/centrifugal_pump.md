@@ -10,10 +10,14 @@ Node types `centrifugal_pump` and the older `pump` build the same model.
 
 ## 2. Governing Standards & Reference Literature
 
-- **Pump affinity laws** ($Q \propto n$, $H \propto n^2$): used for the relief-analysis speed ramp.
-- **ISO 9906 / ANSI/HI 14.6** (pump acceptance tests): definitions of rated flow, rated head, shutoff head and pump efficiency.
-- **ANSI/HI 9.6.1** (NPSH margin): NPSHa compared with NPSHr plus a user margin.
-- **Gülich, J.F.:** *Centrifugal Pumps* — quadratic head curve and locked-rotor resistance as an engineering approximation.
+Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_REGISTER.md) with the edition and clause it was verified against. ⚪ unverified (LLM-cited, not yet checked against the source), ✅ verified, ⚠️ deviation, ➖ textbook principle, 🚩 open pre-check flag.
+
+| Claim | Type | Source (edition) | Used for | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| CP-01 | Principle | Pump affinity laws | $Q \propto n$, $H \propto n^2$ for the relief-analysis speed ramp | ➖ Principle |
+| CP-02 | Standard / Literature | ISO 9906:2012; ANSI/HI 14.6-2022 | Definitions of rated flow, rated head, shutoff head and pump efficiency | ⚪ Unverified |
+| CP-03 | Standard | ANSI/HI 9.6.1-2024 | NPSHa compared with NPSHr plus a user margin | ⚪ Unverified |
+| CP-04 | Literature | Gülich, *Centrifugal Pumps*, 4th ed. (2020) | Quadratic head curve and locked-rotor resistance as an engineering approximation | ⚪ Unverified |
 
 The curve is a duty-point approximation, not a manufacturer's curve fit.
 

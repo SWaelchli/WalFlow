@@ -14,9 +14,13 @@ The pressure drop on the process side is quadratic through a rated drop at rated
 
 ## 2. Governing Standards & Reference Literature
 
-- **Effectiveness-NTU method:** Kays, W.M. & London, A.L., *Compact Heat Exchangers*; Incropera & DeWitt, *Fundamentals of Heat and Mass Transfer*, for $C_{\min}/C_{\max} \to 0$.
-- **Dittus-Boelter correlation** ($\mathrm{Nu} \propto \mathrm{Re}^{0.8}$): flow scaling of UA for liquid-cooled exchangers.
-- **API 661** (air-cooled heat exchangers) and **TEMA** standards: background for the rated duty, design temperatures and allowable pressure drop.
+Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_REGISTER.md) with the edition and clause it was verified against. ⚪ unverified (LLM-cited, not yet checked against the source), ✅ verified, ⚠️ deviation, ➖ textbook principle, 🚩 open pre-check flag.
+
+| Claim | Type | Source (edition) | Used for | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| HX-01 | Literature / Principle | Kays & London, *Compact Heat Exchangers*, 3rd ed. (1984); Bergman, Lavine, Incropera & DeWitt, *Fundamentals of Heat and Mass Transfer*, 8th ed. (2017); Effectiveness-NTU method | Effectiveness-NTU method, limit $C_{\min}/C_{\max} \to 0$ | ⚪ Unverified |
+| HX-02 | Literature | Dittus & Boelter (1930), *Univ. Calif. Publ. Eng.* 2(13), 443–461 | Flow scaling of UA ($\mathrm{Nu} \propto \mathrm{Re}^{0.8}$) for liquid-cooled exchangers | ⚪ Unverified 🚩 |
+| HX-03 | Standard | API Std 661, 7th ed. (2013, R2024); TEMA Standards, 11th ed. (2024) | Background for the rated duty, design temperatures and allowable pressure drop | ⚪ Unverified |
 
 ## 3. Physical & Mathematical Implementation
 

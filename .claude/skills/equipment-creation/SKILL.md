@@ -59,7 +59,7 @@ Create `backend/simulation/equipment/<name>.py` inheriting from `HydraulicNode`:
 ### Step 2b: Create Companion Documentation (`<name>.md`)
 Create `backend/simulation/equipment/<name>.md` with exactly these headings (reference example: `orifice.md`):
 1. `## 1. Overview & Purpose`
-2. `## 2. Governing Standards & Reference Literature`
+2. `## 2. Governing Standards & Reference Literature` (claim table with editions, each claim registered in `docs/STANDARDS_REGISTER.md` as unverified; see the `standard-verification` skill)
 3. `## 3. Physical & Mathematical Implementation` (equations as the code implements them, regime blending, analytical derivative, solver formulation)
 4. `## 4. Thermal & Energy Balance`
 5. `## 5. Parameter & Unit Specification Table`

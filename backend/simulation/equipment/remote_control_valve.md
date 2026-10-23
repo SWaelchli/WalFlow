@@ -13,8 +13,14 @@ Use it for a pressure control loop with a transmitter at the consumer, at the en
 
 ## 2. Governing Standards & Reference Literature
 
-- **Valve equation:** IEC 60534-2-1 / ANSI/ISA-75.01.01 liquid Cv equation, as in the [linear control valve](linear_control_valve.md#3-physical--mathematical-implementation).
-- **Control loop:** an ideal steady-state controller (no tuning, no offset), as an ISA-5.1 pressure control loop PC → PCV would settle with integral action.
+Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_REGISTER.md) with the edition and clause it was verified against. ⚪ unverified (LLM-cited, not yet checked against the source), ✅ verified, ⚠️ deviation, ➖ textbook principle, 🚩 open pre-check flag.
+
+| Claim | Type | Source (edition) | Used for | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| RCV-01 | Standard | IEC 60534-2-1:2011; ANSI/ISA-75.01.01-2012 | Liquid Cv equation, as in the [linear control valve](linear_control_valve.md#3-physical--mathematical-implementation) | ⚪ Unverified |
+| RCV-02 | Standard | ANSI/ISA-5.1-2024 | PC → PCV loop notation | ⚪ Unverified |
+
+The control loop is an ideal steady-state controller (no tuning, no offset), as a pressure control loop would settle with integral action.
 
 ## 3. Physical & Mathematical Implementation
 

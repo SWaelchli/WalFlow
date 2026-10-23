@@ -10,9 +10,13 @@ Unlike the plain [check valve](check_valve.md), this component is an ordinary si
 
 ## 2. Governing Standards & Reference Literature
 
-- **IEC 60534-2-1:** liquid Cv equation for the open seat.
-- **ISO 5167-1 / ISO 5167-2:** orifice equation and permanent pressure loss ratio $(1 - \beta^2)$ (classic form) for the bypass, as for the [calibrated restriction](calibrated_restriction.md#32-pressure-drop-calculate_delta_p).
-- **API 594:** check valves (cracking pressure).
+Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_REGISTER.md) with the edition and clause it was verified against. ⚪ unverified (LLM-cited, not yet checked against the source), ✅ verified, ⚠️ deviation, ➖ textbook principle, 🚩 open pre-check flag.
+
+| Claim | Type | Source (edition) | Used for | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| CVO-01 | Standard | IEC 60534-2-1:2011 | Liquid Cv equation for the open seat | ⚪ Unverified |
+| CVO-02 | Standard | ISO 5167-1:2022; ISO 5167-2:2022 | Orifice equation and permanent pressure loss ratio $(1 - \beta^2)$ (classic form) for the bypass, as for the [calibrated restriction](calibrated_restriction.md#32-pressure-drop-calculate_delta_p) | ⚪ Unverified 🚩 |
+| CVO-03 | Standard | API Std 594, 9th ed. (2022) | Cracking pressure | ⚪ Unverified |
 
 ## 3. Physical & Mathematical Implementation
 

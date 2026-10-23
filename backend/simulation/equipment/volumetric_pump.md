@@ -12,9 +12,13 @@ Three limits act on it:
 
 ## 2. Governing Standards & Reference Literature
 
-- **API 676** (rotary positive displacement pumps) and **API 674** (reciprocating pumps): flow set by displacement, relief protection on the discharge, rated power.
-- **ANSI/HI 3.1-3.5** (rotary pumps): definitions of displacement, slip and pump efficiency.
-- **ANSI/HI 9.6.1** (NPSH margin): NPSHa compared with NPSHr plus a user margin.
+Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_REGISTER.md) with the edition and clause it was verified against. ⚪ unverified (LLM-cited, not yet checked against the source), ✅ verified, ⚠️ deviation, ➖ textbook principle, 🚩 open pre-check flag.
+
+| Claim | Type | Source (edition) | Used for | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| PDP-01 | Standard | API Std 676, 4th ed. (2022); API Std 674, 3rd ed. (2010) | Flow set by displacement, relief protection on the discharge, rated power | ⚪ Unverified |
+| PDP-02 | Standard | ANSI/HI 3.1-3.5-2021 | Definitions of displacement, slip and pump efficiency | ⚪ Unverified |
+| PDP-03 | Standard | ANSI/HI 9.6.1-2024 | NPSHa compared with NPSHr plus a user margin (HI 9.6.1 covers rotodynamic pumps) | ⚪ Unverified 🚩 |
 
 The model is an ideal PD pump with a stiff numerical slip, not a slip model from viscosity and clearances.
 

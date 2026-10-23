@@ -8,9 +8,13 @@ Use it for suction strainers, duplex lube oil filters, return line filters and b
 
 ## 2. Governing Standards & Reference Literature
 
-- **ISO 3968** (hydraulic fluid power filters, evaluation of differential pressure versus flow): datasheet drop at a rated flow in a reference fluid.
-- **ISO 16889** (multi-pass method): terminal differential pressure as the change-out point.
-- **Darcy-Forchheimer** law for porous media: a quadratic (inertial) term plus a linear (viscous) term, which the viscosity factor reproduces at low Re.
+Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_REGISTER.md) with the edition and clause it was verified against. ⚪ unverified (LLM-cited, not yet checked against the source), ✅ verified, ⚠️ deviation, ➖ textbook principle, 🚩 open pre-check flag.
+
+| Claim | Type | Source (edition) | Used for | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| FLT-01 | Literature | ISO 3968:2017 | Datasheet drop at a rated flow in a reference fluid | ⚪ Unverified |
+| FLT-02 | Standard | ISO 16889:2022 | Terminal differential pressure as the change-out point | ⚪ Unverified |
+| FLT-03 | Principle | Darcy-Forchheimer law | Quadratic (inertial) plus linear (viscous) term, which the viscosity factor reproduces at low Re | ➖ Principle |
 
 ## 3. Physical & Mathematical Implementation
 

@@ -11,9 +11,16 @@ Two calculation standards are selectable:
 
 ## 2. Governing Standards & Reference Literature
 
-- **ISO 5167-1:2022:** Measurement of fluid flow by means of pressure differential devices inserted in circular cross-section conduits running full — Part 1: General principles and requirements.
-- **ISO 5167-2:2022:** Measurement of fluid flow … — Part 2: Orifice plates (primary implementation standard; supersedes ISO 5167-2:2003).
-- **Future options (architecture supports adding them):** ASME MFC-3M (orifice plates), Crane Technical Paper No. 410 (resistance-coefficient method).
+Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_REGISTER.md) with the edition and clause it was verified against. ⚪ unverified (LLM-cited, not yet checked against the source), ✅ verified, ⚠️ deviation, ➖ textbook principle, 🚩 open pre-check flag.
+
+| Claim | Type | Source (edition) | Used for | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| ORI-01 | Standard | ISO 5167-2:2022 | Reader-Harris/Gallagher discharge coefficient (primary implementation standard) | ⚪ Unverified |
+| ORI-02 | Standard | ISO 5167-2:2022 | Permanent pressure loss, §5.4 Formula (7) | ⚪ Unverified |
+| ORI-03 | Standard | ISO 5167-2:2022 | Validity limits of the `iso_5167` model | ⚪ Unverified |
+| ORI-04 | Standard | ISO 5167-1:2022 | General principles and requirements | ⚪ Unverified |
+
+Future options (the architecture supports adding them): ASME MFC-3M-2004 (R2025) for orifice plates, Crane TP-410 resistance-coefficient method. Not cited for any claim.
 
 ### Standard Selection
 

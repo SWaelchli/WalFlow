@@ -8,10 +8,14 @@ In the network a pipe is a passive resistance: its pressure drop rises roughly w
 
 ## 2. Governing Standards & Reference Literature
 
-- **Darcy-Weisbach equation** for the friction pressure drop.
-- **Churchill, S.W. (1977):** "Friction-factor equation spans all fluid-flow regimes", *Chemical Engineering* 84(24), 91-92. One continuous expression for laminar, transition and turbulent flow.
-- **Colebrook-White (1939):** the turbulent limit that Churchill reproduces; used as the independent reference in the tests.
-- **Crane Technical Paper No. 410:** sharp-edged pipe entrance, $K = 0.5$ (A-29).
+Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_REGISTER.md) with the edition and clause it was verified against. ⚪ unverified (LLM-cited, not yet checked against the source), ✅ verified, ⚠️ deviation, ➖ textbook principle, 🚩 open pre-check flag.
+
+| Claim | Type | Source (edition) | Used for | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| PIPE-01 | Principle | Darcy-Weisbach equation | Friction pressure drop | ➖ Principle |
+| PIPE-02 | Literature | Churchill (1977), *Chem. Eng.* 84(24), 91–92 | One continuous friction factor for laminar, transition and turbulent flow | ⚪ Unverified |
+| PIPE-03 | Literature | Colebrook (1939), *J. Inst. Civ. Eng.* 11(4), 133–156 | Turbulent limit that Churchill reproduces; independent reference in the tests | ⚪ Unverified |
+| PIPE-04 | Literature | Crane TP-410, *Flow of Fluids* (edition not fixed; newest confirmed 2018) | Sharp-edged pipe entrance, $K = 0.5$ (A-29, page depends on the edition) | ⚪ Unverified 🚩 |
 
 ## 3. Physical & Mathematical Implementation
 
