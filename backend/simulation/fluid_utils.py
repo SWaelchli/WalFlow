@@ -409,8 +409,6 @@ class FluidProperties:
         Calculates vapor pressure in Pascals (Pa) using Antoine equation.
         """
         fluid = FluidProperties.get_fluid(fluid_type)
-
-        t_c = temp_k - 273.15
         model = fluid["vapor_pressure"]
 
         if model["model"] == "water_saturation":

@@ -46,7 +46,7 @@ Status: `open` / `fixed` / `rejected`. "Confirmed" means it was reproduced by ru
 | D-27 | Orifice / docs | `orifice.md` §3.1 describes the old β and d clamps (0.1-0.75, d ≥ 12.5 mm); the code uses 0.01-0.99 and no d clamp | Low / docs | Code reading | fixed |
 | D-28 | Calibrated restriction, check valve orifice, rupture disc / docs | Permanent loss ratio (1 − β²) is attributed to ISO 5167-2, which gives only Formula (7) and 1 − β^1.9 | Low / decision | Confirmed (standard) | fixed |
 | D-29 | Cv valves (all) | Viscosity factor $F_R$ floors at 0.5: no laminar range of IEC 60534-2-1 Annex A; Δp 1-2+ orders too low below Re_V ≈ 20 | Medium (wrong result, viscous fluids) | Confirmed (standard + calculation) | open |
-| D-30 | Calibrated restriction, reducer, fluid properties | Unused local variables `sign_q`, `dp_bern`, `t_c` | Cleanup | Code reading (AST check) | open |
+| D-30 | Calibrated restriction, reducer, fluid properties | Unused local variables `sign_q`, `dp_bern`, `t_c` | Cleanup | Code reading (AST check) | fixed |
 
 ---
 
@@ -557,3 +557,5 @@ The analytical `calculate_dp_derivative` methods of those components are only ex
 **What happens:** nothing; dead code that a reader may take for a missing step.
 
 **Fix direction:** a cleanup. Delete the three names (unpack `dp_bern` as `_`). Check each branch first, so no model was meant to use them.
+
+**Resolution (fixed):** the three names are removed (`dp_bern` unpacked as `_`). No branch needed them: the drop takes its sign from `flow_rate`, the reducer heats only with `dp_loss`, and the vapour-pressure models work in kelvin.

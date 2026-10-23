@@ -118,7 +118,6 @@ class CalibratedRestriction(HydraulicNode):
         self._ensure_calibrated()
 
         # Handle flow direction
-        sign_q = 1.0 if flow_rate >= 0 else -1.0
         abs_q = abs(flow_rate)
 
         if self.restriction_model == "laminar":
