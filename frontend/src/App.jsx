@@ -84,7 +84,7 @@ import { readInstruments, defaultInstrumentData } from './utils/instrumentReadin
 import CanvasContextMenu from './components/canvas/CanvasContextMenu';
 import EmptyCanvasHint from './components/canvas/EmptyCanvasHint';
 
-import { APP_VERSION, FILE_FORMAT_VERSION, FILE_EXTENSION } from './constants';
+import { FILE_EXTENSION } from './constants';
 import { DEFAULT_BASE_CASE, isCaseVariableProperty } from './constants/case_constants';
 import {
   getEffectiveNodeData,
@@ -1212,17 +1212,13 @@ function WalFlowContent() {
     }
 
     try {
-      const blankPayload = {
-        version: FILE_FORMAT_VERSION,
-        app_version: APP_VERSION,
-        format: 'walflow',
-        created_at: new Date().toISOString(),
+      const blankPayload = serializeDiagram({
         nodes: [],
         edges: [],
         globalSettings: { ...DEFAULT_DRAWING_SETTINGS },
         cases: [DEFAULT_BASE_CASE],
-        active_case_id: 'case_base'
-      };
+        activeCaseId: 'case_base'
+      });
 
       const response = await axios.post('/api/diagrams', {
         title,

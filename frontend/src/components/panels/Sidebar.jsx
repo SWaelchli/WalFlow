@@ -7,6 +7,8 @@ import { InfoIcon, WarningIcon, CheckIcon, CrossIcon, FolderIcon, SearchIcon, Tr
 import { FLUID_CATEGORIES, FLUID_LIBRARY } from '../../constants/fluid_library';
 import { useUnits } from '../../context/UnitContext';
 import { FILE_FORMAT_VERSION, APP_VERSION } from '../../constants';
+import { serializeDiagram } from '../../utils/diagramFile';
+import { DEFAULT_BASE_CASE } from '../../constants/case_constants';
 import { resolveSolverSettings, SOLVER_KEYS, DEFAULT_DRAWING_SETTINGS } from '../../utils/settingsLevels';
 import SolverSettingsGroup from './SolverSettingsGroup';
 import DraftNumberInput from '../common/DraftNumberInput';
@@ -1061,24 +1063,13 @@ export default function Sidebar({
       if (activeDiagram && activeDiagram.id === diagramId) {
         if (setActiveDiagram) setActiveDiagram(null);
         if (setActiveProject) setActiveProject(null);
-        onLoad({
-          version: FILE_FORMAT_VERSION,
-          app_version: APP_VERSION,
-          format: 'walflow',
-          created_at: new Date().toISOString(),
+        onLoad(serializeDiagram({
           nodes: [],
           edges: [],
           globalSettings: { ...DEFAULT_DRAWING_SETTINGS },
-          cases: [
-            {
-              id: 'case_base',
-              name: 'Base Case',
-              is_base: true,
-              variable_properties: {}
-            }
-          ],
-          active_case_id: 'case_base'
-        });
+          cases: [DEFAULT_BASE_CASE],
+          activeCaseId: 'case_base'
+        }));
       }
       
       fetchWorkspaceFiles();

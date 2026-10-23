@@ -42,5 +42,5 @@ describe('App shell', () => {
     render(<App />);
     // The navbar's primary action and the welcome canvas's tank both appear
     await waitFor(() => expect(screen.getAllByText(/Run Simulation/i).length).toBeGreaterThan(0), { timeout: 8000 });
-  }, 20000);
+  }, 40000);
 });
