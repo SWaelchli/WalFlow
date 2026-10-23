@@ -59,14 +59,8 @@ def test_volumetric_pump_heats_the_fluid_by_its_inefficiency():
     assert _actual_rise(pump) == pytest.approx(_expected_rise(pump, 0.1), rel=2e-3)
 
 
-def test_perfect_pump_adds_no_heat():
-    pump = _solve_pump(CentrifugalPump("Pump", flow_rated=0.01, head_rated=water_head(1000000.0), efficiency=1.0))
-    # only pipe friction (a few mK) remains
-    assert _actual_rise(pump) == pytest.approx(0.0, abs=1e-3)
-
-
 @pytest.mark.audit("D-10")
-@pytest.mark.parametrize("efficiency", [0.02, 0.05, 0.08])
+@pytest.mark.parametrize("efficiency", [0.02, 0.05, 0.08, 1.0])
 @pytest.mark.parametrize("kind", ["centrifugal", "volumetric"])
 def test_d10_heat_is_shaft_power_minus_hydraulic_power_at_low_efficiency(kind, efficiency):
     # One efficiency in both formulas, down to the 1 % input minimum: no hidden 5 % or 10 % floor

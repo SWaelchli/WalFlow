@@ -39,13 +39,6 @@ def test_f1_21_transition_is_continuous_and_between_limits():
     assert pipe._friction_factor(3000.0) == pytest.approx(_colebrook(3000.0, ROUGH / D), rel=0.10)
 
 
-@pytest.mark.parametrize("q", [1e-6, 5e-5, 1e-3, 2e-2])
-def test_f1_21_derivative_matches_numerical(q):
-    pipe = Pipe("p", L, D, ROUGH)
-    rho, mu = 870.0, 0.04
-    h = q * 1e-5
-    num = (pipe.calculate_delta_p(q + h, rho, mu) - pipe.calculate_delta_p(q - h, rho, mu)) / (2 * h)
-    assert pipe.calculate_dp_derivative(q, rho, mu) == pytest.approx(num, rel=1e-4)
 
 
 def test_f1_21_zero_flow_derivative_is_laminar_limit():

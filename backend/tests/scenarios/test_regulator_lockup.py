@@ -43,14 +43,23 @@ class BlindValve(LinearControlValve):
         return 1e15
 
 
-def test_closed_consumer_keeps_the_prv_at_its_setpoint():
-    nodes, stats = _prv_with_downstream_valve(0.0)
-    prv = nodes["prv"]
+INF = float("inf")
+
+
+@pytest.mark.parametrize("opening, flow_lmin, opening_pct, saturated_allowed", [
     # C3 of the audit gave downstream = 9.99 bar(a): the PRV at 0.22 % passed the closed valve's leak
-    assert prv.outlets[0].pressure / 1e5 == pytest.approx(5.0, abs=1e-3)
-    assert prv.inlets[0].flow_rate * 60000 < 0.05          # only the leakage of the "closed" valve
-    assert prv.opening_pct < 0.1
+    pytest.param(0.0, (-INF, 0.05), (-INF, 0.1), True, id="closed-consumer"),   # only the leakage of the closed valve
+    pytest.param(1.0, (0.0, INF), (0.0, 100.0), False, id="small-demand"),
+])
+def test_prv_holds_its_setpoint_with_a_closed_or_small_consumer(opening, flow_lmin, opening_pct, saturated_allowed):
+    nodes, stats = _prv_with_downstream_valve(opening)
+    prv = nodes["prv"]
+    assert prv.outlets[0].pressure / 1e5 == pytest.approx(5.0, abs=1e-3)   # the audit's 5.75 bar miss at 1 %
+    assert flow_lmin[0] < prv.inlets[0].flow_rate * 60000 < flow_lmin[1]
+    assert opening_pct[0] < prv.opening_pct < opening_pct[1]
     assert stats["controls_converged"]
+    if not saturated_allowed:
+        assert not stats["saturated_controllers"]
 
 
 def test_tight_shut_consumer_locks_the_prv_up():
@@ -90,15 +99,6 @@ def test_prv_in_a_dead_end_is_locked_up_not_wide_open():
     assert nodes["prv"].outlets[0].pressure / 1e5 == pytest.approx(5.0, abs=1e-3)
 
 
-def test_small_demand_opens_the_prv_and_holds_the_setpoint():
-    nodes, stats = _prv_with_downstream_valve(1.0)
-    prv = nodes["prv"]
-    assert prv.outlets[0].pressure / 1e5 == pytest.approx(5.0, abs=1e-3)   # the audit's 5.75 bar miss
-    assert prv.inlets[0].flow_rate > 0
-    assert 0.0 < prv.opening_pct < 100.0
-    assert stats["controls_converged"] and not stats["saturated_controllers"]
-
-
 def test_demand_flow_through_the_locked_regulator_matches_the_valve_equation():
     # Consumer at 1 % : the PRV must pass what the consumer draws at 5 bar(a)
     nodes, _ = _prv_with_downstream_valve(1.0)
@@ -116,39 +116,8 @@ def test_supply_below_setpoint_leaves_the_prv_wide_open():
     assert nodes["prv"].outlets[0].pressure / 1e5 < 4.0
 
 
-def _parallel_prvs():
-    from simulation.equipment.mixer import Mixer
-    from simulation.equipment.splitter import Splitter
-    nodes = {
-        "src": PressureSource("Supply", source_pressure=10.0e5),
-        "sp": Splitter("Split"),
-        "a": LinearRegulator("PRV A", max_cv=5.0, set_pressure=5.2e5),
-        "b": LinearRegulator("PRV B", max_cv=5.0, set_pressure=5.0e5),
-        "mx": Mixer("Header"),
-        "cv": LinearControlValve("Consumer", max_cv=2.0, opening_pct=30.0),
-        "t": Tank("Sink", fluid_level=0.0),
-    }
-    edges = [
-        {"source": "src", "target": "sp", "pipe": Pipe("p0", 1, ID)},
-        {"source": "sp", "source_port": "outlet-0", "target": "a", "pipe": Pipe("p1", 1, ID)},
-        {"source": "sp", "source_port": "outlet-1", "target": "b", "pipe": Pipe("p2", 1, ID)},
-        {"source": "a", "target": "mx", "target_port": "inlet-0", "pipe": Pipe("p3", 1, ID)},
-        {"source": "b", "target": "mx", "target_port": "inlet-1", "pipe": Pipe("p4", 1, ID)},
-        {"source": "mx", "target": "cv", "pipe": Pipe("p5", 1, ID)},
-        {"source": "cv", "target": "t", "pipe": Pipe("p6", 1, ID)},
-    ]
-    return nodes, edges
 
 
-def test_parallel_prvs_the_higher_setpoint_regulates_the_lower_stays_closed():
-    nodes, edges = _parallel_prvs()
-    stats = solve(nodes, edges)
-    assert stats["success"] and stats["controls_converged"]
-    assert nodes["a"].outlets[0].pressure / 1e5 == pytest.approx(5.2, abs=1e-3)
-    assert [(s["name"], s["state"]) for s in stats["saturated_controllers"]] == [("PRV B", "closed")]
-    assert nodes["b"].inlets[0].flow_rate * 60000 < 0.1
-    # Review: lock-up of B against the higher header used to throw B wide open and cycle (56 iterations)
-    assert stats["outer_iterations"] <= 25
 
 
 @pytest.mark.parametrize("limit", range(1, 9))

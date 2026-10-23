@@ -14,15 +14,11 @@ from simulation.fluid_utils import FluidProperties
 FLUID = "iso_vg_46"
 
 
-def test_thermal_mixing_balances():
-    _mix_and_check(tol_k=1.0)
-
-
-def test_f1_42_mixing_conserves_enthalpy_with_variable_cp():
-    _mix_and_check(tol_k=0.1)
-
-
-def _mix_and_check(tol_k):
+@pytest.mark.parametrize("tol_k", [
+    pytest.param(1.0, id="thermal-mixing-balances"),
+    pytest.param(0.1, id="F1-42-variable-cp-enthalpy"),
+])
+def test_mixing_conserves_mass_and_enthalpy(tol_k):
     t_hot = Tank("Hot Tank", fluid_level=10.0, temperature=80 + 273.15, fluid_type=FLUID)
     t_cold = Tank("Cold Tank", fluid_level=5.0, temperature=20 + 273.15, fluid_type=FLUID)
     mix = Mixer("Mixing Junction", num_inlets=2)

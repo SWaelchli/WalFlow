@@ -142,6 +142,41 @@ explanation.
 Run manually from anywhere: `python backend/tests/bench/bench_solver_scaling.py`. Results go to the git-ignored
 `performance_log.md`.
 
+## Mutation testing
+
+Cosmic Ray plants one small bug at a time (`+` to `-`, `>` to `<`, a skipped loop) and runs the tests. A mutant
+the tests do not notice ("survived") is a gap. It takes minutes per module and hours for everything, so it is
+never part of the gate or CI. When to run it:
+
+- **Mandatory before deleting or merging away a test**: prove the rest of the suite still kills what it killed
+  (below). Rewriting tests into a `pytest.param` table needs no proof when every assertion survives.
+- **Recommended after new equipment or a larger physics change**: one run on the changed module. Turn the
+  survivors that are real gaps into reference rows or property assertions.
+- **Optional before a release**: a broad run, for example on a server. The survivors are a to-do list, not a gate.
+
+Otherwise it is the user's call; an agent may suggest a run but does not start one on its own.
+
+Run from `backend/` with `cosmic-ray.toml` (edit `module-path` to the module under test):
+
+```bash
+cosmic-ray init cosmic-ray.toml cr.sqlite      # wipes earlier results in cr.sqlite
+python cosmic-ray-filter.py cr.sqlite          # skip operator swaps no real bug looks like (~90 % of mutants)
+cosmic-ray exec cosmic-ray.toml cr.sqlite      # resumable: only mutants without a result run
+cr-report cr.sqlite                            # cr-html cr.sqlite > report.html for the diffs
+```
+
+- Mutants are written into the source files in place. Do not edit `simulation/` during a run; after an aborted
+  run, `git checkout -- simulation` restores the file left mutated.
+- Windows: `test-command` runs without a shell, so put the absolute path of the venv `python.exe` in it.
+  Otherwise a system python without pytest makes every mutant look killed within seconds.
+- Parallel: one `git worktree add --detach` copy per worker, `cosmic-ray http-worker --port 990N` in each copy's
+  `backend/`, and the `http` distributor with their `worker-urls` in the config.
+
+**Deletion proof.** Run 1: `test-command` runs only the tests to delete; its killed mutants are what they guard.
+Run 2: on a copy of the session with only those killed results removed, the rest of the suite runs with a
+`--deselect` per deleted test. Every run-2 survivor is lost coverage: keep the test or move its assertion
+elsewhere before deleting.
+
 ## The gate
 
 Run before finishing any change. All of it must pass:

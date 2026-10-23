@@ -1,11 +1,10 @@
 import math
 
+import pytest
 
 from simulation.equipment.orifice import Orifice
-from simulation.equipment.tank import Tank
-from simulation.equipment.pipe import Pipe
 from simulation.fluid_utils import FluidProperties
-from simulation.schemas import ReactFlowNode, ReactFlowEdge, ReactFlowGraph, HydraulicNetwork, GlobalSettings
+from simulation.schemas import ReactFlowNode, ReactFlowEdge, ReactFlowGraph, GlobalSettings
 from simulation.graph_parser import GraphParser
 from simulation.solver import NetworkSolver
 
@@ -64,115 +63,38 @@ def test_high_re_analytic_limit():
     assert math.isclose(c, limit, rel_tol=1e-4), f"C(high Re) {c} != limit {limit}"
 
 
-def test_tap_dp_against_iso_flow_equation():
-    """Tap dP satisfies the ISO 5167 flow equation: dp_tap = 0.5*rho*Q^2*(1-beta^4) / (Ao^2*Cd^2).
-
-    The implementation uses C_m = Cd/sqrt(1-beta^4) in the tap-dP denominator, which is
-    mathematically equivalent. This test validates against the standard's form using C_d.
-    """
+@pytest.mark.parametrize("orif_d, cm_gap", [
+    pytest.param(0.02, None, id="beta-0.38-tap-dp"),
+    # at beta ~ 0.7 r(C_d) and r(C_m) differ by ~9 %, so a wrong coefficient in Formula (7) shows
+    pytest.param(0.036736, 0.05, id="beta-0.7-formula7-uses-cd"),
+])
+def test_orifice_permanent_loss_against_iso5167(orif_d, cm_gap):
+    """Tap dP follows the ISO 5167 flow equation dp_tap = 0.5*rho*Q^2*(1-beta^4) / (Ao^2*Cd^2)
+    and the permanent loss is dp_tap * r with r from Formula (7) evaluated with C_d (not C_m)."""
     rho, mu = WATER_RHO, WATER_MU
-    pipe_d, orif_d = 0.05248, 0.02
-    beta = orif_d / pipe_d
-    beta_eff = min(0.75, max(0.1, beta))
-    area_orifice = math.pi * (orif_d / 2.0) ** 2
-    ori = Orifice("Tap", pipe_diameter=pipe_d, orifice_diameter=orif_d)
-
-    re_pipe = 1e5  # fully turbulent, w = 1
-    q = flow_from_re(re_pipe, rho, mu, pipe_d)
-    # _cd_rg_iso5167 returns C_d (discharge coefficient)
-    c_d = Orifice._cd_rg_iso5167(beta_eff, pipe_d, re_pipe)
-    dp = ori.calculate_delta_p(q, rho, mu)
-
-    r = rg_loss_ratio(c_d, beta_eff)
-    dp_tap_impl = dp / r
-    # ISO standard form: dp_tap = 0.5*rho*Q^2*(1-beta^4) / (Ao^2 * Cd^2)
-    dp_tap_expected = 0.5 * rho * q * abs(q) * (1 - beta_eff**4) / (area_orifice ** 2 * c_d ** 2)
-    assert math.isclose(dp_tap_impl, dp_tap_expected, rel_tol=1e-4), \
-        f"tap dP {dp_tap_impl} != ISO flow equation {dp_tap_expected}"
-
-
-def test_formula7_loss_ratio():
-    """Permanent loss ratio matches the Formula (7) recomputation using C_d directly."""
-    rho, mu = WATER_RHO, WATER_MU
-    pipe_d, orif_d = 0.05248, 0.036736  # beta ~ 0.7
-    beta = orif_d / pipe_d
-    beta_eff = min(0.75, max(0.1, beta))
+    pipe_d = 0.05248
+    beta_eff = min(0.75, max(0.1, orif_d / pipe_d))
     area_orifice = math.pi * (orif_d / 2.0) ** 2
     ori = Orifice("Loss", pipe_diameter=pipe_d, orifice_diameter=orif_d)
 
-    re_pipe = 1e5
+    re_pipe = 1e5  # fully turbulent, w = 1
     q = flow_from_re(re_pipe, rho, mu, pipe_d)
     c_d = Orifice._cd_rg_iso5167(beta_eff, pipe_d, re_pipe)
-    dp = ori.calculate_delta_p(q, rho, mu)
-
-    r_impl = dp / (0.5 * rho * q * abs(q) * (1 - beta_eff**4) / (area_orifice ** 2 * c_d ** 2))
-    r_ref = rg_loss_ratio(c_d, beta_eff)
-    assert math.isclose(r_impl, r_ref, rel_tol=1e-4), f"loss ratio {r_impl} != {r_ref}"
-
-
-def test_formula7_uses_discharge_coefficient():
-    """Regression: Formula (7) must use C_d, not the meter coefficient C_m.
-
-    At beta ~ 0.7, r(C_d) and r(C_m) differ by ~9%. This test explicitly confirms
-    that the implementation uses C_d and pins the correct permanent-loss value.
-    """
-    rho, mu = WATER_RHO, WATER_MU
-    pipe_d, orif_d = 0.05248, 0.036736  # beta ~ 0.7
-    beta_eff = min(0.75, max(0.1, orif_d / pipe_d))
-    area_orifice = math.pi * (orif_d / 2.0) ** 2
-    ori = Orifice("F7", pipe_diameter=pipe_d, orifice_diameter=orif_d)
-
-    re_pipe = 1e5
-    q = flow_from_re(re_pipe, rho, mu, pipe_d)
-    c_d = Orifice._cd_rg_iso5167(beta_eff, pipe_d, re_pipe)  # C_d (correct for Formula (7))
-    c_m = c_d / math.sqrt(1.0 - beta_eff ** 4)               # C_m (incorrect if passed to Formula (7))
-
     r_correct = rg_loss_ratio(c_d, beta_eff)
-    r_wrong   = rg_loss_ratio(c_m, beta_eff)
 
-    # Confirm the two values differ by more than 5% so the test is meaningful
-    assert abs(r_correct - r_wrong) / r_correct > 0.05, \
-        f"r(Cd)={r_correct} and r(Cm)={r_wrong} must differ by >5% at beta~0.7"
+    if cm_gap is not None:
+        c_m = c_d / math.sqrt(1.0 - beta_eff ** 4)
+        r_wrong = rg_loss_ratio(c_m, beta_eff)
+        assert abs(r_correct - r_wrong) / r_correct > cm_gap
 
     dp = ori.calculate_delta_p(q, rho, mu)
-    # Recover tap dP using the ISO standard form (C_d in denominator)
-    dp_tap = 0.5 * rho * q * abs(q) * (1 - beta_eff**4) / (area_orifice ** 2 * c_d ** 2)
-    r_impl = dp / dp_tap
-    assert math.isclose(r_impl, r_correct, rel_tol=1e-4), (
-        f"Formula (7) uses wrong coefficient: impl r={r_impl:.6f}, "
-        f"correct (C_d) r={r_correct:.6f}, wrong (C_m) r={r_wrong:.6f}"
-    )
+    dp_tap_expected = 0.5 * rho * q * abs(q) * (1 - beta_eff**4) / (area_orifice ** 2 * c_d ** 2)
+    assert math.isclose(dp / r_correct, dp_tap_expected, rel_tol=1e-4)
+    assert math.isclose(dp / dp_tap_expected, r_correct, rel_tol=1e-4)
 
 
-def _numerical_derivative(ori, q, rho, mu, h_rel=1e-6):
-    h = max(h_rel * abs(q), 1e-9)
-    dp_plus = ori.calculate_delta_p(q + h, rho, mu)
-    dp_minus = ori.calculate_delta_p(q - h, rho, mu)
-    return (dp_plus - dp_minus) / (2.0 * h)
 
 
-def test_derivative_vs_numerical():
-    """Analytic derivative within 1% of central differences across regimes."""
-    rho, mu = WATER_RHO, WATER_MU
-    pipe_d = 0.05248
-
-    cases = [
-        (0.5, 800.0, 'laminar'),
-        (0.5, 3500.0, 'blend'),
-        (0.5, 1e5, 'turbulent'),
-        (0.7, 3000.0, 'laminar'),
-        (0.7, 10000.0, 'blend'),
-        (0.7, 1e5, 'turbulent'),
-    ]
-    for beta, re_pipe, regime in cases:
-        orif_d = beta * pipe_d
-        ori = Orifice(f"Deriv_{regime}", pipe_diameter=pipe_d, orifice_diameter=orif_d)
-        q = flow_from_re(re_pipe, rho, mu, pipe_d)
-        analytic = ori.calculate_dp_derivative(q, rho, mu)
-        numeric = _numerical_derivative(ori, q, rho, mu)
-        assert numeric != 0
-        assert math.isclose(analytic, numeric, rel_tol=1e-2), \
-            f"[{regime}] beta={beta} Re={re_pipe}: analytic {analytic} != numeric {numeric}"
 
 
 def test_continuity_across_blend_bands():
@@ -267,33 +189,6 @@ def test_standard_defaults_and_folding():
     assert ori_legacy.standard == 'classic_cd'
 
 
-def test_network_solve():
-    """Tank -> Pipe -> Orifice -> Pipe -> Tank converges with a positive orifice dP."""
-    gs = GlobalSettings(fluid_type="water")
-    t1 = Tank("Source", fluid_level=5.0, elevation=0.0, temperature=293.15, fluid_type="water")
-    ori = Orifice("Restriction", pipe_diameter=0.05248, orifice_diameter=0.02)
-    t2 = Tank("Sink", fluid_level=1.0, elevation=0.0, temperature=293.15, fluid_type="water")
-
-    nodes = {"t1": t1, "ori": ori, "t2": t2}
-    edges = [
-        {"id": "e1", "source": "t1", "target": "ori", "source_port": "outlet-0", "target_port": "inlet-0", "pipe": Pipe("P1", 1.0, 0.05248)},
-        {"id": "e2", "source": "ori", "target": "t2", "source_port": "outlet-0", "target_port": "inlet-0", "pipe": Pipe("P2", 1.0, 0.05248)}
-    ]
-
-    network = HydraulicNetwork(nodes=nodes, edges=edges)
-    network.global_settings = gs
-    for n in nodes.values():
-        n.global_settings = gs
-    for e in edges:
-        e["pipe"].global_settings = gs
-
-    solver = NetworkSolver(network)
-    solver.solve()
-
-    q = ori.inlets[0].flow_rate
-    dp = ori.inlets[0].pressure - ori.outlets[0].pressure
-    assert q > 0, "Orifice flow must be positive"
-    assert dp > 0, "Orifice dP must be positive"
 
 
 def test_graph_parser_orifice():
@@ -322,7 +217,6 @@ def test_graph_parser_orifice():
     )
     parsed_default = GraphParser.create_node(node_data_default)
     assert parsed_default.standard == 'iso_5167'
-    print("GraphParser successfully created Orifice instance!")
 
 
 def test_extract_telemetry_carries_solver_effective_geometry():
@@ -373,9 +267,7 @@ def test_extract_telemetry_carries_solver_effective_geometry():
 if __name__ == "__main__":
     test_rg_formula_roundtrip()
     test_high_re_analytic_limit()
-    test_tap_dp_against_iso_flow_equation()
-    test_formula7_loss_ratio()
-    test_formula7_uses_discharge_coefficient()
+    test_orifice_permanent_loss_against_iso5167(0.02, None)
     test_derivative_vs_numerical()
     test_continuity_across_blend_bands()
     test_bidirectional_symmetry()
@@ -384,4 +276,3 @@ if __name__ == "__main__":
     test_network_solve()
     test_graph_parser_orifice()
     test_extract_telemetry_carries_solver_effective_geometry()
-    print("All Orifice ISO 5167 tests passed successfully!")

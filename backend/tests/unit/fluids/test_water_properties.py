@@ -20,18 +20,10 @@ IAPWS = [
 ]
 
 
-@pytest.mark.parametrize("t_c, rho, _psat, _cp", IAPWS)
-def test_f1_30_water_density_matches_iapws(t_c, rho, _psat, _cp):
+@pytest.mark.parametrize("t_c, rho, psat, cp", IAPWS)
+def test_f1_30_water_properties_match_iapws(t_c, rho, psat, cp):
     assert FluidProperties.get_density("water", t_c + K) == pytest.approx(rho, rel=0.0005)
-
-
-@pytest.mark.parametrize("t_c, _rho, psat, _cp", IAPWS)
-def test_f1_30_water_vapor_pressure_matches_iapws(t_c, _rho, psat, _cp):
     assert FluidProperties.get_vapor_pressure("water", t_c + K) == pytest.approx(psat, rel=0.003)
-
-
-@pytest.mark.parametrize("t_c, _rho, _psat, cp", IAPWS)
-def test_f1_30_water_cp_matches_iapws(t_c, _rho, _psat, cp):
     assert FluidProperties.get_specific_heat("water", t_c + K) == pytest.approx(cp, rel=0.002)
 
 

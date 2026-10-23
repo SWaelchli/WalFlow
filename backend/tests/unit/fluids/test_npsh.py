@@ -75,9 +75,9 @@ def _valve_circuit(temp_c):
     return extract_telemetry(network)["nodes"]["v"]
 
 
-def test_f1_28_valve_outlet_below_vapor_pressure_is_flagged():
-    assert _valve_circuit(120.0)["flashing_warning"] is True
-
-
-def test_f1_28_cold_valve_is_not_flagged():
-    assert _valve_circuit(20.0)["flashing_warning"] is False
+@pytest.mark.parametrize("temp_c, flagged", [
+    pytest.param(120.0, True, id="valve-outlet-below-vapor-pressure"),
+    pytest.param(20.0, False, id="cold-valve"),
+])
+def test_f1_28_valve_flashing_flag(temp_c, flagged):
+    assert _valve_circuit(temp_c)["flashing_warning"] is flagged

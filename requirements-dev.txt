@@ -2,3 +2,4 @@
 pytest>=9.0
 pytest-randomly>=3.16
 hypothesis>=6.170
+cosmic-ray>=8.7
