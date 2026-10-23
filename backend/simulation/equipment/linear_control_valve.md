@@ -8,8 +8,13 @@ The same valve equation is used by the [linear regulator](linear_regulator.md) a
 
 ## 2. Governing Standards & Reference Literature
 
-- **IEC 60534-2-1 / ANSI/ISA-75.01.01:** sizing equations for incompressible flow (Cv definition, valve Reynolds number and viscosity correction $F_R$).
-- **ISA-75.11.01 / IEC 60534-2-4:** inherent flow characteristics (linear trim).
+Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_REGISTER.md) with the edition and clause it was verified against. ⚪ unverified (LLM-cited, not yet checked against the source), ✅ verified, ⚠️ deviation, ➖ textbook principle, 🚩 open pre-check flag.
+
+| Claim | Type | Source (edition) | Used for | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| LCV-01 | Standard | IEC 60534-2-1:2011; ANSI/ISA-75.01.01-2012 | Sizing equation for incompressible flow (Cv definition) | ⚪ Unverified |
+| LCV-02 | Standard | IEC 60534-2-1:2011; ANSI/ISA-75.01.01-2012 | Valve Reynolds number and viscosity correction $F_R$ (approximated, section 3.3) | ⚪ Unverified |
+| LCV-03 | Standard | ANSI/ISA-75.11.01-2013; IEC 60534-2-4:2009 | Linear inherent flow characteristic | ⚪ Unverified |
 
 The Cv equation is the standard one. The viscosity correction is a smooth approximation in the spirit of IEC 60534-2-1, not its $F_R$ formula (section 3.3).
 

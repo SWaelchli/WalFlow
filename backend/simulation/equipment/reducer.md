@@ -11,14 +11,17 @@ A reducer or expander is a conical fitting between two pipe sizes (e.g. DN80 →
 
 ## 2. Governing Standards & Reference Literature
 
-- **Crane Technical Paper No. 410 (A-26):** loss coefficients of gradual contractions and enlargements, referenced to the small bore.
-- **Idelchik, I.E.:** *Handbook of Hydraulic Resistance*, and **Miller, D.S.:** *Internal Flow Systems* — background for conical contractions and diffusers.
-- **Churchill, S.W. (1977):** Darcy friction factor for the transition wall friction, shared with the [pipe](pipe.md#33-friction-factor-_friction_factor-churchill-1977).
-- **Dimensional standards** (geometry from the inspector catalogue, not used in the hydraulics):
-  - ASME B16.9 (wrought buttwelding reducers) with ASME B36.10M / B36.19M pipe schedules;
-  - DIN EN 10253-2 reducers with DIN EN 10220 / EN ISO 1127 pipe dimensions.
+Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_REGISTER.md) with the edition and clause it was verified against. ⚪ unverified (LLM-cited, not yet checked against the source), ✅ verified, ⚠️ deviation, ➖ textbook principle, 🚩 open pre-check flag.
 
-  Each reducer end takes its wall from the connected line's pipe class (size grid, then its schedule standard), otherwise from the schedule standard matching the reducer standard.
+| Claim | Type | Source (edition) | Used for | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| RED-01 | Literature | Crane TP-410, *Flow of Fluids* (edition not fixed; newest confirmed 2018) | Loss coefficients of gradual contractions and enlargements, referenced to the small bore (A-26, page depends on the edition) | ⚪ Unverified 🚩 |
+| RED-02 | Literature | Idelchik, *Handbook of Hydraulic Resistance*, 4th ed. (2008); Miller, *Internal Flow Systems*, 2nd ed. (1990) | Background for conical contractions and diffusers | ⚪ Unverified |
+| RED-03 | Literature | Churchill (1977), *Chem. Eng.* 84(24), 91–92 | Darcy friction factor for the transition wall friction, shared with the [pipe](pipe.md#33-friction-factor-_friction_factor-churchill-1977) | ⚪ Unverified |
+| RED-04 | Standard | ASME B16.9-2024; ASME B36.10M (edition not fixed); ASME B36.19M-2018 | Reducer and pipe dimensions (geometry only, not used in the hydraulics) | ⚪ Unverified |
+| RED-05 | Standard / Literature | EN 10253-2:2021; EN 10220:2002; EN ISO 1127:1996 | Reducer and pipe dimensions (geometry only, not used in the hydraulics) | ⚪ Unverified |
+
+Each reducer end takes its wall from the connected line's pipe class (size grid, then its schedule standard), otherwise from the schedule standard matching the reducer standard.
 
 ## 3. Physical & Mathematical Implementation
 

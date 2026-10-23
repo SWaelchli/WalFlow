@@ -8,9 +8,14 @@ Use it for temperature control by mixing: a cooler bypass on a lube oil console,
 
 ## 2. Governing Standards & Reference Literature
 
-- **Valve equation:** IEC 60534-2-1 / ANSI/ISA-75.01.01 liquid Cv equation per path, as in the [linear control valve](linear_control_valve.md#3-physical--mathematical-implementation).
-- **Trim:** a linear complementary characteristic (hot opening $x$, cold opening $1 - x$), as for a 3-way mixing valve to ISA-75.11.01.
-- **Control loop:** an ideal steady-state temperature controller (TC → TCV); no thermostat element, no time constant.
+Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_REGISTER.md) with the edition and clause it was verified against. ⚪ unverified (LLM-cited, not yet checked against the source), ✅ verified, ⚠️ deviation, ➖ textbook principle, 🚩 open pre-check flag.
+
+| Claim | Type | Source (edition) | Used for | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| TCV-01 | Standard | IEC 60534-2-1:2011; ANSI/ISA-75.01.01-2012 | Liquid Cv equation per path, as in the [linear control valve](linear_control_valve.md#3-physical--mathematical-implementation) | ⚪ Unverified |
+| TCV-02 | Standard | ANSI/ISA-75.11.01-2013 | Linear complementary characteristic (hot opening $x$, cold opening $1 - x$) of a 3-way mixing valve | ⚪ Unverified |
+
+The control loop is an ideal steady-state temperature controller (TC → TCV): no thermostat element, no time constant.
 
 ## 3. Physical & Mathematical Implementation
 

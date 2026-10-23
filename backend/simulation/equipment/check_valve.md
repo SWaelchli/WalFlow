@@ -8,9 +8,13 @@ Use it on pump discharges (so a standby pump does not run backwards), in paralle
 
 ## 2. Governing Standards & Reference Literature
 
-- **IEC 60534-2-1:** liquid Cv equation for the open valve loss.
-- **API 594 / API 6D:** check valves (cracking pressure, non-return function).
-- **Fischer, A. (1992):** "A special Newton-type optimization method", *Optimization* 24: the Fischer-Burmeister function for complementarity problems.
+Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_REGISTER.md) with the edition and clause it was verified against. ⚪ unverified (LLM-cited, not yet checked against the source), ✅ verified, ⚠️ deviation, ➖ textbook principle, 🚩 open pre-check flag.
+
+| Claim | Type | Source (edition) | Used for | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| CV-01 | Standard | IEC 60534-2-1:2011 | Liquid Cv equation for the open valve loss | ⚪ Unverified |
+| CV-02 | Standard | API Std 594, 9th ed. (2022); API Spec 6D, 25th ed. (2021) | Cracking pressure, non-return function | ⚪ Unverified |
+| CV-03 | Literature | Fischer (1992), *Optimization* 24(3–4), 269–284 | Fischer-Burmeister function for complementarity problems | ⚪ Unverified |
 
 ## 3. Physical & Mathematical Implementation
 

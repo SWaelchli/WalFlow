@@ -87,6 +87,7 @@ All notable changes to the WälFlow project will be documented in this file.
 - **Fitting standards editor**: Pipe schedule matrices are fully editable (DN, NPS, OD, wall thickness per schedule, add / remove sizes and schedule columns; ID = OD − 2·WT). Reducer rows fill NPS and OD from the DN and recalculate the cone angle. Name, description, standard group and reducer type are editable, values follow the unit system, and admins can edit built-in catalogs.
 - **Fitting standard names**: The catalog shows the name; the code is shown as a small identifier and is derived from the name when cloning or creating a standard.
 - **Equipment cleanup**: The unused `is_flow_boundary` solver flag is removed, and the PSV no longer accepts the old `rupture_disc` action mode (use `Pop action – latching`). The equipment guide states that the analytical pressure-drop derivative is optional (the solver uses it for pipes and pumps only).
+- **Standards register**: The standards and literature cited by the equipment documents are collected in `docs/STANDARDS_REGISTER.md` with current editions and a status per claim (all unverified until checked against the source). Section 2 of each equipment document is a claim table, and the `standard-verification` skill describes how a supplied standard is checked.
 
 ### Fixed
 

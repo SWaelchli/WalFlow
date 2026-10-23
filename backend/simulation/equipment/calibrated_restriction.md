@@ -14,10 +14,15 @@ Use it for internal clearances, bearing feeds, nozzles, spray bars, bypass bores
 
 ## 2. Governing Standards & Reference Literature
 
-- **ISO 5167-1 / ISO 5167-2:** orifice flow equation and permanent pressure loss ratio $(1 - \beta^2)$ (classic form) for the equivalent orifice.
-- **Wuest, W. (1954)** / **Idelchik, I.E.:** *Handbook of Hydraulic Resistance*, laminar discharge coefficient $C_d \approx 0.2\sqrt{\mathrm{Re}}$ of small orifices.
-- **Hagen-Poiseuille:** laminar law $\Delta P \propto \mu Q$.
-- **Crane TP 410:** resistance coefficient $K$ for the quadratic law.
+Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_REGISTER.md) with the edition and clause it was verified against. ⚪ unverified (LLM-cited, not yet checked against the source), ✅ verified, ⚠️ deviation, ➖ textbook principle, 🚩 open pre-check flag.
+
+| Claim | Type | Source (edition) | Used for | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| CR-01 | Standard | ISO 5167-1:2022; ISO 5167-2:2022 | Orifice flow equation for the equivalent orifice | ⚪ Unverified |
+| CR-02 | Standard | ISO 5167-2:2022 | Permanent pressure loss ratio $(1 - \beta^2)$ (classic form) | ⚪ Unverified 🚩 |
+| CR-03 | Literature | Wuest (1954), citation not identified; Idelchik, *Handbook of Hydraulic Resistance*, 4th ed. (2008) | Laminar discharge coefficient $C_d \approx 0.2\sqrt{\mathrm{Re}}$ of small orifices | ⚪ Unverified 🚩 |
+| CR-04 | Principle | Hagen-Poiseuille law | Laminar law $\Delta P \propto \mu Q$ | ➖ Principle |
+| CR-05 | Literature | Crane TP-410, *Flow of Fluids* (edition not fixed; newest confirmed 2018) | Resistance coefficient $K$ for the quadratic law | ⚪ Unverified |
 
 ## 3. Physical & Mathematical Implementation
 

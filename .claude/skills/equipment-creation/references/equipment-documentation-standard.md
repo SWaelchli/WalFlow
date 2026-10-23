@@ -30,7 +30,7 @@ Every document uses exactly these headings, in this order. Subsections (`### 3.1
 ### What goes in each section
 
 1. **Overview & Purpose** — what the equipment is, its role in a P&ID, how it behaves in the network (resistance, flow boundary, pressure boundary, junction, thermal unit). Selectable models or standards listed in one short list.
-2. **Governing Standards & Reference Literature** — the standards and books the equations come from (e.g. ISO 5167, ISO 4126, IEC 60534, API 520, Crane TP 410, Idelchik). If several models are selectable, a table `value | model | notes`. If the component is a mathematical idealisation with no standard, say so in one line.
+2. **Governing Standards & Reference Literature** — the standards and books the equations come from, as a claim table `Claim | Type | Source (edition) | Used for | Status`. Each claim gets an ID and a row in [docs/STANDARDS_REGISTER.md](../../../../docs/STANDARDS_REGISTER.md) (with a new source row there if needed), and starts as ⚪ Unverified until it is checked against the source with the `standard-verification` skill. Cite with the edition (`ISO 5167-2:2022`, `API Std 520 Part I, 10th ed. (2020)`, books with edition and year). If several models are selectable, a table `value | model | notes` follows. If the component is a mathematical idealisation with no standard, say so in one line.
 3. **Physical & Mathematical Implementation** — the equations **as the code implements them**, not as a textbook states them. Cover:
    - the primary relation ($\Delta P(Q, \rho, \mu)$, $H(Q)$, fixed $P$ or $Q$, mass balance, ...);
    - flow regimes and how they are blended ($C^0$ / $C^1$ continuity);

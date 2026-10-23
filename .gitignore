@@ -25,3 +25,7 @@ bench_tcv_loop.md
 .claude/skills/ui-ux-pro-max
 # Local deployment secrets (see .env.example)
 .env
+
+# Copyrighted standards and literature live in the private walflow-references repo, never here
+/walflow-references/
+*.pdf
