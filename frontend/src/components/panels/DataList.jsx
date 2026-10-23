@@ -1156,13 +1156,6 @@ export default function DataList({
               const baseBg = item.selected ? '#FFF4E5' : (idx % 2 === 0 ? '#ffffff' : '#F8FAFA');
               const hoverBg = item.selected ? '#FFEAD1' : '#F0F4F4';
 
-              const vel = Math.abs(entry.velocity || 0);
-              const velColor = vel > 4.0 ? 'var(--color-danger-text)' : (vel > 2.5 ? 'var(--color-primary-text)' : 'inherit');
-              // not by colour alone: a marker and a tooltip carry the severity (F3-09)
-              const velMark = vel > 4.0 ? '▲▲' : (vel > 2.5 ? '▲' : '');
-              const velTitle = vel > 4.0 ? 'High velocity: above 4 m/s' : (vel > 2.5 ? 'Elevated velocity: above 2.5 m/s' : undefined);
-              const velWeight = vel > 2.5 ? '700' : 'normal';
-
               return (
                 <tr {...clickableRowProps} key={item.id} draggable={!sortConfig.key && !isEditing} onDragStart={(e) => onDragStart(e, entry.originalIndex)}
                   onDragOver={(e) => onDragOver(e, entry.originalIndex)} onDrop={(e) => onDrop(e, entry.originalIndex)}
@@ -1191,8 +1184,8 @@ export default function DataList({
                     />
                   </td>
                   <td style={{ padding: '8px', textAlign: 'right', fontWeight: '600' }}>{formatFlowM3s(entry.flow)}</td>
-                  <td style={{ padding: '8px', textAlign: 'right', color: velColor, fontWeight: velWeight }} title={velTitle}>
-                    {velMark && <WarningIcon size={11} weight={vel > 4.0 ? 'fill' : 'bold'} aria-label={velTitle} style={{ marginRight: '4px', verticalAlign: '-1px' }} />}{formatVelocity(entry.velocity)}
+                  <td style={{ padding: '8px', textAlign: 'right' }}>
+                    {formatVelocity(entry.velocity)}
                   </td>
                   <td style={{ padding: '8px', textAlign: 'right' }}>{formatPressure(entry.dp, 3)}</td>
                   <td style={{ padding: '8px', textAlign: 'right' }}>{formatPressure(entry.pStart)}</td>
