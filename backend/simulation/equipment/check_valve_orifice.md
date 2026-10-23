@@ -14,7 +14,7 @@ Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_RE
 
 | Claim | Type | Source (edition) | Used for | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| CVO-01 | Standard | IEC 60534-2-1:2011 | Liquid Cv equation for the open seat | ⚪ Unverified |
+| CVO-01 | Standard | IEC 60534-2-1:2011 | Liquid Cv equation for the open seat | ✅ IEC 60534-2-1:2011 §6.1 Eq. (1) |
 | CVO-02 | Standard | ISO 5167-1:2022; ISO 5167-2:2022 | Orifice equation and permanent pressure loss ratio $(1 - \beta^2)$ (classic form) for the bypass, as for the [calibrated restriction](calibrated_restriction.md#32-pressure-drop-calculate_delta_p) | ❌ Equation ✅ F(1); loss ratio not in ISO 5167-2, D-28 |
 | CVO-03 | Standard | API Std 594, 9th ed. (2022) | Cracking pressure | ⚪ Unverified |
 

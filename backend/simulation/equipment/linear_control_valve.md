@@ -12,8 +12,8 @@ Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_RE
 
 | Claim | Type | Source (edition) | Used for | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| LCV-01 | Standard | IEC 60534-2-1:2011; ANSI/ISA-75.01.01-2012 | Sizing equation for incompressible flow (Cv definition) | ⚪ Unverified |
-| LCV-02 | Standard | IEC 60534-2-1:2011; ANSI/ISA-75.01.01-2012 | Valve Reynolds number and viscosity correction $F_R$ (approximated, section 3.3) | ⚪ Unverified |
+| LCV-01 | Standard | IEC 60534-2-1:2011; ANSI/ISA-75.01.01-2012 | Sizing equation for incompressible flow (Cv definition) | ✅ IEC 60534-2-1:2011 §6.1 Eq. (1) |
+| LCV-02 | Standard | IEC 60534-2-1:2011; ANSI/ISA-75.01.01-2012 | Valve Reynolds number and viscosity correction $F_R$ (approximated, section 3.3) | ⚠️ Annex A $F_R$, D-29 |
 | LCV-03 | Standard | ANSI/ISA-75.11.01-2013; IEC 60534-2-4:2009 | Linear inherent flow characteristic | ⚪ Unverified |
 
 The Cv equation is the standard one. The viscosity correction is a smooth approximation in the spirit of IEC 60534-2-1, not its $F_R$ formula (section 3.3).

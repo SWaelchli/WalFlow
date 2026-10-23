@@ -45,6 +45,7 @@ Status: `open` / `fixed` / `rejected`. "Confirmed" means it was reproduced by ru
 | D-26 | Orifice | ISO Reynolds limit for β > 0.56 is a flat 16 000 instead of 16 000·β² (ISO 5167-2:2022 §5.3.1); up to +12 % permanent loss in the ISO-valid range | Medium (wrong result) | Confirmed (standard + calculation) | open |
 | D-27 | Orifice / docs | `orifice.md` §3.1 describes the old β and d clamps (0.1-0.75, d ≥ 12.5 mm); the code uses 0.01-0.99 and no d clamp | Low / docs | Code reading | open |
 | D-28 | Calibrated restriction, check valve orifice, rupture disc / docs | Permanent loss ratio (1 − β²) is attributed to ISO 5167-2, which gives only Formula (7) and 1 − β^1.9 | Low / decision | Confirmed (standard) | open |
+| D-29 | Cv valves (all) | Viscosity factor $F_R$ floors at 0.5: no laminar range of IEC 60534-2-1 Annex A; Δp 1-2+ orders too low below Re_V ≈ 20 | Medium (wrong result, viscous fluids) | Confirmed (standard + calculation) | open |
 
 ---
 
@@ -522,3 +523,11 @@ The analytical `calculate_dp_derivative` methods of those components are only ex
 **What happens:** the documents attribute the ratio permanent loss / differential pressure = 1 − β² to ISO 5167-2. The standard gives Formula (7) (§5.4.1) and the simpler approximation 1 − β^1.9 (§5.4.2) only. Numerically 1 − β² is within −2.4 % … +2.5 % of Formula (7) for β 0.2-0.75, so the results are close; the citation is wrong.
 
 **Fix direction:** a decision: (a) use Formula (7) with the model's C_d, as the orifice does; (b) use §5.4.2, 1 − β^1.9; or (c) keep 1 − β² and cite a source that gives it. (a) or (b) changes results by up to 2.5 %.
+
+## D-29 Valve viscosity factor F_R has no laminar range
+
+**Where:** `fluid_utils.py::FluidProperties.get_valve_fr`, used by every Cv-based component (linear control valve, regulator, remote control valve, three-way TCV, check valve, check valve with orifice, PSV, rupture disc); claim LCV-02 in the register. Found by verifying against IEC 60534-2-1:2011 (read as DIN EN 60534-2-1:2012-01) on 2026-10-23.
+
+**What happens:** WalFlow uses F_R = (Re_v + 200)/(Re_v + 400), clamped to 0.4-1, with Re_v over an equivalent bore 0.01·√Cv. The standard (Annex A, Eq. A.6-A.8b, with Re_V from Eq. 23) lets F_R fall as √Re_V in laminar flow, so Δp ∝ μQ. WalFlow's F_R never drops below 0.5, so its Δp is at most four times the turbulent value. Compared with Annex A for globe and ball valves (water, 46 and 500 cSt): Δp within −13 % … +11 % for Re_V ≈ 40 to 10⁵; below Re_V ≈ 20 (viscous oil, small Cv, low flow) Δp is 1 to 2+ orders of magnitude too low. At Re_V ≥ 10 000 the standard has F_R = 1, WalFlow 0.98-0.999 (Δp +0.1 … +9 %). The documents state the simplification; the docstring calls it the IEC factor.
+
+**Fix direction:** implement Eq. (23) and Annex A with defaults for F_L and F_d (e.g. a globe valve from Table D.2), and the valve size (or C/d²) as an input, keeping F_R smooth for the solver; or keep the approximation and add a warning when Re_V < ~20. Changes results only in laminar and transitional valve flow.

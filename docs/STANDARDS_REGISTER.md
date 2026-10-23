@@ -50,7 +50,7 @@ The workflow for checking a source is the `standard-verification` skill ([.claud
 | `ISO-5167-1` | ISO 5167-1, *Measurement of fluid flow by means of pressure differential devices inserted in circular cross-section conduits running full — Part 1: General principles and requirements* | ISO 5167-1:2022, supersedes 2003 | Read: EVS-EN ISO 5167-1:2022 (identical text) |
 | `ISO-5167-2` | ISO 5167-2, *… — Part 2: Orifice plates* | ISO 5167-2:2022 (published 2022-06), supersedes 2003 | Read: EVS-EN ISO 5167-2:2022 (identical text) |
 | `ASME-MFC-3M` | ASME MFC-3M, *Measurement of Fluid Flow in Pipes Using Orifice, Nozzle, and Venturi* | MFC-3M-2004 incl. MFC-3Ma-2007, reaffirmed 2025 | Cited as a future option only |
-| `IEC-60534-2-1` | IEC 60534-2-1, *Industrial-process control valves — Part 2-1: Flow capacity — Sizing equations for fluid flow under installed conditions* | Ed. 2.0, 2011, corrigendum 2015 | |
+| `IEC-60534-2-1` | IEC 60534-2-1, *Industrial-process control valves — Part 2-1: Flow capacity — Sizing equations for fluid flow under installed conditions* | Ed. 2.0, 2011, corrigendum 2015 | Read: DIN EN 60534-2-1:2012-01 (German, = EN 60534-2-1:2011) + Berichtigung 1:2015-11 (= IEC Cor.:2015, Annex E Ex. 3-4 only) |
 | `IEC-60534-2-4` | IEC 60534-2-4, *Industrial-process control valves — Part 2-4: Flow capacity — Inherent flow characteristics and rangeability* | Ed. 2.0, 2009 | |
 | `ISA-75.01.01` | ANSI/ISA-75.01.01 (60534-2-1 MOD), *Industrial-Process Control Valves — Part 2-1: Flow capacity — Sizing equations for fluid flow under installed conditions* | 2012 | US adoption of `IEC-60534-2-1` |
 | `ISA-75.11.01` | ANSI/ISA-75.11.01, *Inherent Flow Characteristic and Rangeability of Control Valves* | 2013 | |
@@ -115,10 +115,10 @@ Doc § is section 2 of the equipment document. "Verified against" names the exac
 | CP-02 | centrifugal_pump | Definitions of rated flow, rated head, shutoff head and pump efficiency | `ISO-9906`, `HI-14.6` | ⚪ | | | | |
 | CP-03 | centrifugal_pump | NPSHa compared with NPSHr plus a user margin | `HI-9.6.1` | ⚪ | | | | 2024 edition: margin on NPSHR, not NPSH3 |
 | CP-04 | centrifugal_pump | Quadratic head curve and locked-rotor resistance as an engineering approximation | `GULICH` | ⚪ | | | | |
-| CV-01 | check_valve | Liquid Cv equation for the open valve loss | `IEC-60534-2-1` | ⚪ | | | | |
+| CV-01 | check_valve | Liquid Cv equation for the open valve loss | `IEC-60534-2-1` | ✅ | IEC 60534-2-1:2011 + Cor.:2015 | §6.1 Eq. (1), Tab. 1 | 2026-10-23 | K_Cv = 1.732e9 is Eq. (1) inverted with N1 = 8.65e-2 (−0.1 %, N1 rounding); Annex E Ex. 1 reproduced (459.5 vs 460 kPa). Choked flow (§6.2) and $F_P$ (§8) not modelled; IEC scope is control valves (§1): verifies the equation form only |
 | CV-02 | check_valve | Cracking pressure and non-return function of check valves | `API-594`, `API-6D` | ⚪ | | | | |
 | CV-03 | check_valve | Fischer-Burmeister function for complementarity problems | `FISCHER-1992` | ⚪ | | | | |
-| CVO-01 | check_valve_orifice | Liquid Cv equation for the open seat | `IEC-60534-2-1` | ⚪ | | | | Same clause as CV-01 |
+| CVO-01 | check_valve_orifice | Liquid Cv equation for the open seat | `IEC-60534-2-1` | ✅ | IEC 60534-2-1:2011 + Cor.:2015 | §6.1 Eq. (1), Tab. 1 | 2026-10-23 | Same as CV-01; IEC scope is control valves (§1): verifies the equation form only |
 | CVO-02 | check_valve_orifice | Orifice equation and permanent loss ratio $(1-\beta^2)$ for the bypass | `ISO-5167-1`, `ISO-5167-2` | ❌ | ISO 5167-1:2022, ISO 5167-2:2022 | F(1); §5.4 | 2026-10-23 | Equation ✅ as CR-01; loss ratio ❌ as CR-02. D-28 |
 | CVO-03 | check_valve_orifice | Cracking pressure of check valves | `API-594` | ⚪ | | | | |
 | FLT-01 | filter | Datasheet drop at a rated flow in a reference fluid | `ISO-3968` | ⚪ | | | | |
@@ -127,10 +127,10 @@ Doc § is section 2 of the equipment document. "Verified against" names the exac
 | HX-01 | heat_exchanger | Effectiveness-NTU method, limit $C_{\min}/C_{\max} \to 0$ | `KAYS-LONDON`, `INCROPERA`, `EPS-NTU` | ⚪ | | | | |
 | HX-02 | heat_exchanger | Flow scaling of UA with $\mathrm{Re}^{0.8}$ for liquid-cooled exchangers | `DITTUS-BOELTER-1930` | ⚪ 🚩 | | | | Attribution, see A.2 |
 | HX-03 | heat_exchanger | Background for rated duty, design temperatures and allowable pressure drop | `API-661`, `TEMA` | ⚪ | | | | |
-| LCV-01 | linear_control_valve | Incompressible sizing equation (Cv definition) | `IEC-60534-2-1`, `ISA-75.01.01` | ⚪ | | | | |
-| LCV-02 | linear_control_valve | Valve Reynolds number and viscosity correction $F_R$; WalFlow uses a smooth approximation, not the standard's formula | `IEC-60534-2-1`, `ISA-75.01.01` | ⚪ | | | | Verify by quantifying the difference to the standard's $F_R$ |
+| LCV-01 | linear_control_valve | Incompressible sizing equation (Cv definition) | `IEC-60534-2-1`, `ISA-75.01.01` | ✅ | IEC 60534-2-1:2011 + Cor.:2015 | §6.1 Eq. (1), Tab. 1 | 2026-10-23 | K_Cv = 1.732e9 is Eq. (1) inverted with N1 = 8.65e-2 (−0.1 %, N1 rounding); Annex E Ex. 1 reproduced (459.5 vs 460 kPa). Choked flow (§6.2) and $F_P$ (§8) not modelled |
+| LCV-02 | linear_control_valve | Valve Reynolds number and viscosity correction $F_R$; WalFlow uses a smooth approximation, not the standard's formula | `IEC-60534-2-1`, `ISA-75.01.01` | ⚠️ | IEC 60534-2-1:2011 + Cor.:2015 | §9 Eq. (23), Annex A Eq. (A.6)-(A.8b) | 2026-10-23 | D-29: smooth $F_R$ ≥ 0.5; Δp within −13/+11 % for Re_V 40-1e5, 1-2+ orders too low below Re_V ≈ 20; at Re_V ≥ 1e4 Δp +0.1…+9 % (standard $F_R$ = 1) |
 | LCV-03 | linear_control_valve | Linear inherent characteristic | `ISA-75.11.01`, `IEC-60534-2-4` | ⚪ | | | | |
-| REG-01 | linear_regulator | Liquid Cv equation | `IEC-60534-2-1`, `ISA-75.01.01` | ⚪ | | | | Same clause as LCV-01 |
+| REG-01 | linear_regulator | Liquid Cv equation | `IEC-60534-2-1`, `ISA-75.01.01` | ✅ | IEC 60534-2-1:2011 + Cor.:2015 | §6.1 Eq. (1), Tab. 1 | 2026-10-23 | Same as LCV-01 |
 | REG-02 | linear_regulator | Linear inherent characteristic | `ISA-75.11.01` | ⚪ | | | | Same clause as LCV-03 |
 | REG-03 | linear_regulator | Lock-up: closed tight at zero demand | `EN-334` | ⚪ 🚩 | | | | `EN-334` covers fuel-gas regulators |
 | ORI-01 | orifice | Reader-Harris/Gallagher discharge coefficient | `ISO-5167-2` | ✅ | ISO 5167-2:2022 | §5.3.2.1 F(4) | 2026-10-23 | Corner tappings ($L_1 = L_2' = 0$), incl. the $D < 71.12$ mm term |
@@ -149,7 +149,7 @@ Doc § is section 2 of the equipment document. "Verified against" names the exac
 | PSV-06 | pressure_safety_valve | Balanced bellows valves usable up to about 50 % of set | `API-520-2`, `API-521` | ⚪ | | | | |
 | PSV-07 | pressure_safety_valve | Orifice designations, which the Cv stands in for | `API-526` | ⚪ | | | | |
 | PSV-08 | pressure_safety_valve | Seat tightness: the closed valve passes no flow | `API-527` | ⚪ | | | | API 527 sets allowable leakage rates; zero flow is an idealisation |
-| PSV-09 | pressure_safety_valve | Liquid Cv equation for the open valve loss | `IEC-60534-2-1` | ⚪ | | | | Relief valves are rated with $K_d$ and area to API 520, not Cv |
+| PSV-09 | pressure_safety_valve | Liquid Cv equation for the open valve loss | `IEC-60534-2-1` | ✅ | IEC 60534-2-1:2011 + Cor.:2015 | §6.1 Eq. (1), Tab. 1 | 2026-10-23 | Same as LCV-01; IEC scope is control valves (§1): verifies the equation form only; PSV capacity is rated by $K_d$ and area (API 520) |
 | RED-01 | reducer | Gradual contraction and enlargement loss coefficients, referenced to the small bore (A-26) | `CRANE-TP410` | ⚪ 🚩 | | | | Page number depends on the edition |
 | RED-02 | reducer | Background for conical contractions and diffusers | `IDELCHIK`, `MILLER` | ⚪ | | | | |
 | RED-03 | reducer | Darcy friction factor for the transition wall friction | `CHURCHILL-1977` | ⚪ | | | | Same as PIPE-02 |
@@ -158,15 +158,15 @@ Doc § is section 2 of the equipment document. "Verified against" names the exac
 | RLF-01 | relief_device | Gauge set pressure, 10 % overpressure at rated capacity for liquid, blowdown, reseat | `API-520-1`, `ISO-4126-1` | ⚪ | | | | Shares clauses with PSV-01..03 |
 | RLF-02 | relief_device | Relieved pressure, accumulation and overpressure scenarios | `API-521`, `ISO-23251` | ⚪ | | | | |
 | RLF-03 | relief_device | Bursting discs: burst pressure, open after burst | `ISO-4126-2`, `ASME-VIII-1` | ⚪ 🚩 | | | | Section VIII rules moved to `ASME-XIII` |
-| RCV-01 | remote_control_valve | Liquid Cv equation | `IEC-60534-2-1`, `ISA-75.01.01` | ⚪ | | | | Same clause as LCV-01 |
+| RCV-01 | remote_control_valve | Liquid Cv equation | `IEC-60534-2-1`, `ISA-75.01.01` | ✅ | IEC 60534-2-1:2011 + Cor.:2015 | §6.1 Eq. (1), Tab. 1 | 2026-10-23 | Same as LCV-01 |
 | RCV-02 | remote_control_valve | PC → PCV loop notation | `ISA-5.1` | ⚪ | | | | Notation only; the controller is an idealisation |
 | RD-01 | rupture_disc | Burst pressure, application and sizing of bursting discs | `ISO-4126-2`, `ISO-4126-6` | ⚪ | | | | |
 | RD-02 | rupture_disc | Rupture disc devices (UG-127) | `ASME-VIII-1` | ⚪ 🚩 | | | | Moved to `ASME-XIII` from 2021 |
 | RD-03 | rupture_disc | 10 % overpressure for liquid relief capacity | `API-520-1` | ⚪ | | | | |
 | RD-04 | rupture_disc | Flow resistance method ($K_R$) for discs | `API-520-1` | ⚪ | | | | |
 | RD-05 | rupture_disc | Orifice flow equation for the reduced bore | `ISO-5167-2` | ✅ | ISO 5167-2:2022 | F(1) | 2026-10-23 | As CR-01; the code also uses $(1-\beta^2)$, see D-28 |
-| RD-06 | rupture_disc | Liquid Cv equation for the full bore | `IEC-60534-2-1` | ⚪ | | | | |
-| TCV-01 | three_way_tcv | Liquid Cv equation per path | `IEC-60534-2-1`, `ISA-75.01.01` | ⚪ | | | | Same clause as LCV-01 |
+| RD-06 | rupture_disc | Liquid Cv equation for the full bore | `IEC-60534-2-1` | ✅ | IEC 60534-2-1:2011 + Cor.:2015 | §6.1 Eq. (1), Tab. 1 | 2026-10-23 | Same as LCV-01; IEC scope is control valves (§1): verifies the equation form only |
+| TCV-01 | three_way_tcv | Liquid Cv equation per path | `IEC-60534-2-1`, `ISA-75.01.01` | ✅ | IEC 60534-2-1:2011 + Cor.:2015 | §6.1 Eq. (1), Tab. 1 | 2026-10-23 | Same as LCV-01 |
 | TCV-02 | three_way_tcv | Linear complementary characteristic of a 3-way mixing valve | `ISA-75.11.01` | ⚪ | | | | |
 | PDP-01 | volumetric_pump | Flow set by displacement, relief protection on the discharge, rated power | `API-676`, `API-674` | ⚪ | | | | |
 | PDP-02 | volumetric_pump | Definitions of displacement, slip and pump efficiency | `HI-3.1-3.5` | ⚪ | | | | |
@@ -180,6 +180,7 @@ Documents with no source: `base_node`, `flow_source`, `pressure_source`, `measur
 | :--- | :--- | :--- | :--- | :--- |
 | 2026-10-23 | Bibliographic web check of all sources in Part A (no source text read) | all | Editions recorded in Part A; 🚩 flags on CR-02, CR-03, CVO-02, HX-02, REG-03, PIPE-04, RED-01, RLF-03, RD-02, PDP-03 | Claude, from publisher, standards-body and reseller listings |
 | 2026-10-23 | ISO 5167-1:2022 and ISO 5167-2:2022, read as EVS-EN ISO 5167-1/-2:2022 | CR-01, CR-02, CVO-02, ORI-01..04, RD-05 | ✅ CR-01, ORI-01, ORI-02, ORI-04, RD-05; ⚠️ ORI-03 (D-26); ❌ CR-02, CVO-02 (D-28); doc error D-27 | Claude; second opinion `walflow-physics-reviewer` (agreed) |
+| 2026-10-23 | IEC 60534-2-1:2011 + Cor.:2015, read as DIN EN 60534-2-1:2012-01 + Berichtigung 1:2015-11 | CV-01, CVO-01, LCV-01, LCV-02, REG-01, PSV-09, RCV-01, RD-06, TCV-01 | ✅ all Cv-equation claims; ⚠️ LCV-02 (D-29) | Claude; second opinion `walflow-physics-reviewer` (agreed on Cv equation; raised LCV-02 from ✅ to ⚠️) |
 
 ## Private reference library
 

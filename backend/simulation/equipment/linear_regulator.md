@@ -19,7 +19,7 @@ Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_RE
 
 | Claim | Type | Source (edition) | Used for | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| REG-01 | Standard | IEC 60534-2-1:2011; ANSI/ISA-75.01.01-2012 | Liquid Cv equation, as in the [linear control valve](linear_control_valve.md#3-physical--mathematical-implementation) | ⚪ Unverified |
+| REG-01 | Standard | IEC 60534-2-1:2011; ANSI/ISA-75.01.01-2012 | Liquid Cv equation, as in the [linear control valve](linear_control_valve.md#3-physical--mathematical-implementation) | ✅ IEC 60534-2-1:2011 §6.1 Eq. (1) |
 | REG-02 | Standard | ANSI/ISA-75.11.01-2013 | Linear inherent characteristic | ⚪ Unverified |
 | REG-03 | Standard | EN 334:2019+A1:2024 | Lock-up: closed tight at zero demand (EN 334 covers fuel-gas regulators) | ⚪ Unverified 🚩 |
 
