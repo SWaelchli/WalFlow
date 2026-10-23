@@ -15,10 +15,10 @@ Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_RE
 
 | Claim | Type | Source (edition) | Used for | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| ORI-01 | Standard | ISO 5167-2:2022 | Reader-Harris/Gallagher discharge coefficient (primary implementation standard) | ⚪ Unverified |
-| ORI-02 | Standard | ISO 5167-2:2022 | Permanent pressure loss, §5.4 Formula (7) | ⚪ Unverified |
-| ORI-03 | Standard | ISO 5167-2:2022 | Validity limits of the `iso_5167` model | ⚪ Unverified |
-| ORI-04 | Standard | ISO 5167-1:2022 | General principles and requirements | ⚪ Unverified |
+| ORI-01 | Standard | ISO 5167-2:2022 | Reader-Harris/Gallagher discharge coefficient (primary implementation standard) | ✅ ISO 5167-2:2022 §5.3.2.1 F(4) |
+| ORI-02 | Standard | ISO 5167-2:2022 | Permanent pressure loss, §5.4 Formula (7) | ✅ ISO 5167-2:2022 §5.4.1 F(7) |
+| ORI-03 | Standard | ISO 5167-2:2022 | Validity limits of the `iso_5167` model | ⚠️ §5.3.1 Reynolds limit, D-26 |
+| ORI-04 | Standard | ISO 5167-1:2022 | General principles and requirements | ✅ ISO 5167-1:2022 §5.1 F(1) |
 
 Future options (the architecture supports adding them): ASME MFC-3M-2004 (R2025) for orifice plates, Crane TP-410 resistance-coefficient method. Not cited for any claim.
 

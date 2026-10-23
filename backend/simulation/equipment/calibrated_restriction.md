@@ -18,8 +18,8 @@ Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_RE
 
 | Claim | Type | Source (edition) | Used for | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| CR-01 | Standard | ISO 5167-1:2022; ISO 5167-2:2022 | Orifice flow equation for the equivalent orifice | ⚪ Unverified |
-| CR-02 | Standard | ISO 5167-2:2022 | Permanent pressure loss ratio $(1 - \beta^2)$ (classic form) | ⚪ Unverified 🚩 |
+| CR-01 | Standard | ISO 5167-1:2022; ISO 5167-2:2022 | Orifice flow equation for the equivalent orifice | ✅ ISO 5167-1:2022 §5.1 F(1) (equation form) |
+| CR-02 | Standard | ISO 5167-2:2022 | Permanent pressure loss ratio $(1 - \beta^2)$ (classic form) | ❌ Not in ISO 5167-2 (§5.4 gives F(7), 1 − β^1.9), D-28 |
 | CR-03 | Literature | Wuest (1954), citation not identified; Idelchik, *Handbook of Hydraulic Resistance*, 4th ed. (2008) | Laminar discharge coefficient $C_d \approx 0.2\sqrt{\mathrm{Re}}$ of small orifices | ⚪ Unverified 🚩 |
 | CR-04 | Principle | Hagen-Poiseuille law | Laminar law $\Delta P \propto \mu Q$ | ➖ Principle |
 | CR-05 | Literature | Crane TP-410, *Flow of Fluids* (edition not fixed; newest confirmed 2018) | Resistance coefficient $K$ for the quadratic law | ⚪ Unverified |

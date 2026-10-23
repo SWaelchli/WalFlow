@@ -42,6 +42,9 @@ Status: `open` / `fixed` / `rejected`. "Confirmed" means it was reproduced by ru
 | D-23 | Solver / equipment | Analytical dp derivatives of most components are never used by the solver (dead code) | Low / cleanup | Mutation testing | open |
 | D-24 | Solver / junctions | A junction downstream of two hot supplies reports ~1 K below the coldest supply without any cooler | Medium | Confirmed (property test, explore) | open |
 | D-25 | Frontend / file format | The `.wlf` header is written by hand in three places instead of by `serializeDiagram`, so it can drift when the format changes | Low / cleanup | Code review | open |
+| D-26 | Orifice | ISO Reynolds limit for β > 0.56 is a flat 16 000 instead of 16 000·β² (ISO 5167-2:2022 §5.3.1); up to +12 % permanent loss in the ISO-valid range | Medium (wrong result) | Confirmed (standard + calculation) | open |
+| D-27 | Orifice / docs | `orifice.md` §3.1 describes the old β and d clamps (0.1-0.75, d ≥ 12.5 mm); the code uses 0.01-0.99 and no d clamp | Low / docs | Code reading | open |
+| D-28 | Calibrated restriction, check valve orifice, rupture disc / docs | Permanent loss ratio (1 − β²) is attributed to ISO 5167-2, which gives only Formula (7) and 1 − β^1.9 | Low / decision | Confirmed (standard) | open |
 
 ---
 
@@ -489,3 +492,33 @@ The analytical `calculate_dp_derivative` methods of those components are only ex
 **What happens:** nothing today; all three write format 0.2. When the file format changes, these copies can drift from `serializeDiagram` and write files that `checkDiagramFile` rejects or that miss new fields. The round-trip test in `diagramFile.test.js` covers only `serializeDiagram`.
 
 **Fix direction:** a cleanup. Build those payloads with `serializeDiagram` (empty nodes and edges where needed), so one function owns the header.
+
+---
+
+## D-26 Orifice Reynolds limit for large β
+
+**Where:** `backend/simulation/equipment/orifice.py::_re_valid` and `orifice.md` §3.5. Found by verifying claim ORI-03 against ISO 5167-2:2022 (2026-10-23, `docs/STANDARDS_REGISTER.md`).
+
+**What happens:** ISO 5167-2:2022 §5.3.1 sets the lower Reynolds limit for corner and D-D/2 tappings at Re_D ≥ 5 000 for β ≤ 0.56 and Re_D ≥ 16 000·β² for β > 0.56. `_re_valid` returns a flat 16 000 for β > 0.56. The value is the top of the blend band (Re_lo = 0.4·Re_valid) and the threshold of `iso_validity_issues`. At β = 0.75 (ISO limit 9 000) the model still blends towards the viscous extension: C_d is 5.4 % below Reader-Harris/Gallagher at Re_D 9 000 (permanent loss about +12 %), 4.2 % at 10 000 (+9 %), 2.0 % at 12 000 (+4 %); and the warning flags ISO-valid points as invalid.
+
+**Fix direction:** return `16000.0 * beta ** 2` for β > 0.56 (continuous with 5 000 at β = 0.56 within 0.4 %), update `orifice.md` §3.5, and add a reference row at β = 0.75, Re_D just above 9 000 expecting the pure RG coefficient. Check the golden examples for orifices with β > 0.56.
+
+---
+
+## D-27 Orifice document describes the old clamps
+
+**Where:** `backend/simulation/equipment/orifice.md` §3.1 (and the clamp text around line 135). Found while verifying ORI-03 (2026-10-23).
+
+**What happens:** the document says the RG inputs are clamped to β 0.1-0.75 and d ≥ 12.5 mm. Since F1-39 the code uses the true β, guarded only to 0.01-0.99 (`_beta_eff`), with no d clamp, and reports the ISO limits through `iso_validity_issues`.
+
+**Fix direction:** correct the document; no code change.
+
+---
+
+## D-28 Permanent loss ratio (1 − β²) has no ISO source
+
+**Where:** `calibrated_restriction.py`, `check_valve_orifice.py`, `rupture_disc.py` and the `classic_cd` model of `orifice.py`; claims CR-02 and CVO-02 in the register. Found by verifying against ISO 5167-2:2022 (2026-10-23).
+
+**What happens:** the documents attribute the ratio permanent loss / differential pressure = 1 − β² to ISO 5167-2. The standard gives Formula (7) (§5.4.1) and the simpler approximation 1 − β^1.9 (§5.4.2) only. Numerically 1 − β² is within −2.4 % … +2.5 % of Formula (7) for β 0.2-0.75, so the results are close; the citation is wrong.
+
+**Fix direction:** a decision: (a) use Formula (7) with the model's C_d, as the orifice does; (b) use §5.4.2, 1 − β^1.9; or (c) keep 1 − β² and cite a source that gives it. (a) or (b) changes results by up to 2.5 %.
