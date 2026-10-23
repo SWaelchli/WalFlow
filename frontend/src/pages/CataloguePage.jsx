@@ -50,11 +50,11 @@ const SOURCE_LABELS = { ALL: 'All', WALFLOW_EXAMPLE: 'Example', TR2000: 'TR2000'
 const sourceLabel = (code) => SOURCE_LABELS[code] || code;
 // Catalog names come from the fitting catalog (database); the code shows while it is not loaded
 const catalogName = (code, options) => options.find(o => o.code === code)?.name || code;
-const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, onOpenHelpModal }) => {
+const CataloguePage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, onOpenHelpModal }) => {
   const { currentUser, isAuthenticated, isAdmin, adminStatus, logout } = useAuth();
   const { isImperial } = useUnits();
 
-  const [activeTab, setActiveTab] = useState('pipe_classes'); // 'pipe_classes' | 'fitting_standards'
+  const [activeTab, setActiveTab] = useState('pipe_classes'); // 'pipe_classes' | 'fitting_standards' | 'control_valves'
   const scheduleStandardOptions = getScheduleStandardOptions(useFittingStandards('pipe_schedule'));
   const reducerStandardOptions = getReducerStandardOptions(useFittingStandards('reducer'));
   const units = specUnits(isImperial);
@@ -868,6 +868,29 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
             >
               Fitting standards and schedules
             </button>
+            <button
+              onClick={async () => {
+                if (activeTab === 'control_valves') return;
+                if (hasUnsavedEdit && !(await confirmDiscard('switch tabs'))) return;
+                handleCancelEdit();
+                setActiveTab('control_valves');
+              }}
+              style={{
+                height: '28px',
+                padding: '0 12px',
+                fontSize: 'var(--fs-sm)',
+                fontWeight: '600',
+                borderRadius: '7px',
+                border: 'none',
+                cursor: 'pointer',
+                backgroundColor: activeTab === 'control_valves' ? 'var(--color-brand-dark)' : 'transparent',
+                color: activeTab === 'control_valves' ? 'var(--color-text-inverse)' : 'var(--color-text-secondary)',
+                boxShadow: activeTab === 'control_valves' ? 'var(--shadow-sm)' : 'none',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              Control valve styles
+            </button>
           </div>
         </div>
 
@@ -964,7 +987,9 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
 
       {/* Main Content Area: Pipe Classes Catalog vs Fitting Standards & Schedules */}
       {activeTab === 'fitting_standards' ? (
-        <FittingStandardsTab currentUser={currentUser} canManage={canManage} onDirtyChange={setIsFittingDirty} />
+        <FittingStandardsTab key="fittings" currentUser={currentUser} canManage={canManage} onDirtyChange={setIsFittingDirty} />
+      ) : activeTab === 'control_valves' ? (
+        <FittingStandardsTab key="control_valves" fittingType="control_valve" currentUser={currentUser} canManage={canManage} onDirtyChange={setIsFittingDirty} />
       ) : (
 
         <div style={{ display: 'flex', flexGrow: 1, overflow: 'hidden' }}>
@@ -2489,4 +2514,4 @@ const PipeClassesPage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, 
   );
 };
 
-export default PipeClassesPage;
+export default CataloguePage;

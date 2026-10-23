@@ -42,7 +42,7 @@ export default function Navbar({
   onOpenAdminHub,
   onOpenHelpModal,
   onLogoutClear,
-  onNavigateToPipes,
+  onNavigateToCatalogue,
   cases = [],
   activeCaseId = 'case_base',
   onSelectCase,
@@ -269,7 +269,7 @@ export default function Navbar({
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
 
         <button
-          onClick={onNavigateToPipes}
+          onClick={onNavigateToCatalogue}
           className="btn-secondary"
           style={{
             height: '34px',
@@ -278,9 +278,9 @@ export default function Navbar({
             fontSize: 'var(--fs-sm)',
             fontWeight: '700'
           }}
-          title="Open the piping class catalogue"
+          title="Open the catalogue: pipe classes, fitting standards and control valve styles"
         >
-          Piping classes
+          Catalogue
         </button>
 
         <button

@@ -68,8 +68,9 @@ For equal mass flows at 80 °C and 20 °C the enthalpy mix is 0.02 K above the m
 | Max Cv | Cv | `self.max_cv` | Cv | 0.1 | $> 0$ | Cv of each path fully open |
 | Set Temperature | °C (°F) | `self.set_temperature` | K | 40 °C | fluid validity range | Mixed outlet setpoint |
 | Hot port | index | `self.hot_port_idx` | - | 0 (Inlet 1, left) | 0, 1 | Which inlet is the hot port |
-| — (node data `fl`, no UI yet) | – | `self.fl` | – | 0.9 | $(0, 1]$ | Liquid pressure recovery factor $F_L$ of each path (Table D.2) |
-| — (node data `fd`, no UI yet) | – | `self.fd` | – | 0.46 | $> 0$ | Valve style modifier $F_d$ of each path (Table D.2) |
+| Valve style | catalogue entry or Custom | `valve_style_id` | – | IEC Table D.2 globe single port, contoured plug, flow to open | catalogue `control_valve` rows, `custom` | Sets $F_L$ and $F_d$ from the [catalogue](../../../frontend/src/pages/CataloguePage.jsx) (Control valve styles); Custom makes them editable (D-29) |
+| F_L (from the style, or Custom) | – | `self.fl` | – | 0.9 | $(0, 1]$ | Liquid pressure recovery factor $F_L$ of each path (Table D.2) |
+| F_d (from the style, or Custom) | – | `self.fd` | – | 0.46 | $> 0$ | Valve style modifier $F_d$ of each path (Table D.2) |
 | — (from connected pipe) | – | `self.pipe_diameter` | m | 0.05248 | $> 0$ | Valve size $d = D$ for $F_R$ |
 
 The mix ratio (`self.mix_ratio`) is a result.
@@ -107,3 +108,5 @@ Node type: `three_way_tcv`. Field names follow the naming rule in [base_node.md]
 | `hot_port_idx` | index (0 or 1) | 0 |
 | `fl` | factor $F_L$ (IEC 60534-2-1) | 0.9 |
 | `fd` | factor $F_d$ (IEC 60534-2-1) | 0.46 |
+
+The node data also carries `valve_style_id` (`<catalogue code>:<row code>` or `custom`, default `IEC_60534_2_1_TABLE_D2:globe_single_contoured_open`) for the inspector's valve style; the parser reads only `fl` and `fd` (D-29).

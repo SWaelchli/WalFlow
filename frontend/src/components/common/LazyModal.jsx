@@ -8,7 +8,7 @@ export const AdminSetupModal = lazy(() => import('../modals/AdminSetupModal'));
 export const AdminHubModal = lazy(() => import('../modals/AdminHubModal'));
 export const SaveAsModal = lazy(() => import('../modals/SaveAsModal'));
 export const NewDrawingModal = lazy(() => import('../modals/NewDrawingModal'));
-export const PipeClassesPage = lazy(() => import('../../pages/PipeClassesPage'));
+export const CataloguePage = lazy(() => import('../../pages/CataloguePage'));
 
 /**
  * Renders a lazy modal. Nothing is loaded until the modal is first opened; after that it stays mounted

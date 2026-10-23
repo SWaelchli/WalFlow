@@ -1,10 +1,13 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import SetupPanel from './SetupPanel';
 import { UnitProvider } from '../../context/UnitContext';
 import { UNIT_SYSTEMS } from '../../utils/converters';
+import { primeFittingStandards } from '../../hooks/useFittingStandards';
+import { notify } from '../../utils/dialogs';
 
 vi.mock('axios', () => ({ default: { get: vi.fn(() => Promise.resolve({ data: [] })) } }));
+vi.mock('../../utils/dialogs', async (orig) => ({ ...(await orig()), notify: vi.fn() }));
 
 afterEach(cleanup);
 
@@ -173,5 +176,73 @@ describe('F2-04: the heat exchanger inspector shows what the solver uses', () =>
   it('shows 0.5 bar for a heat exchanger without a stored rated pressure drop', () => {
     renderNodePanel({ id: 'hx1', type: 'heat_exchanger', data: {} });
     expect(screen.getByDisplayValue('0.5')).toBeTruthy();
+  });
+});
+
+describe('D-29b: control valve style picker in the inspector', () => {
+  const IEC = 'IEC_60534_2_1_TABLE_D2';
+  const catalogue = {
+    code: IEC, name: 'IEC 60534-2-1 Table D.2', fitting_type: 'control_valve',
+    dimensions: [
+      { code: 'globe_single_contoured_open', valve_type: 'Globe', trim: 'single seat', flow_direction: 'Flow to open', fl: 0.9, fd: 0.46, xt: 0.72 },
+      { code: 'angle_single_contoured_open', valve_type: 'Globe, angle', trim: 'single seat', flow_direction: 'Flow to open', fl: 0.8, fd: 0.41, xt: 0.65 },
+      { code: 'butterfly_70', valve_type: 'Butterfly', trim: '70 deg', flow_direction: 'Either direction', fl: 0.62, fd: 0.57, xt: null }
+    ]
+  };
+  const valve = (type, data) => ({ id: 'v1', type, data: { max_cv: 0.05, ...data } });
+  const styled = { valve_style_id: `${IEC}:globe_single_contoured_open`, fl: 0.9, fd: 0.46 };
+
+  beforeEach(() => { primeFittingStandards('control_valve', [catalogue]); vi.mocked(notify).mockClear(); });
+  afterEach(() => primeFittingStandards('control_valve', []));
+
+  it('offers the picker on the three IEC valves but not on the linear regulator', () => {
+    for (const type of ['linear_control_valve', 'remote_control_valve', 'three_way_tcv']) {
+      renderNodePanel(valve(type, styled));
+      expect(screen.getByLabelText('Valve style')).toBeTruthy();
+      cleanup();
+    }
+    renderNodePanel(valve('linear_regulator', {}));
+    expect(screen.queryByLabelText('Valve style')).toBeNull();
+  });
+
+  it('writes the style id with the row F_L and F_d, and shows them read-only', () => {
+    renderNodePanel(valve('linear_control_valve', styled));
+    expect(screen.queryByLabelText('F_L')).toBeNull();
+    // the closed select names the valve type, so globe and angle with the same trim are distinguishable
+    const selected = () => screen.getByLabelText('Valve style').selectedOptions[0].textContent;
+    expect(selected()).toBe('Globe · single seat, flow to open');
+    const title = screen.getByLabelText('Valve style').title;
+    expect(title.startsWith('Globe · single seat, flow to open\n\n')).toBe(true);
+    expect(title).toContain('Flow to open: the flow pushes the plug away from the seat');
+    cleanup();
+    renderNodePanel(valve('linear_control_valve', { valve_style_id: `${IEC}:angle_single_contoured_open`, fl: 0.8, fd: 0.41 }));
+    expect(selected()).toBe('Globe, angle · single seat, flow to open');
+    cleanup();
+    const onUpdate = renderNodePanel(valve('linear_control_valve', styled));
+    fireEvent.change(screen.getByLabelText('Valve style'), { target: { value: `${IEC}:butterfly_70` } });
+    expect(onUpdate).toHaveBeenCalledWith('v1', { valve_style_id: `${IEC}:butterfly_70`, fl: 0.62, fd: 0.57 });
+  });
+
+  it('Custom makes F_L and F_d editable and rejects F_L 1.2 and F_d 0', () => {
+    const onUpdate = renderNodePanel(valve('linear_control_valve', { valve_style_id: 'custom', fl: 0.8, fd: 0.5 }));
+    const fl = screen.getByLabelText('F_L');
+    fireEvent.change(fl, { target: { value: '1.2' } });
+    fireEvent.blur(fl);
+    const fd = screen.getByLabelText('F_d');
+    fireEvent.change(fd, { target: { value: '0' } });
+    fireEvent.blur(fd);
+    expect(onUpdate).not.toHaveBeenCalled();
+    expect(notify).toHaveBeenCalledTimes(2);
+
+    fireEvent.change(screen.getByLabelText('F_L'), { target: { value: '0.75' } });
+    fireEvent.blur(screen.getByLabelText('F_L'));
+    expect(onUpdate).toHaveBeenCalledWith('v1', { fl: 0.75 });
+  });
+
+  it('keeps F_L and F_d of a style missing from the catalogue and says so', () => {
+    const onUpdate = renderNodePanel(valve('linear_control_valve', { valve_style_id: `${IEC}:removed_row`, fl: 0.77, fd: 0.5 }));
+    expect(screen.getByText('Not in catalogue')).toBeTruthy();
+    expect(screen.getByText(/Style not in catalogue: F_L 0\.77, F_d 0\.50 kept/)).toBeTruthy();
+    expect(onUpdate).not.toHaveBeenCalled();
   });
 });

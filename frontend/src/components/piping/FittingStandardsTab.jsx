@@ -28,7 +28,8 @@ import { modalA11yRef } from '../../hooks/useModalA11y';
 import { clickableProps } from '../../utils/a11yProps';
 
 const STANDARD_GROUPS = ['ASME', 'DIN_EN', 'ISO', 'CUSTOM'];
-const GROUP_LABELS = { ASME: 'ASME', DIN_EN: 'DIN EN', ISO: 'ISO', CUSTOM: 'Custom' };
+const VALVE_GROUPS = ['IEC', 'CUSTOM'];
+const GROUP_LABELS = { ASME: 'ASME', DIN_EN: 'DIN EN', ISO: 'ISO', IEC: 'IEC', CUSTOM: 'Custom' };
 const groupLabel = (g) => GROUP_LABELS[g] || g;
 const SUBTYPE_LABELS = { concentric: 'Concentric', eccentric: 'Eccentric', concentric_eccentric: 'Concentric & eccentric' };
 const subtypeLabel = (t) => SUBTYPE_LABELS[t] || String(t || '').replace(/_/g, ' ');
@@ -55,8 +56,39 @@ const withInsideDiameters = (row) => {
   return { ...row, schedules };
 };
 
+const EMPTY_VALVE_ROW = { code: '', valve_type: '', trim: '', flow_direction: '', fl: '', fd: '', xt: '' };
+const isBlank = (v) => v === '' || v === null || v === undefined;
+
+/** Control valve rows as the API takes them: numbers parsed, an empty x_T as null. */
+const valveRowsForSave = (rows) => rows.map(r => ({
+  ...r,
+  code: String(r.code || '').trim(),
+  valve_type: String(r.valve_type || '').trim(),
+  trim: String(r.trim || '').trim(),
+  flow_direction: String(r.flow_direction || '').trim(),
+  fl: Number(r.fl),
+  fd: Number(r.fd),
+  xt: isBlank(r.xt) ? null : Number(r.xt)
+}));
+
 /** First problem with an edited dimensions table, or null. */
 function dimensionError(type, rows) {
+  if (type === 'control_valve') {
+    const seen = new Set();
+    for (const [i, r] of rows.entries()) {
+      const label = `Row ${i + 1}`;
+      const code = String(r.code || '').trim();
+      if (code.length < 1 || code.length > 50) return `${label}: the code must be 1 to 50 characters.`;
+      if (code.includes(':')) return `${label}: the code must not contain ':'.`;
+      if (seen.has(code)) return `Code ${code} is listed more than once.`;
+      seen.add(code);
+      if (!String(r.valve_type || '').trim()) return `${label}: enter the valve type.`;
+      if (isBlank(r.fl) || !(Number(r.fl) > 0 && Number(r.fl) <= 1)) return `${label}: F_L must be greater than 0 and at most 1.`;
+      if (isBlank(r.fd) || !(Number(r.fd) > 0)) return `${label}: F_d must be greater than 0.`;
+      if (!isBlank(r.xt) && !(Number(r.xt) > 0 && Number(r.xt) <= 1)) return `${label}: x_T must be empty or greater than 0 and at most 1.`;
+    }
+    return null;
+  }
   if (type === 'reducer') {
     const seen = new Set();
     for (const [i, r] of rows.entries()) {
@@ -94,7 +126,132 @@ const smallInput = (width) => ({ width, height: '28px', fontSize: 'var(--fs-sm)'
 const fieldLabel = { display: 'block', fontSize: 'var(--fs-xs)', fontWeight: '700', color: 'var(--color-brand-dark)', marginBottom: '4px' };
 const toolbarBtn = { height: '32px', padding: '0 12px', fontSize: 'var(--fs-xs)', fontWeight: '700', gap: '4px' };
 
-const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUser, onDirtyChange }) {
+const VALVE_COLUMNS = ['Code', 'Valve type', 'Trim', 'Flow direction'];
+const valveNumberInvalid = (field, v) => {
+  if (isBlank(v)) return field !== 'xt';
+  const n = Number(v);
+  if (field === 'fd') return !(n > 0);
+  return !(n > 0 && n <= 1);
+};
+const formatFactor = (v) => (isBlank(v) || !Number.isFinite(Number(v)) ? '—' : Number(v).toFixed(2));
+const invalidBorder = { borderColor: 'var(--color-danger)' };
+
+/** Control valve style rows: grouped by valve type when viewing, inline inputs when editing. */
+function ValveStyleTable({ rows, isEditing, onChange, onNumber, onRemove }) {
+  const head = (
+    <thead>
+      <tr style={{ borderBottom: '2px solid var(--color-border)', textAlign: 'left', color: 'var(--color-text-secondary)', fontSize: 'var(--fs-xs)', fontWeight: '700' }}>
+        {VALVE_COLUMNS.map(label => <th key={label} style={thStyle}>{label}</th>)}
+        <th style={{ ...thStyle, textAlign: isEditing ? 'left' : 'right' }}>F_L</th>
+        <th style={{ ...thStyle, textAlign: isEditing ? 'left' : 'right' }}>F_d</th>
+        <th style={{ ...thStyle, textAlign: isEditing ? 'left' : 'right' }} title="x_T is listed for reference; gas flow is not modelled">x_T (info)</th>
+        {isEditing && <th style={{ ...thStyle, textAlign: 'center' }}>Action</th>}
+      </tr>
+    </thead>
+  );
+
+  if (!isEditing) {
+    // Group by valve type, keeping the catalogue order
+    const byType = [];
+    rows.forEach(row => {
+      const type = row.valve_type || '—';
+      let group = byType.find(g => g.type === type);
+      if (!group) { group = { type, rows: [] }; byType.push(group); }
+      group.rows.push(row);
+    });
+    const factorStyle = { ...thStyle, fontWeight: '700', color: 'var(--color-brand-dark)', fontVariantNumeric: 'tabular-nums', textAlign: 'right' };
+    return (
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--fs-sm)' }}>
+        {head}
+        <tbody>
+          {byType.map(group => (
+            <React.Fragment key={group.type}>
+              <tr style={{ backgroundColor: 'var(--color-surface-light)' }}>
+                <td colSpan={7} style={{ ...thStyle, fontWeight: '800', color: 'var(--color-brand-dark)' }}>{group.type}</td>
+              </tr>
+              {group.rows.map(row => (
+                <tr key={row.code} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                  <td style={{ ...thStyle, fontWeight: '700' }}><code>{row.code}</code></td>
+                  <td style={thStyle}>{row.valve_type}</td>
+                  <td style={{ ...thStyle, color: 'var(--color-text-secondary)' }}>{row.trim || '—'}</td>
+                  <td style={{ ...thStyle, color: 'var(--color-text-secondary)' }}>{row.flow_direction || '—'}</td>
+                  <td style={factorStyle}>{formatFactor(row.fl)}</td>
+                  <td style={factorStyle}>{formatFactor(row.fd)}</td>
+                  <td style={{ ...thStyle, color: 'var(--color-text-secondary)', fontVariantNumeric: 'tabular-nums', textAlign: 'right' }}>{formatFactor(row.xt)}</td>
+                </tr>
+              ))}
+            </React.Fragment>
+          ))}
+        </tbody>
+      </table>
+    );
+  }
+
+  return (
+    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--fs-sm)' }}>
+      {head}
+      <tbody>
+        {rows.map((row, idx) => {
+          const label = `Row ${idx + 1}`;
+          const codeText = String(row.code || '').trim();
+          const codeInvalid = codeText === '' || codeText.length > 50 || codeText.includes(':')
+            || rows.some((r, i) => i !== idx && String(r.code || '').trim() === codeText);
+          const textInput = (field, name, width, invalid = false) => (
+            <input
+              type="text"
+              aria-label={`${label}: ${name}`}
+              value={row[field] ?? ''}
+              onChange={(e) => onChange(idx, r => ({ ...r, [field]: e.target.value }))}
+              className="form-input"
+              style={{ ...smallInput(width), ...(invalid ? invalidBorder : {}) }}
+            />
+          );
+          const numberInput = (field, name) => (
+            <DraftNumberInput
+              aria-label={`${label}: ${name}`}
+              step="any"
+              min="0"
+              placeholder={field === 'xt' ? '—' : undefined}
+              displayValue={row[field]}
+              onCommit={(text) => onNumber(idx, field, text)}
+              className="form-input"
+              style={{ ...smallInput('72px'), ...(valveNumberInvalid(field, row[field]) ? invalidBorder : {}) }}
+            />
+          );
+          return (
+            <tr key={idx} style={{ borderBottom: '1px solid var(--color-border)' }}>
+              <td style={cellStyle}>{textInput('code', 'code', '190px', codeInvalid)}</td>
+              <td style={cellStyle}>{textInput('valve_type', 'valve type', '150px', !String(row.valve_type || '').trim())}</td>
+              <td style={cellStyle}>{textInput('trim', 'trim', '170px')}</td>
+              <td style={cellStyle}>{textInput('flow_direction', 'flow direction', '110px')}</td>
+              <td style={cellStyle}>{numberInput('fl', 'F_L')}</td>
+              <td style={cellStyle}>{numberInput('fd', 'F_d')}</td>
+              <td style={cellStyle}>{numberInput('xt', 'x_T')}</td>
+              <td style={{ ...cellStyle, textAlign: 'center' }}>
+                <button aria-label={`Remove ${label.toLowerCase()}`}
+                  onClick={() => onRemove(idx)}
+                  className="btn-danger-ghost"
+                  style={{ height: '28px', padding: '0 8px' }}
+                  title="Remove style row"
+                >
+                  <TrashIcon size={12} />
+                </button>
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+}
+
+/**
+ * Catalogue tab for fitting standards. `fittingType` 'control_valve' switches it to the control valve
+ * style catalogues (same layout and flows); otherwise it shows reducers and pipe schedules.
+ */
+const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUser, onDirtyChange, fittingType = null }) {
+  const isValve = fittingType === 'control_valve';
+  const groups = isValve ? VALVE_GROUPS : STANDARD_GROUPS;
   const { isImperial } = useUnits();
   const units = specUnits(isImperial);
   const isAdmin = currentUser?.role === 'admin';
@@ -145,21 +302,23 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
     setLoading(true);
     setError('');
     try {
-      const res = await axios.get('/api/fitting-standards');
-      setStandards(res.data);
-      setSelectedId(prev => prev ?? res.data[0]?.id ?? null);
-      return res.data;
+      const res = await axios.get('/api/fitting-standards', isValve ? { params: { fitting_type: 'control_valve' } } : undefined);
+      // The fitting tab leaves out the control valve styles: they have their own tab
+      const list = isValve ? res.data : res.data.filter(item => item.fitting_type !== 'control_valve');
+      setStandards(list);
+      setSelectedId(prev => prev ?? list[0]?.id ?? null);
+      return list;
     } catch {
-      setError('Failed to fetch fitting standards and schedules catalog.');
+      setError(isValve ? 'Failed to fetch the control valve style catalogues.' : 'Failed to fetch fitting standards and schedules catalog.');
       return null;
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isValve]);
 
   // After a create / edit / clone / delete / import / restore: canvas inspectors and the pipe class tab re-read the catalog
   const refreshAfterChange = async () => {
-    invalidateFittingStandards();
+    invalidateFittingStandards(isValve ? 'control_valve' : undefined);
     return fetchStandards();
   };
 
@@ -202,7 +361,7 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
   const handleSeedDefaults = async () => {
     const resetBuiltins = isAdmin && await confirmDialog({
       title: 'Restore default catalogs',
-      message: 'Missing built-in catalogs are added again. Also reset edited built-in catalogs to the shipped data? Sizes that pipe classes use cannot be removed.',
+      message: `Missing built-in catalogs are added again. Also reset edited built-in catalogs to the shipped data?${isValve ? '' : ' Sizes that pipe classes use cannot be removed.'}`,
       confirmLabel: 'Also reset edited',
       cancelLabel: 'Only add missing',
     });
@@ -286,7 +445,7 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
   // --- New standard ---
   const handleOpenNewModal = async () => {
     if (!(await askDiscard('create a new standard'))) return;
-    setNewStandardData({ code: '', name: '', standard: 'CUSTOM', fitting_type: 'reducer', subtype: 'concentric', description: '' });
+    setNewStandardData({ code: '', name: '', standard: 'CUSTOM', fitting_type: isValve ? 'control_valve' : 'reducer', subtype: 'concentric', description: '' });
     setNewCodeTouched(false);
     setIsNewModalOpen(true);
   };
@@ -306,7 +465,7 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
         description: newStandardData.description,
         dimensions: []
       });
-      showToast(`Created '${res.data.name}'. Add its sizes and save.`);
+      showToast(`Created '${res.data.name}'. ${isValve ? 'Add its valve styles and save.' : 'Add its sizes and save.'}`);
       setIsNewModalOpen(false);
       await refreshAfterChange();
       setSelectedId(res.data.id);
@@ -343,6 +502,8 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
   // --- Edit ---
   const startEdit = (item) => {
     const copy = JSON.parse(JSON.stringify(item));
+    // A new control valve catalogue starts with one empty row to fill in
+    if (copy.fitting_type === 'control_valve' && (copy.dimensions || []).length === 0) copy.dimensions = [{ ...EMPTY_VALVE_ROW }];
     const columns = columnsOf(copy);
     setEditFormData(copy);
     setEditColumns(columns);
@@ -360,7 +521,7 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
     }
     // The server recomputes the derived values (ID, cone angle); the edit handlers keep them current for the preview
     const type = editFormData.fitting_type;
-    const rows = editFormData.dimensions;
+    const rows = type === 'control_valve' ? valveRowsForSave(editFormData.dimensions) : editFormData.dimensions;
     const problem = dimensionError(type, rows);
     if (problem) {
       showToast(problem, 'error');
@@ -422,6 +583,22 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
       [`dn_${end}`]: dn,
       ...(size ? { [`nps_${end}`]: size.nps, [`od_${end}_mm`]: size.od_mm } : {})
     }));
+  };
+
+  const handleAddValveRow = () => {
+    setEditFormData(prev => {
+      const last = prev.dimensions[prev.dimensions.length - 1];
+      // A new style starts from the previous row's valve type so grouped styles are quick to enter
+      const row = { ...EMPTY_VALVE_ROW, valve_type: last?.valve_type ?? '' };
+      return { ...prev, dimensions: [...prev.dimensions, row] };
+    });
+  };
+
+  // F_L, F_d and x_T: an out-of-range number is stored so the field is flagged and Save explains it
+  const handleValveNumber = (idx, field, text) => {
+    const value = String(text).trim() === '' ? '' : Number(text);
+    if (value !== '' && !Number.isFinite(value)) return;
+    updateRow(idx, row => ({ ...row, [field]: value }));
   };
 
   const handleAddReducerRow = () => {
@@ -501,14 +678,14 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
   const libraryActions = (
     <LibraryActions
       canManage={canManage}
-      newLabel="New fitting standard"
+      newLabel={isValve ? 'New control valve catalogue' : 'New fitting standard'}
       onNew={handleOpenNewModal}
       onImport={() => fileInputRef.current?.click()}
-      importTitle="Import fitting standards from a JSON file"
+      importTitle={isValve ? 'Import catalogues from a JSON file' : 'Import fitting standards from a JSON file'}
       onExport={handleExportLibrary}
-      exportTitle="Export all fitting standards and schedules as a JSON file"
+      exportTitle={isValve ? 'Export the catalogue library as a JSON file' : 'Export all fitting standards and schedules as a JSON file'}
       onRestore={handleSeedDefaults}
-      restoreTitle="Restore the built-in fitting catalogs (reducers and pipe schedules)"
+      restoreTitle={isValve ? 'Restore the built-in control valve style catalogues' : 'Restore the built-in fitting catalogs (reducers and pipe schedules)'}
     />
   );
 
@@ -573,14 +750,14 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
             type="text"
             className="form-input"
             style={{ width: '100%', height: '34px', fontSize: 'var(--fs-sm)' }}
-            placeholder="Search standards & schedules..."
-            aria-label="Search standards and schedules"
+            placeholder={isValve ? 'Search valve style catalogues...' : 'Search standards & schedules...'}
+            aria-label={isValve ? 'Search valve style catalogues' : 'Search standards and schedules'}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
 
           {/* Type Filter Pills */}
-          <div style={{ display: 'flex', gap: '6px' }}>
+          {!isValve && <div style={{ display: 'flex', gap: '6px' }}>
             {[
               { key: 'ALL', label: 'All' },
               { key: 'reducer', label: 'Reducers' },
@@ -605,11 +782,11 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
                 {item.label}
               </button>
             ))}
-          </div>
+          </div>}
 
           {/* Standard Filter Pills */}
           <div style={{ display: 'flex', gap: '6px' }}>
-            {['ALL', 'ASME', 'DIN_EN', 'CUSTOM'].map(key => (
+            {['ALL', ...groups.filter(g => g !== 'ISO')].map(key => (
               <button
                 key={key}
                 onClick={() => setStandardFilter(key)}
@@ -646,7 +823,7 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
             </div>
           ) : filteredStandards.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '20px', fontSize: 'var(--fs-sm)', color: 'var(--color-text-secondary)' }}>
-              No fitting standards match criteria.
+              {isValve ? 'No control valve style catalogues match criteria.' : 'No fitting standards match criteria.'}
             </div>
           ) : (
             filteredStandards.map(item => {
@@ -694,8 +871,8 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
                   </div>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
-                    <span>{item.fitting_type === 'reducer' ? 'Reducer / Expander' : 'Pipe Schedules'} • {groupLabel(item.standard)}</span>
-                    <span>{dimCount} {item.fitting_type === 'reducer' ? 'sizes' : 'DN entries'}</span>
+                    <span>{{ reducer: 'Reducer / Expander', control_valve: 'Control valve styles' }[item.fitting_type] || 'Pipe Schedules'} • {groupLabel(item.standard)}</span>
+                    <span>{dimCount} {{ reducer: 'sizes', control_valve: 'styles' }[item.fitting_type] || 'DN entries'}</span>
                   </div>
                 </div>
               );
@@ -735,7 +912,7 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
                       title="Clone into an editable custom version"
                     >
                       <CopyIcon size={12} />
-                      Clone Standard
+                      {isValve ? 'Clone Catalogue' : 'Clone Standard'}
                     </button>
                   )}
                   {canEdit(selectedStandard) && (
@@ -745,7 +922,7 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
                       style={toolbarBtn}
                     >
                       <EditIcon size={12} />
-                      Edit Standard
+                      {isValve ? 'Edit Catalogue' : 'Edit Standard'}
                     </button>
                   )}
                   {canManage && !selectedStandard.is_builtin && (
@@ -785,7 +962,7 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
                         value={editFormData.standard}
                         onChange={(e) => setField('standard', e.target.value)}
                       >
-                        {[...new Set([...STANDARD_GROUPS, editFormData.standard])].map(g => (
+                        {[...new Set([...groups, editFormData.standard])].map(g => (
                           <option key={g} value={g}>{groupLabel(g)}</option>
                         ))}
                       </select>
@@ -873,11 +1050,11 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
                       color: 'var(--color-text-secondary)',
                       border: '1px solid var(--color-border)'
                     }}>
-                      {groupLabel(shown.standard)} • {isReducer ? `Reducer${shown.subtype ? ` (${subtypeLabel(shown.subtype).toLowerCase()})` : ''}` : 'Pipe schedules'}
+                      {groupLabel(shown.standard)} • {isReducer ? `Reducer${shown.subtype ? ` (${subtypeLabel(shown.subtype).toLowerCase()})` : ''}` : shown.fitting_type === 'control_valve' ? 'Control valve styles' : 'Pipe schedules'}
                     </span>
                   </div>
                   <p style={{ margin: 0, fontSize: 'var(--fs-sm)', color: 'var(--color-text-secondary)', maxWidth: '800px' }}>
-                    {shown.description || 'Standard engineering fitting dimensions table.'}
+                    {shown.description || (isValve ? 'Control valve style factors table.' : 'Standard engineering fitting dimensions table.')}
                   </p>
                   <div style={{ marginTop: '6px', fontSize: 'var(--fs-xs)', color: 'var(--color-text-muted)' }}>
                     Identifier <code title="Used by pipe classes and library files">{shown.code}</code>
@@ -899,38 +1076,54 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
                 <h3 style={{ margin: 0, fontSize: 'var(--fs-lg)', fontWeight: '800', color: 'var(--color-brand-dark)' }}>
-                  {isReducer ? `Reducer size combinations (${dims.length})` : `Pipe dimensions & schedules (${dims.length})`}
+                  {isValve ? `Valve styles (${dims.length})` : isReducer ? `Reducer size combinations (${dims.length})` : `Pipe dimensions & schedules (${dims.length})`}
                 </h3>
                 {isEditing && (
                   <div style={{ display: 'flex', gap: '8px' }}>
-                    {!isReducer && (
+                    {!isReducer && !isValve && (
                       <button onClick={handleAddScheduleColumn} className="btn-secondary" style={{ ...toolbarBtn, height: '28px', padding: '0 10px' }}>
                         <PlusIcon size={12} />
                         Add schedule
                       </button>
                     )}
                     <button
-                      onClick={isReducer ? handleAddReducerRow : handleAddScheduleRow}
+                      onClick={isValve ? handleAddValveRow : isReducer ? handleAddReducerRow : handleAddScheduleRow}
                       className="btn-secondary"
                       style={{ ...toolbarBtn, height: '28px', padding: '0 10px' }}
                     >
                       <PlusIcon size={12} />
-                      Add size
+                      {isValve ? 'Add style' : 'Add size'}
                     </button>
                   </div>
                 )}
               </div>
 
+              {isValve && (
+                <p style={{ margin: 0, fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
+                  Typical values from IEC 60534-2-1:2011 Table D.2. Manufacturer data takes precedence: add a catalogue with the datasheet values. Flow to open: the flow pushes the plug away from the seat. Flow to close: the flow pushes it towards the seat. Cage: flow out = from inside the cage outwards.
+                </p>
+              )}
+
               {isEditing && (
                 <p style={{ margin: 0, fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
-                  {isReducer
+                  {isValve
+                    ? 'Codes are unique within the catalogue and must not contain ":". F_L: above 0 up to 1. F_d: above 0. x_T is listed for reference; gas flow is not modelled.'
+                    : isReducer
                     ? 'Entering a DN fills NPS and OD from the pipe dimension catalogs; both can be overwritten. The cone angle follows from the ODs and the length.'
                     : 'ID is calculated as OD − 2 × wall thickness. Leave a wall thickness empty when the schedule does not exist for that size.'}
                 </p>
               )}
 
               <div style={{ overflowX: 'auto' }}>
-                {isReducer ? (
+                {isValve ? (
+                  <ValveStyleTable
+                    rows={dims}
+                    isEditing={isEditing}
+                    onChange={updateRow}
+                    onNumber={handleValveNumber}
+                    onRemove={handleRemoveDimensionRow}
+                  />
+                ) : isReducer ? (
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--fs-sm)' }}>
                     <thead>
                       <tr style={{ borderBottom: '2px solid var(--color-border)', textAlign: 'left', color: 'var(--color-text-secondary)', fontSize: 'var(--fs-xs)', fontWeight: '700' }}>
@@ -1171,7 +1364,9 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
 
               {dims.length === 0 && (
                 <div style={{ textAlign: 'center', padding: '16px', fontSize: 'var(--fs-sm)', color: 'var(--color-text-secondary)' }}>
-                  {isEditing ? 'No sizes yet. Use "Add size" to start the table.' : 'This standard has no sizes yet.'}
+                  {isEditing
+                    ? `No ${isValve ? 'styles' : 'sizes'} yet. Use "${isValve ? 'Add style' : 'Add size'}" to start the table.`
+                    : `This ${isValve ? 'catalogue has no styles' : 'standard has no sizes'} yet.`}
                 </div>
               )}
             </div>
@@ -1179,8 +1374,8 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', padding: '40px', color: 'var(--color-text-secondary)' }}>
             {loading ? 'Loading catalog...' : standards.length === 0
-              ? 'The fitting catalog is empty. Restore the defaults, import a library or create a standard.'
-              : 'Select a fitting standard from the left sidebar to view details.'}
+              ? (isValve ? 'There are no control valve style catalogues. Restore the defaults, import a library or create a catalogue.' : 'The fitting catalog is empty. Restore the defaults, import a library or create a standard.')
+              : (isValve ? 'Select a catalogue from the left sidebar to view details.' : 'Select a fitting standard from the left sidebar to view details.')}
             {!loading && libraryActions}
           </div>
         )}
@@ -1205,7 +1400,7 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
                   <CopyIcon size={16} />
                 </div>
                 <div>
-                  <h3 className="modal-title">Clone Fitting Standard</h3>
+                  <h3 className="modal-title">{isValve ? 'Clone Control Valve Catalogue' : 'Clone Fitting Standard'}</h3>
                   <p style={{ margin: 0, fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
                     Create an editable custom copy of {selectedStandard?.name}
                   </p>
@@ -1280,9 +1475,9 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
                   <PlusIcon size={16} />
                 </div>
                 <div>
-                  <h3 className="modal-title">New Fitting Standard</h3>
+                  <h3 className="modal-title">{isValve ? 'New Control Valve Catalogue' : 'New Fitting Standard'}</h3>
                   <p style={{ margin: 0, fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
-                    Create an empty reducer table or pipe schedule matrix, then add its sizes
+                    {isValve ? 'Create a catalogue of valve styles, then enter their F_L and F_d values' : 'Create an empty reducer table or pipe schedule matrix, then add its sizes'}
                   </p>
                 </div>
               </div>
@@ -1307,8 +1502,8 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
                   }}
                 />
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                <div>
+              <div style={{ display: 'grid', gridTemplateColumns: isValve ? '1fr' : '1fr 1fr', gap: '10px' }}>
+                {!isValve && <div>
                   <label htmlFor="new-std-type" style={fieldLabel}>Fitting type</label>
                   <select
                     id="new-std-type"
@@ -1320,7 +1515,7 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
                     <option value="reducer">Reducer / Expander</option>
                     <option value="pipe_schedule">Pipe Schedules</option>
                   </select>
-                </div>
+                </div>}
                 <div>
                   <label htmlFor="new-std-group" style={fieldLabel}>Standard group</label>
                   <select
@@ -1330,7 +1525,7 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
                     value={newStandardData.standard}
                     onChange={(e) => setNewStandardData(prev => ({ ...prev, standard: e.target.value }))}
                   >
-                    {STANDARD_GROUPS.map(g => <option key={g} value={g}>{groupLabel(g)}</option>)}
+                    {groups.map(g => <option key={g} value={g}>{groupLabel(g)}</option>)}
                   </select>
                 </div>
               </div>
@@ -1368,7 +1563,7 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
                 Cancel
               </button>
               <button onClick={handleCreateNewStandard} className="btn-primary">
-                Create Standard
+                {isValve ? 'Create Catalogue' : 'Create Standard'}
               </button>
             </div>
           </div>

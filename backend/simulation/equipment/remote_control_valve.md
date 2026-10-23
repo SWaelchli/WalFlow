@@ -74,8 +74,9 @@ applied to the outlet for $Q \ge 0$ and to the inlet for $Q < 0$.
 | Max Cv | Cv | `self.max_cv` | Cv | 0.05 | $> 0$ | Flow coefficient at 100 % |
 | Mode | text | `self.backpressure` | bool | Pressure Reducing (Downstream Remote) | Pressure Reducing / Backpressure | Control action |
 | Set Point | bar(a) (psi(a)) | `self.set_pressure` | Pa (absolute) | 5.0 bar(a) | $> 0$ | Pressure held at the sensed port |
-| — (node data `fl`, no UI yet) | – | `self.fl` | – | 0.9 | $(0, 1]$ | Liquid pressure recovery factor $F_L$ (Table D.2) |
-| — (node data `fd`, no UI yet) | – | `self.fd` | – | 0.46 | $> 0$ | Valve style modifier $F_d$ (Table D.2) |
+| Valve style | catalogue entry or Custom | `valve_style_id` | – | IEC Table D.2 globe single port, contoured plug, flow to open | catalogue `control_valve` rows, `custom` | Sets $F_L$ and $F_d$ from the [catalogue](../../../frontend/src/pages/CataloguePage.jsx) (Control valve styles); Custom makes them editable (D-29) |
+| F_L (from the style, or Custom) | – | `self.fl` | – | 0.9 | $(0, 1]$ | Liquid pressure recovery factor $F_L$ (Table D.2) |
+| F_d (from the style, or Custom) | – | `self.fd` | – | 0.46 | $> 0$ | Valve style modifier $F_d$ (Table D.2) |
 | — (from connected pipe) | – | `self.pipe_diameter` | m | 0.05248 | $> 0$ | Valve size $d = D$ for $F_R$ |
 | Signal line | drawing | `self.remote_sensing_config` | - | none (own outlet) | any port | Sensed port |
 
@@ -112,3 +113,5 @@ Node type: `remote_control_valve`. Field names follow the naming rule in [base_n
 | `backpressure` | bool | false |
 | `fl` | factor $F_L$ (IEC 60534-2-1) | 0.9 |
 | `fd` | factor $F_d$ (IEC 60534-2-1) | 0.46 |
+
+The node data also carries `valve_style_id` (`<catalogue code>:<row code>` or `custom`, default `IEC_60534_2_1_TABLE_D2:globe_single_contoured_open`) for the inspector's valve style; the parser reads only `fl` and `fd` (D-29).

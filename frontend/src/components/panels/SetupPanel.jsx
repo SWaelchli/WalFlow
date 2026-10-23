@@ -11,6 +11,7 @@ import { componentLabel } from '../../constants/componentLabels';
 import { useUnits } from '../../context/UnitContext';
 import { useFittingStandards } from '../../hooks/useFittingStandards';
 import { DEFAULT_REDUCER_STANDARD, CUSTOM_REDUCER_STANDARD } from '../../utils/reducer_catalog';
+import { CONTROL_VALVE_STYLE_DEFAULTS } from '../../utils/nodeDefaults';
 import DraftNumberInput from '../common/DraftNumberInput';
 import PropertyBadge from './PropertyBadge';
 import PipeSelector from './PipeSelector';
@@ -46,6 +47,7 @@ export default function SetupPanel({
   const [reducerNotice, setReducerNotice] = useState(null); // { nodeId, kind: 'error' | 'warning', text }
   const reducerStandards = useFittingStandards('reducer');
   const scheduleStandards = useFittingStandards('pipe_schedule');
+  const valveStyleCatalogues = useFittingStandards('control_valve');
 
   const isNode = !!node;
   const item = isNode ? node : edge;
@@ -165,6 +167,18 @@ export default function SetupPanel({
           setLocalDrafts({});
           return;
         }
+      } else if (field === 'fl') {
+        if (isNaN(numericValue) || numericValue <= 0 || numericValue > 1) {
+          notify('F_L must be greater than 0 and at most 1.', 'warning');
+          setLocalDrafts({});
+          return;
+        }
+      } else if (field === 'fd') {
+        if (isNaN(numericValue) || numericValue <= 0) {
+          notify('F_d must be greater than 0.', 'warning');
+          setLocalDrafts({});
+          return;
+        }
       } else if (isNaN(numericValue) || numericValue <= 0) {
         notify(`${field} must be a positive number greater than zero.`, 'warning');
         setLocalDrafts({});
@@ -191,6 +205,113 @@ export default function SetupPanel({
 
   const handleDraftChange = (field, val) => {
     setLocalDrafts(prev => ({ ...prev, [field]: val }));
+  };
+
+  // IEC 60534-2-1 valve style of a control valve: sets F_L and F_d for the viscosity correction
+  const renderValveStyle = () => {
+    const styleId = effectiveData.valve_style_id || CONTROL_VALVE_STYLE_DEFAULTS.valve_style_id;
+    const fl = effectiveData.fl ?? CONTROL_VALVE_STYLE_DEFAULTS.fl;
+    const fd = effectiveData.fd ?? CONTROL_VALVE_STYLE_DEFAULTS.fd;
+    const factor = (v) => {
+      const s = String(Number(v));
+      return (s.split('.')[1] || '').length >= 2 ? s : Number(v).toFixed(2);
+    };
+    const isCustom = styleId === 'custom';
+    const isLoading = valveStyleCatalogues.length === 0;
+    const known = valveStyleCatalogues.some(cat => (cat.dimensions || []).some(row => `${cat.code}:${row.code}` === styleId));
+    const isMissing = !isCustom && !isLoading && !known;
+    const selectValue = isCustom ? 'custom' : styleId;
+
+    const handleStyleChange = (value) => {
+      if (value === 'custom') {
+        onUpdate(id, { valve_style_id: 'custom' });
+        return;
+      }
+      for (const cat of valveStyleCatalogues) {
+        const row = (cat.dimensions || []).find(r => `${cat.code}:${r.code}` === value);
+        if (row) {
+          onUpdate(id, { valve_style_id: value, fl: row.fl, fd: row.fd });
+          return;
+        }
+      }
+    };
+
+    // Self-contained label: valve type · trim, flow direction (the closed select shows no optgroup)
+    const styleLabel = (row) => {
+      const trimDir = [row.trim, row.flow_direction && row.flow_direction.toLowerCase()].filter(Boolean).join(', ');
+      return [row.valve_type, trimDir].filter(Boolean).join(' · ') || row.code;
+    };
+    let selectedLabel = isCustom ? 'Custom' : undefined;
+    valveStyleCatalogues.forEach(cat => (cat.dimensions || []).forEach(row => {
+      if (`${cat.code}:${row.code}` === styleId) selectedLabel = styleLabel(row);
+    }));
+
+    const mutedNote = { fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', margin: '4px 0 0' };
+    const styleHelp = 'IEC 60534-2-1 valve style: sets F_L and F_d for the viscosity correction. Flow to open: the flow pushes the plug away from the seat. Flow to close: the flow pushes it towards the seat. Cage: flow out = from inside the cage outwards.';
+
+    return (
+      <div>
+        <label
+          title={styleHelp}
+          style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}
+        >
+          Valve style
+        </label>
+        <select
+          className="form-select"
+          aria-label="Valve style"
+          title={selectedLabel ? `${selectedLabel}\n\n${styleHelp}` : styleHelp}
+          style={{ width: '100%', fontSize: 'var(--fs-xs)', padding: '4px' }}
+          value={selectValue}
+          onChange={(e) => handleStyleChange(e.target.value)}
+        >
+          {valveStyleCatalogues.map(cat => {
+            const byType = [];
+            (cat.dimensions || []).forEach(row => {
+              let group = byType.find(g => g.type === row.valve_type);
+              if (!group) { group = { type: row.valve_type, rows: [] }; byType.push(group); }
+              group.rows.push(row);
+            });
+            return byType.map(group => (
+              <optgroup key={`${cat.code}|${group.type}`} label={`${cat.name} - ${group.type}`}>
+                {group.rows.map(row => (
+                  <option key={row.code} value={`${cat.code}:${row.code}`}>
+                    {styleLabel(row)}
+                  </option>
+                ))}
+              </optgroup>
+            ));
+          })}
+          {isMissing && <option value={styleId} disabled>Not in catalogue</option>}
+          {isLoading && !isCustom && <option value={styleId} disabled>Loading styles...</option>}
+          <option value="custom">Custom</option>
+        </select>
+
+        {isCustom ? (
+          <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+            {[['fl', 'F_L', fl, '0.01'], ['fd', 'F_d', fd, '0.01']].map(([field, name, value, step]) => (
+              <div key={field} style={{ flex: 1 }}>
+                {renderLabel(name, field)}
+                <input
+                  type="number" min="0" step={step}
+                  aria-label={name}
+                  className="form-input" style={{ width: '100%' }}
+                  value={localDrafts[field] !== undefined ? localDrafts[field] : value}
+                  onChange={(e) => handleDraftChange(field, e.target.value)}
+                  onBlur={(e) => validateAndCommit(field, e.target.value, true)}
+                />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p style={mutedNote}>
+            {isMissing
+              ? `Style not in catalogue: F_L ${factor(fl)}, F_d ${factor(fd)} kept`
+              : `F_L ${factor(fl)} · F_d ${factor(fd)}`}
+          </p>
+        )}
+      </div>
+    );
   };
 
   const handleDelete = async () => {
@@ -661,6 +782,7 @@ export default function SetupPanel({
                   onBlur={(e) => validateAndCommit('max_cv', e.target.value, true)}
                 />
               </div>
+              {type === 'remote_control_valve' && renderValveStyle()}
               <div>
                 <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>Regulation mode</label>
                 <select 
@@ -704,6 +826,7 @@ export default function SetupPanel({
                   onBlur={(e) => validateAndCommit('max_cv', e.target.value, true)}
                 />
               </div>
+              {renderValveStyle()}
               <div>
                 {renderLabel(`Set Temperature (${isImperial ? '°F' : '°C'})`, 'set_temperature_c')}
                 <input 
@@ -741,6 +864,7 @@ export default function SetupPanel({
                   onBlur={(e) => validateAndCommit('max_cv', e.target.value, true)}
                 />
               </div>
+              {renderValveStyle()}
               <div>
                 {renderLabel('Opening (%)', 'opening_pct')}
                 <input 

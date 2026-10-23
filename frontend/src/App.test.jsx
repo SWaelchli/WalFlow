@@ -43,4 +43,15 @@ describe('App shell', () => {
     // The navbar's primary action and the welcome canvas's tank both appear
     await waitFor(() => expect(screen.getAllByText(/Run Simulation/i).length).toBeGreaterThan(0), { timeout: 8000 });
   }, 40000);
+
+  it('forwards the old /pipes address to /catalogue (D-29b)', async () => {
+    window.history.pushState({}, '', '/pipes');
+    try {
+      const { default: App } = await import('./App.jsx');
+      render(<App />);
+      expect(window.location.pathname).toBe('/catalogue');
+    } finally {
+      window.history.pushState({}, '', '/');
+    }
+  }, 40000);
 });
