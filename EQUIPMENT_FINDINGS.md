@@ -41,6 +41,7 @@ Status: `open` / `fixed` / `rejected`. "Confirmed" means it was reproduced by ru
 | D-22 | Solver | Junctions balance volume flow, not mass flow; mixing at different temperatures loses ~0.4 % mass | Low / decision | Confirmed (property test) | open |
 | D-23 | Solver / equipment | Analytical dp derivatives of most components are never used by the solver (dead code) | Low / cleanup | Mutation testing | open |
 | D-24 | Solver / junctions | A junction downstream of two hot supplies reports ~1 K below the coldest supply without any cooler | Medium | Confirmed (property test, explore) | open |
+| D-25 | Frontend / file format | The `.wlf` header is written by hand in three places instead of by `serializeDiagram`, so it can drift when the format changes | Low / cleanup | Code review | open |
 
 ---
 
@@ -472,3 +473,13 @@ The analytical `calculate_dp_derivative` methods of those components are only ex
 **Open question:** whether this is the same loop-convergence residual as the 0.18 K case under D-20 (much larger here), a near-stagnant check-valve branch picking up a wrong temperature (compare D-21), or a mixing error. Find it by shrinking the example first, then printing each port's flow and temperature per outer-loop iteration.
 
 **Fix direction:** depends on the cause. The property stays as it is; it fails under the explore profile until this is fixed. The default profile does not draw this case.
+
+---
+
+## D-25 File header written by hand in three places
+
+**Where:** `frontend/src/App.jsx` (blank cloud diagram payload, near `/api/diagrams`), `frontend/src/components/modals/ProjectManagerModal.jsx` and `frontend/src/components/panels/Sidebar.jsx` build the `.wlf` header (`version`, `format`, `app_version`, ...) as literals instead of calling `serializeDiagram` (`frontend/src/utils/diagramFile.js`). Found while planning the phase 4 round-trip test (2026-10-23).
+
+**What happens:** nothing today; all three write format 0.2. When the file format changes, these copies can drift from `serializeDiagram` and write files that `checkDiagramFile` rejects or that miss new fields. The round-trip test in `diagramFile.test.js` covers only `serializeDiagram`.
+
+**Fix direction:** a cleanup. Build those payloads with `serializeDiagram` (empty nodes and edges where needed), so one function owns the header.

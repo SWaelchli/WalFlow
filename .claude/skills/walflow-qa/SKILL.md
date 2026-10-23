@@ -71,6 +71,9 @@ All backend tests live in `backend/tests`. The folder sets the layer marker auto
 Hypothesis tests also get the `property` marker. Select layers with `pytest -m unit`, `-m property`, etc.
 
 Frontend tests sit next to the component they test: `Component.test.jsx`. Shared fixtures are in `frontend/src/test`.
+Keep them lean: the physics is tested in the backend, and the gate's `npm run build` is the main frontend check.
+Test only logic that can break silently (conversions, file export/import, inspector rules). No end-to-end or
+browser tests.
 
 ## Rules
 
