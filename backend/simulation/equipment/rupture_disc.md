@@ -21,7 +21,7 @@ Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_RE
 | RD-02 | Standard | ASME BPVC Section VIII Div. 1, UG-127 (edition not fixed; moved to Section XIII from 2021) | Rupture disc devices | ⚪ Unverified 🚩 |
 | RD-03 | Standard | API Std 520 Part I, 10th ed. (2020) | 10 % overpressure for liquid relief capacity | ⚪ Unverified |
 | RD-04 | Standard | API Std 520 Part I, 10th ed. (2020) | Flow resistance method ($K_R$) for discs | ⚪ Unverified |
-| RD-05 | Standard | ISO 5167-2:2022 | Orifice flow equation for the reduced bore, as for the [calibrated restriction](calibrated_restriction.md#32-pressure-drop-calculate_delta_p) | ⚪ Unverified |
+| RD-05 | Standard | ISO 5167-2:2022 | Orifice flow equation for the reduced bore, as for the [calibrated restriction](calibrated_restriction.md#32-pressure-drop-calculate_delta_p) | ✅ ISO 5167-2:2022 F(1) (equation form) |
 | RD-06 | Standard | IEC 60534-2-1:2011 | Liquid Cv equation for the full bore | ⚪ Unverified |
 
 ## 3. Physical & Mathematical Implementation
