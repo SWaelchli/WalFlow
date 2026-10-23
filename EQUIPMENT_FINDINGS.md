@@ -39,6 +39,8 @@ Status: `open` / `fixed` / `rejected`. "Confirmed" means it was reproduced by ru
 | D-20 | Solver | Reported pressures lag the last property update; a pipe after a viscous drop can show a small static rise | Low | Confirmed (property test) | open |
 | D-21 | Solver / warm start | Exact-hit warm start leaves stagnant branches at the 20 °C port default | Low | Confirmed (property test) | open |
 | D-22 | Solver | Junctions balance volume flow, not mass flow; mixing at different temperatures loses ~0.4 % mass | Low / decision | Confirmed (property test) | open |
+| D-23 | Solver / equipment | Analytical dp derivatives of most components are never used by the solver (dead code) | Low / cleanup | Mutation testing | open |
+| D-24 | Solver / junctions | A junction downstream of two hot supplies reports ~1 K below the coldest supply without any cooler | Medium | Confirmed (property test, explore) | open |
 
 ---
 
@@ -423,6 +425,10 @@ The analytical `calculate_dp_derivative` methods of those components are only ex
 
 **Fix direction:** after the properties converge, run one more Newton solve with the final properties (cheap with the warm start), so reported pressures and every pipe equation agree. Until then the network property allows a lag of 0.2 % of the network's pressure span (`PRESSURE_LAG`); remove it with the fix.
 
+**Same lag in temperatures and properties** (explore profile, 2026-10-23):
+- `test_well_posed_network_reaches_a_finite_steady_state_with_fluid_properties`: pressure source 11 bara at 10 °C → orifice (ISO 5167, pipe ID e⁻² m, bore 0.0677 m) → tank 1 m, heavy crude. The orifice outlet reports density 933.710 kg/m³, the value ~0.52 K below its reported temperature: the throttle warming of ~0.55 K is not in the properties yet. The property allows `PROPERTY_LAG_K`; remove it with the fix.
+- `test_junctions_conserve_energy` (reproduces): ISO VG 100 at 0 °C, source 2 bara → splitter → a mixer `n8` fed directly and through a heat exchanger (medium 5 °C) inside a loop of splitters, mixers and a check valve → tank. A leaving stream of `n8` is ~0.18 K (≈330 J/kg) off the mixed enthalpy of its arriving streams, more than the 0.1 K `TEMPERATURE_TOL`. Reproduce with `@reproduce_failure('6.170.5', b'AXicc2TTYIACRwYNByhTw/4DVIwZLq1xAK4OCBmBMg4CMBkBFBlGoElwXUim4zAJjw24ZJDN4kCzm0nDQQTTbpgYPgupJU66VwGOXR2T')`. The loop stops on a 0.05 K step, not on a converged mix, so a slow loop leaves a larger residual.
+
 ---
 
 ## D-21 Exact-hit warm start leaves stagnant branches at the default temperature
@@ -442,3 +448,27 @@ The analytical `calculate_dp_derivative` methods of those components are only ex
 **What happens:** every node conserves volume flow. Where streams of different temperature mix, densities differ, so mass is not conserved: seawater at 0 °C (1028 kg/m³) and 55 °C (1009 kg/m³) mixed 1:1 leaves the mixer with ~0.4 % less mass than enters. Temperatures are right (the mixer mixes by mass), so the effect is a small inconsistency in mass flow telemetry and in the flow split, largest for big temperature differences and fluids with a strong thermal expansion.
 
 **Fix direction:** a modelling decision. Either keep the volume balance (document it as a limit of the incompressible model in `base_node.md` section 6) or balance mass flow (`rho_in q_in - rho_out q_out`), which couples the hydraulic rows to the property loop. The network properties compare specific enthalpies, not absolute enthalpy flows, so they hold either way.
+
+---
+
+## D-23 Unused analytical derivatives
+
+**Where:** `calculate_dp_derivative` (and helpers) in the equipment classes; the solver's Jacobian assembly in `backend/simulation/solver.py` (search for `is_pump = isinstance(src_node, (CentrifugalPump, VolumetricPump))`). Found by the phase 3 mutation run (2026-10-23, see the `walflow-qa` skill, "Mutation testing").
+
+**What happens:** the solver uses the analytical derivative only for pumps (`calculate_dp_derivative`, `VolumetricPump.outlet_derivatives`) and pipes. Every other node is differentiated numerically (`_numeric_derivative` over `_get_node_p_out`, F1-12), so viscosity corrections and branch switches are included. Their own `calculate_dp_derivative` methods are therefore never called in a simulation, only by tests. In `orifice.py` 45 mutants in `calculate_dp_derivative`, `_iso_ratio_derivative_wrt_cd` and `_dc_dre` survive the suite once the derivative tests are deleted; nothing a user runs can notice a bug there. The derivative tests for orifice, check valve orifice, filter, reducer and pipe friction were deleted in phase 3 for that reason.
+
+**Candidates** (verify each against every call site first, e.g. `three_way_tcv.calculate_dp_derivative_path`, warm start, relief and remote-pilot paths, flow source, heat exchanger and reducer as edge-like nodes): `orifice.py` (with `_iso_ratio_derivative_wrt_cd`, `_dc_dre`), `check_valve.py`, `filter.py`, `reducer.py`, `heat_exchanger.py`, `calibrated_restriction.py`, `linear_control_valve.py`, `linear_regulator.py`, `remote_control_valve.py`, `relief_device.py`, `flow_source.py`, `three_way_tcv.py`, and the `base_node.py` default. Keep pumps and `pipe.py`.
+
+**Fix direction:** a cleanup decision. Either delete the unused methods (and the `.md` sections that describe them), leaving the base-class default if something still dispatches on it, or deliberately switch the solver to the analytical derivatives for speed, then test them with a contract property (analytical vs. numerical slope for every two-port in `RESISTANCE_DATA`) instead of per-component tests. Rerun the gate and the golden examples either way; a mutation run on the touched modules confirms nothing live was removed.
+
+---
+
+## D-24 Junction colder than every supply
+
+**Where:** temperature propagation through mixers and splitters, `backend/simulation/solver.py` outer property loop and `HydraulicNode.calculate_temperature()` (`base_node.py`). Found by `tests/scenarios/test_network_invariants.py::test_dissipation_never_cools_and_mixing_stays_between_its_streams` (explore profile, 2026-10-23).
+
+**What happens:** two pressure sources at 1.5 bara (359.39 K and 334.81 K) feed mixer `n0` through check valves. `n0` feeds splitter `n6`; one branch runs through a check valve (cracking 0) and the other straight to mixer `n7`, which feeds a tank (level 1 m). Heavy crude, pipes 1 m with ID e⁻² m. Splitter `n6` reports 333.85 K, 0.96 K below the coldest supply, although the network has no cooler and dissipation can only warm the fluid. Reproduce with `HYPOTHESIS_PROFILE=explore python -m pytest "tests/scenarios/test_network_invariants.py::test_dissipation_never_cools_and_mixing_stays_between_its_streams" --hypothesis-seed=102041974071240473996831196549072861885` (the run hit hypothesis's shrink time limit, so the example is not minimal).
+
+**Open question:** whether this is the same loop-convergence residual as the 0.18 K case under D-20 (much larger here), a near-stagnant check-valve branch picking up a wrong temperature (compare D-21), or a mixing error. Find it by shrinking the example first, then printing each port's flow and temperature per outer-loop iteration.
+
+**Fix direction:** depends on the cause. The property stays as it is; it fails under the explore profile until this is fixed. The default profile does not draw this case.
