@@ -113,7 +113,6 @@ An unknown `drive_type` is read as `fixed_speed`. The parser rejects an efficien
 - **Steady state:** fixed speed (or the power-limited speed), no pulsation ($\Delta t = 0$).
 - **Solver flags:**
   - `is_pressure_boundary = False`
-  - `is_flow_boundary = False`
   - `blocks_flow_on_shutdown = True`
   - `use_mcp_formulation = False`
   - `is_relief_driver = True`

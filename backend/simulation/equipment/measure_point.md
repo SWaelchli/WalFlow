@@ -52,7 +52,7 @@ The tap has no hydraulic parameters.
 ## 6. Operating Modes & Model Boundaries
 
 - **Steady state:** an algebraic point in the line ($\Delta t = 0$).
-- **Solver flags:** all `False` (`is_pressure_boundary`, `is_flow_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation`).
+- **Solver flags:** all `False` (`is_pressure_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation`).
 - **Inactive:** `active` has no effect.
 - **Reverse flow:** supported; the flow passes in either direction.
 - **Operating cases:** nothing to override.

@@ -135,7 +135,6 @@ Each equipment document has a **Data Fields** section listing what the parser re
 - **No elevation along the network:** components and pipes have no height. Static head enters only through the tank level and elevation, see [tank.md](tank.md).
 - **Solver flags** (defaults on the base class):
   - `is_pressure_boundary = False` — `True` fixes the node pressure to `calculate()` (tank, pressure source).
-  - `is_flow_boundary = False` — not used: no component sets it and the solver does not read it. A flow source is recognised by its node type.
   - `blocks_flow_on_shutdown = False` — `True` removes the component from the solve when it is inactive (positive displacement pump).
   - `use_mcp_formulation = False` — `True` gives the complementarity row of section 3.4.
   - `is_relief_driver = False` — `True` when `apply_relief_ramp` scales the component in the relief analysis.

@@ -71,7 +71,6 @@ Fluid returning into the source does not change its temperature.
 - **Steady state:** a fixed pressure; no capacity, no pressure decay ($\Delta t = 0$).
 - **Solver flags:**
   - `is_pressure_boundary = True`
-  - `is_flow_boundary = False`
   - `blocks_flow_on_shutdown = False`
   - `use_mcp_formulation = False`
   - `is_relief_driver = True`

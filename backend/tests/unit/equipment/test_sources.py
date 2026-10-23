@@ -25,7 +25,6 @@ class TestPressureSource:
     def test_is_pressure_boundary_flag(self):
         source = _make_pressure_source()
         assert source.is_pressure_boundary is True
-        assert source.is_flow_boundary is False
 
     def test_calculate_stamps_pressure_on_all_ports(self):
         source = _make_pressure_source(pressure_bara=5.0)
@@ -44,7 +43,6 @@ class TestFlowSource:
     def test_is_pressure_boundary_false(self):
         source = _make_flow_source()
         assert source.is_pressure_boundary is False
-        assert source.is_flow_boundary is False
 
     @pytest.mark.parametrize("flow_ls, sign", [
         pytest.param(1.0, 0, id="at-target"),          # 1.0 L/s = 60 L/min

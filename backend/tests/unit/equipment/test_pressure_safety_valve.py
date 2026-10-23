@@ -70,7 +70,7 @@ def test_psv_unmitigated_higher_pressure():
 
     assert p_unmitigated > p_mitigated
 
-def test_psv_modulating_and_rupture_disc():
+def test_psv_modulating_and_pop_latching():
     tank_in = Tank(name="Supply Tank", elevation=0.0, fluid_level=2.0)
     pump = CentrifugalPump(name="Feed Pump", flow_rated=0.002, head_rated=water_head(400000.0)) # 4 bar
     psv = PressureSafetyValve(name="PSV-102", set_pressure_barg=2.5, cv=10.0, action_mode="modulating",
@@ -99,7 +99,7 @@ def test_psv_modulating_and_rupture_disc():
     assert 2.5 < p_in_g < 2.75
     assert abs(psv.lift_pct - 100.0 * (p_in_g - 2.5) / 0.25) < 0.01
 
-    # Pop latching (the former rupture-disc mode): opens and stays at full lift
+    # Pop latching: opens and stays at full lift
     psv.action_mode = "pop_latching"
     psv.reset_run_state()
     stats = solver.solve()
@@ -304,10 +304,6 @@ def test_pop_latching_stays_open_below_reseat():
     assert psv.status == "open" and psv.lift_pct == 100.0
     assert (psv.inlets[0].pressure - P_ATM) / 1e5 < psv.reseat_pressure_barg
     assert psv.cycle_low_barg is None
-
-
-def test_old_rupture_disc_mode_loads_as_pop_latching():
-    assert PressureSafetyValve("PSV", set_pressure_barg=3.0, action_mode="rupture_disc").action_mode == "pop_latching"
 
 
 def test_closed_valve_sees_the_header_pressure_of_a_relieving_neighbour():

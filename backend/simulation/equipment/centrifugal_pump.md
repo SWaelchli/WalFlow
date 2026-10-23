@@ -113,7 +113,6 @@ The parser rejects a missing or non-positive rated head (older files with only `
 - **Steady state:** fixed speed, no start-up or run-down ($\Delta t = 0$).
 - **Solver flags:**
   - `is_pressure_boundary = False`
-  - `is_flow_boundary = False`
   - `blocks_flow_on_shutdown = False` (a stopped pump is a resistance, not a block)
   - `use_mcp_formulation = False`
   - `is_relief_driver = True`

@@ -34,7 +34,6 @@ class FlowSource(HydraulicNode):
         self.pressure_cap_reached = False   # outlet pressure held at max_discharge_pressure (F1-24)
 
         self.is_pressure_boundary = False
-        self.is_flow_boundary = False
         self.blocks_flow_on_shutdown = False
 
         self.is_relief_driver = True

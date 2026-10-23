@@ -104,7 +104,7 @@ The parser rejects a bore or length $\le 0$ and a negative roughness. Missing va
 ## 6. Operating Modes & Model Boundaries
 
 - **Steady state:** algebraic relation ($\Delta t = 0$).
-- **Solver flags:** all `False` (`is_pressure_boundary`, `is_flow_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation`).
+- **Solver flags:** all `False` (`is_pressure_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation`).
 - **Inactive:** `active` has no effect.
 - **Reverse flow:** supported. The form loss is odd in $Q$ and switches between contraction and enlargement with the flow direction; the Bernoulli term keeps its sign. Reverse flow through a 3" × 2" reducer is the mirror of forward flow through a 2" × 3" expander: $\Delta P_{\text{reverse}} = -\Delta P_{\text{forward}}$.
 - **Next to a reservoir:** an expander right at a tank or pressure source only has a steady state because the pipe from the reservoir takes the entry velocity head, see [pipe.md](pipe.md#34-entry-from-a-reservoir).

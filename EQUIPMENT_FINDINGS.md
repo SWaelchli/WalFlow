@@ -29,11 +29,11 @@ Status: `open` / `fixed` / `rejected`. "Confirmed" means it was reproduced by ru
 | D-10 | Pumps | Efficiency floors differ between power and heat; braking PD pump heat | Low | Code reading | fixed |
 | D-11 | Linear control valve | Jump between 0 % and 0.1 % opening | Low | Code reading | fixed |
 | D-12 | Check valves (UI) | Cracking pressure labelled barg / psig but is a difference | Low (UI) | Code reading | fixed |
-| D-13 | Solver / all components | Analytical `calculate_dp_derivative` unused except pipes and pumps | Info | Code reading | open |
-| D-14 | Base node | `is_flow_boundary` is a dead flag | Cleanup | Code reading | open |
+| D-13 | Solver / all components | Analytical `calculate_dp_derivative` unused except pipes and pumps | Info | Code reading | fixed |
+| D-14 | Base node | `is_flow_boundary` is a dead flag | Cleanup | Code reading | fixed |
 | D-15 | Pipe | `friction_factor` constructor argument unused | Cleanup | Code reading | fixed |
 | D-16 | Tank | Default level 2 m in the UI, 1 m in the parser | Cleanup | Code reading | fixed |
-| D-17 | PSV | `action_mode = rupture_disc` duplicates the rupture disc component | Cleanup / decision | Code reading | open |
+| D-17 | PSV | `action_mode = rupture_disc` duplicates the rupture disc component | Cleanup / decision | Code reading | fixed |
 | D-18 | Mixer | Inlet with reverse flow reports default density / stale viscosity | Low | Confirmed (property test) | fixed |
 | D-19 | Junctions / reducer | Junction joining different pipe diameters gains kinetic energy; with a reducer the network can have no steady state | Medium | Confirmed (property test) | open |
 | D-20 | Solver | Reported pressures lag the last property update; a pipe after a viscous drop can show a small static rise | Low | Confirmed (property test) | open |
@@ -352,6 +352,8 @@ The analytical `calculate_dp_derivative` methods of those components are only ex
 
 **Docs:** `base_node.md` section 3.3 already describes the current behaviour; update the skill (`SKILL.md` "Analytical Jacobians" principle, `references/solver-stability.md`) to match the decision.
 
+**Resolution (fixed):** option (a). The solver keeps the numerical derivative; the equipment-creation skill (`SKILL.md` principle 3, `references/backend-physics.md` §3.2, `references/equipment-documentation-standard.md`) states that `calculate_dp_derivative` is optional and used for pipes and pumps only.
+
 ---
 
 ## D-14 `is_flow_boundary` is a dead flag
@@ -359,6 +361,8 @@ The analytical `calculate_dp_derivative` methods of those components are only ex
 **Where:** `base_node.py:23`, `flow_source.py:37`, `pressure_source.py:29`. No component sets it to `True` and `solver.py` / `schemas.py` / `graph_parser.py` never read it. A flow source is recognised by `node_type == 'flow_source'` (`solver.py:39`, `:1225`).
 
 **Fix direction:** remove the attribute and its mentions (`base_node.md`, `flow_source.md`, `pressure_source.md` and the other documents' solver flag lists, `references/equipment-archetypes.md` if mentioned, `tests/unit/equipment/test_sources.py` asserts it is `False`). Or give it a meaning (set it on the flow source and use it instead of the node type check). The skill's archetype table no longer claims pumps set it (corrected 2026-10-21).
+
+**Resolution (fixed):** removed. The attribute is gone from `base_node.py`, `flow_source.py` and `pressure_source.py`, from every equipment document's solver flag list, `DEVELOPMENT.md`, the equipment-creation skill and `test_sources.py`.
 
 ---
 
@@ -389,6 +393,8 @@ The analytical `calculate_dp_derivative` methods of those components are only ex
 **Fix direction:** a product decision. Either keep it (document as a convenience) or deprecate the mode: keep reading it for existing files, hide it in the UI, and point users to the rupture disc. Removing it from files is a format change (Versioning Policy in `AGENTS.md`).
 
 **Docs to update:** `pressure_safety_valve.md` sections 1 and 3.2.
+
+**Resolution (fixed):** the latching behaviour was already its own mode, `pop_latching`; `rupture_disc` survived only as a load alias. The alias is removed in `pressure_safety_valve.py` and in the `App.jsx` import. Old files are not supported (file format 0.2 is a new installation), so no migration or format change is needed; an unknown mode reads as `pop_action`. The `pop_latching` mode stays.
 
 ---
 

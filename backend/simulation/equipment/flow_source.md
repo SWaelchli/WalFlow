@@ -80,7 +80,6 @@ The parser rejects a maximum discharge pressure $\le 1$ bar(a).
 - **Steady state:** a constant flow ($\Delta t = 0$).
 - **Solver flags:**
   - `is_pressure_boundary = False`
-  - `is_flow_boundary = False` (the spring is an ordinary edge term)
   - `blocks_flow_on_shutdown = False`
   - `use_mcp_formulation = False`
   - `is_relief_driver = True`

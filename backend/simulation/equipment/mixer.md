@@ -55,7 +55,7 @@ Not applicable — the mixer has no parameters of its own. The number of inlets 
 ## 6. Operating Modes & Model Boundaries
 
 - **Steady state:** algebraic junction ($\Delta t = 0$).
-- **Solver flags:** all `False` (`is_pressure_boundary`, `is_flow_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation`).
+- **Solver flags:** all `False` (`is_pressure_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation`).
 - **Inactive:** `active` has no effect; the mixer always joins its connections.
 - **Reverse flow:** supported on every port; temperatures follow the actual flow direction.
 - **Unused inlet:** an inlet with no pipe is ignored.

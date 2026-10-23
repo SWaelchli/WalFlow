@@ -24,7 +24,6 @@ class CustomEquipment(HydraulicNode):
         
         # 3. Solver flags (see solver-stability.md for details)
         self.is_pressure_boundary = False
-        self.is_flow_boundary = False
         self.blocks_flow_on_shutdown = False
         self.use_mcp_formulation = False
         
@@ -67,7 +66,7 @@ def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float =
 ```
 
 ### 3.2 `calculate_dp_derivative`
-Returns the analytical derivative $\frac{\partial \Delta P}{\partial Q}$.
+Optional. Returns the analytical derivative $\frac{\partial \Delta P}{\partial Q}$. The solver uses it for pipes and pumps only and differentiates every other component numerically, so a new component may leave it out (the base class has a numerical fallback).
 ```python
 def calculate_dp_derivative(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
     """

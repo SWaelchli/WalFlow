@@ -79,7 +79,7 @@ applied to the outlet for $Q \ge 0$ and to the inlet for $Q < 0$. A closed valve
 - **Steady state:** open or closed equilibrium; no slam, no disc dynamics ($\Delta t = 0$).
 - **Solver flags:**
   - `use_mcp_formulation = True`
-  - `is_pressure_boundary = False`, `is_flow_boundary = False`, `blocks_flow_on_shutdown = False`
+  - `is_pressure_boundary = False`, `blocks_flow_on_shutdown = False`
 - **Inactive:** `active` has no effect.
 - **Reverse flow:** blocked (leakage below $10^{-11}$ m³/s at normal pressures).
 - **Shut-in sections:** a check valve with $|Q| \le 10^{-7}$ m³/s counts as closed for sections without a pressure boundary. Such a section takes its pressure through the check valve as a leak path, ranked after a stopped pump and before a relief seat (see [base_node.md](base_node.md#6-operating-modes--model-boundaries)).

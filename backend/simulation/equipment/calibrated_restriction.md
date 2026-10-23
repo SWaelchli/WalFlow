@@ -94,7 +94,7 @@ Only a missing value takes the default; 0 °C is a valid calibration temperature
 ## 6. Operating Modes & Model Boundaries
 
 - **Steady state:** algebraic relation ($\Delta t = 0$).
-- **Solver flags:** all `False` (`is_pressure_boundary`, `is_flow_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation`).
+- **Solver flags:** all `False` (`is_pressure_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation`).
 - **Inactive:** `active` has no effect.
 - **Reverse flow:** symmetric in all three models ($\Delta P$ is odd in $Q$).
 - **Recalibration:** only when a calibration input changes (see 3.1), so the first Newton solve already uses the connected pipe bore and the system fluid.

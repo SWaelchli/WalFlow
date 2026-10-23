@@ -114,7 +114,7 @@ A missing rated drop is 0.5 bar, not zero (audit F2-04). The parser rejects a ra
 ## 6. Operating Modes & Model Boundaries
 
 - **Steady state:** fixed medium temperature, no thermal inertia ($\Delta t = 0$).
-- **Solver flags:** all `False` (`is_pressure_boundary`, `is_flow_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation`).
+- **Solver flags:** all `False` (`is_pressure_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation`).
 - **Inactive:** no heat transfer ($T_{\text{out}} = T_{\text{in}}$, duty 0); the pressure drop stays.
 - **Zero flow:** no heat transfer.
 - **Reverse flow:** the hydraulic drop is symmetric. The thermal calculation takes the port the fluid enters by (the outlet port in reverse flow) and writes the cooled temperature to the port it leaves by, so duty and temperatures are the same as in forward flow (audit D-02).

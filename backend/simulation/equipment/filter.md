@@ -85,7 +85,7 @@ applied to the outlet for $Q \ge 0$ and to the inlet for $Q < 0$, with density a
 ## 6. Operating Modes & Model Boundaries
 
 - **Steady state:** a fixed clogging level; no loading over time ($\Delta t = 0$).
-- **Solver flags:** all `False` (`is_pressure_boundary`, `is_flow_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation`).
+- **Solver flags:** all `False` (`is_pressure_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation`).
 - **Inactive:** `active` has no effect.
 - **Reverse flow:** symmetric (a real element may collapse; not modelled).
 - **Operating cases:** clogging and the datasheet values can be overridden per case (e.g. clean and dirty cases).
