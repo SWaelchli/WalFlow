@@ -19,7 +19,7 @@ Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_RE
 | Claim | Type | Source (edition) | Used for | Status |
 | :--- | :--- | :--- | :--- | :--- |
 | CR-01 | Standard | ISO 5167-1:2022; ISO 5167-2:2022 | Orifice flow equation for the equivalent orifice | ✅ ISO 5167-1:2022 §5.1 F(1) (equation form) |
-| CR-02 | Standard | ISO 5167-2:2022 | Permanent pressure loss ratio $(1 - \beta^2)$ (classic form) | ❌ Not in ISO 5167-2 (§5.4 gives F(7), 1 − β^1.9), D-28 |
+| CR-02 | Standard | ISO 5167-2:2022 | Permanent pressure loss ratio, §5.4 Formula (7) with the model's $C_d$ | ✅ Formula (7) since D-28 (was $1 - \beta^2$) |
 | CR-03 | Literature | Wuest (1954), citation not identified; Idelchik, *Handbook of Hydraulic Resistance*, 4th ed. (2008) | Laminar discharge coefficient $C_d \approx 0.2\sqrt{\mathrm{Re}}$ of small orifices | ⚪ Unverified 🚩 |
 | CR-04 | Principle | Hagen-Poiseuille law | Laminar law $\Delta P \propto \mu Q$ | ➖ Principle |
 | CR-05 | Literature | Crane TP-410, *Flow of Fluids* (edition not fixed; newest confirmed 2018) | Resistance coefficient $K$ for the quadratic law | ⚪ Unverified |
@@ -32,7 +32,7 @@ $$q_0 = \max\!\left(10^{-6},\ \frac{Q_{0,\text{L/min}}}{60\,000}\right), \qquad 
 
 Only the pressure **difference** of the calibration point matters. The calibration fluid is the system fluid (`system`) or a catalogue fluid, for example a datasheet measured with water.
 
-Calibration is lazy (`_ensure_calibrated`): it runs at the first `calculate_delta_p`, `calculate_dp_derivative` or `calculate` call, after the parser has set the connected pipe bore and the global settings, and again only when one of its inputs changes (calibration point, model, resolved fluid, pipe bore).
+Calibration is lazy (`_ensure_calibrated`): it runs at the first `calculate_delta_p` or `calculate` call, after the parser has set the connected pipe bore and the global settings, and again only when one of its inputs changes (calibration point, model, resolved fluid, pipe bore).
 
 | Model | Calibrated constant |
 | :--- | :--- |
@@ -46,7 +46,9 @@ $$\Delta P_{\text{lam}} = K_{\text{lam}}\, \mu\, Q, \qquad \Delta P_{\text{quad}
 
 **Orifice model**, with $D$ the connected pipe bore, $\beta = \min(0.99,\ d_{\text{eq}}/D)$:
 
-$$\Delta P_{\text{orifice}} = \underbrace{\frac{\rho\, v_1 |v_1|}{2} \cdot \frac{1 - \beta^4}{C_d^2\, \beta^4}}_{\text{differential pressure}} \cdot (1 - \beta^2), \qquad v_1 = \frac{Q}{\pi D^2 / 4}$$
+$$\Delta P_{\text{orifice}} = \underbrace{\frac{\rho\, v_1 |v_1|}{2} \cdot \frac{1 - \beta^4}{C_d^2\, \beta^4}}_{\text{differential pressure}} \cdot r, \qquad v_1 = \frac{Q}{\pi D^2 / 4}$$
+
+With the permanent loss ratio of ISO 5167-2:2022 §5.4 Formula (7), $r = \dfrac{S - C_d\beta^2}{S + C_d\beta^2}$, $S = \sqrt{1 - \beta^4 (1 - C_d^2)}$ (`FluidProperties.get_orifice_permanent_loss_ratio`, D-28).
 
 $$C_d(\mathrm{Re}_o) = 0.60 \tanh\!\left(\frac{0.2\sqrt{\mathrm{Re}_o}}{0.60}\right), \qquad \mathrm{Re}_o = \frac{\rho\, |v_o|\, d_{\text{eq}}}{\mu}$$
 
@@ -67,13 +69,9 @@ Calibrated at 10 L/min, 3.5 → 1.0 bar(a) (2.5 bar), ISO VG 46 at 45 °C, DN25 
 
 At this point the equivalent bore runs turbulent, so the orifice model follows the quadratic law; with a smaller flow or a thicker oil it moves towards the laminar law.
 
-### 3.4 Derivative (`calculate_dp_derivative`)
+### 3.4 Derivative
 
-$$\frac{\partial \Delta P_{\text{lam}}}{\partial Q} = K_{\text{lam}}\, \mu, \qquad \frac{\partial \Delta P_{\text{quad}}}{\partial Q} = 2 K_{\text{quad}}\, \rho\, |Q|$$
-
-$$\frac{\partial \Delta P_{\text{orifice}}}{\partial Q} = \frac{2\, c\, |Q|}{C_d^2}\left(1 - \frac{d\ln C_d}{d\ln \mathrm{Re}}\right), \qquad c = \frac{\rho}{2A_1^2} \cdot \frac{(1 - \beta^4)(1 - \beta^2)}{\beta^4}$$
-
-$d\ln C_d / d\ln \mathrm{Re}$ (`get_orifice_cd_slope`) is 0.5 in the laminar limit and 0 in the turbulent limit; $|Q|$ is floored at a tiny flow so the slope stays positive at $Q = 0$. In the network Jacobian the solver differentiates the outlet pressure numerically (see [base_node.md](base_node.md#33-jacobian)).
+The class has no analytical derivative; the solver differentiates the outlet pressure numerically (see [base_node.md](base_node.md#33-jacobian), D-23).
 
 ## 4. Thermal & Energy Balance
 
@@ -111,7 +109,7 @@ Only a missing value takes the default; 0 °C is a valid calibration temperature
 
 | Test | Benchmark |
 | :--- | :--- |
-| `backend/tests/unit/equipment/test_calibrated_restriction.py::test_calibrated_restriction_calibration` | 10 L/min, 3.5 → 1.0 bar at 45 °C (water): every model reproduces 2.5 bar within 0.01 %; derivative positive and within 1 % of a central difference |
+| `backend/tests/unit/equipment/test_calibrated_restriction.py::test_calibrated_restriction_calibration` | 10 L/min, 3.5 → 1.0 bar at 45 °C (water): every model reproduces 2.5 bar within 0.01 % |
 | `test_calibrated_restriction.py::test_laminar_scaling` | Laminar: twice the flow or twice the viscosity gives twice the drop ($10^{-5}$) |
 | `test_calibrated_restriction.py::test_quadratic_scaling` | Quadratic: twice the flow gives four times the drop ($10^{-5}$) |
 | `test_calibrated_restriction.py::test_graph_parser_calibrated_restriction` | Parser reads 15 L/min, 4.0 / 1.5 bar(a), 50 °C, laminar, ISO VG 46 |

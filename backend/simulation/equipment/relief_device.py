@@ -150,10 +150,6 @@ class ReliefDevice(HydraulicNode):
         # The solver's edge row for this device then reads g = 0 (flow form, see class docstring)
         return dp_valve - P_SCALE * g
 
-    def calculate_dp_derivative(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
-        # The solver differentiates this device's row numerically (complementarity rows, F1-12)
-        return P_SCALE / Q_SCALE
-
     # --- reporting -------------------------------------------------------------------------------
     def report(self, flow_rate, density, viscosity, p_in_pa, p_out_pa, p_sense_pa=None):
         """Status, capacity and lift for telemetry; never changes the held open/closed state."""

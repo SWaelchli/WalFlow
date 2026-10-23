@@ -39,9 +39,6 @@ class BlindValve(LinearControlValve):
     def calculate_delta_p(self, flow_rate, density, viscosity=0.001):
         return 1e15 * flow_rate
 
-    def calculate_dp_derivative(self, flow_rate, density, viscosity=0.001):
-        return 1e15
-
 
 INF = float("inf")
 

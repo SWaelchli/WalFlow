@@ -1,8 +1,6 @@
 from simulation.equipment.relief_device import ReliefDevice, P_SCALE
-from simulation.fluid_utils import FluidProperties
-import math
+from simulation.equipment.check_valve import open_seat_dp
 
-K_CV_SI = 1.732e9
 FULL_LIFT_PCT = 99.9          # lift reported as full ("open") from here; below it the valve is modulating
 CYCLING_BAND = 0.01           # cycling stand-in: lift band as a fraction of set, so the average holds the driver at set
 
@@ -190,20 +188,6 @@ class PressureSafetyValve(ReliefDevice):
         self.cycle_high_barg = (self.threshold_pa + offset) / P_SCALE
         self.lift_pct = None   # the averaged lift is not a valve position
 
-    def open_dp(self, flow_rate: float, density: float, viscosity: float) -> float:
-        dp, _ = self.calculate_open_friction_and_deriv(flow_rate, density, viscosity)
-        return dp
-
-    def calculate_open_friction_and_deriv(self, flow_rate: float, density: float, viscosity: float = 0.001) -> tuple:
-        """
-        Computes safety valve open (full lift) friction pressure drop and its derivative.
-        """
-        d_v = max(0.002, 0.01 * math.sqrt(self.cv))
-        v_v = flow_rate / (0.25 * math.pi * d_v**2) if d_v > 0 else 0.0
-        re_v = (density * abs(v_v) * d_v) / max(1e-7, viscosity)
-        fr = FluidProperties.get_valve_fr(re_v)
-        cv_adj = max(0.001, self.cv * fr)
-
-        dp = (K_CV_SI * density * flow_rate * abs(flow_rate)) / (cv_adj ** 2)
-        deriv = (2.0 * K_CV_SI * density * abs(flow_rate)) / (cv_adj ** 2)
-        return dp, deriv
+    def open_dp(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
+        """Open (full lift) friction pressure drop: the Cv seat of the check valve."""
+        return open_seat_dp(self.cv, flow_rate, density, viscosity)

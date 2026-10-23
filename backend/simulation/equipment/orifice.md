@@ -7,7 +7,7 @@ The Orifice component represents a concentric sharp-edged orifice plate installe
 Two calculation standards are selectable:
 
 - **ISO 5167 (`standard='iso_5167'`, default):** ISO 5167-1:2022 / ISO 5167-2:2022 orifice plates, using the Reader-Harris/Gallagher (RG) discharge-coefficient correlation for the meter coefficient $C$ and the ISO 5167-2:2022 §5.4 Formula (7) permanent-pressure-loss ratio.
-- **Classic Cd (`standard='classic_cd'`):** the legacy Reynolds-corrected discharge-coefficient model retained byte-for-byte for backward compatibility with existing diagrams.
+- **Classic Cd (`standard='classic_cd'`):** the Reynolds-corrected discharge-coefficient model of the calibrated restriction and the check valve orifice (`FluidProperties.get_classic_orifice_dp`). Since D-28 its permanent loss uses Formula (7) instead of $1 - \beta^2$, so results differ from before by up to 2.5 %.
 
 ## 2. Governing Standards & Reference Literature
 
@@ -27,7 +27,7 @@ Future options (the architecture supports adding them): ASME MFC-3M-2004 (R2025)
 | `standard` value | Model | Notes |
 | :--- | :--- | :--- |
 | `iso_5167` | RG coefficient + §5.4 Formula (7) permanent loss | Default. Valid for $\beta \in [0.1, 0.75]$, $d \ge 12.5$ mm, $50 \le D \le 1000$ mm. |
-| `classic_cd` | Legacy `C_d$(\mathrm{Re})$` + $(1-\beta^2)$ loss ratio | Legacy diagrams; behavior unchanged from before this feature. |
+| `classic_cd` | Legacy $C_d(\mathrm{Re}_o)$ + Formula (7) loss ratio with that $C_d$ (D-28) | Legacy diagrams; loss ratio was $1 - \beta^2$ before D-28. |
 
 ## 3. Physical & Mathematical Implementation
 
@@ -37,7 +37,7 @@ All quantities in SI units (Pa, m³/s, kg/m³, Pa·s, m). Liquids only (expansib
 
 $$\beta = \frac{d}{D}, \qquad A_{\mathrm{pipe}} = \frac{\pi D^2}{4}, \qquad A_{\mathrm{orifice}} = \frac{\pi d^2}{4}$$
 
-For the RG computation the inputs are clamped to the correlation's validity range: $\beta_{\mathrm{eff}} = \min(0.75, \max(0.1, \beta))$ and $d_{\mathrm{eff}} = \max(0.0125, d)$.
+The RG computation uses the true geometry (F1-39): $\beta_{\mathrm{eff}} = \min(0.99, \max(0.01, \beta))$ only guards against 0 and 1, and $d$ is not clamped. Outside the ISO limits ($\beta$ 0.1–0.75, $d \ge 12.5$ mm, $D$ 50–1000 mm) the correlation is extrapolated, and `iso_validity_issues` reports the violated limit (D-27).
 
 ### 3.2 Reader-Harris/Gallagher discharge coefficient (ISO 5167-2:2022 Formula (4), corner taps)
 
@@ -80,37 +80,27 @@ A simpler, less accurate approximation $\Delta\omega/\Delta p \approx 1 - \beta^
 
 ISO validity starts at the Reynolds limit $\mathrm{Re}_{\mathrm{valid}}(\beta)$:
 
-$$\mathrm{Re}_{\mathrm{valid}} = \begin{cases} 5000 & \beta \le 0.56 \\ 16000 & \beta > 0.56 \end{cases} \quad \text{(ISO 5167-2:2022 §5.3.1)}$$
+$$\mathrm{Re}_{\mathrm{valid}} = \begin{cases} 5000 & \beta \le 0.56 \\ 16000\,\beta^2 & \beta > 0.56 \end{cases} \quad \text{(ISO 5167-2:2022 §5.3.1, D-26)}$$
 
 The RG correlation is unphysical at very low $\mathrm{Re}$ (its $(10^6/\mathrm{Re})^{0.3}$ terms diverge as $\mathrm{Re}\to 0$, forcing $\Delta p \to 0$). To keep the Newton solver continuous down to zero flow, the RG coefficient is blended over a band $\mathrm{Re} \in [\mathrm{Re}_{\mathrm{lo}}, \mathrm{Re}_{\mathrm{valid}}]$ with $\mathrm{Re}_{\mathrm{lo}} = 0.4\,\mathrm{Re}_{\mathrm{valid}}$ to a viscous extension:
 
-$$C_{\mathrm{low}} = \frac{0.6}{\sqrt{1 + 250/\mathrm{Re}_o}\,\sqrt{1-\beta^4}}, \qquad \mathrm{Re}_o = \frac{\mathrm{Re}_D}{\beta_{\mathrm{eff}}}$$
+$$C_{\mathrm{low}} = \frac{0.60 \tanh\!\left(0.2\sqrt{\mathrm{Re}_o}/0.60\right)}{\sqrt{1-\beta^4}}, \qquad \mathrm{Re}_o = \frac{\mathrm{Re}_D}{\beta_{\mathrm{eff}}}$$
 
 $$w = \mathrm{smoothstep}\!\left(\frac{\mathrm{Re}_D - \mathrm{Re}_{\mathrm{lo}}}{\mathrm{Re}_{\mathrm{valid}} - \mathrm{Re}_{\mathrm{lo}}}\right), \qquad C_{\mathrm{eff}} = (1-w)C_{\mathrm{low}} + w\,C_{\mathrm{RG}}$$
 
 `smoothstep(t) = t^2(3-2t)` clamped to $[0,1]$ gives $C^0$ and $C^1$ continuity at both band edges. Below the band the model reproduces legacy-like viscous (laminar) behavior; at and above $\mathrm{Re}_{\mathrm{valid}}$ it is pure ISO 5167.
 
-### 3.6 Analytical derivative
+### 3.6 Derivative
 
-Semi-analytic chain rule through the closed-form meter coefficient $C_{\mathrm{eff}}(\mathrm{Re}_D)$, identical in structure to the forward model:
-
-1. $C(\mathrm{Re}_D)$ is the closed-form blended coefficient (RG, blend, or legacy per standard).
-2. $dC/d\mathrm{Re}_D$ via central difference of the closed form with relative step $10^{-4}\,\mathrm{Re}_D$ (absolute floor $10^{-3}$; forward difference fallback below the step).
-3. Chain rule through $\Delta p = r(C)\, k\, q|q|/C^2$ with $k = 0.5\rho/A_{\mathrm{orifice}}^2$:
-   - $d(\Delta p_{\mathrm{tap}})/dq = \Delta p_{\mathrm{tap}}(2/q - 2(dC/dq)/C)$ for $q \ne 0$
-   - $d\mathrm{Re}_D/d|q| = \rho D / (\mu A_{\mathrm{pipe}})$
-   - $dr/dC = -\dfrac{2\beta^2(1-\beta^4)}{S\,(S + C\beta^2)^2}$, $S = \sqrt{1 - \beta^4(1-C^2)}$
-   - $d\Delta p/dq = r\, d(\Delta p_{\mathrm{tap}})/dq + \Delta p_{\mathrm{tap}}\,(dr/dC)\,(dC/d\mathrm{Re}_D)\,(d\mathrm{Re}_D/d|q|)\,\mathrm{sign}(q)$
-
-The derivative is strictly positive in all regimes, as required by the passive-resistor Jacobian (`solver.py`). At $q \approx 0$ a closed-form viscous-limit value is used (linear slope of the laminar regime).
+The class has no analytical derivative; the solver differentiates the outlet pressure numerically (see [base_node.md](base_node.md#33-jacobian), D-23).
 
 ### 3.7 Legacy model (`standard='classic_cd'`)
 
 Byte-for-byte previous behavior:
 
-$$\Delta p = \underbrace{\tfrac{1}{2}\rho v_{\mathrm{pipe}}^2}_{\text{dynamic}} \cdot \frac{1-\beta^4}{C_d^2\,\beta^4}\cdot (1-\beta^2), \qquad C_d = C_d(\mathrm{Re}_o) \text{ from `fluid_utils.get_orifice_cd`}$$
+$$\Delta p = \underbrace{\tfrac{1}{2}\rho v_{\mathrm{pipe}}^2}_{\text{dynamic}} \cdot \frac{1-\beta^4}{C_d^2\,\beta^4}\cdot r(C_d, \beta), \qquad C_d = C_d(\mathrm{Re}_o) \text{ from `fluid_utils.get_orifice_cd`}$$
 
-with $\beta = \min(0.99, d/D)$ and the existing closed-form analytic derivative. `fluid_utils.get_orifice_cd` is shared by `check_valve_orifice`, `rupture_disc`, and `calibrated_restriction` (tanh blend into 0.60, F1-25).
+with $\beta = \min(0.99, d/D)$ and $r$ from Formula (7) (section 3.4), evaluated with this $C_d$ (D-28). `fluid_utils.get_orifice_cd` is shared by `check_valve_orifice`, `rupture_disc`, and `calibrated_restriction` (tanh blend into 0.60, F1-25).
 
 ## 4. Thermal & Energy Balance
 
@@ -132,8 +122,8 @@ applied to the fluid exiting the node (forward flow: inlet→outlet; reverse flo
 
 - **Steady-State Solver:** static algebraic equilibrium ($\Delta t = 0$); no time integration.
 - **Bidirectional Flow:** fully symmetric $\Delta p(-Q) = -\Delta p(Q)$; $C$ depends on $|\mathrm{Re}_D|$.
-- **Validity clamps (ISO model):** $\beta_{\mathrm{eff}}$ clamped to $[0.1, 0.75]$ and $d_{\mathrm{eff}}$ to $\ge 12.5$ mm for the RG computation; physical geometry is used for the tap differential pressure. Clamps keep the correlation well-behaved outside the formal validity range.
-- **Reynolds boundary:** the "pure ISO" region begins at $\mathrm{Re}_D \ge 5000$ (or $16000$ for $\beta > 0.56$). Below $\mathrm{Re}_{\mathrm{valid}}$ the viscous blend applies; below $\mathrm{Re}_{\mathrm{lo}}$ the model is the legacy-like viscous extension. This boundary is explicit and intentional for Newton convergence.
+- **ISO geometry limits:** the RG correlation uses the true $\beta$ (guarded to 0.01–0.99) and $d$. Outside $\beta$ 0.1–0.75, $d \ge 12.5$ mm or $D$ 50–1000 mm it is extrapolated, and `iso_validity_issues` reports the violated limit.
+- **Reynolds boundary:** the "pure ISO" region begins at $\mathrm{Re}_D \ge 5000$ (or $16000\,\beta^2$ for $\beta > 0.56$). Below $\mathrm{Re}_{\mathrm{valid}}$ the viscous blend applies; below $\mathrm{Re}_{\mathrm{lo}}$ the model is the legacy-like viscous extension. This boundary is explicit and intentional for Newton convergence.
 - **Roughness validity (Tables 1 & 2):** exact $R_a/D$ roughness enforcement is not performed; documented as a validity note only, calculation is not blocked.
 - **Active / Inactive:** shutting the orifice down does not block flow (passive resistor).
 - **Operating cases:** supports node-level parameter overrides per operating scenario.
@@ -145,9 +135,10 @@ applied to the fluid exiting the node (forward flow: inlet→outlet; reverse flo
 - High-$\mathrm{Re}$ limit: $D \ge 71.12$ mm: $C \to 0.5961 + 0.0261\beta^2 - 0.216\beta^8$ within $10^{-4}$.
 - Tap differential pressure satisfies $q_m = C A_o \sqrt{2\rho\Delta p}$ within $10^{-4}$.
 - Permanent loss ratio matches a direct recomputation of §5.4 Formula (7) (using $C$, not $C_d$) within $10^{-4}$.
-- Analytical derivative within $1\%$ of central finite differences across laminar, blend, and fully turbulent regimes ($\beta = 0.5$ and $0.7$, water at 20 °C, DN50).
-- Continuity: no jumps in $\Delta p$ or its derivative across the blend bands.
-- Legacy model: `classic_cd` reproduces the previous formula and derivative to $10^{-12}$.
+- Continuity: no jumps in $\Delta p$ across the blend bands.
+- Legacy model: `classic_cd` reproduces the tanh $C_d$ law with the Formula (7) loss ratio to $10^{-12}$.
+- `test_orifice.py::test_d26_reynolds_limit_above_beta_056_is_16000_beta_squared`: β = 0.75, Re_D 9 100 gives the pure RG drop and no Reynolds issue; Re_D 8 500 reports the issue (limit 16 000·β² = 9 000).
+- `test_orifice.py::test_d28_permanent_loss_is_tap_dp_times_formula_7`: orifice `classic_cd`, calibrated restriction, check valve orifice and reduced-bore rupture disc, β = 0.5: drop = tap differential × Formula (7) within $10^{-9}$.
 - Network solve: tank → pipe → orifice → pipe → tank converges with positive orifice $\Delta P$.
 
 ## Data Fields

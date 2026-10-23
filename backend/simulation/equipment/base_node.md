@@ -66,7 +66,7 @@ The solver builds a sparse Jacobian. The derivative of a pressure row with respe
 | Other resistances | central difference of the node outlet pressure, step $h = \max(10^{-12}, 10^{-4} |q|)$ m³/s |
 | MCP rows | central difference of the whole row residual |
 
-So for valves, orifices, filters and the like, the solver does **not** call their `calculate_dp_derivative`. It differentiates the outlet pressure numerically, so viscosity corrections and branch switches inside the model are always included (audit F1-12). The analytical derivative of such a component is still given in its document and checked in its tests, and `HydraulicNode.calculate_dp_derivative` gives a central-difference fallback ($dq = 10^{-6}$ m³/s) for components without one.
+So for valves, orifices, filters and the like, the solver does **not** call their `calculate_dp_derivative`. It differentiates the outlet pressure numerically, so viscosity corrections and branch switches inside the model are always included (audit F1-12). These components have no analytical derivative (removed in D-23); `HydraulicNode.calculate_dp_derivative` gives a central-difference fallback ($dq = 10^{-6}$ m³/s) of `calculate_delta_p`. No production code calls it. It is not a pressure-drop slope for MCP and relief devices, whose `calculate_delta_p` with node pressures returns a residual row.
 
 ### 3.4 Complementarity (MCP) components
 

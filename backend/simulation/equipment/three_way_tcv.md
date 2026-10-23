@@ -35,7 +35,7 @@ The TCV node's pressure unknown is its **mixed outlet** pressure. Each path loss
 
 $$P_{\text{out},s} - P_{\text{TCV}} - \Delta P_{\text{pipe}}(q) - \Delta P_{\text{path}}(q, \text{port}) = 0$$
 
-The edge leaving the TCV starts at $P_{\text{TCV}}$. The inlet port pressures are reported as $P_{\text{TCV}} + \Delta P_{\text{path}}$. In the Jacobian the path derivative is a numerical central difference, floored at 100 Pa·s/m³ (see [base_node.md](base_node.md#33-jacobian)). `calculate_dp_derivative_path` gives the analytical value $2 K_{Cv} \rho |Q| / (C_{v,\text{path}} F_R)^2$.
+The edge leaving the TCV starts at $P_{\text{TCV}}$. The inlet port pressures are reported as $P_{\text{TCV}} + \Delta P_{\text{path}}$. In the Jacobian the path derivative is a numerical central difference, floored at 100 Pa·s/m³ (see [base_node.md](base_node.md#33-jacobian)).
 
 ### 3.3 Mix ratio search (`NetworkSolver._tcv_step`)
 

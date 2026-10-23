@@ -45,7 +45,7 @@ with the viscosity correction $F_R$ of the [linear control valve](linear_control
 
 **Reduced bore**, with $D$ the connected pipe bore and $d$ the orifice, $\beta = \min(0.99,\ d/D)$ ($d$ limited to $0.99 D$):
 
-$$\Delta P_{\text{open}} = \frac{\rho\, v_1|v_1|}{2} \cdot \frac{1 - \beta^4}{C_d^2\, \beta^4} \cdot (1 - \beta^2), \qquad C_d = 0.60 \tanh\!\left(\frac{0.2\sqrt{\mathrm{Re}_o}}{0.60}\right)$$
+$$\Delta P_{\text{open}} = \frac{\rho\, v_1|v_1|}{2} \cdot \frac{1 - \beta^4}{C_d^2\, \beta^4} \cdot r, \qquad C_d = 0.60 \tanh\!\left(\frac{0.2\sqrt{\mathrm{Re}_o}}{0.60}\right)$$
 
 $v_1$ is the pipe velocity, $\mathrm{Re}_o$ the orifice Reynolds number. The parser sets $D$ from the connected pipe (upstream first), overriding `pipe_diameter_m`.
 
@@ -53,11 +53,7 @@ The open loss enters the flow equation $Q = \text{lift}\sqrt{\Delta p / c(Q)}$ o
 
 ### 3.3 Derivative
 
-`calculate_open_friction_and_deriv` returns the analytical slopes:
-
-$$\text{full bore: } \frac{2 K_{Cv} \rho |Q|}{(C_v F_R)^2}, \qquad \text{reduced bore: } \frac{\rho\, |v_1|}{A_1} \cdot \frac{(1 - \beta^4)(1 - \beta^2)}{C_d^2 \beta^4} \left(1 - \frac{d \ln C_d}{d \ln \mathrm{Re}}\right)$$
-
-The solver differentiates the device's edge row numerically (audit F1-12).
+The class has no analytical derivative; the solver differentiates the device's edge row numerically (audit F1-12, D-23).
 
 ## 4. Thermal & Energy Balance
 

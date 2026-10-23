@@ -15,7 +15,7 @@ Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_RE
 | Claim | Type | Source (edition) | Used for | Status |
 | :--- | :--- | :--- | :--- | :--- |
 | CVO-01 | Standard | IEC 60534-2-1:2011 | Liquid Cv equation for the open seat | ✅ IEC 60534-2-1:2011 §6.1 Eq. (1) |
-| CVO-02 | Standard | ISO 5167-1:2022; ISO 5167-2:2022 | Orifice equation and permanent pressure loss ratio $(1 - \beta^2)$ (classic form) for the bypass, as for the [calibrated restriction](calibrated_restriction.md#32-pressure-drop-calculate_delta_p) | ❌ Equation ✅ F(1); loss ratio not in ISO 5167-2, D-28 |
+| CVO-02 | Standard | ISO 5167-1:2022; ISO 5167-2:2022 | Orifice equation and permanent loss ratio (§5.4 Formula (7)) for the bypass, as for the [calibrated restriction](calibrated_restriction.md) | ✅ Formula (7) since D-28 (was $1 - \beta^2$) |
 | CVO-03 | Standard | API Std 594, 9th ed. (2022) | Cracking pressure | ⚪ Unverified |
 
 ## 3. Physical & Mathematical Implementation
@@ -24,9 +24,9 @@ Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_RE
 
 With $D$ the connected pipe bore, $d$ the orifice, $\beta = \min(0.99,\ d/D)$:
 
-$$\Delta P_{\text{ori}} = \frac{\rho\, v_1|v_1|}{2} \cdot \frac{1 - \beta^4}{C_d^2\, \beta^4} \cdot (1 - \beta^2), \qquad C_d = 0.60 \tanh\!\left(\frac{0.2\sqrt{\mathrm{Re}_o}}{0.60}\right)$$
+$$\Delta P_{\text{ori}} = \frac{\rho\, v_1|v_1|}{2} \cdot \frac{1 - \beta^4}{C_d^2\, \beta^4} \cdot r, \qquad C_d = 0.60 \tanh\!\left(\frac{0.2\sqrt{\mathrm{Re}_o}}{0.60}\right)$$
 
-$v_1$ is the pipe velocity, $\mathrm{Re}_o$ the orifice Reynolds number. The parser sets $D$ from the connected pipe (upstream first), overriding `pipe_diameter_m`.
+$v_1$ is the pipe velocity, $\mathrm{Re}_o$ the orifice Reynolds number, with the permanent loss ratio of ISO 5167-2:2022 §5.4 Formula (7), $r = \dfrac{S - C_d\beta^2}{S + C_d\beta^2}$, $S = \sqrt{1 - \beta^4 (1 - C_d^2)}$ (`FluidProperties.get_orifice_permanent_loss_ratio`, D-28). The parser sets $D$ from the connected pipe (upstream first), overriding `pipe_diameter_m`.
 
 ### 3.2 Seat (`open_seat_dp`, shared with the check valve)
 

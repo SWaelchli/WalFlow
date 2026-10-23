@@ -95,20 +95,6 @@ class FlowSource(HydraulicNode):
         dp = max(-self._max_rise_pa(), min(self._HARD_CAP_PA, dp))
         return dp
 
-    def calculate_dp_derivative(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
-        """
-        Analytical derivative of the spring curve pressure drop w.r.t flow rate.
-        """
-        target_flow = self.source_flow
-        stiffness = self._stiffness()
-
-        # Check if clamped; if so, derivative is zero
-        dp = stiffness * (flow_rate - target_flow)
-        if dp <= -self._max_rise_pa() or dp >= self._HARD_CAP_PA:
-            return 0.0
-
-        return stiffness
-
     def calculate(self) -> float:
         """
         Propagates pressure and thermal state to the outlet.

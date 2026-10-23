@@ -27,8 +27,7 @@ class InLineResistor(HydraulicNode):
         # Standard Darcy-Weisbach or flow coefficient loss: dP = k * rho * Q * |Q|
         return self.k * density * flow_rate * abs(flow_rate)
 
-    def calculate_dp_derivative(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
-        return 2.0 * self.k * density * abs(flow_rate)
+    # No calculate_dp_derivative: the solver differentiates this node numerically (D-23)
 
     def calculate(self):
         inlet = self.inlets[0]
@@ -88,6 +87,7 @@ class PositiveDisplacementPump(HydraulicNode):
         return slope * (flow_rate - self.flow_rated)
 
     def calculate_dp_derivative(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
+        # Pumps (and pipes) are the only nodes whose analytical derivative the solver uses
         return 1e8
 
     def calculate(self):
@@ -121,7 +121,7 @@ class PositiveDisplacementPump(HydraulicNode):
 
 ```python
 from simulation.equipment.base_node import HydraulicNode
-from simulation.fluid_utils import FluidProperties
+from simulation.equipment.check_valve import open_seat_dp
 import math
 
 class DynamicCheckValve(HydraulicNode):
@@ -137,13 +137,6 @@ class DynamicCheckValve(HydraulicNode):
         self.add_inlet()
         self.add_outlet()
 
-    def calculate_open_friction_and_deriv(self, flow_rate: float, density: float, viscosity: float = 0.001) -> tuple:
-        K_CV_SI = 1.732e9
-        effective_cv = self.cv
-        dp_friction = (K_CV_SI * density * flow_rate * abs(flow_rate)) / (effective_cv ** 2)
-        deriv = (2.0 * K_CV_SI * density * abs(flow_rate)) / (effective_cv ** 2)
-        return dp_friction, deriv
-
     def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001,
                           p_in_pa: float = None, p_out_pa: float = None, update_state: bool = True) -> float:
         if p_in_pa is not None and p_out_pa is not None:
@@ -152,7 +145,8 @@ class DynamicCheckValve(HydraulicNode):
             epsilon = 1e-4
             cracking_pa = self.cracking_pressure_bar * 100000.0
             dp_valve = p_in_pa - p_out_pa
-            dp_friction, _ = self.calculate_open_friction_and_deriv(flow_rate, density, viscosity)
+            # Open-seat friction (Cv with the viscosity factor F_R), value only
+            dp_friction = open_seat_dp(self.cv, flow_rate, density, viscosity)
             
             a = flow_rate / q_scale
             b = (cracking_pa + dp_friction - dp_valve) / p_scale
@@ -161,14 +155,8 @@ class DynamicCheckValve(HydraulicNode):
 
         # Standalone evaluation fallback (smooth tanh)
         scale = 1e-5
-        dp_friction, _ = self.calculate_open_friction_and_deriv(flow_rate, density, viscosity)
+        dp_friction = open_seat_dp(self.cv, flow_rate, density, viscosity)
         return (self.cracking_pressure_bar * 1e5) * math.tanh(flow_rate / scale) + dp_friction
-
-    def calculate_dp_derivative(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
-        scale = 1e-5
-        dtanh = (self.cracking_pressure_bar * 1e5) * (1.0 - math.tanh(flow_rate / scale)**2) / scale
-        _, dfriction = self.calculate_open_friction_and_deriv(flow_rate, density, viscosity)
-        return dtanh + dfriction
 
     def calculate(self):
         inlet = self.inlets[0]
@@ -246,9 +234,6 @@ class FlowSplitter(HydraulicNode):
     def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
         return 0.0
 
-    def calculate_dp_derivative(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
-        return 1e-6
-
     def calculate(self):
         inlet = self.inlets[0]
         for out in self.outlets:
@@ -288,9 +273,6 @@ class HeatExchangerUnit(HydraulicNode):
 
     def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
         return self.k * density * flow_rate * abs(flow_rate)
-
-    def calculate_dp_derivative(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
-        return 2.0 * self.k * density * abs(flow_rate)
 
     def calculate(self):
         inlet = self.inlets[0]

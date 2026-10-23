@@ -39,16 +39,6 @@ def test_calibrated_restriction_calibration():
         # Test calibration point matches exactly
         dp_cal = res.calculate_delta_p(q0, rho0, mu0)
         assert math.isclose(dp_cal, dp0, rel_tol=1e-4), f"{model} model dP at calibration {dp_cal} != expected {dp0}"
-        
-        # Test analytical derivative is positive and reasonable
-        deriv = res.calculate_dp_derivative(q0, rho0, mu0)
-        assert deriv > 0, f"{model} derivative {deriv} should be positive"
-        
-        # Test numerical derivative vs analytical derivative
-        num_deriv = res.calculate_dp_derivative(q0, rho0, mu0)
-        # Using parent's numerical fallback to compare
-        parent_deriv = super(CalibratedRestriction, res).calculate_dp_derivative(q0, rho0, mu0)
-        assert math.isclose(deriv, parent_deriv, rel_tol=1e-2), f"{model} analytical derivative {deriv} != numerical derivative {parent_deriv}"
 
 @pytest.mark.parametrize("model, flow_factor, visc_factor", [
     # Laminar: double flow rate gives double pressure drop, double viscosity gives double pressure drop
@@ -144,7 +134,6 @@ def test_d08_calibration_runs_once_and_again_only_after_a_change(monkeypatch):
     node.inlets[0].flow_rate, node.inlets[0].density, node.inlets[0].viscosity = q, rho, mu
     for _ in range(3):
         node.calculate_delta_p(q, rho, mu)
-        node.calculate_dp_derivative(q, rho, mu)
         node.calculate()
     assert len(calls) == 1
     node.pipe_diameter = 0.0266

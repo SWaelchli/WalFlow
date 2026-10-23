@@ -73,11 +73,9 @@ After three exits the regulator stays in its last state, to avoid cycling. A PRV
 
 Saturated controllers are listed in `saturated_controllers` with their state (`wide_open`, `closed`, `lock_up`), setpoint and sensed pressure, so the user sees why a setpoint is not held.
 
-### 3.5 Derivative (`calculate_dp_derivative`)
+### 3.5 Derivative
 
-$$\frac{\partial \Delta P}{\partial Q} = \frac{2\, K_{Cv}\, \rho\, |Q|}{\big(C_{v,\text{eff}} F_R\big)^2}$$
-
-at the current opening ($F_R$ held constant). In the network Jacobian the solver differentiates the outlet pressure numerically; a locked-up regulator has no slope with respect to its inlet pressure or flow (see [base_node.md](base_node.md#33-jacobian)).
+The class has no analytical derivative; the solver differentiates the outlet pressure numerically (see [base_node.md](base_node.md#33-jacobian), D-23). A locked-up regulator has no slope with respect to its inlet pressure or flow.
 
 ## 4. Thermal & Energy Balance
 

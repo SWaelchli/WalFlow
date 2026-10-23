@@ -54,11 +54,9 @@ Several valves sensing the same port in the same mode fix only that one pressure
 
 Valves are grouped only when they sense the exact same port. Valves that sense different ports, even with almost no loss between them, are controlled separately; the pipe loss between those ports still decides the split.
 
-### 3.5 Derivative (`calculate_dp_derivative`)
+### 3.5 Derivative
 
-$$\frac{\partial \Delta P}{\partial Q} = \frac{2\, K_{Cv}\, \rho\, |Q|}{\big(C_{v,\text{eff}} F_R\big)^2}$$
-
-at the current opening ($F_R$ held constant). The network Jacobian uses a numerical derivative of the outlet pressure (see [base_node.md](base_node.md#33-jacobian)).
+The class has no analytical derivative; the solver differentiates the outlet pressure numerically (see [base_node.md](base_node.md#33-jacobian), D-23).
 
 ## 4. Thermal & Energy Balance
 
@@ -93,7 +91,6 @@ The opening (`self.opening_pct`) and the sensed pressure (`self.sensed_pressure`
 
 | Test | Benchmark |
 | :--- | :--- |
-| `backend/tests/unit/equipment/test_remote_control_valve.py::test_remote_control_valve_init_and_derivatives` | $\Delta P > 0$ for forward flow; analytical derivative within 1 % of a central difference |
 | `test_remote_control_valve.py::test_remote_control_valve_network_downstream_regulation` | 50 m tank → valve (Cv 100, 2 bar(a) at the sink tank) → 1 m tank: mass balance within 0.1 %, opening between 0 and 100 % |
 | `test_remote_control_valve.py::test_graph_parser_signal_edge_handling` | A signal line creates `remote_sensing_config` to the tank and no pipe; setpoint 2.5 bar(a) read from the file |
 | `backend/tests/unit/equipment/test_measure_point.py::test_remote_control_valve_senses_a_tap` | Valve sensing a measurement tap holds it at 1.2 bar(a) within 2 mbar |

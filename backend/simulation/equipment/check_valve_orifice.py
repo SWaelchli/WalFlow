@@ -31,21 +31,7 @@ class CheckValveOrifice(HydraulicNode):
         """Calculates pressure drop using Bernoulli orifice equation with Re-dependent Cd."""
         pipe_d = max(0.001, getattr(self, 'pipe_diameter', 0.05248))
         orif_d = max(0.0001, self.orifice_diameter)
-
-        beta_ratio = min(0.99, orif_d / pipe_d)
-        area_pipe = math.pi * (pipe_d / 2.0)**2
-        velocity = flow_rate / max(1e-9, area_pipe)
-        dynamic_pressure = 0.5 * density * velocity * abs(velocity)
-        
-        area_orifice = math.pi * (self.orifice_diameter / 2.0)**2
-        v_orifice = flow_rate / max(1e-9, area_orifice)
-        re_orifice = (density * abs(v_orifice) * self.orifice_diameter) / max(1e-7, viscosity)
-        
-        discharge_coefficient = FluidProperties.get_orifice_cd(re_orifice)
-        geometry_factor = (1.0 - beta_ratio**4) / ((discharge_coefficient**2) * (beta_ratio**4))
-        rec_delta_p = dynamic_pressure * geometry_factor
-        perm_delta_p = rec_delta_p * (1.0 - beta_ratio**2)
-        return perm_delta_p
+        return FluidProperties.get_classic_orifice_dp(flow_rate, density, viscosity, pipe_d, orif_d)
 
     def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
         """
@@ -63,7 +49,7 @@ class CheckValveOrifice(HydraulicNode):
         # Orifice drop rises and seat drop falls with the orifice share q_o: one root on (0, Q)
         def mismatch(q_o):
             return (self._calculate_orifice_dp(q_o, density, viscosity) - cracking_pa
-                    - open_seat_dp(self.cv, flow_rate - q_o, density, viscosity)[0])
+                    - open_seat_dp(self.cv, flow_rate - q_o, density, viscosity))
 
         # 1e-12 of the flow: far below the solver's finite-difference step, with a floor for denormal flows
         q_o = brentq(mismatch, 0.0, flow_rate, xtol=max(1e-12 * flow_rate, 1e-300), rtol=1e-12)

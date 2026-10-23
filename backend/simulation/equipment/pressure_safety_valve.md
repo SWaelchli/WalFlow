@@ -42,7 +42,9 @@ Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_RE
 
 At full lift the valve is a Cv restriction with the viscosity correction of the [linear control valve](linear_control_valve.md#33-viscosity-correction-f_r-fluidpropertiesget_valve_fr):
 
-$$\Delta P_{\text{open}} = \frac{K_{Cv}\, \rho\, Q|Q|}{\big(\max(0.001,\ C_v F_R)\big)^2}, \qquad K_{Cv} = 1.732 \times 10^9$$
+$$\Delta P_{\text{open}} = \frac{K_{Cv}\, \rho\, Q|Q|}{\big(\max(10^{-4},\ C_v F_R)\big)^2}, \qquad K_{Cv} = 1.732 \times 10^9$$
+
+The open seat is the check valve's `open_seat_dp` (shared with the check valve, check valve with orifice and full-bore rupture disc).
 
 This loss enters the flow equation $Q = \text{lift}\sqrt{\Delta p / c(Q)}$ of [relief_device.md](relief_device.md#33-flow-equation-model_flow-calculate_delta_p).
 
@@ -97,7 +99,7 @@ An **undersized** valve stays open at full lift with its driver above the reseat
 
 ### 3.5 Derivative
 
-The device's edge row is differentiated numerically by the solver (audit F1-12). `calculate_dp_derivative` returns a constant $P_{\text{scale}}/Q_{\text{scale}} = 10^8$ only as a placeholder (see [relief_device.md](relief_device.md#33-flow-equation-model_flow-calculate_delta_p)).
+The device's edge row is differentiated numerically by the solver (audit F1-12).
 
 ## 4. Thermal & Energy Balance
 

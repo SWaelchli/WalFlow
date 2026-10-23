@@ -154,26 +154,6 @@ class HeatExchanger(HydraulicNode):
         visc_factor = FluidProperties.get_filter_viscosity_factor(self._reynolds(flow, density, viscosity))
         return self._resistance_k() * density * flow * abs(flow) * visc_factor
 
-    def calculate_dp_derivative(self, flow: float, density: float, viscosity: float) -> float:
-        d_hx = 0.01
-        a_hx = self._channel_area()
-        re_hx = self._reynolds(flow, density, viscosity)
-
-        c2 = self._resistance_k() * density
-
-        deriv_turb = 2.0 * c2 * abs(flow)
-        if re_hx < 2000.0:
-            c_lam = 100.0 * a_hx * viscosity / (density * d_hx)
-            return c2 * (2.0 * abs(flow) + c_lam)
-        elif re_hx > 4000.0:
-            return deriv_turb
-        else:
-            c_lam = 100.0 * a_hx * viscosity / (density * d_hx)
-            deriv_lam = c2 * (2.0 * abs(flow) + c_lam)
-            w = (re_hx - 2000.0) / 2000.0
-            return (1.0 - w) * deriv_lam + w * deriv_turb
-
-
     def calculate_temperature(self):
         """
         Calculates the actual cooling duty and resulting outlet temperature.

@@ -3,7 +3,7 @@ import pytest
 
 from simulation.equipment.tank import Tank
 from simulation.equipment.pipe import Pipe
-from simulation.equipment.check_valve import CheckValve
+from simulation.equipment.check_valve import CheckValve, open_seat_dp
 from simulation.equipment.volumetric_pump import VolumetricPump
 from simulation.schemas import HydraulicNetwork, GlobalSettings
 from simulation.solver import NetworkSolver
@@ -18,7 +18,7 @@ def test_fischer_burmeister_check_valve():
     # At converged manifold, p_in - p_out should match cracking + open friction
     flow_rate = 0.001
     density = 1000.0
-    dp_friction, _ = cv.calculate_open_friction_and_deriv(flow_rate, density)
+    dp_friction = open_seat_dp(cv.cv, flow_rate, density)
     cracking_pa = 0.05 * 100000.0
     target_dp = cracking_pa + dp_friction
     
