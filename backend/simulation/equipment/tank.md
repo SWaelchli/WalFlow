@@ -69,7 +69,6 @@ The fluid is the system fluid from the global settings (`self.fluid_type`). A `f
 - **Steady state:** the level is fixed. The tank does not fill or empty; a net in- or outflow does not change $h$ ($\Delta t = 0$).
 - **Solver flags:**
   - `is_pressure_boundary = True`
-  - `is_flow_boundary = False`
   - `blocks_flow_on_shutdown = False`
   - `use_mcp_formulation = False`
 - **Inactive:** `active` has no effect; the tank always fixes its pressure.

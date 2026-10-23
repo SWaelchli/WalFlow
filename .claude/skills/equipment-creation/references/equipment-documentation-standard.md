@@ -34,7 +34,7 @@ Every document uses exactly these headings, in this order. Subsections (`### 3.1
 3. **Physical & Mathematical Implementation** — the equations **as the code implements them**, not as a textbook states them. Cover:
    - the primary relation ($\Delta P(Q, \rho, \mu)$, $H(Q)$, fixed $P$ or $Q$, mass balance, ...);
    - flow regimes and how they are blended ($C^0$ / $C^1$ continuity);
-   - the analytical derivative supplied to the Newton Jacobian;
+   - the derivative in the Newton Jacobian (analytical for pipes and pumps, numerical for the others);
    - the solver formulation (residual form, MCP Fischer-Burmeister, between-solve state updates);
    - clamps, regularisations and constants with their values.
    Name the method (`calculate_delta_p`, `_cd_rg_iso5167`, ...) where it helps a developer find the code.
@@ -47,7 +47,7 @@ Every document uses exactly these headings, in this order. Subsections (`### 3.1
    `Backend Var` is the attribute on the equipment object (e.g. `self.flow_base`); the file field name is in `## Data Fields`.
 6. **Operating Modes & Model Boundaries** — always cover:
    - steady state ($\Delta t = 0$, instantaneous algebraic equilibrium);
-   - **solver flags** as a list: `is_pressure_boundary`, `is_flow_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation` with their values;
+   - **solver flags** as a list: `is_pressure_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation` with their values;
    - inactive / shutdown behaviour;
    - reverse flow;
    - operating case overrides;

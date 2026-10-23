@@ -9,7 +9,6 @@ CYCLING_BAND = 0.01           # cycling stand-in: lift band as a fraction of set
 
 VALVE_TYPES = ("conventional", "balanced_bellows", "pilot")
 ACTION_MODES = ("pop_action", "pop_latching", "modulating")
-ACTION_MODE_ALIASES = {"rupture_disc": "pop_latching"}   # files before the latching mode was named
 
 
 class PressureSafetyValve(ReliefDevice):
@@ -45,7 +44,6 @@ class PressureSafetyValve(ReliefDevice):
     ):
         super().__init__(name, "pressure_safety_valve", set_pressure_barg, forced_state)
         self.cv = max(0.001, float(cv))
-        action_mode = ACTION_MODE_ALIASES.get(action_mode, action_mode)
         self.action_mode = action_mode if action_mode in ACTION_MODES else "pop_action"
         self.blowdown_pct = max(0.0, min(50.0, float(blowdown_pct)))
         self.valve_type = valve_type if valve_type in VALVE_TYPES else "conventional"

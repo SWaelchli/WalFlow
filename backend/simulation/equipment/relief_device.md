@@ -139,7 +139,7 @@ Shared inputs (the component documents list the full tables):
 ## 6. Operating Modes & Model Boundaries
 
 - **Steady state:** opening, lift and relief are equilibrium states. Valve chatter, pop dynamics, disc burst dynamics and pressure transients are not modelled ($\Delta t = 0$). A pop-action valve that would chatter is reported as `cycling` (see [pressure_safety_valve.md](pressure_safety_valve.md)).
-- **Solver flags:** `use_mcp_formulation = False`, but the solver gives every relief device the flow-equation row of section 3.3 by its node type. `is_pressure_boundary`, `is_flow_boundary`, `blocks_flow_on_shutdown` are `False`; a closed device blocks through `is_closed_relief` (pruning and stagnant sections).
+- **Solver flags:** `use_mcp_formulation = False`, but the solver gives every relief device the flow-equation row of section 3.3 by its node type. `is_pressure_boundary`, `blocks_flow_on_shutdown` are `False`; a closed device blocks through `is_closed_relief` (pruning and stagnant sections).
 - **Reverse flow:** never; a device with $\Delta p \le 0$ passes no flow.
 - **Liquid service only:** no gas or two-phase relief sizing (API 520 gas equations, HEM / Omega method), no backpressure capacity correction $K_w$ (balanced bellows valves get only the 50 % warning), no viscosity correction $K_v$ beyond the Cv model.
 - **Operating cases:** set pressure, Cv and forced state can be overridden per case.

@@ -107,7 +107,7 @@ The parser rejects a diameter $\le 0$ and a negative length or roughness (`Model
 ## 6. Operating Modes & Model Boundaries
 
 - **Steady state:** algebraic relation, no water hammer or line packing ($\Delta t = 0$).
-- **Solver flags:** all `False` (`is_pressure_boundary`, `is_flow_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation`). A pipe is not a node; it is the edge term of the pressure balance.
+- **Solver flags:** all `False` (`is_pressure_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation`). A pipe is not a node; it is the edge term of the pressure balance.
 - **Inactive:** a pipe has no `active` switch.
 - **Reverse flow:** fully supported; friction and entry terms are odd in $Q$.
 - **Operating cases:** pipe data is not overridden per case (case overrides apply to nodes).

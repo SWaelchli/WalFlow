@@ -76,7 +76,7 @@ applied to the outlet for $Q \ge 0$ and to the inlet for $Q < 0$.
 ## 6. Operating Modes & Model Boundaries
 
 - **Steady state:** algebraic relation ($\Delta t = 0$).
-- **Solver flags:** all `False` (`is_pressure_boundary`, `is_flow_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation`).
+- **Solver flags:** all `False` (`is_pressure_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation`).
 - **Inactive:** `active` has no effect.
 - **Reverse flow:** passes through the orifice; $\Delta P$ is negative.
 - **Shut-in sections:** the orifice always connects both sides, so it is no leak path in the stagnant-pressure ranking: at zero flow both sides share one pressure (D-09).

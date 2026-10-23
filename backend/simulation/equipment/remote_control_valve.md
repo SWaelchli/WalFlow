@@ -76,7 +76,7 @@ The opening (`self.opening_pct`) and the sensed pressure (`self.sensed_pressure`
 ## 6. Operating Modes & Model Boundaries
 
 - **Steady state:** the settled opening of an ideal controller ($\Delta t = 0$).
-- **Solver flags:** all `False` (`is_pressure_boundary`, `is_flow_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation`). The solver registers the valve as a controller by its class.
+- **Solver flags:** all `False` (`is_pressure_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation`). The solver registers the valve as a controller by its class.
 - **Inactive:** `active` has no effect.
 - **Reverse flow:** the valve equation is symmetric.
 - **Saturation** is reported in `saturated_controllers` (`wide_open`, `closed`) with the setpoint, the sensed pressure and `reverse_acting`.

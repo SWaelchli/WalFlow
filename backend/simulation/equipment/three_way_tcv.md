@@ -67,7 +67,7 @@ The mix ratio (`self.mix_ratio`) is a result.
 ## 6. Operating Modes & Model Boundaries
 
 - **Steady state:** the settled mix ratio of an ideal controller ($\Delta t = 0$).
-- **Solver flags:** all `False` (`is_pressure_boundary`, `is_flow_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation`). The solver registers the TCV by its class.
+- **Solver flags:** all `False` (`is_pressure_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation`). The solver registers the TCV by its class.
 - **Inactive:** `active` has no effect.
 - **Reverse flow:** a path with reverse flow is a resistance like a forward one; it gets the mixed temperature.
 - **End stops:** 0.1 % and 99.9 % (the trim itself goes down to 0.01 %). An unreachable setpoint is reported at the end stop.

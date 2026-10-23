@@ -52,7 +52,7 @@ Not applicable — the splitter has no parameters of its own. The number of outl
 ## 6. Operating Modes & Model Boundaries
 
 - **Steady state:** algebraic junction ($\Delta t = 0$).
-- **Solver flags:** all `False` (`is_pressure_boundary`, `is_flow_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation`).
+- **Solver flags:** all `False` (`is_pressure_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation`).
 - **Inactive:** `active` has no effect; the splitter always joins its connections.
 - **Reverse flow:** supported on every port; the mass balance holds for any sign.
 - **Unused outlet:** an outlet with no pipe is ignored. A branch that ends in a dead end is pruned before the solve and gets the splitter pressure at zero flow.

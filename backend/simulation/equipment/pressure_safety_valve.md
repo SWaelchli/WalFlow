@@ -71,7 +71,7 @@ An **undersized** valve stays open at full lift with its driver above the reseat
 
 `opening_pressure_barg` / `reseat_pressure_barg` are the same inlet gauge pressures from the final port pressures (the outlet of a conventional valve, the sensed pressure of a pilot), for any status; the details panel draws its Opens/Reseat ticks from them.
 
-**Pop action, latching:** closed until $m \ge 0$, then full lift for the rest of the run, whatever the pressure afterwards. Files with the former `rupture_disc` action mode load as `pop_latching`.
+**Pop action, latching:** closed until $m \ge 0$, then full lift for the rest of the run, whatever the pressure afterwards.
 
 **Modulating:** lift $= m / \Delta P_{\text{ol}}$ clamped to 0-1, $\Delta P_{\text{ol}}$ = 10 % of the gauge set pressure (at least 10 mbar). No state change between solves.
 
@@ -124,7 +124,7 @@ An unknown action mode is read as `pop_action` and an unknown valve type as `con
 | Test | Benchmark |
 | :--- | :--- |
 | `backend/tests/unit/equipment/test_pressure_safety_valve.py::test_psv_pop_action_cracking` | 5 bar pump, 2 barg pop PSV, Cv 10: `open`, inlet above 2.2 barg, `overcapacity`, utilisation $100\sqrt{\Delta p / (2.2\ \text{barg} - P_{\text{out}})}$ within 0.1 |
-| `test_pressure_safety_valve.py::test_psv_modulating_and_rupture_disc` | 4 bar pump, 2.5 barg modulating balanced: inlet between 2.5 and 2.75 barg, lift $= 100 (P_{\text{in,g}} - 2.5)/0.25$ % within 0.01; pop latching opens with 100 % lift |
+| `test_pressure_safety_valve.py::test_psv_modulating_and_pop_latching` | 4 bar pump, 2.5 barg modulating balanced: inlet between 2.5 and 2.75 barg, lift $= 100 (P_{\text{in,g}} - 2.5)/0.25$ % within 0.01; pop latching opens with 100 % lift |
 | `test_pressure_safety_valve.py::test_psv_unmitigated_higher_pressure` | Unmitigated pressure above the relieved pressure |
 | `test_pressure_safety_valve.py::test_conventional_opening_shifts_with_backpressure` | Backpressure 20 m water ($\rho g h$ ≈ 1.96 bar), set 5 barg: conventional closed at 6.5 and open at 7.3 barg header; with 2 barg design backpressure open at 5.2, closed at 4.8; balanced open at 5.2, closed at 4.8 |
 | `test_pressure_safety_valve.py::test_backpressure_result_and_limit` | Superimposed 0 within 1 mbar, built-up = outlet gauge pressure within 1 mbar; conventional above 10 % flagged, balanced 30 % below 50 %, pilot without limit |
@@ -139,7 +139,6 @@ An unknown action mode is read as `pop_action` and an unknown valve type as `con
 | `test_pressure_safety_valve.py::test_example_pop_and_modulating_differ` | Shipped example: PSV-101 pop `open` at full lift, modulating below 99 % lift with the inlet more than 3 bar higher |
 | `test_pressure_safety_valve.py::test_cycling_reports_reseat_to_set_range_and_average_load` | 3 barg, Cv 15, balanced: `cycling`, range $3 \cdot 0.93$-3.0 barg, lift none, inlet 3.0-3.03 barg, flow above $10^{-4}$ m³/s |
 | `test_pressure_safety_valve.py::test_pop_latching_stays_open_below_reseat` | Same valve latching: `open`, lift 100 %, inlet below reseat |
-| `test_pressure_safety_valve.py::test_old_rupture_disc_mode_loads_as_pop_latching` | `rupture_disc` action mode reads as `pop_latching` |
 | `backend/tests/unit/equipment/test_relief_devices.py::test_f1_04_undersized_pop_valve_stays_open_at_full_lift` | 3 barg, Cv 0.5: `open`, lift 100 %, inlet at or above reseat, flow = Cv flow within 1 % |
 | `test_relief_devices.py::test_f1_04_oversized_pop_valve_cycles_near_set_pressure` | 3 barg, Cv 15: `cycling`, inlet 3.0-3.3 barg, flow above $10^{-4}$ m³/s (6 L/min); reseat $3.0 \cdot 0.93$ barg + outlet gauge pressure, equal to `cycle_low_barg` (and opening to `cycle_high_barg`) within 5 mbar |
 | `test_relief_devices.py::test_f1_04_result_does_not_depend_on_the_previous_run` | Two consecutive runs give the same state, flow ($10^{-6}$) and pressure ($10^{-5}$) |
@@ -159,7 +158,7 @@ Node type: `pressure_safety_valve`, `psv`. Field names follow the naming rule in
 | `cv` | Cv | 10 |
 | `valve_type` | text (`conventional` / `balanced_bellows` / `pilot`) | conventional |
 | `design_superimposed_bp_barg` | barg | 0 |
-| `action_mode` | text (`pop_action` / `pop_latching` / `modulating`; `rupture_disc` reads as `pop_latching`) | pop_action |
+| `action_mode` | text (`pop_action` / `pop_latching` / `modulating`) | pop_action |
 | `blowdown_pct` | % | 7 |
 | `forced_state` | text (`auto` / `forced_closed` / `forced_open`) | auto |
 

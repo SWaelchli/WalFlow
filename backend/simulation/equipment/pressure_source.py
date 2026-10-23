@@ -26,7 +26,6 @@ class PressureSource(HydraulicNode):
         self.temperature = float(temperature)           # K
 
         self.is_pressure_boundary = True
-        self.is_flow_boundary = False
         self.blocks_flow_on_shutdown = False
 
         self.is_relief_driver = True

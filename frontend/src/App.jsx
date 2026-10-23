@@ -778,8 +778,6 @@ function WalFlowContent() {
           data: {
             ...node.data,
             rotation: node.data?.rotation || 0,
-            // Old files store the latching PSV mode as 'rupture_disc'
-            ...(node.data?.action_mode === 'rupture_disc' && { action_mode: 'pop_latching' }),
             onRotate: handleRotation,
             onChange: (node.type === 'linear_control_valve' || node.type === 'remote_control_valve') ? handleValveChange : undefined
           }

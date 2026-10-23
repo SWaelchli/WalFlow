@@ -22,7 +22,7 @@ WalFlow is a web-based hydraulic process simulator consisting of:
 ### Fundamental Simulation Principles
 1. **Steady-State Static Solver ($\Delta t = 0$):** All equipment equations must be static algebraic relationships. **No time-stepping, no dynamic charging/discharging ($P_1 V_1^n = P_2 V_2^n$), no time-dependent tank filling, no dynamic water hammer.**
 2. **Smooth Continuity ($C^0$ and $C^1$):** Equations and derivatives must be continuously differentiable across all flow regimes to guarantee Newton-Raphson solver convergence.
-3. **Analytical Jacobians:** Every equipment class should provide exact analytical derivatives ($\frac{\partial \Delta P}{\partial Q}$) for high solver speed and stability.
+3. **Jacobians:** The solver differentiates component pressure drops numerically (central difference), except for pipes and pumps, which supply an analytical `calculate_dp_derivative`. For other components the analytical derivative is optional; the drop itself must be smooth enough for the numerical one.
 
 ---
 
@@ -50,8 +50,8 @@ Before writing code, define the component requirements:
 ### Step 2: Implement Backend Class
 Create `backend/simulation/equipment/<name>.py` inheriting from `HydraulicNode`:
 - Initialize ports via `self.add_inlet()` and `self.add_outlet()`.
-- Set solver categorization flags (`is_pressure_boundary`, `is_flow_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation`).
-- Implement `calculate_delta_p(flow_rate, density, viscosity)` and `calculate_dp_derivative(flow_rate, density, viscosity)`.
+- Set solver categorization flags (`is_pressure_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation`).
+- Implement `calculate_delta_p(flow_rate, density, viscosity)`; `calculate_dp_derivative(flow_rate, density, viscosity)` is optional (the solver uses it for pipes and pumps only).
 - Implement `calculate()` to propagate outlet pressure, flow rate, and thermal effects ($dT = \frac{|\Delta P|}{\rho \cdot C_p}$).
 
 📖 **Deep Dive Reference:** Read [references/backend-physics.md](references/backend-physics.md) and [references/solver-stability.md](references/solver-stability.md).

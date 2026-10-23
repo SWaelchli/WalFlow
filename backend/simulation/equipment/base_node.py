@@ -41,7 +41,6 @@ class HydraulicNode:
         
         # Solver categorization properties (overridden by subclasses to support solver dynamic pruning and MCP)
         self.is_pressure_boundary = False
-        self.is_flow_boundary = False
         self.blocks_flow_on_shutdown = False
         self.use_mcp_formulation = False
 

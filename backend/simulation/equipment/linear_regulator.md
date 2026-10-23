@@ -95,7 +95,7 @@ The opening (`self.opening_pct`) is a result, not an input.
 ## 6. Operating Modes & Model Boundaries
 
 - **Steady state:** the opening is the steady-state equilibrium of an ideal controller; no loop dynamics, no droop ($\Delta t = 0$).
-- **Solver flags:** all `False` (`is_pressure_boundary`, `is_flow_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation`). The solver registers the regulator as a controller by its class.
+- **Solver flags:** all `False` (`is_pressure_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation`). The solver registers the regulator as a controller by its class.
 - **Inactive:** `active` has no effect.
 - **Reverse flow:** the valve equation is symmetric. A PRV whose outlet takes flow back while locked up is treated as closed.
 - **Fixed flow upstream:** a PD pump fixes the flow, so a PRV downstream of it cannot change the pressure by throttling; it goes wide open (`test_pd_pump_fixes_the_flow_so_the_prv_cannot_regulate`).
