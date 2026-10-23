@@ -49,7 +49,7 @@ import DataList from './components/panels/DataList';
 
 import PipeEdge from './edges/PipeEdge';
 import SignalEdge from './edges/SignalEdge';
-import { PipeClassesPage, HelpInfoModal, LoginModal, ProjectManagerModal, AdminSetupModal, AdminHubModal, SaveAsModal, NewDrawingModal, LazyModal, LazyPage } from './components/common/LazyModal';
+import { CataloguePage, HelpInfoModal, LoginModal, ProjectManagerModal, AdminSetupModal, AdminHubModal, SaveAsModal, NewDrawingModal, LazyModal, LazyPage } from './components/common/LazyModal';
 import HeatmapLegend from './components/overlays/HeatmapLegend';
 
 import CanvasLoadingOverlay from './components/overlays/CanvasLoadingOverlay';
@@ -188,11 +188,20 @@ function WalFlowContent() {
   const [activeDiagram, setActiveDiagram] = useState(null);
   const [showRestoredToast, setShowRestoredToast] = useState(false);
 
-  // Routing State (/ vs /pipes)
-  const [currentPath, setCurrentPath] = useState(window.location.pathname);
+  // Routing State (/ vs /catalogue); the old /pipes address forwards to /catalogue
+  const [currentPath, setCurrentPath] = useState(() => {
+    if (window.location.pathname === '/pipes') {
+      window.history.replaceState({}, '', '/catalogue');
+      return '/catalogue';
+    }
+    return window.location.pathname;
+  });
 
   useEffect(() => {
-    const handlePopState = () => setCurrentPath(window.location.pathname);
+    const handlePopState = () => {
+      if (window.location.pathname === '/pipes') window.history.replaceState({}, '', '/catalogue');
+      setCurrentPath(window.location.pathname);
+    };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
@@ -1427,12 +1436,12 @@ function WalFlowContent() {
     caseManagerTop = '16px';
   }
 
-  if (currentPath === '/pipes') {
+  if (currentPath === '/catalogue') {
 
     return (
       <>
         <LazyPage>
-          <PipeClassesPage
+          <CataloguePage
             onNavigateToCanvas={() => { fetchPipeClasses(); navigateTo('/'); }}
             onOpenAuthModal={handleOpenAuthModal}
             onOpenAdminHub={handleOpenAdminHub}
@@ -1473,8 +1482,8 @@ function WalFlowContent() {
         onOpenAdminHub={handleOpenAdminHub}
         onOpenHelpModal={(tab) => handleOpenHelpModal(tab || 'about')}
         onLogoutClear={resetCanvas}
-        onNavigateToPipes={() => navigateTo('/pipes')}
-        currentRoute={currentPath === '/pipes' ? 'pipes' : 'canvas'}
+        onNavigateToCatalogue={() => navigateTo('/catalogue')}
+        currentRoute={currentPath === '/catalogue' ? 'catalogue' : 'canvas'}
         cases={cases}
         activeCaseId={activeCaseId}
         onSelectCase={setActiveCaseId}

@@ -53,7 +53,7 @@ $$F_R = \min\!\left(\frac{0.026}{F_L}\sqrt{n\, \mathrm{Re}_V},\ 1\right), \qquad
 
 - **Valve size.** The valve is taken as line-size, as Annex A.4 tells the user for valves between reducers: $d = D$ = bore of the connected pipe (inlet pipe first, else outlet pipe, else DN50), set by the graph parser.
 - **Opening.** $\mathrm{Re}_V$ uses the Cv at the current opening; $n$ uses $C_{v,\max}$ as $C_\text{rated}$.
-- **Valve style.** $F_L$ (`fl`) and $F_d$ (`fd`) default to the Table D.2 typical values of a globe single-port valve with a contoured plug, flow to open: $F_L = 0.9$, $F_d = 0.46$. They are full-travel values and are used at every opening. The standard lets the manufacturer's data replace them.
+- **Valve style.** $F_L$ (`fl`) and $F_d$ (`fd`) come from the valve style picked in the inspector (D-29). The styles are catalogue entries of type `control_valve` on the Catalogue page: the built-in catalogue holds the 28 Table D.2 rows that have a numeric $F_d$ (the tapered needle and the multistage rows are left out), and admins or pipe managers add manufacturer catalogues. **Custom** lets the user enter both factors. The node stores the style id and a copy of both numbers, so a file keeps its results when the catalogue changes. The default is globe single port, contoured plug, flow to open: $F_L = 0.9$, $F_d = 0.46$. They are full-travel values and are used at every opening; the standard lets the manufacturer's data replace them.
 - **Laminar flow.** $F_R \propto \sqrt{\mathrm{Re}_V} \propto \sqrt{|Q|}$, so $\Delta P$ becomes linear in $Q$ at low flow. $F_R$ is kept above $10^{-9}$ so $\Delta P$ stays finite and is zero at $Q = 0$.
 - **Scope (Annex A.4).** Newtonian, non-flashing liquids; $C/(N_{18}\, d^2) < 0.047$.
 
@@ -105,8 +105,9 @@ applied to the outlet for $Q \ge 0$ and to the inlet for $Q < 0$, with density a
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | Max Cv | Cv (US gpm/psi^0.5) | `self.max_cv` | Cv | 0.05 | $> 0$ | Flow coefficient at 100 % opening |
 | Opening | % | `self.opening_pct` | % | 50 | 0-100 | Valve position; below 0.1 % = closed |
-| — (node data `fl`, no UI yet) | – | `self.fl` | – | 0.9 | $(0, 1]$ | Liquid pressure recovery factor $F_L$ (Table D.2) |
-| — (node data `fd`, no UI yet) | – | `self.fd` | – | 0.46 | $> 0$ | Valve style modifier $F_d$ (Table D.2) |
+| Valve style | catalogue entry or Custom | `valve_style_id` | – | IEC Table D.2 globe single port, contoured plug, flow to open | catalogue `control_valve` rows, `custom` | Sets $F_L$ and $F_d$ from the [catalogue](../../../frontend/src/pages/CataloguePage.jsx) (Control valve styles); Custom makes them editable (D-29) |
+| F_L (from the style, or Custom) | – | `self.fl` | – | 0.9 | $(0, 1]$ | Liquid pressure recovery factor $F_L$ (Table D.2) |
+| F_d (from the style, or Custom) | – | `self.fd` | – | 0.46 | $> 0$ | Valve style modifier $F_d$ (Table D.2) |
 | — (from connected pipe) | – | `self.pipe_diameter` | m | 0.05248 | $> 0$ | Valve size $d = D$ for $F_R$ |
 
 ## 6. Operating Modes & Model Boundaries
@@ -148,3 +149,5 @@ Node type: `linear_control_valve`. Field names follow the naming rule in [base_n
 | `opening_pct` | % | 50 |
 | `fl` | factor $F_L$ (IEC 60534-2-1) | 0.9 |
 | `fd` | factor $F_d$ (IEC 60534-2-1) | 0.46 |
+
+The node data also carries `valve_style_id` (`<catalogue code>:<row code>` or `custom`, default `IEC_60534_2_1_TABLE_D2:globe_single_contoured_open`) for the inspector's valve style; the parser reads only `fl` and `fd` (D-29).

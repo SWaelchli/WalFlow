@@ -380,3 +380,99 @@ class TestFittingStandardsDatabase(unittest.TestCase):
                 "SELECT reducer_standard_code, schedule_standard_code FROM pipe_classes WHERE code = 'LEGACY'"
             )).one()
         self.assertEqual(tuple(row), ("ASME_B16_9_REDUCERS", "ASME_B36_10M_SCHEDULES"))
+
+    # --- Control valve style catalogues (D-29b) ---
+
+    def test_21_control_valve_catalogue_seeded_public_and_protected(self):
+        """The IEC style catalogue is a public built-in: admin-only edit, no delete, clone gives an editable copy."""
+        res = self.client.get("/api/fitting-standards?fitting_type=control_valve")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual([item["code"] for item in res.json()], ["IEC_60534_2_1_TABLE_D2"])
+        iec = res.json()[0]
+        self.assertTrue(iec["is_builtin"])
+        self.assertEqual(len(iec["dimensions"]), 28)
+        self.assertNotIn("IEC_60534_2_1_TABLE_D2", [i["code"] for i in self.client.get("/api/fitting-standards?fitting_type=reducer").json()])
+
+        mgr = {"Authorization": f"Bearer {self.pipemgr_token}"}
+        admin = {"Authorization": f"Bearer {self.admin_token}"}
+        url = "/api/fitting-standards/IEC_60534_2_1_TABLE_D2"
+        self.assertEqual(self.client.put(url, json={"name": "X"}, headers=mgr).status_code, 403)
+        self.assertEqual(self.client.put(url, json={"name": "Edited"}, headers=admin).status_code, 200)
+        self.assertEqual(self.client.delete(url, headers=admin).status_code, 403)
+
+        clone = self.client.post(f"{url}/clone", json={"new_code": "MY_STYLES"}, headers=mgr)
+        self.assertEqual(clone.status_code, 201, clone.text)
+        self.assertFalse(clone.json()["is_builtin"])
+        self.assertEqual(clone.json()["fitting_type"], "control_valve")
+        self.assertEqual(clone.json()["dimensions"], iec["dimensions"])
+
+    def test_22_control_valve_styles_create_edit_and_normalise(self):
+        headers = {"Authorization": f"Bearer {self.pipemgr_token}"}
+        row = {"code": "  my_plug ", "valve_type": "Globe, single port", "trim": "Custom", "flow_direction": "Open",
+               "fl": "0.88", "fd": 0.5, "xt": ""}
+        res = self.client.post("/api/fitting-standards", json={
+            "code": "VALVES_A", "name": "Mine", "fitting_type": "control_valve", "dimensions": [row]}, headers=headers)
+        self.assertEqual(res.status_code, 201, res.text)
+        saved = res.json()["dimensions"][0]
+        self.assertEqual((saved["code"], saved["fl"], saved["fd"], saved["xt"]), ("my_plug", 0.88, 0.5, None))
+
+        upd = self.client.put("/api/fitting-standards/VALVES_A", headers=headers, json={
+            "dimensions": [{**row, "code": "plug2", "xt": "0.7", "fl": 1.0}]})
+        self.assertEqual(upd.status_code, 200, upd.text)
+        self.assertEqual((upd.json()["dimensions"][0]["xt"], upd.json()["dimensions"][0]["fl"]), (0.7, 1.0))
+
+        # The row rules also apply on edit
+        bad = self.client.put("/api/fitting-standards/VALVES_A", json={"dimensions": [{**row, "fl": 0}]}, headers=headers)
+        self.assertEqual(bad.status_code, 400)
+
+    def test_23_control_valve_rows_are_validated(self):
+        headers = {"Authorization": f"Bearer {self.pipemgr_token}"}
+        base = {"code": "VALVES_BAD", "name": "Bad", "fitting_type": "control_valve"}
+        row = {"code": "a", "valve_type": "Globe", "fl": 0.9, "fd": 0.46, "xt": 0.7}
+        cases = [
+            ([{**row, "fl": 0}], "F_L must be above 0 and at most 1"),
+            ([{**row, "fl": 1.01}], "F_L must be above 0 and at most 1"),
+            ([{**row, "fl": "nan"}], "F_L must be above 0 and at most 1"),
+            ([{**row, "fd": 0}], "F_d must be above 0"),
+            ([{**row, "fd": -0.1}], "F_d must be above 0"),
+            ([{**row, "xt": 1.5}], "x_T must be above 0 and at most 1"),
+            ([{**row, "xt": 0}], "x_T must be above 0 and at most 1"),
+            ([{**row, "code": "a:b"}], "without ':'"),
+            ([{**row, "code": " "}], "without ':'"),
+            ([{**row, "code": "c" * 51}], "without ':'"),
+            ([{**row, "valve_type": ""}], "'valve_type' is required"),
+            ([row, {**row, "code": " a "}], "Style code a listed more than once"),
+        ]
+        for dims, message in cases:
+            res = self.client.post("/api/fitting-standards", json={**base, "dimensions": dims}, headers=headers)
+            self.assertEqual(res.status_code, 400, dims)
+            self.assertIn(message, res.json()["detail"])
+        self.assertEqual(self.client.get("/api/fitting-standards/VALVES_BAD").status_code, 404)
+
+    def test_24_control_valve_catalogue_survives_export_and_import(self):
+        admin = {"Authorization": f"Bearer {self.admin_token}"}
+        row = {"code": "r1", "valve_type": "Ball", "trim": "T", "flow_direction": "Either", "fl": 0.74, "fd": 0.99, "xt": None}
+        self.client.post("/api/fitting-standards", json={
+            "code": "VALVES_RT", "name": "Round trip", "fitting_type": "control_valve", "dimensions": [row]}, headers=admin)
+        catalog = self.client.get("/api/fitting-standards/export-library").json()
+        exported = {c["code"]: c for c in catalog}
+        self.assertEqual(exported["IEC_60534_2_1_TABLE_D2"]["fitting_type"], "control_valve")
+        self.assertEqual(exported["VALVES_RT"]["dimensions"], [row])
+
+        self.assertEqual(self.client.delete("/api/fitting-standards/VALVES_RT", headers=admin).status_code, 200)
+        imp = self.client.post("/api/fitting-standards/import-library", json=catalog, headers=admin)
+        self.assertEqual(imp.status_code, 200, imp.text)
+        back = self.client.get("/api/fitting-standards/VALVES_RT").json()
+        self.assertEqual((back["fitting_type"], back["dimensions"]), ("control_valve", [row]))
+
+        # An invalid control valve row rejects the whole import
+        bad = [{"code": "VALVES_X", "fitting_type": "control_valve", "dimensions": [{**row, "fl": 2}]}]
+        self.assertEqual(self.client.post("/api/fitting-standards/import-library", json=bad, headers=admin).status_code, 400)
+
+    def test_25_restore_builtins_resets_edited_control_valve_catalogue(self):
+        admin = {"Authorization": f"Bearer {self.admin_token}"}
+        url = "/api/fitting-standards/IEC_60534_2_1_TABLE_D2"
+        original = self.client.get(url).json()["dimensions"]
+        self.assertEqual(self.client.put(url, json={"dimensions": original[:1]}, headers=admin).status_code, 200)
+        self.assertEqual(self.client.post("/api/fitting-standards/seed-defaults?restore_builtins=true", headers=admin).status_code, 200)
+        self.assertEqual(self.client.get(url).json()["dimensions"], original)

@@ -2,13 +2,17 @@ import { HEAT_EXCHANGER_DEFAULTS } from './equipmentDefaults';
 
 const PUMP_DEFAULTS = { flow_rated_lmin: 100.0, head_rated_m: 50.0, rise_to_shutoff_pct: 20.0, efficiency_pct: 75.0, active: true };
 
+/** IEC 60534-2-1 valve style of a new control valve (globe, single seat, contoured plug, flow to open). */
+export const DEFAULT_VALVE_STYLE_ID = 'IEC_60534_2_1_TABLE_D2:globe_single_contoured_open';
+export const CONTROL_VALVE_STYLE_DEFAULTS = { valve_style_id: DEFAULT_VALVE_STYLE_ID, fl: 0.9, fd: 0.46 };
+
 // Inputs of a component dropped on the canvas, by type. Units as in the file (see the "Data Fields" table in
 // backend/simulation/equipment/<type>.md).
 const DEFAULTS_BY_TYPE = {
   centrifugal_pump: PUMP_DEFAULTS,
   pump: PUMP_DEFAULTS,
   volumetric_pump: { flow_rated_lmin: 100.0, motor_power_kw: 5.0, efficiency_pct: 85.0, drive_type: 'fixed_speed', max_discharge_pressure_bara: 50.0, active: true },
-  linear_control_valve: { max_cv: 0.05, opening_pct: 50.0 },
+  linear_control_valve: { max_cv: 0.05, opening_pct: 50.0, ...CONTROL_VALVE_STYLE_DEFAULTS },
   linear_regulator: { max_cv: 0.05, set_pressure_pa: 500000.0, backpressure: false },
   orifice: { pipe_diameter_m: 0.05248, orifice_diameter_m: 0.02, standard: 'iso_5167', standardDn: 50, standardSch: '40' },
   calibrated_restriction: { flow_base_lmin: 10.0, inlet_pressure_base_bara: 3.5, outlet_pressure_base_bara: 1.0, temp_base_c: 45.0, restriction_model: 'orifice', fluid_type: 'system' },
@@ -21,8 +25,8 @@ const DEFAULTS_BY_TYPE = {
   flow_source: { source_flow_lmin: 50.0, temperature_k: 293.15, max_discharge_pressure_bara: 50.0 },
   filter: { dp_clean_bar: 0.2, dp_terminal_bar: 1.0, flow_ref_lmin: 100.0, clogging_pct: 0.0 },
   heat_exchanger: HEAT_EXCHANGER_DEFAULTS,
-  remote_control_valve: { max_cv: 0.05, set_pressure_pa: 500000.0 },
-  three_way_tcv: { max_cv: 0.1, set_temperature_c: 40.0, hot_port_idx: 0 },
+  remote_control_valve: { max_cv: 0.05, set_pressure_pa: 500000.0, ...CONTROL_VALVE_STYLE_DEFAULTS },
+  three_way_tcv: { max_cv: 0.1, set_temperature_c: 40.0, hot_port_idx: 0, ...CONTROL_VALVE_STYLE_DEFAULTS },
   check_valve: { cv: 10.0, cracking_pressure_bar: 0.05 },
   pressure_safety_valve: { set_pressure_barg: 20.0, cv: 10.0, valve_type: 'conventional', design_superimposed_bp_barg: 0.0, action_mode: 'pop_action', blowdown_pct: 7.0, forced_state: 'auto' },
   psv: { set_pressure_barg: 20.0, cv: 10.0, valve_type: 'conventional', design_superimposed_bp_barg: 0.0, action_mode: 'pop_action', blowdown_pct: 7.0, forced_state: 'auto' },

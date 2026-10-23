@@ -6,9 +6,12 @@ Defines standardized dimensional catalogs based on:
 2. ASME B36.10M - Steel Pipe Dimensions and Schedules
 3. ASME B36.19M - Stainless Steel Pipe Dimensions (5S / 10S / 40S / 80S)
 4. DIN EN 10220 / EN ISO 1127 - Steel Tube Dimensions (DIN EN pipe schedules)
+5. IEC 60534-2-1 Table D.2 - Typical control valve style factors (services/valve_style_defaults.py)
 """
 
 import math
+
+from services.valve_style_defaults import EXAMPLE_VALVE_STYLE_CATALOGUES
 
 # Standard ASME B36.10M Outside Diameters & Schedule Wall Thicknesses (mm)
 PIPE_SCHEDULES_DATA = [
@@ -533,6 +536,8 @@ EXAMPLE_FITTING_STANDARDS = [
         "description": "Steel tube dimensions with ISO 4200 series 1 outside diameters: normal and heavy wall (DIN EN 10220) and thin-wall stainless (EN ISO 1127)",
         "is_builtin": True,
         "dimensions": DIN_EN_PIPE_SCHEDULES_DATA
-    }
+    },
+    # Control valve styles share the catalogue (fitting_type "control_valve", D-29)
+    *EXAMPLE_VALVE_STYLE_CATALOGUES,
 ]
 

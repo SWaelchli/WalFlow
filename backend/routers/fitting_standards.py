@@ -31,7 +31,7 @@ router = APIRouter(
 
 # --- Validation ---
 
-ALLOWED_FITTING_TYPES = {"reducer", "pipe_schedule", "elbow", "tee"}
+ALLOWED_FITTING_TYPES = {"reducer", "pipe_schedule", "elbow", "tee", "control_valve"}
 MAX_CODE_LENGTH = 50
 MAX_IMPORT_STANDARDS = 200
 MAX_DIMENSION_RECORDS = 5000
@@ -52,6 +52,8 @@ def _validate_dimensions(fitting_type: str, dimensions: Any) -> List[str]:
             errors.extend(_reducer_row_errors(i, rec))
         elif fitting_type == "pipe_schedule":
             errors.extend(_schedule_row_errors(i, rec))
+        elif fitting_type == "control_valve":
+            errors.extend(_valve_style_row_errors(i, rec))
         if len(errors) >= 10:
             errors.append("further errors omitted")
             break
@@ -67,6 +69,11 @@ def _validate_dimensions(fitting_type: str, dimensions: Any) -> List[str]:
         repeated = sorted({p for p in pairs if pairs.count(p) > 1})
         if repeated:
             errors.append(f"{', '.join(f'DN{l:g} x DN{s:g}' for l, s in repeated)} listed more than once.")
+    elif fitting_type == "control_valve":
+        codes = [str(rec["code"]).strip() for rec in dimensions]
+        repeated = sorted({c for c in codes if codes.count(c) > 1})
+        if repeated:
+            errors.append(f"Style code {', '.join(repeated)} listed more than once.")
     return errors
 
 
@@ -118,6 +125,27 @@ def _schedule_row_errors(i: int, rec: Dict[str, Any]) -> List[str]:
     return errors
 
 
+def _valve_style_row_errors(i: int, rec: Dict[str, Any]) -> List[str]:
+    """Problems with one control valve style row {code, valve_type, trim, flow_direction, fl, fd, xt?}
+    (IEC 60534-2-1 factors; the simulation needs 0 < F_L <= 1 and F_d > 0, D-29)."""
+    code = str(rec.get("code") or "").strip()
+    if not code or ":" in code or len(code) > MAX_CODE_LENGTH:
+        return [f"dimensions[{i}]: 'code' must be 1-{MAX_CODE_LENGTH} characters without ':'."]
+    if not str(rec.get("valve_type") or "").strip():
+        return [f"{code}: 'valve_type' is required."]
+    fl, fd = _finite(rec.get("fl")), _finite(rec.get("fd"))
+    errors = []
+    if fl is None or not 0.0 < fl <= 1.0:
+        errors.append(f"{code}: F_L must be above 0 and at most 1.")
+    if fd is None or fd <= 0.0:
+        errors.append(f"{code}: F_d must be above 0.")
+    if rec.get("xt") not in (None, ""):
+        xt = _finite(rec.get("xt"))
+        if xt is None or not 0.0 < xt <= 1.0:
+            errors.append(f"{code}: x_T must be above 0 and at most 1.")
+    return errors
+
+
 def _normalize_dimensions(fitting_type: str, dimensions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """Recomputes derived values so they always match the entered geometry:
     schedule ID = OD - 2 WT, reducer cone angle from the two ODs and the length."""
@@ -144,6 +172,12 @@ def _normalize_dimensions(fitting_type: str, dimensions: List[Dict[str, Any]]) -
                 row["cone_angle_deg"] = round(2 * math.degrees(math.atan((od_l - od_s) / (2 * length))), 2)
             rows.append(row)
         return rows
+    if fitting_type == "control_valve":
+        return [
+            {**rec, "code": str(rec["code"]).strip(), "fl": float(rec["fl"]), "fd": float(rec["fd"]),
+             "xt": float(rec["xt"]) if rec.get("xt") not in (None, "") else None}
+            for rec in dimensions
+        ]
     return dimensions
 
 
@@ -214,7 +248,7 @@ class FittingStandardCreate(BaseModel):
     code: str = Field(..., min_length=1, max_length=50, description="Unique fitting standard code")
     name: str = Field(..., min_length=1, max_length=150, description="Descriptive name")
     standard: str = Field("ASME", max_length=50, description="Governing standard (ASME, DIN_EN, ISO, CUSTOM)")
-    fitting_type: str = Field(..., max_length=50, description="Fitting category (reducer, pipe_schedule, elbow, tee)")
+    fitting_type: str = Field(..., max_length=50, description="Catalogue category (reducer, pipe_schedule, elbow, tee, control_valve)")
     subtype: Optional[str] = Field(None, max_length=50, description="Specific sub-variant")
     description: Optional[str] = Field(None, description="Detailed engineering notes")
     dimensions: List[Dict[str, Any]] = Field(default_factory=list, description="Array of dimensional records")
@@ -276,7 +310,7 @@ def _serialize_fitting_standard(item: FittingStandard) -> Dict[str, Any]:
 
 @router.get("", response_model=List[FittingStandardResponse])
 def list_fitting_standards(
-    fitting_type: Optional[str] = Query(None, description="Filter by fitting type: reducer, pipe_schedule, elbow, tee"),
+    fitting_type: Optional[str] = Query(None, description="Filter by fitting type: reducer, pipe_schedule, elbow, tee, control_valve"),
     standard: Optional[str] = Query(None, description="Filter by standard: ASME, DIN_EN, ISO, CUSTOM"),
     q: Optional[str] = Query(None, description="Search term across code, name, and description"),
     db: Session = Depends(get_db)
