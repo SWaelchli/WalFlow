@@ -92,10 +92,16 @@ describe('shipped diagrams (F0-02, F2-22)', () => {
     expect(files.length).toBeGreaterThanOrEqual(11);
   });
 
-  it.each(files)('%s is current format, valid and stores no results', (file) => {
+  it.each(files)('%s is current format, valid, stores no results and round-trips through export', (file) => {
     const text = readFileSync(file, 'utf-8');
     const data = JSON.parse(text);
     expect(checkDiagramFile(data)).toEqual({ ok: true });
+    const exported = JSON.parse(JSON.stringify(serializeDiagram({
+      nodes: data.nodes, edges: data.edges, cases: data.cases, activeCaseId: data.active_case_id, globalSettings: data.globalSettings,
+    })));
+    expect(checkDiagramFile(exported)).toEqual({ ok: true });
+    const ignore = ({ created_at, app_version, ...rest }) => rest; // eslint-disable-line no-unused-vars
+    expect(ignore(exported)).toEqual(ignore({ ...data, ...stripResults(data) }));
     expect(text).not.toMatch(/"telemetry"|"kpis"|"_scalingInfo"|"result_hash"/);
     data.nodes.filter(n => n.type === 'heat_exchanger').forEach(n => expect(n.data.rated_dp_bar).toBeGreaterThan(0));
   });
