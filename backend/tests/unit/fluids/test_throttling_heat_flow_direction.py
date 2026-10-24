@@ -38,7 +38,8 @@ def run_test(name, gs, t1_elev, t2_elev, expect_forward):
 
     # Isenthalpic throttling of an incompressible fluid: dT = dp / (rho * cp), with dp the orifice's own pressure loss at the solved flow, evaluated at the upstream state
     t_up = 293.15
-    dt_ref = abs(ori.calculate_delta_p(q, ori.inlets[0].density, ori.inlets[0].viscosity)) / (FluidProperties.get_density(gs.fluid_type, t_up) * FluidProperties.get_specific_heat(gs.fluid_type, t_up))
+    up = ori.inlets[0] if q > 0 else ori.outlets[0]   # the port the fluid enters by
+    dt_ref = abs(ori.calculate_delta_p(q, up.density, up.viscosity)) / (FluidProperties.get_density(gs.fluid_type, t_up) * FluidProperties.get_specific_heat(gs.fluid_type, t_up))
     assert dt_ref > 0.01  # the case must actually throttle, otherwise the check below proves nothing
 
     if expect_forward:

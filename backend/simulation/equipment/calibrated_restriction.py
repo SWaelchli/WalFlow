@@ -19,7 +19,7 @@ class CalibratedRestriction(HydraulicNode):
     ):
         super().__init__(name, node_type="calibrated_restriction")
         
-        # Only a missing value takes the default; 0 °C is a valid calibration temperature (D-08)
+        # Only a missing value takes the default; 0 °C is a valid calibration temperature
         self.flow_base_lmin = 10.0 if flow_base_lmin is None else float(flow_base_lmin)
         self.inlet_pressure_base_bar = 3.5 if inlet_pressure_base_bar is None else float(inlet_pressure_base_bar)
         self.outlet_pressure_base_bar = 1.0 if outlet_pressure_base_bar is None else float(outlet_pressure_base_bar)
@@ -34,7 +34,7 @@ class CalibratedRestriction(HydraulicNode):
         self.add_outlet()
         
         # Calibrated lazily at first use: the parser sets the pipe bore and the
-        # global settings (system fluid) only after construction (D-08)
+        # global settings (system fluid) only after construction
         self._calibration_key = None
 
     def _get_calibration_fluid(self) -> str:
@@ -137,6 +137,11 @@ class CalibratedRestriction(HydraulicNode):
         inlet = self.inlets[0]
         outlet = self.outlets[0]
 
+        # In reverse flow the fluid enters at the outlet port: the pressure drop uses its properties
+        if inlet.flow_rate < 0:
+            inlet.density = outlet.density
+            inlet.viscosity = outlet.viscosity
+
         dp = self.calculate_delta_p(inlet.flow_rate, inlet.density, inlet.viscosity)
 
         outlet.pressure = inlet.pressure - dp
@@ -155,5 +160,10 @@ class CalibratedRestriction(HydraulicNode):
             cp = FluidProperties.get_specific_heat(fluid_type, outlet.temperature)
             dt = abs(dp) / (outlet.density * cp)
             inlet.temperature = outlet.temperature + dt
+
+        # Density and viscosity of each port at its own temperature (the leaving port includes the throttling heat)
+        for port in (inlet, outlet):
+            port.density = FluidProperties.get_density(fluid_type, port.temperature)
+            port.viscosity = FluidProperties.get_viscosity(fluid_type, port.temperature)
 
         return dp

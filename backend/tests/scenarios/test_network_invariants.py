@@ -21,12 +21,6 @@ BOUNDARY_TYPES = {"tank", "pressure_source", "flow_source"}
 STATIC_DROP_EXEMPT = {"centrifugal_pump"} | BOUNDARY_TYPES
 FLOW_TOL = 1e-8          # m³/s; the mass rows converge to ~2e-10 m³/s per node
 PRESSURE_TOL = 5.0       # Pa
-# Reported pressures lag the last property update (D-20): a 0.05 K step of heavy crude moves its viscosity
-# ~0.2 %, so a pipe after a large viscous drop can show a small rise. Relative to the network's pressure span.
-PRESSURE_LAG = 2e-3
-# K; a port's density / viscosity belong to the last property update, which can trail the reported T by the throttle
-# warming dp/(rho*cp): ~1.2 K at the ~20 bar the networks drop, lightest fluid. Removed with the D-20 fix.
-PROPERTY_LAG_K = 1.5
 TEMPERATURE_TOL = 0.1    # K; the property loop stops at 0.01-0.05 K changes
 
 
@@ -70,9 +64,30 @@ def assert_same_state(a: dict, b: dict):
                 assert ta == pytest.approx(tb, abs=TEMPERATURE_TOL), key
 
 
+def _node(node_id, node_type, **data):
+    return {"id": node_id, "type": node_type, "position": {"x": 0, "y": 0}, "data": {"label": node_id, **data}}
+
+
+def _edge(edge_id, source, target, diameter_m):
+    return {"id": edge_id, "source": source, "target": target, "sourceHandle": "outlet-0", "targetHandle": "inlet-0",
+            "data": {"length_m": 1.0, "diameter_m": diameter_m, "roughness_mm": 0.045}}
+
+
+def _heavy_crude_viscous_drop_graph():
+    """A viscous drop (heat exchanger) ahead of a wide pipe whose own drop is only a few Pa. With properties
+    one update behind, the last pipe showed a 37-50 Pa rise in the flow direction. Pinned: the drops are tiny
+    against the span, which hypothesis rarely draws."""
+    return {"nodes": [_node("n0", "tank", level_m=1.0, temperature_k=283.15),
+                      _node("n1", "centrifugal_pump", flow_rated_lmin=20.0, head_rated_m=20.0),
+                      _node("n2", "heat_exchanger", rated_flow_lmin=20.0, rated_dp_bar=1.0, medium_temp_c=10.0),
+                      _node("n3", "tank", level_m=1.0, temperature_k=283.15)],
+            "edges": [_edge("e0", "n0", "n1", 0.018), _edge("e1", "n1", "n2", 0.018), _edge("e2", "n2", "n3", 0.135)],
+            "globalSettings": {"fluid_type": "crude_heavy"}}
+
+
 def _reverse_flow_graph():
     """Two sources below the sink: the sink pushes flow back through the mixer, the mixer outlet and both
-    inlets carry reverse flow (D-18). Hypothesis rarely draws a sink above both supplies, so it is pinned."""
+    inlets carry reverse flow. Hypothesis rarely draws a sink above both supplies, so it is pinned."""
     def node(node_id, node_type, **data):
         return {"id": node_id, "type": node_type, "position": {"x": 0, "y": 0}, "data": {"label": node_id, **data}}
 
@@ -92,8 +107,8 @@ def _reverse_flow_graph():
 @given(networks())
 def test_well_posed_network_reaches_a_finite_steady_state_with_fluid_properties(graph):
     """Every port value is finite, and every port that carries flow, in either direction, reports the density
-    and viscosity of the system fluid at the port's own temperature (D-18: a junction used to leave the default
-    density or a stale viscosity on a port with reverse flow)."""
+    and viscosity of the system fluid at the port's own temperature (a junction used to leave the default
+    density or a stale viscosity on a port with reverse flow, a throttle the inlet's)."""
     network = solved(graph)
     for key, ports in snapshot(network).items():
         assert all(v == v and abs(v) != float("inf") for port in ports for v in port), key
@@ -105,9 +120,7 @@ def test_well_posed_network_reaches_a_finite_steady_state_with_fluid_properties(
             if abs(port.flow_rate) <= FLOW_TOL:
                 continue
             for value, lookup in ((port.density, FluidProperties.get_density), (port.viscosity, FluidProperties.get_viscosity)):
-                # Within the temperature lag of the property loop (D-20; up to ~0.2 K at a throttle of heavy crude); the D-18 bug was off by the temperature difference of the streams
-                near = [lookup(fluid, port.temperature + d) for d in (-PROPERTY_LAG_K, 0.0, PROPERTY_LAG_K)]
-                assert min(near) * (1 - 1e-9) <= value <= max(near) * (1 + 1e-9), key
+                assert value == pytest.approx(lookup(fluid, port.temperature), rel=1e-9), key
 
 
 @given(networks())
@@ -129,14 +142,14 @@ def test_mass_is_conserved(graph):
     assert supplied == pytest.approx(received, rel=1e-6, abs=FLOW_TOL)
 
 
+@example(_heavy_crude_viscous_drop_graph())
 @given(networks())
 def test_pressure_is_continuous_and_falls_along_the_flow(graph):
     """A pipe end has its node's port pressure; static pressure falls across every pipe and passive
-    component in the flow direction (all generated networks are driven from one side)."""
+    component in the flow direction (all generated networks are driven from one side), by exactly the pipe's own
+    drop at its reported inlet properties, so the reported pressures belong to the reported densities and viscosities."""
     network = solved(graph)
     types = node_types(graph)
-    pressures = [p.pressure for node in network.nodes.values() for p in node.inlets + node.outlets]
-    fall_tol = PRESSURE_TOL + PRESSURE_LAG * (max(pressures) - min(pressures))
     for edge in network.edges:
         pipe = edge["pipe"]
         src = network.nodes[edge["source"]].outlets[int(edge["source_port"].split("-")[-1])]
@@ -145,7 +158,10 @@ def test_pressure_is_continuous_and_falls_along_the_flow(graph):
         assert pipe.outlets[0].pressure == pytest.approx(tgt.pressure, abs=PRESSURE_TOL), edge["id"]
         if abs(pipe.inlets[0].flow_rate) > FLOW_TOL:
             drop = (pipe.inlets[0].pressure - pipe.outlets[0].pressure) * math.copysign(1.0, pipe.inlets[0].flow_rate)
-            assert drop >= -fall_tol, edge["id"]
+            assert drop >= -PRESSURE_TOL, edge["id"]
+            inlet = pipe.inlets[0]
+            expected = pipe.calculate_delta_p(inlet.flow_rate, inlet.density, inlet.viscosity)
+            assert (pipe.inlets[0].pressure - pipe.outlets[0].pressure) == pytest.approx(expected, rel=1e-4, abs=PRESSURE_TOL), edge["id"]
     for node_id, node in network.nodes.items():
         if types[node_id] in STATIC_DROP_EXEMPT or node.inlets[0].flow_rate <= 1e-7:
             continue

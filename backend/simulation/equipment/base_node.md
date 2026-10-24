@@ -66,7 +66,7 @@ The solver builds a sparse Jacobian. The derivative of a pressure row with respe
 | Other resistances | central difference of the node outlet pressure, step $h = \max(10^{-12}, 10^{-4} |q|)$ m³/s |
 | MCP rows | central difference of the whole row residual |
 
-So for valves, orifices, filters and the like, the solver does **not** call their `calculate_dp_derivative`. It differentiates the outlet pressure numerically, so viscosity corrections and branch switches inside the model are always included (audit F1-12). These components have no analytical derivative (removed in D-23); `HydraulicNode.calculate_dp_derivative` gives a central-difference fallback ($dq = 10^{-6}$ m³/s) of `calculate_delta_p`. No production code calls it. It is not a pressure-drop slope for MCP and relief devices, whose `calculate_delta_p` with node pressures returns a residual row.
+So for valves, orifices, filters and the like, the solver does **not** call their `calculate_dp_derivative`. It differentiates the outlet pressure numerically, so viscosity corrections and branch switches inside the model are always included. These components have no analytical derivative; `HydraulicNode.calculate_dp_derivative` gives a central-difference fallback ($dq = 10^{-6}$ m³/s) of `calculate_delta_p`. No production code calls it. It is not a pressure-drop slope for MCP and relief devices, whose `calculate_delta_p` with node pressures returns a residual row.
 
 ### 3.4 Complementarity (MCP) components
 
@@ -89,7 +89,7 @@ All of these are steady-state fixed-point iterations, not time steps.
 
 Every port with flow **into** the component is a source; every other port receives the mixed temperature. Inward means $q > 0$ on an inlet or $q < 0$ on an outlet, so the balance follows the actual flow direction.
 
-The mixed temperature conserves enthalpy (audit F1-42):
+The mixed temperature conserves enthalpy:
 
 $$\sum_k \dot m_k\, h(T_k) = \Big(\sum_k \dot m_k\Big)\, h(T_{\text{mix}}), \qquad \dot m_k = |q_k|\, \rho_k, \qquad h(T) = \int_{273.15\,\text{K}}^{T} c_p\, dT$$
 
@@ -102,6 +102,8 @@ Junctions without their own thermal effect (splitter, mixer, measure point) keep
 ### 4.2 Property propagation
 
 After each hydraulic solve, `NetworkSolver._propagate_properties` passes temperature, density and viscosity along the solved flows: pipe by pipe from the upstream port, then node by node (`calculate_temperature`, then `calculate()`). It repeats up to `property_iterations` (default 5) passes and stops when no port temperature changes by more than 0.01 K. Solved pressures are saved before and restored after, so this step changes only the fluid state.
+
+Once the temperatures change by less than 0.05 K between outer iterations and the pressure controllers and 3-way TCVs have settled, the solver holds the fluid properties fixed for the next hydraulic solve. The loop ends only on such a frozen solve in which the controllers are still at their setpoints and a TCV that was on its setpoint still is (its outlet temperature follows the new flow split); otherwise the properties are propagated again before the next freeze, and a relief state change releases them as well. The reported solution comes from the frozen solve and is reported without propagating again, so the reported pressures satisfy every component's equation with the reported densities and viscosities, and the controllers are judged on those pressures. If the loop stops at its iteration limit first, one more hydraulic solve with the final properties is run before reporting; if that solve fails, the previous solution is reported with `properties_converged = false`. Pumps recompute NPSHa and the cavitation warning from the reported suction pressure. The reported temperatures belong to the last propagated solve; the difference is below the 0.05 K step.
 
 ## 5. Parameter & Unit Specification Table
 
@@ -143,7 +145,7 @@ Each equipment document has a **Data Fields** section listing what the parser re
   - stopped blocking pumps and forced-closed relief devices are removed with their edges;
   - only nodes connected to a pressure boundary or a flow source are solved;
   - dead ends (non-boundary nodes with at most one edge) are removed repeatedly.
-- **Islands:** a connected circuit of two or more nodes without a tank, pressure source or flow source has no defined pressure level. The solve stops with a message naming it (audit F1-10).
+- **Islands:** a connected circuit of two or more nodes without a tank, pressure source or flow source has no defined pressure level. The solve stops with a message naming it.
 - **Pressures without flow:** removed dead legs and sections shut in by blocking devices get their pressure at zero flow from their neighbours (`_fill_pruned_pressures`, `_assign_stagnant_pressures`). Pumps keep their shutoff head, regulators their lock-up pressure. Their ports are flagged `stagnant`.
 - **Operating cases:** `GraphParser.resolve_graph_for_case` merges the active case's node overrides into the node's `data` (and its global setting overrides) before the parser builds the components. Every field in a **Data Fields** table can therefore be overridden per case.
 

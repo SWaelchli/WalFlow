@@ -122,12 +122,11 @@ def test_continuity_across_blend_bands():
             dp_prev = dp
 
 
-@pytest.mark.audit("D-26")
 @pytest.mark.parametrize("re_pipe, in_iso_range", [
-    pytest.param(9100.0, True, id="D-26-above-16000-beta-sq"),
-    pytest.param(8500.0, False, id="D-26-below-16000-beta-sq"),
+    pytest.param(9100.0, True, id="above-16000-beta-sq"),
+    pytest.param(8500.0, False, id="below-16000-beta-sq"),
 ])
-def test_d26_reynolds_limit_above_beta_056_is_16000_beta_squared(re_pipe, in_iso_range):
+def test_reynolds_limit_above_beta_056_is_16000_beta_squared(re_pipe, in_iso_range):
     """beta 0.75: ISO 5167-2:2022 5.3.1 limit is 16000*beta^2 = 9000, not a flat 16000. Above it the
     meter is the pure Reader-Harris/Gallagher value (no viscous blend) and no Reynolds issue is reported."""
     rho, mu, pipe_d, beta = WATER_RHO, WATER_MU, 0.05248, 0.75
@@ -163,17 +162,16 @@ def _rupture_disc(pipe_d, orif_d):
                        orifice_diameter=orif_d)
 
 
-@pytest.mark.audit("D-28")
 @pytest.mark.parametrize("build, drop", [
     pytest.param(lambda D, d: Orifice("O", pipe_diameter=D, orifice_diameter=d, standard="classic_cd"),
-                 lambda n, q, r, m: n.calculate_delta_p(q, r, m), id="D-28-orifice-classic_cd"),
+                 lambda n, q, r, m: n.calculate_delta_p(q, r, m), id="orifice-classic_cd"),
     pytest.param(_calibrated_restriction, lambda n, q, r, m: n.calculate_delta_p(q, r, m),
-                 id="D-28-calibrated_restriction"),
+                 id="calibrated_restriction"),
     pytest.param(_check_valve_orifice, lambda n, q, r, m: n._calculate_orifice_dp(q, r, m),
-                 id="D-28-check_valve_orifice"),
-    pytest.param(_rupture_disc, lambda n, q, r, m: n.open_dp(q, r, m), id="D-28-rupture_disc-reduced_bore"),
+                 id="check_valve_orifice"),
+    pytest.param(_rupture_disc, lambda n, q, r, m: n.open_dp(q, r, m), id="rupture_disc-reduced_bore"),
 ])
-def test_d28_permanent_loss_is_tap_dp_times_formula_7(build, drop):
+def test_permanent_loss_is_tap_dp_times_formula_7(build, drop):
     """Water 20 C, beta 0.5, turbulent: drop = tap differential * ISO 5167-2 Formula (7) ratio with C_d."""
     rho, mu, pipe_d, beta = WATER_RHO, WATER_MU, 0.05248, 0.5
     orif_d = beta * pipe_d
@@ -219,6 +217,21 @@ def test_classic_cd_model_is_tanh_cd_with_formula_7():
         dp_ref = legacy_dp(q, rho, mu, pipe_d, orif_d)
         assert math.isclose(dp_impl, dp_ref, rel_tol=1e-12, abs_tol=1e-20), \
             f"legacy dP mismatch at Q={q}: {dp_impl} vs {dp_ref}"
+
+
+def test_outlet_properties_belong_to_the_warmed_outlet_temperature():
+    """Throttling warms the leaving stream: its density and viscosity are those of the warmed temperature,
+    not of the inlet (a stale copy left the outlet ~0.5 K off its own temperature)."""
+    ori = Orifice("Warm", pipe_diameter=0.05248, orifice_diameter=0.005)
+    ori.global_settings = GlobalSettings(fluid_type="iso_vg_46")
+    inlet, outlet = ori.inlets[0], ori.outlets[0]
+    inlet.flow_rate, inlet.pressure, inlet.temperature = 1e-3, 60e5, 300.0
+    inlet.density = FluidProperties.get_density("iso_vg_46", 300.0)
+    inlet.viscosity = FluidProperties.get_viscosity("iso_vg_46", 300.0)
+    ori.calculate()
+    assert outlet.temperature - inlet.temperature > 0.2  # the row only means something with real warming
+    assert outlet.density == pytest.approx(FluidProperties.get_density("iso_vg_46", outlet.temperature), rel=1e-12)
+    assert outlet.viscosity == pytest.approx(FluidProperties.get_viscosity("iso_vg_46", outlet.temperature), rel=1e-12)
 
 
 def test_standard_defaults_and_folding():
