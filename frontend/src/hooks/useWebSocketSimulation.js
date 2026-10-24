@@ -21,11 +21,11 @@ export function useWebSocketSimulation({ nodes, edges, globalSettings, cases = [
   // Dual-Pass Telemetry States
   const [telemetryMode, setTelemetryMode] = useState('mitigated'); // 'mitigated' | 'peak' | 'unmitigated_global'
   const [graphError, setGraphError] = useState(null); // last rejected graph update (shown inline, not as a popup)
-  // Last model error of a run, shown as a banner (F3-04/F3-06). `id` changes with every new error, so the same text is shown again.
+  // Last model error of a run, shown as a banner. `id` changes with every new error, so the same text is shown again.
   const [runErrorState, setRunErrorState] = useState({ message: null, id: 0 });
   const setRunError = useCallback((message) => setRunErrorState((prev) => ({ message, id: message ? prev.id + 1 : prev.id })), []);
   const runError = runErrorState.message;
-  const [loginRequired, setLoginRequired] = useState(false); // server only lets logged-in users simulate (F3-03)
+  const [loginRequired, setLoginRequired] = useState(false); // server only lets logged-in users simulate
 
   // Refs to eliminate socket churn
   const activeCaseIdRef = useRef(activeCaseId);
@@ -87,7 +87,7 @@ export function useWebSocketSimulation({ nodes, edges, globalSettings, cases = [
           return;
         }
 
-        // Graph pushes (every edit) are answered separately from simulation runs (F2-17)
+        // Graph pushes (every edit) are answered separately from simulation runs
         if (response.status === 'graph_accepted') {
           setGraphError(null);
           return;
@@ -97,7 +97,7 @@ export function useWebSocketSimulation({ nodes, edges, globalSettings, cases = [
           return;
         }
         if (response.status === 'error' && response.context === 'join_diagram') {
-          // Collaboration needs a login and access to the diagram; simulation works without (F2-25)
+          // Collaboration needs a login and access to the diagram; simulation works without
           console.warn(`Collaboration updates not available: ${response.message}`);
           return;
         }
@@ -113,7 +113,7 @@ export function useWebSocketSimulation({ nodes, edges, globalSettings, cases = [
           setLastRunAt(new Date());
           setRunError(null);
 
-          // Results belong to the case and the inputs the run was sent with (F2-07)
+          // Results belong to the case and the inputs the run was sent with
           const run = pendingRunRef.current;
           pendingRunRef.current = null;
           const targetCaseId = run?.caseId || activeCaseIdRef.current;
@@ -133,7 +133,7 @@ export function useWebSocketSimulation({ nodes, edges, globalSettings, cases = [
           setIsSimulating(false);
         }
       } catch (e) {
-        // F2-15: an unreadable reply must not leave the user waiting without any message
+        // An unreadable reply must not leave the user waiting without any message
         console.error('Failed to parse WebSocket message:', e);
         setIsSimulating(false);
         pendingRunRef.current = null;
@@ -179,7 +179,7 @@ export function useWebSocketSimulation({ nodes, edges, globalSettings, cases = [
   }, [nodes, edges, globalSettings, cases, activeCaseId, loginRequired, setRunError]);
 
   // Live preview of a valve opening on the backend only. The value itself is stored case-aware by the
-  // caller (updateNodeData); writing it here would change the base case from inside another case (F2-06).
+  // caller (updateNodeData); writing it here would change the base case from inside another case.
   const handleValveChange = useCallback(
     (newValue, nodeId) => {
       if (ws.current && ws.current.readyState === WebSocket.OPEN) {
@@ -195,7 +195,7 @@ export function useWebSocketSimulation({ nodes, edges, globalSettings, cases = [
     []
   );
 
-  // F5-02: another drawing replaces the canvas, so the last run no longer describes it
+  // Another drawing replaces the canvas, so the last run no longer describes it
   const resetRunState = useCallback(() => {
     setLastStats(null);
     setLastRunAt(null);

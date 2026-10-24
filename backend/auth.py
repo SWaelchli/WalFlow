@@ -169,7 +169,7 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # F2-14: a disabled (rejected) or still pending account loses access immediately, not at token expiry
+    # A disabled (rejected) or still pending account loses access immediately, not at token expiry
     if user.status != "approved":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

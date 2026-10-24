@@ -107,7 +107,7 @@ Doc § is section 2 of the equipment document. "Verified against" names the exac
 | Claim | Doc | Claim as the doc states it | Ref ID | Status | Verified against | Clause | Date | Note / finding |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | CR-01 | calibrated_restriction | Orifice flow equation for the equivalent orifice | `ISO-5167-1`, `ISO-5167-2` | ✅ | ISO 5167-1:2022, ISO 5167-2:2022 | 5167-1 §5.1 F(1); 5167-2 F(1) | 2026-10-23 | Form of the equation only ($\varepsilon = 1$); $C_d$ is WalFlow's own (CR-03), not Formula (4) |
-| CR-02 | calibrated_restriction | Permanent pressure loss ratio, §5.4 Formula (7) with the model's $C_d$ | `ISO-5167-2` | ✅ | ISO 5167-2:2022 | §5.4 F(7) | 2026-10-23 | Fixed in D-28: the code uses F(7) (was $1-\beta^2$, within ±2.5 % of F(7) for β 0.2-0.75) |
+| CR-02 | calibrated_restriction | Permanent pressure loss ratio, §5.4 Formula (7) with the model's $C_d$ | `ISO-5167-2` | ✅ | ISO 5167-2:2022 | §5.4 F(7) | 2026-10-23 | The code uses F(7) (was $1-\beta^2$, within ±2.5 % of F(7) for β 0.2-0.75) |
 | CR-03 | calibrated_restriction | Laminar discharge coefficient $C_d \approx 0.2\sqrt{\mathrm{Re}}$ of small orifices | `WUEST-1954`, `IDELCHIK` | ⚪ 🚩 | | | | `WUEST-1954` not found |
 | CR-04 | calibrated_restriction | Laminar law $\Delta P \propto \mu Q$ | `HAGEN-POISEUILLE` | ➖ | | | | |
 | CR-05 | calibrated_restriction | Resistance coefficient $K$ for the quadratic law | `CRANE-TP410` | ⚪ | | | | |
@@ -119,7 +119,7 @@ Doc § is section 2 of the equipment document. "Verified against" names the exac
 | CV-02 | check_valve | Cracking pressure and non-return function of check valves | `API-594`, `API-6D` | ⚪ | | | | |
 | CV-03 | check_valve | Fischer-Burmeister function for complementarity problems | `FISCHER-1992` | ⚪ | | | | |
 | CVO-01 | check_valve_orifice | Liquid Cv equation for the open seat | `IEC-60534-2-1` | ✅ | IEC 60534-2-1:2011 + Cor.:2015 | §6.1 Eq. (1), Tab. 1 | 2026-10-23 | Same as CV-01; IEC scope is control valves (§1): verifies the equation form only |
-| CVO-02 | check_valve_orifice | Orifice equation and permanent loss ratio (Formula (7)) for the bypass | `ISO-5167-1`, `ISO-5167-2` | ✅ | ISO 5167-1:2022, ISO 5167-2:2022 | F(1); §5.4 F(7) | 2026-10-23 | Equation ✅ as CR-01; loss ratio F(7) since D-28 |
+| CVO-02 | check_valve_orifice | Orifice equation and permanent loss ratio (Formula (7)) for the bypass | `ISO-5167-1`, `ISO-5167-2` | ✅ | ISO 5167-1:2022, ISO 5167-2:2022 | F(1); §5.4 F(7) | 2026-10-23 | Equation ✅ as CR-01; loss ratio F(7) |
 | CVO-03 | check_valve_orifice | Cracking pressure of check valves | `API-594` | ⚪ | | | | |
 | FLT-01 | filter | Datasheet drop at a rated flow in a reference fluid | `ISO-3968` | ⚪ | | | | |
 | FLT-02 | filter | Terminal differential pressure as the change-out point | `ISO-16889` | ⚪ | | | | |
@@ -128,7 +128,7 @@ Doc § is section 2 of the equipment document. "Verified against" names the exac
 | HX-02 | heat_exchanger | Flow scaling of UA with $\mathrm{Re}^{0.8}$ for liquid-cooled exchangers | `DITTUS-BOELTER-1930` | ⚪ 🚩 | | | | Attribution, see A.2 |
 | HX-03 | heat_exchanger | Background for rated duty, design temperatures and allowable pressure drop | `API-661`, `TEMA` | ⚪ | | | | |
 | LCV-01 | linear_control_valve | Incompressible sizing equation (Cv definition) | `IEC-60534-2-1`, `ISA-75.01.01` | ✅ | IEC 60534-2-1:2011 + Cor.:2015 | §6.1 Eq. (1), Tab. 1 | 2026-10-23 | K_Cv = 1.732e9 is Eq. (1) inverted with N1 = 8.65e-2 (−0.1 %, N1 rounding); Annex E Ex. 1 reproduced (459.5 vs 460 kPa). Choked flow (§6.2) and $F_P$ (§8) not modelled |
-| LCV-02 | linear_control_valve | Valve Reynolds number and Reynolds number factor $F_R$ | `IEC-60534-2-1`, `ISA-75.01.01` | ✅ | IEC 60534-2-1:2011 + Cor.:2015 | §9 Eq. (23), Annex A Eq. (A.1), (A.6)-(A.8b), Tab. 1 | 2026-10-23 | D-29 fixed: Annex A implemented as written (Cv constants of Tab. 1); valve taken as line-size (A.4), $d = D$ = connected pipe bore. Deliberate deviation, stated in the doc, only where (A.7) starts below (A.6) ($n$ ≲ 1.2 with $F_L$ 0.9): no downward jump at Re_V = 10, and $F_R$ grows at most as Re_V^0.75 so Δp never falls with rising Q; Δp up to +20 % ($F_L$ 0.9) / +43 % ($F_L$ 0.98) within scope, Re_V ≈ 10-40. Was ⚠️ (smooth $F_R$ ≥ 0.5) |
+| LCV-02 | linear_control_valve | Valve Reynolds number and Reynolds number factor $F_R$ | `IEC-60534-2-1`, `ISA-75.01.01` | ✅ | IEC 60534-2-1:2011 + Cor.:2015 | §9 Eq. (23), Annex A Eq. (A.1), (A.6)-(A.8b), Tab. 1 | 2026-10-23 | Annex A implemented as written (Cv constants of Tab. 1); valve taken as line-size (A.4), $d = D$ = connected pipe bore. Deliberate deviation, stated in the doc, only where (A.7) starts below (A.6) ($n$ ≲ 1.2 with $F_L$ 0.9): no downward jump at Re_V = 10, and $F_R$ grows at most as Re_V^0.75 so Δp never falls with rising Q; Δp up to +20 % ($F_L$ 0.9) / +43 % ($F_L$ 0.98) within scope, Re_V ≈ 10-40. Was ⚠️ (smooth $F_R$ ≥ 0.5) |
 | LCV-04 | linear_control_valve | Default $F_L$ = 0.9, $F_d$ = 0.46 (globe single port, contoured plug, flow to open) | `IEC-60534-2-1` | ✅ | IEC 60534-2-1:2011 | Tab. D.2 | 2026-10-23 | Typical values; the standard defers to manufacturer data. Full-travel values used at every opening. D-29b: the 28 rows with a numeric $F_d$ (English IEC terms) seed the built-in valve style catalogue (`services/valve_style_defaults.py`), checked against the DIN EN copy; tapered needle and multistage rows left out. Publishing the coefficient table in the public repo was approved by the user (exception to the copyright rule of the verification skill) |
 | LCV-03 | linear_control_valve | Linear inherent characteristic | `ISA-75.11.01`, `IEC-60534-2-4` | ⚪ | | | | |
 | REG-01 | linear_regulator | Liquid Cv equation | `IEC-60534-2-1`, `ISA-75.01.01` | ✅ | IEC 60534-2-1:2011 + Cor.:2015 | §6.1 Eq. (1), Tab. 1 | 2026-10-23 | Same as LCV-01 |
@@ -136,7 +136,7 @@ Doc § is section 2 of the equipment document. "Verified against" names the exac
 | REG-03 | linear_regulator | Lock-up: closed tight at zero demand | `EN-334` | ⚪ 🚩 | | | | `EN-334` covers fuel-gas regulators |
 | ORI-01 | orifice | Reader-Harris/Gallagher discharge coefficient | `ISO-5167-2` | ✅ | ISO 5167-2:2022 | §5.3.2.1 F(4) | 2026-10-23 | Corner tappings ($L_1 = L_2' = 0$), incl. the $D < 71.12$ mm term |
 | ORI-02 | orifice | Permanent pressure loss, §5.4 Formula (7) | `ISO-5167-2` | ✅ | ISO 5167-2:2022 | §5.4.1 F(7) | 2026-10-23 | Evaluated with $C_d$, not $C_m$ |
-| ORI-03 | orifice | Validity $\beta \in [0.1, 0.75]$, $d \ge 12.5$ mm, $50 \le D \le 1000$ mm | `ISO-5167-2` | ✅ | ISO 5167-2:2022 | §5.3.1 | 2026-10-23 | Geometry limits ✅. Reynolds limit $16\,000\beta^2$ for β > 0.56 (fixed in D-26; was a flat 16 000). Roughness limits (Tables 1, 2) not modelled |
+| ORI-03 | orifice | Validity $\beta \in [0.1, 0.75]$, $d \ge 12.5$ mm, $50 \le D \le 1000$ mm | `ISO-5167-2` | ✅ | ISO 5167-2:2022 | §5.3.1 | 2026-10-23 | Geometry limits ✅. Reynolds limit $16\,000\beta^2$ for β > 0.56 (was a flat 16 000). Roughness limits (Tables 1, 2) not modelled |
 | ORI-04 | orifice | General principles and requirements | `ISO-5167-1` | ✅ | ISO 5167-1:2022 | §5.1 F(1), §6.3 | 2026-10-23 | Tap Δp is F(1) inverted with $\varepsilon = 1$. Steady, single-phase flow (§6.3) consistent; cavitation (§6.3.2) not checked |
 | PIPE-01 | pipe | Friction pressure drop | `DARCY-WEISBACH` | ➖ | | | | |
 | PIPE-02 | pipe | One continuous friction-factor expression for laminar, transition and turbulent flow | `CHURCHILL-1977` | ⚪ | | | | |
@@ -166,7 +166,7 @@ Doc § is section 2 of the equipment document. "Verified against" names the exac
 | RD-02 | rupture_disc | Rupture disc devices (UG-127) | `ASME-VIII-1` | ⚪ 🚩 | | | | Moved to `ASME-XIII` from 2021 |
 | RD-03 | rupture_disc | 10 % overpressure for liquid relief capacity | `API-520-1` | ⚪ | | | | |
 | RD-04 | rupture_disc | Flow resistance method ($K_R$) for discs | `API-520-1` | ⚪ | | | | |
-| RD-05 | rupture_disc | Orifice flow equation for the reduced bore | `ISO-5167-2` | ✅ | ISO 5167-2:2022 | F(1) | 2026-10-23 | As CR-01; permanent loss ratio F(7) since D-28 |
+| RD-05 | rupture_disc | Orifice flow equation for the reduced bore | `ISO-5167-2` | ✅ | ISO 5167-2:2022 | F(1) | 2026-10-23 | As CR-01; permanent loss ratio F(7) |
 | RD-06 | rupture_disc | Liquid Cv equation for the full bore | `IEC-60534-2-1` | ✅ | IEC 60534-2-1:2011 + Cor.:2015 | §6.1 Eq. (1), Tab. 1 | 2026-10-23 | Same as LCV-01; IEC scope is control valves (§1): verifies the equation form only |
 | TCV-01 | three_way_tcv | Liquid Cv equation per path | `IEC-60534-2-1`, `ISA-75.01.01` | ✅ | IEC 60534-2-1:2011 + Cor.:2015 | §6.1 Eq. (1), Tab. 1 | 2026-10-23 | Same as LCV-01 |
 | TCV-02 | three_way_tcv | Linear complementary characteristic of a 3-way mixing valve | `ISA-75.11.01` | ⚪ | | | | |
@@ -182,9 +182,9 @@ Documents with no source: `base_node`, `flow_source`, `pressure_source`, `measur
 | Date | Source (edition read) | Claims | Result | By |
 | :--- | :--- | :--- | :--- | :--- |
 | 2026-10-23 | Bibliographic web check of all sources in Part A (no source text read) | all | Editions recorded in Part A; 🚩 flags on CR-02, CR-03, CVO-02, HX-02, REG-03, PIPE-04, RED-01, RLF-03, RD-02, PDP-03 | Claude, from publisher, standards-body and reseller listings |
-| 2026-10-23 | ISO 5167-1:2022 and ISO 5167-2:2022, read as EVS-EN ISO 5167-1/-2:2022 | CR-01, CR-02, CVO-02, ORI-01..04, RD-05 | ✅ CR-01, ORI-01, ORI-02, ORI-04, RD-05; ⚠️ ORI-03 (D-26); ❌ CR-02, CVO-02 (D-28); doc error D-27 | Claude; second opinion `walflow-physics-reviewer` (agreed) |
-| 2026-10-23 | IEC 60534-2-1:2011 + Cor.:2015, read as DIN EN 60534-2-1:2012-01 + Berichtigung 1:2015-11 | CV-01, CVO-01, LCV-01, LCV-02, REG-01, PSV-09, RCV-01, RD-06, TCV-01 | ✅ all Cv-equation claims; ⚠️ LCV-02 (D-29) | Claude; second opinion `walflow-physics-reviewer` (agreed on Cv equation; raised LCV-02 from ✅ to ⚠️) |
-| 2026-10-23 | IEC 60534-2-1:2011, read as DIN EN 60534-2-1:2012-01 (Annex A, Tab. 1, Tab. D.2) | LCV-02, LCV-04, RCV-03, TCV-03 | ✅ all, after the D-29 fix (Annex A $F_R$ in the three control valves) | Claude; second opinion `walflow-physics-reviewer` (equations, constants and units agreed) |
+| 2026-10-23 | ISO 5167-1:2022 and ISO 5167-2:2022, read as EVS-EN ISO 5167-1/-2:2022 | CR-01, CR-02, CVO-02, ORI-01..04, RD-05 | ✅ CR-01, ORI-01, ORI-02, ORI-04, RD-05; ⚠️ ORI-03; ❌ CR-02, CVO-02; doc error in orifice.md §3.1 (all fixed since) | Claude; second opinion `walflow-physics-reviewer` (agreed) |
+| 2026-10-23 | IEC 60534-2-1:2011 + Cor.:2015, read as DIN EN 60534-2-1:2012-01 + Berichtigung 1:2015-11 | CV-01, CVO-01, LCV-01, LCV-02, REG-01, PSV-09, RCV-01, RD-06, TCV-01 | ✅ all Cv-equation claims; ⚠️ LCV-02 (fixed since) | Claude; second opinion `walflow-physics-reviewer` (agreed on Cv equation; raised LCV-02 from ✅ to ⚠️) |
+| 2026-10-23 | IEC 60534-2-1:2011, read as DIN EN 60534-2-1:2012-01 (Annex A, Tab. 1, Tab. D.2) | LCV-02, LCV-04, RCV-03, TCV-03 | ✅ all, after Annex A $F_R$ was implemented in the three control valves | Claude; second opinion `walflow-physics-reviewer` (equations, constants and units agreed) |
 
 ## Private reference library
 

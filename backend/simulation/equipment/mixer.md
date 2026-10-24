@@ -38,13 +38,13 @@ The mixer has no branch or run loss coefficient. For a junction whose loss matte
 
 ## 4. Thermal & Energy Balance
 
-The outlet temperature follows from the enthalpy balance of the incoming streams (audit F1-42):
+The outlet temperature follows from the enthalpy balance of the incoming streams:
 
 $$\dot m_0\, h(T_0) + \dot m_1\, h(T_1) = (\dot m_0 + \dot m_1)\, h(T_{\text{out}}), \qquad h(T) = \int c_p\, dT$$
 
 with $\dot m_k = |q_k|\, \rho_k$. See [base_node.md](base_node.md#41-default-mixing-calculate_temperature) for the direction-aware selection of incoming ports.
 
-After mixing, every port with outward flow reports density and viscosity at $T_{\text{out}}$ (`update_outward_properties`, as the splitter): the outlet, and an inlet that carries reverse flow back into its pipe (D-18). With reverse flow out of the mixer's inlets, both inlet pipes receive the mixed temperature.
+After mixing, every port with outward flow reports density and viscosity at $T_{\text{out}}$ (`update_outward_properties`, as the splitter): the outlet, and an inlet that carries reverse flow back into its pipe. With reverse flow out of the mixer's inlets, both inlet pipes receive the mixed temperature.
 
 Example: ISO VG 46 from a hot tank at 80 °C and a cold tank at 20 °C; the outlet temperature lies between the two at the point where the heat given by the hot stream equals the heat taken by the cold stream with $c_p(T)$.
 

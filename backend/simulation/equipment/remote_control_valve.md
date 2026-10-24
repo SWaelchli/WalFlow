@@ -29,9 +29,9 @@ The control loop is an ideal steady-state controller (no tuning, no offset), as 
 
 $$\Delta P = \frac{K_{Cv}\, \rho\, Q|Q|}{\big(C_{v,\max} \cdot \tfrac{\text{opening}}{100} \cdot F_R\big)^2}, \qquad K_{Cv} = 1.732 \times 10^9$$
 
-with the opening clamped to 0.1-100 % and the IEC 60534-2-1 Annex A Reynolds number factor $F_R$ of the [linear control valve](linear_control_valve.md#33-reynolds-number-factor-f_r-fluidpropertiesget_iec_valve_fr): same $F_L$, $F_d$ defaults, valve size from the connected pipe (D-29).
+with the opening clamped to 0.1-100 % and the IEC 60534-2-1 Annex A Reynolds number factor $F_R$ of the [linear control valve](linear_control_valve.md#33-reynolds-number-factor-f_r-fluidpropertiesget_iec_valve_fr): same $F_L$, $F_d$ defaults, valve size from the connected pipe.
 
-The Results tab chart draws this equation at the current and the full opening; the curve points come from `calculate_delta_p` with the results (`valve_curves`, D-33).
+The Results tab chart draws this equation at the current and the full opening; the curve points come from `calculate_delta_p` with the results (`valve_curves`).
 
 ### 3.2 Sensed pressure
 
@@ -59,11 +59,11 @@ Valves are grouped only when they sense the exact same port. Valves that sense d
 
 ### 3.5 Derivative
 
-The class has no analytical derivative; the solver differentiates the outlet pressure numerically (see [base_node.md](base_node.md#33-jacobian), D-23).
+The class has no analytical derivative; the solver differentiates the outlet pressure numerically (see [base_node.md](base_node.md#33-jacobian)).
 
 ## 4. Thermal & Energy Balance
 
-The pressure drop is throttling loss (audit F1-16):
+The pressure drop is throttling loss:
 
 $$\Delta T = \frac{|\Delta P|}{\rho\, c_p(T)}$$
 
@@ -76,7 +76,7 @@ applied to the outlet for $Q \ge 0$ and to the inlet for $Q < 0$.
 | Max Cv | Cv | `self.max_cv` | Cv | 0.05 | $> 0$ | Flow coefficient at 100 % |
 | Mode | text | `self.backpressure` | bool | Pressure Reducing (Downstream Remote) | Pressure Reducing / Backpressure | Control action |
 | Set Point | bar(a) (psi(a)) | `self.set_pressure` | Pa (absolute) | 5.0 bar(a) | $> 0$ | Pressure held at the sensed port |
-| Valve style | catalogue entry or Custom | `valve_style_id` | – | IEC Table D.2 globe single port, contoured plug, flow to open | catalogue `control_valve` rows, `custom` | Sets $F_L$ and $F_d$ from the [catalogue](../../../frontend/src/pages/CataloguePage.jsx) (Control valve styles); Custom makes them editable (D-29) |
+| Valve style | catalogue entry or Custom | `valve_style_id` | – | IEC Table D.2 globe single port, contoured plug, flow to open | catalogue `control_valve` rows, `custom` | Sets $F_L$ and $F_d$ from the [catalogue](../../../frontend/src/pages/CataloguePage.jsx) (Control valve styles); Custom makes them editable |
 | F_L (from the style, or Custom) | – | `self.fl` | – | 0.9 | $(0, 1]$ | Liquid pressure recovery factor $F_L$ (Table D.2) |
 | F_d (from the style, or Custom) | – | `self.fd` | – | 0.46 | $> 0$ | Valve style modifier $F_d$ (Table D.2) |
 | — (from connected pipe) | – | `self.pipe_diameter` | m | 0.05248 | $> 0$ | Valve size $d = D$ for $F_R$ |
@@ -116,4 +116,4 @@ Node type: `remote_control_valve`. Field names follow the naming rule in [base_n
 | `fl` | factor $F_L$ (IEC 60534-2-1) | 0.9 |
 | `fd` | factor $F_d$ (IEC 60534-2-1) | 0.46 |
 
-The node data also carries `valve_style_id` (`<catalogue code>:<row code>` or `custom`, default `IEC_60534_2_1_TABLE_D2:globe_single_contoured_open`) for the inspector's valve style; the parser reads only `fl` and `fd` (D-29).
+The node data also carries `valve_style_id` (`<catalogue code>:<row code>` or `custom`, default `IEC_60534_2_1_TABLE_D2:globe_single_contoured_open`) for the inspector's valve style; the parser reads only `fl` and `fd`.

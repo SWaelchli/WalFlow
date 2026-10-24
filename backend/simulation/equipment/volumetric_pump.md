@@ -31,7 +31,7 @@ $$\Delta P = k\,(Q_r - Q), \qquad k = \frac{10\ \text{MPa}}{0.01\, Q_{\text{ref}
 $Q_r$ is the displacement flow, $Q_{\text{ref}}$ the case value of it (unchanged by the relief ramp). $k$ gives 100 bar per 1 % flow deviation, so the delivered flow stays within a fraction of a percent of displacement at any real pressure. $k = 10^{12}$ Pa·s/m³ if $Q_{\text{ref}} \le 0$.
 
 - **Normal operation** ($Q < Q_r$): $\Delta P > 0$, the pump raises the pressure.
-- **Pushed** ($Q > Q_r$, e.g. fed from a pressurised header): $\Delta P < 0$, the pump brakes the flow to its displacement instead of passing it freely (audit F1-35).
+- **Pushed** ($Q > Q_r$, e.g. fed from a pressurised header): $\Delta P < 0$, the pump brakes the flow to its displacement instead of passing it freely.
 - **Reverse flow** ($Q < 0$): $\Delta P = \Delta P(0) - k\,Q$, a stiff check valve continuous with the rise at zero flow.
 
 The pump raises the pressure: $P_{\text{out}} = P_{\text{in}} + \Delta P$ (see [base_node.md](base_node.md#32-how-a-component-enters-the-equations)). The flow does not depend on the density.
@@ -93,7 +93,7 @@ The share of the shaft power that is not hydraulic power heats the fluid:
 
 $$\Delta T = \frac{|\Delta P|}{\rho\, c_p(T_{\text{in}})} \cdot \frac{1 - \eta}{\eta}$$
 
-applied to the outlet for $Q \ge 0$ and to the inlet for $Q < 0$, with $\eta \ge 1$ % (the input minimum, also used for the shaft power), so the heat is exactly $P_{\text{shaft}} - |Q|\,\Delta P$ (D-10). The factor depends on the sign of $\Delta P$ only, so the heat does not jump when the flow of a dead-headed pump changes sign.
+applied to the outlet for $Q \ge 0$ and to the inlet for $Q < 0$, with $\eta \ge 1$ % (the input minimum, also used for the shaft power), so the heat is exactly $P_{\text{shaft}} - |Q|\,\Delta P$. The factor depends on the sign of $\Delta P$ only, so the heat does not jump when the flow of a dead-headed pump changes sign.
 
 A braking pump (the fluid drives it, $\Delta P < 0$, e.g. fed from a header above its displacement) is a pure resistance like a throttle: all of $Q|\Delta P|$ becomes heat, $\Delta T = |\Delta P|/(\rho c_p)$, and no motor regeneration is assumed (`pump_heat_factor` in [base_node.py](base_node.py)). Recirculation over the pressure limit adds no extra heat. A stopped pump is removed from the solve (section 6) and adds no heat.
 

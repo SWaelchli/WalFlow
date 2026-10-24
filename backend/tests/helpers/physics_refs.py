@@ -1,5 +1,5 @@
 """
-Independent reference calculations for the physics tests (F1-41 / F0-05).
+Independent reference calculations for the physics tests.
 
 These are written from the textbook formulas, not imported from the
 simulation package, so a test fails when the code's physics is wrong.

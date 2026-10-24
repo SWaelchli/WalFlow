@@ -127,7 +127,7 @@ class BatchCaseResult(BaseModel):
     stats: Optional[Dict[str, Any]] = None
     telemetry: Optional[Dict[str, Any]] = None
     telemetry_unmitigated: Optional[Dict[str, Any]] = None
-    telemetry_peak: Optional[Dict[str, Any]] = None   # F1-08: steady state at the peak relief opening
+    telemetry_peak: Optional[Dict[str, Any]] = None   # steady state at the peak relief opening
     kpis: Optional[Dict[str, Any]] = None
 
 class BatchSimulationResponse(BaseModel):

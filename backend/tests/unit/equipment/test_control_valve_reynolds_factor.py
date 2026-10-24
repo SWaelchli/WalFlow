@@ -1,10 +1,9 @@
 """Linear control valve, remote control valve and 3-way TCV paths use the IEC 60534-2-1 Annex A Reynolds
-number factor (D-29): laws of their pressure drop in the laminar region and in both flow directions,
+number factor: laws of their pressure drop in the laminar region and in both flow directions,
 and the F_L / F_d / line size inputs the parser feeds them."""
 import pytest
 from hypothesis import assume, given, strategies as st
 
-pytestmark = pytest.mark.audit("D-29")
 
 from physics_refs import iec_flow_for_reynolds
 from strategies import build, fluid_states, log_uniform
@@ -46,7 +45,7 @@ def test_valve_drop_is_odd_in_flow_and_zero_at_rest(node_type, data, q):
 @given(data=st.data(), re_v=log_uniform(1e-3, 4.0))
 def test_valve_drop_is_linear_in_flow_in_the_laminar_region(node_type, data, re_v):
     """F_R ~ sqrt(Re_V) below Re_V = 10 turns the Cv law into dp ~ Q; a clamp or floor on F_R that bites
-    there (D-29) bends it. Re_V <= 4 so that 2 Q stays in (A.6) too."""
+    there bends it. Re_V <= 4 so that 2 Q stays in (A.6) too."""
     valve, dp, cv, (_, _, rho, mu) = data.draw(valves(node_type))
     q = iec_flow_for_reynolds(re_v, mu / rho, cv, valve.fl, valve.fd, valve.pipe_diameter)
     assume(q > 1e-9)  # the TCV path has no drop below 1e-10 m³/s (documented cut-off)

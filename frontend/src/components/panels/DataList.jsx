@@ -214,7 +214,7 @@ export default function DataList({
   const [isBatchLoading, setIsBatchLoading] = useState(false);
   const [batchError, setBatchError] = useState(null);
 
-  // F2-09: a caller that has just changed cases or nodes passes them in; the props still hold the previous state
+  // A caller that has just changed cases or nodes passes them in; the props still hold the previous state
   const fetchBatchSimulations = useCallback(async (next = {}) => {
     setIsBatchLoading(true);
     setBatchError(null);
@@ -229,7 +229,7 @@ export default function DataList({
         cases: batchCases,
         activeCaseId
       });
-      // Results are tagged with the inputs they are solved from (F2-07)
+      // Results are tagged with the inputs they are solved from
       const inputHashes = computeCaseInputHashes({ nodes: baseNodes, edges: baseEdges, globalSettings, cases: batchCases });
       const response = await fetch('/api/simulation/batch', {
         method: 'POST',
@@ -317,7 +317,7 @@ export default function DataList({
     [reliefDevices]
   );
 
-  const [pendingRerun, setPendingRerun] = useState(null);   // active-case re-run waiting for the new state (F2-09)
+  const [pendingRerun, setPendingRerun] = useState(null);   // active-case re-run waiting for the new state
 
   const handleMatrixForcedStateChange = useCallback((caseId, nodeId, value) => {
     const targetCase = displayCases.find(c => (c.id || c.case_id) === caseId);
@@ -415,7 +415,7 @@ export default function DataList({
       if (ref.type === 'node') {
         const node = nodes.find(n => n.id === ref.id);
         if (!node || node.type === 'text_bubble' || node.type === 'note') return null;
-        // Missing results stay null and show as "—", never as 0 bar / 20 °C (F2-20)
+        // Missing results stay null and show as "—", never as 0 bar / 20 °C
         const telemetry = node.data?.telemetry;
         const pStart = telemetry?.inlets?.[0]?.pressure ?? null;
         const pEnd = telemetry?.outlets?.[0]?.pressure ?? null;
@@ -886,7 +886,7 @@ export default function DataList({
                     const devTypeLabel = dev.type === 'rupture_disc'
                       ? 'Rupture Disc'
                       : (dev.data?.action_mode === 'modulating' ? 'PSV (Modulating)' : 'PSV (Pop Action)');
-                    // Set / burst pressure in gauge (F1-09); older files without it show "missing"
+                    // Set / burst pressure in gauge; older files without it show "missing"
                     const ratingBarg = dev.type === 'rupture_disc' ? dev.data?.burst_pressure_barg : dev.data?.set_pressure_barg;
                     const ratingLabel = ratingBarg ? formatPressureGauge(Number(ratingBarg)) : 'missing';
 
@@ -959,7 +959,7 @@ export default function DataList({
                   </tr>
 
                   {/*
-                    RELIEF CONTINGENCY PRESSURE METRICS (steady states, bar(a)), F1-08:
+                    RELIEF CONTINGENCY PRESSURE METRICS (steady states, bar(a)):
                     1. Relieved: relief devices in their final state.
                     2. Peak: highest of the relief opening snapshots (each device exactly at its set pressure,
                        found on a ramp of the pumps and sources) and the relieved state.
@@ -1026,7 +1026,7 @@ export default function DataList({
                      })}
                    </tr>
 
-                  {/* First Relief Opening (F1-08) */}
+                  {/* First Relief Opening */}
                   <tr style={{ borderBottom: '1px solid var(--color-border-hover)', height: '36px' }}>
                     <td colSpan={3} title="Relief device that reaches its set pressure first, and the driver load (pumps and sources, % of their case value) at which it does" style={{ padding: '6px 12px', fontWeight: '700', color: 'var(--color-text-primary)', verticalAlign: 'middle' }}>
                       First relief opening

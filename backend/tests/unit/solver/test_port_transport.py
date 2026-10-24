@@ -1,8 +1,7 @@
-"""F1-13: telemetry and temperature transport use the port an edge is connected to, not port 0,
+"""Telemetry and temperature transport use the port an edge is connected to, not port 0,
 including for reverse flow through junctions."""
 import pytest
 
-pytestmark = pytest.mark.audit("F1-13")
 
 import pytest
 

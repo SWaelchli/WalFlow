@@ -31,4 +31,4 @@ def test_custom_equipment_pressure_drop(data, flow_lmin, fluid, dp_bar):
    network case in `backend/tests/scenarios/` using the builders in `tests/helpers/networks.py`.
 
 Analytic derivatives: the solver uses `calculate_dp_derivative` only for pipes and pumps and differentiates every
-other component numerically (finding D-13), so a new resistance does not need a derivative test.
+other component numerically, so a new resistance does not need a derivative test.

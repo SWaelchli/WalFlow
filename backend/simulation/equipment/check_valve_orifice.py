@@ -37,7 +37,7 @@ class CheckValveOrifice(HydraulicNode):
         """
         Calculates total pressure drop across Check Valve w/ Orifice.
         Reverse flow, or forward flow whose orifice drop stays below the cracking pressure: all flow through the orifice.
-        Above cracking: seat and orifice in parallel at one valve drop (D-09),
+        Above cracking: seat and orifice in parallel at one valve drop,
         Q = Q_ori(dP) + Q_seat(dP - P_crack), solved for the orifice share of the flow.
         """
         cracking_pa = self.cracking_pressure_bar * 100000.0
@@ -83,5 +83,5 @@ class CheckValveOrifice(HydraulicNode):
         inlet.density = FluidProperties.get_density(fluid_type, inlet.temperature)
         inlet.viscosity = FluidProperties.get_viscosity(fluid_type, inlet.temperature)
 
-        # Outlet temperature already includes the throttling heat (F1-16); do not overwrite it
+        # Outlet temperature already includes the throttling heat; do not overwrite it
         return dp

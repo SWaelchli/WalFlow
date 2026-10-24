@@ -6,7 +6,7 @@ import { serializeDiagram, checkFormatVersion } from '../utils/diagramFile';
 import { useAuth } from './useAuth';
 import { writeDraft, readDraft, removeDraft, startHeartbeat, pruneDrafts, findOrphanDraft, adoptDraft, discardOrphan } from '../utils/draftStorage';
 
-// One id per browser tab, sent with cloud saves so the server's "diagram updated" notice skips the saving tab (F2-11)
+// One id per browser tab, sent with cloud saves so the server's "diagram updated" notice skips the saving tab
 const CLIENT_ID = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `tab-${Math.random().toString(36).slice(2)}`;
 
 // Content that decides whether a save is needed: everything except the timestamp and the viewport
@@ -18,7 +18,7 @@ const contentKey = (payload) => {
 const isStaleConflict = (err) => !!(err.response && err.response.status === 409 &&
   err.response.headers && err.response.headers['x-walflow-conflict'] === 'stale');
 
-// Orphan-draft dialogs that are still open, by draft key (F5-04)
+// Orphan-draft dialogs that are still open, by draft key
 const pendingOrphanOffers = new Map();
 
 const STALE_MESSAGE ='Not saved: this diagram was changed elsewhere since you opened it. Reload to see the latest version; your edits here stay in the local draft.';
@@ -40,7 +40,7 @@ export function useAutoSaveSession({
   const [lastSavedTimestamp, setLastSavedTimestamp] = useState(null);
   const [isRestoredFromDraft, setIsRestoredFromDraft] = useState(false);
   const [restoredDraftTime, setRestoredDraftTime] = useState(null);
-  // Non-blocking notice about co-editors / saves refused because the diagram changed elsewhere (F2-11, F2-25)
+  // Non-blocking notice about co-editors / saves refused because the diagram changed elsewhere
   const [collabNotice, setCollabNotice] = useState(null);
   const dismissCollabNotice = useCallback(() => setCollabNotice(null), []);
   // updated_at of the server version this tab last loaded or saved; sent with each save so a newer copy is not overwritten
@@ -83,7 +83,7 @@ export function useAutoSaveSession({
     const { nodes, edges, globalSettings, cases, activeCaseId, activeProject, activeDiagram, reactFlowInstance } = stateRef.current;
     const viewport = reactFlowInstance ? reactFlowInstance.getViewport() : { x: 0, y: 0, zoom: 1 };
     
-    // Results are not part of a draft or cloud save (F2-22); the diagram is re-solved after loading
+    // Results are not part of a draft or cloud save; the diagram is re-solved after loading
     const { created_at: _createdAt, ...base } = serializeDiagram({ nodes, edges, globalSettings: globalSettings || {}, cases, activeCaseId });
     return {
       ...base,
@@ -137,7 +137,7 @@ export function useAutoSaveSession({
     removeDraft();
   }, []);
 
-  // This tab's draft stays out of other tabs' reach while the tab is open (F2-22)
+  // This tab's draft stays out of other tabs' reach while the tab is open
   useEffect(() => {
     pruneDrafts();
     return startHeartbeat();
@@ -232,7 +232,7 @@ export function useAutoSaveSession({
           setCollabNotice({ kind: 'lock_released', message: `Your edit lock was released by project owner ${eventData.by_username}.` });
         }
       } else if (eventData.action === 'diagram_updated') {
-        // Diagram was modified on the server, by someone else or by another tab of this user (F2-11)
+        // Diagram was modified on the server, by someone else or by another tab of this user
         if (eventData.client_id !== CLIENT_ID) {
           const who = currentUser && eventData.user_id === currentUser.id ? 'Another tab of yours' : `Co-editor ${eventData.username}`;
           setCollabNotice({ kind: 'diagram_updated', message: `${who} saved changes to this diagram. Reload to see them; your unsaved edits here are kept as a local draft.` });
@@ -291,7 +291,7 @@ export function useAutoSaveSession({
     const handleBeforeUnload = () => {
       saveToLocalDraft();
     };
-    // Give the edit lock back when the tab closes (the server also releases it when the socket drops, F2-25)
+    // Give the edit lock back when the tab closes (the server also releases it when the socket drops)
     const handlePageHide = () => {
       if (hasLock && activeDiagram && activeDiagram.id && navigator.sendBeacon) {
         navigator.sendBeacon(`/api/diagrams/${activeDiagram.id}/checkin`);
@@ -307,7 +307,7 @@ export function useAutoSaveSession({
   }, [saveToLocalDraft, hasLock, activeDiagram]);
 
   // What a save would write. Selection, measuring and results do not change it, so they no longer start the
-  // save timers (F2-22, F2-28); a moved component does.
+  // save timers; a moved component does.
   const contentSignature = useMemo(
     () => persistKey({ nodes, edges, globalSettings, cases, activeCaseId }),
     [nodes, edges, globalSettings, cases, activeCaseId]
@@ -338,7 +338,7 @@ export function useAutoSaveSession({
       const ts = saveToLocalDraft();
       if (!isCloudSyncable) {
         if (!ts) {
-          // Storage full or blocked: do not claim the draft is saved (F2-22)
+          // Storage full or blocked: do not claim the draft is saved
           setSaveStatus('error');
           return;
         }
@@ -353,7 +353,7 @@ export function useAutoSaveSession({
       cloudTimer = setTimeout(async () => {
         try {
           const payload = serializeWorkspaceState();
-          // Nothing but selection, viewport or results changed since the last save: nothing to send (F2-11)
+          // Nothing but selection, viewport or results changed since the last save: nothing to send
           if (contentKey(payload) === lastSavedKeyRef.current) {
             setSaveStatus('saved_cloud');
             return;
@@ -425,7 +425,7 @@ export function useAutoSaveSession({
   }, [activeDiagram, isAuthenticated, hasLock, isLockedByOther, saveToLocalDraft, serializeWorkspaceState, setActiveDiagram, putDiagram]);
 
   // Hydration Loader on Boot
-  // Reads a stored draft; null when it is empty, unreadable or in another file format (F0-02: say so once)
+  // Reads a stored draft; null when it is empty, unreadable or in another file format (say so once)
   const parseDraft = useCallback((raw, discard) => {
     try {
       if (!raw) return null;
@@ -479,7 +479,7 @@ ${versionError}`, 'error'), 0);
   const offerOrphanDraft = useCallback(async () => {
     const orphan = findOrphanDraft();
     if (!orphan) return null;
-    // React StrictMode runs the boot effect twice in dev: both runs share one dialog (F5-04)
+    // React StrictMode runs the boot effect twice in dev: both runs share one dialog
     if (pendingOrphanOffers.has(orphan.key)) return pendingOrphanOffers.get(orphan.key);
     const offer = askAboutOrphan(orphan).finally(() => pendingOrphanOffers.delete(orphan.key));
     pendingOrphanOffers.set(orphan.key, offer);

@@ -11,7 +11,7 @@ const items = (h) => [
 
 afterEach(cleanup);
 
-describe('F3-18 context menu', () => {
+describe('context menu', () => {
   it('shows the actions with their shortcuts and runs the chosen one, then closes', () => {
     const h = { rotate: vi.fn(), dup: vi.fn(), del: vi.fn() };
     const onClose = vi.fn();

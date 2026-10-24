@@ -1,4 +1,4 @@
-"""Resource limits for solver runs (F2-13): a cooperative deadline and a cap on concurrent solves.
+"""Resource limits for solver runs: a cooperative deadline and a cap on concurrent solves.
 
 A running thread cannot be killed, so the solver calls check_deadline() from its residual function;
 that is evaluated in every Newton / LM iteration, so a run stops within one iteration of the deadline.

@@ -24,7 +24,7 @@ class RemoteControlValve(HydraulicNode):
         
         # Current physical opening (adjusted by solver)
         self.opening_pct = 100.0
-        self.locked_up = False  # closed PRV holding its setpoint downstream (F1-37), set by the solver
+        self.locked_up = False  # closed PRV holding its setpoint downstream, set by the solver
         self.sensed_pressure = 0.0
         
         self.add_inlet()
@@ -39,10 +39,10 @@ class RemoteControlValve(HydraulicNode):
         eff_opening = max(0.001, min(100.0, opening_pct)) / 100.0
         cv_eff = self.max_cv * eff_opening
 
-        # Reynolds number factor, IEC 60534-2-1 Annex A (D-29)
+        # Reynolds number factor, IEC 60534-2-1 Annex A
         fr = FluidProperties.get_iec_valve_fr(flow_rate, viscosity / density, cv_eff, self.max_cv,
                                               self.fl, self.fd, self.pipe_diameter)
-        cv_eff_adj = max(1e-10, cv_eff * fr)  # F_R is floored; keeps laminar Δp linear in Q (D-29)
+        cv_eff_adj = max(1e-10, cv_eff * fr)  # F_R is floored; keeps laminar Δp linear in Q
         
         K_CV_SI = 1.732e9
         dp = (K_CV_SI * density * flow_rate * abs(flow_rate)) / (cv_eff_adj**2)
@@ -77,5 +77,5 @@ class RemoteControlValve(HydraulicNode):
         inlet.density = FluidProperties.get_density(fluid_type, inlet.temperature)
         inlet.viscosity = FluidProperties.get_viscosity(fluid_type, inlet.temperature)
         
-        # Outlet temperature already includes the throttling heat (F1-16); do not overwrite it
+        # Outlet temperature already includes the throttling heat; do not overwrite it
         return dp

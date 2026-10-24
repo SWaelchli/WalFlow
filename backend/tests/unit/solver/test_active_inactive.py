@@ -1,6 +1,5 @@
 import pytest
 
-pytestmark = pytest.mark.audit("F3-16")
 
 import pytest
 
@@ -49,7 +48,7 @@ def test_inactive_centrifugal_pump():
     assert dp_pump < 0
 
 
-def test_f3_16_stopped_pump_between_equal_heads_passes_no_flow():
+def test_stopped_pump_between_equal_heads_passes_no_flow():
     gs = GlobalSettings(fluid_type="water")
     t1 = Tank("Source", fluid_level=1.0, temperature=293.15)
     p1 = CentrifugalPump("Pump", flow_rated=100.0/60000.0, head_rated=water_head(5.0e5), rise_to_shutoff_pct=20.0)

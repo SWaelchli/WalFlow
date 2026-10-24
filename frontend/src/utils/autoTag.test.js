@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { nextAutoTag, typeDisplayName } from './autoTag';
 
-describe('F3-13 auto tags', () => {
+describe('auto tags', () => {
   it('names a component after its type', () => {
     expect(nextAutoTag('centrifugal_pump', [])).toBe('Centrifugal Pump 1');
     expect(typeDisplayName('linear_control_valve')).toBe('Control Valve');

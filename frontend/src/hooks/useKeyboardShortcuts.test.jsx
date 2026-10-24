@@ -19,7 +19,7 @@ afterEach(() => {
   window.getSelection()?.removeAllRanges();
 });
 
-describe('F2-18 keyboard shortcuts', () => {
+describe('keyboard shortcuts', () => {
   it('act on the canvas when nothing else has the keyboard', () => {
     const h = handlers();
     render(<Host h={h} />);

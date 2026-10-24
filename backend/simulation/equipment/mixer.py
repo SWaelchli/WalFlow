@@ -31,7 +31,7 @@ class Mixer(HydraulicNode):
         self.calculate_temperature()
 
         # Every port with outward flow reports density and viscosity at the mixed temperature: the outlet,
-        # and inlets that carry reverse flow back to their pipe (D-18)
+        # and inlets that carry reverse flow back to their pipe
         self.update_outward_properties()
 
         return 0.0

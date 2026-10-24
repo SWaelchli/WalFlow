@@ -76,7 +76,7 @@ def approve_user(user_id: str, db: Session = Depends(get_db)):
     return {"status": "success", "message": f"User '{target_user.username}' has been approved."}
 
 def _is_last_active_admin(db: Session, user: User) -> bool:
-    """True when `user` is the only approved admin (F2-14: without one, /setup-admin reopens for visitors)."""
+    """True when `user` is the only approved admin (without one, /setup-admin reopens for visitors)."""
     if user.role != "admin" or user.status != "approved":
         return False
     others = db.query(User).filter(User.role == "admin", User.status == "approved", User.id != user.id).count()

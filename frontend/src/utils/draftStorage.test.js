@@ -13,7 +13,7 @@ beforeEach(() => {
   resetTabIdCache();
 });
 
-describe('per-tab drafts (F2-22)', () => {
+describe('per-tab drafts', () => {
   it('keeps the tab id across reloads (sessionStorage) and keys the draft by it', () => {
     const id = getTabId();
     resetTabIdCache();

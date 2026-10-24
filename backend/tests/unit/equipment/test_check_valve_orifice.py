@@ -44,11 +44,10 @@ WATER = (998.2, 1.0e-3)
 OIL = (870.0, 0.04)   # ISO VG 46 near 40 °C
 
 
-@pytest.mark.audit("D-09")
 @pytest.mark.parametrize("fluid", [WATER, OIL])
 @pytest.mark.parametrize("crack_bar", [0.0, 0.05, 0.3])
 @pytest.mark.parametrize("q_lmin", [-20.0, 0.5, 2.0, 5.0, 10.0, 60.0, 200.0])
-def test_d09_flow_splits_between_seat_and_orifice_at_one_valve_drop(fluid, crack_bar, q_lmin):
+def test_flow_splits_between_seat_and_orifice_at_one_valve_drop(fluid, crack_bar, q_lmin):
     # Seat and orifice see the same drop; the orifice no longer pays the cracking pressure on top
     rho, mu = fluid
     cvo = CheckValveOrifice("CVO", cv=10.0, cracking_pressure_bar=crack_bar, pipe_diameter=0.05248,
@@ -58,8 +57,7 @@ def test_d09_flow_splits_between_seat_and_orifice_at_one_valve_drop(fluid, crack
     assert _reference_flow(cvo, dp, rho, mu) == pytest.approx(q, rel=1e-8)
 
 
-@pytest.mark.audit("D-09")
-def test_d09_seat_has_the_viscosity_correction():
+def test_seat_has_the_viscosity_correction():
     # Above cracking a viscous oil needs a larger drop than an equally dense fluid at water viscosity
     cvo = CheckValveOrifice("CVO", cv=10.0, cracking_pressure_bar=0.05, pipe_diameter=0.05248, orifice_diameter=0.001)
     q = 60.0 / 60000.0
@@ -68,19 +66,17 @@ def test_d09_seat_has_the_viscosity_correction():
 
 
 
-@pytest.mark.audit("D-09")
 @pytest.mark.parametrize("q, rho, mu", [(float("nan"), 998.2, 1e-3), (1e-3, float("nan"), 1e-3),
                                         (1e-3, 998.2, float("nan"))])
-def test_d09_non_finite_state_does_not_raise(q, rho, mu):
+def test_non_finite_state_does_not_raise(q, rho, mu):
     # A diverged iterate passes through (NaN, or the orifice drop where the orifice law clamps it) for the solver
     cvo = CheckValveOrifice("CVO", cracking_pressure_bar=0.0, pipe_diameter=0.05248, orifice_diameter=0.005)
     dp = cvo.calculate_delta_p(q, rho, mu)
     assert math.isnan(dp) or dp == cvo._calculate_orifice_dp(q, rho, mu)
 
 
-@pytest.mark.audit("D-09")
 @pytest.mark.parametrize("q", [5e-324, 1e-310, 1e-300, 1e-20])
-def test_d09_tiny_forward_flow_with_zero_cracking_does_not_raise(q):
+def test_tiny_forward_flow_with_zero_cracking_does_not_raise(q):
     cvo = CheckValveOrifice("CVO", cracking_pressure_bar=0.0, pipe_diameter=0.05248, orifice_diameter=0.005)
     dp = cvo.calculate_delta_p(q, 998.2, 1e-3)
     assert 0.0 <= dp <= cvo._calculate_orifice_dp(q, 998.2, 1e-3)

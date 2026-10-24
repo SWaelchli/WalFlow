@@ -307,9 +307,8 @@ def test_flow_source_at_zero_flow_is_no_pressure_reference(method):
     assert source.pressure == pytest.approx(nodes["nrv"].outlets[0].pressure, abs=1.0)
 
 
-@pytest.mark.audit("D-09")
 @pytest.mark.parametrize("method", METHODS)
-def test_d09_section_behind_a_check_valve_with_orifice_takes_the_header_pressure(method):
+def test_section_behind_a_check_valve_with_orifice_takes_the_header_pressure(method):
     # The bypass orifice always connects both sides: at zero flow it has no pressure drop, so the section
     # between the stopped PD pump and the valve sits at header pressure, not at the pump suction pressure
     NetworkSolver.clear_warm_start_cache()

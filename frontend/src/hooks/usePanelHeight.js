@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 const MIN_HEIGHT = 160;
 const COLLAPSED_HEIGHT = 44; // tab header only
 
-/** Default height: 40 % of the window, between 300 and 480 px (F3-08). */
+/** Default height: 40 % of the window, between 300 and 480 px. */
 export const defaultPanelHeight = (viewportHeight) => Math.min(480, Math.max(300, Math.round(viewportHeight * 0.4)));
 
 export const clampPanelHeight = (value, viewportHeight) => Math.min(Math.round(viewportHeight * 0.8), Math.max(MIN_HEIGHT, Math.round(value)));

@@ -10,7 +10,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [adminStatus, setAdminStatus] = useState({ adminExists: true, pendingCount: 0 });
 
-  // F2-10: an expired session (401 on any non-auth call while logged in) logs out once, with a clear message
+  // An expired session (401 on any non-auth call while logged in) logs out once, with a clear message
   const userRef = useRef(null);
   useEffect(() => { userRef.current = currentUser; }, [currentUser]);
   useEffect(() => {

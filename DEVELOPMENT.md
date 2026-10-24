@@ -94,7 +94,7 @@ class NewEquipment(HydraulicNode):
         return dp
 ```
 
-No analytical `calculate_dp_derivative` is needed: the solver differentiates every component numerically except pipes and pumps (D-13, D-23).
+No analytical `calculate_dp_derivative` is needed: the solver differentiates every component numerically except pipes and pumps.
 
 #### Step A.2: Solver Stability Guidelines
 To ensure compatibility with the high-speed Newton solver:

@@ -33,7 +33,7 @@ class ModelInputError(ValueError):
 
 
 def _relief_pressure_barg(d: dict, key: str, name: str, what: str) -> float:
-    """Relief set / burst pressure in barg (F1-09). Files from before the switch store bar(a) under
+    """Relief set / burst pressure in barg. Files from before the switch store bar(a) under
     another key and are not converted: the device must be re-entered from its datasheet."""
     value = d.get(key)
     if value is None or value == '':
@@ -55,7 +55,7 @@ def _parse_signal_handle(handle) -> tuple:
 class GraphParser:
     @staticmethod
     def _npsh_value(d: dict, key: str, default: float, name: str) -> float:
-        """NPSHr / NPSH margin in m (F1-28); empty = default, negative is an input error."""
+        """NPSHr / NPSH margin in m; empty = default, negative is an input error."""
         v = d.get(key)
         v = default if v in (None, '') else float(v)
         if v < 0.0:
@@ -120,12 +120,12 @@ class GraphParser:
 
     @staticmethod
     def _validate_fluids(graph: ReactFlowGraph) -> None:
-        """F1-31: a fluid id that is not in the catalog is an input error (no silent water default)."""
+        """A fluid id that is not in the catalog is an input error (no silent water default)."""
         gs_fluid = getattr(graph.global_settings, 'fluid_type', None) if graph.global_settings else None
         ids = [("System fluid", gs_fluid or 'water')]
         for node in graph.nodes:
             if node.type == 'tank':
-                continue  # F1-23: tank fluid_type is ignored
+                continue  # tank fluid_type is ignored
             f = (node.data or {}).get('fluid_type')
             if f and f != 'system':
                 ids.append((f"'{(node.data or {}).get('label') or node.id}': fluid", f))
@@ -225,7 +225,7 @@ class GraphParser:
         for node_id, node in nodes_dict.items():
             if (hasattr(node, 'orifice_diameter') or node.node_type == 'calibrated_restriction'
                     or getattr(node, 'bore_type', '') == 'reduced_bore'
-                    # IEC 60534-2-1 Annex A F_R takes the valve size from the line (D-29)
+                    # IEC 60534-2-1 Annex A F_R takes the valve size from the line
                     or node.node_type in ('linear_control_valve', 'remote_control_valve', 'three_way_tcv')):
                 connected_d = None
                 # Check connected inlet pipes (upstream pipe diameter takes precedence)
@@ -270,7 +270,7 @@ class GraphParser:
         if node_data.type == 'heat_exchanger' and node.rated_flow_lmin <= 0.0:
             raise ModelInputError(f"'{name}': rated flow must be above 0 L/min.")
         if node_data.type in ('linear_control_valve', 'remote_control_valve', 'three_way_tcv'):
-            # IEC 60534-2-1 style factors divide and take roots in F_R (D-29)
+            # IEC 60534-2-1 style factors divide and take roots in F_R
             if not 0.0 < node.fl <= 1.0:
                 raise ModelInputError(f"'{name}': F_L must be above 0 and at most 1.")
             if node.fd <= 0.0:
@@ -278,7 +278,7 @@ class GraphParser:
 
     @staticmethod
     def _check_calibration_point(node: CalibratedRestriction, name: str) -> None:
-        """A calibrated restriction needs a positive flow and a positive pressure drop at the calibration point (D-08)."""
+        """A calibrated restriction needs a positive flow and a positive pressure drop at the calibration point."""
         if node.flow_base_lmin <= 0:
             raise ModelInputError(f"'{name}': calibration flow must be above 0 L/min.")
         if node.outlet_pressure_base_bar <= 0:
@@ -296,7 +296,7 @@ class GraphParser:
         
         node = None
         if t == 'tank':
-            # F1-23: a tank always uses the system fluid (a stale per-tank fluid_type in old files is ignored)
+            # A tank always uses the system fluid (a stale per-tank fluid_type in old files is ignored)
             fluid_type = getattr(global_settings, 'fluid_type', None) or 'water'
 
             node = Tank(
@@ -418,7 +418,7 @@ class GraphParser:
                 roughness=float(roughness_mm) / 1000.0 if roughness_mm is not None else None
             )
         elif t == 'heat_exchanger':
-            # F2-04: a missing rated pressure drop means the inspector default (0.5 bar), not "no drop"
+            # A missing rated pressure drop means the inspector default (0.5 bar), not "no drop"
             rated_flow = float(d.get('rated_flow_lmin', 500.0))
             rated_dp = float(d.get('rated_dp_bar', 0.5))
 

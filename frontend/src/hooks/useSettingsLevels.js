@@ -19,7 +19,7 @@ const writeLocalSolver = (solver) => {
 const onlySolver = (obj) => Object.fromEntries(SOLVER_KEYS.filter(k => obj?.[k] !== undefined).map(k => [k, obj[k]]));
 
 /**
- * F3-12: global (user) and project settings.
+ * Global (user) and project settings.
  * Global settings live in the database for logged-in users and in localStorage otherwise; a local
  * preference moves to the database on the first login. The unit system is a display preference only.
  */

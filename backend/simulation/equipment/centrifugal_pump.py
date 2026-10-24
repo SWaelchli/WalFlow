@@ -12,9 +12,9 @@ class CentrifugalPump(HydraulicNode):
     A Centrifugal Pump that adds head to the network.
     Uses the "Duty Point" methodology for engineering intuition.
 
-    Curve in head (F1-18): H(Q) = H0 + C·Q², with H0 = H_rated·(1 + rise/100), so the
+    Curve in head: H(Q) = H0 + C·Q², with H0 = H_rated·(1 + rise/100), so the
     pressure rise ΔP = ρ·g·H(Q) follows the fluid density.
-    - Running, reverse flow (F1-34): H = H0 − C·Q² (rises again), so a weaker parallel
+    - Running, reverse flow: H = H0 − C·Q² (rises again), so a weaker parallel
       pump dead-heads instead of passing reverse flow at shut-off head.
     - Stopped (D2): locked-rotor resistance in both directions,
       ΔP = −ρ·g·H_rated·[(1−ε)·x·|x| + ε·x], x = Q/Q_rated, ε = 5 % (rated head lost at rated flow).
@@ -106,7 +106,7 @@ class CentrifugalPump(HydraulicNode):
         inlet = self.inlets[0]
         outlet = self.outlets[0]
 
-        # NPSH check (F1-28)
+        # NPSH check
         fluid_type = self.global_settings.fluid_type if self.global_settings else 'water'
         self.update_npsh(inlet)
 

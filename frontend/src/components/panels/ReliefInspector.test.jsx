@@ -21,7 +21,7 @@ const renderInspector = (node, unitSystem = UNIT_SYSTEMS.METRIC) => {
 const psv = (data) => ({ id: 'psv', type: 'pressure_safety_valve', position: { x: 0, y: 0 }, data: { label: 'PSV-1', ...data } });
 const disc = (data) => ({ id: 'rd', type: 'rupture_disc', position: { x: 0, y: 0 }, data: { label: 'RD-1', ...data } });
 
-describe('F1-09: relief set pressure in gauge', () => {
+describe('relief set pressure in gauge', () => {
   it('warns when an older PSV only has a set pressure in bar(a)', () => {
     renderInspector(psv({ set_pressure_bar: 20 }));
     expect(screen.getAllByText(/Set Pressure \(barg\)/).length).toBe(2);   // label and alert

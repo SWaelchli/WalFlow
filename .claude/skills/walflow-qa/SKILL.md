@@ -41,7 +41,7 @@ For a **bug fix**, work down the list and stop at the first that fits. Write the
    until it fails on the bug. If hypothesis needed a rare input, pin it with `@example(...)` so it is always
    replayed. No new test function.
 2. **A wrong number for one component.** Add a row to that component's reference table:
-   `pytest.param(..., id="D-09")`, so the audit ID stays searchable. No new test function.
+   `pytest.param(..., id="flow_reversal_heats_inlet")`, with an id that says what the row checks. No new test function.
 3. **Only a specific topology shows it.** Add a case to an existing scenario module, or a new scenario if no
    module fits.
 4. **Nothing above fits.** Add a test function and say in the commit message why 1–3 did not fit.
@@ -78,9 +78,9 @@ browser tests.
 ## Rules
 
 1. **Name by subject, not by origin.** `test_regulator_lockup.py`, not `test_f1_37.py`. Names are unique across the tree.
-2. **Audit / review IDs are markers or param IDs.** `pytestmark = pytest.mark.audit("F1-24")` on a file,
-   `@pytest.mark.audit(...)` on a test, or `pytest.param(..., id="D-09")` on a table row. Find them with
-   `pytest -m audit` or by searching the ID.
+2. **No finding or audit IDs.** Finding lists (`EQUIPMENT_FINDINGS.md`, audits) are temporary, so test names,
+   param ids, markers and comments describe the behaviour, never `D-xx` / `F1-xx`. An open finding may be named
+   while it is open (e.g. a known-failure note); remove the ID when it is fixed.
 3. **Fix a bug test-first.** Follow the decision tree above; the test must fail before the fix.
 4. **Assert against an independent reference.** Closed-form values or `helpers/physics_refs.py`, never a copy of
    the production formula. Properties assert laws, not the implementation. No bare `dt > 0` checks, no `print`.
@@ -92,7 +92,7 @@ browser tests.
    `helpers/strategies.py`, reference formulas in `helpers/physics_refs.py`.
 8. **Tests must pass in any order.** `pytest-randomly` shuffles the run. Give every test its own state.
 9. **Test what the app uses.** Do not test dead code paths. Example: the solver differentiates most components
-   numerically (D-13), so their `calculate_dp_derivative` is not checked; pipe and pump derivatives are.
+   numerically, so their `calculate_dp_derivative` is not checked; pipe and pump derivatives are.
 
 ## Property tests (hypothesis)
 

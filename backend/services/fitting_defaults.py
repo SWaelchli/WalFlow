@@ -537,7 +537,7 @@ EXAMPLE_FITTING_STANDARDS = [
         "is_builtin": True,
         "dimensions": DIN_EN_PIPE_SCHEDULES_DATA
     },
-    # Control valve styles share the catalogue (fitting_type "control_valve", D-29)
+    # Control valve styles share the catalogue (fitting_type "control_valve")
     *EXAMPLE_VALVE_STYLE_CATALOGUES,
 ]
 

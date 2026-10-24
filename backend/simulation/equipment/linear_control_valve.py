@@ -1,7 +1,7 @@
 from simulation.equipment.base_node import HydraulicNode
 from simulation.fluid_utils import FluidProperties
 
-# Smallest Cv-controlled opening; below it the valve is closed (D-11)
+# Smallest Cv-controlled opening; below it the valve is closed
 MIN_OPENING_PCT = 0.1
 CLOSED_STIFFNESS = 1e12  # Pa s/m^3, linear resistance of a closed valve
 
@@ -40,10 +40,10 @@ class LinearControlValve(HydraulicNode):
         # Calculate the effective Cv (assuming a linear trim)
         cv_eff = self.max_cv * effective_opening
         
-        # Reynolds number factor, IEC 60534-2-1 Annex A (D-29)
+        # Reynolds number factor, IEC 60534-2-1 Annex A
         fr = FluidProperties.get_iec_valve_fr(flow_rate, viscosity / density, cv_eff, self.max_cv,
                                               self.fl, self.fd, self.pipe_diameter)
-        cv_eff_adj = max(1e-10, cv_eff * fr)  # F_R is floored; keeps laminar Δp linear in Q (D-29)
+        cv_eff_adj = max(1e-10, cv_eff * fr)  # F_R is floored; keeps laminar Δp linear in Q
         
         # Conversion constant: (15850.32^2 * 6894.76 / 1000) approx 1.732e9
         K_CV_SI = 1.732e9
@@ -86,6 +86,6 @@ class LinearControlValve(HydraulicNode):
         inlet.density = FluidProperties.get_density(fluid_type, inlet.temperature)
         inlet.viscosity = FluidProperties.get_viscosity(fluid_type, inlet.temperature)
         
-        # Outlet temperature already includes the throttling heat (F1-16); do not overwrite it
+        # Outlet temperature already includes the throttling heat; do not overwrite it
         
         return dp

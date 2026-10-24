@@ -136,7 +136,7 @@ def pumps(draw, node_type: str):
 
 # Components placed inside generated networks. Their behaviour is a function of the local flow only,
 # so every generated network has exactly one steady state; controllers, relief devices and the 3-way TCV
-# have their own scenarios. The reducer is left out (D-19): a junction joining pipes of different
+# have their own scenarios. The reducer is left out: a junction joining pipes of different
 # diameters keeps one static pressure and so gains kinetic energy for free, which a reducer turns back
 # into static pressure; such a loop can have no steady state.
 NETWORK_COMPONENTS = {
@@ -211,7 +211,7 @@ def networks(draw, max_depth: int = 3, components=tuple(sorted(NETWORK_COMPONENT
         _, other_temp_k, _, _ = draw(fluid_states(fluids=[fluid]))
         mix = add_node("mixer", {})
         # A source is sometimes low (down to 1 bara) so the sink tank can sit above it: flow then runs backwards
-        # through the mixer outlet and an inlet (D-18)
+        # through the mixer outlet and an inlet
         for k, t in enumerate((temp_k, other_temp_k)):
             source = add_node("pressure_source", {
                 "source_pressure_bara": draw(st.one_of(st.floats(1.5, 20.0), st.floats(1.0, 1.6))),

@@ -1,7 +1,6 @@
-"""F1-15: the reported pressures belong to the reported temperatures, and the status says whether that was reached."""
+"""The reported pressures belong to the reported temperatures, and the status says whether that was reached."""
 import pytest
 
-pytestmark = pytest.mark.audit("F1-15")
 
 import pytest
 

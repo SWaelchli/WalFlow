@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
 
-/** F2-18: an open modal owns the keyboard; the canvas shortcuts must not act behind it. */
+/** An open modal owns the keyboard; the canvas shortcuts must not act behind it. */
 export const isModalOpen = () => typeof document !== 'undefined' && document.querySelector('.modal-overlay, [role="dialog"], [aria-modal="true"]') !== null;
 
-/** F2-18: text selected on the page (results, tables) is copied natively, not as canvas components. */
+/** Text selected on the page (results, tables) is copied natively, not as canvas components. */
 export const hasTextSelection = () => {
   const sel = typeof window !== 'undefined' && window.getSelection ? window.getSelection() : null;
   return !!sel && !sel.isCollapsed && sel.toString().trim() !== '';

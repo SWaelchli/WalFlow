@@ -8,7 +8,7 @@ const user = { solver: { tolerance: 1e-8, solver_method: 'lm' } };
 const project = { use_project_solver: true, solver: { tolerance: 1e-4, control_iterations: 50 } };
 const drawing = { use_drawing_solver: true, tolerance: 1e-5, control_iterations: 90, fluid_type: 'water' };
 
-describe('F3-12 solver precedence: Drawing > Project > Global', () => {
+describe('solver precedence: Drawing > Project > Global', () => {
   // every combination of the two checkboxes, with and without a project open
   const cases = [
     { d: false, p: false, hasProject: true, source: 'global', tol: 1e-8 },
@@ -51,7 +51,7 @@ describe('F3-12 solver precedence: Drawing > Project > Global', () => {
   });
 });
 
-describe('F3-12 result hash follows the effective solver settings', () => {
+describe('result hash follows the effective solver settings', () => {
   const graph = (gs, extra) => ({ nodes: [], edges: [], cases: [{ id: 'c', is_base: true }], globalSettings: withEffectiveSolver(gs, extra) });
   const base = { ...drawing, use_drawing_solver: false };
 
@@ -74,7 +74,7 @@ describe('F3-12 result hash follows the effective solver settings', () => {
   });
 });
 
-describe('F3-12 migration of existing files', () => {
+describe('migration of existing files', () => {
   it('a file without the flag keeps its solver values as a ticked drawing override', () => {
     const m = migrateDrawingSettings({ tolerance: 1e-7, unit_system: 'imperial' });
     expect(m.use_drawing_solver).toBe(true);

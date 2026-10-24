@@ -717,7 +717,7 @@ export default function Sidebar({
   const [settingsSubTab, setSettingsSubTab] = useState('drawing'); // 'drawing' | 'project' | 'global'
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Solver settings on the three levels (F3-12): Drawing > Project > Global
+  // Solver settings on the three levels: Drawing > Project > Global
   const solverInForce = resolveSolverSettings({ drawing: globalSettings, project: projectSettings, user: userSettings });
   const solverBelowDrawing = resolveSolverSettings({ drawing: { use_drawing_solver: false }, project: projectSettings, user: userSettings });
   const solverBelowProject = resolveSolverSettings({ user: userSettings });

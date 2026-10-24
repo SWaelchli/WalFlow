@@ -1,7 +1,6 @@
 """Code-review fixes: TR2000 request paths are validated, upstream errors are not echoed to the client."""
 import pytest
 
-pytestmark = pytest.mark.audit("review-4")
 
 import uuid
 

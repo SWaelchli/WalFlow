@@ -83,7 +83,7 @@ export default function SetupPanel({
     </div>
   );
 
-  // NPSH inputs shared by both pump types (F1-28); lengths are shown in metres / feet
+  // NPSH inputs shared by both pump types; lengths are shown in metres / feet
   const renderNpshFields = () => (
     <>
       <div>
@@ -117,7 +117,7 @@ export default function SetupPanel({
   const validateAndCommit = (field, rawValue, isCritical = false, { toSi } = {}) => {
     let finalValue = rawValue;
 
-    // F2-05: leaving an untouched field must not rewrite it with its rounded display value
+    // Leaving an untouched field must not rewrite it with its rounded display value
     if (!Object.prototype.hasOwnProperty.call(localDrafts, field)) return;
 
     // Handle empty string

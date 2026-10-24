@@ -24,7 +24,7 @@ class Pipe(HydraulicNode):
         self.length = length                    # Pipe length (meters)
         self.diameter = diameter                # Internal diameter (meters)
         # Absolute surface roughness (meters); 0 is a valid (hydraulically smooth) roughness,
-        # only a missing value takes the default (D-06)
+        # only a missing value takes the default
         self.roughness = 0.000045 if roughness is None else roughness
         
         # Precalculate invariant geometric terms
@@ -40,7 +40,7 @@ class Pipe(HydraulicNode):
         self.add_outlet()
 
     def _friction_factor(self, re: float) -> float:
-        """Darcy friction factor, Churchill (1977) shared with the reducer (F1-21, D-07)."""
+        """Darcy friction factor, Churchill (1977) shared with the reducer."""
         return FluidProperties.get_darcy_friction_factor(re, self.rel_roughness)
 
     def _leaves_reservoir(self, flow_rate: float) -> bool:

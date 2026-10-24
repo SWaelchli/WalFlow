@@ -1,9 +1,7 @@
-"""F1-20: the "Data Fields" sections of backend/simulation/equipment/*.md list exactly the node and pipe data
+"""The "Data Fields" sections of backend/simulation/equipment/*.md list exactly the node and pipe data
 fields the parser reads, and every dimensional field carries its unit in the name."""
 from walflow_paths import REPO_ROOT
-import pytest
 
-pytestmark = pytest.mark.audit("F1-20")
 
 import glob
 import os

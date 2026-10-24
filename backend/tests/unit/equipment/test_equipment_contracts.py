@@ -4,7 +4,7 @@ These replace per-component copies of the same checks: a new two-port resistance
 adding its node data strategy to helpers/strategies.py. Component-specific numbers (calibration points,
 standards, worked examples) stay in the component's own reference tests.
 
-Analytic derivatives are only checked where the solver uses them (pipes and pumps, D-13); every other
+Analytic derivatives are only checked where the solver uses them (pipes and pumps); every other
 component is differentiated numerically by the solver, so its calculate_dp_derivative is not a contract.
 """
 import math

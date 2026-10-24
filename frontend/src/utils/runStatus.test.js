@@ -22,7 +22,7 @@ describe('summarizeStats', () => {
     expect(s.detail).toMatch(/No pressure reference/);
   });
 
-  it('zero equations is not reported as converged (F3-04)', () => {
+  it('zero equations is not reported as converged', () => {
     const s = summarizeStats(okStats({ num_edges: 0, system_size: 0 }));
     expect(s.level).toBe('nothing');
     expect(s.headline).toBe('Nothing to solve');

@@ -1,4 +1,4 @@
-// F2-28 / F2-22: cheap "did anything real change?" keys for the diagram.
+// Cheap "did anything real change?" keys for the diagram.
 //
 // React Flow replaces a node object on every drag frame and selection change, so effects that depend on
 // `nodes` run constantly. These keys change only when content the consumer cares about changes: the solver

@@ -11,7 +11,7 @@ const node = (id, extra = {}) => ({ id, type: 'tank', position: { x: 0, y: 0 }, 
 const good = () => ({ version: '0.2', nodes: [node('a'), node('b')], edges: [{ id: 'e', source: 'a', target: 'b', data: {} }] });
 const TYPES = new Set(['tank', 'centrifugal_pump']);
 
-describe('F0-02: one version check for every load path', () => {
+describe('one version check for every load path', () => {
   it('accepts the current format only', () => {
     expect(checkFormatVersion({ version: '0.2' })).toBeNull();
     expect(checkFormatVersion({ version: '0.1' })).toMatch(/format 0\.1.*needs format 0\.2/);
@@ -19,7 +19,7 @@ describe('F0-02: one version check for every load path', () => {
   });
 });
 
-describe('F2-10: structural validation', () => {
+describe('structural validation', () => {
   it('accepts a sound diagram', () => {
     expect(validateDiagramStructure(good(), TYPES)).toEqual([]);
   });
@@ -50,7 +50,7 @@ describe('F2-10: structural validation', () => {
   });
 });
 
-describe('F2-22: results are not stored in files or solver messages', () => {
+describe('results are not stored in files or solver messages', () => {
   const withResults = () => ({
     nodes: [node('a', { data: { label: 'a', telemetry: { x: 1 }, onRotate: () => {}, opening: 50 } })],
     edges: [{ id: 'e', source: 'a', target: 'a', data: { telemetry: { y: 2 }, length: 5 } }],
@@ -74,14 +74,14 @@ describe('F2-22: results are not stored in files or solver messages', () => {
   });
 });
 
-describe('F2-04: drop defaults of a heat exchanger', () => {
+describe('drop defaults of a heat exchanger', () => {
   it('include the rated pressure drop the inspector shows', () => {
     expect(HEAT_EXCHANGER_DEFAULTS.rated_dp_bar).toBe(0.5);
     expect(HEAT_EXCHANGER_DEFAULTS.rated_flow_lmin).toBe(500);
   });
 });
 
-describe('shipped diagrams (F0-02, F2-22)', () => {
+describe('shipped diagrams', () => {
   const dataDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'data');
   const files = [
     ...readdirSync(join(dataDir, 'examples')).filter(f => f.endsWith('.wlf')).map(f => join(dataDir, 'examples', f)),

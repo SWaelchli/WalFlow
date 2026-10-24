@@ -1,10 +1,8 @@
 """
-F1-08: the peak relief pressure is a steady state found on a ramp of the relief drivers
+The peak relief pressure is a steady state found on a ramp of the relief drivers
 (pumps, sources), not an interpolation between the unmitigated and relieved states.
 """
-import pytest
 
-pytestmark = pytest.mark.audit("F1-08")
 
 import math
 
@@ -27,7 +25,7 @@ P_ATM_BAR = 1.01325
 
 
 def barg(bara):
-    """Set pressures are entered in barg (F1-09); the reference values below are bar(a)."""
+    """Set pressures are entered in barg; the reference values below are bar(a)."""
     return bara - P_ATM_BAR
 
 
@@ -103,7 +101,7 @@ def test_pop_psv_opening_snapshot_is_at_set_pressure():
     assert abs(dev["opening_ramp_pct"] / 100.0 - lam_expected) < 0.005
 
     # The peak is the higher of the opening snapshot (the closed PSV dead-heads the pump at its set pressure)
-    # and the relieved state. The Cv 15 pop valve is oversized for this pump: it would cycle (F1-04), so the
+    # and the relieved state. The Cv 15 pop valve is oversized for this pump: it would cycle, so the
     # relieved state holds the inlet between set pressure and full lift at +10 %, which is the peak here.
     peak = tel["relief"]["peak"]
     assert psv.status == "cycling"

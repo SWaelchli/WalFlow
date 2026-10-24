@@ -59,10 +59,9 @@ def test_volumetric_pump_heats_the_fluid_by_its_inefficiency():
     assert _actual_rise(pump) == pytest.approx(_expected_rise(pump, 0.1), rel=2e-3)
 
 
-@pytest.mark.audit("D-10")
 @pytest.mark.parametrize("efficiency", [0.02, 0.05, 0.08, 1.0])
 @pytest.mark.parametrize("kind", ["centrifugal", "volumetric"])
-def test_d10_heat_is_shaft_power_minus_hydraulic_power_at_low_efficiency(kind, efficiency):
+def test_heat_is_shaft_power_minus_hydraulic_power_at_low_efficiency(kind, efficiency):
     # One efficiency in both formulas, down to the 1 % input minimum: no hidden 5 % or 10 % floor
     if kind == "centrifugal":
         pump = _solve_pump(CentrifugalPump("Pump", flow_rated=0.01, head_rated=water_head(1000000.0), efficiency=efficiency))
@@ -94,9 +93,8 @@ def _solve_braking(pump):
     return pump
 
 
-@pytest.mark.audit("D-10")
 @pytest.mark.parametrize("kind", ["centrifugal", "volumetric"])
-def test_d10_braking_pump_turns_all_its_pressure_drop_into_heat(kind):
+def test_braking_pump_turns_all_its_pressure_drop_into_heat(kind):
     # The fluid does work on the pump: like a throttle, all of Q·|dP| becomes heat, whatever the efficiency
     if kind == "centrifugal":
         pump = CentrifugalPump("Pump", flow_rated=0.002, head_rated=5.0, efficiency=0.3)
@@ -126,9 +124,8 @@ def _pump_at(pump, flow_rate):
     return dp, exit_port.temperature - entry_port.temperature
 
 
-@pytest.mark.audit("D-10")
 @pytest.mark.parametrize("kind", ["centrifugal", "volumetric"])
-def test_d10_heat_does_not_depend_on_the_sign_of_a_near_zero_flow(kind):
+def test_heat_does_not_depend_on_the_sign_of_a_near_zero_flow(kind):
     # A dead-headed pump sits at Q = ±noise: the heat must not jump between iterations
     def make():
         if kind == "centrifugal":
@@ -140,8 +137,7 @@ def test_d10_heat_does_not_depend_on_the_sign_of_a_near_zero_flow(kind):
     assert rise_minus == pytest.approx(rise_plus, rel=1e-6)
 
 
-@pytest.mark.audit("D-10")
-def test_d10_running_pump_in_reverse_flow_still_draws_shaft_power():
+def test_running_pump_in_reverse_flow_still_draws_shaft_power():
     # A stronger parallel pump pushes flow back through a running one (Q < 0, dP > 0): the motor still drives
     # the impeller, shaft power |Q|·dP/eta, heat (1 - eta)/eta of |dP| on the inlet side
     pump = CentrifugalPump("Pump", flow_rated=0.01, head_rated=50.0, efficiency=0.5)

@@ -1,9 +1,6 @@
-"""F1-41: pressure regulators – at setpoint when reachable, otherwise saturated on the physically correct side."""
-import pytest
+"""Pressure regulators – at setpoint when reachable, otherwise saturated on the physically correct side."""
 
-pytestmark = pytest.mark.audit("F1-41")
 
-import pytest
 
 from physics_refs import solve, water_head
 from networks import assert_regulator_consistent, ID_1IN, ATM

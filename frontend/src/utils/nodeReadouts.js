@@ -1,5 +1,5 @@
-// F3-10: canvas readouts are "not calculated" (null -> "—") until a run has produced telemetry,
-// never 0 bar or 0 L/min. A pressure drop is shown as a positive "ΔP" in the neutral text colour (F3-11).
+// Canvas readouts are "not calculated" (null -> "—") until a run has produced telemetry,
+// never 0 bar or 0 L/min. A pressure drop is shown as a positive "ΔP" in the neutral text colour.
 
 const portValue = (telemetry, side, field) => {
   const v = telemetry?.[side]?.[0]?.[field];

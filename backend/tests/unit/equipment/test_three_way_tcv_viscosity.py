@@ -1,8 +1,7 @@
-"""F1-05: the solver uses the real (oil) viscosity for TCV path losses, so the solved
+"""The solver uses the real (oil) viscosity for TCV path losses, so the solved
 pressures agree with the TCV's own viscous path ΔP and with Darcy–Weisbach in the feed pipes."""
 import pytest
 
-pytestmark = pytest.mark.audit("F1-05")
 
 import pytest
 
@@ -15,7 +14,7 @@ FLUID = "iso_vg_46"
 D, L = 0.025, 5.0
 
 
-def test_f1_05_tcv_paths_consistent_with_viscous_dp():
+def test_tcv_paths_consistent_with_viscous_dp():
     hot = Tank("Hot", fluid_level=12.0, temperature=60 + 273.15, fluid_type=FLUID)
     cold = Tank("Cold", fluid_level=12.0, temperature=15 + 273.15, fluid_type=FLUID)
     sink = Tank("Sink", fluid_level=0.0, temperature=40 + 273.15, fluid_type=FLUID)

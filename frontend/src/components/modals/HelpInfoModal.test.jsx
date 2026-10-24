@@ -5,7 +5,7 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 afterEach(cleanup);
 import HelpInfoModal from './HelpInfoModal';
 
-describe('HelpInfoModal (F3-07, F2-27)', () => {
+describe('HelpInfoModal', () => {
   it('is an accessible dialog named by its title, and focus stays inside on Tab', () => {
     render(<div><button>opener</button><HelpInfoModal isOpen onClose={() => {}} initialTab="guide" /></div>);
     const dialog = screen.getByRole('dialog');

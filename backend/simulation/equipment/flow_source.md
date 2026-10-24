@@ -44,12 +44,12 @@ The flow deviation is the delivered pressure rise divided by $k$. It is negligib
 
 $$-\left(P_{\text{max}} - P_{\text{atm}}\right) \le \Delta P \le 20\ \text{MPa}$$
 
-- **Maximum discharge pressure** $P_{\text{max}}$ (user input, absolute): the outlet pressure cannot rise above it. When the downstream network needs more, the source delivers less than $Q_{\text{set}}$, like a pump on its relief valve, and `pressure_cap_reached` is set (outlet within 1 Pa of $P_{\text{max}}$, audit F1-24). The UI then warns that the delivered flow is below the set flow.
+- **Maximum discharge pressure** $P_{\text{max}}$ (user input, absolute): the outlet pressure cannot rise above it. When the downstream network needs more, the source delivers less than $Q_{\text{set}}$, like a pump on its relief valve, and `pressure_cap_reached` is set (outlet within 1 Pa of $P_{\text{max}}$). The UI then warns that the delivered flow is below the set flow.
 - **20 MPa** on the other side is a numerical guard for solver search steps, not a physical limit.
 
 ### 3.4 Derivative
 
-The class has no analytical derivative; the solver differentiates the outlet pressure numerically (see [base_node.md](base_node.md#33-jacobian), D-23). The slope is $k$ between the limits and 0 on a limit.
+The class has no analytical derivative; the solver differentiates the outlet pressure numerically (see [base_node.md](base_node.md#33-jacobian)). The slope is $k$ between the limits and 0 on a limit.
 
 ### 3.5 Relief analysis ramp
 

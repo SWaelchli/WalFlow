@@ -11,7 +11,6 @@ from db.database import init_db, engine, Base, SessionLocal
 from db.models import User, PipeClass, Project, FittingStandard
 from auth import hash_password, create_access_token
 
-pytestmark = pytest.mark.audit("pipe-class-review")
 
 B10 = "ASME_B36_10M_SCHEDULES"
 B19 = "ASME_B36_19M_SCHEDULES"

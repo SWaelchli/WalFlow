@@ -5,12 +5,12 @@ import uuid
 from simulation.schemas import Port
 from simulation.fluid_utils import FluidProperties
 
-# Lowest pump efficiency the parser accepts (1 %); guards shaft power and heat against division by zero (D-10)
+# Lowest pump efficiency the parser accepts (1 %); guards shaft power and heat against division by zero
 MIN_PUMP_EFFICIENCY = 0.01
 
 
 def pump_shaft_power(flow_rate: float, dp_rise: float, efficiency: float, active: bool = True) -> float:
-    """Shaft power (W) of a pump (D-10): |Q|·dP/eta while it raises the pressure (dP > 0), in reverse flow too,
+    """Shaft power (W) of a pump: |Q|·dP/eta while it raises the pressure (dP > 0), in reverse flow too,
     where the motor still drives the impeller; 0 when it is stopped or braking (dP <= 0)."""
     if not active or dp_rise <= 0:
         return 0.0
@@ -18,7 +18,7 @@ def pump_shaft_power(flow_rate: float, dp_rise: float, efficiency: float, active
 
 
 def pump_heat_factor(dp_rise: float, efficiency: float, active: bool = True) -> float:
-    """Share of the pump |dP| that heats the fluid (D-10): (1 - eta)/eta while it raises the pressure, so the heat
+    """Share of the pump |dP| that heats the fluid: (1 - eta)/eta while it raises the pressure, so the heat
     is P_shaft - |Q|·dP; 1 when it is stopped or braking (dP < 0), as in a throttle. Depends on the sign of dP
     only, so the heat does not jump when a dead-headed pump's flow changes sign."""
     if not active or dp_rise < 0:
@@ -44,7 +44,7 @@ class HydraulicNode:
         self.blocks_flow_on_shutdown = False
         self.use_mcp_formulation = False
 
-        # Relief analysis (F1-08): drivers (pumps, sources) scale with a ramp factor to find the
+        # Relief analysis: drivers (pumps, sources) scale with a ramp factor to find the
         # steady state at which a relief device reaches its set pressure. Subclasses that drive
         # the system set is_relief_driver and override apply_relief_ramp / reset_relief_ramp.
         self.is_relief_driver = False
@@ -91,7 +91,7 @@ class HydraulicNode:
         # to the outward ports yet, we just propagate the inward temperature.
         # Specialized nodes (HX, Orifice) set their outlet temp BEFORE calling this.
         
-        # Enthalpy balance (F1-42): sum(m_i * h_i) = m_total * h_mix, with h = integral of cp dT
+        # Enthalpy balance: sum(m_i * h_i) = m_total * h_mix, with h = integral of cp dT
         fluid_type = getattr(self.global_settings, 'fluid_type', 'water')
         weighted_temp_sum = 0.0
         enthalpy_sum = 0.0
@@ -115,7 +115,7 @@ class HydraulicNode:
         return any(p.flow_rate > 0 for p in self.inlets) or any(p.flow_rate < 0 for p in self.outlets)
 
     def update_outward_properties(self) -> None:
-        """Density and viscosity of the ports with outward flow at their own temperature (junctions, D-01)."""
+        """Density and viscosity of the ports with outward flow at their own temperature (junctions)."""
         if not self.global_settings:
             return
         fluid_type = self.global_settings.fluid_type
@@ -125,7 +125,7 @@ class HydraulicNode:
             port.viscosity = FluidProperties.get_viscosity(fluid_type, port.temperature)
 
     def update_npsh(self, inlet) -> None:
-        """NPSHa = (P_in - Pv)/(rho g) at a pump suction (F1-28), always reported. The cavitation warning is
+        """NPSHa = (P_in - Pv)/(rho g) at a pump suction, always reported. The cavitation warning is
         raised when NPSHa < NPSHr + margin (NPSHr 0 when no datasheet value is entered)."""
         fluid_type = getattr(self.global_settings, 'fluid_type', 'water')
         pv = FluidProperties.get_vapor_pressure(fluid_type, inlet.temperature)

@@ -1,7 +1,6 @@
 """Code-review fixes: library imports tolerate duplicates and bad entries."""
 import pytest
 
-pytestmark = pytest.mark.audit("review-3")
 
 import uuid
 

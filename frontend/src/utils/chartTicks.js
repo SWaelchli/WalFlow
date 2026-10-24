@@ -1,4 +1,4 @@
-// F3-14: round axis ticks (0, 20, 40 ... instead of raw floats such as 13.349999).
+// Round axis ticks (0, 20, 40 ... instead of raw floats such as 13.349999).
 
 /** Round step (1, 2, 2.5, 5 x 10^n) that covers `max` in about `count` intervals. */
 export const niceStep = (max, count = 5) => {

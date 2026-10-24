@@ -1,11 +1,8 @@
-"""F1-14: the warm-start cache is safe under concurrent solves and never decides the answer."""
-import pytest
+"""The warm-start cache is safe under concurrent solves and never decides the answer."""
 
-pytestmark = pytest.mark.audit("F1-14")
 
 import threading
 
-import pytest
 
 from physics_refs import solve
 from simulation.equipment.pipe import Pipe

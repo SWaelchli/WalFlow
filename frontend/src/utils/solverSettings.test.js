@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { parseSolverSetting } from './solverSettings';
 
-describe('F2-17: solver setting entries', () => {
+describe('solver setting entries', () => {
   it('accepts values in range', () => {
     expect(parseSolverSetting('tolerance', '1e-6')).toEqual({ ok: true, value: 1e-6 });
     expect(parseSolverSetting('control_iterations', '100')).toEqual({ ok: true, value: 100 });

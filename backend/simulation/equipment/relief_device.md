@@ -21,7 +21,7 @@ Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_RE
 
 ## 3. Physical & Mathematical Implementation
 
-### 3.1 Set pressure (audit F1-09)
+### 3.1 Set pressure
 
 Set and burst pressures are entered in **barg**. A device acts on its inlet gauge pressure:
 
@@ -53,7 +53,7 @@ The solver row for the device's edge is (see [base_node.md](base_node.md#34-comp
 
 $$g = \frac{Q - Q_{\text{model}}(Q, P_{\text{in}}, P_{\text{out}})}{10^{-3}} = 0$$
 
-with $P_{\text{out}}$ estimated as the downstream node pressure plus the outlet pipe loss. The Jacobian of this row is a numerical central difference of the whole row (audit F1-12).
+with $P_{\text{out}}$ estimated as the downstream node pressure plus the outlet pipe loss. The Jacobian of this row is a numerical central difference of the whole row.
 
 ### 3.4 Lift
 
@@ -67,7 +67,7 @@ $$\Delta P_{\text{ol}} = \max(1000\ \text{Pa},\ 0.10 \cdot P_{\text{set,g}} \cdo
 
 is the full-lift overpressure: 10 % of the gauge set pressure (`RATED_OVERPRESSURE`, API 520 liquid service), at least 10 mbar. The band $\Delta P_{\text{band}}$ (`modulating_band_pa`) is $\Delta P_{\text{ol}}$; a cycling PSV narrows it (see [pressure_safety_valve.md](pressure_safety_valve.md)). Each component decides which mode applies.
 
-### 3.5 Rated capacity (audit F1-38)
+### 3.5 Rated capacity
 
 The rated flow is the flow at full lift with the inlet at 110 % of the set pressure (gauge) against the actual outlet pressure:
 
@@ -79,7 +79,7 @@ $$Q_{\text{rated}} = \sqrt{\frac{P_{\text{set,abs}} + \Delta P_{\text{ol}} - P_{
 - `rated_flow_lmin`, `lift_pct`;
 - `status`: `closed` / `intact`; when open, `modulating` (PSV, lift below 99.9 %), `open` (full lift) / `burst`, or `cycling` (PSV); `overcapacity` above 100 %. An open device without flow (no pressure difference) is reported open with 0 % utilisation.
 
-### 3.6 Forced states (audit F1-03)
+### 3.6 Forced states
 
 | `forced_state` | Effect |
 | :--- | :--- |
@@ -93,7 +93,7 @@ A network with relief devices runs three kinds of solves. All are steady states;
 
 1. **Unmitigated:** every device held closed. Gives the pressure the system would reach without protection.
 2. **Relieved (sequential passes):** user-forced devices return to their forced state; `auto` devices start held closed. After each solve, the closed `auto` devices whose opening margin reached zero are found; the group with the lowest set pressure is released (state `auto`) and the network is solved again. Higher-set devices are released only if the lower ones cannot hold the pressure. Leakage alone (a stagnant section's pressure) does not lift a held device.
-3. **Opening snapshots (audit F1-08):** for each released group, the relief drivers (pumps and sources with `is_relief_driver` and "Ramp during relief analysis" on) are scaled by a factor $\lambda$ from 0 to their case value. $\lambda$ is bisected (up to 24 solves, until the margin is below 1 mbar or $\Delta\lambda < 10^{-4}$) until the group's opening margin is zero (for an inlet-gauge device, the inlet is exactly at set pressure), with earlier groups free to relieve and later devices held closed. This runs on a copy of the network.
+3. **Opening snapshots:** for each released group, the relief drivers (pumps and sources with `is_relief_driver` and "Ramp during relief analysis" on) are scaled by a factor $\lambda$ from 0 to their case value. $\lambda$ is bisected (up to 24 solves, until the margin is below 1 mbar or $\Delta\lambda < 10^{-4}$) until the group's opening margin is zero (for an inlet-gauge device, the inlet is exactly at set pressure), with earlier groups free to relieve and later devices held closed. This runs on a copy of the network.
 
 | Driver | Ramp $\lambda$ |
 | :--- | :--- |
@@ -124,7 +124,7 @@ PSV backpressure (`_backpressure_result`, gauge at the valve outlet; also on the
 
 ## 4. Thermal & Energy Balance
 
-An open device with forward flow is a throttle (audit F1-16):
+An open device with forward flow is a throttle:
 
 $$\Delta T = \frac{\max(0,\ P_{\text{in}} - P_{\text{out}})}{\rho\, c_p(T_{\text{in}})}$$
 

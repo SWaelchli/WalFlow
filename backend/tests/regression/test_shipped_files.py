@@ -1,8 +1,7 @@
-"""F0-02 / F2-22 / F2-04: shipped diagrams are format 0.2, carry no stored results and give heat exchangers an explicit rated dP."""
+"""Shipped diagrams are format 0.2, carry no stored results and give heat exchangers an explicit rated dP."""
 from walflow_paths import DATA_DIR
 import pytest
 
-pytestmark = pytest.mark.audit("F0-02", "F2-22", "F2-04")
 
 import glob
 import json

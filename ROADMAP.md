@@ -34,7 +34,7 @@ This document outlines planned features, overlays, and enhancements for the WalF
   * **Goal:** Determine standard formulas and reference pressure drops ($\Delta P_{\text{ref}}$) for assessing capacity utilization percentage ($Q_{\text{actual}} / Q_{\text{rated}}$) and overcapacity alerts for both incompressible liquids and compressible gases.
   * **Status (B1c, 2026-10-14):** liquid service done: rated flow = flow at full lift with the inlet at 110 % of set (gauge) against the actual outlet pressure, from the device's Cv / orifice. Gases, two-phase and fire-case accumulation remain open.
 
-- [ ] **⛰️ Pipe Elevation & Fittings Losses (audit F1-17)**
+- [ ] **⛰️ Pipe Elevation & Fittings Losses**
   * **Concept:** Per-pipe elevation change ($\rho g \Delta Z$ term) so suction lift, siphons and NPSH at an elevated pump can be modelled, plus a fittings $\Sigma K$ (or equivalent length) per pipe and a tank-outlet entrance loss ($\approx 1.5\,\rho v^2/2$). Steady-state only.
   * **Status (B6 decision, 2026-10-15):** not implemented. Today only tanks have an elevation, pipes are straight-pipe Darcy-Weisbach, and the in-app help documents these limits. New fields would be optional (no file format bump).
 
@@ -48,12 +48,12 @@ This document outlines planned features, overlays, and enhancements for the WalF
 
 - [ ] **🔌 Multiple Nozzles on Fluid Sources (Tanks and Pressure Sources)**
   * **Concept:** Configurable number of inlet and outlet nozzles on a tank or pressure source (e.g. two pump suctions and a separate relief return on one tank), each a separate port with its own pipe, optionally with its own nozzle height.
-  * **Today (audit F5-01, 2026-10-16):** a port takes one pipe. A line that branches needs a splitter or mixer; separate nozzles are modelled with a second tank at the same level and conditions. The solver already treats a tank or pressure source as one fixed-pressure node, so extra ports mainly need the node component, the port table in `networkValidation.js` (`PORTS_BY_TYPE`) and the parser.
+  * **Today (2026-10-16):** a port takes one pipe. A line that branches needs a splitter or mixer; separate nozzles are modelled with a second tank at the same level and conditions. The solver already treats a tank or pressure source as one fixed-pressure node, so extra ports mainly need the node component, the port table in `networkValidation.js` (`PORTS_BY_TYPE`) and the parser.
   * **Engineering Value:** Drawings that match the P&ID without helper tanks or splitters.
 
-- [ ] **🚦 Plausibility Warnings (audit F3-05)**
+- [ ] **🚦 Plausibility Warnings**
   * **Concept:** Non-blocking result warnings, shown in the status chip panel and the result banners: centrifugal pump run-out and minimum flow (% of rated / BEP), pipe velocity above a limit per service (e.g. suction, discharge, return), operating pressure or temperature above the pipe class P-T rating, and fluid temperature outside the property data range (`temperature_out_of_range` is already in `physical_validity`).
-  * **Status (B4a decision, 2026-10-15):** moved out of the audit. The backend flags for NPSH (F1-28), fluid range (F1-31) and motor overload (F1-36) exist; thresholds (velocity limits, % of rated flow) need a decision before building the UI.
+  * **Status (B4a decision, 2026-10-15):** moved out of the audit. The backend flags for NPSH, fluid range and motor overload exist; thresholds (velocity limits, % of rated flow) need a decision before building the UI.
 
 - [ ] **🛢️ Pump Viscosity Correction (HI 9.6.7)**
   * **Concept:** Correct centrifugal pump head, flow and efficiency for viscous fluids (Hydraulic Institute 9.6.7 correction factors $C_H$, $C_Q$, $C_\eta$ from the water curve). Today the curve is head-based (B1a), so density is handled, but viscosity does not change the curve.
@@ -170,7 +170,7 @@ u$):** cSt at the local temperature. Derived, not an ISA variable.
   * **Done (2026-10-20)**: After each solve, sections shut in by a stopped PD pump, a check valve without flow or a closed relief device take the pressure behind their strongest leak path (stopped pump to its suction, then check valve, then relief seat), carried through the section at zero flow (pumps keep their shutoff head, regulators their set pressure) and held where no check valve opens and no relief device lifts; ports and pipes carry `stagnant: true`. Pruned nodes are filled the same way from the solved pressures, so nothing passes through a blocking device and no stale value stays. A flow source at zero flow is no pressure reference. Leakage alone does not open a PSV in the relief passes; the unmitigated pass shows the full leak-path pressure. Only shipped case affected: the P-2358B branch of the large reference network (was 0.45 to 5.19 bar(a) depending on method and pass, now tank pressure 1.03 bar(a)). Newton and LM now agree on every port; about 1 ms per solve. Open: temperature in stagnant sections is still undefined; no frontend marker yet.
 
 - [x] **🏷️ Unit-Consistent Node Data Field Names (Format Break)**
-  * **Problem**: Node `data` mixes units and naming (`set_pressure` in Pa vs `set_pressure_bar` / `source_pressure_bara` in bar, `flow_rated` vs `flow_rated_lmin`, tank `temperature` in K vs `set_temperature_c` in °C, `orifice_diameter` in m). Audit F1-20. B5 only documents the fields and tests the parser against that table; no renaming.
+  * **Problem**: Node `data` mixes units and naming (`set_pressure` in Pa vs `set_pressure_bar` / `source_pressure_bara` in bar, `flow_rated` vs `flow_rated_lmin`, tank `temperature` in K vs `set_temperature_c` in °C, `orifice_diameter` in m). B5 only documents the fields and tests the parser against that table; no renaming.
   * **Fix**: Rename to one convention (unit suffix on every dimensional field, e.g. `_pa`, `_bar`, `_lmin`, `_c`, `_m`), together with one `migrateDiagram` step for old files. Do it in the same release as the next unavoidable format break (at the latest the 1.0 format bump), not on its own, so users migrate only once.
   * **Benefit**: no silent unit mistakes when adding equipment, simpler parser and inspectors, one converter path.
   * **Done**: Values keep their unit, only the names change (pipe `roughness` in m becomes `roughness_mm`). The file format stays 0.2; 0.2 was not released yet, so files with the old names are not converted. The field tables moved from `docs/node-fields.md` to the `## Data Fields` section of each `backend/simulation/equipment/<type>.md`.
@@ -182,6 +182,6 @@ u$):** cSt at the local temperature. Derived, not an ISA variable.
   * **Done (2026-10-21)**: Documentation standard and equipment-creation skill updated (fixed headings, a line for sections that do not apply, benchmarks only from existing test assertions, shared documents). All 22 component documents follow it; new `relief_device.md` holds the shared PSV / rupture disc model and the relief analysis; `base_node.md` holds the solver contract (unknowns, residuals, Jacobian, outer loops, pruning). The open findings are tracked in `EQUIPMENT_FINDINGS.md` until fixed.
 
 - [ ] **⚛️ Upgrade reactflow 11 to @xyflow/react 12**
-  * **Problem**: `reactflow` 11 is the legacy package with a peer range of React 17/18, but the app runs on React 19. Audit F2-28.
+  * **Problem**: `reactflow` 11 is the legacy package with a peer range of React 17/18, but the app runs on React 19.
   * **Benefits**: supported package on React 19, fewer re-renders per drag frame (v12 measures and updates nodes more efficiently, `useNodesData` / `useStore` selectors), better typed and documented node and edge APIs, server-side rendering and `colorMode` support, and continued security and bug fixes. A memoised v11 (done in B5) removes most of the lag, so this is for long-term maintenance, not urgent.
   * **Effort and risk**: about 2-3 days. Custom nodes, handles, edge types, `onConnect` / `isValidConnection`, context menus and the fit-view logic need re-testing; `node.width/height` becomes `node.measured`.

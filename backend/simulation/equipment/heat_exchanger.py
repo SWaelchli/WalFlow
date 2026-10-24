@@ -41,13 +41,13 @@ class HeatExchanger(HydraulicNode):
         self.design_outlet_temp_c = design_outlet_temp_c
         self.ua_direct_w_k = ua_direct_w_k
 
-        # Explicit resistance override [Pa/(m3/s)^2 at 1000 kg/m3]; None = calibrate from the rated dP (D-03)
+        # Explicit resistance override [Pa/(m3/s)^2 at 1000 kg/m3]; None = calibrate from the rated dP
         self.pressure_drop_factor = pressure_drop_factor
         self._rating_cache = {}
 
         # Internal State
         self.actual_duty_kw = 0.0
-        # F1-40: design effectiveness of the rating and the resulting feasibility status
+        # Design effectiveness of the rating and the resulting feasibility status
         self.design_effectiveness = None
         self.rating_status = "ok"   # "ok" | "high_effectiveness" (> 0.95) | "infeasible" (>= 1)
 
@@ -71,7 +71,7 @@ class HeatExchanger(HydraulicNode):
         return getattr(self.global_settings, 'fluid_type', 'water')
 
     def _design_state(self):
-        """Density, viscosity and cp of the system fluid at the design inlet temperature (D-03)."""
+        """Density, viscosity and cp of the system fluid at the design inlet temperature."""
         fluid_type = self._fluid_type()
         t = self.design_inlet_temp_c + 273.15
         return (FluidProperties.get_density(fluid_type, t), FluidProperties.get_viscosity(fluid_type, t),
@@ -95,7 +95,7 @@ class HeatExchanger(HydraulicNode):
 
     def _resistance_k(self):
         """K in dP = K * rho * Q|Q| * f(Re), calibrated so that the rated dP is reproduced at the
-        rated flow in the system fluid at the design inlet temperature (D-03, as the filter in F1-19)."""
+        rated flow in the system fluid at the design inlet temperature."""
         if self.pressure_drop_factor is not None:
             return self.pressure_drop_factor / 1000.0
 
@@ -109,7 +109,7 @@ class HeatExchanger(HydraulicNode):
         return self._cached('k', compute)
 
     def _ua_rated(self):
-        """Rated UA, with density and cp at the design inlet temperature (D-03)."""
+        """Rated UA, with density and cp at the design inlet temperature."""
         return self._cached('ua', lambda: self._calculate_ua_rated(self._design_state()[2]))
 
     def _calculate_ua_rated(self, cp: float):
@@ -160,7 +160,7 @@ class HeatExchanger(HydraulicNode):
         """
         inlet = self.inlets[0]
         outlet = self.outlets[0]
-        # The stream enters at the inlet port in forward flow and at the outlet port in reverse flow (D-02)
+        # The stream enters at the inlet port in forward flow and at the outlet port in reverse flow
         entering, leaving = (inlet, outlet) if inlet.flow_rate >= 0 else (outlet, inlet)
 
         if abs(inlet.flow_rate) < 1e-12 or not getattr(self, 'active', True):

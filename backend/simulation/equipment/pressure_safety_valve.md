@@ -66,7 +66,7 @@ The valve opens on the margin $m = \text{driver} - \text{threshold}$ (`opening_m
 
 Decided between hydraulic solves from the solved pressures, held during each solve:
 
-**Pop action, reseating** (audit F1-04):
+**Pop action, reseating**:
 
 | Held state | Lift | Changes to | When |
 | :--- | :--- | :--- | :--- |
@@ -99,7 +99,7 @@ An **undersized** valve stays open at full lift with its driver above the reseat
 
 ### 3.5 Derivative
 
-The device's edge row is differentiated numerically by the solver (audit F1-12).
+The device's edge row is differentiated numerically by the solver.
 
 ## 4. Thermal & Energy Balance
 

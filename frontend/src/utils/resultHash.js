@@ -1,4 +1,4 @@
-// F2-07: results are stored per case together with a hash of the inputs they were solved from.
+// Results are stored per case together with a hash of the inputs they were solved from.
 // When the current inputs hash differently, the results are labelled as out of date.
 
 // Fields that do not influence the solution (appearance, notes, display units, runtime callbacks).
@@ -38,7 +38,7 @@ const pickData = (data, ignored) => {
 };
 
 // Nodes and pipes are replaced on every drag frame and selection change, so their signature is built once per
-// object; a case hash after a drag frame then costs one node instead of the whole diagram (F2-28)
+// object; a case hash after a drag frame then costs one node instead of the whole diagram
 const nodeSignatures = new WeakMap();
 const edgeSignatures = new WeakMap();
 const signatureOf = (store, item, build) => {

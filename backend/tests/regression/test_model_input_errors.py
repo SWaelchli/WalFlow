@@ -1,7 +1,6 @@
 """Code-review fixes: HX sign, relief state restore, parser input errors."""
 import pytest
 
-pytestmark = pytest.mark.audit("review-1")
 
 import pytest
 

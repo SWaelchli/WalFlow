@@ -1,7 +1,6 @@
-"""F1-07: physically impossible states are reported, not passed off as a clean solution."""
+"""Physically impossible states are reported, not passed off as a clean solution."""
 import pytest
 
-pytestmark = pytest.mark.audit("F1-07")
 
 import pytest
 

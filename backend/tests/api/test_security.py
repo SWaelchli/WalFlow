@@ -1,7 +1,6 @@
-"""B3 (F2-11, F2-12, F2-13, F2-14, F2-25, F3-03): security and deployment behaviour."""
+"""Security and deployment behaviour."""
 import pytest
 
-pytestmark = pytest.mark.audit("B3", "F2-11", "F2-12", "F2-13", "F2-14", "F2-25", "F3-03")
 
 import asyncio
 import json
@@ -61,15 +60,15 @@ def _request(xff=None, peer="10.0.0.9"):
     return Request({"type": "http", "headers": headers, "client": (peer, 1234), "method": "GET", "path": "/", "query_string": b""})
 
 
-# ---------------------------------------------------------------- F2-12
-def test_f2_12_spoofed_left_entry_is_ignored(monkeypatch):
+# ---------------------------------------------------------------- proxy headers
+def test_spoofed_left_entry_is_ignored(monkeypatch):
     monkeypatch.delenv("WALFLOW_TRUSTED_PROXY_HOPS", raising=False)
     # the client sent "1.1.1.1"; nginx appended the real peer
     assert get_client_ip(_request("1.1.1.1, 203.0.113.7")) == "203.0.113.7"
     assert get_client_ip(_request("2.2.2.2, 203.0.113.7")) == "203.0.113.7"
 
 
-def test_f2_12_hops_and_fallbacks(monkeypatch):
+def test_hops_and_fallbacks(monkeypatch):
     monkeypatch.setenv("WALFLOW_TRUSTED_PROXY_HOPS", "2")
     assert get_client_ip(_request("9.9.9.9, 203.0.113.7, 172.18.0.2")) == "203.0.113.7"
     assert get_client_ip(_request("172.18.0.2")) == "10.0.0.9"          # fewer entries than hops: socket peer
@@ -78,8 +77,8 @@ def test_f2_12_hops_and_fallbacks(monkeypatch):
     assert get_client_ip(_request()) == "10.0.0.9"
 
 
-# ---------------------------------------------------------------- F2-13
-def test_f2_13_deadline_stops_the_solver():
+# ---------------------------------------------------------------- solver deadline and batch limits
+def test_deadline_stops_the_solver():
     nodes = {"a": Tank("A", fluid_level=3.0), "b": Tank("B", fluid_level=0.0)}
     edges = [{"source": "a", "target": "b", "pipe": Pipe("p", 5, 0.05)}]
     assert solve(nodes, edges)["success"]   # solves without a deadline
@@ -88,7 +87,7 @@ def test_f2_13_deadline_stops_the_solver():
             solve(nodes, edges)
 
 
-def test_f2_13_deadline_is_per_block_and_resets():
+def test_deadline_is_per_block_and_resets():
     with pytest.raises(SolveTimeout):
         with solve_deadline(1e-9):
             check_deadline()
@@ -103,7 +102,7 @@ def _graph(n_nodes, n_cases=0):
     }
 
 
-def test_f2_13_batch_size_limits(client, monkeypatch):
+def test_batch_size_limits(client, monkeypatch):
     monkeypatch.setenv("WALFLOW_MAX_NODES", "3")
     monkeypatch.setenv("WALFLOW_MAX_CASES", "2")
     assert client.post("/api/simulation/batch", json=_graph(4)).status_code == 413
@@ -111,7 +110,7 @@ def test_f2_13_batch_size_limits(client, monkeypatch):
     assert client.post("/api/simulation/batch", json=_graph(2, n_cases=2)).status_code == 200
 
 
-def test_f2_13_batch_timeout_is_a_case_error(client, monkeypatch):
+def test_batch_timeout_is_a_case_error(client, monkeypatch):
     monkeypatch.setenv("WALFLOW_SOLVE_TIMEOUT_S", "0.000001")
     graph = {
         "nodes": [{"id": "a", "type": "tank", "position": {"x": 0, "y": 0}, "data": {}},
@@ -124,7 +123,7 @@ def test_f2_13_batch_timeout_is_a_case_error(client, monkeypatch):
     assert result["status"] == "error" and "time limit" in result["error_message"]
 
 
-def test_f2_13_websocket_rejects_oversized_graph(monkeypatch):
+def test_websocket_rejects_oversized_graph(monkeypatch):
     monkeypatch.setenv("WALFLOW_MAX_NODES", "1")
     with TestClient(app).websocket_connect("/ws/simulate") as ws:
         ws.send_text(json.dumps({"action": "run_simulation", "graph": _graph(2)}))
@@ -132,15 +131,15 @@ def test_f2_13_websocket_rejects_oversized_graph(monkeypatch):
     assert reply["status"] == "error" and "too large" in reply["message"]
 
 
-# ---------------------------------------------------------------- F3-03
-def test_f3_03_anonymous_user_can_use_the_simulation_socket(monkeypatch):
+# ---------------------------------------------------------------- simulation socket access
+def test_anonymous_user_can_use_the_simulation_socket(monkeypatch):
     monkeypatch.delenv("WALFLOW_REQUIRE_WS_AUTH", raising=False)
     with TestClient(app).websocket_connect("/ws/simulate") as ws:
         ws.send_text(json.dumps({"action": "run_simulation"}))
         assert json.loads(ws.receive_text())["status"] == "waiting"
 
 
-def test_f3_03_anonymous_user_cannot_join_a_diagram(monkeypatch):
+def test_anonymous_user_cannot_join_a_diagram(monkeypatch):
     monkeypatch.delenv("WALFLOW_REQUIRE_WS_AUTH", raising=False)
     with TestClient(app).websocket_connect("/ws/simulate") as ws:
         ws.send_text(json.dumps({"action": "join_diagram", "diagram_id": "x"}))
@@ -148,8 +147,8 @@ def test_f3_03_anonymous_user_cannot_join_a_diagram(monkeypatch):
     assert reply["status"] == "error" and reply["context"] == "join_diagram"
 
 
-# ---------------------------------------------------------------- F2-14
-def test_f2_14_last_admin_cannot_be_demoted_disabled_or_deleted(client):
+# ---------------------------------------------------------------- admin accounts
+def test_last_admin_cannot_be_demoted_disabled_or_deleted(client):
     admin_id, headers, _ = _user("admin")
     _drop_other_admins(admin_id)
     assert client.put(f"/api/admin/users/{admin_id}/role", json={"role": "user"}, headers=headers).status_code == 400
@@ -160,7 +159,7 @@ def test_f2_14_last_admin_cannot_be_demoted_disabled_or_deleted(client):
     assert client.put(f"/api/admin/users/{admin_id}/role", json={"role": "user"}, headers=headers).status_code == 200
 
 
-def test_f2_14_disabled_user_loses_access_at_once(client):
+def test_disabled_user_loses_access_at_once(client):
     _, admin_headers, _ = _user("admin")
     user_id, user_headers, _ = _user()
     assert client.get("/api/auth/me", headers=user_headers).status_code == 200
@@ -172,21 +171,21 @@ def test_f2_14_disabled_user_loses_access_at_once(client):
     assert client.get("/api/auth/me", headers=user_headers).status_code == 200
 
 
-def test_f2_14_pipe_manager_can_be_assigned(client):
+def test_pipe_manager_can_be_assigned(client):
     _, admin_headers, _ = _user("admin")
     user_id, _, _ = _user()
     assert client.put(f"/api/admin/users/{user_id}/role", json={"role": "pipe_manager"}, headers=admin_headers).status_code == 200
     assert client.put(f"/api/admin/users/{user_id}/role", json={"role": "root"}, headers=admin_headers).status_code == 400
 
 
-# ---------------------------------------------------------------- F2-25
+# ---------------------------------------------------------------- diagram locks and saves
 def _standalone_diagram(client, headers, data="{}"):
     resp = client.post("/api/diagrams", json={"title": "D", "diagram_data": data}, headers=headers)
     assert resp.status_code == 201
     return resp.json()
 
 
-def test_f2_25_standalone_checkout_and_lock_status_are_owner_only(client):
+def test_standalone_checkout_and_lock_status_are_owner_only(client):
     _, owner, _ = _user()
     _, other, _ = _user()
     d = _standalone_diagram(client, owner)
@@ -195,7 +194,7 @@ def test_f2_25_standalone_checkout_and_lock_status_are_owner_only(client):
     assert client.get(f"/api/diagrams/{d['id']}/lock-status", headers=owner).status_code == 200
 
 
-def test_f2_25_join_diagram_needs_access_and_owner_gets_in(client, monkeypatch):
+def test_join_diagram_needs_access_and_owner_gets_in(client, monkeypatch):
     monkeypatch.delenv("WALFLOW_REQUIRE_WS_AUTH", raising=False)
     _, owner, owner_token = _user()
     _, _, other_token = _user()
@@ -217,7 +216,7 @@ class _FakeSocket:
         self.sent.append(json.loads(text))
 
 
-def test_f2_25_lock_is_released_when_the_last_socket_of_the_holder_closes():
+def test_lock_is_released_when_the_last_socket_of_the_holder_closes():
     async def scenario():
         from services.lock_service import acquire_lock
         manager = ConnectionManager()
@@ -235,7 +234,7 @@ def test_f2_25_lock_is_released_when_the_last_socket_of_the_holder_closes():
     asyncio.run(scenario())
 
 
-def test_f2_25_stale_save_is_rejected_and_current_save_accepted(client):
+def test_stale_save_is_rejected_and_current_save_accepted(client):
     _, owner, _ = _user()
     d = _standalone_diagram(client, owner, '{"v":1}')
     first = client.put(f"/api/diagrams/{d['id']}", json={"diagram_data": '{"v":2}', "base_updated_at": d["updated_at"]}, headers=owner)
@@ -247,15 +246,15 @@ def test_f2_25_stale_save_is_rejected_and_current_save_accepted(client):
     assert ok.status_code == 200 and ok.json()["diagram_data"] == '{"v":3}'
 
 
-# ---------------------------------------------------------------- F2-11
-def test_f2_11_unchanged_save_does_not_move_updated_at(client):
+# ---------------------------------------------------------------- save notices
+def test_unchanged_save_does_not_move_updated_at(client):
     _, owner, _ = _user()
     d = _standalone_diagram(client, owner, '{"v":1}')
     same = client.put(f"/api/diagrams/{d['id']}", json={"diagram_data": '{"v":1}', "base_updated_at": d["updated_at"]}, headers=owner)
     assert same.status_code == 200 and same.json()["updated_at"] == d["updated_at"]
 
 
-def test_f2_11_notices_are_coalesced(monkeypatch):
+def test_notices_are_coalesced(monkeypatch):
     monkeypatch.setenv("WALFLOW_COLLAB_BROADCAST_INTERVAL_S", "0.2")
 
     async def scenario():

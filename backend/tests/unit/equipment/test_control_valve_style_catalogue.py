@@ -2,7 +2,6 @@
 typical F_L / x_T / F_d at rated travel (D-29b)."""
 import pytest
 
-pytestmark = pytest.mark.audit("D-29b")
 
 from services.valve_style_defaults import (
     DEFAULT_VALVE_STYLE_ID, EXAMPLE_VALVE_STYLE_CATALOGUES, IEC_60534_TABLE_D2_CODE)

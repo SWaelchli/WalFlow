@@ -1,7 +1,6 @@
-"""F1-37: a pressure regulator closes tight (lock-up) when nothing downstream draws flow."""
+"""A pressure regulator closes tight (lock-up) when nothing downstream draws flow."""
 import pytest
 
-pytestmark = pytest.mark.audit("F1-37")
 
 import pytest
 

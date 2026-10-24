@@ -1,4 +1,4 @@
-// F2-17: allowed ranges of the numeric solver settings. A value outside the range, or an empty field, is
+// Allowed ranges of the numeric solver settings. A value outside the range, or an empty field, is
 // not stored (the input shows the previous value again), so the backend never receives null or NaN.
 export const SOLVER_SETTING_RANGES = {
   control_iterations: { min: 1, max: 1000, integer: true },

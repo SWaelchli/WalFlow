@@ -100,7 +100,7 @@ const PressureSafetyValveDetails = memo(function PressureSafetyValveDetails({ no
   const hasResult = telemetry.inlets?.[0]?.pressure != null;
   const currentQ = Math.abs(telemetry?.outlets?.[0]?.flow_rate || 0);
   const pIn = telemetry?.inlets?.[0]?.pressure || 101325;
-  // Set pressure is gauge (F1-09); the atmospheric pressure follows from the solver's set pressure in bar(a)
+  // Set pressure is gauge; the atmospheric pressure follows from the solver's set pressure in bar(a)
   const pAtmBar = setPressureBarg !== null && telemetry.set_pressure_bara != null ? telemetry.set_pressure_bara - setPressureBarg : 1.01325;
   const inletBarg = hasResult ? pIn / 100000 - pAtmBar : null;
   const ratedFlowLmin = parseFloat(telemetry?.rated_flow_lmin || 0.0);

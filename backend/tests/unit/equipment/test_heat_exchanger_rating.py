@@ -1,9 +1,6 @@
-"""F1-40: an infeasible heat exchanger rating is reported, not silently clamped."""
-import pytest
+"""An infeasible heat exchanger rating is reported, not silently clamped."""
 
-pytestmark = pytest.mark.audit("F1-40")
 
-import pytest
 
 from physics_refs import solve
 from routers.simulation import extract_telemetry
@@ -27,14 +24,14 @@ def _status(rated_kw):
     return extract_telemetry(net)["nodes"]["hx"]
 
 
-def test_f1_40_audit_case_is_infeasible():
+def test_infeasible_rating_is_reported():
     # 300 kW from 100 L/min of oil with only 40 K available needs a 103 K drop
     tel = _status(300.0)
     assert tel["rating_status"] == "infeasible"
     assert tel["design_effectiveness"] > 1.0
 
 
-def test_f1_40_modest_rating_is_ok():
+def test_modest_rating_is_ok():
     tel = _status(30.0)
     assert tel["rating_status"] == "ok"
     assert 0.0 < tel["design_effectiveness"] < 0.95

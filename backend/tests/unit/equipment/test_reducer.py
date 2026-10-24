@@ -202,10 +202,9 @@ def test_negative_reducer_roughness_is_rejected():
         GraphParser.parse_graph(_reducer_graph({"roughness_mm": -0.1}))
 
 
-@pytest.mark.audit("D-07")
 @pytest.mark.parametrize("roughness", [0.0, 0.000045])
 @pytest.mark.parametrize("q", [1e-6, 2e-5, 5e-5, 1e-4, 1e-3, 1e-2])
-def test_d07_reducer_friction_equals_pipe_friction(roughness, q):
+def test_reducer_friction_equals_pipe_friction(roughness, q):
     # Equal bores: no form loss and no Bernoulli term, only wall friction over the length
     d, length, rho, mu = 0.05, 0.5, 870.0, 0.03
     red = Reducer("R", diameter_in=d, diameter_out=d, length=length, roughness=roughness)

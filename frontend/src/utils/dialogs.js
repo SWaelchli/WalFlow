@@ -1,4 +1,4 @@
-// F3-06: non-blocking replacements for window.alert / confirm / prompt.
+// Non-blocking replacements for window.alert / confirm / prompt.
 // A small module-level store, so event handlers, hooks and providers can all call it without a context.
 // <DialogHost /> (mounted once in main.jsx) renders the toasts and modals.
 

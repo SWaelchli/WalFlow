@@ -1,7 +1,6 @@
-"""F1-41: mixer energy and mass balance."""
+"""Mixer energy and mass balance."""
 import pytest
 
-pytestmark = pytest.mark.audit("F1-41", "F1-42")
 
 import pytest
 
@@ -16,7 +15,7 @@ FLUID = "iso_vg_46"
 
 @pytest.mark.parametrize("tol_k", [
     pytest.param(1.0, id="thermal-mixing-balances"),
-    pytest.param(0.1, id="F1-42-variable-cp-enthalpy"),
+    pytest.param(0.1, id="variable-cp-enthalpy"),
 ])
 def test_mixing_conserves_mass_and_enthalpy(tol_k):
     t_hot = Tank("Hot Tank", fluid_level=10.0, temperature=80 + 273.15, fluid_type=FLUID)

@@ -31,7 +31,7 @@ beforeEach(() => {
 });
 afterEach(() => { vi.useRealTimers(); });
 
-describe('cloud autosave (F2-11, F2-25)', () => {
+describe('cloud autosave', () => {
   it('sends the loaded version, then the version of the previous save', async () => {
     const { rerender } = await mount();
     rerender(baseProps({ nodes: [node('a', 10)] }));
@@ -63,7 +63,7 @@ describe('cloud autosave (F2-11, F2-25)', () => {
   });
 });
 
-describe('collaboration notices (F2-11)', () => {
+describe('collaboration notices', () => {
   const emit = (detail) => act(() => { window.dispatchEvent(new CustomEvent('walflow_collab_event', { detail })); });
 
   it('shows a banner, not a blocking dialog, when a co-editor saved', async () => {

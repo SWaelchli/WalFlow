@@ -8,7 +8,7 @@ const hintStyle = { fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary
 const inputStyle = { width: '100%' };
 
 /**
- * The solver settings group, shared by the Drawing, Project and Global tabs (F3-12).
+ * The solver settings group, shared by the Drawing, Project and Global tabs.
  *
  * - `values`: the values to show.
  * - `onChange(patch)`: called with { key: value } for an accepted edit.

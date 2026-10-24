@@ -29,13 +29,13 @@ The regulator is an ideal controller: no droop (proportional band), no hysteresi
 
 ### 3.1 Valve equation (`calculate_delta_p`)
 
-The same Cv equation as the [linear control valve](linear_control_valve.md#32-pressure-drop-calculate_delta_p), but with the smooth viscosity correction of the [check valve](check_valve.md#31-open-valve-loss-open_seat_dp) (`FluidProperties.get_valve_fr`), not the IEC 60534-2-1 Annex A factor of the control valves (D-29). A regulator standard may replace it later.
+The same Cv equation as the [linear control valve](linear_control_valve.md#32-pressure-drop-calculate_delta_p), but with the smooth viscosity correction of the [check valve](check_valve.md#31-open-valve-loss-open_seat_dp) (`FluidProperties.get_valve_fr`), not the IEC 60534-2-1 Annex A factor of the control valves. A regulator standard may replace it later.
 
 $$\Delta P = \frac{K_{Cv}\, \rho\, Q|Q|}{\big(C_{v,\max} \cdot \tfrac{\text{opening}}{100} \cdot F_R\big)^2}, \qquad K_{Cv} = 1.732 \times 10^9$$
 
 The opening is clamped to 0.1-100 % inside the equation; a closed regulator is represented by lock-up (3.4), not by 0 %.
 
-The Results tab chart draws this equation at the current and the full opening; the curve points come from `calculate_delta_p` with the results (`valve_curves`, D-33).
+The Results tab chart draws this equation at the current and the full opening; the curve points come from `calculate_delta_p` with the results (`valve_curves`).
 
 ### 3.2 Control error
 
@@ -45,7 +45,7 @@ With this sign, $f$ rises as the valve opens in both modes. The setpoint counts 
 
 ### 3.3 Opening search (`NetworkSolver._control_step`)
 
-The opening is not part of the Newton system; an outer loop around the hydraulic solve finds it (audit F1-01, see [base_node.md](base_node.md#35-outer-loops)):
+The opening is not part of the Newton system; an outer loop around the hydraulic solve finds it (see [base_node.md](base_node.md#35-outer-loops)):
 
 1. Unknown per controller: $v = \ln(\text{opening})$. Every run starts at 50 %.
 2. After each hydraulic solve, a finite-difference Jacobian $\partial f_i / \partial v_k$ (step 0.03 in $\ln$) is built from extra solves, one per controller.
@@ -54,9 +54,9 @@ The opening is not part of the Newton system; an outer loop around the hydraulic
 
 Interacting controllers (a PRV and a BPR in series) are solved together, because the Jacobian has their cross terms. A controller whose own opening does not move its error walks towards the end stop its error asks for. One whose opening moves its error the wrong way is flagged `reverse_acting` and runs to an end stop, like a wrong-acting loop.
 
-The loop ends when every controller is at its setpoint or saturated, together with converged fluid properties and 3-way TCVs, or at `control_iterations` (default 100). The reported result is the hydraulic solution of the last control positions, never positions moved after it (audit F1-02); `controls_converged` says whether the loop finished.
+The loop ends when every controller is at its setpoint or saturated, together with converged fluid properties and 3-way TCVs, or at `control_iterations` (default 100). The reported result is the hydraulic solution of the last control positions, never positions moved after it; `controls_converged` says whether the loop finished.
 
-### 3.4 Saturation and lock-up (audit F1-37)
+### 3.4 Saturation and lock-up
 
 | State | Condition | Result |
 | :--- | :--- | :--- |
@@ -77,11 +77,11 @@ Saturated controllers are listed in `saturated_controllers` with their state (`w
 
 ### 3.5 Derivative
 
-The class has no analytical derivative; the solver differentiates the outlet pressure numerically (see [base_node.md](base_node.md#33-jacobian), D-23). A locked-up regulator has no slope with respect to its inlet pressure or flow.
+The class has no analytical derivative; the solver differentiates the outlet pressure numerically (see [base_node.md](base_node.md#33-jacobian)). A locked-up regulator has no slope with respect to its inlet pressure or flow.
 
 ## 4. Thermal & Energy Balance
 
-The pressure drop is throttling loss (audit F1-16):
+The pressure drop is throttling loss:
 
 $$\Delta T = \frac{|\Delta P|}{\rho\, c_p(T)}$$
 

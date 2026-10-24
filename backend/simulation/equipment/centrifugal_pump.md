@@ -39,7 +39,7 @@ $$\Delta P = \rho\, g\, H(Q), \qquad g = 9.81\ \text{m/s}^2$$
 The pump raises the pressure: $P_{\text{out}} = P_{\text{in}} + \Delta P$ (see [base_node.md](base_node.md#32-how-a-component-enters-the-equations)).
 
 - **Beyond the zero-head flow** $Q > Q_r \sqrt{H_0/(H_0 - H_r)}$ the head becomes negative and the pump acts as a resistance; the curve stays continuous.
-- **Reverse flow** (audit F1-34): $H = H_0 - C\,Q^2$ rises above the shutoff head. A weaker pump in parallel therefore dead-heads instead of passing reverse flow at shutoff head.
+- **Reverse flow**: $H = H_0 - C\,Q^2$ rises above the shutoff head. A weaker pump in parallel therefore dead-heads instead of passing reverse flow at shutoff head.
 
 Example curve, $Q_r$ = 100 L/min, $H_r$ = 50 m, $r$ = 20 %:
 
@@ -72,7 +72,7 @@ $$P_{\text{shaft}} = \begin{cases} \dfrac{|Q|\, \Delta P}{\max(0.01,\ \eta)} & \
 
 $\eta$ is the hydraulic pump efficiency (motor losses not included). A running pump with reverse flow and $\Delta P > 0$ (a stronger parallel pump pushes flow back through it) still draws $|Q|\,\Delta P/\eta$: the motor drives the impeller, and the power goes to 0 smoothly at $Q = 0$. A stopped or braking pump has zero shaft power (`pump_shaft_power` in [base_node.py](base_node.py)). The case KPI sums this power.
 
-### 3.5 NPSH (`update_npsh`, audit F1-28)
+### 3.5 NPSH (`update_npsh`)
 
 $$\text{NPSH}_a = \frac{P_{\text{in}} - P_v(T_{\text{in}})}{\rho\, g}$$
 
@@ -92,7 +92,7 @@ The share of the shaft power that is not hydraulic power heats the fluid:
 
 $$\Delta T = \frac{|\Delta P|}{\rho\, c_p(T_{\text{in}})} \cdot \frac{1 - \eta}{\eta}$$
 
-with $\eta \ge 1$ % (the input minimum, also used for the shaft power), so the heat is exactly $P_{\text{shaft}} - |Q|\,\Delta P$ (D-10). The factor depends on the sign of $\Delta P$ only, so the heat does not jump when the flow of a dead-headed pump changes sign. In reverse flow this leaves out the throttling loss of the backflow (no four-quadrant characteristic); it is an approximation.
+with $\eta \ge 1$ % (the input minimum, also used for the shaft power), so the heat is exactly $P_{\text{shaft}} - |Q|\,\Delta P$. The factor depends on the sign of $\Delta P$ only, so the heat does not jump when the flow of a dead-headed pump changes sign. In reverse flow this leaves out the throttling loss of the backflow (no four-quadrant characteristic); it is an approximation.
 
 A stopped pump, and a running pump the fluid drives through it ($\Delta P < 0$, beyond runout), is a pure resistance: all its pressure loss becomes heat ($\Delta T = |\Delta P| / (\rho c_p)$, `pump_heat_factor` in [base_node.py](base_node.py)). The rise is applied to the outlet for $Q \ge 0$ and to the inlet for $Q < 0$; density and viscosity are then re-evaluated at both ends.
 

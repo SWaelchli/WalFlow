@@ -216,7 +216,7 @@ const ProjectManagerModal = ({
       const response = await axios.get(`/api/diagrams/${diagramId}`);
       const parsedData = JSON.parse(response.data.diagram_data);
       
-      // Version and structure are checked by the loader (F0-02); only link the contexts once it accepted the file
+      // Version and structure are checked by the loader; only link the contexts once it accepted the file
       const accepted = onLoadDiagram(parsedData);
       if (accepted === false) {
         if (hideCanvasLoading) {

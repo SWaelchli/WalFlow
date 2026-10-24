@@ -981,7 +981,7 @@ textarea:focus-visible,
 
 
 
-/* Canvas context menu (F3-18) */
+/* Canvas context menu */
 .context-menu-item {
   display: flex;
   width: 100%;
@@ -1013,7 +1013,7 @@ textarea:focus-visible,
   color: var(--color-text-secondary);
 }
 
-/* Resizable data panel (F3-08) */
+/* Resizable data panel */
 .panel-resize-handle {
   position: absolute;
   top: -3px;

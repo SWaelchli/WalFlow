@@ -33,7 +33,7 @@ The $v|v|$ form keeps the sign of the flow: reverse flow gives a negative drop o
 
 ### 3.3 Friction factor (`_friction_factor`, Churchill 1977)
 
-The function is `FluidProperties.get_darcy_friction_factor(Re, ε/D)`, shared with the [reducer](reducer.md#34-wall-friction-over-the-fitting) (audit D-07).
+The function is `FluidProperties.get_darcy_friction_factor(Re, ε/D)`, shared with the [reducer](reducer.md#34-wall-friction-over-the-fitting).
 
 $$f = 8\left[\left(\frac{8}{\mathrm{Re}}\right)^{12} + \frac{1}{(a + b)^{1.5}}\right]^{1/12}$$
 
@@ -41,7 +41,7 @@ $$a = \left[2.457 \ln\frac{1}{(7/\mathrm{Re})^{0.9} + 0.27\,\varepsilon/D}\right
 
 - Laminar limit: $f \to 64/\mathrm{Re}$. Below $\mathrm{Re} = 10$ the code uses $64/\mathrm{Re}$ directly (Churchill gives the same value there).
 - Turbulent limit: Colebrook-White within about 2 %.
-- Transition (Re 2000-4000): one smooth curve, so the solver never sees a switch or a blend band (audit F1-21). It differs from a "64/Re, then Colebrook" reference by a few percent in this band.
+- Transition (Re 2000-4000): one smooth curve, so the solver never sees a switch or a blend band. It differs from a "64/Re, then Colebrook" reference by a few percent in this band.
 
 Typical values, 100 m of steel pipe ($\varepsilon$ = 0.045 mm) at 20 °C:
 
@@ -120,7 +120,7 @@ The parser rejects a diameter $\le 0$ and a negative length or roughness (`Model
   - fittings, bends and valves inside the pipe (add them as components);
   - heat loss to the surroundings;
   - compressibility, two-phase flow and cavitation in the pipe.
-- **Roughness 0:** a hydraulically smooth wall (smooth-pipe Colebrook limit), e.g. for plastic or drawn tubing (audit D-06).
+- **Roughness 0:** a hydraulically smooth wall (smooth-pipe Colebrook limit), e.g. for plastic or drawn tubing.
 - The pipe class reference and sizing fields are stored for the inspector only (see Data Fields).
 
 ## 7. Verification & Benchmarks

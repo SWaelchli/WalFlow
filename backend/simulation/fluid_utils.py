@@ -1,7 +1,7 @@
 import math
 from functools import lru_cache
 
-# Largest d(ln F_R)/d(ln Re_V) allowed for control valves: the drop rises at least as sqrt(Q) (D-29)
+# Largest d(ln F_R)/d(ln Re_V) allowed for control valves: the drop rises at least as sqrt(Q)
 IEC_FR_MAX_SLOPE = 0.75
 
 
@@ -358,7 +358,7 @@ class FluidProperties:
     @staticmethod
     def get_orifice_cd(reynolds_number: float) -> float:
         """
-        Discharge coefficient Cd of a sharp-edged orifice versus the orifice Reynolds number (F1-25).
+        Discharge coefficient Cd of a sharp-edged orifice versus the orifice Reynolds number.
         Laminar (Wuest) law Cd = 0.2*sqrt(Re) blended into the turbulent limit 0.60 with
         Cd = Cd_t * tanh(0.2*sqrt(Re) / Cd_t): continuous and monotonic, Cd -> 0.60 for Re -> infinity.
         """
@@ -369,7 +369,7 @@ class FluidProperties:
     @staticmethod
     def get_orifice_permanent_loss_ratio(cd: float, beta: float) -> float:
         """
-        Permanent pressure loss / tap differential pressure of an orifice, ISO 5167-2:2022 §5.4 Formula (7) (D-28).
+        Permanent pressure loss / tap differential pressure of an orifice, ISO 5167-2:2022 §5.4 Formula (7).
         cd is the discharge coefficient C_d, not the meter coefficient C_d / sqrt(1 - beta^4).
         """
         s = math.sqrt(1.0 - beta ** 4 * (1.0 - cd ** 2))
@@ -393,7 +393,7 @@ class FluidProperties:
 
     @staticmethod
     def get_darcy_friction_factor(reynolds_number: float, rel_roughness: float) -> float:
-        """Darcy friction factor from the Churchill (1977) equation (F1-21, D-07): one continuous expression
+        """Darcy friction factor from the Churchill (1977) equation: one continuous expression
         for laminar (64/Re), transition and turbulent (Colebrook-like) flow. rel_roughness = eps/D, 0 = smooth."""
         re = max(1e-6, abs(reynolds_number))
         if re < 10.0:
@@ -425,7 +425,7 @@ class FluidProperties:
         """
         Smooth viscosity correction factor Fr for valves outside the scope of IEC 60534
         (check valves, regulators). Not the standard's formula: control valves use
-        get_iec_valve_fr (D-29). Scales effective Cv down smoothly in the transition
+        get_iec_valve_fr. Scales effective Cv down smoothly in the transition
         and laminar regimes, with a floor of 0.4.
         """
         re_safe = max(1e-6, abs(reynolds_number))
@@ -450,12 +450,12 @@ class FluidProperties:
     def get_iec_valve_fr(flow_rate: float, kinematic_viscosity: float, cv: float, cv_rated: float,
                          fl: float, fd: float, diameter: float) -> float:
         """
-        Reynolds number factor F_R of IEC 60534-2-1:2011 Annex A (D-29).
+        Reynolds number factor F_R of IEC 60534-2-1:2011 Annex A.
         Laminar (Re_V < 10): Eq. (A.6); transitional (Re_V >= 10): Eq. (A.7); n from Eq. (A.8a)
         for full-size trim (C_rated/(N18 d^2) >= 0.016), otherwise Eq. (A.8b).
         The valve is taken as line-size (Annex A.4): d = D = pipe bore. F_R stays above zero so
         the Cv law gives a finite drop, linear in Q at low flow.
-        Deviations (D-29), both only for valves very small or very large for the line (n <~ 1.2):
+        Deviations, both only for valves very small or very large for the line (n <~ 1.2):
         - No jump: for Re_V >= 10, F_R is not allowed below the laminar value at Re_V = 10. Where (A.7)
           starts below (A.6), the standard's F_R jumps down there and the pressure drop has a gap with
           no flow; here F_R holds that value until (A.7) rises past it.
