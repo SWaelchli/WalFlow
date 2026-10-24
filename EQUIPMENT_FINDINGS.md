@@ -36,7 +36,7 @@ Status: `open` / `fixed` / `rejected`. "Confirmed" means it was reproduced by ru
 | D-17 | PSV | `action_mode = rupture_disc` duplicates the rupture disc component | Cleanup / decision | Code reading | fixed |
 | D-18 | Mixer | Inlet with reverse flow reports default density / stale viscosity | Low | Confirmed (property test) | fixed |
 | D-19 | Junctions / reducer | Junction joining different pipe diameters gains kinetic energy; with a reducer the network can have no steady state | Medium | Confirmed (property test) | open |
-| D-20 | Solver | Reported pressures lag the last property update; a pipe after a viscous drop can show a small static rise | Low | Confirmed (property test) | open |
+| D-20 | Solver | Reported pressures lag the last property update; a pipe after a viscous drop can show a small static rise | Low | Confirmed (property test) | fixed |
 | D-21 | Solver / warm start | Exact-hit warm start leaves stagnant branches at the 20 °C port default | Low | Confirmed (property test) | open |
 | D-22 | Solver | Junctions balance volume flow, not mass flow; mixing at different temperatures loses ~0.4 % mass | Low / decision | Confirmed (property test) | open |
 | D-23 | Solver / equipment | Analytical dp derivatives of most components are never used by the solver (dead code) | Low / cleanup | Mutation testing | fixed |
@@ -444,7 +444,13 @@ The analytical `calculate_dp_derivative` methods of those components are only ex
 
 **Same lag in temperatures and properties** (explore profile, 2026-10-23):
 - `test_well_posed_network_reaches_a_finite_steady_state_with_fluid_properties`: pressure source 11 bara at 10 °C → orifice (ISO 5167, pipe ID e⁻² m, bore 0.0677 m) → tank 1 m, heavy crude. The orifice outlet reports density 933.710 kg/m³, the value ~0.52 K below its reported temperature: the throttle warming of ~0.55 K is not in the properties yet. The property allows `PROPERTY_LAG_K`; remove it with the fix.
-- `test_junctions_conserve_energy` (reproduces): ISO VG 100 at 0 °C, source 2 bara → splitter → a mixer `n8` fed directly and through a heat exchanger (medium 5 °C) inside a loop of splitters, mixers and a check valve → tank. A leaving stream of `n8` is ~0.18 K (≈330 J/kg) off the mixed enthalpy of its arriving streams, more than the 0.1 K `TEMPERATURE_TOL`. Reproduce with `@reproduce_failure('6.170.5', b'AXicc2TTYIACRwYNByhTw/4DVIwZLq1xAK4OCBmBMg4CMBkBFBlGoElwXUim4zAJjw24ZJDN4kCzm0nDQQTTbpgYPgupJU66VwGOXR2T')`. The loop stops on a 0.05 K step, not on a converged mix, so a slow loop leaves a larger residual.
+
+---
+**Resolution (fixed):**
+- **Solver:** once the temperatures change by less than 0.05 K and the pressure controllers and 3-way TCVs have settled, the outer loop holds the fluid properties fixed for the next hydraulic solve. The loop ends only on such a frozen solve, with the controllers still at their setpoints and a TCV that was on its setpoint still on it; otherwise the properties are propagated again. Telemetry does not propagate again, so the reported pressures satisfy every component equation with the reported densities and viscosities. At the iteration limit, one extra frozen solve runs before reporting. Pumps recompute NPSHa from the reported suction pressure. The shipped examples need 0–2 more outer iterations (14 → 22 in the worst case, Large Reference Network case 1) and all report `controls_converged`. Golden results stay within tolerance.
+- **Orifice density lag:** a component bug, not the loop. The orifice and calibrated restriction copied the inlet density and viscosity to the warmed outlet; they now evaluate both ports at their own temperature, as the control valves do. The calibrated restriction also takes the outlet properties in reverse flow, as the orifice does.
+- **Tests:** `PRESSURE_LAG` and `PROPERTY_LAG_K` are removed. The pressure property checks every pipe's drop against its own model with the reported properties, with the heavy crude case as an `@example`. The orifice and calibrated restriction tests have a warmed-outlet property row.
+- **Not fixed here:** the junction energy residual of `test_junctions_conserve_energy` is unchanged (about 330 J/kg). It is a temperature convergence issue in loops of junctions and moved to D-24.
 
 ---
 
@@ -488,7 +494,9 @@ The analytical `calculate_dp_derivative` methods of those components are only ex
 
 **What happens:** two pressure sources at 1.5 bara (359.39 K and 334.81 K) feed mixer `n0` through check valves. `n0` feeds splitter `n6`; one branch runs through a check valve (cracking 0) and the other straight to mixer `n7`, which feeds a tank (level 1 m). Heavy crude, pipes 1 m with ID e⁻² m. Splitter `n6` reports 333.85 K, 0.96 K below the coldest supply, although the network has no cooler and dissipation can only warm the fluid. Reproduce with `HYPOTHESIS_PROFILE=explore python -m pytest "tests/scenarios/test_network_invariants.py::test_dissipation_never_cools_and_mixing_stays_between_its_streams" --hypothesis-seed=102041974071240473996831196549072861885` (the run hit hypothesis's shrink time limit, so the example is not minimal).
 
-**Open question:** whether this is the same loop-convergence residual as the 0.18 K case under D-20 (much larger here), a near-stagnant check-valve branch picking up a wrong temperature (compare D-21), or a mixing error. Find it by shrinking the example first, then printing each port's flow and temperature per outer-loop iteration.
+**Related (moved from D-20):** `test_junctions_conserve_energy` under the explore profile. ISO VG 100 at 0 °C, source 2 bara → splitter → mixer `n8` fed directly and through a heat exchanger (medium 5 °C), inside a loop of splitters, mixers and a check valve → tank. A leaving stream of `n8` is about 330 J/kg (≈0.18 K) off the mixed enthalpy of its arriving streams, more than the 0.1 K `TEMPERATURE_TOL`; reproduce with `@reproduce_failure('6.170.5', b'AXicc2TTYIACRwYNByhTw/4DVIwZLq1xAK4OCBmBMg4CMBkBFBlGoElwXUim4zAJjw24ZJDN4kCzm0nDQQTTbpgYPgupJU66VwGOXR2T')`. A fresh explore run found a larger case (node `n6`, about 2970 J/kg off): `@reproduce_failure('6.170.5', b'AXicc2TQcFBhAANHRg37DxCmhgMHOoMBCjQOQBmOIIjQ4siMS4kjTs149AAhQs4BzkB3DVgtE07H4TadCZtZGg4iCGNJNRSnONz1BwSQxQG7pRzO')`. It is unchanged by the D-20 fix (frozen final properties), so it is not a reporting lag: the property propagation (`property_iterations`, 0.01 K) or the outer loop's 0.05 K step stops before the temperatures around the junction loop have converged.
+
+**Open question:** whether this is the same loop-convergence residual as the energy cases above, a near-stagnant check-valve branch picking up a wrong temperature (compare D-21), or a mixing error. Find it by shrinking the example first, then printing each port's flow and temperature per outer-loop iteration.
 
 **Fix direction:** depends on the cause. The property stays as it is; it fails under the explore profile until this is fixed. The default profile does not draw this case.
 

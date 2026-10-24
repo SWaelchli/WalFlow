@@ -19,7 +19,7 @@ Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_RE
 | Claim | Type | Source (edition) | Used for | Status |
 | :--- | :--- | :--- | :--- | :--- |
 | CR-01 | Standard | ISO 5167-1:2022; ISO 5167-2:2022 | Orifice flow equation for the equivalent orifice | ✅ ISO 5167-1:2022 §5.1 F(1) (equation form) |
-| CR-02 | Standard | ISO 5167-2:2022 | Permanent pressure loss ratio, §5.4 Formula (7) with the model's $C_d$ | ✅ Formula (7) since D-28 (was $1 - \beta^2$) |
+| CR-02 | Standard | ISO 5167-2:2022 | Permanent pressure loss ratio, §5.4 Formula (7) with the model's $C_d$ | ✅ ISO 5167-2:2022 §5.4 Formula (7) |
 | CR-03 | Literature | Wuest (1954), citation not identified; Idelchik, *Handbook of Hydraulic Resistance*, 4th ed. (2008) | Laminar discharge coefficient $C_d \approx 0.2\sqrt{\mathrm{Re}}$ of small orifices | ⚪ Unverified 🚩 |
 | CR-04 | Principle | Hagen-Poiseuille law | Laminar law $\Delta P \propto \mu Q$ | ➖ Principle |
 | CR-05 | Literature | Crane TP-410, *Flow of Fluids* (edition not fixed; newest confirmed 2018) | Resistance coefficient $K$ for the quadratic law | ⚪ Unverified |
@@ -48,11 +48,11 @@ $$\Delta P_{\text{lam}} = K_{\text{lam}}\, \mu\, Q, \qquad \Delta P_{\text{quad}
 
 $$\Delta P_{\text{orifice}} = \underbrace{\frac{\rho\, v_1 |v_1|}{2} \cdot \frac{1 - \beta^4}{C_d^2\, \beta^4}}_{\text{differential pressure}} \cdot r, \qquad v_1 = \frac{Q}{\pi D^2 / 4}$$
 
-With the permanent loss ratio of ISO 5167-2:2022 §5.4 Formula (7), $r = \dfrac{S - C_d\beta^2}{S + C_d\beta^2}$, $S = \sqrt{1 - \beta^4 (1 - C_d^2)}$ (`FluidProperties.get_orifice_permanent_loss_ratio`, D-28).
+With the permanent loss ratio of ISO 5167-2:2022 §5.4 Formula (7), $r = \dfrac{S - C_d\beta^2}{S + C_d\beta^2}$, $S = \sqrt{1 - \beta^4 (1 - C_d^2)}$ (`FluidProperties.get_orifice_permanent_loss_ratio`).
 
 $$C_d(\mathrm{Re}_o) = 0.60 \tanh\!\left(\frac{0.2\sqrt{\mathrm{Re}_o}}{0.60}\right), \qquad \mathrm{Re}_o = \frac{\rho\, |v_o|\, d_{\text{eq}}}{\mu}$$
 
-$C_d$ (`FluidProperties.get_orifice_cd`, audit F1-25) is continuous and monotonic: $0.2\sqrt{\mathrm{Re}}$ (laminar, $\Delta P \propto \mu Q$) at low Re, 0.60 at high Re ($\Delta P \propto \rho Q^2$). So the orifice model moves by itself from viscous to quadratic behaviour as the flow or the viscosity changes.
+$C_d$ (`FluidProperties.get_orifice_cd`) is continuous and monotonic: $0.2\sqrt{\mathrm{Re}}$ (laminar, $\Delta P \propto \mu Q$) at low Re, 0.60 at high Re ($\Delta P \propto \rho Q^2$). So the orifice model moves by itself from viscous to quadratic behaviour as the flow or the viscosity changes.
 
 $D$ is taken from the connected pipe (the upstream pipe first, else the downstream one; DN50 if none).
 
@@ -71,15 +71,15 @@ At this point the equivalent bore runs turbulent, so the orifice model follows t
 
 ### 3.4 Derivative
 
-The class has no analytical derivative; the solver differentiates the outlet pressure numerically (see [base_node.md](base_node.md#33-jacobian), D-23).
+The class has no analytical derivative; the solver differentiates the outlet pressure numerically (see [base_node.md](base_node.md#33-jacobian)).
 
 ## 4. Thermal & Energy Balance
 
-The whole pressure drop is throttling loss (audit F1-16):
+The whole pressure drop is throttling loss:
 
 $$\Delta T = \frac{|\Delta P|}{\rho\, c_p(T)}$$
 
-applied to the outlet for $Q \ge 0$ and to the inlet for $Q < 0$.
+applied to the outlet for $Q \ge 0$ and to the inlet for $Q < 0$, with density and viscosity re-evaluated at both ends.
 
 ## 5. Parameter & Unit Specification Table
 

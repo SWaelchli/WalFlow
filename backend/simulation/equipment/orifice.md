@@ -7,7 +7,7 @@ The Orifice component represents a concentric sharp-edged orifice plate installe
 Two calculation standards are selectable:
 
 - **ISO 5167 (`standard='iso_5167'`, default):** ISO 5167-1:2022 / ISO 5167-2:2022 orifice plates, using the Reader-Harris/Gallagher (RG) discharge-coefficient correlation for the meter coefficient $C$ and the ISO 5167-2:2022 §5.4 Formula (7) permanent-pressure-loss ratio.
-- **Classic Cd (`standard='classic_cd'`):** the Reynolds-corrected discharge-coefficient model of the calibrated restriction and the check valve orifice (`FluidProperties.get_classic_orifice_dp`). Since D-28 its permanent loss uses Formula (7) instead of $1 - \beta^2$, so results differ from before by up to 2.5 %.
+- **Classic Cd (`standard='classic_cd'`):** the Reynolds-corrected discharge-coefficient model of the calibrated restriction and the check valve orifice (`FluidProperties.get_classic_orifice_dp`). Its permanent loss uses Formula (7); files from before this change (loss ratio $1 - \beta^2$) give results up to 2.5 % different.
 
 ## 2. Governing Standards & Reference Literature
 
@@ -17,7 +17,7 @@ Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_RE
 | :--- | :--- | :--- | :--- | :--- |
 | ORI-01 | Standard | ISO 5167-2:2022 | Reader-Harris/Gallagher discharge coefficient (primary implementation standard) | ✅ ISO 5167-2:2022 §5.3.2.1 F(4) |
 | ORI-02 | Standard | ISO 5167-2:2022 | Permanent pressure loss, §5.4 Formula (7) | ✅ ISO 5167-2:2022 §5.4.1 F(7) |
-| ORI-03 | Standard | ISO 5167-2:2022 | Validity limits of the `iso_5167` model | ⚠️ §5.3.1 Reynolds limit, D-26 |
+| ORI-03 | Standard | ISO 5167-2:2022 | Validity limits of the `iso_5167` model | ✅ ISO 5167-2:2022 §5.3.1 |
 | ORI-04 | Standard | ISO 5167-1:2022 | General principles and requirements | ✅ ISO 5167-1:2022 §5.1 F(1) |
 
 Future options (the architecture supports adding them): ASME MFC-3M-2004 (R2025) for orifice plates, Crane TP-410 resistance-coefficient method. Not cited for any claim.
@@ -27,7 +27,7 @@ Future options (the architecture supports adding them): ASME MFC-3M-2004 (R2025)
 | `standard` value | Model | Notes |
 | :--- | :--- | :--- |
 | `iso_5167` | RG coefficient + §5.4 Formula (7) permanent loss | Default. Valid for $\beta \in [0.1, 0.75]$, $d \ge 12.5$ mm, $50 \le D \le 1000$ mm. |
-| `classic_cd` | Legacy $C_d(\mathrm{Re}_o)$ + Formula (7) loss ratio with that $C_d$ (D-28) | Legacy diagrams; loss ratio was $1 - \beta^2$ before D-28. |
+| `classic_cd` | Legacy $C_d(\mathrm{Re}_o)$ + Formula (7) loss ratio with that $C_d$ | Legacy diagrams; loss ratio was $1 - \beta^2$ in older versions. |
 
 ## 3. Physical & Mathematical Implementation
 
@@ -37,7 +37,7 @@ All quantities in SI units (Pa, m³/s, kg/m³, Pa·s, m). Liquids only (expansib
 
 $$\beta = \frac{d}{D}, \qquad A_{\mathrm{pipe}} = \frac{\pi D^2}{4}, \qquad A_{\mathrm{orifice}} = \frac{\pi d^2}{4}$$
 
-The RG computation uses the true geometry (F1-39): $\beta_{\mathrm{eff}} = \min(0.99, \max(0.01, \beta))$ only guards against 0 and 1, and $d$ is not clamped. Outside the ISO limits ($\beta$ 0.1–0.75, $d \ge 12.5$ mm, $D$ 50–1000 mm) the correlation is extrapolated, and `iso_validity_issues` reports the violated limit (D-27).
+The RG computation uses the true geometry: $\beta_{\mathrm{eff}} = \min(0.99, \max(0.01, \beta))$ only guards against 0 and 1, and $d$ is not clamped. Outside the ISO limits ($\beta$ 0.1–0.75, $d \ge 12.5$ mm, $D$ 50–1000 mm) the correlation is extrapolated, and `iso_validity_issues` reports the violated limit.
 
 ### 3.2 Reader-Harris/Gallagher discharge coefficient (ISO 5167-2:2022 Formula (4), corner taps)
 
@@ -80,7 +80,7 @@ A simpler, less accurate approximation $\Delta\omega/\Delta p \approx 1 - \beta^
 
 ISO validity starts at the Reynolds limit $\mathrm{Re}_{\mathrm{valid}}(\beta)$:
 
-$$\mathrm{Re}_{\mathrm{valid}} = \begin{cases} 5000 & \beta \le 0.56 \\ 16000\,\beta^2 & \beta > 0.56 \end{cases} \quad \text{(ISO 5167-2:2022 §5.3.1, D-26)}$$
+$$\mathrm{Re}_{\mathrm{valid}} = \begin{cases} 5000 & \beta \le 0.56 \\ 16000\,\beta^2 & \beta > 0.56 \end{cases} \quad \text{(ISO 5167-2:2022 §5.3.1)}$$
 
 The RG correlation is unphysical at very low $\mathrm{Re}$ (its $(10^6/\mathrm{Re})^{0.3}$ terms diverge as $\mathrm{Re}\to 0$, forcing $\Delta p \to 0$). To keep the Newton solver continuous down to zero flow, the RG coefficient is blended over a band $\mathrm{Re} \in [\mathrm{Re}_{\mathrm{lo}}, \mathrm{Re}_{\mathrm{valid}}]$ with $\mathrm{Re}_{\mathrm{lo}} = 0.4\,\mathrm{Re}_{\mathrm{valid}}$ to a viscous extension:
 
@@ -92,7 +92,7 @@ $$w = \mathrm{smoothstep}\!\left(\frac{\mathrm{Re}_D - \mathrm{Re}_{\mathrm{lo}}
 
 ### 3.6 Derivative
 
-The class has no analytical derivative; the solver differentiates the outlet pressure numerically (see [base_node.md](base_node.md#33-jacobian), D-23).
+The class has no analytical derivative; the solver differentiates the outlet pressure numerically (see [base_node.md](base_node.md#33-jacobian)).
 
 ### 3.7 Legacy model (`standard='classic_cd'`)
 
@@ -100,7 +100,7 @@ Byte-for-byte previous behavior:
 
 $$\Delta p = \underbrace{\tfrac{1}{2}\rho v_{\mathrm{pipe}}^2}_{\text{dynamic}} \cdot \frac{1-\beta^4}{C_d^2\,\beta^4}\cdot r(C_d, \beta), \qquad C_d = C_d(\mathrm{Re}_o) \text{ from `fluid_utils.get_orifice_cd`}$$
 
-with $\beta = \min(0.99, d/D)$ and $r$ from Formula (7) (section 3.4), evaluated with this $C_d$ (D-28). `fluid_utils.get_orifice_cd` is shared by `check_valve_orifice`, `rupture_disc`, and `calibrated_restriction` (tanh blend into 0.60, F1-25).
+with $\beta = \min(0.99, d/D)$ and $r$ from Formula (7) (section 3.4), evaluated with this $C_d$. `fluid_utils.get_orifice_cd` is shared by `check_valve_orifice`, `rupture_disc`, and `calibrated_restriction` (tanh blend into 0.60).
 
 ## 4. Thermal & Energy Balance
 
@@ -108,7 +108,7 @@ Throttling friction dissipation converts pressure energy into fluid thermal enth
 
 $$dT = \frac{|\Delta P|}{\rho\, C_p(T)}$$
 
-applied to the fluid exiting the node (forward flow: inlet→outlet; reverse flow: outlet→inlet).
+applied to the fluid exiting the node (forward flow: inlet→outlet; reverse flow: outlet→inlet), with density and viscosity re-evaluated at both ends.
 
 ## 5. Parameter & Unit Specification Table
 

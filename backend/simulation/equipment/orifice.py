@@ -19,7 +19,7 @@ class Orifice(HydraulicNode):
       Below the Reynolds validity limit C_m is smoothly blended to a viscous extension so
       the Newton solver stays continuous down to zero flow.
     - `'classic_cd'`: Reynolds-corrected discharge coefficient model (C_d from
-      `FluidProperties.get_orifice_cd`) with the Formula (7) loss ratio (`get_classic_orifice_dp`, D-28).
+      `FluidProperties.get_orifice_cd`) with the Formula (7) loss ratio (`get_classic_orifice_dp`).
     """
     VALID_STANDARDS = ('iso_5167', 'classic_cd')
 
@@ -38,11 +38,11 @@ class Orifice(HydraulicNode):
 
     @staticmethod
     def _beta_eff(beta: float) -> float:
-        """Beta used in the correlations: the true beta (F1-39), only guarded against 0 and 1."""
+        """Beta used in the correlations: the true beta, only guarded against 0 and 1."""
         return min(0.99, max(0.01, beta))
 
     def iso_validity_issues(self, re_pipe: float = None) -> list:
-        """Limits of ISO 5167-2 that the current geometry / operating point violates (F1-39)."""
+        """Limits of ISO 5167-2 that the current geometry / operating point violates."""
         pipe_d = max(0.001, getattr(self, 'pipe_diameter', 0.05248))
         orif_d = self.orifice_diameter
         beta = orif_d / pipe_d
@@ -72,7 +72,7 @@ class Orifice(HydraulicNode):
 
     @staticmethod
     def _re_valid(beta: float) -> float:
-        """ISO 5167-2:2022 §5.3.1 lower Reynolds validity limit (corner taps), 16 000·β² above β 0.56 (D-26)."""
+        """ISO 5167-2:2022 §5.3.1 lower Reynolds validity limit (corner taps), 16 000·β² above β 0.56."""
         return 5000.0 if beta <= 0.56 else 16000.0 * beta ** 2
 
     @classmethod
@@ -207,5 +207,10 @@ class Orifice(HydraulicNode):
             cp = FluidProperties.get_specific_heat(fluid_type, outlet.temperature)
             dt = abs(dp) / (outlet.density * cp)
             inlet.temperature = outlet.temperature + dt
+
+        # Density and viscosity of each port at its own temperature (the leaving port includes the throttling heat)
+        for port in (inlet, outlet):
+            port.density = FluidProperties.get_density(fluid_type, port.temperature)
+            port.viscosity = FluidProperties.get_viscosity(fluid_type, port.temperature)
 
         return dp

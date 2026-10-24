@@ -46,7 +46,7 @@ class NetworkSolver:
     # Class-level cache: (topology_key, active_case_id) -> np.ndarray (converged state vector)
     _warm_start_cache: Dict[Tuple, np.ndarray] = {}
     _MAX_WARM_START_ENTRIES: int = 128
-    # Solves run in worker threads (asyncio.to_thread); every cache access goes through this lock (F1-14)
+    # Solves run in worker threads (asyncio.to_thread); every cache access goes through this lock
     _warm_start_lock = threading.Lock()
 
     @classmethod
@@ -66,6 +66,7 @@ class NetworkSolver:
         self.node_to_key = {id(n): nid for nid, n in network.nodes.items()}
         
         self.last_prop_iters = 0
+        self.properties_frozen = False   # the final solve and its telemetry keep the converged properties
         self.held_closed_ids = set()   # auto relief devices the relief passes hold closed (leakage does not lift them)
         self.active_case_id = getattr(network, 'active_case_id', None) or 'default'
         self.warm_start_status = "Cold Start"
@@ -90,7 +91,7 @@ class NetworkSolver:
             if edge['source'] not in inactive_node_ids and edge['target'] not in inactive_node_ids:
                 active_edges.append(edge)
                 
-        # F1-10: connected circuits (counting edges through inactive nodes) that contain no pressure reference
+        # Connected circuits (counting edges through inactive nodes) that contain no pressure reference
         full_adj = {nid: set() for nid in self.all_node_ids}
         for edge in self.all_edges_list:
             if edge['source'] in full_adj and edge['target'] in full_adj:
@@ -206,7 +207,7 @@ class NetworkSolver:
                 self.node_outgoing_edge_indices[edge['source']].append(j)
 
     # ------------------------------------------------------------------
-    # Pressure-control outer loop (F1-01, F1-37)
+    # Pressure-control outer loop
     #
     # Unknown per controller: v = ln(opening). Error per controller:
     #   f = sign * (sensed - set) [bar], rising with the opening for PRV (sensed downstream)
@@ -226,7 +227,7 @@ class NetworkSolver:
     TCV_MIX_MIN, TCV_MIX_MAX = 0.001, 0.999
     TCV_START_MIX = 0.5
     TCV_MAX_STEP = 3.0              # trust region in z (odds change by at most a factor 20 per iteration)
-    TCV_BRACKET_AGE = 4             # regular steps a bracket end stays valid without being refreshed (D-31)
+    TCV_BRACKET_AGE = 4             # regular steps a bracket end stays valid without being refreshed
 
     @staticmethod
     def _logit(mix: float) -> float:
@@ -248,7 +249,7 @@ class NetworkSolver:
         split; the secant only spans two regular steps. The step factor halves when the error changes sign
         without at least halving (overshoot) and recovers while the error falls with the same sign.
         Once regular steps have seen both signs of the error, the latest mix on each side brackets the
-        setpoint; a step that would leave the bracket bisects it instead (D-31: an S-shaped T_out(z), e.g.
+        setpoint; a step that would leave the bracket bisects it instead (an S-shaped T_out(z), e.g.
         laminar paths, otherwise lets the flat-region secant overshoot into a cycle). tm: per-TCV memory
         across outer iterations.
         """
@@ -626,6 +627,7 @@ class NetworkSolver:
     def solve(self, method=None):
         self.prune_topology()
         self._clear_stagnant_flags()   # a failed solve leaves no flags from the previous run
+        self.properties_frozen = False
         start_time = time.perf_counter()
         max_outer_iterations = 100
 
@@ -640,7 +642,7 @@ class NetworkSolver:
 
         island_error = self._island_error()
         if island_error:
-            # F1-10: a circuit without any pressure reference has no defined pressure level
+            # A circuit without any pressure reference has no defined pressure level
             return self._failure_stats(start_time, method, island_error)
 
         state = {
@@ -658,10 +660,10 @@ class NetworkSolver:
                     state["residuals"] = getattr(self, '_last_evaluated_residuals', None)
                 return False
             sol, num_int, inner_iters, fallback, residuals = res
-            state.update(sol=sol, num_int=num_int, residuals=residuals, x=sol)
+            state.update(sol=sol, num_int=num_int, residuals=residuals, x=sol, frozen=self.properties_frozen)
             state["inner"] += inner_iters
             state["fallback"] = state["fallback"] or fallback
-            if propagate:
+            if propagate and not self.properties_frozen:
                 self._propagate_properties(sol[num_int:])
             return True
 
@@ -696,6 +698,7 @@ class NetworkSolver:
         properties_converged = False
         controls_converged = not controllers
         tcv_settled = not self.tcv_node_indices
+        tcv_on_setpoint = False
         memo = {}
         base_states = {}
         dirty = False
@@ -703,13 +706,16 @@ class NetworkSolver:
         for it in range(max_outer_iterations):
             outer_iterations += 1
 
-            # Control positions this hydraulic solution belongs to (F1-02)
+            # Control positions this hydraulic solution belongs to
             base_states = {idx: (self.nodes_list[idx].opening_pct, self.nodes_list[idx].locked_up)
                            for idx in self.control_node_indices}
             for idx in self.tcv_node_indices:
                 base_states[f"tcv_{idx}"] = self.nodes_list[idx].mix_ratio
             dirty = False
 
+            # Once the properties have settled they are held fixed, so the controllers converge on pressures
+            # that belong to the reported densities and viscosities
+            solved_frozen = self.properties_frozen
             if not run_hydraulics():
                 break
             relief_changed = update_relief_states()
@@ -727,7 +733,7 @@ class NetworkSolver:
                 max_temp_change = 1.0
             prev_temperatures = curr_temperatures
 
-            # 1. Pressure controllers (Newton on the openings, F1-01)
+            # 1. Pressure controllers (Newton on the openings)
             if controllers and relief_changed:
                 # The solution above belongs to the previous relief state: differencing against it would mix
                 # the relief jump into the Jacobian. Re-solve with the new state first.
@@ -738,24 +744,37 @@ class NetworkSolver:
             else:
                 controls_converged = True
 
-            # 2. 3-Way Thermal Control Valves (mix_ratio is the opening of the user-designated HOT port)
-            max_err_temp = 0.0
-            for idx in self.tcv_node_indices:
-                max_err_temp = max(max_err_temp, abs(self._tcv_step(self.nodes_list[idx], tcv_memo[idx])))
+            # 2. 3-Way Thermal Control Valves (mix_ratio is the opening of the user-designated HOT port);
+            # they act on temperatures, so they only move while the properties are propagated
+            if self.tcv_node_indices and not solved_frozen:
+                max_err_temp = 0.0
+                for idx in self.tcv_node_indices:
+                    max_err_temp = max(max_err_temp, abs(self._tcv_step(self.nodes_list[idx], tcv_memo[idx])))
+                max_mix_change = max(abs(self.nodes_list[idx].mix_ratio - base_states[f"tcv_{idx}"])
+                                     for idx in self.tcv_node_indices)
+                tcv_on_setpoint = max_err_temp < self.TCV_TOL_K
+                tcv_settled = tcv_on_setpoint or (it >= 2 and max_mix_change < 1e-6)
+            elif self.tcv_node_indices and tcv_on_setpoint:
+                # The frozen solve moves the flow split a little: a TCV that was on its setpoint must still be
+                tcv_settled = all(abs(self.nodes_list[idx].outlets[0].temperature - self.nodes_list[idx].set_temperature)
+                                  < self.TCV_TOL_K for idx in self.tcv_node_indices)
 
             properties_converged = (max_temp_change < 0.05)
 
-            if self.tcv_node_indices:
-                max_mix_change = max(abs(self.nodes_list[idx].mix_ratio - base_states[f"tcv_{idx}"])
-                                     for idx in self.tcv_node_indices)
-                tcv_settled = (max_err_temp < self.TCV_TOL_K) or (it >= 2 and max_mix_change < 1e-6)
-
-            if controls_converged and tcv_settled and properties_converged and not relief_changed:
+            if controls_converged and tcv_settled and properties_converged and solved_frozen and not relief_changed:
                 break
+            # Freeze only on settled controllers, so the frozen properties belong to (nearly) the reported flows.
+            # Controllers that still moved on frozen properties change the flows: propagate once more (and let the
+            # TCVs check their temperatures) before freezing again
+            freeze = (not solved_frozen and properties_converged and tcv_settled and controls_converged
+                      and not relief_changed)
+            if freeze != self.properties_frozen:
+                memo.clear()    # the property change would look like a controller overshoot
+            self.properties_frozen = freeze
 
         saturated = []
         if state["error"] is None and state["sol"] is not None:
-            # F1-02: report the hydraulic solution together with the control positions it was solved with;
+            # Report the hydraulic solution together with the control positions it was solved with;
             # the loop may have moved them afterwards (e.g. at its iteration limit).
             for idx in self.control_node_indices:
                 node = self.nodes_list[idx]
@@ -771,7 +790,7 @@ class NetworkSolver:
                 run_hydraulics()
                 relief_changed = update_relief_states()
 
-            # F1-15: with the control positions frozen, iterate the fluid properties until the reported
+            # With the control positions frozen, iterate the fluid properties until the reported
             # pressures belong to the reported temperatures (the loop may have stopped at its limit)
             if state["error"] is None and not properties_converged:
                 for _ in range(20):
@@ -785,15 +804,28 @@ class NetworkSolver:
                         properties_converged = True
                         break
 
+            # A solve followed by a property update belongs to the previous properties (iteration limit):
+            # solve once more with the final properties held fixed, so the reported pressures satisfy every
+            # component's equation with the reported densities and viscosities.
             num_int = len(self.internal_node_indices)
-            sol = state["sol"]
-            self._update_telemetry(sol[:num_int], sol[num_int:])
+            last_solve_frozen = state.get("frozen", False)
+            self.properties_frozen = True
+            try:
+                if state["error"] is None and not last_solve_frozen and not run_hydraulics(fatal=False, propagate=False):
+                    properties_converged = False    # reported pressures still lag the properties
+                sol = state["sol"]
+                self._update_telemetry(sol[:num_int], sol[num_int:])
+                for node in self.nodes_list:
+                    if isinstance(node, (CentrifugalPump, VolumetricPump)) and node.inlets:
+                        node.update_npsh(node.inlets[0])   # NPSHa from the reported suction pressure
+            finally:
+                self.properties_frozen = False
             if controllers:
                 controls_converged, saturated = self._controller_report(controllers)
                 for st in controllers.values():
                     if st["state"] == "lockup":
                         st["node"].opening_pct = 0.0    # closed tight; the solver pinned its outlet at the setpoint
-            # A 3-way TCV off its setpoint at the iteration limit is a control loop that did not settle (D-31)
+            # A 3-way TCV off its setpoint at the iteration limit is a control loop that did not settle
             controls_converged = controls_converged and tcv_settled
 
         final_sol_x = state["sol"]
@@ -825,7 +857,7 @@ class NetworkSolver:
         return stats
 
     def _store_warm_start(self, x) -> None:
-        """Remember the final state of a solve as the next start (F1-14: never intermediate control iterations)."""
+        """Remember the final state of a solve as the next start (never intermediate control iterations)."""
         gs = getattr(self.network, 'global_settings', None)
         if x is None or not self.persist_warm_start or not (getattr(gs, 'warm_start', True) if gs else True):
             return
@@ -858,7 +890,7 @@ class NetworkSolver:
         }
 
     def _island_error(self):
-        """F1-10: message for connected circuits that contain no tank, pressure source or flow source."""
+        """Message for connected circuits that contain no tank, pressure source or flow source."""
         if not getattr(self, 'island_groups', None):
             return None
         names = []
@@ -870,7 +902,7 @@ class NetworkSolver:
                 "Connect it to a tank or source.")
 
     def _physical_validity(self) -> Dict[str, Any]:
-        """F1-07: ports at negative absolute pressure or below vapour pressure are not a physical result."""
+        """Ports at negative absolute pressure or below vapour pressure are not a physical result."""
         gs = getattr(self.network, 'global_settings', None)
         fluid = getattr(gs, 'fluid_type', 'water') if gs else 'water'
         issues = []
@@ -879,7 +911,7 @@ class NetworkSolver:
             node = self.network.nodes[nid]
             if isinstance(node, Pipe):
                 continue
-            # F1-31: fluid correlations are only valid inside the fluid's temperature range
+            # Fluid correlations are only valid inside the fluid's temperature range
             t_ports = [p.temperature - 273.15 for p in node.inlets + node.outlets if p.flow_rate != 0.0]
             if t_ports and (min(t_ports) < t_lo or max(t_ports) > t_hi):
                 t_bad = min(t_ports) if min(t_ports) < t_lo else max(t_ports)
@@ -1036,7 +1068,7 @@ class NetworkSolver:
             if self._use_mcp_for_node(src_node):
                 # Complementarity rows (check valves, closed relief devices): the node itself decides which
                 # branch of its model applies at the current state, so differentiate exactly that function
-                # numerically instead of an analytic form that can describe a different branch (F1-12).
+                # numerically instead of an analytic form that can describe a different branch.
                 pipe = edge['pipe']
                 pipe_density = pipe.inlets[0].density
                 pipe_viscosity = pipe.inlets[0].viscosity
@@ -1134,7 +1166,7 @@ class NetworkSolver:
                         dp_deriv_src_signed = src_node.calculate_dp_derivative(q_edges[j], density, viscosity)
                     else:
                         # Valves, regulators, orifices, filters...: differentiate the node's own outlet
-                        # pressure so viscosity corrections and branch switches are included (F1-12)
+                        # pressure so viscosity corrections and branch switches are included
                         dp_deriv_src_signed = self._numeric_derivative(
                             lambda q_: self._get_node_p_out(src_node, p_in_all[src_idx], q_, q_), q_edges[j])
 
@@ -1170,7 +1202,7 @@ class NetworkSolver:
         Custom high-performance sparse Newton-Raphson solver using backtracking line search.
 
         Converged means the residual is below `tol` AND the next Newton step moves no flow by more than `step_tol`
-        (scaled units, L/s). The step test is what keeps low-loss sections honest (F1-06): a 10 Pa
+        (scaled units, L/s). The step test is what keeps low-loss sections honest: a 10 Pa
         residual alone is satisfied by 150 L/min in a DN200 line between equal tank levels.
         """
         import scipy.sparse.linalg as spla
@@ -1266,7 +1298,7 @@ class NetworkSolver:
             x0 = np.concatenate([x0_raw[:num_internal] / p_scale, x0_raw[num_internal:] / q_scale])
 
         def objective(x_scaled):
-            check_deadline()   # F2-13: cooperative solve timeout
+            check_deadline()   # cooperative solve timeout
             p_in_internal = x_scaled[:num_internal] * p_scale
             q_edges = x_scaled[num_internal:] * q_scale
             p_in_all = np.zeros(len(self.nodes_list))
@@ -1303,7 +1335,7 @@ class NetworkSolver:
                 if isinstance(src_node, ThreeWayTCV):
                     p_src_out = p_in_all[src_idx]
                 elif getattr(src_node, 'locked_up', False):
-                    p_src_out = src_node.set_pressure   # F1-37: closed regulator holds its setpoint downstream
+                    p_src_out = src_node.set_pressure   # closed regulator holds its setpoint downstream
                 elif self._use_mcp_for_node(src_node):
                     pipe = edge['pipe']
                     dp_pipe = pipe.calculate_delta_p(q_edges[j], pipe.inlets[0].density, pipe.inlets[0].viscosity)
@@ -1349,7 +1381,7 @@ class NetworkSolver:
         tol = getattr(gs, 'tolerance', 1e-6) if gs else 1e-6
         fallback_used = False
 
-        # F1-06: honour the user tolerance (scaled units: 1e-6 = 0.1 Pa); no 10 Pa floor
+        # Honour the user tolerance (scaled units: 1e-6 = 0.1 Pa); no 10 Pa floor
         residual_tolerance = max(1e-8, tol)
 
         def run_newton(x_init):
@@ -1363,7 +1395,7 @@ class NetworkSolver:
         def is_converged_solution(candidate):
             return bool(candidate.success and np.max(np.abs(objective(candidate.x))) <= residual_tolerance)
 
-        # F1-11: whichever method is chosen, the other one is the fallback, and both are held to the same
+        # Whichever method is chosen, the other one is the fallback, and both are held to the same
         # tests: converged to the residual tolerance AND physical (no port below -1 bar(a), no reverse pump flow)
         primary, secondary = (run_newton, run_lm) if method == 'sparse_newton' else (run_lm, run_newton)
         sol = primary(x0)
@@ -1390,7 +1422,7 @@ class NetworkSolver:
         if is_converged:
             final_p = sol.x[:num_internal] * p_scale
             final_q = sol.x[num_internal:] * q_scale
-            self._last_objective, self._last_x_scaled = objective, sol.x.copy()   # Jacobian checks (F1-12 test)
+            self._last_objective, self._last_x_scaled = objective, sol.x.copy()   # Jacobian checks (test_jacobian.py)
             self._update_telemetry(final_p, final_q)
             
             converged_x = np.concatenate([final_p, final_q])
@@ -1443,7 +1475,7 @@ class NetworkSolver:
         if getattr(node, 'locked_up', False):
             return node.set_pressure
         if isinstance(node, LinearRegulator) and not node.backpressure and                 self.node_to_key.get(id(node)) in self.pruned_node_ids:
-            # F1-37: a regulator without any flow path (dead end) is locked up, not wide open
+            # A regulator without any flow path (dead end) is locked up, not wide open
             return min(p_in, node.set_pressure)
         if isinstance(node, VolumetricPump):
             return p_in + node.calculate_delta_p(q_flow, density, viscosity, p_in_pa=p_in)
@@ -1470,7 +1502,8 @@ class NetworkSolver:
             return p_in
 
     def _update_telemetry(self, p_in_internal, q_edges):
-        self._propagate_properties(q_edges)
+        if not self.properties_frozen:
+            self._propagate_properties(q_edges)
         
         # Populate all nodes' pressures and edges' flows (including pruned ones)
         gs = getattr(self.network, 'global_settings', None)
@@ -1787,12 +1820,12 @@ class NetworkSolver:
             return 0
 
     def _src_port(self, edge, node):
-        """Outlet port of `node` that the edge leaves from (F1-13: not always port 0)."""
+        """Outlet port of `node` that the edge leaves from (not always port 0)."""
         idx = self._parse_port_idx(edge.get('source_port', 'outlet-0'))
         return node.outlets[idx] if idx < len(node.outlets) else node.outlets[0]
 
     def _tgt_port(self, edge, node):
-        """Inlet port of `node` that the edge arrives at (F1-13: not always port 0)."""
+        """Inlet port of `node` that the edge arrives at (not always port 0)."""
         idx = self._parse_port_idx(edge.get('target_port', 'inlet-0'))
         return node.inlets[idx] if idx < len(node.inlets) else node.inlets[0]
 
@@ -1878,7 +1911,7 @@ class NetworkSolver:
                 port.pressure = p
 
 RELIEF_NODE_TYPES = ('pressure_safety_valve', 'rupture_disc')
-# The check valve with orifice is no leak path: its bypass orifice always ties both sides together (D-09)
+# The check valve with orifice is no leak path: its bypass orifice always ties both sides together
 CHECK_VALVE_TYPES = ('check_valve',)
 # Leak paths out of a shut-in section, strongest first (ROADMAP "Undefined Pressure in Stagnant Branches")
 LEAK_STOPPED_PUMP, LEAK_CHECK_VALVE, LEAK_RELIEF_SEAT = 0, 1, 2
@@ -1948,7 +1981,7 @@ def _backpressure_result(node, k, tel_relieved, tel_closed):
 
 def _find_relief_openings(network, opening_groups, auto_ids, original_states, extract_telemetry_fn):
     """
-    F1-08: steady state at the moment each relief device opens.
+    Steady state at the moment each relief device opens.
 
     The case's relief drivers (is_relief_driver and relief_ramp_enabled: pumps, sources) are
     scaled with a ramp factor λ from 0 to their case value (λ = 1). For each group of devices
@@ -2045,7 +2078,7 @@ def _run_sequential_relief_passes(network, solver, extract_telemetry_fn):
     Pass 1: Lock all relief valves forced_closed to calculate unmitigated baseline.
     Passes 2+: Sequentially unlock relief devices starting with the lowest setpoint first.
              Only unlock higher setpoint devices if lower setpoint devices fail to suppress overpressure.
-    Then the opening of each device is located on a ramp of the relief drivers (F1-08).
+    Then the opening of each device is located on a ramp of the relief drivers.
 
     Returns (stats, telemetry_mitigated, telemetry_unmitigated, has_psv, telemetry_peak);
     telemetry_peak is None when the peak is the relieved state itself or is unavailable.
@@ -2069,10 +2102,10 @@ def _run_sequential_relief_passes(network, solver, extract_telemetry_fn):
         node.reset_run_state()
 
     first_stats = solver.solve()
-    first_warm_start_status = first_stats.get("warm_start_status")   # F0-06: report the user's run, not the last pass
+    first_warm_start_status = first_stats.get("warm_start_status")   # Report the user's run, not the last pass
     telemetry_unmitigated = extract_telemetry_fn(network)
 
-    # F1-03: devices the user forced open or closed return to that state for the relieved passes
+    # Devices the user forced open or closed return to that state for the relieved passes
     for k, node in psv_items:
         node.forced_state = original_states[k]
 
@@ -2098,7 +2131,7 @@ def _run_sequential_relief_passes(network, solver, extract_telemetry_fn):
         for node in auto_psv_nodes:
             if node.forced_state == "forced_closed":
                 set_p = node.set_pressure_bara
-                # F1-09: the opening driver (inlet gauge, differential or pilot pressure) reaches its threshold
+                # The opening driver (inlet gauge, differential or pilot pressure) reaches its threshold
                 if node.inlets and node.opening_margin_pa() >= 0.0:
                     breached_nodes.append((set_p, node))
 
@@ -2137,7 +2170,7 @@ def _run_sequential_relief_passes(network, solver, extract_telemetry_fn):
     # -------------------------------------------------------------------------
     # 1. Relieved: steady-state max pressure with the relief devices in their final state.
     # 2. Peak: highest max pressure over the opening snapshots (each device exactly at its
-    #    set pressure, found on the driver ramp) and the relieved state (F1-08).
+    #    set pressure, found on the driver ramp) and the relieved state.
     # 3. Unmitigated: steady-state max pressure with ALL relief devices held closed.
     # =========================================================================
     relieved_pressure_bara = _telemetry_max_pressure_bara(telemetry_mitigated)
