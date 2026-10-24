@@ -16,7 +16,7 @@ const NO_DN50 = {
   ],
 };
 
-describe('F3-02: default pipe for new connections is DN50 STD', () => {
+describe('default pipe for new connections is DN50 STD', () => {
   it('uses manual ASME B36.10M DN50 STD when no pipe class is available', () => {
     const d = getDefaultPipeData([], true);
     expect(d).toMatchObject({ pipe_class_id: 'manual', standardDn: 50, standardSch: 'STD', outer_diameter_mm: 60.3, wall_thickness_mm: 3.91 });
@@ -40,7 +40,7 @@ describe('F3-02: default pipe for new connections is DN50 STD', () => {
   });
 });
 
-describe('F3-02: display of pipes without catalog references', () => {
+describe('display of pipes without catalog references', () => {
   it('shows an older pipe with a standard bore as Manual with its matching DN', () => {
     expect(resolvePipeSelection({ diameter_m: 0.05248 })).toEqual({ classId: 'manual', dn: 50, sch: 'STD', isCustomId: false, scheduleStandard: 'ASME_B36_10M_SCHEDULES' });
   });

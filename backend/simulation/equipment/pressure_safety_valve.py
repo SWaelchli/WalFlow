@@ -20,7 +20,7 @@ class PressureSafetyValve(ReliefDevice):
     - balanced bellows: inlet gauge pressure against the set pressure (independent of backpressure);
     - pilot: gauge pressure at the pilot sensing point (own inlet without a sensing line) against the set pressure.
 
-    Steady-state lift (F1-04):
+    Steady-state lift:
     - modulating: closed below the threshold, lift linear to full lift at 10 % overpressure;
     - pop action: closed until the driver reaches the threshold, then full lift. It stays open while the
       full-lift driver is at or above the reseat threshold·(1 − blowdown). Below reseat the valve would cycle

@@ -98,7 +98,7 @@ class Reducer(HydraulicNode):
         return density * abs(flow_rate) / self.area_avg * self.d_avg / max(1e-7, viscosity)
 
     def _get_friction_factor(self, re: float) -> float:
-        """Darcy friction factor over the average diameter, Churchill (1977) shared with the pipe (D-07)."""
+        """Darcy friction factor over the average diameter, Churchill (1977) shared with the pipe."""
         return FluidProperties.get_darcy_friction_factor(re, self.roughness / self.d_avg)
 
     def calculate_losses(self, flow_rate: float, density: float, viscosity: float) -> tuple[float, float, float]:

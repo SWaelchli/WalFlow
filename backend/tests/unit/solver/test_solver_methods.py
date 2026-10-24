@@ -1,7 +1,6 @@
-"""F1-11: Newton and Levenberg–Marquardt are interchangeable; the fallback is held to the same checks."""
+"""Newton and Levenberg–Marquardt are interchangeable; the fallback is held to the same checks."""
 import pytest
 
-pytestmark = pytest.mark.audit("F1-11")
 
 import pytest
 

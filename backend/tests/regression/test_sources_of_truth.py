@@ -1,9 +1,8 @@
-"""F2-24: `global_roughness` is gone (pipes use the pipe class or their own roughness); older files that still
+"""`global_roughness` is gone (pipes use the pipe class or their own roughness); older files that still
 contain it load unchanged; the frontend fluid list is the backend catalogue."""
 from walflow_paths import REPO_ROOT
 import pytest
 
-pytestmark = pytest.mark.audit("F2-24")
 
 import glob
 import os

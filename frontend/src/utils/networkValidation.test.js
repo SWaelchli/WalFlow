@@ -117,7 +117,7 @@ describe('validateNetwork', () => {
     expect(codes(validateNetwork(d).errors)).toContain('unknown_endpoint');
   });
 
-  it('warns about an open outlet (the F3-04 case: orifice outlet left open)', () => {
+  it('warns about an open outlet (orifice outlet left open)', () => {
     const d = {
       nodes: [node('t1', 'tank'), node('o1', 'orifice')],
       edges: [pipe('e1', 't1', 'o1')],
@@ -190,7 +190,7 @@ describe('validateNetwork', () => {
   });
 });
 
-// F5-01: every shipped drawing passes the model checks, so none of them is blocked from running
+// Every shipped drawing passes the model checks, so none of them is blocked from running
 describe('shipped diagrams pass the model checks', () => {
   const dataDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'data');
   const files = [

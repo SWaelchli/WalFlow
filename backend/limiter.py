@@ -15,7 +15,7 @@ def trusted_proxy_hops() -> int:
         return 1
 
 def get_client_ip(request: Request) -> str:
-    # F2-12: the left side of X-Forwarded-For is client-controlled; only entries appended by our own proxies
+    # The left side of X-Forwarded-For is client-controlled; only entries appended by our own proxies
     # count, so take the address `hops` entries from the right (the peer the outermost trusted proxy saw).
     hops = trusted_proxy_hops()
     forwarded = request.headers.get("X-Forwarded-For")

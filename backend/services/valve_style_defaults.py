@@ -48,7 +48,7 @@ IEC_60534_TABLE_D2_DATA = [
     for code, vtype, trim, direction, fl, xt, fd in _TABLE_D2_ROWS
 ]
 
-# Default style of a new control valve; matches the backend defaults fl = 0.9, fd = 0.46 (D-29)
+# Default style of a new control valve; matches the backend defaults fl = 0.9, fd = 0.46
 DEFAULT_VALVE_STYLE_ID = f"{IEC_60534_TABLE_D2_CODE}:globe_single_contoured_open"
 
 EXAMPLE_VALVE_STYLE_CATALOGUES = [

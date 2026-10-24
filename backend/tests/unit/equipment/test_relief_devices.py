@@ -1,15 +1,14 @@
 """
 B1c: relief devices.
 
-F1-03  forced open is solved as open (PSV full lift, disc burst) and survives the unmitigated pass
-F1-09  set / burst pressure in barg; a device opens when the inlet gauge pressure reaches it
-F1-04  pop action: full lift above the reseat pressure, "cycling" (solved like a modulating valve) below
-F1-38  capacity utilisation against the rated flow at 10 % overpressure, not against 1 bar
-B1c    the open/closed state is held during a Newton solve and changed only between solves
+forced open is solved as open (PSV full lift, disc burst) and survives the unmitigated pass
+set / burst pressure in barg; a device opens when the inlet gauge pressure reaches it
+pop action: full lift above the reseat pressure, "cycling" (solved like a modulating valve) below
+capacity utilisation against the rated flow at 10 % overpressure, not against 1 bar
+the open/closed state is held during a Newton solve and changed only between solves
 """
 import pytest
 
-pytestmark = pytest.mark.audit("B1c", "F1-09", "F1-38")
 
 import math
 import pytest
@@ -68,10 +67,10 @@ def _pump_to_psv(psv, head_bar=6.0):
     return HydraulicNetwork(nodes=nodes, edges=edges)
 
 
-# --- F1-09: gauge set pressure ------------------------------------------------------------------
+# --- gauge set pressure ------------------------------------------------------------------
 
 @pytest.mark.parametrize("p_src_bara, opens", [(10.99, False), (11.03, True)])
-def test_f1_09_set_10_barg_opens_at_11_013_bara(p_src_bara, opens):
+def test_set_10_barg_opens_at_11_013_bara(p_src_bara, opens):
     psv = PressureSafetyValve("PSV", set_pressure_barg=10.0, cv=1.0, action_mode="modulating")
     _, _, stats = _header_to_drain(psv, p_src_bara * 1e5)
     assert stats["success"]
@@ -81,15 +80,15 @@ def test_f1_09_set_10_barg_opens_at_11_013_bara(p_src_bara, opens):
     assert psv.status == ("modulating" if opens else "closed")
 
 
-def test_f1_09_opening_follows_the_atmospheric_pressure_setting():
+def test_opening_follows_the_atmospheric_pressure_setting():
     """At 0.9 bar(a) ambient, 10 barg is 10.9 bar(a): a 10.95 bar(a) header now lifts the valve."""
     psv = PressureSafetyValve("PSV", set_pressure_barg=10.0, cv=1.0, action_mode="modulating")
     _, _, stats = _header_to_drain(psv, 10.95e5, atmospheric_pressure=90000.0)
     assert stats["success"] and psv.inlets[0].flow_rate > 1e-6
 
 
-def test_f1_09_pop_opening_snapshot_in_gauge():
-    """The relief ramp (F1-08) finds the opening at set (barg) + P_atm."""
+def test_pop_opening_snapshot_in_gauge():
+    """The relief ramp finds the opening at set (barg) + P_atm."""
     psv = PressureSafetyValve("PSV", set_pressure_barg=3.0, cv=0.5, action_mode="pop_action")
     net = _pump_to_psv(psv)
     stats, tel, *_ = run_sequential_relief_simulation(net, NetworkSolver(net), extract_telemetry)
@@ -98,9 +97,9 @@ def test_f1_09_pop_opening_snapshot_in_gauge():
     assert abs(dev["inlet_at_opening_bara"] - 4.01325) < 0.01
 
 
-# --- F1-38: capacity ------------------------------------------------------------------------------
+# --- capacity ------------------------------------------------------------------------------
 
-def test_f1_38_capacity_is_100_pct_at_10_pct_overpressure():
+def test_capacity_is_100_pct_at_10_pct_overpressure():
     """Audit C4: set 20 barg, Cv 10, inlet at 22 barg relieving to atmosphere = full lift, rated flow."""
     psv = PressureSafetyValve("PSV", set_pressure_barg=20.0, cv=10.0, action_mode="modulating", valve_type="balanced_bellows")
     _, _, stats = _header_to_drain(psv, P_ATM + 22.0e5)
@@ -113,7 +112,7 @@ def test_f1_38_capacity_is_100_pct_at_10_pct_overpressure():
     assert psv.status == "open" and psv.lift_pct > 99.9
 
 
-def test_f1_38_overcapacity_above_rated_flow():
+def test_overcapacity_above_rated_flow():
     """Forced open at 30 barg inlet: flow above the rated flow → overcapacity, ratio √(30/22)."""
     psv = PressureSafetyValve("PSV", set_pressure_barg=20.0, cv=10.0, forced_state="forced_open")
     _, _, stats = _header_to_drain(psv, P_ATM + 30.0e5)
@@ -121,7 +120,7 @@ def test_f1_38_overcapacity_above_rated_flow():
     assert math.isclose(psv.capacity_utilization_pct, 100.0 * math.sqrt(30.0 / 22.0), rel_tol=0.005)
 
 
-def test_f1_38_reduced_bore_disc_capacity():
+def test_reduced_bore_disc_capacity():
     """Reduced-bore disc: rated = orifice flow at 1.1·burst (gauge); at 1.21·burst the ratio is √1.1."""
     rd = RuptureDisc("RD", burst_pressure_barg=10.0, bore_type="reduced_bore", pipe_diameter=0.05248, orifice_diameter=0.02)
     nodes, edges, stats = _header_to_drain(rd, P_ATM + 12.1e5)
@@ -131,9 +130,9 @@ def test_f1_38_reduced_bore_disc_capacity():
     assert rd.status == "overcapacity"
 
 
-# --- F1-04: pop action and blowdown -----------------------------------------------------------------
+# --- pop action and blowdown -----------------------------------------------------------------
 
-def test_f1_04_undersized_pop_valve_stays_open_at_full_lift():
+def test_undersized_pop_valve_stays_open_at_full_lift():
     """Cv 0.5 cannot pull the pump below the reseat pressure: full lift, flow by the Cv definition."""
     psv = PressureSafetyValve("PSV", set_pressure_barg=3.0, cv=0.5, action_mode="pop_action", blowdown_pct=7.0)
     net = _pump_to_psv(psv)
@@ -146,7 +145,7 @@ def test_f1_04_undersized_pop_valve_stays_open_at_full_lift():
     assert math.isclose(psv.inlets[0].flow_rate, cv_flow_m3s(0.5, dp, rho), rel_tol=0.01)
 
 
-def test_f1_04_oversized_pop_valve_cycles_near_set_pressure():
+def test_oversized_pop_valve_cycles_near_set_pressure():
     """Cv 15 at full lift would drop the inlet far below reseat (2.79 barg): the valve cycles. Steady
     state: the modulating equivalent holds the inlet between set and +10 %, status "cycling"."""
     psv = PressureSafetyValve("PSV", set_pressure_barg=3.0, cv=15.0, action_mode="pop_action", blowdown_pct=7.0)
@@ -163,7 +162,7 @@ def test_f1_04_oversized_pop_valve_cycles_near_set_pressure():
     assert math.isclose(psv.opening_pressure_barg, psv.cycle_high_barg, abs_tol=0.005)
 
 
-def test_f1_04_result_does_not_depend_on_the_previous_run():
+def test_result_does_not_depend_on_the_previous_run():
     psv = PressureSafetyValve("PSV", set_pressure_barg=3.0, cv=15.0, action_mode="pop_action")
     net = _pump_to_psv(psv)
     solver = NetworkSolver(net)
@@ -175,13 +174,13 @@ def test_f1_04_result_does_not_depend_on_the_previous_run():
     assert math.isclose(first[1], second[1], rel_tol=1e-6) and math.isclose(first[2], second[2], rel_tol=1e-5)
 
 
-# --- F1-03: forced open -------------------------------------------------------------------------------
+# --- forced open -------------------------------------------------------------------------------
 
 @pytest.mark.parametrize("make", [
     lambda: PressureSafetyValve("DEV", set_pressure_barg=50.0, cv=2.0, forced_state="forced_open"),
     lambda: RuptureDisc("DEV", burst_pressure_barg=50.0, cv=2.0, forced_state="forced_open"),
 ])
-def test_f1_03_forced_open_relieves_below_set_pressure(make):
+def test_forced_open_relieves_below_set_pressure(make):
     dev = make()
     net = _pump_to_psv(dev)
     stats, tel, tel_unmit, *_ = run_sequential_relief_simulation(net, NetworkSolver(net), extract_telemetry)
@@ -193,7 +192,7 @@ def test_f1_03_forced_open_relieves_below_set_pressure(make):
     assert tel["relief"]["devices"]["psv"]["forced_state"] == "forced_open"
 
 
-def test_f1_03_forced_closed_stays_closed():
+def test_forced_closed_stays_closed():
     psv = PressureSafetyValve("PSV", set_pressure_barg=1.0, cv=2.0, forced_state="forced_closed")
     net = _pump_to_psv(psv)
     stats, tel, *_ = run_sequential_relief_simulation(net, NetworkSolver(net), extract_telemetry)
@@ -240,12 +239,12 @@ def _graph(data):
     )
 
 
-def test_d1_old_bar_a_key_is_not_converted():
+def test_old_bar_a_key_is_not_converted():
     with pytest.raises(ModelInputError, match="PSV-7.*set pressure \\(barg\\) missing"):
         GraphParser.parse_graph(_graph({"set_pressure_bar": 20.0}))
 
 
-def test_d1_barg_key_is_read():
+def test_barg_key_is_read():
     net = GraphParser.parse_graph(_graph({"set_pressure_barg": 12.5, "forced_state": "forced_open"}))
     psv = net.nodes["psv"]
     assert psv.set_pressure_barg == 12.5 and psv.forced_state == "forced_open"

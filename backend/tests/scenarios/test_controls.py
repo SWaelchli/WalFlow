@@ -1,7 +1,6 @@
-"""F1-01: pressure controllers settle on their setpoints, whatever the settings or the click history."""
+"""Pressure controllers settle on their setpoints, whatever the settings or the click history."""
 import pytest
 
-pytestmark = pytest.mark.audit("F1-01")
 
 import pytest
 
@@ -46,7 +45,7 @@ def test_result_does_not_depend_on_iteration_limit_or_warm_start(settings):
 
 @pytest.mark.parametrize("example,case", [(API682, None), ("Example_Pressure_Regulation", None), ("Example_API_614_LOS", "Case 1")])
 def test_first_and_second_run_agree(example, case):
-    """F1-14: the answer may not depend on what was solved before (warm-start cache)."""
+    """The answer may not depend on what was solved before (warm-start cache)."""
     NetworkSolver.clear_warm_start_cache()
     net1, s1 = solve_example(example, case)
     net2, s2 = solve_example(example, case)              # now starts from the cached solution

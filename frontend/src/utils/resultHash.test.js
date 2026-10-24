@@ -14,7 +14,7 @@ const base = () => ({
   ],
 });
 
-describe('F2-07: input hash of a case', () => {
+describe('input hash of a case', () => {
   it('is stable and ignores appearance, notes, display units and runtime fields', () => {
     const h = computeCaseInputHash(base(), 'case_base');
     const g = base();

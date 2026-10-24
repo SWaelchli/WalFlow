@@ -39,7 +39,7 @@ export default function PressureSafetyValveNode({ id, data, selected }) {
     statusColor = 'var(--color-warning)';
     badgeBg = 'rgba(245, 158, 11, 0.12)';
   } else if (status === 'cycling') {
-    // Pop valve oversized for the load: it would cycle between set and reseat pressure (F1-04)
+    // Pop valve oversized for the load: it would cycle between set and reseat pressure
     statusText = 'CYCLING';
     statusColor = 'var(--color-warning)';
     badgeBg = 'rgba(245, 158, 11, 0.12)';

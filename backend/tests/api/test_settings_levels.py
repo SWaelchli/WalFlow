@@ -1,7 +1,5 @@
-"""F3-12: global (user) and project settings are stored in the database."""
-import pytest
+"""Global (user) and project settings are stored in the database."""
 
-pytestmark = pytest.mark.audit("F3-12")
 
 import unittest
 
@@ -79,7 +77,7 @@ class TestSettingsLevels(unittest.TestCase):
         self.assertNotIn("damping_factor", solver)
 
     def test_project_settings_default_roundtrip_and_owner_only(self):
-        pid = self.client.post("/api/projects", json={"title": "F3-12"}, headers=self.owner).json()["id"]
+        pid = self.client.post("/api/projects", json={"title": "settings"}, headers=self.owner).json()["id"]
         detail = self.client.get(f"/api/projects/{pid}", headers=self.owner).json()
         self.assertFalse(detail["settings"]["use_project_solver"])
 

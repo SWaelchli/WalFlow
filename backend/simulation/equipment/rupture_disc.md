@@ -53,7 +53,7 @@ The open loss enters the flow equation $Q = \text{lift}\sqrt{\Delta p / c(Q)}$ o
 
 ### 3.3 Derivative
 
-The class has no analytical derivative; the solver differentiates the device's edge row numerically (audit F1-12, D-23).
+The class has no analytical derivative; the solver differentiates the device's edge row numerically.
 
 ## 4. Thermal & Energy Balance
 

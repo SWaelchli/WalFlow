@@ -20,7 +20,7 @@ Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_RE
 
 ### 3.1 Reference state
 
-The datasheet drops refer to the system fluid at a reference temperature (audit F1-19):
+The datasheet drops refer to the system fluid at a reference temperature:
 
 | System fluid | $T_{\text{ref}}$ | $\mu_{\text{ref}}$ |
 | :--- | :--- | :--- |
@@ -64,11 +64,11 @@ Clean 0.2 bar, terminal 1.0 bar at 100 L/min:
 
 ### 3.6 Derivative
 
-The class has no analytical derivative; the solver differentiates the outlet pressure numerically (see [base_node.md](base_node.md#33-jacobian), D-23).
+The class has no analytical derivative; the solver differentiates the outlet pressure numerically (see [base_node.md](base_node.md#33-jacobian)).
 
 ## 4. Thermal & Energy Balance
 
-The whole pressure drop is throttling loss (audit F1-16):
+The whole pressure drop is throttling loss:
 
 $$\Delta T = \frac{|\Delta P|}{\rho\, c_p(T)}$$
 

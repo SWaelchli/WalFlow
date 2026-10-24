@@ -8,7 +8,7 @@ const buttonStyle = {
 };
 
 /**
- * F2-10: a render error no longer leaves a white screen. The user can reload (the last local draft is
+ * A render error no longer leaves a white screen. The user can reload (the last local draft is
  * restored), save the draft as a file, or discard the draft if it is what crashes the app.
  */
 export default class ErrorBoundary extends React.Component {

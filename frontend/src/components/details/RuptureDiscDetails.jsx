@@ -13,7 +13,7 @@ export default function RuptureDiscDetails({ node, unmitigatedTelemetry }) {
   const unmitTelemetry = unmitigatedTelemetry?.nodes?.[node.id] || telemetry;
 
   const burstPressureBarg = data.burst_pressure_barg ? Number(data.burst_pressure_barg) : null;
-  // Burst pressure is gauge (F1-09); the solver also reports it in bar(a) for comparison with port pressures
+  // Burst pressure is gauge; the solver also reports it in bar(a) for comparison with port pressures
   const burstPressureBara = telemetry?.set_pressure_bara ?? (burstPressureBarg !== null ? burstPressureBarg + 1.01325 : null);
   const boreType = data.bore_type || 'full_bore';
   const cv = data.cv || 10.0;

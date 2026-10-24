@@ -1,4 +1,4 @@
-// F3-13: readable default names for dropped components ("Centrifugal Pump 3"), numbered per type.
+// Readable default names for dropped components ("Centrifugal Pump 3"), numbered per type.
 
 const TYPE_NAMES = {
   linear_control_valve: 'Control Valve',

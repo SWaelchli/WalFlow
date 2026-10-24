@@ -1,6 +1,6 @@
 import { Suspense, lazy, useState } from 'react';
 
-// Dialogs and pages that most sessions never open are loaded on first use (F0-07: one 1.5 MB bundle).
+// Dialogs and pages that most sessions never open are loaded on first use (one 1.5 MB bundle).
 export const HelpInfoModal = lazy(() => import('../modals/HelpInfoModal'));
 export const LoginModal = lazy(() => import('../modals/LoginModal'));
 export const ProjectManagerModal = lazy(() => import('../modals/ProjectManagerModal'));

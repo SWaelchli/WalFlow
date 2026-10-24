@@ -31,7 +31,7 @@ const headerAndCellCounts = () => {
   return [table.querySelectorAll('thead th').length, table.querySelectorAll('tbody tr')[0].querySelectorAll('td').length];
 };
 
-describe('F3-01: results table headers line up with the cells', () => {
+describe('results table headers line up with the cells', () => {
   it('pipe list has a Name header and one header per cell', () => {
     renderList();
     expect(screen.getByText(/^Name/)).toBeTruthy();
@@ -47,7 +47,7 @@ describe('F3-01: results table headers line up with the cells', () => {
   });
 });
 
-describe('F1-08: relief analysis matrix', () => {
+describe('relief analysis matrix', () => {
   const psvNodes = [{ id: 'psv', type: 'pressure_safety_valve', position: { x: 0, y: 0 }, data: { label: 'PSV-1', set_pressure_barg: 2.98675 } }];
   const reliefCase = (relief) => ({
     id: 'case_base', name: 'Case 1', is_base: true, overrides: { nodes: {} },
@@ -83,7 +83,7 @@ describe('F1-08: relief analysis matrix', () => {
     expect(screen.getByText('Re-run the simulation')).toBeTruthy();
   });
 
-  it('F1-09 / F1-04: shows the set pressure in barg and a cycling result as text', () => {
+  it('Shows the set pressure in barg and a cycling result as text', () => {
     renderRelief([reliefCase({
       peak: { available: true, pressure_bara: 4.2, source: 'relieved', device_ids: [] },
       devices: { psv: { status: 'cycling', forced_state: 'auto', opening_order: 1, opening_ramp_pct: 62.3, inlet_at_opening_bara: 4.0, inlet_relieved_bara: 4.21,
@@ -117,7 +117,7 @@ describe('F1-08: relief analysis matrix', () => {
   });
 });
 
-describe('F2-09: changing a forced state in the relief matrix', () => {
+describe('changing a forced state in the relief matrix', () => {
   const baseCase = { id: 'case_base', name: 'Case 1', is_base: true, overrides: { nodes: {} } };
   const psvAt = (forced_state) => [{ id: 'psv', type: 'pressure_safety_valve', position: { x: 0, y: 0 }, data: { label: 'PSV-1', set_pressure_barg: 5.0, forced_state } }];
   const tree = (nodesList, props) => (
@@ -198,7 +198,7 @@ describe('Measurements tab', () => {
   });
 });
 
-describe('F3-02 / F2-08: pipe rows', () => {
+describe('pipe rows', () => {
   it('shows an older non-standard pipe as Manual with its custom inner diameter', () => {
     renderList();
     expect(screen.getByText('Custom ID 100.00 mm')).toBeTruthy();

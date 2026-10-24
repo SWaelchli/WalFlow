@@ -1,7 +1,6 @@
-"""F1-41: regulator scenarios with pumps and parallel branches."""
+"""Regulator scenarios with pumps and parallel branches."""
 import pytest
 
-pytestmark = pytest.mark.audit("F1-41")
 
 from physics_refs import solve, water_head
 from networks import assert_regulator_consistent, ID_1IN, ATM

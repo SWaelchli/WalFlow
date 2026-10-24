@@ -7,7 +7,7 @@ const BANNER_TONES = {
 };
 
 /**
- * Banners over the canvas for the outcome of the last run (F3-04): solver errors and result warnings.
+ * Banners over the canvas for the outcome of the last run: solver errors and result warnings.
  * Dismissed banners stay hidden until a new result arrives. `children` (stale / rejected-change banner) share the stack.
  */
 export default function RunBanners({ runError, runErrorId, summary, resultKey, onSelect, onOpenStatus, children }) {

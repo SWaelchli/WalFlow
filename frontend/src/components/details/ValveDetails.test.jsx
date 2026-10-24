@@ -41,7 +41,7 @@ const telemetry = (extra = {}) => ({
   ...extra,
 });
 
-describe('ValveDetails backend curves (D-33)', () => {
+describe('ValveDetails backend curves', () => {
   afterEach(cleanup);
 
   it('shows the placeholder, no chart, until the backend sends valve_curves', () => {

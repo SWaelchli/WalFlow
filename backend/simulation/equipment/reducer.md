@@ -56,7 +56,7 @@ Evaluated at the mean diameter $D_{\text{avg}} = (D_1 + D_2)/2$, area $A_{\text{
 
 $$\Delta P_{\text{fric}} = f\,\frac{H}{D_{\text{avg}}}\,\frac{\rho\, Q|Q|}{2 A_{\text{avg}}^2}, \qquad \mathrm{Re} = \frac{\rho\,|Q|\,D_{\text{avg}}}{A_{\text{avg}}\,\max(10^{-7}, \mu)}$$
 
-$f$ is the Churchill (1977) friction factor with $\varepsilon / D_{\text{avg}}$, the same function as the pipe (`FluidProperties.get_darcy_friction_factor`, audit D-07; see [pipe.md](pipe.md#33-friction-factor-_friction_factor-churchill-1977)): $64/\mathrm{Re}$ in laminar flow, Colebrook-like in turbulent flow, one smooth curve in between. Roughness 0 is a smooth wall. The fitting is short, so friction is a small part of the loss.
+$f$ is the Churchill (1977) friction factor with $\varepsilon / D_{\text{avg}}$, the same function as the pipe (`FluidProperties.get_darcy_friction_factor`, see [pipe.md](pipe.md#33-friction-factor-_friction_factor-churchill-1977)): $64/\mathrm{Re}$ in laminar flow, Colebrook-like in turbulent flow, one smooth curve in between. Roughness 0 is a smooth wall. The fitting is short, so friction is a small part of the loss.
 
 $$\Delta P_{\text{loss}} = \Delta P_{\text{form}} + \Delta P_{\text{fric}}$$
 
@@ -75,7 +75,7 @@ The Bernoulli term dominates: an expander shows a static pressure rise, a reduce
 
 ### 3.6 Derivative
 
-The class has no analytical derivative; the solver differentiates the outlet pressure numerically (see [base_node.md](base_node.md#33-jacobian), D-23).
+The class has no analytical derivative; the solver differentiates the outlet pressure numerically (see [base_node.md](base_node.md#33-jacobian)).
 
 ## 4. Thermal & Energy Balance
 

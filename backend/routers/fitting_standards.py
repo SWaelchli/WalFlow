@@ -127,7 +127,7 @@ def _schedule_row_errors(i: int, rec: Dict[str, Any]) -> List[str]:
 
 def _valve_style_row_errors(i: int, rec: Dict[str, Any]) -> List[str]:
     """Problems with one control valve style row {code, valve_type, trim, flow_direction, fl, fd, xt?}
-    (IEC 60534-2-1 factors; the simulation needs 0 < F_L <= 1 and F_d > 0, D-29)."""
+    (IEC 60534-2-1 factors; the simulation needs 0 < F_L <= 1 and F_d > 0)."""
     code = str(rec.get("code") or "").strip()
     if not code or ":" in code or len(code) > MAX_CODE_LENGTH:
         return [f"dimensions[{i}]: 'code' must be 1-{MAX_CODE_LENGTH} characters without ':'."]

@@ -5,7 +5,7 @@ import { notify, confirmDialog, askName, confirmDiscard, resetDialogs } from '..
 
 afterEach(() => { cleanup(); act(() => resetDialogs()); vi.useRealTimers(); });
 
-describe('F3-06 dialog service', () => {
+describe('dialog service', () => {
   it('shows a toast and shows the same message only once', () => {
     render(<DialogHost />);
     act(() => { notify('Saved.', 'success'); notify('Saved.', 'success'); });

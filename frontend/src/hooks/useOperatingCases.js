@@ -62,7 +62,7 @@ export function useOperatingCases({ nodes }) {
     setCases(prev => updateCaseTelemetry(prev, targetCaseId, telemetry, kpis, telemetryUnmitigated, telemetryPeak, resultHash));
   }, []);
 
-  // inputHashes: { caseId: hash } of the inputs the batch was sent with (F2-07)
+  // inputHashes: { caseId: hash } of the inputs the batch was sent with
   const handleBatchResultsTelemetry = useCallback((batchResults, inputHashes = {}) => {
     setCases(prev => prev.map(c => {
       const match = batchResults.find(b => b.case_id === c.id);

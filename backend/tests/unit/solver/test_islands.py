@@ -1,7 +1,5 @@
-"""F1-10: a circuit without a pressure reference is an error with a message, not a silent success."""
-import pytest
+"""A circuit without a pressure reference is an error with a message, not a silent success."""
 
-pytestmark = pytest.mark.audit("F1-10")
 
 from physics_refs import solve
 from simulation.equipment.centrifugal_pump import CentrifugalPump

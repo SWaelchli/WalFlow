@@ -21,7 +21,7 @@ export const CASE_VARIABLE_FIELDS = new Set([
   'forced_state',      // Contingency Test Mode (auto / forced_closed / forced_open per case)
   'source_pressure_bara', // FluidSource: set pressure (bara), case-overridable per scenario
   'source_flow_lmin',     // FluidSource: set flow rate (L/min), case-overridable per scenario
-  'relief_ramp_enabled',  // Pump / source: ramped by the relief analysis (F1-08)
+  'relief_ramp_enabled',  // Pump / source: ramped by the relief analysis
 ]);
 
 // Equipment the relief analysis can ramp to find each relief device's opening (backend: is_relief_driver)

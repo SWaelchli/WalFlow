@@ -9,7 +9,7 @@ export const getActiveCase = (cases = [], activeCaseId = 'case_base') => {
 };
 
 /**
- * Telemetry dataset of a case for the relief case view (F1-08):
+ * Telemetry dataset of a case for the relief case view:
  * - 'unmitigated_global': all relief devices held closed
  * - 'peak': solved steady state at the relief opening that sets the peak pressure; the backend
  *   sends no separate snapshot when the peak is the relieved state itself (or is unavailable)
@@ -29,7 +29,7 @@ export const getEffectiveNodeData = (node, cases = [], activeCaseId = 'case_base
   if (!node) return {};
   const activeCase = getActiveCase(cases, activeCaseId);
   let effective = { ...(node.data || {}) };
-  delete effective.telemetry; // F2-07: results come from the case only, never from a previously solved case
+  delete effective.telemetry; // Results come from the case only, never from a previously solved case
 
   if (activeCase && !activeCase.is_base && activeCase.overrides?.nodes?.[node.id]) {
     effective = {
@@ -68,7 +68,7 @@ export const getEffectiveEdgeData = (edge, cases = [], activeCaseId = 'case_base
 /**
  * Updates the calculated telemetry for a specific operating case (relieved, unmitigated and peak).
  * telemetryPeak is null when the peak is the relieved state, so a new run always replaces it.
- * resultHash identifies the inputs the results were solved from (F2-07, see resultHash.js).
+ * resultHash identifies the inputs the results were solved from (see resultHash.js).
  */
 export const updateCaseTelemetry = (cases = [], targetCaseId, telemetry, kpis, telemetryUnmitigated, telemetryPeak = null, resultHash = undefined) => {
   return cases.map(c => {

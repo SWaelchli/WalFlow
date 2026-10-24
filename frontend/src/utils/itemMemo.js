@@ -1,4 +1,4 @@
-// F2-28: React Flow keeps the object of every node and pipe that did not change. Mapping the whole list into
+// React Flow keeps the object of every node and pipe that did not change. Mapping the whole list into
 // new objects on each drag frame makes every node re-render; this reuses the previous output of an item as
 // long as the item and the shared inputs (`deps`) are the same objects/values.
 

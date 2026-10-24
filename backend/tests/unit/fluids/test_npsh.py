@@ -1,7 +1,6 @@
-"""F1-28: NPSHa is reported at every pump, compared with NPSHr + margin; throttling devices are flagged below Pv."""
+"""NPSHa is reported at every pump, compared with NPSHr + margin; throttling devices are flagged below Pv."""
 import pytest
 
-pytestmark = pytest.mark.audit("F1-28")
 
 import pytest
 
@@ -24,7 +23,7 @@ def _pump_circuit(level, **pump_kw):
     return pump, solve(nodes, edges)
 
 
-def test_f1_28_npsha_matches_hand_calculation():
+def test_npsha_matches_hand_calculation():
     pump, stats = _pump_circuit(level=3.0)
     assert stats["success"]
     inlet = pump.inlets[0]
@@ -33,21 +32,21 @@ def test_f1_28_npsha_matches_hand_calculation():
     assert 9.0 < pump.npsha_m < 13.0       # ~ 10 m atmospheric + 3 m static - friction - Pv
 
 
-def test_f1_28_warns_when_npsha_below_npshr_plus_margin():
+def test_warns_when_npsha_below_npshr_plus_margin():
     pump, _ = _pump_circuit(level=3.0, npshr_m=20.0)
     assert pump.cavitation_warning is True
     pump, _ = _pump_circuit(level=3.0, npshr_m=3.0, npsh_margin_m=0.5)
     assert pump.cavitation_warning is False
 
 
-def test_f1_28_margin_is_editable():
+def test_margin_is_editable():
     pump, _ = _pump_circuit(level=3.0, npshr_m=3.0, npsh_margin_m=0.5)
     na = pump.npsha_m
     pump, _ = _pump_circuit(level=3.0, npshr_m=3.0, npsh_margin_m=na)   # margin pushes NPSHr + margin above NPSHa
     assert pump.cavitation_warning is True
 
 
-def test_f1_28_telemetry_reports_npsh():
+def test_telemetry_reports_npsh():
     pump, _ = _pump_circuit(level=3.0, npshr_m=3.0)
     tel = extract_telemetry(HydraulicNetwork(nodes={pump.id: pump}, edges=[]))
     node = tel["nodes"][pump.id]
@@ -55,7 +54,7 @@ def test_f1_28_telemetry_reports_npsh():
     assert node["npshr_m"] == 3.0
 
 
-def test_f1_28_negative_npshr_is_an_input_error():
+def test_negative_npshr_is_an_input_error():
     graph = ReactFlowGraph(nodes=[{"id": "p", "type": "centrifugal_pump", "position": {"x": 0, "y": 0},
                                    "data": {"label": "P1", "head": 30, "npshr_m": -1}}], edges=[])
     with pytest.raises(ModelInputError):
@@ -79,5 +78,5 @@ def _valve_circuit(temp_c):
     pytest.param(120.0, True, id="valve-outlet-below-vapor-pressure"),
     pytest.param(20.0, False, id="cold-valve"),
 ])
-def test_f1_28_valve_flashing_flag(temp_c, flagged):
+def test_valve_flashing_flag(temp_c, flagged):
     assert _valve_circuit(temp_c)["flashing_warning"] is flagged

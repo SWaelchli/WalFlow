@@ -1,5 +1,5 @@
 // Non-blocking notice for co-editing events (a co-editor saved, a save was refused, the lock was released).
-// Replaces the blocking window.confirm / alert dialogs (F2-11).
+// Replaces the blocking window.confirm / alert dialogs.
 export default function CollabNotice({ notice, onDismiss }) {
   if (!notice) return null;
   const canReload = notice.kind === 'diagram_updated' || notice.kind === 'stale';

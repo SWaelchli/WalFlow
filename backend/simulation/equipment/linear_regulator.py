@@ -15,7 +15,7 @@ class LinearRegulator(HydraulicNode):
         
         # Current physical opening (adjusted by solver)
         self.opening_pct = 100.0
-        self.locked_up = False  # closed PRV holding its setpoint downstream (F1-37), set by the solver
+        self.locked_up = False  # closed PRV holding its setpoint downstream, set by the solver
         
         self.add_inlet()
         self.add_outlet()
@@ -71,5 +71,5 @@ class LinearRegulator(HydraulicNode):
         inlet.density = FluidProperties.get_density(fluid_type, inlet.temperature)
         inlet.viscosity = FluidProperties.get_viscosity(fluid_type, inlet.temperature)
         
-        # Outlet temperature already includes the throttling heat (F1-16); do not overwrite it
+        # Outlet temperature already includes the throttling heat; do not overwrite it
         return dp

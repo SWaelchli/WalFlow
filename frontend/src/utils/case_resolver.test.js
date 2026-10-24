@@ -3,7 +3,7 @@ import { areValuesEquivalent, getCaseTelemetrySet, getEffectiveNodeData, getEffe
 
 const tel = (p) => ({ nodes: { psv: { inlets: [{ pressure: p }], outlets: [] } }, edges: {} });
 
-describe('relief case views (F1-08)', () => {
+describe('relief case views', () => {
   const relieved = tel(250000);
   const unmitigated = tel(840000);
   const peak = tel(400000);
@@ -30,7 +30,7 @@ describe('relief case views (F1-08)', () => {
   });
 });
 
-describe('F2-07: results come from the case only', () => {
+describe('results come from the case only', () => {
   const solved = { id: 'case_base', is_base: true, telemetry: tel(250000) };
   const unsolved = { id: 'case_2', is_base: false, overrides: { nodes: {} } };
 

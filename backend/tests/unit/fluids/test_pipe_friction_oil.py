@@ -1,7 +1,6 @@
-"""F1-41: pipe friction against an independent Darcy–Weisbach / Colebrook calculation, for oil at two temperatures."""
+"""Pipe friction against an independent Darcy–Weisbach / Colebrook calculation, for oil at two temperatures."""
 import pytest
 
-pytestmark = pytest.mark.audit("F1-41")
 
 import pytest
 
@@ -37,7 +36,7 @@ def test_pipe_flow_matches_darcy_colebrook(temp_c):
     dp_static = rho * 9.81 * (12.0 - 2.0)
     q_ref = reservoir_pipe_flow(dp_static, L, D, ROUGH, rho, mu)
     q = pipe.inlets[0].flow_rate
-    # The reference switches abruptly from 64/Re to Colebrook; WalFlow uses the continuous Churchill (F1-21),
+    # The reference switches abruptly from 64/Re to Colebrook; WalFlow uses the continuous Churchill,
     # which differs by a few percent in the transition band (Re 2000-4000, the 60 °C case)
     tol = 0.01 if temp_c < 40.0 else 0.10
     assert q == pytest.approx(q_ref, rel=tol)

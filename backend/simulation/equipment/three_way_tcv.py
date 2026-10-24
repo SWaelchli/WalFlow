@@ -41,10 +41,10 @@ class ThreeWayTCV(HydraulicNode):
         if abs(flow) < 1e-10:
             return 0.0
             
-        # Reynolds number factor, IEC 60534-2-1 Annex A (D-29)
+        # Reynolds number factor, IEC 60534-2-1 Annex A
         fr = FluidProperties.get_iec_valve_fr(flow, viscosity / density, eff_cv, self.max_cv,
                                               self.fl, self.fd, self.pipe_diameter)
-        cv_adj = max(1e-10, eff_cv * fr)  # F_R is floored; keeps laminar Δp linear in Q (D-29)
+        cv_adj = max(1e-10, eff_cv * fr)  # F_R is floored; keeps laminar Δp linear in Q
 
         K_CV_SI = 1.732e9
         dp = (K_CV_SI * density * flow * abs(flow)) / (cv_adj**2)
@@ -65,14 +65,14 @@ class ThreeWayTCV(HydraulicNode):
         
         if m_tot > 1e-10:
             inward = [(m, p.temperature) for m, p in ((m0, inlet_0), (m1, inlet_1), (m_out_rev, outlet)) if m > 0.0]
-            # Throttling heat of both forward paths (F1-16): power Q·ΔP ends up in the mixed stream
+            # Throttling heat of both forward paths: power Q·ΔP ends up in the mixed stream
             heat_w = 0.0
             for port, idx in ((inlet_0, 0), (inlet_1, 1)):
                 if port.flow_rate > 0:
                     heat_w += port.flow_rate * max(0.0, self.calculate_path_dp(port.flow_rate, port.density, idx, port.viscosity))
             if outlet.flow_rate < 0:
                 heat_w = 0.0
-            # Enthalpy balance with cp(T) (D-04, as F1-42): sum(m h) + heat = m_tot * h_mix
+            # Enthalpy balance with cp(T): sum(m h) + heat = m_tot * h_mix
             fluid = getattr(self.global_settings, 'fluid_type', 'water')
             h_mix = (sum(m * FluidProperties.get_enthalpy(fluid, t) for m, t in inward) + heat_w) / m_tot
             mix_temp = FluidProperties.get_temperature_from_enthalpy(

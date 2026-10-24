@@ -219,7 +219,7 @@ function WalFlowContent() {
 
   const { isCanvasLoading, canvasLoadingLabel, showCanvasLoading, hideCanvasLoading, scheduleLoad } = useCanvasLoading({ nodes, edges });
 
-  // F3-08: frame the diagram after a load, an example or a new drawing
+  // Frame the diagram after a load, an example or a new drawing
   useEffect(() => {
     if (!fitViewPendingRef.current || !reactFlowInstance) return;
     fitViewPendingRef.current = false;
@@ -344,7 +344,7 @@ function WalFlowContent() {
     onUpdateCaseTelemetry: handleUpdateCaseTelemetry
   });
 
-  // F3-04 / F2-19: model checks before a run. Errors block it, warnings are only listed in the status panel.
+  // Model checks before a run. Errors block it, warnings are only listed in the status panel.
   const validation = useMemo(() => validateNetwork({ nodes, edges }, KNOWN_NODE_TYPES), [nodes, edges]);
   const [statusPanelOpen, setStatusPanelOpen] = useState(false);
   const closeStatusPanel = useCallback(() => setStatusPanelOpen(false), []);
@@ -369,7 +369,7 @@ function WalFlowContent() {
     runChecked({ silent: true });
   }, [autoRunPending, isConnected, runChecked]);
 
-  // F2-07: hash of the inputs each case is solved from, and whether its stored results still match
+  // Hash of the inputs each case is solved from, and whether its stored results still match
   const caseInputHashes = useMemo(
     () => computeCaseInputHashes({ nodes, edges, globalSettings: effectiveGlobalSettings, cases }),
     [nodes, edges, effectiveGlobalSettings, cases]
@@ -562,7 +562,7 @@ function WalFlowContent() {
     onOpenHelp: () => handleOpenHelpModal('shortcuts'),
   });
 
-  // F3-18: right-click menus (components, pipes, empty canvas)
+  // Right-click menus (components, pipes, empty canvas)
   const [contextMenu, setContextMenu] = useState(null);
   const closeContextMenu = useCallback(() => setContextMenu(null), []);
 
@@ -761,7 +761,7 @@ function WalFlowContent() {
     [setEdges]
   );
 
-  // F0-02 / F2-10: one gate for every load path. Returns true when the diagram is accepted.
+  // One gate for every load path. Returns true when the diagram is accepted.
   const loadData = useCallback((data) => {
     const check = checkDiagramFile(data, KNOWN_NODE_TYPES);
     if (!check.ok) {
@@ -772,7 +772,7 @@ function WalFlowContent() {
     resetRunState();
     showCanvasLoading();
     scheduleLoad(() => {
-      // Results are never loaded from a file (F2-22); old or hand-edited files may still carry them
+      // Results are never loaded from a file; old or hand-edited files may still carry them
       const clean = stripResults({ nodes: data.nodes, edges: data.edges, cases: data.cases || [] });
       const seenNodeIds = new Set();
       const restoredNodes = clean.nodes.map((node, idx) => {
@@ -811,7 +811,7 @@ function WalFlowContent() {
       resetHistory(restoredNodes, restoredEdges);
       fitViewPendingRef.current = true;
       // Settings of the loaded drawing replace the previous ones; old files keep their solver values as a
-      // ticked drawing override, and their stored unit system is ignored (display preference of the user, F3-12)
+      // ticked drawing override, and their stored unit system is ignored (display preference of the user)
       setGlobalSettings({ ...DEFAULT_DRAWING_SETTINGS, ...migrateDrawingSettings(data.globalSettings || { use_drawing_solver: false }) });
       if (clean.cases.length > 0) {
         setCases(clean.cases);
@@ -827,7 +827,7 @@ function WalFlowContent() {
   }, [handleValveChange, handleRotation, setNodes, setEdges, setCases, setActiveCaseId, showCanvasLoading, hideCanvasLoading, scheduleLoad, resetHistory, resetRunState]);
 
   const handleLoadDiagramWithCheck = useCallback(async (data, diagramTitle = '', options = {}) => {
-    // Reject a bad file before anything about the open drawing changes (F0-02, F2-10)
+    // Reject a bad file before anything about the open drawing changes
     const check = checkDiagramFile(data, KNOWN_NODE_TYPES);
     if (!check.ok) {
       notify(check.message, 'warning');
@@ -846,7 +846,7 @@ function WalFlowContent() {
       });
       if (!proceed) return false;
 
-      // Detach cloud sync FIRST (F2-29): save pending edits of the open drawing
+      // Detach cloud sync FIRST: save pending edits of the open drawing
       // (serialized now, before the new content loads), then release its lock.
       if (hasCloudDiagram && hasLock) {
         triggerManualCloudSave().finally(() => checkinDiagram());
@@ -883,7 +883,7 @@ function WalFlowContent() {
       setTimeout(() => setShowRestoredToast(false), 5000);
     };
 
-    // This tab's own draft (reload) is restored directly; otherwise a draft left by a closed tab is offered (F2-22)
+    // This tab's own draft (reload) is restored directly; otherwise a draft left by a closed tab is offered
     const draft = loadLocalDraftOnBoot();
     if (draft) {
       applyDraft(draft);
@@ -948,7 +948,7 @@ function WalFlowContent() {
     requestSnapshot();
   }, [setEdges, edges, nodes, activeDiagram, hasLock, availablePipeClasses, allowCustomPipes, requestSnapshot]);
 
-  // F2-19: a port takes one pipe. The red handle while dragging comes from isValidConnection; the reason is
+  // A port takes one pipe. The red handle while dragging comes from isValidConnection; the reason is
   // shown when the drag ends on a handle that was refused.
   const refusedConnectionRef = useRef(false);
   const isValidConnection = useCallback((connection) => {
@@ -1265,7 +1265,7 @@ function WalFlowContent() {
     }
   }, [resetCanvas, clearLocalDraft, setActiveDiagram, setActiveProject, loadData, showCanvasLoading]);
 
-  // The solver gets the graph again only when something it uses changes (F2-28): not on drag, selection or
+  // The solver gets the graph again only when something it uses changes: not on drag, selection or
   // when results arrive. The key is cheap; the graph itself is read from a ref when the timer fires.
   const solverKey = useMemo(
     () => solverMessageKey({ nodes, edges, globalSettings: effectiveGlobalSettings, cases, activeCaseId }),
@@ -1320,7 +1320,7 @@ function WalFlowContent() {
   });
 
   // Pipes and components that did not change keep their object between renders, so a drag frame re-renders only
-  // the moved node (F2-28)
+  // the moved node
   const [edgeCache] = useState(() => new Map());
   const [nodeCache] = useState(() => new Map());
   // handleCanvasValveChange depends on the node list, so it changes on every drag frame; the nodes get a stable

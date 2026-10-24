@@ -1,11 +1,10 @@
-"""IEC 60534-2-1:2011 Annex A Reynolds number factor F_R of control valves (D-29): reference values for
+"""IEC 60534-2-1:2011 Annex A Reynolds number factor F_R of control valves: reference values for
 Eq. (A.6) / (A.7) with n from (A.8a) / (A.8b), and the laws F_R keeps over all valve data."""
 import math
 
 import pytest
 from hypothesis import example, given, strategies as st
 
-pytestmark = pytest.mark.audit("D-29")
 
 from physics_refs import iec_flow_for_reynolds
 from strategies import log_uniform
@@ -39,7 +38,7 @@ FR_TABLE = [
     pytest.param(124.0, 9.99, 0.09381805755222108, id="held-below-Re10-A6"),
     pytest.param(124.0, 10.0001, 0.0938650017921126, id="held-at-Re10-not-A7"),
     pytest.param(124.0, 10.5, 0.0938650017921126, id="held-Re10.5-inside-band"),
-    # Growth cap (D-29): a = 0.33*sqrt(F_L)/n^0.25 = 0.30885, held branch ends at F_s = F_lam10 = 0.0938650,
+    # Growth cap: a = 0.33*sqrt(F_L)/n^0.25 = 0.30885, held branch ends at F_s = F_lam10 = 0.0938650,
     # Re_s = 1e4*10^((F_s - 1)/a) = 11.64415. Capped: F_R = F_s*(Re_V/Re_s)^0.75 (the standard's (A.7) would
     # give 0.0979027 at 12 and 0.118579 at 14, rising faster than Re_V^0.75 and so lowering the drop).
     # The cap ends where it meets the laminar term 0.026/F_L*sqrt(n Re) (Re_V = 15.9), after that the
@@ -103,7 +102,7 @@ def test_iec_fr_is_one_from_re_10000(state, re_v):
 @example(state=(124.0, 124.0, 0.9, 0.46, 0.05248, 1e-5), a=9.9999999, b=10.5)
 def test_iec_fr_does_not_fall_with_re_anywhere(state, a, b):
     """F_R never falls as Re_V rises, also across Re_V = 10. The standard's F_R jumps down there for some
-    valves (A.6 above A.7 at 10); the model deliberately holds the value (documented deviation, D-29,
+    valves (A.6 above A.7 at 10); the model deliberately holds the value (documented deviation,
     linear_control_valve.md section 3.3), so the pressure drop has no flow gap."""
     lo, hi = sorted([a, b])
     assert _fr(state, lo) <= _fr(state, hi) * (1.0 + 1e-9)
@@ -112,12 +111,12 @@ def test_iec_fr_does_not_fall_with_re_anywhere(state, a, b):
 @given(state=valve_states(), eps=st.floats(1e-9, 1e-6))
 @example(state=(124.0, 124.0, 0.9, 0.46, 0.05248, 1e-5), eps=1e-7)
 def test_iec_fr_is_continuous_at_re_10(state, eps):
-    """No jump at the switch from (A.6) to (A.7), including the valves where the standard jumps (D-29)."""
+    """No jump at the switch from (A.6) to (A.7), including the valves where the standard jumps."""
     below, above = _fr(state, 10.0 * (1.0 - eps)), _fr(state, 10.0 * (1.0 + eps))
     assert above == pytest.approx(below, rel=1e-4)
 
 
-# --- growth cap (D-29) ------------------------------------------------------------------------------
+# --- growth cap ------------------------------------------------------------------------------
 
 @st.composite
 def cap_valve_states(draw):

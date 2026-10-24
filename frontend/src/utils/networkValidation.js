@@ -1,4 +1,4 @@
-// F3-04 / F2-19: checks a drawing before it is sent to the solver.
+// Checks a drawing before it is sent to the solver.
 // Errors block the run; warnings let it run but are listed so the user can look at them.
 
 const single = { inlets: ['inlet-0'], outlets: ['outlet-0'] };
@@ -53,7 +53,7 @@ const portName = (handle) => String(handle ?? '').replace('-', ' ');
 export const PORT_TAKEN_MESSAGE = 'This port already has a pipe. Use a splitter or mixer to branch a line.';
 
 /**
- * Rule for a new hydraulic connection (F2-19): one pipe per port. Signal links are not restricted.
+ * Rule for a new hydraulic connection: one pipe per port. Signal links are not restricted.
  * @returns {{ok: boolean, message?: string}}
  */
 export function checkNewConnection(edges, { source, target, sourceHandle, targetHandle }) {

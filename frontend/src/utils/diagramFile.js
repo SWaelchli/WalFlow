@@ -1,7 +1,7 @@
 import { FILE_FORMAT_VERSION, APP_VERSION } from '../constants';
 
 // Simulation results live only in memory (per case). They are never written to files, drafts, cloud
-// saves or solver messages (F2-22); a diagram is re-solved after loading.
+// saves or solver messages; a diagram is re-solved after loading.
 export const CASE_RESULT_KEYS = ['telemetry', 'telemetry_unmitigated', 'telemetry_peak', 'kpis', 'stats', 'result_hash', '_scalingInfo'];
 export const NODE_RUNTIME_KEYS = ['telemetry', 'onRotate', 'onChange', 'hasCaseOverrides'];
 export const EDGE_RUNTIME_KEYS = ['telemetry'];
@@ -57,7 +57,7 @@ export const serializeDiagram = ({ nodes, edges, globalSettings, cases, activeCa
 };
 
 /**
- * F0-02: one version check for every load path (import, drop, example, cloud, project, draft).
+ * One version check for every load path (import, drop, example, cloud, project, draft).
  * Older formats are intentionally not converted. Returns an error message, or null when the file is accepted.
  */
 export const checkFormatVersion = (data) => {
@@ -70,7 +70,7 @@ export const checkFormatVersion = (data) => {
 const isFiniteNumber = (v) => typeof v === 'number' && Number.isFinite(v);
 
 /**
- * F2-10: structural check of a diagram before it reaches the canvas.
+ * Structural check of a diagram before it reaches the canvas.
  * Returns a list of problems (empty when the diagram is usable).
  */
 export const validateDiagramStructure = (data, knownNodeTypes = null) => {

@@ -25,7 +25,7 @@ def numpy_json_default(obj):
     raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
 
 def sanitize_non_finite(obj, _path="", _found=None):
-    """F2-15: replace NaN/Infinity with None so the reply is valid JSON.
+    """Replace NaN/Infinity with None so the reply is valid JSON.
 
     Returns (clean_copy, paths) where paths lists the first few fields that were not finite,
     e.g. "telemetry.HX-1.temperature_out". The caller reports them as a solver warning.
@@ -68,7 +68,7 @@ THROTTLING_TYPES = {"linear_control_valve", "linear_regulator", "remote_control_
 
 
 def _outlet_below_vapor_pressure(network, node) -> bool:
-    """F1-28: a throttling device whose downstream pressure is below the vapour pressure flashes / cavitates."""
+    """A throttling device whose downstream pressure is below the vapour pressure flashes / cavitates."""
     fluid = getattr(getattr(network, 'global_settings', None), 'fluid_type', 'water')
     for port in node.outlets:
         if port.flow_rate > 0.0 and port.pressure < FluidProperties.get_vapor_pressure(fluid, port.temperature):
@@ -106,7 +106,7 @@ def calculate_case_kpis(network, telemetry: Dict[str, Any], stats: Dict[str, Any
             has_cavitation = True
 
         # Aggregate pump power & flow: shaft power QÂ·Î”P/Î· at the actual operating point,
-        # stopped pumps count 0 (F1-36)
+        # stopped pumps count 0
         if isinstance(node, (VolumetricPump, CentrifugalPump)):
             total_pump_power_w += node.shaft_power()
             for outlet in node.outlets:
@@ -139,7 +139,7 @@ VALVE_CURVE_MIN_FLOW = 0.005  # m^3/s (300 L/min), smallest flow range of the cu
 
 
 def valve_curves(node) -> Dict[str, List[float]]:
-    """Δp over flow at the current and the full opening, from the valve's own calculate_delta_p (D-33).
+    """Δp over flow at the current and the full opening, from the valve's own calculate_delta_p.
 
     Uses the solved inlet fluid, so F_R, F_L, F_d and the valve size match the solve. Range 0 to
     max(300 L/min, 2 × the current flow).
@@ -203,7 +203,7 @@ def extract_telemetry(network) -> Dict[str, Any]:
         if hasattr(node, 'action_mode'):
             node_tel["action_mode"] = node.action_mode
         if hasattr(node, 'set_pressure_barg'):
-            # Relief devices (F1-09, F1-04, F1-38): set pressure in barg, plus bar(a) to compare with port pressures
+            # Relief devices: set pressure in barg, plus bar(a) to compare with port pressures
             node_tel["set_pressure_barg"] = node.set_pressure_barg
             node_tel["set_pressure_bara"] = node.set_pressure_bara
             node_tel["rated_flow_lmin"] = node.rated_flow_lmin
@@ -268,7 +268,7 @@ def run_batch_simulation(request: Request, graph: ReactFlowGraph):
     Executes hydraulic simulations for all operating cases in the diagram graph.
     Returns side-by-side telemetry and KPI comparisons for the matrix dashboard.
     """
-    # F2-13: /batch is open to anonymous users, so bound the work one request can ask for
+    # /batch is open to anonymous users, so bound the work one request can ask for
     if len(graph.nodes) > max_nodes():
         raise HTTPException(status_code=413,
                             detail=f"Diagram too large: {len(graph.nodes)} components (limit {max_nodes()}).")
@@ -285,7 +285,7 @@ def run_batch_simulation(request: Request, graph: ReactFlowGraph):
 
     results: List[BatchCaseResult] = []
 
-    # One deadline for the whole request and a cap on concurrent solves (F2-13)
+    # One deadline for the whole request and a cap on concurrent solves
     with solve_slot(), solve_deadline():
         for case in cases_to_run:
             try:

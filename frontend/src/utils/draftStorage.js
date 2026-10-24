@@ -1,4 +1,4 @@
-// Local drafts, one per browser tab (F2-22): two tabs no longer overwrite each other's draft.
+// Local drafts, one per browser tab: two tabs no longer overwrite each other's draft.
 //
 // A tab's id lives in sessionStorage, so a reload keeps the tab's draft. The draft itself is in
 // localStorage under `walflow_draft_<tabId>`. Every tab marks itself alive with a heartbeat; a draft whose

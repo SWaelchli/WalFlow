@@ -149,7 +149,6 @@ def test_tcv_downstream_network_integration():
     assert abs(tcv.outlets[0].temperature - 318.15) < 0.5, f"TCV target 45C (318.15K) missed, got {tcv.outlets[0].temperature}K"
 
 
-@pytest.mark.audit("D-31")
 @pytest.mark.parametrize("tcv_cv", [
     pytest.param(1.0, id="laminar-s-curve-cv1"),    # cycled between brackets before the bisecting mix loop
     pytest.param(0.5, id="cv0.5"),                  # hydraulic failure from the F_R jump at Re_V = 10
@@ -164,7 +163,6 @@ def test_tcv_laminar_oil_settles_on_the_setpoint(tcv_cv):
     assert tcv.outlets[0].temperature == pytest.approx(318.15, abs=0.01)
 
 
-@pytest.mark.audit("D-31")
 def test_tcv_iteration_limit_is_reported_not_hidden():
     """A TCV still moving at the outer iteration limit must not report converged controls."""
     net, _ = build_tcv_network(hot_temp=333.15, cold_temp=303.15, set_temp=318.15, max_cv=1.0, load_cv=0.1,

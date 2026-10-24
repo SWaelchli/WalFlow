@@ -29,7 +29,7 @@ def test_psv_pop_action_cracking():
     stats = solver.solve()
 
     assert stats["success"] is True
-    # The pump holds the inlet above 110 % of set (2.2 barg) even at full lift: overcapacity (F1-38)
+    # The pump holds the inlet above 110 % of set (2.2 barg) even at full lift: overcapacity
     p_in, p_out = psv.inlets[0].pressure, psv.outlets[0].pressure
     assert psv.lift_state == "open" and (p_in - 101325.0) / 1e5 > 2.2
     assert psv.status == "overcapacity"

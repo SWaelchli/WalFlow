@@ -31,7 +31,7 @@ class FlowSource(HydraulicNode):
         self.temperature = float(temperature)           # K
         self.max_discharge_pressure = float(max_discharge_pressure)  # Pa(a)
 
-        self.pressure_cap_reached = False   # outlet pressure held at max_discharge_pressure (F1-24)
+        self.pressure_cap_reached = False   # outlet pressure held at max_discharge_pressure
 
         self.is_pressure_boundary = False
         self.blocks_flow_on_shutdown = False

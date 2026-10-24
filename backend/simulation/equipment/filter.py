@@ -19,7 +19,7 @@ class Filter(HydraulicNode):
         self.dp_terminal = dp_terminal_bar * 100000.0
         self.flow_ref = flow_ref_lmin / 60000.0 # Convert to m3/s
         self.clogging_pct = clogging_pct
-        # F1-19: viscosity of the fluid the datasheet dP refers to (mPa*s); None = system fluid at
+        # Viscosity of the fluid the datasheet dP refers to (mPa*s); None = system fluid at
         # its reference temperature (40 C for oils and fuels, 20 C for aqueous fluids)
         self.ref_viscosity_mpas = ref_viscosity_mpas
         
@@ -47,7 +47,7 @@ class Filter(HydraulicNode):
 
     def get_resistance_k(self):
         """Current K factor (dP = K * rho * Q^2 * f(Re)), calibrated so that the datasheet dP is
-        reproduced at the reference flow in the reference fluid (F1-19)."""
+        reproduced at the reference flow in the reference fluid."""
         rho_ref, mu_ref = self._reference_state()
         q_ref = max(1e-9, self.flow_ref)
         f_ref = FluidProperties.get_filter_viscosity_factor(self._reynolds(q_ref, rho_ref, mu_ref))

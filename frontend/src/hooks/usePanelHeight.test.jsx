@@ -4,7 +4,7 @@ import usePanelHeight, { defaultPanelHeight, clampPanelHeight } from './usePanel
 
 beforeEach(() => { localStorage.clear(); });
 
-describe('F3-08 data panel size', () => {
+describe('data panel size', () => {
   it('defaults to 40 % of the window between 300 and 480 px', () => {
     expect(defaultPanelHeight(600)).toBe(300);
     expect(defaultPanelHeight(900)).toBe(360);

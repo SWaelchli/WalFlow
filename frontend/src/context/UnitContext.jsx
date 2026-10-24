@@ -104,7 +104,7 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
     return formatPressureFromBar(valBar, unitSystem, decimals);
   }, [unitSystem]);
 
-  // Gauge pressure (relief set / burst pressure, F1-09) with its unit: "18.99 barg" / "275.4 psig"
+  // Gauge pressure (relief set / burst pressure) with its unit: "18.99 barg" / "275.4 psig"
   const formatPressureGauge = useCallback((valBarg, decimals = 2) => {
     if (valBarg === null || valBarg === undefined || isNaN(valBarg)) return '—';
     return `${formatPressureFromBar(valBarg, unitSystem, unitSystem === UNIT_SYSTEMS.IMPERIAL ? 1 : decimals)} ${unitSystem === UNIT_SYSTEMS.IMPERIAL ? 'psig' : 'barg'}`;

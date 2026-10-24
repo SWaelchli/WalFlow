@@ -1,5 +1,5 @@
 // Defaults written to a component when it is dropped on the canvas. They must match what the inspector
-// shows and what the backend uses when a field is missing (F2-04).
+// shows and what the backend uses when a field is missing.
 
 export const HEAT_EXCHANGER_DEFAULTS = {
   active: true,

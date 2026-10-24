@@ -42,7 +42,7 @@ def _prune_expired_local_locks(now: datetime):
 
 
 def collab_broadcast_interval_s() -> float:
-    """WALFLOW_COLLAB_BROADCAST_INTERVAL_S: shortest gap between 'diagram updated' notices per diagram (F2-11)."""
+    """WALFLOW_COLLAB_BROADCAST_INTERVAL_S: shortest gap between 'diagram updated' notices per diagram."""
     try:
         return max(0.0, float(os.getenv("WALFLOW_COLLAB_BROADCAST_INTERVAL_S", "10")))
     except ValueError:
@@ -109,7 +109,7 @@ class ConnectionManager:
 
     async def notify_diagram_updated(self, diagram_id: str, message: dict):
         """Send 'diagram_updated' at most once per interval per diagram; a notice that arrives sooner is
-        held back and the newest one is sent when the interval has passed (F2-11)."""
+        held back and the newest one is sent when the interval has passed."""
         interval = collab_broadcast_interval_s()
         now = time.monotonic()
         wait = self._last_update_sent.get(diagram_id, -1e9) + interval - now
@@ -136,7 +136,7 @@ class ConnectionManager:
 
 
 async def release_lock_after_disconnect(manager: "ConnectionManager", info):
-    """F2-25: free the edit lock when the last socket of the lock holder closes (tab closed, network lost)."""
+    """Free the edit lock when the last socket of the lock holder closes (tab closed, network lost)."""
     if not info:
         return
     diagram_id, user_id = info

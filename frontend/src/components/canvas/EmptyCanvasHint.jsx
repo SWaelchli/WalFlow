@@ -1,6 +1,6 @@
 import React from 'react';
 
-/** F3-18: shown over an empty canvas so the first step is obvious. */
+/** Shown over an empty canvas so the first step is obvious. */
 export default function EmptyCanvasHint() {
   return (
     <div

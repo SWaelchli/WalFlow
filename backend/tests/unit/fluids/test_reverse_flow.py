@@ -1,7 +1,6 @@
-"""F1-41: reverse flow – magnitude against Darcy–Weisbach/Colebrook and temperature carried backwards."""
+"""Reverse flow – magnitude against Darcy–Weisbach/Colebrook and temperature carried backwards."""
 import pytest
 
-pytestmark = pytest.mark.audit("F1-41")
 
 import pytest
 

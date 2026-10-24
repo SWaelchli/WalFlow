@@ -1,4 +1,4 @@
-"""D-04: the 3-way TCV mixes its streams by the enthalpy balance with cp(T), not by the
+"""The 3-way TCV mixes its streams by the enthalpy balance with cp(T), not by the
 mass-weighted temperature, and adds the throttling heat as enthalpy."""
 from types import SimpleNamespace
 
@@ -9,7 +9,6 @@ from scipy.optimize import brentq
 from simulation.equipment.three_way_tcv import ThreeWayTCV
 from simulation.fluid_utils import FluidProperties
 
-pytestmark = pytest.mark.audit("D-04")
 
 
 def _h(fluid, t_k):
@@ -42,21 +41,21 @@ def _reference(tcv, fluid):
 
 
 @pytest.mark.parametrize("fluid", ["water", "glycol_50", "iso_vg_46"])
-def test_d04_mixed_temperature_follows_the_enthalpy_balance(fluid):
+def test_mixed_temperature_follows_the_enthalpy_balance(fluid):
     # Equal mass flows at 80 and 20 degC, low flow: throttling heat negligible
     tcv = _tcv(fluid, 1e-4, 1e-4 * FluidProperties.get_density(fluid, 353.15) / FluidProperties.get_density(fluid, 293.15))
     tcv.calculate()
     assert tcv.outlets[0].temperature == pytest.approx(_reference(tcv, fluid), abs=0.05)
 
 
-def test_d04_oil_mix_differs_from_the_mass_weighted_mean():
+def test_oil_mix_differs_from_the_mass_weighted_mean():
     tcv = _tcv("iso_vg_46", 1e-4, 1e-4 * FluidProperties.get_density("iso_vg_46", 353.15)
                / FluidProperties.get_density("iso_vg_46", 293.15))
     tcv.calculate()
     assert tcv.outlets[0].temperature - 323.15 == pytest.approx(0.87, abs=0.1)
 
 
-def test_d04_throttling_heat_enters_as_enthalpy():
+def test_throttling_heat_enters_as_enthalpy():
     # High flow through a small valve: several kW of throttling heat
     tcv = _tcv("iso_vg_46", 2e-3, 2e-3)
     tcv.max_cv = 5.0

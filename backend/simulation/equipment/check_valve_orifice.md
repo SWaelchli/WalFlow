@@ -15,7 +15,7 @@ Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_RE
 | Claim | Type | Source (edition) | Used for | Status |
 | :--- | :--- | :--- | :--- | :--- |
 | CVO-01 | Standard | IEC 60534-2-1:2011 | Liquid Cv equation for the open seat | ✅ IEC 60534-2-1:2011 §6.1 Eq. (1) |
-| CVO-02 | Standard | ISO 5167-1:2022; ISO 5167-2:2022 | Orifice equation and permanent loss ratio (§5.4 Formula (7)) for the bypass, as for the [calibrated restriction](calibrated_restriction.md) | ✅ Formula (7) since D-28 (was $1 - \beta^2$) |
+| CVO-02 | Standard | ISO 5167-1:2022; ISO 5167-2:2022 | Orifice equation and permanent loss ratio (§5.4 Formula (7)) for the bypass, as for the [calibrated restriction](calibrated_restriction.md) | ✅ ISO 5167-2:2022 §5.4 Formula (7) |
 | CVO-03 | Standard | API Std 594, 9th ed. (2022) | Cracking pressure | ⚪ Unverified |
 
 ## 3. Physical & Mathematical Implementation
@@ -26,7 +26,7 @@ With $D$ the connected pipe bore, $d$ the orifice, $\beta = \min(0.99,\ d/D)$:
 
 $$\Delta P_{\text{ori}} = \frac{\rho\, v_1|v_1|}{2} \cdot \frac{1 - \beta^4}{C_d^2\, \beta^4} \cdot r, \qquad C_d = 0.60 \tanh\!\left(\frac{0.2\sqrt{\mathrm{Re}_o}}{0.60}\right)$$
 
-$v_1$ is the pipe velocity, $\mathrm{Re}_o$ the orifice Reynolds number, with the permanent loss ratio of ISO 5167-2:2022 §5.4 Formula (7), $r = \dfrac{S - C_d\beta^2}{S + C_d\beta^2}$, $S = \sqrt{1 - \beta^4 (1 - C_d^2)}$ (`FluidProperties.get_orifice_permanent_loss_ratio`, D-28). The parser sets $D$ from the connected pipe (upstream first), overriding `pipe_diameter_m`.
+$v_1$ is the pipe velocity, $\mathrm{Re}_o$ the orifice Reynolds number, with the permanent loss ratio of ISO 5167-2:2022 §5.4 Formula (7), $r = \dfrac{S - C_d\beta^2}{S + C_d\beta^2}$, $S = \sqrt{1 - \beta^4 (1 - C_d^2)}$ (`FluidProperties.get_orifice_permanent_loss_ratio`). The parser sets $D$ from the connected pipe (upstream first), overriding `pipe_diameter_m`.
 
 ### 3.2 Seat (`open_seat_dp`, shared with the check valve)
 
@@ -37,7 +37,7 @@ $$\Delta P_{\text{seat}}(q_s) = \frac{K_{Cv}\, \rho\, q_s|q_s|}{(C_v F_R)^2}, \q
 ### 3.3 Paths (`calculate_delta_p`)
 
 - **Reverse flow, or forward flow with $\Delta P_{\text{ori}}(Q) \le P_{\text{crack}}$:** the seat is shut, all flow passes the orifice, $\Delta P = \Delta P_{\text{ori}}(Q)$.
-- **Forward flow above cracking:** seat and orifice in parallel at **one** valve drop (D-09):
+- **Forward flow above cracking:** seat and orifice in parallel at **one** valve drop:
 
 $$Q = q_o + q_s, \qquad \Delta P = \Delta P_{\text{ori}}(q_o) = P_{\text{crack}} + \Delta P_{\text{seat}}(q_s)$$
 
@@ -62,7 +62,7 @@ The class has no `calculate_dp_derivative` of its own; the solver differentiates
 
 ## 4. Thermal & Energy Balance
 
-The pressure drop is throttling loss (audit F1-16):
+The pressure drop is throttling loss:
 
 $$\Delta T = \frac{|\Delta P|}{\rho\, c_p(T)}$$
 
@@ -83,7 +83,7 @@ applied to the outlet for $Q \ge 0$ and to the inlet for $Q < 0$.
 - **Solver flags:** all `False` (`is_pressure_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation`).
 - **Inactive:** `active` has no effect.
 - **Reverse flow:** passes through the orifice; $\Delta P$ is negative.
-- **Shut-in sections:** the orifice always connects both sides, so it is no leak path in the stagnant-pressure ranking: at zero flow both sides share one pressure (D-09).
+- **Shut-in sections:** the orifice always connects both sides, so it is no leak path in the stagnant-pressure ranking: at zero flow both sides share one pressure.
 - **Operating cases:** all fields can be overridden per case.
 - **Not modelled:** partial lift (the seat is a fixed Cv once cracked), seat leakage in reverse flow.
 

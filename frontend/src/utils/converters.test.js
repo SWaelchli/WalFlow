@@ -15,7 +15,7 @@ describe('unit converters', () => {
   });
 });
 
-describe('F2-20: missing values and heat duty', () => {
+describe('missing values and heat duty', () => {
   it('shows a dash instead of 0 for missing values', () => {
     expect(paToBar(undefined)).toBe('—');
     expect(paToBar(null)).toBe('—');

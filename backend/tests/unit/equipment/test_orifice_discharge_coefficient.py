@@ -1,7 +1,6 @@
-"""F1-25: sharp-orifice Cd at low Reynolds number (Wuest laminar law blended into 0.60)."""
+"""Sharp-orifice Cd at low Reynolds number (Wuest laminar law blended into 0.60)."""
 import pytest
 
-pytestmark = pytest.mark.audit("F1-25")
 
 import math
 
@@ -19,14 +18,14 @@ from simulation.fluid_utils import FluidProperties as FP
     pytest.param(100.0, False, 0.59, id="improved-100"),
     pytest.param(1000.0, False, 0.59, id="improved-1000"),
 ])
-def test_f1_25_laminar_limit_follows_wuest(re, wuest, cd_min):
+def test_laminar_limit_follows_wuest(re, wuest, cd_min):
     if wuest:
         assert FP.get_orifice_cd(re) == pytest.approx(0.2 * math.sqrt(re), rel=0.05)
     else:
         assert FP.get_orifice_cd(re) > cd_min
 
 
-def test_f1_25_turbulent_limit_and_monotonic():
+def test_turbulent_limit_and_monotonic():
     assert FP.get_orifice_cd(1e6) == pytest.approx(0.60, abs=1e-6)
     res = [10 ** (i / 4.0) for i in range(-4, 12)]   # Re 0.1 ... 1000
     cds = [FP.get_orifice_cd(r) for r in res]

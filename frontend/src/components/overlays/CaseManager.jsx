@@ -44,7 +44,7 @@ export default function CaseManager({
     }
   ];
 
-  // F1-08: explain the Peak view when it has no separate snapshot
+  // Explain the Peak view when it has no separate snapshot
   const activePeak = cases.find(c => c.id === activeCaseId)?.telemetry?.relief?.peak;
   let peakNote = null;
   if (telemetryMode === 'peak' && activePeak) {

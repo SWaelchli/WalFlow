@@ -31,5 +31,5 @@ def test_warm_start_needs_few_iterations():
             node.data["flow_rated_lmin"] = node.data.get("flow_rated_lmin", 100.0) * 1.01
 
     iters_adj = NetworkSolver(GraphParser.parse_graph(graph)).solve(method="sparse_newton").get("total_inner_iterations", 0)
-    # F1-06: convergence also needs a small Newton step, which costs ~2 more evaluations than a residual-only test
+    # Convergence also needs a small Newton step, which costs ~2 more evaluations than a residual-only test
     assert iters_adj <= 8 and iters_adj < iters_cold, f"warm start took {iters_adj} iterations (cold {iters_cold})"

@@ -1,7 +1,6 @@
-"""F1-06: the solver must not leave phantom flows in low-loss sections (old absolute 10 Pa residual floor)."""
+"""The solver must not leave phantom flows in low-loss sections (old absolute 10 Pa residual floor)."""
 import pytest
 
-pytestmark = pytest.mark.audit("F1-06")
 
 import pytest
 

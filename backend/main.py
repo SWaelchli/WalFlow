@@ -102,7 +102,7 @@ async def websocket_endpoint(websocket: WebSocket):
     if not token:
         token = websocket.query_params.get("token")
         
-    # Anonymous users may run simulations (F3-03); WALFLOW_REQUIRE_WS_AUTH=true makes the whole socket login-only.
+    # Anonymous users may run simulations; WALFLOW_REQUIRE_WS_AUTH=true makes the whole socket login-only.
     # Collaboration (join_diagram) always needs a login, see below.
     require_auth = os.getenv("WALFLOW_REQUIRE_WS_AUTH", "false").lower() in ("true", "1")
 
@@ -142,7 +142,7 @@ async def websocket_endpoint(websocket: WebSocket):
             if action == "join_diagram":
                 diagram_id = data.get("diagram_id")
                 if diagram_id:
-                    # F2-25: lock and update events carry user names, so joining needs a login and project/owner access
+                    # Lock and update events carry user names, so joining needs a login and project/owner access
                     db = SessionLocal()
                     try:
                         user = get_user_from_token(token, db)
@@ -182,7 +182,7 @@ async def websocket_endpoint(websocket: WebSocket):
                         traceback.print_exc()
                         # SEC-06: Sanitize error payload
                         safe_msg = "Invalid diagram graph format. Please verify component connections."
-                        # context lets the client show this inline instead of as a popup (F2-17)
+                        # context lets the client show this inline instead of as a popup
                         await websocket.send_text(json.dumps({"status": "error", "context": "update_graph", "message": safe_msg}))
                         continue
 
@@ -226,7 +226,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     try:
                         # Offload CPU-heavy matrix solver to thread pool to prevent event loop starvation
                         import asyncio
-                        # F2-13: bounded by the solve timeout and the concurrent-solve cap
+                        # Bounded by the solve timeout and the concurrent-solve cap
                         stats, telemetry_mitigated, telemetry_unmitigated, has_psv, telemetry_peak = await asyncio.to_thread(
                             run_limited,
                             run_sequential_relief_simulation,
@@ -245,7 +245,7 @@ async def websocket_endpoint(websocket: WebSocket):
                             print(f"  Solver stats: {stats}")
 
                         kpis = calculate_case_kpis(network_instance, telemetry_mitigated, stats)
-                        # F2-15: NaN/Infinity would make the frame invalid JSON; send null and report the fields
+                        # NaN/Infinity would make the frame invalid JSON; send null and report the fields
                         stats, clean = sanitize_result(stats, telemetry=telemetry_mitigated, telemetry_unmitigated=telemetry_unmitigated,
                                                        telemetry_peak=telemetry_peak, kpis=kpis)
                         telemetry_mitigated, telemetry_unmitigated = clean["telemetry"], clean["telemetry_unmitigated"]
@@ -274,7 +274,7 @@ async def websocket_endpoint(websocket: WebSocket):
     except WebSocketDisconnect:
         print("Frontend client disconnected.")
     finally:
-        # F2-25: a closed tab must not keep the edit lock for its full 15 minutes
+        # A closed tab must not keep the edit lock for its full 15 minutes
         await release_lock_after_disconnect(collab_manager, collab_manager.disconnect(websocket))
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 
 /**
- * F3-18: right-click menu for components, pipes and the empty canvas.
+ * Right-click menu for components, pipes and the empty canvas.
  * items: [{ id, label, shortcut, disabled, danger, onSelect }]; a falsy entry is skipped, `{ separator: true }` draws a rule.
  */
 export default function CanvasContextMenu({ x, y, items, onClose, label = 'Canvas actions', width = 200 }) {

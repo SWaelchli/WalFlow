@@ -32,7 +32,7 @@ For `rated_duty` the design outlet temperature is $T_{\text{out}} = T_{\text{in}
 
 $$\varepsilon_d = \frac{T_{\text{in}} - T_{\text{out}}}{T_{\text{in}} - T_{m,\text{rated}}}, \qquad \text{NTU}_d = -\ln(1 - \varepsilon_d), \qquad UA_r = \text{NTU}_d\, \dot m_r\, c_p$$
 
-$\varepsilon_d$ is clamped to $10^{-5} \dots 0.999$ for the calculation. The unclamped value is reported as `design_effectiveness` with `rating_status` (audit F1-40):
+$\varepsilon_d$ is clamped to $10^{-5} \dots 0.999$ for the calculation. The unclamped value is reported as `design_effectiveness` with `rating_status`:
 
 | `rating_status` | Condition | Meaning |
 | :--- | :--- | :--- |
@@ -40,7 +40,7 @@ $\varepsilon_d$ is clamped to $10^{-5} \dots 0.999$ for the calculation. The unc
 | `high_effectiveness` | $0.95 < \varepsilon_d < 1$ | needs a very large exchanger |
 | `infeasible` | $\varepsilon_d \ge 1$ | the rated duty needs the fluid colder than the medium |
 
-$c_p$ and $\rho$ are evaluated in the system fluid at the design inlet temperature, so $UA_r$ is a fixed property of the exchanger and does not drift with the operating temperature (audit D-03). The rating is cached and recomputed only when an input changes.
+$c_p$ and $\rho$ are evaluated in the system fluid at the design inlet temperature, so $UA_r$ is a fixed property of the exchanger and does not drift with the operating temperature. The rating is cached and recomputed only when an input changes.
 
 ### 3.2 UA at the operating flow
 
@@ -62,7 +62,7 @@ $$\mathrm{Re}_{hx} = \frac{\rho\, (|Q| / A_{hx})\, d_{hx}}{\mu}, \qquad d_{hx} =
 
 $f$ is the viscosity factor of the [filter](filter.md#33-viscosity-factor-fluidpropertiesget_filter_viscosity_factor) ($1 + 100/\mathrm{Re}$ in the laminar range). $A_{hx}$ gives 2 m/s in the channels at rated flow.
 
-The reference state is the system fluid at the design inlet temperature: $\rho_{\text{ref}}$, $\mu_{\text{ref}}$ and $\mathrm{Re}_{\text{ref}}$ at $Q_r$ (audit D-03, the same calibration as the [filter](filter.md)). The rated drop is reproduced exactly at the rating point in any fluid; away from it the drop follows density and viscosity. Default exchanger (0.5 bar at 500 L/min, design inlet 50 °C):
+The reference state is the system fluid at the design inlet temperature: $\rho_{\text{ref}}$, $\mu_{\text{ref}}$ and $\mathrm{Re}_{\text{ref}}$ at $Q_r$ (the same calibration as the [filter](filter.md)). The rated drop is reproduced exactly at the rating point in any fluid; away from it the drop follows density and viscosity. Default exchanger (0.5 bar at 500 L/min, design inlet 50 °C):
 
 | Fluid at rated flow | $\Delta P$ |
 | :--- | :--- |
@@ -88,7 +88,7 @@ Default rating: 300 kW at 500 L/min, design inlet 50 °C, water-cooled at 10 °C
 
 ### 3.6 Derivative
 
-The class has no analytical derivative; the solver differentiates the outlet pressure numerically (see [base_node.md](base_node.md#33-jacobian), D-23).
+The class has no analytical derivative; the solver differentiates the outlet pressure numerically (see [base_node.md](base_node.md#33-jacobian)).
 
 ## 4. Thermal & Energy Balance
 
@@ -109,7 +109,7 @@ Section 3.3 is the energy balance: the duty $\dot Q$ leaves the process fluid to
 | Cooling Medium Temp | °C (°F) | `self.medium_temp_c` | °C | 10 | any | Medium temperature (water-cooled) |
 | Rated ΔP | bar (psi) | `self.rated_dp_bar` | bar | 0.5 | $\ge 0$ | Process-side drop at rated flow |
 
-A missing rated drop is 0.5 bar, not zero (audit F2-04). The parser rejects a rated flow $\le 0$.
+A missing rated drop is 0.5 bar, not zero. The parser rejects a rated flow $\le 0$.
 
 ## 6. Operating Modes & Model Boundaries
 
@@ -117,7 +117,7 @@ A missing rated drop is 0.5 bar, not zero (audit F2-04). The parser rejects a ra
 - **Solver flags:** all `False` (`is_pressure_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation`).
 - **Inactive:** no heat transfer ($T_{\text{out}} = T_{\text{in}}$, duty 0); the pressure drop stays.
 - **Zero flow:** no heat transfer.
-- **Reverse flow:** the hydraulic drop is symmetric. The thermal calculation takes the port the fluid enters by (the outlet port in reverse flow) and writes the cooled temperature to the port it leaves by, so duty and temperatures are the same as in forward flow (audit D-02).
+- **Reverse flow:** the hydraulic drop is symmetric. The thermal calculation takes the port the fluid enters by (the outlet port in reverse flow) and writes the cooled temperature to the port it leaves by, so duty and temperatures are the same as in forward flow.
 - **Air-cooled:** the rating uses 20 °C ambient; operation uses the drawing's ambient temperature. The medium temperature field is not used.
 - **Operating cases:** status, rating and medium temperature can be overridden per case (e.g. summer and winter cooling water).
 - **Not modelled:** the utility side (its flow, temperature rise and pressure drop), fouling, phase change, throttling heat of the pressure drop.

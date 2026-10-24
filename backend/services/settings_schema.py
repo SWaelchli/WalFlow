@@ -1,4 +1,4 @@
-"""B4a / F3-12: stored settings for the user (global) and project levels.
+"""Stored settings for the user (global) and project levels.
 
 Solver settings exist on three levels (drawing in the .wlf, project and user in the database). The
 effective values are resolved in the frontend (Drawing, if ticked > Project, if ticked > Global), so the
@@ -11,7 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class SolverSettings(BaseModel):
-    """The solver group. Ranges match frontend/src/utils/solverSettings.js (F2-17)."""
+    """The solver group. Ranges match frontend/src/utils/solverSettings.js."""
     model_config = ConfigDict(extra="forbid")
 
     solver_method: Literal["sparse_newton", "lm"] = "sparse_newton"

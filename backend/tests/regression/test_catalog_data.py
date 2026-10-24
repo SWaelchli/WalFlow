@@ -1,8 +1,6 @@
-"""F2-23: seeded catalogue data against ASME B36.19M / B36.10M / DIN EN, and the example classes'
+"""Seeded catalogue data against ASME B36.19M / B36.10M / DIN EN, and the example classes'
 references into it. The catalogs live only in the database (seeded from `fitting_defaults.py`)."""
-import pytest
 
-pytestmark = pytest.mark.audit("F2-23")
 
 from services.fitting_defaults import DIN_EN_10253_2_REDUCERS_DATA, EXAMPLE_FITTING_STANDARDS
 from services.pipe_class_defaults import EXAMPLE_PIPE_CLASSES
@@ -21,7 +19,7 @@ def test_example_classes_reference_seeded_catalogs():
         assert set(cls["reducer_standard_codes"]) <= SEED_REDUCERS
 
 
-def test_f2_23_10s_walls_dn15_dn20_are_2_11_mm():
+def test_10s_walls_dn15_dn20_are_2_11_mm():
     found = []
     for cls in EXAMPLE_PIPE_CLASSES:
         for r in resolve_sizes(cls["sizes"], SEED_CATALOGS):
@@ -40,7 +38,7 @@ def test_s_schedule_seed_classes_use_b36_19m():
             assert cls["schedule_standard_codes"] == ["ASME_B36_19M_SCHEDULES"], cls["code"]
 
 
-def test_f2_23_b36_10m_dn400_sch20_sch30():
+def test_b36_10m_dn400_sch20_sch30():
     from services.fitting_defaults import PIPE_SCHEDULES_DATA
     dn400 = next(r for r in PIPE_SCHEDULES_DATA if r["dn"] == 400)["schedules"]
     assert dn400["20"]["wt_mm"] == 7.92 and dn400["30"]["wt_mm"] == 9.53

@@ -27,7 +27,7 @@ class InLineResistor(HydraulicNode):
         # Standard Darcy-Weisbach or flow coefficient loss: dP = k * rho * Q * |Q|
         return self.k * density * flow_rate * abs(flow_rate)
 
-    # No calculate_dp_derivative: the solver differentiates this node numerically (D-23)
+    # No calculate_dp_derivative: the solver differentiates this node numerically
 
     def calculate(self):
         inlet = self.inlets[0]

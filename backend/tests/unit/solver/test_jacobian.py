@@ -1,9 +1,8 @@
-"""F1-12: the analytic Jacobian agrees with finite differences of the residual at the converged state
+"""The analytic Jacobian agrees with finite differences of the residual at the converged state
 for every shipped diagram (and so for every equipment type in them)."""
 from walflow_paths import EXAMPLES_DIR
 import pytest
 
-pytestmark = pytest.mark.audit("F1-12")
 
 import contextlib
 import glob

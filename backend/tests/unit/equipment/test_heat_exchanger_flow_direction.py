@@ -1,7 +1,6 @@
-"""D-02: the heat exchanger cools the stream that enters it, in either flow direction."""
+"""The heat exchanger cools the stream that enters it, in either flow direction."""
 import pytest
 
-pytestmark = pytest.mark.audit("D-02")
 
 from physics_refs import solve
 from simulation.equipment.heat_exchanger import HeatExchanger

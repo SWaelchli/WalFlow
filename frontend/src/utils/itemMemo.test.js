@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { mapCached } from './itemMemo';
 
-describe('mapCached (F2-28)', () => {
+describe('mapCached', () => {
   const a = { id: 'a', v: 1 };
   const b = { id: 'b', v: 2 };
 

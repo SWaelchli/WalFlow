@@ -23,8 +23,8 @@ def _within(target, rel):
     pytest.param(dict(SMALL_VFD, efficiency=0.8), 50.0, None, _within(48e5, 0.01), id="power-limit"),
     # Efficiency scaling: usable 2000 W gives half of the dP
     pytest.param(dict(SMALL_VFD, efficiency=0.4), 50.0, None, _within(24e5, 0.01), id="efficiency-scaling"),
-    # F1-35 aiding flow: Q > Q_rated, the pump brakes (negative dP) instead of passing freely
-    pytest.param(HIGH_POWER, 101.0, None, _within(-100e5, 0.01), id="F1-35-aiding-flow"),
+    # Aiding flow: Q > Q_rated, the pump brakes (negative dP) instead of passing freely
+    pytest.param(HIGH_POWER, 101.0, None, _within(-100e5, 0.01), id="aiding-flow"),
     # Dead head: the outlet is held at the 50 bar(a) default limit (+ max. 1 % accumulation)
     pytest.param(HIGH_POWER, 1.0, P_IN, (50e5, 50e5 * 1.01), id="dead-head"),
     # Fixed-speed drive (default) ignores the motor rating for the flow

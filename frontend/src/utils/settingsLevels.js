@@ -1,4 +1,4 @@
-// F3-12: settings exist on three levels.
+// Settings exist on three levels.
 //   Drawing  (.wlf)             title, fluid, ambient, atmospheric pressure, solver settings (+ "use drawing solver settings")
 //   Project  (database)         pipe classes, custom pipes, solver settings (+ "use project solver settings")
 //   Global   (database / local) unit preference, solver settings (always active)

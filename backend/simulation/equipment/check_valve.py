@@ -4,7 +4,7 @@ import math
 
 def open_seat_dp(cv: float, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
     """Open seat friction drop: Cv with the IEC 60534 viscosity factor F_R over the nominal seat bore.
-    Shared with the check valve with orifice (D-09)."""
+    Shared with the check valve with orifice."""
     K_CV_SI = 1.732e9
     d_v = max(0.002, 0.01 * math.sqrt(cv))
     v_v = flow_rate / (0.25 * math.pi * d_v**2)
@@ -104,5 +104,5 @@ class CheckValve(HydraulicNode):
         inlet.density = FluidProperties.get_density(fluid_type, inlet.temperature)
         inlet.viscosity = FluidProperties.get_viscosity(fluid_type, inlet.temperature)
 
-        # Outlet temperature already includes the throttling heat (F1-16); do not overwrite it
+        # Outlet temperature already includes the throttling heat; do not overwrite it
         return dp

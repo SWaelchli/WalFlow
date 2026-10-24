@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { niceStep, niceTicks, formatTick } from './chartTicks';
 
-describe('F3-14 chart ticks', () => {
+describe('chart ticks', () => {
   it('uses round steps', () => {
     expect(niceStep(100, 5)).toBe(20);
     expect(niceStep(13.35, 5)).toBe(5);

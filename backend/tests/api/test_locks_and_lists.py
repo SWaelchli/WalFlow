@@ -1,7 +1,5 @@
 """Code-review fixes: atomic Redis lock acquisition, summary lists skip diagram blobs."""
-import pytest
 
-pytestmark = pytest.mark.audit("review-5")
 
 import uuid
 

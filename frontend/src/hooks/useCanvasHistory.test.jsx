@@ -26,7 +26,7 @@ const load = (result, nodes) => act(() => {
   result.current.resetHistory(nodes, []);
 });
 
-describe('F2-03: undo history', () => {
+describe('undo history', () => {
   it('undo right after loading a diagram does nothing', () => {
     const { result } = setup();
     load(result, [node('a1')]);

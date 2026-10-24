@@ -1,8 +1,6 @@
-"""F3-19 / F0-03: the backend and frontend `constants` files, package.json and AGENTS.md state the same versions."""
+"""The backend and frontend `constants` files, package.json and AGENTS.md state the same versions."""
 from walflow_paths import REPO_ROOT
-import pytest
 
-pytestmark = pytest.mark.audit("F3-19", "F0-03")
 
 import json
 import os

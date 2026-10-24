@@ -56,7 +56,7 @@ class DiagramUpdateSchema(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     diagram_data: Optional[str] = None
-    # updated_at of the version the client loaded or last saved; a newer server copy is not overwritten (F2-25)
+    # updated_at of the version the client loaded or last saved; a newer server copy is not overwritten
     base_updated_at: Optional[str] = None
 
 class DiagramSummarySchema(BaseModel):
@@ -187,7 +187,7 @@ async def update_diagram(
                 detail="You do not have permission to modify this diagram."
             )
 
-    # F2-25: never overwrite a version the client has not seen (expired lock, two tabs, standalone diagrams)
+    # Never overwrite a version the client has not seen (expired lock, two tabs, standalone diagrams)
     if payload.base_updated_at:
         try:
             base = _naive_utc(datetime.fromisoformat(payload.base_updated_at.replace("Z", "+00:00")))
@@ -218,7 +218,7 @@ async def update_diagram(
         db.commit()
         db.refresh(diagram)
 
-        # Tell co-editors, at most once per interval (F2-11); client_id lets the saving tab ignore its own notice
+        # Tell co-editors, at most once per interval; client_id lets the saving tab ignore its own notice
         await collab_manager.notify_diagram_updated(
             diagram_id,
             {
@@ -286,7 +286,7 @@ async def checkout_diagram(
     if not diagram:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Diagram not found.")
 
-    require_diagram_access(db, diagram, current_user)   # F2-25: also for standalone diagrams
+    require_diagram_access(db, diagram, current_user)   # also for standalone diagrams
 
     lock = acquire_lock(diagram_id, current_user.id, current_user.username)
     if lock["user_id"] != current_user.id:
@@ -396,7 +396,7 @@ def get_diagram_lock_status(
     if not diagram:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Diagram not found.")
 
-    require_diagram_access(db, diagram, current_user)   # F2-25: also for standalone diagrams
+    require_diagram_access(db, diagram, current_user)   # also for standalone diagrams
 
     lock = get_lock_status_info(diagram_id)
     return {

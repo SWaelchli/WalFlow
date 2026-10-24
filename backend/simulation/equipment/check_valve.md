@@ -22,7 +22,7 @@ Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_RE
 
 $$\Delta P_{\text{fric}}(Q) = \frac{K_{Cv}\, \rho\, Q|Q|}{\big(\max(10^{-4},\ C_v F_R)\big)^2}, \qquad K_{Cv} = 1.732 \times 10^9$$
 
-with a smooth viscosity correction $F_R$ (`FluidProperties.get_valve_fr`). It is not the IEC 60534-2-1 Annex A factor of the control valves (D-29): a check valve is outside the scope of IEC 60534. An equivalent trim diameter and a valve Reynolds number:
+with a smooth viscosity correction $F_R$ (`FluidProperties.get_valve_fr`). It is not the IEC 60534-2-1 Annex A factor of the control valves: a check valve is outside the scope of IEC 60534. An equivalent trim diameter and a valve Reynolds number:
 
 $$d_v = \max\!\left(0.002,\ 0.01\sqrt{C_v}\right)\ \text{m}, \qquad \mathrm{Re}_v = \frac{\rho\, |Q|\, d_v}{\mu\, \pi d_v^2 / 4}, \qquad F_R = \min\!\left(1,\ \max\!\left(0.4,\ \frac{\mathrm{Re}_v + 200}{\mathrm{Re}_v + 400}\right)\right)$$
 
@@ -45,7 +45,7 @@ $$\phi(a, b) = \sqrt{a^2 + b^2 + \varepsilon^2} - (a + b) = 0, \qquad \varepsilo
 
 $\phi = 0$ holds exactly when the complementarity condition holds (for $\varepsilon \to 0$). $\phi$ is smooth, so Newton can cross between closed and open without switching equations. $\varepsilon$ smooths the corner: a closed valve with 1 bar across it leaks about $5 \times 10^{-12}$ m³/s.
 
-The solver gives the valve's edge this row (`use_mcp_formulation = True`, see [base_node.md](base_node.md#34-complementarity-mcp-components)): the method returns $\Delta p - 10^5 \phi$, so the edge pressure balance reads $\phi = 0$. $P_{\text{out}}$ is estimated as the downstream node pressure plus the outlet pipe loss. The Jacobian of the row is a numerical central difference of the whole row (audit F1-12).
+The solver gives the valve's edge this row (`use_mcp_formulation = True`, see [base_node.md](base_node.md#34-complementarity-mcp-components)): the method returns $\Delta p - 10^5 \phi$, so the edge pressure balance reads $\phi = 0$. $P_{\text{out}}$ is estimated as the downstream node pressure plus the outlet pipe loss. The Jacobian of the row is a numerical central difference of the whole row.
 
 ### 3.4 Smoothed fallback (`calculate_delta_p` without pressures)
 
@@ -69,7 +69,7 @@ The cracking pressure stays in the open-state drop at every flow (the spring is 
 
 ## 4. Thermal & Energy Balance
 
-The pressure drop is throttling loss (audit F1-16), with the drop of the smoothed curve (3.4):
+The pressure drop is throttling loss, with the drop of the smoothed curve (3.4):
 
 $$\Delta T = \frac{|\Delta P|}{\rho\, c_p(T)}$$
 

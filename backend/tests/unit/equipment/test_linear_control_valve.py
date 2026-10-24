@@ -1,4 +1,4 @@
-"""Linear control valve: closed below the 0.1 % minimum opening (D-11)."""
+"""Linear control valve: closed below the 0.1 % minimum opening."""
 
 import pytest
 
@@ -11,15 +11,13 @@ def _dp(opening_pct, flow_rate):
     return LinearControlValve("LCV", max_cv=5.0, opening_pct=opening_pct).calculate_delta_p(flow_rate, RHO, MU)
 
 
-@pytest.mark.audit("D-11")
 @pytest.mark.parametrize("opening_pct", [0.0, 0.05, 0.0999])
-def test_d11_opening_below_minimum_is_closed(opening_pct):
+def test_opening_below_minimum_is_closed(opening_pct):
     valve = LinearControlValve("LCV", max_cv=5.0, opening_pct=opening_pct)
     assert valve.calculate_delta_p(Q, RHO, MU) == pytest.approx(1e12 * Q)
 
 
-@pytest.mark.audit("D-11")
-def test_d11_minimum_opening_follows_the_cv_law():
+def test_minimum_opening_follows_the_cv_law():
     # 0.1 % is the smallest Cv-controlled opening: quadratic drop, not the closed stiffness
     valve = LinearControlValve("LCV", max_cv=5.0, opening_pct=0.1)
     dp_min = valve.calculate_delta_p(Q, RHO, MU)

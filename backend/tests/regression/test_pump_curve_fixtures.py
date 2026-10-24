@@ -1,10 +1,9 @@
-"""F2-24: the pump-chart formulas in the frontend (utils/pumpCurves.js) repeat the pump models. This test pins the
+"""The pump-chart formulas in the frontend (utils/pumpCurves.js) repeat the pump models. This test pins the
 fixture file the frontend test checks against, so a change to either side fails a test. Regenerate with
-`WALFLOW_WRITE_FIXTURES=1 pytest tests/test_f2_24_pump_curve_fixtures.py`."""
+`WALFLOW_WRITE_FIXTURES=1 pytest tests/test_pump_curve_fixtures.py`."""
 from walflow_paths import FRONTEND_SRC
 import pytest
 
-pytestmark = pytest.mark.audit("F2-24")
 
 import json
 import os

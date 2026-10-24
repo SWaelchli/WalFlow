@@ -1,4 +1,4 @@
-"""D-33: the valve chart draws the telemetry `valve_curves` of the valve's own calculate_delta_p (F_R, valve
+"""The valve chart draws the telemetry `valve_curves` of the valve's own calculate_delta_p (F_R, valve
 style, solved fluid), not a formula of its own. Checks the curve builder against the valve, the opening
 argument it relies on, and a solved network whose operating point lies on the curve."""
 import contextlib
@@ -7,7 +7,6 @@ import io
 import pytest
 from hypothesis import given, strategies as st
 
-pytestmark = pytest.mark.audit("D-33")
 
 from strategies import build, fluid_states, log_uniform
 from routers.simulation import VALVE_CURVE_MIN_FLOW, VALVE_CURVE_POINTS, extract_telemetry, valve_curves

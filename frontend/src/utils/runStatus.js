@@ -1,4 +1,4 @@
-// F3-04: turns the solver's stats into the status chip state and the banner texts.
+// Turns the solver's stats into the status chip state and the banner texts.
 // Pure functions; the UI lives in StatusPanel / RunBanners / Navbar.
 
 const REASON_TEXT = {

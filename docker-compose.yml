@@ -8,7 +8,7 @@ services:
     restart: unless-stopped
     ports:
       # Only reachable from this host: users go through the frontend/nginx container, which sets the
-      # forwarded client address the rate limiter relies on (F2-12). Remove "127.0.0.1:" to expose it.
+      # forwarded client address the rate limiter relies on. Remove "127.0.0.1:" to expose it.
       - "127.0.0.1:5701:8000"
     volumes:
       - /docker/walflow/data:/app/data

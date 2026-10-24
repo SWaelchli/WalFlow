@@ -1,7 +1,6 @@
-"""F1-16: every restriction keeps its throttling heat, ΔT = ΔP/(ρ·cp) (adiabatic, incompressible liquid)."""
+"""Every restriction keeps its throttling heat, ΔT = ΔP/(ρ·cp) (adiabatic, incompressible liquid)."""
 import pytest
 
-pytestmark = pytest.mark.audit("F1-16")
 
 import pytest
 
@@ -33,7 +32,7 @@ COMPONENTS = {
 
 
 @pytest.mark.parametrize("kind", sorted(COMPONENTS))
-def test_f1_16_throttling_heat_magnitude(kind):
+def test_throttling_heat_magnitude(kind):
     # ~5.8 bar of water head across one restriction
     t1 = Tank("High", elevation=59.0, fluid_level=0.0, temperature=293.15)
     t2 = Tank("Low", elevation=0.0, fluid_level=0.0, temperature=293.15)

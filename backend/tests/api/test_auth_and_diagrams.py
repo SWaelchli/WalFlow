@@ -227,7 +227,7 @@ class TestAuthAndDiagrams(unittest.TestCase):
         old_auth_req = os.environ.get("WALFLOW_REQUIRE_WS_AUTH")
 
         try:
-            # Case 1: WALFLOW_REQUIRE_WS_AUTH is not set: anonymous users may simulate (F3-03)
+            # Case 1: WALFLOW_REQUIRE_WS_AUTH is not set: anonymous users may simulate
             if "WALFLOW_REQUIRE_WS_AUTH" in os.environ:
                 del os.environ["WALFLOW_REQUIRE_WS_AUTH"]
             unauth_client = TestClient(app)

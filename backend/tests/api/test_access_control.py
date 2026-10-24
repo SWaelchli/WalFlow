@@ -1,7 +1,6 @@
 """Code-review fixes: diagram delete/checkin access, cascades, user deletion hand-over, invitation password."""
 import pytest
 
-pytestmark = pytest.mark.audit("review-2")
 
 import uuid
 

@@ -1,8 +1,7 @@
-"""B1a pump regressions: F1-18 (head-based curve, efficiency), F1-34 (reverse flow),
-F1-35 (pushed PD pump), F1-36 (shaft power KPI), D1 (rated head required)."""
+"""Pump regressions: head-based curve and efficiency, reverse flow, pushed PD pump, shaft power KPI,
+rated head required."""
 import pytest
 
-pytestmark = pytest.mark.audit("B1a", "F1-18", "F1-34", "F1-35", "F1-36")
 
 import io
 import contextlib
@@ -25,14 +24,14 @@ Q_R = 100.0 / 60000.0
 
 
 @pytest.mark.parametrize("fluid,temp_c", [("water", 20.0), ("iso_vg_46", 20.0), ("iso_vg_46", 80.0)])
-def test_f1_18_pump_pressure_rise_follows_density(fluid, temp_c):
+def test_pump_pressure_rise_follows_density(fluid, temp_c):
     pump = CentrifugalPump("P", flow_rated=Q_R, head_rated=50.0, rise_to_shutoff_pct=20.0)
     rho = FluidProperties.get_density(fluid, temp_c + 273.15)
     assert pump.calculate_delta_p(Q_R, rho) == pytest.approx(rho * G * 50.0, rel=1e-9)
     assert pump.calculate_delta_p(0.0, rho) == pytest.approx(rho * G * 60.0, rel=1e-9)
 
 
-def test_f1_18_operating_point_in_oil_system():
+def test_operating_point_in_oil_system():
     # Pump lifts VG46 between two open tanks 30 m apart through a short, wide pipe
     fluid, t_k = "iso_vg_46", 40 + 273.15
     nodes = {
@@ -55,7 +54,7 @@ def test_f1_18_operating_point_in_oil_system():
     assert q == pytest.approx(Q_R * 3 ** 0.5, rel=0.01)
 
 
-def test_f1_34_running_pump_resists_reverse_flow():
+def test_running_pump_resists_reverse_flow():
     pump = CentrifugalPump("P", flow_rated=Q_R, head_rated=50.0, rise_to_shutoff_pct=20.0)
     rho = 998.0
     assert pump.calculate_delta_p(-Q_R, rho) == pytest.approx(rho * G * 70.0, rel=1e-9)
@@ -64,14 +63,14 @@ def test_f1_34_running_pump_resists_reverse_flow():
     assert pump.calculate_dp_derivative(-Q_R, rho) == pytest.approx(pump.calculate_dp_derivative(Q_R, rho))
 
 
-def test_d2_stopped_pump_loses_rated_head_at_rated_flow():
+def test_stopped_pump_loses_rated_head_at_rated_flow():
     pump = CentrifugalPump("P", flow_rated=Q_R, head_rated=50.0)
     pump.active = False
     for q in (Q_R, -Q_R):
         assert pump.calculate_delta_p(q, 1000.0) == pytest.approx(-1000.0 * G * 50.0 * (1 if q > 0 else -1), rel=1e-9)
 
 
-def test_f1_35_pushed_pd_pump_passes_its_displacement():
+def test_pushed_pd_pump_passes_its_displacement():
     # 10 bar(a) header feeds a 100 L/min PD pump discharging to an open tank
     nodes = {
         "src": PressureSource("Header", source_pressure=10.0e5),
@@ -103,7 +102,7 @@ def _pd_network(drive):
     return nodes, stats
 
 
-def test_f1_36_fixed_speed_keeps_flow_and_flags_overload():
+def test_fixed_speed_keeps_flow_and_flags_overload():
     nodes, stats = _pd_network("fixed_speed")
     pump = nodes["p"]
     tel = extract_telemetry(type("N", (), {"nodes": nodes, "edges": []})())["nodes"]["p"]
@@ -114,7 +113,7 @@ def test_f1_36_fixed_speed_keeps_flow_and_flags_overload():
     assert tel["motor_load_pct"] > 100.0
 
 
-def test_f1_36_vfd_power_limit_reduces_flow_and_flags_it():
+def test_vfd_power_limit_reduces_flow_and_flags_it():
     nodes, stats = _pd_network("vfd_power_limit")
     pump = nodes["p"]
     tel = extract_telemetry(type("N", (), {"nodes": nodes, "edges": []})())["nodes"]["p"]
@@ -123,7 +122,7 @@ def test_f1_36_vfd_power_limit_reduces_flow_and_flags_it():
     assert tel["shaft_power_kw"] == pytest.approx(5.0, rel=0.02)
 
 
-def test_f1_36_kpi_power_is_shaft_power_and_stopped_pump_counts_zero():
+def test_kpi_power_is_shaft_power_and_stopped_pump_counts_zero():
     nodes, stats = _pd_network("fixed_speed")
     net = type("N", (), {"nodes": nodes, "edges": []})()
     kpi = calculate_case_kpis(net, extract_telemetry(net), stats)
@@ -146,12 +145,12 @@ def _pump_graph(pump_data, pump_type="centrifugal_pump"):
     })
 
 
-def test_d1_old_file_with_rated_pressure_only_is_blocked():
+def test_old_file_with_rated_pressure_only_is_blocked():
     with pytest.raises(ModelInputError, match="P-101.*rated head missing"):
         GraphParser.parse_graph(_pump_graph({"pressure_rated_bar": 5.0}))
 
 
-def test_d4_efficiency_is_read_from_the_file():
+def test_efficiency_is_read_from_the_file():
     net = GraphParser.parse_graph(_pump_graph({"head_rated_m": 50.0, "efficiency_pct": 62.0}))
     assert net.nodes["p1"].efficiency == pytest.approx(0.62)
     assert GraphParser.parse_graph(_pump_graph({"head_rated_m": 50.0})).nodes["p1"].efficiency == pytest.approx(0.75)

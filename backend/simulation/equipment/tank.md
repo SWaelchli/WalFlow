@@ -62,7 +62,7 @@ $$T_{\text{port}} = T_{\text{tank}}$$
 | Elevation | m (ft) | `self.elevation` | m | 0.0 | any | Tank bottom above the common datum |
 | Temp | °C (°F) | `self.temperature` | K | 293.15 K (new tank in the UI: the drawing's ambient temperature) | fluid validity range | Liquid temperature |
 
-The fluid is the system fluid from the global settings (`self.fluid_type`). A `fluid_type` stored on a tank in older files is ignored (audit F1-23).
+The fluid is the system fluid from the global settings (`self.fluid_type`). A `fluid_type` stored on a tank in older files is ignored.
 
 ## 6. Operating Modes & Model Boundaries
 

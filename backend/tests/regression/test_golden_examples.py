@@ -25,7 +25,7 @@ FILES = sorted(glob.glob(os.path.join(EXAMPLES, "*.wlf")))
 GOLDEN = GOLDEN_FILE
 UPDATE = os.environ.get("WALFLOW_UPDATE_GOLDEN") == "1"
 
-# Tolerances: well above run-to-run noise (the solve is deterministic, F1-14), well below any
+# Tolerances: well above run-to-run noise (the solve is deterministic), well below any
 # change worth noticing. Temperatures converge to 0.05 K (property check of the outer loop), hence 0.05 K;
 # the TCV setpoint accuracy (0.01 K) is checked by scenarios/test_tcv_loop_convergence.py.
 FLOW_ABS_LMIN, FLOW_REL = 0.05, 0.005

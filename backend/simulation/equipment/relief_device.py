@@ -14,7 +14,7 @@ class ReliefDevice(HydraulicNode):
     Shared model of the pressure relief devices (PSV, rupture disc).
 
     Set pressures are gauge (barg, API 520 / ISO 4126); a device opens when its inlet gauge pressure
-    P_in − P_atm reaches the set pressure (F1-09). Whether a device is open is decided between hydraulic
+    P_in − P_atm reaches the set pressure. Whether a device is open is decided between hydraulic
     solves (update_relief_state) and held fixed during a Newton solve, so its branch never flips
     mid-iteration. Inside a solve the device is a flow equation
 
@@ -129,7 +129,7 @@ class ReliefDevice(HydraulicNode):
         return lift * dp / ((dp + DP_SQRT_REG) ** 0.5 * c ** 0.5)
 
     def rated_flow(self, flow_rate, density, viscosity, p_out_pa) -> float:
-        """Flow at full lift with the inlet at 110 % of set pressure (gauge) against the actual outlet (F1-38)."""
+        """Flow at full lift with the inlet at 110 % of set pressure (gauge) against the actual outlet."""
         dp_rated = self.set_pressure_pa + self.full_lift_overpressure_pa - p_out_pa
         if dp_rated <= 0.0:
             return 0.0
@@ -204,7 +204,7 @@ class ReliefDevice(HydraulicNode):
         outlet.density = FluidProperties.get_density(fluid_type, outlet.temperature)
         outlet.viscosity = FluidProperties.get_viscosity(fluid_type, outlet.temperature)
 
-        # Outlet temperature already includes the throttling heat (F1-16); do not overwrite it
+        # Outlet temperature already includes the throttling heat; do not overwrite it
         return dp
 
 

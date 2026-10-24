@@ -15,9 +15,9 @@ class VolumetricPump(HydraulicNode):
 
     The flow is set by the displacement: a stiff "spring" ΔP = k·(Q_rated − Q) acts in both
     directions, so a pump fed from a pressurised header brakes the flow instead of passing
-    it freely (F1-35).
+    it freely.
 
-    Drive (D3, F1-36):
+    Drive (D3):
     - fixed_speed (default): an induction motor keeps (almost) its speed when overloaded, so
       the flow stays at displacement. If the shaft power Q·ΔP/η exceeds the motor rating,
       `motor_overload` is set (the motor would overheat and trip).
@@ -90,7 +90,7 @@ class VolumetricPump(HydraulicNode):
         return slope / self._stiffness()
 
     def _unlimited_dp(self, flow_rate: float) -> float:
-        delta_p = self._stiffness() * (self.flow_rated - flow_rate)  # both signs (F1-35)
+        delta_p = self._stiffness() * (self.flow_rated - flow_rate)  # both signs
         if self._uses_power_limit():
             delta_p = min(delta_p, self._power_limit_dp(flow_rate))
         return delta_p
@@ -166,7 +166,7 @@ class VolumetricPump(HydraulicNode):
         inlet = self.inlets[0]
         outlet = self.outlets[0]
 
-        # NPSH check (F1-28)
+        # NPSH check
         fluid_type = self.global_settings.fluid_type if self.global_settings else 'water'
         self.update_npsh(inlet)
 

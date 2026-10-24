@@ -16,7 +16,7 @@ class Splitter(HydraulicNode):
     def calculate(self):
         """
         Equal pressure at all ports. Temperatures come from calculate_temperature (enthalpy mix of the
-        ports with inward flow) and are not overwritten here (D-01); the outward ports get density and
+        ports with inward flow) and are not overwritten here; the outward ports get density and
         viscosity at that temperature. Flow distribution is set by the connected resistances.
         """
         inlet = self.inlets[0]

@@ -7,7 +7,7 @@ const values = { ...BUILTIN_SOLVER_SETTINGS };
 
 afterEach(cleanup);
 
-describe('F3-12 solver settings group', () => {
+describe('solver settings group', () => {
   it('is greyed out with its source while the level is not ticked', () => {
     const { container } = render(
       <SolverSettingsGroup values={values} onChange={() => {}} inheritedFrom="global"
