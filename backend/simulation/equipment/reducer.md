@@ -119,7 +119,7 @@ The parser rejects a bore or length $\le 0$ and a negative roughness. Missing va
 | `test_reducer.py::test_reducer_expander_diffuser_recovery` | 2" × 3" expander: Bernoulli < 0, loss > 0 |
 | `test_reducer.py::test_reducer_reverse_flow_symmetry` | Reverse $\Delta P$ = −forward $\Delta P$ within 0.01 % for the tested case |
 | `test_reducer.py::test_zero_reducer_roughness_is_kept_as_smooth`, `test_reducer_roughness_is_read_in_mm` | 0.2 mm → 0.0002 m; missing → 0.045 mm; 0 stays 0 |
-| `test_reducer.py::test_d07_reducer_friction_equals_pipe_friction` | Equal bores, 50 mm × 0.5 m, oil ($\rho$ = 870, $\mu$ = 0.03 Pa·s), $Q = 10^{-6}$ to $10^{-2}$ m³/s (laminar to turbulent), roughness 0 and 0.045 mm: $\Delta P$ equals a pipe of the same size within $10^{-9}$ |
+| `test_reducer.py::test_reducer_friction_equals_pipe_friction` | Equal bores, 50 mm × 0.5 m, oil ($\rho$ = 870, $\mu$ = 0.03 Pa·s), $Q = 10^{-6}$ to $10^{-2}$ m³/s (laminar to turbulent), roughness 0 and 0.045 mm: $\Delta P$ equals a pipe of the same size within $10^{-9}$ |
 | `backend/tests/unit/equipment/test_pipe_reservoir_entry.py::test_expander_between_reservoirs_with_short_pipes` | Expander 0.1-5 m from a reservoir: flow matches an independent Crane + Bernoulli + entry sum within 1 % |
 
 ## Data Fields

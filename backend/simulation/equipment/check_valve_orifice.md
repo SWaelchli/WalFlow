@@ -94,12 +94,12 @@ applied to the outlet for $Q \ge 0$ and to the inlet for $Q < 0$.
 | `backend/tests/unit/equipment/test_check_valve_orifice.py::test_check_valve_orifice_physics` | Cv 10, 0.05 bar, 10 mm orifice in 100 mm: positive drop at 6 L/min, negative drop at −6 L/min, at least 0.05 bar at 60 L/min |
 | `test_check_valve_orifice.py::test_graph_parser_check_valve_orifice` | Parser reads Cv 12, cracking 0.08 bar, orifice 15 mm |
 | `backend/tests/unit/fluids/test_throttling_heat.py::test_f1_16_throttling_heat_magnitude` | Outlet temperature rise $= \Delta P/(\rho c_p)$ within 2 % |
-| `test_check_valve_orifice.py::test_d09_flow_splits_between_seat_and_orifice_at_one_valve_drop` | Water and oil, cracking 0 / 0.05 / 0.3 bar, −20 to 200 L/min: inverted orifice flow plus plain check valve seat flow at the returned drop equals $Q$ ($10^{-8}$) |
-| `test_check_valve_orifice.py::test_d09_seat_has_the_viscosity_correction` | Open seat in viscous oil needs more drop than at water viscosity |
-| `test_check_valve_orifice.py::test_d09_drop_is_continuous_and_monotonic_through_zero_and_cracking` | Zero drop at zero flow, strictly rising, no jump at $Q = 0$ or at cracking |
-| `test_check_valve_orifice.py::test_d09_non_finite_state_does_not_raise` | NaN flow, density or viscosity passes through (NaN or the orifice drop), no exception |
-| `test_check_valve_orifice.py::test_d09_tiny_forward_flow_with_zero_cracking_does_not_raise` | Denormal forward flow with zero cracking pressure returns a drop between 0 and the orifice drop |
-| `backend/tests/unit/solver/test_stagnant_branches.py::test_d09_section_behind_a_check_valve_with_orifice_takes_the_header_pressure` | Section between a stopped PD pump and the valve sits at header pressure (1 Pa), both solver methods |
+| `test_check_valve_orifice.py::test_flow_splits_between_seat_and_orifice_at_one_valve_drop` | Water and oil, cracking 0 / 0.05 / 0.3 bar, −20 to 200 L/min: inverted orifice flow plus plain check valve seat flow at the returned drop equals $Q$ ($10^{-8}$) |
+| `test_check_valve_orifice.py::test_seat_has_the_viscosity_correction` | Open seat in viscous oil needs more drop than at water viscosity |
+| `test_equipment_contracts.py::test_resistance_is_finite_and_at_rest_without_flow`, `::test_resistance_opposes_the_flow`, `::test_resistance_loss_rises_with_flow` | Zero drop at zero flow, strictly rising, no jump at $Q = 0$ or at cracking |
+| `test_check_valve_orifice.py::test_non_finite_state_does_not_raise` | NaN flow, density or viscosity passes through (NaN or the orifice drop), no exception |
+| `test_check_valve_orifice.py::test_tiny_forward_flow_with_zero_cracking_does_not_raise` | Denormal forward flow with zero cracking pressure returns a drop between 0 and the orifice drop |
+| `backend/tests/unit/solver/test_stagnant_branches.py::test_section_behind_a_check_valve_with_orifice_takes_the_header_pressure` | Section between a stopped PD pump and the valve sits at header pressure (1 Pa), both solver methods |
 
 ## Data Fields
 

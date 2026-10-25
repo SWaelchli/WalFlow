@@ -137,8 +137,8 @@ applied to the fluid exiting the node (forward flow: inlet→outlet; reverse flo
 - Permanent loss ratio matches a direct recomputation of §5.4 Formula (7) (using $C$, not $C_d$) within $10^{-4}$.
 - Continuity: no jumps in $\Delta p$ across the blend bands.
 - Legacy model: `classic_cd` reproduces the tanh $C_d$ law with the Formula (7) loss ratio to $10^{-12}$.
-- `test_orifice.py::test_d26_reynolds_limit_above_beta_056_is_16000_beta_squared`: β = 0.75, Re_D 9 100 gives the pure RG drop and no Reynolds issue; Re_D 8 500 reports the issue (limit 16 000·β² = 9 000).
-- `test_orifice.py::test_d28_permanent_loss_is_tap_dp_times_formula_7`: orifice `classic_cd`, calibrated restriction, check valve orifice and reduced-bore rupture disc, β = 0.5: drop = tap differential × Formula (7) within $10^{-9}$.
+- `test_orifice.py::test_reynolds_limit_above_beta_056_is_16000_beta_squared`: β = 0.75, Re_D 9 100 gives the pure RG drop and no Reynolds issue; Re_D 8 500 reports the issue (limit 16 000·β² = 9 000).
+- `test_orifice.py::test_permanent_loss_is_tap_dp_times_formula_7`: orifice `classic_cd`, calibrated restriction, check valve orifice and reduced-bore rupture disc, β = 0.5: drop = tap differential × Formula (7) within $10^{-9}$.
 - Network solve: tank → pipe → orifice → pipe → tank converges with positive orifice $\Delta P$.
 
 ## Data Fields

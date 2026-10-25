@@ -179,7 +179,7 @@ describe('the heat exchanger inspector shows what the solver uses', () => {
   });
 });
 
-describe('D-29b: control valve style picker in the inspector', () => {
+describe('control valve style picker in the inspector', () => {
   const IEC = 'IEC_60534_2_1_TABLE_D2';
   const catalogue = {
     code: IEC, name: 'IEC 60534-2-1 Table D.2', fitting_type: 'control_valve',

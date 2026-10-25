@@ -113,10 +113,10 @@ Only a missing value takes the default; 0 °C is a valid calibration temperature
 | `test_calibrated_restriction.py::test_laminar_scaling` | Laminar: twice the flow or twice the viscosity gives twice the drop ($10^{-5}$) |
 | `test_calibrated_restriction.py::test_quadratic_scaling` | Quadratic: twice the flow gives four times the drop ($10^{-5}$) |
 | `test_calibrated_restriction.py::test_graph_parser_calibrated_restriction` | Parser reads 15 L/min, 4.0 / 1.5 bar(a), 50 °C, laminar, ISO VG 46 |
-| `test_calibrated_restriction.py::test_d08_parsed_restriction_reproduces_calibration_at_first_call` | Parsed node, system fluid ISO VG 46, DN25 line: 2.5 bar at 10 L/min on the first call, all three models ($10^{-4}$) |
-| `test_calibrated_restriction.py::test_d08_calibration_runs_once_and_again_only_after_a_change` | Repeated calls calibrate once; a new pipe bore triggers one recalibration |
-| `test_calibrated_restriction.py::test_d08_zero_calibration_temperature_is_kept` | 0 °C stays 0 °C (constructor and parser) |
-| `test_calibrated_restriction.py::test_d08_invalid_calibration_point_is_an_input_error` | Flow ≤ 0, inlet ≤ outlet, outlet ≤ 0 bar(a), temperature below absolute zero: `ModelInputError` naming the component |
+| `test_calibrated_restriction.py::test_parsed_restriction_reproduces_calibration_at_first_call` | Parsed node, system fluid ISO VG 46, DN25 line: 2.5 bar at 10 L/min on the first call, all three models ($10^{-4}$) |
+| `test_calibrated_restriction.py::test_calibration_runs_once_and_again_only_after_a_change` | Repeated calls calibrate once; a new pipe bore triggers one recalibration |
+| `test_calibrated_restriction.py::test_zero_calibration_temperature_is_kept` | 0 °C stays 0 °C (constructor and parser) |
+| `test_calibrated_restriction.py::test_invalid_calibration_point_is_an_input_error` | Flow ≤ 0, inlet ≤ outlet, outlet ≤ 0 bar(a), temperature below absolute zero: `ModelInputError` naming the component |
 
 No network benchmark at the calibration point and no throttling heat test for this component.
 

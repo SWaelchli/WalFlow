@@ -381,7 +381,7 @@ class TestFittingStandardsDatabase(unittest.TestCase):
             )).one()
         self.assertEqual(tuple(row), ("ASME_B16_9_REDUCERS", "ASME_B36_10M_SCHEDULES"))
 
-    # --- Control valve style catalogues (D-29b) ---
+    # --- Control valve style catalogues ---
 
     def test_21_control_valve_catalogue_seeded_public_and_protected(self):
         """The IEC style catalogue is a public built-in: admin-only edit, no delete, clone gives an editable copy."""
