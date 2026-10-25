@@ -40,7 +40,7 @@ Status: `open` / `fixed` / `rejected`. "Confirmed" means it was reproduced by ru
 | D-21 | Solver / dead legs | Stagnant branches keep the 20 °C port default (cold and warm start), depending on the flow noise sign | Low | Confirmed (property test) | fixed |
 | D-22 | Solver | Junctions balance volume flow, not mass flow; mixing at different temperatures loses ~0.4 % mass | Low / decision | Confirmed (property test) | open |
 | D-23 | Solver / equipment | Analytical dp derivatives of most components are never used by the solver (dead code) | Low / cleanup | Mutation testing | fixed |
-| D-24 | Solver / junctions | A junction downstream of two hot supplies reports ~1 K below the coldest supply without any cooler | Medium | Confirmed (property test, explore) | open |
+| D-24 | Solver / junctions | A junction downstream of two hot supplies reports ~1 K below the coldest supply without any cooler | Medium | Confirmed (property test, explore) | partly fixed (loop cycle); junction loops open |
 | D-25 | Frontend / file format | The `.wlf` header is written by hand in three places instead of by `serializeDiagram`, so it can drift when the format changes | Low / cleanup | Code review | fixed |
 | D-26 | Orifice | ISO Reynolds limit for β > 0.56 is a flat 16 000 instead of 16 000·β² (ISO 5167-2:2022 §5.3.1); up to +12 % permanent loss in the ISO-valid range | Medium (wrong result) | Confirmed (standard + calculation) | fixed |
 | D-27 | Orifice / docs | `orifice.md` §3.1 describes the old β and d clamps (0.1-0.75, d ≥ 12.5 mm); the code uses 0.01-0.99 and no d clamp | Low / docs | Code reading | fixed |
@@ -50,6 +50,7 @@ Status: `open` / `fixed` / `rejected`. "Confirmed" means it was reproduced by ru
 | D-31 | Solver / 3-way TCV | Mix-ratio loop cycles on an S-shaped outlet temperature (laminar paths) and still reports `controls_converged` | Medium (wrong result reported as converged) | Test (D-29a), trace | fixed |
 | D-32 | Solver | Hydraulic solve fails for flows below about 1e-7 m³/s (e.g. Cv 0.1 TCV with a Cv 0.01 load on ISO VG 46) | Low (micro flows) | Test (D-29a), trace | rejected (cause was D-29) |
 | D-33 | Linear control valve, remote control valve, regulator (Results tab) | Valve chart draws the bare Cv equation in the browser, without $F_R$ and the valve style | Low (display only) | User question | fixed |
+| D-34 | Solver / stagnant sections | Two separate graph walks and thresholds for stagnant pressures and dead-leg temperatures; the temperature graph is rebuilt on every property pass | Cleanup | Code review | open |
 
 ---
 
@@ -502,6 +503,15 @@ The analytical `calculate_dp_derivative` methods of those components are only ex
 
 **Fix direction:** depends on the cause. The property stays as it is; it fails under the explore profile until this is fixed. The default profile does not draw this case.
 
+**Diagnosis (2026-10-25):** three separate causes.
+- Test artifact: the property ignored arriving streams below 1e-7 m³/s, so a real trickle into a mixer looked like a mixer hotter than its streams. Arriving streams now count from 1e-9 m³/s; the trickle network is pinned as an `@example`.
+- (a) Outer-loop cycle near a flow reversal: a branch close to zero flow flips direction, the mixed temperature changes, the new viscosities flip it back. Transformer oil network: a 4-cycle with the mixer outlet swinging 274–299 K; heavy crude network: the tank branch flipping between +3.6e-9 and −2.6e-7 m³/s. Both ended at 100 outer iterations with flows and temperatures from different states.
+- (b) Loops of junctions: in a splitter → check valve → mixer loop behind a dead tank branch, a spurious 4.2e-7 m³/s circulation keeps the loop near the 293.15 K start value. Each Gauss-Seidel pass changes it by less than 0.01 K, so the loop reports converged about 1 K below every supply. Likely the cause of the `test_junctions_conserve_energy` residual.
+
+**Resolution (a) fixed:** the property update uses damped flows $Q_{\text{prop}}$ once successive corrections swing back. Properties count as converged only when $Q_{\text{prop}}$ matches the solved flows (1e-4 relative, same direction on every non-dead edge); see `base_node.md` §4.2. Both networks converge in 8 outer iterations and are pinned as `@example`s; `solved()` in `test_network_invariants.py` now also requires `properties_converged`.
+
+**Open (b):** solve the junction mixing of each property pass as one sparse linear enthalpy system instead of Gauss-Seidel sweeps.
+
 ---
 
 ## D-25 File header written by hand in three places
@@ -609,3 +619,18 @@ The analytical `calculate_dp_derivative` methods of those components are only ex
 
 **Resolution (fixed):** the telemetry of the three valves carries `valve_curves` (`routers/simulation.py::valve_curves`): flow and $\Delta P$ at the current and at the full opening from the valve's own `calculate_delta_p`, with the solved inlet fluid, 61 points from 0 to max(300 L/min, 2 × the current flow). The chart draws these points and no longer computes $\Delta P$. The operating point is drawn at the valve's own pressure (inlet for backpressure, outlet otherwise), so it lies on the curve. A valve sensing elsewhere (e.g. the API 614 spill-over valve: inlet 7.66 bar(a), header 6.50 bar(a)) shows its sensed pressure in the values below the chart; the setpoint line marks the target.
 
+---
+
+## D-34 Two walks over stagnant sections
+
+**Where:** `backend/simulation/solver.py`, `_fill_stagnant_temperatures` (dead-leg temperatures, D-21) versus `_side_links` / `_assign_stagnant_pressures` (stagnant pressures, `port.stagnant` flags). Found by the code review of the D-21 fix (2026-10-25).
+
+**What happens:** the same topology is walked twice, with two meanings of "stagnant":
+- pressures: sections shut in by a closed check valve, stopped pump or closed relief device, with a check valve counted as closed below `Q_STAGNANT` (1e-7 m³/s);
+- temperatures: ports with $|Q| \le$ `Q_DEAD_LEG` (1e-9 m³/s, the solver's flow noise).
+
+Nothing is wrong today: a port flagged `stagnant` with a flow between the two thresholds carries real flow, and its temperature follows that flow correctly. But a change to one walk (e.g. a new blocking device) can miss the other. In addition, `_fill_stagnant_temperatures` rebuilds its port graph (pipe chains, node-interior links) on every `_propagate_properties` call: every outer iteration, up to 20 final property passes and the telemetry. The topology is fixed for the solver's lifetime.
+
+**Fix direction:** a cleanup. Build one port graph once per solver (like `edges_into` / `edges_out_of`), and use it for both the pressure groups and the temperature fill, so only the flow-dependent classification is done per call. Keep the two thresholds, but define them next to each other with the reason for each.
+
+**Tests:** no behaviour change. `test_stagnant_branches.py` and `test_network_invariants.py` (warm start, also under the explore profile) must stay green; a mutation run on the merged walk confirms both uses are covered.
