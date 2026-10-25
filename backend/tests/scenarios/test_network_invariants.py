@@ -149,6 +149,52 @@ def _flow_reversal_cycling_graphs():
     return oil, crude
 
 
+def _junction_loop_graph():
+    """A splitter whose two branches rejoin in a mixer (a loop of junctions) behind a mixer fed by two
+    throttled supplies. The loop circulates ~4e-7 m³/s against a net through-flow of ~1e-9 m³/s, so the
+    junction temperatures stay near the 293.15 K start value unless the mixing is solved as a whole: every
+    supply is 294.15 K and nothing cools, yet the loop used to report about 293.2 K."""
+    def edge(edge_id, source, target, diameter_m=math.exp(-2), source_port="outlet-0", target_port="inlet-0"):
+        return {"id": edge_id, "source": source, "target": target, "sourceHandle": source_port,
+                "targetHandle": target_port,
+                "data": {"length_m": 1.0, "diameter_m": diameter_m, "roughness_mm": 0.0}}
+    return {"nodes": [_node("n0", "mixer"),
+                      _node("n1", "pressure_source", source_pressure_bara=2.0, temperature_k=294.15),
+                      _node("n2", "check_valve", cv=1.0, cracking_pressure_bar=0.0),
+                      _node("n3", "pressure_source", source_pressure_bara=1.0, temperature_k=294.15),
+                      _node("n4", "linear_control_valve", max_cv=math.exp(3), opening_pct=18.0),
+                      _node("n5", "tank", level_m=1.0, temperature_k=294.15),
+                      _node("n6", "check_valve", cv=1.0, cracking_pressure_bar=0.0),
+                      _node("n7", "splitter"),
+                      _node("n8", "mixer"),
+                      _node("n9", "check_valve", cv=1.0, cracking_pressure_bar=0.0)],
+            "edges": [edge("e0", "n1", "n2"), edge("e1", "n2", "n0"),
+                      edge("e2", "n3", "n4", math.exp(-3)), edge("e3", "n4", "n0", target_port="inlet-1"),
+                      edge("e4", "n0", "n7"), edge("e5", "n7", "n9"), edge("e6", "n9", "n8"),
+                      edge("e7", "n7", "n8", source_port="outlet-1", target_port="inlet-1"),
+                      edge("e8", "n8", "n6"), edge("e9", "n6", "n5")],
+            "globalSettings": {"fluid_type": "crude_heavy"}}
+
+
+def _noise_trickle_mixing_graph():
+    """A hot supply behind a check valve and a cold supply behind a long thin pipe meet in a mixer. The
+    valve passes only ~9e-11 m³/s of solver noise (below the dead-leg threshold) against ~6e-8 m³/s from the
+    cold side, so the mixed stream must stay at the cold temperature instead of drifting ~0.1 K towards the hot one."""
+    def edge(edge_id, source, target, diameter_m, length_m=1.0, target_port="inlet-0"):
+        return {"id": edge_id, "source": source, "target": target, "sourceHandle": "outlet-0",
+                "targetHandle": target_port,
+                "data": {"length_m": length_m, "diameter_m": diameter_m, "roughness_mm": 0.0}}
+    return {"nodes": [_node("n0", "mixer"),
+                      _node("n1", "pressure_source", source_pressure_bara=1.25, temperature_k=341.15),
+                      _node("n2", "check_valve", cv=1.0, cracking_pressure_bar=0.125),
+                      _node("n3", "pressure_source", source_pressure_bara=1.25, temperature_k=273.15),
+                      _node("n4", "tank", level_m=2.0, temperature_k=341.15)],
+            "edges": [edge("e0", "n1", "n2", 0.1353352832366127), edge("e1", "n2", "n0", 0.1353352832366127),
+                      edge("e2", "n3", "n0", 0.015184197956837946, length_m=54.598150033144236, target_port="inlet-1"),
+                      edge("e3", "n0", "n4", 0.1353352832366127)],
+            "globalSettings": {"fluid_type": "iso_vg_150"}}
+
+
 @example(_reverse_flow_graph())
 @given(networks())
 def test_well_posed_network_reaches_a_finite_steady_state_with_fluid_properties(graph):
@@ -217,6 +263,7 @@ def test_pressure_is_continuous_and_falls_along_the_flow(graph):
 @example(_trickle_mixing_graph())
 @example(_flow_reversal_cycling_graphs()[0])
 @example(_flow_reversal_cycling_graphs()[1])
+@example(_junction_loop_graph())
 @given(networks(components=tuple(sorted(DISSIPATIVE_ONLY))))
 def test_dissipation_never_cools_and_mixing_stays_between_its_streams(graph):
     """Without a cooler the fluid only warms by dissipation (pipes, throttling, pump losses), and a mixer
@@ -241,11 +288,12 @@ def test_dissipation_never_cools_and_mixing_stays_between_its_streams(graph):
                     assert min(arriving) - TEMPERATURE_TOL <= temperature <= max(arriving) + TEMPERATURE_TOL
 
 
+@example(_noise_trickle_mixing_graph())
 @given(networks())
 def test_junctions_conserve_energy(graph):
     """At a splitter or mixer every leaving stream carries the mass-weighted mean specific enthalpy h(T) of
     the arriving streams, in whichever direction each stream flows. (Absolute enthalpy flows are not compared:
-    junctions balance volume, not mass, D-22.)"""
+    junctions balance volume, not mass.)"""
     network = solved(graph)
     fluid = graph["globalSettings"]["fluid_type"]
     types = node_types(graph)
@@ -289,3 +337,40 @@ def test_warm_start_reaches_the_cold_start_state(graph):
     network, stats = solve_graph(graph, cold=False)
     assert stats["success"] and stats["warm_start_status"] == "Exact Hit"
     assert_same_state(cold, snapshot(network))
+
+
+def _pump_loop_small_throughflow_graph(fluid, opening_pct):
+    """A pump recirculating through a splitter and a mixer while a nearly closed valve passes only a small
+    through-flow. The loop circulates far more than it drains, so it takes many passes to warm up."""
+    def edge(edge_id, source, target, diameter_m=0.05, length_m=1.0, source_port="outlet-0", target_port="inlet-0"):
+        return {"id": edge_id, "source": source, "target": target, "sourceHandle": source_port,
+                "targetHandle": target_port,
+                "data": {"length_m": length_m, "diameter_m": diameter_m, "roughness_mm": 0.0}}
+    return {"nodes": [_node("src", "pressure_source", source_pressure_bara=2.0, temperature_k=300.0),
+                      _node("m", "mixer"),
+                      _node("p", "centrifugal_pump", flow_rated_lmin=60.0, head_rated_m=40.0),
+                      _node("s", "splitter"),
+                      _node("v", "linear_control_valve", max_cv=1.0, opening_pct=opening_pct),
+                      _node("t", "tank", level_m=1.0, temperature_k=300.0)],
+            "edges": [edge("e0", "src", "m"), edge("e1", "m", "p"), edge("e2", "p", "s"),
+                      edge("e3", "s", "v"), edge("e4", "v", "t"),
+                      edge("e5", "s", "m", diameter_m=0.025, length_m=30.0, source_port="outlet-1", target_port="inlet-1")],
+            "globalSettings": {"fluid_type": fluid}}
+
+
+@pytest.mark.parametrize("fluid, opening_pct", [
+    pytest.param("iso_vg_150", 2.0, id="oil_loop_small_throughflow"),
+    pytest.param("water", 0.5, id="water_loop_tiny_throughflow"),
+])
+def test_pump_loop_energy_reaches_the_through_flow(fluid, opening_pct):
+    """What the through-flow carries out as enthalpy (above the 300 K supply) is what the pump shaft and the
+    pressure drop of the supply put in. The property loop used to stop after a quiet pass, long before the
+    loop temperature settled, and the through-flow left too cold (oil 0.88, water 0.07 of the input)."""
+    network, stats = solve_graph(_pump_loop_small_throughflow_graph(fluid, opening_pct))
+    assert stats["success"] and stats["properties_converged"], stats.get("error")
+    nodes = network.nodes
+    inlet, outlet = nodes["v"].inlets[0], nodes["v"].outlets[0]
+    gain = inlet.flow_rate * inlet.density * (FluidProperties.get_enthalpy(fluid, outlet.temperature)
+                                              - FluidProperties.get_enthalpy(fluid, 300.0))
+    supplied = nodes["p"].shaft_power() + inlet.flow_rate * (nodes["src"].outlets[0].pressure - outlet.pressure)
+    assert 0.93 <= gain / supplied <= 1.05

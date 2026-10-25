@@ -5,10 +5,12 @@ import math
 import threading
 import time
 from scipy.optimize import root
+import scipy.sparse as sp
+import scipy.sparse.linalg as spla
 from typing import List, Dict, Any, Tuple
 
 from simulation.schemas import HydraulicNetwork
-from simulation.equipment.base_node import HydraulicNode
+from simulation.equipment.base_node import HydraulicNode, Q_DEAD_LEG, select_inward
 from simulation.equipment.tank import Tank
 from simulation.equipment.pipe import Pipe
 from simulation.equipment.centrifugal_pump import CentrifugalPump
@@ -688,7 +690,9 @@ class NetworkSolver:
         def run_hydraulics(fatal=True, propagate=True) -> bool:
             """Hydraulic solve at the current control positions, then fluid property propagation."""
             try:
-                res = self._solve_hydraulics_core(method=method, x0_custom=state["x"])
+                # One property update per solve, with the relaxed flows, after the telemetry is written
+                res = self._solve_hydraulics_core(method=method, x0_custom=state["x"],
+                                                  property_flows=relaxed_flows if propagate else None)
             except ValueError as e:
                 if fatal:
                     state["error"] = str(e)
@@ -700,8 +704,6 @@ class NetworkSolver:
             state["fallback"] = state["fallback"] or fallback
             if self.properties_frozen:
                 state["dq"] = None      # controllers may move the flows while frozen: no swing of the property loop
-            elif propagate:
-                self._propagate_properties(relaxed_flows(sol[num_int:]))
             return True
 
         # Relief devices start every run closed / intact; their state is decided between hydraulic solves
@@ -1045,7 +1047,6 @@ class NetworkSolver:
         """
         Calculates the sparse Jacobian J(x_scaled) analytically.
         """
-        import scipy.sparse as sp
         
         num_internal = len(self.internal_node_indices)
         num_edges = len(self.edges_list)
@@ -1250,7 +1251,6 @@ class NetworkSolver:
         (scaled units, L/s). The step test is what keeps low-loss sections honest: a 10 Pa
         residual alone is satisfied by 150 L/min in a DN200 line between equal tank levels.
         """
-        import scipy.sparse.linalg as spla
 
         class SolResult:
             def __init__(self, success, message, x, nfev, njev):
@@ -1325,7 +1325,8 @@ class NetworkSolver:
             return SolResult(True, "Converged (iteration limit, residual within tolerance)", x, nfev, njev)
         return SolResult(False, f"Reached max iterations ({max_iter})", x, nfev, njev)
 
-    def _solve_hydraulics_core(self, method='sparse_newton', x0_custom=None) -> Tuple[np.ndarray, int, int, bool, np.ndarray]:
+    def _solve_hydraulics_core(self, method='sparse_newton', x0_custom=None,
+                               property_flows=None) -> Tuple[np.ndarray, int, int, bool, np.ndarray]:
         num_internal = len(self.internal_node_indices)
         num_edges = len(self.edges_list)
         if (num_internal + num_edges) == 0:
@@ -1468,7 +1469,7 @@ class NetworkSolver:
             final_p = sol.x[:num_internal] * p_scale
             final_q = sol.x[num_internal:] * q_scale
             self._last_objective, self._last_x_scaled = objective, sol.x.copy()   # Jacobian checks (test_jacobian.py)
-            self._update_telemetry(final_p, final_q)
+            self._update_telemetry(final_p, final_q, property_flows)
             
             converged_x = np.concatenate([final_p, final_q])
             return converged_x, num_internal, getattr(sol, 'nfev', 0), fallback_used, final_residuals
@@ -1546,8 +1547,11 @@ class NetworkSolver:
         else:
             return p_in
 
-    def _update_telemetry(self, p_in_internal, q_edges):
-        if not self.properties_frozen:
+    def _update_telemetry(self, p_in_internal, q_edges, property_flows=None):
+        """Reported pressures and flows, after propagating the fluid properties with the solved flows. With
+        property_flows (the relaxed flows of the outer loop) the properties are propagated last instead, on the
+        relief states and pressures written here, and belong to the next solve."""
+        if not self.properties_frozen and property_flows is None:
             self._propagate_properties(q_edges)
         
         # Populate all nodes' pressures and edges' flows (including pruned ones)
@@ -1648,6 +1652,9 @@ class NetworkSolver:
                 pipe.inlets[0].flow_rate = q
                 pipe.outlets[0].pressure = tgt_port.pressure
                 pipe.outlets[0].flow_rate = q
+
+        if not self.properties_frozen and property_flows is not None:
+            self._propagate_properties(property_flows(q_edges))
 
     def _side_ports(self, nid, side):
         node = self.network.nodes[nid]
@@ -1944,7 +1951,12 @@ class NetworkSolver:
                 new_temps = [p.temperature for p in node.outlets] + [p.temperature for p in node.inlets]
                 for old_t, new_t in zip(old_temps, new_temps):
                     max_temp_change = max(max_temp_change, abs(new_t - old_t))
-            if max_temp_change < 0.01:
+            if actual_iters >= max_iterations:
+                break
+            # A pass in a loop with a small through-flow moves little even far from the steady state: a settled
+            # pass ends the propagation only when the mixing solve agrees within the outer loop's tolerance
+            settled = max_temp_change < 0.01
+            if self._solve_mixing(q_edges, min_change=0.05 if settled else 0.0) < 0.05 and settled:
                 break
         self.last_prop_iters = actual_iters
         self._fill_stagnant_temperatures(q_edges)
@@ -1955,6 +1967,93 @@ class NetworkSolver:
                 port.pressure = p
             for port, p in zip(node.outlets, out_pressures):
                 port.pressure = p
+
+    def _solve_mixing(self, q_edges, min_change=0.0):
+        """The junction mixing of all nodes at once. In a loop of junctions with a small through-flow, a pass moves the
+        loop temperature only by that small share of the difference, so the passes stop long before it settles.
+        Unknown T_e: the temperature edge e carries away from its upstream node u,
+            T_e = a_u * sum(w_i * (T_i + dT_i)) / sum(w_i) + b_e     over the edges i arriving at u
+        with w = |Q| rho, dT the pipe's own temperature change, a_u the node's temperature slope and b_e its own
+        heating, all taken from the current pass, so the next pass only refines what is nonlinear. The arriving edges
+        follow select_inward (noise below Q_DEAD_LEG excluded). A pressure reference, a node without
+        arriving flow and a dead leg keep their temperature. Writes T_e into the upstream port of every other edge
+        when the largest change reaches min_change, and returns that change (0 when nothing was solved). Leaves the
+        ports untouched when the system is singular (a loop that only circulates: the passes are its answer, returns
+        0) or the solution is not finite or moves a temperature further outside the validity range of the fluid
+        (returns inf: the passes have not been confirmed and go on)."""
+        n = len(self.edges_list)
+        if n == 0:
+            return 0.0
+        upstream, arriving = [], defaultdict(list)
+        dT, w, t_arr = np.zeros(n), np.zeros(n), np.zeros(n)
+        for j, edge in enumerate(self.edges_list):
+            src, tgt = self.network.nodes[edge['source']], self.network.nodes[edge['target']]
+            pipe = edge['pipe']
+            if q_edges[j] >= 0:
+                u, port, d, p_up, p_dn = src, self._src_port(edge, src), edge['target'], pipe.inlets[0], pipe.outlets[0]
+            else:
+                u, port, d, p_up, p_dn = tgt, self._tgt_port(edge, tgt), edge['source'], pipe.outlets[0], pipe.inlets[0]
+            upstream.append((u, port))
+            arriving[id(self.network.nodes[d])].append(j)
+            dT[j] = p_dn.temperature - p_up.temperature
+            w[j] = abs(q_edges[j]) * p_dn.density
+            t_arr[j] = p_dn.temperature
+
+        mixes = {}      # per upstream node: (arriving edges, their sum of w, slope, linear mix, mean pipe dT)
+        for u, _ in upstream:
+            if id(u) in mixes:
+                continue
+            ins = arriving.get(id(u), ())
+            ins = select_inward(ins, lambda i: abs(q_edges[i]))
+            w_sum = sum(w[i] for i in ins)
+            if is_pressure_reference(u) or w_sum <= 0.0:
+                mixes[id(u)] = None
+            else:
+                mixes[id(u)] = (ins, w_sum, u.temperature_slope(), sum(w[i] * t_arr[i] for i in ins) / w_sum,
+                                sum(w[i] * dT[i] for i in ins) / w_sum)
+        rows, cols, vals = list(range(n)), list(range(n)), [1.0] * n
+        rhs = np.zeros(n)
+        free = np.zeros(n, dtype=bool)
+        for j, (u, port) in enumerate(upstream):
+            mix = mixes[id(u)]
+            if mix is None or abs(q_edges[j]) <= Q_DEAD_LEG:
+                rhs[j] = port.temperature
+                continue
+            free[j] = True
+            ins, w_sum, a, t_mix, dT_mean = mix
+            rhs[j] = port.temperature - a * t_mix + a * dT_mean
+            for i in ins:
+                rows.append(j)
+                cols.append(i)
+                vals.append(-a * w[i] / w_sum)
+        if not free.any():
+            return 0.0
+        matrix = sp.csr_matrix((vals, (rows, cols)), shape=(n, n))
+        try:
+            # splu raises on a singular matrix instead of warning (warning filters are process-wide, solves threaded)
+            t = np.atleast_1d(spla.splu(matrix.tocsc()).solve(rhs))
+        except RuntimeError:
+            return 0.0
+        if not np.all(np.isfinite(t)):
+            return math.inf
+        fluids = {j: getattr(upstream[j][0].global_settings, 'fluid_type', 'water') for j in np.flatnonzero(free)}
+        ranges = {f: FluidProperties.temperature_range_c(f) for f in set(fluids.values())}
+        for j in np.flatnonzero(free):
+            t_min, t_max = (v + 273.15 for v in ranges[fluids[j]])
+            beyond = lambda T: max(t_min - T, T - t_max, 0.0)
+            if beyond(t[j]) > beyond(upstream[j][1].temperature) + 1e-9:
+                return math.inf  # e.g. a nearly closed loop heated without limit: left to the passes
+        moved = max((abs(upstream[j][1].temperature - t[j]) for j in np.flatnonzero(free)), default=0.0)
+        if moved < min_change:
+            return moved
+        for j in np.flatnonzero(free):
+            port = upstream[j][1]
+            if abs(port.temperature - t[j]) > 1e-9:
+                # The next pass takes density and viscosity into the pipe with the temperature
+                port.temperature = float(t[j])
+                port.density = FluidProperties.get_density(fluids[j], port.temperature)
+                port.viscosity = FluidProperties.get_viscosity(fluids[j], port.temperature)
+        return moved
 
     def _fill_stagnant_temperatures(self, q_edges):
         """A dead leg (|Q| <= Q_DEAD_LEG) carries no fluid, so the flow sign gives its ports no temperature: they
@@ -2035,9 +2134,6 @@ CHECK_VALVE_TYPES = ('check_valve',)
 # Leak paths out of a shut-in section, strongest first (ROADMAP "Undefined Pressure in Stagnant Branches")
 LEAK_STOPPED_PUMP, LEAK_CHECK_VALVE, LEAK_RELIEF_SEAT = 0, 1, 2
 Q_STAGNANT = 1e-7               # m³/s (6 mL/min): a check valve below this flow is closed
-# m³/s: below this the flow sign is solver noise (mass rows converge to ~2e-10, Newton step_tol >= 1e-9) and carries
-# no temperature (dead leg); real trickles, e.g. ~3e-8 through a Cv 0.001 valve, stay above it
-Q_DEAD_LEG = 1e-9
 RELIEF_SEAT_MARGIN_PA = 1.0     # a stagnant section stays this far below a closed relief device's set pressure
 RELIEF_RAMP_MAX_SOLVES = 24     # bisection steps per opening (λ resolution 2⁻²⁴)
 RELIEF_RAMP_TOL_PA = 100.0      # 1 mbar: inlet pressure at the opening snapshot vs set pressure
