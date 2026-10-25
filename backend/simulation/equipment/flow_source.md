@@ -81,7 +81,7 @@ The parser rejects a maximum discharge pressure $\le 1$ bar(a).
   - `blocks_flow_on_shutdown = False`
   - `use_mcp_formulation = False`
   - `is_relief_driver = True`
-- **Pressure reference:** for topology pruning a flow source counts as a reference, like a tank. At zero set flow its section carries no flow and takes its pressure from its neighbours instead (stagnant section, see [base_node.md](base_node.md#6-operating-modes--model-boundaries)).
+- **Pressure reference:** for topology pruning a flow source counts as a reference, like a tank. At zero set flow its section carries no flow and takes its pressure from its neighbours instead (stagnant section, see [base_node.md](base_node.md#6-operating-modes--model-boundaries)). Its temperature still applies: the dead leg it feeds takes the source temperature.
 - **Inactive:** `active` has no effect; set the flow to 0 to stop the source.
 - **Reverse flow:** a set flow is always out of the source. The spring resists any other flow, so reverse flow only occurs on the lower 20 MPa guard.
 - **Operating cases:** set flow, temperature and maximum discharge pressure can be overridden per case.

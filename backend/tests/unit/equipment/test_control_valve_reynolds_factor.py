@@ -48,7 +48,7 @@ def test_valve_drop_is_linear_in_flow_in_the_laminar_region(node_type, data, re_
     there bends it. Re_V <= 4 so that 2 Q stays in (A.6) too."""
     valve, dp, cv, (_, _, rho, mu) = data.draw(valves(node_type))
     q = iec_flow_for_reynolds(re_v, mu / rho, cv, valve.fl, valve.fd, valve.pipe_diameter)
-    assume(q > 1e-9)  # the TCV path has no drop below 1e-10 m³/s (documented cut-off)
+    assume(q > 1e-9)  # the TCV path has no drop below 1e-10 mÂ³/s (documented cut-off)
     assert dp(2.0 * q, rho, mu) == pytest.approx(2.0 * dp(q, rho, mu), rel=1e-9)
 
 

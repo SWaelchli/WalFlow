@@ -91,6 +91,7 @@ applied to the outlet for $Q \ge 0$ and to the inlet for $Q < 0$. A closed valve
 - **Inactive:** `active` has no effect.
 - **Reverse flow:** blocked (leakage below $10^{-11}$ m³/s at normal pressures).
 - **Shut-in sections:** a check valve with $|Q| \le 10^{-7}$ m³/s counts as closed for sections without a pressure boundary. Such a section takes its pressure through the check valve as a leak path, ranked after a stopped pump and before a relief seat (see [base_node.md](base_node.md#6-operating-modes--model-boundaries)).
+- **Temperatures of a closed valve:** each side of a closed check valve takes the temperature of its own nearest live neighbour or boundary (dead-leg rule in [base_node.md](base_node.md#6-operating-modes--model-boundaries)), so the inlet and outlet can differ.
 - **Operating cases:** Cv and cracking pressure can be overridden per case.
 - **Not modelled:** partial lift between cracking and full open, reverse flow needed to close the disc, water hammer at closing, the cracking pressure falling off at high flow.
 
