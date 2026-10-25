@@ -1,5 +1,5 @@
 """Seeded control valve style catalogue against IEC 60534-2-1:2011 Table D.2 (DIN EN 60534-2-1:2012-01),
-typical F_L / x_T / F_d at rated travel (D-29b)."""
+typical F_L / x_T / F_d at rated travel."""
 import pytest
 
 

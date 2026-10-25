@@ -41,7 +41,7 @@ const renderTab = (fittingType) => render(
 
 const groupHeading = (text) => screen.getAllByText(text).filter(el => el.getAttribute('colspan') === '7');
 
-describe('D-29b: control valve style catalogues in the catalogue page', () => {
+describe('control valve style catalogues in the catalogue page', () => {
   it('keeps control valve catalogues out of the fittings view', async () => {
     renderTab(null);
     await screen.findAllByText('My reducers');

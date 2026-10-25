@@ -44,7 +44,7 @@ describe('App shell', () => {
     await waitFor(() => expect(screen.getAllByText(/Run Simulation/i).length).toBeGreaterThan(0), { timeout: 8000 });
   }, 40000);
 
-  it('forwards the old /pipes address to /catalogue (D-29b)', async () => {
+  it('forwards the old /pipes address to /catalogue', async () => {
     window.history.pushState({}, '', '/pipes');
     try {
       const { default: App } = await import('./App.jsx');

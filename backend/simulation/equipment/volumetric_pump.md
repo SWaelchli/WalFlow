@@ -141,9 +141,9 @@ An unknown `drive_type` is read as `fixed_speed`. The parser rejects an efficien
 | `backend/tests/unit/equipment/test_pumps.py::test_f1_35_pushed_pd_pump_passes_its_displacement` | 10 bar(a) header → pump → tank: flow 100 L/min within 1 %, outlet below inlet (pump brakes) |
 | `test_pumps.py::test_f1_36_fixed_speed_keeps_flow_and_flags_overload`, `test_f1_36_vfd_power_limit_reduces_flow_and_flags_it` | 400 m lift with 5 kW: fixed speed keeps 100 L/min and flags overload; VFD drops below 80 L/min at 5 kW shaft power (2 %) |
 | `backend/tests/unit/equipment/test_pump_waste_heat.py::test_volumetric_pump_heats_the_fluid_by_its_inefficiency` | $\eta$ = 10 %: $\Delta T = \Delta P/(\rho c_p) \cdot (1-\eta)/\eta$ within 0.2 % |
-| `test_pump_waste_heat.py::test_d10_heat_is_shaft_power_minus_hydraulic_power_at_low_efficiency` | $\eta$ = 2, 5, 8 %: shaft power $Q\Delta P/\eta$ ($10^{-9}$), heat $= P_{\text{shaft}} - Q\Delta P$ within 0.2 % |
-| `test_pump_waste_heat.py::test_d10_heat_does_not_depend_on_the_sign_of_a_near_zero_flow` | Dead-headed pump at $Q = \pm 10^{-12}$ m³/s: same $\Delta T$ ($10^{-6}$) |
-| `test_pump_waste_heat.py::test_d10_braking_pump_turns_all_its_pressure_drop_into_heat` | Header drives flow above displacement: $\Delta T = |\Delta P|/(\rho c_p)$ within 0.2 %, zero shaft power |
+| `test_pump_waste_heat.py::test_heat_is_shaft_power_minus_hydraulic_power_at_low_efficiency` | $\eta$ = 2, 5, 8 %: shaft power $Q\Delta P/\eta$ ($10^{-9}$), heat $= P_{\text{shaft}} - Q\Delta P$ within 0.2 % |
+| `test_pump_waste_heat.py::test_heat_does_not_depend_on_the_sign_of_a_near_zero_flow` | Dead-headed pump at $Q = \pm 10^{-12}$ m³/s: same $\Delta T$ ($10^{-6}$) |
+| `test_pump_waste_heat.py::test_braking_pump_turns_all_its_pressure_drop_into_heat` | Header drives flow above displacement: $\Delta T = |\Delta P|/(\rho c_p)$ within 0.2 %, zero shaft power |
 | `backend/tests/unit/solver/test_active_inactive.py::test_inactive_volumetric_pump` | Stopped pump between a 5 m and a 1 m tank: flow below $10^{-6}$ m³/s |
 
 ## Data Fields

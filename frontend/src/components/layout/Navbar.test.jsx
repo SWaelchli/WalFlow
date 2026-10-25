@@ -8,7 +8,7 @@ vi.mock('../../hooks/useAuth', () => ({
 
 afterEach(cleanup);
 
-describe('D-29b: Navbar catalogue entry', () => {
+describe('Navbar catalogue entry', () => {
   it('shows a Catalogue button that calls onNavigateToCatalogue', () => {
     const onNavigateToCatalogue = vi.fn();
     render(<Navbar onNavigateToCatalogue={onNavigateToCatalogue} />);

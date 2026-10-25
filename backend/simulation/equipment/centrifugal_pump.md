@@ -143,10 +143,10 @@ The parser rejects a missing or non-positive rated head (older files with only `
 | `test_pumps.py::test_d1_old_file_with_rated_pressure_only_is_blocked`, `test_efficiency_outside_1_to_100_pct_is_rejected` | Missing rated head and efficiency outside 1-100 % are input errors |
 | `backend/tests/unit/equipment/test_pump_waste_heat.py::test_centrifugal_pump_heats_the_fluid_by_its_inefficiency` | VG 46, $\eta$ = 50 %: $\Delta T = \Delta P/(\rho c_p) \cdot (1-\eta)/\eta$ within 0.2 % |
 | `test_pump_waste_heat.py::test_perfect_pump_adds_no_heat` | $\eta$ = 100 %: $\Delta T$ below 1 mK (pipe friction only) |
-| `test_pump_waste_heat.py::test_d10_heat_is_shaft_power_minus_hydraulic_power_at_low_efficiency` | $\eta$ = 2, 5, 8 %: shaft power $Q\Delta P/\eta$ ($10^{-9}$), heat $= P_{\text{shaft}} - Q\Delta P$ within 0.2 % |
-| `test_pump_waste_heat.py::test_d10_braking_pump_turns_all_its_pressure_drop_into_heat` | 60 m head drives flow beyond runout: $\Delta T = |\Delta P|/(\rho c_p)$ within 0.2 %, zero shaft power |
-| `test_pump_waste_heat.py::test_d10_heat_does_not_depend_on_the_sign_of_a_near_zero_flow` | Dead-headed pump at $Q = \pm 10^{-12}$ m³/s: same $\Delta T$ ($10^{-6}$) |
-| `test_pump_waste_heat.py::test_d10_running_pump_in_reverse_flow_still_draws_shaft_power` | $Q$ = −2 L/s, $\eta$ = 50 %: shaft power $|Q|\Delta P/\eta$, $\Delta T = \Delta P/(\rho c_p)\cdot(1-\eta)/\eta$ on the inlet ($10^{-9}$) |
+| `test_pump_waste_heat.py::test_heat_is_shaft_power_minus_hydraulic_power_at_low_efficiency` | $\eta$ = 2, 5, 8 %: shaft power $Q\Delta P/\eta$ ($10^{-9}$), heat $= P_{\text{shaft}} - Q\Delta P$ within 0.2 % |
+| `test_pump_waste_heat.py::test_braking_pump_turns_all_its_pressure_drop_into_heat` | 60 m head drives flow beyond runout: $\Delta T = |\Delta P|/(\rho c_p)$ within 0.2 %, zero shaft power |
+| `test_pump_waste_heat.py::test_heat_does_not_depend_on_the_sign_of_a_near_zero_flow` | Dead-headed pump at $Q = \pm 10^{-12}$ m³/s: same $\Delta T$ ($10^{-6}$) |
+| `test_pump_waste_heat.py::test_running_pump_in_reverse_flow_still_draws_shaft_power` | $Q$ = −2 L/s, $\eta$ = 50 %: shaft power $|Q|\Delta P/\eta$, $\Delta T = \Delta P/(\rho c_p)\cdot(1-\eta)/\eta$ on the inlet ($10^{-9}$) |
 | `backend/tests/unit/fluids/test_npsh.py::test_f1_28_npsha_matches_hand_calculation` | Supply tank 3 m level: NPSHa $= (P_{\text{in}} - P_v)/(\rho g)$ within $10^{-9}$, between 9 and 13 m |
 | `test_npsh.py::test_f1_28_warns_when_npsha_below_npshr_plus_margin`, `test_f1_28_margin_is_editable` | Warning with NPSHr 20 m; none with NPSHr 3 m + 0.5 m; a margin equal to NPSHa triggers it |
 | `backend/tests/unit/solver/test_active_inactive.py::test_f3_16_stopped_pump_between_equal_heads_passes_no_flow` | A stopped pump between equal heads passes no flow |
