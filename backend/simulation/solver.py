@@ -229,6 +229,12 @@ class NetworkSolver:
     TCV_MAX_STEP = 3.0              # trust region in z (odds change by at most a factor 20 per iteration)
     TCV_BRACKET_AGE = 4             # regular steps a bracket end stays valid without being refreshed
 
+    # Property loop: when successive hydraulic solutions swing back (flows and temperatures cycling), the flows
+    # the properties are propagated with move only part of the way to the new solution, halving the step on
+    # every further swing. Converged only when those flows match the hydraulic solution.
+    PROP_RELAX_MIN = 1.0 / 64
+    PROP_FLOW_TOL = 1e-4            # mismatch accepted, relative to the largest edge flow
+
     @staticmethod
     def _logit(mix: float) -> float:
         return math.log(mix / (1.0 - mix))
@@ -648,7 +654,36 @@ class NetworkSolver:
         state = {
             "x": self._generate_initial_guess(), "sol": None, "num_int": 0, "inner": 0,
             "fallback": False, "residuals": None, "error": None,
+            "q_prop": None, "dq": None, "omega": 1.0, "steady": 0, "flows_match": True,
         }
+
+        def relaxed_flows(q_sol):
+            """Flows for the property update: the solution itself until the updates start to swing back."""
+            q_sol = np.asarray(q_sol, dtype=float)
+            q_prev = state["q_prop"]
+            if q_prev is None or len(q_prev) != len(q_sol):
+                q = q_sol.copy()
+            else:
+                d = q_sol - q_prev
+                d_prev = state["dq"]
+                if d_prev is not None and np.dot(d, d_prev) < 0:
+                    state["steady"] = 0
+                    if np.linalg.norm(d) > 0.5 * np.linalg.norm(d_prev):
+                        state["omega"] = max(0.5 * state["omega"], self.PROP_RELAX_MIN)
+                elif d_prev is not None:
+                    # Corrections in one direction: a single swing (a Newton overshoot) must not slow the rest of the run
+                    state["steady"] += 1
+                    if state["steady"] >= 3:
+                        state["omega"], state["steady"] = min(2.0 * state["omega"], 1.0), 0
+                state["dq"] = d
+                q = q_prev + state["omega"] * d
+            state["q_prop"] = q
+            scale = float(np.max(np.abs(q_sol))) if len(q_sol) else 0.0
+            gap = float(np.max(np.abs(q_sol - q))) if len(q_sol) else 0.0
+            # A weak branch must also run the same way, or its ports carry the temperature of the other direction
+            reversed_branch = np.any((q_sol * q < 0) & (np.maximum(np.abs(q_sol), np.abs(q)) > Q_DEAD_LEG))
+            state["flows_match"] = gap <= self.PROP_FLOW_TOL * scale + Q_DEAD_LEG and not reversed_branch
+            return q
 
         def run_hydraulics(fatal=True, propagate=True) -> bool:
             """Hydraulic solve at the current control positions, then fluid property propagation."""
@@ -663,8 +698,10 @@ class NetworkSolver:
             state.update(sol=sol, num_int=num_int, residuals=residuals, x=sol, frozen=self.properties_frozen)
             state["inner"] += inner_iters
             state["fallback"] = state["fallback"] or fallback
-            if propagate and not self.properties_frozen:
-                self._propagate_properties(sol[num_int:])
+            if self.properties_frozen:
+                state["dq"] = None      # controllers may move the flows while frozen: no swing of the property loop
+            elif propagate:
+                self._propagate_properties(relaxed_flows(sol[num_int:]))
             return True
 
         # Relief devices start every run closed / intact; their state is decided between hydraulic solves
@@ -685,6 +722,7 @@ class NetworkSolver:
                 q = x[n_int:]
                 q[np.abs(q) < 1e-7] = self._initial_flow_guess()
                 state["x"] = x
+                state["dq"] = None      # the jump to the new relief state is no swing of the property loop
             return changed
 
         controllers = {idx: self._init_controller(idx) for idx in self.control_node_indices}
@@ -759,7 +797,14 @@ class NetworkSolver:
                 tcv_settled = all(abs(self.nodes_list[idx].outlets[0].temperature - self.nodes_list[idx].set_temperature)
                                   < self.TCV_TOL_K for idx in self.tcv_node_indices)
 
-            properties_converged = (max_temp_change < 0.05)
+            # Controller and TCV steps move the flows on purpose, and their next step needs the temperatures of
+            # the new flows: only swings at fixed control positions are damped
+            if any((self.nodes_list[idx].opening_pct, self.nodes_list[idx].locked_up) != base_states[idx]
+                   for idx in self.control_node_indices) or any(
+                    self.nodes_list[idx].mix_ratio != base_states[f"tcv_{idx}"] for idx in self.tcv_node_indices):
+                state["dq"], state["omega"] = None, 1.0
+
+            properties_converged = max_temp_change < 0.05 and state["flows_match"]
 
             if controls_converged and tcv_settled and properties_converged and solved_frozen and not relief_changed:
                 break
@@ -800,7 +845,7 @@ class NetworkSolver:
                         break
                     change = max((abs(p.temperature - before[(nid, k, i)]) for nid, n in self.network.nodes.items()
                                   for k, ports in (("in", n.inlets), ("out", n.outlets)) for i, p in enumerate(ports)), default=0.0)
-                    if change < 0.05:
+                    if change < 0.05 and state["flows_match"]:
                         properties_converged = True
                         break
 

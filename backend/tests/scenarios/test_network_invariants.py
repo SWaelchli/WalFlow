@@ -22,6 +22,7 @@ STATIC_DROP_EXEMPT = {"centrifugal_pump"} | BOUNDARY_TYPES
 FLOW_TOL = 1e-8          # m³/s; the mass rows converge to ~2e-10 m³/s per node
 PRESSURE_TOL = 5.0       # Pa
 TEMPERATURE_TOL = 0.1    # K; the property loop stops at 0.01-0.05 K changes
+MIXING_FLOW_TOL = 1e-9   # m³/s; the solver's dead-leg threshold: a trickle above it still mixes into the outlet
 
 
 def solve_graph(graph: dict, cold: bool = True):
@@ -37,6 +38,7 @@ def solve_graph(graph: dict, cold: bool = True):
 def solved(graph: dict):
     network, stats = solve_graph(graph)
     assert stats["success"], f"no steady state found: {stats.get('error')}"
+    assert stats["properties_converged"], f"outer loop did not settle in {stats.get('outer_iterations')} iterations"
     return network
 
 
@@ -99,6 +101,52 @@ def _reverse_flow_graph():
             "edges": [edge("e0", "n1", "outlet-0", "n0", "inlet-0"), edge("e1", "n2", "outlet-0", "n0", "inlet-1"),
                       edge("e2", "n0", "outlet-0", "n3", "inlet-0")],
             "globalSettings": {"fluid_type": "iso_vg_46"}}
+
+
+def _trickle_mixing_graph():
+    """Two 1 K apart sources throttled to a trickle (2.6e-7 and 5.5e-8 m³/s) into a mixer. The weaker leg is
+    below 1e-7 m³/s yet still mixes into the outlet, so the outlet lies above the warmer-looking stream
+    that a coarse flow filter would see alone."""
+    return {"nodes": [_node("n0", "pressure_source", source_pressure_bara=2.0, temperature_k=273.15),
+                      _node("n1", "pressure_source", source_pressure_bara=2.0, temperature_k=274.15),
+                      _node("n2", "linear_control_valve", max_cv=math.e, opening_pct=5.0),
+                      _node("n3", "linear_control_valve", max_cv=1.0, opening_pct=5.0),
+                      _node("n4", "mixer"),
+                      _node("n5", "tank", level_m=1.0, temperature_k=283.15)],
+            "edges": [_edge("e0", "n0", "n2", math.exp(-2)), _edge("e1", "n1", "n3", math.exp(-2)),
+                      {**_edge("e2", "n2", "n4", math.exp(-2)), "targetHandle": "inlet-0"},
+                      {**_edge("e3", "n3", "n4", math.exp(-2)), "targetHandle": "inlet-1"},
+                      _edge("e4", "n4", "n5", math.exp(-2))],
+            "globalSettings": {"fluid_type": "iso_vg_100"}}
+
+
+def _flow_reversal_cycling_graphs():
+    """Two mixer networks on which the outer loop (flow solve against temperature update) used to cycle at a
+    flow reversal and ended at the iteration limit: a hot stream at low pressure against a cold stream throttled by
+    a small valve, and a crude mixer whose valve branch runs backwards against a long thin branch."""
+    def edge(edge_id, source, target, diameter_m, length_m=1.0, roughness_mm=0.0, target_port="inlet-0"):
+        return {"id": edge_id, "source": source, "target": target, "sourceHandle": "outlet-0",
+                "targetHandle": target_port,
+                "data": {"length_m": length_m, "diameter_m": diameter_m, "roughness_mm": roughness_mm}}
+    oil = {"nodes": [_node("n0", "mixer"),
+                     _node("n1", "pressure_source", source_pressure_bara=1.375, temperature_k=355.15),
+                     _node("n2", "pressure_source", source_pressure_bara=18.0, temperature_k=273.15),
+                     _node("n3", "linear_control_valve", max_cv=1.0, opening_pct=84.0),
+                     _node("n4", "tank", level_m=1.0, temperature_k=355.15)],
+           "edges": [edge("e0", "n1", "n0", math.exp(-2)), edge("e1", "n2", "n3", math.exp(-2)),
+                     edge("e2", "n3", "n0", math.exp(-2), target_port="inlet-1"),
+                     edge("e3", "n0", "n4", math.exp(-4.1875), roughness_mm=0.5)],
+           "globalSettings": {"fluid_type": "transformer_oil"}}
+    crude = {"nodes": [_node("n0", "mixer"),
+                       _node("n1", "pressure_source", source_pressure_bara=1.0, temperature_k=283.15),
+                       _node("n2", "linear_control_valve", max_cv=math.exp(2), opening_pct=15.0),
+                       _node("n3", "pressure_source", source_pressure_bara=2.0, temperature_k=303.15),
+                       _node("n4", "tank", level_m=1.0, temperature_k=283.15)],
+             "edges": [edge("e0", "n1", "n2", math.exp(-2)), edge("e1", "n2", "n0", math.exp(-2)),
+                       edge("e2", "n3", "n0", math.exp(-4), length_m=math.exp(5.25), target_port="inlet-1"),
+                       edge("e3", "n0", "n4", math.exp(-2))],
+             "globalSettings": {"fluid_type": "crude_heavy"}}
+    return oil, crude
 
 
 @example(_reverse_flow_graph())
@@ -166,6 +214,9 @@ def test_pressure_is_continuous_and_falls_along_the_flow(graph):
         assert node.inlets[0].pressure >= max(p.pressure for p in node.outlets) - PRESSURE_TOL, node_id
 
 
+@example(_trickle_mixing_graph())
+@example(_flow_reversal_cycling_graphs()[0])
+@example(_flow_reversal_cycling_graphs()[1])
 @given(networks(components=tuple(sorted(DISSIPATIVE_ONLY))))
 def test_dissipation_never_cools_and_mixing_stays_between_its_streams(graph):
     """Without a cooler the fluid only warms by dissipation (pipes, throttling, pump losses), and a mixer
@@ -181,8 +232,8 @@ def test_dissipation_never_cools_and_mixing_stays_between_its_streams(graph):
             assert port.temperature >= t_supply - TEMPERATURE_TOL, node_id
         if types[node_id] == "mixer":
             # Streams arrive through inlets with forward flow and through the outlet with reverse flow
-            arriving = [p.temperature for p in node.inlets if p.flow_rate > 1e-7]
-            arriving += [p.temperature for p in node.outlets if p.flow_rate < -1e-7]
+            arriving = [p.temperature for p in node.inlets if p.flow_rate > MIXING_FLOW_TOL]
+            arriving += [p.temperature for p in node.outlets if p.flow_rate < -MIXING_FLOW_TOL]
             leaving = [p.temperature for p in node.inlets if p.flow_rate < -1e-7]
             leaving += [p.temperature for p in node.outlets if p.flow_rate > 1e-7]
             if arriving:
