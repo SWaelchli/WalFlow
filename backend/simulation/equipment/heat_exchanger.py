@@ -1,4 +1,4 @@
-from simulation.equipment.base_node import HydraulicNode
+from simulation.equipment.base_node import HydraulicNode, Q_DEAD_LEG
 from simulation.fluid_utils import FluidProperties
 import math
 
@@ -163,9 +163,10 @@ class HeatExchanger(HydraulicNode):
         # The stream enters at the inlet port in forward flow and at the outlet port in reverse flow
         entering, leaving = (inlet, outlet) if inlet.flow_rate >= 0 else (outlet, inlet)
 
-        if abs(inlet.flow_rate) < 1e-12 or not getattr(self, 'active', True):
+        if abs(inlet.flow_rate) <= Q_DEAD_LEG or not getattr(self, 'active', True):
             leaving.temperature = entering.temperature
             self.actual_duty_kw = 0.0
+            self._slope = 1.0
             return
 
         # Get fluid properties
@@ -198,12 +199,18 @@ class HeatExchanger(HydraulicNode):
         # Effectiveness for phase change/constant utility temp (C_max = inf)
         if ntu > 50.0:
             to = tm
+            self._slope = 0.0
         else:
             effectiveness = 1.0 - math.exp(-ntu)
             to = ti - effectiveness * (ti - tm)
+            self._slope = 1.0 - effectiveness
 
         self.actual_duty_kw = (m_dot * cp * (ti - to)) / 1000.0
         leaving.temperature = to
+
+    def temperature_slope(self) -> float:
+        """dT_out/dT_in = 1 - effectiveness at the last evaluated flow (the outlet is pulled towards the medium)."""
+        return getattr(self, '_slope', 1.0)
 
     def calculate(self):
         inlet = self.inlets[0]

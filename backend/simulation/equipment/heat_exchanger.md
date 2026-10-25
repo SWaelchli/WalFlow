@@ -50,7 +50,7 @@ $$UA = UA_r \left(\frac{|Q|}{Q_r}\right)^{n}, \qquad n = \begin{cases} 0.8 & \te
 
 $$\text{NTU} = \frac{UA}{\dot m\, c_p}, \qquad \varepsilon = 1 - e^{-\text{NTU}}, \qquad T_{\text{out}} = T_{\text{in}} - \varepsilon\,(T_{\text{in}} - T_m)$$
 
-$T_m$ is the cooling medium temperature (water-cooled) or the global ambient temperature (air-cooled). For NTU > 50, $T_{\text{out}} = T_m$. The formula works in both directions: a fluid colder than the medium is heated. The actual duty is
+$T_m$ is the cooling medium temperature (water-cooled) or the global ambient temperature (air-cooled). For NTU > 50, $T_{\text{out}} = T_m$. The solver's junction mixing solve (`base_node.md` §4.2) uses the slope $\partial T_{\text{out}}/\partial T_{\text{in}} = 1-\varepsilon$ at the current flow (`temperature_slope()`; 0 for NTU > 50, 1 without flow). The formula works in both directions: a fluid colder than the medium is heated. The actual duty is
 
 $$\dot Q = \dot m\, c_p\, (T_{\text{in}} - T_{\text{out}})$$
 
@@ -116,7 +116,7 @@ A missing rated drop is 0.5 bar, not zero. The parser rejects a rated flow $\le 
 - **Steady state:** fixed medium temperature, no thermal inertia ($\Delta t = 0$).
 - **Solver flags:** all `False` (`is_pressure_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation`).
 - **Inactive:** no heat transfer ($T_{\text{out}} = T_{\text{in}}$, duty 0); the pressure drop stays.
-- **Zero flow:** no heat transfer.
+- **Zero flow:** no heat transfer at $|Q| \le$ `Q_DEAD_LEG` (1e-9 m³/s, solver noise, see `base_node.md` §4.1); the leaving port takes the entering temperature until the dead-leg fill sets it.
 - **Reverse flow:** the hydraulic drop is symmetric. The thermal calculation takes the port the fluid enters by (the outlet port in reverse flow) and writes the cooled temperature to the port it leaves by, so duty and temperatures are the same as in forward flow.
 - **Air-cooled:** the rating uses 20 °C ambient; operation uses the drawing's ambient temperature. The medium temperature field is not used.
 - **Operating cases:** status, rating and medium temperature can be overridden per case (e.g. summer and winter cooling water).
@@ -131,8 +131,8 @@ A missing rated drop is 0.5 bar, not zero. The parser rejects a rated flow $\le 
 | `backend/tests/unit/equipment/test_heat_exchanger_rating.py::test_f1_40_audit_case_is_infeasible` | 300 kW from 100 L/min of oil with 40 K available: `infeasible`, $\varepsilon_d > 1$ |
 | `test_heat_exchanger_rating.py::test_f1_40_modest_rating_is_ok` | 30 kW: `ok`, $0 < \varepsilon_d < 0.95$ |
 | `backend/tests/unit/equipment/test_heat_exchanger_default.py` | Missing rated drop: 0.5 bar at rated flow in water at 50 °C within 0.1 %; an explicit value is kept |
-| `test_heat_exchanger_default.py::test_d03_rated_dp_is_reproduced_at_the_design_inlet_temperature` | Water and ISO VG 46 at the design inlet temperature: rated drop at rated flow within 0.1 % |
-| `test_heat_exchanger_default.py::test_d03_rated_ua_uses_the_design_inlet_state_not_the_operating_temperature` | ISO VG 46 at 80 °C, rating at 50 °C: outlet equals an independent ε-NTU calculation with $UA_r$ from the design state within 0.01 K |
+| `test_heat_exchanger_default.py::test_rated_dp_is_reproduced_at_the_design_inlet_temperature` | Water and ISO VG 46 at the design inlet temperature: rated drop at rated flow within 0.1 % |
+| `test_heat_exchanger_default.py::test_rated_ua_uses_the_design_inlet_state_not_the_operating_temperature` | ISO VG 46 at 80 °C, rating at 50 °C: outlet equals an independent ε-NTU calculation with $UA_r$ from the design state within 0.01 K |
 | `backend/tests/unit/equipment/test_heat_exchanger_flow_direction.py` | Mirrored forward and reverse networks: duty equal within 1 % |
 | `backend/tests/unit/solver/test_active_inactive.py::test_inactive_heat_exchanger` | Inactive: $T_{\text{out}} = T_{\text{in}}$ within $10^{-6}$ K, duty 0 |
 | `backend/tests/unit/solver/test_basic_components.py::test_heat_exchanger` | Network solve: outlet colder than inlet |

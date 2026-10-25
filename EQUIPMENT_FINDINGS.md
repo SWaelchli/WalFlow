@@ -40,7 +40,7 @@ Status: `open` / `fixed` / `rejected`. "Confirmed" means it was reproduced by ru
 | D-21 | Solver / dead legs | Stagnant branches keep the 20 °C port default (cold and warm start), depending on the flow noise sign | Low | Confirmed (property test) | fixed |
 | D-22 | Solver | Junctions balance volume flow, not mass flow; mixing at different temperatures loses ~0.4 % mass | Low / decision | Confirmed (property test) | open |
 | D-23 | Solver / equipment | Analytical dp derivatives of most components are never used by the solver (dead code) | Low / cleanup | Mutation testing | fixed |
-| D-24 | Solver / junctions | A junction downstream of two hot supplies reports ~1 K below the coldest supply without any cooler | Medium | Confirmed (property test, explore) | partly fixed (loop cycle); junction loops open |
+| D-24 | Solver / junctions | A junction downstream of two hot supplies reports ~1 K below the coldest supply without any cooler | Medium | Confirmed (property test, explore) | fixed |
 | D-25 | Frontend / file format | The `.wlf` header is written by hand in three places instead of by `serializeDiagram`, so it can drift when the format changes | Low / cleanup | Code review | fixed |
 | D-26 | Orifice | ISO Reynolds limit for β > 0.56 is a flat 16 000 instead of 16 000·β² (ISO 5167-2:2022 §5.3.1); up to +12 % permanent loss in the ISO-valid range | Medium (wrong result) | Confirmed (standard + calculation) | fixed |
 | D-27 | Orifice / docs | `orifice.md` §3.1 describes the old β and d clamps (0.1-0.75, d ≥ 12.5 mm); the code uses 0.01-0.99 and no d clamp | Low / docs | Code reading | fixed |
@@ -51,6 +51,7 @@ Status: `open` / `fixed` / `rejected`. "Confirmed" means it was reproduced by ru
 | D-32 | Solver | Hydraulic solve fails for flows below about 1e-7 m³/s (e.g. Cv 0.1 TCV with a Cv 0.01 load on ISO VG 46) | Low (micro flows) | Test (D-29a), trace | rejected (cause was D-29) |
 | D-33 | Linear control valve, remote control valve, regulator (Results tab) | Valve chart draws the bare Cv equation in the browser, without $F_R$ and the valve style | Low (display only) | User question | fixed |
 | D-34 | Solver / stagnant sections | Two separate graph walks and thresholds for stagnant pressures and dead-leg temperatures; the temperature graph is rebuilt on every property pass | Cleanup | Code review | open |
+| D-35 | Solver / micro flows | Pressure drop of a pipe behind a very stiff micro-flow edge is off by ~5 Pa (pipe absorbs the edge residual) | Low | Confirmed (property test, explore) | open |
 
 ---
 
@@ -510,7 +511,9 @@ The analytical `calculate_dp_derivative` methods of those components are only ex
 
 **Resolution (a) fixed:** the property update uses damped flows $Q_{\text{prop}}$ once successive corrections swing back. Properties count as converged only when $Q_{\text{prop}}$ matches the solved flows (1e-4 relative, same direction on every non-dead edge); see `base_node.md` §4.2. Both networks converge in 8 outer iterations and are pinned as `@example`s; `solved()` in `test_network_invariants.py` now also requires `properties_converged`.
 
-**Open (b):** solve the junction mixing of each property pass as one sparse linear enthalpy system instead of Gauss-Seidel sweeps.
+**Resolution (b) fixed:** between the Gauss-Seidel passes, `_solve_mixing` solves the junction mixing of all nodes as one sparse linear system (one unknown temperature per edge; component heating, pipe ΔT and the heat exchanger slope $1-\varepsilon$ taken from the current pass, so the passes only refine what is nonlinear); see `base_node.md` §4.2. The loop now sits at its supply temperature plus dissipation (294.20 K) instead of 293.16 K, and is pinned as an `@example`.
+
+**Resolution (energy residual) fixed:** the explore failure of `test_junctions_conserve_energy` that remained (also on the D-24a commit) was a ~9e-11 m³/s hot trickle, solver noise below `Q_DEAD_LEG`, mixed into a junction 68 K colder: 0.1 K off. `calculate_temperature` and `has_inflow` now ignore flows at or below `Q_DEAD_LEG` (moved to `base_node.py`), like the mixing solve and the dead-leg fill; pinned as an `@example`. Run time of the shipped examples unchanged or lower (golden + solver-method subset 4.7 s, was 5.6 s).
 
 ---
 
@@ -629,8 +632,21 @@ The analytical `calculate_dp_derivative` methods of those components are only ex
 - pressures: sections shut in by a closed check valve, stopped pump or closed relief device, with a check valve counted as closed below `Q_STAGNANT` (1e-7 m³/s);
 - temperatures: ports with $|Q| \le$ `Q_DEAD_LEG` (1e-9 m³/s, the solver's flow noise).
 
-Nothing is wrong today: a port flagged `stagnant` with a flow between the two thresholds carries real flow, and its temperature follows that flow correctly. But a change to one walk (e.g. a new blocking device) can miss the other. In addition, `_fill_stagnant_temperatures` rebuilds its port graph (pipe chains, node-interior links) on every `_propagate_properties` call: every outer iteration, up to 20 final property passes and the telemetry. The topology is fixed for the solver's lifetime.
+Nothing is wrong today: a port flagged `stagnant` with a flow between the two thresholds carries real flow, and its temperature follows that flow correctly. But a change to one walk (e.g. a new blocking device) can miss the other. In addition, `_fill_stagnant_temperatures` rebuilds its port graph (pipe chains, node-interior links) on every `_propagate_properties` call: every outer iteration, up to 20 final property passes and the telemetry. The topology is fixed for the solver's lifetime. `_solve_mixing` (D-24) adds a third copy of the per-edge direction logic (upstream port and pipe end by flow sign) next to the passes of `_propagate_properties`, also rebuilt on every call.
 
 **Fix direction:** a cleanup. Build one port graph once per solver (like `edges_into` / `edges_out_of`), and use it for both the pressure groups and the temperature fill, so only the flow-dependent classification is done per call. Keep the two thresholds, but define them next to each other with the reason for each.
 
 **Tests:** no behaviour change. `test_stagnant_branches.py` and `test_network_invariants.py` (warm start, also under the explore profile) must stay green; a mutation run on the merged walk confirms both uses are covered.
+
+---
+
+## D-35 Pipe drop off by ~5 Pa behind a stiff micro-flow edge
+
+**Where:** `backend/simulation/solver.py`, hydraulic solve and reported pressures. Found by `tests/scenarios/test_network_invariants.py::test_pressure_is_continuous_and_falls_along_the_flow` under the explore profile while checking D-24 (2026-10-25); fails identically on the commit before the D-24 changes.
+
+**What happens:** tank (1 m, 264.15 K) → centrifugal pump (20.1 L/min, 20.1 m rated) → linear control valve (Cv 1, 5 % open) → tank (1 m), ISO VG 150, pipes 1 m with ID e⁻² m. The valve passes 2.5e-8 m³/s at a 2.12 bar drop (laminar, about 8.5e12 Pa·s/m³). The pipe after it reports a 5.42 Pa drop, but its own drop at the reported flow and properties is 0.021 Pa; the test allows 5 Pa. Nothing is flagged stagnant, `max_residual` is 4.2e-7, the solve converges in 4 outer iterations.
+
+**Likely cause (not confirmed):** at that stiffness a flow error of about 6e-13 m³/s, far below the solver's flow tolerances, is already 5 Pa. The reported port pressures follow each component's drop from the node pressures, so the pipe takes up what is left of the edge equation.
+
+**Fix direction:** confirm by printing the edge residual in Pa. Then either scale the edge residual by the edge's own slope (pressure tolerance instead of flow tolerance) or report the pipe outlet pressure from its own drop. A second, separate observation from the same explore runs: one run of `test_network_invariants.py` took 88 minutes (the others 4 minutes); the slow example was not captured.
+

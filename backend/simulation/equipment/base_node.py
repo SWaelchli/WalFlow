@@ -5,6 +5,21 @@ import uuid
 from simulation.schemas import Port
 from simulation.fluid_utils import FluidProperties
 
+# m³/s: below this the flow sign is solver noise (mass rows converge to ~2e-10, Newton step_tol >= 1e-9) and carries
+# no temperature (dead leg); real trickles, e.g. ~3e-8 through a Cv 0.001 valve, stay above it
+Q_DEAD_LEG = 1e-9
+
+
+def select_inward(items, inflow):
+    """The items that feed a node, given their inward flow (positive into the node): flows above Q_DEAD_LEG. A smaller
+    flow is solver noise and feeds no mix (a 1e-10 m³/s trickle 70 K hotter would shift it 0.1 K), unless only such
+    flows arrive and together they exceed Q_DEAD_LEG: then they are what leaves, and all of them count."""
+    signed = [x for x in items if inflow(x) > 0]
+    live = [x for x in signed if inflow(x) > Q_DEAD_LEG]
+    if live:
+        return live
+    return signed if sum(inflow(x) for x in signed) > Q_DEAD_LEG else []
+
 # Lowest pump efficiency the parser accepts (1 %); guards shaft power and heat against division by zero
 MIN_PUMP_EFFICIENCY = 0.01
 
@@ -73,16 +88,9 @@ class HydraulicNode:
         weighted_temp_sum = 0.0
         
         # Check all ports (inlets and outlets) for inward flow
-        inward_ports = []
-        outward_ports = []
-        
-        for port in self.inlets:
-            if port.flow_rate > 0: inward_ports.append(port)
-            else: outward_ports.append(port)
-            
-        for port in self.outlets:
-            if port.flow_rate < 0: inward_ports.append(port)
-            else: outward_ports.append(port)
+        inward_ports = self.inward_ports()
+        inward_ids = {id(p) for p in inward_ports}
+        outward_ports = [p for p in self.inlets + self.outlets if id(p) not in inward_ids]
 
         if not inward_ports:
             return
@@ -93,7 +101,6 @@ class HydraulicNode:
         
         # Enthalpy balance: sum(m_i * h_i) = m_total * h_mix, with h = integral of cp dT
         fluid_type = getattr(self.global_settings, 'fluid_type', 'water')
-        weighted_temp_sum = 0.0
         enthalpy_sum = 0.0
         for port in inward_ports:
             m_dot = abs(port.flow_rate) * port.density
@@ -101,26 +108,35 @@ class HydraulicNode:
             weighted_temp_sum += m_dot * port.temperature
             enthalpy_sum += m_dot * FluidProperties.get_enthalpy(fluid_type, port.temperature)
 
-        if total_mass_flow > 0:
-            mix_temp = FluidProperties.get_temperature_from_enthalpy(
-                fluid_type, enthalpy_sum / total_mass_flow, weighted_temp_sum / total_mass_flow)
-        else:
-            mix_temp = inward_ports[0].temperature
-        
+        # inward_ports only holds ports with positive inward flow, so total_mass_flow > 0
+        mix_temp = FluidProperties.get_temperature_from_enthalpy(
+            fluid_type, enthalpy_sum / total_mass_flow, weighted_temp_sum / total_mass_flow)
+
         for port in outward_ports:
             port.temperature = mix_temp
 
+    def temperature_slope(self) -> float:
+        """Change of the leaving temperature per kelvin of the mixed arriving temperature, used by the solver's
+        junction mixing solve. 1 when the node's own heating does not depend on the inlet temperature."""
+        return 1.0
+
+    def inward_ports(self) -> List[Port]:
+        """The ports that feed the node (select_inward): inward flow is q on an inlet and -q on an outlet."""
+        outlet_ids = {id(p) for p in self.outlets}
+        return select_inward(self.inlets + self.outlets, lambda p: -p.flow_rate if id(p) in outlet_ids else p.flow_rate)
+
     def has_inflow(self) -> bool:
-        """True when any port has flow into the node (the sources of calculate_temperature)."""
-        return any(p.flow_rate > 0 for p in self.inlets) or any(p.flow_rate < 0 for p in self.outlets)
+        """True when a port feeds the node (inward_ports): flow at or below Q_DEAD_LEG does not count, unless together
+        the arriving flows exceed it."""
+        return bool(self.inward_ports())
 
     def update_outward_properties(self) -> None:
         """Density and viscosity of the ports with outward flow at their own temperature (junctions)."""
         if not self.global_settings:
             return
         fluid_type = self.global_settings.fluid_type
-        outward = [p for p in self.inlets if p.flow_rate <= 0] + [p for p in self.outlets if p.flow_rate >= 0]
-        for port in outward:
+        inward_ids = {id(p) for p in self.inward_ports()}
+        for port in (p for p in self.inlets + self.outlets if id(p) not in inward_ids):
             port.density = FluidProperties.get_density(fluid_type, port.temperature)
             port.viscosity = FluidProperties.get_viscosity(fluid_type, port.temperature)
 

@@ -57,36 +57,30 @@ class ThreeWayTCV(HydraulicNode):
         outlet = self.outlets[0]
         
         # Mass/Energy Balance
-        # Only include ports with INWARD flow as sources
-        m0 = inlet_0.flow_rate * inlet_0.density if inlet_0.flow_rate > 0 else 0.0
-        m1 = inlet_1.flow_rate * inlet_1.density if inlet_1.flow_rate > 0 else 0.0
-        m_out_rev = abs(outlet.flow_rate) * outlet.density if outlet.flow_rate < 0 else 0.0
-        m_tot = m0 + m1 + m_out_rev
+        # Only include ports with INWARD flow as sources (the rule of calculate_temperature, noise excluded)
+        sources = self.inward_ports()
+        source_ids = {id(p) for p in sources}
+        inward = [(abs(p.flow_rate) * p.density, p.temperature) for p in sources]
+        m_tot = sum(m for m, _ in inward)
         
-        if m_tot > 1e-10:
-            inward = [(m, p.temperature) for m, p in ((m0, inlet_0), (m1, inlet_1), (m_out_rev, outlet)) if m > 0.0]
+        # Only noise arrives: no port has a temperature to give, they keep theirs (the dead-leg fill sets them later)
+        if sources:
             # Throttling heat of both forward paths: power Q·ΔP ends up in the mixed stream
             heat_w = 0.0
             for port, idx in ((inlet_0, 0), (inlet_1, 1)):
-                if port.flow_rate > 0:
+                if id(port) in source_ids:
                     heat_w += port.flow_rate * max(0.0, self.calculate_path_dp(port.flow_rate, port.density, idx, port.viscosity))
-            if outlet.flow_rate < 0:
+            if id(outlet) in source_ids:
                 heat_w = 0.0
             # Enthalpy balance with cp(T): sum(m h) + heat = m_tot * h_mix
             fluid = getattr(self.global_settings, 'fluid_type', 'water')
             h_mix = (sum(m * FluidProperties.get_enthalpy(fluid, t) for m, t in inward) + heat_w) / m_tot
             mix_temp = FluidProperties.get_temperature_from_enthalpy(
                 fluid, h_mix, sum(m * t for m, t in inward) / m_tot)
-        else:
-            mix_temp = inlet_0.temperature
-            
-        if outlet.flow_rate >= 0:
-            outlet.temperature = mix_temp
-        if inlet_0.flow_rate <= 0:
-            inlet_0.temperature = mix_temp
-        if inlet_1.flow_rate <= 0:
-            inlet_1.temperature = mix_temp
-            
+            for port in (outlet, inlet_0, inlet_1):
+                if id(port) not in source_ids:
+                    port.temperature = mix_temp
+
         outlet.flow_rate = inlet_0.flow_rate + inlet_1.flow_rate
         
         # Hydraulics & Port Telemetry:
