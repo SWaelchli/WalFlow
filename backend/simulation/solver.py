@@ -1902,6 +1902,7 @@ class NetworkSolver:
             if max_temp_change < 0.01:
                 break
         self.last_prop_iters = actual_iters
+        self._fill_stagnant_temperatures(q_edges)
 
         # Restore all port pressures
         for node, (in_pressures, out_pressures) in saved_pressures.items():
@@ -1910,12 +1911,88 @@ class NetworkSolver:
             for port, p in zip(node.outlets, out_pressures):
                 port.pressure = p
 
+    def _fill_stagnant_temperatures(self, q_edges):
+        """A dead leg (|Q| <= Q_DEAD_LEG) carries no fluid, so the flow sign gives its ports no temperature: they
+        would keep whatever they held (the Port default on a fresh network), depending on the start. Each stagnant
+        port takes the temperature of the nearest seed instead, walking through stagnant ports only. Seeds are the
+        ports of a pressure reference (their own temperature) and the ports of a node with flow (a stagnant one takes
+        the node's leaving temperature); seeds are never overwritten. A pipe has one temperature; crossing a stagnant node is one step, so the two sides
+        of a closed check valve take the temperatures of their own neighbours. Pruned sections count as stagnant."""
+        active_q = {id(e): q_edges[j] for j, e in enumerate(self.edges_list)}
+        port_q = {}     # id(port) -> outward flow of the node port
+        adj = defaultdict(list)
+        for edge in self.all_edges_list:
+            q = active_q.get(id(edge), 0.0)
+            src = self._src_port(edge, self.network.nodes[edge['source']])
+            tgt = self._tgt_port(edge, self.network.nodes[edge['target']])
+            port_q[id(src)] = port_q.get(id(src), 0.0) + q
+            port_q[id(tgt)] = port_q.get(id(tgt), 0.0) - q
+            if abs(q) <= Q_DEAD_LEG:
+                pipe = edge['pipe']
+                chain = (src, pipe.inlets[0], pipe.outlets[0], tgt)
+                for a, b in zip(chain, chain[1:]):
+                    adj[id(a)].append((b, 0))
+                    adj[id(b)].append((a, 0))
+
+        dist, temp = {}, {}
+        seeds, boundary = set(), set()
+        queue = deque()
+
+        def seed(p, t, rank):
+            seeds.add(id(p))
+            dist[id(p)], temp[id(p)] = (0, rank), t
+            queue.append(p)
+
+        # Seeds keep their temperature. Equally near seeds: references (boundaries and flow sources, whose
+        # temperature is set) before live nodes, then by name and id, so the choice does not depend on node order
+        for node in self.all_nodes_list:
+            ports = node.inlets + node.outlets
+            if is_pressure_reference(node):
+                for p in ports:
+                    boundary.add(id(p))
+                    seed(p, p.temperature, (0, str(node.name), str(node.id)))
+                continue
+            leaving = [p for p in ports if port_q.get(id(p), 0.0) > Q_DEAD_LEG]
+            if leaving:
+                for p in ports:
+                    live = abs(port_q.get(id(p), 0.0)) > Q_DEAD_LEG
+                    seed(p, p.temperature if live else leaving[0].temperature, (1, str(node.name), str(node.id)))
+            else:
+                for a in ports:
+                    adj[id(a)].extend((b, 1) for b in ports if b is not a)
+
+        ports_by_id = {}
+        while queue:    # 0-1 breadth-first search: pipes and connections cost 0, a stagnant node's inside 1
+            p = queue.popleft()
+            ports_by_id[id(p)] = p
+            steps, rank = dist[id(p)]
+            for nb, cost in adj[id(p)]:
+                d = (steps + cost, rank)
+                if id(nb) not in seeds and d < dist.get(id(nb), (math.inf,)):
+                    dist[id(nb)], temp[id(nb)] = d, temp[id(p)]
+                    if cost == 0:
+                        queue.appendleft(nb)
+                    else:
+                        queue.append(nb)
+
+        gs = getattr(self.network, 'global_settings', None) or (self.nodes_list[0].global_settings if self.nodes_list else None)
+        fluid_type = getattr(gs, 'fluid_type', 'water')
+        for pid, p in ports_by_id.items():
+            if pid in boundary or p.temperature == temp[pid]:
+                continue
+            p.temperature = temp[pid]
+            p.density = FluidProperties.get_density(fluid_type, p.temperature)
+            p.viscosity = FluidProperties.get_viscosity(fluid_type, p.temperature)
+
 RELIEF_NODE_TYPES = ('pressure_safety_valve', 'rupture_disc')
 # The check valve with orifice is no leak path: its bypass orifice always ties both sides together
 CHECK_VALVE_TYPES = ('check_valve',)
 # Leak paths out of a shut-in section, strongest first (ROADMAP "Undefined Pressure in Stagnant Branches")
 LEAK_STOPPED_PUMP, LEAK_CHECK_VALVE, LEAK_RELIEF_SEAT = 0, 1, 2
 Q_STAGNANT = 1e-7               # m³/s (6 mL/min): a check valve below this flow is closed
+# m³/s: below this the flow sign is solver noise (mass rows converge to ~2e-10, Newton step_tol >= 1e-9) and carries
+# no temperature (dead leg); real trickles, e.g. ~3e-8 through a Cv 0.001 valve, stay above it
+Q_DEAD_LEG = 1e-9
 RELIEF_SEAT_MARGIN_PA = 1.0     # a stagnant section stays this far below a closed relief device's set pressure
 RELIEF_RAMP_MAX_SOLVES = 24     # bisection steps per opening (λ resolution 2⁻²⁴)
 RELIEF_RAMP_TOL_PA = 100.0      # 1 mbar: inlet pressure at the opening snapshot vs set pressure

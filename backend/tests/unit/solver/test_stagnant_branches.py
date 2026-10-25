@@ -20,6 +20,7 @@ from simulation.equipment.pressure_source import PressureSource
 from simulation.equipment.splitter import Splitter
 from simulation.equipment.tank import Tank
 from simulation.equipment.volumetric_pump import VolumetricPump
+from simulation.fluid_utils import FluidProperties
 from simulation.schemas import GlobalSettings, HydraulicNetwork
 from simulation.solver import NetworkSolver, run_sequential_relief_simulation
 
@@ -327,3 +328,27 @@ def test_section_behind_a_check_valve_with_orifice_takes_the_header_pressure(met
     for port in (nodes["nrv"].inlets[0], pump.outlets[0]):
         assert port.flow_rate == pytest.approx(0.0, abs=1e-9)
         assert port.pressure == pytest.approx(p_header_side, abs=1.0)
+
+
+def test_dead_leg_behind_a_check_valve_takes_the_temperature_of_its_nearest_live_side():
+    # A stagnant port has no flow to carry a temperature. Each side of the closed valve takes the temperature of the live end it hangs on: source side from the
+    # source, mixer side from the mixer's leaving stream; density and viscosity follow
+    K = 273.15
+    nodes = {"hot": PressureSource("Hot", 15e5, 60 + K), "cold": PressureSource("Cold", 9e5, 10 + K),
+             "nrv": CheckValve("NRV", 1.0), "mix": Mixer("Mixer", 2), "sink": Tank("Sink", fluid_level=1.0, temperature=10 + K)}
+    edges = [{"id": "e1", "source": "hot", "target": "mix", "target_port": "inlet-0", "pipe": Pipe("hot", 1, ID)},
+             {"id": "e2", "source": "cold", "target": "nrv", "pipe": Pipe("cold side", 1, ID)},
+             {"id": "e3", "source": "nrv", "target": "mix", "target_port": "inlet-1", "pipe": Pipe("mixer side", 1, ID)},
+             {"id": "e4", "source": "mix", "target": "sink", "pipe": Pipe("out", 50, 0.01)}]
+    stats = solve(nodes, edges, fluid="crude_heavy")
+    assert stats["success"], stats.get("error")
+    pipes = {e["id"]: e["pipe"] for e in edges}
+    mixer_side = nodes["mix"].outlets[0].temperature
+    assert mixer_side > 50 + K
+    source_side = [nodes["nrv"].inlets[0], *pipes["e2"].inlets, *pipes["e2"].outlets]
+    live_side = [nodes["nrv"].outlets[0], nodes["mix"].inlets[1], *pipes["e3"].inlets, *pipes["e3"].outlets]
+    for ports, expected in ((source_side, 10 + K), (live_side, mixer_side)):
+        for port in ports:
+            assert abs(port.flow_rate) <= 1e-7
+            assert port.temperature == pytest.approx(expected, abs=0.1)
+            assert port.density == pytest.approx(FluidProperties.get_density("crude_heavy", expected), rel=1e-3)

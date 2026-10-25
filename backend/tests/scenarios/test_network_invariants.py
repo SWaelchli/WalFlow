@@ -59,9 +59,7 @@ def assert_same_state(a: dict, b: dict):
         for (pa, qa, ta), (pb, qb, tb) in zip(a[key], b[key]):
             assert pa == pytest.approx(pb, rel=1e-4, abs=PRESSURE_TOL), key
             assert qa == pytest.approx(qb, rel=1e-4, abs=FLOW_TOL), key
-            # A stagnant port's temperature depends on the start (D-21); compare flowing ports only
-            if abs(qa) > FLOW_TOL:
-                assert ta == pytest.approx(tb, abs=TEMPERATURE_TOL), key
+            assert ta == pytest.approx(tb, abs=TEMPERATURE_TOL), key
 
 
 def _node(node_id, node_type, **data):

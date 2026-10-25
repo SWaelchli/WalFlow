@@ -37,7 +37,7 @@ Status: `open` / `fixed` / `rejected`. "Confirmed" means it was reproduced by ru
 | D-18 | Mixer | Inlet with reverse flow reports default density / stale viscosity | Low | Confirmed (property test) | fixed |
 | D-19 | Junctions / reducer | Junction joining different pipe diameters gains kinetic energy; with a reducer the network can have no steady state | Medium | Confirmed (property test) | open |
 | D-20 | Solver | Reported pressures lag the last property update; a pipe after a viscous drop can show a small static rise | Low | Confirmed (property test) | fixed |
-| D-21 | Solver / warm start | Exact-hit warm start leaves stagnant branches at the 20 °C port default | Low | Confirmed (property test) | open |
+| D-21 | Solver / dead legs | Stagnant branches keep the 20 °C port default (cold and warm start), depending on the flow noise sign | Low | Confirmed (property test) | fixed |
 | D-22 | Solver | Junctions balance volume flow, not mass flow; mixing at different temperatures loses ~0.4 % mass | Low / decision | Confirmed (property test) | open |
 | D-23 | Solver / equipment | Analytical dp derivatives of most components are never used by the solver (dead code) | Low / cleanup | Mutation testing | fixed |
 | D-24 | Solver / junctions | A junction downstream of two hot supplies reports ~1 K below the coldest supply without any cooler | Medium | Confirmed (property test, explore) | open |
@@ -461,6 +461,8 @@ The analytical `calculate_dp_derivative` methods of those components are only ex
 **What happens:** pressure source 15 bara and pressure source 9 bara → check valve (Cv 1) into a mixer → tank, heavy crude at 10 °C. The check valve closes (flow ~1e-12 m³/s). After a cold start the dead branch shows 283.21 K (its neighbour); after an exact-hit warm start of the same file it shows 293.15 K, the `Port` default. Pressures, flows and all flowing temperatures agree. The user sees a dead leg at 20 °C or 10 °C depending on whether the run is the first one.
 
 **Fix direction:** the warm-start path must run the same stagnant-port temperature fill as the cold start (or restore cached temperatures with the cached state). Until then the warm-start property compares temperatures only at flowing ports; remove that with the fix.
+
+**Resolution (fixed):** not warm-start specific. The warm start only changes the initial guess. Closed-branch flows are about ±1e-12 m³/s with a noise sign, and temperatures follow the sign. A dead leg could therefore end with no port feeding it, and keep the 20 °C default on cold starts too (reproduced with a 15/9 bara pair). The 10 °C seen on the cold start was luck. `_fill_stagnant_temperatures` (end of `_propagate_properties`) now gives every port with $|Q| \le$ `Q_DEAD_LEG` (1e-9 m³/s; the check-valve threshold `Q_STAGNANT` = 1e-7 would also catch real trickles, e.g. a heat exchanger behind a Cv 0.001 valve) the temperature of its nearest seed, walking through stagnant ports and pruned sections. Seeds are the pressure-boundary ports and the leaving temperature of a node with flow. Crossing a stagnant node is one step, so each side of a closed check valve takes its own neighbour's temperature. Test: `test_stagnant_branches.py::test_dead_leg_behind_a_check_valve_takes_the_temperature_of_its_nearest_live_side`. The warm-start property now compares temperatures at every port. Doc: `base_node.md` section 3.
 
 ---
 
