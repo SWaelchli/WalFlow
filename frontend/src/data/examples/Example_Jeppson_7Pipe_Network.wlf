@@ -385,7 +385,7 @@
   "cases": [
     {
       "id": "case_base",
-      "name": "Problem 2: pump supply",
+      "name": "Problem 2",
       "is_base": true,
       "overrides": {
         "nodes": {},
@@ -394,7 +394,7 @@
     },
     {
       "id": "case_problem_3",
-      "name": "Problem 3: three reservoirs",
+      "name": "Problem 3",
       "is_base": false,
       "overrides": {
         "nodes": {

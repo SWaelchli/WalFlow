@@ -30,6 +30,16 @@ WalFlow is a **steady-state** simulator: it solves the algebraic balance of pres
 
 The same text is in the app under **Help > Model & Limits**.
 
+## Validation
+
+WalFlow is checked against published pipe network solutions from R. W. Jeppson, *Steady Flow Analysis of Pipe Networks: An Instructional Manual* (Utah State University, 1974). Each case is a ready-to-open example under **Library & Examples > Validation Benchmarks**. A regression test keeps every pipe flow and friction loss within a set tolerance of the published values, so a change to the solver or the friction model that shifts the results fails the test suite. The remaining differences come from the reservoir entrance loss WalFlow includes and Jeppson neglects, and from Jeppson's fitted friction formula at an unstated water temperature. Variants that need the Hazen-Williams formula are not covered, because WalFlow uses Darcy-Weisbach only.
+
+| Benchmark | Network | Largest difference from published values |
+| :--- | :--- | :--- |
+| Jeppson 7-pipe, Ch. V problem 2 (also AFT Fathom Verification Case 63) | 3 reservoirs, pump, 1 demand | flow 0.005 cfs, friction loss 0.07 ft, pressure 0.05 psi |
+| Jeppson 7-pipe, Ch. V problem 3 | 3 reservoirs, pump removed | flow 0.005 cfs, friction loss 0.07 ft |
+| Jeppson 48-pipe, Ch. VI problem 3 | 2 supplies, 28 demands | flow 0.018 cfs (0.7 %), friction loss 0.6 % |
+
 ---
 <img width="1033" height="667" alt="Untitled" src="https://github.com/user-attachments/assets/5839d719-bae1-4ee6-9179-d06644e6875b" />
 ---

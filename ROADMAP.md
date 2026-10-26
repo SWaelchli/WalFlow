@@ -51,6 +51,11 @@ This document outlines planned features, overlays, and enhancements for the WalF
   * **Today (2026-10-26):** a flow source with a negative set flow is the withdrawal (`flow_source.md` section 3.6). It has only an outlet port, so the pipe to it is drawn from the source into the network and its flow shows negative; the Jeppson validation example uses it.
   * **Engineering Value:** Distribution networks and literature benchmarks (Jeppson, AFT verification cases) with many junction demands, drawn with the flow direction and without reversed pipes.
 
+- [ ] **🔀 Multi-Port Junction Without Flow Direction**
+  * **Concept:** One junction node with a configurable number of ports (3 to about 8), each usable as inlet or outlet: a single node balance (mass, energy, total pressure) and no fixed inlet/outlet roles, so a pipe connects to any port whichever way it is drawn. Optionally a demand set on the junction itself (with the demand component above).
+  * **Today (2026-10-26):** junctions are 3-port tees with fixed roles (splitter 1 in / 2 out, mixer 2 in / 1 out) and every edge runs outlet to inlet. A four-pipe junction needs chained tees with short links, and a junction whose pipes all flow in needs one pipe drawn against the flow. The Jeppson 48-pipe example uses 62 tees for 30 junctions.
+  * **Engineering Value:** Clean distribution networks, headers and literature benchmarks drawn like the source figure; no tee chains, no orientation puzzles when building a looped network.
+
 - [ ] **🔌 Multiple Nozzles on Fluid Sources (Tanks and Pressure Sources)**
   * **Concept:** Configurable number of inlet and outlet nozzles on a tank or pressure source (e.g. two pump suctions and a separate relief return on one tank), each a separate port with its own pipe, optionally with its own nozzle height.
   * **Today (2026-10-16):** a port takes one pipe. A line that branches needs a splitter or mixer; separate nozzles are modelled with a second tank at the same level and conditions. The solver already treats a tank or pressure source as one fixed-pressure node, so extra ports mainly need the node component, the port table in `networkValidation.js` (`PORTS_BY_TYPE`) and the parser.
