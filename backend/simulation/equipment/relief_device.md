@@ -138,7 +138,7 @@ Shared inputs (the component documents list the full tables):
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | Set Pressure / Burst Pressure | barg (psig) | `self.set_pressure_barg` | barg (→ Pa abs) | required | $> 0$ | Opening pressure, gauge |
 | Forced state | text | `self.forced_state` | - | auto | auto, forced_open, forced_closed | Contingency override |
-| Ramp during relief analysis | bool | `self.relief_ramp_enabled` | - | true | - | On the drivers, not on the device (see [base_node.md](base_node.md)) |
+| Ramp during relief analysis | bool | `self.relief_ramp_enabled` | - | true | - | On the drivers (pumps, sources; not a withdrawing flow source), not on the device (see [base_node.md](base_node.md)) |
 
 ## 6. Operating Modes & Model Boundaries
 

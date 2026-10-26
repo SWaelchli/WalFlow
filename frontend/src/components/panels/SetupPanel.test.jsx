@@ -246,3 +246,27 @@ describe('control valve style picker in the inspector', () => {
     expect(onUpdate).not.toHaveBeenCalled();
   });
 });
+
+describe('flow source set flow', () => {
+  const source = (flow) => ({ id: 'fs1', type: 'flow_source', data: { source_flow_lmin: flow, label: 'Demand' } });
+
+  it.each([['-3398', -3398], ['0', 0]])('accepts %s L/min (withdrawal / stopped source)', (typed, stored) => {
+    vi.mocked(notify).mockClear();
+    const onUpdate = renderNodePanel(source(40));
+    const input = screen.getByDisplayValue('40');
+    fireEvent.change(input, { target: { value: typed } });
+    fireEvent.blur(input);
+    expect(onUpdate).toHaveBeenCalledTimes(1);
+    expect(onUpdate.mock.calls[0][1].source_flow_lmin).toBe(stored);
+    expect(notify).not.toHaveBeenCalled();
+  });
+
+  it('rejects a value that is not a number', () => {
+    vi.mocked(notify).mockClear();
+    const onUpdate = renderNodePanel(source(40));
+    const input = screen.getByDisplayValue('40');
+    fireEvent.change(input, { target: { value: 'abc' } });
+    fireEvent.blur(input);
+    expect(onUpdate).not.toHaveBeenCalled();
+  });
+});

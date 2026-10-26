@@ -6,6 +6,8 @@ A flow source injects a constant volume flow into the network through its single
 
 Use it for a dosing pump, a metered supply, a process stream that arrives at a known rate, or any point where the flow is known and the pressure is not.
 
+A negative set flow withdraws fluid at that rate: a demand or consumer draw-off, as at the junctions of a distribution network (section 3.6).
+
 ## 2. Governing Standards & Reference Literature
 
 No engineering standard applies. The flow source is a mathematical boundary condition (an ideal flow source with a pressure limit). It is implemented as a stiff spring instead of a hard flow constraint, so it fits the same edge pressure balance as every other component.
@@ -53,7 +55,16 @@ The class has no analytical derivative; the solver differentiates the outlet pre
 
 ### 3.5 Relief analysis ramp
 
-The flow source is a relief driver (`is_relief_driver = True`). During the relief analysis, `apply_relief_ramp(λ)` sets $Q_{\text{set}}(\lambda) = \lambda\, Q_{\text{set}}$; the stiffness stays referenced to the case flow. `reset_relief_ramp` restores the case value. See [relief_device.md](relief_device.md).
+A flow source with $Q_{\text{set}} \ge 0$ is a relief driver (`is_relief_driver = True`); a withdrawal is not (section 3.6). During the relief analysis, `apply_relief_ramp(λ)` sets $Q_{\text{set}}(\lambda) = \lambda\, Q_{\text{set}}$; the stiffness stays referenced to the case flow. `reset_relief_ramp` restores the case value. See [relief_device.md](relief_device.md).
+
+### 3.6 Withdrawal (negative set flow)
+
+$Q_{\text{set}} < 0$ draws $|Q_{\text{set}}|$ out of the network through the outlet port. The spring of section 3.2 is unchanged: the source holds the withdrawal against any network pressure between the limits of section 3.3, and the deviation is as small as for an injection.
+
+- **Pressure limit:** a network pressure above $P_{\text{max}}$ at the outlet pushes more than $|Q_{\text{set}}|$ into the source, and `pressure_cap_reached` is set. Keep $P_{\text{max}}$ above the highest network pressure at the draw-off point.
+- **Sub-atmospheric outlet:** allowed; the source keeps the set withdrawal (up to the 20 MPa guard).
+- **Relief analysis:** not a relief driver. A larger withdrawal only lowers the pressures, so ramping it cannot drive a relief case. It stays at its case value while the drivers ramp from $\lambda = 0$; a withdrawal larger than the supply at low $\lambda$ can depressurise the network and stop the ramp without a result.
+- **Temperature:** the withdrawn fluid leaves the network; the set temperature has no effect on the network.
 
 ## 4. Thermal & Energy Balance
 
@@ -63,11 +74,13 @@ $$T_{\text{outlet}} = T_{\text{set}}$$
 
 The pressure rise of the source adds no heat (an ideal source, not a pump with losses).
 
+For a withdrawal the outlet port still shows $T_{\text{set}}$, but the fluid leaving the network has the network temperature: on reverse flow the connecting pipe takes its properties from the node it leaves, and the mixing balance does not count the source as a supply.
+
 ## 5. Parameter & Unit Specification Table
 
 | Parameter (UI Label) | UI Unit | Backend Var | SI Unit | Default | Valid Range | Description |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| Set Flow | L/min (GPM) | `self.source_flow` | m³/s | 50 L/min | $\ge 0$ | Injected volume flow |
+| Set Flow | L/min (GPM) | `self.source_flow` | m³/s | 50 L/min | any; $< 0$ withdraws | Injected volume flow; a negative value is a withdrawal (section 3.6) |
 | Injected Temp | °C (°F) | `self.temperature` | K | 293.15 K | fluid validity range | Temperature of the injected fluid |
 | Max. Discharge Pressure | bar(a) (psi(a)) | `self.max_discharge_pressure` | Pa | 50 bar(a) | $> 1$ bar(a) | Outlet pressure limit; above it the flow drops below the set flow |
 
@@ -80,10 +93,10 @@ The parser rejects a maximum discharge pressure $\le 1$ bar(a).
   - `is_pressure_boundary = False`
   - `blocks_flow_on_shutdown = False`
   - `use_mcp_formulation = False`
-  - `is_relief_driver = True`
+  - `is_relief_driver = True` for $Q_{\text{set}} \ge 0$, `False` for a withdrawal
 - **Pressure reference:** for topology pruning a flow source counts as a reference, like a tank. At zero set flow its section carries no flow and takes its pressure from its neighbours instead (stagnant section, see [base_node.md](base_node.md#6-operating-modes--model-boundaries)). Its temperature still applies: the dead leg it feeds takes the source temperature.
 - **Inactive:** `active` has no effect; set the flow to 0 to stop the source.
-- **Reverse flow:** a set flow is always out of the source. The spring resists any other flow, so reverse flow only occurs on the lower 20 MPa guard.
+- **Reverse flow:** the flow follows the sign of the set flow (out of the source for an injection, into it for a withdrawal). The spring resists any other flow, so the direction only reverses on a limit of section 3.3.
 - **Operating cases:** set flow, temperature and maximum discharge pressure can be overridden per case.
 - **Not modelled:** a pump curve (use a [volumetric](volumetric_pump.md) or [centrifugal pump](centrifugal_pump.md)), suction conditions and NPSH.
 
@@ -91,8 +104,9 @@ The parser rejects a maximum discharge pressure $\le 1$ bar(a).
 
 | Test | Benchmark |
 | :--- | :--- |
-| `backend/tests/unit/equipment/test_sources.py::TestFlowSource` | $\Delta P = 0$ at the set flow (within $10^{-7}$ Pa); negative below it, positive above it; never beyond 20 MPa |
-| `test_sources.py::TestNetworkSolve::test_flow_source_network_solve` | 45 L/min → 10 m × 50 mm pipe → tank: delivered flow within 1 L/min; outlet pressure $= P_{\text{atm}} - \Delta P$ within 1 Pa |
+| `backend/tests/unit/equipment/test_sources.py::TestFlowSource` | $\Delta P = 0$ at the set flow (within $10^{-7}$ Pa); negative below it, positive above it, also for a withdrawal ($Q_{\text{set}} < 0$); never beyond 20 MPa |
+| `test_sources.py::TestFlowSource::test_only_a_withdrawal_is_not_a_relief_driver` | `is_relief_driver` True at 50 and 0 L/min, False at −50 L/min |
+| `test_sources.py::TestNetworkSolve::test_flow_source_network_solve` | 45 L/min → 10 m × 50 mm pipe → tank, and the same as a withdrawal from the tank (also with a sub-atmospheric draw-off): signed flow within 1 L/min of the set flow; outlet pressure $= P_{\text{atm}} - \Delta P$ within 1 Pa |
 | `backend/tests/unit/equipment/test_flow_source_pressure_cap.py::test_f1_24_cap_flag_set_when_limit_binds` | 100 L/min through 200 m × 15 mm with a 3 bar(a) limit: flag set, flow below 100 L/min |
 | `test_flow_source_pressure_cap.py::test_f1_24_cap_flag_clear_in_normal_operation` | Same flow through 200 m × 80 mm with a 50 bar(a) limit: flag clear, flow within 1 % of 100 L/min |
 | `backend/tests/unit/solver/test_stagnant_branches.py::test_flow_source_at_zero_flow_is_no_pressure_reference` | Source at 0 L/min behind a check valve: its outlet is flagged stagnant and takes the check valve outlet pressure within 1 Pa |
