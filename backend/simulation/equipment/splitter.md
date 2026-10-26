@@ -14,9 +14,11 @@ No engineering standard applies. The splitter is an ideal junction: conservation
 
 ### 3.1 Pressure
 
-The splitter is one node with one pressure unknown $p$. Every edge that leaves it starts at that pressure:
+The splitter is one node with one total-pressure unknown $p_0$. Every edge that leaves it starts at that total pressure:
 
-$$P_{\text{inlet}} = P_{\text{outlet},0} = P_{\text{outlet},1} = p$$
+$$P_{0,\text{inlet}} = P_{0,\text{outlet},0} = P_{0,\text{outlet},1} = p_0$$
+
+Each port reports the static pressure $p_0 - \rho v^2/2$ of the pipe on it: a branch slower than the feed shows a higher static pressure (see [base_node.md](base_node.md#36-total-pressure-at-nodes-static-pressure-at-ports)).
 
 The splitter has no `calculate_delta_p`, so in the edge pressure balance its outlet pressure equals its inlet pressure (see [base_node.md](base_node.md#32-how-a-component-enters-the-equations)).
 
@@ -57,7 +59,7 @@ Not applicable — the splitter has no parameters of its own. The number of outl
 - **Reverse flow:** supported on every port; the mass balance holds for any sign.
 - **Unused outlet:** an outlet with no pipe is ignored. A branch that ends in a dead end is pruned before the solve and gets the splitter pressure at zero flow.
 - **Operating cases:** nothing to override.
-- **Not modelled:** branch and run losses of a real tee, and velocity-head changes at the junction.
+- **Not modelled:** branch and run losses of a real tee. The junction keeps the total pressure; the static pressures follow the velocity heads.
 
 ## 7. Verification & Benchmarks
 

@@ -33,7 +33,7 @@ A device opens on its **opening margin** (`opening_margin_pa`):
 
 $$m = \text{driver} - \text{threshold} \ge 0$$
 
-For the rupture disc (and this base class) the driver is the inlet gauge pressure $P_{\text{in}} - P_{\text{atm}}$ and the threshold is the set pressure. A PSV replaces both according to its valve type (conventional: differential against the CDTP; pilot: the sensed pressure); see [pressure_safety_valve.md](pressure_safety_valve.md#32-opening-driver-by-valve-type). Every opening decision (held state, relief passes, opening snapshots) and the modulating lift use this margin. `inlet_opening_pressure_pa` gives the inlet pressure at which a closed device opens (used to hold a stagnant section just below it), or none for a pilot sensing a remote point.
+For the rupture disc (and this base class) the driver is the inlet gauge pressure $P_{\text{in}} - P_{\text{atm}}$ and the threshold is the set pressure. A PSV replaces both according to its valve type (conventional: differential against the CDTP; pilot: the sensed pressure); see [pressure_safety_valve.md](pressure_safety_valve.md#32-opening-driver-by-valve-type). Every opening decision (held state, relief passes, opening snapshots) and the modulating lift use this margin, on total pressures (`total_of`, the same values the solve's row uses; [base_node.md](base_node.md#36-total-pressure-at-nodes-static-pressure-at-ports)). A closed device passes no flow, so at its set point the total equals the static pressure. `inlet_opening_pressure_pa` gives the inlet pressure at which a closed device opens (used to hold a stagnant section just below it), or none for a pilot sensing a remote point.
 
 ### 3.2 Held state
 

@@ -11,7 +11,9 @@ class Port(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
 
     # State Variables (Using SI Units as standard: Pascals, m^3/s, kg/m^3)
-    pressure: float = 101325.0  # Default to 1 atm (atmospheric pressure)
+    pressure: float = 101325.0  # Static pressure; default to 1 atm (atmospheric pressure)
+    # Total (stagnation) pressure of the node side, set by the solver's report; None until then (base_node.total_of)
+    total_pressure: Optional[float] = None
     flow_rate: float = 0.0      # Volumetric flow rate (Q)
     temperature: float = 293.15 # Kelvin (Default to 20°C)
 

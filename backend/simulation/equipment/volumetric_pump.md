@@ -57,7 +57,7 @@ With the inlet pressure known (the solver passes it), the outlet is limited:
 
 $$\Delta P_{\text{lim}} = P_{\text{max}} - P_{\text{in}}, \qquad \Delta P = \Delta P_{\text{lim}} + s\,(\Delta P_{\text{unlimited}} - \Delta P_{\text{lim}}) \quad \text{if } \Delta P_{\text{unlimited}} > \Delta P_{\text{lim}}$$
 
-$s$ (`_limit_ratio`) gives the limited curve a small slope: full recirculation (dead-head, $Q = 0$) needs about 1 % above the limit (`LIMIT_ACCUMULATION`), like the accumulation of a relief valve. A flat cap would leave Newton without a slope. `pressure_cap_reached` is set when the outlet is within 1 Pa of $P_{\text{max}}$ or above.
+$s$ (`_limit_ratio`) gives the limited curve a small slope: full recirculation (dead-head, $Q = 0$) needs about 1 % above the limit (`LIMIT_ACCUMULATION`), like the accumulation of a relief valve. A flat cap would leave Newton without a slope. `pressure_cap_reached` is set when the outlet is within 1 Pa of $P_{\text{max}}$ or above. $P_{\text{in}}$ and the limited outlet are total pressures; the reported static outlet is lower by the discharge velocity head.
 
 | Operating point | Outlet pressure | Flow |
 | :--- | :--- | :--- |
@@ -81,7 +81,7 @@ $\eta$ is the pump efficiency (motor losses not included); $P_m$ is the motor ra
 
 ### 3.6 NPSH
 
-$\text{NPSH}_a = (P_{\text{in}} - P_v)/(\rho g)$ is reported, and `cavitation_warning` is set when $\text{NPSH}_a < \text{NPSH}_r + \text{margin}$, as for the [centrifugal pump](centrifugal_pump.md#35-npsh-update_npsh-audit-f1-28).
+$\text{NPSH}_a = (P_{0,\text{in}} - P_v)/(\rho g)$, with the total suction pressure $P_{0,\text{in}}$, is reported, and `cavitation_warning` is set when $\text{NPSH}_a < \text{NPSH}_r + \text{margin}$, as for the [centrifugal pump](centrifugal_pump.md#35-npsh-update_npsh-audit-f1-28).
 
 ### 3.7 Relief analysis ramp
 

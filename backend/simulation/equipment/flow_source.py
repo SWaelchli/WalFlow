@@ -1,4 +1,4 @@
-from simulation.equipment.base_node import HydraulicNode
+from simulation.equipment.base_node import HydraulicNode, total_of
 from simulation.fluid_utils import FluidProperties
 
 class FlowSource(HydraulicNode):
@@ -67,7 +67,7 @@ class FlowSource(HydraulicNode):
 
     def refresh_warnings(self) -> None:
         """Flag set when the delivered flow is limited by the discharge pressure limit."""
-        p_out = self.outlets[0].pressure if self.outlets else 0.0
+        p_out = total_of(self.outlets[0]) if self.outlets else 0.0   # the solve caps the total pressure
         self.pressure_cap_reached = bool(p_out >= self.max_discharge_pressure - 1.0)
 
     def _get_fluid_type(self) -> str:

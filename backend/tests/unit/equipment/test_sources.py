@@ -1,4 +1,5 @@
 import pytest
+from simulation.equipment.base_node import total_of
 from simulation.schemas import HydraulicNetwork
 from simulation.solver import NetworkSolver
 from simulation.equipment.tank import Tank
@@ -155,4 +156,4 @@ class TestNetworkSolve:
         viscosity = 0.001
         dp = source.calculate_delta_p(source.outlets[0].flow_rate, density, viscosity)
         expected_outlet_p = gs.atmospheric_pressure - dp
-        assert abs(source.outlets[0].pressure - expected_outlet_p) < 1.0
+        assert abs(total_of(source.outlets[0]) - expected_outlet_p) < 1.0   # the solve pins the total

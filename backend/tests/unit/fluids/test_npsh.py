@@ -2,10 +2,13 @@
 import pytest
 
 
+import math
+
 import pytest
 
 from physics_refs import solve, water_head
 from routers.simulation import extract_telemetry
+from simulation.equipment.base_node import total_of
 from simulation.equipment.centrifugal_pump import CentrifugalPump
 from simulation.equipment.linear_control_valve import LinearControlValve
 from simulation.equipment.pipe import Pipe
@@ -28,7 +31,11 @@ def test_npsha_matches_hand_calculation():
     assert stats["success"]
     inlet = pump.inlets[0]
     pv = FP.get_vapor_pressure("water", inlet.temperature)
-    assert pump.npsha_m == pytest.approx((inlet.pressure - pv) / (inlet.density * 9.81), rel=1e-9)
+    # The suction head counts the velocity head: total pressure, the static port pressure plus rho v² / 2 of the pipe
+    v = inlet.flow_rate / (math.pi * 0.05 ** 2 / 4.0)
+    assert inlet.pressure + 0.5 * inlet.density * v * v == pytest.approx(total_of(inlet), rel=1e-6)
+    assert pump.npsha_m == pytest.approx((total_of(inlet) - pv) / (inlet.density * 9.81), rel=1e-6)
+    assert pump.npsha_m > (inlet.pressure - pv) / (inlet.density * 9.81)
     assert 9.0 < pump.npsha_m < 13.0       # ~ 10 m atmospheric + 3 m static - friction - Pv
 
 

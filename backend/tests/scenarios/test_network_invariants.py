@@ -11,7 +11,9 @@ import math
 import pytest
 from hypothesis import example, given, strategies as st
 
+from physics_refs import pipe_end_total
 from strategies import DISSIPATIVE_ONLY, networks
+from simulation.equipment.base_node import total_of
 from simulation.fluid_utils import FluidProperties
 from simulation.graph_parser import GraphParser
 from simulation.schemas import ReactFlowGraph
@@ -71,6 +73,54 @@ def _node(node_id, node_type, **data):
 def _edge(edge_id, source, target, diameter_m):
     return {"id": edge_id, "source": source, "target": target, "sourceHandle": "outlet-0", "targetHandle": "inlet-0",
             "data": {"length_m": 1.0, "diameter_m": diameter_m, "roughness_mm": 0.045}}
+
+
+def _pipe_edge(edge_id, source, target, diameter_m, source_port="outlet-0", target_port="inlet-0"):
+    return {"id": edge_id, "source": source, "target": target, "sourceHandle": source_port, "targetHandle": target_port,
+            "data": {"length_m": 1.0, "diameter_m": diameter_m, "roughness_mm": 0.0}}
+
+
+def _reducer_node(node_id, diameter_in_m, diameter_out_m):
+    return _node(node_id, "reducer", diameter_in_m=diameter_in_m, diameter_out_m=diameter_out_m, length_m=0.37,
+                 standard="CUSTOM")
+
+
+def _reducer_backflow_graph(bara):
+    """Two sources into a mixer; the 1.5 bara one reaches it through a DN135 -> DN50 reducer, the other through a
+    DN135 pipe, and a DN50 pipe leads to the tank. The mixer holds one pressure for pipes of both bores; with
+    static pressures it handed the flow free kinetic energy that the reducer turned into pressure, flow ran
+    backwards through the reducer and the solve failed from about 1.7 bara down on the first source."""
+    return {"nodes": [_node("n0", "pressure_source", source_pressure_bara=bara, temperature_k=283.15),
+                      _node("n1", "pressure_source", source_pressure_bara=1.5, temperature_k=283.15),
+                      _reducer_node("n2", 0.135, 0.05),
+                      _node("n3", "mixer"),
+                      _node("n4", "tank", level_m=1.0, temperature_k=283.15)],
+            "edges": [_pipe_edge("e0", "n0", "n3", 0.135, target_port="inlet-0"),
+                      _pipe_edge("e1", "n1", "n2", 0.135),
+                      _pipe_edge("e2", "n2", "n3", 0.05, target_port="inlet-1"),
+                      _pipe_edge("e3", "n3", "n4", 0.05)],
+            "globalSettings": {"fluid_type": "water"}}
+
+
+def _reducer_bypass_graph():
+    """A splitter feeds a check valve branch and a DN50 pipe -> DN50 x DN135 expander -> DN135 branch, rejoined in
+    a mixer: the two branches meet at one pressure with different velocities."""
+    return {"nodes": [_node("n0", "pressure_source", source_pressure_bara=2.0, temperature_k=283.15),
+                      _node("n1", "pressure_source", source_pressure_bara=2.0, temperature_k=283.15),
+                      _node("n2", "mixer"), _node("n3", "splitter"),
+                      _node("n4", "check_valve", cv=1.0),
+                      _reducer_node("n5", 0.05, 0.135),
+                      _node("n6", "mixer"),
+                      _node("n7", "tank", level_m=1.0, temperature_k=283.15)],
+            "edges": [_pipe_edge("e0", "n0", "n2", 0.135, target_port="inlet-0"),
+                      _pipe_edge("e1", "n1", "n2", 0.135, target_port="inlet-1"),
+                      _pipe_edge("e2", "n2", "n3", 0.135),
+                      _pipe_edge("e3", "n3", "n4", 0.135, source_port="outlet-0"),
+                      _pipe_edge("e4", "n4", "n6", 0.135, target_port="inlet-0"),
+                      _pipe_edge("e5", "n3", "n5", 0.05, source_port="outlet-1"),
+                      _pipe_edge("e6", "n5", "n6", 0.135, target_port="inlet-1"),
+                      _pipe_edge("e7", "n6", "n7", 0.135)],
+            "globalSettings": {"fluid_type": "water"}}
 
 
 def _heavy_crude_viscous_drop_graph():
@@ -254,6 +304,10 @@ def test_well_posed_network_reaches_a_finite_steady_state_with_fluid_properties(
                 assert value == pytest.approx(lookup(fluid, port.temperature), rel=1e-9), key
 
 
+@example(_reducer_backflow_graph(2.0))
+@example(_reducer_backflow_graph(1.7))
+@example(_reducer_backflow_graph(1.3))
+@example(_reducer_bypass_graph())
 @example(_density_change_mixer_graph())
 @example(_strong_heater_graph())
 @given(networks())
@@ -290,21 +344,29 @@ def test_mass_is_conserved(graph):
     assert supplied == pytest.approx(received, rel=1e-6, abs=mass_floor)
 
 
+@example(_reducer_backflow_graph(2.0))
+@example(_reducer_backflow_graph(1.7))
+@example(_reducer_backflow_graph(1.3))
+@example(_reducer_bypass_graph())
 @example(_heavy_crude_viscous_drop_graph())
 @example(_stiff_valve_after_pump_graph())
 @given(networks())
 def test_pressure_is_continuous_and_falls_along_the_flow(graph):
-    """A pipe end has its node's port pressure; static pressure falls across every pipe and passive
-    component in the flow direction (all generated networks are driven from one side), by exactly the pipe's own
-    drop at its reported inlet properties, so the reported pressures belong to the reported densities and viscosities."""
+    """A pipe end sits at its node's total pressure less its own velocity head (the node holds one total pressure
+    for all its pipes; across a splitter or mixer the static pressures differ by the pipe velocity heads). Static
+    pressure falls across every pipe, and total pressure across every passive component, in the flow direction
+    (all generated networks are driven from one side), the pipe by exactly its own drop at its reported inlet
+    properties, so the reported pressures belong to the reported densities and viscosities."""
     network = solved(graph)
     types = node_types(graph)
     for edge in network.edges:
         pipe = edge["pipe"]
         src = network.nodes[edge["source"]].outlets[int(edge["source_port"].split("-")[-1])]
         tgt = network.nodes[edge["target"]].inlets[int(edge["target_port"].split("-")[-1])]
-        assert pipe.inlets[0].pressure == pytest.approx(src.pressure, abs=PRESSURE_TOL), edge["id"]
-        assert pipe.outlets[0].pressure == pytest.approx(tgt.pressure, abs=PRESSURE_TOL), edge["id"]
+        assert pipe_end_total(pipe, pipe.inlets[0], network.nodes[edge["source"]]) == pytest.approx(
+            total_of(src), abs=PRESSURE_TOL), edge["id"]
+        assert pipe_end_total(pipe, pipe.outlets[0], network.nodes[edge["target"]]) == pytest.approx(
+            total_of(tgt), abs=PRESSURE_TOL), edge["id"]
         if abs(pipe.inlets[0].flow_rate) > FLOW_TOL:
             drop = (pipe.inlets[0].pressure - pipe.outlets[0].pressure) * math.copysign(1.0, pipe.inlets[0].flow_rate)
             assert drop >= -PRESSURE_TOL, edge["id"]
@@ -314,7 +376,11 @@ def test_pressure_is_continuous_and_falls_along_the_flow(graph):
     for node_id, node in network.nodes.items():
         if types[node_id] in STATIC_DROP_EXEMPT or node.inlets[0].flow_rate <= 1e-7:
             continue
-        assert node.inlets[0].pressure >= max(p.pressure for p in node.outlets) - PRESSURE_TOL, node_id
+        assert total_of(node.inlets[0]) >= max(total_of(p) for p in node.outlets) - PRESSURE_TOL, node_id
+    for node_id, node in network.nodes.items():
+        if types[node_id] in ("splitter", "mixer"):
+            totals = [total_of(p) for p in [*node.inlets, *node.outlets]]
+            assert max(totals) - min(totals) <= PRESSURE_TOL, node_id
 
 
 @example(_trickle_mixing_graph())

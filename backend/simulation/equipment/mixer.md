@@ -14,9 +14,11 @@ No engineering standard applies. The mixer is an ideal adiabatic junction: conse
 
 ### 3.1 Pressure
 
-The mixer is one node with one pressure unknown $p$:
+The mixer is one node with one total-pressure unknown $p_0$:
 
-$$P_{\text{inlet},0} = P_{\text{inlet},1} = P_{\text{outlet}} = p$$
+$$P_{0,\text{inlet},0} = P_{0,\text{inlet},1} = P_{0,\text{outlet}} = p_0$$
+
+Each port reports the static pressure $p_0 - \rho v^2/2$ of the pipe on it, so the ports differ where the pipe velocities differ (see [base_node.md](base_node.md#36-total-pressure-at-nodes-static-pressure-at-ports)).
 
 The mixer has no `calculate_delta_p`, so in the edge pressure balance its outlet pressure equals its inlet pressure (see [base_node.md](base_node.md#32-how-a-component-enters-the-equations)).
 

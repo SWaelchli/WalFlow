@@ -115,3 +115,16 @@ def iec_flow_for_reynolds(re_v: float, nu: float, cv: float, fl: float, fd: floa
     d_mm = d_m * 1000.0
     shape = ((fl * cv) ** 2 / (n2 * d_mm ** 4) + 1.0) ** 0.25
     return re_v * nu * math.sqrt(cv * fl) / (n4 * fd * shape) / 3600.0
+
+
+def velocity_head(q: float, d: float, rho: float) -> float:
+    """Dynamic pressure rho v² / 2 (Pa) of flow q in a bore d."""
+    return rho * (q / (math.pi * d ** 2 / 4.0)) ** 2 / 2.0
+
+
+def pipe_end_total(pipe, pipe_port, node) -> float:
+    """Total pressure the solve holds at the node end of a pipe: the pipe end's static pressure plus its dynamic
+    pressure, except on a tank or pressure source, whose pipe ends report the reservoir pressure itself. As in the pipe's drop, the dynamic pressure is taken at the pipe's inlet properties."""
+    if node.is_pressure_boundary:
+        return pipe_port.pressure
+    return pipe_port.pressure + velocity_head(pipe.inlets[0].flow_rate, pipe.diameter, pipe.inlets[0].density)

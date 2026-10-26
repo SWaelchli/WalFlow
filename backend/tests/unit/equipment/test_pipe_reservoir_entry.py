@@ -138,6 +138,31 @@ def test_entry_term_only_where_flow_leaves_a_reservoir(q, at_inlet, at_outlet, a
     assert extra == pytest.approx(expected, rel=1e-9, abs=1e-9)
 
 
+@pytest.mark.parametrize("q, at_inlet, at_outlet", [
+    pytest.param(0.005, False, False, id="node_to_node_forward"),
+    pytest.param(0.005, True, False, id="reservoir_to_node_forward"),
+    pytest.param(0.005, False, True, id="node_to_reservoir_forward"),
+    pytest.param(0.005, True, True, id="reservoir_to_reservoir_forward"),
+    pytest.param(-0.005, False, False, id="node_to_node_reverse"),
+    pytest.param(-0.005, True, False, id="node_to_reservoir_reverse"),
+    pytest.param(-0.005, False, True, id="reservoir_to_node_reverse"),
+    pytest.param(-0.005, True, True, id="reservoir_to_reservoir_reverse"),
+])
+def test_stagnation_drop_adds_entry_and_exit_loss_to_friction(q, at_inlet, at_outlet):
+    """The solve works on total pressure: between two nodes the drop is friction alone (the velocity head is
+    carried by the node total); leaving a reservoir it adds the entrance loss K rho v² / 2 (K = 0.5), entering one
+    the exit loss rho v² / 2. Its derivative is the central difference of the drop."""
+    pipe = Pipe("p1", 2.0, D50, ROUGH)
+    pipe.inlet_at_reservoir, pipe.outlet_at_reservoir = at_inlet, at_outlet
+    leaving_reservoir, entering_reservoir = (at_inlet, at_outlet) if q > 0 else (at_outlet, at_inlet)
+    head = RHO * (q / (math.pi * D50 ** 2 / 4.0)) ** 2 / 2.0
+    expected = math.copysign(pipe_dp(q, 2.0, D50, ROUGH, RHO, MU) + head * (0.5 * leaving_reservoir + 1.0 * entering_reservoir), q)
+    assert pipe.stagnation_delta_p(q, RHO, MU) == pytest.approx(expected, rel=TOL)
+    dq = 1e-7
+    numeric = (pipe.stagnation_delta_p(q + dq, RHO, MU) - pipe.stagnation_delta_p(q - dq, RHO, MU)) / (2 * dq)
+    assert pipe.stagnation_dp_derivative(q, RHO, MU) == pytest.approx(numeric, rel=1e-3)
+
+
 def test_only_the_entrance_loss_heats_the_fluid():
     """Acceleration from rest is reversible; only K rho v² / 2 (and friction) becomes heat."""
     q = 0.01

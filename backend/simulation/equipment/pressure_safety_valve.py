@@ -1,5 +1,6 @@
 from simulation.equipment.relief_device import ReliefDevice, P_SCALE
 from simulation.equipment.check_valve import open_seat_dp
+from simulation.equipment.base_node import total_of
 
 FULL_LIFT_PCT = 99.9          # lift reported as full ("open") from here; below it the valve is modulating
 CYCLING_BAND = 0.01           # cycling stand-in: lift band as a fraction of set, so the average holds the driver at set
@@ -112,13 +113,13 @@ class PressureSafetyValve(ReliefDevice):
             return p_in_pa
         node, port_type, idx = self.pilot_source
         ports = node.inlets if port_type == "inlet" else node.outlets
-        return ports[idx].pressure if idx < len(ports) else p_in_pa
+        return total_of(ports[idx]) if idx < len(ports) else p_in_pa
 
     def inlet_opening_pressure_pa(self):
         if self.has_remote_pilot:
             return None
         if self.valve_type == "conventional":
-            return self.outlets[0].pressure + self.threshold_pa
+            return total_of(self.outlets[0]) + self.threshold_pa
         return self.set_pressure_pa
 
     # --- held state ------------------------------------------------------------------------------

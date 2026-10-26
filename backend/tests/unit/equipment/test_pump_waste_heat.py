@@ -5,6 +5,7 @@ Reference: dT = dp / (rho * cp) * (1 - eta) / eta, with rho and cp of the fluid 
 import pytest
 
 from physics_refs import water_head
+from simulation.equipment.base_node import total_of
 from simulation.equipment.tank import Tank
 from simulation.equipment.pipe import Pipe
 from simulation.equipment.centrifugal_pump import CentrifugalPump
@@ -37,7 +38,7 @@ def _solve_pump(pump):
 
 def _expected_rise(pump, efficiency):
     t_in = pump.inlets[0].temperature
-    dp = pump.outlets[0].pressure - pump.inlets[0].pressure
+    dp = total_of(pump.outlets[0]) - total_of(pump.inlets[0])   # the pump works on total pressure
     rho = FluidProperties.get_density(FLUID, t_in)
     cp = FluidProperties.get_specific_heat(FLUID, t_in)
     return dp / (rho * cp) * (1.0 - efficiency) / efficiency
@@ -68,7 +69,7 @@ def test_heat_is_shaft_power_minus_hydraulic_power_at_low_efficiency(kind, effic
     else:
         pump = _solve_pump(VolumetricPump("PD-Pump", flow_rated=0.001, motor_power=1e7, efficiency=efficiency))
     q = pump.inlets[0].flow_rate
-    dp = pump.outlets[0].pressure - pump.inlets[0].pressure
+    dp = total_of(pump.outlets[0]) - total_of(pump.inlets[0])   # shaft power is on total pressure
     t_in = pump.inlets[0].temperature
     m_cp = FluidProperties.get_density(FLUID, t_in) * q * FluidProperties.get_specific_heat(FLUID, t_in)
     assert pump.shaft_power() == pytest.approx(q * dp / efficiency, rel=1e-9)

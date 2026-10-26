@@ -2,7 +2,7 @@
 
 ## 1. Overview & Purpose
 
-A centrifugal pump adds head to the flow along a falling curve through its rated duty point. Where it operates on the curve follows from the system curve of the connected network. The pump is rated in **head**, so its pressure rise follows the fluid density: the same pump gives less pressure in oil than in water.
+A centrifugal pump adds head to the flow along a falling curve through its rated duty point. Where it operates on the curve follows from the system curve of the connected network. The pump is rated in **head**, so its pressure rise follows the fluid density: the same pump gives less pressure in oil than in water. The head is a total head (Hydraulic Institute): it raises the total pressure, and the reported static rise differs from it by the velocity heads of the suction and discharge pipes when they differ in size (see [base_node.md](base_node.md#36-total-pressure-at-nodes-static-pressure-at-ports)).
 
 A stopped pump is a locked-rotor resistance in both directions. At the suction the available NPSH is computed and compared with the required NPSH plus a margin.
 
@@ -74,9 +74,9 @@ $\eta$ is the hydraulic pump efficiency (motor losses not included). A running p
 
 ### 3.5 NPSH (`update_npsh`)
 
-$$\text{NPSH}_a = \frac{P_{\text{in}} - P_v(T_{\text{in}})}{\rho\, g}$$
+$$\text{NPSH}_a = \frac{P_{0,\text{in}} - P_v(T_{\text{in}})}{\rho\, g}, \qquad P_{0,\text{in}} = P_{\text{in}} + \frac{\rho\, v_{\text{in}}^2}{2}$$
 
-$P_{\text{in}}$ is the static inlet pressure, $P_v$ the vapour pressure of the system fluid. NPSHa is always reported. `cavitation_warning` is set when the pump is running and
+$P_{0,\text{in}}$ is the total suction pressure (Hydraulic Institute): the reported static inlet pressure plus the velocity head of the suction pipe (`total_of`), $P_v$ the vapour pressure of the system fluid. NPSHa is always reported. `cavitation_warning` is set when the pump is running and
 
 $$\text{NPSH}_a < \text{NPSH}_r + \text{margin}$$
 
@@ -128,7 +128,6 @@ The parser rejects a missing or non-positive rated head (older files with only `
   - viscosity correction of head and efficiency (ANSI/HI 9.6.7); the curve is the water curve for every fluid, scaled only by density;
   - efficiency varying along the curve; $\eta$ is one value;
   - variable speed in normal operation (only the relief ramp changes speed);
-  - the velocity head at the suction in NPSHa (conservative by $v^2/2g$);
   - cavitation effects on the curve; the warning does not change the hydraulics.
 
 ## 7. Verification & Benchmarks

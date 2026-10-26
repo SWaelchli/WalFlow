@@ -31,6 +31,12 @@ All quantities in SI units. $A_1, A_2$ are the inlet and outlet bore areas, $A_s
 
 $$\Delta P = P_1 - P_2 = \Delta P_{\text{loss}} + \Delta P_{\text{Bernoulli}}$$
 
+**In the network** the nodes hold total pressures ([base_node.md](base_node.md#36-total-pressure-at-nodes-static-pressure-at-ports)), so the solve takes the total-pressure drop, the losses alone (`calculate_delta_p`):
+
+$$P_{0,1} - P_{0,2} = \Delta P_{\text{loss}}$$
+
+The Bernoulli change appears in the reported static pressures: each port reports its total minus the velocity head of the pipe on it. With pipes of the reducer's bores the reported $P_1 - P_2$ equals the total above; with other pipe sizes it follows the pipes. A static model at the nodes let a junction feed a small pipe kinetic energy for free, which the reducer then turned into static pressure; around a loop that left no steady state.
+
 ### 3.2 Bernoulli term
 
 $$\Delta P_{\text{Bernoulli}} = \frac{\rho}{2}\,(v_2^2 - v_1^2) = \frac{\rho\, Q^2}{2}\left(\frac{1}{A_2^2} - \frac{1}{A_1^2}\right)$$
@@ -71,11 +77,11 @@ Water at 20 °C, 3" × 2" STD ($D$ = 77.9 / 52.5 mm, $H$ = 89 mm, $\theta$ = 18.
 | 300 L/min | 2.31 m/s | Reducer | 2.2 mbar | +21.2 mbar | +23.4 mbar |
 | 300 L/min | 2.31 m/s | Expander | 3.6 mbar | −21.2 mbar | −17.6 mbar |
 
-The Bernoulli term dominates: an expander shows a static pressure rise, a reducer a drop about ten times its loss.
+The Bernoulli term dominates: an expander shows a static pressure rise, a reducer a drop about ten times its loss. These are the reported static changes between pipes of the reducer's bores; the solve's total-pressure drop is the loss column.
 
 ### 3.6 Derivative
 
-The class has no analytical derivative; the solver differentiates the outlet pressure numerically (see [base_node.md](base_node.md#33-jacobian)).
+The class has no analytical derivative; the solver differentiates the outlet pressure (the losses) numerically (see [base_node.md](base_node.md#33-jacobian)).
 
 ## 4. Thermal & Energy Balance
 
@@ -106,7 +112,8 @@ The parser rejects a bore or length $\le 0$ and a negative roughness. Missing va
 - **Solver flags:** all `False` (`is_pressure_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation`).
 - **Inactive:** `active` has no effect.
 - **Reverse flow:** supported. The form loss is odd in $Q$ and switches between contraction and enlargement with the flow direction; the Bernoulli term keeps its sign. Reverse flow through a 3" × 2" reducer is the mirror of forward flow through a 2" × 3" expander: $\Delta P_{\text{reverse}} = -\Delta P_{\text{forward}}$.
-- **Next to a reservoir:** an expander right at a tank or pressure source only has a steady state because the pipe from the reservoir takes the entry velocity head, see [pipe.md](pipe.md#34-entry-from-a-reservoir).
+- **Next to a reservoir:** the pipe from a tank or pressure source takes the entry, the pipe into one the exit loss, see [pipe.md](pipe.md#35-total-pressure-drop).
+- **Mismatched pipes:** the reducer's bores set its losses; the reported static pressures follow the velocities of the pipes on its ports.
 - **Operating cases:** all fields can be overridden per case.
 - **Not modelled:** eccentric versus concentric shape, flow separation in wide diffusers beyond the Crane coefficients, and cavitation at the small bore.
 
@@ -115,8 +122,8 @@ The parser rejects a bore or length $\le 0$ and a negative roughness. Missing va
 | Test | Benchmark |
 | :--- | :--- |
 | `backend/tests/unit/equipment/test_reducer.py::test_reducer_crane_k_factors` | 3" × 2" ($\beta$ = 0.6735): at 18.2° $K_c = 0.8 \cdot 0.158158 \cdot 0.54638$, $K_e = 2.6 \cdot 0.158158 \cdot 0.54638^2$; at 90° $K_c = 0.5\sqrt{0.707107} \cdot 0.54638$, $K_e = 0.54638^2$; all within 0.01 %, referenced to the small bore |
-| `test_reducer.py::test_reducer_contraction_losses_and_bernoulli` | 3" × 2" reducer, 100 L/min water: loss > 0, Bernoulli > 0, total = loss + Bernoulli within $10^{-5}$ |
-| `test_reducer.py::test_reducer_expander_diffuser_recovery` | 2" × 3" expander: Bernoulli < 0, loss > 0 |
+| `test_reducer.py::test_reducer_losses_and_bernoulli` | Reducer and expander: loss > 0, Bernoulli with the sign of the area change, static total = loss + Bernoulli, `calculate_delta_p` = loss |
+| `test_reducer.py::test_reducer_network_solves` | Source → pipe → reducer or expander → pipe → tank: the solve's drop equals the loss, the total pressure falls by the loss only, and the reported static change between pipes of the two bores equals loss + Bernoulli |
 | `test_reducer.py::test_reducer_reverse_flow_symmetry` | Reverse $\Delta P$ = −forward $\Delta P$ within 0.01 % for the tested case |
 | `test_reducer.py::test_zero_reducer_roughness_is_kept_as_smooth`, `test_reducer_roughness_is_read_in_mm` | 0.2 mm → 0.0002 m; missing → 0.045 mm; 0 stays 0 |
 | `test_reducer.py::test_reducer_friction_equals_pipe_friction` | Equal bores, 50 mm × 0.5 m, oil ($\rho$ = 870, $\mu$ = 0.03 Pa·s), $Q = 10^{-6}$ to $10^{-2}$ m³/s (laminar to turbulent), roughness 0 and 0.045 mm: $\Delta P$ equals a pipe of the same size within $10^{-9}$ |

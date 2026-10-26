@@ -1,5 +1,7 @@
 import copy
 from collections import defaultdict, deque
+import heapq
+import itertools
 import numpy as np
 import math
 import threading
@@ -284,6 +286,7 @@ class NetworkSolver:
     # every further swing. Converged only when those flows match the hydraulic solution.
     PROP_RELAX_MIN = 1.0 / 64
     PROP_FLOW_TOL = 1e-4            # mismatch accepted, relative to the largest edge flow
+    STILL_TOTAL_TOL = 1.0           # Pa: ports joined at rest without a pressure difference share a total
 
     @staticmethod
     def _logit(mix: float) -> float:
@@ -1177,7 +1180,7 @@ class NetworkSolver:
 
                 def row_residual(p_src, p_tgt, q, sense=None):
                     # Same function as the objective's row for this edge
-                    dp_pipe_ = pipe.calculate_delta_p(q, pipe_density, pipe_viscosity)
+                    dp_pipe_ = pipe.stagnation_delta_p(q, pipe_density, pipe_viscosity)
                     dp_tcv_ = 0.0
                     if tcv_port is not None:
                         port = tgt_node_obj.inlets[tcv_port]
@@ -1275,7 +1278,7 @@ class NetworkSolver:
                 pipe_inlet = pipe.inlets[0]
                 pipe_density = pipe_inlet.density
                 pipe_viscosity = pipe_inlet.viscosity
-                dp_deriv_pipe = max(1e-3, pipe.calculate_dp_derivative(q_edges[j], pipe_density, pipe_viscosity))
+                dp_deriv_pipe = max(1e-3, pipe.stagnation_dp_derivative(q_edges[j], pipe_density, pipe_viscosity))
                 
                 # Term 3: d(dp_tcv)/dq_j
                 dp_deriv_tcv = 0.0
@@ -1464,7 +1467,7 @@ class NetworkSolver:
                     p_src_out = src_node.set_pressure   # closed regulator holds its setpoint downstream
                 elif self._use_mcp_for_node(src_node):
                     pipe = edge['pipe']
-                    dp_pipe = pipe.calculate_delta_p(q_edges[j], pipe.inlets[0].density, pipe.inlets[0].viscosity)
+                    dp_pipe = pipe.stagnation_delta_p(q_edges[j], pipe.inlets[0].density, pipe.inlets[0].viscosity)
                     p_out_est = p_in_all[tgt_idx] + dp_pipe + self._tcv_entry_dp(edge, self.network.nodes[tgt_id], q_edges[j])
 
                     inlet = src_node.inlets[0] if src_node.inlets else None
@@ -1484,10 +1487,10 @@ class NetworkSolver:
                     tgt_node = self.network.nodes[tgt_id]
                     port_idx = self._parse_port_idx(edge.get('target_port', 'inlet-0'))
                     dp_tcv = tgt_node.calculate_path_dp(q_edges[j], tgt_node.inlets[port_idx].density, port_idx, tgt_node.inlets[port_idx].viscosity)
-                    dp_pipe = edge['pipe'].calculate_delta_p(q_edges[j], edge['pipe'].inlets[0].density, edge['pipe'].inlets[0].viscosity)
+                    dp_pipe = edge['pipe'].stagnation_delta_p(q_edges[j], edge['pipe'].inlets[0].density, edge['pipe'].inlets[0].viscosity)
                     residuals.append(((p_src_out - p_in_all[tgt_idx]) - (dp_pipe + dp_tcv)) / p_scale)
                 else:
-                    dp_pipe = edge['pipe'].calculate_delta_p(q_edges[j], edge['pipe'].inlets[0].density, edge['pipe'].inlets[0].viscosity)
+                    dp_pipe = edge['pipe'].stagnation_delta_p(q_edges[j], edge['pipe'].inlets[0].density, edge['pipe'].inlets[0].viscosity)
                     residuals.append(((p_src_out - p_in_all[tgt_idx]) - dp_pipe) / p_scale)
             return np.array(residuals)
 
@@ -1626,7 +1629,7 @@ class NetworkSolver:
                     # The pipe carries the edge flow, not the component's inlet volume flow (as in the solve)
                     pos = self.edge_pos.get(id(edge))
                     q_edge = q_flow / self._current_weights()[1][pos] if pos is not None else q_flow
-                    p_out_est = (p_tgt + pipe.calculate_delta_p(q_edge, pipe.inlets[0].density, pipe.inlets[0].viscosity)
+                    p_out_est = (p_tgt + pipe.stagnation_delta_p(q_edge, pipe.inlets[0].density, pipe.inlets[0].viscosity)
                                  + self._tcv_entry_dp(edge, tgt_node, q_edge))
                 return p_in - node.calculate_delta_p(q_flow, density, viscosity, p_in_pa=p_in, p_out_pa=p_out_est, update_state=update_state)
 
@@ -1657,10 +1660,11 @@ class NetworkSolver:
             all_idx = self.all_node_id_to_idx[active_node_id]
             p_in_all[all_idx] = p_in_internal[i]
             
-        # 4. Clear all flows to 0.0 initially
+        # 4. Clear all flows to 0.0 initially. Until _report_static_pressures the ports hold total pressures
         for node in self.all_nodes_list:
-            for port in node.inlets: port.flow_rate = 0.0
-            for port in node.outlets: port.flow_rate = 0.0
+            for port in node.inlets + node.outlets:
+                port.flow_rate = 0.0
+                port.total_pressure = None
 
         # 5. Populate active flows (the solved edge flows; components no longer overwrite them in step 6)
         for j, edge in enumerate(self.edges_list):
@@ -1713,6 +1717,8 @@ class NetworkSolver:
 
         # 8. Populate all edges' pipe flows and pressures
         active_edge_pos = self.edge_pos
+        heads = defaultdict(list)   # id(port) -> velocity heads of the flowing pipes on it
+        still = []   # zero-flow pipes: (src node, src port, tgt node, tgt port, ((pipe end, port it copies), ...))
         for edge in self.all_edges_list:
             pipe = edge['pipe']
             src_node, src_port, tgt_node, tgt_port = self.edge_ports[id(edge)]
@@ -1730,20 +1736,99 @@ class NetworkSolver:
                 pipe.outlets[0].pressure = pipe_p
                 pipe.inlets[0].flow_rate = 0.0
                 pipe.outlets[0].flow_rate = 0.0
+                still.append((src_node, src_port, tgt_node, tgt_port,
+                              ((pipe.inlets[0], src_port), (pipe.outlets[0], src_port))))
             elif tgt_is_closed_relief:
                 pipe_p = tgt_port.pressure
                 pipe.inlets[0].pressure = pipe_p
                 pipe.outlets[0].pressure = pipe_p
                 pipe.inlets[0].flow_rate = 0.0
                 pipe.outlets[0].flow_rate = 0.0
+                still.append((src_node, src_port, tgt_node, tgt_port,
+                              ((pipe.inlets[0], tgt_port), (pipe.outlets[0], tgt_port))))
             else:
-                pipe.inlets[0].pressure = src_port.pressure
                 pipe.inlets[0].flow_rate = q
-                pipe.outlets[0].pressure = tgt_port.pressure
                 pipe.outlets[0].flow_rate = q
+                pipe.inlets[0].pressure = src_port.pressure
+                pipe.outlets[0].pressure = tgt_port.pressure
+                if abs(q) > Q_DEAD_LEG:   # solver noise on a dead leg carries no velocity head
+                    # A pipe end on a node is at the node's total pressure minus the velocity head; an end on a
+                    # reservoir reports its pressure (the pipe's drop holds the entry, pipe.md)
+                    head = pipe.velocity_head(q, pipe.inlets[0].density)
+                    if not getattr(src_node, 'is_pressure_boundary', False):
+                        pipe.inlets[0].pressure -= head
+                        heads[id(src_port)].append(head)
+                    if not getattr(tgt_node, 'is_pressure_boundary', False):
+                        pipe.outlets[0].pressure -= head
+                        heads[id(tgt_port)].append(head)
+                else:
+                    still.append((src_node, src_port, tgt_node, tgt_port,
+                                  ((pipe.inlets[0], src_port), (pipe.outlets[0], tgt_port))))
+
+        self._report_static_pressures(heads, still)
 
         if not self.properties_frozen and property_flows is not None:
             self._propagate_properties(property_flows(q_edges))
+
+    def _report_static_pressures(self, heads, still):
+        """The solve's node pressures are total pressures. A port with one flowing pipe (heads: id(port) -> the
+        velocity heads of the flowing pipes on it, from step 8) reports the static pressure at that pipe's end; a
+        port with several has no single velocity and reports the total. The total stays in total_pressure (relief
+        devices, NPSHa).
+
+        A port without flow on a side with flowing ports of the same total reports the lowest static pressure among
+        them, as a gauge on a dead tee branch reads the run's static pressure. The zero-flow section behind it, or
+        behind a flowing port (still, from step 8), drops with it: its pipes and the nodes without flow, up to a
+        reservoir and only between ports of the same total (within STILL_TOTAL_TOL), so not across a device holding
+        a pressure difference (a closed check or relief valve, a stopped positive-displacement pump); a centrifugal
+        pump passes it with its shutoff head. A section reached from several ports takes the largest drop, the
+        lowest static pressure."""
+        nodes = self.network.nodes.values()
+        for node in nodes:
+            for port in node.inlets + node.outlets:
+                port.total_pressure = port.pressure
+                port_heads = heads.get(id(port))
+                if port_heads is not None and len(port_heads) == 1:
+                    port.pressure -= port_heads[0]
+
+        reach = defaultdict(list)   # id(port) -> (node, port) at the far end of each zero-flow pipe on it
+        for src_node, src_port, tgt_node, tgt_port, _ in still:
+            reach[id(src_port)].append((tgt_node, tgt_port))
+            reach[id(tgt_port)].append((src_node, src_port))
+        flowing = {id(node) for node in nodes if any(id(p) in heads for p in node.inlets + node.outlets)}
+
+        def same_total(a, b):
+            return abs(a.total_pressure - b.total_pressure) <= self.STILL_TOTAL_TOL
+
+        todo = []   # heap of (-drop, order, port): the largest drop reaches a port first
+        order = itertools.count()
+        for node in nodes:
+            for side in (node.inlets, node.outlets):
+                run = [p for p in side if len(heads.get(id(p), ())) == 1]
+                for p in side:
+                    if id(p) not in heads:
+                        drop = max((heads[id(f)][0] for f in run if same_total(f, p)), default=None)
+                    else:
+                        drop = heads[id(p)][0] if id(p) in reach and len(heads[id(p)]) == 1 else None
+                    if drop is not None:
+                        heapq.heappush(todo, (-drop, next(order), p))
+        drops = {}   # id(port) -> the drop it took
+        while todo:
+            neg_drop, _, port = heapq.heappop(todo)
+            if id(port) in drops:
+                continue
+            drops[id(port)] = -neg_drop
+            if id(port) not in heads:   # a flowing port already reports its static pressure
+                port.pressure += neg_drop
+            for node, far in reach.get(id(port), ()):
+                if id(far) in drops or id(node) in flowing or getattr(node, 'is_pressure_boundary', False):
+                    continue
+                for p in node.inlets + node.outlets:
+                    if same_total(p, port) or isinstance(node, CentrifugalPump):
+                        heapq.heappush(todo, (neg_drop, next(order), p))
+        for *_, ends in still:
+            for end, port in ends:
+                end.pressure -= drops.get(id(port), 0.0)
 
     def _side_ports(self, nid, side):
         node = self.network.nodes[nid]

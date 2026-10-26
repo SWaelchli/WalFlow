@@ -15,6 +15,7 @@ import pytest
 
 from physics_refs import solve, water_head
 from routers.simulation import extract_telemetry
+from simulation.equipment.base_node import total_of
 from simulation.equipment.pressure_source import PressureSource
 from simulation.equipment.centrifugal_pump import CentrifugalPump
 from simulation.equipment.tank import Tank
@@ -156,7 +157,7 @@ def test_oversized_pop_valve_cycles_near_set_pressure():
     assert 3.0 <= p_in_g <= 3.3
     assert psv.inlets[0].flow_rate > 1e-4
     # Conventional: reseat and opening are inlet pressures, shifted by the outlet backpressure
-    p_out_g = (psv.outlets[0].pressure - P_ATM) / 1e5
+    p_out_g = (total_of(psv.outlets[0]) - P_ATM) / 1e5
     assert math.isclose(psv.reseat_pressure_barg, 3.0 * 0.93 + p_out_g)
     assert math.isclose(psv.reseat_pressure_barg, psv.cycle_low_barg, abs_tol=0.005)
     assert math.isclose(psv.opening_pressure_barg, psv.cycle_high_barg, abs_tol=0.005)

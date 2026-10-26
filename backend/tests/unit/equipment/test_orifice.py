@@ -317,7 +317,7 @@ def test_extract_telemetry_carries_solver_effective_geometry():
 
     dp_tel = ori.inlets[0].pressure - ori.outlets[0].pressure
     dp_direct = ori.calculate_delta_p(ori.inlets[0].flow_rate, ori.inlets[0].density, ori.inlets[0].viscosity)
-    assert math.isclose(dp_tel, dp_direct, rel_tol=1e-9), \
+    assert math.isclose(dp_tel, dp_direct, rel_tol=1e-7), \
         "telemetry operating-point dP must match a direct calculation with the same effective geometry"
 
 

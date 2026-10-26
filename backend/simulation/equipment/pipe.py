@@ -83,6 +83,32 @@ class Pipe(HydraulicNode):
             raise ValueError("Pipe diameter must be strictly positive.")
         return self._friction_dp(flow_rate, density, viscosity) + self._entry_dp(flow_rate, density)
 
+    def velocity_head(self, flow_rate: float, density: float) -> float:
+        """rho v² / 2 in the pipe (Pa); the static pressure at an end on a node is the node's total minus this."""
+        velocity = flow_rate / self.area
+        return density * velocity * velocity / 2.0
+
+    def stagnation_delta_p(self, flow_rate: float, density: float, viscosity: float) -> float:
+        """Total-pressure drop between the nodes at the two ends, the edge row of the network solve. Equal to the
+        static drop plus the velocity head at each end on a node, minus it at the far end; an end on a reservoir
+        has none (its pressure is the reservoir's stagnation pressure, or the static jet pressure where the flow
+        enters it). Between two nodes this is the friction alone; leaving a reservoir it adds K rho v²/2, entering
+        one the exit loss rho v²/2."""
+        dp = self.calculate_delta_p(flow_rate, density, viscosity)
+        ends = self._head_ends()
+        return dp + ends * self.velocity_head(flow_rate, density) if ends else dp
+
+    def stagnation_dp_derivative(self, flow_rate: float, density: float, viscosity: float) -> float:
+        """d(stagnation_delta_p)/dQ."""
+        slope = self.calculate_dp_derivative(flow_rate, density, viscosity)
+        ends = self._head_ends()
+        return slope + ends * density * flow_rate / self.area ** 2 if ends else slope
+
+    def _head_ends(self) -> int:
+        """+1 inlet end only on a node, -1 outlet end only, 0 when both or neither are (the heads cancel): the sign
+        of the velocity head in stagnation_delta_p, shared with its derivative."""
+        return (not self.inlet_at_reservoir) - (not self.outlet_at_reservoir)
+
     def calculate(self):
         inlet = self.inlets[0]
         outlet = self.outlets[0]

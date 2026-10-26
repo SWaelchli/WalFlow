@@ -1,4 +1,4 @@
-from simulation.equipment.base_node import HydraulicNode
+from simulation.equipment.base_node import HydraulicNode, total_of
 from simulation.fluid_utils import FluidProperties
 
 P_SCALE = 100000.0
@@ -57,9 +57,10 @@ class ReliefDevice(HydraulicNode):
 
     # --- opening margin --------------------------------------------------------------------------
     def port_pressures(self, p_in_pa=None, p_out_pa=None, p_sense_pa=None) -> tuple:
-        """(p_in, p_out, p_sense) with the solved port pressures filled in where not given."""
-        p_in = p_in_pa if p_in_pa is not None else self.inlets[0].pressure
-        p_out = p_out_pa if p_out_pa is not None else self.outlets[0].pressure
+        """(p_in, p_out, p_sense) with the solved port pressures filled in where not given: total pressures, as in
+        the solve's row, so the held state and the solved flow agree once the device passes flow."""
+        p_in = p_in_pa if p_in_pa is not None else total_of(self.inlets[0])
+        p_out = p_out_pa if p_out_pa is not None else total_of(self.outlets[0])
         p_sense = p_sense_pa if p_sense_pa is not None else self.sensed_port_pressure(p_in)
         return p_in, p_out, p_sense
 
@@ -191,7 +192,7 @@ class ReliefDevice(HydraulicNode):
             outlet.flow_rate = 0.0
             dp = 0.0
         else:
-            dp = max(0.0, inlet.pressure - outlet.pressure)
+            dp = max(0.0, total_of(inlet) - total_of(outlet))   # the throttled total pressure turns into heat
         outlet.flow_rate = inlet.flow_rate
         outlet.density = inlet.density
         outlet.viscosity = inlet.viscosity

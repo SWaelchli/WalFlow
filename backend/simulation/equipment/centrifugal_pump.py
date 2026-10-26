@@ -1,4 +1,4 @@
-from simulation.equipment.base_node import HydraulicNode, pump_heat_factor, pump_shaft_power
+from simulation.equipment.base_node import HydraulicNode, pump_heat_factor, pump_shaft_power, total_of
 from simulation.fluid_utils import FluidProperties
 
 GRAVITY = 9.81  # m/s², same value as Tank
@@ -96,7 +96,7 @@ class CentrifugalPump(HydraulicNode):
         """Shaft power (W) at the current operating point (`pump_shaft_power`); 0 when stopped."""
         if not self.inlets or not self.outlets:
             return 0.0
-        return pump_shaft_power(self.inlets[0].flow_rate, self.outlets[0].pressure - self.inlets[0].pressure,
+        return pump_shaft_power(self.inlets[0].flow_rate, total_of(self.outlets[0]) - total_of(self.inlets[0]),
                                 self.efficiency, getattr(self, 'active', True))
 
     def calculate(self):

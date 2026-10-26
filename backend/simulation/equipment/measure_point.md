@@ -18,7 +18,7 @@ No engineering standard applies. The tap is an ideal point in the line with no r
 
 $$P_{\text{out}} = P_{\text{in}}, \qquad Q_{\text{out}} = Q_{\text{in}}$$
 
-The class has no `calculate_delta_p`, so the solver treats it like a [splitter](splitter.md) or [mixer](mixer.md): a node with one pressure unknown and a mass balance row (see [base_node.md](base_node.md#32-how-a-component-enters-the-equations)).
+The class has no `calculate_delta_p`, so the solver treats it like a [splitter](splitter.md) or [mixer](mixer.md): a node with one total-pressure unknown and a mass balance row; each port reports the static pressure of the pipe on it (see [base_node.md](base_node.md#32-how-a-component-enters-the-equations)).
 
 ### 3.2 Equivalence with the unsplit pipe
 
