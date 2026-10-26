@@ -29,19 +29,19 @@ There is one equation per unknown:
 
 **Mass balance, one row per internal node:**
 
-$$r_i = 5 \cdot \frac{\sum q_{\text{in}} - \sum q_{\text{out}}}{q_{\text{scale}}} + 10^{-9}\, \frac{p_i}{p_{\text{scale}}} = 0$$
+$$r_i = 5 \cdot \frac{\sum w_j q_{\text{in}} - \sum w_j q_{\text{out}}}{q_{\text{scale}}} + 10^{-9}\, \frac{p_i}{p_{\text{scale}}} = 0, \qquad w_j = \frac{\rho_j}{\bar\rho}$$
 
-The factor 5 balances the row against the pressure rows. The $10^{-9}$ term keeps the matrix from becoming exactly singular for a floating node. A flow source replaces its mass balance with $p_i = P_{\text{atm}}$, see [flow_source.md](flow_source.md).
+The node conserves mass flow $\rho_j q_j$. $\rho_j$ is the density of edge $j$ at the end where it enters the next node, in the flow direction of the last property propagation (`_edge_weights`), the density that node mixes with, held fixed during each hydraulic solve like the densities of the edge rows; $\bar\rho$ is the mean edge density, so the row keeps the size and tolerance of a volume flow row. Before the first propagation all ports have the same default density and $w_j = 1$. Where a node changes or mixes temperatures the volume flow changes: water heated from 10 to 80 °C leaves with about 2.8 % more volume flow than it enters. The factor 5 balances the row against the pressure rows. The $10^{-9}$ term keeps the matrix from becoming exactly singular for a floating node. A flow source replaces its mass balance with $p_i = P_{\text{atm}}$, see [flow_source.md](flow_source.md).
 
 **Pressure balance, one row per edge** from node $s$ to node $t$:
 
-$$r_j = \frac{P_{\text{out},s}(p_s, q_j) - p_t - \Delta P_{\text{pipe}}(q_j)}{p_{\text{scale}}} = 0$$
+$$r_j = \frac{P_{\text{out},s}(p_s, f_j q_j) - p_t - \Delta P_{\text{pipe}}(q_j)}{p_{\text{scale}}} = 0$$
 
 Scales: $p_{\text{scale}} = 10^5$ Pa, $q_{\text{scale}} = 10^{-3}$ m³/s.
 
 ### 3.2 How a component enters the equations
 
-The component sets the outlet pressure $P_{\text{out},s}$ from its inlet pressure and the flow of the edge that leaves it:
+The component sets the outlet pressure $P_{\text{out},s}$ from its inlet pressure and its **inlet volume flow** $q = f_j\, q_j$: the mass flow of the edge $j$ that leaves it, divided by the density on its inlet port ($f_j = \rho_j / \rho_{\text{in}}$, `_edge_weights`). Inlet and outlet volume flows differ where the component changes the density (section 3.1). The inlet is the one place every component curve is evaluated, in the solve, its Jacobian, the report, the property pass (heat, `calculate()`) and the controllers: a pump displaces suction volume, and the valve and orifice equations take the flow at upstream conditions. A component must therefore read its flow from the inlet port, never from the outlet port. Flow and density always come from the same port, so $\rho\, q$ is the edge mass flow. In reverse flow the fluid enters at the outlet port; components that use the entering properties (orifice, calibrated restriction) copy them onto the inlet port in `calculate()`, so $f_j \approx 1$ and the pair stays consistent.
 
 | Component kind | Outlet pressure |
 | :--- | :--- |
@@ -115,7 +115,7 @@ $$Q_{\text{prop}}^{k} = Q_{\text{prop}}^{k-1} + \omega\,(Q^{k} - Q_{\text{prop}}
 
 $\omega$ starts at 1, so $Q_{\text{prop}} = Q$ until the correction $Q^{k} - Q_{\text{prop}}^{k-1}$ swings back against the previous one (negative dot product) without at least halving in size. On each such swing $\omega$ is halved, down to 1/64; after three corrections in a row in the same direction it doubles again, up to 1, so a single Newton overshoot does not slow the rest of the run. A relief state change and a solve with frozen properties (see below) do not count as a swing: the comparison starts afresh after them, keeping $\omega$. While a pressure controller or 3-way TCV still moves its position, $\omega$ is held at 1 and no swing is counted: those steps change the flows on purpose, and the next step needs the temperatures of the new flows.
 
-Once the temperatures change by less than 0.05 K between outer iterations, $\max|Q - Q_{\text{prop}}|$ is within $10^{-4}$ of the largest edge flow (plus $10^{-9}$ m³/s), every edge with more than $10^{-9}$ m³/s runs the same way in $Q$ and $Q_{\text{prop}}$, and the pressure controllers and 3-way TCVs have settled, the solver holds the fluid properties fixed for the next hydraulic solve. The loop ends only on such a frozen solve in which the controllers are still at their setpoints and a TCV that was on its setpoint still is (its outlet temperature follows the new flow split); otherwise the properties are propagated again before the next freeze, and a relief state change releases them as well. The reported solution comes from the frozen solve and is reported without propagating again, so the reported pressures satisfy every component's equation with the reported densities and viscosities (a component's drop is evaluated at the flow leaving through its outlet, the flow of the solve's edge row; the node mass rows leave up to ~$10^{-10}$ m³/s between inlet and outlet, which a very stiff component would otherwise pass on to the next pipe as a few Pa), and the controllers are judged on those pressures. If the loop stops at its iteration limit first, one more hydraulic solve with the final properties is run before reporting; if that solve fails, the previous solution is reported with `properties_converged = false`. Pumps recompute NPSHa and the cavitation warning from the reported suction pressure. The reported temperatures belong to the last propagated solve; on a converged run the difference is below the 0.05 K step. With `properties_converged = false` they were propagated with $Q_{\text{prop}}$ and can differ more.
+Once the temperatures change by less than 0.05 K between outer iterations, $\max|Q - Q_{\text{prop}}|$ is within $10^{-4}$ of the largest edge flow (plus $10^{-9}$ m³/s), every edge with more than $10^{-9}$ m³/s runs the same way in $Q$ and $Q_{\text{prop}}$, and the pressure controllers and 3-way TCVs have settled, the solver holds the fluid properties fixed for the next hydraulic solve. The loop ends only on such a frozen solve in which the controllers are still at their setpoints and a TCV that was on its setpoint still is (its outlet temperature follows the new flow split); otherwise the properties are propagated again before the next freeze, and a relief state change releases them as well. The reported solution comes from the frozen solve and is reported without propagating again, so the reported pressures satisfy every component's equation with the reported densities and viscosities (a component's drop is evaluated at the inlet volume flow of the solve's edge row, $f_j q_j$ of its outlet edge, not at the summed inlet port flows: the node mass rows leave up to ~$10^{-10}$ m³/s between them, which a very stiff component would otherwise pass on to the next pipe as a few Pa), and the controllers are judged on those pressures. If the loop stops at its iteration limit first, one more hydraulic solve with the final properties is run before reporting; if that solve fails, the previous solution is reported with `properties_converged = false` (its flows balance mass at the densities of that solve, not at the propagated ones the ports then show). Pumps recompute NPSHa and the cavitation warning from the reported suction pressure. The reported temperatures belong to the last propagated solve; on a converged run the difference is below the 0.05 K step. With `properties_converged = false` they were propagated with $Q_{\text{prop}}$ and can differ more.
 
 ## 5. Parameter & Unit Specification Table
 
@@ -146,6 +146,7 @@ Each equipment document has a **Data Fields** section listing what the parser re
 ## 6. Operating Modes & Model Boundaries
 
 - **Steady state:** every equation is algebraic ($\Delta t = 0$). There is no inertia, no storage and no time history.
+- **One volume flow per pipe:** each edge carries one mass flow and reports its volume flow at the density where it enters the next node. A pipe whose temperature changes along its length does not model its own thermal expansion.
 - **No elevation along the network:** components and pipes have no height. Static head enters only through the tank level and elevation, see [tank.md](tank.md).
 - **Solver flags** (defaults on the base class):
   - `is_pressure_boundary = False` — `True` fixes the node pressure to `calculate()` (tank, pressure source).
@@ -168,7 +169,7 @@ Each equipment document has a **Data Fields** section listing what the parser re
 | :--- | :--- |
 | `backend/tests/unit/solver/test_node_fields_documented.py` | Every field the parser reads is in a **Data Fields** table and vice versa; dimensional fields carry their unit suffix |
 | `backend/tests/unit/fluids/test_mixing.py::test_f1_42_mixing_conserves_enthalpy_with_variable_cp` | Mixer outlet temperature from 80 °C and 20 °C ISO VG 46 streams matches an independent enthalpy balance with $c_p(T)$ within 0.1 K; mass flow balanced within 0.5 % |
-| `backend/tests/unit/solver/test_basic_components.py::test_mass_balance` | Mixer outflow equals the sum of inflows within $10^{-10}$ m³/s |
+| `backend/tests/scenarios/test_network_invariants.py::test_mass_is_conserved` | Every solved generated network balances mass flow $\sum \rho q$ at every node (rel. $10^{-6}$); pinned: 0 °C / 55 °C seawater mixer, water heater 10 → 80 °C; reported port flows equal their edge flows |
 | `backend/tests/unit/solver/test_islands.py` | A closed loop without a tank is reported; the same loop with a tank solves |
 | `backend/tests/unit/solver/test_active_inactive.py` | Inactive pumps and heat exchanger behave as defined in their documents |
 | `backend/tests/unit/solver/test_stagnant_branches.py` | Pressures in shut-in sections and dead legs do not depend on node or edge order |

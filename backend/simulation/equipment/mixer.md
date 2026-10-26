@@ -22,11 +22,11 @@ The mixer has no `calculate_delta_p`, so in the edge pressure balance its outlet
 
 ### 3.2 Mass balance
 
-One mass balance row for the node (volume flows, see [base_node.md](base_node.md#31-unknowns-and-equations)):
+One mass balance row for the node (mass flows, see [base_node.md](base_node.md#31-unknowns-and-equations)):
 
-$$q_{\text{inlet},0} + q_{\text{inlet},1} - q_{\text{outlet}} = 0$$
+$$\rho_0\, q_{\text{inlet},0} + \rho_1\, q_{\text{inlet},1} - \rho_{\text{out}}\, q_{\text{outlet}} = 0$$
 
-Flows are signed: a negative inlet flow is flow out of the mixer.
+with each edge's density where it enters the node it flows into. Flows are signed: a negative inlet flow is flow out of the mixer. Streams at different temperatures leave with a slightly different volume flow than the sum of the inlets (seawater at 0 °C and 55 °C mixed 1:1: about 0.4 %).
 
 ### 3.3 Derivative
 
@@ -68,7 +68,7 @@ Not applicable — the mixer has no parameters of its own. The number of inlets 
 | :--- | :--- |
 | `backend/tests/unit/fluids/test_mixing.py::test_f1_42_mixing_conserves_enthalpy_with_variable_cp` | ISO VG 46 from tanks at 80 °C (level 10 m) and 20 °C (level 5 m): outlet temperature matches an independent enthalpy balance with $c_p(T)$ within 0.1 K; outlet mass flow equals the sum of inlet mass flows within 0.5 % |
 | `test_mixing.py::test_thermal_mixing_balances` | Same network, within 1 K |
-| `backend/tests/unit/solver/test_basic_components.py::test_mass_balance` | Two tanks (10 m and 8 m) through a mixer and a valve: outlet flow equals the sum of inlet flows within $10^{-10}$ m³/s |
+| `backend/tests/scenarios/test_network_invariants.py::test_mass_is_conserved` | Mass flow balanced at every junction (rel. $10^{-6}$), including a 0 °C / 55 °C seawater mixer |
 | `backend/tests/unit/solver/test_port_transport.py::test_reverse_flow_through_a_mixer_reaches_both_inlet_pipes_at_the_outlet_temperature` | Hot tank (60 °C) on the outlet feeds backwards: both inlet pipes carry 60 °C within 0.5 K |
 
 ## Data Fields

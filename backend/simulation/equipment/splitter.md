@@ -22,11 +22,11 @@ The splitter has no `calculate_delta_p`, so in the edge pressure balance its out
 
 ### 3.2 Mass balance
 
-One mass balance row for the node (volume flows, see [base_node.md](base_node.md#31-unknowns-and-equations)):
+One mass balance row for the node (mass flows, see [base_node.md](base_node.md#31-unknowns-and-equations)):
 
-$$q_{\text{inlet}} - q_{\text{outlet},0} - q_{\text{outlet},1} = 0$$
+$$\rho_{\text{in}}\, q_{\text{inlet}} - \rho_0\, q_{\text{outlet},0} - \rho_1\, q_{\text{outlet},1} = 0$$
 
-Flows are signed: a negative outlet flow is flow into the splitter.
+with each edge's density where it enters the node it flows into. Flows are signed: a negative outlet flow is flow into the splitter.
 
 ### 3.3 Derivative
 

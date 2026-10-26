@@ -4,7 +4,7 @@ class MeasurePoint(HydraulicNode):
     """
     In-line measurement tap: a location in a line that instruments and remote control valves can sense.
     Physically:
-    - 1 inlet, 1 outlet, no pressure drop (P_in = P_out, Q_in = Q_out).
+    - 1 inlet, 1 outlet, no pressure drop (P_in = P_out, mass flow in = mass flow out).
     - Like the splitter it has no calculate_delta_p, so the solver treats it as a junction.
     """
     def __init__(self, name: str):
