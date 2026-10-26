@@ -1,6 +1,10 @@
 import math
 from functools import lru_cache
 
+# Pure functions of (fluid id, temperature) and the fixed FLUIDS catalog: the property passes repeat the same
+# temperatures, so a cache hit returns the exact value computed before
+PROPERTY_CACHE_SIZE = 65536
+
 # Largest d(ln F_R)/d(ln Re_V) allowed for control valves: the drop rises at least as sqrt(Q)
 IEC_FR_MAX_SLOPE = 0.75
 
@@ -307,6 +311,7 @@ class FluidProperties:
         ]
 
     @staticmethod
+    @lru_cache(maxsize=PROPERTY_CACHE_SIZE)
     def get_density(fluid_type: str, temp_k: float) -> float:
         fluid = FluidProperties.get_fluid(fluid_type)
         t_c = temp_k - 273.15
@@ -320,6 +325,7 @@ class FluidProperties:
         return d["ref"] * (1 - d["alpha"] * (t_c - d["t_ref_c"]))
 
     @staticmethod
+    @lru_cache(maxsize=PROPERTY_CACHE_SIZE)
     def get_viscosity(fluid_type: str, temp_k: float) -> float:
         """
         Returns dynamic viscosity (Pa*s or kg/(m*s)).
@@ -514,6 +520,7 @@ class FluidProperties:
         return 1.0
 
     @staticmethod
+    @lru_cache(maxsize=PROPERTY_CACHE_SIZE)
     def get_specific_heat(fluid_type: str, temp_k: float) -> float:
         """
         Returns specific heat capacity (J/kg*K).
@@ -560,6 +567,7 @@ class FluidProperties:
     _GL_WEIGHTS = (5.0 / 9.0, 8.0 / 9.0, 5.0 / 9.0)
 
     @staticmethod
+    @lru_cache(maxsize=PROPERTY_CACHE_SIZE)
     def get_enthalpy(fluid_type: str, temp_k: float) -> float:
         """Specific enthalpy h(T) = integral of cp dT from 273.15 K (J/kg); valid for any cp(T)."""
         half = 0.5 * (temp_k - 273.15)
