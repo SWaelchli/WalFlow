@@ -5,9 +5,13 @@ import uuid
 from simulation.schemas import Port
 from simulation.fluid_utils import FluidProperties
 
+# Two "no flow" thresholds for two questions, kept apart on purpose:
 # m³/s: below this the flow sign is solver noise (mass rows converge to ~2e-10, Newton step_tol >= 1e-9) and carries
 # no temperature (dead leg); real trickles, e.g. ~3e-8 through a Cv 0.001 valve, stay above it
 Q_DEAD_LEG = 1e-9
+# m³/s (6 mL/min): a check valve below this flow is closed, and an edge below it anchors no pressure group (stagnant
+# pressures); a port between the two thresholds is flagged stagnant but still carries its flow's temperature
+Q_STAGNANT = 1e-7
 
 
 def select_inward(items, inflow):

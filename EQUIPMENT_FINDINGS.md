@@ -50,7 +50,7 @@ Status: `open` / `fixed` / `rejected`. "Confirmed" means it was reproduced by ru
 | D-31 | Solver / 3-way TCV | Mix-ratio loop cycles on an S-shaped outlet temperature (laminar paths) and still reports `controls_converged` | Medium (wrong result reported as converged) | Test (D-29a), trace | fixed |
 | D-32 | Solver | Hydraulic solve fails for flows below about 1e-7 m³/s (e.g. Cv 0.1 TCV with a Cv 0.01 load on ISO VG 46) | Low (micro flows) | Test (D-29a), trace | rejected (cause was D-29) |
 | D-33 | Linear control valve, remote control valve, regulator (Results tab) | Valve chart draws the bare Cv equation in the browser, without $F_R$ and the valve style | Low (display only) | User question | fixed |
-| D-34 | Solver / stagnant sections | Two separate graph walks and thresholds for stagnant pressures and dead-leg temperatures; the temperature graph is rebuilt on every property pass | Cleanup | Code review | open |
+| D-34 | Solver / stagnant sections | Two separate graph walks and thresholds for stagnant pressures and dead-leg temperatures; the temperature graph is rebuilt on every property pass | Cleanup | Code review | fixed |
 | D-35 | Solver / micro flows | Pressure drop of a pipe behind a very stiff micro-flow edge is off by ~5 Pa (pipe absorbs the edge residual) | Low | Confirmed (property test, explore) | fixed |
 | D-36 | Solver / micro flows | Explore profile: oil networks with junction flows near 1e-8 m³/s fail the junction enthalpy check, or the outer loop does not settle in 100 iterations | Low | Confirmed (property test, explore) | open |
 
@@ -642,6 +642,8 @@ Nothing is wrong today: a port flagged `stagnant` with a flow between the two th
 **Fix direction:** a cleanup. Build one port graph once per solver (like `edges_into` / `edges_out_of`), and use it for both the pressure groups and the temperature fill, so only the flow-dependent classification is done per call. Keep the two thresholds, but define them next to each other with the reason for each.
 
 **Tests:** no behaviour change. `test_stagnant_branches.py` and `test_network_invariants.py` (warm start, also under the explore profile) must stay green; a mutation run on the merged walk confirms both uses are covered.
+
+**Resolution (2026-10-26):** the solver builds one edge-port table (`edge_ports`, `side_links`) once per solver and the per-node active edges (`edges_into` / `edges_out_of`) in `prune_topology`. The pressure groups, the property passes, `_solve_mixing` (via `_upstream_end`) and `_fill_stagnant_temperatures` all read it; the temperature fill only classifies the flows per call. The two walks stay separate algorithms (union-find over node sides vs. 0-1 BFS over ports) because they answer different questions. `Q_STAGNANT` moved to `base_node.py` next to `Q_DEAD_LEG`, each with its reason. No mutation run (user decision).
 
 ---
 

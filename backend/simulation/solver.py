@@ -10,7 +10,7 @@ import scipy.sparse.linalg as spla
 from typing import List, Dict, Any, Tuple
 
 from simulation.schemas import HydraulicNetwork
-from simulation.equipment.base_node import HydraulicNode, Q_DEAD_LEG, select_inward
+from simulation.equipment.base_node import HydraulicNode, Q_DEAD_LEG, Q_STAGNANT, select_inward
 from simulation.equipment.tank import Tank
 from simulation.equipment.pipe import Pipe
 from simulation.equipment.centrifugal_pump import CentrifugalPump
@@ -75,8 +75,45 @@ class NetworkSolver:
         self.persist_warm_start = True   # False for auxiliary solves (relief ramp) that must not overwrite the cache
         self._weights = None             # (w, f) of _edge_weights for the current solve
 
+        self._edge_ports = self._side_links = None   # _build_port_table, on first use
         # Initial topology pruning
         self.prune_topology()
+
+    def _build_port_table(self):
+        """The ports at both ends of every edge and the links between node sides, built once: the topology is fixed
+        for the solver's lifetime. The stagnant pressure groups, the property passes, the mixing solve and the
+        dead-leg temperature fill all read it, so a port rule is written in one place. Built on the first solve, not
+        in __init__: a solver is built on every graph edit, and an edge to a missing port fails only when run."""
+        nodes = self.network.nodes
+        edge_ports = {}                 # id(edge) -> (source node, source port, target node, target port)
+        side_links = defaultdict(list)  # side -> [(port of this side on the edge, side at the other end)]
+        for edge in self.all_edges_list:
+            src, tgt = edge['source'], edge['target']
+            src_port, tgt_port = self._src_port(edge, nodes[src]), self._tgt_port(edge, nodes[tgt])
+            edge_ports[id(edge)] = (nodes[src], src_port, nodes[tgt], tgt_port)
+            side_links[(src, 'out')].append((src_port, (tgt, 'in')))
+            side_links[(tgt, 'in')].append((tgt_port, (src, 'out')))
+        self._edge_ports, self._side_links = edge_ports, dict(side_links)
+
+    @property
+    def edge_ports(self):
+        if self._edge_ports is None:
+            self._build_port_table()
+        return self._edge_ports
+
+    @property
+    def side_links(self):
+        if self._side_links is None:
+            self._build_port_table()
+        return self._side_links
+
+    def _upstream_end(self, edge, q):
+        """For flow q on the edge: (upstream node, its port, downstream node, pipe's upstream end, pipe's downstream end)."""
+        src, src_port, tgt, tgt_port = self.edge_ports[id(edge)]
+        pipe = edge['pipe']
+        if q >= 0:
+            return src, src_port, tgt, pipe.inlets[0], pipe.outlets[0]
+        return tgt, tgt_port, src, pipe.outlets[0], pipe.inlets[0]
 
     def prune_topology(self):
         # 1. Identify inactive nodes
@@ -173,6 +210,14 @@ class NetworkSolver:
         self.edges_list = active_edges
         self.edge_pos = {id(e): j for j, e in enumerate(active_edges)}
         self._weights = None
+        # Active edges per node for the property passes, with the node's own port (None for a handle beyond its ports)
+        self.edges_into, self.edges_out_of = defaultdict(list), defaultdict(list)
+        for j, edge in enumerate(active_edges):
+            src, tgt = self.network.nodes[edge['source']], self.network.nodes[edge['target']]
+            idx = self._parse_port_idx(edge.get('target_port', 'inlet-0'))
+            self.edges_into[edge['target']].append((j, edge, tgt.inlets[idx] if idx < len(tgt.inlets) else None))
+            idx = self._parse_port_idx(edge.get('source_port', 'outlet-0'))
+            self.edges_out_of[edge['source']].append((j, edge, src.outlets[idx] if idx < len(src.outlets) else None))
         self.node_id_to_idx = {node_id: i for i, node_id in enumerate(self.node_ids)}
         # A pilot whose sensing point is left out of the solve senses its own inlet
         for node in self.network.nodes.values():
@@ -1651,15 +1696,14 @@ class NetworkSolver:
                     node.calculate()
 
         # 6b. Sides left out of the solve take their pressure from the solved sides they connect to
-        links = self._side_links()
-        self._fill_pruned_pressures(links, atm_p)
+        self._fill_pruned_pressures(atm_p)
 
         # 7. Closed relief devices pass no flow
         for node in self.all_nodes_list:
             if is_closed_relief(node):
                 for port in node.inlets + node.outlets: port.flow_rate = 0.0
 
-        stagnant_ids = self._assign_stagnant_pressures(q_edges, links)
+        stagnant_ids = self._assign_stagnant_pressures(q_edges)
 
         # 7b. Device state (opening, status) from the final pressures of the sides set in 6b and 7
         for nid in self.pruned_node_ids | stagnant_ids:
@@ -1671,9 +1715,8 @@ class NetworkSolver:
         active_edge_pos = self.edge_pos
         for edge in self.all_edges_list:
             pipe = edge['pipe']
-            src_node = self.network.nodes[edge['source']]
-            tgt_node = self.network.nodes[edge['target']]
-            
+            src_node, src_port, tgt_node, tgt_port = self.edge_ports[id(edge)]
+
             active_pos = active_edge_pos.get(id(edge))
             is_active = active_pos is not None
             q = q_edges[active_pos] if is_active else 0.0
@@ -1681,8 +1724,6 @@ class NetworkSolver:
             src_is_closed_relief = is_closed_relief(src_node)
             tgt_is_closed_relief = is_closed_relief(tgt_node)
 
-            src_port = self._src_port(edge, src_node)
-            tgt_port = self._tgt_port(edge, tgt_node)
             if src_is_closed_relief:
                 pipe_p = src_port.pressure
                 pipe.inlets[0].pressure = pipe_p
@@ -1708,16 +1749,6 @@ class NetworkSolver:
         node = self.network.nodes[nid]
         return node.inlets if side == 'in' else node.outlets
 
-    def _side_links(self):
-        """side -> [(port of this side on the edge, side at the other end)]"""
-        nodes = self.network.nodes
-        links = defaultdict(list)
-        for edge in self.all_edges_list:
-            src, tgt = edge['source'], edge['target']
-            links[(src, 'out')].append((self._src_port(edge, nodes[src]), (tgt, 'in')))
-            links[(tgt, 'in')].append((self._tgt_port(edge, nodes[tgt]), (src, 'out')))
-        return links
-
     def _p_in_at_rest(self, node, p_out):
         """Inlet pressure that gives p_out at zero flow (exact for a rise or drop that does not depend on p_in)."""
         p_in = p_out
@@ -1725,7 +1756,7 @@ class NetworkSolver:
             p_in = p_out - (self._get_node_p_out(node, p_in, 0.0, 0.0) - p_in)
         return p_in
 
-    def _carry_at_rest(self, seeds, links, todo, passes):
+    def _carry_at_rest(self, seeds, todo, passes):
         """Carries the pressure of the seed sides at zero flow to the sides in `todo` they reach (removed from
         it): unchanged along a pipe, across a device with passes(nid) by its zero-flow rise or drop (pump
         shutoff head, regulator lock-up) in either direction."""
@@ -1739,7 +1770,7 @@ class NetworkSolver:
 
         while queue:
             nid, side = queue.popleft()
-            for port, other in links[(nid, side)]:
+            for port, other in self.side_links.get((nid, side), ()):
                 if other in todo:
                     set_side(other, port.pressure)
             other = (nid, 'out' if side == 'in' else 'in')
@@ -1749,7 +1780,7 @@ class NetworkSolver:
                 p = ports[0].pressure
                 set_side(other, self._get_node_p_out(node, p, 0.0, 0.0) if side == 'in' else self._p_in_at_rest(node, p))
 
-    def _fill_pruned_pressures(self, links, atm_p):
+    def _fill_pruned_pressures(self, atm_p):
         """Pressure of the sides left out of the solve (dead legs, stopped PD pumps, closed relief devices).
 
         Each node has an inlet side and an outlet side. From the solved sides the pressure is carried at zero
@@ -1763,7 +1794,7 @@ class NetworkSolver:
             if nid not in self.pruned_node_ids:
                 seeds += [(nid, 'in')] if is_closed_relief(node) else [(nid, 'in'), (nid, 'out')]
         todo = {(nid, side) for nid in nodes for side in ('in', 'out')} - set(seeds)
-        self._carry_at_rest(seeds, links, todo, lambda nid: not blocks_at_rest(nodes[nid]))
+        self._carry_at_rest(seeds, todo, lambda nid: not blocks_at_rest(nodes[nid]))
         for side in todo:
             for port in self._side_ports(*side):
                 port.pressure = atm_p
@@ -1774,7 +1805,7 @@ class NetworkSolver:
         for port in ports:
             port.stagnant = False
 
-    def _assign_stagnant_pressures(self, q_edges, links):
+    def _assign_stagnant_pressures(self, q_edges):
         """Pressure of sections shut in by blocking devices (ROADMAP "Undefined Pressure in Stagnant Branches").
 
         Each node has an inlet side and an outlet side. Pipes and open devices tie sides together; a blocking
@@ -1885,7 +1916,7 @@ class NetworkSolver:
         def settle(entry, p, members):
             for port in self._side_ports(*entry):
                 port.pressure = p
-            self._carry_at_rest([entry], links, set(members) - {entry}, passes)
+            self._carry_at_rest([entry], set(members) - {entry}, passes)
 
         while unresolved:
             evals = {root: evaluate(members) for root, members in unresolved.items()}
@@ -1942,57 +1973,42 @@ class NetworkSolver:
         if self.nodes_list and self.nodes_list[0].global_settings:
             max_iterations = getattr(self.nodes_list[0].global_settings, 'property_iterations', 5)
         actual_iters = 0
-        # Edges per node, built once so each node only visits its own edges
-        edges_into, edges_out_of = {}, {}
-        for j, edge in enumerate(self.edges_list):
-            edges_into.setdefault(edge['target'], []).append((j, edge))
-            edges_out_of.setdefault(edge['source'], []).append((j, edge))
         for _ in range(max_iterations):
             actual_iters += 1
             max_temp_change = 0.0
             for j, edge in enumerate(self.edges_list):
-                src_node = self.network.nodes[edge['source']]
-                tgt_node = self.network.nodes[edge['target']]
                 pipe = edge['pipe']
                 q = q_edges[j]
                 pipe.inlets[0].flow_rate = q
                 pipe.outlets[0].flow_rate = q
-                if q >= 0:
-                    src_port = self._src_port(edge, src_node)
-                    pipe.inlets[0].temperature = src_port.temperature
-                    pipe.inlets[0].density = src_port.density
-                    pipe.inlets[0].viscosity = src_port.viscosity
-                else:
-                    tgt_port = self._tgt_port(edge, tgt_node)
-                    pipe.outlets[0].temperature = tgt_port.temperature
-                    pipe.outlets[0].density = tgt_port.density
-                    pipe.outlets[0].viscosity = tgt_port.viscosity
-                pipe.calculate() 
+                _, port, _, pipe_up, _ = self._upstream_end(edge, q)
+                pipe_up.temperature = port.temperature
+                pipe_up.density = port.density
+                pipe_up.viscosity = port.viscosity
+                pipe.calculate()
             for node_id, node in self.network.nodes.items():
                 if isinstance(node, Tank):
                     node.calculate()
                     continue
                 old_temps = [p.temperature for p in node.outlets] + [p.temperature for p in node.inlets]
-                for j, edge in edges_into.get(node_id, ()):
-                    q = q_edges[j]
-                    pipe = edge['pipe']
-                    port_idx = self._parse_port_idx(edge.get('target_port', 'inlet-0'))
-                    if port_idx < len(node.inlets):
-                        node.inlets[port_idx].flow_rate = q
+                for j, edge, port in self.edges_into.get(node_id, ()):
+                    if port is not None:
+                        q = q_edges[j]
+                        port.flow_rate = q
                         if q >= 0:
-                            node.inlets[port_idx].temperature = pipe.outlets[0].temperature
-                            node.inlets[port_idx].density = pipe.outlets[0].density
-                            node.inlets[port_idx].viscosity = pipe.outlets[0].viscosity
-                for j, edge in edges_out_of.get(node_id, ()):
-                    q = q_edges[j]
-                    pipe = edge['pipe']
-                    port_idx = self._parse_port_idx(edge.get('source_port', 'outlet-0'))
-                    if port_idx < len(node.outlets):
-                        node.outlets[port_idx].flow_rate = q
+                            pipe_end = edge['pipe'].outlets[0]
+                            port.temperature = pipe_end.temperature
+                            port.density = pipe_end.density
+                            port.viscosity = pipe_end.viscosity
+                for j, edge, port in self.edges_out_of.get(node_id, ()):
+                    if port is not None:
+                        q = q_edges[j]
+                        port.flow_rate = q
                         if q < 0:
-                            node.outlets[port_idx].temperature = pipe.inlets[0].temperature
-                            node.outlets[port_idx].density = pipe.inlets[0].density
-                            node.outlets[port_idx].viscosity = pipe.inlets[0].viscosity
+                            pipe_end = edge['pipe'].inlets[0]
+                            port.temperature = pipe_end.temperature
+                            port.density = pipe_end.density
+                            port.viscosity = pipe_end.viscosity
                 if hasattr(node, 'calculate_temperature'):
                     node.calculate_temperature()
                 node.calculate()
@@ -2035,14 +2051,9 @@ class NetworkSolver:
         upstream, arriving = [], defaultdict(list)
         dT, w, t_arr = np.zeros(n), np.zeros(n), np.zeros(n)
         for j, edge in enumerate(self.edges_list):
-            src, tgt = self.network.nodes[edge['source']], self.network.nodes[edge['target']]
-            pipe = edge['pipe']
-            if q_edges[j] >= 0:
-                u, port, d, p_up, p_dn = src, self._src_port(edge, src), edge['target'], pipe.inlets[0], pipe.outlets[0]
-            else:
-                u, port, d, p_up, p_dn = tgt, self._tgt_port(edge, tgt), edge['source'], pipe.outlets[0], pipe.inlets[0]
+            u, port, d, p_up, p_dn = self._upstream_end(edge, q_edges[j])
             upstream.append((u, port))
-            arriving[id(self.network.nodes[d])].append(j)
+            arriving[id(d)].append(j)
             dT[j] = p_dn.temperature - p_up.temperature
             w[j] = abs(q_edges[j]) * p_dn.density
             t_arr[j] = p_dn.temperature
@@ -2110,13 +2121,12 @@ class NetworkSolver:
         ports of a pressure reference (their own temperature) and the ports of a node with flow (a stagnant one takes
         the node's leaving temperature); seeds are never overwritten. A pipe has one temperature; crossing a stagnant node is one step, so the two sides
         of a closed check valve take the temperatures of their own neighbours. Pruned sections count as stagnant."""
-        active_q = {id(e): q_edges[j] for j, e in enumerate(self.edges_list)}
         port_q = {}     # id(port) -> outward flow of the node port
         adj = defaultdict(list)
         for edge in self.all_edges_list:
-            q = active_q.get(id(edge), 0.0)
-            src = self._src_port(edge, self.network.nodes[edge['source']])
-            tgt = self._tgt_port(edge, self.network.nodes[edge['target']])
+            j = self.edge_pos.get(id(edge))
+            q = q_edges[j] if j is not None else 0.0
+            _, src, _, tgt = self.edge_ports[id(edge)]
             port_q[id(src)] = port_q.get(id(src), 0.0) + q
             port_q[id(tgt)] = port_q.get(id(tgt), 0.0) - q
             if abs(q) <= Q_DEAD_LEG:
@@ -2181,7 +2191,6 @@ RELIEF_NODE_TYPES = ('pressure_safety_valve', 'rupture_disc')
 CHECK_VALVE_TYPES = ('check_valve',)
 # Leak paths out of a shut-in section, strongest first (ROADMAP "Undefined Pressure in Stagnant Branches")
 LEAK_STOPPED_PUMP, LEAK_CHECK_VALVE, LEAK_RELIEF_SEAT = 0, 1, 2
-Q_STAGNANT = 1e-7               # m³/s (6 mL/min): a check valve below this flow is closed
 RELIEF_SEAT_MARGIN_PA = 1.0     # a stagnant section stays this far below a closed relief device's set pressure
 RELIEF_RAMP_MAX_SOLVES = 24     # bisection steps per opening (λ resolution 2⁻²⁴)
 RELIEF_RAMP_TOL_PA = 100.0      # 1 mbar: inlet pressure at the opening snapshot vs set pressure
