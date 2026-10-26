@@ -9,6 +9,8 @@ walflow.db
 test_walflow.db
 performance_log.md
 bench_tcv_loop.md
+performance_findings.md
+perf_snapshots/
 .hypothesis/
 
 .kilo/

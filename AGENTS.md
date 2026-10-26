@@ -47,6 +47,10 @@ cd frontend && npm run lint && npm test && npm run build
 ```
 GitHub Actions runs the same gate only when a release tag is pushed, and blocks Docker publishing if it fails; pushes to `main` are not checked in CI.
 
+### Performance
+
+Follow the `walflow-performance` skill ([.claude/skills/walflow-performance/SKILL.md](./.claude/skills/walflow-performance/SKILL.md)) for any change made for speed. Every speed-up must be measured as faster, and must leave the simulation's accuracy, scope and physical model unchanged.
+
 ## Orchestrator Delegation Protocol
 
 The main session (Opus) is the orchestrator. It keeps the user conversation, decisions and physics; noisy or

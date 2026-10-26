@@ -143,7 +143,8 @@ explanation.
 ## Benchmarks
 
 Run manually from anywhere: `python backend/tests/bench/bench_solver_scaling.py`. Results go to the git-ignored
-`performance_log.md`.
+`performance_log.md`. Performance work (profiling, result snapshots, accepting a speed-up) follows the
+`walflow-performance` skill.
 
 ## Mutation testing
 
