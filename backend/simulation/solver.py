@@ -769,7 +769,11 @@ class NetworkSolver:
             return q
 
         def run_hydraulics(fatal=True, propagate=True) -> bool:
-            """Hydraulic solve at the current control positions, then fluid property propagation."""
+            """Hydraulic solve at the current control positions, then fluid property propagation. Without
+            propagate (the controllers' finite-difference solves) the properties are held as they are, so the
+            differences measure the opening alone."""
+            frozen = self.properties_frozen
+            self.properties_frozen = frozen or not propagate
             try:
                 # One property update per solve, with the relaxed flows, after the telemetry is written
                 res = self._solve_hydraulics_core(method=method, x0_custom=state["x"],
@@ -779,11 +783,13 @@ class NetworkSolver:
                     state["error"] = str(e)
                     state["residuals"] = getattr(self, '_last_evaluated_residuals', None)
                 return False
+            finally:
+                self.properties_frozen = frozen
             sol, num_int, inner_iters, fallback, residuals = res
-            state.update(sol=sol, num_int=num_int, residuals=residuals, x=sol, frozen=self.properties_frozen)
+            state.update(sol=sol, num_int=num_int, residuals=residuals, x=sol, frozen=frozen or not propagate)
             state["inner"] += inner_iters
             state["fallback"] = state["fallback"] or fallback
-            if self.properties_frozen:
+            if frozen:
                 state["dq"] = None      # controllers may move the flows while frozen: no swing of the property loop
             return True
 

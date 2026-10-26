@@ -100,3 +100,35 @@ def test_property_passes_go_on_after_a_settled_pass_when_the_mixing_solve_is_rej
     monkeypatch.setattr(solver, "_solve_mixing", lambda q, min_change=0.0: 0.0)
     solver._propagate_properties(q_edges)
     assert solver.last_prop_iters < PROPERTY_ITERATIONS
+
+
+def test_controller_finite_difference_solves_hold_the_fluid_properties(monkeypatch):
+    # The controllers' finite-difference solves measure the opening alone. If they re-propagate temperature,
+    # density and viscosity from their perturbed flows, the controller gain is distorted and the converged
+    # flows drift. (Equipment may still move its own outlet with the opening, e.g. the TCV mix: only the
+    # propagation over the network is held.)
+    held_frozen, propagations, running = [], [], []
+    real_core = NetworkSolver._solve_hydraulics_core
+    real_propagate = NetworkSolver._propagate_properties
+
+    def core_spy(self, *args, property_flows=None, **kwargs):
+        controller_solve = property_flows is None   # the property loop passes its relaxed flows, the controllers do not
+        if controller_solve:
+            held_frozen.append(self.properties_frozen)
+        running.append(controller_solve)
+        try:
+            return real_core(self, *args, property_flows=property_flows, **kwargs)
+        finally:
+            running.pop()
+
+    def propagate_spy(self, *args, **kwargs):
+        propagations.append(bool(running and running[-1]))   # True: propagated inside a controller solve
+        return real_propagate(self, *args, **kwargs)
+
+    monkeypatch.setattr(NetworkSolver, "_solve_hydraulics_core", core_spy)
+    monkeypatch.setattr(NetworkSolver, "_propagate_properties", propagate_spy)
+    _, stats = solve_example("Example_API_614_LOS", "Case 1")
+    assert stats["success"]
+    assert held_frozen and propagations      # the example has pressure controllers and a temperature loop
+    assert all(held_frozen)
+    assert not any(propagations)
