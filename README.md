@@ -11,11 +11,12 @@
 
 * **Interactive Drag-and-Drop Canvas:** Build Process Flow Diagrams effortlessly using a component library built on ReactFlow.
 * **Real-Time Physics Engine:** Fast Python-based steady-state static solver calculating algebraic pressure distributions, flow rates, and fluid temperatures over WebSocket connections.
-* **Hydraulic Component Library:** Includes pumps, control valves, shut-off valves, orifices, pressure relief valves, heat exchangers, oil coolers, strainers, reservoirs, and pipe branching.
+* **Hydraulic Component Library:** Tanks, pressure and flow sources (a negative set flow is a demand), centrifugal and volumetric pumps, linear, remote and 3-way temperature control valves, pressure regulators, check valves (also with orifice), orifices and calibrated restrictions, reducers, filters, heat exchangers, safety relief valves and rupture discs, splitter and mixer tees, and measurement points.
 * **Live Telemetry & Component Inspection:** Instant visual readout of pressure drops, flow rates, temperature profiles, and operating curves.
+* **Operating Cases & Relief Analysis:** Run several operating cases of one diagram side by side, and check relief valves and rupture discs in a relief analysis matrix.
 * **Custom Fluids & Solver Control:** Select standard fluids (ISO VG oils, water, etc.) or configure custom fluid properties (density, viscosity) and ambient conditions.
-* **Scenario Templates & Cloud Storage:** Quickly load benchmark PFD scenarios or save, export, and import customized simulation models.
-* **Colaborative Project Structure:** Create Projects and invite your team to work on your PFDs together .
+* **Examples & Cloud Storage:** Load ready-made examples, including the validation benchmarks, or save, export, and import your own simulation models.
+* **Collaborative Project Structure:** Create projects and invite your team to work on your PFDs together.
 
 ---
 
@@ -30,19 +31,21 @@ WalFlow is a **steady-state** simulator: it solves the algebraic balance of pres
 
 The same text is in the app under **Help > Model & Limits**.
 
-## Validation
-
-WalFlow is checked against published pipe network solutions from R. W. Jeppson, *Steady Flow Analysis of Pipe Networks: An Instructional Manual* (Utah State University, 1974). Each case is a ready-to-open example under **Library & Examples > Validation Benchmarks**. A regression test keeps every pipe flow and friction loss within a set tolerance of the published values, so a change to the solver or the friction model that shifts the results fails the test suite. The remaining differences come from the reservoir entrance loss WalFlow includes and Jeppson neglects, and from Jeppson's fitted friction formula at an unstated water temperature. Variants that need the Hazen-Williams formula are not covered, because WalFlow uses Darcy-Weisbach only.
-
-| Benchmark | Network | Largest difference from published values |
-| :--- | :--- | :--- |
-| Jeppson 7-pipe, Ch. V problem 2 (also AFT Fathom Verification Case 63) | 3 reservoirs, pump, 1 demand | flow 0.005 cfs, friction loss 0.07 ft, pressure 0.05 psi |
-| Jeppson 7-pipe, Ch. V problem 3 | 3 reservoirs, pump removed | flow 0.005 cfs, friction loss 0.07 ft |
-| Jeppson 48-pipe, Ch. VI problem 3 | 2 supplies, 28 demands | flow 0.018 cfs (0.7 %), friction loss 0.6 % |
-
 ---
 <img width="1033" height="667" alt="Untitled" src="https://github.com/user-attachments/assets/5839d719-bae1-4ee6-9179-d06644e6875b" />
 ---
+
+## Validation
+
+WalFlow is checked against published pipe network solutions from R. W. Jeppson, *Steady Flow Analysis of Pipe Networks: An Instructional Manual* (Utah State University, 1974). Each case is a ready-to-open example under **Library & Examples > Validation Benchmarks**. A regression test keeps every pipe flow and friction loss within a set tolerance of the published values, so a change to the solver or the friction model that shifts the results fails the test suite. The remaining differences come from the reservoir entrance loss WalFlow includes and Jeppson neglects, and from Jeppson's fitted friction formula at an unstated water temperature; in percent they are largest on the smallest flows. Variants that need the Hazen-Williams formula are not covered, because WalFlow uses Darcy-Weisbach only.
+
+| Benchmark | Network | Largest difference from published values |
+| :--- | :--- | :--- |
+| Jeppson 7-pipe, Ch. V problem 2 (also AFT Fathom Verification Case 63) | 3 reservoirs, pump, 1 demand | flow 2.4 %¹, friction loss 4.7 %¹, junction head 0.1 % |
+| Jeppson 7-pipe, Ch. V problem 3 | 3 reservoirs, pump removed | flow 2.3 %¹, friction loss 3.7 %¹ |
+| Jeppson 48-pipe, Ch. VI problem 3 | 2 supplies, 28 demands | flow 0.7 %, friction loss 0.6 %² |
+
+¹ On the smallest pipe flow (0.13 and 0.23 cfs); all other pipes within 0.8 % (flow) and 1.2 % (friction loss). ² Pipe 36 (published as 0.05 ft) differs by 8 % from rounding.
 
 ## 🐳 Production Deployment (Docker Compose)
 
@@ -56,7 +59,7 @@ services:
     container_name: walflow-backend
     restart: unless-stopped
     ports:
-      - "127.0.0.1:8000:8000"
+      - "127.0.0.1:5701:8000"
     volumes:
       - /docker/walflow/data:/app/data
     environment:
@@ -70,12 +73,12 @@ services:
     container_name: walflow-frontend
     restart: unless-stopped
     ports:
-      - "5173:80"
+      - "5702:80"
     depends_on:
       - walflow-backend
 ```
 
-Create a `.env` file with `WALFLOW_SECRET_KEY` (see below), run `docker compose up -d` and navigate to `http://localhost:5173` in order to access the web UI.
+Create a `.env` file with `WALFLOW_SECRET_KEY` (see below), run `docker compose up -d` and navigate to `http://localhost:5702` in order to access the web UI.
 
 ### Environment Variables Configuration
 
@@ -121,13 +124,20 @@ To run backend and frontend dev servers locally:
 # 1. Start Backend (FastAPI)
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1   # Linux/macOS: source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements-dev.txt   # runtime plus test dependencies
 uvicorn main:app --app-dir backend --reload --port 8000
 
 # 2. Start Frontend (Vite + React)
 cd frontend
 npm install
 npm run dev
+```
+
+Run the tests before a change is finished (the same gate runs in CI on release tags):
+
+```bash
+cd backend && python -m pytest
+cd frontend && npm run lint && npm test && npm run build
 ```
 
 For complete development guidelines, graph parser extensions, and step-by-step equipment integration, see [DEVELOPMENT.md](./DEVELOPMENT.md).
