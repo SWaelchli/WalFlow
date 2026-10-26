@@ -1,6 +1,6 @@
 ---
 name: walflow-frontend-dev
-description: Use this agent when UI or UX code in frontend/src must change: equipment node components, App/Sidebar registration, inspectors, panels, modals, styling. Must be invoked for frontend implementation once requirements are confirmed.
+description: "Use this agent when UI or UX code in frontend/src must change: equipment node components, App/Sidebar registration, inspectors, panels, modals, styling. Must be invoked for frontend implementation once requirements are confirmed."
 tools: Read, Write, Edit, Glob, Grep, Bash
 model: sonnet
 ---
