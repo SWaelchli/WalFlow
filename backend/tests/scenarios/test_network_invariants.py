@@ -24,7 +24,7 @@ STATIC_DROP_EXEMPT = {"centrifugal_pump"} | BOUNDARY_TYPES
 FLOW_TOL = 1e-8          # m³/s; the mass rows converge to ~2e-10 m³/s per node
 PRESSURE_TOL = 5.0       # Pa
 TEMPERATURE_TOL = 0.1    # K; the property loop stops at 0.01-0.05 K changes
-MIXING_FLOW_TOL = 1e-9   # m³/s; the solver's dead-leg threshold: a trickle above it still mixes into the outlet
+MIXING_FLOW_TOL = 1e-9   # m³/s; the solver's dead-leg threshold (both mixing tests): a trickle above it still mixes into the outlet
 
 
 def solve_graph(graph: dict, cold: bool = True):
@@ -245,6 +245,24 @@ def _noise_trickle_mixing_graph():
             "globalSettings": {"fluid_type": "iso_vg_150"}}
 
 
+def _crude_trickle_mixing_graph():
+    """Two sources at different temperatures feed a mixer through a wide and a thin pipe. The thin side
+    delivers a ~9e-9 m³/s trickle, above the dead-leg threshold, so it still mixes into the outlet and moves
+    it ~0.12 K; the mixed stream is not simply the temperature of the larger stream."""
+    def edge(edge_id, source, target, diameter_m, length_m=1.0, target_port="inlet-0"):
+        return {"id": edge_id, "source": source, "target": target, "sourceHandle": "outlet-0",
+                "targetHandle": target_port,
+                "data": {"length_m": length_m, "diameter_m": diameter_m, "roughness_mm": 0.0}}
+    return {"nodes": [_node("n0", "mixer"),
+                      _node("n1", "pressure_source", source_pressure_bara=1.0625, temperature_k=288.15),
+                      _node("n2", "pressure_source", source_pressure_bara=1.0625, temperature_k=283.15),
+                      _node("n3", "tank", level_m=0.5, temperature_k=288.15)],
+            "edges": [edge("e0", "n1", "n0", math.exp(-4)),
+                      edge("e1", "n2", "n0", math.exp(-3), target_port="inlet-1"),
+                      edge("e2", "n0", "n3", math.exp(-4), length_m=math.exp(2))],
+            "globalSettings": {"fluid_type": "crude_heavy"}}
+
+
 def _stiff_valve_after_pump_graph():
     """A pump feeds a valve opened 5 % (very stiff) and a tank. The node mass residual at the valve (~6e-13 m³/s)
     times its stiffness is ~5 Pa; the report must use the flow the solve used, or the next pipe shows that
@@ -411,6 +429,7 @@ def test_dissipation_never_cools_and_mixing_stays_between_its_streams(graph):
                     assert min(arriving) - TEMPERATURE_TOL <= temperature <= max(arriving) + TEMPERATURE_TOL
 
 
+@example(_crude_trickle_mixing_graph())
 @example(_noise_trickle_mixing_graph())
 @given(networks())
 def test_junctions_conserve_energy(graph):
@@ -424,7 +443,7 @@ def test_junctions_conserve_energy(graph):
         if types[node_id] not in ("splitter", "mixer"):
             continue
         streams = [(p.flow_rate, p) for p in node.inlets] + [(-p.flow_rate, p) for p in node.outlets]
-        arriving = [(q * p.density, FluidProperties.get_enthalpy(fluid, p.temperature)) for q, p in streams if q > FLOW_TOL]
+        arriving = [(q * p.density, FluidProperties.get_enthalpy(fluid, p.temperature)) for q, p in streams if q > MIXING_FLOW_TOL]
         if not arriving:
             continue
         h_mix = sum(m * h for m, h in arriving) / sum(m for m, _ in arriving)
