@@ -2,30 +2,41 @@ from pydantic import BaseModel, Field, model_validator, ConfigDict
 from typing import Optional, List, Dict, Any
 import uuid
 
-class Port(BaseModel):
+class Port:
     """
     A Port represents a physical connection point on a piece of equipment.
-    We use Pydantic (BaseModel) here because it automatically validates data types,
-    which will prevent crashes when the React frontend sends us text instead of numbers.
+    Solver state only, never parsed from user input: a plain slotted class, because the solver writes its
+    attributes over a million times per run and a pydantic model makes every write several times slower.
     """
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    __slots__ = ("id", "pressure", "total_pressure", "flow_rate", "temperature", "density", "viscosity",
+                 "stagnant", "connected_to_port_id")
 
-    # State Variables (Using SI Units as standard: Pascals, m^3/s, kg/m^3)
-    pressure: float = 101325.0  # Static pressure; default to 1 atm (atmospheric pressure)
-    # Total (stagnation) pressure of the node side, set by the solver's report; None until then (base_node.total_of)
-    total_pressure: Optional[float] = None
-    flow_rate: float = 0.0      # Volumetric flow rate (Q)
-    temperature: float = 293.15 # Kelvin (Default to 20°C)
+    def __init__(self, **values):
+        self.id: str = str(uuid.uuid4())
 
-    # Fluid Properties (Defaulting to water at standard conditions)
-    density: float = 1000.0     
-    viscosity: float = 0.001
+        # State Variables (Using SI Units as standard: Pascals, m^3/s, kg/m^3)
+        self.pressure: float = 101325.0  # Static pressure; default to 1 atm (atmospheric pressure)
+        # Total (stagnation) pressure of the node side, set by the solver's report; None until then (base_node.total_of)
+        self.total_pressure: Optional[float] = None
+        self.flow_rate: float = 0.0      # Volumetric flow rate (Q)
+        self.temperature: float = 293.15 # Kelvin (Default to 20°C)
 
-    # No flow and no pressure reference: the solver set the pressure from the section's leak path
-    stagnant: bool = False
+        # Fluid Properties (Defaulting to water at standard conditions)
+        self.density: float = 1000.0
+        self.viscosity: float = 0.001
 
-    # Network Tracking: Which port on another piece of equipment is this connected to?
-    connected_to_port_id: Optional[str] = None
+        # No flow and no pressure reference: the solver set the pressure from the section's leak path
+        self.stagnant: bool = False
+
+        # Network Tracking: Which port on another piece of equipment is this connected to?
+        self.connected_to_port_id: Optional[str] = None
+
+        for name, value in values.items():
+            setattr(self, name, value)
+
+    def model_dump(self) -> Dict[str, Any]:
+        """The port state as a dict, in field order (telemetry)."""
+        return {name: getattr(self, name) for name in self.__slots__}
 
 class GlobalSettings(BaseModel):
     """Global simulation parameters."""

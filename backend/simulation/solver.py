@@ -258,6 +258,36 @@ class NetworkSolver:
             if edge['source'] in self.node_outgoing_edge_indices:
                 self.node_outgoing_edge_indices[edge['source']].append(j)
 
+        # Topology constants of the residual and its Jacobian; device states (lock-up, relief, MCP) are read per call
+        self.internal_pos = {idx: i for i, idx in enumerate(self.internal_node_indices)}
+        self._internal_idx = np.array(self.internal_node_indices, dtype=int)
+        self._p_fixed = np.zeros(len(self.nodes_list))
+        for i, p in self.fixed_pressure_nodes.items():
+            self._p_fixed[i] = p
+        # Per internal node: (is a flow source, incoming edges, outgoing edges)
+        self._mass_rows = [(getattr(self.nodes_list[idx], 'node_type', None) == 'flow_source',
+                            self.node_incoming_edge_indices.get(self.node_ids[idx], []),
+                            self.node_outgoing_edge_indices.get(self.node_ids[idx], []))
+                           for idx in self.internal_node_indices]
+        # Per edge: (source index, target index, source position among the unknowns or -1, same for the target,
+        # source node, target node, its 3-way TCV inlet port index when the target is a ThreeWayTCV else None, pipe)
+        self._edge_rows = []
+        for edge in self.edges_list:
+            src_idx, tgt_idx = self.node_id_to_idx[edge['source']], self.node_id_to_idx[edge['target']]
+            tgt_node = self.network.nodes[edge['target']]
+            tcv_port = (self._parse_port_idx(edge.get('target_port', 'inlet-0'))
+                        if isinstance(tgt_node, ThreeWayTCV) else None)
+            self._edge_rows.append((src_idx, tgt_idx, self.internal_pos.get(src_idx, -1),
+                                    self.internal_pos.get(tgt_idx, -1), self.nodes_list[src_idx], tgt_node,
+                                    tcv_port, edge['pipe']))
+        self._mass_jacobian = None   # (w_mass it was built with, rows, cols, data), calculate_jacobian
+
+    def _all_pressures(self, p_in_internal) -> np.ndarray:
+        """Pressures of all active nodes: the fixed boundary pressures and the internal unknowns."""
+        p_in_all = self._p_fixed.copy()
+        p_in_all[self._internal_idx] = p_in_internal
+        return p_in_all
+
     # ------------------------------------------------------------------
     # Pressure-control outer loop
     #
@@ -1106,77 +1136,57 @@ class NetworkSolver:
         p_scale = 100000.0
         q_scale = 0.001
         
-        rows = []
-        cols = []
-        data = []
-        
         # Extract variables from x_scaled
         p_in_internal = x_scaled[:num_internal] * p_scale
         q_edges = x_scaled[num_internal:] * q_scale
-        
-        # Reconstruct all node pressures
-        p_in_all = np.zeros(len(self.nodes_list))
-        for i, p in self.fixed_pressure_nodes.items():
-            p_in_all[i] = p
-        for i, idx in enumerate(self.internal_node_indices):
-            p_in_all[idx] = p_in_internal[i]
+        p_in_all = self._all_pressures(p_in_internal)
 
-        internal_pos = {idx: i for i, idx in enumerate(self.internal_node_indices)}
+        internal_pos = self.internal_pos
         w_mass, f_comp = self._current_weights()
 
-        # 1. Mass Balance Rows (a < num_internal)
-        for a, node_idx in enumerate(self.internal_node_indices):
-            node_id = self.node_ids[node_idx]
-            node = self.nodes_list[node_idx]
-            
-            # If a flow source is present, its derivative with respect to its own pressure is 1.0,
-            # and 0 for everything else since its reference pressure is fixed to atmospheric.
-            if getattr(node, 'node_type', None) == 'flow_source':
+        # 1. Mass Balance Rows (a < num_internal): constant while the weights are, so built once per solve
+        if self._mass_jacobian is None or self._mass_jacobian[0] is not w_mass:
+            rows, cols, data = [], [], []
+            for a, (is_flow_source, incoming, outgoing) in enumerate(self._mass_rows):
+                # If a flow source is present, its derivative with respect to its own pressure is 1.0,
+                # and 0 for everything else since its reference pressure is fixed to atmospheric.
+                if is_flow_source:
+                    rows.append(a)
+                    cols.append(a)
+                    data.append(1.0)
+                    continue
+
+                # Tiny regularization to prevent exactly singular matrix (floating nodes)
                 rows.append(a)
                 cols.append(a)
-                data.append(1.0)
-                continue
+                data.append(1e-9)
 
-            # Tiny regularization to prevent exactly singular matrix (floating nodes)
-            rows.append(a)
-            cols.append(a)
-            data.append(1e-9)
-            
-            for j in self.node_incoming_edge_indices.get(node_id, []):
-                rows.append(a)
-                cols.append(num_internal + j)
-                data.append(5.0 * w_mass[j])
-            for j in self.node_outgoing_edge_indices.get(node_id, []):
-                rows.append(a)
-                cols.append(num_internal + j)
-                data.append(-5.0 * w_mass[j])
+                for j in incoming:
+                    rows.append(a)
+                    cols.append(num_internal + j)
+                    data.append(5.0 * w_mass[j])
+                for j in outgoing:
+                    rows.append(a)
+                    cols.append(num_internal + j)
+                    data.append(-5.0 * w_mass[j])
+            self._mass_jacobian = (w_mass, rows, cols, data)
+        rows, cols, data = (list(v) for v in self._mass_jacobian[1:])
 
         # 2. Pressure Balance Rows (a_row = num_internal + j)
-        for j, edge in enumerate(self.edges_list):
+        for j, (src_idx, tgt_idx, src_internal_idx, tgt_internal_idx, src_node, tgt_node_obj, tcv_port, pipe) \
+                in enumerate(self._edge_rows):
             a_row = num_internal + j
-            src_id = edge['source']
-            tgt_id = edge['target']
-            src_idx = self.node_id_to_idx[src_id]
-            tgt_idx = self.node_id_to_idx[tgt_id]
-            src_node = self.nodes_list[src_idx]
-            
-            src_internal_idx = internal_pos.get(src_idx, -1)
-            tgt_internal_idx = internal_pos.get(tgt_idx, -1)
             fj = f_comp[j]   # the source component sees its inlet volume flow fj*q_j
 
             if self._use_mcp_for_node(src_node):
                 # Complementarity rows (check valves, closed relief devices): the node itself decides which
                 # branch of its model applies at the current state, so differentiate exactly that function
                 # numerically instead of an analytic form that can describe a different branch.
-                pipe = edge['pipe']
                 pipe_density = pipe.inlets[0].density
                 pipe_viscosity = pipe.inlets[0].viscosity
                 inlet = src_node.inlets[0] if src_node.inlets else None
                 density = inlet.density if inlet else 1000.0
                 viscosity = inlet.viscosity if inlet else 0.001
-
-                tgt_node_obj = self.network.nodes[tgt_id]
-                tcv_port = self._parse_port_idx(edge.get('target_port', 'inlet-0')) if isinstance(tgt_node_obj, ThreeWayTCV) else None
 
                 def row_residual(p_src, p_tgt, q, sense=None):
                     # Same function as the objective's row for this edge
@@ -1274,7 +1284,6 @@ class NetworkSolver:
                     data.append((q_scale / p_scale) * dp_deriv_src_signed * fj)
 
                 # Term 2: d(dp_pipe)/dq_j
-                pipe = edge['pipe']
                 pipe_inlet = pipe.inlets[0]
                 pipe_density = pipe_inlet.density
                 pipe_viscosity = pipe_inlet.viscosity
@@ -1282,13 +1291,11 @@ class NetworkSolver:
                 
                 # Term 3: d(dp_tcv)/dq_j
                 dp_deriv_tcv = 0.0
-                if isinstance(self.network.nodes[tgt_id], ThreeWayTCV):
-                    tgt_node = self.network.nodes[tgt_id]
-                    port_idx = self._parse_port_idx(edge.get('target_port', 'inlet-0'))
-                    tcv_density = tgt_node.inlets[port_idx].density
-                    tcv_viscosity = tgt_node.inlets[port_idx].viscosity
+                if tcv_port is not None:
+                    tcv_density = tgt_node_obj.inlets[tcv_port].density
+                    tcv_viscosity = tgt_node_obj.inlets[tcv_port].viscosity
                     dp_deriv_tcv = max(100.0, self._numeric_derivative(
-                        lambda q_: tgt_node.calculate_path_dp(q_, tcv_density, port_idx, tcv_viscosity), q_edges[j]))
+                        lambda q_: tgt_node_obj.calculate_path_dp(q_, tcv_density, tcv_port, tcv_viscosity), q_edges[j]))
 
                 rows.append(a_row)
                 cols.append(num_internal + j)
@@ -1312,6 +1319,7 @@ class NetworkSolver:
                 self.x = x
                 self.nfev = nfev
                 self.njev = njev
+                self.residual = r    # objective(x): x and r are only ever updated together
 
         if step_tol is None:
             step_tol = tol
@@ -1429,19 +1437,14 @@ class NetworkSolver:
             check_deadline()   # cooperative solve timeout
             p_in_internal = x_scaled[:num_internal] * p_scale
             q_edges = x_scaled[num_internal:] * q_scale
-            p_in_all = np.zeros(len(self.nodes_list))
-            for i, p in self.fixed_pressure_nodes.items(): p_in_all[i] = p
-            for i, idx in enumerate(self.internal_node_indices): p_in_all[idx] = p_in_internal[i]
-            
+            p_in_all = self._all_pressures(p_in_internal)
+
             residuals = []
             # 1. Mass Balance
-            for i, node_idx in enumerate(self.internal_node_indices):
-                node_id = self.node_ids[node_idx]
-                node = self.nodes_list[node_idx]
-                
+            for i, (is_flow_source, incoming, outgoing) in enumerate(self._mass_rows):
                 # If a flow source is present, bypass mass balance and pin its reference pressure
                 # to the ambient/atmospheric pressure instead.
-                if getattr(node, 'node_type', None) == 'flow_source':
+                if is_flow_source:
                     atm_p = 101325.0
                     if self.network.global_settings:
                         atm_p = getattr(self.network.global_settings, 'atmospheric_pressure', 101325.0)
@@ -1449,26 +1452,19 @@ class NetworkSolver:
                     continue
 
                 # Mass flow, as volume flow at the mean density: the row keeps the size and tolerance of a q row
-                m_in = sum(w_mass[j] * q_edges[j] for j in self.node_incoming_edge_indices.get(node_id, []))
-                m_out = sum(w_mass[j] * q_edges[j] for j in self.node_outgoing_edge_indices.get(node_id, []))
+                m_in = sum(w_mass[j] * q_edges[j] for j in incoming)
+                m_out = sum(w_mass[j] * q_edges[j] for j in outgoing)
                 residuals.append(5.0 * (m_in - m_out) / q_scale + 1e-9 * x_scaled[i])
-            
+
             # 2. Pressure Balance
-            for j, edge in enumerate(self.edges_list):
-                src_id = edge['source']
-                tgt_id = edge['target']
-                src_idx = self.node_id_to_idx[src_id]
-                tgt_idx = self.node_id_to_idx[tgt_id]
-                src_node = self.nodes_list[src_idx]
-                
+            for j, (src_idx, tgt_idx, _, _, src_node, tgt_node, tcv_port, pipe) in enumerate(self._edge_rows):
                 if isinstance(src_node, ThreeWayTCV):
                     p_src_out = p_in_all[src_idx]
                 elif getattr(src_node, 'locked_up', False):
                     p_src_out = src_node.set_pressure   # closed regulator holds its setpoint downstream
                 elif self._use_mcp_for_node(src_node):
-                    pipe = edge['pipe']
                     dp_pipe = pipe.stagnation_delta_p(q_edges[j], pipe.inlets[0].density, pipe.inlets[0].viscosity)
-                    p_out_est = p_in_all[tgt_idx] + dp_pipe + self._tcv_entry_dp(edge, self.network.nodes[tgt_id], q_edges[j])
+                    p_out_est = p_in_all[tgt_idx] + dp_pipe + self._tcv_entry_dp(self.edges_list[j], tgt_node, q_edges[j])
 
                     inlet = src_node.inlets[0] if src_node.inlets else None
                     density = inlet.density if inlet else 1000.0
@@ -1483,14 +1479,12 @@ class NetworkSolver:
                     q_comp = f_comp[j] * q_edges[j]
                     p_src_out = self._get_node_p_out(src_node, p_in_all[src_idx], q_comp, q_comp)
                 
-                if isinstance(self.network.nodes[tgt_id], ThreeWayTCV):
-                    tgt_node = self.network.nodes[tgt_id]
-                    port_idx = self._parse_port_idx(edge.get('target_port', 'inlet-0'))
-                    dp_tcv = tgt_node.calculate_path_dp(q_edges[j], tgt_node.inlets[port_idx].density, port_idx, tgt_node.inlets[port_idx].viscosity)
-                    dp_pipe = edge['pipe'].stagnation_delta_p(q_edges[j], edge['pipe'].inlets[0].density, edge['pipe'].inlets[0].viscosity)
+                if tcv_port is not None:
+                    dp_tcv = tgt_node.calculate_path_dp(q_edges[j], tgt_node.inlets[tcv_port].density, tcv_port, tgt_node.inlets[tcv_port].viscosity)
+                    dp_pipe = pipe.stagnation_delta_p(q_edges[j], pipe.inlets[0].density, pipe.inlets[0].viscosity)
                     residuals.append(((p_src_out - p_in_all[tgt_idx]) - (dp_pipe + dp_tcv)) / p_scale)
                 else:
-                    dp_pipe = edge['pipe'].stagnation_delta_p(q_edges[j], edge['pipe'].inlets[0].density, edge['pipe'].inlets[0].viscosity)
+                    dp_pipe = pipe.stagnation_delta_p(q_edges[j], pipe.inlets[0].density, pipe.inlets[0].viscosity)
                     residuals.append(((p_src_out - p_in_all[tgt_idx]) - dp_pipe) / p_scale)
             return np.array(residuals)
 
@@ -1523,8 +1517,13 @@ class NetworkSolver:
             return root(objective, x_init, method='lm', jac=dense_jacobian, tol=residual_tolerance,
                         options={'maxiter': inner_max_steps, 'xtol': 1e-12, 'ftol': 1e-12})
 
+        def residual_at(candidate):
+            """objective(candidate.x): the Newton solve returns the one it evaluated there, other results are evaluated."""
+            r = getattr(candidate, 'residual', None)
+            return objective(candidate.x) if r is None else r
+
         def is_converged_solution(candidate):
-            return bool(candidate.success and np.max(np.abs(objective(candidate.x))) <= residual_tolerance)
+            return bool(candidate.success and np.max(np.abs(residual_at(candidate))) <= residual_tolerance)
 
         # Whichever method is chosen, the other one is the fallback, and both are held to the same
         # tests: converged to the residual tolerance AND physical (no port below -1 bar(a), no reverse pump flow)
@@ -1544,7 +1543,7 @@ class NetworkSolver:
             if best is not None:
                 sol = best
 
-        final_residuals = objective(sol.x)
+        final_residuals = residual_at(sol)
         self._last_evaluated_residuals = final_residuals
         max_res = np.max(np.abs(final_residuals))
 
