@@ -81,8 +81,8 @@ class ThreeWayTCV(HydraulicNode):
                 if id(port) not in source_ids:
                     port.temperature = mix_temp
 
-        outlet.flow_rate = inlet_0.flow_rate + inlet_1.flow_rate
-        
+        # The port flows are the solved edge flows (the node balances mass, so the outlet is not the sum of the inlets)
+
         # Hydraulics & Port Telemetry:
         dp0 = self.calculate_path_dp(inlet_0.flow_rate, inlet_0.density, 0, inlet_0.viscosity)
         dp1 = self.calculate_path_dp(inlet_1.flow_rate, inlet_1.density, 1, inlet_1.viscosity)

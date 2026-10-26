@@ -38,7 +38,7 @@ Status: `open` / `fixed` / `rejected`. "Confirmed" means it was reproduced by ru
 | D-19 | Junctions / reducer | Junction joining different pipe diameters gains kinetic energy; with a reducer the network can have no steady state | Medium | Confirmed (property test) | open |
 | D-20 | Solver | Reported pressures lag the last property update; a pipe after a viscous drop can show a small static rise | Low | Confirmed (property test) | fixed |
 | D-21 | Solver / dead legs | Stagnant branches keep the 20 °C port default (cold and warm start), depending on the flow noise sign | Low | Confirmed (property test) | fixed |
-| D-22 | Solver | Junctions balance volume flow, not mass flow; mixing at different temperatures loses ~0.4 % mass | Low / decision | Confirmed (property test) | open |
+| D-22 | Solver | Junctions balance volume flow, not mass flow; mixing at different temperatures loses ~0.4 % mass | Low / decision | Confirmed (property test) | fixed |
 | D-23 | Solver / equipment | Analytical dp derivatives of most components are never used by the solver (dead code) | Low / cleanup | Mutation testing | fixed |
 | D-24 | Solver / junctions | A junction downstream of two hot supplies reports ~1 K below the coldest supply without any cooler | Medium | Confirmed (property test, explore) | fixed |
 | D-25 | Frontend / file format | The `.wlf` header is written by hand in three places instead of by `serializeDiagram`, so it can drift when the format changes | Low / cleanup | Code review | fixed |
@@ -52,6 +52,7 @@ Status: `open` / `fixed` / `rejected`. "Confirmed" means it was reproduced by ru
 | D-33 | Linear control valve, remote control valve, regulator (Results tab) | Valve chart draws the bare Cv equation in the browser, without $F_R$ and the valve style | Low (display only) | User question | fixed |
 | D-34 | Solver / stagnant sections | Two separate graph walks and thresholds for stagnant pressures and dead-leg temperatures; the temperature graph is rebuilt on every property pass | Cleanup | Code review | open |
 | D-35 | Solver / micro flows | Pressure drop of a pipe behind a very stiff micro-flow edge is off by ~5 Pa (pipe absorbs the edge residual) | Low | Confirmed (property test, explore) | fixed |
+| D-36 | Solver / micro flows | Explore profile: oil networks with junction flows near 1e-8 m³/s fail the junction enthalpy check, or the outer loop does not settle in 100 iterations | Low | Confirmed (property test, explore) | open |
 
 ---
 
@@ -476,6 +477,10 @@ The analytical `calculate_dp_derivative` methods of those components are only ex
 
 **Fix direction:** a modelling decision. Either keep the volume balance (document it as a limit of the incompressible model in `base_node.md` section 6) or balance mass flow (`rho_in q_in - rho_out q_out`), which couples the hydraulic rows to the property loop. The network properties compare specific enthalpies, not absolute enthalpy flows, so they hold either way.
 
+The same rows hold at two-port nodes, so a component that changes the temperature keeps volume flow too (water heated from 10 to 80 °C: ~2.8 % mass lost).
+
+**Resolution (2026-10-25):** mass balance chosen. The node rows weight each edge flow by $\rho_j/\bar\rho$, the edge density where the flow enters the next node (the density that node mixes with), in the flow direction of the last property pass, held fixed within each hydraulic solve (`_edge_mass_weights`). The mixer and 3-way TCV no longer overwrite the solved outlet flow with the volume sum of their inlets, and the reported port flows are written from the edges again after the components ran (they set outlet = inlet volume flow). `test_mass_is_conserved` checks $\sum \rho q$ at every node, with a pinned 0 °C / 55 °C seawater mixer. The gate then showed that the solve evaluated component curves at the outlet edge flow and the property pass at the inlet flow; with mass balance they differ, and on a stiff curve (PD pump slip) the pump heat was 60x too high. Now every component curve is evaluated at its inlet volume flow, edge mass flow / inlet density (`f` of `_edge_weights`), in the solve, the Jacobian and the report (`base_node.md` section 3.2, `equipment-creation` skill). Remaining limit: one volume flow per pipe, so a pipe's own thermal expansion is not modelled (`base_node.md` section 6).
+
 ---
 
 ## D-23 Unused analytical derivatives
@@ -651,4 +656,18 @@ Nothing is wrong today: a port flagged `stagnant` with a flow between the two th
 **Fix direction:** confirm by printing the edge residual in Pa. Then either scale the edge residual by the edge's own slope (pressure tolerance instead of flow tolerance) or report the pipe outlet pressure from its own drop. A second, separate observation from the same explore runs: one run of `test_network_invariants.py` took 88 minutes (the others 4 minutes); the slow example was not captured.
 
 **Resolution (fixed):** not the edge residual: at the final state the residuals are at most 0.04 Pa. The valve's inlet and outlet pipes carry 2.542694e-8 and 2.542758e-8 m³/s (a node mass residual of 6.4e-13 m³/s, inside the flow tolerance). The solve evaluates the valve drop at the outlet edge's flow, the report evaluated it at the inlet port's flow; at 8.3e12 Pa·s/m³ that is 5.36 Pa, which the reported valve outlet pressure carried into the next pipe. The report now evaluates a node's drop at the flow leaving through its outlet, as the solve does; the pipe matches its own drop within the solve residual, and the valve's reported drop differs from its drop at the inlet flow by 2.5e-5 relative. The 88-minute run is not addressed.
+
+---
+
+## D-36 Junction enthalpy and outer loop at micro flows (explore)
+
+**Where:** `test_junctions_conserve_energy` (`backend/tests/scenarios/test_network_invariants.py`), explore profile, seed `181318304813737089310484609464376911635`. Found while checking the mass balance change (D-22); both cases fail identically on the commit before it (8e5de77).
+
+**What happens:** two generated `sae_10w30` networks:
+1. 13 nodes, 14 edges (mixers, splitters, check valves, heat exchangers, two pressure sources, a tank): `success` but `properties_converged = false` after 100 outer iterations.
+2. A mixer `n7` with inlet 0 feeding 2.2e-9 m³/s at 5 °C, the outlet feeding 9.4e-8 m³/s at 0 °C (reverse) and inlet 1 leaving at 0.104 °C: the enthalpy check fails (199 vs 0.058 J/kg). The flows are just above `Q_DEAD_LEG` (1e-9 m³/s).
+
+The networks are saved in the session scratchpad only; rebuild them from the `@reproduce_failure` blobs of an explore run with that seed.
+
+**Fix direction:** reproduce, pin both as `@example`s, then check whether the mixing at flows near `Q_DEAD_LEG` (`select_inward`, `_solve_mixing`) or the test's `MIXING_FLOW_TOL` is wrong.
 

@@ -78,9 +78,9 @@ def calculate_dp_derivative(self, flow_rate: float, density: float, viscosity: f
 
 ### 3.3 `calculate()`
 Executed during the final telemetry update phase after the system matrix has converged. It:
-1. Computes the final $\Delta P$.
+1. Computes the final $\Delta P$ at the **inlet** volume flow: `inlet.flow_rate` with the inlet port's density and viscosity, never `outlet.flow_rate`. Nodes balance mass, so the outlet volume flow differs where the density changes; the solver also evaluates the curve at the inlet volume flow (`base_node.md` section 3.2).
 2. Sets outlet pressure: `outlet.pressure = inlet.pressure - dp`.
-3. Propagates flow rate: `outlet.flow_rate = inlet.flow_rate`.
+3. Propagates flow rate: `outlet.flow_rate = inlet.flow_rate` (a placeholder for the property pass only; the solver reports the solved outlet edge flow).
 4. Computes throttling thermal rise (Joule-Thomson / viscous dissipation) or energy balance.
 5. Updates fluid properties based on resulting temperature.
 

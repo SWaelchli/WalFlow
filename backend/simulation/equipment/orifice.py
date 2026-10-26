@@ -189,7 +189,7 @@ class Orifice(HydraulicNode):
 
         # Update the outlet conditions
         outlet.pressure = inlet.pressure - dp
-        outlet.flow_rate = inlet.flow_rate  # Incompressible flow means Q_in = Q_out
+        outlet.flow_rate = inlet.flow_rate  # property pass only; the solver reports the solved outlet edge flow
         outlet.density = inlet.density
         outlet.viscosity = inlet.viscosity
 

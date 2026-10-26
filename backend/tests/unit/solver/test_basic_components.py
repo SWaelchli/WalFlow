@@ -93,4 +93,3 @@ if __name__ == "__main__":
     test_tank_static_pressure()
     test_pump_curve()
     test_heat_exchanger()
-    test_mass_balance()

@@ -4,7 +4,7 @@ class Mixer(HydraulicNode):
     """
     A Junction Node that combines multiple inlets into 1 outlet.
     Physically:
-    - Sum(Inflows) = Outflow
+    - Sum(mass inflows) = mass outflow (solver node row)
     - Pressure at all inlets must equal the outlet pressure (neglecting internal friction).
     """
     def __init__(self, name: str, num_inlets: int = 2):
@@ -16,14 +16,10 @@ class Mixer(HydraulicNode):
     def calculate(self):
         """
         Updates outlet based on inlets.
-        The mixer is a constraint node.
+        The mixer is a constraint node; the port flows are the solved edge flows.
         """
-        inlet_sum_q = sum(inlet.flow_rate for inlet in self.inlets)
         outlet = self.outlets[0]
-        
-        # Outflow is the sum of all inflows
-        outlet.flow_rate = inlet_sum_q
-        
+
         # All inlets must be at the same pressure as the outlet
         # In the solver, this will be used to calculate the residual error.
         outlet.pressure = self.inlets[0].pressure

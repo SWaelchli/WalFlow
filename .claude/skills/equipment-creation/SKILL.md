@@ -53,6 +53,7 @@ Create `backend/simulation/equipment/<name>.py` inheriting from `HydraulicNode`:
 - Set solver categorization flags (`is_pressure_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation`).
 - Implement `calculate_delta_p(flow_rate, density, viscosity)`; `calculate_dp_derivative(flow_rate, density, viscosity)` is optional (the solver uses it for pipes and pumps only).
 - Implement `calculate()` to propagate outlet pressure, flow rate, and thermal effects ($dT = \frac{|\Delta P|}{\rho \cdot C_p}$).
+- **Evaluate the curve at the inlet volume flow.** Nodes balance mass, so inlet and outlet volume flows differ wherever the density changes. The solver passes `calculate_delta_p` the inlet volume flow (edge mass flow / inlet port density). In `calculate()`, heat and pressure drop must use `inlet.flow_rate` with the inlet port's density and viscosity, never `outlet.flow_rate`. A stiff curve (PD pump, nearly closed valve) evaluated at the other flow gives a different Δp and heat. See `base_node.md` section 3.2.
 
 📖 **Deep Dive Reference:** Read [references/backend-physics.md](references/backend-physics.md) and [references/solver-stability.md](references/solver-stability.md).
 

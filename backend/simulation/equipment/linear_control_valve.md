@@ -132,7 +132,6 @@ applied to the outlet for $Q \ge 0$ and to the inlet for $Q < 0$, with density a
 | :--- | :--- |
 | `backend/tests/unit/fluids/test_throttling_heat.py::test_f1_16_throttling_heat_magnitude` | Cv 1 at 50 %, drop above 0.5 bar: outlet temperature rise $= \Delta P/(\rho c_p)$ within 2 % |
 | `backend/tests/unit/fluids/test_npsh.py::test_f1_28_valve_outlet_below_vapor_pressure_is_flagged`, `test_f1_28_cold_valve_is_not_flagged` | Cv 5 at 50 % between a 5 m tank and an open tank: water at 120 °C sets `flashing_warning`, at 20 °C it does not |
-| `backend/tests/unit/solver/test_basic_components.py::test_mass_balance` | Valve as the load of a mixer network; flows balance within $10^{-10}$ m³/s |
 | `backend/tests/unit/equipment/test_linear_control_valve.py::test_opening_below_minimum_is_closed` | 0, 0.05 and 0.0999 % are closed: $\Delta P = 10^{12} Q$ |
 | `test_linear_control_valve.py::test_minimum_opening_follows_the_cv_law` | 0.1 % follows the Cv law: twice the flow gives four times the drop (5 %) |
 | `backend/tests/unit/fluids/test_valve_reynolds_factor.py::test_iec_fr_matches_annex_a_reference` | $F_R$ hand-computed from Annex A at Re$_V$ 1 to $2 \times 10^4$: full-size trim (Cv 100), reduced trim (Cv 10), and Cv 124 on DN50 through the held value and the growth cap (section 3.3) |

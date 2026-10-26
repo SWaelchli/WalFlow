@@ -18,6 +18,8 @@ Read-only reviewer of WalFlow's physics engine changes in `backend/simulation/` 
   3. Open or fixed items in `EQUIPMENT_FINDINGS.md` that the change touches or reintroduces.
   4. Physical laws: mass and energy conservation, pressure drop in the flow direction for passive elements,
      reverse/zero flow handling, Jacobian consistent with the residual, units (SI internally), no division by zero.
+     Nodes balance mass, not volume: a component's curve, heat and drop are evaluated at its inlet volume flow
+     (`inlet.flow_rate`, inlet density) everywhere, never at the outlet flow (`base_node.md` section 3.2).
   5. Registration: new or renamed equipment wired in `graph_parser.py` and schemas.
 - Do not report style issues. Only report findings you can tie to a concrete wrong result or crash.
 

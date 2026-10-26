@@ -211,6 +211,29 @@ def _stiff_valve_after_pump_graph():
             "globalSettings": {"fluid_type": "iso_vg_150"}}
 
 
+def _density_change_mixer_graph():
+    """Seawater at 0 and 55 degC mixed 1:1 (1028 and 1009 kg/m3): the mixed stream is denser than the mean volume
+    suggests, so volume flow is not conserved across the mixer. Hypothesis rarely draws such a temperature gap."""
+    return {"nodes": [_node("n0", "mixer"),
+                      _node("n1", "pressure_source", source_pressure_bara=3.0, temperature_k=273.15),
+                      _node("n2", "pressure_source", source_pressure_bara=3.0, temperature_k=328.15),
+                      _node("n3", "tank", level_m=1.0, temperature_k=273.15)],
+            "edges": [_edge("e0", "n1", "n0", 0.05), {**_edge("e1", "n2", "n0", 0.05), "targetHandle": "inlet-1"},
+                      _edge("e2", "n0", "n3", 0.05)],
+            "globalSettings": {"fluid_type": "seawater"}}
+
+
+def _strong_heater_graph():
+    """Water at 10 degC heated to 80 degC in a heat exchanger (a two-port node, not a junction): the outlet is
+    2.8 % less dense, so volume flow is not conserved across it. Hypothesis rarely draws such a duty."""
+    return {"nodes": [_node("n1", "pressure_source", source_pressure_bara=3.0, temperature_k=283.15),
+                      _node("n2", "heat_exchanger", rating_method="ua_direct", ua_direct_w_k=1e6, medium_temp_c=80.0,
+                            rated_flow_lmin=20.0, rated_dp_bar=0.1),
+                      _node("n3", "tank", level_m=1.0, temperature_k=283.15)],
+            "edges": [_edge("e0", "n1", "n2", 0.02), _edge("e1", "n2", "n3", 0.02)],
+            "globalSettings": {"fluid_type": "water"}}
+
+
 @example(_reverse_flow_graph())
 @given(networks())
 def test_well_posed_network_reaches_a_finite_steady_state_with_fluid_properties(graph):
@@ -231,23 +254,40 @@ def test_well_posed_network_reaches_a_finite_steady_state_with_fluid_properties(
                 assert value == pytest.approx(lookup(fluid, port.temperature), rel=1e-9), key
 
 
+@example(_density_change_mixer_graph())
+@example(_strong_heater_graph())
 @given(networks())
 def test_mass_is_conserved(graph):
-    """Every junction and component passes on what it receives; what leaves the source reaches the sink."""
+    """Mass flow, not volume flow, is conserved: every junction and component passes on the mass it receives
+    (a mixer of 0 and 55 degC water, or a heater, changes the volume flow), and what leaves the sources reaches
+    the sinks. Each edge carries rho * q with rho of the fluid at its downstream end."""
     network = solved(graph)
     types = node_types(graph)
-    for node_id, node in network.nodes.items():
-        if types[node_id] in BOUNDARY_TYPES:
-            continue
-        inflow = sum(p.flow_rate for p in node.inlets)
-        outflow = sum(p.flow_rate for p in node.outlets)
-        assert inflow == pytest.approx(outflow, rel=1e-6, abs=FLOW_TOL), node_id
+    mass_floor = FLOW_TOL * 2000.0   # kg/s; FLOW_TOL at the densest fluid
+
+    def mass_flow(edge):
+        pipe = edge["pipe"]
+        q = pipe.inlets[0].flow_rate
+        downstream = pipe.outlets[0] if q >= 0 else pipe.inlets[0]
+        return q * downstream.density
+
     for edge in network.edges:
         pipe = edge["pipe"]
         assert pipe.inlets[0].flow_rate == pytest.approx(pipe.outlets[0].flow_rate, abs=FLOW_TOL), edge["id"]
-    supplied = sum(e["pipe"].inlets[0].flow_rate for e in network.edges if types[e["source"]] in BOUNDARY_TYPES)
-    received = sum(e["pipe"].outlets[0].flow_rate for e in network.edges if types[e["target"]] in BOUNDARY_TYPES)
-    assert supplied == pytest.approx(received, rel=1e-6, abs=FLOW_TOL)
+        # The node's reported port flow is the flow of the edge on it, even where density changes the volume flow
+        src = network.nodes[edge["source"]].outlets[int(edge["source_port"].split("-")[-1])]
+        tgt = network.nodes[edge["target"]].inlets[int(edge["target_port"].split("-")[-1])]
+        assert src.flow_rate == pytest.approx(pipe.inlets[0].flow_rate, abs=FLOW_TOL), edge["id"]
+        assert tgt.flow_rate == pytest.approx(pipe.outlets[0].flow_rate, abs=FLOW_TOL), edge["id"]
+    for node_id in network.nodes:
+        if types[node_id] in BOUNDARY_TYPES:
+            continue
+        inflow = sum(mass_flow(e) for e in network.edges if e["target"] == node_id)
+        outflow = sum(mass_flow(e) for e in network.edges if e["source"] == node_id)
+        assert inflow == pytest.approx(outflow, rel=1e-6, abs=mass_floor), node_id
+    supplied = sum(mass_flow(e) for e in network.edges if types[e["source"]] in BOUNDARY_TYPES)
+    received = sum(mass_flow(e) for e in network.edges if types[e["target"]] in BOUNDARY_TYPES)
+    assert supplied == pytest.approx(received, rel=1e-6, abs=mass_floor)
 
 
 @example(_heavy_crude_viscous_drop_graph())
@@ -310,7 +350,7 @@ def test_dissipation_never_cools_and_mixing_stays_between_its_streams(graph):
 def test_junctions_conserve_energy(graph):
     """At a splitter or mixer every leaving stream carries the mass-weighted mean specific enthalpy h(T) of
     the arriving streams, in whichever direction each stream flows. (Absolute enthalpy flows are not compared:
-    junctions balance volume, not mass.)"""
+    only the mass-weighted mean enthalpy of the arriving streams is checked.)"""
     network = solved(graph)
     fluid = graph["globalSettings"]["fluid_type"]
     types = node_types(graph)
