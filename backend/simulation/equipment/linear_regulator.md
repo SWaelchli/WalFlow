@@ -48,7 +48,7 @@ With this sign, $f$ rises as the valve opens in both modes. The setpoint counts 
 The opening is not part of the Newton system; an outer loop around the hydraulic solve finds it (see [base_node.md](base_node.md#35-outer-loops)):
 
 1. Unknown per controller: $v = \ln(\text{opening})$. Every run starts at 50 %.
-2. After each hydraulic solve, a finite-difference Jacobian $\partial f_i / \partial v_k$ (step 0.03 in $\ln$) is built from extra solves, one per controller.
+2. After each hydraulic solve, a finite-difference Jacobian $\partial f_i / \partial v_k$ (step 0.03 in $\ln$) is built from extra solves, one per controller. These solves hold the fluid properties of the base solve, so the difference measures the opening alone.
 3. Newton step $\Delta v = -J^{-1} f$ (least squares), limited to a factor 10 in opening per iteration (`MAX_STEP_LN`) and clipped to the end stops 0.05 % and 100 %.
 4. If an error changes sign **and** grows, the last step is halved (up to five times). An error that grows with the same sign comes from fluid properties still settling and is not backtracked.
 
