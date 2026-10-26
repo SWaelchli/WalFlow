@@ -52,7 +52,7 @@ Status: `open` / `fixed` / `rejected`. "Confirmed" means it was reproduced by ru
 | D-33 | Linear control valve, remote control valve, regulator (Results tab) | Valve chart draws the bare Cv equation in the browser, without $F_R$ and the valve style | Low (display only) | User question | fixed |
 | D-34 | Solver / stagnant sections | Two separate graph walks and thresholds for stagnant pressures and dead-leg temperatures; the temperature graph is rebuilt on every property pass | Cleanup | Code review | fixed |
 | D-35 | Solver / micro flows | Pressure drop of a pipe behind a very stiff micro-flow edge is off by ~5 Pa (pipe absorbs the edge residual) | Low | Confirmed (property test, explore) | fixed |
-| D-36 | Solver / micro flows | Explore profile: oil networks with junction flows near 1e-8 m³/s fail the junction enthalpy check, or the outer loop does not settle in 100 iterations | Low | Confirmed (property test, explore) | open |
+| D-36 | Solver / micro flows | Explore profile: oil networks with junction flows near 1e-8 m³/s fail the junction enthalpy check, or the outer loop does not settle in 100 iterations | Low | Confirmed (property test, explore) | rejected (test threshold) |
 
 ---
 
@@ -679,4 +679,6 @@ Nothing is wrong today: a port flagged `stagnant` with a flow between the two th
 The networks are saved in the session scratchpad only; rebuild them from the `@reproduce_failure` blobs of an explore run with that seed.
 
 **Fix direction:** reproduce, pin both as `@example`s, then check whether the mixing at flows near `Q_DEAD_LEG` (`select_inward`, `_solve_mixing`) or the test's `MIXING_FLOW_TOL` is wrong.
+
+**Resolution (rejected, 2026-10-26):** the solver was right; the test was not. `test_junctions_conserve_energy` counted an arriving stream only above `FLOW_TOL` (1e-8 m³/s), while the solver mixes every stream above `Q_DEAD_LEG` (1e-9 m³/s). A trickle between the two (case 2: 2.2e-9 m³/s) moves the outlet, and the test then reports an enthalpy mismatch. On the current code the same seed produced such a network in crude_heavy: 9.0e-9 m³/s at 28 500 J/kg plus 3.6e-7 m³/s at 19 000 J/kg mix to 19 233 J/kg, which is correct. The test now selects arriving streams with `MIXING_FLOW_TOL`, as the sibling temperature test already did, and that network is pinned as an `@example`. Case 1 (outer loop not settling) does not reproduce: the explore run with the same seed passes all 2000 examples on the current code. No solver change, so no performance gain either.
 
