@@ -51,7 +51,7 @@ Status: `open` / `fixed` / `rejected`. "Confirmed" means it was reproduced by ru
 | D-32 | Solver | Hydraulic solve fails for flows below about 1e-7 m³/s (e.g. Cv 0.1 TCV with a Cv 0.01 load on ISO VG 46) | Low (micro flows) | Test (D-29a), trace | rejected (cause was D-29) |
 | D-33 | Linear control valve, remote control valve, regulator (Results tab) | Valve chart draws the bare Cv equation in the browser, without $F_R$ and the valve style | Low (display only) | User question | fixed |
 | D-34 | Solver / stagnant sections | Two separate graph walks and thresholds for stagnant pressures and dead-leg temperatures; the temperature graph is rebuilt on every property pass | Cleanup | Code review | open |
-| D-35 | Solver / micro flows | Pressure drop of a pipe behind a very stiff micro-flow edge is off by ~5 Pa (pipe absorbs the edge residual) | Low | Confirmed (property test, explore) | open |
+| D-35 | Solver / micro flows | Pressure drop of a pipe behind a very stiff micro-flow edge is off by ~5 Pa (pipe absorbs the edge residual) | Low | Confirmed (property test, explore) | fixed |
 
 ---
 
@@ -649,4 +649,6 @@ Nothing is wrong today: a port flagged `stagnant` with a flow between the two th
 **Likely cause (not confirmed):** at that stiffness a flow error of about 6e-13 m³/s, far below the solver's flow tolerances, is already 5 Pa. The reported port pressures follow each component's drop from the node pressures, so the pipe takes up what is left of the edge equation.
 
 **Fix direction:** confirm by printing the edge residual in Pa. Then either scale the edge residual by the edge's own slope (pressure tolerance instead of flow tolerance) or report the pipe outlet pressure from its own drop. A second, separate observation from the same explore runs: one run of `test_network_invariants.py` took 88 minutes (the others 4 minutes); the slow example was not captured.
+
+**Resolution (fixed):** not the edge residual: at the final state the residuals are at most 0.04 Pa. The valve's inlet and outlet pipes carry 2.542694e-8 and 2.542758e-8 m³/s (a node mass residual of 6.4e-13 m³/s, inside the flow tolerance). The solve evaluates the valve drop at the outlet edge's flow, the report evaluated it at the inlet port's flow; at 8.3e12 Pa·s/m³ that is 5.36 Pa, which the reported valve outlet pressure carried into the next pipe. The report now evaluates a node's drop at the flow leaving through its outlet, as the solve does; the pipe matches its own drop within the solve residual, and the valve's reported drop differs from its drop at the inlet flow by 2.5e-5 relative. The 88-minute run is not addressed.
 
