@@ -91,6 +91,7 @@ All notable changes to the WälFlow project will be documented in this file.
 - **Standards register**: The standards and literature cited by the equipment documents are collected in `docs/STANDARDS_REGISTER.md` with current editions and a status per claim (all unverified until checked against the source). Section 2 of each equipment document is a claim table, and the `standard-verification` skill describes how a supplied standard is checked.
 - **Solver speed**: Each hydraulic solve updates the fluid properties once instead of twice, which brings solve times on large networks back to their earlier level.
 - **Mass balance at nodes**: Every node now conserves mass flow instead of volume flow, so the volume flow rises where fluid is heated or mixed hot (about 2.8 % for water heated from 10 to 80 °C) and falls where it is cooled. Every component's curve is evaluated at its inlet volume flow.
+- **Solver topology tables**: The ports at both ends of every pipe are looked up once per solver and shared by the stagnant-section pressures and temperatures, the fluid-property passes and the mixing solve, instead of being rebuilt on every pass. Results are unchanged.
 
 ### Fixed
 
