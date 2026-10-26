@@ -106,6 +106,7 @@ import exampleRemoteControl from './data/examples/Example_Remote_Control.wlf';
 import exampleParallelPumps from './data/examples/Example_Parallel_Pumps.wlf';
 import exampleLargeNetwork from './data/examples/Example_Large_Reference_Network.wlf';
 import exampleMultiPsv from './data/examples/Example_Multi_PSV_Protection.wlf';
+import exampleJeppson from './data/examples/Example_Jeppson_7Pipe_Network.wlf';
 import greetingCanvas from './data/GreetingCanvas.wlf';
 
 const nodeTypes = {
@@ -1539,6 +1540,9 @@ function WalFlowContent() {
               "Remote Control & Interlocks": exampleRemoteControl,
               "Parallel Pumping & Min-Flow": exampleParallelPumps,
               "Multi-PSV & Rupture Disc Protection": exampleMultiPsv
+            },
+            "Validation Benchmarks": {
+              "Jeppson (1974) 7-Pipe Network": exampleJeppson
             }
           }}
           isAuthenticated={isAuthenticated}

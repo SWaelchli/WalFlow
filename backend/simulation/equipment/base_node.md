@@ -135,7 +135,7 @@ Once the temperatures change by less than 0.05 K between outer iterations, $\max
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | Label | text | `self.name` | - | `<type>_<id>` | any | Name shown in results and messages |
 | Active | bool | `self.active` | - | `true` | `true` / `false` | Component in service; effect per component (section 6) |
-| Ramp during relief analysis | bool | `self.relief_ramp_enabled` | - | `true` | `true` / `false` | A driver (pump, source) takes part in the relief ramp |
+| Ramp during relief analysis | bool | `self.relief_ramp_enabled` | - | `true` | `true` / `false` | A driver (pump, source; not a withdrawing flow source) takes part in the relief ramp |
 
 ### 5.1 Field naming rule
 

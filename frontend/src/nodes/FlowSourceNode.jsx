@@ -15,12 +15,14 @@ export default function FlowSourceNode({ id, data, selected }) {
 
   const flowLmin = data.source_flow_lmin ?? 50.0;
   const tempK = data.temperature_k ?? 293.15;
+  // Negative set flow = withdrawal (demand): shown as a draw-off magnitude, not a signed injection
+  const isWithdrawal = Number(flowLmin) < 0;
 
   // Live telemetry (post-simulation) — prefer outlet telemetry
   const telemetryOutlet = data.telemetry?.outlets?.[0];
   const liveFlowFormatted = telemetryOutlet?.flow_rate != null
     ? formatFlowM3s(Math.abs(telemetryOutlet.flow_rate))
-    : formatFlow(flowLmin);
+    : formatFlow(Math.abs(Number(flowLmin)));
   const liveTempFormatted = telemetryOutlet?.temperature != null
     ? formatTemperatureK(telemetryOutlet.temperature)
     : formatTemperatureK(tempK);
@@ -37,8 +39,8 @@ export default function FlowSourceNode({ id, data, selected }) {
           <div style={{ fontSize: '9px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>
             {data.label || 'FLOW SOURCE'}
           </div>
-          <div style={{ fontSize: '10px', fontWeight: 'bold' }}>
-            {liveFlowFormatted} {labels.flow}
+          <div style={{ fontSize: '10px', fontWeight: 'bold' }} title={isWithdrawal ? 'Withdrawal (negative set flow)' : undefined}>
+            {isWithdrawal && 'Draw-off '}{liveFlowFormatted} {labels.flow}
           </div>
           <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)' }}>
             {liveTempFormatted} {labels.temperature}

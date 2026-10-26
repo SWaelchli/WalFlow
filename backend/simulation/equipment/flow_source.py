@@ -36,7 +36,8 @@ class FlowSource(HydraulicNode):
         self.is_pressure_boundary = False
         self.blocks_flow_on_shutdown = False
 
-        self.is_relief_driver = True
+        # A negative set flow withdraws fluid (a demand); ramping it up only lowers pressures, so it drives no relief
+        self.is_relief_driver = self.source_flow >= 0.0
         self._ramp_nominal_flow = None
 
         # 0 inlets + 1 outlet

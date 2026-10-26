@@ -46,6 +46,11 @@ This document outlines planned features, overlays, and enhancements for the WalF
   * **Concept:** Device-type option for PSVs. Today (B1c) a valve opens when its inlet gauge pressure reaches the set pressure, which is how balanced-bellows and pilot valves behave. A conventional spring valve opens at set + superimposed backpressure (differential across the seat), and built-up backpressure above ~10 % of set reduces its capacity (API 520 Kb factor).
   * **Engineering Value:** Correct opening points and capacities for relief valves discharging into a pressurised header or a long outlet line.
 
+- [ ] **🚰 Demand (Consumer Draw-Off) Component**
+  * **Concept:** A dedicated demand node with one inlet that withdraws a set flow at a junction, as in water distribution networks: a sink symbol, flow into the node shown positive, optionally a pressure-dependent demand (orifice to atmosphere) next to the fixed demand.
+  * **Today (2026-10-26):** a flow source with a negative set flow is the withdrawal (`flow_source.md` section 3.6). It has only an outlet port, so the pipe to it is drawn from the source into the network and its flow shows negative; the Jeppson validation example uses it.
+  * **Engineering Value:** Distribution networks and literature benchmarks (Jeppson, AFT verification cases) with many junction demands, drawn with the flow direction and without reversed pipes.
+
 - [ ] **🔌 Multiple Nozzles on Fluid Sources (Tanks and Pressure Sources)**
   * **Concept:** Configurable number of inlet and outlet nozzles on a tank or pressure source (e.g. two pump suctions and a separate relief return on one tank), each a separate port with its own pipe, optionally with its own nozzle height.
   * **Today (2026-10-16):** a port takes one pipe. A line that branches needs a splitter or mixer; separate nozzles are modelled with a second tank at the same level and conditions. The solver already treats a tank or pressure source as one fixed-pressure node, so extra ports mainly need the node component, the port table in `networkValidation.js` (`PORTS_BY_TYPE`) and the parser.

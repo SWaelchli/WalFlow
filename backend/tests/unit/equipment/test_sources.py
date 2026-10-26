@@ -45,18 +45,25 @@ class TestFlowSource:
         source = _make_flow_source()
         assert source.is_pressure_boundary is False
 
-    @pytest.mark.parametrize("flow_ls, sign", [
-        pytest.param(1.0, 0, id="at-target"),          # 1.0 L/s = 60 L/min
-        pytest.param(0.5, -1, id="below-target-boosts"),  # adds pressure boost
-        pytest.param(1.5, +1, id="above-target-resists"),  # resists flow
+    @pytest.mark.parametrize("set_lmin, flow_ls, sign", [
+        pytest.param(60.0, 1.0, 0, id="at-target"),          # 1.0 L/s = 60 L/min
+        pytest.param(60.0, 0.5, -1, id="below-target-boosts"),  # adds pressure boost
+        pytest.param(60.0, 1.5, +1, id="above-target-resists"),  # resists flow
+        pytest.param(-60.0, -1.0, 0, id="withdrawal-at-target"),
+        pytest.param(-60.0, -0.5, +1, id="withdrawal-too-little-resists"),  # draws less than set: dp is a drop
+        pytest.param(-60.0, -1.5, -1, id="withdrawal-too-much-boosts"),
     ])
-    def test_delta_p_sign_follows_flow_error(self, flow_ls, sign):
-        source = _make_flow_source(flow_lmin=60.0)
+    def test_delta_p_sign_follows_flow_error(self, set_lmin, flow_ls, sign):
+        source = _make_flow_source(flow_lmin=set_lmin)
         dp = source.calculate_delta_p(flow_ls / 1000.0, 1000.0)
         if sign == 0:
             assert abs(dp) < 1e-7
         else:
             assert dp * sign > 0.0
+
+    @pytest.mark.parametrize("set_lmin, drives_relief", [(50.0, True), (0.0, True), (-50.0, False)])
+    def test_only_a_withdrawal_is_not_a_relief_driver(self, set_lmin, drives_relief):
+        assert _make_flow_source(flow_lmin=set_lmin).is_relief_driver is drives_relief
 
     def test_delta_p_hard_cap_not_exceeded(self):
         source = _make_flow_source(flow_lmin=60.0)
@@ -120,14 +127,18 @@ class TestNetworkSolve:
         # Verify port pressure is correctly solved and stamped to 6 bara
         assert abs(source.outlets[0].pressure - 600_000.0) < 1.0
 
-    def test_flow_source_network_solve(self):
+    @pytest.mark.parametrize("target_lmin, level_m, draw_off_below_atm", [
+        pytest.param(45.0, 2.0, False, id="injection"),
+        pytest.param(-45.0, 2.0, False, id="withdrawal"),
+        pytest.param(-200.0, 0.2, True, id="withdrawal-sub-atmospheric-draw-off"),
+    ])
+    def test_flow_source_network_solve(self, target_lmin, level_m, draw_off_below_atm):
         """
-        FlowSource in a 2-node circuit: FlowSource -> Pipe -> Tank.
+        FlowSource in a 2-node circuit: FlowSource -> Pipe -> Tank. A negative set flow draws from the tank.
         """
         gs = self._gs()
-        target_lmin = 45.0
         source = _make_flow_source(flow_lmin=target_lmin)
-        tank = self._make_tank('t_out', level_m=2.0)
+        tank = self._make_tank('t_out', level_m=level_m)
         pipe = self._make_pipe('p1')
 
         nodes = {'src': source, 't_out': tank}
@@ -146,9 +157,10 @@ class TestNetworkSolve:
         assert stats is not None
         assert stats['success'] is True
 
-        # Flow source should supply flow close to target
-        actual_flow_lmin = abs(source.outlets[0].flow_rate) * 60_000.0
+        # Flow source should supply flow close to target (signed: a negative set flow runs from the tank)
+        actual_flow_lmin = source.outlets[0].flow_rate * 60_000.0
         assert abs(actual_flow_lmin - target_lmin) < 1.0
+        assert bool(source.outlets[0].pressure < gs.atmospheric_pressure) is draw_off_below_atm
 
         # The solver pinned the internal node pressure to atmospheric_pressure (101,325 Pa).
         # Therefore, the outlet pressure must equal atmospheric_pressure - dp.

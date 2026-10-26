@@ -179,6 +179,13 @@ export default function SetupPanel({
           setLocalDrafts({});
           return;
         }
+      } else if (field === 'source_flow_lmin') {
+        // Any finite flow: negative = withdrawal (demand), 0 stops the source
+        if (!Number.isFinite(numericValue)) {
+          notify('Set flow must be a number (negative = withdrawal).', 'warning');
+          setLocalDrafts({});
+          return;
+        }
       } else if (isNaN(numericValue) || numericValue <= 0) {
         notify(`${field} must be a positive number greater than zero.`, 'warning');
         setLocalDrafts({});
@@ -702,7 +709,9 @@ export default function SetupPanel({
             <>
               {node?.data?.telemetry?.pressure_cap_reached && (
                 <div role="alert" style={{ background: '#FEF2F2', border: '1px solid #FEE2E2', borderRadius: '4px', padding: '8px', fontSize: 'var(--fs-xs)', color: 'var(--color-danger-text)' }}>
-                  Discharge pressure limit reached: the delivered flow is below the set flow. Raise the max. discharge pressure or check for a blocked outlet path.
+                  {Number(effectiveData.source_flow_lmin ?? 50.0) < 0
+                    ? 'Discharge pressure limit reached: the network pressure at the draw-off exceeds the max. discharge pressure, so the withdrawn flow exceeds the set draw-off. Raise the max. discharge pressure above the network pressure.'
+                    : 'Discharge pressure limit reached: the delivered flow is below the set flow. Raise the max. discharge pressure or check for a blocked outlet path.'}
                 </div>
               )}
               <div>
@@ -717,6 +726,9 @@ export default function SetupPanel({
                   onChange={(e) => handleDraftChange('source_flow_lmin', e.target.value)}
                   onBlur={(e) => validateAndCommit('source_flow_lmin', e.target.value, true)}
                 />
+                <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
+                  Negative = withdrawal (demand); 0 stops the source.
+                </p>
               </div>
 
               <div>
@@ -732,7 +744,9 @@ export default function SetupPanel({
                   onBlur={(e) => validateAndCommit('max_discharge_pressure_bara', e.target.value, true)}
                 />
                 <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
-                  Above this outlet pressure the delivered flow drops below the set flow.
+                  {Number(effectiveData.source_flow_lmin ?? 50.0) < 0
+                    ? 'Keep above the network pressure at the draw-off; above it more than the set withdrawal flows in.'
+                    : 'Above this outlet pressure the delivered flow drops below the set flow.'}
                 </p>
               </div>
 
