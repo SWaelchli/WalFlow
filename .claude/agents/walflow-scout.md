@@ -1,6 +1,6 @@
 ---
 name: walflow-scout
-description: Use this agent when you must locate code across WalFlow before changing it: where a feature, equipment, parser registration, WebSocket field or UI wiring lives. Must be invoked before multi-file changes touching unseen code.
+description: "Use this agent when you must locate code across WalFlow before changing it: where a feature, equipment, parser registration, WebSocket field or UI wiring lives. Must be invoked before multi-file changes touching unseen code."
 tools: Read, Grep, Glob
 model: haiku
 ---
