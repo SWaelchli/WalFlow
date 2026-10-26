@@ -136,10 +136,10 @@ def pumps(draw, node_type: str):
 
 # Components placed inside generated networks. Their behaviour is a function of the local flow only,
 # so every generated network has exactly one steady state; controllers, relief devices and the 3-way TCV
-# have their own scenarios. The reducer is left out: a junction joining pipes of different
-# diameters keeps one static pressure and so gains kinetic energy for free, which a reducer turns back
-# into static pressure; such a loop can have no steady state.
+# have their own scenarios. The reducer joins pipes of different bores: the solve works on total pressures, so
+# junctions of different diameters neither create nor lose kinetic energy.
 NETWORK_COMPONENTS = {
+    "reducer": RESISTANCE_DATA["reducer"],
     "orifice": RESISTANCE_DATA["orifice"],
     "linear_control_valve": st.fixed_dictionaries({
         "max_cv": log_uniform(0.5, 50.0), "opening_pct": st.floats(5.0, 100.0)}),

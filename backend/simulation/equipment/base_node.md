@@ -22,7 +22,7 @@ Not applicable — this is the software contract between the components and the 
 
 The solver (`NetworkSolver`, `backend/simulation/solver.py`) works on the reduced network after topology pruning (section 6). Its unknowns are:
 
-- $p_i$: the inlet pressure of every node that is not a pressure boundary [Pa];
+- $p_i$: the inlet **total** (stagnation) pressure of every node that is not a pressure boundary [Pa], see 3.6;
 - $q_j$: the volume flow on every pipe (edge) [m³/s], positive from the edge source to the edge target.
 
 There is one equation per unknown:
@@ -35,7 +35,9 @@ The node conserves mass flow $\rho_j q_j$. $\rho_j$ is the density of edge $j$ a
 
 **Pressure balance, one row per edge** from node $s$ to node $t$:
 
-$$r_j = \frac{P_{\text{out},s}(p_s, f_j q_j) - p_t - \Delta P_{\text{pipe}}(q_j)}{p_{\text{scale}}} = 0$$
+$$r_j = \frac{P_{\text{out},s}(p_s, f_j q_j) - p_t - \Delta P_{\text{pipe,0}}(q_j)}{p_{\text{scale}}} = 0$$
+
+$\Delta P_{\text{pipe,0}}$ is the pipe's total-pressure drop (`stagnation_delta_p`, [pipe.md](pipe.md#35-total-pressure-drop)).
 
 Scales: $p_{\text{scale}} = 10^5$ Pa, $q_{\text{scale}} = 10^{-3}$ m³/s.
 
@@ -61,7 +63,7 @@ The solver builds a sparse Jacobian. The derivative of a pressure row with respe
 
 | Term | Source |
 | :--- | :--- |
-| Pipe $\partial \Delta P_{\text{pipe}} / \partial q$ | `Pipe.calculate_dp_derivative`, floored at $10^{-3}$ Pa·s/m³ |
+| Pipe $\partial \Delta P_{\text{pipe,0}} / \partial q$ | `Pipe.stagnation_dp_derivative`, floored at $10^{-3}$ Pa·s/m³ |
 | Pump $\partial \Delta P / \partial q$ | the pump's `calculate_dp_derivative` (volumetric pump: `outlet_derivatives`) |
 | Other resistances | central difference of the node outlet pressure, step $h = \max(10^{-12}, 10^{-4} |q|)$ m³/s |
 | MCP rows | central difference of the whole row residual |
@@ -70,7 +72,7 @@ So for valves, orifices, filters and the like, the solver does **not** call thei
 
 ### 3.4 Complementarity (MCP) components
 
-A component with `use_mcp_formulation = True` (and every relief device) gets a row in which its `calculate_delta_p` also receives the inlet pressure and an estimate of the outlet pressure ($p_t + \Delta P_{\text{pipe}}$). This lets a check valve choose between "closed, $q = 0$" and "open, flow equation" smoothly (Fischer-Burmeister), see [check_valve.md](check_valve.md). Relief devices decide open or closed between solves and hold that state during the solve, see [relief_device.md](relief_device.md).
+A component with `use_mcp_formulation = True` (and every relief device) gets a row in which its `calculate_delta_p` also receives the inlet pressure and an estimate of the outlet pressure ($p_t + \Delta P_{\text{pipe,0}}$). This lets a check valve choose between "closed, $q = 0$" and "open, flow equation" smoothly (Fischer-Burmeister), see [check_valve.md](check_valve.md). Relief devices decide open or closed between solves and hold that state during the solve, see [relief_device.md](relief_device.md).
 
 ### 3.5 Outer loops
 
@@ -82,6 +84,16 @@ One Newton solve finds the hydraulic equilibrium for fixed fluid properties and 
 4. **Relief device states**, see [relief_device.md](relief_device.md).
 
 All of these are steady-state fixed-point iterations, not time steps.
+
+### 3.6 Total pressure at nodes, static pressure at ports
+
+Every side of a node holds one **total** pressure $p_0 = p + \rho v^2/2$. Where pipes of different diameters meet, the fluid changes speed, and only a total pressure keeps the junction from gaining kinetic energy. At one shared static pressure, a large pipe feeding a small one accelerates the flow for free, and a reducer downstream turns that into static pressure; around a loop the gain grows faster with the flow than friction, and the network has no steady state.
+
+- **Components** drop or raise the total pressure. A valve or orifice between two pipes of one size drops the static pressure by the same amount; a pump's rise is a total head rise (Hydraulic Institute); a reducer drops only its losses ([reducer.md](reducer.md)).
+- **Junctions** (splitter, mixer, measuring point) pass the total pressure unchanged. They neither gain nor lose energy; a tee loss is not modelled.
+- **Reservoirs** (tank, pressure source) hold fluid at rest: their pressure is a stagnation pressure, and the pipe on them takes the entry or the exit, see [pipe.md](pipe.md#34-entry-from-a-reservoir).
+- **Reported pressures are static.** `_report_static_pressures` sets a port with one pipe to $p_0 - \rho v^2/2$ of that pipe (its velocity and density), and a pipe end on a node likewise. A port or pipe end on a reservoir reports the reservoir pressure. Only flowing pipes count (above `Q_DEAD_LEG`): a port with several flowing pipes has no single velocity and reports $p_0$ (the canvas allows one pipe per port; a hand-built network may have more). A port without flow on a side (inlets or outlets) that has flowing ports of the same total (within 1 Pa) reports the lowest static pressure among them, as a gauge on a dead tee branch reads the run's static pressure; the zero-flow section behind it, or behind a flowing port, drops by the same amount (its pipes and the nodes without flow, up to a reservoir and only between ports of the same total, so not across a closed check or relief valve or a stopped positive-displacement pump; a centrifugal pump passes it with its shutoff head). A section reached from several ports takes the largest drop. The highest reported pressure (`max_pressure_bar`) is therefore a static pressure. Each port keeps its total in `total_pressure` (read with `total_of`).
+- **What compares with which:** pressure controllers hold the static pressure they sense, as a gauge reads it. Relief devices compare total pressures, in the solve and between solves, so the held state and the solved flow agree; a closed device passes no flow, and at its set point both are equal. NPSHa uses the total suction pressure. Pump shaft power, motor load and the discharge pressure caps (volumetric pump, flow source) use the total pressures the solve uses.
 
 ## 4. Thermal & Energy Balance
 

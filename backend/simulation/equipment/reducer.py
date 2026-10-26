@@ -129,10 +129,11 @@ class Reducer(HydraulicNode):
 
     def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float) -> float:
         """
-        Calculates total pressure drop P_in - P_out for the given flow rate.
+        Total-pressure drop between the nodes at its two sides, the network solve's row: the losses only. The
+        Bernoulli change shows in the static pressures, which the solver reports from the velocity in the pipes.
         """
-        _, _, dp_total = self.calculate_losses(flow_rate, density, viscosity)
-        return dp_total
+        dp_loss, _, _ = self.calculate_losses(flow_rate, density, viscosity)
+        return dp_loss
 
     def calculate(self):
         """Propagates pressure, flow, and thermal viscous dissipation to ports."""

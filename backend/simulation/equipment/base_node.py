@@ -14,6 +14,12 @@ Q_DEAD_LEG = 1e-9
 Q_STAGNANT = 1e-7
 
 
+def total_of(port) -> float:
+    """Total pressure at a port: static plus the velocity head of its pipe, as the solver reported it; the static
+    pressure where no total is reported (before a solve, or while the solver still writes totals to the ports)."""
+    return port.pressure if port.total_pressure is None else port.total_pressure
+
+
 def select_inward(items, inflow):
     """The items that feed a node, given their inward flow (positive into the node): flows above Q_DEAD_LEG. A smaller
     flow is solver noise and feeds no mix (a 1e-10 m³/s trickle 70 K hotter would shift it 0.1 K), unless only such
@@ -145,11 +151,12 @@ class HydraulicNode:
             port.viscosity = FluidProperties.get_viscosity(fluid_type, port.temperature)
 
     def update_npsh(self, inlet) -> None:
-        """NPSHa = (P_in - Pv)/(rho g) at a pump suction, always reported. The cavitation warning is
-        raised when NPSHa < NPSHr + margin (NPSHr 0 when no datasheet value is entered)."""
+        """NPSHa = (P_total - Pv)/(rho g) at a pump suction, always reported: the total suction pressure, static
+        plus the suction velocity head (total_of). The cavitation warning is raised when NPSHa < NPSHr + margin
+        (NPSHr 0 when no datasheet value is entered)."""
         fluid_type = getattr(self.global_settings, 'fluid_type', 'water')
         pv = FluidProperties.get_vapor_pressure(fluid_type, inlet.temperature)
-        self.npsha_m = (inlet.pressure - pv) / (max(1.0, inlet.density) * 9.81)
+        self.npsha_m = (total_of(inlet) - pv) / (max(1.0, inlet.density) * 9.81)
         required = (self.npshr_m or 0.0) + self.npsh_margin_m
         self.cavitation_warning = bool(getattr(self, 'active', True) and self.npsha_m < required)
 

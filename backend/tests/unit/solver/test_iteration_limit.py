@@ -1,5 +1,7 @@
 """When the control loop stops at its iteration limit, the reported state is still one
 hydraulic solution: every pipe and valve obeys its own ΔP(Q), and no absolute pressure is negative."""
+from physics_refs import pipe_end_total
+from simulation.equipment.base_node import total_of
 from walflow_paths import EXAMPLES_DIR
 import pytest
 
@@ -36,10 +38,10 @@ def test_reported_state_is_consistent(control_iterations):
         # 1 %: since the fluid properties are iterated to consistency even when the control
         # loop stops at its limit. The old defect gave 15-28 % here.
         assert dp_reported == pytest.approx(dp_model, rel=0.01, abs=50.0), f"pipe {pipe.name}"
-        # Pipe ends carry the pressures of the components they connect
+        # Pipe ends sit at the total pressure of the components they connect, less their own velocity head
         src, tgt = net.nodes[edge["source"]], net.nodes[edge["target"]]
-        assert pipe.inlets[0].pressure == pytest.approx(src.outlets[0].pressure, abs=50.0)
-        assert pipe.outlets[0].pressure == pytest.approx(tgt.inlets[0].pressure, abs=50.0)
+        assert pipe_end_total(pipe, pipe.inlets[0], src) == pytest.approx(total_of(src.outlets[0]), abs=50.0)
+        assert pipe_end_total(pipe, pipe.outlets[0], tgt) == pytest.approx(total_of(tgt.inlets[0]), abs=50.0)
 
     for node in net.nodes.values():
         for port in node.inlets + node.outlets:
@@ -48,5 +50,5 @@ def test_reported_state_is_consistent(control_iterations):
     for node in net.nodes.values():
         if node.node_type in ("linear_regulator", "linear_control_valve", "remote_control_valve"):
             p_in, p_out = node.inlets[0], node.outlets[0]
-            assert p_in.pressure - p_out.pressure == pytest.approx(
+            assert total_of(p_in) - total_of(p_out) == pytest.approx(
                 node.calculate_delta_p(p_in.flow_rate, p_in.density, p_in.viscosity), rel=0.01, abs=50.0)

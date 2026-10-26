@@ -7,6 +7,7 @@ seat), held where no check valve would open and no relief device would lift, and
 import pytest
 
 from physics_refs import solve
+from simulation.equipment.base_node import total_of
 from simulation.equipment.centrifugal_pump import CentrifugalPump
 from simulation.equipment.check_valve import CheckValve
 from simulation.equipment.check_valve_orifice import CheckValveOrifice
@@ -92,7 +93,7 @@ def test_section_behind_a_stopped_pump_sits_at_its_suction_pressure(method):
     # Pipe 106 in the reference network: no flow, so the same pressure at both ends and at the pump inlet
     assert nodes["pump"].inlets[0].pressure == pytest.approx(p_suction, abs=1.0)
     assert pipes["e_suction"].outlets[0].pressure == pytest.approx(p_suction, abs=1.0)
-    assert nodes["nrv"].outlets[0].pressure == pytest.approx(nodes["mix"].inlets[0].pressure, abs=1.0)
+    assert nodes["nrv"].outlets[0].pressure == pytest.approx(nodes["mix"].inlets[0].pressure, abs=1.0)   # dead mixer inlet reads the run's static pressure (flowing header inlet)
     assert nodes["nrv"].outlets[0].pressure > p_suction + 1e5
 
 
@@ -328,6 +329,32 @@ def test_section_behind_a_check_valve_with_orifice_takes_the_header_pressure(met
     for port in (nodes["nrv"].inlets[0], pump.outlets[0]):
         assert port.flow_rate == pytest.approx(0.0, abs=1e-9)
         assert port.pressure == pytest.approx(p_header_side, abs=1.0)
+
+
+def test_dead_tee_branch_reads_the_static_pressure_of_the_flowing_run():
+    # A gauge on a dead branch of a tee reads the run's static pressure, not the total: the dead splitter port,
+    # its pipe (both ends) and the node behind it drop by the velocity head, while the total stays reported
+    NetworkSolver.clear_warm_start_cache()
+    nodes = {"src": PressureSource("Source", source_pressure=6e5), "tee": Splitter("Tee"),
+             "sink": Tank("Sink", fluid_level=0.0), "end": Splitter("Dead end")}
+    edges = [{"id": "e_in", "source": "src", "target": "tee", "pipe": Pipe("feed", 1, ID)},
+             {"id": "e_run", "source": "tee", "target": "sink", "source_port": "outlet-0", "pipe": Pipe("run", 1, ID)},
+             {"id": "e_dead", "source": "tee", "target": "end", "source_port": "outlet-1", "pipe": Pipe("dead leg", 1, ID)}]
+    stats = solve(nodes, edges)
+    assert stats["success"], stats.get("error")
+    pipes = {e["id"]: e["pipe"] for e in edges}
+    feed = pipes["e_in"].outlets[0]
+    velocity = feed.flow_rate / (3.141592653589793 * ID**2 / 4)
+    head = feed.density * velocity**2 / 2
+    assert velocity > 3.0
+    run_static = nodes["tee"].outlets[0].pressure
+    dead = nodes["tee"].outlets[1]
+    assert dead.flow_rate == pytest.approx(0.0, abs=1e-9)
+    for port in (dead, *pipes["e_dead"].inlets, *pipes["e_dead"].outlets, *nodes["end"].inlets):
+        assert port.pressure == pytest.approx(run_static, abs=1e-3)
+    assert total_of(dead) == pytest.approx(total_of(nodes["tee"].inlets[0]), abs=1e-3)
+    assert total_of(dead) == pytest.approx(feed.pressure + head, rel=1e-2 * head / feed.pressure)
+    assert total_of(dead) > run_static + 0.5 * head
 
 
 def test_dead_leg_behind_a_check_valve_takes_the_temperature_of_its_nearest_live_side():

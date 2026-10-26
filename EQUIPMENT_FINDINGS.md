@@ -35,7 +35,7 @@ Status: `open` / `fixed` / `rejected`. "Confirmed" means it was reproduced by ru
 | D-16 | Tank | Default level 2 m in the UI, 1 m in the parser | Cleanup | Code reading | fixed |
 | D-17 | PSV | `action_mode = rupture_disc` duplicates the rupture disc component | Cleanup / decision | Code reading | fixed |
 | D-18 | Mixer | Inlet with reverse flow reports default density / stale viscosity | Low | Confirmed (property test) | fixed |
-| D-19 | Junctions / reducer | Junction joining different pipe diameters gains kinetic energy; with a reducer the network can have no steady state | Medium | Confirmed (property test) | open |
+| D-19 | Junctions / reducer | Junction joining different pipe diameters gains kinetic energy; with a reducer the network can have no steady state | Medium | Confirmed (property test) | fixed |
 | D-20 | Solver | Reported pressures lag the last property update; a pipe after a viscous drop can show a small static rise | Low | Confirmed (property test) | fixed |
 | D-21 | Solver / dead legs | Stagnant branches keep the 20 °C port default (cold and warm start), depending on the flow noise sign | Low | Confirmed (property test) | fixed |
 | D-22 | Solver | Junctions balance volume flow, not mass flow; mixing at different temperatures loses ~0.4 % mass | Low / decision | Confirmed (property test) | fixed |
@@ -434,6 +434,13 @@ The analytical `calculate_dp_derivative` methods of those components are only ex
 **Fix direction:** account for kinetic energy where pipes of different diameters meet (total pressure at nodes, or a sudden contraction / expansion loss at each mismatched port), so a junction can no longer gain energy. This is a solver physics change and moves golden results. Until then the reducer is left out of the generated networks (`helpers/strategies.NETWORK_COMPONENTS`); its contract and reference tests still run.
 
 **Docs to update:** `reducer.md` section 6, `splitter.md` / `mixer.md` section 3.4.
+
+**Resolution (fixed, 2026-10-26):** total pressure at nodes (user decision, option A over a static model with an acceleration charge).
+- **Solver:** node pressures are total pressures. Edge rows use `Pipe.stagnation_delta_p`: friction between nodes, plus K·ρv²/2 leaving and the exit loss ρv²/2 entering a reservoir. The reducer solves on its losses only. Junctions pass the total pressure unchanged, so no element can gain energy.
+- **Report:** a port with one pipe reports static = total − ρv²/2 of that pipe; a port with several pipes reports the total; `Port.total_pressure` / `total_of` keep the total. Relief margins, PSV pilot sensing, NPSHa, pump shaft power and the PD pump / flow source caps use totals; pressure controllers hold the static pressure they sense.
+- **Not changed:** a locked-up regulator pins its outlet total to the setpoint (static lower by the velocity head of the lock-up flow, which is close to zero); tee losses are still not modelled.
+- **Tests:** reducer back in `NETWORK_COMPONENTS`; both reproducers are `@example`s of the network properties (they failed before the fix); stagnation-drop reference rows; junction totals equal on all ports. Golden pressures moved by less than one pipe velocity head (largest 0.18 bar, Pressure Regulation), flows by at most 0.016 L/min.
+- **Docs:** `base_node.md` 3.6 (new), `pipe.md` 3.5, `reducer.md` 3.1/3.5/6, `splitter.md`, `mixer.md`, `measure_point.md`, pump NPSH and cap sections, `relief_device.md`.
 
 ---
 

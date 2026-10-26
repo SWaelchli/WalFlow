@@ -120,7 +120,7 @@ A component belongs in `NETWORK_COMPONENTS` when its behaviour depends only on i
 relief devices and the 3-way TCV have several states or outer loops and stay in their own scenarios. A
 generated network the solver cannot solve is a finding: either the solver is wrong, or the generator produced
 a case the model does not cover. Then log it in `EQUIPMENT_FINDINGS.md` with the shrunk network, constrain the
-generator and say why in a comment (the reducer is out until junctions joining different pipe diameters balance kinetic energy).
+generator and say why in a comment.
 
 If a property fails only in the full run, it is still a real case: hypothesis mixes constants from the imported
 source into generation, so the full suite draws other examples than one file alone. Reproduce the failing

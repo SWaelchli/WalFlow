@@ -68,9 +68,22 @@ Without it, an expander close to a reservoir would recover static pressure that 
 
 ### 3.5 Total pressure drop
 
+The static pressure drop between the reported pipe ends (`calculate_delta_p`):
+
 $$\Delta P_{\text{pipe}} = \Delta P_{\text{f}} + \Delta P_{\text{entry}}$$
 
-This enters the edge pressure balance of the network, see [base_node.md](base_node.md#31-unknowns-and-equations).
+The network solves total pressures at the nodes ([base_node.md](base_node.md#36-total-pressure-at-nodes-static-pressure-at-ports)). An end on a node is at the node's total pressure minus the velocity head $h = \rho v^2/2$ (`velocity_head`); an end on a reservoir reports the reservoir pressure. The edge row of the network therefore takes the total-pressure drop (`stagnation_delta_p`):
+
+$$\Delta P_{\text{pipe,0}} = \Delta P_{\text{pipe}} + h\,[\text{inlet end on a node}] - h\,[\text{outlet end on a node}]$$
+
+| Ends | $\Delta P_{\text{pipe,0}}$ for $Q > 0$ |
+| :--- | :--- |
+| node → node | $\Delta P_{\text{f}}$ (the velocity head is the same at both ends) |
+| reservoir → node | $\Delta P_{\text{f}} + K h$ (entrance loss; the acceleration from rest is reversible) |
+| node → reservoir | $\Delta P_{\text{f}} + h$ (exit loss: the kinetic energy is lost in the vessel) |
+| reservoir → reservoir | $\Delta P_{\text{f}} + (1 + K) h$ |
+
+Reverse flow mirrors the table. The derivative is `stagnation_dp_derivative`. The pipe heating (section 4) leaves out the exit loss, which turns into heat in the vessel.
 
 ### 3.6 Derivative (`calculate_dp_derivative`)
 
@@ -85,6 +98,8 @@ $$\left.\frac{\partial \Delta P_{\text{f}}}{\partial Q}\right|_{Q=0} = \frac{32\
 Entry term:
 
 $$\frac{\partial \Delta P_{\text{entry}}}{\partial Q} = (1 + K)\, \frac{\rho\, |Q|}{A^2}$$
+
+Velocity-head ends of the total-pressure drop (`stagnation_dp_derivative`): $\partial h / \partial Q = \rho\, Q / A^2$, with the sign of each end as in section 3.5.
 
 The solver uses this derivative directly and floors it at $10^{-3}$ Pa·s/m³.
 
@@ -137,6 +152,7 @@ The parser rejects a diameter $\le 0$ and a negative length or roughness (`Model
 | `test_pipe_friction.py::test_pipe_has_no_friction_factor_argument` | `Pipe(..., friction_factor=0.02)` raises `TypeError` |
 | `backend/tests/unit/fluids/test_pipe_friction_oil.py::test_pipe_flow_matches_darcy_colebrook` | ISO VG 46, tanks 12 m and 2 m level, 100 m × 50 mm: gravity flow matches Darcy-Weisbach / Colebrook with entry loss within 1 % at 20 °C, 10 % at 60 °C (transition band) |
 | `backend/tests/unit/equipment/test_pipe_reservoir_entry.py` | 0.5 bar from a tank or pressure source through 10 m DN50 to a tank: flow matches entry + friction within 1 %; entry term only at the end the flow leaves; only the $K$ part heats the fluid |
+| `test_pipe_reservoir_entry.py::test_stagnation_drop_adds_entry_and_exit_loss_to_friction` | The four end combinations in both flow directions: total drop = friction (+ $K h$ leaving, + $h$ entering a reservoir); derivative matches a central difference |
 | `test_pipe_reservoir_entry.py::test_expander_between_reservoirs_with_short_pipes` | Reservoir → 0.1-5 m DN50 → 2"×3" expander → DN80 → tank solves and matches an independent loss sum within 1 % |
 | `backend/tests/unit/fluids/test_reverse_flow.py` | Reverse flow: magnitude within 2 % of the forward reference; temperature carried from the supplying end |
 

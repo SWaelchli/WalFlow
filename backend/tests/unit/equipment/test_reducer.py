@@ -1,4 +1,7 @@
+import math
+
 import pytest
+from simulation.equipment.base_node import total_of
 from simulation.equipment.reducer import Reducer
 from simulation.equipment.pressure_source import PressureSource
 from simulation.equipment.tank import Tank
@@ -27,7 +30,9 @@ def test_reducer_losses_and_bernoulli(d_in, d_out, q_lmin, bernoulli_sign):
     assert bernoulli_sign * dp_bern > 0.0
     assert dp_loss > 0.0
     assert dp_total == pytest.approx(dp_loss + dp_bern, rel=1e-5)
-    assert reducer.calculate_delta_p(q, rho, mu) == pytest.approx(dp_total, rel=1e-5)
+    # The network solve's drop is the loss alone: the Bernoulli shift reaches the static pressures through the
+    # velocity in the pipes at the two ports (test_reducer_network_solves)
+    assert reducer.calculate_delta_p(q, rho, mu) == pytest.approx(dp_loss, rel=1e-9)
 
 
 
@@ -115,9 +120,8 @@ def test_reducer_reverse_flow_symmetry():
 @pytest.mark.parametrize("p_src, d_in, d_out, len_out, recovery", [
     # source at 5 bar, 3x2 reducer, tank: contraction, flow must be positive
     pytest.param(500000.0, 0.07792, 0.05248, 5.0, False, id="contraction-3x2"),
-    # The expander recovery outweighs the very short downstream pipe, so the
-    # expander to tank edge Jacobian term is negative. The solver must still converge.
-    pytest.param(150000.0, 0.05248, 0.07792, 0.05, True, id="expander-dominant-pressure-recovery"),
+    # Short pipe behind an expander: the static pressure recovers across it. The solver must still converge.
+    pytest.param(150000.0, 0.05248, 0.07792, 0.05, True, id="expander-pressure-recovery"),
 ])
 def test_reducer_network_solves(p_src, d_in, d_out, len_out, recovery):
     gs = GlobalSettings(fluid_type="water", default_temperature=20.0)
@@ -139,21 +143,16 @@ def test_reducer_network_solves(p_src, d_in, d_out, len_out, recovery):
     q = red.inlets[0].flow_rate
     rho, mu = red.inlets[0].density, red.inlets[0].viscosity
     assert q > 0.0
-    if not recovery:
-        return
-    # Edge term d(dp_red + dp_pipe2)/dQ is negative at the solution (central difference)
-    h = 1e-4 * abs(q)
-    pipe2 = edges[1]["pipe"]
-
-    def edge_dp(x):
-        return red.calculate_delta_p(x, rho, mu) + pipe2.calculate_delta_p(x, rho, mu)
-
-    assert (edge_dp(q + h) - edge_dp(q - h)) / (2.0 * h) < 0.0
-    # Pressure drop across the expander must match its own characteristic at the solved flow
-    dp_solved = red.inlets[0].pressure - red.outlets[0].pressure
-    dp_model = red.calculate_delta_p(q, red.inlets[0].density, red.inlets[0].viscosity)
-    assert dp_solved == pytest.approx(dp_model, rel=1e-3)
-    assert dp_solved < 0.0  # net static pressure recovery
+    # Static change between the pipes of the reducer's two bores = its loss + the Bernoulli change
+    # rho (v_out² - v_in²) / 2 (closed form), and the total pressure falls by the loss alone
+    a_in, a_out = math.pi * d_in ** 2 / 4.0, math.pi * d_out ** 2 / 4.0
+    bernoulli = 0.5 * rho * q * q * (1.0 / a_out ** 2 - 1.0 / a_in ** 2)
+    dp_loss = red.calculate_losses(q, rho, mu)[0]
+    dp_solved = edges[0]["pipe"].outlets[0].pressure - edges[1]["pipe"].inlets[0].pressure
+    assert dp_solved == pytest.approx(dp_loss + bernoulli, rel=1e-3, abs=5.0)
+    assert total_of(red.inlets[0]) - total_of(red.outlets[0]) == pytest.approx(dp_loss, rel=1e-3, abs=5.0)
+    if recovery:
+        assert dp_solved < 0.0  # net static pressure recovery
 
 
 def _reducer_graph(reducer_data):

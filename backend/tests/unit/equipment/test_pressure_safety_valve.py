@@ -1,5 +1,6 @@
 
 from physics_refs import water_head
+from simulation.equipment.base_node import total_of
 from simulation.equipment.tank import Tank
 from simulation.equipment.centrifugal_pump import CentrifugalPump
 from simulation.equipment.pressure_safety_valve import PressureSafetyValve
@@ -30,7 +31,7 @@ def test_psv_pop_action_cracking():
 
     assert stats["success"] is True
     # The pump holds the inlet above 110 % of set (2.2 barg) even at full lift: overcapacity
-    p_in, p_out = psv.inlets[0].pressure, psv.outlets[0].pressure
+    p_in, p_out = total_of(psv.inlets[0]), total_of(psv.outlets[0])
     assert psv.lift_state == "open" and (p_in - 101325.0) / 1e5 > 2.2
     assert psv.status == "overcapacity"
     assert psv.inlets[0].flow_rate > 0.0001
@@ -95,7 +96,7 @@ def test_psv_modulating_and_pop_latching():
     stats = solver.solve()
     assert stats["success"] is True
     assert psv.status == "modulating"
-    p_in_g = (psv.inlets[0].pressure - 101325.0) / 1e5
+    p_in_g = (total_of(psv.inlets[0]) - 101325.0) / 1e5
     assert 2.5 < p_in_g < 2.75
     assert abs(psv.lift_pct - 100.0 * (p_in_g - 2.5) / 0.25) < 0.01
 
@@ -223,15 +224,15 @@ def test_pilot_lift_follows_the_remote_sensing_point():
     psv = net.nodes["psv"]
     assert psv.has_remote_pilot
     assert NetworkSolver(net).solve()["success"]
-    p_sp_g = (net.nodes["sp"].inlets[0].pressure - P_ATM) / 1e5
-    p_in_g = (psv.inlets[0].pressure - P_ATM) / 1e5
+    p_sp_g = (total_of(net.nodes["sp"].inlets[0]) - P_ATM) / 1e5
+    p_in_g = (total_of(psv.inlets[0]) - P_ATM) / 1e5
     assert p_in_g < p_sp_g - 0.05                       # the sensing line bypasses a real line loss
     assert psv.lift_pct == pytest.approx(100.0 * (p_sp_g - 10.0) / 1.0, abs=0.05)
 
     own = GraphParser.parse_graph(_pilot_graph(with_line=False))
     assert not own.nodes["psv"].has_remote_pilot
     assert NetworkSolver(own).solve()["success"]
-    p_own_g = (own.nodes["psv"].inlets[0].pressure - P_ATM) / 1e5
+    p_own_g = (total_of(own.nodes["psv"].inlets[0]) - P_ATM) / 1e5
     assert own.nodes["psv"].lift_pct == pytest.approx(100.0 * (p_own_g - 10.0) / 1.0, abs=0.05)
     assert own.nodes["psv"].lift_pct < psv.lift_pct
 
@@ -258,7 +259,7 @@ def test_example_pilot_senses_the_pump_discharge():
     net = _example(case_prefix="PSV-101 blocked")
     psv, pump = net.nodes["node_psv_secondary"], net.nodes["node_hp_pump"]
     assert psv.status == "modulating"
-    p_pump_g = (pump.outlets[0].pressure - P_ATM) / 1e5
+    p_pump_g = (total_of(pump.outlets[0]) - P_ATM) / 1e5
     assert psv.lift_pct == pytest.approx(100.0 * (p_pump_g - 24.0) / 2.4, abs=0.05)
 
 
@@ -294,7 +295,7 @@ def test_cycling_reports_reseat_to_set_range_and_average_load():
     assert psv.status == "cycling" and psv.lift_pct is None
     assert psv.cycle_low_barg == pytest.approx(3.0 * 0.93, abs=1e-6)    # reseat = set·(1 − blowdown)
     assert psv.cycle_high_barg == pytest.approx(3.0, abs=1e-6)
-    p_in_g = (psv.inlets[0].pressure - P_ATM) / 1e5
+    p_in_g = (total_of(psv.inlets[0]) - P_ATM) / 1e5
     assert 3.0 <= p_in_g <= 3.0 * 1.01 + 1e-6      # the average state holds the inlet at set
     assert psv.inlets[0].flow_rate > 1e-4            # average relief load
 
@@ -302,7 +303,7 @@ def test_cycling_reports_reseat_to_set_range_and_average_load():
 def test_pop_latching_stays_open_below_reseat():
     psv = _oversized_pop("pop_latching")
     assert psv.status == "open" and psv.lift_pct == 100.0
-    assert (psv.inlets[0].pressure - P_ATM) / 1e5 < psv.reseat_pressure_barg
+    assert (total_of(psv.inlets[0]) - P_ATM) / 1e5 < psv.reseat_pressure_barg
     assert psv.cycle_low_barg is None
 
 
@@ -341,12 +342,13 @@ def test_pilot_result_does_not_depend_on_node_order():
     solver = NetworkSolver(net)
     assert solver.solve()["success"]
     psv, sp = net.nodes["psv"], net.nodes["sp"]
-    p_sp_g = (sp.outlets[0].pressure - P_ATM) / 1e5
+    p_sp_g = (total_of(sp.outlets[0]) - P_ATM) / 1e5
     assert psv.lift_pct == pytest.approx(100.0 * (p_sp_g - 10.0) / 1.0, abs=0.05)
     # One result pass from the solved state, with the sensed port still at its value from before the solve
-    p_int = np.array([solver.nodes_list[i].inlets[0].pressure for i in solver.internal_node_indices])
+    p_int = np.array([total_of(solver.nodes_list[i].inlets[0]) for i in solver.internal_node_indices])
     q = np.array([e["pipe"].inlets[0].flow_rate for e in solver.edges_list])
     sp.outlets[0].pressure = P_ATM
+    sp.outlets[0].total_pressure = None
     solver._update_telemetry(p_int, q)
     assert psv.lift_pct == pytest.approx(100.0 * (p_sp_g - 10.0) / 1.0, abs=0.05)
 
@@ -371,7 +373,7 @@ def test_pilot_sensing_a_point_outside_the_solve_senses_its_own_inlet():
     assert psv.pilot_source is not None
     assert NetworkSolver(net).solve()["success"]
     assert not psv.has_remote_pilot
-    p_own_g = (psv.inlets[0].pressure - P_ATM) / 1e5
+    p_own_g = (total_of(psv.inlets[0]) - P_ATM) / 1e5
     assert psv.lift_pct == pytest.approx(100.0 * (p_own_g - 10.0) / 1.0, abs=0.05)
     assert psv.inlet_opening_pressure_pa() == psv.set_pressure_pa
 

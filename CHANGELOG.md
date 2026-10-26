@@ -92,6 +92,7 @@ All notable changes to the WälFlow project will be documented in this file.
 - **Solver speed**: Each hydraulic solve updates the fluid properties once instead of twice, which brings solve times on large networks back to their earlier level.
 - **Mass balance at nodes**: Every node now conserves mass flow instead of volume flow, so the volume flow rises where fluid is heated or mixed hot (about 2.8 % for water heated from 10 to 80 °C) and falls where it is cooled. Every component's curve is evaluated at its inlet volume flow.
 - **Solver topology tables**: The ports at both ends of every pipe are looked up once per solver and shared by the stagnant-section pressures and temperatures, the fluid-property passes and the mixing solve, instead of being rebuilt on every pass. Results are unchanged.
+- **Total pressure at nodes**: The solver balances total pressure at nodes and reports static pressure at ports, so a junction between pipe sizes no longer gains kinetic energy and networks with a reducer in a loop reach a steady state. NPSHa includes the suction velocity head. A dead branch reads the static pressure of the line it tees off. Results shift slightly where pipe velocities differ at a junction.
 
 ### Fixed
 

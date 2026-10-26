@@ -31,16 +31,6 @@ two_port_types = pytest.mark.parametrize("node_type", TWO_PORT_TYPES)
 pump_types = pytest.mark.parametrize("node_type", sorted(PUMP_DATA))
 
 
-def loss_drop(node_type, node, q, rho, mu):
-    """Drop of total pressure (static + dynamic) in the flow direction. Only the reducer changes the
-    velocity between its ports; there the static drop includes the reversible Bernoulli shift."""
-    dp = node.calculate_delta_p(q, rho, mu)
-    if node_type == "reducer":
-        a_in, a_out = math.pi * node.diameter_in ** 2 / 4.0, math.pi * node.diameter_out ** 2 / 4.0
-        dp += 0.5 * rho * q * q * (1.0 / a_in ** 2 - 1.0 / a_out ** 2)
-    return dp
-
-
 def public_state(node):
     """Attributes a caller can see; private ones may hold lazy caches."""
     return {k: v for k, v in vars(node).items() if not k.startswith("_")}
@@ -87,9 +77,10 @@ def test_resistance_is_finite_and_at_rest_without_flow(node_type, data, q):
 @two_port_types
 @given(data=st.data(), q=flows())
 def test_resistance_opposes_the_flow(node_type, data, q):
-    """Second law: a passive element loses total pressure in the direction of flow."""
+    """Second law: a passive element loses total pressure in the direction of flow. The solve's drop is the loss
+    only: the reducer's reversible Bernoulli shift is a static-pressure effect, not part of it."""
     node, (_, _, rho, mu) = data.draw(two_ports(node_type))
-    assert loss_drop(node_type, node, q, rho, mu) * q >= 0.0
+    assert node.calculate_delta_p(q, rho, mu) * q >= 0.0
 
 
 @two_port_types
@@ -98,7 +89,7 @@ def test_resistance_loss_rises_with_flow(node_type, data, q, factor):
     """More flow in the same direction never loses less total pressure (one operating point per drop)."""
     node, (_, _, rho, mu) = data.draw(two_ports(node_type))
     smaller, larger = sorted([q, q * factor])
-    assert loss_drop(node_type, node, larger, rho, mu) >= loss_drop(node_type, node, smaller, rho, mu)
+    assert node.calculate_delta_p(larger, rho, mu) >= node.calculate_delta_p(smaller, rho, mu)
 
 
 @two_port_types

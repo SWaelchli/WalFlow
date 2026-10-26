@@ -42,7 +42,8 @@ Ports represent fluid connection points on the node.
 
 ### Port Attributes (`simulation/schemas.py`)
 Each `Port` has:
-- `pressure`: Static pressure in Pascals [$\text{Pa}$].
+- `pressure`: Static pressure in Pascals [$\text{Pa}$]. The solver solves total pressures at nodes and reports static ones at ports.
+- `total_pressure`: Total (stagnation) pressure of the node side in Pascals, set by the solver's report; read it with `total_of(port)` (relief margins, NPSHa).
 - `flow_rate`: Volumetric flow rate in cubic meters per second [$\text{m}^3/\text{s}$]. Positive means flow enters an inlet or leaves an outlet.
 - `temperature`: Fluid temperature in Kelvin [$\text{K}$].
 - `density`: Fluid density in kilograms per cubic meter [$\text{kg}/\text{m}^3$].

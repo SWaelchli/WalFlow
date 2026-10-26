@@ -1,4 +1,4 @@
-from simulation.equipment.base_node import HydraulicNode, pump_heat_factor, pump_shaft_power
+from simulation.equipment.base_node import HydraulicNode, pump_heat_factor, pump_shaft_power, total_of
 from simulation.fluid_utils import FluidProperties
 import math
 
@@ -149,16 +149,16 @@ class VolumetricPump(HydraulicNode):
         self.pressure_cap_reached = bool(active and p_out >= self.max_discharge_pressure - 1.0)
 
     def refresh_warnings(self):
-        """Recompute the warnings from the final (reported) port state."""
+        """Recompute the warnings from the final (reported) port state, on total pressures as in the solve."""
         if self.inlets and self.outlets:
-            self._update_warnings(self.inlets[0].flow_rate, self.outlets[0].pressure - self.inlets[0].pressure,
-                                  self.outlets[0].pressure)
+            p_in, p_out = total_of(self.inlets[0]), total_of(self.outlets[0])
+            self._update_warnings(self.inlets[0].flow_rate, p_out - p_in, p_out)
 
     def shaft_power(self) -> float:
         """Shaft power |Q|·ΔP/η (W) at the current operating point (`pump_shaft_power`); 0 when stopped."""
         if not self.inlets or not self.outlets:
             return 0.0
-        return pump_shaft_power(self.inlets[0].flow_rate, self.outlets[0].pressure - self.inlets[0].pressure,
+        return pump_shaft_power(self.inlets[0].flow_rate, total_of(self.outlets[0]) - total_of(self.inlets[0]),
                                 self.efficiency, getattr(self, 'active', True))
 
     def calculate(self):
@@ -170,8 +170,9 @@ class VolumetricPump(HydraulicNode):
         fluid_type = self.global_settings.fluid_type if self.global_settings else 'water'
         self.update_npsh(inlet)
 
-        dp = self.calculate_delta_p(inlet.flow_rate, inlet.density, inlet.viscosity, p_in_pa=inlet.pressure)
-        self._update_warnings(inlet.flow_rate, dp, inlet.pressure + dp)
+        p_in = total_of(inlet)
+        dp = self.calculate_delta_p(inlet.flow_rate, inlet.density, inlet.viscosity, p_in_pa=p_in)
+        self._update_warnings(inlet.flow_rate, dp, p_in + dp)
 
         outlet.pressure = inlet.pressure + dp
         outlet.flow_rate = inlet.flow_rate
