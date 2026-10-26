@@ -1,0 +1,2528 @@
+{
+  "version": "0.2",
+  "app_version": "0.2.0",
+  "format": "walflow",
+  "nodes": [
+    {
+      "id": "note-jeppson-48",
+      "type": "text_bubble",
+      "position": {
+        "x": -74,
+        "y": 1352
+      },
+      "width": 460,
+      "height": 560,
+      "style": {
+        "width": 460,
+        "height": 560
+      },
+      "data": {
+        "label": "Note",
+        "title": "JEPPSON (1974) 48-PIPE NETWORK",
+        "text": "Validation case: the 48-pipe network of R. W. Jeppson, Steady Flow Analysis of Pipe Networks: An Instructional Manual, Utah State University, 1974, Ch. VI, example problem 3 (network p. 71, solution p. 70).\n\nData: all pipes Darcy-Weisbach with roughness 0.012 in; water at 68 °F (not stated for this problem); all junctions at one elevation. Pipe labels give the published diameter and length. Supplies 20.428 cfs (flow source) and 56.312 cfs (tank); 28 demands of 1.0 to 5.0 cfs and 1.74 cfs (flow sources with negative set flow).\n\nJeppson gives no heads for this network: the tank level is an arbitrary head reference, and only flows and friction losses compare. With one pressure boundary the flows depend on the pipes alone.\n\nEach junction joining more than three connections is a chain of tees with short links, so the diagram is busier than the source figure. Pipes are drawn in the direction of the published flow, except P16, P22, P33, drawn against it so every tee chain has an outlet."
+      }
+    },
+    {
+      "id": "B1",
+      "type": "mixer",
+      "position": {
+        "x": 774,
+        "y": 1942
+      },
+      "data": {
+        "label": "Junction B1"
+      }
+    },
+    {
+      "id": "B2-1",
+      "type": "mixer",
+      "position": {
+        "x": 992,
+        "y": 1866
+      },
+      "data": {
+        "label": "B2.1"
+      }
+    },
+    {
+      "id": "B2-2",
+      "type": "mixer",
+      "position": {
+        "x": 1088,
+        "y": 1866
+      },
+      "data": {
+        "label": "B2.2"
+      }
+    },
+    {
+      "id": "B3-1",
+      "type": "mixer",
+      "position": {
+        "x": 1536,
+        "y": 1866
+      },
+      "data": {
+        "label": "B3.1"
+      }
+    },
+    {
+      "id": "B3-2",
+      "type": "splitter",
+      "position": {
+        "x": 1632,
+        "y": 1866
+      },
+      "data": {
+        "label": "B3.2"
+      }
+    },
+    {
+      "id": "B4-1",
+      "type": "mixer",
+      "position": {
+        "x": 2087,
+        "y": 1859
+      },
+      "data": {
+        "label": "B4.1"
+      }
+    },
+    {
+      "id": "B4-2",
+      "type": "splitter",
+      "position": {
+        "x": 2182,
+        "y": 1859
+      },
+      "data": {
+        "label": "B4.2"
+      }
+    },
+    {
+      "id": "B5-1",
+      "type": "mixer",
+      "position": {
+        "x": 2330,
+        "y": 1754
+      },
+      "data": {
+        "label": "B5.1"
+      }
+    },
+    {
+      "id": "B5-2",
+      "type": "splitter",
+      "position": {
+        "x": 2425,
+        "y": 1754
+      },
+      "data": {
+        "label": "B5.2"
+      }
+    },
+    {
+      "id": "B6",
+      "type": "mixer",
+      "position": {
+        "x": 2614,
+        "y": 1850
+      },
+      "data": {
+        "label": "Junction B6"
+      }
+    },
+    {
+      "id": "M1-1",
+      "type": "mixer",
+      "position": {
+        "x": 939,
+        "y": 1322
+      },
+      "data": {
+        "label": "M1.1"
+      }
+    },
+    {
+      "id": "M1-2",
+      "type": "splitter",
+      "position": {
+        "x": 1034,
+        "y": 1322
+      },
+      "data": {
+        "label": "M1.2"
+      }
+    },
+    {
+      "id": "M1-3",
+      "type": "splitter",
+      "position": {
+        "x": 1129,
+        "y": 1322
+      },
+      "data": {
+        "label": "M1.3"
+      }
+    },
+    {
+      "id": "M2-1",
+      "type": "mixer",
+      "position": {
+        "x": 1483,
+        "y": 1322
+      },
+      "data": {
+        "label": "M2.1"
+      }
+    },
+    {
+      "id": "M2-2",
+      "type": "mixer",
+      "position": {
+        "x": 1578,
+        "y": 1322
+      },
+      "data": {
+        "label": "M2.2"
+      }
+    },
+    {
+      "id": "M2-3",
+      "type": "splitter",
+      "position": {
+        "x": 1673,
+        "y": 1322
+      },
+      "data": {
+        "label": "M2.3"
+      }
+    },
+    {
+      "id": "M3-1",
+      "type": "mixer",
+      "position": {
+        "x": 2027,
+        "y": 1322
+      },
+      "data": {
+        "label": "M3.1"
+      }
+    },
+    {
+      "id": "M3-2",
+      "type": "mixer",
+      "position": {
+        "x": 2122,
+        "y": 1322
+      },
+      "data": {
+        "label": "M3.2"
+      }
+    },
+    {
+      "id": "M3-3",
+      "type": "splitter",
+      "position": {
+        "x": 2217,
+        "y": 1322
+      },
+      "data": {
+        "label": "M3.3"
+      }
+    },
+    {
+      "id": "M4-1",
+      "type": "mixer",
+      "position": {
+        "x": 2273,
+        "y": 1322
+      },
+      "data": {
+        "label": "M4.1"
+      }
+    },
+    {
+      "id": "M4-2",
+      "type": "mixer",
+      "position": {
+        "x": 2368,
+        "y": 1322
+      },
+      "data": {
+        "label": "M4.2"
+      }
+    },
+    {
+      "id": "M4-3",
+      "type": "splitter",
+      "position": {
+        "x": 2463,
+        "y": 1322
+      },
+      "data": {
+        "label": "M4.3"
+      }
+    },
+    {
+      "id": "M5-1",
+      "type": "mixer",
+      "position": {
+        "x": 2567,
+        "y": 1322
+      },
+      "data": {
+        "label": "M5.1"
+      }
+    },
+    {
+      "id": "M5-2",
+      "type": "mixer",
+      "position": {
+        "x": 2662,
+        "y": 1322
+      },
+      "data": {
+        "label": "M5.2"
+      }
+    },
+    {
+      "id": "E-1",
+      "type": "mixer",
+      "position": {
+        "x": 3050,
+        "y": 1072
+      },
+      "data": {
+        "label": "E.1"
+      }
+    },
+    {
+      "id": "E-2",
+      "type": "mixer",
+      "position": {
+        "x": 3145,
+        "y": 1072
+      },
+      "data": {
+        "label": "E.2"
+      }
+    },
+    {
+      "id": "N13-1",
+      "type": "mixer",
+      "position": {
+        "x": 2641,
+        "y": 944
+      },
+      "data": {
+        "label": "N13.1"
+      }
+    },
+    {
+      "id": "N13-2",
+      "type": "mixer",
+      "position": {
+        "x": 2736,
+        "y": 944
+      },
+      "data": {
+        "label": "N13.2"
+      }
+    },
+    {
+      "id": "N13-3",
+      "type": "mixer",
+      "position": {
+        "x": 2831,
+        "y": 944
+      },
+      "data": {
+        "label": "N13.3"
+      }
+    },
+    {
+      "id": "N5-1",
+      "type": "mixer",
+      "position": {
+        "x": 2304,
+        "y": 826
+      },
+      "data": {
+        "label": "N5.1"
+      }
+    },
+    {
+      "id": "N5-2",
+      "type": "mixer",
+      "position": {
+        "x": 2400,
+        "y": 826
+      },
+      "data": {
+        "label": "N5.2"
+      }
+    },
+    {
+      "id": "N3-1",
+      "type": "mixer",
+      "position": {
+        "x": 1520,
+        "y": 778
+      },
+      "data": {
+        "label": "N3.1"
+      }
+    },
+    {
+      "id": "N3-2",
+      "type": "mixer",
+      "position": {
+        "x": 1616,
+        "y": 778
+      },
+      "data": {
+        "label": "N3.2"
+      }
+    },
+    {
+      "id": "N25-1",
+      "type": "mixer",
+      "position": {
+        "x": 768,
+        "y": 832
+      },
+      "data": {
+        "label": "N25.1"
+      }
+    },
+    {
+      "id": "N25-2",
+      "type": "splitter",
+      "position": {
+        "x": 864,
+        "y": 832
+      },
+      "data": {
+        "label": "N25.2"
+      }
+    },
+    {
+      "id": "N26-1",
+      "type": "mixer",
+      "position": {
+        "x": 752,
+        "y": 442
+      },
+      "data": {
+        "label": "N26.1"
+      }
+    },
+    {
+      "id": "N26-2",
+      "type": "mixer",
+      "position": {
+        "x": 848,
+        "y": 442
+      },
+      "data": {
+        "label": "N26.2"
+      }
+    },
+    {
+      "id": "N41-1",
+      "type": "mixer",
+      "position": {
+        "x": 800,
+        "y": 32
+      },
+      "data": {
+        "label": "N41.1"
+      }
+    },
+    {
+      "id": "N41-2",
+      "type": "splitter",
+      "position": {
+        "x": 896,
+        "y": 32
+      },
+      "data": {
+        "label": "N41.2"
+      }
+    },
+    {
+      "id": "N28-1",
+      "type": "mixer",
+      "position": {
+        "x": 1472,
+        "y": 160
+      },
+      "data": {
+        "label": "N28.1"
+      }
+    },
+    {
+      "id": "N28-2",
+      "type": "splitter",
+      "position": {
+        "x": 1568,
+        "y": 160
+      },
+      "data": {
+        "label": "N28.2"
+      }
+    },
+    {
+      "id": "N23",
+      "type": "mixer",
+      "position": {
+        "x": 1786,
+        "y": 346
+      },
+      "data": {
+        "label": "Junction N23"
+      }
+    },
+    {
+      "id": "N24-1",
+      "type": "mixer",
+      "position": {
+        "x": 1888,
+        "y": 250
+      },
+      "data": {
+        "label": "N24.1"
+      }
+    },
+    {
+      "id": "N24-2",
+      "type": "mixer",
+      "position": {
+        "x": 1984,
+        "y": 250
+      },
+      "data": {
+        "label": "N24.2"
+      }
+    },
+    {
+      "id": "N17",
+      "type": "mixer",
+      "position": {
+        "x": 2182,
+        "y": 435
+      },
+      "data": {
+        "label": "Junction N17"
+      }
+    },
+    {
+      "id": "N18",
+      "type": "mixer",
+      "position": {
+        "x": 2314,
+        "y": 352
+      },
+      "data": {
+        "label": "Junction N18"
+      }
+    },
+    {
+      "id": "N19",
+      "type": "mixer",
+      "position": {
+        "x": 2573,
+        "y": 563
+      },
+      "data": {
+        "label": "Junction N19"
+      }
+    },
+    {
+      "id": "N44",
+      "type": "splitter",
+      "position": {
+        "x": 410,
+        "y": 378
+      },
+      "data": {
+        "label": "Junction N44"
+      }
+    },
+    {
+      "id": "N40-1",
+      "type": "mixer",
+      "position": {
+        "x": 567,
+        "y": 234
+      },
+      "data": {
+        "label": "N40.1"
+      }
+    },
+    {
+      "id": "N40-2",
+      "type": "splitter",
+      "position": {
+        "x": 662,
+        "y": 234
+      },
+      "data": {
+        "label": "N40.2"
+      }
+    },
+    {
+      "id": "N42-1",
+      "type": "mixer",
+      "position": {
+        "x": 423,
+        "y": 582
+      },
+      "data": {
+        "label": "N42.1"
+      }
+    },
+    {
+      "id": "N42-2",
+      "type": "mixer",
+      "position": {
+        "x": 518,
+        "y": 582
+      },
+      "data": {
+        "label": "N42.2"
+      }
+    },
+    {
+      "id": "N42-3",
+      "type": "splitter",
+      "position": {
+        "x": 613,
+        "y": 582
+      },
+      "data": {
+        "label": "N42.3"
+      }
+    },
+    {
+      "id": "N43-1",
+      "type": "mixer",
+      "position": {
+        "x": 167,
+        "y": 730
+      },
+      "data": {
+        "label": "N43.1"
+      }
+    },
+    {
+      "id": "N43-2",
+      "type": "splitter",
+      "position": {
+        "x": 262,
+        "y": 730
+      },
+      "data": {
+        "label": "N43.2"
+      }
+    },
+    {
+      "id": "N36-1",
+      "type": "mixer",
+      "position": {
+        "x": -22,
+        "y": 1072
+      },
+      "data": {
+        "label": "N36.1"
+      }
+    },
+    {
+      "id": "N36-2",
+      "type": "mixer",
+      "position": {
+        "x": 73,
+        "y": 1072
+      },
+      "data": {
+        "label": "N36.2"
+      }
+    },
+    {
+      "id": "N38-1",
+      "type": "mixer",
+      "position": {
+        "x": 375,
+        "y": 960
+      },
+      "data": {
+        "label": "N38.1"
+      }
+    },
+    {
+      "id": "N38-2",
+      "type": "splitter",
+      "position": {
+        "x": 470,
+        "y": 960
+      },
+      "data": {
+        "label": "N38.2"
+      }
+    },
+    {
+      "id": "N35-1",
+      "type": "mixer",
+      "position": {
+        "x": 458,
+        "y": 1322
+      },
+      "data": {
+        "label": "N35.1"
+      }
+    },
+    {
+      "id": "N35-2",
+      "type": "mixer",
+      "position": {
+        "x": 553,
+        "y": 1322
+      },
+      "data": {
+        "label": "N35.2"
+      }
+    },
+    {
+      "id": "N33",
+      "type": "mixer",
+      "position": {
+        "x": 768,
+        "y": 1626
+      },
+      "data": {
+        "label": "Junction N33"
+      }
+    },
+    {
+      "id": "demand-B1",
+      "type": "flow_source",
+      "position": {
+        "x": 714,
+        "y": 2052
+      },
+      "data": {
+        "label": "Demand 2 cfs",
+        "source_flow_lmin": -3398.02,
+        "temperature_k": 293.15
+      }
+    },
+    {
+      "id": "demand-B2",
+      "type": "flow_source",
+      "position": {
+        "x": 980,
+        "y": 1976
+      },
+      "data": {
+        "label": "Demand 3 cfs",
+        "source_flow_lmin": -5097.03,
+        "temperature_k": 293.15
+      }
+    },
+    {
+      "id": "supply-B3",
+      "type": "flow_source",
+      "position": {
+        "x": 1524,
+        "y": 1976
+      },
+      "data": {
+        "label": "Supply 20.428 cfs",
+        "source_flow_lmin": 34707.39,
+        "temperature_k": 293.15
+      }
+    },
+    {
+      "id": "demand-B4",
+      "type": "flow_source",
+      "position": {
+        "x": 2074,
+        "y": 1969
+      },
+      "data": {
+        "label": "Demand 2 cfs",
+        "source_flow_lmin": -3398.02,
+        "temperature_k": 293.15
+      }
+    },
+    {
+      "id": "demand-B5",
+      "type": "flow_source",
+      "position": {
+        "x": 2318,
+        "y": 1864
+      },
+      "data": {
+        "label": "Demand 3 cfs",
+        "source_flow_lmin": -5097.03,
+        "temperature_k": 293.15
+      }
+    },
+    {
+      "id": "demand-B6",
+      "type": "flow_source",
+      "position": {
+        "x": 2554,
+        "y": 1960
+      },
+      "data": {
+        "label": "Demand 2 cfs",
+        "source_flow_lmin": -3398.02,
+        "temperature_k": 293.15
+      }
+    },
+    {
+      "id": "demand-M1",
+      "type": "flow_source",
+      "position": {
+        "x": 974,
+        "y": 1432
+      },
+      "data": {
+        "label": "Demand 2 cfs",
+        "source_flow_lmin": -3398.02,
+        "temperature_k": 293.15
+      }
+    },
+    {
+      "id": "demand-M2",
+      "type": "flow_source",
+      "position": {
+        "x": 1518,
+        "y": 1432
+      },
+      "data": {
+        "label": "Demand 3 cfs",
+        "source_flow_lmin": -5097.03,
+        "temperature_k": 293.15
+      }
+    },
+    {
+      "id": "demand-M3",
+      "type": "flow_source",
+      "position": {
+        "x": 2062,
+        "y": 1432
+      },
+      "data": {
+        "label": "Demand 2 cfs",
+        "source_flow_lmin": -3398.02,
+        "temperature_k": 293.15
+      }
+    },
+    {
+      "id": "demand-M4",
+      "type": "flow_source",
+      "position": {
+        "x": 2308,
+        "y": 1432
+      },
+      "data": {
+        "label": "Demand 5 cfs",
+        "source_flow_lmin": -8495.05,
+        "temperature_k": 293.15
+      }
+    },
+    {
+      "id": "demand-M5",
+      "type": "flow_source",
+      "position": {
+        "x": 2554,
+        "y": 1432
+      },
+      "data": {
+        "label": "Demand 1 cfs",
+        "source_flow_lmin": -1699.01,
+        "temperature_k": 293.15
+      }
+    },
+    {
+      "id": "demand-E",
+      "type": "flow_source",
+      "position": {
+        "x": 3038,
+        "y": 1182
+      },
+      "data": {
+        "label": "Demand 1.74 cfs",
+        "source_flow_lmin": -2956.28,
+        "temperature_k": 293.15
+      }
+    },
+    {
+      "id": "demand-N13",
+      "type": "flow_source",
+      "position": {
+        "x": 2676,
+        "y": 1054
+      },
+      "data": {
+        "label": "Demand 3 cfs",
+        "source_flow_lmin": -5097.03,
+        "temperature_k": 293.15
+      }
+    },
+    {
+      "id": "demand-N3",
+      "type": "flow_source",
+      "position": {
+        "x": 1508,
+        "y": 888
+      },
+      "data": {
+        "label": "Demand 4 cfs",
+        "source_flow_lmin": -6796.04,
+        "temperature_k": 293.15
+      }
+    },
+    {
+      "id": "demand-N26",
+      "type": "flow_source",
+      "position": {
+        "x": 740,
+        "y": 552
+      },
+      "data": {
+        "label": "Demand 4 cfs",
+        "source_flow_lmin": -6796.04,
+        "temperature_k": 293.15
+      }
+    },
+    {
+      "id": "demand-N41",
+      "type": "flow_source",
+      "position": {
+        "x": 788,
+        "y": 142
+      },
+      "data": {
+        "label": "Demand 3 cfs",
+        "source_flow_lmin": -5097.03,
+        "temperature_k": 293.15
+      }
+    },
+    {
+      "id": "demand-N28",
+      "type": "flow_source",
+      "position": {
+        "x": 1460,
+        "y": 270
+      },
+      "data": {
+        "label": "Demand 2.5 cfs",
+        "source_flow_lmin": -4247.53,
+        "temperature_k": 293.15
+      }
+    },
+    {
+      "id": "demand-N23",
+      "type": "flow_source",
+      "position": {
+        "x": 1726,
+        "y": 456
+      },
+      "data": {
+        "label": "Demand 4 cfs",
+        "source_flow_lmin": -6796.04,
+        "temperature_k": 293.15
+      }
+    },
+    {
+      "id": "demand-N24",
+      "type": "flow_source",
+      "position": {
+        "x": 1876,
+        "y": 360
+      },
+      "data": {
+        "label": "Demand 4 cfs",
+        "source_flow_lmin": -6796.04,
+        "temperature_k": 293.15
+      }
+    },
+    {
+      "id": "demand-N17",
+      "type": "flow_source",
+      "position": {
+        "x": 2122,
+        "y": 545
+      },
+      "data": {
+        "label": "Demand 2 cfs",
+        "source_flow_lmin": -3398.02,
+        "temperature_k": 293.15
+      }
+    },
+    {
+      "id": "demand-N18",
+      "type": "flow_source",
+      "position": {
+        "x": 2254,
+        "y": 462
+      },
+      "data": {
+        "label": "Demand 1.5 cfs",
+        "source_flow_lmin": -2548.52,
+        "temperature_k": 293.15
+      }
+    },
+    {
+      "id": "demand-N19",
+      "type": "flow_source",
+      "position": {
+        "x": 2513,
+        "y": 673
+      },
+      "data": {
+        "label": "Demand 2 cfs",
+        "source_flow_lmin": -3398.02,
+        "temperature_k": 293.15
+      }
+    },
+    {
+      "id": "supply-tank",
+      "type": "tank",
+      "position": {
+        "x": 150,
+        "y": 238
+      },
+      "data": {
+        "label": "Supply 56.312 cfs (head reference)",
+        "elevation_m": 0.0,
+        "level_m": 45.72,
+        "temperature_k": 293.15
+      }
+    },
+    {
+      "id": "demand-N40",
+      "type": "flow_source",
+      "position": {
+        "x": 554,
+        "y": 344
+      },
+      "data": {
+        "label": "Demand 2 cfs",
+        "source_flow_lmin": -3398.02,
+        "temperature_k": 293.15
+      }
+    },
+    {
+      "id": "demand-N42",
+      "type": "flow_source",
+      "position": {
+        "x": 458,
+        "y": 692
+      },
+      "data": {
+        "label": "Demand 4 cfs",
+        "source_flow_lmin": -6796.04,
+        "temperature_k": 293.15
+      }
+    },
+    {
+      "id": "demand-N43",
+      "type": "flow_source",
+      "position": {
+        "x": 154,
+        "y": 840
+      },
+      "data": {
+        "label": "Demand 2 cfs",
+        "source_flow_lmin": -3398.02,
+        "temperature_k": 293.15
+      }
+    },
+    {
+      "id": "demand-N36",
+      "type": "flow_source",
+      "position": {
+        "x": -34,
+        "y": 1182
+      },
+      "data": {
+        "label": "Demand 3 cfs",
+        "source_flow_lmin": -5097.03,
+        "temperature_k": 293.15
+      }
+    },
+    {
+      "id": "demand-N38",
+      "type": "flow_source",
+      "position": {
+        "x": 362,
+        "y": 1070
+      },
+      "data": {
+        "label": "Demand 3 cfs",
+        "source_flow_lmin": -5097.03,
+        "temperature_k": 293.15
+      }
+    },
+    {
+      "id": "demand-N35",
+      "type": "flow_source",
+      "position": {
+        "x": 446,
+        "y": 1432
+      },
+      "data": {
+        "label": "Demand 2 cfs",
+        "source_flow_lmin": -3398.02,
+        "temperature_k": 293.15
+      }
+    },
+    {
+      "id": "demand-N33",
+      "type": "flow_source",
+      "position": {
+        "x": 708,
+        "y": 1736
+      },
+      "data": {
+        "label": "Demand 4 cfs",
+        "source_flow_lmin": -6796.04,
+        "temperature_k": 293.15
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "p1",
+      "source": "B3-2",
+      "sourceHandle": "outlet-0",
+      "target": "B4-1",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "P1: 24 in, 2000 ft",
+        "length_m": 609.6,
+        "diameter_m": 0.6096,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p2",
+      "source": "B3-2",
+      "sourceHandle": "outlet-1",
+      "target": "M2-1",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "P2: 24 in, 2000 ft",
+        "length_m": 609.6,
+        "diameter_m": 0.6096,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p3",
+      "source": "M2-3",
+      "sourceHandle": "outlet-0",
+      "target": "N3-1",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "P3: 24 in, 2000 ft",
+        "length_m": 609.6,
+        "diameter_m": 0.6096,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p4",
+      "source": "N3-2",
+      "sourceHandle": "outlet-0",
+      "target": "N5-1",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "P4: 12 in, 3000 ft",
+        "length_m": 914.4,
+        "diameter_m": 0.3048,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p5",
+      "source": "M3-3",
+      "sourceHandle": "outlet-0",
+      "target": "N5-1",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "P5: 24 in, 2000 ft",
+        "length_m": 609.6,
+        "diameter_m": 0.6096,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p6",
+      "source": "B4-2",
+      "sourceHandle": "outlet-0",
+      "target": "M3-1",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "P6: 12 in, 2000 ft",
+        "length_m": 609.6,
+        "diameter_m": 0.3048,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p7",
+      "source": "M3-3",
+      "sourceHandle": "outlet-1",
+      "target": "M4-1",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "P7: 12 in, 1000 ft",
+        "length_m": 304.8,
+        "diameter_m": 0.3048,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p8",
+      "source": "B5-2",
+      "sourceHandle": "outlet-0",
+      "target": "M4-1",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "P8: 12 in, 1500 ft",
+        "length_m": 457.2,
+        "diameter_m": 0.3048,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p9",
+      "source": "B4-2",
+      "sourceHandle": "outlet-1",
+      "target": "B5-1",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "P9: 18 in, 1000 ft",
+        "length_m": 304.8,
+        "diameter_m": 0.4572,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p10",
+      "source": "M4-3",
+      "sourceHandle": "outlet-0",
+      "target": "M5-1",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "P10: 12 in, 1000 ft",
+        "length_m": 304.8,
+        "diameter_m": 0.3048,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p11",
+      "source": "B6",
+      "sourceHandle": "outlet-0",
+      "target": "M5-1",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "P11: 12 in, 2000 ft",
+        "length_m": 609.6,
+        "diameter_m": 0.3048,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p12",
+      "source": "B5-2",
+      "sourceHandle": "outlet-1",
+      "target": "B6",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "P12: 18 in, 1000 ft",
+        "length_m": 304.8,
+        "diameter_m": 0.4572,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p13",
+      "source": "M4-3",
+      "sourceHandle": "outlet-1",
+      "target": "N13-1",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "P13: 12 in, 2000 ft",
+        "length_m": 609.6,
+        "diameter_m": 0.3048,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p14",
+      "source": "N13-3",
+      "sourceHandle": "outlet-0",
+      "target": "E-1",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "P14: 12 in, 1500 ft",
+        "length_m": 457.2,
+        "diameter_m": 0.3048,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p15",
+      "source": "M5-2",
+      "sourceHandle": "outlet-0",
+      "target": "E-1",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "P15: 24 in, 2000 ft",
+        "length_m": 609.6,
+        "diameter_m": 0.6096,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p16",
+      "source": "N17",
+      "sourceHandle": "outlet-0",
+      "target": "N13-3",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "P16: 12 in, 3000 ft",
+        "length_m": 914.4,
+        "diameter_m": 0.3048,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p17",
+      "source": "N24-2",
+      "sourceHandle": "outlet-0",
+      "target": "N17",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "P17: 12 in, 1000 ft",
+        "length_m": 304.8,
+        "diameter_m": 0.3048,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p18",
+      "source": "N18",
+      "sourceHandle": "outlet-0",
+      "target": "N24-1",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "P18: 12 in, 1500 ft",
+        "length_m": 457.2,
+        "diameter_m": 0.3048,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p19",
+      "source": "N19",
+      "sourceHandle": "outlet-0",
+      "target": "N18",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "P19: 18 in, 1000 ft",
+        "length_m": 304.8,
+        "diameter_m": 0.4572,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p20",
+      "source": "E-2",
+      "sourceHandle": "outlet-0",
+      "target": "N19",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "P20: 24 in, 3000 ft",
+        "length_m": 914.4,
+        "diameter_m": 0.6096,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p21",
+      "source": "N5-2",
+      "sourceHandle": "outlet-0",
+      "target": "N13-1",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "P21: 12 in, 1500 ft",
+        "length_m": 457.2,
+        "diameter_m": 0.3048,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p22",
+      "source": "N23",
+      "sourceHandle": "outlet-0",
+      "target": "N5-2",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "P22: 12 in, 3000 ft",
+        "length_m": 914.4,
+        "diameter_m": 0.3048,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p23",
+      "source": "N28-2",
+      "sourceHandle": "outlet-0",
+      "target": "N23",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "P23: 12 in, 1000 ft",
+        "length_m": 304.8,
+        "diameter_m": 0.3048,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p24",
+      "source": "N28-2",
+      "sourceHandle": "outlet-1",
+      "target": "N24-1",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "P24: 12 in, 1500 ft",
+        "length_m": 457.2,
+        "diameter_m": 0.3048,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p25",
+      "source": "N25-2",
+      "sourceHandle": "outlet-0",
+      "target": "N3-1",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "P25: 12 in, 3000 ft",
+        "length_m": 914.4,
+        "diameter_m": 0.3048,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p26",
+      "source": "N26-2",
+      "sourceHandle": "outlet-0",
+      "target": "N25-1",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "P26: 12 in, 1500 ft",
+        "length_m": 457.2,
+        "diameter_m": 0.3048,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p27",
+      "source": "N41-2",
+      "sourceHandle": "outlet-0",
+      "target": "N26-1",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "P27: 12 in, 1500 ft",
+        "length_m": 457.2,
+        "diameter_m": 0.3048,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p28",
+      "source": "N41-2",
+      "sourceHandle": "outlet-1",
+      "target": "N28-1",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "P28: 12 in, 2500 ft",
+        "length_m": 762.0,
+        "diameter_m": 0.3048,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p29",
+      "source": "M1-2",
+      "sourceHandle": "outlet-0",
+      "target": "B2-1",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "P29: 18 in, 2000 ft",
+        "length_m": 609.6,
+        "diameter_m": 0.4572,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p30",
+      "source": "N25-2",
+      "sourceHandle": "outlet-1",
+      "target": "M1-1",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "P30: 18 in, 2000 ft",
+        "length_m": 609.6,
+        "diameter_m": 0.4572,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p31",
+      "source": "B1",
+      "sourceHandle": "outlet-0",
+      "target": "B2-1",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "P31: 24 in, 1000 ft",
+        "length_m": 304.8,
+        "diameter_m": 0.6096,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p32",
+      "source": "N35-2",
+      "sourceHandle": "outlet-0",
+      "target": "B1",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "P32: 24 in, 2500 ft",
+        "length_m": 762.0,
+        "diameter_m": 0.6096,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p33",
+      "source": "N33",
+      "sourceHandle": "outlet-0",
+      "target": "N35-2",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "P33: 12 in, 1500 ft",
+        "length_m": 457.2,
+        "diameter_m": 0.3048,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p34",
+      "source": "M1-3",
+      "sourceHandle": "outlet-0",
+      "target": "N33",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "P34: 12 in, 1500 ft",
+        "length_m": 457.2,
+        "diameter_m": 0.3048,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p35",
+      "source": "N36-2",
+      "sourceHandle": "outlet-0",
+      "target": "N35-1",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "P35: 24 in, 2000 ft",
+        "length_m": 609.6,
+        "diameter_m": 0.6096,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p36",
+      "source": "N38-2",
+      "sourceHandle": "outlet-0",
+      "target": "N36-1",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "P36: 18 in, 1500 ft",
+        "length_m": 457.2,
+        "diameter_m": 0.4572,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p37",
+      "source": "N38-2",
+      "sourceHandle": "outlet-1",
+      "target": "N25-1",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "P37: 18 in, 1500 ft",
+        "length_m": 457.2,
+        "diameter_m": 0.4572,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p38",
+      "source": "N42-3",
+      "sourceHandle": "outlet-0",
+      "target": "N38-1",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "P38: 24 in, 1500 ft",
+        "length_m": 457.2,
+        "diameter_m": 0.6096,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p39",
+      "source": "N42-3",
+      "sourceHandle": "outlet-1",
+      "target": "N26-1",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "P39: 18 in, 1200 ft",
+        "length_m": 365.76,
+        "diameter_m": 0.4572,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p40",
+      "source": "N40-2",
+      "sourceHandle": "outlet-0",
+      "target": "N42-1",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "P40: 18 in, 1500 ft",
+        "length_m": 457.2,
+        "diameter_m": 0.4572,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p41",
+      "source": "N40-2",
+      "sourceHandle": "outlet-1",
+      "target": "N41-1",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "P41: 18 in, 1000 ft",
+        "length_m": 304.8,
+        "diameter_m": 0.4572,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p42",
+      "source": "N43-2",
+      "sourceHandle": "outlet-0",
+      "target": "N42-1",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "P42: 18 in, 1200 ft",
+        "length_m": 365.76,
+        "diameter_m": 0.4572,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p43",
+      "source": "N44",
+      "sourceHandle": "outlet-0",
+      "target": "N43-1",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "P43: 24 in, 1500 ft",
+        "length_m": 457.2,
+        "diameter_m": 0.6096,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p44",
+      "source": "N44",
+      "sourceHandle": "outlet-1",
+      "target": "N40-1",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "P44: 24 in, 1000 ft",
+        "length_m": 304.8,
+        "diameter_m": 0.6096,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p45",
+      "source": "N43-2",
+      "sourceHandle": "outlet-1",
+      "target": "N36-1",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "P45: 24 in, 1500 ft",
+        "length_m": 457.2,
+        "diameter_m": 0.6096,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p46",
+      "source": "M1-3",
+      "sourceHandle": "outlet-1",
+      "target": "M2-1",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "P46: 12 in, 2000 ft",
+        "length_m": 609.6,
+        "diameter_m": 0.3048,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p47",
+      "source": "M2-3",
+      "sourceHandle": "outlet-1",
+      "target": "M3-1",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "P47: 12 in, 2000 ft",
+        "length_m": 609.6,
+        "diameter_m": 0.3048,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "p48",
+      "source": "B2-2",
+      "sourceHandle": "outlet-0",
+      "target": "B3-1",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "P48: 24 in, 2000 ft",
+        "length_m": 609.6,
+        "diameter_m": 0.6096,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "B2-1-link",
+      "source": "B2-1",
+      "sourceHandle": "outlet-0",
+      "target": "B2-2",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Tee link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "B3-1-link",
+      "source": "B3-1",
+      "sourceHandle": "outlet-0",
+      "target": "B3-2",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Tee link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "B4-1-link",
+      "source": "B4-1",
+      "sourceHandle": "outlet-0",
+      "target": "B4-2",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Tee link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "B5-1-link",
+      "source": "B5-1",
+      "sourceHandle": "outlet-0",
+      "target": "B5-2",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Tee link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "M1-1-link",
+      "source": "M1-1",
+      "sourceHandle": "outlet-0",
+      "target": "M1-2",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Tee link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "M1-2-link",
+      "source": "M1-2",
+      "sourceHandle": "outlet-1",
+      "target": "M1-3",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Tee link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "M2-1-link",
+      "source": "M2-1",
+      "sourceHandle": "outlet-0",
+      "target": "M2-2",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Tee link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "M2-2-link",
+      "source": "M2-2",
+      "sourceHandle": "outlet-0",
+      "target": "M2-3",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Tee link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "M3-1-link",
+      "source": "M3-1",
+      "sourceHandle": "outlet-0",
+      "target": "M3-2",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Tee link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "M3-2-link",
+      "source": "M3-2",
+      "sourceHandle": "outlet-0",
+      "target": "M3-3",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Tee link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "M4-1-link",
+      "source": "M4-1",
+      "sourceHandle": "outlet-0",
+      "target": "M4-2",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Tee link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "M4-2-link",
+      "source": "M4-2",
+      "sourceHandle": "outlet-0",
+      "target": "M4-3",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Tee link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "M5-1-link",
+      "source": "M5-1",
+      "sourceHandle": "outlet-0",
+      "target": "M5-2",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Tee link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "E-1-link",
+      "source": "E-1",
+      "sourceHandle": "outlet-0",
+      "target": "E-2",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Tee link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "N13-1-link",
+      "source": "N13-1",
+      "sourceHandle": "outlet-0",
+      "target": "N13-2",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Tee link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "N13-2-link",
+      "source": "N13-2",
+      "sourceHandle": "outlet-0",
+      "target": "N13-3",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Tee link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "N5-1-link",
+      "source": "N5-1",
+      "sourceHandle": "outlet-0",
+      "target": "N5-2",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Tee link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "N3-1-link",
+      "source": "N3-1",
+      "sourceHandle": "outlet-0",
+      "target": "N3-2",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Tee link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "N25-1-link",
+      "source": "N25-1",
+      "sourceHandle": "outlet-0",
+      "target": "N25-2",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Tee link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "N26-1-link",
+      "source": "N26-1",
+      "sourceHandle": "outlet-0",
+      "target": "N26-2",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Tee link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "N41-1-link",
+      "source": "N41-1",
+      "sourceHandle": "outlet-0",
+      "target": "N41-2",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Tee link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "N28-1-link",
+      "source": "N28-1",
+      "sourceHandle": "outlet-0",
+      "target": "N28-2",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Tee link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "N24-1-link",
+      "source": "N24-1",
+      "sourceHandle": "outlet-0",
+      "target": "N24-2",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Tee link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "N40-1-link",
+      "source": "N40-1",
+      "sourceHandle": "outlet-0",
+      "target": "N40-2",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Tee link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "N42-1-link",
+      "source": "N42-1",
+      "sourceHandle": "outlet-0",
+      "target": "N42-2",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Tee link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "N42-2-link",
+      "source": "N42-2",
+      "sourceHandle": "outlet-0",
+      "target": "N42-3",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Tee link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "N43-1-link",
+      "source": "N43-1",
+      "sourceHandle": "outlet-0",
+      "target": "N43-2",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Tee link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "N36-1-link",
+      "source": "N36-1",
+      "sourceHandle": "outlet-0",
+      "target": "N36-2",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Tee link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "N38-1-link",
+      "source": "N38-1",
+      "sourceHandle": "outlet-0",
+      "target": "N38-2",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Tee link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "N35-1-link",
+      "source": "N35-1",
+      "sourceHandle": "outlet-0",
+      "target": "N35-2",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Tee link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "demand-B1-link",
+      "source": "demand-B1",
+      "sourceHandle": "outlet-0",
+      "target": "B1",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "Demand link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "demand-B2-link",
+      "source": "demand-B2",
+      "sourceHandle": "outlet-0",
+      "target": "B2-2",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "Demand link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "supply-B3-link",
+      "source": "supply-B3",
+      "sourceHandle": "outlet-0",
+      "target": "B3-1",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "Supply link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "demand-B4-link",
+      "source": "demand-B4",
+      "sourceHandle": "outlet-0",
+      "target": "B4-1",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "Demand link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "demand-B5-link",
+      "source": "demand-B5",
+      "sourceHandle": "outlet-0",
+      "target": "B5-1",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "Demand link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "demand-B6-link",
+      "source": "demand-B6",
+      "sourceHandle": "outlet-0",
+      "target": "B6",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "Demand link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "demand-M1-link",
+      "source": "demand-M1",
+      "sourceHandle": "outlet-0",
+      "target": "M1-1",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "Demand link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "demand-M2-link",
+      "source": "demand-M2",
+      "sourceHandle": "outlet-0",
+      "target": "M2-2",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "Demand link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "demand-M3-link",
+      "source": "demand-M3",
+      "sourceHandle": "outlet-0",
+      "target": "M3-2",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "Demand link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "demand-M4-link",
+      "source": "demand-M4",
+      "sourceHandle": "outlet-0",
+      "target": "M4-2",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "Demand link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "demand-M5-link",
+      "source": "demand-M5",
+      "sourceHandle": "outlet-0",
+      "target": "M5-2",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "Demand link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "demand-E-link",
+      "source": "demand-E",
+      "sourceHandle": "outlet-0",
+      "target": "E-2",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "Demand link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "demand-N13-link",
+      "source": "demand-N13",
+      "sourceHandle": "outlet-0",
+      "target": "N13-2",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "Demand link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "demand-N3-link",
+      "source": "demand-N3",
+      "sourceHandle": "outlet-0",
+      "target": "N3-2",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "Demand link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "demand-N26-link",
+      "source": "demand-N26",
+      "sourceHandle": "outlet-0",
+      "target": "N26-2",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "Demand link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "demand-N41-link",
+      "source": "demand-N41",
+      "sourceHandle": "outlet-0",
+      "target": "N41-1",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "Demand link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "demand-N28-link",
+      "source": "demand-N28",
+      "sourceHandle": "outlet-0",
+      "target": "N28-1",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "Demand link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "demand-N23-link",
+      "source": "demand-N23",
+      "sourceHandle": "outlet-0",
+      "target": "N23",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "Demand link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "demand-N24-link",
+      "source": "demand-N24",
+      "sourceHandle": "outlet-0",
+      "target": "N24-2",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "Demand link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "demand-N17-link",
+      "source": "demand-N17",
+      "sourceHandle": "outlet-0",
+      "target": "N17",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "Demand link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "demand-N18-link",
+      "source": "demand-N18",
+      "sourceHandle": "outlet-0",
+      "target": "N18",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "Demand link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "demand-N19-link",
+      "source": "demand-N19",
+      "sourceHandle": "outlet-0",
+      "target": "N19",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "Demand link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "supply-tank-link",
+      "source": "supply-tank",
+      "sourceHandle": "outlet-0",
+      "target": "N44",
+      "targetHandle": "inlet-0",
+      "data": {
+        "label": "Supply link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "demand-N40-link",
+      "source": "demand-N40",
+      "sourceHandle": "outlet-0",
+      "target": "N40-1",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "Demand link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "demand-N42-link",
+      "source": "demand-N42",
+      "sourceHandle": "outlet-0",
+      "target": "N42-2",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "Demand link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "demand-N43-link",
+      "source": "demand-N43",
+      "sourceHandle": "outlet-0",
+      "target": "N43-1",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "Demand link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "demand-N36-link",
+      "source": "demand-N36",
+      "sourceHandle": "outlet-0",
+      "target": "N36-2",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "Demand link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "demand-N38-link",
+      "source": "demand-N38",
+      "sourceHandle": "outlet-0",
+      "target": "N38-1",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "Demand link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "demand-N35-link",
+      "source": "demand-N35",
+      "sourceHandle": "outlet-0",
+      "target": "N35-1",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "Demand link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    },
+    {
+      "id": "demand-N33-link",
+      "source": "demand-N33",
+      "sourceHandle": "outlet-0",
+      "target": "N33",
+      "targetHandle": "inlet-1",
+      "data": {
+        "label": "Demand link",
+        "length_m": 0.01,
+        "diameter_m": 0.6,
+        "roughness_mm": 0.3048
+      }
+    }
+  ],
+  "globalSettings": {
+    "fluid_type": "water",
+    "ambient_temperature": 293.15,
+    "atmospheric_pressure": 101325,
+    "property_iterations": 5,
+    "tolerance": 1e-06,
+    "inner_iterations": 1000,
+    "control_iterations": 100,
+    "solver_method": "hybr",
+    "max_iterations": 1000
+  },
+  "cases": [
+    {
+      "id": "case_base",
+      "name": "Problem 3",
+      "is_base": true,
+      "overrides": {
+        "nodes": {},
+        "global_settings": {}
+      }
+    }
+  ],
+  "active_case_id": "case_base"
+}

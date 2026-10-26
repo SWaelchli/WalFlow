@@ -39,7 +39,7 @@ All notable changes to the WälFlow project will be documented in this file.
 - **Max. discharge pressure**: PD pumps and flow sources get a "Max. Discharge Pressure" input (absolute, default 50 bar(a)), replacing the hidden 200 bar cap; above it the delivered flow drops (PD pump: internal relief to suction, flagged in the pump details).
 - **PD pump drive type**: PD pumps get a drive type (fixed speed with motor-overload warning, or VFD power limit).
 - **Enter key handler**: Global Enter key handler blurs numeric and text inputs on keypress, triggering validation and committing app updates.
-- **Validation benchmark**: New example "Jeppson (1974) 7-Pipe Network" (Validation Benchmarks) with the published problems 2 (pump supply, = AFT Fathom Verification Case 63) and 3 (three reservoirs) as operating cases; a regression test holds WalFlow to the published flows, head losses and pressures.
+- **Validation benchmark**: New example "Jeppson (1974) 7-Pipe Network" (Validation Benchmarks) with the published problems 2 (pump supply, = AFT Fathom Verification Case 63) and 3 (three reservoirs) as operating cases; a regression test holds WalFlow to the published flows, head losses and pressures. Second example "Jeppson (1974) 48-Pipe Network" (Ch. VI problem 3, two supplies, 28 demands) held to the published flows and friction losses.
 - **Flow source withdrawal**: A negative set flow on a flow source draws that flow out of the network (a junction demand); the node shows it as a draw-off.
 
 ### Changed

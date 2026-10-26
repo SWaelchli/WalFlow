@@ -107,6 +107,7 @@ import exampleParallelPumps from './data/examples/Example_Parallel_Pumps.wlf';
 import exampleLargeNetwork from './data/examples/Example_Large_Reference_Network.wlf';
 import exampleMultiPsv from './data/examples/Example_Multi_PSV_Protection.wlf';
 import exampleJeppson from './data/examples/Example_Jeppson_7Pipe_Network.wlf';
+import exampleJeppson48 from './data/examples/Example_Jeppson_48Pipe_Network.wlf';
 import greetingCanvas from './data/GreetingCanvas.wlf';
 
 const nodeTypes = {
@@ -1542,7 +1543,8 @@ function WalFlowContent() {
               "Multi-PSV & Rupture Disc Protection": exampleMultiPsv
             },
             "Validation Benchmarks": {
-              "Jeppson (1974) 7-Pipe Network": exampleJeppson
+              "Jeppson (1974) 7-Pipe Network": exampleJeppson,
+              "Jeppson (1974) 48-Pipe Network": exampleJeppson48
             }
           }}
           isAuthenticated={isAuthenticated}
