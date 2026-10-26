@@ -18,7 +18,7 @@ The workflow for checking a source is the `standard-verification` skill ([.claud
 | :--- | :--- |
 | ⚪ Unverified | LLM-cited; the source has not been read |
 | ✅ Verified | The clause supports the claim, and the doc and the code agree with it |
-| ⚠️ Deviation | The source was read and the model differs; a finding `D-xx` in [EQUIPMENT_FINDINGS.md](../EQUIPMENT_FINDINGS.md) |
+| ⚠️ Deviation | The source was read and the model differs; logged as a finding in `EQUIPMENT_FINDINGS.md` (created when needed, deleted once all findings are closed) |
 | ❌ Not in source | The source does not contain the claim; the citation is replaced or removed |
 | ➖ Principle | Textbook principle (e.g. Darcy-Weisbach). No edition-specific claim to verify; any coefficient taken from a source needs its own source row |
 | 🚩 | Pre-check flag from the bibliographic check: edition superseded, citation moved, applicability doubtful or source not found. Resolve when the source is read |
