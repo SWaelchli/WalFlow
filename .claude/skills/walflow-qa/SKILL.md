@@ -79,8 +79,8 @@ browser tests.
 
 1. **Name by subject, not by origin.** `test_regulator_lockup.py`, not `test_f1_37.py`. Names are unique across the tree.
 2. **No finding or audit IDs.** Finding lists (`EQUIPMENT_FINDINGS.md`, audits) are temporary, so test names,
-   param ids, markers and comments describe the behaviour, never `D-xx` / `F1-xx`. An open finding may be named
-   while it is open (e.g. a known-failure note); remove the ID when it is fixed.
+   param ids, markers and comments describe the behaviour, never `D-xx` / `F1-xx`, not even while the finding
+   is open (describe the known failure instead).
 3. **Fix a bug test-first.** Follow the decision tree above; the test must fail before the fix.
 4. **Assert against an independent reference.** Closed-form values or `helpers/physics_refs.py`, never a copy of
    the production formula. Properties assert laws, not the implementation. No bare `dt > 0` checks, no `print`.
