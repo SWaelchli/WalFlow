@@ -1597,7 +1597,11 @@ class NetworkSolver:
                 for port in node.inlets: port.pressure = p_in
                 q_in_total = sum(p.flow_rate for p in node.inlets)
                 q_out_total = sum(p.flow_rate for p in node.outlets)
-                p_out = self._get_node_p_out(node, p_in, q_in_total, q_out_total, update_state=True, p_in_all=p_in_all)
+                # The drop at the flow leaving through the outlet, as in the solve's edge row: the node mass rows
+                # leave up to ~1e-10 m³/s between inlet and outlet, which a stiff component (1e13 Pa·s/m³) turns
+                # into Pa that the next pipe would report as its own drop
+                q_drop = q_out_total if node.outlets else q_in_total
+                p_out = self._get_node_p_out(node, p_in, q_drop, q_out_total, update_state=True, p_in_all=p_in_all)
                 for port in node.outlets: port.pressure = p_out
                 if isinstance(node, ThreeWayTCV):
                     node.calculate()

@@ -195,6 +195,22 @@ def _noise_trickle_mixing_graph():
             "globalSettings": {"fluid_type": "iso_vg_150"}}
 
 
+def _stiff_valve_after_pump_graph():
+    """A pump feeds a valve opened 5 % (very stiff) and a tank. The node mass residual at the valve (~6e-13 m³/s)
+    times its stiffness is ~5 Pa; the report must use the flow the solve used, or the next pipe shows that
+    residual as its own drop (5.4 Pa against its true 0.02 Pa)."""
+    def edge(edge_id, source, target):
+        return {"id": edge_id, "source": source, "target": target, "sourceHandle": "outlet-0",
+                "targetHandle": "inlet-0",
+                "data": {"length_m": 1.0, "diameter_m": math.exp(-2), "roughness_mm": 0.0}}
+    return {"nodes": [_node("t1", "tank", level_m=1.0, temperature_k=264.15),
+                      _node("p", "centrifugal_pump", flow_rated_lmin=20.1, head_rated_m=20.1),
+                      _node("v", "linear_control_valve", max_cv=1.0, opening_pct=5.0),
+                      _node("t2", "tank", level_m=1.0, temperature_k=264.15)],
+            "edges": [edge("e0", "t1", "p"), edge("e1", "p", "v"), edge("e2", "v", "t2")],
+            "globalSettings": {"fluid_type": "iso_vg_150"}}
+
+
 @example(_reverse_flow_graph())
 @given(networks())
 def test_well_posed_network_reaches_a_finite_steady_state_with_fluid_properties(graph):
@@ -235,6 +251,7 @@ def test_mass_is_conserved(graph):
 
 
 @example(_heavy_crude_viscous_drop_graph())
+@example(_stiff_valve_after_pump_graph())
 @given(networks())
 def test_pressure_is_continuous_and_falls_along_the_flow(graph):
     """A pipe end has its node's port pressure; static pressure falls across every pipe and passive
