@@ -4,8 +4,8 @@
 
 A measurement tap is a sensing location in the middle of a pipe run. It lets an instrument bubble or a remote control valve read the line at a point that is not a component port, for example halfway along a long return line, without changing the hydraulics.
 
-- **Ports:** one inlet (`inlet-0`) and one outlet (`outlet-0`).
-- **Sensing pin:** always present, `signal-inlet-0`, reads the inlet port state. In the drawing the pin is shown centred between inlet and outlet. The tap has no pressure drop, so inlet and outlet are the same state.
+- **Ports:** two neutral ports, `port-0` and `port-1` (a two-port [junction](junction.md)); the pipes may be drawn either way.
+- **Sensing pin:** always present, `signal-port-0`, reads the state at port 0 (at port 1 when port 0 has no pipe). In the drawing the pin is shown centred between the ports. The tap has no pressure drop, so both ports have the same total pressure.
 - **Insertion:** right-click a pipe → *Insert measurement tap*. The pipe is split at the clicked point into two halves of half the original length each (25 m if no length was set). The upstream half keeps the pipe's id and label; the downstream half gets the next free pipe label.
 
 ## 2. Governing Standards & Reference Literature
@@ -18,7 +18,7 @@ No engineering standard applies. The tap is an ideal point in the line with no r
 
 $$P_{\text{out}} = P_{\text{in}}, \qquad Q_{\text{out}} = Q_{\text{in}}$$
 
-The class has no `calculate_delta_p`, so the solver treats it like a [junction](junction.md): a node with one total-pressure unknown and a mass balance row; each port reports the static pressure of the pipe on it (see [base_node.md](base_node.md#32-how-a-component-enters-the-equations)).
+The class is a [junction](junction.md) with two ports: a node with one total-pressure unknown and a mass balance row; each port reports the static pressure of the pipe on it (see [base_node.md](base_node.md#32-how-a-component-enters-the-equations)).
 
 ### 3.2 Equivalence with the unsplit pipe
 
@@ -34,12 +34,12 @@ Not applicable — the tap adds no pressure term.
 
 ### 3.4 Sensing and instrumentation
 
-- **Remote control valves:** a signal line from the tap pin to a valve's `signal-in` makes the valve hold its set pressure at the tap (`remote_sensing_config = {node_id, port_type: "inlet", port_idx: 0}`), see [remote_control_valve.md](remote_control_valve.md).
-- **Instrument bubbles (`instrument`):** display-only, not sent to the solver. The graph parser skips them and drops the signal lines into them. The frontend computes their readings (P, ΔP, Q, T, velocity, kinematic viscosity) from the tap's inlet telemetry. Velocity uses the inside diameter of the pipe on the tap's inlet.
+- **Remote control valves:** a signal line from the tap pin to a valve's `signal-in` makes the valve hold its set pressure at the tap (the slot of port 0, as for a junction port; port 1 when port 0 has no pipe), see [remote_control_valve.md](remote_control_valve.md).
+- **Instrument bubbles (`instrument`):** display-only, not sent to the solver. The graph parser skips them and drops the signal lines into them. The frontend computes their readings (P, ΔP, Q, T, velocity, kinematic viscosity) from the tap's port-0 telemetry. Velocity uses the inside diameter of the pipe on port 0.
 
 ## 4. Thermal & Energy Balance
 
-Temperature passes from the entering to the leaving port unchanged ($\Delta T = 0$), and the leaving port gets density and viscosity at that temperature. No energy is added or dissipated. With reverse flow the outlet state reaches the inlet (direction-aware mixing, see [base_node.md](base_node.md#41-default-mixing-calculate_temperature)). Without flow the outlet takes the inlet temperature.
+Temperature passes from the entering to the leaving port unchanged ($\Delta T = 0$), and the leaving port gets density and viscosity at that temperature. No energy is added or dissipated. The port the flow enters by sets the state (junction mixing, see [junction.md](junction.md)). Without flow both ports take the temperature of port 0.
 
 ## 5. Parameter & Unit Specification Table
 

@@ -4,6 +4,8 @@
 
 A fixed restriction calibrated from one known operating point: flow $Q_0$, inlet and outlet pressure, temperature $T_0$ and calibration fluid. From that point the model scales the pressure drop to other flows, temperatures and fluids with one of three laws.
 
+- **Ports:** two neutral ports, `port-0` and `port-1`, with no inlet or outlet. The component is a [component link](component_link.md) between two hidden nodes at its ports, each with a solved pressure: the flow sign picks the upstream port. Telemetry `ports[k]` has `flow_rate` positive into the component.
+
 Use it for internal clearances, bearing feeds, nozzles, spray bars, bypass bores, a consumer known only from a datasheet point ("10 L/min at 2.5 bar"), or any resistance whose geometry is unknown.
 
 | `restriction_model` | Law | Typical use |
@@ -54,7 +56,7 @@ $$C_d(\mathrm{Re}_o) = 0.60 \tanh\!\left(\frac{0.2\sqrt{\mathrm{Re}_o}}{0.60}\ri
 
 $C_d$ (`FluidProperties.get_orifice_cd`) is continuous and monotonic: $0.2\sqrt{\mathrm{Re}}$ (laminar, $\Delta P \propto \mu Q$) at low Re, 0.60 at high Re ($\Delta P \propto \rho Q^2$). So the orifice model moves by itself from viscous to quadratic behaviour as the flow or the viscosity changes.
 
-$D$ is taken from the connected pipe (the upstream pipe first, else the downstream one; DN50 if none).
+$D$ is taken from the connected pipe on the upstream port of the last property pass with flow, the pipe on the other port when that port is free; without flow the bore of the last pass, at first the port-0 pipe; DN50 if none ([component_link.md](component_link.md)).
 
 ### 3.3 Worked example
 
@@ -71,7 +73,7 @@ At this point the equivalent bore runs turbulent, so the orifice model follows t
 
 ### 3.4 Derivative
 
-The class has no analytical derivative; the solver differentiates the outlet pressure numerically (see [base_node.md](base_node.md#33-jacobian)).
+The class has no analytical derivative; the component link differentiates $\Delta P$ numerically (central difference, [component_link.md](component_link.md)). $\Delta P$ is odd in $Q$, so the port order does not matter.
 
 ## 4. Thermal & Energy Balance
 
@@ -79,7 +81,7 @@ The whole pressure drop is throttling loss:
 
 $$\Delta T = \frac{|\Delta P|}{\rho\, c_p(T)}$$
 
-applied to the outlet for $Q \ge 0$ and to the inlet for $Q < 0$, with density and viscosity re-evaluated at both ends.
+applied at the port the flow leaves by, with the upstream port's density and viscosity; the component link evaluates it in its property pass ([component_link.md](component_link.md)).
 
 ## 5. Parameter & Unit Specification Table
 

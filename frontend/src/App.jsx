@@ -13,6 +13,7 @@ import { notify, confirmDialog } from './utils/dialogs';
 import { validateNetwork, checkNewConnection, normalizeConnection, PORT_TAKEN_MESSAGE } from './utils/networkValidation';
 import { junctionLayout, junctionPortCount, PIN_TIP, PIN_LENGTH } from './utils/junctionLayout';
 import { summarizeStats, deriveRunState } from './utils/runStatus';
+import { portNumberLabel } from './utils/portLabels';
 import RunBanners from './components/overlays/RunBanners';
 import 'reactflow/dist/style.css'; 
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
@@ -576,7 +577,7 @@ function WalFlowContent() {
     setSelectedEdge(null);
     // Pins an instrument can be wired to: a tap's own pin, or the sensing pins switched on at a component
     const pins = node.type === 'measure_point'
-      ? ['inlet-0']
+      ? ['port-0']
       : Object.entries(node.data?.sensing || {}).filter(([, on]) => on).map(([port]) => port);
     setContextMenu({ x: event.clientX, y: event.clientY, kind: 'node', nodeId: node.id, isTap: node.type === 'measure_point', pins: node.type === 'instrument' ? [] : pins });
   }, [setNodes, setEdges]);
@@ -603,7 +604,8 @@ function WalFlowContent() {
       const hy = py + Math.sin(pa) * head;
       position = { x: hx + 40, y: Math.sin(pa) > 0.5 ? hy + 50 : hy - 110 };
     } else {
-      const pinX = host.type === 'measure_point' ? 20 : (portId.startsWith('outlet') ? (host.width || 60) : portId.startsWith('port-') ? (host.width || 40) / 2 : 0);
+      const atEnd = portId.startsWith('outlet') || (host.type !== 'junction' && portId === 'port-1');
+      const pinX = host.type === 'measure_point' ? 20 : (atEnd ? (host.width || 60) : host.type === 'junction' ? (host.width || 40) / 2 : 0);
       position = { x: host.position.x + pinX + 40, y: host.position.y - 110 };
     }
     const instrument = {
@@ -679,7 +681,7 @@ function WalFlowContent() {
       const pins = contextMenu.pins || [];
       const instrumentItems = pins.map(port => ({
         id: `add-instrument-${port}`,
-        label: contextMenu.isTap ? 'Add instrument' : `Add instrument at ${port.startsWith('port-') ? `Port ${Number(port.slice(5)) + 1}` : port.replace('-', ' ')}`,
+        label: contextMenu.isTap ? 'Add instrument' : `Add instrument at ${port.startsWith('port-') ? portNumberLabel(Number(port.slice(5))) : port.replace('-', ' ')}`,
         disabled: locked,
         onSelect: () => addInstrumentAtPin(contextMenu.nodeId, port),
       }));
@@ -919,7 +921,7 @@ function WalFlowContent() {
       notify("This drawing is read-only. Please check out the drawing to edit.", 'warning');
       return;
     }
-    // The canvas connects in loose mode (a junction port works either way); the stored pipe runs outlet side -> inlet side
+    // The canvas connects in loose mode; a role outlet is stored as the source and a role inlet as the target, neutral ports as drawn
     const direction = normalizeConnection(nodes, rawParams);
     if (!direction.ok) return; // isValidConnection already refuses these
     const params = direction.connection;
@@ -980,11 +982,11 @@ function WalFlowContent() {
       const { sourceHandle, targetHandle } = connection || {};
       const isSig = (h) => String(h ?? '').startsWith('signal-');
       if (connection?.source === connection?.target && sourceHandle === targetHandle) return false; // over the handle it started from
-      refusedConnectionRef.current = isSig(sourceHandle) !== isSig(targetHandle)
+      refusedConnectionRef.current = direction.message ?? (isSig(sourceHandle) !== isSig(targetHandle)
         ? 'A signal handle cannot connect to a hydraulic port.'
         : isSig(sourceHandle)
           ? 'A sensing pin connects to an instrument or valve signal input.'
-          : 'A pipe runs from an outlet to an inlet; a junction port connects to either.';
+          : null);
       return false;
     }
     const check = checkNewConnection(edges, direction.connection);

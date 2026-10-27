@@ -139,3 +139,42 @@ def assert_regulator_consistent(reg, set_pa, tol_bar=0.05):
         return "saturated closed"
     pytest.fail(f"opening {reg.opening_pct:.1f} % and sensed {sensed/1e5:.3f} bar vs set {set_pa/1e5:.3f} bar")
 
+
+
+def graph_node(node_id, node_type, data=None):
+    return {"id": node_id, "type": node_type, "position": {"x": 0, "y": 0}, "data": {"label": node_id, **(data or {})}}
+
+
+def graph_pipe(edge_id, source, target, source_port=None, target_port=None, length=1.0, diameter=0.0266):
+    return {"id": edge_id, "source": source, "target": target, "sourceHandle": source_port, "targetHandle": target_port,
+            "data": {"length_m": length, "diameter_m": diameter}}
+
+
+def graph_signal(edge_id, source, source_port, target, target_port="signal-in"):
+    return {"id": edge_id, "source": source, "target": target, "sourceHandle": source_port,
+            "targetHandle": target_port, "data": {"type": "SIGNAL"}}
+
+
+def component_line(node_type, data=None, fluid="water", source_level=20.0, sink_level=1.0, temperature_k=293.15):
+    """Saved-file graph: tank "t1" -> pipe -> component "c" -> pipe -> tank "t2", the component entered by port-0 and
+    left by port-1 (neutral types) or inlet-0 / outlet-0 (role types)."""
+    neutral = node_type in ("orifice", "calibrated_restriction", "filter", "measure_point")
+    c_in, c_out = ("port-0", "port-1") if neutral else ("inlet-0", "outlet-0")
+    return {
+        "nodes": [graph_node("t1", "tank", {"level_m": source_level, "temperature_k": temperature_k}),
+                  graph_node("c", node_type, data),
+                  graph_node("t2", "tank", {"level_m": sink_level, "temperature_k": temperature_k})],
+        "edges": [graph_pipe("e1", "t1", "c", "outlet-0", c_in), graph_pipe("e2", "c", "t2", c_out, "inlet-0")],
+        "globalSettings": {"fluid_type": fluid},
+    }
+
+
+def solve_graph(graph_dict):
+    """Parse and solve a saved-file graph: (network, stats). Fails the test when the solve does not succeed."""
+    from simulation.graph_parser import GraphParser
+    from simulation.schemas import ReactFlowGraph
+    from simulation.solver import NetworkSolver
+    network = GraphParser.parse_graph(ReactFlowGraph(**graph_dict))
+    stats = NetworkSolver(network).solve()
+    assert stats["success"], stats
+    return network, stats

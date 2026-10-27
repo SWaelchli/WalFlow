@@ -8,6 +8,8 @@ This guide details how to implement the visual node, property forms, sidebar car
 
 Create `frontend/src/nodes/<Name>Node.jsx`. Use `<BaseNode>` to handle selection boxes, node rotation, warnings, case override badges, and off-state indicators.
 
+The template below is for a component with role ports (`inlet-0`, `outlet-0`). For a neutral-port component, see section 1b.
+
 ```jsx
 import { Handle, Position } from 'reactflow';
 import { useMemo } from 'react';
@@ -84,6 +86,16 @@ export default function CustomEquipmentNode({ id, data, selected }) {
   );
 }
 ```
+
+### 1b. Neutral-port components
+
+A component built on `InlineNode` (see backend Archetype 1) has no inlet or outlet. Reference: `frontend/src/nodes/OrificeNode.jsx`.
+
+- **Handles:** use `id="port-0"` / `id="port-1"` with `className="handle-neutral"` and `title="Port 1"` / `"Port 2"`. Do not set a `background`: both ports are hollow rings in `--color-port-neutral`.
+- **Handle type:** the canvas connects in loose mode, so `type` does not set a direction. Keep `target` on port 0 and `source` on port 1.
+- **Sensing pins:** `sensing['port-k']` with `<SensingPin portId="port-k" />`. The signal handle is `signal-port-k`. Pilots and remote control valves can sense here.
+- **Registration:** add the type to `NEUTRAL_TYPES` in `frontend/src/utils/networkValidation.js`, and to the port lists in `SetupPanel.jsx`.
+- **Telemetry:** the backend sends `telemetry.ports[k]`, with `flow_rate` positive into the component. Do not read `inlets` / `outlets`. Use `neutralDrop(telemetry)` (Δp in the flow direction) and `neutralPorts(telemetry)` (upstream / downstream port) from `utils/nodeReadouts.js`.
 
 ---
 

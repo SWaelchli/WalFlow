@@ -94,6 +94,11 @@ class Pipe(HydraulicNode):
         velocity = flow_rate / self.area
         return density * velocity * velocity / 2.0
 
+    def end_heads(self, flow_rate: float) -> tuple:
+        """Velocity heads at the two ends (one diameter: equal), at the upstream density as in the solve."""
+        head = self.velocity_head(flow_rate, self.upstream_port().density)
+        return head, head
+
     def stagnation_delta_p(self, flow_rate: float, density: float, viscosity: float) -> float:
         """Total-pressure drop between the nodes at the two ends, the edge row of the network solve. Equal to the
         static drop plus the velocity head at each end on a node, minus it at the far end; an end on a reservoir

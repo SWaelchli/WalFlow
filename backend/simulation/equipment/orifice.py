@@ -1,9 +1,9 @@
-from simulation.equipment.base_node import HydraulicNode
+from simulation.equipment.base_node import InlineNode
 from simulation.fluid_utils import FluidProperties
 import math
 
 
-class Orifice(HydraulicNode):
+class Orifice(InlineNode):
     """
     An Orifice acts as a restriction in the hydraulic network. It calculates the permanent
     pressure loss caused by the area restriction.
@@ -31,10 +31,7 @@ class Orifice(HydraulicNode):
         self.pipe_diameter = max(0.001, float(pipe_diameter or 0.05248))
         self.orifice_diameter = max(0.0001, float(orifice_diameter or 0.01))
         self.standard = standard if standard in self.VALID_STANDARDS else 'iso_5167'
-        
-        # A orifice requires exactly one inlet and one outlet
-        self.add_inlet()
-        self.add_outlet()
+
 
     @staticmethod
     def _beta_eff(beta: float) -> float:
@@ -170,47 +167,3 @@ class Orifice(HydraulicNode):
         ratio = FluidProperties.get_orifice_permanent_loss_ratio(cd, beta_eff)
         return ratio * tap_dp
 
-    def calculate(self):
-
-        """
-        Updates the outlet port's state based on the inlet port's state and the calculated drop.
-        """
-        inlet = self.inlets[0]
-        outlet = self.outlets[0]
-
-        # In reverse flow the fluid enters at the outlet port: the pressure drop must use its properties,
-        # not the (never populated) defaults of the inlet port.
-        if inlet.flow_rate < 0:
-            inlet.density = outlet.density
-            inlet.viscosity = outlet.viscosity
-
-        # Calculate the pressure drop based on the current flow rate passing through
-        dp = self.calculate_delta_p(inlet.flow_rate, inlet.density, inlet.viscosity)
-
-        # Update the outlet conditions
-        outlet.pressure = inlet.pressure - dp
-        outlet.flow_rate = inlet.flow_rate  # property pass only; the solver reports the solved outlet edge flow
-        outlet.density = inlet.density
-        outlet.viscosity = inlet.viscosity
-
-        # Throttling Heat: dT = abs(dP) / (rho * Cp)
-        # Apply to the port where fluid is EXITING the node.
-        fluid_type = getattr(self.global_settings, 'fluid_type', 'water')
-
-        if inlet.flow_rate >= 0:
-            # Forward flow: Inlet -> Outlet
-            cp = FluidProperties.get_specific_heat(fluid_type, inlet.temperature)
-            dt = abs(dp) / (inlet.density * cp)
-            outlet.temperature = inlet.temperature + dt
-        else:
-            # Reverse flow: Outlet -> Inlet
-            cp = FluidProperties.get_specific_heat(fluid_type, outlet.temperature)
-            dt = abs(dp) / (outlet.density * cp)
-            inlet.temperature = outlet.temperature + dt
-
-        # Density and viscosity of each port at its own temperature (the leaving port includes the throttling heat)
-        for port in (inlet, outlet):
-            port.density = FluidProperties.get_density(fluid_type, port.temperature)
-            port.viscosity = FluidProperties.get_viscosity(fluid_type, port.temperature)
-
-        return dp

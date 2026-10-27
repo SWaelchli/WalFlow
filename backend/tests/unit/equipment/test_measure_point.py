@@ -39,29 +39,29 @@ def test_tap_has_no_pressure_drop_and_matches_an_unsplit_pipe():
     ref = _solve({"nodes": TANKS, "edges": [_pipe("p", "t1", "t2", 40.0)]})
     net = _solve({
         "nodes": TANKS + [_node("tap", "measure_point")],
-        "edges": [_pipe("p1", "t1", "tap", 20.0), _pipe("p2", "tap", "t2", 20.0)],
+        "edges": [_pipe("p1", "t1", "tap", 20.0, tgt_port="port-0"), _pipe("p2", "tap", "t2", 20.0, src_port="port-1")],
     })
     tap = net.nodes["tap"]
     assert isinstance(tap, MeasurePoint)
 
     q_ref = ref.nodes["t2"].inlets[0].flow_rate
     assert q_ref > 0
-    assert tap.inlets[0].flow_rate == pytest.approx(q_ref, rel=1e-4)
-    assert tap.outlets[0].flow_rate == pytest.approx(q_ref, rel=1e-4)
-    assert tap.inlets[0].pressure == pytest.approx(tap.outlets[0].pressure, abs=1.0)
+    assert tap.port_flow_into(0) == pytest.approx(q_ref, rel=1e-4)   # positive into the tap by port 0, out by port 1
+    assert tap.port_flow_into(1) == pytest.approx(-q_ref, rel=1e-4)
+    assert tap.port(0).pressure == pytest.approx(tap.port(1).pressure, abs=1.0)
     # The tap sits halfway: equal pipes and flow split the friction evenly; the entry velocity head is
     # taken where the fluid leaves t1, so all of it lies upstream of the tap
     p1, p2 = net.nodes["t1"].outlets[0].pressure, net.nodes["t2"].inlets[0].pressure
-    entry = reservoir_entry_dp(q_ref, 0.05, tap.inlets[0].density)
-    assert tap.inlets[0].pressure == pytest.approx(p2 + (p1 - p2 - entry) / 2, rel=1e-3)
+    entry = reservoir_entry_dp(q_ref, 0.05, tap.port(0).density)
+    assert tap.port(0).pressure == pytest.approx(p2 + (p1 - p2 - entry) / 2, rel=1e-3)
 
 
 def test_instrument_bubble_and_its_signal_edge_do_not_enter_the_network():
     graph = {
         "nodes": TANKS + [_node("tap", "measure_point"), _node("pit", "instrument", {"variable": "P"})],
         "edges": [
-            _pipe("p1", "t1", "tap", 20.0), _pipe("p2", "tap", "t2", 20.0),
-            _signal("s1", "tap", "signal-inlet-0", "pit", "signal-in"),
+            _pipe("p1", "t1", "tap", 20.0, tgt_port="port-0"), _pipe("p2", "tap", "t2", 20.0, src_port="port-1"),
+            _signal("s1", "tap", "signal-port-0", "pit", "signal-in"),
         ],
     }
     network = GraphParser.parse_graph(ReactFlowGraph(**graph))
@@ -77,12 +77,31 @@ def test_remote_control_valve_senses_a_tap():
             _node("tap", "measure_point"),
         ],
         "edges": [
-            _pipe("p1", "t1", "rcv", 5.0), _pipe("p2", "rcv", "tap", 10.0), _pipe("p3", "tap", "t2", 10.0),
-            _signal("s1", "tap", "signal-inlet-0", "rcv", "signal-in"),
+            _pipe("p1", "t1", "rcv", 5.0), _pipe("p2", "rcv", "tap", 10.0, tgt_port="port-0"), _pipe("p3", "tap", "t2", 10.0, src_port="port-1"),
+            _signal("s1", "tap", "signal-port-0", "rcv", "signal-in"),
         ],
     }
     network = _solve(graph)
     rcv = network.nodes["rcv"]
-    assert rcv.remote_sensing_config == {"node_id": "tap", "port_type": "inlet", "port_idx": 0}
+    assert rcv.remote_sensing_config == {"node_id": "tap", "port_type": "inlet", "port_idx": 0}   # slot of port-0
     assert 0.0 < rcv.opening_pct < 100.0
-    assert network.nodes["tap"].inlets[0].pressure / 1e5 == pytest.approx(1.2, abs=2e-3)
+    assert network.nodes["tap"].port(0).pressure / 1e5 == pytest.approx(1.2, abs=2e-3)
+
+
+def test_remote_control_valve_senses_a_dead_end_tap_piped_on_port_1_only():
+    # The tap's only pipe is on port-1 (port-0 free); its signal pin must still attach to the valve
+    graph = {
+        "nodes": TANKS + [
+            _node("t3", "tank", {"level_m": 5.0}),
+            _node("rcv", "remote_control_valve", {"max_cv": 20.0, "set_pressure_pa": 1.2e5}),
+            _node("tap", "measure_point"),
+        ],
+        "edges": [
+            _pipe("p1", "t1", "rcv", 5.0), _pipe("p2", "rcv", "t2", 10.0),
+            _pipe("p3", "tap", "t3", 2.0, src_port="port-1"),
+            _signal("s1", "tap", "signal-port-0", "rcv", "signal-in"),
+        ],
+    }
+    network = GraphParser.parse_graph(ReactFlowGraph(**graph))
+    assert network.nodes["rcv"].remote_sensing_config is not None
+    assert network.nodes["rcv"].remote_sensing_config["node_id"] == "tap"

@@ -33,11 +33,12 @@ describe('summarizeStats', () => {
       physical_validity: { valid: false, issues: [
         { node_id: 'p1', node: 'Pump 1', port: 'inlet-0', reason: 'below_vapor_pressure', pressure_bara: 0.01 },
         { node_id: 'p2', node: 'Pump 2', port: 'inlet-0', reason: 'below_vapor_pressure', pressure_bara: 0.01 },
+        { node_id: 'o1', node: 'Orifice 1', port: 'port-1', reason: 'below_vapor_pressure', pressure_bara: 0.01 },
       ] },
     }));
     expect(s.level).toBe('warning');
     expect(s.notes).toHaveLength(1);
-    expect(s.notes[0].text).toMatch(/Pump 1 inlet 0, Pump 2 inlet 0/);
+    expect(s.notes[0].text).toMatch(/Pump 1 inlet 0, Pump 2 inlet 0, Orifice 1 Port 2/);
     expect(s.notes[0].nodeId).toBe('p1');
   });
 

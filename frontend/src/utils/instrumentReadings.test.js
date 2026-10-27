@@ -9,6 +9,7 @@ const tel = {
     tap: { inlets: [{ pressure: 351325, flow_rate: 0.002, temperature: 313.15, density: 860, viscosity: 0.0258 }], outlets: [{ pressure: 351325 }] },
     j: { ports: [{ pressure: 300000, flow_rate: 0.001 }, { pressure: 300000, flow_rate: -0.0004 }, { pressure: 300000, flow_rate: null }] },
     f: { inlets: [{ pressure: 400000 }], outlets: [{ pressure: 385000 }] },
+    o: { ports: [{ pressure: 400000, flow_rate: 0.001 }, { pressure: 380000, flow_rate: -0.001 }] },
   },
 };
 const edges = [
@@ -19,6 +20,10 @@ const edges = [
   { id: 'jp1', source: 'j', target: 'jr', sourceHandle: 'signal-port-1', targetHandle: 'signal-in', data: { type: 'SIGNAL' } },
   { id: 'jp2', source: 'j', target: 'js', sourceHandle: 'signal-port-2', targetHandle: 'signal-in', data: { type: 'SIGNAL' } },
   { id: 'jpipe', source: 'j', target: 'tank', sourceHandle: 'port-1', targetHandle: 'inlet-0', data: { type: 'PIPE', diameter_m: 0.04 } },
+  { id: 'op0', source: 'o', target: 'tank', sourceHandle: 'port-0', targetHandle: 'inlet-0', data: { type: 'PIPE', diameter_m: 0.05 } },
+  { id: 'op1', source: 'o', target: 'tank', sourceHandle: 'port-1', targetHandle: 'inlet-0', data: { type: 'PIPE', diameter_m: 0.05 } },
+  { id: 'so0', source: 'o', target: 'oq', sourceHandle: 'signal-port-0', targetHandle: 'signal-in', data: { type: 'SIGNAL' } },
+  { id: 'so1', source: 'o', target: 'or', sourceHandle: 'signal-port-1', targetHandle: 'signal-in', data: { type: 'SIGNAL' } },
   { id: 's2', source: 'f', target: 'd', sourceHandle: 'signal-inlet-0', targetHandle: 'signal-in', data: { type: 'SIGNAL' } },
   { id: 's3', source: 'f', target: 'd', sourceHandle: 'signal-outlet-0', targetHandle: 'signal-in-ref', data: { type: 'SIGNAL' } },
 ];
@@ -46,6 +51,22 @@ describe('readInstrument', () => {
     expect(at('jq', 'P')).toBeCloseTo(1.98675, 6);
     expect(at('jr', 'v')).toBeCloseTo(-0.0004 / (Math.PI * 0.04 ** 2 / 4), 6); // pipe found on the junction port as its source
     expect(at('jq', 'v')).toBeNull(); // no pipe on port-0
+  });
+
+  it('reads the flow through a two-port component whichever port is tapped', () => {
+    const at = (id, variable) => readInstrument({ id, type: 'instrument', data: { variable } }, edges, tel);
+    const through = 0.001 / (Math.PI * 0.05 ** 2 / 4);
+    expect(at('oq', 'Q')).toBeCloseTo(60, 6);
+    expect(at('or', 'Q')).toBeCloseTo(60, 6); // port-1 reads +Q, not the flow into that port
+    expect(at('or', 'v')).toBeCloseTo(through, 6);
+    expect(at('or', 'P')).toBeCloseTo(2.78675, 6); // pressure stays that of the tapped port
+  });
+
+  it('reads the through flow of a two-port component whose port 0 is free (null)', () => {
+    const half = { nodes: { o: { ports: [null, { pressure: 380000, flow_rate: -0.001 }] } } };   // leaving by Port 2
+    const at = (variable) => readInstrument({ id: 'or', type: 'instrument', data: { variable } }, edges, half);
+    expect(at('Q')).toBeCloseTo(60, 6);
+    expect(at('v')).toBeCloseTo(0.001 / (Math.PI * 0.05 ** 2 / 4), 6);
   });
 
   it('names a junction pin 1-based and a component pin by its handle', () => {

@@ -14,7 +14,7 @@ A pressure safety (relief) valve on a liquid line. It is closed below its set pr
 | :--- | :--- |
 | `conventional` (default) | $P_{\text{in}} - P_{\text{out}}$ against the cold differential test pressure (CDTP): backpressure shifts the opening and reduces the lift |
 | `balanced_bellows` | Inlet gauge pressure against the set pressure: independent of backpressure |
-| `pilot` | Gauge pressure at the pilot sensing point (a signal line to any sensing pin or tap; own inlet without a line) against the set pressure |
+| `pilot` | Gauge pressure at the pilot sensing point (a signal line to a sensing pin or tap of a node; own inlet without a line). A port of an in-line component (orifice, calibrated restriction, filter) senses its hidden port node ([component_link.md](component_link.md)) |
 
 The shared relief model (gauge set pressure, opening margin, held state, flow equation, rated capacity, forced states, relief analysis, backpressure results) is in [relief_device.md](relief_device.md). This document covers the valve's own opening logic and its open pressure loss. For a dedicated disc with a reduced bore, use the [rupture disc](rupture_disc.md).
 
@@ -172,4 +172,4 @@ Node type: `pressure_safety_valve`, `psv`. Field names follow the naming rule in
 | `blowdown_pct` | % | 7 |
 | `forced_state` | text (`auto` / `forced_closed` / `forced_open`) | auto |
 
-The pilot sensing line is a `SIGNAL` edge from a sensing pin or tap (`signal-<port>`) to the valve's `signal-in` handle.
+The pilot sensing line is a `SIGNAL` edge from a sensing pin or tap (`signal-<port>`) to the valve's `signal-in` handle. A line from a port of an in-line component senses that port's hidden node ([component_link.md](component_link.md)).

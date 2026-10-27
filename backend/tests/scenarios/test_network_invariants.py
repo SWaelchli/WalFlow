@@ -15,7 +15,7 @@ from hypothesis import example, given, strategies as st
 
 from physics_refs import pipe_end_total
 from strategies import DISSIPATIVE_ONLY, networks
-from simulation.equipment.base_node import total_of
+from simulation.equipment.base_node import InlineNode, total_of
 from simulation.equipment.junction import Junction
 from simulation.fluid_utils import FluidProperties
 from simulation.graph_parser import GraphParser
@@ -47,23 +47,37 @@ def solved(graph: dict):
     return network
 
 
+class _NodeTypes(dict):
+    """Canvas type per node id; the hidden junctions at in-line component ports are plain junctions."""
+    def __missing__(self, key):
+        return "junction"
+
+
 def node_types(graph: dict) -> dict:
-    return {n["id"]: n["type"] for n in graph["nodes"]}
+    return _NodeTypes({n["id"]: n["type"] for n in graph["nodes"]})
+
+
+def pipe_edges(network):
+    """(edge id, pipe) of every pipe edge, in its drawn direction; the component links are left out."""
+    return [(edge["id"], edge["pipe"]) for edge in network.edges if hasattr(edge["pipe"], "calculate_delta_p")]
 
 
 def snapshot(network) -> dict:
     """(pressure, flow, temperature) of every node port and pipe end, keyed by node / edge id. A junction lists
     its ports in port-k order with the flow into it, so the slot order (the order of the pipes) does not show;
-    a tank is one entry with its net inflow."""
+    an in-line component lists port-0, port-1 (flow into the component); a tank is one entry with its net inflow."""
     def ports(obj):
         if isinstance(obj, Junction):
             return [(obj.port(k).pressure, obj.port_flow_into(k), obj.port(k).temperature)
                     for k in range(obj.num_ports) if obj.port(k) is not None]
+        if isinstance(obj, InlineNode):
+            return [(p.pressure, p.flow_rate, p.temperature) for p in obj.ports]
         if getattr(obj, "node_type", None) == "tank":   # a pipe drawn to its inlet or its outlet is the same connection
             return [(obj.outlets[0].pressure, obj.inlets[0].flow_rate - obj.outlets[0].flow_rate, obj.outlets[0].temperature)]
         return [(p.pressure, p.flow_rate, p.temperature) for p in [*obj.inlets, *obj.outlets]]
-    result = {node_id: ports(node) for node_id, node in network.nodes.items()}
-    result.update({edge["id"]: ports(edge["pipe"]) for edge in network.edges})
+    result = {node_id: ports(node) for node_id, node in {**network.nodes, **network.inline_nodes}.items()
+              if not getattr(node, "hidden", False)}
+    result.update({edge_id: ports(pipe) for edge_id, pipe in pipe_edges(network)})
     return result
 
 
@@ -340,10 +354,10 @@ def test_well_posed_network_reaches_a_finite_steady_state_with_fluid_properties(
     for key, ports in snapshot(network).items():
         assert all(v == v and abs(v) != float("inf") for port in ports for v in port), key
     fluid = graph["globalSettings"]["fluid_type"]
-    objects = dict(network.nodes)
-    objects.update({edge["id"]: edge["pipe"] for edge in network.edges})
+    objects = {**network.nodes, **network.inline_nodes}
+    objects.update({edge_id: pipe for edge_id, pipe in pipe_edges(network)})
     for key, obj in objects.items():
-        for port in [*obj.inlets, *obj.outlets]:
+        for port in (obj.ports if isinstance(obj, InlineNode) else [*obj.inlets, *obj.outlets]):
             if abs(port.flow_rate) <= FLOW_TOL:
                 continue
             for value, lookup in ((port.density, FluidProperties.get_density), (port.viscosity, FluidProperties.get_viscosity)):
@@ -379,6 +393,8 @@ def test_mass_is_conserved(graph):
         tgt = network.nodes[edge["target"]].inlets[int(edge["target_port"].split("-")[-1])]
         assert src.flow_rate == pytest.approx(pipe.inlets[0].flow_rate, abs=FLOW_TOL), edge["id"]
         assert tgt.flow_rate == pytest.approx(pipe.outlets[0].flow_rate, abs=FLOW_TOL), edge["id"]
+    for node_id, component in network.inline_nodes.items():   # an in-line component passes its mass flow on (its heat lowers the density, so not the volume flow)
+        assert sum(p.flow_rate * p.density for p in component.ports) == pytest.approx(0.0, abs=FLOW_TOL * 1000.0), node_id
     for node_id in network.nodes:
         if types[node_id] in BOUNDARY_TYPES:
             continue
@@ -411,32 +427,41 @@ def test_pressure_is_continuous_and_falls_along_the_flow(graph):
         pipe = edge["pipe"]
         src = network.nodes[edge["source"]].outlets[int(edge["source_port"].split("-")[-1])]
         tgt = network.nodes[edge["target"]].inlets[int(edge["target_port"].split("-")[-1])]
+        if not hasattr(pipe, "calculate_delta_p"):
+            continue        # a component link: its ports are checked on the component
+        first, first_end = pipe, pipe.inlets[0]
+        last, last_end = pipe, pipe.outlets[0]
         if abs(pipe.inlets[0].flow_rate) <= MIXING_FLOW_TOL:
             # A still pipe has no velocity head: a no-flow port reads the junction's lowest flowing static pressure
             # and the whole still section behind it drops by the same amount, so compare static pressures along
             # the section instead of against the node total (pressure boundaries keep their reservoir pressure)
             assert pipe.inlets[0].pressure == pytest.approx(pipe.outlets[0].pressure, abs=PRESSURE_TOL), edge["id"]
-            for end, port, node_id in ((pipe.inlets[0], src, edge["source"]), (pipe.outlets[0], tgt, edge["target"])):
+            for end, port, node_id in ((first_end, src, edge["source"]), (last_end, tgt, edge["target"])):
                 if types[node_id] not in BOUNDARY_TYPES:
                     assert end.pressure == pytest.approx(port.pressure, abs=PRESSURE_TOL), edge["id"]
         else:
-            assert pipe_end_total(pipe, pipe.inlets[0], network.nodes[edge["source"]]) == pytest.approx(
+            assert pipe_end_total(first, first_end, network.nodes[edge["source"]]) == pytest.approx(
                 total_of(src), abs=PRESSURE_TOL), edge["id"]
-            assert pipe_end_total(pipe, pipe.outlets[0], network.nodes[edge["target"]]) == pytest.approx(
+            assert pipe_end_total(last, last_end, network.nodes[edge["target"]]) == pytest.approx(
                 total_of(tgt), abs=PRESSURE_TOL), edge["id"]
         if abs(pipe.inlets[0].flow_rate) > FLOW_TOL:
             drop = (pipe.inlets[0].pressure - pipe.outlets[0].pressure) * math.copysign(1.0, pipe.inlets[0].flow_rate)
             assert drop >= -PRESSURE_TOL, edge["id"]
             expected = pipe.calculate_delta_p(pipe.inlets[0].flow_rate, *pipe.upstream_port().fluid())
-            assert (pipe.inlets[0].pressure - pipe.outlets[0].pressure) == pytest.approx(expected, rel=1e-4, abs=PRESSURE_TOL), edge["id"]
+            assert (pipe.inlets[0].pressure - pipe.outlets[0].pressure) == pytest.approx(
+                expected, rel=1e-4, abs=PRESSURE_TOL), edge["id"]
     for node_id, node in network.nodes.items():
-        if types[node_id] in STATIC_DROP_EXEMPT or types[node_id] == "junction" or node.inlets[0].flow_rate <= 1e-7:
+        if types[node_id] in STATIC_DROP_EXEMPT or isinstance(node, Junction) or node.inlets[0].flow_rate <= 1e-7:
             continue
         assert total_of(node.inlets[0]) >= max(total_of(p) for p in node.outlets) - PRESSURE_TOL, node_id
     for node_id, node in network.nodes.items():
-        if types[node_id] == "junction":
+        if isinstance(node, Junction):
             totals = [total_of(p) for p in [*node.inlets, *node.outlets]]
             assert max(totals) - min(totals) <= PRESSURE_TOL, node_id
+    for node_id, component in network.inline_nodes.items():   # total pressure falls from the port the flow enters by
+        entry, leave = (component.ports if component.ports[0].flow_rate > 0 else component.ports[::-1])
+        if entry.flow_rate > FLOW_TOL:
+            assert total_of(entry) >= total_of(leave) - PRESSURE_TOL, node_id
 
 
 @example(_trickle_mixing_graph())
@@ -451,12 +476,15 @@ def test_dissipation_never_cools_and_mixing_stays_between_its_streams(graph):
     types = node_types(graph)
     # What each source and tank supplies, defaults included (a tank above a source feeds reverse flow)
     t_supply = min(node.temperature for node_id, node in network.nodes.items() if types[node_id] in {"tank", "pressure_source"})
+    for node_id, component in network.inline_nodes.items():
+        for port in component.ports:
+            assert port.temperature >= t_supply - TEMPERATURE_TOL, node_id
     for node_id, node in network.nodes.items():
         if types[node_id] in BOUNDARY_TYPES:
             continue
         for port in [*node.inlets, *node.outlets]:
             assert port.temperature >= t_supply - TEMPERATURE_TOL, node_id
-        if types[node_id] == "junction":
+        if isinstance(node, Junction):
             # Streams arrive through inlets with forward flow and through the outlet with reverse flow
             arriving = [p.temperature for p in node.inlets if p.flow_rate > MIXING_FLOW_TOL]
             arriving += [p.temperature for p in node.outlets if p.flow_rate < -MIXING_FLOW_TOL]
@@ -478,7 +506,7 @@ def test_junctions_conserve_energy(graph):
     fluid = graph["globalSettings"]["fluid_type"]
     types = node_types(graph)
     for node_id, node in network.nodes.items():
-        if types[node_id] != "junction":
+        if not isinstance(node, Junction):
             continue
         streams = [(p.flow_rate, p) for p in node.inlets] + [(-p.flow_rate, p) for p in node.outlets]
         arriving = [(q * p.density, FluidProperties.get_enthalpy(fluid, p.temperature)) for q, p in streams if q > MIXING_FLOW_TOL]
@@ -501,48 +529,51 @@ def _stagnant_junction_graph():
             "globalSettings": {"fluid_type": "water"}}
 
 
-def _reversible_edges(graph):
-    """Ids of the pipes whose two ends take either direction: between junctions, or to a tank that has no other pipe."""
-    types = node_types(graph)
-    degree = Counter(n for e in graph["edges"] for n in (e["source"], e["target"]))
-
-    def free(node_id):
-        return types[node_id] == "junction" or (types[node_id] == "tank" and degree[node_id] == 1)
-    return {e["id"] for e in graph["edges"] if free(e["source"]) and free(e["target"])
-            and "junction" in (types[e["source"]], types[e["target"]])}
-
-
 def _reversed(edge):
-    """The same pipe drawn from the other end (a tank takes the pipe on its other handle)."""
-    swap = {"outlet-0": "inlet-0", "inlet-0": "outlet-0"}
+    """The same pipe drawn from the other end."""
     return {**edge, "source": edge["target"], "target": edge["source"],
-            "sourceHandle": swap.get(edge["targetHandle"], edge["targetHandle"]),
-            "targetHandle": swap.get(edge["sourceHandle"], edge["sourceHandle"])}
+            "sourceHandle": edge["targetHandle"], "targetHandle": edge["sourceHandle"]}
+
+
+def _swap_component_ports(graph, node_ids):
+    """The same diagram with port-0 and port-1 exchanged on the given components (every pipe on them follows)."""
+    swap = {"port-0": "port-1", "port-1": "port-0"}
+    edges = [{**e, "sourceHandle": swap[e["sourceHandle"]] if e["source"] in node_ids else e["sourceHandle"],
+              "targetHandle": swap[e["targetHandle"]] if e["target"] in node_ids else e["targetHandle"]}
+             for e in graph["edges"]]
+    return {**graph, "edges": edges}
 
 
 @example(_stagnant_junction_graph(), random.Random(7))
 @given(networks(max_depth=2), st.randoms(use_true_random=False))
 def test_result_does_not_depend_on_ids_order_or_drawn_direction(graph, rnd):
-    """Renaming every node and edge, shuffling both lists and drawing pipes on junctions from the other end
-    (as a different save of the same diagram) gives the same state: pressures, port temperatures and
-    reported static pressures per junction port, and the pipe flows up to their sign."""
+    """Renaming every node and edge, shuffling both lists, drawing pipes from the other end and exchanging the
+    two neutral ports of components (as a different save of the same diagram) gives the same state: pressures,
+    port temperatures and reported static pressures per junction port, the pipe flows up to their sign, and the
+    flow into each component port."""
     reference = snapshot(solved(graph))
     node_ids = [n["id"] for n in graph["nodes"]]
     new_ids = dict(zip(node_ids, rnd.sample([f"x{i}" for i in range(len(node_ids))], len(node_ids))))
     edge_ids = {e["id"]: f"pipe-{len(graph['edges']) - i}" for i, e in enumerate(graph["edges"])}
-    flipped = {i for i in sorted(_reversible_edges(graph)) if rnd.random() < 0.5}
+    flipped = {e["id"] for e in graph["edges"]   # only a pipe between two neutral ports can be drawn from either end
+               if e["sourceHandle"].startswith("port-") and e["targetHandle"].startswith("port-") and rnd.random() < 0.5}
+    swapped = {n["id"] for n in graph["nodes"] if n["type"] in ("orifice", "filter", "calibrated_restriction")
+               and rnd.random() < 0.5}
+    redrawn = _swap_component_ports(graph, swapped)
     renamed = {
-        **graph,
+        **redrawn,
         "nodes": rnd.sample([{**n, "id": new_ids[n["id"]]} for n in graph["nodes"]], len(node_ids)),
         "edges": rnd.sample([{**(_reversed(e) if e["id"] in flipped else e), "id": edge_ids[e["id"]],
                               "source": new_ids[(_reversed(e) if e["id"] in flipped else e)["source"]],
                               "target": new_ids[(_reversed(e) if e["id"] in flipped else e)["target"]]}
-                             for e in graph["edges"]], len(graph["edges"])),
+                             for e in redrawn["edges"]], len(graph["edges"])),
     }
     result = snapshot(solved(renamed))
     back = {**{old: result[new] for old, new in new_ids.items()}, **{old: result[new] for old, new in edge_ids.items()}}
     for edge_id in flipped:   # the pipe's inlet is the old outlet, and its flow runs the other way
         reference[edge_id] = [(p, -q, t) for p, q, t in reversed(reference[edge_id])]
+    for node_id in swapped:   # port-0 is the old port-1: the same flow into the same physical side
+        reference[node_id] = list(reversed(reference[node_id]))
     assert_same_state(reference, back)
 
 

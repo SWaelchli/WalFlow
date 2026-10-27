@@ -28,9 +28,9 @@ def test_disconnected_floating_subgraph_resilience():
         nodes={
             "Tank1": tank1,
             "Tank2": tank2,
-            "FloatingOrifice": floating_orifice,
             "FloatingValve": floating_valve
         },
+        inline_nodes={"FloatingOrifice": floating_orifice},
         edges=[
             {"id": "e1", "source": "Tank1", "target": "Tank2", "pipe": pipe1}
         ]

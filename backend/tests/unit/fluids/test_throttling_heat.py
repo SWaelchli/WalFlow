@@ -5,6 +5,7 @@ import pytest
 import pytest
 
 from physics_refs import solve, throttling_dt
+from simulation.equipment.base_node import InlineNode
 from simulation.equipment.tank import Tank
 from simulation.equipment.pipe import Pipe
 from simulation.equipment.orifice import Orifice
@@ -44,7 +45,7 @@ def test_throttling_heat_magnitude(kind):
     stats = solve({"t1": t1, "r": comp, "t2": t2}, edges)
     assert stats["success"]
 
-    inlet, outlet = comp.inlets[0], comp.outlets[0]
+    inlet, outlet = comp.ports if isinstance(comp, InlineNode) else (comp.inlets[0], comp.outlets[0])
     assert inlet.flow_rate > 1e-5, "restriction must pass flow in this test"
     dp = inlet.pressure - outlet.pressure
     assert dp > 0.5e5

@@ -321,7 +321,7 @@
       "source": "header-junction",
       "sourceHandle": "port-1",
       "target": "load-a",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "data": {
         "label": "Branch 1",
         "length_m": 3,
@@ -340,7 +340,7 @@
       "source": "header-junction",
       "sourceHandle": "port-2",
       "target": "load-b",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "data": {
         "label": "Branch 2",
         "length_m": 3,
@@ -357,7 +357,7 @@
     {
       "id": "pp10",
       "source": "load-a",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "return-junction",
       "targetHandle": "port-0",
       "data": {
@@ -376,7 +376,7 @@
     {
       "id": "pp11",
       "source": "load-b",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "return-junction",
       "targetHandle": "port-2",
       "data": {

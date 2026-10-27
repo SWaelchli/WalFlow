@@ -89,6 +89,7 @@ export default function FlowSourceNode({ id, data, selected }) {
         position={getRotatedPosition(Position.Right, rotation)}
         id="outlet-0"
         className="handle-outlet"
+        title="Outlet"
         style={{
           top: '50%', left: '65px',
           marginTop: '-5px', marginLeft: '-5px',
