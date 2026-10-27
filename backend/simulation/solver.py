@@ -270,16 +270,22 @@ class NetworkSolver:
                             self.node_outgoing_edge_indices.get(self.node_ids[idx], []))
                            for idx in self.internal_node_indices]
         # Per edge: (source index, target index, source position among the unknowns or -1, same for the target,
-        # source node, target node, its 3-way TCV inlet port index when the target is a ThreeWayTCV else None, pipe)
+        # source node, target node, its 3-way TCV inlet port index when the target is a ThreeWayTCV else None, pipe,
+        # source kind: "through" (a 3-way TCV or a node without a component law: its outlet is at its inlet pressure),
+        # "mcp" (_use_mcp_for_node) or "law")
         self._edge_rows = []
         for edge in self.edges_list:
             src_idx, tgt_idx = self.node_id_to_idx[edge['source']], self.node_id_to_idx[edge['target']]
-            tgt_node = self.network.nodes[edge['target']]
+            src_node, tgt_node = self.nodes_list[src_idx], self.network.nodes[edge['target']]
             tcv_port = (self._parse_port_idx(edge.get('target_port', 'inlet-0'))
                         if isinstance(tgt_node, ThreeWayTCV) else None)
+            if isinstance(src_node, ThreeWayTCV) or not hasattr(src_node, 'calculate_delta_p'):
+                kind = "through"
+            else:
+                kind = "mcp" if self._use_mcp_for_node(src_node) else "law"
             self._edge_rows.append((src_idx, tgt_idx, self.internal_pos.get(src_idx, -1),
-                                    self.internal_pos.get(tgt_idx, -1), self.nodes_list[src_idx], tgt_node,
-                                    tcv_port, edge['pipe']))
+                                    self.internal_pos.get(tgt_idx, -1), src_node, tgt_node,
+                                    tcv_port, edge['pipe'], kind))
         self._mass_jacobian = None   # (w_mass it was built with, rows, cols, data), calculate_jacobian
 
     def _all_pressures(self, p_in_internal) -> np.ndarray:
@@ -1179,12 +1185,12 @@ class NetworkSolver:
         rows, cols, data = (list(v) for v in self._mass_jacobian[1:])
 
         # 2. Pressure Balance Rows (a_row = num_internal + j)
-        for j, (src_idx, tgt_idx, src_internal_idx, tgt_internal_idx, src_node, tgt_node_obj, tcv_port, pipe) \
+        for j, (src_idx, tgt_idx, src_internal_idx, tgt_internal_idx, src_node, tgt_node_obj, tcv_port, pipe, kind) \
                 in enumerate(self._edge_rows):
             a_row = num_internal + j
             fj = f_comp[j]   # the source component sees its inlet volume flow fj*q_j
 
-            if self._use_mcp_for_node(src_node):
+            if kind == "mcp":
                 # Complementarity rows (check valves, closed relief devices): the node itself decides which
                 # branch of its model applies at the current state, so differentiate exactly that function
                 # numerically instead of an analytic form that can describe a different branch.
@@ -1270,7 +1276,7 @@ class NetworkSolver:
                     rows.append(a_row)
                     cols.append(num_internal + j)
                     data.append((q_scale / p_scale) * pd_derivs[1] * fj)
-                elif not src_locked and not isinstance(src_node, ThreeWayTCV) and hasattr(src_node, 'calculate_delta_p'):
+                elif not src_locked and kind == "law":
                     inlet = src_node.inlets[0] if src_node.inlets else None
                     density = inlet.density if inlet else 1000.0
                     viscosity = inlet.viscosity if inlet else 0.001
@@ -1460,12 +1466,12 @@ class NetworkSolver:
                 residuals.append(5.0 * (m_in - m_out) / q_scale + 1e-9 * x_scaled[i])
 
             # 2. Pressure Balance
-            for j, (src_idx, tgt_idx, _, _, src_node, tgt_node, tcv_port, pipe) in enumerate(self._edge_rows):
-                if isinstance(src_node, ThreeWayTCV):
+            for j, (src_idx, tgt_idx, _, _, src_node, tgt_node, tcv_port, pipe, kind) in enumerate(self._edge_rows):
+                if kind == "through":
                     p_src_out = p_in_all[src_idx]
                 elif getattr(src_node, 'locked_up', False):
                     p_src_out = src_node.set_pressure   # closed regulator holds its setpoint downstream
-                elif self._use_mcp_for_node(src_node):
+                elif kind == "mcp":
                     dp_pipe = pipe.stagnation_delta_p(q_edges[j], *pipe.upstream_port().fluid())
                     p_out_est = p_in_all[tgt_idx] + dp_pipe + self._tcv_entry_dp(self.edges_list[j], tgt_node, q_edges[j])
 

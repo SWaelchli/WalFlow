@@ -35,13 +35,19 @@ class Pipe(HydraulicNode):
         self.inlet_at_reservoir = False
         self.outlet_at_reservoir = False
 
+        self._last_friction = (None, 0.0)   # ((Re, rel_roughness), friction factor) of the last call
+
         # A pipe requires exactly one inlet and one outlet
         self.add_inlet()
         self.add_outlet()
 
     def _friction_factor(self, re: float) -> float:
-        """Darcy friction factor, Churchill (1977) shared with the reducer."""
-        return FluidProperties.get_darcy_friction_factor(re, self.rel_roughness)
+        """Darcy friction factor, Churchill (1977) shared with the reducer. The last value is kept: the Jacobian
+        asks again at the Reynolds number the residual at the same state just used."""
+        key = (re, self.rel_roughness)
+        if key != self._last_friction[0]:
+            self._last_friction = (key, FluidProperties.get_darcy_friction_factor(re, self.rel_roughness))
+        return self._last_friction[1]
 
     def _leaves_reservoir(self, flow_rate: float) -> bool:
         """True when the flow enters the pipe from a reservoir end (inlet side for q > 0, outlet side for q < 0)."""
