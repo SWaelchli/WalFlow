@@ -59,6 +59,7 @@ export default function HeatExchangerNode({ id, data, selected }) {
         position={getRotatedPosition(Position.Left, rotation)} 
         id="inlet-0" 
         className="handle-inlet"
+        title="Inlet"
         style={{ 
           top: '30px', left: '5px', 
           marginTop: '-5px', marginLeft: '-5px',
@@ -73,6 +74,7 @@ export default function HeatExchangerNode({ id, data, selected }) {
         position={getRotatedPosition(Position.Right, rotation)} 
         id="outlet-0" 
         className="handle-outlet"
+        title="Outlet"
         style={{ 
           top: '30px', left: '55px', 
           marginTop: '-5px', marginLeft: '-5px',

@@ -4,6 +4,8 @@
 
 The Orifice component represents a concentric sharp-edged orifice plate installed in a circular pipe. It acts as a fixed restriction: for a given flow rate the plate produces a non-recoverable permanent pressure loss along the network (and a larger, recoverable differential pressure across the plate that is not modeled). The component calculates the **network permanent pressure loss** $\Delta P(Q, \rho, \mu)$ supplied to the solver, and therefore behaves as a passive (quadratic-dominated) hydraulic resistor. Only the network pressure loss is computed; flow-measurement (tap-differential) use is out of scope, so the RG coefficient is evaluated for corner taps.
 
+- **Ports:** two neutral ports, `port-0` and `port-1`, with no inlet or outlet. The component is a [component link](component_link.md) between two hidden nodes at its ports, each with a solved pressure: the flow sign picks the upstream port. Telemetry `ports[k]` has `flow_rate` positive into the component.
+
 Two calculation standards are selectable:
 
 - **ISO 5167 (`standard='iso_5167'`, default):** ISO 5167-1:2022 / ISO 5167-2:2022 orifice plates, using the Reader-Harris/Gallagher (RG) discharge-coefficient correlation for the meter coefficient $C$ and the ISO 5167-2:2022 §5.4 Formula (7) permanent-pressure-loss ratio.
@@ -92,7 +94,7 @@ $$w = \mathrm{smoothstep}\!\left(\frac{\mathrm{Re}_D - \mathrm{Re}_{\mathrm{lo}}
 
 ### 3.6 Derivative
 
-The class has no analytical derivative; the solver differentiates the outlet pressure numerically (see [base_node.md](base_node.md#33-jacobian)).
+The class has no analytical derivative; the component link differentiates $\Delta P$ numerically (central difference, [component_link.md](component_link.md)). $\Delta P$ is odd in $Q$, so the port order does not matter.
 
 ### 3.7 Legacy model (`standard='classic_cd'`)
 
@@ -108,13 +110,13 @@ Throttling friction dissipation converts pressure energy into fluid thermal enth
 
 $$dT = \frac{|\Delta P|}{\rho\, C_p(T)}$$
 
-applied to the fluid exiting the node (forward flow: inlet→outlet; reverse flow: outlet→inlet), with density and viscosity re-evaluated at both ends.
+applied at the port the flow leaves by, with the upstream port's density and viscosity; the component link evaluates it in its property pass ([component_link.md](component_link.md)).
 
 ## 5. Parameter & Unit Specification Table
 
 | Parameter | UI Unit | Backend Var | SI Unit | Default | Range | Description |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| Pipe Diameter | mm | `pipe_diameter_m` | m | `0.1` | $> 0$ | Connected-pipe internal diameter (auto-detected from the connected pipe when present) |
+| Pipe Diameter | mm | `pipe_diameter_m` | m | `0.1` | $> 0$ | Connected-pipe internal diameter (the pipe on the upstream port of the last property pass with flow, the other pipe on a free port; without flow the bore of the last pass, at first the port-0 pipe; [component_link.md](component_link.md)) |
 | Orifice Diameter | mm | `orifice_diameter_m` | m | `0.07` | $> 0$ | Orifice plate bore diameter |
 | Standard | — | `standard` | str | `'iso_5167'` | `iso_5167`, `classic_cd` | Calculation standard |
 

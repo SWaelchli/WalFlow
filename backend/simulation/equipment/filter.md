@@ -4,6 +4,8 @@
 
 A filter or strainer whose pressure drop is taken from its datasheet: the drop at a rated flow for the **clean** element and for the **terminal** (fully loaded, change-out) element. A clogging level between 0 and 100 % interpolates between the two. The drop scales with flow, density and, at low mesh Reynolds numbers, viscosity, so a cold oil start shows a higher filter drop.
 
+- **Ports:** two neutral ports, `port-0` and `port-1`, with no inlet or outlet. The component is a [component link](component_link.md) between two hidden nodes at its ports, each with a solved pressure: the flow sign picks the upstream port. Telemetry `ports[k]` has `flow_rate` positive into the component.
+
 Use it for suction strainers, duplex lube oil filters, return line filters and basket strainers.
 
 ## 2. Governing Standards & Reference Literature
@@ -64,7 +66,7 @@ Clean 0.2 bar, terminal 1.0 bar at 100 L/min:
 
 ### 3.6 Derivative
 
-The class has no analytical derivative; the solver differentiates the outlet pressure numerically (see [base_node.md](base_node.md#33-jacobian)).
+The class has no analytical derivative; the component link differentiates $\Delta P$ numerically (central difference, [component_link.md](component_link.md)). $\Delta P$ is odd in $Q$, so the port order does not matter.
 
 ## 4. Thermal & Energy Balance
 
@@ -72,7 +74,7 @@ The whole pressure drop is throttling loss:
 
 $$\Delta T = \frac{|\Delta P|}{\rho\, c_p(T)}$$
 
-applied to the outlet for $Q \ge 0$ and to the inlet for $Q < 0$, with density and viscosity re-evaluated at both ends.
+applied at the port the flow leaves by, with the upstream port's density and viscosity; the component link evaluates it in its property pass ([component_link.md](component_link.md)).
 
 ## 5. Parameter & Unit Specification Table
 

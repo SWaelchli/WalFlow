@@ -49,8 +49,8 @@ DUAL_SOURCE = {
     "edges": [
         _edge("e1", "t1", "mix1", 5.0, 0.1, target_handle="port-0"),
         _edge("e2", "t2", "mix1", 5.0, 0.1, target_handle="port-1"),
-        _edge("e3", "mix1", "ori1", 2.0, 0.1, source_handle="port-2"),
-        _edge("e4", "ori1", "t3", 5.0, 0.1),
+        _edge("e3", "mix1", "ori1", 2.0, 0.1, source_handle="port-2", target_handle="port-0"),
+        _edge("e4", "ori1", "t3", 5.0, 0.1, source_handle="port-1"),
     ],
 }
 
@@ -78,8 +78,9 @@ DUAL_SINK = {
 def test_flow_split_follows_resistance_and_head(graph, more, less, both_flow_forward):
     network = GraphParser.parse_graph(ReactFlowGraph(**graph))
     NetworkSolver(network).solve()
-    flows = {edge["pipe"].name: edge["pipe"].inlets[0].flow_rate for edge in network.edges}
-    q_more, q_less = flows["Pipe " + more], flows["Pipe " + less]
+    # Each pipe in its drawn direction
+    flows = {edge["id"]: edge["pipe"].inlets[0].flow_rate for edge in network.edges}
+    q_more, q_less = flows[more], flows[less]
     if both_flow_forward:
         assert q_less > 0
     assert q_more > q_less

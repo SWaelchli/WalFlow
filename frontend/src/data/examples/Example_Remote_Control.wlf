@@ -62,7 +62,7 @@
         "label": "Header Pressure Sensor Orifice",
         "orifice_diameter_m": 0.02,
         "sensing": {
-          "outlet-0": true
+          "port-1": true
         }
       }
     },
@@ -124,7 +124,7 @@
       "source": "feed-pump",
       "sourceHandle": "outlet-0",
       "target": "sensing-node",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "data": {
         "label": "High-P Discharge",
         "length_m": 2,
@@ -141,7 +141,7 @@
     {
       "id": "r3",
       "source": "sensing-node",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "remote-valve",
       "targetHandle": "inlet-0",
       "data": {
@@ -179,7 +179,7 @@
     {
       "id": "Signal 100",
       "source": "sensing-node",
-      "sourceHandle": "signal-outlet-0",
+      "sourceHandle": "signal-port-1",
       "target": "remote-valve",
       "targetHandle": "signal-in",
       "label": "Signal 100",

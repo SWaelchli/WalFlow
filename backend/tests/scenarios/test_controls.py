@@ -93,20 +93,16 @@ def test_iteration_limit_is_reported_not_hidden():
 def test_wrong_acting_remote_valve_runs_to_an_end_stop_and_says_why():
     """Downstream-mode RCV sensing a point upstream of itself: opening lowers the sensed pressure, so the
     loop runs wide open like a real wrong-acting controller; the report flags it instead of looking normal."""
-    from simulation.equipment.pressure_source import PressureSource
-    from simulation.equipment.remote_control_valve import RemoteControlValve
-    nodes = {
-        "src": PressureSource("Supply", source_pressure=6e5),
-        "ori": Orifice("Upstream restriction", pipe_diameter=ID, orifice_diameter=0.01),
-        "rcv": RemoteControlValve("RCV", max_cv=5.0, set_pressure=5.0e5, backpressure=False),
-        "t": Tank("Sink", fluid_level=0.0),
-    }
-    nodes["rcv"].remote_sensing_config = {"node_id": "ori", "port_type": "outlet", "port_idx": 0}
-    edges = [
-        {"source": "src", "target": "ori", "pipe": Pipe("p1", 1, ID)},
-        {"source": "ori", "target": "rcv", "pipe": Pipe("p2", 1, ID)},
-        {"source": "rcv", "target": "t", "pipe": Pipe("p3", 1, ID)},
-    ]
-    stats = solve(nodes, edges)
+    from networks import graph_node, graph_pipe, graph_signal, solve_graph
+    graph = {"nodes": [graph_node("src", "pressure_source", {"label": "Supply", "source_pressure_bara": 6.0}),
+                       graph_node("ori", "orifice", {"label": "Upstream restriction", "orifice_diameter_m": 0.01}),
+                       graph_node("rcv", "remote_control_valve", {"label": "RCV", "max_cv": 5.0, "set_pressure_pa": 5.0e5}),
+                       graph_node("t", "tank", {"label": "Sink", "level_m": 0.0})],
+             "edges": [graph_pipe("p1", "src", "ori", "outlet-0", "port-0", diameter=ID),
+                       graph_pipe("p2", "ori", "rcv", "port-1", "inlet-0", diameter=ID),
+                       graph_pipe("p3", "rcv", "t", "outlet-0", "inlet-0", diameter=ID),
+                       graph_signal("s1", "ori", "signal-port-1", "rcv")],
+             "globalSettings": {"fluid_type": "water"}}
+    _, stats = solve_graph(graph)
     [sat] = stats["saturated_controllers"]
     assert sat["name"] == "RCV" and sat["state"] == "wide_open" and sat["reverse_acting"] is True

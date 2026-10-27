@@ -2,7 +2,7 @@
 
 ## 1. Overview & Purpose
 
-A pipe connects two components. It computes the friction pressure drop along its length and the temperature rise from viscous dissipation. Each hydraulic edge of a `.wlf` file becomes one `Pipe`; edges of type `SIGNAL` are sensing links and create no pipe.
+A pipe connects two components. It computes the friction pressure drop along its length and the temperature rise from viscous dissipation. Each hydraulic edge of a `.wlf` file becomes one `Pipe`; edges of type `SIGNAL` are sensing links and create no pipe. Each pipe is a solver edge of its own; a pipe on a port of an in-line component ends on that port's hidden node ([component_link.md](component_link.md)).
 
 In the network a pipe is a passive resistance: its pressure drop rises roughly with the square of the flow in turbulent flow and linearly in laminar flow. Where the flow leaves a tank or pressure source into the pipe, the pipe also takes the entry velocity head (section 3.4).
 
@@ -62,6 +62,7 @@ $$\Delta P_{\text{entry}} = (1 + K)\,\frac{\rho\,v\,|v|}{2}$$
 - The term is active only at a reservoir end that the flow leaves: the inlet end for $Q > 0$, the outlet end for $Q < 0$. Value and slope are zero at $Q = 0$, so switching between the two ends is $C^1$-continuous.
 - Where the flow enters a reservoir, the kinetic energy is lost in the vessel (exit loss $K = 1$) and the static pressure at the pipe end equals the reservoir pressure. No term is added.
 - `HydraulicNetwork` sets the flags `inlet_at_reservoir` and `outlet_at_reservoir` from the topology when the network is built (a node with `is_pressure_boundary = True` at that end).
+- `end_heads(q)` gives the velocity heads at both ends, which the solver subtracts to report static pressures.
 - The reported pipe pressure drop includes the entry term.
 
 Without it, an expander close to a reservoir would recover static pressure that was never deducted, and a short line source → expander → tank had no steady-state solution. For why reservoir pressures are stagnation pressures, see [pressure_source.md](pressure_source.md#32-stagnation-pressure-not-line-pressure).

@@ -67,6 +67,7 @@ export default function PressureSourceNode({ id, data, selected }) {
         position={getRotatedPosition(Position.Left, rotation)}
         id="inlet-0"
         className="handle-inlet"
+        title="Inlet"
         style={{
           top: '50%', left: '5px',
           marginTop: '-5px', marginLeft: '-5px',
@@ -82,6 +83,7 @@ export default function PressureSourceNode({ id, data, selected }) {
         position={getRotatedPosition(Position.Right, rotation)}
         id="outlet-0"
         className="handle-outlet"
+        title="Outlet"
         style={{
           top: '50%', left: '65px',
           marginTop: '-5px', marginLeft: '-5px',

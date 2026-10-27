@@ -5,6 +5,7 @@ import { SensingPin } from '../components/canvas/SensingPin';
 import BaseNode from './BaseNode';
 import { useUnits } from '../context/UnitContext';
 import { junctionLayout, junctionLabelPlacement, junctionPortCount, PIN_TIP, PIN_LENGTH } from '../utils/junctionLayout';
+import { portNumberLabel } from '../utils/portLabels';
 
 const SIDE_POSITION = { left: Position.Left, right: Position.Right, top: Position.Top, bottom: Position.Bottom };
 
@@ -67,11 +68,12 @@ export default function JunctionNode({ id, data, selected }) {
           position={getRotatedPosition(SIDE_POSITION[p.side], rotation)}
           id={p.id}
           className="handle-port handle-junction"
+          title={portNumberLabel(Number(p.id.split('-')[1]))}
           style={{
             top: `${p.y}px`, left: `${p.x}px`,
             marginTop: '-5px', marginLeft: '-5px',
             right: 'auto', bottom: 'auto',
-            background: 'var(--color-port-neutral)', width: '8px', height: '8px'
+            width: '8px', height: '8px'
           }}
         />
       ))}

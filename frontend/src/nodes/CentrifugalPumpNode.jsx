@@ -46,6 +46,7 @@ export default function CentrifugalPumpNode({ id, data, selected }) {
         position={getRotatedPosition(Position.Left, rotation)} 
         id="inlet-0" 
         className="handle-inlet"
+        title="Suction"
         style={{ 
           top: '35px', left: '10px', 
           marginTop: '-5px', marginLeft: '-5px',
@@ -60,6 +61,7 @@ export default function CentrifugalPumpNode({ id, data, selected }) {
         position={getRotatedPosition(Position.Right, rotation)} 
         id="outlet-0" 
         className="handle-outlet"
+        title="Discharge"
         style={{ 
           top: '15px', left: '60px', 
           marginTop: '-5px', marginLeft: '-5px',

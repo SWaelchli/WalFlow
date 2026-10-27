@@ -51,7 +51,7 @@ def test_bpr_in_parallel_branch():
         {"source": "t1", "target": "p1", "pipe": Pipe("p1", 1, ID_1IN)},
         {"source": "p1", "target": "split", "pipe": Pipe("p2", 1, ID_1IN)},
         {"source": "split", "source_port": "outlet-0", "target": "reg", "target_port": "inlet-0", "pipe": Pipe("p3", 1, ID_1IN)},
-        {"source": "split", "source_port": "outlet-1", "target": "ori", "target_port": "inlet-0", "pipe": Pipe("p4", 1, ID_1IN)},
+        {"source": "split", "source_port": "outlet-1", "target": "ori", "target_port": "port-0", "pipe": Pipe("p4", 1, ID_1IN)},
         {"source": "reg", "target": "t_sink1", "pipe": Pipe("p5", 1, ID_1IN)},
         {"source": "ori", "target": "t_sink2", "pipe": Pipe("p6", 1, ID_1IN)},
     ]

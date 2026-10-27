@@ -22,6 +22,7 @@ const AngledPin = ({ portId, offset, angle, length, rotation }) => {
         type="source"
         position={getRotatedPosition(side, rotation)}
         id={`signal-${portId}`}
+        title="Signal"
         style={{
           top: `${hy}px`,
           left: `${hx}px`,
@@ -76,6 +77,7 @@ export const SensingPin = ({ portId, offset = { x: 0, y: 0 }, angle, length = 18
         type="source" 
         position={Position.Top} 
         id={`signal-${portId}`} 
+        title="Signal"
         style={{ 
           top: '12px',
           left: '15px',

@@ -105,9 +105,9 @@ def _restriction_graph(restriction_data, fluid="iso_vg_46"):
             {"id": "t2", "type": "tank", "position": {"x": 2, "y": 0}, "data": {"label": "T2"}},
         ],
         "edges": [
-            {"id": "e1", "source": "t1", "target": "cr", "sourceHandle": "outlet-0", "targetHandle": "inlet-0",
+            {"id": "e1", "source": "t1", "target": "cr", "sourceHandle": "outlet-0", "targetHandle": "port-0",
              "data": {"length_m": 1.0, "diameter_m": 0.0266}},
-            {"id": "e2", "source": "cr", "target": "t2", "sourceHandle": "outlet-0", "targetHandle": "inlet-0",
+            {"id": "e2", "source": "cr", "target": "t2", "sourceHandle": "port-1", "targetHandle": "inlet-0",
              "data": {"length_m": 1.0, "diameter_m": 0.0266}},
         ],
         "global_settings": {"fluid_type": fluid},
@@ -117,26 +117,10 @@ def _restriction_graph(restriction_data, fluid="iso_vg_46"):
 @pytest.mark.parametrize("model", ["orifice", "laminar", "quadratic"])
 def test_parsed_restriction_reproduces_calibration_at_first_call(model):
     # System fluid ISO VG 46 and a DN25 pipe are only known after the parser has built the node
-    node = GraphParser.parse_graph(_restriction_graph({"restriction_model": model})).nodes["cr"]
+    node = GraphParser.parse_graph(_restriction_graph({"restriction_model": model})).inline_nodes["cr"]
     t0 = 45.0 + 273.15
     rho, mu = FluidProperties.get_density("iso_vg_46", t0), FluidProperties.get_viscosity("iso_vg_46", t0)
     assert node.calculate_delta_p(10.0 / 60000.0, rho, mu) == pytest.approx(2.5e5, rel=1e-4)
-
-
-def test_outlet_properties_belong_to_the_warmed_outlet_temperature():
-    """Throttling warms the leaving stream: its density and viscosity are those of the warmed temperature,
-    not of the inlet (a stale copy left the outlet ~0.5 K off its own temperature)."""
-    from simulation.schemas import GlobalSettings
-    node = CalibratedRestriction("CR", 10.0, 3.5, 1.0, 45.0, "quadratic", "iso_vg_46")
-    node.global_settings = GlobalSettings(fluid_type="iso_vg_46")
-    inlet, outlet = node.inlets[0], node.outlets[0]
-    inlet.flow_rate, inlet.pressure, inlet.temperature = 40.0 / 60000.0, 60e5, 318.15
-    inlet.density = FluidProperties.get_density("iso_vg_46", 318.15)
-    inlet.viscosity = FluidProperties.get_viscosity("iso_vg_46", 318.15)
-    node.calculate()
-    assert outlet.temperature - inlet.temperature > 0.2  # the row only means something with real warming
-    assert outlet.density == pytest.approx(FluidProperties.get_density("iso_vg_46", outlet.temperature), rel=1e-12)
-    assert outlet.viscosity == pytest.approx(FluidProperties.get_viscosity("iso_vg_46", outlet.temperature), rel=1e-12)
 
 
 def test_calibration_runs_once_and_again_only_after_a_change(monkeypatch):
@@ -145,20 +129,17 @@ def test_calibration_runs_once_and_again_only_after_a_change(monkeypatch):
     original = CalibratedRestriction._calibrate
     monkeypatch.setattr(CalibratedRestriction, "_calibrate", lambda self: (calls.append(1), original(self)))
     q, rho, mu = 10.0 / 60000.0, 990.0, 6e-4
-    node.inlets[0].flow_rate, node.inlets[0].density, node.inlets[0].viscosity = q, rho, mu
     for _ in range(3):
         node.calculate_delta_p(q, rho, mu)
-        node.calculate()
     assert len(calls) == 1
     node.pipe_diameter = 0.0266
     node.calculate_delta_p(q, rho, mu)
-    node.calculate()
     assert len(calls) == 2
 
 
 def test_zero_calibration_temperature_is_kept():
     assert CalibratedRestriction("CR", 10.0, 3.5, 1.0, 0.0).temp_base_c == 0.0
-    node = GraphParser.parse_graph(_restriction_graph({"temp_base_c": 0.0})).nodes["cr"]
+    node = GraphParser.parse_graph(_restriction_graph({"temp_base_c": 0.0})).inline_nodes["cr"]
     assert node.temp_base_c == 0.0
 
 

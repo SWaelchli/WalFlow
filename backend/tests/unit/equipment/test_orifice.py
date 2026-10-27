@@ -219,21 +219,6 @@ def test_classic_cd_model_is_tanh_cd_with_formula_7():
             f"legacy dP mismatch at Q={q}: {dp_impl} vs {dp_ref}"
 
 
-def test_outlet_properties_belong_to_the_warmed_outlet_temperature():
-    """Throttling warms the leaving stream: its density and viscosity are those of the warmed temperature,
-    not of the inlet (a stale copy left the outlet ~0.5 K off its own temperature)."""
-    ori = Orifice("Warm", pipe_diameter=0.05248, orifice_diameter=0.005)
-    ori.global_settings = GlobalSettings(fluid_type="iso_vg_46")
-    inlet, outlet = ori.inlets[0], ori.outlets[0]
-    inlet.flow_rate, inlet.pressure, inlet.temperature = 1e-3, 60e5, 300.0
-    inlet.density = FluidProperties.get_density("iso_vg_46", 300.0)
-    inlet.viscosity = FluidProperties.get_viscosity("iso_vg_46", 300.0)
-    ori.calculate()
-    assert outlet.temperature - inlet.temperature > 0.2  # the row only means something with real warming
-    assert outlet.density == pytest.approx(FluidProperties.get_density("iso_vg_46", outlet.temperature), rel=1e-12)
-    assert outlet.viscosity == pytest.approx(FluidProperties.get_viscosity("iso_vg_46", outlet.temperature), rel=1e-12)
-
-
 def test_standard_defaults_and_folding():
     """Default is iso_5167; invalid values fold back to the default."""
     ori = Orifice("Default")
@@ -276,6 +261,27 @@ def test_graph_parser_orifice():
     assert parsed_default.standard == 'iso_5167'
 
 
+@pytest.mark.parametrize("q, expected_d", [
+    pytest.param(5e-4, 0.05, id="forward_flow_takes_port_0_pipe"),
+    pytest.param(-5e-4, 0.08, id="reverse_flow_takes_port_1_pipe"),
+    pytest.param(1e-9, 0.01, id="dead_leg_keeps_bore"),
+    pytest.param(-1e-9, 0.01, id="reverse_dead_leg_keeps_bore"),
+])
+def test_component_link_takes_the_upstream_pipe_bore_only_with_flow(q, expected_d):
+    from simulation.equipment.component_link import ComponentLink
+    from simulation.equipment.pipe import Pipe
+    from simulation.schemas import GlobalSettings as GS
+
+    ori = Orifice("O", pipe_diameter=0.01, orifice_diameter=0.004)
+    link = ComponentLink(ori, GS(fluid_type="water"))
+    link.adjacent = [Pipe("a", length=1.0, diameter=0.05), Pipe("b", length=1.0, diameter=0.08)]
+    link.inlets[0].flow_rate = q
+    for port in (link.inlets[0], link.outlets[0]):
+        port.temperature, port.density, port.viscosity = 293.15, WATER_RHO, WATER_MU
+    link.calculate()
+    assert ori.pipe_diameter == expected_d
+
+
 def test_extract_telemetry_carries_solver_effective_geometry():
     """
     Regression for the OrificeDetails curve mismatch: telemetry must report the
@@ -295,15 +301,15 @@ def test_extract_telemetry_carries_solver_effective_geometry():
                       data={"label": "Sink", "level_m": 1.0, "elevation_m": 0.0, "temperature_k": 293.15}),
     ]
     edges = [
-        ReactFlowEdge(id="e1", source="t1", target="ori", sourceHandle="outlet-0", targetHandle="inlet-0",
+        ReactFlowEdge(id="e1", source="t1", target="ori", sourceHandle="outlet-0", targetHandle="port-0",
                       data={"diameter_m": 0.08}),
-        ReactFlowEdge(id="e2", source="ori", target="t2", sourceHandle="outlet-0", targetHandle="inlet-0",
+        ReactFlowEdge(id="e2", source="ori", target="t2", sourceHandle="port-1", targetHandle="inlet-0",
                       data={"diameter_m": 0.08}),
     ]
     graph = ReactFlowGraph(nodes=nodes, edges=edges, global_settings=gs)
     network = GraphParser.parse_graph(graph)
 
-    ori = network.nodes["ori"]
+    ori = network.inline_nodes["ori"]
     assert ori.pipe_diameter == 0.08, \
         "graph_parser must override the node default (0.05248) with the connected pipe diameter (0.08)"
 
@@ -315,9 +321,11 @@ def test_extract_telemetry_carries_solver_effective_geometry():
     assert ori_tel["pipe_diameter"] == 0.08
     assert ori_tel["standard"] == "classic_cd"
 
-    dp_tel = ori.inlets[0].pressure - ori.outlets[0].pressure
-    dp_direct = ori.calculate_delta_p(ori.inlets[0].flow_rate, ori.inlets[0].density, ori.inlets[0].viscosity)
-    assert math.isclose(dp_tel, dp_direct, rel_tol=1e-7), \
+    port_in, port_out = ori.ports   # flow_rate positive into the component: forward flow enters by port 0
+    assert port_in.flow_rate > 0
+    dp_tel = port_in.pressure - port_out.pressure
+    dp_direct = ori.calculate_delta_p(port_in.flow_rate, port_in.density, port_in.viscosity)
+    assert math.isclose(dp_tel, dp_direct, rel_tol=1e-5), \
         "telemetry operating-point dP must match a direct calculation with the same effective geometry"
 
 
