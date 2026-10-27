@@ -45,6 +45,7 @@ All notable changes to the WälFlow project will be documented in this file.
 
 ### Changed
 
+- **Source and instrument symbol size**: The flow and pressure source symbols are 60 px like the pumps and valves (were 70 px), and their circles and the instrument bubble have the same diameter as the pump circle; the Jeppson examples keep their layout.
 - **Signal lines**: Sensing/signal lines draw as one static dashed line in muted slate instead of two overlaid yellow/orange animated dashes; saved files render the new style unchanged.
 - **Unit in every field name**: Node and pipe data fields carry their unit (`level_m`, `temperature_k`, `set_pressure_pa`, `opening_pct`, pipe `length_m` / `diameter_m`, …). Old 0.2 pre-release files are not converted; the file format stays 0.2. The field list per component now lives in `backend/simulation/equipment/<type>.md`.
 - **Equipment documentation**: Every component document in `backend/simulation/equipment/` follows one 7-section standard (equations as implemented, thermal balance, parameters, model limits, benchmarks from the tests), with a new shared `relief_device.md`.

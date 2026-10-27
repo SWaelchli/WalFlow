@@ -30,8 +30,8 @@ export default function PressureSourceNode({ id, data, selected }) {
       id={id}
       data={data}
       selected={selected}
-      width={70}
-      height={70}
+      width={60}
+      height={60}
       footer={
         <>
           <div style={{ fontSize: '9px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>
@@ -46,17 +46,17 @@ export default function PressureSourceNode({ id, data, selected }) {
         </>
       }
     >
-      <svg width="70" height="70" viewBox="0 0 70 70">
+      <svg width="60" height="60" viewBox="0 0 60 60">
         {/* Outer circle */}
         <circle
-          cx="35" cy="35" r="28"
+          cx="30" cy="30" r="20"
           fill="var(--color-surface)"
           stroke="var(--color-brand-dark)"
           strokeWidth="2.5"
         />
         {/* Inner solid circle (Constant pressure indicator) */}
         <circle
-          cx="35" cy="35" r="9"
+          cx="30" cy="30" r="7"
           fill="#395253"
         />
       </svg>
@@ -68,13 +68,13 @@ export default function PressureSourceNode({ id, data, selected }) {
         id="inlet-0"
         className="handle-inlet"
         style={{
-          top: '50%', left: '5px',
+          top: '50%', left: '10px',
           marginTop: '-5px', marginLeft: '-5px',
           right: 'auto', bottom: 'auto', transform: 'none',
           background: 'var(--color-inlet)', width: '8px', height: '8px'
         }}
       />
-      {sensing['inlet-0'] && <SensingPin portId="inlet-0" offset={{ x: -20, y: 0 }} />}
+      {sensing['inlet-0'] && <SensingPin portId="inlet-0" offset={{ x: -15, y: 0 }} />}
 
       {/* Outlet handle — Right */}
       <Handle
@@ -83,13 +83,13 @@ export default function PressureSourceNode({ id, data, selected }) {
         id="outlet-0"
         className="handle-outlet"
         style={{
-          top: '50%', left: '65px',
+          top: '50%', left: '50px',
           marginTop: '-5px', marginLeft: '-5px',
           right: 'auto', bottom: 'auto', transform: 'none',
           background: 'var(--color-outlet)', width: '8px', height: '8px'
         }}
       />
-      {sensing['outlet-0'] && <SensingPin portId="outlet-0" offset={{ x: 20, y: 0 }} />}
+      {sensing['outlet-0'] && <SensingPin portId="outlet-0" offset={{ x: 15, y: 0 }} />}
     </BaseNode>
   );
 }

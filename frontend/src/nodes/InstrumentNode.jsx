@@ -4,7 +4,7 @@ import { useUnits } from '../context/UnitContext';
 import { getRotatedPosition, RotateButton } from '../components/canvas/NodeRotationHandle';
 import { instrumentLetters, formatReading } from '../utils/instrumentReadings';
 
-const D = 48; // bubble height, and its width for a short tag; a longer tag only makes it wider
+const D = 42; // bubble height, and its width for a short tag; a longer tag only makes it wider
 
 const handleStyle = {
   background: 'var(--color-warning)',

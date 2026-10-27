@@ -11,9 +11,10 @@ This document outlines planned features, overlays, and enhancements for the WalF
   * **Visuals & MAWP Alerts:** Semi-transparent shaded region boundaries grouped by high-pressure, pilot-pressure, and tank-return lines, with dynamic visual red flash and warning badges (`⚠️ P > MAWP`) when a component or low-pressure line experiences pressure exceeding its rated MAWP limit.
   * **Engineering Value:** Provides clarity in complex P&ID diagrams with multiple pressure levels (e.g., main supply circuit vs. pilot control circuit vs. drain/tank return) and alerts engineers to structural overpressure risks.
 
-- [ ] **📐 Flow and Pressure Source Symbol Size**
+- [x] **📐 Flow and Pressure Source Symbol Size**
   * **Concept:** Resize the flow source and pressure source symbols to match the other equipment on the diagram.
   * **Today (2026-10-26):** both are 70 px wide (`FlowSourceNode.jsx`, `PressureSourceNode.jsx`), while most equipment is 60 px (pumps, valves, tank, heat exchanger) and the inline items 40 px. They look oversized next to the tank and pumps they connect to. The shipped examples need their positions checked after the resize.
+  * **Done (2026-10-27):** both symbols are 60 px with a circle the size of the pump circle (r = 20) and their ports on the circle edge; the instrument bubble matches the same diameter; the Jeppson examples shift each source by 5 px so the symbol centres and pipe routes stay put.
 
 ---
 
