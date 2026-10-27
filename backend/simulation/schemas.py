@@ -34,6 +34,10 @@ class Port:
         for name, value in values.items():
             setattr(self, name, value)
 
+    def fluid(self) -> tuple:
+        """(density, viscosity) at the port."""
+        return self.density, self.viscosity
+
     def model_dump(self) -> Dict[str, Any]:
         """The port state as a dict, in field order (telemetry)."""
         return {name: getattr(self, name) for name in self.__slots__}

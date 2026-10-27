@@ -9,15 +9,25 @@ class _Graph:
     def __init__(self, fluid):
         self.nodes, self.edges = [], []
         self.fluid = fluid
+        self.junction_ports = {}   # junction id -> ports used so far (a pipe takes the next free port-k)
 
     def node(self, node_id, node_type, **data):
+        if node_type == "junction":
+            self.junction_ports[node_id] = 0
         self.nodes.append({"id": node_id, "type": node_type, "position": {"x": 0, "y": 0},
                            "data": {"label": node_id, **data}})
         return node_id
 
+    def _handle(self, node_id, default):
+        if node_id not in self.junction_ports:
+            return default
+        self.junction_ports[node_id] += 1
+        return f"port-{self.junction_ports[node_id] - 1}"
+
     def pipe(self, src, tgt, src_port=0, tgt_port=0, data=None):
         self.edges.append({"id": f"e{len(self.edges)}", "source": src, "target": tgt,
-                           "sourceHandle": f"outlet-{src_port}", "targetHandle": f"inlet-{tgt_port}",
+                           "sourceHandle": self._handle(src, f"outlet-{src_port}"),
+                           "targetHandle": self._handle(tgt, f"inlet-{tgt_port}"),
                            "data": {**PIPE, **(data or {})}})
 
     def graph(self):
@@ -73,15 +83,15 @@ def series_graph(set1_c=50.0, set2_c=35.0, fluid="water"):
 
 
 def parallel_graph(set_a_c=40.0, set_b_c=60.0, fluid="water"):
-    """Two TCVs fed from one hot and one cold header, outlets joined in a mixer before the load."""
+    """Two TCVs fed from one hot and one cold header, outlets joined in a junction before the load."""
     g = _Graph(fluid)
     g.node("hot", "pressure_source", source_pressure_bara=3.0, temperature_k=353.15)
     g.node("cold", "pressure_source", source_pressure_bara=3.0, temperature_k=293.15)
-    g.node("sh", "splitter")
-    g.node("sc", "splitter")
+    g.node("sh", "junction")
+    g.node("sc", "junction")
     g.node("tcv_a", "three_way_tcv", max_cv=10.0, set_temperature_c=set_a_c, hot_port_idx=0)
     g.node("tcv_b", "three_way_tcv", max_cv=10.0, set_temperature_c=set_b_c, hot_port_idx=1)
-    g.node("mix", "mixer")
+    g.node("mix", "junction")
     g.node("load", "linear_control_valve", max_cv=8.0, opening_pct=100.0)
     g.node("sink", "pressure_source", source_pressure_bara=1.0, temperature_k=293.15)
     g.pipe("hot", "sh")
@@ -107,7 +117,7 @@ def cooler_loop_graph(t_supply_c=55.0, set_c=45.0, fluid="iso_vg_46", max_cv=25.
     g = _Graph(fluid)
     g.node("supply", "tank", level_m=2.0, elevation_m=0.0, temperature_k=t_supply_c + 273.15)
     g.node("pump", "centrifugal_pump", flow_rated_lmin=200.0, head_rated_m=72.0, rise_to_shutoff_pct=20.0)
-    g.node("split", "splitter")
+    g.node("split", "junction")
     g.node("cooler", "heat_exchanger", rated_cooling_kw=cooling_kw, rated_flow_lmin=200.0,
            design_inlet_temp_c=55.0, medium_temp_c=medium_c, rated_dp_bar=0.5)
     g.node("tcv", "three_way_tcv", max_cv=max_cv, set_temperature_c=set_c, hot_port_idx=hot_port_idx)
@@ -117,7 +127,7 @@ def cooler_loop_graph(t_supply_c=55.0, set_c=45.0, fluid="iso_vg_46", max_cv=25.
     g.pipe("supply", "pump", data=pipe)
     head = "pump"
     if bpr_bara is not None or psv_barg is not None:
-        g.node("hdr", "splitter")
+        g.node("hdr", "junction")
         g.pipe("pump", "hdr", data=pipe)
         head = "hdr"
         if bpr_bara is not None:

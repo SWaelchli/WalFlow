@@ -24,7 +24,7 @@ def test_resistance_opposes_the_flow(node_type, data, q):
 
 | Kind | Example in WalFlow |
 |---|---|
-| Conservation | Mass balance at every node, enthalpy balance at a mixer |
+| Conservation | Mass balance at every node, enthalpy balance at a junction |
 | Sign / second law | Passive element loses total pressure in the flow direction; throttling never cools |
 | Monotonicity | More flow never loses less pressure; a pump never rises more at higher flow |
 | Consistency | Analytic slope lies between the one-sided difference quotients (`assert_slope_between_one_sided_differences`) |

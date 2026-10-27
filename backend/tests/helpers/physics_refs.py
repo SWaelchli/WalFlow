@@ -124,7 +124,7 @@ def velocity_head(q: float, d: float, rho: float) -> float:
 
 def pipe_end_total(pipe, pipe_port, node) -> float:
     """Total pressure the solve holds at the node end of a pipe: the pipe end's static pressure plus its dynamic
-    pressure, except on a tank or pressure source, whose pipe ends report the reservoir pressure itself. As in the pipe's drop, the dynamic pressure is taken at the pipe's inlet properties."""
+    pressure, except on a tank or pressure source, whose pipe ends report the reservoir pressure itself. As in the pipe's drop, the dynamic pressure is taken at the properties of the pipe's upstream end."""
     if node.is_pressure_boundary:
         return pipe_port.pressure
-    return pipe_port.pressure + velocity_head(pipe.inlets[0].flow_rate, pipe.diameter, pipe.inlets[0].density)
+    return pipe_port.pressure + velocity_head(pipe.inlets[0].flow_rate, pipe.diameter, pipe.upstream_port().density)

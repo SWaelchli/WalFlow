@@ -195,20 +195,20 @@ def test_backpressure_result_and_limit(valve_type, limit, exceeded):
 
 
 def _pilot_graph(with_line: bool, valve_type: str = "pilot"):
-    """Header 10.5 barg → 2 m DN200 → splitter → 20 m of 20 mm pipe → PSV (set 10 barg, modulating) → drain."""
+    """Header 10.5 barg → 2 m DN200 → junction → 20 m of 20 mm pipe → PSV (set 10 barg, modulating) → drain."""
     edges = [
-        {"id": "e1", "source": "src", "target": "sp", "data": {"length_m": 2.0, "diameter_m": BIG}},
-        {"id": "e2", "source": "sp", "target": "psv", "data": {"length_m": 20.0, "diameter_m": 0.02}},
+        {"id": "e1", "source": "src", "target": "sp", "targetHandle": "port-0", "data": {"length_m": 2.0, "diameter_m": BIG}},
+        {"id": "e2", "source": "sp", "sourceHandle": "port-1", "target": "psv", "data": {"length_m": 20.0, "diameter_m": 0.02}},
         {"id": "e3", "source": "psv", "target": "t", "data": {"length_m": 1.0, "diameter_m": BIG}},
     ]
     if with_line:
-        edges.append({"id": "s1", "source": "sp", "sourceHandle": "signal-inlet-0", "target": "psv",
+        edges.append({"id": "s1", "source": "sp", "sourceHandle": "signal-port-0", "target": "psv",
                       "targetHandle": "signal-in", "data": {"type": "SIGNAL"}})
     return ReactFlowGraph(
         nodes=[
             {"id": "src", "type": "pressure_source", "position": {"x": 0, "y": 0},
              "data": {"label": "S", "source_pressure_bara": 10.5 + P_ATM / 1e5}},
-            {"id": "sp", "type": "splitter", "position": {"x": 0, "y": 0}, "data": {"label": "SP"}},
+            {"id": "sp", "type": "junction", "position": {"x": 0, "y": 0}, "data": {"label": "SP"}},
             {"id": "psv", "type": "pressure_safety_valve", "position": {"x": 0, "y": 0},
              "data": {"label": "PSV", "set_pressure_barg": 10.0, "cv": 1.0, "action_mode": "modulating",
                       "valve_type": valve_type}},
@@ -219,7 +219,7 @@ def _pilot_graph(with_line: bool, valve_type: str = "pilot"):
 
 
 def test_pilot_lift_follows_the_remote_sensing_point():
-    """Modulating pilot: lift from the sensed (splitter) pressure, not from its own inlet behind a lossy line."""
+    """Modulating pilot: lift from the sensed (junction) pressure, not from its own inlet behind a lossy line."""
     net = GraphParser.parse_graph(_pilot_graph(with_line=True))
     psv = net.nodes["psv"]
     assert psv.has_remote_pilot
@@ -310,11 +310,11 @@ def test_pop_latching_stays_open_below_reseat():
 def test_closed_valve_sees_the_header_pressure_of_a_relieving_neighbour():
     """PSV-A relieves into a shared header with a lossy line to the drain; PSV-B stays closed on that header.
     Its superimposed (= total) backpressure is the final header pressure, not the one without relief."""
-    from simulation.equipment.mixer import Mixer
+    from networks import make_junction
     a = PressureSafetyValve("A", set_pressure_barg=5.0, cv=2.0, action_mode="modulating", valve_type="balanced_bellows")
     b = PressureSafetyValve("B", set_pressure_barg=10.0, cv=2.0, action_mode="modulating", valve_type="balanced_bellows")
     nodes = {"sa": PressureSource("SA", source_pressure=P_ATM + 6e5), "sb": PressureSource("SB", source_pressure=P_ATM + 2e5),
-             "a": a, "b": b, "hdr": Mixer("Header"), "t": Tank("Drain", fluid_level=0.0)}
+             "a": a, "b": b, "hdr": make_junction("Header", 2, 1), "t": Tank("Drain", fluid_level=0.0)}
     edges = [
         {"id": "e1", "source": "sa", "target": "a", "pipe": Pipe("p1", 1.0, BIG)},
         {"id": "e2", "source": "sb", "target": "b", "pipe": Pipe("p2", 1.0, BIG)},
@@ -332,10 +332,10 @@ def test_closed_valve_sees_the_header_pressure_of_a_relieving_neighbour():
 
 
 def test_pilot_result_does_not_depend_on_node_order():
-    """The pilot senses the splitter outlet; with the PSV listed first, the result pass must still use the
-    solved splitter pressure (not the port value from before the solve)."""
+    """The pilot senses the junction's outlet-side port; with the PSV listed first, the result pass must still use the
+    solved junction pressure (not the port value from before the solve)."""
     graph = _pilot_graph(with_line=True)
-    graph.edges[-1].sourceHandle = "signal-outlet-0"
+    graph.edges[-1].sourceHandle = "signal-port-1"   # the port of the pipe to the valve
     graph.nodes.sort(key=lambda n: n.id != "psv")
     net = GraphParser.parse_graph(graph)
     assert list(net.nodes)[0] == "psv"
@@ -364,7 +364,8 @@ def test_pilot_sensing_a_point_outside_the_solve_senses_its_own_inlet():
     """A tap on a dead-end branch is left out of the solve: the pilot then senses its own inlet."""
     graph = _pilot_graph(with_line=False)
     graph.nodes.append(graph.nodes[1].model_copy(update={"id": "mp", "type": "measure_point", "data": {"label": "MP"}}))
-    graph.edges.append(graph.edges[0].model_copy(update={"id": "e4", "source": "sp", "target": "mp"}))
+    graph.edges.append(graph.edges[0].model_copy(update={"id": "e4", "source": "sp", "sourceHandle": "port-2",
+                                                         "target": "mp", "targetHandle": None}))
     graph.edges.append(graph.edges[0].model_copy(update={"id": "s1", "source": "mp", "sourceHandle": "signal-inlet-0",
                                                          "target": "psv", "targetHandle": "signal-in",
                                                          "data": {"type": "SIGNAL"}}))

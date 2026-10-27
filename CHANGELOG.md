@@ -41,6 +41,7 @@ All notable changes to the WälFlow project will be documented in this file.
 - **Enter key handler**: Global Enter key handler blurs numeric and text inputs on keypress, triggering validation and committing app updates.
 - **Validation benchmark**: New example "Jeppson (1974) 7-Pipe Network" (Validation Benchmarks) with the published problems 2 (pump supply, = AFT Fathom Verification Case 63) and 3 (three reservoirs) as operating cases; a regression test holds WalFlow to the published flows, head losses and pressures. Second example "Jeppson (1974) 48-Pipe Network" (Ch. VI problem 3, two supplies, 28 demands) held to the published flows and friction losses.
 - **Flow source withdrawal**: A negative set flow on a flow source draws that flow out of the network (a junction demand); the node shows it as a draw-off.
+- **Junction**: One junction with 3 to 8 neutral ports replaces the mixer and splitter; a pipe connects to any port in either direction (tee, cross, header). The examples are converted; the Jeppson networks now show their four-pipe junctions as one node instead of chained tees.
 
 ### Changed
 
@@ -99,6 +100,7 @@ All notable changes to the WälFlow project will be documented in this file.
 
 ### Fixed
 
+- **Pipes with reverse flow**: Friction uses the density and viscosity of the end the flow enters by, not the drawn inlet, so a heated viscous line gives the same result whichever way it is drawn.
 - **Pressure controllers with temperature-dependent fluids**: The extra solves that measure a controller's sensitivity hold the fluid properties fixed instead of recalculating them, so systems with controllers and a TCV settle in fewer iterations (shipped examples about 17 % faster overall) and a TCV ends closer to its setpoint (results change by up to 0.2 %).
 - **Control valve viscosity correction (IEC 60534-2-1)**: The linear control valve, remote control valve and three-way TCV use the Annex A Reynolds number factor, sized from the connected pipe, so viscous low-flow cases give the laminar pressure drop (previously up to two orders of magnitude too low).
 - **3-way TCV control loop**: The mix ratio no longer cycles when the outlet temperature responds steeply (e.g. viscous laminar paths), and a TCV that misses its setpoint is reported as not settled instead of converged.

@@ -85,6 +85,9 @@ const calculateMaxPressureBar = (telemetry) => {
       (node.outlets || []).forEach(port => {
         if (typeof port.pressure === 'number' && port.pressure > maxPa) maxPa = port.pressure;
       });
+      (node.ports || []).forEach(port => {
+        if (typeof port?.pressure === 'number' && port.pressure > maxPa) maxPa = port.pressure;
+      });
     });
   }
   if (telemetry.edges) {

@@ -11,6 +11,10 @@ This document outlines planned features, overlays, and enhancements for the WalF
   * **Visuals & MAWP Alerts:** Semi-transparent shaded region boundaries grouped by high-pressure, pilot-pressure, and tank-return lines, with dynamic visual red flash and warning badges (`⚠️ P > MAWP`) when a component or low-pressure line experiences pressure exceeding its rated MAWP limit.
   * **Engineering Value:** Provides clarity in complex P&ID diagrams with multiple pressure levels (e.g., main supply circuit vs. pilot control circuit vs. drain/tank return) and alerts engineers to structural overpressure risks.
 
+- [ ] **📐 Flow and Pressure Source Symbol Size**
+  * **Concept:** Resize the flow source and pressure source symbols to match the other equipment on the diagram.
+  * **Today (2026-10-26):** both are 70 px wide (`FlowSourceNode.jsx`, `PressureSourceNode.jsx`), while most equipment is 60 px (pumps, valves, tank, heat exchanger) and the inline items 40 px. They look oversized next to the tank and pumps they connect to. The shipped examples need their positions checked after the resize.
+
 ---
 
 ## 📁 Project Management & Collaboration
@@ -51,15 +55,34 @@ This document outlines planned features, overlays, and enhancements for the WalF
   * **Today (2026-10-26):** a flow source with a negative set flow is the withdrawal (`flow_source.md` section 3.6). It has only an outlet port, so the pipe to it is drawn from the source into the network and its flow shows negative; the Jeppson validation example uses it.
   * **Engineering Value:** Distribution networks and literature benchmarks (Jeppson, AFT verification cases) with many junction demands, drawn with the flow direction and without reversed pipes.
 
-- [ ] **🔀 Multi-Port Junction Without Flow Direction**
+- [x] **🔀 Multi-Port Junction Without Flow Direction**
   * **Concept:** One junction node with a configurable number of ports (3 to about 8), each usable as inlet or outlet: a single node balance (mass, energy, total pressure) and no fixed inlet/outlet roles, so a pipe connects to any port whichever way it is drawn. Optionally a demand set on the junction itself (with the demand component above).
   * **Today (2026-10-26):** junctions are 3-port tees with fixed roles (splitter 1 in / 2 out, mixer 2 in / 1 out) and every edge runs outlet to inlet. A four-pipe junction needs chained tees with short links, and a junction whose pipes all flow in needs one pipe drawn against the flow. The Jeppson 48-pipe example uses 62 tees for 30 junctions.
   * **Engineering Value:** Clean distribution networks, headers and literature benchmarks drawn like the source figure; no tee chains, no orientation puzzles when building a looped network.
+  * **Done (2026-10-26):** `junction` node with 3 to 8 neutral ports replaces the mixer and splitter (no backward compatibility); the parser maps each port to an inlet or outlet slot from the drawn pipe direction, the solver core is unchanged. A demand on the junction itself stays with the demand component.
+
+- [ ] **📒 Fitting Loss Coefficient (K) Catalogue and Junction Port Losses**
+  * **Concept:** A new "Fitting K factors" tab on `/catalogue`, next to the geometric fitting and schedule libraries (that tab to be renamed so it reads as geometry only). Entries per source (built-in Crane TP-410, user sets), rows per fitting type (tee run / branch, elbow, bend, entrance, exit, ...) with a method: fixed K, Crane $n\,f_T$ ($f_T$ from the connected pipe size), later Hooper 2-K and Darby 3-K for viscous fluids at low Re. The multi-port junction gets an optional constant K per port, picked from a tee row with a run / branch role per port (copied into the node like the control valve style); the default stays an ideal junction.
+  * **Notes (2026-10-26):** tables give K per path, the junction needs K per port. Splitting Crane as run end $10\,f_T$ and branch end $50\,f_T$ reproduces run-run $20\,f_T$ and run-branch $60\,f_T$ for single-feed patterns; merging and dividing flow stay approximate. Per-pipe fittings $\Sigma K$ (see Pipe Elevation & Fittings Losses) can use the same catalogue. Every seeded value needs a `standard-verification` check; Hooper and Darby are new register entries.
+  * **Engineering Value:** Traceable fitting losses from one library instead of hand-placed restrictions on branches.
+
+- [ ] **🔱 Flow-Ratio Dependent Tee Losses (Idelchik / Miller)**
+  * **Concept:** Tee loss coefficients for the combining and dividing flow patterns from Idelchik (diagrams 7-x) and Miller, as a function of flow ratio, area ratio and branch angle. Geometry fixes the run and branch legs; the flow pattern is found from the solved flow signs. 3-port tees only (crosses where data exist); larger headers keep the constant K per port.
+  * **Notes (2026-10-26):** a leg's loss depends on the flows in the other legs, which couples the junction's edges in the Jacobian (today one diagonal entry per edge). Pattern switches at flow reversal need smoothing near zero flow for Newton convergence. The run coefficient in combining flow can be negative (ejector effect). Needs its own validation cases from the tables.
+  * **Engineering Value:** Realistic header and manifold distribution where the tee losses decide the flow split.
 
 - [ ] **🔌 Multiple Nozzles on Fluid Sources (Tanks and Pressure Sources)**
   * **Concept:** Configurable number of inlet and outlet nozzles on a tank or pressure source (e.g. two pump suctions and a separate relief return on one tank), each a separate port with its own pipe, optionally with its own nozzle height.
-  * **Today (2026-10-16):** a port takes one pipe. A line that branches needs a splitter or mixer; separate nozzles are modelled with a second tank at the same level and conditions. The solver already treats a tank or pressure source as one fixed-pressure node, so extra ports mainly need the node component, the port table in `networkValidation.js` (`PORTS_BY_TYPE`) and the parser.
-  * **Engineering Value:** Drawings that match the P&ID without helper tanks or splitters.
+  * **Today (2026-10-16):** a port takes one pipe. A line that branches needs a junction; separate nozzles are modelled with a second tank at the same level and conditions. The solver already treats a tank or pressure source as one fixed-pressure node, so extra ports mainly need the node component, the port table in `networkValidation.js` (`PORTS_BY_TYPE`) and the parser.
+  * **Engineering Value:** Drawings that match the P&ID without helper tanks or junctions.
+
+- [ ] **🔀 Neutral Ports and Free Drawing Direction**
+  * **Concept:** Separate two things the inlet / outlet handles mix today: the *role* of a port (suction or discharge, protected side, large or small end) and the *drawing rule* (a pipe must run from an outlet to an inlet). Drop the drawing rule for all equipment, and give neutral ports to the components whose ports have no role, as the junction has since 2026-10-26.
+  * **1. Free drawing direction (all equipment):** a pipe may be drawn either way between any two hydraulic ports. The parser orients each edge from the port roles, as `_assign_junction_ports` already does for junctions; edge flows are signed, so only the sign changes, not the solution. Ports with a role keep their colour and name. Results stay positive in each component's reference direction (e.g. pump suction to discharge). Two ports of the same role (outlet to outlet) remain an error. Existing files stay valid without a file-format bump, since outlet-to-inlet pipes are a subset. The direction refusal toast and the validation direction checks go away or shrink to the same-role case.
+  * **2. Neutral ports where the port has no role:** candidates are the flow source and pressure source (with a port-count select up to 8, the junction's port layout `junctionLayout.js` and the neutral handle colour), and symmetric inline items (e.g. orifice, calibrated restriction, measure point). Open for sources: how a flow source's set flow is split over several ports (total at the node, each port's share solved), and its sign convention. Overlaps with Multiple Nozzles on Fluid Sources above, which also covers tanks.
+  * **3. Role ports stay:** pump and volumetric pump (head from suction to discharge), check valve, relief valve and rupture disc (protected inlet), pressure-reducing and back-pressure valves (controlled side), reducer and expander (diameter per end), heat exchanger (hot and cold sides), three-way TCV (port functions) and the DP transmitter (+ / −).
+  * **First step:** audit every equipment class for its reverse-flow behaviour and whether its ports have a role, and sort each into group 2 or 3. Not yet checked (2026-10-26).
+  * **Engineering Value:** Diagrams are drawn the way the engineer thinks of the line, without reversed pipes or helper junctions, and sources branch directly.
 
 - [ ] **🚦 Plausibility Warnings**
   * **Concept:** Non-blocking result warnings, shown in the status chip panel and the result banners: centrifugal pump run-out and minimum flow (% of rated / BEP), pipe velocity above a limit per service (e.g. suction, discharge, return), operating pressure or temperature above the pipe class P-T rating, and fluid temperature outside the property data range (`temperature_out_of_range` is already in `physical_validity`).
@@ -135,6 +158,10 @@ u$):** cSt at the local temperature. Derived, not an ISA variable.
 
 ## 🐛 Bug Fixes & Refactoring Backlog
 
+- [ ] **🔍 Fit View Cuts Off Large Diagrams**
+  * **Problem (seen 2026-10-26)**: The fit-view button (bottom left) doesn't fit the whole drawing on screen. In the Large Reference example the drawing is shifted left, and the tanks and relief valves on the left edge are cut off at the sidebar border. In the Jeppson 48 example the note bubble sits on the left edge and the right side runs off screen.
+  * **Causes to check**: the canvas may extend under the left sidebar, so the fit is centred in an area that is partly hidden; or the fit may run before React Flow has measured all nodes. The call is `fitView({ padding: 0.2, maxZoom: 1.2 })` in `App.jsx`. This was already there before the junction change.
+
 - [x] **🔀 Expander Solvability Near Reservoirs (Static Pressure Model)**
   * **Problem**: With the static pressure model, only the Reducer node accounts for velocity head. An expander (e.g. DN50 → DN80) with a short pipe (< ~1.5 m) to a tank or pressure source recovers more static pressure than the system loses, so no steady-state solution exists and the solver reports non-convergence. Reducing flow (contraction) is unaffected.
   * **Fix to evaluate**: Add entry / exit losses and velocity-head handling at tanks and pressure sources (or an equivalent total-pressure formulation), then re-verify expander cases against hand calculations. Needs evaluation before implementing.
@@ -153,7 +180,7 @@ u$):** cSt at the local temperature. Derived, not an ISA variable.
   * **Considerations**:
     - Ensure numerical stability (e.g., handle small flow rates, zero pressure drop).
     - Avoid redundancy (e.g., do not override existing `calculate_temperature()` implementations).
-    - Handle bidirectional (or tridirectional for `Mixer`, `ThreeWayTCV`) flow correctly.
+    - Handle bidirectional (or multi-directional for `Junction`, `ThreeWayTCV`) flow correctly.
     - Always use the correct fluid properties (density, specific heat) for the current temperature and pressure.
     - Minimize performance impact by avoiding expensive calculations in iterative methods.
   * **Important**: The above methodology is only a suggestion and needs to be properly evaluated and adjusted as necessary. Do not implement blindly.
@@ -186,7 +213,7 @@ u$):** cSt at the local temperature. Derived, not an ISA variable.
   * **Done**: Values keep their unit, only the names change (pipe `roughness` in m becomes `roughness_mm`). The file format stays 0.2; 0.2 was not released yet, so files with the old names are not converted. The field tables moved from `docs/node-fields.md` to the `## Data Fields` section of each `backend/simulation/equipment/<type>.md`.
 
 - [x] **📚 Detailed Equipment Documentation**
-  * **Problem**: 16 of the equipment documents in `backend/simulation/equipment/` (tank, pumps, control valves, regulator, calibrated restriction, heat exchanger, filter, 3-way TCV, check valves, PSV, rupture disc, splitter, mixer, pipe, base node) are short stubs with an overview and the Data Fields table only.
+  * **Problem**: 14 of the equipment documents in `backend/simulation/equipment/` (tank, pumps, control valves, regulator, calibrated restriction, heat exchanger, filter, 3-way TCV, check valves, PSV, rupture disc, pipe, base node) are short stubs with an overview and the Data Fields table only.
   * **Fix**: Complete each one per `.claude/skills/equipment-creation/references/equipment-documentation-standard.md` (governing standards, equations and derivatives, thermal balance, parameter table, model boundaries, verification benchmarks), as done for orifice, reducer, pressure source, flow source and measurement tap.
   * **Benefit**: the physics behind every component is traceable for developers and engineering users.
   * **Done (2026-10-21)**: Documentation standard and equipment-creation skill updated (fixed headings, a line for sections that do not apply, benchmarks only from existing test assertions, shared documents). All 22 component documents follow it; new `relief_device.md` holds the shared PSV / rupture disc model and the relief analysis; `base_node.md` holds the solver contract (unknowns, residuals, Jacobian, outer loops, pruning). The open findings are tracked in `EQUIPMENT_FINDINGS.md` until fixed.

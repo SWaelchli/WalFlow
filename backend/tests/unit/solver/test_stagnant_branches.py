@@ -6,6 +6,7 @@ strongest leak path out of the section (stopped pump to its suction, then check 
 seat), held where no check valve would open and no relief device would lift, and its ports are flagged."""
 import pytest
 
+from networks import make_junction
 from physics_refs import solve
 from simulation.equipment.base_node import total_of
 from simulation.equipment.centrifugal_pump import CentrifugalPump
@@ -14,11 +15,9 @@ from simulation.equipment.check_valve_orifice import CheckValveOrifice
 from simulation.equipment.flow_source import FlowSource
 from simulation.equipment.linear_control_valve import LinearControlValve
 from simulation.equipment.linear_regulator import LinearRegulator
-from simulation.equipment.mixer import Mixer
 from simulation.equipment.pipe import Pipe
 from simulation.equipment.pressure_safety_valve import PressureSafetyValve
 from simulation.equipment.pressure_source import PressureSource
-from simulation.equipment.splitter import Splitter
 from simulation.equipment.tank import Tank
 from simulation.equipment.volumetric_pump import VolumetricPump
 from simulation.fluid_utils import FluidProperties
@@ -36,11 +35,11 @@ def standby_branch(with_pump=True, psv_set_barg=10.0):
     Without the pump the tee is a dead leg bounded only by the check valve and the PSV."""
     nodes = {
         "suction": Tank("Suction", fluid_level=2.0),
-        "tee": Splitter("Discharge tee"),
+        "tee": make_junction("Discharge tee", 1 if with_pump else 0, 2),
         "psv": PressureSafetyValve("PSV", set_pressure_barg=psv_set_barg, valve_type="balanced_bellows"),
         "nrv": CheckValve("NRV"),
         "header": PressureSource("Header", source_pressure=HEADER_PA),
-        "mix": Mixer("Header tee"),
+        "mix": make_junction("Header tee", 2, 1),
         "consumer": LinearControlValve("Consumer", max_cv=2.0, opening_pct=50.0),
         "return": Tank("Return", fluid_level=0.0),
     }
@@ -93,7 +92,7 @@ def test_section_behind_a_stopped_pump_sits_at_its_suction_pressure(method):
     # Pipe 106 in the reference network: no flow, so the same pressure at both ends and at the pump inlet
     assert nodes["pump"].inlets[0].pressure == pytest.approx(p_suction, abs=1.0)
     assert pipes["e_suction"].outlets[0].pressure == pytest.approx(p_suction, abs=1.0)
-    assert nodes["nrv"].outlets[0].pressure == pytest.approx(nodes["mix"].inlets[0].pressure, abs=1.0)   # dead mixer inlet reads the run's static pressure (flowing header inlet)
+    assert nodes["nrv"].outlets[0].pressure == pytest.approx(nodes["mix"].inlets[0].pressure, abs=1.0)   # dead junction inlet reads the run's static pressure (flowing header inlet)
     assert nodes["nrv"].outlets[0].pressure > p_suction + 1e5
 
 
@@ -152,7 +151,7 @@ def _stopped_pump():
 
 
 def _header_and_consumer(nodes, edges):
-    nodes.update({"header": PressureSource("Header", source_pressure=HEADER_PA), "mix": Mixer("Header tee"),
+    nodes.update({"header": PressureSource("Header", source_pressure=HEADER_PA), "mix": make_junction("Header tee", 2, 1),
                   "consumer": LinearControlValve("Consumer", max_cv=2.0, opening_pct=50.0),
                   "return": Tank("Return", fluid_level=0.0)})
     edges += [{"id": "e_header", "source": "header", "target": "mix", "target_port": "inlet-0", "pipe": Pipe("header", 1, ID)},
@@ -249,7 +248,7 @@ def test_leakage_alone_does_not_open_a_psv_in_the_relief_passes():
 def _shut_in_behind_check_valve(device):
     """Header (4 bara) -> check valve -> device -> dead end (a tee with nothing connected downstream)."""
     nodes = {"header": PressureSource("Header", source_pressure=HEADER_PA), "nrv": CheckValve("NRV"),
-             "device": device, "end": Splitter("Dead end")}
+             "device": device, "end": make_junction("Dead end", 1, 0)}
     edges = [{"id": "e_in", "source": "header", "target": "nrv", "pipe": Pipe("header", 1, ID)},
              {"id": "e_nrv", "source": "nrv", "target": "device", "pipe": Pipe("NRV to device", 1, ID)},
              {"id": "e_end", "source": "device", "target": "end", "pipe": Pipe("dead leg", 1, ID)}]
@@ -283,7 +282,7 @@ def test_pump_reached_from_its_discharge_keeps_its_pressure_rise():
     # Review finding: a pruned pump seen only from its discharge side got suction equal to discharge
     NetworkSolver.clear_warm_start_cache()
     pump = CentrifugalPump("Booster", flow_rated=10.0 / 60000.0, head_rated=30.0)
-    nodes = {"start": Mixer("Dead suction"), "pump": pump}
+    nodes = {"start": make_junction("Dead suction", 0, 1), "pump": pump}
     edges = [{"id": "e_suction", "source": "start", "target": "pump", "pipe": Pipe("suction", 1, ID)},
              {"id": "e_discharge", "source": "pump", "target": "mix", "target_port": "inlet-1", "pipe": Pipe("discharge", 1, ID)}]
     _header_and_consumer(nodes, edges)
@@ -332,11 +331,11 @@ def test_section_behind_a_check_valve_with_orifice_takes_the_header_pressure(met
 
 
 def test_dead_tee_branch_reads_the_static_pressure_of_the_flowing_run():
-    # A gauge on a dead branch of a tee reads the run's static pressure, not the total: the dead splitter port,
+    # A gauge on a dead branch of a tee reads the run's static pressure, not the total: the dead junction port,
     # its pipe (both ends) and the node behind it drop by the velocity head, while the total stays reported
     NetworkSolver.clear_warm_start_cache()
-    nodes = {"src": PressureSource("Source", source_pressure=6e5), "tee": Splitter("Tee"),
-             "sink": Tank("Sink", fluid_level=0.0), "end": Splitter("Dead end")}
+    nodes = {"src": PressureSource("Source", source_pressure=6e5), "tee": make_junction("Tee", 1, 2),
+             "sink": Tank("Sink", fluid_level=0.0), "end": make_junction("Dead end", 1, 0)}
     edges = [{"id": "e_in", "source": "src", "target": "tee", "pipe": Pipe("feed", 1, ID)},
              {"id": "e_run", "source": "tee", "target": "sink", "source_port": "outlet-0", "pipe": Pipe("run", 1, ID)},
              {"id": "e_dead", "source": "tee", "target": "end", "source_port": "outlet-1", "pipe": Pipe("dead leg", 1, ID)}]
@@ -347,7 +346,8 @@ def test_dead_tee_branch_reads_the_static_pressure_of_the_flowing_run():
     velocity = feed.flow_rate / (3.141592653589793 * ID**2 / 4)
     head = feed.density * velocity**2 / 2
     assert velocity > 3.0
-    run_static = nodes["tee"].outlets[0].pressure
+    # All junction ports are one side: the dead port reads the lowest static pressure of the flowing ports
+    run_static = min(nodes["tee"].inlets[0].pressure, nodes["tee"].outlets[0].pressure)
     dead = nodes["tee"].outlets[1]
     assert dead.flow_rate == pytest.approx(0.0, abs=1e-9)
     for port in (dead, *pipes["e_dead"].inlets, *pipes["e_dead"].outlets, *nodes["end"].inlets):
@@ -359,22 +359,22 @@ def test_dead_tee_branch_reads_the_static_pressure_of_the_flowing_run():
 
 def test_dead_leg_behind_a_check_valve_takes_the_temperature_of_its_nearest_live_side():
     # A stagnant port has no flow to carry a temperature. Each side of the closed valve takes the temperature of the live end it hangs on: source side from the
-    # source, mixer side from the mixer's leaving stream; density and viscosity follow
+    # source, junction side from the junction's leaving stream; density and viscosity follow
     K = 273.15
     nodes = {"hot": PressureSource("Hot", 15e5, 60 + K), "cold": PressureSource("Cold", 9e5, 10 + K),
-             "nrv": CheckValve("NRV", 1.0), "mix": Mixer("Mixer", 2), "sink": Tank("Sink", fluid_level=1.0, temperature=10 + K)}
+             "nrv": CheckValve("NRV", 1.0), "mix": make_junction("Junction", 2, 1), "sink": Tank("Sink", fluid_level=1.0, temperature=10 + K)}
     edges = [{"id": "e1", "source": "hot", "target": "mix", "target_port": "inlet-0", "pipe": Pipe("hot", 1, ID)},
              {"id": "e2", "source": "cold", "target": "nrv", "pipe": Pipe("cold side", 1, ID)},
-             {"id": "e3", "source": "nrv", "target": "mix", "target_port": "inlet-1", "pipe": Pipe("mixer side", 1, ID)},
+             {"id": "e3", "source": "nrv", "target": "mix", "target_port": "inlet-1", "pipe": Pipe("junction side", 1, ID)},
              {"id": "e4", "source": "mix", "target": "sink", "pipe": Pipe("out", 50, 0.01)}]
     stats = solve(nodes, edges, fluid="crude_heavy")
     assert stats["success"], stats.get("error")
     pipes = {e["id"]: e["pipe"] for e in edges}
-    mixer_side = nodes["mix"].outlets[0].temperature
-    assert mixer_side > 50 + K
+    junction_side = nodes["mix"].outlets[0].temperature
+    assert junction_side > 50 + K
     source_side = [nodes["nrv"].inlets[0], *pipes["e2"].inlets, *pipes["e2"].outlets]
     live_side = [nodes["nrv"].outlets[0], nodes["mix"].inlets[1], *pipes["e3"].inlets, *pipes["e3"].outlets]
-    for ports, expected in ((source_side, 10 + K), (live_side, mixer_side)):
+    for ports, expected in ((source_side, 10 + K), (live_side, junction_side)):
         for port in ports:
             assert abs(port.flow_rate) <= 1e-7
             assert port.temperature == pytest.approx(expected, abs=0.1)

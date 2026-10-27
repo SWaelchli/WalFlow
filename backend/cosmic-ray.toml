@@ -14,8 +14,7 @@ module-path = [
     "simulation/equipment/pressure_source.py",
     "simulation/equipment/calibrated_restriction.py",
     "simulation/equipment/volumetric_pump.py",
-    "simulation/equipment/splitter.py",
-    "simulation/equipment/mixer.py",
+    "simulation/equipment/junction.py",
     "simulation/equipment/base_node.py",
     "simulation/fluid_utils.py",
 ]

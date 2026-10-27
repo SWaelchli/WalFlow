@@ -52,14 +52,15 @@
       }
     },
     {
-      "id": "header-splitter",
-      "type": "splitter",
+      "id": "header-junction",
+      "type": "junction",
       "position": {
         "x": 420,
         "y": 250
       },
       "data": {
-        "label": "Header Manifold Splitter"
+        "label": "Header Manifold Junction",
+        "num_ports": 3
       }
     },
     {
@@ -155,8 +156,8 @@
       "id": "p2",
       "source": "main-pump",
       "sourceHandle": "outlet-0",
-      "target": "header-splitter",
-      "targetHandle": "inlet-0",
+      "target": "header-junction",
+      "targetHandle": "port-0",
       "data": {
         "label": "Discharge",
         "length_m": 2,
@@ -172,8 +173,8 @@
     },
     {
       "id": "p3",
-      "source": "header-splitter",
-      "sourceHandle": "outlet-0",
+      "source": "header-junction",
+      "sourceHandle": "port-1",
       "target": "bpr-valve",
       "targetHandle": "inlet-0",
       "data": {
@@ -210,8 +211,8 @@
     },
     {
       "id": "p5",
-      "source": "header-splitter",
-      "sourceHandle": "outlet-1",
+      "source": "header-junction",
+      "sourceHandle": "port-2",
       "target": "prv-valve",
       "targetHandle": "inlet-0",
       "data": {

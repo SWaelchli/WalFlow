@@ -124,23 +124,24 @@
       }
     },
     {
-      "id": "suction-splitter",
-      "type": "splitter",
+      "id": "suction-junction",
+      "type": "junction",
       "position": {
         "x": 120,
         "y": 250
       },
       "data": {
-        "label": "Common Suction Splitter",
-        "rotation": 0
+        "label": "Common Suction Junction",
+        "rotation": 0,
+        "num_ports": 3
       }
     }
   ],
   "edges": [
     {
       "id": "b1",
-      "source": "suction-splitter",
-      "sourceHandle": "outlet-0",
+      "source": "suction-junction",
+      "sourceHandle": "port-1",
       "target": "centrifugal-pump",
       "targetHandle": "inlet-0",
       "data": {
@@ -196,8 +197,8 @@
     },
     {
       "id": "b4",
-      "source": "suction-splitter",
-      "sourceHandle": "outlet-1",
+      "source": "suction-junction",
+      "sourceHandle": "port-2",
       "target": "volumetric-pump",
       "targetHandle": "inlet-0",
       "data": {
@@ -255,8 +256,8 @@
       "id": "b0",
       "source": "source-reservoir",
       "sourceHandle": "outlet-0",
-      "target": "suction-splitter",
-      "targetHandle": "inlet-0",
+      "target": "suction-junction",
+      "targetHandle": "port-0",
       "data": {
         "label": "Common Suction",
         "length_m": 1,

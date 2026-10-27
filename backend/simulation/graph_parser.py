@@ -7,8 +7,7 @@ from simulation.equipment.linear_control_valve import LinearControlValve
 from simulation.equipment.linear_regulator import LinearRegulator
 from simulation.equipment.pipe import Pipe
 from simulation.equipment.orifice import Orifice
-from simulation.equipment.splitter import Splitter
-from simulation.equipment.mixer import Mixer
+from simulation.equipment.junction import Junction
 from simulation.equipment.measure_point import MeasurePoint
 from simulation.equipment.heat_exchanger import HeatExchanger
 from simulation.equipment.filter import Filter
@@ -153,7 +152,8 @@ class GraphParser:
 
         # 2. Map Connections (Edges)
         parsed_edges = []
-        
+        signal_edges = []
+
         for edge in resolved_graph.edges:
 
             edge_data = edge.data or {}
@@ -161,24 +161,8 @@ class GraphParser:
             # Identify Signal Edges (Yellow Links)
             edge_type = str(edge_data.get('type', '')).upper()
             if edge_type == 'SIGNAL':
-                source_node = nodes_dict.get(edge.source)
-                target_node = nodes_dict.get(edge.target)
-                if isinstance(target_node, PressureSafetyValve):
-                    # Pilot sensing line
-                    # (only a pilot-operated valve reads it; the first line wins, as the setup panel shows it)
-                    if target_node.valve_type == 'pilot' and source_node is not None and target_node.pilot_source is None:
-                        port_type, port_idx = _parse_signal_handle(edge.sourceHandle)
-                        ports = source_node.inlets if port_type == "inlet" else source_node.outlets
-                        if port_idx < len(ports) and source_node is not target_node:
-                            target_node.remote_sensing_config = {"node_id": edge.source, "port_type": port_type, "port_idx": port_idx}
-                            target_node.pilot_source = (source_node, port_type, port_idx)
-                elif isinstance(target_node, RemoteControlValve):
-                    port_type, port_idx = _parse_signal_handle(edge.sourceHandle)
-                    target_node.remote_sensing_config = {
-                        "node_id": edge.source,
-                        "port_type": port_type,
-                        "port_idx": port_idx
-                    }
+                # Attached in edge order once the junction port slots exist
+                signal_edges.append(edge)
                 continue # Do not create a Pipe for signal edges
 
             # Create a Pipe node for this hydraulic edge
@@ -221,6 +205,17 @@ class GraphParser:
                     "pipe": pipe
                 })
 
+        GraphParser._assign_junction_ports(nodes_dict, parsed_edges)
+        for edge in signal_edges:
+            source_node, handle = nodes_dict.get(edge.source), edge.sourceHandle
+            if isinstance(source_node, Junction):
+                parts = str(handle or "").split('-')
+                slot = source_node.port_slots.get(int(parts[-1])) if parts[-1].isascii() and parts[-1].isdigit() and parts[-2:-1] == ['port'] else None
+                if slot is None:   # a port without a pipe has nothing to sense
+                    continue
+                handle = f"{slot[0]}-{slot[1]}"
+            GraphParser._attach_signal(edge.source, source_node, nodes_dict.get(edge.target), handle)
+
         # Auto-detect connected pipe diameter for Orifice, CheckValveOrifice, and RuptureDisc nodes
         for node_id, node in nodes_dict.items():
             if (hasattr(node, 'orifice_diameter') or node.node_type == 'calibrated_restriction'
@@ -249,6 +244,47 @@ class GraphParser:
         network.active_case_id = resolved_graph.active_case_id
         return network
 
+
+    @staticmethod
+    def _attach_signal(source_id: str, source_node, target_node, handle) -> None:
+        """Sensing line from a port of source_node to a pilot relief valve or a remote control valve."""
+        if isinstance(target_node, PressureSafetyValve):
+            # Pilot sensing line
+            # (only a pilot-operated valve reads it; the first line wins, as the setup panel shows it)
+            if target_node.valve_type == 'pilot' and source_node is not None and target_node.pilot_source is None:
+                port_type, port_idx = _parse_signal_handle(handle)
+                ports = source_node.inlets if port_type == "inlet" else source_node.outlets
+                if port_idx < len(ports) and source_node is not target_node:
+                    target_node.remote_sensing_config = {"node_id": source_id, "port_type": port_type, "port_idx": port_idx}
+                    target_node.pilot_source = (source_node, port_type, port_idx)
+        elif isinstance(target_node, RemoteControlValve):
+            port_type, port_idx = _parse_signal_handle(handle)
+            target_node.remote_sensing_config = {
+                "node_id": source_id,
+                "port_type": port_type,
+                "port_idx": port_idx
+            }
+
+    @staticmethod
+    def _assign_junction_ports(nodes_dict: Dict[str, HydraulicNode], parsed_edges: list) -> None:
+        """Gives every pipe end on a junction port (port-k) an inlet slot when the pipe is drawn into the junction
+        and an outlet slot when drawn out of it, and rewrites the edge's port to that slot for the solver."""
+        for edge_info in parsed_edges:
+            for end, as_inlet in (("source", False), ("target", True)):
+                node = nodes_dict[edge_info[end]]
+                if not isinstance(node, Junction):
+                    continue
+                handle = str(edge_info[f"{end}_port"] or "")
+                parts = handle.split('-')
+                if len(parts) != 2 or parts[0] != 'port' or not (parts[1].isascii() and parts[1].isdigit()):
+                    raise ModelInputError(f"Pipe '{edge_info['label']}': junction '{node.name}' has no port \"{handle}\".")
+                if int(parts[1]) >= node.num_ports:   # ports are numbered from 1 on the canvas
+                    raise ModelInputError(f"Pipe '{edge_info['label']}': junction '{node.name}' has no Port "
+                                          f"{int(parts[1]) + 1} (it has {node.num_ports} ports).")
+                try:
+                    edge_info[f"{end}_port"] = node.assign_port(int(parts[1]), as_inlet)
+                except ValueError as e:
+                    raise ModelInputError(f"Junction '{node.name}': {e}.") from e
 
     @staticmethod
     def create_node(node_data: ReactFlowNode, global_settings: Any = None) -> HydraulicNode:
@@ -443,12 +479,18 @@ class GraphParser:
                 clogging_pct=float(d.get('clogging_pct', 0.0)),
                 ref_viscosity_mpas=(float(d['ref_viscosity_mpas']) if d.get('ref_viscosity_mpas') not in (None, '') else None)
             )
-        elif t == 'splitter':
-            # 1 inlet, 2 outlets
-            node = Splitter(name=name, num_outlets=2)
-        elif t == 'mixer':
-            # 2 inlets, 1 outlet
-            node = Mixer(name=name, num_inlets=2)
+        elif t == 'junction':
+            # Neutral ports port-0 .. port-(N-1); inlet / outlet slots are assigned from the pipes (_assign_junction_ports)
+            # A whole number 3 to 8 (4.0 and "4" pass, 4.6 / null / "" do not), the rule of networkValidation.js
+            num_ports = d.get('num_ports', Junction.MIN_PORTS)
+            try:
+                whole = float(num_ports) == int(float(num_ports))
+            except (TypeError, ValueError, OverflowError):
+                whole = False
+            num_ports = int(float(num_ports)) if whole else None
+            if num_ports is None or not Junction.MIN_PORTS <= num_ports <= Junction.MAX_PORTS:
+                raise ModelInputError(f"'{name}': number of ports must be a whole number {Junction.MIN_PORTS} to {Junction.MAX_PORTS}.")
+            node = Junction(name=name, num_ports=num_ports)
         elif t == 'measure_point':
             # In-line tap: zero pressure drop, sensed through its pin (signal-inlet-0)
             node = MeasurePoint(name=name)

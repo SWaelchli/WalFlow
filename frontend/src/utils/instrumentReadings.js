@@ -35,10 +35,12 @@ export const retagForVariable = (label, oldVariable, newVariable, existingLabels
 const isSignalEdge = (e) => String(e?.data?.type ?? '').toUpperCase() === 'SIGNAL'
   || String(e?.sourceHandle ?? '').startsWith('signal-');
 
-/** "signal-inlet-0" -> { side: 'inlets', idx: 0, handle: 'inlet-0' } */
+/** "signal-inlet-0" -> { side: 'inlets', idx: 0, handle: 'inlet-0' }; a junction pin "signal-port-2" -> side 'ports' */
 const parsePin = (sourceHandle) => {
-  const m = /^signal-(inlet|outlet)-(\d+)$/.exec(String(sourceHandle ?? ''));
-  return m ? { side: `${m[1]}s`, idx: Number(m[2]), handle: `${m[1]}-${m[2]}` } : null;
+  const m = /^signal-(inlet|outlet|port)-(\d+)$/.exec(String(sourceHandle ?? ''));
+  if (!m) return null;
+  const side = m[1] === 'port' ? 'ports' : `${m[1]}s`;
+  return { side, idx: Number(m[2]), handle: `${m[1]}-${m[2]}` };
 };
 
 /** Where an instrument input is wired: { nodeId, side, idx, handle } or null. */
@@ -53,7 +55,10 @@ export const describeInstrumentInput = (input, nodes) => {
   if (!input) return null;
   const host = nodes.find((n) => n.id === input.nodeId);
   const name = host?.data?.label || input.nodeId;
-  return host?.type === 'measure_point' ? name : `${name} · ${input.handle.replace('-', ' ')}`;
+  if (host?.type === 'measure_point') return name;
+  // A junction port is shown 1-based ("Port 3" for port-2), like the rest of the UI
+  const port = input.side === 'ports' ? `Port ${input.idx + 1}` : input.handle.replace('-', ' ');
+  return `${name} · ${port}`;
 };
 
 const finite = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
@@ -61,9 +66,10 @@ const finite = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 // Inside diameter (m) of the pipe on a port; for a tap that is the inlet-side pipe, since its pin senses inlet-0
 const pipeDiameterAt = (input, edges) => {
   const isInlet = input.side === 'inlets';
-  const pipe = edges.find((e) => !isSignalEdge(e) && (isInlet
-    ? e.target === input.nodeId && e.targetHandle === input.handle
-    : e.source === input.nodeId && e.sourceHandle === input.handle));
+  const isPort = input.side === 'ports'; // a junction port can be either end of its pipe
+  const pipe = edges.find((e) => !isSignalEdge(e) && (
+    (isPort || isInlet) && e.target === input.nodeId && e.targetHandle === input.handle
+    || (isPort || !isInlet) && e.source === input.nodeId && e.sourceHandle === input.handle));
   const d = Number(pipe?.data?.diameter_m);
   return d > 0 ? d : null;
 };

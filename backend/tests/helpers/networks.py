@@ -2,13 +2,23 @@
 import pytest
 
 from simulation.equipment.linear_control_valve import LinearControlValve
-from simulation.equipment.mixer import Mixer
+from simulation.equipment.junction import Junction
 from simulation.equipment.pipe import Pipe
 from simulation.equipment.pressure_source import PressureSource
 from simulation.equipment.remote_control_valve import RemoteControlValve
-from simulation.equipment.splitter import Splitter
 from simulation.equipment.tank import Tank
 from simulation.schemas import HydraulicNetwork
+
+
+def make_junction(name, n_inlets=2, n_outlets=1):
+    """A Junction holding n_inlets pipes drawn into it (slots inlet-0..) and n_outlets drawn out of it (outlet-0..),
+    the layout the parser builds for the same drawing. Ports are numbered inlets first."""
+    junction = Junction(name, num_ports=n_inlets + n_outlets)
+    for k in range(n_inlets):
+        junction.assign_port(k, as_inlet=True)
+    for k in range(n_outlets):
+        junction.assign_port(n_inlets + k, as_inlet=False)
+    return junction
 
 
 def create_simple_network(pump_node, valve_opening=100.0):
@@ -37,7 +47,7 @@ def create_simple_network(pump_node, valve_opening=100.0):
 def generate_stress_network(size=10):
     """
     Generates a synthetic network with 'size' parallel loops.
-    Each loop has: Splitter -> 2 Pipes -> Mixer.
+    Each loop has: Junction -> 2 Pipes -> Junction.
     """
     nodes = [
         {"id": "t_start", "type": "tank", "data": {"label": "Source", "level_m": 10.0}, "position": {"x":0,"y":0}},
@@ -52,20 +62,21 @@ def generate_stress_network(size=10):
         s_id = f"s_{i}"
         m_id = f"m_{i}"
         
-        nodes.append({"id": s_id, "type": "splitter", "data": {"label": f"S{i}"}, "position": {"x": 200 + i*200, "y": 0}})
-        nodes.append({"id": m_id, "type": "mixer", "data": {"label": f"M{i}"}, "position": {"x": 300 + i*200, "y": 0}})
+        nodes.append({"id": s_id, "type": "junction", "data": {"label": f"S{i}"}, "position": {"x": 200 + i*200, "y": 0}})
+        nodes.append({"id": m_id, "type": "junction", "data": {"label": f"M{i}"}, "position": {"x": 300 + i*200, "y": 0}})
         
-        # Connect previous to splitter
-        edges.append({"id": f"e_pre_{i}", "source": prev_node, "target": s_id, "data": {"length_m": 1, "diameter_m": 0.1}})
+        out_handle = {"sourceHandle": "port-2"} if i else {}   # the previous joining junction's outlet side
+        # Connect previous to the splitting junction (port-0 in, port-1 and port-2 out)
+        edges.append({"id": f"e_pre_{i}", "source": prev_node, "target": s_id, "targetHandle": "port-0", **out_handle, "data": {"length_m": 1, "diameter_m": 0.1}})
         
         # Parallel paths
-        edges.append({"id": f"e_p1_{i}", "source": s_id, "target": m_id, "data": {"length_m": 10, "diameter_m": 0.05}})
-        edges.append({"id": f"e_p2_{i}", "source": s_id, "target": m_id, "data": {"length_m": 10, "diameter_m": 0.08}})
+        edges.append({"id": f"e_p1_{i}", "source": s_id, "target": m_id, "sourceHandle": "port-1", "targetHandle": "port-0", "data": {"length_m": 10, "diameter_m": 0.05}})
+        edges.append({"id": f"e_p2_{i}", "source": s_id, "target": m_id, "sourceHandle": "port-2", "targetHandle": "port-1", "data": {"length_m": 10, "diameter_m": 0.08}})
         
         prev_node = m_id
 
     nodes.append({"id": "t_end", "type": "tank", "data": {"label": "Sink", "level_m": 1.0}, "position": {"x": 200 + size*200, "y": 0}})
-    edges.append({"id": "e_end", "source": prev_node, "target": "t_end", "data": {"length_m": 1, "diameter_m": 0.1}})
+    edges.append({"id": "e_end", "source": prev_node, "target": "t_end", **({"sourceHandle": "port-2"} if size else {}), "data": {"length_m": 1, "diameter_m": 0.1}})
 
     return {"nodes": nodes, "edges": edges}
 
@@ -77,14 +88,14 @@ ID_1IN = 0.0266
 def parallel_remote_valves(set_a_bar, set_b_bar, cv_a=5.0, cv_b=5.0, len_a=1.0, len_b=1.0, consumer=30.0,
                            backpressure=False):
     """10 bar supply -> two remote valves "a"/"b" in parallel -> consumer valve -> tank; both sense one header.
-    PRV: the header is the mixer outlet after the valves. BPR: the header is the splitter inlet before them.
+    PRV: the header is the joining junction after the valves. BPR: the header is the splitting junction before them.
     Returns (nodes, edges)."""
     nodes = {
         "src": PressureSource("Supply", source_pressure=10.0e5),
-        "sp": Splitter("Split"),
+        "sp": make_junction("Split", 1, 2),
         "a": RemoteControlValve("A", max_cv=cv_a, set_pressure=set_a_bar * 1e5, backpressure=backpressure),
         "b": RemoteControlValve("B", max_cv=cv_b, set_pressure=set_b_bar * 1e5, backpressure=backpressure),
-        "mx": Mixer("Join"),
+        "mx": make_junction("Join", 2, 1),
         "cv": LinearControlValve("Consumer", max_cv=2.0, opening_pct=consumer),
         "t": Tank("Sink", fluid_level=0.0),
     }

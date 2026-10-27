@@ -1,6 +1,10 @@
 """Whole networks against published solutions."""
+import json
+import os
+
 import pytest
 from physics_refs import G, pipe_end_total, solve_example
+from walflow_paths import EXAMPLES_DIR
 
 CFS = 0.028316846592     # m³/s per ft³/s
 FT = 0.3048
@@ -48,8 +52,9 @@ def test_jeppson_flows_and_friction_losses(solved):
         q = pipe.inlets[0].flow_rate
         assert q * FLIP.get(pid, 1.0) / CFS == pytest.approx(q_ref, abs=0.01), pid
         # friction only: Jeppson's loss excludes the reservoir entrance term WalFlow adds on a tank outlet
-        loss = pipe._friction_dp(q, pipe.inlets[0].density, pipe.inlets[0].viscosity)
-        assert abs(loss) / (pipe.inlets[0].density * G) / FT == pytest.approx(abs(loss_ref), abs=0.15), pid
+        rho, mu = pipe.upstream_port().fluid()
+        loss = pipe._friction_dp(q, rho, mu)
+        assert abs(loss) / (rho * G) / FT == pytest.approx(abs(loss_ref), abs=0.15), pid
 
 
 def test_jeppson_problem_2_junction_heads_and_pressures():
@@ -95,5 +100,26 @@ def test_jeppson_48_pipe_network_flows_and_friction_losses():
         q = pipe.inlets[0].flow_rate
         assert (q < 0) == (pid in AGAINST_PUBLISHED_DIRECTION), pid
         assert abs(q) / CFS == pytest.approx(q_ref, abs=0.03), pid
-        loss = pipe._friction_dp(q, pipe.inlets[0].density, pipe.inlets[0].viscosity)
-        assert abs(loss) / (pipe.inlets[0].density * G) / FT == pytest.approx(hf_ref, rel=0.01, abs=0.05), pid
+        rho, mu = pipe.upstream_port().fluid()
+        loss = pipe._friction_dp(q, rho, mu)
+        assert abs(loss) / (rho * G) / FT == pytest.approx(hf_ref, rel=0.01, abs=0.05), pid
+
+
+def test_jeppson_48_pipe_network_draws_each_literature_junction_as_one_node():
+    """A four-pipe junction of the figure is one four-port junction node, not a chain of tees joined by short pipes."""
+    with open(os.path.join(EXAMPLES_DIR, "Example_Jeppson_48Pipe_Network.wlf"), encoding="utf-8") as f:
+        data = json.load(f)
+    junctions = {n["id"]: n["data"]["num_ports"] for n in data["nodes"] if n["type"] == "junction"}
+    assert not [n for n in data["nodes"] if n["type"] in ("mixer", "splitter")]
+    # no pipe only there to join two tees: nothing 0.01 m long runs between two junctions
+    assert not [e["id"] for e in data["edges"]
+                if e["source"] in junctions and e["target"] in junctions and e["data"]["length_m"] <= 0.01]
+    assert not [e["id"] for e in data["edges"] if "tee" in e["data"].get("label", "").lower()]
+    degree = {j: 0 for j in junctions}
+    for e in data["edges"]:
+        for end in (e["source"], e["target"]):
+            if end in degree:
+                degree[end] += 1
+    four_pipe = [j for j, d in degree.items() if d == 4]
+    assert four_pipe, "the figure has junctions with four pipes"
+    assert all(junctions[j] == 4 for j in four_pipe)

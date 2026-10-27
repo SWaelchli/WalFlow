@@ -214,34 +214,26 @@ class BoundaryTank(HydraulicNode):
 ---
 
 ## Archetype 5: Multi-port Flow Junction
-*Examples:* Splitter (1 inlet, 2 outlets), Mixer (2 inlets, 1 outlet), 3-Way TCV.
+*Examples:* Junction (3 to 8 neutral ports), 3-Way TCV.
+
+The reference implementation is `backend/simulation/equipment/junction.py`: no `calculate_delta_p` (one total pressure at all ports), the default direction-aware `calculate_temperature`, and `calculate()` only copies the pressure and calls `update_outward_properties()`. Neutral ports are mapped to inlet / outlet slots by the parser from the drawn pipe direction (`GraphParser._assign_junction_ports`); a node whose ports all share one total pressure sets `single_side = True` for the static pressure report.
 
 ```python
 from simulation.equipment.base_node import HydraulicNode
-from simulation.fluid_utils import FluidProperties
 
-class FlowSplitter(HydraulicNode):
-    """
-    1-inlet, N-outlet flow splitter.
-    Assumes zero pressure drop between connected manifold ports.
-    """
-    def __init__(self, name: str, num_outlets: int = 2):
-        super().__init__(name, node_type="splitter")
-        self.add_inlet()
-        for _ in range(num_outlets):
-            self.add_outlet()
+class Junction(HydraulicNode):
+    single_side = True
 
-    def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
-        return 0.0
+    def __init__(self, name: str, num_ports: int = 3):
+        super().__init__(name, node_type="junction")
+        self.num_ports = num_ports
+        self.port_slots = {}   # filled by the parser: port index -> ("inlet" | "outlet", slot index)
 
     def calculate(self):
-        inlet = self.inlets[0]
-        for out in self.outlets:
-            out.pressure = inlet.pressure
-            out.density = inlet.density
-            out.viscosity = inlet.viscosity
-            out.temperature = inlet.temperature
-        self.calculate_temperature()
+        ports = self.inlets + self.outlets
+        for port in ports[1:]:
+            port.pressure = ports[0].pressure
+        self.update_outward_properties()
         return 0.0
 ```
 

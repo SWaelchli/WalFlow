@@ -31,7 +31,7 @@
         "y": 250
       },
       "data": {
-        "label": "Warm Oil Reservoir (55\u00b0C)",
+        "label": "Warm Oil Reservoir (55°C)",
         "level_m": 2.0,
         "elevation_m": 0.0,
         "temperature_k": 328.15
@@ -55,14 +55,16 @@
       }
     },
     {
-      "id": "cooler-splitter",
-      "type": "splitter",
+      "id": "cooler-junction",
+      "type": "junction",
       "position": {
         "x": 420,
         "y": 250
       },
       "data": {
-        "label": "Cooling Splitter"
+        "rotation": 180,
+        "label": "Cooling Junction",
+        "num_ports": 3
       }
     },
     {
@@ -92,7 +94,7 @@
         "y": 250
       },
       "data": {
-        "label": "3-Way TCV (Target: 45\u00b0C)",
+        "label": "3-Way TCV (Target: 45°C)",
         "max_cv": 25.0,
         "set_temperature_c": 45.0,
         "hot_port_idx": 1,
@@ -231,8 +233,8 @@
       "id": "t2",
       "source": "oil-pump",
       "sourceHandle": "outlet-0",
-      "target": "cooler-splitter",
-      "targetHandle": "inlet-0",
+      "target": "cooler-junction",
+      "targetHandle": "port-1",
       "data": {
         "label": "Discharge",
         "length_m": 2,
@@ -248,8 +250,8 @@
     },
     {
       "id": "t3",
-      "source": "cooler-splitter",
-      "sourceHandle": "outlet-0",
+      "source": "cooler-junction",
+      "sourceHandle": "port-2",
       "target": "oil-cooler",
       "targetHandle": "inlet-0",
       "data": {
@@ -267,8 +269,8 @@
     },
     {
       "id": "t4",
-      "source": "cooler-splitter",
-      "sourceHandle": "outlet-1",
+      "source": "cooler-junction",
+      "sourceHandle": "port-0",
       "target": "tcv-3way",
       "targetHandle": "inlet-1",
       "data": {
@@ -441,7 +443,7 @@
     },
     {
       "id": "case_hot_oil",
-      "name": "Hot oil (70 \u00b0C)",
+      "name": "Hot oil (70 °C)",
       "is_base": false,
       "overrides": {
         "nodes": {
@@ -454,7 +456,7 @@
     },
     {
       "id": "case_cold_start",
-      "name": "Cold start (15 \u00b0C)",
+      "name": "Cold start (15 °C)",
       "is_base": false,
       "overrides": {
         "nodes": {

@@ -33,6 +33,6 @@ describe('defaultNodeData', () => {
   });
 
   it('only sets fields the backend reads (Data Fields tables in backend/simulation/equipment/*.md)', () => {
-    expect(defaultNodeData('splitter', ctx)).toEqual({ label: 'X', rotation: 0, onRotate: ctx.onRotate, onChange: undefined });
+    expect(defaultNodeData('junction', ctx)).toEqual({ label: 'X', rotation: 0, onRotate: ctx.onRotate, onChange: undefined, num_ports: 3 });
   });
 });

@@ -56,7 +56,7 @@ Every document uses exactly these headings, in this order. Subsections (`### 3.1
 
 ### Sections that do not apply
 
-Keep the heading and write one line saying why, e.g. `Not applicable — the splitter has no pressure loss; its ports share one pressure.` Never drop a heading.
+Keep the heading and write one line saying why, e.g. `Not applicable — the junction has no pressure loss; its ports share one pressure.` Never drop a heading.
 
 ### Shared models
 

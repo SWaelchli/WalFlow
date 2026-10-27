@@ -26,8 +26,8 @@
       "id": "res-100",
       "type": "tank",
       "position": {
-        "x": 0,
-        "y": 300
+        "x": 630,
+        "y": 120
       },
       "data": {
         "label": "Reservoir 100 ft",
@@ -40,8 +40,8 @@
       "id": "res-105",
       "type": "tank",
       "position": {
-        "x": 900,
-        "y": 300
+        "x": 1360,
+        "y": 450
       },
       "data": {
         "label": "Reservoir 105 ft",
@@ -54,8 +54,8 @@
       "id": "res-95",
       "type": "tank",
       "position": {
-        "x": 0,
-        "y": 610
+        "x": 70,
+        "y": 640
       },
       "data": {
         "label": "Pump Sump 95 ft",
@@ -68,8 +68,8 @@
       "id": "demand-2",
       "type": "flow_source",
       "position": {
-        "x": 600,
-        "y": 60
+        "x": 1365,
+        "y": 165
       },
       "data": {
         "label": "Demand 2.0 cfs",
@@ -80,66 +80,75 @@
     },
     {
       "id": "junction-1",
-      "type": "mixer",
+      "type": "junction",
       "position": {
-        "x": 200,
-        "y": 300
+        "x": 830,
+        "y": 180
       },
       "data": {
-        "label": "Junction 1"
+        "rotation": 0,
+        "label": "Junction 1",
+        "num_ports": 3
       }
     },
     {
       "id": "junction-2",
-      "type": "splitter",
+      "type": "junction",
       "position": {
-        "x": 450,
-        "y": 80
+        "x": 1180,
+        "y": 180
       },
       "data": {
         "label": "Junction 2",
-        "rotation": 180
+        "rotation": 0,
+        "num_ports": 3
       }
     },
     {
       "id": "junction-3",
-      "type": "mixer",
+      "type": "junction",
       "position": {
-        "x": 700,
-        "y": 300
+        "x": 1180,
+        "y": 480
       },
       "data": {
-        "label": "Junction 3"
+        "rotation": 180,
+        "label": "Junction 3",
+        "num_ports": 3
       }
     },
     {
       "id": "junction-4",
-      "type": "mixer",
+      "type": "junction",
       "position": {
-        "x": 560,
-        "y": 440
+        "x": 830,
+        "y": 480
       },
       "data": {
-        "label": "Junction 4"
+        "rotation": 270,
+        "label": "Junction 4",
+        "num_ports": 3
       }
     },
     {
       "id": "sump-header",
-      "type": "splitter",
+      "type": "junction",
       "position": {
-        "x": 120,
-        "y": 640
+        "x": 250,
+        "y": 700
       },
       "data": {
-        "label": "Sump Header"
+        "rotation": 0,
+        "label": "Sump Header",
+        "num_ports": 3
       }
     },
     {
       "id": "pump-valve",
       "type": "linear_control_valve",
       "position": {
-        "x": 220,
-        "y": 570
+        "x": 390,
+        "y": 685
       },
       "data": {
         "label": "Pump Isolation",
@@ -151,8 +160,8 @@
       "id": "pump",
       "type": "centrifugal_pump",
       "position": {
-        "x": 340,
-        "y": 561
+        "x": 560,
+        "y": 685
       },
       "data": {
         "label": "Pump",
@@ -166,8 +175,8 @@
       "id": "bypass-valve",
       "type": "linear_control_valve",
       "position": {
-        "x": 280,
-        "y": 700
+        "x": 390,
+        "y": 885
       },
       "data": {
         "label": "Pump Bypass",
@@ -177,13 +186,15 @@
     },
     {
       "id": "discharge-header",
-      "type": "mixer",
+      "type": "junction",
       "position": {
-        "x": 460,
-        "y": 640
+        "x": 730,
+        "y": 680
       },
       "data": {
-        "label": "Discharge Header"
+        "rotation": 0,
+        "label": "Discharge Header",
+        "num_ports": 3
       }
     }
   ],
@@ -193,7 +204,7 @@
       "source": "res-100",
       "sourceHandle": "outlet-0",
       "target": "junction-1",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "data": {
         "label": "P1: 8 in, 1000 ft",
         "length_m": 304.8,
@@ -204,9 +215,9 @@
     {
       "id": "p2",
       "source": "junction-2",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-0",
       "target": "junction-1",
-      "targetHandle": "inlet-1",
+      "targetHandle": "port-1",
       "data": {
         "label": "P2: 6 in, 2000 ft",
         "length_m": 609.6,
@@ -217,9 +228,9 @@
     {
       "id": "p3",
       "source": "junction-2",
-      "sourceHandle": "outlet-1",
+      "sourceHandle": "port-2",
       "target": "junction-3",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-2",
       "data": {
         "label": "P3: 8 in, 2000 ft",
         "length_m": 609.6,
@@ -230,9 +241,9 @@
     {
       "id": "p4",
       "source": "junction-4",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-2",
       "target": "junction-3",
-      "targetHandle": "inlet-1",
+      "targetHandle": "port-1",
       "data": {
         "label": "P4: 8 in, 1000 ft",
         "length_m": 304.8,
@@ -243,7 +254,7 @@
     {
       "id": "p5",
       "source": "junction-3",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-0",
       "target": "res-105",
       "targetHandle": "inlet-0",
       "data": {
@@ -256,9 +267,9 @@
     {
       "id": "p6",
       "source": "junction-1",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-2",
       "target": "junction-4",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-1",
       "data": {
         "label": "P6: 6 in, 1000 ft",
         "length_m": 304.8,
@@ -269,9 +280,9 @@
     {
       "id": "p7",
       "source": "discharge-header",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "junction-4",
-      "targetHandle": "inlet-1",
+      "targetHandle": "port-0",
       "data": {
         "label": "P7: 6 in, 1000 ft",
         "length_m": 304.8,
@@ -284,7 +295,7 @@
       "source": "demand-2",
       "sourceHandle": "outlet-0",
       "target": "junction-2",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-1",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -297,7 +308,7 @@
       "source": "res-95",
       "sourceHandle": "outlet-0",
       "target": "sump-header",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "data": {
         "label": "Sump link",
         "length_m": 0.01,
@@ -308,7 +319,7 @@
     {
       "id": "s2",
       "source": "sump-header",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "pump-valve",
       "targetHandle": "inlet-0",
       "data": {
@@ -336,7 +347,7 @@
       "source": "pump",
       "sourceHandle": "outlet-0",
       "target": "discharge-header",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "data": {
         "label": "Pump discharge",
         "length_m": 0.01,
@@ -347,7 +358,7 @@
     {
       "id": "s5",
       "source": "sump-header",
-      "sourceHandle": "outlet-1",
+      "sourceHandle": "port-2",
       "target": "bypass-valve",
       "targetHandle": "inlet-0",
       "data": {
@@ -362,7 +373,7 @@
       "source": "bypass-valve",
       "sourceHandle": "outlet-0",
       "target": "discharge-header",
-      "targetHandle": "inlet-1",
+      "targetHandle": "port-2",
       "data": {
         "label": "Bypass outlet",
         "length_m": 0.01,

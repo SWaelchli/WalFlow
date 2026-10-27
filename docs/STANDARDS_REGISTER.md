@@ -176,7 +176,7 @@ Doc § is section 2 of the equipment document. "Verified against" names the exac
 | PDP-02 | volumetric_pump | Definitions of displacement, slip and pump efficiency | `HI-3.1-3.5` | ⚪ | | | | |
 | PDP-03 | volumetric_pump | NPSHa compared with NPSHr plus a user margin | `HI-9.6.1` | ⚪ 🚩 | | | | HI 9.6.1 covers rotodynamic pumps; rotary PD pumps use NPIP in HI 3.1-3.5 |
 
-Documents with no source: `base_node`, `flow_source`, `pressure_source`, `measure_point`, `mixer`, `splitter`, `tank` (idealisations; principles `MASS-ENERGY`, `GLOBAL-GRADIENT`).
+Documents with no source: `base_node`, `flow_source`, `pressure_source`, `measure_point`, `junction`, `tank` (idealisations; principles `MASS-ENERGY`, `GLOBAL-GRADIENT`).
 
 ## Part C: Verification log
 

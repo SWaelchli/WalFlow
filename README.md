@@ -11,7 +11,7 @@
 
 * **Interactive Drag-and-Drop Canvas:** Build Process Flow Diagrams effortlessly using a component library built on ReactFlow.
 * **Real-Time Physics Engine:** Fast Python-based steady-state static solver calculating algebraic pressure distributions, flow rates, and fluid temperatures over WebSocket connections.
-* **Hydraulic Component Library:** Tanks, pressure and flow sources (a negative set flow is a demand), centrifugal and volumetric pumps, linear, remote and 3-way temperature control valves, pressure regulators, check valves (also with orifice), orifices and calibrated restrictions, reducers, filters, heat exchangers, safety relief valves and rupture discs, splitter and mixer tees, and measurement points.
+* **Hydraulic Component Library:** Tanks, pressure and flow sources (a negative set flow is a demand), centrifugal and volumetric pumps, linear, remote and 3-way temperature control valves, pressure regulators, check valves (also with orifice), orifices and calibrated restrictions, reducers, filters, heat exchangers, safety relief valves and rupture discs, junctions with 3 to 8 ports (tees, crosses, headers), and measurement points.
 * **Live Telemetry & Component Inspection:** Instant visual readout of pressure drops, flow rates, temperature profiles, and operating curves.
 * **Operating Cases & Relief Analysis:** Run several operating cases of one diagram side by side, and check relief valves and rupture discs in a relief analysis matrix.
 * **Custom Fluids & Solver Control:** Select standard fluids (ISO VG oils, water, etc.) or configure custom fluid properties (density, viscosity) and ambient conditions.
