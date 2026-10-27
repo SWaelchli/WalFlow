@@ -5,6 +5,7 @@ import ValveDetails from './ValveDetails';
 import FilterDetails from './FilterDetails';
 import OrificeDetails from './OrificeDetails';
 import JunctionDetails from './JunctionDetails';
+import JunctionPortsDetails from './JunctionPortsDetails';
 import GenericDetails from './GenericDetails';
 import PressureSafetyValveDetails from './PressureSafetyValveDetails';
 import RuptureDiscDetails from './RuptureDiscDetails';
@@ -43,8 +44,8 @@ export default function ResultsPanel({ selectedNode, selectedEdge, allNodes, all
         return <FilterDetails node={selectedNode} />;
       case 'orifice':
         return <OrificeDetails node={selectedNode} />;
-      case 'splitter':
-      case 'mixer':
+      case 'junction':
+        return <JunctionPortsDetails node={selectedNode} />;
       case 'three_way_tcv':
         return <JunctionDetails 
           node={selectedNode} 

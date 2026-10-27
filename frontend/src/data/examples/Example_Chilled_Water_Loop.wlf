@@ -95,14 +95,15 @@
       }
     },
     {
-      "id": "primary-mixer",
-      "type": "mixer",
+      "id": "primary-junction",
+      "type": "junction",
       "position": {
         "x": 520,
         "y": 250
       },
       "data": {
-        "label": "Pump Discharge Header"
+        "label": "Pump Discharge Header",
+        "num_ports": 3
       }
     },
     {
@@ -126,14 +127,15 @@
       }
     },
     {
-      "id": "supply-splitter",
-      "type": "splitter",
+      "id": "supply-junction",
+      "type": "junction",
       "position": {
         "x": 820,
         "y": 250
       },
       "data": {
-        "label": "Secondary Supply Splitter"
+        "label": "Secondary Supply Junction",
+        "num_ports": 3
       }
     },
     {
@@ -172,14 +174,15 @@
       }
     },
     {
-      "id": "return-mixer",
-      "type": "mixer",
+      "id": "return-junction",
+      "type": "junction",
       "position": {
         "x": 1120,
         "y": 250
       },
       "data": {
-        "label": "Common Return Header"
+        "label": "Common Return Header",
+        "num_ports": 3
       }
     },
     {
@@ -197,15 +200,16 @@
       }
     },
     {
-      "id": "suction-splitter",
-      "type": "splitter",
+      "id": "suction-junction",
+      "type": "junction",
       "position": {
         "x": 120,
         "y": 250
       },
       "data": {
-        "label": "Common Suction Splitter",
-        "rotation": 0
+        "label": "Common Suction Junction",
+        "rotation": 0,
+        "num_ports": 3
       }
     },
     {
@@ -284,8 +288,8 @@
   "edges": [
     {
       "id": "c1",
-      "source": "suction-splitter",
-      "sourceHandle": "outlet-0",
+      "source": "suction-junction",
+      "sourceHandle": "port-1",
       "target": "primary-pump-1",
       "targetHandle": "inlet-0",
       "data": {
@@ -303,8 +307,8 @@
     },
     {
       "id": "c2",
-      "source": "suction-splitter",
-      "sourceHandle": "outlet-1",
+      "source": "suction-junction",
+      "sourceHandle": "port-2",
       "target": "primary-pump-2",
       "targetHandle": "inlet-0",
       "data": {
@@ -362,8 +366,8 @@
       "id": "c5",
       "source": "cv-check-1",
       "sourceHandle": "outlet-0",
-      "target": "primary-mixer",
-      "targetHandle": "inlet-0",
+      "target": "primary-junction",
+      "targetHandle": "port-0",
       "data": {
         "label": "Header A",
         "length_m": 2,
@@ -381,8 +385,8 @@
       "id": "c6",
       "source": "cv-check-2",
       "sourceHandle": "outlet-0",
-      "target": "primary-mixer",
-      "targetHandle": "inlet-1",
+      "target": "primary-junction",
+      "targetHandle": "port-2",
       "data": {
         "label": "Header B",
         "length_m": 2,
@@ -398,8 +402,8 @@
     },
     {
       "id": "c7",
-      "source": "primary-mixer",
-      "sourceHandle": "outlet-0",
+      "source": "primary-junction",
+      "sourceHandle": "port-1",
       "target": "chiller-evaporator",
       "targetHandle": "inlet-0",
       "data": {
@@ -419,8 +423,8 @@
       "id": "c8",
       "source": "chiller-evaporator",
       "sourceHandle": "outlet-0",
-      "target": "supply-splitter",
-      "targetHandle": "inlet-0",
+      "target": "supply-junction",
+      "targetHandle": "port-0",
       "data": {
         "label": "Chilled Supply",
         "length_m": 5,
@@ -436,8 +440,8 @@
     },
     {
       "id": "c9",
-      "source": "supply-splitter",
-      "sourceHandle": "outlet-0",
+      "source": "supply-junction",
+      "sourceHandle": "port-1",
       "target": "process-cooling-coil",
       "targetHandle": "inlet-0",
       "data": {
@@ -455,8 +459,8 @@
     },
     {
       "id": "c10",
-      "source": "supply-splitter",
-      "sourceHandle": "outlet-1",
+      "source": "supply-junction",
+      "sourceHandle": "port-2",
       "target": "secondary-control-valve",
       "targetHandle": "inlet-0",
       "data": {
@@ -476,8 +480,8 @@
       "id": "c11",
       "source": "process-cooling-coil",
       "sourceHandle": "outlet-0",
-      "target": "return-mixer",
-      "targetHandle": "inlet-0",
+      "target": "return-junction",
+      "targetHandle": "port-0",
       "data": {
         "label": "Coil Return",
         "length_m": 4,
@@ -495,8 +499,8 @@
       "id": "c12",
       "source": "secondary-control-valve",
       "sourceHandle": "outlet-0",
-      "target": "return-mixer",
-      "targetHandle": "inlet-1",
+      "target": "return-junction",
+      "targetHandle": "port-2",
       "data": {
         "label": "AHU Return",
         "length_m": 4,
@@ -512,8 +516,8 @@
     },
     {
       "id": "c13",
-      "source": "return-mixer",
-      "sourceHandle": "outlet-0",
+      "source": "return-junction",
+      "sourceHandle": "port-1",
       "target": "return-tank",
       "targetHandle": "inlet-0",
       "data": {
@@ -533,8 +537,8 @@
       "id": "c0",
       "source": "expansion-tank",
       "sourceHandle": "outlet-0",
-      "target": "suction-splitter",
-      "targetHandle": "inlet-0",
+      "target": "suction-junction",
+      "targetHandle": "port-0",
       "data": {
         "label": "Common Suction",
         "length_m": 1,
@@ -693,7 +697,7 @@
     },
     {
       "id": "case_warm_reservoir",
-      "name": "Warm reservoir (12 \u00b0C)",
+      "name": "Warm reservoir (12 °C)",
       "is_base": false,
       "overrides": {
         "nodes": {

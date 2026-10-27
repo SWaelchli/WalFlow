@@ -30,7 +30,7 @@
     },
     {
       "id": "case_92e739e5",
-      "name": "10\u00b0 Start",
+      "name": "10° Start",
       "description": "",
       "is_base": false,
       "overrides": {
@@ -47,7 +47,7 @@
     },
     {
       "id": "case_0781e168",
-      "name": "20\u00b0 Start",
+      "name": "20° Start",
       "description": "",
       "is_base": false,
       "overrides": {
@@ -160,7 +160,7 @@
     },
     {
       "id": "node_31c4a871",
-      "type": "splitter",
+      "type": "junction",
       "position": {
         "x": 50,
         "y": 261
@@ -174,13 +174,14 @@
       },
       "dragging": false,
       "data": {
-        "label": "SPLITTER_804",
-        "rotation": 270
+        "label": "JUNCTION_804",
+        "rotation": 0,
+        "num_ports": 3
       }
     },
     {
       "id": "node_713c04c3",
-      "type": "splitter",
+      "type": "junction",
       "position": {
         "x": 35,
         "y": -40
@@ -194,8 +195,9 @@
       },
       "dragging": false,
       "data": {
-        "label": "SPLITTER_804_copy",
-        "rotation": 270
+        "label": "JUNCTION_804_copy",
+        "rotation": 0,
+        "num_ports": 3
       }
     },
     {
@@ -290,7 +292,7 @@
     },
     {
       "id": "node_6a53fcc0",
-      "type": "splitter",
+      "type": "junction",
       "position": {
         "x": 339,
         "y": -79
@@ -304,13 +306,14 @@
       },
       "dragging": false,
       "data": {
-        "label": "SPLITTER_109",
-        "rotation": 0
+        "label": "JUNCTION_109",
+        "rotation": 90,
+        "num_ports": 3
       }
     },
     {
       "id": "node_192e77a1",
-      "type": "mixer",
+      "type": "junction",
       "position": {
         "x": 376,
         "y": 252
@@ -324,8 +327,9 @@
       },
       "dragging": false,
       "data": {
-        "label": "MIXER_682",
-        "rotation": 90
+        "label": "JUNCTION_682",
+        "rotation": 90,
+        "num_ports": 3
       }
     },
     {
@@ -353,7 +357,7 @@
     },
     {
       "id": "node_d8aa69c8",
-      "type": "splitter",
+      "type": "junction",
       "position": {
         "x": 381,
         "y": -233
@@ -367,8 +371,9 @@
       },
       "dragging": false,
       "data": {
-        "label": "SPLITTER_702",
-        "rotation": 270
+        "label": "JUNCTION_702",
+        "rotation": 270,
+        "num_ports": 3
       }
     },
     {
@@ -474,7 +479,7 @@
     },
     {
       "id": "node_abab9f02",
-      "type": "splitter",
+      "type": "junction",
       "position": {
         "x": 926,
         "y": -532
@@ -488,12 +493,13 @@
       },
       "dragging": false,
       "data": {
-        "label": "SPLITTER_25",
+        "label": "JUNCTION_25",
         "rotation": 0,
         "sensing": {
           "outlet-0": false,
           "inlet-0": false
-        }
+        },
+        "num_ports": 3
       }
     },
     {
@@ -549,7 +555,7 @@
     },
     {
       "id": "node_d7a7dc67",
-      "type": "splitter",
+      "type": "junction",
       "position": {
         "x": 1249,
         "y": -472
@@ -563,8 +569,9 @@
       },
       "dragging": false,
       "data": {
-        "label": "SPLITTER_770",
-        "rotation": 0
+        "label": "JUNCTION_770",
+        "rotation": 0,
+        "num_ports": 3
       }
     },
     {
@@ -617,7 +624,7 @@
     },
     {
       "id": "node_0f156414",
-      "type": "splitter",
+      "type": "junction",
       "position": {
         "x": 1724,
         "y": -627
@@ -631,13 +638,14 @@
       },
       "dragging": false,
       "data": {
-        "label": "SPLITTER_770_copy_copy",
-        "rotation": 0
+        "label": "BRANCH_770_copy_copy",
+        "rotation": 180,
+        "num_ports": 3
       }
     },
     {
       "id": "node_a0ba4eba",
-      "type": "splitter",
+      "type": "junction",
       "position": {
         "x": 1446,
         "y": -371
@@ -651,8 +659,9 @@
       },
       "dragging": false,
       "data": {
-        "label": "SPLITTER_770_copy",
-        "rotation": 0
+        "label": "JUNCTION_770_copy",
+        "rotation": 0,
+        "num_ports": 3
       }
     },
     {
@@ -684,7 +693,7 @@
     },
     {
       "id": "node_4211d433",
-      "type": "splitter",
+      "type": "junction",
       "position": {
         "x": 1805,
         "y": -375
@@ -698,8 +707,9 @@
       },
       "dragging": false,
       "data": {
-        "label": "SPLITTER_770_copy_copy",
-        "rotation": 0
+        "label": "BRANCH_770_copy_copy",
+        "rotation": 0,
+        "num_ports": 3
       }
     },
     {
@@ -752,7 +762,7 @@
     },
     {
       "id": "node_6e5b1658",
-      "type": "splitter",
+      "type": "junction",
       "position": {
         "x": 2126,
         "y": -379
@@ -766,8 +776,9 @@
       },
       "dragging": false,
       "data": {
-        "label": "SPLITTER_770_copy_copy_copy",
-        "rotation": 0
+        "label": "JUNCTION_770_copy_copy_copy",
+        "rotation": 0,
+        "num_ports": 3
       }
     },
     {
@@ -820,7 +831,7 @@
     },
     {
       "id": "node_327c00de",
-      "type": "splitter",
+      "type": "junction",
       "position": {
         "x": 2360,
         "y": -359
@@ -834,8 +845,9 @@
       },
       "dragging": false,
       "data": {
-        "label": "SPLITTER_770_copy_copy_copy_copy",
-        "rotation": 90
+        "label": "JUNCTION_770_copy_copy_copy_copy",
+        "rotation": 0,
+        "num_ports": 3
       }
     },
     {
@@ -1248,7 +1260,7 @@
         "y": -660
       },
       "data": {
-        "label": "\u03bdI 102",
+        "label": "νI 102",
         "rotation": 0,
         "variable": "nu",
         "pressure_basis": "gauge",
@@ -1300,7 +1312,7 @@
       "source": "node_032bb480",
       "sourceHandle": "outlet-0",
       "target": "node_713c04c3",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-2",
       "id": "edge_7b5a055f",
       "label": "Pipe 100",
       "animated": true,
@@ -1323,7 +1335,7 @@
     },
     {
       "source": "node_713c04c3",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-0",
       "target": "node_3176b1fc",
       "targetHandle": "inlet-0",
       "id": "edge_0980b47c",
@@ -1398,7 +1410,7 @@
     },
     {
       "source": "node_713c04c3",
-      "sourceHandle": "outlet-1",
+      "sourceHandle": "port-1",
       "target": "node_807e08c4",
       "targetHandle": "inlet-0",
       "id": "edge_16ad7d6d",
@@ -1425,7 +1437,7 @@
       "source": "node_807e08c4",
       "sourceHandle": "outlet-0",
       "target": "node_6a53fcc0",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-2",
       "id": "edge_314fc373",
       "label": "Pipe 105",
       "animated": true,
@@ -1475,7 +1487,7 @@
       "source": "node_b4cf5bf5",
       "sourceHandle": "outlet-0",
       "target": "node_31c4a871",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-2",
       "id": "edge_f943b257",
       "label": "Pipe 107",
       "animated": true,
@@ -1498,7 +1510,7 @@
     },
     {
       "source": "node_31c4a871",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-0",
       "target": "node_2cc6a499",
       "targetHandle": "inlet-0",
       "id": "edge_fe80816f",
@@ -1548,7 +1560,7 @@
     },
     {
       "source": "node_31c4a871",
-      "sourceHandle": "outlet-1",
+      "sourceHandle": "port-1",
       "target": "node_d26da9b2",
       "targetHandle": "inlet-0",
       "id": "edge_36ed9d2b",
@@ -1575,7 +1587,7 @@
       "source": "node_d26da9b2",
       "sourceHandle": "outlet-0",
       "target": "node_192e77a1",
-      "targetHandle": "inlet-1",
+      "targetHandle": "port-2",
       "id": "edge_e0479ed5",
       "label": "Pipe 111",
       "animated": true,
@@ -1598,9 +1610,9 @@
     },
     {
       "source": "node_6a53fcc0",
-      "sourceHandle": "outlet-1",
+      "sourceHandle": "port-1",
       "target": "node_192e77a1",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "id": "edge_1f99d337",
       "label": "Pipe 112",
       "animated": true,
@@ -1623,9 +1635,9 @@
     },
     {
       "source": "node_6a53fcc0",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-0",
       "target": "node_d8aa69c8",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "id": "edge_431d2b59",
       "label": "Pipe 115",
       "animated": true,
@@ -1648,7 +1660,7 @@
     },
     {
       "source": "node_d8aa69c8",
-      "sourceHandle": "outlet-1",
+      "sourceHandle": "port-2",
       "target": "node_c2678a3e",
       "targetHandle": "inlet-0",
       "id": "edge_48c2ae58",
@@ -1673,7 +1685,7 @@
     },
     {
       "source": "node_d8aa69c8",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "node_50250584",
       "targetHandle": "inlet-0",
       "id": "edge_caf4ff7f",
@@ -1800,7 +1812,7 @@
       "source": "node_8d84994e",
       "sourceHandle": "outlet-0",
       "target": "node_abab9f02",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "id": "edge_7e5e672e",
       "label": "Pipe 121",
       "animated": true,
@@ -1823,7 +1835,7 @@
     },
     {
       "source": "node_abab9f02",
-      "sourceHandle": "outlet-1",
+      "sourceHandle": "port-2",
       "target": "node_f9bb5ad9",
       "targetHandle": "inlet-0",
       "id": "edge_51d3e49c",
@@ -1873,9 +1885,9 @@
     },
     {
       "source": "node_abab9f02",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "node_d7a7dc67",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "id": "edge_5ad159b8",
       "label": "Pipe 124",
       "animated": true,
@@ -1898,9 +1910,9 @@
     },
     {
       "source": "node_d7a7dc67",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "node_0f156414",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-1",
       "id": "edge_9def537d",
       "label": "Pipe 125",
       "animated": true,
@@ -1923,7 +1935,7 @@
     },
     {
       "source": "node_0f156414",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-2",
       "target": "node_9a1b2114",
       "targetHandle": "inlet-0",
       "id": "edge_7bed3ebe",
@@ -1998,7 +2010,7 @@
     },
     {
       "source": "node_0f156414",
-      "sourceHandle": "outlet-1",
+      "sourceHandle": "port-0",
       "target": "node_d4dbe2e8",
       "targetHandle": "inlet-0",
       "id": "edge_b7759f8c",
@@ -2073,9 +2085,9 @@
     },
     {
       "source": "node_d7a7dc67",
-      "sourceHandle": "outlet-1",
+      "sourceHandle": "port-2",
       "target": "node_a0ba4eba",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "id": "edge_72fd1f72",
       "label": "Pipe 132",
       "animated": true,
@@ -2098,7 +2110,7 @@
     },
     {
       "source": "node_a0ba4eba",
-      "sourceHandle": "outlet-1",
+      "sourceHandle": "port-2",
       "target": "node_bf70bd63",
       "targetHandle": "inlet-0",
       "id": "edge_a1f4c802",
@@ -2173,9 +2185,9 @@
     },
     {
       "source": "node_a0ba4eba",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "node_4211d433",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "id": "edge_98f23a82",
       "label": "Pipe 136",
       "animated": true,
@@ -2198,9 +2210,9 @@
     },
     {
       "source": "node_4211d433",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "node_6e5b1658",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "id": "edge_c4ee725e",
       "label": "Pipe 137",
       "animated": true,
@@ -2223,9 +2235,9 @@
     },
     {
       "source": "node_6e5b1658",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "node_327c00de",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "id": "edge_0efa5689",
       "label": "Pipe 138",
       "animated": true,
@@ -2248,7 +2260,7 @@
     },
     {
       "source": "node_327c00de",
-      "sourceHandle": "outlet-1",
+      "sourceHandle": "port-2",
       "target": "node_f243d748",
       "targetHandle": "inlet-0",
       "id": "edge_4e94df60",
@@ -2298,7 +2310,7 @@
     },
     {
       "source": "node_327c00de",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "node_f57214b9",
       "targetHandle": "inlet-0",
       "id": "edge_2473f595",
@@ -2348,7 +2360,7 @@
     },
     {
       "source": "node_4211d433",
-      "sourceHandle": "outlet-1",
+      "sourceHandle": "port-2",
       "target": "node_485f95a2",
       "targetHandle": "inlet-0",
       "id": "edge_acc72dbe",
@@ -2398,7 +2410,7 @@
     },
     {
       "source": "node_6e5b1658",
-      "sourceHandle": "outlet-1",
+      "sourceHandle": "port-2",
       "target": "node_8368ae5f",
       "targetHandle": "inlet-0",
       "id": "edge_ed700842",
@@ -2548,7 +2560,7 @@
     },
     {
       "source": "node_192e77a1",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "node_37e0704c",
       "targetHandle": "inlet-0",
       "id": "edge_750a271f",
@@ -2649,7 +2661,7 @@
       "sourceHandle": "signal-inlet-0",
       "target": "vi-102",
       "targetHandle": "signal-in",
-      "label": "\u03bdI 102 signal",
+      "label": "νI 102 signal",
       "animated": true,
       "type": "step",
       "style": {
@@ -2658,7 +2670,7 @@
         "strokeDasharray": "5,5"
       },
       "data": {
-        "label": "\u03bdI 102 signal",
+        "label": "νI 102 signal",
         "type": "SIGNAL"
       }
     },

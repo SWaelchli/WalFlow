@@ -1,3 +1,5 @@
+import { junctionPortCount, junctionPortIds, MIN_JUNCTION_PORTS, MAX_JUNCTION_PORTS } from './junctionLayout';
+
 // Checks a drawing before it is sent to the solver.
 // Errors block the run; warnings let it run but are listed so the user can look at them.
 
@@ -25,8 +27,8 @@ export const PORTS_BY_TYPE = {
   expander: single,
   pressure_source: single,
   flow_source: { inlets: [], outlets: ['outlet-0'] },
-  splitter: { inlets: ['inlet-0'], outlets: ['outlet-0', 'outlet-1'] },
-  mixer: { inlets: ['inlet-0', 'inlet-1'], outlets: ['outlet-0'] },
+  // `either` ports take a pipe running in either direction; the count follows data.num_ports (see portsOf)
+  junction: { inlets: [], outlets: [], either: junctionPortIds(3) },
   measure_point: single,
   three_way_tcv: { inlets: ['inlet-0', 'inlet-1'], outlets: ['outlet-0'] },
   text_bubble: { inlets: [], outlets: [] },
@@ -40,7 +42,13 @@ const VENTING_TYPES = new Set(['pressure_safety_valve', 'psv', 'rupture_disc']);
 // Not part of the hydraulic network: notes, and instrument bubbles (they only read results)
 const NOTE_TYPES = new Set(['text_bubble', 'instrument']);
 
-export const ERROR_CODES = ['empty_drawing', 'unknown_type', 'unknown_endpoint', 'invalid_port', 'port_shared'];
+/** Ports of one node: PORTS_BY_TYPE, with the port count of a junction taken from its data. */
+export const portsOf = (node) => {
+  if (node?.type === 'junction') return { inlets: [], outlets: [], either: junctionPortIds(junctionPortCount(node.data)) };
+  return { either: [], ...PORTS_BY_TYPE[node?.type] };
+};
+
+export const ERROR_CODES = ['empty_drawing', 'unknown_type', 'unknown_endpoint', 'invalid_port', 'port_shared', 'invalid_num_ports'];
 
 const isSignalEdge = (e) => String(e?.data?.type ?? '').toUpperCase() === 'SIGNAL'
   || String(e?.sourceHandle ?? '').startsWith('signal-')
@@ -48,20 +56,76 @@ const isSignalEdge = (e) => String(e?.data?.type ?? '').toUpperCase() === 'SIGNA
 
 const nodeName = (n) => String(n?.data?.label || n?.data?.tag || n?.id || 'component');
 const edgeName = (e) => String(e?.data?.label || e?.label || e?.id || 'pipe');
-const portName = (handle) => String(handle ?? '').replace('-', ' ');
+// Junction ports are shown 1-based, as in the rest of the UI ("port-2" -> "Port 3")
+const portName = (handle) => {
+  const m = /^port-(\d+)$/.exec(String(handle ?? ''));
+  return m ? `Port ${Number(m[1]) + 1}` : String(handle ?? '').replace('-', ' ');
+};
 
-export const PORT_TAKEN_MESSAGE = 'This port already has a pipe. Use a splitter or mixer to branch a line.';
+// Python float() rejects hex/binary/octal text that Number() would read
+const PLAIN_DECIMAL = /^\s*[+-]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?\s*$/i;
+
+/** True when num_ports is missing or a whole number 3..8 (a numeric string such as "4" counts, as in the solver). */
+export const validPortCount = (raw) => {
+  if (raw === undefined) return true;
+  if (typeof raw === 'string' ? !PLAIN_DECIMAL.test(raw) : typeof raw !== 'number') return false;
+  const n = Number(raw);
+  return Number.isInteger(n) && n >= MIN_JUNCTION_PORTS && n <= MAX_JUNCTION_PORTS;
+};
+
+export const PORT_TAKEN_MESSAGE = 'This port already has a pipe. Use a junction to branch a line.';
+
+const isJunctionPort = (node, handle) => node?.type === 'junction' && /^port-\d+$/.test(String(handle ?? ''));
+const isSignalHandle = (h) => String(h ?? '').startsWith('signal-');
+const SIGNAL_INPUTS = new Set(['signal-in', 'signal-in-ref']);
 
 /**
- * Rule for a new hydraulic connection: one pipe per port. Signal links are not restricted.
+ * Direction of a connection the canvas reports (it runs in loose mode so a junction port connects either way).
+ * Hydraulic pipes are stored from the outlet side to the inlet side: the end that is not a junction port decides,
+ * and a drag started at an inlet is swapped. Two junction ports are kept as dragged. A signal line runs from a
+ * sensing pin to a `signal-in*` input.
+ * @param {object[]} nodes
+ * @returns {{ok: boolean, connection?: object}} the connection to store, or ok false when it is not allowed
+ */
+export function normalizeConnection(nodes, conn) {
+  const { source, target, sourceHandle, targetHandle } = conn || {};
+  if (!source || !target || source === target && sourceHandle === targetHandle) return { ok: false };
+  const sSig = isSignalHandle(sourceHandle);
+  const tSig = isSignalHandle(targetHandle);
+  if (sSig || tSig) {
+    if (!(sSig && tSig)) return { ok: false };
+    if (SIGNAL_INPUTS.has(sourceHandle) && !SIGNAL_INPUTS.has(targetHandle)) {
+      return { ok: true, connection: { source: target, target: source, sourceHandle: targetHandle, targetHandle: sourceHandle } };
+    }
+    return SIGNAL_INPUTS.has(targetHandle) && !SIGNAL_INPUTS.has(sourceHandle) ? { ok: true, connection: conn } : { ok: false };
+  }
+  const byId = new Map(nodes.map(n => [n.id, n]));
+  const sJ = isJunctionPort(byId.get(source), sourceHandle);
+  const tJ = isJunctionPort(byId.get(target), targetHandle);
+  const kind = (h) => (String(h ?? '').startsWith('outlet-') ? 'outlet' : String(h ?? '').startsWith('inlet-') ? 'inlet' : null);
+  const swapped = { source: target, target: source, sourceHandle: targetHandle, targetHandle: sourceHandle };
+  if (sJ && tJ) return { ok: true, connection: conn };
+  if (sJ) return kind(targetHandle) === 'inlet' ? { ok: true, connection: conn } : kind(targetHandle) === 'outlet' ? { ok: true, connection: swapped } : { ok: false };
+  if (tJ) return kind(sourceHandle) === 'outlet' ? { ok: true, connection: conn } : kind(sourceHandle) === 'inlet' ? { ok: true, connection: swapped } : { ok: false };
+  const ks = kind(sourceHandle);
+  const kt = kind(targetHandle);
+  if (ks === 'outlet' && kt === 'inlet') return { ok: true, connection: conn };
+  if (ks === 'inlet' && kt === 'outlet') return { ok: true, connection: swapped };
+  return { ok: false };
+}
+
+/**
+ * Rule for a new hydraulic connection: one pipe per port, a junction port counting at either end of a pipe.
+ * Signal links are not restricted.
  * @returns {{ok: boolean, message?: string}}
  */
 export function checkNewConnection(edges, { source, target, sourceHandle, targetHandle }) {
-  if (String(sourceHandle ?? '').startsWith('signal-') || String(targetHandle ?? '').startsWith('signal-')) return { ok: true };
-  const taken = edges.some((e) => !isSignalEdge(e) && (
-    (e.source === source && (e.sourceHandle || 'outlet-0') === (sourceHandle || 'outlet-0'))
-    || (e.target === target && (e.targetHandle || 'inlet-0') === (targetHandle || 'inlet-0'))
-  ));
+  if (isSignalHandle(sourceHandle) || isSignalHandle(targetHandle)) return { ok: true };
+  const ends = [[source, sourceHandle || 'outlet-0'], [target, targetHandle || 'inlet-0']];
+  const taken = edges.some((e) => !isSignalEdge(e) && ends.some(([nodeId, handle]) => (
+    (e.source === nodeId && (e.sourceHandle || 'outlet-0') === handle)
+    || (e.target === nodeId && (e.targetHandle || 'inlet-0') === handle)
+  )));
   return taken ? { ok: false, message: PORT_TAKEN_MESSAGE } : { ok: true };
 }
 
@@ -93,6 +157,14 @@ export function validateNetwork({ nodes = [], edges = [] }, knownTypes = null) {
     }
   });
 
+  // The solver accepts only a whole number of ports from 3 to 8 (missing means 3)
+  components.filter(n => n.type === 'junction').forEach((n) => {
+    if (!validPortCount(n.data?.num_ports)) {
+      add(errors, 'error', 'invalid_num_ports',
+        `${nodeName(n)} has an invalid number of ports. Set a whole number from ${MIN_JUNCTION_PORTS} to ${MAX_JUNCTION_PORTS}.`, [n.id]);
+    }
+  });
+
   const hydraulic = edges.filter(e => !isSignalEdge(e));
   const portUse = new Map(); // "nodeId|handle" -> edges using that port
   const useOf = (nodeId, handle) => {
@@ -114,9 +186,10 @@ export function validateNetwork({ nodes = [], edges = [] }, knownTypes = null) {
     ];
     ends.forEach(({ node, handle, dir }) => {
       if (!usable.has(node.id)) return;
-      if (!PORTS_BY_TYPE[node.type][dir].includes(handle)) {
+      const ports = portsOf(node);
+      if (!ports[dir].includes(handle) && !ports.either.includes(handle)) {
         add(errors, 'error', 'invalid_port',
-          `${edgeName(e)} uses port "${handle}" which ${nodeName(node)} does not have.`, [node.id], [e.id]);
+          `${edgeName(e)} uses ${node.type === 'junction' ? portName(handle) : `port "${handle}"`} which ${nodeName(node)} does not have.`, [node.id], [e.id]);
         return;
       }
       useOf(node.id, handle).push(e);
@@ -128,7 +201,7 @@ export function validateNetwork({ nodes = [], edges = [] }, knownTypes = null) {
     const [nodeId, handle] = key.split('|');
     const node = byId.get(nodeId);
     add(errors, 'error', 'port_shared',
-      `${list.length} pipes are attached to ${portName(handle)} of ${nodeName(node)}. A port takes one pipe; use a splitter or mixer to branch.`,
+      `${list.length} pipes are attached to ${portName(handle)} of ${nodeName(node)}. A port takes one pipe; use a junction to branch.`,
       [nodeId], list.map(e => e.id));
   });
 
@@ -146,19 +219,31 @@ export function validateNetwork({ nodes = [], edges = [] }, knownTypes = null) {
 
   components.forEach((n) => {
     if (!usable.has(n.id)) return;
-    const ports = PORTS_BY_TYPE[n.type];
-    const used = [...ports.inlets, ...ports.outlets].filter(h => (portUse.get(`${n.id}|${h}`) || []).length > 0);
+    const ports = portsOf(n);
+    const used = [...ports.inlets, ...ports.outlets, ...ports.either].filter(h => (portUse.get(`${n.id}|${h}`) || []).length > 0);
     if (used.length === 0) {
       add(warnings, 'warning', 'isolated_node', `${nodeName(n)} is not connected to anything and is ignored by the solver.`, [n.id]);
       return;
     }
-    if (BOUNDARY_TYPES.has(n.type)) return;
+    // An unpiped junction port is simply ignored; boundaries fix a pressure or flow
+    if (BOUNDARY_TYPES.has(n.type) || n.type === 'junction') return;
     const outlets = VENTING_TYPES.has(n.type) ? [] : ports.outlets;
-    const open = [...ports.inlets, ...outlets].filter(h => !(portUse.get(`${n.id}|${h}`) || []).length);
+    const open = [...ports.inlets, ...outlets, ...ports.either].filter(h => !(portUse.get(`${n.id}|${h}`) || []).length);
     if (open.length) {
       add(warnings, 'warning', 'open_port',
         `${nodeName(n)}: ${open.map(portName).join(', ')} ${open.length > 1 ? 'are' : 'is'} not connected and is treated as a closed end.`, [n.id]);
     }
+  });
+
+  // A sensing line from a junction port without a pipe senses nothing; the solver ignores that line
+  edges.forEach((e) => {
+    const m = /^signal-port-(\d+)$/.exec(String(e.sourceHandle ?? ''));
+    const host = m && byId.get(e.source);
+    if (!host || host.type !== 'junction' || !usable.has(host.id)) return;
+    if ((portUse.get(`${host.id}|port-${m[1]}`) || []).length) return;
+    add(warnings, 'warning', 'signal_port_unpiped',
+      `${edgeName(e)} senses Port ${Number(m[1]) + 1} of ${nodeName(host)}, which has no pipe, so the receiving instrument or valve senses nothing there.`,
+      [host.id], [e.id]);
   });
 
   // Groups of connected components need at least one boundary that fixes pressure or flow

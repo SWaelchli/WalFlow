@@ -109,7 +109,7 @@ Friction and the entrance loss become heat in the fluid. The acceleration from r
 
 $$\Delta P_{\text{loss}} = \Delta P_{\text{f}} + \Delta P_{\text{entry}}\, \frac{K}{1 + K}, \qquad \Delta T = \frac{|\Delta P_{\text{loss}}|}{\rho\, c_p(T)}$$
 
-The temperature rise is applied to the downstream end: the outlet for $Q \ge 0$, the inlet for $Q < 0$. Density and viscosity at both ends are then re-evaluated at their temperatures. There is no heat exchange with the surroundings (adiabatic pipe).
+The temperature rise is applied to the downstream end: the outlet for $Q \ge 0$, the inlet for $Q < 0$. Density and viscosity at both ends are then re-evaluated at their temperatures. There is no heat exchange with the surroundings (adiabatic pipe). The friction and entrance losses use the density and viscosity of the upstream end, the one the flow enters by (`upstream_port`, from the flow of the last property pass), so the result does not depend on the direction the pipe is drawn; so does the velocity head at both ends.
 
 For water, $\Delta T \approx 0.024$ K per bar of friction loss.
 

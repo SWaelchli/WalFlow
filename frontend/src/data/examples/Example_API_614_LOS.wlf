@@ -16,7 +16,7 @@
     },
     {
       "id": "case_cold_start_10",
-      "name": "Cold start (10\u00b0C)",
+      "name": "Cold start (10°C)",
       "is_base": false,
       "overrides": {
         "nodes": {
@@ -31,7 +31,7 @@
     },
     {
       "id": "case_cold_start_20",
-      "name": "Cold start (20\u00b0C)",
+      "name": "Cold start (20°C)",
       "is_base": false,
       "overrides": {
         "nodes": {
@@ -169,18 +169,19 @@
       "dragging": false
     },
     {
-      "id": "pump-discharge-splitter",
-      "type": "splitter",
+      "id": "pump-discharge-junction",
+      "type": "junction",
       "position": {
         "x": 295,
         "y": 120
       },
+      "width": 110,
+      "height": 71,
       "data": {
         "label": "Pump Discharge Manifold",
-        "rotation": 270
-      },
-      "width": 110,
-      "height": 71
+        "rotation": 0,
+        "num_ports": 3
+      }
     },
     {
       "id": "spill-over-valve",
@@ -222,18 +223,19 @@
       "height": 143
     },
     {
-      "id": "cooler-bypass-splitter",
-      "type": "splitter",
+      "id": "cooler-bypass-junction",
+      "type": "junction",
       "position": {
         "x": 80,
         "y": 120
       },
+      "width": 76,
+      "height": 71,
       "data": {
         "label": "Cooler Bypass Tee",
-        "rotation": 270
-      },
-      "width": 76,
-      "height": 71
+        "rotation": 180,
+        "num_ports": 3
+      }
     },
     {
       "id": "oil-cooler",
@@ -295,32 +297,34 @@
       "dragging": false
     },
     {
-      "id": "distribution-header-splitter",
-      "type": "splitter",
+      "id": "distribution-header-junction",
+      "type": "junction",
       "position": {
         "x": 740,
         "y": -45
       },
+      "width": 125,
+      "height": 71,
       "data": {
         "label": "Header Distribution Manifold",
-        "rotation": 0
-      },
-      "width": 125,
-      "height": 71
+        "rotation": 180,
+        "num_ports": 3
+      }
     },
     {
-      "id": "motor-bearing-splitter",
-      "type": "splitter",
+      "id": "motor-bearing-junction",
+      "type": "junction",
       "position": {
         "x": 880,
         "y": -340
       },
+      "width": 75,
+      "height": 71,
       "data": {
         "label": "Motor Supply Tee",
-        "rotation": 0
-      },
-      "width": 75,
-      "height": 71
+        "rotation": 0,
+        "num_ports": 3
+      }
     },
     {
       "id": "orifice-motor-nde",
@@ -387,18 +391,19 @@
       "height": 143
     },
     {
-      "id": "gearbox-splitter",
-      "type": "splitter",
+      "id": "gearbox-junction",
+      "type": "junction",
       "position": {
         "x": 880,
         "y": 0
       },
+      "width": 93,
+      "height": 71,
       "data": {
         "label": "Machinery Branch Tee",
-        "rotation": 0
-      },
-      "width": 93,
-      "height": 71
+        "rotation": 0,
+        "num_ports": 3
+      }
     },
     {
       "id": "orifice-gearbox",
@@ -416,19 +421,20 @@
       "height": 91
     },
     {
-      "id": "comp1-splitter",
-      "type": "splitter",
+      "id": "comp1-junction",
+      "type": "junction",
       "position": {
         "x": 880,
         "y": 170
       },
-      "data": {
-        "label": "Compressor 1 Supply Manifold",
-        "rotation": 0
-      },
       "width": 131,
       "height": 71,
-      "selected": false
+      "selected": false,
+      "data": {
+        "label": "Compressor 1 Supply Manifold",
+        "rotation": 270,
+        "num_ports": 3
+      }
     },
     {
       "id": "drain-gearbox",
@@ -466,18 +472,19 @@
       "height": 91
     },
     {
-      "id": "comp1-nde-splitter",
-      "type": "splitter",
+      "id": "comp1-nde-junction",
+      "type": "junction",
       "position": {
         "x": 880,
         "y": 340
       },
+      "width": 107,
+      "height": 71,
       "data": {
         "label": "Compressor 1 Branch Tee",
-        "rotation": 0
-      },
-      "width": 107,
-      "height": 71
+        "rotation": 270,
+        "num_ports": 3
+      }
     },
     {
       "id": "orifice-comp1-nde",
@@ -495,15 +502,11 @@
       "height": 91
     },
     {
-      "id": "comp2-splitter",
-      "type": "splitter",
+      "id": "comp2-junction",
+      "type": "junction",
       "position": {
         "x": 880,
         "y": 510
-      },
-      "data": {
-        "label": "Compressor 2 Supply Manifold",
-        "rotation": 0
       },
       "width": 131,
       "height": 71,
@@ -512,7 +515,12 @@
         "x": 880,
         "y": 510
       },
-      "dragging": false
+      "dragging": false,
+      "data": {
+        "label": "Compressor 2 Supply Manifold",
+        "rotation": 270,
+        "num_ports": 3
+      }
     },
     {
       "id": "orifice-comp2-de",
@@ -768,8 +776,8 @@
       "id": "pump-discharge-line",
       "source": "main-oil-pump",
       "sourceHandle": "outlet-0",
-      "target": "pump-discharge-splitter",
-      "targetHandle": "inlet-0",
+      "target": "pump-discharge-junction",
+      "targetHandle": "port-2",
       "label": "pump-discharge-line",
       "animated": true,
       "data": {
@@ -788,8 +796,8 @@
     },
     {
       "id": "spill-over-line",
-      "source": "pump-discharge-splitter",
-      "sourceHandle": "outlet-1",
+      "source": "pump-discharge-junction",
+      "sourceHandle": "port-1",
       "target": "spill-over-valve",
       "targetHandle": "inlet-0",
       "label": "spill-over-line",
@@ -832,10 +840,10 @@
     },
     {
       "id": "main-supply-header",
-      "source": "pump-discharge-splitter",
-      "sourceHandle": "outlet-0",
-      "target": "cooler-bypass-splitter",
-      "targetHandle": "inlet-0",
+      "source": "pump-discharge-junction",
+      "sourceHandle": "port-0",
+      "target": "cooler-bypass-junction",
+      "targetHandle": "port-0",
       "label": "main-supply-header",
       "animated": true,
       "data": {
@@ -854,8 +862,8 @@
     },
     {
       "id": "cooler-supply-line",
-      "source": "cooler-bypass-splitter",
-      "sourceHandle": "outlet-0",
+      "source": "cooler-bypass-junction",
+      "sourceHandle": "port-1",
       "target": "oil-cooler",
       "targetHandle": "inlet-0",
       "label": "cooler-supply-line",
@@ -922,8 +930,8 @@
       "id": "sensing-line_b",
       "source": "tap-header",
       "sourceHandle": "outlet-0",
-      "target": "distribution-header-splitter",
-      "targetHandle": "inlet-0",
+      "target": "distribution-header-junction",
+      "targetHandle": "port-1",
       "label": "sensing-line",
       "animated": true,
       "data": {
@@ -942,10 +950,10 @@
     },
     {
       "id": "motor-supply-line",
-      "source": "distribution-header-splitter",
-      "sourceHandle": "outlet-0",
-      "target": "motor-bearing-splitter",
-      "targetHandle": "inlet-0",
+      "source": "distribution-header-junction",
+      "sourceHandle": "port-2",
+      "target": "motor-bearing-junction",
+      "targetHandle": "port-0",
       "label": "motor-supply-line",
       "animated": true,
       "data": {
@@ -964,10 +972,10 @@
     },
     {
       "id": "main-distribution-line",
-      "source": "distribution-header-splitter",
-      "sourceHandle": "outlet-1",
-      "target": "gearbox-splitter",
-      "targetHandle": "inlet-0",
+      "source": "distribution-header-junction",
+      "sourceHandle": "port-0",
+      "target": "gearbox-junction",
+      "targetHandle": "port-0",
       "label": "main-distribution-line",
       "animated": true,
       "data": {
@@ -986,8 +994,8 @@
     },
     {
       "id": "motor-nde-supply",
-      "source": "motor-bearing-splitter",
-      "sourceHandle": "outlet-0",
+      "source": "motor-bearing-junction",
+      "sourceHandle": "port-1",
       "target": "orifice-motor-nde",
       "targetHandle": "inlet-0",
       "label": "motor-nde-supply",
@@ -1008,8 +1016,8 @@
     },
     {
       "id": "motor-de-supply",
-      "source": "motor-bearing-splitter",
-      "sourceHandle": "outlet-1",
+      "source": "motor-bearing-junction",
+      "sourceHandle": "port-2",
       "target": "orifice-motor-de",
       "targetHandle": "inlet-0",
       "label": "motor-de-supply",
@@ -1074,8 +1082,8 @@
     },
     {
       "id": "gearbox-supply",
-      "source": "gearbox-splitter",
-      "sourceHandle": "outlet-0",
+      "source": "gearbox-junction",
+      "sourceHandle": "port-1",
       "target": "orifice-gearbox",
       "targetHandle": "inlet-0",
       "label": "gearbox-supply",
@@ -1100,10 +1108,10 @@
     },
     {
       "id": "aux-distribution-line",
-      "source": "gearbox-splitter",
-      "sourceHandle": "outlet-1",
-      "target": "comp1-splitter",
-      "targetHandle": "inlet-0",
+      "source": "gearbox-junction",
+      "sourceHandle": "port-2",
+      "target": "comp1-junction",
+      "targetHandle": "port-1",
       "label": "aux-distribution-line",
       "animated": true,
       "data": {
@@ -1144,8 +1152,8 @@
     },
     {
       "id": "comp1-de-supply",
-      "source": "comp1-splitter",
-      "sourceHandle": "outlet-0",
+      "source": "comp1-junction",
+      "sourceHandle": "port-2",
       "target": "orifice-comp1-de",
       "targetHandle": "inlet-0",
       "label": "comp1-de-supply",
@@ -1166,10 +1174,10 @@
     },
     {
       "id": "comp1-nde-manifold",
-      "source": "comp1-splitter",
-      "sourceHandle": "outlet-1",
-      "target": "comp1-nde-splitter",
-      "targetHandle": "inlet-0",
+      "source": "comp1-junction",
+      "sourceHandle": "port-0",
+      "target": "comp1-nde-junction",
+      "targetHandle": "port-1",
       "label": "comp1-nde-manifold",
       "animated": true,
       "data": {
@@ -1210,8 +1218,8 @@
     },
     {
       "id": "comp1-nde-supply",
-      "source": "comp1-nde-splitter",
-      "sourceHandle": "outlet-0",
+      "source": "comp1-nde-junction",
+      "sourceHandle": "port-2",
       "target": "orifice-comp1-nde",
       "targetHandle": "inlet-0",
       "label": "comp1-nde-supply",
@@ -1232,10 +1240,10 @@
     },
     {
       "id": "comp2-manifold",
-      "source": "comp1-nde-splitter",
-      "sourceHandle": "outlet-1",
-      "target": "comp2-splitter",
-      "targetHandle": "inlet-0",
+      "source": "comp1-nde-junction",
+      "sourceHandle": "port-0",
+      "target": "comp2-junction",
+      "targetHandle": "port-1",
       "label": "comp2-manifold",
       "animated": true,
       "data": {
@@ -1276,8 +1284,8 @@
     },
     {
       "id": "comp2-de-supply",
-      "source": "comp2-splitter",
-      "sourceHandle": "outlet-0",
+      "source": "comp2-junction",
+      "sourceHandle": "port-2",
       "target": "orifice-comp2-de",
       "targetHandle": "inlet-0",
       "label": "comp2-de-supply",
@@ -1298,8 +1306,8 @@
     },
     {
       "id": "comp2-nde-supply",
-      "source": "comp2-splitter",
-      "sourceHandle": "outlet-1",
+      "source": "comp2-junction",
+      "sourceHandle": "port-0",
       "target": "orifice-comp2-nde",
       "targetHandle": "inlet-0",
       "label": "comp2-nde-supply",
@@ -1391,8 +1399,8 @@
       }
     },
     {
-      "source": "cooler-bypass-splitter",
-      "sourceHandle": "outlet-1",
+      "source": "cooler-bypass-junction",
+      "sourceHandle": "port-2",
       "target": "node_6f63ec38",
       "targetHandle": "inlet-1",
       "id": "Pipe 100",

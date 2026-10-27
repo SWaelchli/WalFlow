@@ -7,6 +7,8 @@ import { FLUID_CATEGORIES, FLUID_LIBRARY } from '../../constants/fluid_library';
 import { getEffectiveNodeData } from '../../utils/case_resolver';
 import { GlobeIcon, BoltIcon, WarningIcon, CrossIcon, CaretDownIcon } from '../symbols/IconLibrary';
 import { componentLabel } from '../../constants/componentLabels';
+import { validPortCount } from '../../utils/networkValidation';
+import { MIN_JUNCTION_PORTS, MAX_JUNCTION_PORTS, junctionPortCount, junctionPortIds } from '../../utils/junctionLayout';
 
 import { useUnits } from '../../context/UnitContext';
 import { useFittingStandards } from '../../hooks/useFittingStandards';
@@ -334,6 +336,35 @@ export default function SetupPanel({
     else onDeleteEdge(id);
   };
 
+  // Fewer ports: refused while a port that would go still has a pipe or a signal line
+  const handlePortCountChange = (value) => {
+    const next = parseInt(value, 10);
+    const current = junctionPortCount(data);
+    // Compared with the stored value: an invalid one (e.g. 4.6) is replaced even by the count it displays
+    if (!Number.isFinite(next) || (validPortCount(data?.num_ports) && next === current)) return;
+    if (next < current) {
+      const inUse = [];
+      for (let k = next; k < current; k += 1) {
+        const handle = `port-${k}`;
+        if (allEdges.some(e => (e.source === id && (e.sourceHandle === handle || e.sourceHandle === `signal-${handle}`)) || (e.target === id && e.targetHandle === handle))) {
+          inUse.push(`Port ${k + 1}`);
+        }
+      }
+      if (inUse.length) {
+        notify(`${inUse.join(' and ')} still ${inUse.length > 1 ? 'have' : 'has'} a connected line. Delete ${inUse.length > 1 ? 'them' : 'it'} before reducing the number of ports.`, 'warning');
+        return;
+      }
+      const sensing = { ...(data.sensing || {}) };
+      for (let k = next; k < current; k += 1) delete sensing[`port-${k}`];
+      onUpdate(id, { num_ports: next, sensing });
+      return;
+    }
+    onUpdate(id, { num_ports: next });
+  };
+
+  const sensingPorts = type === 'junction' ? junctionPortIds(junctionPortCount(data)) : ['inlet-0', 'outlet-0'];
+  const sensingLabel = (portId) => (type === 'junction' ? `PORT ${Number(portId.slice(5)) + 1}` : portId.toUpperCase());
+
   const handleSensingToggle = (portId) => {
     const sensing = data.sensing || {};
     onUpdate(id, { sensing: { ...sensing, [portId]: !sensing[portId] } });
@@ -422,7 +453,7 @@ export default function SetupPanel({
             <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '8px' }}>
               <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: 'bold' }}>Sensing nodes (yellow pin)</label>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '4px' }}>
-                {['inlet-0', 'outlet-0'].map(portId => (
+                {sensingPorts.map(portId => (
                   <button
                     key={portId}
                     onClick={() => handleSensingToggle(portId)}
@@ -433,7 +464,7 @@ export default function SetupPanel({
                       border: '1px solid var(--color-border)'
                     }}
                   >
-                    {portId.toUpperCase()}
+                    {sensingLabel(portId)}
                   </button>
                 ))}
               </div>
@@ -826,6 +857,23 @@ export default function SetupPanel({
                 />
               </div>
             </>
+          )}
+
+          {isNode && type === 'junction' && (
+            <div>
+              <label htmlFor={`num-ports-${id}`} style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>Number of ports</label>
+              <select
+                id={`num-ports-${id}`}
+                className="form-input" style={{ width: '100%' }}
+                value={validPortCount(data?.num_ports) ? junctionPortCount(data) : ''}
+                onChange={(e) => handlePortCountChange(e.target.value)}
+              >
+                {!validPortCount(data?.num_ports) && <option value="" disabled>— invalid —</option>}
+                {Array.from({ length: MAX_JUNCTION_PORTS - MIN_JUNCTION_PORTS + 1 }, (_, i) => MIN_JUNCTION_PORTS + i).map(n => (
+                  <option key={n} value={n}>{n}</option>
+                ))}
+              </select>
+            </div>
           )}
 
           {isNode && type === 'three_way_tcv' && (

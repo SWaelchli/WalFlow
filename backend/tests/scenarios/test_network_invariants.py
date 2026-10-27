@@ -7,6 +7,8 @@ Topology-specific behaviour (controllers, relief, islands) stays in the other sc
 import contextlib
 import io
 import math
+import random
+from collections import Counter
 
 import pytest
 from hypothesis import example, given, strategies as st
@@ -14,6 +16,7 @@ from hypothesis import example, given, strategies as st
 from physics_refs import pipe_end_total
 from strategies import DISSIPATIVE_ONLY, networks
 from simulation.equipment.base_node import total_of
+from simulation.equipment.junction import Junction
 from simulation.fluid_utils import FluidProperties
 from simulation.graph_parser import GraphParser
 from simulation.schemas import ReactFlowGraph
@@ -49,8 +52,15 @@ def node_types(graph: dict) -> dict:
 
 
 def snapshot(network) -> dict:
-    """(pressure, flow, temperature) of every node port and pipe end, keyed by node / edge id."""
+    """(pressure, flow, temperature) of every node port and pipe end, keyed by node / edge id. A junction lists
+    its ports in port-k order with the flow into it, so the slot order (the order of the pipes) does not show;
+    a tank is one entry with its net inflow."""
     def ports(obj):
+        if isinstance(obj, Junction):
+            return [(obj.port(k).pressure, obj.port_flow_into(k), obj.port(k).temperature)
+                    for k in range(obj.num_ports) if obj.port(k) is not None]
+        if getattr(obj, "node_type", None) == "tank":   # a pipe drawn to its inlet or its outlet is the same connection
+            return [(obj.outlets[0].pressure, obj.inlets[0].flow_rate - obj.outlets[0].flow_rate, obj.outlets[0].temperature)]
         return [(p.pressure, p.flow_rate, p.temperature) for p in [*obj.inlets, *obj.outlets]]
     result = {node_id: ports(node) for node_id, node in network.nodes.items()}
     result.update({edge["id"]: ports(edge["pipe"]) for edge in network.edges})
@@ -86,40 +96,40 @@ def _reducer_node(node_id, diameter_in_m, diameter_out_m):
 
 
 def _reducer_backflow_graph(bara):
-    """Two sources into a mixer; the 1.5 bara one reaches it through a DN135 -> DN50 reducer, the other through a
-    DN135 pipe, and a DN50 pipe leads to the tank. The mixer holds one pressure for pipes of both bores; with
+    """Two sources into a junction; the 1.5 bara one reaches it through a DN135 -> DN50 reducer, the other through a
+    DN135 pipe, and a DN50 pipe leads to the tank. The junction holds one pressure for pipes of both bores; with
     static pressures it handed the flow free kinetic energy that the reducer turned into pressure, flow ran
     backwards through the reducer and the solve failed from about 1.7 bara down on the first source."""
     return {"nodes": [_node("n0", "pressure_source", source_pressure_bara=bara, temperature_k=283.15),
                       _node("n1", "pressure_source", source_pressure_bara=1.5, temperature_k=283.15),
                       _reducer_node("n2", 0.135, 0.05),
-                      _node("n3", "mixer"),
+                      _node("n3", "junction"),
                       _node("n4", "tank", level_m=1.0, temperature_k=283.15)],
-            "edges": [_pipe_edge("e0", "n0", "n3", 0.135, target_port="inlet-0"),
+            "edges": [_pipe_edge("e0", "n0", "n3", 0.135, target_port="port-0"),
                       _pipe_edge("e1", "n1", "n2", 0.135),
-                      _pipe_edge("e2", "n2", "n3", 0.05, target_port="inlet-1"),
-                      _pipe_edge("e3", "n3", "n4", 0.05)],
+                      _pipe_edge("e2", "n2", "n3", 0.05, target_port="port-1"),
+                      _pipe_edge("e3", "n3", "n4", 0.05, source_port="port-2")],
             "globalSettings": {"fluid_type": "water"}}
 
 
 def _reducer_bypass_graph():
-    """A splitter feeds a check valve branch and a DN50 pipe -> DN50 x DN135 expander -> DN135 branch, rejoined in
-    a mixer: the two branches meet at one pressure with different velocities."""
+    """A junction feeds a check valve branch and a DN50 pipe -> DN50 x DN135 expander -> DN135 branch, rejoined in
+    a junction: the two branches meet at one pressure with different velocities."""
     return {"nodes": [_node("n0", "pressure_source", source_pressure_bara=2.0, temperature_k=283.15),
                       _node("n1", "pressure_source", source_pressure_bara=2.0, temperature_k=283.15),
-                      _node("n2", "mixer"), _node("n3", "splitter"),
+                      _node("n2", "junction"), _node("n3", "junction"),
                       _node("n4", "check_valve", cv=1.0),
                       _reducer_node("n5", 0.05, 0.135),
-                      _node("n6", "mixer"),
+                      _node("n6", "junction"),
                       _node("n7", "tank", level_m=1.0, temperature_k=283.15)],
-            "edges": [_pipe_edge("e0", "n0", "n2", 0.135, target_port="inlet-0"),
-                      _pipe_edge("e1", "n1", "n2", 0.135, target_port="inlet-1"),
-                      _pipe_edge("e2", "n2", "n3", 0.135),
-                      _pipe_edge("e3", "n3", "n4", 0.135, source_port="outlet-0"),
-                      _pipe_edge("e4", "n4", "n6", 0.135, target_port="inlet-0"),
-                      _pipe_edge("e5", "n3", "n5", 0.05, source_port="outlet-1"),
-                      _pipe_edge("e6", "n5", "n6", 0.135, target_port="inlet-1"),
-                      _pipe_edge("e7", "n6", "n7", 0.135)],
+            "edges": [_pipe_edge("e0", "n0", "n2", 0.135, target_port="port-0"),
+                      _pipe_edge("e1", "n1", "n2", 0.135, target_port="port-1"),
+                      _pipe_edge("e2", "n2", "n3", 0.135, source_port="port-2", target_port="port-0"),
+                      _pipe_edge("e3", "n3", "n4", 0.135, source_port="port-1"),
+                      _pipe_edge("e4", "n4", "n6", 0.135, target_port="port-0"),
+                      _pipe_edge("e5", "n3", "n5", 0.05, source_port="port-2"),
+                      _pipe_edge("e6", "n5", "n6", 0.135, target_port="port-1"),
+                      _pipe_edge("e7", "n6", "n7", 0.135, source_port="port-2")],
             "globalSettings": {"fluid_type": "water"}}
 
 
@@ -135,72 +145,88 @@ def _heavy_crude_viscous_drop_graph():
             "globalSettings": {"fluid_type": "crude_heavy"}}
 
 
+def _closed_check_valve_into_junction_graph():
+    """A closed check valve feeds a junction that a higher source drives to the tank: the pipe behind the valve has
+    no flow, and the junction reads its lowest flowing static pressure there, below the node total."""
+    pipe = math.exp(-2)
+    return {"nodes": [_node("n0", "junction"),
+                      _node("n1", "pressure_source", source_pressure_bara=1.5, temperature_k=283.15),
+                      _node("n2", "check_valve", cv=1.0, cracking_pressure_bar=0.0),
+                      _node("n3", "pressure_source", source_pressure_bara=2.0, temperature_k=283.15),
+                      _node("n4", "tank", level_m=1.0, temperature_k=283.15)],
+            "edges": [_pipe_edge("e0", "n1", "n2", pipe), _pipe_edge("e1", "n2", "n0", pipe, target_port="port-0"),
+                      _pipe_edge("e2", "n3", "n0", pipe, target_port="port-1"),
+                      _pipe_edge("e3", "n0", "n4", pipe, source_port="port-2")],
+            "globalSettings": {"fluid_type": "crude_heavy"}}
+
+
 def _reverse_flow_graph():
-    """Two sources below the sink: the sink pushes flow back through the mixer, the mixer outlet and both
-    inlets carry reverse flow. Hypothesis rarely draws a sink above both supplies, so it is pinned."""
+    """Two sources below the sink: the sink pushes flow back through the junction, its outlet-side port and both
+    inlet-side ports carry reverse flow. Hypothesis rarely draws a sink above both supplies, so it is pinned."""
     def node(node_id, node_type, **data):
         return {"id": node_id, "type": node_type, "position": {"x": 0, "y": 0}, "data": {"label": node_id, **data}}
 
     def edge(edge_id, source, source_port, target, target_port):
         return {"id": edge_id, "source": source, "target": target, "sourceHandle": source_port,
                 "targetHandle": target_port, "data": {"length_m": 10.0, "diameter_m": 0.05, "roughness_mm": 0.045}}
-    return {"nodes": [node("n0", "mixer"),
+    return {"nodes": [node("n0", "junction"),
                       node("n1", "pressure_source", source_pressure_bara=1.0, temperature_k=283.15),
                       node("n2", "pressure_source", source_pressure_bara=1.2, temperature_k=333.15),
                       node("n3", "tank", level_m=5.0, temperature_k=293.15)],
-            "edges": [edge("e0", "n1", "outlet-0", "n0", "inlet-0"), edge("e1", "n2", "outlet-0", "n0", "inlet-1"),
-                      edge("e2", "n0", "outlet-0", "n3", "inlet-0")],
+            "edges": [edge("e0", "n1", "outlet-0", "n0", "port-0"), edge("e1", "n2", "outlet-0", "n0", "port-1"),
+                      edge("e2", "n0", "port-2", "n3", "inlet-0")],
             "globalSettings": {"fluid_type": "iso_vg_46"}}
 
 
 def _trickle_mixing_graph():
-    """Two 1 K apart sources throttled to a trickle (2.6e-7 and 5.5e-8 m³/s) into a mixer. The weaker leg is
+    """Two 1 K apart sources throttled to a trickle (2.6e-7 and 5.5e-8 m³/s) into a junction. The weaker leg is
     below 1e-7 m³/s yet still mixes into the outlet, so the outlet lies above the warmer-looking stream
     that a coarse flow filter would see alone."""
     return {"nodes": [_node("n0", "pressure_source", source_pressure_bara=2.0, temperature_k=273.15),
                       _node("n1", "pressure_source", source_pressure_bara=2.0, temperature_k=274.15),
                       _node("n2", "linear_control_valve", max_cv=math.e, opening_pct=5.0),
                       _node("n3", "linear_control_valve", max_cv=1.0, opening_pct=5.0),
-                      _node("n4", "mixer"),
+                      _node("n4", "junction"),
                       _node("n5", "tank", level_m=1.0, temperature_k=283.15)],
             "edges": [_edge("e0", "n0", "n2", math.exp(-2)), _edge("e1", "n1", "n3", math.exp(-2)),
-                      {**_edge("e2", "n2", "n4", math.exp(-2)), "targetHandle": "inlet-0"},
-                      {**_edge("e3", "n3", "n4", math.exp(-2)), "targetHandle": "inlet-1"},
-                      _edge("e4", "n4", "n5", math.exp(-2))],
+                      {**_edge("e2", "n2", "n4", math.exp(-2)), "targetHandle": "port-0"},
+                      {**_edge("e3", "n3", "n4", math.exp(-2)), "targetHandle": "port-1"},
+                      {**_edge("e4", "n4", "n5", math.exp(-2)), "sourceHandle": "port-2"}],
             "globalSettings": {"fluid_type": "iso_vg_100"}}
 
 
 def _flow_reversal_cycling_graphs():
-    """Two mixer networks on which the outer loop (flow solve against temperature update) used to cycle at a
+    """Two junction networks on which the outer loop (flow solve against temperature update) used to cycle at a
     flow reversal and ended at the iteration limit: a hot stream at low pressure against a cold stream throttled by
-    a small valve, and a crude mixer whose valve branch runs backwards against a long thin branch."""
-    def edge(edge_id, source, target, diameter_m, length_m=1.0, roughness_mm=0.0, target_port="inlet-0"):
-        return {"id": edge_id, "source": source, "target": target, "sourceHandle": "outlet-0",
+    a small valve, and a crude junction whose valve branch runs backwards against a long thin branch."""
+    def edge(edge_id, source, target, diameter_m, length_m=1.0, roughness_mm=0.0, target_port="inlet-0",
+             source_port="outlet-0"):
+        return {"id": edge_id, "source": source, "target": target, "sourceHandle": source_port,
                 "targetHandle": target_port,
                 "data": {"length_m": length_m, "diameter_m": diameter_m, "roughness_mm": roughness_mm}}
-    oil = {"nodes": [_node("n0", "mixer"),
+    oil = {"nodes": [_node("n0", "junction"),
                      _node("n1", "pressure_source", source_pressure_bara=1.375, temperature_k=355.15),
                      _node("n2", "pressure_source", source_pressure_bara=18.0, temperature_k=273.15),
                      _node("n3", "linear_control_valve", max_cv=1.0, opening_pct=84.0),
                      _node("n4", "tank", level_m=1.0, temperature_k=355.15)],
-           "edges": [edge("e0", "n1", "n0", math.exp(-2)), edge("e1", "n2", "n3", math.exp(-2)),
-                     edge("e2", "n3", "n0", math.exp(-2), target_port="inlet-1"),
-                     edge("e3", "n0", "n4", math.exp(-4.1875), roughness_mm=0.5)],
+           "edges": [edge("e0", "n1", "n0", math.exp(-2), target_port="port-0"), edge("e1", "n2", "n3", math.exp(-2)),
+                     edge("e2", "n3", "n0", math.exp(-2), target_port="port-1"),
+                     edge("e3", "n0", "n4", math.exp(-4.1875), roughness_mm=0.5, source_port="port-2")],
            "globalSettings": {"fluid_type": "transformer_oil"}}
-    crude = {"nodes": [_node("n0", "mixer"),
+    crude = {"nodes": [_node("n0", "junction"),
                        _node("n1", "pressure_source", source_pressure_bara=1.0, temperature_k=283.15),
                        _node("n2", "linear_control_valve", max_cv=math.exp(2), opening_pct=15.0),
                        _node("n3", "pressure_source", source_pressure_bara=2.0, temperature_k=303.15),
                        _node("n4", "tank", level_m=1.0, temperature_k=283.15)],
-             "edges": [edge("e0", "n1", "n2", math.exp(-2)), edge("e1", "n2", "n0", math.exp(-2)),
-                       edge("e2", "n3", "n0", math.exp(-4), length_m=math.exp(5.25), target_port="inlet-1"),
-                       edge("e3", "n0", "n4", math.exp(-2))],
+             "edges": [edge("e0", "n1", "n2", math.exp(-2)), edge("e1", "n2", "n0", math.exp(-2), target_port="port-0"),
+                       edge("e2", "n3", "n0", math.exp(-4), length_m=math.exp(5.25), target_port="port-1"),
+                       edge("e3", "n0", "n4", math.exp(-2), source_port="port-2")],
              "globalSettings": {"fluid_type": "crude_heavy"}}
     return oil, crude
 
 
 def _junction_loop_graph():
-    """A splitter whose two branches rejoin in a mixer (a loop of junctions) behind a mixer fed by two
+    """A junction whose two branches rejoin in a second junction (a loop of junctions) behind a junction fed by two
     throttled supplies. The loop circulates ~4e-7 m³/s against a net through-flow of ~1e-9 m³/s, so the
     junction temperatures stay near the 293.15 K start value unless the mixing is solved as a whole: every
     supply is 294.15 K and nothing cools, yet the loop used to report about 293.2 K."""
@@ -208,58 +234,59 @@ def _junction_loop_graph():
         return {"id": edge_id, "source": source, "target": target, "sourceHandle": source_port,
                 "targetHandle": target_port,
                 "data": {"length_m": 1.0, "diameter_m": diameter_m, "roughness_mm": 0.0}}
-    return {"nodes": [_node("n0", "mixer"),
+    return {"nodes": [_node("n0", "junction"),
                       _node("n1", "pressure_source", source_pressure_bara=2.0, temperature_k=294.15),
                       _node("n2", "check_valve", cv=1.0, cracking_pressure_bar=0.0),
                       _node("n3", "pressure_source", source_pressure_bara=1.0, temperature_k=294.15),
                       _node("n4", "linear_control_valve", max_cv=math.exp(3), opening_pct=18.0),
                       _node("n5", "tank", level_m=1.0, temperature_k=294.15),
                       _node("n6", "check_valve", cv=1.0, cracking_pressure_bar=0.0),
-                      _node("n7", "splitter"),
-                      _node("n8", "mixer"),
+                      _node("n7", "junction"),
+                      _node("n8", "junction"),
                       _node("n9", "check_valve", cv=1.0, cracking_pressure_bar=0.0)],
-            "edges": [edge("e0", "n1", "n2"), edge("e1", "n2", "n0"),
-                      edge("e2", "n3", "n4", math.exp(-3)), edge("e3", "n4", "n0", target_port="inlet-1"),
-                      edge("e4", "n0", "n7"), edge("e5", "n7", "n9"), edge("e6", "n9", "n8"),
-                      edge("e7", "n7", "n8", source_port="outlet-1", target_port="inlet-1"),
-                      edge("e8", "n8", "n6"), edge("e9", "n6", "n5")],
+            "edges": [edge("e0", "n1", "n2"), edge("e1", "n2", "n0", target_port="port-0"),
+                      edge("e2", "n3", "n4", math.exp(-3)), edge("e3", "n4", "n0", target_port="port-1"),
+                      edge("e4", "n0", "n7", source_port="port-2", target_port="port-0"),
+                      edge("e5", "n7", "n9", source_port="port-1"), edge("e6", "n9", "n8", target_port="port-0"),
+                      edge("e7", "n7", "n8", source_port="port-2", target_port="port-1"),
+                      edge("e8", "n8", "n6", source_port="port-2"), edge("e9", "n6", "n5")],
             "globalSettings": {"fluid_type": "crude_heavy"}}
 
 
 def _noise_trickle_mixing_graph():
-    """A hot supply behind a check valve and a cold supply behind a long thin pipe meet in a mixer. The
+    """A hot supply behind a check valve and a cold supply behind a long thin pipe meet in a junction. The
     valve passes only ~9e-11 m³/s of solver noise (below the dead-leg threshold) against ~6e-8 m³/s from the
     cold side, so the mixed stream must stay at the cold temperature instead of drifting ~0.1 K towards the hot one."""
-    def edge(edge_id, source, target, diameter_m, length_m=1.0, target_port="inlet-0"):
-        return {"id": edge_id, "source": source, "target": target, "sourceHandle": "outlet-0",
+    def edge(edge_id, source, target, diameter_m, length_m=1.0, target_port="inlet-0", source_port="outlet-0"):
+        return {"id": edge_id, "source": source, "target": target, "sourceHandle": source_port,
                 "targetHandle": target_port,
                 "data": {"length_m": length_m, "diameter_m": diameter_m, "roughness_mm": 0.0}}
-    return {"nodes": [_node("n0", "mixer"),
+    return {"nodes": [_node("n0", "junction"),
                       _node("n1", "pressure_source", source_pressure_bara=1.25, temperature_k=341.15),
                       _node("n2", "check_valve", cv=1.0, cracking_pressure_bar=0.125),
                       _node("n3", "pressure_source", source_pressure_bara=1.25, temperature_k=273.15),
                       _node("n4", "tank", level_m=2.0, temperature_k=341.15)],
-            "edges": [edge("e0", "n1", "n2", 0.1353352832366127), edge("e1", "n2", "n0", 0.1353352832366127),
-                      edge("e2", "n3", "n0", 0.015184197956837946, length_m=54.598150033144236, target_port="inlet-1"),
-                      edge("e3", "n0", "n4", 0.1353352832366127)],
+            "edges": [edge("e0", "n1", "n2", 0.1353352832366127), edge("e1", "n2", "n0", 0.1353352832366127, target_port="port-0"),
+                      edge("e2", "n3", "n0", 0.015184197956837946, length_m=54.598150033144236, target_port="port-1"),
+                      edge("e3", "n0", "n4", 0.1353352832366127, source_port="port-2")],
             "globalSettings": {"fluid_type": "iso_vg_150"}}
 
 
 def _crude_trickle_mixing_graph():
-    """Two sources at different temperatures feed a mixer through a wide and a thin pipe. The thin side
+    """Two sources at different temperatures feed a junction through a wide and a thin pipe. The thin side
     delivers a ~9e-9 m³/s trickle, above the dead-leg threshold, so it still mixes into the outlet and moves
     it ~0.12 K; the mixed stream is not simply the temperature of the larger stream."""
-    def edge(edge_id, source, target, diameter_m, length_m=1.0, target_port="inlet-0"):
-        return {"id": edge_id, "source": source, "target": target, "sourceHandle": "outlet-0",
+    def edge(edge_id, source, target, diameter_m, length_m=1.0, target_port="inlet-0", source_port="outlet-0"):
+        return {"id": edge_id, "source": source, "target": target, "sourceHandle": source_port,
                 "targetHandle": target_port,
                 "data": {"length_m": length_m, "diameter_m": diameter_m, "roughness_mm": 0.0}}
-    return {"nodes": [_node("n0", "mixer"),
+    return {"nodes": [_node("n0", "junction"),
                       _node("n1", "pressure_source", source_pressure_bara=1.0625, temperature_k=288.15),
                       _node("n2", "pressure_source", source_pressure_bara=1.0625, temperature_k=283.15),
                       _node("n3", "tank", level_m=0.5, temperature_k=288.15)],
-            "edges": [edge("e0", "n1", "n0", math.exp(-4)),
-                      edge("e1", "n2", "n0", math.exp(-3), target_port="inlet-1"),
-                      edge("e2", "n0", "n3", math.exp(-4), length_m=math.exp(2))],
+            "edges": [edge("e0", "n1", "n0", math.exp(-4), target_port="port-0"),
+                      edge("e1", "n2", "n0", math.exp(-3), target_port="port-1"),
+                      edge("e2", "n0", "n3", math.exp(-4), length_m=math.exp(2), source_port="port-2")],
             "globalSettings": {"fluid_type": "crude_heavy"}}
 
 
@@ -279,15 +306,16 @@ def _stiff_valve_after_pump_graph():
             "globalSettings": {"fluid_type": "iso_vg_150"}}
 
 
-def _density_change_mixer_graph():
+def _density_change_junction_graph():
     """Seawater at 0 and 55 degC mixed 1:1 (1028 and 1009 kg/m3): the mixed stream is denser than the mean volume
-    suggests, so volume flow is not conserved across the mixer. Hypothesis rarely draws such a temperature gap."""
-    return {"nodes": [_node("n0", "mixer"),
+    suggests, so volume flow is not conserved across the junction. Hypothesis rarely draws such a temperature gap."""
+    return {"nodes": [_node("n0", "junction"),
                       _node("n1", "pressure_source", source_pressure_bara=3.0, temperature_k=273.15),
                       _node("n2", "pressure_source", source_pressure_bara=3.0, temperature_k=328.15),
                       _node("n3", "tank", level_m=1.0, temperature_k=273.15)],
-            "edges": [_edge("e0", "n1", "n0", 0.05), {**_edge("e1", "n2", "n0", 0.05), "targetHandle": "inlet-1"},
-                      _edge("e2", "n0", "n3", 0.05)],
+            "edges": [{**_edge("e0", "n1", "n0", 0.05), "targetHandle": "port-0"},
+                      {**_edge("e1", "n2", "n0", 0.05), "targetHandle": "port-1"},
+                      {**_edge("e2", "n0", "n3", 0.05), "sourceHandle": "port-2"}],
             "globalSettings": {"fluid_type": "seawater"}}
 
 
@@ -326,12 +354,12 @@ def test_well_posed_network_reaches_a_finite_steady_state_with_fluid_properties(
 @example(_reducer_backflow_graph(1.7))
 @example(_reducer_backflow_graph(1.3))
 @example(_reducer_bypass_graph())
-@example(_density_change_mixer_graph())
+@example(_density_change_junction_graph())
 @example(_strong_heater_graph())
 @given(networks())
 def test_mass_is_conserved(graph):
     """Mass flow, not volume flow, is conserved: every junction and component passes on the mass it receives
-    (a mixer of 0 and 55 degC water, or a heater, changes the volume flow), and what leaves the sources reaches
+    (a junction of 0 and 55 degC water, or a heater, changes the volume flow), and what leaves the sources reaches
     the sinks. Each edge carries rho * q with rho of the fluid at its downstream end."""
     network = solved(graph)
     types = node_types(graph)
@@ -367,36 +395,46 @@ def test_mass_is_conserved(graph):
 @example(_reducer_backflow_graph(1.3))
 @example(_reducer_bypass_graph())
 @example(_heavy_crude_viscous_drop_graph())
+@example(_closed_check_valve_into_junction_graph())
 @example(_stiff_valve_after_pump_graph())
 @given(networks())
 def test_pressure_is_continuous_and_falls_along_the_flow(graph):
     """A pipe end sits at its node's total pressure less its own velocity head (the node holds one total pressure
-    for all its pipes; across a splitter or mixer the static pressures differ by the pipe velocity heads). Static
+    for all its pipes; across a junction the static pressures differ by the pipe velocity heads). Static
     pressure falls across every pipe, and total pressure across every passive component, in the flow direction
-    (all generated networks are driven from one side), the pipe by exactly its own drop at its reported inlet
-    properties, so the reported pressures belong to the reported densities and viscosities."""
+    (all generated networks are driven from one side), the pipe by exactly its own drop at the properties of its
+    upstream end, so the reported pressures belong to the reported densities and viscosities. A pipe without
+    flow instead keeps the reported static pressure of the node port it sits on, equal at both ends."""
     network = solved(graph)
     types = node_types(graph)
     for edge in network.edges:
         pipe = edge["pipe"]
         src = network.nodes[edge["source"]].outlets[int(edge["source_port"].split("-")[-1])]
         tgt = network.nodes[edge["target"]].inlets[int(edge["target_port"].split("-")[-1])]
-        assert pipe_end_total(pipe, pipe.inlets[0], network.nodes[edge["source"]]) == pytest.approx(
-            total_of(src), abs=PRESSURE_TOL), edge["id"]
-        assert pipe_end_total(pipe, pipe.outlets[0], network.nodes[edge["target"]]) == pytest.approx(
-            total_of(tgt), abs=PRESSURE_TOL), edge["id"]
+        if abs(pipe.inlets[0].flow_rate) <= MIXING_FLOW_TOL:
+            # A still pipe has no velocity head: a no-flow port reads the junction's lowest flowing static pressure
+            # and the whole still section behind it drops by the same amount, so compare static pressures along
+            # the section instead of against the node total (pressure boundaries keep their reservoir pressure)
+            assert pipe.inlets[0].pressure == pytest.approx(pipe.outlets[0].pressure, abs=PRESSURE_TOL), edge["id"]
+            for end, port, node_id in ((pipe.inlets[0], src, edge["source"]), (pipe.outlets[0], tgt, edge["target"])):
+                if types[node_id] not in BOUNDARY_TYPES:
+                    assert end.pressure == pytest.approx(port.pressure, abs=PRESSURE_TOL), edge["id"]
+        else:
+            assert pipe_end_total(pipe, pipe.inlets[0], network.nodes[edge["source"]]) == pytest.approx(
+                total_of(src), abs=PRESSURE_TOL), edge["id"]
+            assert pipe_end_total(pipe, pipe.outlets[0], network.nodes[edge["target"]]) == pytest.approx(
+                total_of(tgt), abs=PRESSURE_TOL), edge["id"]
         if abs(pipe.inlets[0].flow_rate) > FLOW_TOL:
             drop = (pipe.inlets[0].pressure - pipe.outlets[0].pressure) * math.copysign(1.0, pipe.inlets[0].flow_rate)
             assert drop >= -PRESSURE_TOL, edge["id"]
-            inlet = pipe.inlets[0]
-            expected = pipe.calculate_delta_p(inlet.flow_rate, inlet.density, inlet.viscosity)
+            expected = pipe.calculate_delta_p(pipe.inlets[0].flow_rate, *pipe.upstream_port().fluid())
             assert (pipe.inlets[0].pressure - pipe.outlets[0].pressure) == pytest.approx(expected, rel=1e-4, abs=PRESSURE_TOL), edge["id"]
     for node_id, node in network.nodes.items():
-        if types[node_id] in STATIC_DROP_EXEMPT or node.inlets[0].flow_rate <= 1e-7:
+        if types[node_id] in STATIC_DROP_EXEMPT or types[node_id] == "junction" or node.inlets[0].flow_rate <= 1e-7:
             continue
         assert total_of(node.inlets[0]) >= max(total_of(p) for p in node.outlets) - PRESSURE_TOL, node_id
     for node_id, node in network.nodes.items():
-        if types[node_id] in ("splitter", "mixer"):
+        if types[node_id] == "junction":
             totals = [total_of(p) for p in [*node.inlets, *node.outlets]]
             assert max(totals) - min(totals) <= PRESSURE_TOL, node_id
 
@@ -407,8 +445,8 @@ def test_pressure_is_continuous_and_falls_along_the_flow(graph):
 @example(_junction_loop_graph())
 @given(networks(components=tuple(sorted(DISSIPATIVE_ONLY))))
 def test_dissipation_never_cools_and_mixing_stays_between_its_streams(graph):
-    """Without a cooler the fluid only warms by dissipation (pipes, throttling, pump losses), and a mixer
-    outlet lies between its inlet temperatures."""
+    """Without a cooler the fluid only warms by dissipation (pipes, throttling, pump losses), and a junction
+    outlet lies between the temperatures of the streams arriving."""
     network = solved(graph)
     types = node_types(graph)
     # What each source and tank supplies, defaults included (a tank above a source feeds reverse flow)
@@ -418,7 +456,7 @@ def test_dissipation_never_cools_and_mixing_stays_between_its_streams(graph):
             continue
         for port in [*node.inlets, *node.outlets]:
             assert port.temperature >= t_supply - TEMPERATURE_TOL, node_id
-        if types[node_id] == "mixer":
+        if types[node_id] == "junction":
             # Streams arrive through inlets with forward flow and through the outlet with reverse flow
             arriving = [p.temperature for p in node.inlets if p.flow_rate > MIXING_FLOW_TOL]
             arriving += [p.temperature for p in node.outlets if p.flow_rate < -MIXING_FLOW_TOL]
@@ -433,14 +471,14 @@ def test_dissipation_never_cools_and_mixing_stays_between_its_streams(graph):
 @example(_noise_trickle_mixing_graph())
 @given(networks())
 def test_junctions_conserve_energy(graph):
-    """At a splitter or mixer every leaving stream carries the mass-weighted mean specific enthalpy h(T) of
+    """At a junction every leaving stream carries the mass-weighted mean specific enthalpy h(T) of
     the arriving streams, in whichever direction each stream flows. (Absolute enthalpy flows are not compared:
     only the mass-weighted mean enthalpy of the arriving streams is checked.)"""
     network = solved(graph)
     fluid = graph["globalSettings"]["fluid_type"]
     types = node_types(graph)
     for node_id, node in network.nodes.items():
-        if types[node_id] not in ("splitter", "mixer"):
+        if types[node_id] != "junction":
             continue
         streams = [(p.flow_rate, p) for p in node.inlets] + [(-p.flow_rate, p) for p in node.outlets]
         arriving = [(q * p.density, FluidProperties.get_enthalpy(fluid, p.temperature)) for q, p in streams if q > MIXING_FLOW_TOL]
@@ -454,22 +492,57 @@ def test_junctions_conserve_energy(graph):
                     h_mix, abs=cp * TEMPERATURE_TOL), node_id
 
 
+def _stagnant_junction_graph():
+    """A junction between three tanks at one level and three temperatures: no flow anywhere, so the junction
+    has no stream to take a temperature from and takes the one of its lowest connected port (port-0)."""
+    tanks = [_node(f"n{k}", "tank", level_m=2.0, temperature_k=t) for k, t in enumerate((300.0, 280.0, 320.0))]
+    return {"nodes": [*tanks, _node("n3", "junction")],
+            "edges": [{**_edge(f"e{k}", f"n{k}", "n3", 0.05), "targetHandle": f"port-{k}"} for k in range(3)],
+            "globalSettings": {"fluid_type": "water"}}
+
+
+def _reversible_edges(graph):
+    """Ids of the pipes whose two ends take either direction: between junctions, or to a tank that has no other pipe."""
+    types = node_types(graph)
+    degree = Counter(n for e in graph["edges"] for n in (e["source"], e["target"]))
+
+    def free(node_id):
+        return types[node_id] == "junction" or (types[node_id] == "tank" and degree[node_id] == 1)
+    return {e["id"] for e in graph["edges"] if free(e["source"]) and free(e["target"])
+            and "junction" in (types[e["source"]], types[e["target"]])}
+
+
+def _reversed(edge):
+    """The same pipe drawn from the other end (a tank takes the pipe on its other handle)."""
+    swap = {"outlet-0": "inlet-0", "inlet-0": "outlet-0"}
+    return {**edge, "source": edge["target"], "target": edge["source"],
+            "sourceHandle": swap.get(edge["targetHandle"], edge["targetHandle"]),
+            "targetHandle": swap.get(edge["sourceHandle"], edge["sourceHandle"])}
+
+
+@example(_stagnant_junction_graph(), random.Random(7))
 @given(networks(max_depth=2), st.randoms(use_true_random=False))
-def test_result_does_not_depend_on_ids_or_order(graph, rnd):
-    """Renaming every node and edge and shuffling both lists (as a different save of the same diagram)
-    gives the same state."""
+def test_result_does_not_depend_on_ids_order_or_drawn_direction(graph, rnd):
+    """Renaming every node and edge, shuffling both lists and drawing pipes on junctions from the other end
+    (as a different save of the same diagram) gives the same state: pressures, port temperatures and
+    reported static pressures per junction port, and the pipe flows up to their sign."""
     reference = snapshot(solved(graph))
     node_ids = [n["id"] for n in graph["nodes"]]
     new_ids = dict(zip(node_ids, rnd.sample([f"x{i}" for i in range(len(node_ids))], len(node_ids))))
     edge_ids = {e["id"]: f"pipe-{len(graph['edges']) - i}" for i, e in enumerate(graph["edges"])}
+    flipped = {i for i in sorted(_reversible_edges(graph)) if rnd.random() < 0.5}
     renamed = {
         **graph,
         "nodes": rnd.sample([{**n, "id": new_ids[n["id"]]} for n in graph["nodes"]], len(node_ids)),
-        "edges": rnd.sample([{**e, "id": edge_ids[e["id"]], "source": new_ids[e["source"]],
-                              "target": new_ids[e["target"]]} for e in graph["edges"]], len(graph["edges"])),
+        "edges": rnd.sample([{**(_reversed(e) if e["id"] in flipped else e), "id": edge_ids[e["id"]],
+                              "source": new_ids[(_reversed(e) if e["id"] in flipped else e)["source"]],
+                              "target": new_ids[(_reversed(e) if e["id"] in flipped else e)["target"]]}
+                             for e in graph["edges"]], len(graph["edges"])),
     }
     result = snapshot(solved(renamed))
     back = {**{old: result[new] for old, new in new_ids.items()}, **{old: result[new] for old, new in edge_ids.items()}}
+    for edge_id in flipped:   # the pipe's inlet is the old outlet, and its flow runs the other way
+        reference[edge_id] = [(p, -q, t) for p, q, t in reversed(reference[edge_id])]
     assert_same_state(reference, back)
 
 
@@ -482,21 +555,22 @@ def test_warm_start_reaches_the_cold_start_state(graph):
 
 
 def _pump_loop_small_throughflow_graph(fluid, opening_pct):
-    """A pump recirculating through a splitter and a mixer while a nearly closed valve passes only a small
+    """A pump recirculating through two junctions while a nearly closed valve passes only a small
     through-flow. The loop circulates far more than it drains, so it takes many passes to warm up."""
     def edge(edge_id, source, target, diameter_m=0.05, length_m=1.0, source_port="outlet-0", target_port="inlet-0"):
         return {"id": edge_id, "source": source, "target": target, "sourceHandle": source_port,
                 "targetHandle": target_port,
                 "data": {"length_m": length_m, "diameter_m": diameter_m, "roughness_mm": 0.0}}
     return {"nodes": [_node("src", "pressure_source", source_pressure_bara=2.0, temperature_k=300.0),
-                      _node("m", "mixer"),
+                      _node("m", "junction"),
                       _node("p", "centrifugal_pump", flow_rated_lmin=60.0, head_rated_m=40.0),
-                      _node("s", "splitter"),
+                      _node("s", "junction"),
                       _node("v", "linear_control_valve", max_cv=1.0, opening_pct=opening_pct),
                       _node("t", "tank", level_m=1.0, temperature_k=300.0)],
-            "edges": [edge("e0", "src", "m"), edge("e1", "m", "p"), edge("e2", "p", "s"),
-                      edge("e3", "s", "v"), edge("e4", "v", "t"),
-                      edge("e5", "s", "m", diameter_m=0.025, length_m=30.0, source_port="outlet-1", target_port="inlet-1")],
+            "edges": [edge("e0", "src", "m", target_port="port-0"), edge("e1", "m", "p", source_port="port-2"),
+                      edge("e2", "p", "s", target_port="port-0"),
+                      edge("e3", "s", "v", source_port="port-1"), edge("e4", "v", "t"),
+                      edge("e5", "s", "m", diameter_m=0.025, length_m=30.0, source_port="port-2", target_port="port-1")],
             "globalSettings": {"fluid_type": fluid}}
 
 

@@ -10,6 +10,7 @@ from simulation.graph_parser import GraphParser, ModelInputError
 from simulation.solver import NetworkSolver, run_sequential_relief_simulation
 from simulation.equipment.volumetric_pump import VolumetricPump
 from simulation.equipment.centrifugal_pump import CentrifugalPump
+from simulation.equipment.junction import Junction
 from simulation.fluid_utils import FluidProperties
 from limiter import limiter
 from simulation.limits import SolveTimeout, solve_deadline, solve_slot, max_nodes, max_cases
@@ -162,6 +163,12 @@ def extract_telemetry(network) -> Dict[str, Any]:
             "inlets": [p.model_dump() for p in node.inlets],
             "outlets": [p.model_dump() for p in node.outlets]
         }
+        if isinstance(node, Junction):
+            # Per port-k in port order: the slot port with flow_rate positive into the junction; None without a pipe
+            node_tel["ports"] = [
+                {**node.port(k).model_dump(), "flow_rate": float(node.port_flow_into(k))} if node.port(k) is not None else None
+                for k in range(node.num_ports)
+            ]
         if hasattr(node, 'opening_pct'):
             node_tel["opening_pct"] = node.opening_pct
         if hasattr(node, 'sensed_pressure'):

@@ -53,7 +53,7 @@ The solver finds the mix ratio between hydraulic solves, one step per outer iter
 
 ## 4. Thermal & Energy Balance
 
-The outlet temperature (`calculate`) follows the enthalpy balance of the inward streams with $c_p(T)$, as the [mixer](mixer.md#4-thermal--energy-balance) and the default node mixing. The throttling heat of both forward paths is added as enthalpy:
+The outlet temperature (`calculate`) follows the enthalpy balance of the inward streams with $c_p(T)$, as the [junction](junction.md#4-thermal--energy-balance) and the default node mixing. The throttling heat of both forward paths is added as enthalpy:
 
 $$h(T_{\text{out}}) = \frac{\sum_k \dot m_k\, h(T_k) + \sum_{\text{paths}} Q\, \Delta P_{\text{path}}}{\sum_k \dot m_k}, \qquad h(T) = \int_{273.15\,\text{K}}^{T} c_p\, dT$$
 

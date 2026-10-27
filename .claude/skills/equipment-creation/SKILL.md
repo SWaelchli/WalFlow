@@ -130,7 +130,7 @@ cd frontend && npm run lint && npm test && npm run build
 | **Active Flow Sources** | Centrifugal Pump, Volumetric Pump | $H(Q)$ curve or displacement spring, `is_relief_driver = True`; PD pump `blocks_flow_on_shutdown = True` | [equipment-archetypes.md#archetype-2](references/equipment-archetypes.md) |
 | **Dynamic Closed / MCP Valves** | Check Valve, Relief Valve (PSV), Rupture Disc | `use_mcp_formulation = True` | [equipment-archetypes.md#archetype-3](references/equipment-archetypes.md) |
 | **Pressure Boundaries** | Tank, Reservoir, Fixed Pressure Point | `is_pressure_boundary = True` | [equipment-archetypes.md#archetype-4](references/equipment-archetypes.md) |
-| **Multi-port Flow Junctions** | Splitter, Mixer, 3-Way TCV | Direction-aware mixing | [equipment-archetypes.md#archetype-5](references/equipment-archetypes.md) |
+| **Multi-port Flow Junctions** | Junction, 3-Way TCV | Direction-aware mixing | [equipment-archetypes.md#archetype-5](references/equipment-archetypes.md) |
 | **Thermal Units** | Heat Exchanger, Cooler | Thermal duty / effectiveness | [equipment-archetypes.md#archetype-6](references/equipment-archetypes.md) |
 
 ---

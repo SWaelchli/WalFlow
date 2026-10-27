@@ -26,6 +26,7 @@ const DEFAULTS_BY_TYPE = {
   filter: { dp_clean_bar: 0.2, dp_terminal_bar: 1.0, flow_ref_lmin: 100.0, clogging_pct: 0.0 },
   heat_exchanger: HEAT_EXCHANGER_DEFAULTS,
   remote_control_valve: { max_cv: 0.05, set_pressure_pa: 500000.0, ...CONTROL_VALVE_STYLE_DEFAULTS },
+  junction: { num_ports: 3 },
   three_way_tcv: { max_cv: 0.1, set_temperature_c: 40.0, hot_port_idx: 0, ...CONTROL_VALVE_STYLE_DEFAULTS },
   check_valve: { cv: 10.0, cracking_pressure_bar: 0.05 },
   pressure_safety_valve: { set_pressure_barg: 20.0, cv: 10.0, valve_type: 'conventional', design_superimposed_bp_barg: 0.0, action_mode: 'pop_action', blowdown_pct: 7.0, forced_state: 'auto' },

@@ -7,8 +7,8 @@
       "id": "note-jeppson-48",
       "type": "text_bubble",
       "position": {
-        "x": -74,
-        "y": 1352
+        "x": -440,
+        "y": 0
       },
       "width": 460,
       "height": 560,
@@ -19,697 +19,411 @@
       "data": {
         "label": "Note",
         "title": "JEPPSON (1974) 48-PIPE NETWORK",
-        "text": "Validation case: the 48-pipe network of R. W. Jeppson, Steady Flow Analysis of Pipe Networks: An Instructional Manual, Utah State University, 1974, Ch. VI, example problem 3 (network p. 71, solution p. 70).\n\nData: all pipes Darcy-Weisbach with roughness 0.012 in; water at 68 °F (not stated for this problem); all junctions at one elevation. Pipe labels give the published diameter and length. Supplies 20.428 cfs (flow source) and 56.312 cfs (tank); 28 demands of 1.0 to 5.0 cfs and 1.74 cfs (flow sources with negative set flow).\n\nJeppson gives no heads for this network: the tank level is an arbitrary head reference, and only flows and friction losses compare. With one pressure boundary the flows depend on the pipes alone.\n\nEach junction joining more than three connections is a chain of tees with short links, so the diagram is busier than the source figure. Pipes are drawn in the direction of the published flow, except P16, P22, P33, drawn against it so every tee chain has an outlet."
+        "text": "Validation case: the 48-pipe network of R. W. Jeppson, Steady Flow Analysis of Pipe Networks: An Instructional Manual, Utah State University, 1974, Ch. VI, example problem 3 (network p. 71, solution p. 70).\n\nData: all pipes Darcy-Weisbach with roughness 0.012 in; water at 68 °F (not stated for this problem); all junctions at one elevation. Pipe labels give the published diameter and length. Supplies 20.428 cfs (flow source) and 56.312 cfs (tank); 28 demands of 1.0 to 5.0 cfs and 1.74 cfs (flow sources with negative set flow).\n\nJeppson gives no heads for this network: the tank level is an arbitrary head reference, and only flows and friction losses compare. With one pressure boundary the flows depend on the pipes alone.\n\nEach junction is one node with as many ports as pipes (3 to 5, including the demand or supply connection). Pipes are drawn in the direction of the published flow, except P16, P22 and P33, which are drawn against it (a junction port takes a pipe in either direction)."
       }
     },
     {
       "id": "B1",
-      "type": "mixer",
+      "type": "junction",
       "position": {
-        "x": 774,
-        "y": 1942
+        "x": 380,
+        "y": 1500
       },
       "data": {
-        "label": "Junction B1"
+        "rotation": 180,
+        "label": "Junction B1",
+        "num_ports": 3
       }
     },
     {
-      "id": "B2-1",
-      "type": "mixer",
+      "id": "B2",
+      "type": "junction",
       "position": {
-        "x": 992,
-        "y": 1866
+        "x": 1061.4,
+        "y": 1500
       },
       "data": {
-        "label": "B2.1"
+        "label": "Junction B2",
+        "num_ports": 4
       }
     },
     {
-      "id": "B2-2",
-      "type": "mixer",
+      "id": "B3",
+      "type": "junction",
       "position": {
-        "x": 1088,
-        "y": 1866
+        "x": 1404.1,
+        "y": 1500
       },
       "data": {
-        "label": "B2.2"
+        "label": "Junction B3",
+        "num_ports": 4
       }
     },
     {
-      "id": "B3-1",
-      "type": "mixer",
+      "id": "B4",
+      "type": "junction",
       "position": {
-        "x": 1536,
-        "y": 1866
+        "x": 1748.2,
+        "y": 1500
       },
       "data": {
-        "label": "B3.1"
+        "label": "Junction B4",
+        "num_ports": 4
       }
     },
     {
-      "id": "B3-2",
-      "type": "splitter",
+      "id": "B5",
+      "type": "junction",
       "position": {
-        "x": 1632,
-        "y": 1866
+        "x": 2070.4,
+        "y": 1500
       },
       "data": {
-        "label": "B3.2"
-      }
-    },
-    {
-      "id": "B4-1",
-      "type": "mixer",
-      "position": {
-        "x": 2087,
-        "y": 1859
-      },
-      "data": {
-        "label": "B4.1"
-      }
-    },
-    {
-      "id": "B4-2",
-      "type": "splitter",
-      "position": {
-        "x": 2182,
-        "y": 1859
-      },
-      "data": {
-        "label": "B4.2"
-      }
-    },
-    {
-      "id": "B5-1",
-      "type": "mixer",
-      "position": {
-        "x": 2330,
-        "y": 1754
-      },
-      "data": {
-        "label": "B5.1"
-      }
-    },
-    {
-      "id": "B5-2",
-      "type": "splitter",
-      "position": {
-        "x": 2425,
-        "y": 1754
-      },
-      "data": {
-        "label": "B5.2"
+        "label": "Junction B5",
+        "num_ports": 4
       }
     },
     {
       "id": "B6",
-      "type": "mixer",
+      "type": "junction",
       "position": {
-        "x": 2614,
-        "y": 1850
+        "x": 2420,
+        "y": 1500
       },
       "data": {
-        "label": "Junction B6"
+        "rotation": 90,
+        "label": "Junction B6",
+        "num_ports": 3
       }
     },
     {
-      "id": "M1-1",
-      "type": "mixer",
+      "id": "M1",
+      "type": "junction",
       "position": {
-        "x": 939,
-        "y": 1322
+        "x": 1044.8,
+        "y": 1173.1
       },
       "data": {
-        "label": "M1.1"
+        "rotation": 180,
+        "label": "Junction M1",
+        "num_ports": 5
       }
     },
     {
-      "id": "M1-2",
-      "type": "splitter",
+      "id": "M2",
+      "type": "junction",
       "position": {
-        "x": 1034,
-        "y": 1322
+        "x": 1396.1,
+        "y": 1164.4
       },
       "data": {
-        "label": "M1.2"
+        "rotation": 270,
+        "label": "Junction M2",
+        "num_ports": 5
       }
     },
     {
-      "id": "M1-3",
-      "type": "splitter",
+      "id": "M3",
+      "type": "junction",
       "position": {
-        "x": 1129,
-        "y": 1322
+        "x": 1740.2,
+        "y": 1164.4
       },
       "data": {
-        "label": "M1.3"
+        "rotation": 270,
+        "label": "Junction M3",
+        "num_ports": 5
       }
     },
     {
-      "id": "M2-1",
-      "type": "mixer",
+      "id": "M4",
+      "type": "junction",
       "position": {
-        "x": 1483,
-        "y": 1322
+        "x": 2071,
+        "y": 1173.1
       },
       "data": {
-        "label": "M2.1"
+        "rotation": 0,
+        "label": "Junction M4",
+        "num_ports": 5
       }
     },
     {
-      "id": "M2-2",
-      "type": "mixer",
+      "id": "M5",
+      "type": "junction",
       "position": {
-        "x": 1578,
-        "y": 1322
+        "x": 2420,
+        "y": 1164.6
       },
       "data": {
-        "label": "M2.2"
+        "label": "Junction M5",
+        "num_ports": 4
       }
     },
     {
-      "id": "M2-3",
-      "type": "splitter",
+      "id": "E",
+      "type": "junction",
       "position": {
-        "x": 1673,
-        "y": 1322
+        "x": 2420,
+        "y": 839
       },
       "data": {
-        "label": "M2.3"
+        "label": "Junction E",
+        "num_ports": 4
       }
     },
     {
-      "id": "M3-1",
-      "type": "mixer",
+      "id": "N13",
+      "type": "junction",
       "position": {
-        "x": 2027,
-        "y": 1322
+        "x": 2078.8,
+        "y": 839.7
       },
       "data": {
-        "label": "M3.1"
+        "rotation": 90,
+        "label": "Junction N13",
+        "num_ports": 5
       }
     },
     {
-      "id": "M3-2",
-      "type": "mixer",
+      "id": "N5",
+      "type": "junction",
       "position": {
-        "x": 2122,
-        "y": 1322
+        "x": 1731.8,
+        "y": 839
       },
       "data": {
-        "label": "M3.2"
+        "label": "Junction N5",
+        "num_ports": 4
       }
     },
     {
-      "id": "M3-3",
-      "type": "splitter",
+      "id": "N3",
+      "type": "junction",
       "position": {
-        "x": 2217,
-        "y": 1322
+        "x": 1387.7,
+        "y": 839
       },
       "data": {
-        "label": "M3.3"
+        "label": "Junction N3",
+        "num_ports": 4
       }
     },
     {
-      "id": "M4-1",
-      "type": "mixer",
+      "id": "N25",
+      "type": "junction",
       "position": {
-        "x": 2273,
-        "y": 1322
+        "x": 1061.4,
+        "y": 839
       },
       "data": {
-        "label": "M4.1"
+        "label": "Junction N25",
+        "num_ports": 4
       }
     },
     {
-      "id": "M4-2",
-      "type": "mixer",
+      "id": "N26",
+      "type": "junction",
       "position": {
-        "x": 2368,
-        "y": 1322
+        "x": 1061.4,
+        "y": 511.7
       },
       "data": {
-        "label": "M4.2"
+        "label": "Junction N26",
+        "num_ports": 4
       }
     },
     {
-      "id": "M4-3",
-      "type": "splitter",
+      "id": "N41",
+      "type": "junction",
       "position": {
-        "x": 2463,
-        "y": 1322
+        "x": 1061.4,
+        "y": 188.6
       },
       "data": {
-        "label": "M4.3"
+        "label": "Junction N41",
+        "num_ports": 4
       }
     },
     {
-      "id": "M5-1",
-      "type": "mixer",
+      "id": "N28",
+      "type": "junction",
       "position": {
-        "x": 2567,
-        "y": 1322
+        "x": 1731.8,
+        "y": 188.5
       },
       "data": {
-        "label": "M5.1"
-      }
-    },
-    {
-      "id": "M5-2",
-      "type": "mixer",
-      "position": {
-        "x": 2662,
-        "y": 1322
-      },
-      "data": {
-        "label": "M5.2"
-      }
-    },
-    {
-      "id": "E-1",
-      "type": "mixer",
-      "position": {
-        "x": 3050,
-        "y": 1072
-      },
-      "data": {
-        "label": "E.1"
-      }
-    },
-    {
-      "id": "E-2",
-      "type": "mixer",
-      "position": {
-        "x": 3145,
-        "y": 1072
-      },
-      "data": {
-        "label": "E.2"
-      }
-    },
-    {
-      "id": "N13-1",
-      "type": "mixer",
-      "position": {
-        "x": 2641,
-        "y": 944
-      },
-      "data": {
-        "label": "N13.1"
-      }
-    },
-    {
-      "id": "N13-2",
-      "type": "mixer",
-      "position": {
-        "x": 2736,
-        "y": 944
-      },
-      "data": {
-        "label": "N13.2"
-      }
-    },
-    {
-      "id": "N13-3",
-      "type": "mixer",
-      "position": {
-        "x": 2831,
-        "y": 944
-      },
-      "data": {
-        "label": "N13.3"
-      }
-    },
-    {
-      "id": "N5-1",
-      "type": "mixer",
-      "position": {
-        "x": 2304,
-        "y": 826
-      },
-      "data": {
-        "label": "N5.1"
-      }
-    },
-    {
-      "id": "N5-2",
-      "type": "mixer",
-      "position": {
-        "x": 2400,
-        "y": 826
-      },
-      "data": {
-        "label": "N5.2"
-      }
-    },
-    {
-      "id": "N3-1",
-      "type": "mixer",
-      "position": {
-        "x": 1520,
-        "y": 778
-      },
-      "data": {
-        "label": "N3.1"
-      }
-    },
-    {
-      "id": "N3-2",
-      "type": "mixer",
-      "position": {
-        "x": 1616,
-        "y": 778
-      },
-      "data": {
-        "label": "N3.2"
-      }
-    },
-    {
-      "id": "N25-1",
-      "type": "mixer",
-      "position": {
-        "x": 768,
-        "y": 832
-      },
-      "data": {
-        "label": "N25.1"
-      }
-    },
-    {
-      "id": "N25-2",
-      "type": "splitter",
-      "position": {
-        "x": 864,
-        "y": 832
-      },
-      "data": {
-        "label": "N25.2"
-      }
-    },
-    {
-      "id": "N26-1",
-      "type": "mixer",
-      "position": {
-        "x": 752,
-        "y": 442
-      },
-      "data": {
-        "label": "N26.1"
-      }
-    },
-    {
-      "id": "N26-2",
-      "type": "mixer",
-      "position": {
-        "x": 848,
-        "y": 442
-      },
-      "data": {
-        "label": "N26.2"
-      }
-    },
-    {
-      "id": "N41-1",
-      "type": "mixer",
-      "position": {
-        "x": 800,
-        "y": 32
-      },
-      "data": {
-        "label": "N41.1"
-      }
-    },
-    {
-      "id": "N41-2",
-      "type": "splitter",
-      "position": {
-        "x": 896,
-        "y": 32
-      },
-      "data": {
-        "label": "N41.2"
-      }
-    },
-    {
-      "id": "N28-1",
-      "type": "mixer",
-      "position": {
-        "x": 1472,
-        "y": 160
-      },
-      "data": {
-        "label": "N28.1"
-      }
-    },
-    {
-      "id": "N28-2",
-      "type": "splitter",
-      "position": {
-        "x": 1568,
-        "y": 160
-      },
-      "data": {
-        "label": "N28.2"
+        "label": "Junction N28",
+        "num_ports": 4
       }
     },
     {
       "id": "N23",
-      "type": "mixer",
+      "type": "junction",
       "position": {
-        "x": 1786,
-        "y": 346
+        "x": 1731.8,
+        "y": 510
       },
       "data": {
-        "label": "Junction N23"
+        "rotation": 90,
+        "label": "Junction N23",
+        "num_ports": 3
       }
     },
     {
-      "id": "N24-1",
-      "type": "mixer",
+      "id": "N24",
+      "type": "junction",
       "position": {
-        "x": 1888,
-        "y": 250
+        "x": 2086.8,
+        "y": 188.5
       },
       "data": {
-        "label": "N24.1"
-      }
-    },
-    {
-      "id": "N24-2",
-      "type": "mixer",
-      "position": {
-        "x": 1984,
-        "y": 250
-      },
-      "data": {
-        "label": "N24.2"
+        "label": "Junction N24",
+        "num_ports": 4
       }
     },
     {
       "id": "N17",
-      "type": "mixer",
+      "type": "junction",
       "position": {
-        "x": 2182,
-        "y": 435
+        "x": 2086.8,
+        "y": 510
       },
       "data": {
-        "label": "Junction N17"
+        "rotation": 90,
+        "label": "Junction N17",
+        "num_ports": 3
       }
     },
     {
       "id": "N18",
-      "type": "mixer",
+      "type": "junction",
       "position": {
-        "x": 2314,
-        "y": 352
+        "x": 2420,
+        "y": 188.5
       },
       "data": {
-        "label": "Junction N18"
+        "rotation": 90,
+        "label": "Junction N18",
+        "num_ports": 3
       }
     },
     {
       "id": "N19",
-      "type": "mixer",
+      "type": "junction",
       "position": {
-        "x": 2573,
-        "y": 563
+        "x": 2420,
+        "y": 510
       },
       "data": {
-        "label": "Junction N19"
+        "rotation": 90,
+        "label": "Junction N19",
+        "num_ports": 3
       }
     },
     {
       "id": "N44",
-      "type": "splitter",
+      "type": "junction",
       "position": {
-        "x": 410,
-        "y": 378
+        "x": 380,
+        "y": 188.6
       },
       "data": {
-        "label": "Junction N44"
+        "label": "Junction N44",
+        "num_ports": 3
       }
     },
     {
-      "id": "N40-1",
-      "type": "mixer",
+      "id": "N40",
+      "type": "junction",
       "position": {
-        "x": 567,
-        "y": 234
+        "x": 707.7,
+        "y": 188.6
       },
       "data": {
-        "label": "N40.1"
+        "label": "Junction N40",
+        "num_ports": 4
       }
     },
     {
-      "id": "N40-2",
-      "type": "splitter",
+      "id": "N42",
+      "type": "junction",
       "position": {
-        "x": 662,
-        "y": 234
+        "x": 716.1,
+        "y": 495.1
       },
       "data": {
-        "label": "N40.2"
+        "rotation": 270,
+        "label": "Junction N42",
+        "num_ports": 5
       }
     },
     {
-      "id": "N42-1",
-      "type": "mixer",
+      "id": "N43",
+      "type": "junction",
       "position": {
-        "x": 423,
-        "y": 582
+        "x": 380,
+        "y": 511.7
       },
       "data": {
-        "label": "N42.1"
+        "label": "Junction N43",
+        "num_ports": 4
       }
     },
     {
-      "id": "N42-2",
-      "type": "mixer",
+      "id": "N36",
+      "type": "junction",
       "position": {
-        "x": 518,
-        "y": 582
+        "x": 380,
+        "y": 839
       },
       "data": {
-        "label": "N42.2"
+        "label": "Junction N36",
+        "num_ports": 4
       }
     },
     {
-      "id": "N42-3",
-      "type": "splitter",
+      "id": "N38",
+      "type": "junction",
       "position": {
-        "x": 613,
-        "y": 582
+        "x": 724.1,
+        "y": 839
       },
       "data": {
-        "label": "N42.3"
+        "label": "Junction N38",
+        "num_ports": 4
       }
     },
     {
-      "id": "N43-1",
-      "type": "mixer",
+      "id": "N35",
+      "type": "junction",
       "position": {
-        "x": 167,
-        "y": 730
+        "x": 380,
+        "y": 1164.6
       },
       "data": {
-        "label": "N43.1"
-      }
-    },
-    {
-      "id": "N43-2",
-      "type": "splitter",
-      "position": {
-        "x": 262,
-        "y": 730
-      },
-      "data": {
-        "label": "N43.2"
-      }
-    },
-    {
-      "id": "N36-1",
-      "type": "mixer",
-      "position": {
-        "x": -22,
-        "y": 1072
-      },
-      "data": {
-        "label": "N36.1"
-      }
-    },
-    {
-      "id": "N36-2",
-      "type": "mixer",
-      "position": {
-        "x": 73,
-        "y": 1072
-      },
-      "data": {
-        "label": "N36.2"
-      }
-    },
-    {
-      "id": "N38-1",
-      "type": "mixer",
-      "position": {
-        "x": 375,
-        "y": 960
-      },
-      "data": {
-        "label": "N38.1"
-      }
-    },
-    {
-      "id": "N38-2",
-      "type": "splitter",
-      "position": {
-        "x": 470,
-        "y": 960
-      },
-      "data": {
-        "label": "N38.2"
-      }
-    },
-    {
-      "id": "N35-1",
-      "type": "mixer",
-      "position": {
-        "x": 458,
-        "y": 1322
-      },
-      "data": {
-        "label": "N35.1"
-      }
-    },
-    {
-      "id": "N35-2",
-      "type": "mixer",
-      "position": {
-        "x": 553,
-        "y": 1322
-      },
-      "data": {
-        "label": "N35.2"
+        "label": "Junction N35",
+        "num_ports": 4
       }
     },
     {
       "id": "N33",
-      "type": "mixer",
+      "type": "junction",
       "position": {
-        "x": 768,
-        "y": 1626
+        "x": 720,
+        "y": 1164.6
       },
       "data": {
-        "label": "Junction N33"
+        "label": "Junction N33",
+        "num_ports": 3
       }
     },
     {
       "id": "demand-B1",
       "type": "flow_source",
       "position": {
-        "x": 714,
-        "y": 2052
+        "x": 185,
+        "y": 1485
       },
       "data": {
         "label": "Demand 2 cfs",
@@ -721,10 +435,11 @@
       "id": "demand-B2",
       "type": "flow_source",
       "position": {
-        "x": 980,
-        "y": 1976
+        "x": 1046.4,
+        "y": 1665
       },
       "data": {
+        "rotation": 270,
         "label": "Demand 3 cfs",
         "source_flow_lmin": -5097.03,
         "temperature_k": 293.15
@@ -734,10 +449,11 @@
       "id": "supply-B3",
       "type": "flow_source",
       "position": {
-        "x": 1524,
-        "y": 1976
+        "x": 1389.1,
+        "y": 1665
       },
       "data": {
+        "rotation": 270,
         "label": "Supply 20.428 cfs",
         "source_flow_lmin": 34707.39,
         "temperature_k": 293.15
@@ -747,10 +463,11 @@
       "id": "demand-B4",
       "type": "flow_source",
       "position": {
-        "x": 2074,
-        "y": 1969
+        "x": 1733.2,
+        "y": 1665
       },
       "data": {
+        "rotation": 270,
         "label": "Demand 2 cfs",
         "source_flow_lmin": -3398.02,
         "temperature_k": 293.15
@@ -760,10 +477,11 @@
       "id": "demand-B5",
       "type": "flow_source",
       "position": {
-        "x": 2318,
-        "y": 1864
+        "x": 2055.4,
+        "y": 1665
       },
       "data": {
+        "rotation": 270,
         "label": "Demand 3 cfs",
         "source_flow_lmin": -5097.03,
         "temperature_k": 293.15
@@ -773,10 +491,11 @@
       "id": "demand-B6",
       "type": "flow_source",
       "position": {
-        "x": 2554,
-        "y": 1960
+        "x": 2405,
+        "y": 1665
       },
       "data": {
+        "rotation": 270,
         "label": "Demand 2 cfs",
         "source_flow_lmin": -3398.02,
         "temperature_k": 293.15
@@ -786,10 +505,11 @@
       "id": "demand-M1",
       "type": "flow_source",
       "position": {
-        "x": 974,
-        "y": 1432
+        "x": 922.3,
+        "y": 1271.5
       },
       "data": {
+        "rotation": 270,
         "label": "Demand 2 cfs",
         "source_flow_lmin": -3398.02,
         "temperature_k": 293.15
@@ -799,10 +519,11 @@
       "id": "demand-M2",
       "type": "flow_source",
       "position": {
-        "x": 1518,
-        "y": 1432
+        "x": 1501.5,
+        "y": 1032.3
       },
       "data": {
+        "rotation": 180,
         "label": "Demand 3 cfs",
         "source_flow_lmin": -5097.03,
         "temperature_k": 293.15
@@ -812,10 +533,11 @@
       "id": "demand-M3",
       "type": "flow_source",
       "position": {
-        "x": 2062,
-        "y": 1432
+        "x": 1841.5,
+        "y": 1032.3
       },
       "data": {
+        "rotation": 180,
         "label": "Demand 2 cfs",
         "source_flow_lmin": -3398.02,
         "temperature_k": 293.15
@@ -825,10 +547,11 @@
       "id": "demand-M4",
       "type": "flow_source",
       "position": {
-        "x": 2308,
-        "y": 1432
+        "x": 2187.7,
+        "y": 1271.5
       },
       "data": {
+        "rotation": 270,
         "label": "Demand 5 cfs",
         "source_flow_lmin": -8495.05,
         "temperature_k": 293.15
@@ -838,10 +561,11 @@
       "id": "demand-M5",
       "type": "flow_source",
       "position": {
-        "x": 2554,
-        "y": 1432
+        "x": 2585,
+        "y": 1149.6
       },
       "data": {
+        "rotation": 180,
         "label": "Demand 1 cfs",
         "source_flow_lmin": -1699.01,
         "temperature_k": 293.15
@@ -851,10 +575,11 @@
       "id": "demand-E",
       "type": "flow_source",
       "position": {
-        "x": 3038,
-        "y": 1182
+        "x": 2585,
+        "y": 824
       },
       "data": {
+        "rotation": 180,
         "label": "Demand 1.74 cfs",
         "source_flow_lmin": -2956.28,
         "temperature_k": 293.15
@@ -864,10 +589,11 @@
       "id": "demand-N13",
       "type": "flow_source",
       "position": {
-        "x": 2676,
-        "y": 1054
+        "x": 2181.5,
+        "y": 947.7
       },
       "data": {
+        "rotation": 180,
         "label": "Demand 3 cfs",
         "source_flow_lmin": -5097.03,
         "temperature_k": 293.15
@@ -877,10 +603,11 @@
       "id": "demand-N3",
       "type": "flow_source",
       "position": {
-        "x": 1508,
-        "y": 888
+        "x": 1485,
+        "y": 705
       },
       "data": {
+        "rotation": 180,
         "label": "Demand 4 cfs",
         "source_flow_lmin": -6796.04,
         "temperature_k": 293.15
@@ -890,10 +617,11 @@
       "id": "demand-N26",
       "type": "flow_source",
       "position": {
-        "x": 740,
-        "y": 552
+        "x": 1225,
+        "y": 496.7
       },
       "data": {
+        "rotation": 180,
         "label": "Demand 4 cfs",
         "source_flow_lmin": -6796.04,
         "temperature_k": 293.15
@@ -903,10 +631,11 @@
       "id": "demand-N41",
       "type": "flow_source",
       "position": {
-        "x": 788,
-        "y": 142
+        "x": 1145,
+        "y": 45
       },
       "data": {
+        "rotation": 180,
         "label": "Demand 3 cfs",
         "source_flow_lmin": -5097.03,
         "temperature_k": 293.15
@@ -916,10 +645,11 @@
       "id": "demand-N28",
       "type": "flow_source",
       "position": {
-        "x": 1460,
-        "y": 270
+        "x": 1825,
+        "y": 45
       },
       "data": {
+        "rotation": 180,
         "label": "Demand 2.5 cfs",
         "source_flow_lmin": -4247.53,
         "temperature_k": 293.15
@@ -929,8 +659,8 @@
       "id": "demand-N23",
       "type": "flow_source",
       "position": {
-        "x": 1726,
-        "y": 456
+        "x": 1545,
+        "y": 495
       },
       "data": {
         "label": "Demand 4 cfs",
@@ -942,10 +672,11 @@
       "id": "demand-N24",
       "type": "flow_source",
       "position": {
-        "x": 1876,
-        "y": 360
+        "x": 2165,
+        "y": 45
       },
       "data": {
+        "rotation": 180,
         "label": "Demand 4 cfs",
         "source_flow_lmin": -6796.04,
         "temperature_k": 293.15
@@ -955,8 +686,8 @@
       "id": "demand-N17",
       "type": "flow_source",
       "position": {
-        "x": 2122,
-        "y": 545
+        "x": 1885,
+        "y": 495
       },
       "data": {
         "label": "Demand 2 cfs",
@@ -968,10 +699,11 @@
       "id": "demand-N18",
       "type": "flow_source",
       "position": {
-        "x": 2254,
-        "y": 462
+        "x": 2505,
+        "y": 45
       },
       "data": {
+        "rotation": 180,
         "label": "Demand 1.5 cfs",
         "source_flow_lmin": -2548.52,
         "temperature_k": 293.15
@@ -981,8 +713,8 @@
       "id": "demand-N19",
       "type": "flow_source",
       "position": {
-        "x": 2513,
-        "y": 673
+        "x": 2225,
+        "y": 495
       },
       "data": {
         "label": "Demand 2 cfs",
@@ -994,8 +726,8 @@
       "id": "supply-tank",
       "type": "tank",
       "position": {
-        "x": 150,
-        "y": 238
+        "x": 100,
+        "y": 128.7
       },
       "data": {
         "label": "Supply 56.312 cfs (head reference)",
@@ -1008,10 +740,11 @@
       "id": "demand-N40",
       "type": "flow_source",
       "position": {
-        "x": 554,
-        "y": 344
+        "x": 805,
+        "y": 45
       },
       "data": {
+        "rotation": 180,
         "label": "Demand 2 cfs",
         "source_flow_lmin": -3398.02,
         "temperature_k": 293.15
@@ -1021,10 +754,11 @@
       "id": "demand-N42",
       "type": "flow_source",
       "position": {
-        "x": 458,
-        "y": 692
+        "x": 821.5,
+        "y": 372.3
       },
       "data": {
+        "rotation": 180,
         "label": "Demand 4 cfs",
         "source_flow_lmin": -6796.04,
         "temperature_k": 293.15
@@ -1034,8 +768,8 @@
       "id": "demand-N43",
       "type": "flow_source",
       "position": {
-        "x": 154,
-        "y": 840
+        "x": 185,
+        "y": 496.7
       },
       "data": {
         "label": "Demand 2 cfs",
@@ -1047,8 +781,8 @@
       "id": "demand-N36",
       "type": "flow_source",
       "position": {
-        "x": -34,
-        "y": 1182
+        "x": 185,
+        "y": 824
       },
       "data": {
         "label": "Demand 3 cfs",
@@ -1060,10 +794,11 @@
       "id": "demand-N38",
       "type": "flow_source",
       "position": {
-        "x": 362,
-        "y": 1070
+        "x": 709.1,
+        "y": 1005
       },
       "data": {
+        "rotation": 270,
         "label": "Demand 3 cfs",
         "source_flow_lmin": -5097.03,
         "temperature_k": 293.15
@@ -1073,8 +808,8 @@
       "id": "demand-N35",
       "type": "flow_source",
       "position": {
-        "x": 446,
-        "y": 1432
+        "x": 185,
+        "y": 1149.6
       },
       "data": {
         "label": "Demand 2 cfs",
@@ -1086,10 +821,11 @@
       "id": "demand-N33",
       "type": "flow_source",
       "position": {
-        "x": 708,
-        "y": 1736
+        "x": 705,
+        "y": 1335
       },
       "data": {
+        "rotation": 270,
         "label": "Demand 4 cfs",
         "source_flow_lmin": -6796.04,
         "temperature_k": 293.15
@@ -1099,10 +835,10 @@
   "edges": [
     {
       "id": "p1",
-      "source": "B3-2",
-      "sourceHandle": "outlet-0",
-      "target": "B4-1",
-      "targetHandle": "inlet-0",
+      "source": "B3",
+      "sourceHandle": "port-1",
+      "target": "B4",
+      "targetHandle": "port-0",
       "data": {
         "label": "P1: 24 in, 2000 ft",
         "length_m": 609.6,
@@ -1112,10 +848,10 @@
     },
     {
       "id": "p2",
-      "source": "B3-2",
-      "sourceHandle": "outlet-1",
-      "target": "M2-1",
-      "targetHandle": "inlet-0",
+      "source": "B3",
+      "sourceHandle": "port-3",
+      "target": "M2",
+      "targetHandle": "port-0",
       "data": {
         "label": "P2: 24 in, 2000 ft",
         "length_m": 609.6,
@@ -1125,10 +861,10 @@
     },
     {
       "id": "p3",
-      "source": "M2-3",
-      "sourceHandle": "outlet-0",
-      "target": "N3-1",
-      "targetHandle": "inlet-0",
+      "source": "M2",
+      "sourceHandle": "port-2",
+      "target": "N3",
+      "targetHandle": "port-2",
       "data": {
         "label": "P3: 24 in, 2000 ft",
         "length_m": 609.6,
@@ -1138,10 +874,10 @@
     },
     {
       "id": "p4",
-      "source": "N3-2",
-      "sourceHandle": "outlet-0",
-      "target": "N5-1",
-      "targetHandle": "inlet-0",
+      "source": "N3",
+      "sourceHandle": "port-1",
+      "target": "N5",
+      "targetHandle": "port-0",
       "data": {
         "label": "P4: 12 in, 3000 ft",
         "length_m": 914.4,
@@ -1151,10 +887,10 @@
     },
     {
       "id": "p5",
-      "source": "M3-3",
-      "sourceHandle": "outlet-0",
-      "target": "N5-1",
-      "targetHandle": "inlet-1",
+      "source": "M3",
+      "sourceHandle": "port-2",
+      "target": "N5",
+      "targetHandle": "port-2",
       "data": {
         "label": "P5: 24 in, 2000 ft",
         "length_m": 609.6,
@@ -1164,10 +900,10 @@
     },
     {
       "id": "p6",
-      "source": "B4-2",
-      "sourceHandle": "outlet-0",
-      "target": "M3-1",
-      "targetHandle": "inlet-0",
+      "source": "B4",
+      "sourceHandle": "port-3",
+      "target": "M3",
+      "targetHandle": "port-0",
       "data": {
         "label": "P6: 12 in, 2000 ft",
         "length_m": 609.6,
@@ -1177,10 +913,10 @@
     },
     {
       "id": "p7",
-      "source": "M3-3",
-      "sourceHandle": "outlet-1",
-      "target": "M4-1",
-      "targetHandle": "inlet-0",
+      "source": "M3",
+      "sourceHandle": "port-4",
+      "target": "M4",
+      "targetHandle": "port-0",
       "data": {
         "label": "P7: 12 in, 1000 ft",
         "length_m": 304.8,
@@ -1190,10 +926,10 @@
     },
     {
       "id": "p8",
-      "source": "B5-2",
-      "sourceHandle": "outlet-0",
-      "target": "M4-1",
-      "targetHandle": "inlet-1",
+      "source": "B5",
+      "sourceHandle": "port-3",
+      "target": "M4",
+      "targetHandle": "port-4",
       "data": {
         "label": "P8: 12 in, 1500 ft",
         "length_m": 457.2,
@@ -1203,10 +939,10 @@
     },
     {
       "id": "p9",
-      "source": "B4-2",
-      "sourceHandle": "outlet-1",
-      "target": "B5-1",
-      "targetHandle": "inlet-0",
+      "source": "B4",
+      "sourceHandle": "port-1",
+      "target": "B5",
+      "targetHandle": "port-0",
       "data": {
         "label": "P9: 18 in, 1000 ft",
         "length_m": 304.8,
@@ -1216,10 +952,10 @@
     },
     {
       "id": "p10",
-      "source": "M4-3",
-      "sourceHandle": "outlet-0",
-      "target": "M5-1",
-      "targetHandle": "inlet-0",
+      "source": "M4",
+      "sourceHandle": "port-2",
+      "target": "M5",
+      "targetHandle": "port-0",
       "data": {
         "label": "P10: 12 in, 1000 ft",
         "length_m": 304.8,
@@ -1230,9 +966,9 @@
     {
       "id": "p11",
       "source": "B6",
-      "sourceHandle": "outlet-0",
-      "target": "M5-1",
-      "targetHandle": "inlet-1",
+      "sourceHandle": "port-0",
+      "target": "M5",
+      "targetHandle": "port-2",
       "data": {
         "label": "P11: 12 in, 2000 ft",
         "length_m": 609.6,
@@ -1242,10 +978,10 @@
     },
     {
       "id": "p12",
-      "source": "B5-2",
-      "sourceHandle": "outlet-1",
+      "source": "B5",
+      "sourceHandle": "port-1",
       "target": "B6",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-2",
       "data": {
         "label": "P12: 18 in, 1000 ft",
         "length_m": 304.8,
@@ -1255,10 +991,10 @@
     },
     {
       "id": "p13",
-      "source": "M4-3",
-      "sourceHandle": "outlet-1",
-      "target": "N13-1",
-      "targetHandle": "inlet-0",
+      "source": "M4",
+      "sourceHandle": "port-1",
+      "target": "N13",
+      "targetHandle": "port-3",
       "data": {
         "label": "P13: 12 in, 2000 ft",
         "length_m": 609.6,
@@ -1268,10 +1004,10 @@
     },
     {
       "id": "p14",
-      "source": "N13-3",
-      "sourceHandle": "outlet-0",
-      "target": "E-1",
-      "targetHandle": "inlet-0",
+      "source": "N13",
+      "sourceHandle": "port-1",
+      "target": "E",
+      "targetHandle": "port-0",
       "data": {
         "label": "P14: 12 in, 1500 ft",
         "length_m": 457.2,
@@ -1281,10 +1017,10 @@
     },
     {
       "id": "p15",
-      "source": "M5-2",
-      "sourceHandle": "outlet-0",
-      "target": "E-1",
-      "targetHandle": "inlet-1",
+      "source": "M5",
+      "sourceHandle": "port-3",
+      "target": "E",
+      "targetHandle": "port-2",
       "data": {
         "label": "P15: 24 in, 2000 ft",
         "length_m": 609.6,
@@ -1295,9 +1031,9 @@
     {
       "id": "p16",
       "source": "N17",
-      "sourceHandle": "outlet-0",
-      "target": "N13-3",
-      "targetHandle": "inlet-1",
+      "sourceHandle": "port-1",
+      "target": "N13",
+      "targetHandle": "port-0",
       "data": {
         "label": "P16: 12 in, 3000 ft",
         "length_m": 914.4,
@@ -1307,10 +1043,10 @@
     },
     {
       "id": "p17",
-      "source": "N24-2",
-      "sourceHandle": "outlet-0",
+      "source": "N24",
+      "sourceHandle": "port-2",
       "target": "N17",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "data": {
         "label": "P17: 12 in, 1000 ft",
         "length_m": 304.8,
@@ -1321,9 +1057,9 @@
     {
       "id": "p18",
       "source": "N18",
-      "sourceHandle": "outlet-0",
-      "target": "N24-1",
-      "targetHandle": "inlet-0",
+      "sourceHandle": "port-2",
+      "target": "N24",
+      "targetHandle": "port-1",
       "data": {
         "label": "P18: 12 in, 1500 ft",
         "length_m": 457.2,
@@ -1334,9 +1070,9 @@
     {
       "id": "p19",
       "source": "N19",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-0",
       "target": "N18",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-1",
       "data": {
         "label": "P19: 18 in, 1000 ft",
         "length_m": 304.8,
@@ -1346,10 +1082,10 @@
     },
     {
       "id": "p20",
-      "source": "E-2",
-      "sourceHandle": "outlet-0",
+      "source": "E",
+      "sourceHandle": "port-3",
       "target": "N19",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-1",
       "data": {
         "label": "P20: 24 in, 3000 ft",
         "length_m": 914.4,
@@ -1359,10 +1095,10 @@
     },
     {
       "id": "p21",
-      "source": "N5-2",
-      "sourceHandle": "outlet-0",
-      "target": "N13-1",
-      "targetHandle": "inlet-1",
+      "source": "N5",
+      "sourceHandle": "port-1",
+      "target": "N13",
+      "targetHandle": "port-4",
       "data": {
         "label": "P21: 12 in, 1500 ft",
         "length_m": 457.2,
@@ -1373,9 +1109,9 @@
     {
       "id": "p22",
       "source": "N23",
-      "sourceHandle": "outlet-0",
-      "target": "N5-2",
-      "targetHandle": "inlet-1",
+      "sourceHandle": "port-1",
+      "target": "N5",
+      "targetHandle": "port-3",
       "data": {
         "label": "P22: 12 in, 3000 ft",
         "length_m": 914.4,
@@ -1385,10 +1121,10 @@
     },
     {
       "id": "p23",
-      "source": "N28-2",
-      "sourceHandle": "outlet-0",
+      "source": "N28",
+      "sourceHandle": "port-2",
       "target": "N23",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "data": {
         "label": "P23: 12 in, 1000 ft",
         "length_m": 304.8,
@@ -1398,10 +1134,10 @@
     },
     {
       "id": "p24",
-      "source": "N28-2",
-      "sourceHandle": "outlet-1",
-      "target": "N24-1",
-      "targetHandle": "inlet-1",
+      "source": "N28",
+      "sourceHandle": "port-1",
+      "target": "N24",
+      "targetHandle": "port-0",
       "data": {
         "label": "P24: 12 in, 1500 ft",
         "length_m": 457.2,
@@ -1411,10 +1147,10 @@
     },
     {
       "id": "p25",
-      "source": "N25-2",
-      "sourceHandle": "outlet-0",
-      "target": "N3-1",
-      "targetHandle": "inlet-1",
+      "source": "N25",
+      "sourceHandle": "port-1",
+      "target": "N3",
+      "targetHandle": "port-0",
       "data": {
         "label": "P25: 12 in, 3000 ft",
         "length_m": 914.4,
@@ -1424,10 +1160,10 @@
     },
     {
       "id": "p26",
-      "source": "N26-2",
-      "sourceHandle": "outlet-0",
-      "target": "N25-1",
-      "targetHandle": "inlet-0",
+      "source": "N26",
+      "sourceHandle": "port-2",
+      "target": "N25",
+      "targetHandle": "port-3",
       "data": {
         "label": "P26: 12 in, 1500 ft",
         "length_m": 457.2,
@@ -1437,10 +1173,10 @@
     },
     {
       "id": "p27",
-      "source": "N41-2",
-      "sourceHandle": "outlet-0",
-      "target": "N26-1",
-      "targetHandle": "inlet-0",
+      "source": "N41",
+      "sourceHandle": "port-2",
+      "target": "N26",
+      "targetHandle": "port-3",
       "data": {
         "label": "P27: 12 in, 1500 ft",
         "length_m": 457.2,
@@ -1450,10 +1186,10 @@
     },
     {
       "id": "p28",
-      "source": "N41-2",
-      "sourceHandle": "outlet-1",
-      "target": "N28-1",
-      "targetHandle": "inlet-0",
+      "source": "N41",
+      "sourceHandle": "port-1",
+      "target": "N28",
+      "targetHandle": "port-0",
       "data": {
         "label": "P28: 12 in, 2500 ft",
         "length_m": 762.0,
@@ -1463,10 +1199,10 @@
     },
     {
       "id": "p29",
-      "source": "M1-2",
-      "sourceHandle": "outlet-0",
-      "target": "B2-1",
-      "targetHandle": "inlet-0",
+      "source": "M1",
+      "sourceHandle": "port-1",
+      "target": "B2",
+      "targetHandle": "port-3",
       "data": {
         "label": "P29: 18 in, 2000 ft",
         "length_m": 609.6,
@@ -1476,10 +1212,10 @@
     },
     {
       "id": "p30",
-      "source": "N25-2",
-      "sourceHandle": "outlet-1",
-      "target": "M1-1",
-      "targetHandle": "inlet-0",
+      "source": "N25",
+      "sourceHandle": "port-2",
+      "target": "M1",
+      "targetHandle": "port-4",
       "data": {
         "label": "P30: 18 in, 2000 ft",
         "length_m": 609.6,
@@ -1490,9 +1226,9 @@
     {
       "id": "p31",
       "source": "B1",
-      "sourceHandle": "outlet-0",
-      "target": "B2-1",
-      "targetHandle": "inlet-1",
+      "sourceHandle": "port-0",
+      "target": "B2",
+      "targetHandle": "port-0",
       "data": {
         "label": "P31: 24 in, 1000 ft",
         "length_m": 304.8,
@@ -1502,10 +1238,10 @@
     },
     {
       "id": "p32",
-      "source": "N35-2",
-      "sourceHandle": "outlet-0",
+      "source": "N35",
+      "sourceHandle": "port-2",
       "target": "B1",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-2",
       "data": {
         "label": "P32: 24 in, 2500 ft",
         "length_m": 762.0,
@@ -1516,9 +1252,9 @@
     {
       "id": "p33",
       "source": "N33",
-      "sourceHandle": "outlet-0",
-      "target": "N35-2",
-      "targetHandle": "inlet-1",
+      "sourceHandle": "port-0",
+      "target": "N35",
+      "targetHandle": "port-1",
       "data": {
         "label": "P33: 12 in, 1500 ft",
         "length_m": 457.2,
@@ -1528,10 +1264,10 @@
     },
     {
       "id": "p34",
-      "source": "M1-3",
-      "sourceHandle": "outlet-0",
+      "source": "M1",
+      "sourceHandle": "port-3",
       "target": "N33",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-1",
       "data": {
         "label": "P34: 12 in, 1500 ft",
         "length_m": 457.2,
@@ -1541,10 +1277,10 @@
     },
     {
       "id": "p35",
-      "source": "N36-2",
-      "sourceHandle": "outlet-0",
-      "target": "N35-1",
-      "targetHandle": "inlet-0",
+      "source": "N36",
+      "sourceHandle": "port-2",
+      "target": "N35",
+      "targetHandle": "port-3",
       "data": {
         "label": "P35: 24 in, 2000 ft",
         "length_m": 609.6,
@@ -1554,10 +1290,10 @@
     },
     {
       "id": "p36",
-      "source": "N38-2",
-      "sourceHandle": "outlet-0",
-      "target": "N36-1",
-      "targetHandle": "inlet-0",
+      "source": "N38",
+      "sourceHandle": "port-0",
+      "target": "N36",
+      "targetHandle": "port-1",
       "data": {
         "label": "P36: 18 in, 1500 ft",
         "length_m": 457.2,
@@ -1567,10 +1303,10 @@
     },
     {
       "id": "p37",
-      "source": "N38-2",
-      "sourceHandle": "outlet-1",
-      "target": "N25-1",
-      "targetHandle": "inlet-1",
+      "source": "N38",
+      "sourceHandle": "port-1",
+      "target": "N25",
+      "targetHandle": "port-0",
       "data": {
         "label": "P37: 18 in, 1500 ft",
         "length_m": 457.2,
@@ -1580,10 +1316,10 @@
     },
     {
       "id": "p38",
-      "source": "N42-3",
-      "sourceHandle": "outlet-0",
-      "target": "N38-1",
-      "targetHandle": "inlet-0",
+      "source": "N42",
+      "sourceHandle": "port-0",
+      "target": "N38",
+      "targetHandle": "port-3",
       "data": {
         "label": "P38: 24 in, 1500 ft",
         "length_m": 457.2,
@@ -1593,10 +1329,10 @@
     },
     {
       "id": "p39",
-      "source": "N42-3",
-      "sourceHandle": "outlet-1",
-      "target": "N26-1",
-      "targetHandle": "inlet-1",
+      "source": "N42",
+      "sourceHandle": "port-4",
+      "target": "N26",
+      "targetHandle": "port-0",
       "data": {
         "label": "P39: 18 in, 1200 ft",
         "length_m": 365.76,
@@ -1606,10 +1342,10 @@
     },
     {
       "id": "p40",
-      "source": "N40-2",
-      "sourceHandle": "outlet-0",
-      "target": "N42-1",
-      "targetHandle": "inlet-0",
+      "source": "N40",
+      "sourceHandle": "port-2",
+      "target": "N42",
+      "targetHandle": "port-2",
       "data": {
         "label": "P40: 18 in, 1500 ft",
         "length_m": 457.2,
@@ -1619,10 +1355,10 @@
     },
     {
       "id": "p41",
-      "source": "N40-2",
-      "sourceHandle": "outlet-1",
-      "target": "N41-1",
-      "targetHandle": "inlet-0",
+      "source": "N40",
+      "sourceHandle": "port-1",
+      "target": "N41",
+      "targetHandle": "port-0",
       "data": {
         "label": "P41: 18 in, 1000 ft",
         "length_m": 304.8,
@@ -1632,10 +1368,10 @@
     },
     {
       "id": "p42",
-      "source": "N43-2",
-      "sourceHandle": "outlet-0",
-      "target": "N42-1",
-      "targetHandle": "inlet-1",
+      "source": "N43",
+      "sourceHandle": "port-1",
+      "target": "N42",
+      "targetHandle": "port-1",
       "data": {
         "label": "P42: 18 in, 1200 ft",
         "length_m": 365.76,
@@ -1646,9 +1382,9 @@
     {
       "id": "p43",
       "source": "N44",
-      "sourceHandle": "outlet-0",
-      "target": "N43-1",
-      "targetHandle": "inlet-0",
+      "sourceHandle": "port-2",
+      "target": "N43",
+      "targetHandle": "port-3",
       "data": {
         "label": "P43: 24 in, 1500 ft",
         "length_m": 457.2,
@@ -1659,9 +1395,9 @@
     {
       "id": "p44",
       "source": "N44",
-      "sourceHandle": "outlet-1",
-      "target": "N40-1",
-      "targetHandle": "inlet-0",
+      "sourceHandle": "port-1",
+      "target": "N40",
+      "targetHandle": "port-0",
       "data": {
         "label": "P44: 24 in, 1000 ft",
         "length_m": 304.8,
@@ -1671,10 +1407,10 @@
     },
     {
       "id": "p45",
-      "source": "N43-2",
-      "sourceHandle": "outlet-1",
-      "target": "N36-1",
-      "targetHandle": "inlet-1",
+      "source": "N43",
+      "sourceHandle": "port-2",
+      "target": "N36",
+      "targetHandle": "port-3",
       "data": {
         "label": "P45: 24 in, 1500 ft",
         "length_m": 457.2,
@@ -1684,10 +1420,10 @@
     },
     {
       "id": "p46",
-      "source": "M1-3",
-      "sourceHandle": "outlet-1",
-      "target": "M2-1",
-      "targetHandle": "inlet-1",
+      "source": "M1",
+      "sourceHandle": "port-0",
+      "target": "M2",
+      "targetHandle": "port-1",
       "data": {
         "label": "P46: 12 in, 2000 ft",
         "length_m": 609.6,
@@ -1697,10 +1433,10 @@
     },
     {
       "id": "p47",
-      "source": "M2-3",
-      "sourceHandle": "outlet-1",
-      "target": "M3-1",
-      "targetHandle": "inlet-1",
+      "source": "M2",
+      "sourceHandle": "port-4",
+      "target": "M3",
+      "targetHandle": "port-1",
       "data": {
         "label": "P47: 12 in, 2000 ft",
         "length_m": 609.6,
@@ -1710,10 +1446,10 @@
     },
     {
       "id": "p48",
-      "source": "B2-2",
-      "sourceHandle": "outlet-0",
-      "target": "B3-1",
-      "targetHandle": "inlet-0",
+      "source": "B2",
+      "sourceHandle": "port-1",
+      "target": "B3",
+      "targetHandle": "port-0",
       "data": {
         "label": "P48: 24 in, 2000 ft",
         "length_m": 609.6,
@@ -1722,401 +1458,11 @@
       }
     },
     {
-      "id": "B2-1-link",
-      "source": "B2-1",
-      "sourceHandle": "outlet-0",
-      "target": "B2-2",
-      "targetHandle": "inlet-0",
-      "data": {
-        "label": "Tee link",
-        "length_m": 0.01,
-        "diameter_m": 0.6,
-        "roughness_mm": 0.3048
-      }
-    },
-    {
-      "id": "B3-1-link",
-      "source": "B3-1",
-      "sourceHandle": "outlet-0",
-      "target": "B3-2",
-      "targetHandle": "inlet-0",
-      "data": {
-        "label": "Tee link",
-        "length_m": 0.01,
-        "diameter_m": 0.6,
-        "roughness_mm": 0.3048
-      }
-    },
-    {
-      "id": "B4-1-link",
-      "source": "B4-1",
-      "sourceHandle": "outlet-0",
-      "target": "B4-2",
-      "targetHandle": "inlet-0",
-      "data": {
-        "label": "Tee link",
-        "length_m": 0.01,
-        "diameter_m": 0.6,
-        "roughness_mm": 0.3048
-      }
-    },
-    {
-      "id": "B5-1-link",
-      "source": "B5-1",
-      "sourceHandle": "outlet-0",
-      "target": "B5-2",
-      "targetHandle": "inlet-0",
-      "data": {
-        "label": "Tee link",
-        "length_m": 0.01,
-        "diameter_m": 0.6,
-        "roughness_mm": 0.3048
-      }
-    },
-    {
-      "id": "M1-1-link",
-      "source": "M1-1",
-      "sourceHandle": "outlet-0",
-      "target": "M1-2",
-      "targetHandle": "inlet-0",
-      "data": {
-        "label": "Tee link",
-        "length_m": 0.01,
-        "diameter_m": 0.6,
-        "roughness_mm": 0.3048
-      }
-    },
-    {
-      "id": "M1-2-link",
-      "source": "M1-2",
-      "sourceHandle": "outlet-1",
-      "target": "M1-3",
-      "targetHandle": "inlet-0",
-      "data": {
-        "label": "Tee link",
-        "length_m": 0.01,
-        "diameter_m": 0.6,
-        "roughness_mm": 0.3048
-      }
-    },
-    {
-      "id": "M2-1-link",
-      "source": "M2-1",
-      "sourceHandle": "outlet-0",
-      "target": "M2-2",
-      "targetHandle": "inlet-0",
-      "data": {
-        "label": "Tee link",
-        "length_m": 0.01,
-        "diameter_m": 0.6,
-        "roughness_mm": 0.3048
-      }
-    },
-    {
-      "id": "M2-2-link",
-      "source": "M2-2",
-      "sourceHandle": "outlet-0",
-      "target": "M2-3",
-      "targetHandle": "inlet-0",
-      "data": {
-        "label": "Tee link",
-        "length_m": 0.01,
-        "diameter_m": 0.6,
-        "roughness_mm": 0.3048
-      }
-    },
-    {
-      "id": "M3-1-link",
-      "source": "M3-1",
-      "sourceHandle": "outlet-0",
-      "target": "M3-2",
-      "targetHandle": "inlet-0",
-      "data": {
-        "label": "Tee link",
-        "length_m": 0.01,
-        "diameter_m": 0.6,
-        "roughness_mm": 0.3048
-      }
-    },
-    {
-      "id": "M3-2-link",
-      "source": "M3-2",
-      "sourceHandle": "outlet-0",
-      "target": "M3-3",
-      "targetHandle": "inlet-0",
-      "data": {
-        "label": "Tee link",
-        "length_m": 0.01,
-        "diameter_m": 0.6,
-        "roughness_mm": 0.3048
-      }
-    },
-    {
-      "id": "M4-1-link",
-      "source": "M4-1",
-      "sourceHandle": "outlet-0",
-      "target": "M4-2",
-      "targetHandle": "inlet-0",
-      "data": {
-        "label": "Tee link",
-        "length_m": 0.01,
-        "diameter_m": 0.6,
-        "roughness_mm": 0.3048
-      }
-    },
-    {
-      "id": "M4-2-link",
-      "source": "M4-2",
-      "sourceHandle": "outlet-0",
-      "target": "M4-3",
-      "targetHandle": "inlet-0",
-      "data": {
-        "label": "Tee link",
-        "length_m": 0.01,
-        "diameter_m": 0.6,
-        "roughness_mm": 0.3048
-      }
-    },
-    {
-      "id": "M5-1-link",
-      "source": "M5-1",
-      "sourceHandle": "outlet-0",
-      "target": "M5-2",
-      "targetHandle": "inlet-0",
-      "data": {
-        "label": "Tee link",
-        "length_m": 0.01,
-        "diameter_m": 0.6,
-        "roughness_mm": 0.3048
-      }
-    },
-    {
-      "id": "E-1-link",
-      "source": "E-1",
-      "sourceHandle": "outlet-0",
-      "target": "E-2",
-      "targetHandle": "inlet-0",
-      "data": {
-        "label": "Tee link",
-        "length_m": 0.01,
-        "diameter_m": 0.6,
-        "roughness_mm": 0.3048
-      }
-    },
-    {
-      "id": "N13-1-link",
-      "source": "N13-1",
-      "sourceHandle": "outlet-0",
-      "target": "N13-2",
-      "targetHandle": "inlet-0",
-      "data": {
-        "label": "Tee link",
-        "length_m": 0.01,
-        "diameter_m": 0.6,
-        "roughness_mm": 0.3048
-      }
-    },
-    {
-      "id": "N13-2-link",
-      "source": "N13-2",
-      "sourceHandle": "outlet-0",
-      "target": "N13-3",
-      "targetHandle": "inlet-0",
-      "data": {
-        "label": "Tee link",
-        "length_m": 0.01,
-        "diameter_m": 0.6,
-        "roughness_mm": 0.3048
-      }
-    },
-    {
-      "id": "N5-1-link",
-      "source": "N5-1",
-      "sourceHandle": "outlet-0",
-      "target": "N5-2",
-      "targetHandle": "inlet-0",
-      "data": {
-        "label": "Tee link",
-        "length_m": 0.01,
-        "diameter_m": 0.6,
-        "roughness_mm": 0.3048
-      }
-    },
-    {
-      "id": "N3-1-link",
-      "source": "N3-1",
-      "sourceHandle": "outlet-0",
-      "target": "N3-2",
-      "targetHandle": "inlet-0",
-      "data": {
-        "label": "Tee link",
-        "length_m": 0.01,
-        "diameter_m": 0.6,
-        "roughness_mm": 0.3048
-      }
-    },
-    {
-      "id": "N25-1-link",
-      "source": "N25-1",
-      "sourceHandle": "outlet-0",
-      "target": "N25-2",
-      "targetHandle": "inlet-0",
-      "data": {
-        "label": "Tee link",
-        "length_m": 0.01,
-        "diameter_m": 0.6,
-        "roughness_mm": 0.3048
-      }
-    },
-    {
-      "id": "N26-1-link",
-      "source": "N26-1",
-      "sourceHandle": "outlet-0",
-      "target": "N26-2",
-      "targetHandle": "inlet-0",
-      "data": {
-        "label": "Tee link",
-        "length_m": 0.01,
-        "diameter_m": 0.6,
-        "roughness_mm": 0.3048
-      }
-    },
-    {
-      "id": "N41-1-link",
-      "source": "N41-1",
-      "sourceHandle": "outlet-0",
-      "target": "N41-2",
-      "targetHandle": "inlet-0",
-      "data": {
-        "label": "Tee link",
-        "length_m": 0.01,
-        "diameter_m": 0.6,
-        "roughness_mm": 0.3048
-      }
-    },
-    {
-      "id": "N28-1-link",
-      "source": "N28-1",
-      "sourceHandle": "outlet-0",
-      "target": "N28-2",
-      "targetHandle": "inlet-0",
-      "data": {
-        "label": "Tee link",
-        "length_m": 0.01,
-        "diameter_m": 0.6,
-        "roughness_mm": 0.3048
-      }
-    },
-    {
-      "id": "N24-1-link",
-      "source": "N24-1",
-      "sourceHandle": "outlet-0",
-      "target": "N24-2",
-      "targetHandle": "inlet-0",
-      "data": {
-        "label": "Tee link",
-        "length_m": 0.01,
-        "diameter_m": 0.6,
-        "roughness_mm": 0.3048
-      }
-    },
-    {
-      "id": "N40-1-link",
-      "source": "N40-1",
-      "sourceHandle": "outlet-0",
-      "target": "N40-2",
-      "targetHandle": "inlet-0",
-      "data": {
-        "label": "Tee link",
-        "length_m": 0.01,
-        "diameter_m": 0.6,
-        "roughness_mm": 0.3048
-      }
-    },
-    {
-      "id": "N42-1-link",
-      "source": "N42-1",
-      "sourceHandle": "outlet-0",
-      "target": "N42-2",
-      "targetHandle": "inlet-0",
-      "data": {
-        "label": "Tee link",
-        "length_m": 0.01,
-        "diameter_m": 0.6,
-        "roughness_mm": 0.3048
-      }
-    },
-    {
-      "id": "N42-2-link",
-      "source": "N42-2",
-      "sourceHandle": "outlet-0",
-      "target": "N42-3",
-      "targetHandle": "inlet-0",
-      "data": {
-        "label": "Tee link",
-        "length_m": 0.01,
-        "diameter_m": 0.6,
-        "roughness_mm": 0.3048
-      }
-    },
-    {
-      "id": "N43-1-link",
-      "source": "N43-1",
-      "sourceHandle": "outlet-0",
-      "target": "N43-2",
-      "targetHandle": "inlet-0",
-      "data": {
-        "label": "Tee link",
-        "length_m": 0.01,
-        "diameter_m": 0.6,
-        "roughness_mm": 0.3048
-      }
-    },
-    {
-      "id": "N36-1-link",
-      "source": "N36-1",
-      "sourceHandle": "outlet-0",
-      "target": "N36-2",
-      "targetHandle": "inlet-0",
-      "data": {
-        "label": "Tee link",
-        "length_m": 0.01,
-        "diameter_m": 0.6,
-        "roughness_mm": 0.3048
-      }
-    },
-    {
-      "id": "N38-1-link",
-      "source": "N38-1",
-      "sourceHandle": "outlet-0",
-      "target": "N38-2",
-      "targetHandle": "inlet-0",
-      "data": {
-        "label": "Tee link",
-        "length_m": 0.01,
-        "diameter_m": 0.6,
-        "roughness_mm": 0.3048
-      }
-    },
-    {
-      "id": "N35-1-link",
-      "source": "N35-1",
-      "sourceHandle": "outlet-0",
-      "target": "N35-2",
-      "targetHandle": "inlet-0",
-      "data": {
-        "label": "Tee link",
-        "length_m": 0.01,
-        "diameter_m": 0.6,
-        "roughness_mm": 0.3048
-      }
-    },
-    {
       "id": "demand-B1-link",
       "source": "demand-B1",
       "sourceHandle": "outlet-0",
       "target": "B1",
-      "targetHandle": "inlet-1",
+      "targetHandle": "port-1",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -2128,8 +1474,8 @@
       "id": "demand-B2-link",
       "source": "demand-B2",
       "sourceHandle": "outlet-0",
-      "target": "B2-2",
-      "targetHandle": "inlet-1",
+      "target": "B2",
+      "targetHandle": "port-2",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -2141,8 +1487,8 @@
       "id": "supply-B3-link",
       "source": "supply-B3",
       "sourceHandle": "outlet-0",
-      "target": "B3-1",
-      "targetHandle": "inlet-1",
+      "target": "B3",
+      "targetHandle": "port-2",
       "data": {
         "label": "Supply link",
         "length_m": 0.01,
@@ -2154,8 +1500,8 @@
       "id": "demand-B4-link",
       "source": "demand-B4",
       "sourceHandle": "outlet-0",
-      "target": "B4-1",
-      "targetHandle": "inlet-1",
+      "target": "B4",
+      "targetHandle": "port-2",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -2167,8 +1513,8 @@
       "id": "demand-B5-link",
       "source": "demand-B5",
       "sourceHandle": "outlet-0",
-      "target": "B5-1",
-      "targetHandle": "inlet-1",
+      "target": "B5",
+      "targetHandle": "port-2",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -2181,7 +1527,7 @@
       "source": "demand-B6",
       "sourceHandle": "outlet-0",
       "target": "B6",
-      "targetHandle": "inlet-1",
+      "targetHandle": "port-1",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -2193,8 +1539,8 @@
       "id": "demand-M1-link",
       "source": "demand-M1",
       "sourceHandle": "outlet-0",
-      "target": "M1-1",
-      "targetHandle": "inlet-1",
+      "target": "M1",
+      "targetHandle": "port-2",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -2206,8 +1552,8 @@
       "id": "demand-M2-link",
       "source": "demand-M2",
       "sourceHandle": "outlet-0",
-      "target": "M2-2",
-      "targetHandle": "inlet-1",
+      "target": "M2",
+      "targetHandle": "port-3",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -2219,8 +1565,8 @@
       "id": "demand-M3-link",
       "source": "demand-M3",
       "sourceHandle": "outlet-0",
-      "target": "M3-2",
-      "targetHandle": "inlet-1",
+      "target": "M3",
+      "targetHandle": "port-3",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -2232,8 +1578,8 @@
       "id": "demand-M4-link",
       "source": "demand-M4",
       "sourceHandle": "outlet-0",
-      "target": "M4-2",
-      "targetHandle": "inlet-1",
+      "target": "M4",
+      "targetHandle": "port-3",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -2245,8 +1591,8 @@
       "id": "demand-M5-link",
       "source": "demand-M5",
       "sourceHandle": "outlet-0",
-      "target": "M5-2",
-      "targetHandle": "inlet-1",
+      "target": "M5",
+      "targetHandle": "port-1",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -2258,8 +1604,8 @@
       "id": "demand-E-link",
       "source": "demand-E",
       "sourceHandle": "outlet-0",
-      "target": "E-2",
-      "targetHandle": "inlet-1",
+      "target": "E",
+      "targetHandle": "port-1",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -2271,8 +1617,8 @@
       "id": "demand-N13-link",
       "source": "demand-N13",
       "sourceHandle": "outlet-0",
-      "target": "N13-2",
-      "targetHandle": "inlet-1",
+      "target": "N13",
+      "targetHandle": "port-2",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -2284,8 +1630,8 @@
       "id": "demand-N3-link",
       "source": "demand-N3",
       "sourceHandle": "outlet-0",
-      "target": "N3-2",
-      "targetHandle": "inlet-1",
+      "target": "N3",
+      "targetHandle": "port-3",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -2297,8 +1643,8 @@
       "id": "demand-N26-link",
       "source": "demand-N26",
       "sourceHandle": "outlet-0",
-      "target": "N26-2",
-      "targetHandle": "inlet-1",
+      "target": "N26",
+      "targetHandle": "port-1",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -2310,8 +1656,8 @@
       "id": "demand-N41-link",
       "source": "demand-N41",
       "sourceHandle": "outlet-0",
-      "target": "N41-1",
-      "targetHandle": "inlet-1",
+      "target": "N41",
+      "targetHandle": "port-3",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -2323,8 +1669,8 @@
       "id": "demand-N28-link",
       "source": "demand-N28",
       "sourceHandle": "outlet-0",
-      "target": "N28-1",
-      "targetHandle": "inlet-1",
+      "target": "N28",
+      "targetHandle": "port-3",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -2337,7 +1683,7 @@
       "source": "demand-N23",
       "sourceHandle": "outlet-0",
       "target": "N23",
-      "targetHandle": "inlet-1",
+      "targetHandle": "port-2",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -2349,8 +1695,8 @@
       "id": "demand-N24-link",
       "source": "demand-N24",
       "sourceHandle": "outlet-0",
-      "target": "N24-2",
-      "targetHandle": "inlet-1",
+      "target": "N24",
+      "targetHandle": "port-3",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -2363,7 +1709,7 @@
       "source": "demand-N17",
       "sourceHandle": "outlet-0",
       "target": "N17",
-      "targetHandle": "inlet-1",
+      "targetHandle": "port-2",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -2376,7 +1722,7 @@
       "source": "demand-N18",
       "sourceHandle": "outlet-0",
       "target": "N18",
-      "targetHandle": "inlet-1",
+      "targetHandle": "port-0",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -2389,7 +1735,7 @@
       "source": "demand-N19",
       "sourceHandle": "outlet-0",
       "target": "N19",
-      "targetHandle": "inlet-1",
+      "targetHandle": "port-2",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -2402,7 +1748,7 @@
       "source": "supply-tank",
       "sourceHandle": "outlet-0",
       "target": "N44",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "data": {
         "label": "Supply link",
         "length_m": 0.01,
@@ -2414,8 +1760,8 @@
       "id": "demand-N40-link",
       "source": "demand-N40",
       "sourceHandle": "outlet-0",
-      "target": "N40-1",
-      "targetHandle": "inlet-1",
+      "target": "N40",
+      "targetHandle": "port-3",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -2427,8 +1773,8 @@
       "id": "demand-N42-link",
       "source": "demand-N42",
       "sourceHandle": "outlet-0",
-      "target": "N42-2",
-      "targetHandle": "inlet-1",
+      "target": "N42",
+      "targetHandle": "port-3",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -2440,8 +1786,8 @@
       "id": "demand-N43-link",
       "source": "demand-N43",
       "sourceHandle": "outlet-0",
-      "target": "N43-1",
-      "targetHandle": "inlet-1",
+      "target": "N43",
+      "targetHandle": "port-0",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -2453,8 +1799,8 @@
       "id": "demand-N36-link",
       "source": "demand-N36",
       "sourceHandle": "outlet-0",
-      "target": "N36-2",
-      "targetHandle": "inlet-1",
+      "target": "N36",
+      "targetHandle": "port-0",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -2466,8 +1812,8 @@
       "id": "demand-N38-link",
       "source": "demand-N38",
       "sourceHandle": "outlet-0",
-      "target": "N38-1",
-      "targetHandle": "inlet-1",
+      "target": "N38",
+      "targetHandle": "port-2",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -2479,8 +1825,8 @@
       "id": "demand-N35-link",
       "source": "demand-N35",
       "sourceHandle": "outlet-0",
-      "target": "N35-1",
-      "targetHandle": "inlet-1",
+      "target": "N35",
+      "targetHandle": "port-0",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -2493,7 +1839,7 @@
       "source": "demand-N33",
       "sourceHandle": "outlet-0",
       "target": "N33",
-      "targetHandle": "inlet-1",
+      "targetHandle": "port-2",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,

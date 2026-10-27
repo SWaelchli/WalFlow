@@ -7,7 +7,7 @@ export const GUIDE_SECTIONS = [
     title: '1. Build the diagram',
     items: [
       <>{b('Add components:')} drag pumps, tanks, valves, regulators, orifices, filters, heat exchangers, relief devices and junctions from the left sidebar onto the canvas. Right-click the canvas, a component or a pipe for a context menu.</>,
-      <>{b('Connect ports:')} drag from an outlet handle to an inlet handle to create a pipe. A port takes one pipe; use a splitter or mixer to branch. Drag the signal handles for control connections.</>,
+      <>{b('Connect ports:')} drag from an outlet handle to an inlet handle to create a pipe; the purple junction ports connect to either. A port takes one pipe; use a junction to branch. Drag the signal handles for control connections.</>,
       <>{b('Edit properties:')} click a component or pipe to open its inspector on the right. Pipe size, schedule and pipe class are also editable in the data list below the canvas.</>,
       <>{b('Layout:')} the data list below the canvas can be resized with its drag handle (arrow keys work too) and collapsed.</>,
     ],

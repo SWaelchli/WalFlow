@@ -34,7 +34,7 @@ def test_reported_state_is_consistent(control_iterations):
         pipe = edge["pipe"]
         q = pipe.inlets[0].flow_rate
         dp_reported = pipe.inlets[0].pressure - pipe.outlets[0].pressure
-        dp_model = pipe.calculate_delta_p(q, pipe.inlets[0].density, pipe.inlets[0].viscosity)
+        dp_model = pipe.calculate_delta_p(q, *pipe.upstream_port().fluid())
         # 1 %: since the fluid properties are iterated to consistency even when the control
         # loop stops at its limit. The old defect gave 15-28 % here.
         assert dp_reported == pytest.approx(dp_model, rel=0.01, abs=50.0), f"pipe {pipe.name}"

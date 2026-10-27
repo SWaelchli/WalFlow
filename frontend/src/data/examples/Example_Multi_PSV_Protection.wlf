@@ -100,39 +100,42 @@
       }
     },
     {
-      "id": "node_header_splitter",
-      "type": "splitter",
+      "id": "node_header_junction",
+      "type": "junction",
       "position": {
         "x": 400,
         "y": 300
       },
       "data": {
-        "label": "MAIN_HEADER_SPLITTER",
-        "rotation": 0
+        "label": "MAIN_HEADER_JUNCTION",
+        "rotation": 180,
+        "num_ports": 3
       }
     },
     {
-      "id": "node_relief_splitter_1",
-      "type": "splitter",
+      "id": "node_relief_branch_1",
+      "type": "junction",
       "position": {
         "x": 400,
         "y": 180
       },
       "data": {
-        "label": "RELIEF_SPLITTER_1",
-        "rotation": 0
+        "label": "RELIEF_BRANCH_1",
+        "rotation": 270,
+        "num_ports": 3
       }
     },
     {
-      "id": "node_relief_splitter_2",
-      "type": "splitter",
+      "id": "node_relief_branch_2",
+      "type": "junction",
       "position": {
         "x": 400,
         "y": 60
       },
       "data": {
-        "label": "RELIEF_SPLITTER_2",
-        "rotation": 0
+        "label": "RELIEF_BRANCH_2",
+        "rotation": 270,
+        "num_ports": 3
       }
     },
     {
@@ -187,27 +190,29 @@
       }
     },
     {
-      "id": "node_relief_mixer_1",
-      "type": "mixer",
+      "id": "node_relief_merge_1",
+      "type": "junction",
       "position": {
         "x": 760,
         "y": 60
       },
       "data": {
-        "label": "RELIEF_MIXER_1",
-        "rotation": 0
+        "label": "RELIEF_MERGE_1",
+        "rotation": 90,
+        "num_ports": 3
       }
     },
     {
-      "id": "node_relief_mixer_2",
-      "type": "mixer",
+      "id": "node_relief_merge_2",
+      "type": "junction",
       "position": {
         "x": 760,
         "y": 180
       },
       "data": {
-        "label": "RELIEF_MIXER_2",
-        "rotation": 0
+        "label": "RELIEF_MERGE_2",
+        "rotation": 180,
+        "num_ports": 3
       }
     },
     {
@@ -241,15 +246,16 @@
       }
     },
     {
-      "id": "node_return_mixer",
-      "type": "mixer",
+      "id": "node_return_junction",
+      "type": "junction",
       "position": {
         "x": 960,
         "y": 300
       },
       "data": {
-        "label": "RETURN_MIXER",
-        "rotation": 0
+        "label": "RETURN_JUNCTION",
+        "rotation": 180,
+        "num_ports": 3
       }
     },
     {
@@ -357,8 +363,8 @@
       "id": "pipe_pump_discharge",
       "source": "node_hp_pump",
       "sourceHandle": "outlet-0",
-      "target": "node_header_splitter",
-      "targetHandle": "inlet-0",
+      "target": "node_header_junction",
+      "targetHandle": "port-1",
       "type": "default",
       "data": {
         "label": "Discharge Line",
@@ -376,8 +382,8 @@
     },
     {
       "id": "pipe_process_line",
-      "source": "node_header_splitter",
-      "sourceHandle": "outlet-1",
+      "source": "node_header_junction",
+      "sourceHandle": "port-0",
       "target": "node_process_restriction",
       "targetHandle": "inlet-0",
       "type": "default",
@@ -420,8 +426,8 @@
       "id": "pipe_process_return_b",
       "source": "tap-process-return",
       "sourceHandle": "outlet-0",
-      "target": "node_return_mixer",
-      "targetHandle": "inlet-1",
+      "target": "node_return_junction",
+      "targetHandle": "port-1",
       "type": "default",
       "data": {
         "label": "Process Return",
@@ -439,10 +445,10 @@
     },
     {
       "id": "pipe_relief_hdr_1",
-      "source": "node_header_splitter",
-      "sourceHandle": "outlet-0",
-      "target": "node_relief_splitter_1",
-      "targetHandle": "inlet-0",
+      "source": "node_header_junction",
+      "sourceHandle": "port-2",
+      "target": "node_relief_branch_1",
+      "targetHandle": "port-0",
       "type": "default",
       "data": {
         "label": "Relief Header 1",
@@ -460,8 +466,8 @@
     },
     {
       "id": "pipe_psv101_inlet",
-      "source": "node_relief_splitter_1",
-      "sourceHandle": "outlet-0",
+      "source": "node_relief_branch_1",
+      "sourceHandle": "port-2",
       "target": "node_psv_primary",
       "targetHandle": "inlet-0",
       "type": "default",
@@ -481,10 +487,10 @@
     },
     {
       "id": "pipe_relief_hdr_2",
-      "source": "node_relief_splitter_1",
-      "sourceHandle": "outlet-1",
-      "target": "node_relief_splitter_2",
-      "targetHandle": "inlet-0",
+      "source": "node_relief_branch_1",
+      "sourceHandle": "port-1",
+      "target": "node_relief_branch_2",
+      "targetHandle": "port-0",
       "type": "default",
       "data": {
         "label": "Relief Header 2",
@@ -502,8 +508,8 @@
     },
     {
       "id": "pipe_psv102_inlet",
-      "source": "node_relief_splitter_2",
-      "sourceHandle": "outlet-0",
+      "source": "node_relief_branch_2",
+      "sourceHandle": "port-2",
       "target": "node_psv_secondary",
       "targetHandle": "inlet-0",
       "type": "default",
@@ -523,8 +529,8 @@
     },
     {
       "id": "pipe_rd101_inlet",
-      "source": "node_relief_splitter_2",
-      "sourceHandle": "outlet-1",
+      "source": "node_relief_branch_2",
+      "sourceHandle": "port-1",
       "target": "node_rupture_disc",
       "targetHandle": "inlet-0",
       "type": "default",
@@ -546,8 +552,8 @@
       "id": "pipe_rd101_outlet",
       "source": "node_rupture_disc",
       "sourceHandle": "outlet-0",
-      "target": "node_relief_mixer_1",
-      "targetHandle": "inlet-0",
+      "target": "node_relief_merge_1",
+      "targetHandle": "port-0",
       "type": "default",
       "data": {
         "label": "RD-101 Relief Line",
@@ -567,8 +573,8 @@
       "id": "pipe_psv102_outlet",
       "source": "node_psv_secondary",
       "sourceHandle": "outlet-0",
-      "target": "node_relief_mixer_1",
-      "targetHandle": "inlet-1",
+      "target": "node_relief_merge_1",
+      "targetHandle": "port-2",
       "type": "default",
       "data": {
         "label": "PSV-102 Relief Line",
@@ -588,8 +594,8 @@
       "id": "pipe_psv101_outlet",
       "source": "node_psv_primary",
       "sourceHandle": "outlet-0",
-      "target": "node_relief_mixer_2",
-      "targetHandle": "inlet-0",
+      "target": "node_relief_merge_2",
+      "targetHandle": "port-1",
       "type": "default",
       "data": {
         "label": "PSV-101 Relief Line",
@@ -607,10 +613,10 @@
     },
     {
       "id": "pipe_relief_collect_1",
-      "source": "node_relief_mixer_1",
-      "sourceHandle": "outlet-0",
-      "target": "node_relief_mixer_2",
-      "targetHandle": "inlet-1",
+      "source": "node_relief_merge_1",
+      "sourceHandle": "port-1",
+      "target": "node_relief_merge_2",
+      "targetHandle": "port-2",
       "type": "default",
       "data": {
         "label": "Relief Return Header",
@@ -628,8 +634,8 @@
     },
     {
       "id": "pipe_relief_to_tank",
-      "source": "node_relief_mixer_2",
-      "sourceHandle": "outlet-0",
+      "source": "node_relief_merge_2",
+      "sourceHandle": "port-0",
       "target": "tap-relief-return",
       "targetHandle": "inlet-0",
       "type": "default",
@@ -651,8 +657,8 @@
       "id": "pipe_relief_to_tank_b",
       "source": "tap-relief-return",
       "sourceHandle": "outlet-0",
-      "target": "node_return_mixer",
-      "targetHandle": "inlet-0",
+      "target": "node_return_junction",
+      "targetHandle": "port-2",
       "type": "default",
       "data": {
         "label": "Common Relief Discharge",
@@ -670,8 +676,8 @@
     },
     {
       "id": "pipe_common_return",
-      "source": "node_return_mixer",
-      "sourceHandle": "outlet-0",
+      "source": "node_return_junction",
+      "sourceHandle": "port-0",
       "target": "node_return_tank",
       "targetHandle": "inlet-0",
       "type": "default",

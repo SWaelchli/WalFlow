@@ -3,11 +3,10 @@ import pytest
 
 
 from physics_refs import solve, water_head
-from networks import assert_regulator_consistent, ID_1IN, ATM
+from networks import assert_regulator_consistent, make_junction, ID_1IN, ATM
 from simulation.equipment.tank import Tank
 from simulation.equipment.pipe import Pipe
 from simulation.equipment.centrifugal_pump import CentrifugalPump
-from simulation.equipment.splitter import Splitter
 from simulation.equipment.orifice import Orifice
 from simulation.equipment.linear_regulator import LinearRegulator
 
@@ -42,7 +41,7 @@ def test_bpr_in_parallel_branch():
     nodes = {
         "t1": Tank("Source", fluid_level=1.0),
         "p1": CentrifugalPump("Pump", flow_rated=1.0, head_rated=water_head(15.0e5), rise_to_shutoff_pct=0.0),
-        "split": Splitter("Splitter"),
+        "split": make_junction("Junction", 1, 2),
         "reg": LinearRegulator("BPR", max_cv=5.0, set_pressure=set_pa, backpressure=True),
         "ori": Orifice("Bypass Load", pipe_diameter=ID_1IN, orifice_diameter=0.012),
         "t_sink1": Tank("Sink A", fluid_level=0.0),

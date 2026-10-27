@@ -43,6 +43,46 @@ def test_bad_pipe_input_is_a_model_input_error(edge_data, match):
         GraphParser.parse_graph(_graph("heat_exchanger", None, edge_data))
 
 
+def _junction_graph(num_ports, handles):
+    """A junction with one tank per given handle: ("in", handle) draws the pipe into it, ("out", handle) out of it."""
+    nodes = [{"id": "j", "type": "junction", "position": {"x": 0, "y": 0}, "data": {"label": "J", "num_ports": num_ports}}]
+    edges = []
+    for k, (direction, handle) in enumerate(handles):
+        nodes.append({"id": f"t{k}", "type": "tank", "position": {"x": 0, "y": 0}, "data": {"label": f"T{k}", "level_m": 1.0}})
+        ends = ({"source": f"t{k}", "target": "j", "sourceHandle": "outlet-0", "targetHandle": handle} if direction == "in"
+                else {"source": "j", "target": f"t{k}", "sourceHandle": handle, "targetHandle": "inlet-0"})
+        edges.append({"id": f"e{k}", **ends, "data": {"length_m": 1.0, "diameter_m": 0.05}})
+    return ReactFlowGraph(nodes=nodes, edges=edges)
+
+
+@pytest.mark.parametrize("num_ports, handles, match", [
+    pytest.param(2, [("in", "port-0")], "number of ports", id="junction_with_2_ports"),
+    pytest.param(9, [("in", "port-0")], "number of ports", id="junction_with_9_ports"),
+    pytest.param(3, [("in", "inlet-0")], 'has no port "inlet-0"', id="junction_handle_is_not_a_port"),
+    pytest.param(3, [("out", "outlet-1")], 'has no port "outlet-1"', id="junction_source_handle_is_not_a_port"),
+    pytest.param(3, [("in", "port-3")], "has no Port 4 .it has 3 ports.", id="junction_port_beyond_the_port_count"),
+    pytest.param(3, [("in", "port-x")], 'has no port "port-x"', id="junction_port_index_is_not_a_number"),
+    pytest.param(3, [("in", "port-²")], 'has no port "port-²"', id="junction_port_index_is_a_superscript_digit"),
+    pytest.param(4.6, [("in", "port-0")], "number of ports", id="junction_with_a_fractional_port_count"),
+    pytest.param(None, [("in", "port-0")], "number of ports", id="junction_with_a_null_port_count"),
+    pytest.param("", [("in", "port-0")], "number of ports", id="junction_with_an_empty_port_count"),
+    pytest.param("x", [("in", "port-0")], "number of ports", id="junction_with_a_text_port_count"),
+    pytest.param(True, [("in", "port-0")], "number of ports", id="junction_with_a_true_port_count"),
+    pytest.param(False, [("in", "port-0")], "number of ports", id="junction_with_a_false_port_count"),
+    pytest.param(3, [("in", "port-1"), ("out", "port-1")], "takes one pipe", id="junction_two_pipes_on_one_port"),
+    pytest.param(3, [("in", "port-1"), ("in", "port-1")], "takes one pipe", id="junction_two_pipes_drawn_the_same_way_on_one_port"),
+])
+def test_bad_junction_wiring_is_a_model_input_error(num_ports, handles, match):
+    with pytest.raises(ModelInputError, match=match):
+        GraphParser.parse_graph(_junction_graph(num_ports, handles))
+
+
+@pytest.mark.parametrize("num_ports", [4, 4.0, "4", "4.0", " 4 "])
+def test_whole_number_port_counts_are_accepted_in_any_spelling(num_ports):
+    network = GraphParser.parse_graph(_junction_graph(num_ports, [("in", "port-3")]))
+    assert network.nodes["j"].num_ports == 4
+
+
 def test_relief_state_is_restored_when_a_solve_raises():
     network = GraphParser.parse_graph(_graph("pressure_safety_valve", {"set_pressure_barg": 5.0}))
     psv = network.nodes["n1"]

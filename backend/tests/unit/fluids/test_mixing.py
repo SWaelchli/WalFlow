@@ -1,13 +1,13 @@
-"""Mixer energy and mass balance."""
+"""Junction energy and mass balance."""
 import pytest
 
 
 import pytest
 
 from physics_refs import solve
+from networks import make_junction
 from simulation.equipment.tank import Tank
 from simulation.equipment.pipe import Pipe
-from simulation.equipment.mixer import Mixer
 from simulation.fluid_utils import FluidProperties
 
 FLUID = "iso_vg_46"
@@ -20,7 +20,7 @@ FLUID = "iso_vg_46"
 def test_mixing_conserves_mass_and_enthalpy(tol_k):
     t_hot = Tank("Hot Tank", fluid_level=10.0, temperature=80 + 273.15, fluid_type=FLUID)
     t_cold = Tank("Cold Tank", fluid_level=5.0, temperature=20 + 273.15, fluid_type=FLUID)
-    mix = Mixer("Mixing Junction", num_inlets=2)
+    mix = make_junction("Mixing Junction", 2, 1)
     t_sink = Tank("Return Tank", fluid_level=0.0, temperature=20 + 273.15, fluid_type=FLUID)
     edges = [
         {"source": "t1", "target": "mix", "target_port": "inlet-0", "pipe": Pipe("p_hot", 5, 0.05)},

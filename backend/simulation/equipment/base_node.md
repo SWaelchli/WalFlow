@@ -90,7 +90,7 @@ All of these are steady-state fixed-point iterations, not time steps.
 Every side of a node holds one **total** pressure $p_0 = p + \rho v^2/2$. Where pipes of different diameters meet, the fluid changes speed, and only a total pressure keeps the junction from gaining kinetic energy. At one shared static pressure, a large pipe feeding a small one accelerates the flow for free, and a reducer downstream turns that into static pressure; around a loop the gain grows faster with the flow than friction, and the network has no steady state.
 
 - **Components** drop or raise the total pressure. A valve or orifice between two pipes of one size drops the static pressure by the same amount; a pump's rise is a total head rise (Hydraulic Institute); a reducer drops only its losses ([reducer.md](reducer.md)).
-- **Junctions** (splitter, mixer, measuring point) pass the total pressure unchanged. They neither gain nor lose energy; a tee loss is not modelled.
+- **Junctions** (junction, measuring point) pass the total pressure unchanged. They neither gain nor lose energy; a tee loss is not modelled.
 - **Reservoirs** (tank, pressure source) hold fluid at rest: their pressure is a stagnation pressure, and the pipe on them takes the entry or the exit, see [pipe.md](pipe.md#34-entry-from-a-reservoir).
 - **Reported pressures are static.** `_report_static_pressures` sets a port with one pipe to $p_0 - \rho v^2/2$ of that pipe (its velocity and density), and a pipe end on a node likewise. A port or pipe end on a reservoir reports the reservoir pressure. Only flowing pipes count (above `Q_DEAD_LEG`): a port with several flowing pipes has no single velocity and reports $p_0$ (the canvas allows one pipe per port; a hand-built network may have more). A port without flow on a side (inlets or outlets) that has flowing ports of the same total (within 1 Pa) reports the lowest static pressure among them, as a gauge on a dead tee branch reads the run's static pressure; the zero-flow section behind it, or behind a flowing port, drops by the same amount (its pipes and the nodes without flow, up to a reservoir and only between ports of the same total, so not across a closed check or relief valve or a stopped positive-displacement pump; a centrifugal pump passes it with its shutoff head). A section reached from several ports takes the largest drop. The highest reported pressure (`max_pressure_bar`) is therefore a static pressure. Each port keeps its total in `total_pressure` (read with `total_of`).
 - **What compares with which:** pressure controllers hold the static pressure they sense, as a gauge reads it. Relief devices compare total pressures, in the solve and between solves, so the held state and the solved flow agree; a closed device passes no flow, and at its set point both are equal. NPSHa uses the total suction pressure. Pump shaft power, motor load and the discharge pressure caps (volumetric pump, flow source) use the total pressures the solve uses.
@@ -109,7 +109,7 @@ $T_{\text{mix}}$ is found by inverting $h(T)$ (`FluidProperties.get_temperature_
 
 Components with their own thermal effect (throttling heat, pump waste heat, heat exchanger duty) set their outlet temperature themselves.
 
-Junctions without their own thermal effect (splitter, mixer, measure point) keep the mixed temperature and only call `update_outward_properties()` in `calculate()`, which evaluates density and viscosity of each outward port at its temperature. `has_inflow()` tells whether any port feeds the node.
+Junctions without their own thermal effect (junction, measure point) keep the mixed temperature and only call `update_outward_properties()` in `calculate()`, which evaluates density and viscosity of each outward port at its temperature. `has_inflow()` tells whether any port feeds the node.
 
 ### 4.2 Property propagation
 
@@ -180,8 +180,8 @@ Each equipment document has a **Data Fields** section listing what the parser re
 | Test | What it checks |
 | :--- | :--- |
 | `backend/tests/unit/solver/test_node_fields_documented.py` | Every field the parser reads is in a **Data Fields** table and vice versa; dimensional fields carry their unit suffix |
-| `backend/tests/unit/fluids/test_mixing.py::test_f1_42_mixing_conserves_enthalpy_with_variable_cp` | Mixer outlet temperature from 80 °C and 20 °C ISO VG 46 streams matches an independent enthalpy balance with $c_p(T)$ within 0.1 K; mass flow balanced within 0.5 % |
-| `backend/tests/scenarios/test_network_invariants.py::test_mass_is_conserved` | Every solved generated network balances mass flow $\sum \rho q$ at every node (rel. $10^{-6}$); pinned: 0 °C / 55 °C seawater mixer, water heater 10 → 80 °C; reported port flows equal their edge flows |
+| `backend/tests/unit/fluids/test_mixing.py::test_f1_42_mixing_conserves_enthalpy_with_variable_cp` | Junction outlet temperature from 80 °C and 20 °C ISO VG 46 streams matches an independent enthalpy balance with $c_p(T)$ within 0.1 K; mass flow balanced within 0.5 % |
+| `backend/tests/scenarios/test_network_invariants.py::test_mass_is_conserved` | Every solved generated network balances mass flow $\sum \rho q$ at every node (rel. $10^{-6}$); pinned: 0 °C / 55 °C seawater junction, water heater 10 → 80 °C; reported port flows equal their edge flows |
 | `backend/tests/unit/solver/test_islands.py` | A closed loop without a tank is reported; the same loop with a tank solves |
 | `backend/tests/unit/solver/test_active_inactive.py` | Inactive pumps and heat exchanger behave as defined in their documents |
 | `backend/tests/unit/solver/test_stagnant_branches.py` | Pressures in shut-in sections and dead legs do not depend on node or edge order |

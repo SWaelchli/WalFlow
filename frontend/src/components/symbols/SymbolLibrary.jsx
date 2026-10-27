@@ -12,9 +12,7 @@ export const EquipmentSymbol = ({ type, size = 40, style = {} }) => {
     orifice: { w: 40, h: 60 },
     calibrated_restriction: { w: 40, h: 60 },
     reducer: { w: 50, h: 40 },
-    splitter: { w: 40, h: 40 },
-
-    mixer: { w: 40, h: 40 },
+    junction: { w: 40, h: 40 },
     measure_point: { w: 40, h: 40 },
     instrument: { w: 50, h: 50 },
     filter: { w: 60, h: 40 },
@@ -219,22 +217,14 @@ export const EquipmentSymbol = ({ type, size = 40, style = {} }) => {
             <path d="M 10 30 L 20 20 L 30 40 L 40 20 L 50 30" fill="none" stroke="#334155" strokeWidth="2" />
           </svg>
         );
-      case 'splitter':
+      case 'junction':
         return (
           <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
-            <circle cx="20" cy="20" r="15" fill="white" stroke="#334155" strokeWidth="2.5" />
-            <path d="M 5 20 L 15 20" stroke="#334155" strokeWidth="1.5" />
-            <path d="M 25 15 L 35 10" stroke="#334155" strokeWidth="1.5" />
-            <path d="M 25 25 L 35 30" stroke="#334155" strokeWidth="1.5" />
-          </svg>
-        );
-      case 'mixer':
-        return (
-          <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
-            <circle cx="20" cy="20" r="15" fill="white" stroke="#334155" strokeWidth="2.5" />
-            <path d="M 5 10 L 15 15" stroke="#334155" strokeWidth="1.5" />
-            <path d="M 5 30 L 15 25" stroke="#334155" strokeWidth="1.5" />
-            <path d="M 25 20 L 35 20" stroke="#334155" strokeWidth="1.5" />
+            <path d="M 3 20 L 37 20 M 20 20 L 20 37" fill="none" stroke="#334155" strokeWidth="2.5" strokeLinecap="round" />
+            <circle cx="20" cy="20" r="5" fill="white" stroke="#334155" strokeWidth="2.5" />
+            <circle cx="3" cy="20" r="2.5" fill="#7C3AED" />
+            <circle cx="37" cy="20" r="2.5" fill="#7C3AED" />
+            <circle cx="20" cy="37" r="2.5" fill="#7C3AED" />
           </svg>
         );
       case 'measure_point':

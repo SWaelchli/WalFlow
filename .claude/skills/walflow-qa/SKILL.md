@@ -110,7 +110,7 @@ Read [references/property-testing.md](references/property-testing.md) before wri
 ### Network properties
 
 `helpers/strategies.networks()` generates saved-file graphs: one of three supplies (pressure source, tank and
-centrifugal pump, or two sources at different temperatures meeting in a mixer) feeding a random series-parallel
+centrifugal pump, or two sources at different temperatures meeting in a junction) feeding a random series-parallel
 arrangement of `NETWORK_COMPONENTS` into a tank. Each one has exactly one steady state, so the solver must find it.
 `test_network_invariants.py` checks on every solved network: convergence to finite values, mass balance, pressure
 continuity and fall along the flow, dissipation never cools, enthalpy balance at junctions, independence of ids and

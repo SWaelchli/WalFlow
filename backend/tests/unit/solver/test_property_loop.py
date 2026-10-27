@@ -5,8 +5,8 @@ import numpy as np
 import pytest
 import scipy.sparse.linalg as spla
 
+from networks import make_junction
 from physics_refs import solve_example
-from simulation.equipment.mixer import Mixer
 from simulation.equipment.pipe import Pipe
 from simulation.equipment.pressure_source import PressureSource
 from simulation.equipment.tank import Tank
@@ -25,7 +25,7 @@ def test_property_loop_converges_and_pipes_are_consistent(case):
         pipe = edge["pipe"]
         q = pipe.inlets[0].flow_rate
         dp_reported = pipe.inlets[0].pressure - pipe.outlets[0].pressure
-        dp_model = pipe.calculate_delta_p(q, pipe.inlets[0].density, pipe.inlets[0].viscosity)
+        dp_model = pipe.calculate_delta_p(q, *pipe.upstream_port().fluid())
         assert dp_reported == pytest.approx(dp_model, rel=0.01, abs=100.0), pipe.name
 
 
@@ -39,11 +39,11 @@ def test_stats_carry_the_status_flags():
 PROPERTY_ITERATIONS = 4
 
 
-def _solved_mixer():
-    """Hot and cold stream into a mixer: the mixer outlet edge is the one free edge of the mixing solve."""
+def _solved_junction():
+    """Hot and cold stream into a junction: the junction outlet edge is the one free edge of the mixing solve."""
     K = 273.15
     nodes = {"hot": PressureSource("Hot", 15e5, 60 + K), "cold": PressureSource("Cold", 12e5, 10 + K),
-             "mix": Mixer("Mixer", 2), "sink": Tank("Sink", fluid_level=1.0, temperature=10 + K)}
+             "mix": make_junction("Junction", 2, 1), "sink": Tank("Sink", fluid_level=1.0, temperature=10 + K)}
     edges = [{"id": "e1", "source": "hot", "target": "mix", "target_port": "inlet-0", "pipe": Pipe("hot", 1, 0.05)},
              {"id": "e2", "source": "cold", "target": "mix", "target_port": "inlet-1", "pipe": Pipe("cold", 1, 0.05)},
              {"id": "e3", "source": "mix", "target": "sink", "pipe": Pipe("out", 1, 0.05)}]
@@ -80,7 +80,7 @@ def _singular(_matrix):
 ])
 def test_mixing_solve_reports_no_agreement_when_it_is_abandoned(monkeypatch, make_rejection, expected):
     # An abandoned solve must not look like agreement (0), or a settled pass would end the property passes early
-    solver, port, q_edges = _solved_mixer()
+    solver, port, q_edges = _solved_junction()
     # A pipe that gains 10 K between its ends is read as the node's own cooling, so the solve moves the leaving
     # temperature away from where the port sits
     for edge in solver.edges_list:
@@ -93,7 +93,7 @@ def test_mixing_solve_reports_no_agreement_when_it_is_abandoned(monkeypatch, mak
 
 
 def test_property_passes_go_on_after_a_settled_pass_when_the_mixing_solve_is_rejected(monkeypatch):
-    solver, _, q_edges = _solved_mixer()
+    solver, _, q_edges = _solved_junction()
     monkeypatch.setattr(solver, "_solve_mixing", lambda q, min_change=0.0: math.inf)
     solver._propagate_properties(q_edges)
     assert solver.last_prop_iters == PROPERTY_ITERATIONS

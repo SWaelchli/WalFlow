@@ -94,25 +94,27 @@
       }
     },
     {
-      "id": "common-header-mixer",
-      "type": "mixer",
+      "id": "common-header-junction",
+      "type": "junction",
       "position": {
         "x": 580,
         "y": 250
       },
       "data": {
-        "label": "Common Discharge Header Mixer"
+        "label": "Common Discharge Header Junction",
+        "num_ports": 3
       }
     },
     {
-      "id": "header-splitter",
-      "type": "splitter",
+      "id": "header-junction",
+      "type": "junction",
       "position": {
         "x": 720,
         "y": 250
       },
       "data": {
-        "label": "Distribution Splitter"
+        "label": "Distribution Junction",
+        "num_ports": 3
       }
     },
     {
@@ -154,35 +156,37 @@
       }
     },
     {
-      "id": "suction-splitter",
-      "type": "splitter",
+      "id": "suction-junction",
+      "type": "junction",
       "position": {
         "x": 120,
         "y": 250
       },
       "data": {
-        "label": "Common Suction Splitter",
-        "rotation": 0
+        "label": "Common Suction Junction",
+        "rotation": 0,
+        "num_ports": 3
       }
     },
     {
-      "id": "return-mixer",
-      "type": "mixer",
+      "id": "return-junction",
+      "type": "junction",
       "position": {
         "x": 1050,
         "y": 250
       },
       "data": {
-        "label": "Common Return Mixer",
-        "rotation": 0
+        "label": "Common Return Junction",
+        "rotation": 0,
+        "num_ports": 3
       }
     }
   ],
   "edges": [
     {
       "id": "pp1",
-      "source": "suction-splitter",
-      "sourceHandle": "outlet-0",
+      "source": "suction-junction",
+      "sourceHandle": "port-1",
       "target": "pump-a",
       "targetHandle": "inlet-0",
       "data": {
@@ -200,8 +204,8 @@
     },
     {
       "id": "pp2",
-      "source": "suction-splitter",
-      "sourceHandle": "outlet-1",
+      "source": "suction-junction",
+      "sourceHandle": "port-2",
       "target": "pump-b",
       "targetHandle": "inlet-0",
       "data": {
@@ -259,8 +263,8 @@
       "id": "pp5",
       "source": "check-bypass-a",
       "sourceHandle": "outlet-0",
-      "target": "common-header-mixer",
-      "targetHandle": "inlet-0",
+      "target": "common-header-junction",
+      "targetHandle": "port-0",
       "data": {
         "label": "Header Feed A",
         "length_m": 3,
@@ -278,8 +282,8 @@
       "id": "pp6",
       "source": "check-bypass-b",
       "sourceHandle": "outlet-0",
-      "target": "common-header-mixer",
-      "targetHandle": "inlet-1",
+      "target": "common-header-junction",
+      "targetHandle": "port-2",
       "data": {
         "label": "Header Feed B",
         "length_m": 3,
@@ -295,10 +299,10 @@
     },
     {
       "id": "pp7",
-      "source": "common-header-mixer",
-      "sourceHandle": "outlet-0",
-      "target": "header-splitter",
-      "targetHandle": "inlet-0",
+      "source": "common-header-junction",
+      "sourceHandle": "port-1",
+      "target": "header-junction",
+      "targetHandle": "port-0",
       "data": {
         "label": "Main Header",
         "length_m": 4,
@@ -314,8 +318,8 @@
     },
     {
       "id": "pp8",
-      "source": "header-splitter",
-      "sourceHandle": "outlet-0",
+      "source": "header-junction",
+      "sourceHandle": "port-1",
       "target": "load-a",
       "targetHandle": "inlet-0",
       "data": {
@@ -333,8 +337,8 @@
     },
     {
       "id": "pp9",
-      "source": "header-splitter",
-      "sourceHandle": "outlet-1",
+      "source": "header-junction",
+      "sourceHandle": "port-2",
       "target": "load-b",
       "targetHandle": "inlet-0",
       "data": {
@@ -354,8 +358,8 @@
       "id": "pp10",
       "source": "load-a",
       "sourceHandle": "outlet-0",
-      "target": "return-mixer",
-      "targetHandle": "inlet-0",
+      "target": "return-junction",
+      "targetHandle": "port-0",
       "data": {
         "label": "Return 1",
         "length_m": 3,
@@ -373,8 +377,8 @@
       "id": "pp11",
       "source": "load-b",
       "sourceHandle": "outlet-0",
-      "target": "return-mixer",
-      "targetHandle": "inlet-1",
+      "target": "return-junction",
+      "targetHandle": "port-2",
       "data": {
         "label": "Return 2",
         "length_m": 3,
@@ -392,8 +396,8 @@
       "id": "pp0",
       "source": "common-suction-tank",
       "sourceHandle": "outlet-0",
-      "target": "suction-splitter",
-      "targetHandle": "inlet-0",
+      "target": "suction-junction",
+      "targetHandle": "port-0",
       "data": {
         "label": "Common Suction",
         "length_m": 1,
@@ -409,8 +413,8 @@
     },
     {
       "id": "pp12",
-      "source": "return-mixer",
-      "sourceHandle": "outlet-0",
+      "source": "return-junction",
+      "sourceHandle": "port-1",
       "target": "discharge-sink",
       "targetHandle": "inlet-0",
       "data": {

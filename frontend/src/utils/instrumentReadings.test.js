@@ -1,12 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import {
   readInstrument, readInstruments, alarmState, limitOrderError, retagForVariable, defaultInstrumentData,
-  limitToDisplay, limitFromDisplay, formatReading,
+  limitToDisplay, limitFromDisplay, formatReading, instrumentInput, describeInstrumentInput,
 } from './instrumentReadings';
 
 const tel = {
   nodes: {
     tap: { inlets: [{ pressure: 351325, flow_rate: 0.002, temperature: 313.15, density: 860, viscosity: 0.0258 }], outlets: [{ pressure: 351325 }] },
+    j: { ports: [{ pressure: 300000, flow_rate: 0.001 }, { pressure: 300000, flow_rate: -0.0004 }, { pressure: 300000, flow_rate: null }] },
     f: { inlets: [{ pressure: 400000 }], outlets: [{ pressure: 385000 }] },
   },
 };
@@ -14,6 +15,10 @@ const edges = [
   { id: 'p1', source: 'pump', target: 'tap', sourceHandle: 'outlet-0', targetHandle: 'inlet-0', data: { type: 'PIPE', diameter_m: 0.05 } },
   { id: 'p2', source: 'tap', target: 'tank', sourceHandle: 'outlet-0', targetHandle: 'inlet-0', data: { type: 'PIPE', diameter_m: 0.08 } },
   { id: 's1', source: 'tap', target: 'i', sourceHandle: 'signal-inlet-0', targetHandle: 'signal-in', data: { type: 'SIGNAL' } },
+  { id: 'jp0', source: 'j', target: 'jq', sourceHandle: 'signal-port-0', targetHandle: 'signal-in', data: { type: 'SIGNAL' } },
+  { id: 'jp1', source: 'j', target: 'jr', sourceHandle: 'signal-port-1', targetHandle: 'signal-in', data: { type: 'SIGNAL' } },
+  { id: 'jp2', source: 'j', target: 'js', sourceHandle: 'signal-port-2', targetHandle: 'signal-in', data: { type: 'SIGNAL' } },
+  { id: 'jpipe', source: 'j', target: 'tank', sourceHandle: 'port-1', targetHandle: 'inlet-0', data: { type: 'PIPE', diameter_m: 0.04 } },
   { id: 's2', source: 'f', target: 'd', sourceHandle: 'signal-inlet-0', targetHandle: 'signal-in', data: { type: 'SIGNAL' } },
   { id: 's3', source: 'f', target: 'd', sourceHandle: 'signal-outlet-0', targetHandle: 'signal-in-ref', data: { type: 'SIGNAL' } },
 ];
@@ -31,6 +36,23 @@ describe('readInstrument', () => {
     expect(readInstrument(inst('T'), edges, tel)).toBeCloseTo(40, 6);
     expect(readInstrument(inst('v'), edges, tel)).toBeCloseTo(0.002 / (Math.PI * 0.05 ** 2 / 4), 6); // ~1.02 m/s in DN50
     expect(readInstrument(inst('nu'), edges, tel)).toBeCloseTo(30, 6);
+  });
+
+  it('reads a junction port pin from telemetry.ports: flow positive into the junction, null when unconnected', () => {
+    const at = (id, variable) => readInstrument({ id, type: 'instrument', data: { variable } }, edges, tel);
+    expect(at('jq', 'Q')).toBeCloseTo(60, 6);
+    expect(at('jr', 'Q')).toBeCloseTo(-24, 6);
+    expect(at('js', 'Q')).toBeNull();
+    expect(at('jq', 'P')).toBeCloseTo(1.98675, 6);
+    expect(at('jr', 'v')).toBeCloseTo(-0.0004 / (Math.PI * 0.04 ** 2 / 4), 6); // pipe found on the junction port as its source
+    expect(at('jq', 'v')).toBeNull(); // no pipe on port-0
+  });
+
+  it('names a junction pin 1-based and a component pin by its handle', () => {
+    const nodes = [{ id: 'j', type: 'junction', data: { label: 'J-1' } }, { id: 'f', type: 'filter', data: { label: 'F-1' } }];
+    expect(describeInstrumentInput(instrumentInput('js', edges), nodes)).toBe('J-1 · Port 3');
+    expect(describeInstrumentInput(instrumentInput('d', edges), nodes)).toBe('F-1 · inlet 0');
+    expect(describeInstrumentInput(null, nodes)).toBeNull();
   });
 
   it('reads a pressure difference as (+) minus (-) and needs both inputs', () => {

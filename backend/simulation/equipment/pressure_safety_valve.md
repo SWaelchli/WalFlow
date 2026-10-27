@@ -138,7 +138,7 @@ An unknown action mode is read as `pop_action` and an unknown valve type as `con
 | `test_pressure_safety_valve.py::test_psv_unmitigated_higher_pressure` | Unmitigated pressure above the relieved pressure |
 | `test_pressure_safety_valve.py::test_conventional_opening_shifts_with_backpressure` | Backpressure 20 m water ($\rho g h$ ≈ 1.96 bar), set 5 barg: conventional closed at 6.5 and open at 7.3 barg header; with 2 barg design backpressure open at 5.2, closed at 4.8; balanced open at 5.2, closed at 4.8 |
 | `test_pressure_safety_valve.py::test_backpressure_result_and_limit` | Superimposed 0 within 1 mbar, built-up = outlet gauge pressure within 1 mbar; conventional above 10 % flagged, balanced 30 % below 50 %, pilot without limit |
-| `test_pressure_safety_valve.py::test_pilot_lift_follows_the_remote_sensing_point` | Modulating pilot sensing a splitter upstream of a lossy line: lift $= 100 (P_{\text{sense,g}} - 10)/1$ % within 0.05; without a line the lift follows its own inlet and is lower |
+| `test_pressure_safety_valve.py::test_pilot_lift_follows_the_remote_sensing_point` | Modulating pilot sensing a junction upstream of a lossy line: lift $= 100 (P_{\text{sense,g}} - 10)/1$ % within 0.05; without a line the lift follows its own inlet and is lower |
 | `test_pressure_safety_valve.py::test_pilot_line_is_ignored_unless_the_valve_is_pilot_operated` | A signal line to a balanced valve is not read |
 | `test_pressure_safety_valve.py::test_pilot_result_does_not_depend_on_node_order` | PSV listed before its sensing node: one result pass with the sensed port reset to atm still gives lift $= 100 (P_{	ext{sense,g}} - 10)/1$ % within 0.05 |
 | `test_pressure_safety_valve.py::test_pilot_keeps_its_first_sensing_line` | Two lines: the first is read |

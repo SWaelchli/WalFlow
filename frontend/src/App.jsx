@@ -1,4 +1,5 @@
 import ReactFlow, { 
+  ConnectionMode,
   Background, 
   Controls, 
   ControlButton, 
@@ -9,7 +10,8 @@ import ReactFlow, {
   ReactFlowProvider
 } from 'reactflow';
 import { notify, confirmDialog } from './utils/dialogs';
-import { validateNetwork, checkNewConnection, PORT_TAKEN_MESSAGE } from './utils/networkValidation';
+import { validateNetwork, checkNewConnection, normalizeConnection, PORT_TAKEN_MESSAGE } from './utils/networkValidation';
+import { junctionLayout, junctionPortCount, PIN_TIP, PIN_LENGTH } from './utils/junctionLayout';
 import { summarizeStats, deriveRunState } from './utils/runStatus';
 import RunBanners from './components/overlays/RunBanners';
 import 'reactflow/dist/style.css'; 
@@ -24,8 +26,7 @@ import LinearControlValveNode from './nodes/LinearControlValveNode';
 import LinearRegulatorNode from './nodes/LinearRegulatorNode';
 import FilterNode from './nodes/FilterNode';
 import HeatExchangerNode from './nodes/HeatExchangerNode';
-import SplitterNode from './nodes/SplitterNode';
-import MixerNode from './nodes/MixerNode';
+import JunctionNode from './nodes/JunctionNode';
 import MeasurePointNode from './nodes/MeasurePointNode';
 import InstrumentNode from './nodes/InstrumentNode';
 import RemoteControlValveNode from './nodes/RemoteControlValveNode';
@@ -125,8 +126,7 @@ const nodeTypes = {
   linear_regulator: LinearRegulatorNode,
   filter: FilterNode,
   heat_exchanger: HeatExchangerNode,
-  splitter: SplitterNode,
-  mixer: MixerNode,
+  junction: JunctionNode,
   measure_point: MeasurePointNode,
   instrument: InstrumentNode,
   remote_control_valve: RemoteControlValveNode,
@@ -587,11 +587,29 @@ function WalFlowContent() {
     const host = nodes.find(n => n.id === nodeId);
     if (!host) return;
     // Up and to the right of the pin, so the signal line rises and turns into the bubble's left-hand input
-    const pinX = host.type === 'measure_point' ? 20 : (portId.startsWith('outlet') ? (host.width || 60) : 0);
+    let position;
+    const jPort = host.type === 'junction' ? junctionLayout(junctionPortCount(host.data)) : null;
+    const jp = jPort?.ports.find(p => p.id === portId);
+    if (jp) {
+      // Junction: the pin head, found from the port position and needle angle in the rotated frame
+      const half = jPort.size / 2;
+      const rot = ((host.data?.rotation || 0) * Math.PI) / 180;
+      const [ox, oy] = [jp.x - half, jp.y - half];
+      const px = host.position.x + half + ox * Math.cos(rot) - oy * Math.sin(rot);
+      const py = host.position.y + half + ox * Math.sin(rot) + oy * Math.cos(rot);
+      const pa = ((jp.pinAngle + (host.data?.rotation || 0)) * Math.PI) / 180;
+      const head = PIN_TIP + PIN_LENGTH;
+      const hx = px + Math.cos(pa) * head;
+      const hy = py + Math.sin(pa) * head;
+      position = { x: hx + 40, y: Math.sin(pa) > 0.5 ? hy + 50 : hy - 110 };
+    } else {
+      const pinX = host.type === 'measure_point' ? 20 : (portId.startsWith('outlet') ? (host.width || 60) : portId.startsWith('port-') ? (host.width || 40) / 2 : 0);
+      position = { x: host.position.x + pinX + 40, y: host.position.y - 110 };
+    }
     const instrument = {
       id: getId(),
       type: 'instrument',
-      position: { x: host.position.x + pinX + 40, y: host.position.y - 110 },
+      position,
       selected: true,
       data: defaultInstrumentData('P', nodes.map(n => n.data?.label)),
     };
@@ -661,7 +679,7 @@ function WalFlowContent() {
       const pins = contextMenu.pins || [];
       const instrumentItems = pins.map(port => ({
         id: `add-instrument-${port}`,
-        label: contextMenu.isTap ? 'Add instrument' : `Add instrument at ${port.replace('-', ' ')}`,
+        label: contextMenu.isTap ? 'Add instrument' : `Add instrument at ${port.startsWith('port-') ? `Port ${Number(port.slice(5)) + 1}` : port.replace('-', ' ')}`,
         disabled: locked,
         onSelect: () => addInstrumentAtPin(contextMenu.nodeId, port),
       }));
@@ -896,17 +914,17 @@ function WalFlowContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const onConnect = useCallback((params) => {
+  const onConnect = useCallback((rawParams) => {
     if (activeDiagram && !hasLock) {
       notify("This drawing is read-only. Please check out the drawing to edit.", 'warning');
       return;
     }
+    // The canvas connects in loose mode (a junction port works either way); the stored pipe runs outlet side -> inlet side
+    const direction = normalizeConnection(nodes, rawParams);
+    if (!direction.ok) return; // isValidConnection already refuses these
+    const params = direction.connection;
     const isSourceSignal = !!params.sourceHandle?.startsWith('signal-');
     const isTargetSignal = !!params.targetHandle?.startsWith('signal-');
-    if (isSourceSignal !== isTargetSignal) {
-      notify("Cannot connect a signal handle to a hydraulic port.", 'error');
-      return;
-    }
     const isSignal = isSourceSignal && isTargetSignal;
     // An instrument input reads one pin
     const targetIsInstrument = nodes.some(n => n.id === params.target && n.type === 'instrument');
@@ -952,17 +970,36 @@ function WalFlowContent() {
 
   // A port takes one pipe. The red handle while dragging comes from isValidConnection; the reason is
   // shown when the drag ends on a handle that was refused.
-  const refusedConnectionRef = useRef(false);
+  // Holds the reason (or null) for the last handle the drag was over; one toast per drag
+  const refusedConnectionRef = useRef(null);
+  // Read through a ref so the callback stays stable while nodes move
   const isValidConnection = useCallback((connection) => {
-    const ok = checkNewConnection(edges, connection).ok;
-    refusedConnectionRef.current = !ok;
-    return ok;
+    const direction = normalizeConnection(nodesRef.current, connection);
+    refusedConnectionRef.current = null;
+    if (!direction.ok) {
+      const { sourceHandle, targetHandle } = connection || {};
+      const isSig = (h) => String(h ?? '').startsWith('signal-');
+      if (connection?.source === connection?.target && sourceHandle === targetHandle) return false; // over the handle it started from
+      refusedConnectionRef.current = isSig(sourceHandle) !== isSig(targetHandle)
+        ? 'A signal handle cannot connect to a hydraulic port.'
+        : isSig(sourceHandle)
+          ? 'A sensing pin connects to an instrument or valve signal input.'
+          : 'A pipe runs from an outlet to an inlet; a junction port connects to either.';
+      return false;
+    }
+    const check = checkNewConnection(edges, direction.connection);
+    refusedConnectionRef.current = check.ok ? null : check.message;
+    return check.ok;
   }, [edges]);
-  const onConnectStart = useCallback(() => { refusedConnectionRef.current = false; }, []);
+  const onConnectStart = useCallback(() => { refusedConnectionRef.current = null; }, []);
   const onConnectEnd = useCallback((event) => {
-    const overHandle = event?.target?.closest?.('.react-flow__handle');
-    if (refusedConnectionRef.current && overHandle) notify(PORT_TAKEN_MESSAGE, 'warning');
-    refusedConnectionRef.current = false;
+    // On touch, touchend.target is the start handle, so look at the element under the end point
+    const pt = event?.changedTouches?.[0] ?? event;
+    const overHandle = Number.isFinite(pt?.clientX) && Number.isFinite(pt?.clientY)
+      ? document.elementFromPoint(pt.clientX, pt.clientY)?.closest?.('.react-flow__handle')
+      : null;
+    if (refusedConnectionRef.current && overHandle) notify(refusedConnectionRef.current, 'warning');
+    refusedConnectionRef.current = null;
   }, []);
 
   const onNodeClick = useCallback((event, node) => {
@@ -1669,6 +1706,7 @@ function WalFlowContent() {
             onEdgesChange={onEdgesChangeCustom}
             onConnect={onConnect}
             isValidConnection={isValidConnection}
+            connectionMode={ConnectionMode.Loose}
             onConnectStart={onConnectStart}
             onConnectEnd={onConnectEnd}
             onNodeClick={onNodeClick}

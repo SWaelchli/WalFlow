@@ -36,5 +36,5 @@ def test_tcv_paths_consistent_with_viscous_dp():
         # Feed pipe: tank head minus independent Darcy loss must arrive at the TCV inlet
         pipe = edge["pipe"]
         p_tank = tank.outlets[0].pressure
-        dp_feed = pipe_dp(port.flow_rate, L, D, pipe.roughness, pipe.inlets[0].density, pipe.inlets[0].viscosity)
+        dp_feed = pipe_dp(port.flow_rate, L, D, pipe.roughness, *pipe.upstream_port().fluid())
         assert port.pressure == pytest.approx(p_tank - dp_feed, abs=max(200.0, 0.01 * dp_path))

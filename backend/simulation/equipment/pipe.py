@@ -109,13 +109,19 @@ class Pipe(HydraulicNode):
         of the velocity head in stagnation_delta_p, shared with its derivative."""
         return (not self.inlet_at_reservoir) - (not self.outlet_at_reservoir)
 
+    def upstream_port(self):
+        """The end the flow enters by (flow of the last property pass): its density and viscosity are the pipe's,
+        whichever way the pipe is drawn. The drawn inlet without flow."""
+        return self.inlets[0] if self.inlets[0].flow_rate >= 0 else self.outlets[0]
+
     def calculate(self):
         inlet = self.inlets[0]
         outlet = self.outlets[0]
         if self.diameter <= 0:
             raise ValueError("Pipe diameter must be strictly positive.")
-        dp_friction = self._friction_dp(inlet.flow_rate, inlet.density, inlet.viscosity)
-        dp_entry = self._entry_dp(inlet.flow_rate, inlet.density)
+        upstream = self.upstream_port()
+        dp_friction = self._friction_dp(inlet.flow_rate, upstream.density, upstream.viscosity)
+        dp_entry = self._entry_dp(inlet.flow_rate, upstream.density)
         dp = dp_friction + dp_entry
         # Accelerating the fluid from rest is reversible; only friction and the entrance loss become heat
         k = self.RESERVOIR_ENTRY_K

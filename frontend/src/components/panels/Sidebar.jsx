@@ -63,8 +63,7 @@ const categorizedEquipment = [
   {
     name: 'Distribution & Manifolds',
     items: [
-      { type: 'splitter', label: 'Splitter', description: 'Flow Dividing Manifold' },
-      { type: 'mixer', label: 'Mixer', description: 'Flow Combining Manifold' },
+      { type: 'junction', label: 'Junction', description: 'Branch / Merge, 3 to 8 Ports' },
     ]
   },
 

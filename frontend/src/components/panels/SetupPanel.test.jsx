@@ -247,6 +247,17 @@ describe('control valve style picker in the inspector', () => {
   });
 });
 
+describe('junction port count', () => {
+  it('shows an invalid stored count as "— invalid —" and applies a picked 4', () => {
+    const onUpdate = renderNodePanel({ id: 'j1', type: 'junction', data: { label: 'J-1', num_ports: 4.6 } });
+    const select = screen.getByLabelText('Number of ports');
+    expect(select.selectedOptions[0].textContent).toBe('— invalid —');
+    expect(select.selectedOptions[0].disabled).toBe(true);
+    fireEvent.change(select, { target: { value: '4' } });
+    expect(onUpdate).toHaveBeenCalledWith('j1', { num_ports: 4 });
+  });
+});
+
 describe('flow source set flow', () => {
   const source = (flow) => ({ id: 'fs1', type: 'flow_source', data: { source_flow_lmin: flow, label: 'Demand' } });
 
