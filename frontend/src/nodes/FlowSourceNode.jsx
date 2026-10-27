@@ -32,8 +32,8 @@ export default function FlowSourceNode({ id, data, selected }) {
       id={id}
       data={data}
       selected={selected}
-      width={70}
-      height={70}
+      width={60}
+      height={60}
       footer={
         <>
           <div style={{ fontSize: '9px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>
@@ -48,10 +48,10 @@ export default function FlowSourceNode({ id, data, selected }) {
         </>
       }
     >
-      <svg width="70" height="70" viewBox="0 0 70 70">
+      <svg width="60" height="60" viewBox="0 0 60 60">
         {/* Outer circle */}
         <circle
-          cx="35" cy="35" r="28"
+          cx="30" cy="30" r="20"
           fill="var(--color-surface)"
           stroke="var(--color-brand-dark)"
           strokeWidth="2.5"
@@ -59,7 +59,7 @@ export default function FlowSourceNode({ id, data, selected }) {
 
         {/* Waves */}
         <path
-          d="M 16 25 Q 21 18 26 25 Q 31 32 36 25 Q 41 18 46 25 Q 51 32 54 25"
+          d="M 16.4 22.8 Q 20 17.8 23.6 22.8 Q 27.2 27.8 30.8 22.8 Q 34.3 17.8 37.8 22.8 Q 41.4 27.8 43.6 22.8"
           fill="none"
           stroke="#395253"
           strokeWidth="2.2"
@@ -67,7 +67,7 @@ export default function FlowSourceNode({ id, data, selected }) {
         />
         
         <path
-          d="M 16 45 Q 21 38 26 45 Q 31 52 36 45 Q 41 38 46 45 Q 51 52 54 45"
+          d="M 16.4 37.2 Q 20 32.2 23.6 37.2 Q 27.2 42.2 30.8 37.2 Q 34.3 32.2 37.8 37.2 Q 41.4 42.2 43.6 37.2"
           fill="none"
           stroke="#395253"
           strokeWidth="2.2"
@@ -75,7 +75,7 @@ export default function FlowSourceNode({ id, data, selected }) {
         />
         
         <path
-          d="M 16 35 Q 21 28 26 35 Q 31 42 36 35 Q 41 28 46 35 Q 51 42 54 35"
+          d="M 16.4 30 Q 20 25 23.6 30 Q 27.2 35 30.8 30 Q 34.3 25 37.8 30 Q 41.4 35 43.6 30"
           fill="none"
           stroke="#395253"
           strokeWidth="2.2"
@@ -90,13 +90,13 @@ export default function FlowSourceNode({ id, data, selected }) {
         id="outlet-0"
         className="handle-outlet"
         style={{
-          top: '50%', left: '65px',
+          top: '50%', left: '50px',
           marginTop: '-5px', marginLeft: '-5px',
           right: 'auto', bottom: 'auto', transform: 'none',
           background: 'var(--color-outlet)', width: '8px', height: '8px'
         }}
       />
-      {sensing['outlet-0'] && <SensingPin portId="outlet-0" offset={{ x: 20, y: 0 }} />}
+      {sensing['outlet-0'] && <SensingPin portId="outlet-0" offset={{ x: 15, y: 0 }} />}
     </BaseNode>
   );
 }
