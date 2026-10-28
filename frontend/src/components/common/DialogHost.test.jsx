@@ -31,8 +31,9 @@ describe('dialog service', () => {
     render(<DialogHost />);
     let result;
     act(() => { result = confirmDialog({ title: 'Delete?', message: 'Really?', confirmLabel: 'Delete', danger: true }); });
-    const dialog = screen.getByRole('alertdialog');
+    const dialog = screen.getByRole('alertdialog', { name: 'Delete?' });
     expect(dialog.getAttribute('aria-modal')).toBe('true');
+    expect(dialog.getAttribute('aria-labelledby')).toBeTruthy();
     expect(screen.getByText('Really?')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
     expect(await result).toBe(true);

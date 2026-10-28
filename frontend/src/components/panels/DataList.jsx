@@ -691,6 +691,7 @@ export default function DataList({
                               </span>
                             )}
                             <input 
+                              aria-label="Case name"
                               style={{ 
                                 width: `${inputWidth}px`, 
                                 fontSize: 'var(--fs-xs)', 
@@ -921,6 +922,7 @@ export default function DataList({
                           return (
                             <td key={caseId} style={{ padding: '4px 12px', background: caseId === activeCaseId ? '#fff7ed' : 'inherit', borderLeft: '1px solid var(--color-border)', verticalAlign: 'middle' }}>
                               <select
+                                aria-label={`${dev.data?.label || dev.id} state in ${c.case_name || c.name || 'case'}`}
                                 value={forcedState}
                                 onChange={(e) => handleMatrixForcedStateChange(caseId, dev.id, e.target.value)}
                                 style={{
@@ -1154,6 +1156,8 @@ export default function DataList({
                 if (patch) onUpdateEdge(item.id, patch);
               };
 
+              const rowLabel = item.data.label || item.id;
+
               const handleNameChange = (newName) => {
                 if (isNode) { if (onUpdateNode) onUpdateNode(item.id, { label: newName }); }
                 else { if (onUpdateEdge) onUpdateEdge(item.id, { label: newName }); }
@@ -1184,6 +1188,7 @@ export default function DataList({
                   <td style={{ padding: '8px', color: 'var(--color-text-secondary)', fontWeight: '600' }}>{entry.displayType}</td>
                   <td style={{ padding: '8px' }}>
                     <input 
+                      aria-label={`${rowLabel} name`}
                       style={{ width: '110px', fontSize: 'var(--fs-xs)', border: '1px solid var(--color-border)', padding: '3px 6px', borderRadius: '5px', fontWeight: '700', color: 'var(--color-text-primary)', outline: 'none' }}
                       value={item.data.label || item.id} 
                       onChange={(e) => handleNameChange(e.target.value)} 
@@ -1208,6 +1213,7 @@ export default function DataList({
                       {!isNode ? (
                         <select 
                           className="form-select"
+                          aria-label={`${rowLabel} nominal size`}
                           style={{ fontSize: 'var(--fs-xs)', padding: '2px 6px', height: '26px' }}
                           value={isCustomId ? '' : currentDn}
                           disabled={currentClassId !== 'manual' && !selectedClass}
@@ -1237,6 +1243,7 @@ export default function DataList({
                       {!isNode ? (
                         <select 
                           className="form-select"
+                          aria-label={`${rowLabel} schedule`}
                           style={{ fontSize: 'var(--fs-xs)', padding: '2px 6px', height: '26px' }}
                           value={currentSch}
                           disabled={scheduleLocked}
@@ -1265,6 +1272,7 @@ export default function DataList({
                       {!isNode ? (
                         <select 
                           className="form-select"
+                          aria-label={`${rowLabel} pipe class`}
                           style={{ fontSize: 'var(--fs-xs)', padding: '2px 6px', height: '26px', minWidth: '160px' }}
                           value={selectedClass ? selectedClass.id : currentClassId}
                           onChange={(e) => handleClassChange(e.target.value)} 
@@ -1296,6 +1304,7 @@ export default function DataList({
                     <td style={{ padding: '8px', textAlign: 'right' }} onClick={(e) => e.stopPropagation()}>
                       {!isNode && (
                         <DraftNumberInput
+                          aria-label={`${rowLabel} length`}
                           step="0.1"
                           style={{ width: '55px', fontSize: 'var(--fs-xs)', border: '1px solid var(--color-border)', padding: '3px 6px', borderRadius: '5px', textAlign: 'right', fontWeight: '600', color: 'var(--color-brand-dark)', outline: 'none' }}
                           displayValue={isImperial ? ((item.data.length_m ?? 25) * 3.280839895).toFixed(1) : (item.data.length_m ?? 25)}

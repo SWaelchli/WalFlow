@@ -156,7 +156,7 @@ const PumpDetails = memo(function PumpDetails({ node }) {
       </div>
       
       <div style={{ width: '100%', height: '240px', background: 'var(--color-surface)', borderRadius: 'var(--radius-md)' }}>
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minWidth={0} initialDimension={{ width: 240, height: 160 }}>
           <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 4, bottom: 10 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
             <XAxis dataKey="q" type="number" domain={[0, xTicks[xTicks.length - 1]]} ticks={xTicks} tickFormatter={formatTick} fontSize={10}

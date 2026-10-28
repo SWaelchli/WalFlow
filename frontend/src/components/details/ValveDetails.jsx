@@ -116,7 +116,7 @@ const ValveDetails = memo(function ValveDetails({ node }) {
             Run a simulation to see the valve curves
           </div>
         ) : (
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minWidth={0} initialDimension={{ width: 240, height: 160 }}>
           <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 4, bottom: 10 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
             <XAxis dataKey="q" type="number" domain={[0, xMaxDisplay]} ticks={xTicks} fontSize={10} tickFormatter={formatTick} height={36}
