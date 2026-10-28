@@ -16,7 +16,7 @@ Full gate (same as AGENTS.md; run every stage even if an earlier one fails):
 
 # Operational Rules
 - If the brief names a subset, run only that: a path (`tests/unit/equipment/test_pipe.py`), a node id,
-  or a marker (`-m unit`, `-m "scenario and not slow"`, `-m property`). Frontend subset: `npx vitest run <path>`.
+  or a marker (`-m unit`, `-m "scenario and not slow"`, `-m property`). Frontend subset: `npm test -- <path>`.
 - Use `-q`, `--tb=line` or `--tb=short`, and `-x` only when the brief asks to stop at first failure.
 - Read source only to resolve a failure's `path:line`; never read beyond what that needs.
 - For hypothesis failures, capture the "Falsifying example" lines only.

@@ -13,7 +13,7 @@ The section 2 references of the equipment documents were written by an LLM from 
 | :--- | :--- | :--- |
 | Sources, claims, verification log | `docs/STANDARDS_REGISTER.md` | yes |
 | Claim table per component | section 2 of `backend/simulation/equipment/<name>.md` | yes |
-| Model deviations found | `EQUIPMENT_FINDINGS.md` (next `D-xx`) | yes |
+| Model deviations found | `FINDINGS.md` (next `D-xx`) | yes |
 | Source PDFs | `../walflow-references/standards/`, `../walflow-references/literature/` | **no** (private repo) |
 | Clause excerpts, working notes | `../walflow-references/notes/<Ref ID>_<edition>.md` | **no** |
 
@@ -33,9 +33,9 @@ Copyright: in the public repo cite the clause, equation, table or figure number 
 6. **Record** (public repo):
    - register Part B: status, "Verified against" (edition), clause, date, note;
    - register Part C: one log row for the session;
-   - equipment `.md` section 2: the status cell, e.g. `✅ 10th ed. (2020) §5.8` or `⚠️ Re limit flat 16 000, §5.3.1 gives 16 000·β²` while the deviation is open (a short description, never the `D-xx` ID: `EQUIPMENT_FINDINGS.md` will be deleted, so code, docs, register, skills and tests never carry a finding ID); once it is fixed, the cell becomes ✅ with the clause;
+   - equipment `.md` section 2: the status cell, e.g. `✅ 10th ed. (2020) §5.8` or `⚠️ Re limit flat 16 000, §5.3.1 gives 16 000·β²` while the deviation is open (a short description, never the `D-xx` ID: `FINDINGS.md` will be deleted, so code, docs, register, skills and tests never carry a finding ID); once it is fixed, the cell becomes ✅ with the clause;
    - the 🚩 flag is removed once the flagged question is answered.
-7. **Deviation.** Add a `D-xx` finding to `EQUIPMENT_FINDINGS.md` with the clause and the expected value. Do not change model code in the verification task: a fix is a separate task after the user confirms it, following the bug-fix decision tree of the `walflow-qa` skill.
+7. **Deviation.** Add a `D-xx` finding to `FINDINGS.md` in the repo root (create it if it does not exist) with the clause and the expected value. Do not change model code in the verification task: a fix is a separate task after the user confirms it, following the bug-fix decision tree of the `walflow-qa` skill.
 8. **Not in source.** Propose a replacement source or the removal of the citation; change the doc only after the user agrees.
 9. **Private notes.** Write `../walflow-references/notes/<Ref ID>_<edition>.md`: per claim the clause, the relevant excerpt or equation, and the reasoning. Tell the user to commit the private repo; never commit it yourself without being asked.
 10. **Report** to the user: per claim the status and one line why, the findings opened, and the files changed.

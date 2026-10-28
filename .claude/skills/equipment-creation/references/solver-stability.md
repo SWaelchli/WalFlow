@@ -94,6 +94,8 @@ def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float =
     return self.cracking_pressure_bar * 1e5 * math.tanh(flow_rate / scale) + dp_friction
 ```
 
+**Open flow coefficient when closed:** while closed, the Fischer-Burmeister function evaluates the drop with the open friction characteristic. Use the fully open flow coefficient (e.g. `self.cv`), not a state-dependent effective one, or the derivative becomes extremely stiff while the device is closed.
+
 ---
 
 ## 5. Dynamic Topology Reduction (`blocks_flow_on_shutdown`)
@@ -115,6 +117,9 @@ When `self.active = False`, the solver's DFS reachability pre-processor will aut
 | `is_pressure_boundary` | `bool` | `False` | Component imposes a fixed pressure boundary (e.g. `Tank`, pressure boundary). |
 | `blocks_flow_on_shutdown` | `bool` | `False` | Component completely stops all flow through its ports when `self.active == False`. |
 | `use_mcp_formulation` | `bool` | `False` | Component switches states dynamically between closed/cracking/open using complementarity equations. |
+| `is_relief_driver` | `bool` | `False` | Component drives the system pressure (pump, source). See below. |
+
+**Relief drivers:** the relief analysis ramps every relief driver with a factor λ (0 = at rest, 1 = case value) to find the steady state at which each relief device reaches its set pressure. Implement `apply_relief_ramp(lam)` (scale the driving parameters, keep the case values) and `reset_relief_ramp()` (restore them), and add the type to `RELIEF_DRIVER_TYPES` in `frontend/src/constants/case_constants.js` so the "Ramp during relief analysis" option (`relief_ramp_enabled`) appears in the setup panel.
 
 ---
 
@@ -122,4 +127,23 @@ When `self.active = False`, the solver's DFS reachability pre-processor will aut
 
 When the solver runs iterations, it calls `calculate_delta_p(..., update_state=False)`.
 - **Do NOT mutate internal status flags (like bursting a rupture disc or locking a latch) when `update_state=False`.**
+- Do not check dynamic thresholds (e.g. pressure above set pressure) during iterations; use static state flags (`_was_open`, `is_burst`) so the Jacobian stays smooth and continuous.
 - Only update dynamic state variables (e.g., `self.is_burst = True`) when `update_state=True` (which occurs during post-solve telemetry generation).
+
+---
+
+## 8. Sign Convention of `calculate_delta_p`
+
+Pressure drop must be an odd function of flow: use `q * abs(q)`, never `q**2`. An even function makes a branch with reversed flow act as a pressure source and breaks the Jacobian (its derivative `2*c*|q|` is even, so the function must be odd). Test it with `calculate_delta_p(+q) == -calculate_delta_p(-q)`.
+
+---
+
+## 9. Solver Internals Equipment Must Respect
+
+These describe solver behaviour in `solver.py`; the full contract is in `backend/simulation/equipment/base_node.md`.
+
+- **Fallback solvers:** when falling back to SciPy's dense solvers (`root` with `method='lm'` or `'hybr'`), pass a dense-wrapped analytical Jacobian (`jac=lambda x: calculate_jacobian(x).toarray()`). Finite differences there are slow (fallback solves should stay under ~600 ms on large systems).
+- **Backtracking depth:** highly non-linear networks need at least 25 line-search backtracking steps to pass through high-resistance transitions.
+- **Pruned node pressures:** `_fill_pruned_pressures` carries the solved pressures at zero flow into the nodes left out of the solve, side by side (each node has an inlet and an outlet side). `_carry_at_rest` does the carrying for both this step and the stagnant step: unchanged along a pipe, across a device by its zero-flow rise or drop in either direction (`_get_node_p_out`, inverted by `_p_in_at_rest`). Device state is refreshed once from the final pressures. Blocking devices (`blocks_at_rest`: closed relief devices, stopped PD pumps) pass no pressure from one side to the other, so each side takes its own neighbour's pressure; the outlet of a closed relief device takes its downstream pressure. `is_pressure_reference` is the test for a node that fixes a circuit (pruning, islands); the stagnant step anchors only on pressure boundaries and flowing edges, since a flow source at zero flow fixes no pressure.
+- **Stagnant sections:** a section shut in by blocking devices (stopped PD pump, check valve without flow, closed relief device) has no pressure in the equations. `_assign_stagnant_pressures` sets it from the strongest leak path (stopped pump to its suction, then check valve, then relief seat; highest pressure on a tie), carries it through the section with `_carry_at_rest` (a running pump keeps its shutoff head) and shifts it so that no check valve opens and no relief device lifts, and flags the ports `stagnant`. Leakage never lifts an 'auto' relief device (also while the relief passes hold it closed, `NetworkSolver.held_closed_ids`); in the unmitigated pass the device has failed and the section takes the full leak-path pressure. If a check valve pushes a section above a set pressure, the check valve wins so the breach stays visible. A new check valve type goes into `CHECK_VALVE_TYPES` in `solver.py` and needs `cracking_pressure_bar`.
+- **Restore mutated state:** `run_sequential_relief_simulation` changes `forced_state` of relief devices during its passes and restores it in a `finally`. Any new analysis that temporarily mutates shared node state must do the same, because the WebSocket reuses the network between runs.
