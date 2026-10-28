@@ -2,6 +2,7 @@
 import contextlib
 import io
 
+from networks import neutral_graph
 import pytest
 
 from simulation.graph_parser import GraphParser
@@ -29,7 +30,7 @@ def _signal(edge_id, source, source_handle, target):
 def _solve(graph):
     NetworkSolver.clear_warm_start_cache()
     with contextlib.redirect_stdout(io.StringIO()):
-        network = GraphParser.parse_graph(ReactFlowGraph(**graph))
+        network = GraphParser.parse_graph(neutral_graph(**graph))
         stats = NetworkSolver(network).solve()
     assert stats["success"], stats.get("error")
     return network
@@ -63,7 +64,7 @@ def test_telemetry_ports_report_flow_into_the_junction_per_port():
 def _regulated_graph(sense_handle):
     """6 bara supply -> remote control valve (holds 3 bara at the sensed point) -> junction -> load valve -> tank.
     Port-0 takes the pipe drawn into the junction, port-1 the one drawn out of it, port-2 has no pipe."""
-    return {"nodes": [_node("src", "pressure_source", source_pressure_bara=6.0),
+    return {"nodes": [_node("src", "pressure_boundary", set_pressure_bara=6.0),
                       _node("rcv", "remote_control_valve", max_cv=5.0, set_pressure_pa=3.0e5),
                       _node("j", "junction"),
                       _node("load", "linear_control_valve", max_cv=1.0, opening_pct=100.0),
@@ -102,7 +103,7 @@ def test_signal_from_an_unconnected_junction_port_senses_nothing(sense_handle):
 
 def _pilot_graph(signals):
     """Header 10.5 barg -> junction -> 20 m of 20 mm pipe -> pilot PSV (set 10 barg) -> drain."""
-    return {"nodes": [_node("src", "pressure_source", source_pressure_bara=10.5 + P_ATM / 1e5),
+    return {"nodes": [_node("src", "pressure_boundary", set_pressure_bara=10.5 + P_ATM / 1e5),
                       _node("j", "junction"),
                       _node("psv", "pressure_safety_valve", set_pressure_barg=10.0, cv=1.0, action_mode="modulating",
                             valve_type="pilot"),
@@ -115,9 +116,9 @@ def _pilot_graph(signals):
 
 
 @pytest.mark.parametrize("signals, sensed_node", [
-    pytest.param([_signal("s1", "j", "signal-port-1", "psv"), _signal("s2", "src", "signal-outlet-0", "psv")], "j",
+    pytest.param([_signal("s1", "j", "signal-port-1", "psv"), _signal("s2", "src", "signal-port-0", "psv")], "j",
                  id="first_line_from_the_junction_wins"),
-    pytest.param([_signal("s2", "src", "signal-outlet-0", "psv"), _signal("s1", "j", "signal-port-1", "psv")], "src",
+    pytest.param([_signal("s2", "src", "signal-port-0", "psv"), _signal("s1", "j", "signal-port-1", "psv")], "src",
                  id="first_line_from_another_node_wins"),
 ])
 def test_pilot_keeps_its_first_sensing_line_also_from_a_junction_port(signals, sensed_node):

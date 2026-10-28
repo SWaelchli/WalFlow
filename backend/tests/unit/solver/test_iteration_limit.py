@@ -1,6 +1,7 @@
 """When the control loop stops at its iteration limit, the reported state is still one
 hydraulic solution: every pipe and valve obeys its own ΔP(Q), and no absolute pressure is negative."""
 from physics_refs import pipe_end_total
+from networks import neutral_graph
 from simulation.equipment.base_node import total_of
 from walflow_paths import EXAMPLES_DIR
 import pytest
@@ -26,7 +27,7 @@ def test_reported_state_is_consistent(control_iterations):
     data["globalSettings"] = {**data.get("globalSettings", {}), "control_iterations": control_iterations}
     with contextlib.redirect_stdout(io.StringIO()):
         NetworkSolver.clear_warm_start_cache()
-        net = GraphParser.parse_graph(ReactFlowGraph(**data))
+        net = GraphParser.parse_graph(neutral_graph(**data))
         stats = NetworkSolver(net).solve()
     assert stats["success"]
 

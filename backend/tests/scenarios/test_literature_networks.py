@@ -45,8 +45,9 @@ def solved(request):
 
 def test_jeppson_flows_and_friction_losses(solved):
     network, pipes, published = solved
-    demand = next(n for n in network.nodes.values() if n.node_type == "flow_source")
-    assert abs(demand.outlets[0].flow_rate) / CFS == pytest.approx(2.0, abs=0.001)
+    demand = next(n for n in network.nodes.values() if n.node_type == "flow_boundary")
+    assert demand.port_flow_into(0) / CFS == pytest.approx(2.0, abs=0.001)       # drawn into the demand: positive
+    assert pipes["d2"].inlets[0].flow_rate / CFS == pytest.approx(2.0, abs=0.001)
     for pid, q_ref, loss_ref in zip(PIPES, published["flow"], published["loss"]):
         pipe = pipes[pid]
         q = pipe.inlets[0].flow_rate

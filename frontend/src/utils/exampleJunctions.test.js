@@ -51,3 +51,33 @@ describe('shipped diagrams use junctions correctly', () => {
     });
   });
 });
+
+describe('shipped diagrams use neutral boundary ports', () => {
+  const OLD_TYPES = ['flow_source', 'pressure_source'];
+  const BOUNDARIES = ['tank', 'pressure_boundary', 'flow_boundary'];
+  const hydraulic = (e) => !String(e.sourceHandle).startsWith('signal-') && !String(e.targetHandle).startsWith('signal-');
+
+  it.each(files)('%s has no old type names and no inlet-0/outlet-0 on a tank or boundary', (file) => {
+    const { nodes, edges } = JSON.parse(readFileSync(file, 'utf-8'));
+    expect(nodes.filter((n) => OLD_TYPES.includes(n.type))).toEqual([]);
+    const isBoundary = new Map(nodes.map((n) => [n.id, BOUNDARIES.includes(n.type)]));
+    edges.filter(hydraulic).forEach((e) => {
+      [[e.source, e.sourceHandle], [e.target, e.targetHandle]].forEach(([id, handle]) => {
+        if (isBoundary.get(id)) expect(handle, `${e.id}: ${id}`).toMatch(/^port-\d+$/);
+      });
+    });
+    nodes.filter((n) => BOUNDARIES.includes(n.type)).forEach((n) => {
+      expect(n.data, n.id).not.toHaveProperty('source_flow_lmin');
+      expect(n.data, n.id).not.toHaveProperty('source_pressure_bara');
+    });
+  });
+
+  it.each(files)('%s stores a flow boundary as the pipe source when it supplies and the target when it draws', (file) => {
+    const { nodes, edges } = JSON.parse(readFileSync(file, 'utf-8'));
+    const draws = new Map(nodes.filter((n) => n.type === 'flow_boundary').map((n) => [n.id, n.data.flow_direction === 'draw']));
+    edges.filter(hydraulic).forEach((e) => {
+      if (draws.has(e.source)) expect(draws.get(e.source), `${e.id}: ${e.source} is a draw but starts the pipe`).toBe(false);
+      if (draws.has(e.target)) expect(draws.get(e.target), `${e.id}: ${e.target} supplies but ends the pipe`).toBe(true);
+    });
+  });
+});

@@ -1,4 +1,5 @@
 """NPSHa is reported at every pump, compared with NPSHr + margin; throttling devices are flagged below Pv."""
+from networks import neutral_graph
 import pytest
 
 
@@ -62,7 +63,7 @@ def test_telemetry_reports_npsh():
 
 
 def test_negative_npshr_is_an_input_error():
-    graph = ReactFlowGraph(nodes=[{"id": "p", "type": "centrifugal_pump", "position": {"x": 0, "y": 0},
+    graph = neutral_graph(nodes=[{"id": "p", "type": "centrifugal_pump", "position": {"x": 0, "y": 0},
                                    "data": {"label": "P1", "head": 30, "npshr_m": -1}}], edges=[])
     with pytest.raises(ModelInputError):
         GraphParser.parse_graph(graph)

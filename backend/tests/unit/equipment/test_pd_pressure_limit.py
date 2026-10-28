@@ -1,4 +1,4 @@
-"""PD pump / flow source: user-set absolute discharge pressure limit (default 50 bar(a)) instead of the fixed 200 bar guard."""
+"""PD pump / flow boundary: user-set absolute discharge pressure limit (default 50 bar(a)) instead of the fixed 200 bar guard."""
 from walflow_paths import EXAMPLES_DIR
 
 import contextlib
@@ -8,13 +8,13 @@ import os
 
 import pytest
 
-from simulation.equipment.flow_source import FlowSource
+from simulation.equipment.flow_boundary import FlowBoundary
 from simulation.equipment.volumetric_pump import VolumetricPump
 from simulation.graph_parser import GraphParser, ModelInputError
 from simulation.schemas import GlobalSettings, ReactFlowGraph
 from simulation.solver import NetworkSolver, run_sequential_relief_simulation
 from routers.simulation import extract_telemetry
-from networks import create_simple_network
+from networks import neutral_graph, create_simple_network
 
 Q_R = 100.0 / 60000.0
 
@@ -43,8 +43,8 @@ def test_pump_below_its_limit_is_unaffected():
     assert not pump.pressure_cap_reached
 
 
-def test_flow_source_outlet_is_limited():
-    src = FlowSource("F", source_flow=1e-3, max_discharge_pressure=20e5)
+def test_flow_boundary_outlet_is_limited():
+    src = FlowBoundary("F", set_flow=1e-3, max_discharge_pressure=20e5)
     # No flow taken: the pressure rise over atmospheric stops at the limit (dp < 0 is a rise)
     assert src.calculate_delta_p(0.0, 1000.0) == pytest.approx(-(20e5 - 101325.0))
 
@@ -60,7 +60,7 @@ def test_multi_psv_example_unmitigated_stops_at_pump_limit():
     path = os.path.join(EXAMPLES_DIR, "Example_Multi_PSV_Protection.wlf")
     data = json.load(open(path, encoding="utf-8"))
     with contextlib.redirect_stdout(io.StringIO()):
-        network = GraphParser.parse_graph(ReactFlowGraph(**data))
+        network = GraphParser.parse_graph(neutral_graph(**data))
         _, _, tel_unmitigated, _, _ = run_sequential_relief_simulation(network, NetworkSolver(network), extract_telemetry)
     pump_id = next(k for k, n in network.nodes.items() if n.node_type == "volumetric_pump")
     p_out = tel_unmitigated["nodes"][pump_id]["outlets"][0]["pressure"]

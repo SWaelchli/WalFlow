@@ -2,6 +2,8 @@ import math
 
 # Add backend to path
 
+from networks import neutral_graph
+from physics_refs import build_network
 from simulation.equipment.remote_control_valve import RemoteControlValve
 from simulation.equipment.tank import Tank
 from simulation.equipment.pipe import Pipe
@@ -40,7 +42,7 @@ def test_remote_control_valve_network_downstream_regulation():
     pipe1 = Pipe("Pipe1", length=20.0, diameter=0.05)
     pipe2 = Pipe("Pipe2", length=20.0, diameter=0.05)
     
-    network = HydraulicNetwork(
+    network = build_network(
         nodes={"Tank1": tank1, "RCV": rcv, "Tank2": tank2},
         edges=[
             {"id": "e1", "source": "Tank1", "target": "RCV", "pipe": pipe1},
@@ -76,7 +78,7 @@ def test_graph_parser_signal_edge_handling():
                 "id": "e_sig1",
                 "source": "tank_dst",
                 "target": "rcv_1",
-                "sourceHandle": "inlet-0",
+                "sourceHandle": "signal-port-0",
                 "targetHandle": "remote_sensing",
                 "type": "signal",
                 "data": {"type": "SIGNAL", "isSignal": True}
@@ -84,7 +86,7 @@ def test_graph_parser_signal_edge_handling():
         ]
     }
     
-    rf_graph = ReactFlowGraph(**rf_data)
+    rf_graph = neutral_graph(**rf_data)
     network = GraphParser.parse_graph(rf_graph)
     
     assert len(network.nodes) == 3

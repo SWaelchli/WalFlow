@@ -8,7 +8,7 @@ from physics_refs import solve
 from simulation.equipment.linear_control_valve import LinearControlValve
 from simulation.equipment.linear_regulator import LinearRegulator
 from simulation.equipment.pipe import Pipe
-from simulation.equipment.pressure_source import PressureSource
+from simulation.equipment.pressure_boundary import PressureBoundary
 from simulation.equipment.tank import Tank
 
 ID = 0.0266
@@ -17,7 +17,7 @@ ATM = 101325.0
 
 def _prv_with_downstream_valve(valve_opening, supply_bara=10.0, set_bara=5.0):
     nodes = {
-        "src": PressureSource("Supply", source_pressure=supply_bara * 1e5),
+        "src": PressureBoundary("Supply", set_pressure=supply_bara * 1e5),
         "prv": LinearRegulator("PRV", max_cv=5.0, set_pressure=set_bara * 1e5, backpressure=False),
         "cv": LinearControlValve("Consumer", max_cv=5.0, opening_pct=valve_opening),
         "t": Tank("Sink", fluid_level=0.0),
@@ -60,7 +60,7 @@ def test_prv_holds_its_setpoint_with_a_closed_or_small_consumer(opening, flow_lm
 
 def test_tight_shut_consumer_locks_the_prv_up():
     nodes = {
-        "src": PressureSource("Supply", source_pressure=10.0e5),
+        "src": PressureBoundary("Supply", set_pressure=10.0e5),
         "prv": LinearRegulator("PRV", max_cv=5.0, set_pressure=5.0e5, backpressure=False),
         "cv": BlindValve("Consumer", max_cv=5.0, opening_pct=0.0),
         "t": Tank("Sink", fluid_level=0.0),
@@ -82,7 +82,7 @@ def test_tight_shut_consumer_locks_the_prv_up():
 def test_prv_in_a_dead_end_is_locked_up_not_wide_open():
     # Nothing downstream: the regulator has no flow path and used to show downstream = upstream pressure
     nodes = {
-        "src": PressureSource("Supply", source_pressure=10.0e5),
+        "src": PressureBoundary("Supply", set_pressure=10.0e5),
         "prv": LinearRegulator("PRV", max_cv=5.0, set_pressure=5.0e5, backpressure=False),
         "dead": LinearControlValve("Dead end", max_cv=5.0, opening_pct=100.0),
     }
@@ -121,7 +121,7 @@ def test_report_matches_the_reported_solution_at_any_iteration_limit(limit):
     """Stopping mid-way (e.g. right after lock-up was decided but before it was solved) may not
     report a lock-up that the reported pressures do not show."""
     nodes = {
-        "src": PressureSource("Supply", source_pressure=10.0e5),
+        "src": PressureBoundary("Supply", set_pressure=10.0e5),
         "prv": LinearRegulator("PRV", max_cv=5.0, set_pressure=5.0e5, backpressure=False),
         "cv": BlindValve("Consumer", max_cv=5.0, opening_pct=0.0),
         "t": Tank("Sink", fluid_level=0.0),

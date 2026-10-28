@@ -1,9 +1,11 @@
 import math
 
+from physics_refs import build_network
+from networks import neutral_graph
 import pytest
 from simulation.equipment.base_node import total_of
 from simulation.equipment.reducer import Reducer
-from simulation.equipment.pressure_source import PressureSource
+from simulation.equipment.pressure_boundary import PressureBoundary
 from simulation.equipment.tank import Tank
 from simulation.equipment.pipe import Pipe
 from simulation.schemas import HydraulicNetwork, GlobalSettings
@@ -125,7 +127,7 @@ def test_reducer_reverse_flow_symmetry():
 ])
 def test_reducer_network_solves(p_src, d_in, d_out, len_out, recovery):
     gs = GlobalSettings(fluid_type="water", default_temperature=20.0)
-    src = PressureSource(name="Supply", source_pressure=p_src, temperature=293.15)
+    src = PressureBoundary(name="Supply", set_pressure=p_src, temperature=293.15)
     red = Reducer(name="Red", diameter_in=d_in, diameter_out=d_out, length=0.089, cone_angle_deg=18.2)
     tank = Tank(name="DischargeTank", fluid_level=0.0, elevation=0.0, temperature=293.15, fluid_type="water")
     nodes = {"src": src, "red": red, "tank": tank}
@@ -138,7 +140,7 @@ def test_reducer_network_solves(p_src, d_in, d_out, len_out, recovery):
     for e in edges:
         e["pipe"].global_settings = gs
     NetworkSolver._warm_start_cache.clear()
-    stats = NetworkSolver(HydraulicNetwork(nodes=nodes, edges=edges)).solve()
+    stats = NetworkSolver(build_network(nodes=nodes, edges=edges)).solve()
     assert stats["success"] is True, stats.get("error")
     q = red.inlets[0].flow_rate
     rho, mu = red.inlets[0].density, red.inlets[0].viscosity
@@ -157,7 +159,7 @@ def test_reducer_network_solves(p_src, d_in, d_out, len_out, recovery):
 
 def _reducer_graph(reducer_data):
     from simulation.schemas import ReactFlowGraph
-    return ReactFlowGraph(**{
+    return neutral_graph(**{
         "nodes": [
             {"id": "t1", "type": "tank", "position": {"x": 0, "y": 0}, "data": {"label": "T1"}},
             {"id": "r1", "type": "reducer", "position": {"x": 1, "y": 0}, "data": {"label": "R-1", **reducer_data}},

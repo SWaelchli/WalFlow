@@ -1,4 +1,5 @@
 """Flow split / merge ordering on small saved-file graphs; mass balance is a law in test_network_invariants.py."""
+from networks import neutral_graph
 import pytest
 
 from simulation.schemas import ReactFlowGraph
@@ -76,7 +77,7 @@ DUAL_SINK = {
     pytest.param(DUAL_SINK, "e_out1", "e_out2", False, id="dual-sink-lower-sink-takes-more"),
 ])
 def test_flow_split_follows_resistance_and_head(graph, more, less, both_flow_forward):
-    network = GraphParser.parse_graph(ReactFlowGraph(**graph))
+    network = GraphParser.parse_graph(neutral_graph(**graph))
     NetworkSolver(network).solve()
     # Each pipe in its drawn direction
     flows = {edge["id"]: edge["pipe"].inlets[0].flow_rate for edge in network.edges}
@@ -105,7 +106,7 @@ def test_four_port_junction_equals_two_chained_three_port_junctions():
     so a port count above 3 neither adds nor loses a flow path."""
     flows = []
     for graph in _four_port_junction_graphs():
-        network = GraphParser.parse_graph(ReactFlowGraph(**graph))
+        network = GraphParser.parse_graph(neutral_graph(**graph))
         assert NetworkSolver(network).solve()["success"]
         flows.append({e["id"]: e["pipe"].inlets[0].flow_rate for e in network.edges if e["id"].startswith("e")})
     four, chained = flows
@@ -123,7 +124,7 @@ def test_pipe_between_two_ports_of_one_junction_carries_nothing_and_changes_noth
     flows = []
     for edges in (legs, [*legs, loop]):
         junction = {**_junction("j", 200, 0), "data": {"label": "J", "num_ports": 4}}
-        network = GraphParser.parse_graph(ReactFlowGraph(nodes=[*tanks, junction], edges=edges))
+        network = GraphParser.parse_graph(neutral_graph(nodes=[*tanks, junction], edges=edges))
         assert NetworkSolver(network).solve()["success"]
         flows.append({e["id"]: e["pipe"].inlets[0].flow_rate for e in network.edges})
     plain, looped = flows

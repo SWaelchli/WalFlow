@@ -4,7 +4,7 @@
 
 A pipe connects two components. It computes the friction pressure drop along its length and the temperature rise from viscous dissipation. Each hydraulic edge of a `.wlf` file becomes one `Pipe`; edges of type `SIGNAL` are sensing links and create no pipe. Each pipe is a solver edge of its own; a pipe on a port of an in-line component ends on that port's hidden node ([component_link.md](component_link.md)).
 
-In the network a pipe is a passive resistance: its pressure drop rises roughly with the square of the flow in turbulent flow and linearly in laminar flow. Where the flow leaves a tank or pressure source into the pipe, the pipe also takes the entry velocity head (section 3.4).
+In the network a pipe is a passive resistance: its pressure drop rises roughly with the square of the flow in turbulent flow and linearly in laminar flow. Where the flow leaves a tank or pressure boundary into the pipe, the pipe also takes the entry velocity head (section 3.4).
 
 ## 2. Governing Standards & Reference Literature
 
@@ -55,7 +55,7 @@ Typical values, 100 m of steel pipe ($\varepsilon$ = 0.045 mm) at 20 °C:
 
 ### 3.4 Entry from a reservoir
 
-Tanks and pressure sources hold fluid at rest. Where the flow leaves one into the pipe, the static pressure drops by the velocity head of the acceleration from rest plus the entrance loss (Crane TP 410, sharp-edged entrance $K = 0.5$, `RESERVOIR_ENTRY_K`):
+Tanks and pressure boundaries hold fluid at rest. Where the flow leaves one into the pipe, the static pressure drops by the velocity head of the acceleration from rest plus the entrance loss (Crane TP 410, sharp-edged entrance $K = 0.5$, `RESERVOIR_ENTRY_K`):
 
 $$\Delta P_{\text{entry}} = (1 + K)\,\frac{\rho\,v\,|v|}{2}$$
 
@@ -65,7 +65,7 @@ $$\Delta P_{\text{entry}} = (1 + K)\,\frac{\rho\,v\,|v|}{2}$$
 - `end_heads(q)` gives the velocity heads at both ends, which the solver subtracts to report static pressures.
 - The reported pipe pressure drop includes the entry term.
 
-Without it, an expander close to a reservoir would recover static pressure that was never deducted, and a short line source → expander → tank had no steady-state solution. For why reservoir pressures are stagnation pressures, see [pressure_source.md](pressure_source.md#32-stagnation-pressure-not-line-pressure).
+Without it, an expander close to a reservoir would recover static pressure that was never deducted, and a short line source → expander → tank had no steady-state solution. For why reservoir pressures are stagnation pressures, see [pressure_boundary.md](pressure_boundary.md#32-stagnation-pressure-not-line-pressure).
 
 ### 3.5 Total pressure drop
 
@@ -152,7 +152,7 @@ The parser rejects a diameter $\le 0$ and a negative length or roughness (`Model
 | `test_pipe_friction.py::test_friction_slope_is_the_exact_derivative`, `test_friction_slope_laminar_limit_is_minus_f` | $df/d\ln\mathrm{Re}$ within $10^{-5}$ of a central difference at Re 0.5 to $10^7$ (including both sides of Re 10 and the transition band), $\varepsilon/D$ = 0, 0.0009, 0.01; $-f$ at Re 0, $10^{-9}$, 1 |
 | `test_pipe_friction.py::test_pipe_has_no_friction_factor_argument` | `Pipe(..., friction_factor=0.02)` raises `TypeError` |
 | `backend/tests/unit/fluids/test_pipe_friction_oil.py::test_pipe_flow_matches_darcy_colebrook` | ISO VG 46, tanks 12 m and 2 m level, 100 m × 50 mm: gravity flow matches Darcy-Weisbach / Colebrook with entry loss within 1 % at 20 °C, 10 % at 60 °C (transition band) |
-| `backend/tests/unit/equipment/test_pipe_reservoir_entry.py` | 0.5 bar from a tank or pressure source through 10 m DN50 to a tank: flow matches entry + friction within 1 %; entry term only at the end the flow leaves; only the $K$ part heats the fluid |
+| `backend/tests/unit/equipment/test_pipe_reservoir_entry.py` | 0.5 bar from a tank or pressure boundary through 10 m DN50 to a tank: flow matches entry + friction within 1 %; entry term only at the end the flow leaves; only the $K$ part heats the fluid |
 | `test_pipe_reservoir_entry.py::test_stagnation_drop_adds_entry_and_exit_loss_to_friction` | The four end combinations in both flow directions: total drop = friction (+ $K h$ leaving, + $h$ entering a reservoir); derivative matches a central difference |
 | `test_pipe_reservoir_entry.py::test_expander_between_reservoirs_with_short_pipes` | Reservoir → 0.1-5 m DN50 → 2"×3" expander → DN80 → tank solves and matches an independent loss sum within 1 % |
 | `backend/tests/unit/fluids/test_reverse_flow.py` | Reverse flow: magnitude within 2 % of the forward reference; temperature carried from the supplying end |

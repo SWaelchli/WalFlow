@@ -34,7 +34,8 @@
         "label": "Common Reservoir",
         "level_m": 2.0,
         "elevation_m": 0.0,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1
       }
     },
     {
@@ -78,7 +79,8 @@
         "label": "Centrifugal Train Discharge Tank",
         "level_m": 0.5,
         "elevation_m": 0.0,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1
       }
     },
     {
@@ -120,7 +122,8 @@
         "label": "Volumetric Train Discharge Tank",
         "level_m": 0.5,
         "elevation_m": 0.0,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1
       }
     },
     {
@@ -181,7 +184,7 @@
       "source": "centrifugal-throttle",
       "sourceHandle": "outlet-0",
       "target": "centrifugal-sink",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "data": {
         "label": "Delivery 1",
         "length_m": 2,
@@ -238,7 +241,7 @@
       "source": "volumetric-prv",
       "sourceHandle": "outlet-0",
       "target": "volumetric-sink",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "data": {
         "label": "Delivery 2",
         "length_m": 2,
@@ -255,7 +258,7 @@
     {
       "id": "b0",
       "source": "source-reservoir",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-0",
       "target": "suction-junction",
       "targetHandle": "port-0",
       "data": {

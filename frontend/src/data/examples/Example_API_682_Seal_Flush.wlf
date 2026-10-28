@@ -36,7 +36,8 @@
         "level_m": 1.5,
         "elevation_m": 0,
         "temperature_k": 303.15,
-        "rotation": 0
+        "rotation": 0,
+        "num_ports": 1
       },
       "width": 95,
       "height": 143
@@ -66,7 +67,7 @@
         "y": 250
       },
       "data": {
-        "label": "Duplex Barrier Filter (10µm)",
+        "label": "Duplex Barrier Filter (10\u00b5m)",
         "dp_clean_bar": 0.15,
         "dp_terminal_bar": 1.5,
         "flow_ref_lmin": 35,
@@ -143,7 +144,8 @@
         "level_m": 1.5,
         "elevation_m": 0,
         "temperature_k": 305.15,
-        "rotation": 180
+        "rotation": 180,
+        "num_ports": 1
       },
       "width": 82,
       "height": 143,
@@ -159,7 +161,7 @@
     {
       "id": "e1",
       "source": "barrier-tank",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-0",
       "target": "barrier-pump",
       "targetHandle": "inlet-0",
       "data": {
@@ -261,7 +263,7 @@
       "source": "seal-bpr",
       "sourceHandle": "outlet-0",
       "target": "return-tank",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "data": {
         "label": "Barrier Return Line",
         "length_m": 4,

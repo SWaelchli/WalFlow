@@ -1,5 +1,6 @@
 import math
 
+from networks import neutral_graph
 import pytest
 
 from simulation.equipment.orifice import Orifice
@@ -306,7 +307,7 @@ def test_extract_telemetry_carries_solver_effective_geometry():
         ReactFlowEdge(id="e2", source="ori", target="t2", sourceHandle="port-1", targetHandle="inlet-0",
                       data={"diameter_m": 0.08}),
     ]
-    graph = ReactFlowGraph(nodes=nodes, edges=edges, global_settings=gs)
+    graph = neutral_graph(nodes=nodes, edges=edges, global_settings=gs)
     network = GraphParser.parse_graph(graph)
 
     ori = network.inline_nodes["ori"]

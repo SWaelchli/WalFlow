@@ -165,11 +165,11 @@ def _pipe_data():
 
 @st.composite
 def networks(draw, max_depth: int = 3, components=tuple(sorted(NETWORK_COMPONENTS))):
-    """A saved-file graph (dict for ReactFlowGraph): a pressure source, a tank with a centrifugal pump, or two
-    pressure sources at different temperatures joined in a junction, feeding a random series-parallel arrangement
+    """A saved-file graph (dict for ReactFlowGraph): a pressure boundary, a tank with a centrifugal pump, or two
+    pressure boundaries at different temperatures joined in a junction, feeding a random series-parallel arrangement
     of components (junction pairs with 2 or 3 branches) into a tank. Every edge is a pipe with its own geometry.
-    A junction has 1 to 2 ports more than it uses, its pipes sit on shuffled ports, a pipe between two neutral ports is drawn in either
-    direction and the in-line components are entered by either neutral port. Node ids are n0, n1, ... in creation order."""
+    A junction has 1 to 2 ports more than it uses, its pipes sit on shuffled ports, tanks and pressure boundaries have 1 to 3 ports,
+    a pipe between two neutral ports (junction, tank, pressure boundary) is drawn in either direction and the in-line components are entered by either neutral port. Node ids are n0, n1, ... in creation order."""
     nodes, edges = [], []
 
     def add_node(node_type, data):
@@ -183,6 +183,11 @@ def networks(draw, max_depth: int = 3, components=tuple(sorted(NETWORK_COMPONENT
         num_ports = min(Junction.MAX_PORTS, max(Junction.MIN_PORTS, used) + draw(st.integers(0, 2)))
         handles = [f"port-{k}" for k in draw(st.permutations(range(num_ports)))]
         return add_node("junction", {"num_ports": num_ports}), handles
+
+    def add_reservoir(node_type, data):
+        """A tank or pressure boundary with 1 to 3 ports: returns (id, a port handle it uses)."""
+        num_ports = draw(st.integers(1, 3))
+        return add_node(node_type, {"num_ports": num_ports, **data}), f"port-{draw(st.integers(0, num_ports - 1))}"
 
     def connect(src, dst):
         if src[1].startswith("port-") and dst[1].startswith("port-") and draw(st.booleans()):
@@ -229,9 +234,8 @@ def networks(draw, max_depth: int = 3, components=tuple(sorted(NETWORK_COMPONENT
     fluid, temp_k, _, _ = draw(fluid_states())
     supply = draw(st.sampled_from(["source", "pump", "two_sources"]))
     if supply == "source":
-        source = add_node("pressure_source", {"source_pressure_bara": draw(st.floats(1.5, 20.0)),
-                                              "temperature_k": temp_k})
-        start = (source, "outlet-0")
+        start = add_reservoir("pressure_boundary", {"set_pressure_bara": draw(st.floats(1.5, 20.0)),
+                                                    "temperature_k": temp_k})
     elif supply == "two_sources":
         # Streams at different temperatures meet: the mixing energy balance is only visible this way
         _, other_temp_k, _, _ = draw(fluid_states(fluids=[fluid]))
@@ -239,17 +243,17 @@ def networks(draw, max_depth: int = 3, components=tuple(sorted(NETWORK_COMPONENT
         # A source is sometimes low (down to 1 bara) so the sink tank can sit above it: flow then runs backwards
         # through the junction's outlet-side port and an inlet-side one
         for k, t in enumerate((temp_k, other_temp_k)):
-            source = add_node("pressure_source", {
-                "source_pressure_bara": draw(st.one_of(st.floats(1.5, 20.0), st.floats(1.0, 1.6))),
+            source = add_reservoir("pressure_boundary", {
+                "set_pressure_bara": draw(st.one_of(st.floats(1.5, 20.0), st.floats(1.0, 1.6))),
                 "temperature_k": t})
-            place((source, "outlet-0"), (mix, mix_ports[k]), max_depth)
+            place(source, (mix, mix_ports[k]), max_depth)
         start = (mix, mix_ports[2])
     else:
-        feed = add_node("tank", {"level_m": draw(st.floats(0.5, 5.0)), "temperature_k": temp_k})
+        feed = add_reservoir("tank", {"level_m": draw(st.floats(0.5, 5.0)), "temperature_k": temp_k})
         pump = add_node("centrifugal_pump", {"flow_rated_lmin": draw(log_uniform(20.0, 2000.0)),
                                              "head_rated_m": draw(log_uniform(10.0, 120.0))})
-        connect((feed, "outlet-0"), (pump, "inlet-0"))
+        connect(feed, (pump, "inlet-0"))
         start = (pump, "outlet-0")
-    sink = add_node("tank", {"level_m": draw(st.floats(0.5, 5.0)), "temperature_k": temp_k})
-    place(start, (sink, "inlet-0"), 0)
+    sink = add_reservoir("tank", {"level_m": draw(st.floats(0.5, 5.0)), "temperature_k": temp_k})
+    place(start, sink, 0)
     return {"nodes": nodes, "edges": edges, "globalSettings": {"fluid_type": fluid}}

@@ -19,7 +19,7 @@
       "data": {
         "label": "Note",
         "title": "JEPPSON (1974) 7-PIPE NETWORK",
-        "text": "Validation case: the 7-pipe network of R. W. Jeppson, Steady Flow Analysis of Pipe Networks: An Instructional Manual, Utah State University, 1974, Ch. V, example problems 1-3 (pp. 47-48). The same network with the pump is AFT Fathom Verification Case 63.\n\nData: all pipes Darcy-Weisbach with roughness 0.012 in; water at 70 °F; all junctions at 80 ft, the datum of this model, so the tank levels are the reservoir heads above it (20, 25 and 15 ft). Demand 2.0 cfs at junction 2 (a flow source with negative set flow). Pump: least-squares fit of Jeppson's curve h = -10.33 Q² + 2.823 Q + 22.29 (ft, cfs) over 0.5-1.1 cfs, within 0.11 ft.\n\nCases:\n• Problem 2: pump supply (base). Published flows (cfs): P1 0.533, P2 0.662, P3 1.338, P4 0.699, P5 0.639, P6 -0.129, P7 0.828; junction pressures 8.10 / 0.56 / 7.32 / 8.28 psi.\n• Problem 3: three reservoirs, pump removed (isolated, bypass open). Published flows (cfs): P1 0.979, P2 0.680, P3 1.320, P4 0.527, P5 0.793, P6 0.300, P7 0.227.\n\nThe demand is drawn at junction 2, so pipes P2, P3 and P5 are drawn against the flow and show negative flows; compare magnitudes. WalFlow adds the reservoir entrance loss that Jeppson neglects, which explains most of the remaining difference (largest about 2 % on the smallest flows)."
+        "text": "Validation case: the 7-pipe network of R. W. Jeppson, Steady Flow Analysis of Pipe Networks: An Instructional Manual, Utah State University, 1974, Ch. V, example problems 1-3 (pp. 47-48). The same network with the pump is AFT Fathom Verification Case 63.\n\nData: all pipes Darcy-Weisbach with roughness 0.012 in; water at 70 \u00b0F; all junctions at 80 ft, the datum of this model, so the tank levels are the reservoir heads above it (20, 25 and 15 ft). Demand 2.0 cfs at junction 2 (a flow source with negative set flow). Pump: least-squares fit of Jeppson's curve h = -10.33 Q\u00b2 + 2.823 Q + 22.29 (ft, cfs) over 0.5-1.1 cfs, within 0.11 ft.\n\nCases:\n\u2022 Problem 2: pump supply (base). Published flows (cfs): P1 0.533, P2 0.662, P3 1.338, P4 0.699, P5 0.639, P6 -0.129, P7 0.828; junction pressures 8.10 / 0.56 / 7.32 / 8.28 psi.\n\u2022 Problem 3: three reservoirs, pump removed (isolated, bypass open). Published flows (cfs): P1 0.979, P2 0.680, P3 1.320, P4 0.527, P5 0.793, P6 0.300, P7 0.227.\n\nThe demand is drawn at junction 2, so pipes P2, P3 and P5 are drawn against the flow and show negative flows; compare magnitudes. WalFlow adds the reservoir entrance loss that Jeppson neglects, which explains most of the remaining difference (largest about 2 % on the smallest flows)."
       }
     },
     {
@@ -33,7 +33,8 @@
         "label": "Reservoir 100 ft",
         "elevation_m": 0.0,
         "level_m": 6.096,
-        "temperature_k": 294.26
+        "temperature_k": 294.26,
+        "num_ports": 1
       }
     },
     {
@@ -47,7 +48,8 @@
         "label": "Reservoir 105 ft",
         "elevation_m": 0.0,
         "level_m": 7.62,
-        "temperature_k": 294.26
+        "temperature_k": 294.26,
+        "num_ports": 1
       }
     },
     {
@@ -61,21 +63,24 @@
         "label": "Pump Sump 95 ft",
         "elevation_m": 0.0,
         "level_m": 4.572,
-        "temperature_k": 294.26
+        "temperature_k": 294.26,
+        "num_ports": 1
       }
     },
     {
       "id": "demand-2",
-      "type": "flow_source",
+      "type": "flow_boundary",
       "position": {
         "x": 1370,
         "y": 170
       },
       "data": {
         "label": "Demand 2.0 cfs",
-        "source_flow_lmin": -3398.02,
         "temperature_k": 294.26,
-        "rotation": 180
+        "rotation": 180,
+        "num_ports": 1,
+        "set_flow_lmin": 3398.02,
+        "flow_direction": "draw"
       }
     },
     {
@@ -202,7 +207,7 @@
     {
       "id": "p1",
       "source": "res-100",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-0",
       "target": "junction-1",
       "targetHandle": "port-0",
       "data": {
@@ -256,7 +261,7 @@
       "source": "junction-3",
       "sourceHandle": "port-0",
       "target": "res-105",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "data": {
         "label": "P5: 6 in, 1000 ft",
         "length_m": 304.8,
@@ -292,10 +297,10 @@
     },
     {
       "id": "d2",
-      "source": "demand-2",
-      "sourceHandle": "outlet-0",
-      "target": "junction-2",
-      "targetHandle": "port-1",
+      "source": "junction-2",
+      "sourceHandle": "port-1",
+      "target": "demand-2",
+      "targetHandle": "port-0",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -306,7 +311,7 @@
     {
       "id": "s1",
       "source": "res-95",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-0",
       "target": "sump-header",
       "targetHandle": "port-0",
       "data": {

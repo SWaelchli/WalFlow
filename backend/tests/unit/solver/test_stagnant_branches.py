@@ -7,17 +7,17 @@ seat), held where no check valve would open and no relief device would lift, and
 import pytest
 
 from networks import make_junction
-from physics_refs import solve
+from physics_refs import build_network, solve
 from simulation.equipment.base_node import total_of
 from simulation.equipment.centrifugal_pump import CentrifugalPump
 from simulation.equipment.check_valve import CheckValve
 from simulation.equipment.check_valve_orifice import CheckValveOrifice
-from simulation.equipment.flow_source import FlowSource
+from simulation.equipment.flow_boundary import FlowBoundary
 from simulation.equipment.linear_control_valve import LinearControlValve
 from simulation.equipment.linear_regulator import LinearRegulator
 from simulation.equipment.pipe import Pipe
 from simulation.equipment.pressure_safety_valve import PressureSafetyValve
-from simulation.equipment.pressure_source import PressureSource
+from simulation.equipment.pressure_boundary import PressureBoundary
 from simulation.equipment.tank import Tank
 from simulation.equipment.volumetric_pump import VolumetricPump
 from simulation.fluid_utils import FluidProperties
@@ -38,7 +38,7 @@ def standby_branch(with_pump=True, psv_set_barg=10.0):
         "tee": make_junction("Discharge tee", 1 if with_pump else 0, 2),
         "psv": PressureSafetyValve("PSV", set_pressure_barg=psv_set_barg, valve_type="balanced_bellows"),
         "nrv": CheckValve("NRV"),
-        "header": PressureSource("Header", source_pressure=HEADER_PA),
+        "header": PressureBoundary("Header", set_pressure=HEADER_PA),
         "mix": make_junction("Header tee", 2, 1),
         "consumer": LinearControlValve("Consumer", max_cv=2.0, opening_pct=50.0),
         "return": Tank("Return", fluid_level=0.0),
@@ -128,7 +128,7 @@ def test_relief_passes_keep_the_section_at_suction_pressure():
     gs = GlobalSettings(fluid_type="water")
     for item in [*nodes.values(), *(e["pipe"] for e in edges)]:
         item.global_settings = gs
-    network = HydraulicNetwork(nodes=nodes, edges=edges)
+    network = build_network(nodes=nodes, edges=edges)
     stats, telemetry, _, _, _ = run_sequential_relief_simulation(network, NetworkSolver(network), lambda net: {})
     assert stats["success"], stats.get("error")
     p_suction = nodes["suction"].outlets[0].pressure
@@ -141,7 +141,7 @@ def _network(nodes, edges):
     gs = GlobalSettings(fluid_type="water")
     for item in [*nodes.values(), *(e["pipe"] for e in edges)]:
         item.global_settings = gs
-    return HydraulicNetwork(nodes=nodes, edges=edges)
+    return build_network(nodes=nodes, edges=edges)
 
 
 def _stopped_pump():
@@ -151,7 +151,7 @@ def _stopped_pump():
 
 
 def _header_and_consumer(nodes, edges):
-    nodes.update({"header": PressureSource("Header", source_pressure=HEADER_PA), "mix": make_junction("Header tee", 2, 1),
+    nodes.update({"header": PressureBoundary("Header", set_pressure=HEADER_PA), "mix": make_junction("Header tee", 2, 1),
                   "consumer": LinearControlValve("Consumer", max_cv=2.0, opening_pct=50.0),
                   "return": Tank("Return", fluid_level=0.0)})
     edges += [{"id": "e_header", "source": "header", "target": "mix", "target_port": "inlet-0", "pipe": Pipe("header", 1, ID)},
@@ -209,7 +209,7 @@ def test_check_valve_push_above_a_relief_set_pressure_stays_visible():
     # Review finding: the check valve's lower limit (header minus cracking) and the PSV seat limit conflict;
     # the check valve wins, so the section shows the breach instead of hiding it below the set pressure
     NetworkSolver.clear_warm_start_cache()
-    nodes = {"header": PressureSource("Header", source_pressure=8e5), "nrv": CheckValve("NRV"),
+    nodes = {"header": PressureBoundary("Header", set_pressure=8e5), "nrv": CheckValve("NRV"),
              "psv": PressureSafetyValve("PSV", set_pressure_barg=5.0, valve_type="balanced_bellows"), "return": Tank("Return", fluid_level=0.0)}
     edges = [{"id": "e_in", "source": "header", "target": "nrv", "pipe": Pipe("header", 1, ID)},
              {"id": "e_mid", "source": "nrv", "target": "psv", "pipe": Pipe("NRV to PSV", 1, ID)},
@@ -247,7 +247,7 @@ def test_leakage_alone_does_not_open_a_psv_in_the_relief_passes():
 
 def _shut_in_behind_check_valve(device):
     """Header (4 bara) -> check valve -> device -> dead end (a tee with nothing connected downstream)."""
-    nodes = {"header": PressureSource("Header", source_pressure=HEADER_PA), "nrv": CheckValve("NRV"),
+    nodes = {"header": PressureBoundary("Header", set_pressure=HEADER_PA), "nrv": CheckValve("NRV"),
              "device": device, "end": make_junction("Dead end", 1, 0)}
     edges = [{"id": "e_in", "source": "header", "target": "nrv", "pipe": Pipe("header", 1, ID)},
              {"id": "e_nrv", "source": "nrv", "target": "device", "pipe": Pipe("NRV to device", 1, ID)},
@@ -294,10 +294,10 @@ def test_pump_reached_from_its_discharge_keeps_its_pressure_rise():
 
 
 @pytest.mark.parametrize("method", METHODS)
-def test_flow_source_at_zero_flow_is_no_pressure_reference(method):
-    # Review finding: a flow source fixes the flow, not the pressure; at zero flow its section is stagnant
+def test_flow_boundary_at_zero_flow_is_no_pressure_reference(method):
+    # Review finding: a flow boundary fixes the flow, not the pressure; at zero flow its section is stagnant
     NetworkSolver.clear_warm_start_cache()
-    nodes = {"source": FlowSource("Dosing", source_flow=0.0), "nrv": CheckValve("NRV")}
+    nodes = {"source": FlowBoundary("Dosing", set_flow=0.0), "nrv": CheckValve("NRV")}
     edges = [{"id": "e_source", "source": "source", "target": "nrv", "pipe": Pipe("dosing line", 1, ID)},
              {"id": "e_nrv", "source": "nrv", "target": "mix", "target_port": "inlet-1", "pipe": Pipe("NRV outlet", 1, ID)}]
     _header_and_consumer(nodes, edges)
@@ -334,7 +334,7 @@ def test_dead_tee_branch_reads_the_static_pressure_of_the_flowing_run():
     # A gauge on a dead branch of a tee reads the run's static pressure, not the total: the dead junction port,
     # its pipe (both ends) and the node behind it drop by the velocity head, while the total stays reported
     NetworkSolver.clear_warm_start_cache()
-    nodes = {"src": PressureSource("Source", source_pressure=6e5), "tee": make_junction("Tee", 1, 2),
+    nodes = {"src": PressureBoundary("Source", set_pressure=6e5), "tee": make_junction("Tee", 1, 2),
              "sink": Tank("Sink", fluid_level=0.0), "end": make_junction("Dead end", 1, 0)}
     edges = [{"id": "e_in", "source": "src", "target": "tee", "pipe": Pipe("feed", 1, ID)},
              {"id": "e_run", "source": "tee", "target": "sink", "source_port": "outlet-0", "pipe": Pipe("run", 1, ID)},
@@ -361,7 +361,7 @@ def test_dead_leg_behind_a_check_valve_takes_the_temperature_of_its_nearest_live
     # A stagnant port has no flow to carry a temperature. Each side of the closed valve takes the temperature of the live end it hangs on: source side from the
     # source, junction side from the junction's leaving stream; density and viscosity follow
     K = 273.15
-    nodes = {"hot": PressureSource("Hot", 15e5, 60 + K), "cold": PressureSource("Cold", 9e5, 10 + K),
+    nodes = {"hot": PressureBoundary("Hot", 15e5, 60 + K), "cold": PressureBoundary("Cold", 9e5, 10 + K),
              "nrv": CheckValve("NRV", 1.0), "mix": make_junction("Junction", 2, 1), "sink": Tank("Sink", fluid_level=1.0, temperature=10 + K)}
     edges = [{"id": "e1", "source": "hot", "target": "mix", "target_port": "inlet-0", "pipe": Pipe("hot", 1, ID)},
              {"id": "e2", "source": "cold", "target": "nrv", "pipe": Pipe("cold side", 1, ID)},

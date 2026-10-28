@@ -34,7 +34,8 @@
         "label": "Suction Storage Tank",
         "level_m": 3.0,
         "elevation_m": 0.0,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1
       }
     },
     {
@@ -152,7 +153,8 @@
         "label": "Header Sink Tank",
         "level_m": 1.0,
         "elevation_m": 0.0,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1
       }
     },
     {
@@ -395,7 +397,7 @@
     {
       "id": "pp0",
       "source": "common-suction-tank",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-0",
       "target": "suction-junction",
       "targetHandle": "port-0",
       "data": {
@@ -416,7 +418,7 @@
       "source": "return-junction",
       "sourceHandle": "port-1",
       "target": "discharge-sink",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "data": {
         "label": "Common Return",
         "length_m": 1,

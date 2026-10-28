@@ -94,7 +94,7 @@ def test_wrong_acting_remote_valve_runs_to_an_end_stop_and_says_why():
     """Downstream-mode RCV sensing a point upstream of itself: opening lowers the sensed pressure, so the
     loop runs wide open like a real wrong-acting controller; the report flags it instead of looking normal."""
     from networks import graph_node, graph_pipe, graph_signal, solve_graph
-    graph = {"nodes": [graph_node("src", "pressure_source", {"label": "Supply", "source_pressure_bara": 6.0}),
+    graph = {"nodes": [graph_node("src", "pressure_boundary", {"label": "Supply", "set_pressure_bara": 6.0}),
                        graph_node("ori", "orifice", {"label": "Upstream restriction", "orifice_diameter_m": 0.01}),
                        graph_node("rcv", "remote_control_valve", {"label": "RCV", "max_cv": 5.0, "set_pressure_pa": 5.0e5}),
                        graph_node("t", "tank", {"label": "Sink", "level_m": 0.0})],

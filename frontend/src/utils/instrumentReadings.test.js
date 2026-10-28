@@ -10,6 +10,7 @@ const tel = {
     j: { ports: [{ pressure: 300000, flow_rate: 0.001 }, { pressure: 300000, flow_rate: -0.0004 }, { pressure: 300000, flow_rate: null }] },
     f: { inlets: [{ pressure: 400000 }], outlets: [{ pressure: 385000 }] },
     o: { ports: [{ pressure: 400000, flow_rate: 0.001 }, { pressure: 380000, flow_rate: -0.001 }] },
+    tk: { ports: [{ pressure: 200000, flow_rate: 0.003 }, { pressure: 200000, flow_rate: 0.001 }] },
   },
 };
 const edges = [
@@ -24,9 +25,12 @@ const edges = [
   { id: 'op1', source: 'o', target: 'tank', sourceHandle: 'port-1', targetHandle: 'inlet-0', data: { type: 'PIPE', diameter_m: 0.05 } },
   { id: 'so0', source: 'o', target: 'oq', sourceHandle: 'signal-port-0', targetHandle: 'signal-in', data: { type: 'SIGNAL' } },
   { id: 'so1', source: 'o', target: 'or', sourceHandle: 'signal-port-1', targetHandle: 'signal-in', data: { type: 'SIGNAL' } },
+  { id: 'st0', source: 'tk', target: 'tq0', sourceHandle: 'signal-port-0', targetHandle: 'signal-in', data: { type: 'SIGNAL' } },
+  { id: 'st1', source: 'tk', target: 'tq1', sourceHandle: 'signal-port-1', targetHandle: 'signal-in', data: { type: 'SIGNAL' } },
   { id: 's2', source: 'f', target: 'd', sourceHandle: 'signal-inlet-0', targetHandle: 'signal-in', data: { type: 'SIGNAL' } },
   { id: 's3', source: 'f', target: 'd', sourceHandle: 'signal-outlet-0', targetHandle: 'signal-in-ref', data: { type: 'SIGNAL' } },
 ];
+const hosts = [{ id: 'o', type: 'orifice' }, { id: 'tk', type: 'tank' }];
 const inst = (variable, extra = {}) => ({ id: 'i', type: 'instrument', data: { variable, ...extra } });
 
 describe('readInstrument', () => {
@@ -54,17 +58,22 @@ describe('readInstrument', () => {
   });
 
   it('reads the flow through a two-port component whichever port is tapped', () => {
-    const at = (id, variable) => readInstrument({ id, type: 'instrument', data: { variable } }, edges, tel);
+    const at = (id, variable) => readInstrument({ id, type: 'instrument', data: { variable } }, edges, tel, 101325, hosts);
     const through = 0.001 / (Math.PI * 0.05 ** 2 / 4);
     expect(at('oq', 'Q')).toBeCloseTo(60, 6);
     expect(at('or', 'Q')).toBeCloseTo(60, 6); // port-1 reads +Q, not the flow into that port
     expect(at('or', 'v')).toBeCloseTo(through, 6);
     expect(at('or', 'P')).toBeCloseTo(2.78675, 6); // pressure stays that of the tapped port
+    // a two-port tank is not in-line: each port reads its own flow
+    expect(at('tq0', 'Q')).toBeCloseTo(180, 6);
+    expect(at('tq1', 'Q')).toBeCloseTo(60, 6);
+    // without the node list the tapped port's own entry is read
+    expect(readInstrument({ id: 'or', type: 'instrument', data: { variable: 'Q' } }, edges, tel)).toBeCloseTo(-60, 6);
   });
 
   it('reads the through flow of a two-port component whose port 0 is free (null)', () => {
     const half = { nodes: { o: { ports: [null, { pressure: 380000, flow_rate: -0.001 }] } } };   // leaving by Port 2
-    const at = (variable) => readInstrument({ id: 'or', type: 'instrument', data: { variable } }, edges, half);
+    const at = (variable) => readInstrument({ id: 'or', type: 'instrument', data: { variable } }, edges, half, 101325, hosts);
     expect(at('Q')).toBeCloseTo(60, 6);
     expect(at('v')).toBeCloseTo(0.001 / (Math.PI * 0.05 ** 2 / 4), 6);
   });

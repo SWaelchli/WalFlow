@@ -8,6 +8,7 @@ All notable changes to the WälFlow project will be documented in this file.
 
 ### Added
 
+- **Neutral ports on boundaries**: Tank, pressure boundary and flow boundary (renamed from pressure source / flow source) have 1 to 8 neutral ports. The flow boundary supplies or draws a set flow, shared over its ports at common pressure, as an equal share or with its own flow per port; a draw has a minimum suction pressure and its pipes show positive flow. The port count sits below the name tag for all multi-port equipment. New flow boundary symbol (radial arrows, out for supply, in for draw); the tank liquid follows the rounded bottom. Older files are not converted.
 - **Imperial / US Customary unit system**: Full bidirectional unit conversions across the entire application supporting standard engineering units (Pressure: `psi(a)` / `psi(d)`, Flow: `gpm`, Temperature: `°F`, Power: `HP`, Length: `ft`, Pipe Roughness & Diameter: `in`, Velocity: `ft/s`).
 - **Global unit system selector**: Modern toggle switch in Sidebar Settings allowing seamless switching between Metric (SI) and Imperial (US Customary) unit systems, with persistence to localStorage and saved diagram files.
 - **Pressure and flow sources** (`PressureSource` / `FlowSource`): Split the universal source into two separate components: a Constant Pressure Source (1 inlet + 1 outlet, solid concentric circle symbol) and a Constant Flow Source (1 outlet only, wave symbol), styled in dark theme colors.

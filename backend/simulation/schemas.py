@@ -159,14 +159,14 @@ class HydraulicNetwork(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     nodes: Dict[str, Any]  # ID -> HydraulicNode
-    edges: List[Dict[str, Any]]  # List of: {'source': id, 'target': id, 'pipe': Pipe | ComponentLink, 'source_port': str, 'target_port': str}
+    edges: List[Dict[str, Any]]  # List of: {'source': id, 'target': id, 'pipe': Pipe | ComponentLink | BoundaryLink, 'source_port': str, 'target_port': str}
     inline_nodes: Dict[str, Any] = {}  # ID -> InlineNode: in-line components, each solved as a ComponentLink edge
     global_settings: Optional[GlobalSettings] = None
     active_case_id: Optional[str] = None
 
     @model_validator(mode='after')
     def _mark_reservoir_pipe_ends(self):
-        # Tanks and pressure sources hold fluid at rest: a pipe end on one adds the entry velocity head
+        # Tanks and pressure boundaries hold fluid at rest: a pipe end on one adds the entry velocity head
         for edge in self.edges:
             pipe = edge.get('pipe')
             if pipe is None or not hasattr(pipe, 'inlet_at_reservoir'):

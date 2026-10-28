@@ -2,6 +2,7 @@ import math
 
 # Add backend to path
 
+from physics_refs import build_network
 from simulation.equipment.tank import Tank
 from simulation.equipment.pipe import Pipe
 from simulation.equipment.linear_control_valve import LinearControlValve
@@ -24,7 +25,7 @@ def test_disconnected_floating_subgraph_resilience():
     floating_orifice = Orifice("FloatingOrifice", pipe_diameter=0.05, orifice_diameter=0.02)
     floating_valve = LinearControlValve("FloatingValve", max_cv=25.0)
     
-    network = HydraulicNetwork(
+    network = build_network(
         nodes={
             "Tank1": tank1,
             "Tank2": tank2,
@@ -58,7 +59,7 @@ def test_zero_flow_fully_closed_valve():
     pipe1 = Pipe("Pipe1", length=10.0, diameter=0.05)
     pipe2 = Pipe("Pipe2", length=10.0, diameter=0.05)
     
-    network = HydraulicNetwork(
+    network = build_network(
         nodes={
             "Tank1": tank1,
             "ClosedValve": valve,

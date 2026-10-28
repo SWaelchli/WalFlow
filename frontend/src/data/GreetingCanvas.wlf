@@ -72,7 +72,8 @@
         "label": "Supply Reservoir",
         "level_m": 3.0,
         "elevation_m": 0.0,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1
       }
     },
     {
@@ -116,7 +117,8 @@
         "label": "Return Reservoir",
         "level_m": 1.0,
         "elevation_m": 2.0,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1
       }
     }
   ],
@@ -124,7 +126,7 @@
     {
       "id": "pipe-1",
       "source": "greeting-tank-1",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-0",
       "target": "greeting-pump",
       "targetHandle": "inlet-0",
       "type": "default",
@@ -172,7 +174,7 @@
       "source": "greeting-valve",
       "sourceHandle": "outlet-0",
       "target": "greeting-tank-2",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "type": "default",
       "animated": true,
       "label": "Return Line",

@@ -4,7 +4,7 @@ Reference: dT = dp / (rho * cp) * (1 - eta) / eta, with rho and cp of the fluid 
 """
 import pytest
 
-from physics_refs import water_head
+from physics_refs import build_network, water_head
 from simulation.equipment.base_node import total_of
 from simulation.equipment.tank import Tank
 from simulation.equipment.pipe import Pipe
@@ -26,7 +26,7 @@ def _solve_pump(pump):
         {"id": "e1", "source": "t1", "target": "p1", "source_port": "outlet-0", "target_port": "inlet-0", "pipe": Pipe("P1", 1.0, 0.1)},
         {"id": "e2", "source": "p1", "target": "t2", "source_port": "outlet-0", "target_port": "inlet-0", "pipe": Pipe("P2", 1.0, 0.1)},
     ]
-    network = HydraulicNetwork(nodes=nodes, edges=edges)
+    network = build_network(nodes=nodes, edges=edges)
     network.global_settings = gs
     for node in nodes.values():
         node.global_settings = gs
@@ -86,7 +86,7 @@ def _solve_braking(pump):
         {"id": "e1", "source": "t1", "target": "p1", "pipe": Pipe("P1", 1.0, 0.1)},
         {"id": "e2", "source": "p1", "target": "t2", "pipe": Pipe("P2", 1.0, 0.1)},
     ]
-    network = HydraulicNetwork(nodes=nodes, edges=edges)
+    network = build_network(nodes=nodes, edges=edges)
     network.global_settings = gs
     for item in [*nodes.values(), *(e["pipe"] for e in edges)]:
         item.global_settings = gs

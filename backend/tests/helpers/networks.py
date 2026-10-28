@@ -1,10 +1,13 @@
 """Network builders shared by several test modules."""
+from physics_refs import build_network
+import functools
+
 import pytest
 
 from simulation.equipment.linear_control_valve import LinearControlValve
 from simulation.equipment.junction import Junction
 from simulation.equipment.pipe import Pipe
-from simulation.equipment.pressure_source import PressureSource
+from simulation.equipment.pressure_boundary import PressureBoundary
 from simulation.equipment.remote_control_valve import RemoteControlValve
 from simulation.equipment.tank import Tank
 from simulation.schemas import HydraulicNetwork
@@ -40,7 +43,7 @@ def create_simple_network(pump_node, valve_opening=100.0):
         {"id": "e2", "source": "p1", "target": "v1", "pipe": p_b},
         {"id": "e3", "source": "v1", "target": "t2", "pipe": p_c},
     ]
-    return HydraulicNetwork(nodes=nodes, edges=edges)
+    return build_network(nodes=nodes, edges=edges)
 
 
 
@@ -91,7 +94,7 @@ def parallel_remote_valves(set_a_bar, set_b_bar, cv_a=5.0, cv_b=5.0, len_a=1.0, 
     PRV: the header is the joining junction after the valves. BPR: the header is the splitting junction before them.
     Returns (nodes, edges)."""
     nodes = {
-        "src": PressureSource("Supply", source_pressure=10.0e5),
+        "src": PressureBoundary("Supply", set_pressure=10.0e5),
         "sp": make_junction("Split", 1, 2),
         "a": RemoteControlValve("A", max_cv=cv_a, set_pressure=set_a_bar * 1e5, backpressure=backpressure),
         "b": RemoteControlValve("B", max_cv=cv_b, set_pressure=set_b_bar * 1e5, backpressure=backpressure),
@@ -169,11 +172,63 @@ def component_line(node_type, data=None, fluid="water", source_level=20.0, sink_
     }
 
 
+RESERVOIR_TYPES = ("tank", "pressure_boundary", "flow_boundary")
+
+
+def use_neutral_ports(graph_dict):
+    """Redraw a saved-file graph (dict) as the canvas saves it: a pipe end on a tank, pressure boundary or flow
+    boundary sits on a numbered port-k handle, one pipe per port, and the node's num_ports grows to fit. Ends that
+    already name a port-k keep it; "inlet-0" / "outlet-0" / no handle on these nodes get the lowest free port. The
+    drawn direction of every pipe is kept. Returns the same dict."""
+    reservoirs = {n["id"]: n for n in graph_dict["nodes"] if n["type"] in RESERVOIR_TYPES}
+    used = {node_id: set() for node_id in reservoirs}
+    ends = []
+    for edge in graph_dict["edges"]:
+        if (edge.get("data") or {}).get("type") == "SIGNAL":
+            continue
+        for end in ("source", "target"):
+            handle = edge.get(f"{end}Handle")
+            if edge[end] in reservoirs:
+                if handle and handle.startswith("port-"):
+                    used[edge[end]].add(int(handle.split("-")[1]))
+                else:
+                    ends.append((edge, end))
+    for edge, end in ends:
+        node_id = edge[end]
+        k = min(set(range(9)) - used[node_id])
+        used[node_id].add(k)
+        edge[f"{end}Handle"] = f"port-{k}"
+    for node_id, node in reservoirs.items():
+        node["data"]["num_ports"] = max(node["data"].get("num_ports", 1), max(used[node_id], default=-1) + 1)
+    return graph_dict
+
+
+def on_neutral_ports(build):
+    """Decorator for a function returning a saved-file graph (or a list of them): redrawn by use_neutral_ports."""
+    @functools.wraps(build)
+    def wrapper(*args, **kwargs):
+        built = build(*args, **kwargs)
+        for graph in built if isinstance(built, (list, tuple)) else [built]:
+            use_neutral_ports(graph)
+        return built
+    return wrapper
+
+
+def neutral_graph(**graph_fields):
+    """ReactFlowGraph of a saved-file graph written with plain dicts, redrawn onto neutral ports (use_neutral_ports)."""
+    from simulation.schemas import ReactFlowGraph
+    for key in ("nodes", "edges"):
+        graph_fields[key] = [x.model_dump() if hasattr(x, "model_dump") else x for x in graph_fields[key]]
+    use_neutral_ports(graph_fields)
+    return ReactFlowGraph(**graph_fields)
+
+
 def solve_graph(graph_dict):
     """Parse and solve a saved-file graph: (network, stats). Fails the test when the solve does not succeed."""
     from simulation.graph_parser import GraphParser
     from simulation.schemas import ReactFlowGraph
     from simulation.solver import NetworkSolver
+    use_neutral_ports(graph_dict)
     network = GraphParser.parse_graph(ReactFlowGraph(**graph_dict))
     stats = NetworkSolver(network).solve()
     assert stats["success"], stats

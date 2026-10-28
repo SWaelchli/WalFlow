@@ -50,3 +50,12 @@ export const nodePressure = (telemetry) => {
   const p = telemetry?.ports?.find(Boolean)?.pressure;   // the first piped port (a free port reports null)
   return Number.isFinite(p) ? p : null;
 };
+
+/** First piped port object of a multi-port boundary (tank, boundaries, junction), or null when it has no result. */
+export const firstPiped = (telemetry) => telemetry?.ports?.find(Boolean) ?? null;
+
+/** Net flow in m3/s into a multi-port component through all its piped ports (negative = it delivers), or null. */
+export const netPortFlow = (telemetry) => {
+  const piped = (telemetry?.ports || []).filter(Boolean);
+  return piped.length ? piped.reduce((s, p) => s + (p.flow_rate ?? 0), 0) : null;
+};

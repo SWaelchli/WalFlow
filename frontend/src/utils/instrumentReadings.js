@@ -3,6 +3,7 @@
 import { barToPsi, psiToBar, lminToGpm, gpmToLmin, cToF, fToC, msToFts, ftsToMs } from './converters';
 import { nextNumberedTag } from './autoTag';
 import { portNumberLabel } from './portLabels';
+import { NEUTRAL_TYPES } from './networkValidation';
 
 export const INSTRUMENT_VARIABLES = {
   P: { letters: 'PIT', name: 'Pressure' },
@@ -77,7 +78,7 @@ const pipeDiameterAt = (input, edges) => {
  * Reading of one instrument in base units, or null when it is not wired or there is no result.
  * @param telemetrySet one case's telemetry ({ nodes: { id: { inlets, outlets } } })
  */
-export function readInstrument(instrument, edges, telemetrySet, atmosphericPa = DEFAULT_ATM_PA) {
+export function readInstrument(instrument, edges, telemetrySet, atmosphericPa = DEFAULT_ATM_PA, nodes = null) {
   const data = instrument?.data || {};
   const input = instrumentInput(instrument?.id, edges);
   if (!input) return null;
@@ -86,7 +87,9 @@ export function readInstrument(instrument, edges, telemetrySet, atmosphericPa = 
   if (!port) return null;
   // On a two-port neutral component a flow reads the flow through it (Port 1 to Port 2), whichever port is tapped;
   // flow_rate is positive into the port, so Port 2's (when Port 1 is free) counts negative
-  const throughFlow = input.side === 'ports' && ports.length === 2
+  // Only neutral in-line parts do this; a tank, boundary or junction with two ports reads the tapped port's own flow
+  const hostType = nodes?.find((n) => n.id === input.nodeId)?.type;
+  const throughFlow = input.side === 'ports' && ports.length === 2 && NEUTRAL_TYPES.has(hostType)
     ? (ports[0] ? ports[0].flow_rate : -ports[1].flow_rate)
     : port.flow_rate;
 
@@ -154,7 +157,7 @@ export function readInstruments(nodes, edges, telemetrySet, atmosphericPa = DEFA
   const out = new Map();
   nodes.forEach((n) => {
     if (n.type !== 'instrument') return;
-    const value = readInstrument(n, edges, telemetrySet, atmosphericPa);
+    const value = readInstrument(n, edges, telemetrySet, atmosphericPa, nodes);
     out.set(n.id, { value, state: alarmState(value, n.data) });
   });
   return out;

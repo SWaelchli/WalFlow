@@ -1,17 +1,20 @@
 import { useUnits } from '../../context/UnitContext';
 import { junctionPortCount } from '../../utils/junctionLayout';
+import { boundaryPortCount, BOUNDARY_PORT_TYPES } from '../../utils/boundaryLayout';
 import { NO_FLOW_M3S } from '../../utils/nodeReadouts';
 
-// Flow is positive into the junction; a port without a pipe has no result
-function directionOf(flow) {
+// Flow is positive into the component; a port without a pipe has no result
+function directionOf(flow, noun) {
   if (Math.abs(flow) < NO_FLOW_M3S) return 'no flow';
-  return flow > 0 ? 'into junction' : 'out of junction';
+  return flow > 0 ? `into ${noun}` : `out of ${noun}`;
 }
 
-/** Per-port results of a junction: flow magnitude and direction, static pressure and temperature. */
+/** Per-port results of a junction, tank or boundary: flow magnitude and direction, static pressure and temperature. */
 export default function JunctionPortsDetails({ node }) {
   const { labels, formatFlowM3s, formatPressurePa, formatTemperatureK } = useUnits();
-  const count = junctionPortCount(node.data);
+  const isBoundary = BOUNDARY_PORT_TYPES.has(node.type);
+  const count = isBoundary ? boundaryPortCount(node.data) : junctionPortCount(node.data);
+  const noun = node.type === 'junction' ? 'junction' : node.type === 'tank' ? 'tank' : 'boundary';
   const ports = node.data?.telemetry?.ports || [];
 
   return (
@@ -29,7 +32,7 @@ export default function JunctionPortsDetails({ node }) {
           }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
               <span style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>Port {k + 1}</span>
-              <span style={{ color: 'var(--color-text-secondary)' }}>{p ? directionOf(p.flow_rate || 0) : 'not connected'}</span>
+              <span style={{ color: 'var(--color-text-secondary)' }}>{p ? directionOf(p.flow_rate || 0, noun) : 'not connected'}</span>
             </div>
             {p && (
               <div style={{ textAlign: 'right', flexShrink: 0 }}>

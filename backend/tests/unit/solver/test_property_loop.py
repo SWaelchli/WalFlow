@@ -6,9 +6,9 @@ import pytest
 import scipy.sparse.linalg as spla
 
 from networks import make_junction
-from physics_refs import solve_example
+from physics_refs import build_network, solve_example
 from simulation.equipment.pipe import Pipe
-from simulation.equipment.pressure_source import PressureSource
+from simulation.equipment.pressure_boundary import PressureBoundary
 from simulation.equipment.tank import Tank
 from simulation.fluid_utils import FluidProperties
 from simulation.schemas import GlobalSettings, HydraulicNetwork
@@ -44,7 +44,7 @@ PROPERTY_ITERATIONS = 4
 def _solved_junction():
     """Hot and cold stream into a junction: the junction outlet edge is the one free edge of the mixing solve."""
     K = 273.15
-    nodes = {"hot": PressureSource("Hot", 15e5, 60 + K), "cold": PressureSource("Cold", 12e5, 10 + K),
+    nodes = {"hot": PressureBoundary("Hot", 15e5, 60 + K), "cold": PressureBoundary("Cold", 12e5, 10 + K),
              "mix": make_junction("Junction", 2, 1), "sink": Tank("Sink", fluid_level=1.0, temperature=10 + K)}
     edges = [{"id": "e1", "source": "hot", "target": "mix", "target_port": "inlet-0", "pipe": Pipe("hot", 1, 0.05)},
              {"id": "e2", "source": "cold", "target": "mix", "target_port": "inlet-1", "pipe": Pipe("cold", 1, 0.05)},
@@ -52,7 +52,7 @@ def _solved_junction():
     gs = GlobalSettings(fluid_type="water", property_iterations=PROPERTY_ITERATIONS)
     for item in [*nodes.values(), *(e["pipe"] for e in edges)]:
         item.global_settings = gs
-    solver = NetworkSolver(HydraulicNetwork(nodes=nodes, edges=edges))
+    solver = NetworkSolver(build_network(nodes=nodes, edges=edges))
     assert solver.solve()["success"]
     q_edges = [e["pipe"].inlets[0].flow_rate for e in solver.edges_list]
     return solver, nodes["mix"].outlets[0], q_edges

@@ -5,13 +5,13 @@ import pytest
 from simulation.schemas import ReactFlowGraph
 from simulation.graph_parser import GraphParser
 from simulation.solver import NetworkSolver
-from networks import generate_stress_network
+from networks import neutral_graph, generate_stress_network
 
 
 @pytest.mark.parametrize("complexity", [5, 15, 30])
 def test_newton_and_lm_agree(complexity):
     """The two solver methods are independent algorithms; they must land on the same pressures."""
-    graph = ReactFlowGraph(**generate_stress_network(complexity))
+    graph = neutral_graph(**generate_stress_network(complexity))
     results = {}
     for method in ("sparse_newton", "lm"):
         NetworkSolver._warm_start_cache.clear()
@@ -22,7 +22,7 @@ def test_newton_and_lm_agree(complexity):
 
 
 def test_warm_start_needs_few_iterations():
-    graph = ReactFlowGraph(**generate_stress_network(30))
+    graph = neutral_graph(**generate_stress_network(30))
     NetworkSolver._warm_start_cache.clear()
     iters_cold = NetworkSolver(GraphParser.parse_graph(graph)).solve(method="sparse_newton").get("total_inner_iterations", 0)
 

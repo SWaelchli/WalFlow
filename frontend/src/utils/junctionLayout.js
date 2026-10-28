@@ -27,7 +27,7 @@ const norm360 = (a) => ((a % 360) + 360) % 360;
  * outward, turned from the radial direction by half the gap to the nearest port (at most 45 deg), away from the
  * direction the pipe leaves (the handle side). Axis-aligned ports turn up (top and bottom ports turn right).
  */
-function pinAngles(ports) {
+export function pinAngles(ports) {
   const radial = ports.map((p) => norm360((Math.atan2(p.uy, p.ux) * 180) / Math.PI));
   return ports.map((p, k) => {
     const gap = Math.min(...radial.map((a, j) => (j === k ? 360 : Math.abs(wrap180(a - radial[k])))));

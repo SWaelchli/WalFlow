@@ -9,6 +9,7 @@ import { GlobeIcon, BoltIcon, WarningIcon, CrossIcon, CaretDownIcon } from '../s
 import { componentLabel } from '../../constants/componentLabels';
 import { validPortCount, NEUTRAL_TYPES } from '../../utils/networkValidation';
 import { MIN_JUNCTION_PORTS, MAX_JUNCTION_PORTS, junctionPortCount, junctionPortIds } from '../../utils/junctionLayout';
+import { MIN_BOUNDARY_PORTS, MAX_BOUNDARY_PORTS, BOUNDARY_PORT_TYPES, boundaryPortCount } from '../../utils/boundaryLayout';
 
 import { useUnits } from '../../context/UnitContext';
 import { useFittingStandards } from '../../hooks/useFittingStandards';
@@ -23,6 +24,12 @@ import InstrumentSetup from './InstrumentSetup';
 
 import { clickableProps } from '../../utils/a11yProps';
 import { portNumberLabel } from '../../utils/portLabels';
+const FLOW_SPLIT_OPTIONS = [
+  ['common_pressure', 'Calculate flow per port based on equal pressure'],
+  ['total_split', 'Distribute flow equally between ports'],
+  ['per_port', 'Set flow at every port'],
+];
+
 export default function SetupPanel({
   node,
   edge,
@@ -182,10 +189,16 @@ export default function SetupPanel({
           setLocalDrafts({});
           return;
         }
-      } else if (field === 'source_flow_lmin') {
-        // Any finite flow: negative = withdrawal (demand), 0 stops the source
-        if (!Number.isFinite(numericValue)) {
-          notify('Set flow must be a number (negative = withdrawal).', 'warning');
+      } else if (field === 'set_flow_lmin') {
+        // A magnitude: the direction is set by supply / draw; 0 stops the boundary
+        if (!Number.isFinite(numericValue) || numericValue < 0) {
+          notify('Set flow must be zero or positive. Choose supply or draw for the direction.', 'warning');
+          setLocalDrafts({});
+          return;
+        }
+      } else if (field === 'min_suction_pressure_bara') {
+        if (!Number.isFinite(numericValue) || numericValue < 0) {
+          notify('Min. suction pressure must be zero or positive.', 'warning');
           setLocalDrafts({});
           return;
         }
@@ -337,12 +350,16 @@ export default function SetupPanel({
     else onDeleteEdge(id);
   };
 
+  const isBoundaryType = BOUNDARY_PORT_TYPES.has(type);
+  const [minPorts, maxPorts] = isBoundaryType ? [MIN_BOUNDARY_PORTS, MAX_BOUNDARY_PORTS] : [MIN_JUNCTION_PORTS, MAX_JUNCTION_PORTS];
+  const portCountOk = validPortCount(data?.num_ports, minPorts, maxPorts);
+
   // Fewer ports: refused while a port that would go still has a pipe or a signal line
   const handlePortCountChange = (value) => {
     const next = parseInt(value, 10);
-    const current = junctionPortCount(data);
+    const current = isBoundaryType ? boundaryPortCount(data) : junctionPortCount(data);
     // Compared with the stored value: an invalid one (e.g. 4.6) is replaced even by the count it displays
-    if (!Number.isFinite(next) || (validPortCount(data?.num_ports) && next === current)) return;
+    if (!Number.isFinite(next) || (portCountOk && next === current)) return;
     if (next < current) {
       const inUse = [];
       for (let k = next; k < current; k += 1) {
@@ -357,13 +374,23 @@ export default function SetupPanel({
       }
       const sensing = { ...(data.sensing || {}) };
       for (let k = next; k < current; k += 1) delete sensing[`port-${k}`];
-      onUpdate(id, { num_ports: next, sensing });
+      onUpdate(id, { num_ports: next, sensing, ...resizedPortFlows(next) });
       return;
     }
-    onUpdate(id, { num_ports: next });
+    onUpdate(id, { num_ports: next, ...resizedPortFlows(next) });
+  };
+
+  // Per-port flows of a flow boundary follow the port count: new ports copy the last port, fewer ports trim
+  const resizedPortFlows = (count) => {
+    if (type !== 'flow_boundary' || !Array.isArray(data?.port_flows_lmin)) return {};
+    const flows = data.port_flows_lmin.slice(0, count);
+    const fill = flows.length ? flows[flows.length - 1] : (data.set_flow_lmin ?? 50.0);
+    while (flows.length < count) flows.push(fill);
+    return { port_flows_lmin: flows };
   };
 
   const sensingPorts = type === 'junction' ? junctionPortIds(junctionPortCount(data))
+    : isBoundaryType ? junctionPortIds(boundaryPortCount(data))
     : NEUTRAL_TYPES.has(type) ? ['port-0', 'port-1'] : ['inlet-0', 'outlet-0'];
   const sensingLabel = (portId) => (portId.startsWith('port-') ? portNumberLabel(Number(portId.slice(5))).toUpperCase() : portId.toUpperCase());
 
@@ -447,6 +474,23 @@ export default function SetupPanel({
                 onChange={(e) => handleDraftChange('label', e.target.value)}
                 onBlur={(e) => validateAndCommit('label', e.target.value)}
               />
+            </div>
+          )}
+
+          {isNode && (type === 'junction' || isBoundaryType) && (
+            <div>
+              <label htmlFor={`num-ports-${id}`} style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>Number of ports</label>
+              <select
+                id={`num-ports-${id}`}
+                className="form-input" style={{ width: '100%' }}
+                value={portCountOk ? (isBoundaryType ? boundaryPortCount(data) : junctionPortCount(data)) : ''}
+                onChange={(e) => handlePortCountChange(e.target.value)}
+              >
+                {!portCountOk && <option value="" disabled>— invalid —</option>}
+                {Array.from({ length: maxPorts - minPorts + 1 }, (_, i) => minPorts + i).map(n => (
+                  <option key={n} value={n}>{n}</option>
+                ))}
+              </select>
             </div>
           )}
 
@@ -706,19 +750,19 @@ export default function SetupPanel({
             </>
           )}
 
-          {isNode && type === 'pressure_source' && (
+          {isNode && type === 'pressure_boundary' && (
             <>
               <div>
-                {renderLabel(`Set Pressure (${isImperial ? 'psi(a)' : 'bar(a)'})`, 'source_pressure_bara')}
+                {renderLabel(`Set Pressure (${isImperial ? 'psi(a)' : 'bar(a)'})`, 'set_pressure_bara')}
                 <input
                   type="number"
                   className="form-input" style={{ width: '100%' }}
                   step="0.1"
-                  value={localDrafts.source_pressure_bara !== undefined
-                    ? localDrafts.source_pressure_bara
-                    : (isImperial ? (Number(effectiveData.source_pressure_bara ?? 6.0) * 14.5037738).toFixed(1) : (effectiveData.source_pressure_bara ?? 6.0))}
-                  onChange={(e) => handleDraftChange('source_pressure_bara', e.target.value)}
-                  onBlur={(e) => validateAndCommit('source_pressure_bara', e.target.value, true)}
+                  value={localDrafts.set_pressure_bara !== undefined
+                    ? localDrafts.set_pressure_bara
+                    : (isImperial ? (Number(effectiveData.set_pressure_bara ?? 6.0) * 14.5037738).toFixed(1) : (effectiveData.set_pressure_bara ?? 6.0))}
+                  onChange={(e) => handleDraftChange('set_pressure_bara', e.target.value)}
+                  onBlur={(e) => validateAndCommit('set_pressure_bara', e.target.value, true)}
                 />
               </div>
 
@@ -738,68 +782,205 @@ export default function SetupPanel({
             </>
           )}
 
-          {isNode && type === 'flow_source' && (
-            <>
-              {node?.data?.telemetry?.pressure_cap_reached && (
-                <div role="alert" style={{ background: '#FEF2F2', border: '1px solid #FEE2E2', borderRadius: '4px', padding: '8px', fontSize: 'var(--fs-xs)', color: 'var(--color-danger-text)' }}>
-                  {Number(effectiveData.source_flow_lmin ?? 50.0) < 0
-                    ? 'Discharge pressure limit reached: the network pressure at the draw-off exceeds the max. discharge pressure, so the withdrawn flow exceeds the set draw-off. Raise the max. discharge pressure above the network pressure.'
-                    : 'Discharge pressure limit reached: the delivered flow is below the set flow. Raise the max. discharge pressure or check for a blocked outlet path.'}
+          {isNode && type === 'flow_boundary' && (() => {
+            const isDraw = effectiveData.flow_direction === 'draw';
+            const telemetry = node?.data?.telemetry;
+            const alertStyle = { background: '#FEF2F2', border: '1px solid #FEE2E2', borderRadius: '4px', padding: '8px', fontSize: 'var(--fs-xs)', color: 'var(--color-danger-text)' };
+            const hintStyle = { fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', margin: '4px 0 0' };
+            const pressureUnit = isImperial ? 'psi(a)' : 'bar(a)';
+            const pressureValue = (field, fallback) => (localDrafts[field] !== undefined
+              ? localDrafts[field]
+              : (isImperial ? (Number(effectiveData[field] ?? fallback) * 14.5037738).toFixed(1) : (effectiveData[field] ?? fallback)));
+            const nPorts = boundaryPortCount(data);
+            const flowSplit = effectiveData.flow_split ?? 'common_pressure';
+            const perPort = nPorts > 1 && flowSplit === 'per_port';
+            const portFlows = Array.isArray(data?.port_flows_lmin) ? data.port_flows_lmin : [];
+            const connectedPorts = new Set();
+            allEdges.forEach(e => {
+              [[e.source, e.sourceHandle], [e.target, e.targetHandle]].forEach(([nodeId, handle]) => {
+                const m = nodeId === id ? /^port-(\d+)$/.exec(String(handle ?? '')) : null;
+                if (m) connectedPorts.add(Number(m[1]));
+              });
+            });
+            const portFlowTotal = Array.from({ length: nPorts }, (_, k) => k)
+              .filter(k => connectedPorts.has(k))
+              .reduce((sum, k) => sum + Number(portFlows[k] ?? effectiveData.set_flow_lmin ?? 50.0), 0);
+            const formatFlow = (lmin) => (isImperial ? lmin * 0.264172052 : lmin).toFixed(1);
+            const commitPortFlow = (k, raw) => {
+              if (!Object.prototype.hasOwnProperty.call(localDrafts, `port_flow_${k}`)) return;
+              const value = fromInputValue('set_flow_lmin', raw === '' ? 0 : raw);
+              const numeric = typeof value === 'number' ? value : parseFloat(value);
+              setLocalDrafts(prev => {
+                const next = { ...prev };
+                delete next[`port_flow_${k}`];
+                return next;
+              });
+              if (!Number.isFinite(numeric) || numeric < 0) {
+                notify('Port flow must be zero or positive. Choose supply or draw for the direction.', 'warning');
+                return;
+              }
+              const flows = Array.from({ length: nPorts }, (_, j) => portFlows[j] ?? Number(effectiveData.set_flow_lmin ?? 50.0));
+              flows[k] = numeric;
+              onUpdate(id, { port_flows_lmin: flows });
+            };
+            return (
+              <>
+                {!isDraw && telemetry?.pressure_cap_reached && (
+                  <div role="alert" style={alertStyle}>
+                    Discharge pressure limit reached: the delivered flow is below the set flow. Raise the max. discharge pressure or check for a blocked outlet path.
+                  </div>
+                )}
+                {isDraw && telemetry?.suction_limit_reached && (
+                  <div role="alert" style={alertStyle}>
+                    Suction limit reached: drawn flow below set flow. Lower the min. suction pressure or check for a blocked path to the boundary.
+                  </div>
+                )}
+                <div>
+                  <label htmlFor={`flow-direction-${id}`} style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>Direction</label>
+                  <select
+                    id={`flow-direction-${id}`}
+                    className="form-input" style={{ width: '100%' }}
+                    value={isDraw ? 'draw' : 'supply'}
+                    onChange={(e) => onUpdate(id, { flow_direction: e.target.value })}
+                  >
+                    <option value="supply">Supply (flow into the network)</option>
+                    <option value="draw">Draw (flow out of the network)</option>
+                  </select>
                 </div>
-              )}
-              <div>
-                {renderLabel(`Set Flow (${isImperial ? 'GPM' : 'L/min'})`, 'source_flow_lmin')}
-                <input
-                  type="number"
-                  className="form-input" style={{ width: '100%' }}
-                  step={isImperial ? "0.1" : "1"}
-                  value={localDrafts.source_flow_lmin !== undefined
-                    ? localDrafts.source_flow_lmin
-                    : (isImperial ? (Number(effectiveData.source_flow_lmin ?? 50.0) * 0.264172052).toFixed(1) : (effectiveData.source_flow_lmin ?? 50.0))}
-                  onChange={(e) => handleDraftChange('source_flow_lmin', e.target.value)}
-                  onBlur={(e) => validateAndCommit('source_flow_lmin', e.target.value, true)}
-                />
-                <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
-                  Negative = withdrawal (demand); 0 stops the source.
-                </p>
-              </div>
 
-              <div>
-                {renderLabel(`Max. Discharge Pressure (${isImperial ? 'psi(a)' : 'bar(a)'})`, 'max_discharge_pressure_bara')}
-                <input
-                  type="number"
-                  className="form-input" style={{ width: '100%' }}
-                  step="1"
-                  value={localDrafts.max_discharge_pressure_bara !== undefined
-                    ? localDrafts.max_discharge_pressure_bara
-                    : (isImperial ? (Number(effectiveData.max_discharge_pressure_bara ?? 50.0) * 14.5037738).toFixed(1) : (effectiveData.max_discharge_pressure_bara ?? 50.0))}
-                  onChange={(e) => handleDraftChange('max_discharge_pressure_bara', e.target.value)}
-                  onBlur={(e) => validateAndCommit('max_discharge_pressure_bara', e.target.value, true)}
-                />
-                <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
-                  {Number(effectiveData.source_flow_lmin ?? 50.0) < 0
-                    ? 'Keep above the network pressure at the draw-off; above it more than the set withdrawal flows in.'
-                    : 'Above this outlet pressure the delivered flow drops below the set flow.'}
-                </p>
-              </div>
+                {!perPort && (
+                <div>
+                  {renderLabel(`Set Flow (${isImperial ? 'GPM' : 'L/min'})`, 'set_flow_lmin')}
+                  <input
+                    type="number"
+                    min="0"
+                    className="form-input" style={{ width: '100%' }}
+                    step={isImperial ? "0.1" : "1"}
+                    value={localDrafts.set_flow_lmin !== undefined
+                      ? localDrafts.set_flow_lmin
+                      : (isImperial ? (Number(effectiveData.set_flow_lmin ?? 50.0) * 0.264172052).toFixed(1) : (effectiveData.set_flow_lmin ?? 50.0))}
+                    onChange={(e) => handleDraftChange('set_flow_lmin', e.target.value)}
+                    onBlur={(e) => validateAndCommit('set_flow_lmin', e.target.value, true)}
+                  />
+                  <p style={hintStyle}>Magnitude, zero or more; 0 stops the boundary.</p>
+                </div>
+                )}
 
-              <div>
-                {renderLabel(`Injected Temp (${isImperial ? '°F' : '°C'})`, 'temperature_k')}
-                <input
-                  type="number"
-                  className="form-input" style={{ width: '100%' }}
-                  step="0.1"
-                  value={localDrafts.temperature_k !== undefined
-                    ? localDrafts.temperature_k
-                    : Number(toDisplayValue('temperature_k', effectiveData.temperature_k ?? 293.15)).toFixed(1)}
-                  onChange={(e) => handleDraftChange('temperature_k', e.target.value)}
-                  onBlur={(e) => validateAndCommit('temperature_k', e.target.value)}
-                />
-              </div>
-            </>
-          )}
+                {nPorts > 1 && (
+                  <div>
+                    <label htmlFor={`flow-split-${id}`} style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>Flow split</label>
+                    <select
+                      id={`flow-split-${id}`}
+                      className="form-input" style={{ width: '100%', minWidth: 0, textOverflow: 'ellipsis' }}
+                      title={FLOW_SPLIT_OPTIONS.find(([v]) => v === flowSplit)?.[1]}
+                      value={flowSplit}
+                      onChange={(e) => {
+                        const next = e.target.value;
+                        if (next === 'per_port') {
+                          const base = Number(effectiveData.set_flow_lmin ?? 50.0);
+                          const flows = Array.from({ length: nPorts }, (_, k) => portFlows[k] ?? base);
+                          onUpdate(id, { flow_split: next, port_flows_lmin: flows });
+                        } else {
+                          onUpdate(id, { flow_split: next });
+                        }
+                      }}
+                    >
+                      {FLOW_SPLIT_OPTIONS.map(([value, label]) => (
+                        <option key={value} value={value}>{label}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
-          {isNode && RELIEF_DRIVER_TYPES.includes(type) && (
+                {perPort && (
+                  <div>
+                    <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
+                      {`Flow per port (${isImperial ? 'GPM' : 'L/min'})`}
+                    </label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '2px' }}>
+                      {Array.from({ length: nPorts }, (_, k) => {
+                        const draftKey = `port_flow_${k}`;
+                        const stored = portFlows[k] ?? Number(effectiveData.set_flow_lmin ?? 50.0);
+                        const connected = connectedPorts.has(k);
+                        return (
+                          <div key={k} style={{ opacity: connected ? 1 : 0.6 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <label htmlFor={`port-flow-${id}-${k}`} style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', width: '48px', flexShrink: 0 }}>{portNumberLabel(k)}</label>
+                              <input
+                                id={`port-flow-${id}-${k}`}
+                                type="number"
+                                min="0"
+                                className="form-input" style={{ flex: 1, minWidth: 0 }}
+                                step={isImperial ? "0.1" : "1"}
+                                value={localDrafts[draftKey] !== undefined
+                                  ? localDrafts[draftKey]
+                                  : (isImperial ? (stored * 0.264172052).toFixed(1) : stored)}
+                                onChange={(e) => handleDraftChange(draftKey, e.target.value)}
+                                onBlur={(e) => commitPortFlow(k, e.target.value)}
+                              />
+                            </div>
+                            {!connected && <p style={{ ...hintStyle, margin: '2px 0 0 56px' }}>not connected</p>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <p style={hintStyle}>
+                      {`Total (connected ports): ${formatFlow(portFlowTotal)} ${isImperial ? 'GPM' : 'L/min'}`}
+                    </p>
+                  </div>
+                )}
+
+                {!isDraw && (
+                  <div>
+                    {renderLabel(`Max. Discharge Pressure (${pressureUnit})`, 'max_discharge_pressure_bara')}
+                    <input
+                      type="number"
+                      className="form-input" style={{ width: '100%' }}
+                      step="1"
+                      value={pressureValue('max_discharge_pressure_bara', 50.0)}
+                      onChange={(e) => handleDraftChange('max_discharge_pressure_bara', e.target.value)}
+                      onBlur={(e) => validateAndCommit('max_discharge_pressure_bara', e.target.value, true)}
+                    />
+                    <p style={hintStyle}>Above this outlet pressure the delivered flow drops below the set flow.</p>
+                  </div>
+                )}
+
+                {isDraw && (
+                  <div>
+                    {renderLabel(`Min. Suction Pressure (${pressureUnit})`, 'min_suction_pressure_bara')}
+                    <input
+                      type="number"
+                      min="0"
+                      className="form-input" style={{ width: '100%' }}
+                      step="0.1"
+                      value={pressureValue('min_suction_pressure_bara', 0.0)}
+                      onChange={(e) => handleDraftChange('min_suction_pressure_bara', e.target.value)}
+                      onBlur={(e) => validateAndCommit('min_suction_pressure_bara', e.target.value, true)}
+                    />
+                    <p style={hintStyle}>Below this pressure at the boundary the drawn flow drops below the set flow.</p>
+                  </div>
+                )}
+
+                {!isDraw && (
+                  <div>
+                    {renderLabel(`Injected Temp (${isImperial ? '°F' : '°C'})`, 'temperature_k')}
+                    <input
+                      type="number"
+                      className="form-input" style={{ width: '100%' }}
+                      step="0.1"
+                      value={localDrafts.temperature_k !== undefined
+                        ? localDrafts.temperature_k
+                        : Number(toDisplayValue('temperature_k', effectiveData.temperature_k ?? 293.15)).toFixed(1)}
+                      onChange={(e) => handleDraftChange('temperature_k', e.target.value)}
+                      onBlur={(e) => validateAndCommit('temperature_k', e.target.value)}
+                    />
+                  </div>
+                )}
+              </>
+            );
+          })()}
+
+          {isNode && RELIEF_DRIVER_TYPES.includes(type) && !(type === 'flow_boundary' && effectiveData.flow_direction === 'draw') && (
             <div>
               {renderLabel('Ramp during relief analysis', 'relief_ramp_enabled')}
               <select
@@ -859,23 +1040,6 @@ export default function SetupPanel({
                 />
               </div>
             </>
-          )}
-
-          {isNode && type === 'junction' && (
-            <div>
-              <label htmlFor={`num-ports-${id}`} style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>Number of ports</label>
-              <select
-                id={`num-ports-${id}`}
-                className="form-input" style={{ width: '100%' }}
-                value={validPortCount(data?.num_ports) ? junctionPortCount(data) : ''}
-                onChange={(e) => handlePortCountChange(e.target.value)}
-              >
-                {!validPortCount(data?.num_ports) && <option value="" disabled>— invalid —</option>}
-                {Array.from({ length: MAX_JUNCTION_PORTS - MIN_JUNCTION_PORTS + 1 }, (_, i) => MIN_JUNCTION_PORTS + i).map(n => (
-                  <option key={n} value={n}>{n}</option>
-                ))}
-              </select>
-            </div>
           )}
 
           {isNode && type === 'three_way_tcv' && (

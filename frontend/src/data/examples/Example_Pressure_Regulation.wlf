@@ -34,7 +34,8 @@
         "label": "Feed Tank",
         "level_m": 2.0,
         "elevation_m": 0.0,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1
       }
     },
     {
@@ -88,7 +89,8 @@
         "label": "Overpressure Bypass Tank",
         "level_m": 0.5,
         "elevation_m": 0.0,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1
       }
     },
     {
@@ -128,7 +130,8 @@
         "label": "Process Sink Tank",
         "level_m": 0.5,
         "elevation_m": 0.0,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1
       }
     }
   ],
@@ -136,7 +139,7 @@
     {
       "id": "p1",
       "source": "feed-tank",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-0",
       "target": "main-pump",
       "targetHandle": "inlet-0",
       "data": {
@@ -195,7 +198,7 @@
       "source": "bpr-valve",
       "sourceHandle": "outlet-0",
       "target": "bpr-tank",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "data": {
         "label": "Bypass Return",
         "length_m": 3,
@@ -252,7 +255,7 @@
       "source": "downstream-load",
       "sourceHandle": "port-1",
       "target": "process-sink",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "data": {
         "label": "Sink Return",
         "length_m": 2,

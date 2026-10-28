@@ -1,3 +1,4 @@
+from physics_refs import build_network
 import pytest
 
 
@@ -52,7 +53,7 @@ def test_dynamic_topology_reduction():
         {"source": "p1", "target": "t2", "pipe": Pipe("p2", 1.0, 0.05)}
     ]
     
-    network = HydraulicNetwork(nodes=nodes, edges=edges)
+    network = build_network(nodes=nodes, edges=edges)
     for n in nodes.values(): n.global_settings = gs
     for e in edges: e['pipe'].global_settings = gs
 
@@ -90,7 +91,7 @@ def test_check_valve_mcp_in_solver():
         {"source": "cv", "target": "t2", "pipe": Pipe("p2", 1.0, 0.05)}
     ]
     
-    network = HydraulicNetwork(nodes=nodes, edges=edges)
+    network = build_network(nodes=nodes, edges=edges)
     for n in nodes.values(): n.global_settings = gs
     for e in edges: e['pipe'].global_settings = gs
 

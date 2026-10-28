@@ -1,4 +1,5 @@
 
+from networks import neutral_graph
 from simulation.schemas import ReactFlowGraph, ReactFlowNode, GlobalSettings, OperatingCase, OperatingCaseOverrides
 from simulation.graph_parser import GraphParser
 
@@ -35,7 +36,7 @@ def test_resolve_graph_for_case_overrides():
         )
     )
     
-    graph = ReactFlowGraph(
+    graph = neutral_graph(
         nodes=[node_valve],
         edges=[],
         global_settings=global_settings,
@@ -75,7 +76,7 @@ def test_parse_graph_with_operating_cases():
         )
     )
     
-    graph = ReactFlowGraph(
+    graph = neutral_graph(
         nodes=[tank_node],
         edges=[],
         cases=[hot_case],

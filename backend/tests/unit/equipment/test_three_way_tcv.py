@@ -1,5 +1,6 @@
 
 # Add backend to path
+from physics_refs import build_network
 import pytest
 
 from simulation.schemas import HydraulicNetwork, GlobalSettings
@@ -40,7 +41,7 @@ def build_tcv_network(hot_temp=353.15, cold_temp=293.15, set_temp=313.15,
         {"id": "e_sink", "source": "vl", "target": "t_sink", "pipe": Pipe("p4", 1, 0.05)}
     ]
     
-    network = HydraulicNetwork(nodes=nodes, edges=edges)
+    network = build_network(nodes=nodes, edges=edges)
     if control_iterations is not None:
         network.global_settings = GlobalSettings(fluid_type="iso_vg_46", control_iterations=control_iterations)
     for n in nodes.values(): n.global_settings = gs

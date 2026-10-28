@@ -14,8 +14,9 @@ from typing import List, Dict, Any, Tuple
 from simulation.schemas import HydraulicNetwork
 from simulation.equipment.base_node import HydraulicNode, Q_DEAD_LEG, Q_STAGNANT, select_inward
 from simulation.equipment.tank import Tank
+from simulation.equipment.flow_boundary import FlowBoundary
 from simulation.equipment.pipe import Pipe
-from simulation.equipment.component_link import ComponentLink, canvas_id
+from simulation.equipment.component_link import ComponentLink, BoundaryLink, canvas_id
 from simulation.equipment.centrifugal_pump import CentrifugalPump
 from simulation.equipment.volumetric_pump import VolumetricPump
 from simulation.equipment.linear_control_valve import LinearControlValve
@@ -41,7 +42,7 @@ def blocks_at_rest(node) -> bool:
 
 def is_pressure_reference(node) -> bool:
     """A node that fixes the pressure (or the flow) of the circuit it sits in (topology pruning)."""
-    return getattr(node, 'is_pressure_boundary', False) or getattr(node, 'node_type', None) == 'flow_source'
+    return getattr(node, 'is_pressure_boundary', False) or getattr(node, 'node_type', None) == 'flow_boundary'
 
 class NetworkSolver:
     """
@@ -160,7 +161,7 @@ class NetworkSolver:
             if len(canvas_ids) >= 2 and not has_reference:
                 self.island_groups.append(canvas_ids)
 
-        # 3. Reachability Analysis (undirected DFS from pressure boundaries or flow sources)
+        # 3. Reachability Analysis (undirected DFS from pressure boundaries or flow boundaries)
         boundary_ids = [nid for nid, node in self.network.nodes.items() if is_pressure_reference(node)]
         
         adj = {nid: set() for nid in self.all_node_ids}
@@ -267,8 +268,8 @@ class NetworkSolver:
         self._p_fixed = np.zeros(len(self.nodes_list))
         for i, p in self.fixed_pressure_nodes.items():
             self._p_fixed[i] = p
-        # Per internal node: (is a flow source, incoming edges, outgoing edges)
-        self._mass_rows = [(getattr(self.nodes_list[idx], 'node_type', None) == 'flow_source',
+        # Per internal node: (is a flow boundary, incoming edges, outgoing edges)
+        self._mass_rows = [(getattr(self.nodes_list[idx], 'node_type', None) == 'flow_boundary',
                             self.node_incoming_edge_indices.get(self.node_ids[idx], []),
                             self.node_outgoing_edge_indices.get(self.node_ids[idx], []))
                            for idx in self.internal_node_indices]
@@ -1032,17 +1033,21 @@ class NetworkSolver:
             "physical_validity": {"valid": True, "issues": []},
         }
 
+    def _canvas_node(self, cid):
+        """The canvas component of id cid: a node or an in-line component."""
+        return self.network.nodes.get(cid) or self.network.inline_nodes[cid]
+
     def _island_error(self):
-        """Message for connected circuits that contain no tank, pressure source or flow source."""
+        """Message for connected circuits that contain no tank, pressure boundary or flow boundary."""
         if not getattr(self, 'island_groups', None):
             return None
         names = []
         for group in self.island_groups[:3]:
-            shown = [(self.network.nodes.get(nid) or self.network.inline_nodes[nid]).name for nid in group[:4]]
+            shown = [self._canvas_node(nid).name for nid in group[:4]]
             names.append(", ".join(shown) + (" …" if len(group) > 4 else ""))
         return ("No pressure reference: the circuit with " + "; and the circuit with ".join(names) +
-                " has no tank, pressure source or flow source, so its pressure level is undefined. "
-                "Connect it to a tank or source.")
+                " has no tank, pressure boundary or flow boundary, so its pressure level is undefined. "
+                "Connect it to a tank or boundary.")
 
     def _physical_validity(self) -> Dict[str, Any]:
         """Ports at negative absolute pressure or below vapour pressure are not a physical result."""
@@ -1052,15 +1057,20 @@ class NetworkSolver:
         t_lo, t_hi = FluidProperties.temperature_range_c(fluid)
         for nid in sorted(self.active_node_ids):
             node = self.network.nodes[nid]
-            if isinstance(node, Pipe):
+            if isinstance(node, Pipe) or getattr(node, 'port_hubs', None):   # a flow boundary: on its port nodes
                 continue
             node_id, name = node.id, node.name
             named_ports = [(f"{kind}-{i}", port) for kind, ports in (("inlet", node.inlets), ("outlet", node.outlets))
                            for i, port in enumerate(ports)]
-            if getattr(node, 'hidden', False):   # a port of an in-line component: reported on the component
+            if getattr(node, 'hidden', False):   # a port of an in-line component or a flow boundary: reported on it
                 node_id, port_label = canvas_id(nid), nid.split('#')[1]
-                name = self.network.inline_nodes[node_id].name
-                named_ports = [(port_label, named_ports[0][1])] if named_ports else []
+                owner = self._canvas_node(node_id)
+                name = owner.name
+                if isinstance(owner, FlowBoundary):   # its canvas ports on this hidden node
+                    named_ports = [(f"port-{k}", hub.port(i)) for k, (hub, i) in sorted(owner.port_hubs.items())
+                                   if hub is node]
+                else:
+                    named_ports = [(port_label, named_ports[0][1])] if named_ports else []
             # Fluid correlations are only valid inside the fluid's temperature range
             t_ports = [p.temperature - 273.15 for _, p in named_ports if p.flow_rate != 0.0]
             if t_ports and (min(t_ports) < t_lo or max(t_ports) > t_hi):
@@ -1095,15 +1105,15 @@ class NetworkSolver:
         if max_idx < num_internal:
             node_idx = self.internal_node_indices[max_idx]
             node = self.nodes_list[node_idx]
-            # A hidden port node of an in-line component is located on the component
-            name = self.network.inline_nodes[canvas_id(node.id)].name if getattr(node, 'hidden', False) else node.name
+            # A hidden port node of an in-line component or a flow boundary is located on that component
+            name = self._canvas_node(canvas_id(node.id)).name if getattr(node, 'hidden', False) else node.name
             return {"type": "Node", "name": name, "id": canvas_id(node.id), "error_type": "Mass Balance", "magnitude": max_val}
         else:
             edge_idx = max_idx - num_internal
             edge = self.edges_list[edge_idx]
-            inline = self.network.inline_nodes.get(canvas_id(edge.get('id') or ''))
-            if inline is not None and edge['id'].endswith('#link'):   # an in-line component is located on itself
-                return {"type": "Node", "name": inline.name, "id": canvas_id(edge['id']), "error_type": "Pressure Balance", "magnitude": max_val}
+            if isinstance(edge['pipe'], (ComponentLink, BoundaryLink)):   # the link of an in-line component or a flow boundary
+                owner = self._canvas_node(canvas_id(edge['id']))
+                return {"type": "Node", "name": owner.name, "id": canvas_id(edge['id']), "error_type": "Pressure Balance", "magnitude": max_val}
             return {"type": "Connection", "name": edge.get('label') or edge.get('id'), "id": canvas_id(edge.get('id') or ''), "error_type": "Pressure Balance", "magnitude": max_val}
 
     def _generate_initial_guess(self):
@@ -1173,10 +1183,10 @@ class NetworkSolver:
         # 1. Mass Balance Rows (a < num_internal): constant while the weights are, so built once per solve
         if self._mass_jacobian is None or self._mass_jacobian[0] is not w_mass:
             rows, cols, data = [], [], []
-            for a, (is_flow_source, incoming, outgoing) in enumerate(self._mass_rows):
-                # If a flow source is present, its derivative with respect to its own pressure is 1.0,
+            for a, (is_flow_boundary, incoming, outgoing) in enumerate(self._mass_rows):
+                # If a flow boundary is present, its derivative with respect to its own pressure is 1.0,
                 # and 0 for everything else since its reference pressure is fixed to atmospheric.
-                if is_flow_source:
+                if is_flow_boundary:
                     rows.append(a)
                     cols.append(a)
                     data.append(1.0)
@@ -1294,6 +1304,10 @@ class NetworkSolver:
                     is_pump = isinstance(src_node, (CentrifugalPump, VolumetricPump))
                     if is_pump:
                         dp_deriv_src_signed = src_node.calculate_dp_derivative(fj * q_edges[j], density, viscosity)
+                    elif isinstance(src_node, FlowBoundary):
+                        # Outlet pressure p_in - dp of its stiff spring
+                        dp_deriv_src_signed = -src_node.calculate_dp_derivative(
+                            fj * q_edges[j], density, viscosity, outlet=self._outlet_of(self.edges_list[j]))
                     else:
                         # Valves, regulators, orifices, filters...: differentiate the node's own outlet
                         # pressure so viscosity corrections and branch switches are included
@@ -1460,10 +1474,10 @@ class NetworkSolver:
 
             residuals = []
             # 1. Mass Balance
-            for i, (is_flow_source, incoming, outgoing) in enumerate(self._mass_rows):
-                # If a flow source is present, bypass mass balance and pin its reference pressure
+            for i, (is_flow_boundary, incoming, outgoing) in enumerate(self._mass_rows):
+                # If a flow boundary is present, bypass mass balance and pin its reference pressure
                 # to the ambient/atmospheric pressure instead.
-                if is_flow_source:
+                if is_flow_boundary:
                     atm_p = 101325.0
                     if self.network.global_settings:
                         atm_p = getattr(self.network.global_settings, 'atmospheric_pressure', 101325.0)
@@ -1494,7 +1508,8 @@ class NetworkSolver:
                 else:
                     # The component's curve at its inlet volume flow (f_comp: edge density / inlet density)
                     q_comp = f_comp[j] * q_edges[j]
-                    p_src_out = self._get_node_p_out(src_node, p_in_all[src_idx], q_comp, q_comp)
+                    p_src_out = self._get_node_p_out(src_node, p_in_all[src_idx], q_comp, q_comp,
+                                                     outlet=self._outlet_of(self.edges_list[j]))
                 
                 if tcv_port is not None:
                     dp_tcv = tgt_node.calculate_path_dp(q_edges[j], tgt_node.inlets[tcv_port].density, tcv_port, tgt_node.inlets[tcv_port].viscosity)
@@ -1612,12 +1627,15 @@ class NetworkSolver:
         port = tgt_node.inlets[port_idx]
         return tgt_node.calculate_path_dp(q, port.density, port_idx, port.viscosity)
 
-    def _get_node_p_out(self, node, p_in, q_in, q_out, update_state: bool = False, p_in_all=None):
-        """p_in_all (indexed like all_nodes_list) supplies the solved downstream pressure for relief devices."""
+    def _get_node_p_out(self, node, p_in, q_in, q_out, update_state: bool = False, p_in_all=None, outlet: int = 0):
+        """p_in_all (indexed like all_nodes_list) supplies the solved downstream pressure for relief devices; outlet
+        is the outlet (link) of a flow boundary, whose set flow can differ per outlet."""
         density, viscosity = node.upstream_fluid()
-        
-        q_flow = q_out if getattr(node, 'node_type', '') == 'flow_source' else q_in
-        
+
+        if isinstance(node, FlowBoundary):
+            return p_in - node.calculate_delta_p(q_out, density, viscosity, outlet=outlet)
+        q_flow = q_in
+
         if getattr(node, 'locked_up', False):
             return node.set_pressure
         if isinstance(node, LinearRegulator) and not node.backpressure and                 self.node_to_key.get(id(node)) in self.pruned_node_ids:
@@ -1708,6 +1726,14 @@ class NetworkSolver:
                 # (1e13 Pa·s/m³) turns into Pa that the next pipe would report as its own drop
                 out_edges = self.node_outgoing_edge_indices.get(node_key, ())
                 q_drop = sum(f_comp[j] * q_edges[j] for j in out_edges) if node.outlets else q_in_total
+                if isinstance(node, FlowBoundary):
+                    # One flow spring per link: each outlet at the flow of its own link, as in the solve's edge row
+                    for j in out_edges:
+                        q_link = f_comp[j] * q_edges[j]
+                        port = self._src_port(self.edges_list[j], node)
+                        port.pressure = self._get_node_p_out(node, p_in, q_link, q_link, p_in_all=p_in_all,
+                                                             outlet=self._outlet_of(self.edges_list[j]))
+                    continue
                 p_out = self._get_node_p_out(node, p_in, q_drop, q_out_total, update_state=True, p_in_all=p_in_all)
                 for port in node.outlets: port.pressure = p_out
                 if isinstance(node, ThreeWayTCV):
@@ -1951,7 +1977,7 @@ class NetworkSolver:
         for edge in self.all_edges_list:
             parent[find((edge['source'], 'out'))] = find((edge['target'], 'in'))
 
-        # A flow source at zero flow fixes nothing; one with flow is anchored by its edge flow
+        # A flow boundary at zero flow fixes nothing; one with flow is anchored by its edge flow
         anchored = set()
         for nid, node in nodes.items():
             if getattr(node, 'is_pressure_boundary', False):
@@ -2048,6 +2074,10 @@ class NetworkSolver:
                 if shift != 0.0:
                     settle(best[2], -best[1] + shift, members)
         return {nid for members in groups.values() for nid, _ in members}
+
+    def _outlet_of(self, edge) -> int:
+        """Index of the outlet the edge leaves its source from."""
+        return self._parse_port_idx(edge.get('source_port', 'outlet-0'))
 
     def _parse_port_idx(self, port_str: str) -> int:
         try:
@@ -2250,7 +2280,7 @@ class NetworkSolver:
             dist[id(p)], temp[id(p)] = (0, rank), t
             queue.append(p)
 
-        # Seeds keep their temperature. Equally near seeds: references (boundaries and flow sources, whose
+        # Seeds keep their temperature. Equally near seeds: references (boundaries and flow boundaries, whose
         # temperature is set) before live nodes, then by name and id, so the choice does not depend on node order
         for node in self.all_nodes_list:
             ports = node.inlets + node.outlets
@@ -2377,7 +2407,7 @@ def _find_relief_openings(network, opening_groups, auto_ids, original_states, ex
     drivers = [n for n in net.nodes.values()
                if getattr(n, 'is_relief_driver', False) and getattr(n, 'relief_ramp_enabled', True)]
     if not drivers:
-        return [], "No ramped driver: enable 'Ramp during relief analysis' on a pump or source."
+        return [], "No ramped driver: enable 'Ramp during relief analysis' on a pump or boundary."
 
     ramp_solver = NetworkSolver(net)
     ramp_solver.persist_warm_start = False

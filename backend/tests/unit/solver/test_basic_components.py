@@ -1,7 +1,7 @@
 
 # Add backend to path
 
-from physics_refs import water_head
+from physics_refs import build_network, water_head
 from simulation.equipment.tank import Tank
 from simulation.equipment.pipe import Pipe
 from simulation.equipment.centrifugal_pump import CentrifugalPump
@@ -30,7 +30,7 @@ def test_tank_static_pressure():
         {"source": "v1", "target": "t2", "pipe": Pipe("p2", 1.0, 0.05)}
     ]
     
-    network = HydraulicNetwork(nodes=nodes, edges=edges)
+    network = build_network(nodes=nodes, edges=edges)
     for n in nodes.values(): n.global_settings = gs
     for e in edges: e['pipe'].global_settings = gs
 
@@ -70,7 +70,7 @@ def test_heat_exchanger():
         {"source": "hx", "target": "t2", "pipe": Pipe("p4", 1, 0.05)}
     ]
 
-    network = HydraulicNetwork(nodes=nodes, edges=edges)
+    network = build_network(nodes=nodes, edges=edges)
     for n in nodes.values(): n.global_settings = gs
     for e in edges: e['pipe'].global_settings = gs
 

@@ -1,4 +1,5 @@
 """Gasoline / crude vapour pressure, validity ranges and unknown fluids."""
+from networks import neutral_graph
 import pytest
 
 
@@ -31,7 +32,7 @@ def test_unknown_fluid_is_an_error_everywhere():
 
 
 def test_parser_rejects_unknown_system_fluid():
-    graph = ReactFlowGraph(nodes=[], edges=[], global_settings={"fluid_type": "iso_vg_46_old"})
+    graph = neutral_graph(nodes=[], edges=[], global_settings={"fluid_type": "iso_vg_46_old"})
     with pytest.raises(ModelInputError, match="iso_vg_46_old"):
         GraphParser.parse_graph(graph)
 

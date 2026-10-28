@@ -3,7 +3,7 @@ import pytest
 
 import pytest
 
-from physics_refs import water_head
+from physics_refs import build_network, water_head
 from simulation.equipment.tank import Tank
 from simulation.equipment.pipe import Pipe
 from simulation.equipment.centrifugal_pump import CentrifugalPump
@@ -28,7 +28,7 @@ def test_inactive_centrifugal_pump():
         {"source": "p1", "target": "t2", "pipe": Pipe("p2", 1.0, 0.05)}
     ]
     
-    network = HydraulicNetwork(nodes=nodes, edges=edges)
+    network = build_network(nodes=nodes, edges=edges)
     for n in nodes.values(): n.global_settings = gs
     for e in edges: e['pipe'].global_settings = gs
 
@@ -61,7 +61,7 @@ def test_stopped_pump_between_equal_heads_passes_no_flow():
     ]
     for n in nodes.values(): n.global_settings = gs
     for e in edges: e['pipe'].global_settings = gs
-    NetworkSolver(HydraulicNetwork(nodes=nodes, edges=edges)).solve()
+    NetworkSolver(build_network(nodes=nodes, edges=edges)).solve()
     # < 0.1 % of rated flow; the remainder is the solver's residual tolerance (~5 Pa, B1b)
     assert abs(p1.inlets[0].flow_rate) * 60000.0 < 0.05  # L/min
 
@@ -90,7 +90,7 @@ def test_inactive_heat_exchanger():
         {"source": "hx", "target": "t2", "pipe": Pipe("p2", 1.0, 0.05)}
     ]
     
-    network = HydraulicNetwork(nodes=nodes, edges=edges)
+    network = build_network(nodes=nodes, edges=edges)
     for n in nodes.values(): n.global_settings = gs
     for e in edges: e['pipe'].global_settings = gs
 

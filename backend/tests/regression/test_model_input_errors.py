@@ -19,9 +19,9 @@ def _graph(node_type, node_data=None, edge_data=None):
             {"id": "t2", "type": "tank", "position": {"x": 2, "y": 0}, "data": {"label": "T2", "level_m": 1.0}},
         ],
         "edges": [
-            {"id": "e1", "source": "t1", "target": "n1", "sourceHandle": "outlet-0", "targetHandle": "inlet-0",
+            {"id": "e1", "source": "t1", "target": "n1", "sourceHandle": "port-0", "targetHandle": "inlet-0",
              "data": {"length_m": 1.0, "diameter_m": 0.05, **(edge_data or {})}},
-            {"id": "e2", "source": "n1", "target": "t2", "sourceHandle": "outlet-0", "targetHandle": "inlet-0",
+            {"id": "e2", "source": "n1", "target": "t2", "sourceHandle": "outlet-0", "targetHandle": "port-0",
              "data": {"length_m": 1.0, "diameter_m": 0.05}},
         ],
     })
@@ -65,8 +65,8 @@ def _junction_graph(num_ports, handles):
     edges = []
     for k, (direction, handle) in enumerate(handles):
         nodes.append({"id": f"t{k}", "type": "tank", "position": {"x": 0, "y": 0}, "data": {"label": f"T{k}", "level_m": 1.0}})
-        ends = ({"source": f"t{k}", "target": "j", "sourceHandle": "outlet-0", "targetHandle": handle} if direction == "in"
-                else {"source": "j", "target": f"t{k}", "sourceHandle": handle, "targetHandle": "inlet-0"})
+        ends = ({"source": f"t{k}", "target": "j", "sourceHandle": "port-0", "targetHandle": handle} if direction == "in"
+                else {"source": "j", "target": f"t{k}", "sourceHandle": handle, "targetHandle": "port-0"})
         edges.append({"id": f"e{k}", **ends, "data": {"length_m": 1.0, "diameter_m": 0.05}})
     return ReactFlowGraph(nodes=nodes, edges=edges)
 
@@ -91,6 +91,48 @@ def _junction_graph(num_ports, handles):
 def test_bad_junction_wiring_is_a_model_input_error(num_ports, handles, match):
     with pytest.raises(ModelInputError, match=match):
         GraphParser.parse_graph(_junction_graph(num_ports, handles))
+
+
+def _boundary_graph(node_type, data, pipes):
+    """A boundary "FB" labelled FB and a 3-port tank; pipes = (direction, FB port, tank port), "out" drawn from FB."""
+    nodes = [{"id": "b", "type": node_type, "position": {"x": 0, "y": 0}, "data": {"label": "FB", **data}},
+             {"id": "t", "type": "tank", "position": {"x": 0, "y": 0}, "data": {"label": "T", "num_ports": 3}}]
+    edges = []
+    for k, (direction, port, tank_port) in enumerate(pipes):
+        ends = (("b", "t", port, tank_port) if direction == "out" else ("t", "b", tank_port, port))
+        edges.append({"id": f"e{k}", "source": ends[0], "target": ends[1], "sourceHandle": ends[2],
+                      "targetHandle": ends[3], "data": {"length_m": 1.0, "diameter_m": 0.05}})
+    return ReactFlowGraph(nodes=nodes, edges=edges)
+
+
+OUT, IN = [("out", "port-0", "port-0")], [("in", "port-0", "port-0")]
+BAD_PORT_COUNT = "number of ports must be a whole number 1 to 8"
+
+
+@pytest.mark.parametrize("node_type, data, pipes, match", [
+    pytest.param("flow_boundary", {}, IN, "FB.*supplies flow", id="pipe_into_a_supply"),
+    pytest.param("flow_boundary", {"flow_direction": "draw"}, OUT, "FB.*draws flow", id="pipe_out_of_a_draw"),
+    pytest.param("flow_boundary", {"set_flow_lmin": -5}, OUT, "FB.*must not be negative", id="negative_set_flow"),
+    pytest.param("flow_boundary", {"min_suction_pressure_bara": -1}, OUT, "FB.*below 0 bar", id="negative_min_suction"),
+    pytest.param("flow_boundary", {"flow_direction": "sideways"}, OUT, "FB.*supply or draw", id="unknown_flow_direction"),
+    pytest.param("flow_boundary", {"flow_split": "half"}, OUT, "FB.*flow split must be", id="unknown_flow_split"),
+    pytest.param("flow_boundary", {"num_ports": 2, "flow_split": "total_split"}, OUT, "FB.*Port 2 has no pipe",
+                 id="free_port_with_total_split"),
+    pytest.param("flow_boundary", {"num_ports": 2, "flow_split": "per_port", "port_flows_lmin": [10.0, -1.0]}, OUT,
+                 "FB.*port flows must not be negative", id="negative_port_flow"),
+    *[pytest.param(node_type, {"num_ports": count}, OUT, BAD_PORT_COUNT, id=f"{node_type}_with_{count}_ports")
+      for node_type in ("tank", "pressure_boundary", "flow_boundary") for count in (0, 9, 2.5)],
+    *[pytest.param(node_type, {"num_ports": 2}, [("out", "port-2", "port-0")], r"FB.*no Port 3 .it has 2 ports.",
+                   id=f"{node_type}_port_beyond_the_port_count") for node_type in ("tank", "pressure_boundary", "flow_boundary")],
+    *[pytest.param(node_type, {"num_ports": 2}, [("out", "port-1", "port-0"), ("in", "port-1", "port-1")],
+                   "FB.*Port 2 takes one pipe", id=f"{node_type}_two_pipes_on_one_port")
+      for node_type in ("tank", "pressure_boundary", "flow_boundary")],
+])
+def test_bad_boundary_input_is_a_model_input_error(node_type, data, pipes, match):
+    if node_type == "flow_boundary" and len(pipes) == 2:
+        pipes = [pipes[0], ("out", "port-1", "port-1")]   # a supply takes its pipes drawn out of it
+    with pytest.raises(ModelInputError, match=match):
+        GraphParser.parse_graph(_boundary_graph(node_type, data, pipes))
 
 
 @pytest.mark.parametrize("num_ports", [4, 4.0, "4", "4.0", " 4 "])

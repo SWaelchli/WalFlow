@@ -10,9 +10,9 @@ from simulation.graph_parser import GraphParser, ModelInputError
 from simulation.solver import NetworkSolver, run_sequential_relief_simulation
 from simulation.equipment.volumetric_pump import VolumetricPump
 from simulation.equipment.centrifugal_pump import CentrifugalPump
-from simulation.equipment.junction import Junction
-from simulation.equipment.base_node import InlineNode
-from simulation.equipment.component_link import ComponentLink, canvas_id
+from simulation.equipment.base_node import InlineNode, NeutralPortNode
+from simulation.equipment.flow_boundary import FlowBoundary
+from simulation.equipment.component_link import ComponentLink, BoundaryLink, canvas_id
 from simulation.fluid_utils import FluidProperties
 from limiter import limiter
 from simulation.limits import SolveTimeout, solve_deadline, solve_slot, max_nodes, max_cases
@@ -172,8 +172,8 @@ def extract_telemetry(network) -> Dict[str, Any]:
                 "inlets": [p.model_dump() for p in node.inlets],
                 "outlets": [p.model_dump() for p in node.outlets]
             }
-        if isinstance(node, Junction):
-            # Per port-k in port order: the slot port with flow_rate positive into the junction; None without a pipe
+        if isinstance(node, (NeutralPortNode, FlowBoundary)):
+            # Per port-k in port order: the port with flow_rate positive into the node; None without a pipe
             node_tel["ports"] = [
                 {**node.port(k).model_dump(), "flow_rate": float(node.port_flow_into(k))} if node.port(k) is not None else None
                 for k in range(node.num_ports)
@@ -203,10 +203,12 @@ def extract_telemetry(network) -> Dict[str, Any]:
             node_tel["motor_overload"] = node.motor_overload
             node_tel["power_limited"] = node.power_limited
             node_tel["pressure_cap_reached"] = node.pressure_cap_reached
-        if node.node_type == "flow_source":
+        if isinstance(node, FlowBoundary):
             node.refresh_warnings()
             node_tel["pressure_cap_reached"] = node.pressure_cap_reached
+            node_tel["suction_limit_reached"] = node.suction_limit_reached
             node_tel["max_discharge_pressure_bara"] = node.max_discharge_pressure / 100000.0
+            node_tel["min_suction_pressure_bara"] = node.min_suction_pressure / 100000.0
         if node.node_type == "heat_exchanger":
             node_tel["rating_status"] = node.rating_status
             node_tel["design_effectiveness"] = node.design_effectiveness
@@ -249,7 +251,7 @@ def extract_telemetry(network) -> Dict[str, Any]:
         telemetry["nodes"][node_id] = node_tel
 
     for edge in network.edges:
-        if isinstance(edge["pipe"], ComponentLink):   # reported on the component's ports
+        if isinstance(edge["pipe"], (ComponentLink, BoundaryLink)):   # reported on the component's ports
             continue
         telemetry["edges"][edge["id"]] = {
             "inlets": [p.model_dump() for p in edge["pipe"].inlets],

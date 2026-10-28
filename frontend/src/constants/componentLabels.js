@@ -2,8 +2,8 @@
 // component is called the same thing everywhere. Sentence case, as in the rest of the UI.
 export const COMPONENT_LABELS = {
   tank: 'Tank',
-  pressure_source: 'Pressure source',
-  flow_source: 'Flow source',
+  pressure_boundary: 'Pressure boundary',
+  flow_boundary: 'Flow boundary',
   centrifugal_pump: 'Centrifugal pump',
   pump: 'Centrifugal pump',
   volumetric_pump: 'Volumetric pump',

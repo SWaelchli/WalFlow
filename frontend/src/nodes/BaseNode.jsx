@@ -18,7 +18,8 @@ export default function BaseNode({
   warningTitle,
   children,
   footer,
-  footerStyle
+  footerStyle,
+  footerOffset = 0
 }) {
   const updateNodeInternals = useUpdateNodeInternals();
   const rotation = data.rotation || 0;
@@ -110,7 +111,7 @@ export default function BaseNode({
 
       {/* Centred under the symbol and kept out of the node box, so a long readout neither shifts the text nor moves the pins */}
       {footer && (
-        <div style={footerStyle || { position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', width: 'max-content', textAlign: 'center', marginTop: '5px' }}>
+        <div style={footerStyle || { position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', width: 'max-content', textAlign: 'center', marginTop: `${5 + footerOffset}px` }}>
           {footer}
         </div>
       )}

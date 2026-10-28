@@ -107,7 +107,7 @@ applied at the port the flow leaves by, with the upstream port's density and vis
 | `test_filter_reference_fluid.py::test_f1_19_oil_40c_reproduces_datasheet` | ISO VG 46 at 40 °C, rated flow: 0.15 bar and 0.5 bar exactly ($10^{-9}$) |
 | `test_filter_reference_fluid.py::test_f1_19_cold_oil_has_higher_dp_but_not_by_480_percent` | ISO VG 46 at 10 °C: 1.5 to 6 times the datasheet drop |
 | `test_filter_reference_fluid.py::test_f1_19_explicit_reference_viscosity` | Reference viscosity 100 mPa·s: at that viscosity and the reference density, 0.15 bar exactly |
-| `backend/tests/unit/equipment/test_filter.py::test_clean_filter_reproduces_rating_point_with_water` | Flow source 100 L/min → filter (1.0 bar clean) → tank, water at 20 °C: 1.0 bar within 5 % |
+| `backend/tests/unit/equipment/test_filter.py::test_clean_filter_reproduces_rating_point_with_water` | Flow boundary 100 L/min → filter (1.0 bar clean) → tank, water at 20 °C: 1.0 bar within 5 % |
 | `test_filter.py::test_cold_oil_gives_higher_filter_dp` | ISO VG 46: drop at 20 °C above the drop at 60 °C |
 | `backend/tests/unit/fluids/test_throttling_heat.py::test_f1_16_throttling_heat_magnitude` | Outlet temperature rise $= \Delta P/(\rho c_p)$ within 2 % |
 

@@ -1,5 +1,6 @@
 """Volumetric pump in networks: density independence, parallel and series pumps, power limit, fixed-speed overload."""
 from networks import create_simple_network
+from physics_refs import build_network
 from simulation.equipment.volumetric_pump import VolumetricPump
 from simulation.equipment.tank import Tank
 from simulation.equipment.pipe import Pipe
@@ -55,7 +56,7 @@ def test_volumetric_pump_network_scenarios():
         {"id": "e3", "source": "p1", "target": "tout", "source_port": "outlet-0", "target_port": "inlet-0", "pipe": Pipe("p3",1.0,0.01)},
         {"id": "e4", "source": "p2", "target": "tout", "source_port": "outlet-0", "target_port": "inlet-1", "pipe": Pipe("p4",1.0,0.01)},
     ]
-    net_para = HydraulicNetwork(nodes=nodes, edges=edges)
+    net_para = build_network(nodes=nodes, edges=edges)
     solver_para = NetworkSolver(net_para)
     solver_para.solve()
     
@@ -110,7 +111,7 @@ def test_volumetric_pump_network_scenarios():
         {"id": "e2", "source": "p1", "target": "p2", "pipe": Pipe("p2",1,0.01)},
         {"id": "e3", "source": "p2", "target": "tout", "pipe": Pipe("p3",1,0.01)},
     ]
-    net_ser = HydraulicNetwork(nodes=nodes_ser, edges=edges_ser)
+    net_ser = build_network(nodes=nodes_ser, edges=edges_ser)
     solver_ser = NetworkSolver(net_ser)
     solver_ser.solve()
     q_ser = p_s1.inlets[0].flow_rate
