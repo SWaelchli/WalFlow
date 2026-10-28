@@ -34,7 +34,8 @@
         "label": "Supply Reservoir",
         "level_m": 2.0,
         "elevation_m": 0.0,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1
       }
     },
     {
@@ -95,7 +96,8 @@
         "label": "Receiving Tank",
         "level_m": 0.5,
         "elevation_m": 0.0,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1
       }
     }
   ],
@@ -103,7 +105,7 @@
     {
       "id": "r1",
       "source": "suction-tank",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-0",
       "target": "feed-pump",
       "targetHandle": "inlet-0",
       "data": {
@@ -162,7 +164,7 @@
       "source": "remote-valve",
       "sourceHandle": "outlet-0",
       "target": "process-sink",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "data": {
         "label": "Protected Delivery",
         "length_m": 2,

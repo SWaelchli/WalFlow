@@ -19,13 +19,14 @@ export const CASE_VARIABLE_FIELDS = new Set([
   'set_pressure_pa',   // Linear / Remote regulator set pressure (Pa)
   'set_temperature_c', // Three-way TCV set temperature (°C)
   'forced_state',      // Contingency Test Mode (auto / forced_closed / forced_open per case)
-  'source_pressure_bara', // FluidSource: set pressure (bara), case-overridable per scenario
-  'source_flow_lmin',     // FluidSource: set flow rate (L/min), case-overridable per scenario
+  'set_pressure_bara',    // Pressure boundary: set pressure (bara), case-overridable per scenario
+  'set_flow_lmin',        // Flow boundary: set flow magnitude (L/min), case-overridable per scenario
+  'min_suction_pressure_bara', // Flow boundary (draw): suction floor (bara)
   'relief_ramp_enabled',  // Pump / source: ramped by the relief analysis
 ]);
 
 // Equipment the relief analysis can ramp to find each relief device's opening (backend: is_relief_driver)
-export const RELIEF_DRIVER_TYPES = ['centrifugal_pump', 'pump', 'volumetric_pump', 'pressure_source', 'flow_source'];
+export const RELIEF_DRIVER_TYPES = ['centrifugal_pump', 'pump', 'volumetric_pump', 'pressure_boundary', 'flow_boundary'];
 
 /**
  * Checks if a node data property is a case-specific operating variable.

@@ -1,4 +1,5 @@
 """A heat exchanger without an explicit rated ΔP uses the 0.5 bar default the inspector shows."""
+from networks import neutral_graph
 import pytest
 
 
@@ -7,7 +8,7 @@ from simulation.schemas import ReactFlowGraph
 
 
 def _hx(data):
-    graph = ReactFlowGraph(nodes=[{"id": "hx", "type": "heat_exchanger", "position": {"x": 0, "y": 0}, "data": data}], edges=[])
+    graph = neutral_graph(nodes=[{"id": "hx", "type": "heat_exchanger", "position": {"x": 0, "y": 0}, "data": data}], edges=[])
     return GraphParser.parse_graph(graph).nodes["hx"]
 
 

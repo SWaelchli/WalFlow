@@ -19,7 +19,7 @@
       "data": {
         "label": "Note",
         "title": "JEPPSON (1974) 48-PIPE NETWORK",
-        "text": "Validation case: the 48-pipe network of R. W. Jeppson, Steady Flow Analysis of Pipe Networks: An Instructional Manual, Utah State University, 1974, Ch. VI, example problem 3 (network p. 71, solution p. 70).\n\nData: all pipes Darcy-Weisbach with roughness 0.012 in; water at 68 °F (not stated for this problem); all junctions at one elevation. Pipe labels give the published diameter and length. Supplies 20.428 cfs (flow source) and 56.312 cfs (tank); 28 demands of 1.0 to 5.0 cfs and 1.74 cfs (flow sources with negative set flow).\n\nJeppson gives no heads for this network: the tank level is an arbitrary head reference, and only flows and friction losses compare. With one pressure boundary the flows depend on the pipes alone.\n\nEach junction is one node with as many ports as pipes (3 to 5, including the demand or supply connection). Pipes are drawn in the direction of the published flow, except P16, P22 and P33, which are drawn against it (a junction port takes a pipe in either direction)."
+        "text": "Validation case: the 48-pipe network of R. W. Jeppson, Steady Flow Analysis of Pipe Networks: An Instructional Manual, Utah State University, 1974, Ch. VI, example problem 3 (network p. 71, solution p. 70).\n\nData: all pipes Darcy-Weisbach with roughness 0.012 in; water at 68 \u00b0F (not stated for this problem); all junctions at one elevation. Pipe labels give the published diameter and length. Supplies 20.428 cfs (flow source) and 56.312 cfs (tank); 28 demands of 1.0 to 5.0 cfs and 1.74 cfs (flow sources with negative set flow).\n\nJeppson gives no heads for this network: the tank level is an arbitrary head reference, and only flows and friction losses compare. With one pressure boundary the flows depend on the pipes alone.\n\nEach junction is one node with as many ports as pipes (3 to 5, including the demand or supply connection). Pipes are drawn in the direction of the published flow, except P16, P22 and P33, which are drawn against it (a junction port takes a pipe in either direction)."
       }
     },
     {
@@ -420,20 +420,22 @@
     },
     {
       "id": "demand-B1",
-      "type": "flow_source",
+      "type": "flow_boundary",
       "position": {
         "x": 190,
         "y": 1490
       },
       "data": {
         "label": "Demand 2 cfs",
-        "source_flow_lmin": -3398.02,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1,
+        "set_flow_lmin": 3398.02,
+        "flow_direction": "draw"
       }
     },
     {
       "id": "demand-B2",
-      "type": "flow_source",
+      "type": "flow_boundary",
       "position": {
         "x": 1051.4,
         "y": 1670
@@ -441,13 +443,15 @@
       "data": {
         "rotation": 270,
         "label": "Demand 3 cfs",
-        "source_flow_lmin": -5097.03,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1,
+        "set_flow_lmin": 5097.03,
+        "flow_direction": "draw"
       }
     },
     {
       "id": "supply-B3",
-      "type": "flow_source",
+      "type": "flow_boundary",
       "position": {
         "x": 1394.1,
         "y": 1670
@@ -455,13 +459,15 @@
       "data": {
         "rotation": 270,
         "label": "Supply 20.428 cfs",
-        "source_flow_lmin": 34707.39,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1,
+        "set_flow_lmin": 34707.39,
+        "flow_direction": "supply"
       }
     },
     {
       "id": "demand-B4",
-      "type": "flow_source",
+      "type": "flow_boundary",
       "position": {
         "x": 1738.2,
         "y": 1670
@@ -469,13 +475,15 @@
       "data": {
         "rotation": 270,
         "label": "Demand 2 cfs",
-        "source_flow_lmin": -3398.02,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1,
+        "set_flow_lmin": 3398.02,
+        "flow_direction": "draw"
       }
     },
     {
       "id": "demand-B5",
-      "type": "flow_source",
+      "type": "flow_boundary",
       "position": {
         "x": 2060.4,
         "y": 1670
@@ -483,13 +491,15 @@
       "data": {
         "rotation": 270,
         "label": "Demand 3 cfs",
-        "source_flow_lmin": -5097.03,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1,
+        "set_flow_lmin": 5097.03,
+        "flow_direction": "draw"
       }
     },
     {
       "id": "demand-B6",
-      "type": "flow_source",
+      "type": "flow_boundary",
       "position": {
         "x": 2410,
         "y": 1670
@@ -497,13 +507,15 @@
       "data": {
         "rotation": 270,
         "label": "Demand 2 cfs",
-        "source_flow_lmin": -3398.02,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1,
+        "set_flow_lmin": 3398.02,
+        "flow_direction": "draw"
       }
     },
     {
       "id": "demand-M1",
-      "type": "flow_source",
+      "type": "flow_boundary",
       "position": {
         "x": 927.3,
         "y": 1276.5
@@ -511,13 +523,15 @@
       "data": {
         "rotation": 270,
         "label": "Demand 2 cfs",
-        "source_flow_lmin": -3398.02,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1,
+        "set_flow_lmin": 3398.02,
+        "flow_direction": "draw"
       }
     },
     {
       "id": "demand-M2",
-      "type": "flow_source",
+      "type": "flow_boundary",
       "position": {
         "x": 1506.5,
         "y": 1037.3
@@ -525,13 +539,15 @@
       "data": {
         "rotation": 180,
         "label": "Demand 3 cfs",
-        "source_flow_lmin": -5097.03,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1,
+        "set_flow_lmin": 5097.03,
+        "flow_direction": "draw"
       }
     },
     {
       "id": "demand-M3",
-      "type": "flow_source",
+      "type": "flow_boundary",
       "position": {
         "x": 1846.5,
         "y": 1037.3
@@ -539,13 +555,15 @@
       "data": {
         "rotation": 180,
         "label": "Demand 2 cfs",
-        "source_flow_lmin": -3398.02,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1,
+        "set_flow_lmin": 3398.02,
+        "flow_direction": "draw"
       }
     },
     {
       "id": "demand-M4",
-      "type": "flow_source",
+      "type": "flow_boundary",
       "position": {
         "x": 2192.7,
         "y": 1276.5
@@ -553,13 +571,15 @@
       "data": {
         "rotation": 270,
         "label": "Demand 5 cfs",
-        "source_flow_lmin": -8495.05,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1,
+        "set_flow_lmin": 8495.05,
+        "flow_direction": "draw"
       }
     },
     {
       "id": "demand-M5",
-      "type": "flow_source",
+      "type": "flow_boundary",
       "position": {
         "x": 2590,
         "y": 1154.6
@@ -567,13 +587,15 @@
       "data": {
         "rotation": 180,
         "label": "Demand 1 cfs",
-        "source_flow_lmin": -1699.01,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1,
+        "set_flow_lmin": 1699.01,
+        "flow_direction": "draw"
       }
     },
     {
       "id": "demand-E",
-      "type": "flow_source",
+      "type": "flow_boundary",
       "position": {
         "x": 2590,
         "y": 829
@@ -581,13 +603,15 @@
       "data": {
         "rotation": 180,
         "label": "Demand 1.74 cfs",
-        "source_flow_lmin": -2956.28,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1,
+        "set_flow_lmin": 2956.28,
+        "flow_direction": "draw"
       }
     },
     {
       "id": "demand-N13",
-      "type": "flow_source",
+      "type": "flow_boundary",
       "position": {
         "x": 2186.5,
         "y": 952.7
@@ -595,13 +619,15 @@
       "data": {
         "rotation": 180,
         "label": "Demand 3 cfs",
-        "source_flow_lmin": -5097.03,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1,
+        "set_flow_lmin": 5097.03,
+        "flow_direction": "draw"
       }
     },
     {
       "id": "demand-N3",
-      "type": "flow_source",
+      "type": "flow_boundary",
       "position": {
         "x": 1490,
         "y": 710
@@ -609,13 +635,15 @@
       "data": {
         "rotation": 180,
         "label": "Demand 4 cfs",
-        "source_flow_lmin": -6796.04,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1,
+        "set_flow_lmin": 6796.04,
+        "flow_direction": "draw"
       }
     },
     {
       "id": "demand-N26",
-      "type": "flow_source",
+      "type": "flow_boundary",
       "position": {
         "x": 1230,
         "y": 501.7
@@ -623,13 +651,15 @@
       "data": {
         "rotation": 180,
         "label": "Demand 4 cfs",
-        "source_flow_lmin": -6796.04,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1,
+        "set_flow_lmin": 6796.04,
+        "flow_direction": "draw"
       }
     },
     {
       "id": "demand-N41",
-      "type": "flow_source",
+      "type": "flow_boundary",
       "position": {
         "x": 1150,
         "y": 50
@@ -637,13 +667,15 @@
       "data": {
         "rotation": 180,
         "label": "Demand 3 cfs",
-        "source_flow_lmin": -5097.03,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1,
+        "set_flow_lmin": 5097.03,
+        "flow_direction": "draw"
       }
     },
     {
       "id": "demand-N28",
-      "type": "flow_source",
+      "type": "flow_boundary",
       "position": {
         "x": 1830,
         "y": 50
@@ -651,26 +683,30 @@
       "data": {
         "rotation": 180,
         "label": "Demand 2.5 cfs",
-        "source_flow_lmin": -4247.53,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1,
+        "set_flow_lmin": 4247.53,
+        "flow_direction": "draw"
       }
     },
     {
       "id": "demand-N23",
-      "type": "flow_source",
+      "type": "flow_boundary",
       "position": {
         "x": 1550,
         "y": 500
       },
       "data": {
         "label": "Demand 4 cfs",
-        "source_flow_lmin": -6796.04,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1,
+        "set_flow_lmin": 6796.04,
+        "flow_direction": "draw"
       }
     },
     {
       "id": "demand-N24",
-      "type": "flow_source",
+      "type": "flow_boundary",
       "position": {
         "x": 2170,
         "y": 50
@@ -678,26 +714,30 @@
       "data": {
         "rotation": 180,
         "label": "Demand 4 cfs",
-        "source_flow_lmin": -6796.04,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1,
+        "set_flow_lmin": 6796.04,
+        "flow_direction": "draw"
       }
     },
     {
       "id": "demand-N17",
-      "type": "flow_source",
+      "type": "flow_boundary",
       "position": {
         "x": 1890,
         "y": 500
       },
       "data": {
         "label": "Demand 2 cfs",
-        "source_flow_lmin": -3398.02,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1,
+        "set_flow_lmin": 3398.02,
+        "flow_direction": "draw"
       }
     },
     {
       "id": "demand-N18",
-      "type": "flow_source",
+      "type": "flow_boundary",
       "position": {
         "x": 2510,
         "y": 50
@@ -705,21 +745,25 @@
       "data": {
         "rotation": 180,
         "label": "Demand 1.5 cfs",
-        "source_flow_lmin": -2548.52,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1,
+        "set_flow_lmin": 2548.52,
+        "flow_direction": "draw"
       }
     },
     {
       "id": "demand-N19",
-      "type": "flow_source",
+      "type": "flow_boundary",
       "position": {
         "x": 2230,
         "y": 500
       },
       "data": {
         "label": "Demand 2 cfs",
-        "source_flow_lmin": -3398.02,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1,
+        "set_flow_lmin": 3398.02,
+        "flow_direction": "draw"
       }
     },
     {
@@ -733,12 +777,13 @@
         "label": "Supply 56.312 cfs (head reference)",
         "elevation_m": 0.0,
         "level_m": 45.72,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1
       }
     },
     {
       "id": "demand-N40",
-      "type": "flow_source",
+      "type": "flow_boundary",
       "position": {
         "x": 810,
         "y": 50
@@ -746,13 +791,15 @@
       "data": {
         "rotation": 180,
         "label": "Demand 2 cfs",
-        "source_flow_lmin": -3398.02,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1,
+        "set_flow_lmin": 3398.02,
+        "flow_direction": "draw"
       }
     },
     {
       "id": "demand-N42",
-      "type": "flow_source",
+      "type": "flow_boundary",
       "position": {
         "x": 826.5,
         "y": 377.3
@@ -760,39 +807,45 @@
       "data": {
         "rotation": 180,
         "label": "Demand 4 cfs",
-        "source_flow_lmin": -6796.04,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1,
+        "set_flow_lmin": 6796.04,
+        "flow_direction": "draw"
       }
     },
     {
       "id": "demand-N43",
-      "type": "flow_source",
+      "type": "flow_boundary",
       "position": {
         "x": 190,
         "y": 501.7
       },
       "data": {
         "label": "Demand 2 cfs",
-        "source_flow_lmin": -3398.02,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1,
+        "set_flow_lmin": 3398.02,
+        "flow_direction": "draw"
       }
     },
     {
       "id": "demand-N36",
-      "type": "flow_source",
+      "type": "flow_boundary",
       "position": {
         "x": 190,
         "y": 829
       },
       "data": {
         "label": "Demand 3 cfs",
-        "source_flow_lmin": -5097.03,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1,
+        "set_flow_lmin": 5097.03,
+        "flow_direction": "draw"
       }
     },
     {
       "id": "demand-N38",
-      "type": "flow_source",
+      "type": "flow_boundary",
       "position": {
         "x": 714.1,
         "y": 1010
@@ -800,26 +853,30 @@
       "data": {
         "rotation": 270,
         "label": "Demand 3 cfs",
-        "source_flow_lmin": -5097.03,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1,
+        "set_flow_lmin": 5097.03,
+        "flow_direction": "draw"
       }
     },
     {
       "id": "demand-N35",
-      "type": "flow_source",
+      "type": "flow_boundary",
       "position": {
         "x": 190,
         "y": 1154.6
       },
       "data": {
         "label": "Demand 2 cfs",
-        "source_flow_lmin": -3398.02,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1,
+        "set_flow_lmin": 3398.02,
+        "flow_direction": "draw"
       }
     },
     {
       "id": "demand-N33",
-      "type": "flow_source",
+      "type": "flow_boundary",
       "position": {
         "x": 710,
         "y": 1340
@@ -827,8 +884,10 @@
       "data": {
         "rotation": 270,
         "label": "Demand 4 cfs",
-        "source_flow_lmin": -6796.04,
-        "temperature_k": 293.15
+        "temperature_k": 293.15,
+        "num_ports": 1,
+        "set_flow_lmin": 6796.04,
+        "flow_direction": "draw"
       }
     }
   ],
@@ -1459,10 +1518,10 @@
     },
     {
       "id": "demand-B1-link",
-      "source": "demand-B1",
-      "sourceHandle": "outlet-0",
-      "target": "B1",
-      "targetHandle": "port-1",
+      "source": "B1",
+      "sourceHandle": "port-1",
+      "target": "demand-B1",
+      "targetHandle": "port-0",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -1472,10 +1531,10 @@
     },
     {
       "id": "demand-B2-link",
-      "source": "demand-B2",
-      "sourceHandle": "outlet-0",
-      "target": "B2",
-      "targetHandle": "port-2",
+      "source": "B2",
+      "sourceHandle": "port-2",
+      "target": "demand-B2",
+      "targetHandle": "port-0",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -1486,7 +1545,7 @@
     {
       "id": "supply-B3-link",
       "source": "supply-B3",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-0",
       "target": "B3",
       "targetHandle": "port-2",
       "data": {
@@ -1498,10 +1557,10 @@
     },
     {
       "id": "demand-B4-link",
-      "source": "demand-B4",
-      "sourceHandle": "outlet-0",
-      "target": "B4",
-      "targetHandle": "port-2",
+      "source": "B4",
+      "sourceHandle": "port-2",
+      "target": "demand-B4",
+      "targetHandle": "port-0",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -1511,10 +1570,10 @@
     },
     {
       "id": "demand-B5-link",
-      "source": "demand-B5",
-      "sourceHandle": "outlet-0",
-      "target": "B5",
-      "targetHandle": "port-2",
+      "source": "B5",
+      "sourceHandle": "port-2",
+      "target": "demand-B5",
+      "targetHandle": "port-0",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -1524,10 +1583,10 @@
     },
     {
       "id": "demand-B6-link",
-      "source": "demand-B6",
-      "sourceHandle": "outlet-0",
-      "target": "B6",
-      "targetHandle": "port-1",
+      "source": "B6",
+      "sourceHandle": "port-1",
+      "target": "demand-B6",
+      "targetHandle": "port-0",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -1537,10 +1596,10 @@
     },
     {
       "id": "demand-M1-link",
-      "source": "demand-M1",
-      "sourceHandle": "outlet-0",
-      "target": "M1",
-      "targetHandle": "port-2",
+      "source": "M1",
+      "sourceHandle": "port-2",
+      "target": "demand-M1",
+      "targetHandle": "port-0",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -1550,10 +1609,10 @@
     },
     {
       "id": "demand-M2-link",
-      "source": "demand-M2",
-      "sourceHandle": "outlet-0",
-      "target": "M2",
-      "targetHandle": "port-3",
+      "source": "M2",
+      "sourceHandle": "port-3",
+      "target": "demand-M2",
+      "targetHandle": "port-0",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -1563,10 +1622,10 @@
     },
     {
       "id": "demand-M3-link",
-      "source": "demand-M3",
-      "sourceHandle": "outlet-0",
-      "target": "M3",
-      "targetHandle": "port-3",
+      "source": "M3",
+      "sourceHandle": "port-3",
+      "target": "demand-M3",
+      "targetHandle": "port-0",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -1576,10 +1635,10 @@
     },
     {
       "id": "demand-M4-link",
-      "source": "demand-M4",
-      "sourceHandle": "outlet-0",
-      "target": "M4",
-      "targetHandle": "port-3",
+      "source": "M4",
+      "sourceHandle": "port-3",
+      "target": "demand-M4",
+      "targetHandle": "port-0",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -1589,10 +1648,10 @@
     },
     {
       "id": "demand-M5-link",
-      "source": "demand-M5",
-      "sourceHandle": "outlet-0",
-      "target": "M5",
-      "targetHandle": "port-1",
+      "source": "M5",
+      "sourceHandle": "port-1",
+      "target": "demand-M5",
+      "targetHandle": "port-0",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -1602,10 +1661,10 @@
     },
     {
       "id": "demand-E-link",
-      "source": "demand-E",
-      "sourceHandle": "outlet-0",
-      "target": "E",
-      "targetHandle": "port-1",
+      "source": "E",
+      "sourceHandle": "port-1",
+      "target": "demand-E",
+      "targetHandle": "port-0",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -1615,10 +1674,10 @@
     },
     {
       "id": "demand-N13-link",
-      "source": "demand-N13",
-      "sourceHandle": "outlet-0",
-      "target": "N13",
-      "targetHandle": "port-2",
+      "source": "N13",
+      "sourceHandle": "port-2",
+      "target": "demand-N13",
+      "targetHandle": "port-0",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -1628,10 +1687,10 @@
     },
     {
       "id": "demand-N3-link",
-      "source": "demand-N3",
-      "sourceHandle": "outlet-0",
-      "target": "N3",
-      "targetHandle": "port-3",
+      "source": "N3",
+      "sourceHandle": "port-3",
+      "target": "demand-N3",
+      "targetHandle": "port-0",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -1641,10 +1700,10 @@
     },
     {
       "id": "demand-N26-link",
-      "source": "demand-N26",
-      "sourceHandle": "outlet-0",
-      "target": "N26",
-      "targetHandle": "port-1",
+      "source": "N26",
+      "sourceHandle": "port-1",
+      "target": "demand-N26",
+      "targetHandle": "port-0",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -1654,10 +1713,10 @@
     },
     {
       "id": "demand-N41-link",
-      "source": "demand-N41",
-      "sourceHandle": "outlet-0",
-      "target": "N41",
-      "targetHandle": "port-3",
+      "source": "N41",
+      "sourceHandle": "port-3",
+      "target": "demand-N41",
+      "targetHandle": "port-0",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -1667,10 +1726,10 @@
     },
     {
       "id": "demand-N28-link",
-      "source": "demand-N28",
-      "sourceHandle": "outlet-0",
-      "target": "N28",
-      "targetHandle": "port-3",
+      "source": "N28",
+      "sourceHandle": "port-3",
+      "target": "demand-N28",
+      "targetHandle": "port-0",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -1680,10 +1739,10 @@
     },
     {
       "id": "demand-N23-link",
-      "source": "demand-N23",
-      "sourceHandle": "outlet-0",
-      "target": "N23",
-      "targetHandle": "port-2",
+      "source": "N23",
+      "sourceHandle": "port-2",
+      "target": "demand-N23",
+      "targetHandle": "port-0",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -1693,10 +1752,10 @@
     },
     {
       "id": "demand-N24-link",
-      "source": "demand-N24",
-      "sourceHandle": "outlet-0",
-      "target": "N24",
-      "targetHandle": "port-3",
+      "source": "N24",
+      "sourceHandle": "port-3",
+      "target": "demand-N24",
+      "targetHandle": "port-0",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -1706,10 +1765,10 @@
     },
     {
       "id": "demand-N17-link",
-      "source": "demand-N17",
-      "sourceHandle": "outlet-0",
-      "target": "N17",
-      "targetHandle": "port-2",
+      "source": "N17",
+      "sourceHandle": "port-2",
+      "target": "demand-N17",
+      "targetHandle": "port-0",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -1719,9 +1778,9 @@
     },
     {
       "id": "demand-N18-link",
-      "source": "demand-N18",
-      "sourceHandle": "outlet-0",
-      "target": "N18",
+      "source": "N18",
+      "sourceHandle": "port-0",
+      "target": "demand-N18",
       "targetHandle": "port-0",
       "data": {
         "label": "Demand link",
@@ -1732,10 +1791,10 @@
     },
     {
       "id": "demand-N19-link",
-      "source": "demand-N19",
-      "sourceHandle": "outlet-0",
-      "target": "N19",
-      "targetHandle": "port-2",
+      "source": "N19",
+      "sourceHandle": "port-2",
+      "target": "demand-N19",
+      "targetHandle": "port-0",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -1746,7 +1805,7 @@
     {
       "id": "supply-tank-link",
       "source": "supply-tank",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-0",
       "target": "N44",
       "targetHandle": "port-0",
       "data": {
@@ -1758,10 +1817,10 @@
     },
     {
       "id": "demand-N40-link",
-      "source": "demand-N40",
-      "sourceHandle": "outlet-0",
-      "target": "N40",
-      "targetHandle": "port-3",
+      "source": "N40",
+      "sourceHandle": "port-3",
+      "target": "demand-N40",
+      "targetHandle": "port-0",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -1771,10 +1830,10 @@
     },
     {
       "id": "demand-N42-link",
-      "source": "demand-N42",
-      "sourceHandle": "outlet-0",
-      "target": "N42",
-      "targetHandle": "port-3",
+      "source": "N42",
+      "sourceHandle": "port-3",
+      "target": "demand-N42",
+      "targetHandle": "port-0",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -1784,9 +1843,9 @@
     },
     {
       "id": "demand-N43-link",
-      "source": "demand-N43",
-      "sourceHandle": "outlet-0",
-      "target": "N43",
+      "source": "N43",
+      "sourceHandle": "port-0",
+      "target": "demand-N43",
       "targetHandle": "port-0",
       "data": {
         "label": "Demand link",
@@ -1797,9 +1856,9 @@
     },
     {
       "id": "demand-N36-link",
-      "source": "demand-N36",
-      "sourceHandle": "outlet-0",
-      "target": "N36",
+      "source": "N36",
+      "sourceHandle": "port-0",
+      "target": "demand-N36",
       "targetHandle": "port-0",
       "data": {
         "label": "Demand link",
@@ -1810,10 +1869,10 @@
     },
     {
       "id": "demand-N38-link",
-      "source": "demand-N38",
-      "sourceHandle": "outlet-0",
-      "target": "N38",
-      "targetHandle": "port-2",
+      "source": "N38",
+      "sourceHandle": "port-2",
+      "target": "demand-N38",
+      "targetHandle": "port-0",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,
@@ -1823,9 +1882,9 @@
     },
     {
       "id": "demand-N35-link",
-      "source": "demand-N35",
-      "sourceHandle": "outlet-0",
-      "target": "N35",
+      "source": "N35",
+      "sourceHandle": "port-0",
+      "target": "demand-N35",
       "targetHandle": "port-0",
       "data": {
         "label": "Demand link",
@@ -1836,10 +1895,10 @@
     },
     {
       "id": "demand-N33-link",
-      "source": "demand-N33",
-      "sourceHandle": "outlet-0",
-      "target": "N33",
-      "targetHandle": "port-2",
+      "source": "N33",
+      "sourceHandle": "port-2",
+      "target": "demand-N33",
+      "targetHandle": "port-0",
       "data": {
         "label": "Demand link",
         "length_m": 0.01,

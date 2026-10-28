@@ -34,7 +34,8 @@
         "label": "Chilled Water Reservoir",
         "level_m": 3.0,
         "elevation_m": 5.0,
-        "temperature_k": 279.15
+        "temperature_k": 279.15,
+        "num_ports": 1
       }
     },
     {
@@ -196,7 +197,8 @@
         "label": "Return Reservoir",
         "level_m": 1.0,
         "elevation_m": 0.0,
-        "temperature_k": 285.15
+        "temperature_k": 285.15,
+        "num_ports": 1
       }
     },
     {
@@ -519,7 +521,7 @@
       "source": "return-junction",
       "sourceHandle": "port-1",
       "target": "return-tank",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "data": {
         "label": "Main Return",
         "length_m": 5,
@@ -536,7 +538,7 @@
     {
       "id": "c0",
       "source": "expansion-tank",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-0",
       "target": "suction-junction",
       "targetHandle": "port-0",
       "data": {
@@ -697,7 +699,7 @@
     },
     {
       "id": "case_warm_reservoir",
-      "name": "Warm reservoir (12 °C)",
+      "name": "Warm reservoir (12 \u00b0C)",
       "is_base": false,
       "overrides": {
         "nodes": {

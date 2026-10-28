@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { confirmDialog } from '../../utils/dialogs';
 import { componentLabel } from '../../constants/componentLabels';
 import { NEUTRAL_TYPES } from '../../utils/networkValidation';
-import { neutralPorts } from '../../utils/nodeReadouts';
+import { BOUNDARY_PORT_TYPES } from '../../utils/boundaryLayout';
+import { neutralPorts, firstPiped, netPortFlow } from '../../utils/nodeReadouts';
 import { PlusIcon, PlayIcon, ExportIcon, CaseIcon, TrashIcon, SpinnerIcon, ArrowUpIcon, ArrowDownIcon, SortIcon, WarningIcon, CheckIcon, DragHandleIcon, CrossIcon } from '../symbols/IconLibrary';
 import { getScheduleStandardOptions, getScheduleDataset, listSchedules, scheduleLabel, DEFAULT_SCHEDULE_STANDARD } from '../../utils/pipe_schedules';
 import { formatDnOption } from '../../utils/reducer_catalog';
@@ -424,16 +425,20 @@ export default function DataList({
         const telemetry = node.data?.telemetry;
         // Two-port components list their upstream port first
         const neutral = NEUTRAL_TYPES.has(node.type) ? neutralPorts(telemetry) : null;
-        const pStart = (neutral ? neutral.up : telemetry?.inlets?.[0])?.pressure ?? null;
-        const pEnd = (neutral ? neutral.down : telemetry?.outlets?.[0])?.pressure ?? null;
+        // Tank and boundaries report per port: the first piped port stands for the node, flow is the net exchange
+        const isBoundary = BOUNDARY_PORT_TYPES.has(node.type);
+        const bPort = isBoundary ? firstPiped(telemetry) : null;
+        const bNet = isBoundary ? netPortFlow(telemetry) : null;
+        const pStart = (isBoundary ? bPort : neutral ? neutral.up : telemetry?.inlets?.[0])?.pressure ?? null;
+        const pEnd = (isBoundary ? bPort : neutral ? neutral.down : telemetry?.outlets?.[0])?.pressure ?? null;
         return {
           ...ref, originalIndex: index, item: node, label: node.data.label || node.id,
           displayType: componentLabel(node.type),
-          flow: neutral ? neutral.flow : (telemetry?.outlets?.[0]?.flow_rate ?? null),
+          flow: isBoundary ? (bNet != null ? Math.abs(bNet) : null) : neutral ? neutral.flow : (telemetry?.outlets?.[0]?.flow_rate ?? null),
           dp: pStart != null && pEnd != null ? Math.abs(pStart - pEnd) / 100000 : null,
           pStart: pStart != null ? pStart / 100000 : null,
           pEnd: pEnd != null ? pEnd / 100000 : null,
-          temp: neutral ? (neutral.down.temperature ?? null) : (telemetry?.outlets?.[0]?.temperature ?? telemetry?.inlets?.[0]?.temperature ?? null),
+          temp: isBoundary ? (bPort?.temperature ?? null) : neutral ? (neutral.down.temperature ?? null) : (telemetry?.outlets?.[0]?.temperature ?? telemetry?.inlets?.[0]?.temperature ?? null),
           length: 0,
           velocity: null
         };

@@ -1,4 +1,5 @@
 import math
+from networks import neutral_graph
 import pytest
 
 
@@ -97,7 +98,7 @@ def test_graph_parser_calibrated_restriction():
 
 def _restriction_graph(restriction_data, fluid="iso_vg_46"):
     from simulation.schemas import ReactFlowGraph
-    return ReactFlowGraph(**{
+    return neutral_graph(**{
         "nodes": [
             {"id": "t1", "type": "tank", "position": {"x": 0, "y": 0}, "data": {"label": "T1"}},
             {"id": "cr", "type": "calibrated_restriction", "position": {"x": 1, "y": 0},

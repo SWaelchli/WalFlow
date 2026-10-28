@@ -1,5 +1,6 @@
 import { portTitle, portNumberLabel } from './portLabels';
 import { junctionPortCount, junctionPortIds, MIN_JUNCTION_PORTS, MAX_JUNCTION_PORTS } from './junctionLayout';
+import { boundaryPortCount, BOUNDARY_PORT_TYPES, MIN_BOUNDARY_PORTS, MAX_BOUNDARY_PORTS } from './boundaryLayout';
 
 // Checks a drawing before it is sent to the solver.
 // Errors block the run; warnings let it run but are listed so the user can look at them.
@@ -10,7 +11,7 @@ const TWO_PORT = { inlets: [], outlets: [], either: ['port-0', 'port-1'] };
 
 /** Hydraulic ports per component type (handle ids as rendered by the node components). */
 export const PORTS_BY_TYPE = {
-  tank: single,
+  tank: { inlets: [], outlets: [], either: junctionPortIds(1) },
   pump: single,
   centrifugal_pump: single,
   volumetric_pump: single,
@@ -28,8 +29,9 @@ export const PORTS_BY_TYPE = {
   calibrated_restriction: TWO_PORT,
   reducer: single,
   expander: single,
-  pressure_source: single,
-  flow_source: { inlets: [], outlets: ['outlet-0'] },
+  // Boundaries: 1 to 8 neutral ports following data.num_ports (see portsOf)
+  pressure_boundary: { inlets: [], outlets: [], either: junctionPortIds(1) },
+  flow_boundary: { inlets: [], outlets: [], either: junctionPortIds(1) },
   // `either` ports take a pipe running in either direction; the count follows data.num_ports (see portsOf)
   junction: { inlets: [], outlets: [], either: junctionPortIds(3) },
   measure_point: TWO_PORT,
@@ -39,19 +41,20 @@ export const PORTS_BY_TYPE = {
 };
 
 // Boundaries fix a pressure or a flow; an unused port on them is normal.
-const BOUNDARY_TYPES = new Set(['tank', 'pressure_source', 'flow_source']);
+const BOUNDARY_TYPES = new Set(['tank', 'pressure_boundary', 'flow_boundary']);
 // Relief devices may discharge to atmosphere, so an unconnected outlet is not reported.
 const VENTING_TYPES = new Set(['pressure_safety_valve', 'psv', 'rupture_disc']);
 // Not part of the hydraulic network: notes, and instrument bubbles (they only read results)
 const NOTE_TYPES = new Set(['text_bubble', 'instrument']);
 
-/** Ports of one node: PORTS_BY_TYPE, with the port count of a junction taken from its data. */
+/** Ports of one node: PORTS_BY_TYPE, with the port count of a junction or boundary taken from its data. */
 export const portsOf = (node) => {
+  if (BOUNDARY_PORT_TYPES.has(node?.type)) return { inlets: [], outlets: [], either: junctionPortIds(boundaryPortCount(node.data)) };
   if (node?.type === 'junction') return { inlets: [], outlets: [], either: junctionPortIds(junctionPortCount(node.data)) };
   return { either: [], ...PORTS_BY_TYPE[node?.type] };
 };
 
-export const ERROR_CODES = ['empty_drawing', 'unknown_type', 'unknown_endpoint', 'invalid_port', 'port_shared', 'invalid_num_ports'];
+export const ERROR_CODES = ['empty_drawing', 'unknown_type', 'unknown_endpoint', 'invalid_port', 'port_shared', 'invalid_num_ports', 'flow_split_port_open', 'flow_boundary_direction'];
 
 const isSignalEdge = (e) => String(e?.data?.type ?? '').toUpperCase() === 'SIGNAL'
   || String(e?.sourceHandle ?? '').startsWith('signal-')
@@ -65,12 +68,12 @@ const portName = (handle) => (/^port-\d+$/.test(String(handle ?? '')) ? portTitl
 // Python float() rejects hex/binary/octal text that Number() would read
 const PLAIN_DECIMAL = /^\s*[+-]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?\s*$/i;
 
-/** True when num_ports is missing or a whole number 3..8 (a numeric string such as "4" counts, as in the solver). */
-export const validPortCount = (raw) => {
+/** True when num_ports is missing or a whole number min..max (default 3..8 of a junction; a numeric string such as "4" counts, as in the solver). */
+export const validPortCount = (raw, min = MIN_JUNCTION_PORTS, max = MAX_JUNCTION_PORTS) => {
   if (raw === undefined) return true;
   if (typeof raw === 'string' ? !PLAIN_DECIMAL.test(raw) : typeof raw !== 'number') return false;
   const n = Number(raw);
-  return Number.isInteger(n) && n >= MIN_JUNCTION_PORTS && n <= MAX_JUNCTION_PORTS;
+  return Number.isInteger(n) && n >= min && n <= max;
 };
 
 export const PORT_TAKEN_MESSAGE = 'This port already has a pipe. Use a junction to branch a line.';
@@ -83,11 +86,13 @@ export const NEUTRAL_TYPES = new Set(['orifice', 'calibrated_restriction', 'filt
 
 export const SAME_ROLE_MESSAGE = 'Two outlets (or two inlets) cannot be joined: a line runs from an outlet to an inlet.';
 
-/** True for a port without a role: a port of a junction or of a neutral component. */
-export const isNeutralPort = (node, handle) => (node?.type === 'junction' || NEUTRAL_TYPES.has(node?.type)) && /^port-\d+$/.test(String(handle ?? ''));
+/** True for a port that looks neutral: a port of a junction, a boundary or a neutral component. */
+export const isNeutralPort = (node, handle) => (node?.type === 'junction' || BOUNDARY_PORT_TYPES.has(node?.type) || NEUTRAL_TYPES.has(node?.type)) && /^port-\d+$/.test(String(handle ?? ''));
 
 /** 'inlet' | 'outlet' for a role port, null for a neutral port or an unknown handle. */
 const roleOf = (node, handle) => {
+  // A flow boundary looks neutral but is stored by its direction: a supply is the pipe source, a draw the target
+  if (node?.type === 'flow_boundary' && /^port-\d+$/.test(String(handle ?? ''))) return node.data?.flow_direction === 'draw' ? 'inlet' : 'outlet';
   if (isNeutralPort(node, handle)) return null;
   const h = String(handle ?? '');
   return h.startsWith('outlet-') ? 'outlet' : h.startsWith('inlet-') ? 'inlet' : null;
@@ -98,7 +103,8 @@ const isHydraulicHandle = (h) => /^(inlet|outlet|port)-\d+$/.test(String(h ?? ''
  * Direction of a connection the canvas reports (it runs in loose mode so any port connects either way).
  * Any two hydraulic ports may be joined except two ports of the same role (outlet-outlet, inlet-inlet).
  * A role port decides the stored direction (a role outlet is the source, a role inlet the target; a drag the other
- * way is swapped); between two neutral ports the pipe is kept as drawn. A signal line runs from a sensing pin
+ * way is swapped); a flow boundary counts as an outlet when it supplies and as an inlet when it draws.
+ * Between two neutral ports the pipe is kept as drawn. A signal line runs from a sensing pin
  * to a `signal-in*` input.
  * @param {object[]} nodes
  * @returns {{ok: boolean, connection?: object, message?: string}} the connection to store, or ok false (with the reason, if known)
@@ -126,6 +132,41 @@ export function normalizeConnection(nodes, conn) {
   if (rs && rs === rt) return { ok: false, message: SAME_ROLE_MESSAGE };
   const swapped = { source: target, target: source, sourceHandle: targetHandle, targetHandle: sourceHandle };
   return { ok: true, connection: rs === 'inlet' || rt === 'outlet' ? swapped : conn };
+}
+
+/**
+ * Turns every hydraulic pipe on a node around (source and target, with their handles). Signal lines are kept.
+ * Used when a flow boundary changes between supply and draw.
+ */
+export function flipBoundaryEdges(edges, nodeId) {
+  return edges.map((e) => {
+    if (isSignalEdge(e) || (e.source !== nodeId && e.target !== nodeId)) return e;
+    // Results of a turned pipe (inlet and outlet values) would show swapped, so they are dropped until the next run
+    const { telemetry: _telemetry, ...data } = e.data || {};
+    return { ...e, data, source: e.target, target: e.source, sourceHandle: e.targetHandle, targetHandle: e.sourceHandle };
+  });
+}
+
+/**
+ * Message when turning the pipes of a flow boundary around would put a pipe on a role port (a pump inlet, a valve
+ * outlet ...), whose direction is fixed; null when the change is possible.
+ * @param {string} newDirection 'supply' | 'draw'
+ */
+export function flipBlockedMessage(nodes, edges, nodeId, newDirection) {
+  const byId = new Map(nodes.map(n => [n.id, n]));
+  const self = byId.get(nodeId);
+  for (const e of edges) {
+    if (isSignalEdge(e) || e.source === e.target) continue;
+    const source = e.source === nodeId;
+    if (!source && e.target !== nodeId) continue;
+    const far = byId.get(source ? e.target : e.source);
+    const farHandle = source ? e.targetHandle : e.sourceHandle;
+    const role = roleOf(far, farHandle);
+    if (!role) continue;
+    const verb = source ? 'feeds' : 'is fed by';
+    return `Cannot switch '${nodeName(self)}' to ${newDirection}: its pipe ${verb} the ${role} of '${nodeName(far)}'. Reconnect it first.`;
+  }
+  return null;
 }
 
 /**
@@ -178,6 +219,13 @@ export function validateNetwork({ nodes = [], edges = [] }, knownTypes = null) {
         `${nodeName(n)} has an invalid number of ports. Set a whole number from ${MIN_JUNCTION_PORTS} to ${MAX_JUNCTION_PORTS}.`, [n.id]);
     }
   });
+  // Tank and boundaries take 1 to 8 ports (missing means 1)
+  components.filter(n => BOUNDARY_PORT_TYPES.has(n.type)).forEach((n) => {
+    if (!validPortCount(n.data?.num_ports, MIN_BOUNDARY_PORTS, MAX_BOUNDARY_PORTS)) {
+      add(errors, 'error', 'invalid_num_ports',
+        `${nodeName(n)} has an invalid number of ports. Set a whole number from ${MIN_BOUNDARY_PORTS} to ${MAX_BOUNDARY_PORTS}.`, [n.id]);
+    }
+  });
 
   const hydraulic = edges.filter(e => !isSignalEdge(e));
   const portUse = new Map(); // "nodeId|handle" -> edges using that port
@@ -194,6 +242,14 @@ export function validateNetwork({ nodes = [], edges = [] }, knownTypes = null) {
       add(errors, 'error', 'unknown_endpoint', `${edgeName(e)} is attached to a component that no longer exists.`, [], [e.id]);
       return;
     }
+    // A supplying flow boundary is the pipe source, a drawing one the pipe target
+    [[src, 'supply'], [tgt, 'draw']].forEach(([node, mode]) => {
+      if (node.type !== 'flow_boundary' || !usable.has(node.id)) return;
+      const dir = node.data?.flow_direction === 'draw' ? 'draw' : 'supply';
+      if (dir === mode) return;
+      add(errors, 'error', 'flow_boundary_direction',
+        `Flow boundary '${nodeName(node)}' ${dir === 'draw' ? 'draws' : 'supplies'} flow, so its pipes must ${dir === 'draw' ? 'run into it' : 'run out of it'}.`, [node.id], [e.id]);
+    });
     const ends = [
       { node: src, handle: e.sourceHandle || 'outlet-0', dir: 'outlets' },
       { node: tgt, handle: e.targetHandle || 'inlet-0', dir: 'inlets' },
@@ -239,6 +295,15 @@ export function validateNetwork({ nodes = [], edges = [] }, knownTypes = null) {
       add(warnings, 'warning', 'isolated_node', `${nodeName(n)} is not connected to anything and is ignored by the solver.`, [n.id]);
       return;
     }
+    // An equal share needs a pipe at every port (the solver rejects a free port); a set flow per port ignores it
+    if (n.type === 'flow_boundary' && n.data?.flow_split === 'total_split') {
+      const count = boundaryPortCount(n.data);
+      const free = ports.either.findIndex(h => !(portUse.get(`${n.id}|${h}`) || []).length);
+      if (free >= 0 && used.length < count) {
+        add(errors, 'error', 'flow_split_port_open',
+          `${nodeName(n)}: Port ${free + 1} has no pipe. With the flow distributed equally every port needs a pipe: connect it, lower the number of ports or select another flow split.`, [n.id]);
+      }
+    }
     // An unpiped junction port is simply ignored; boundaries fix a pressure or flow
     if (BOUNDARY_TYPES.has(n.type) || n.type === 'junction') return;
     const outlets = VENTING_TYPES.has(n.type) ? [] : ports.outlets;
@@ -249,11 +314,11 @@ export function validateNetwork({ nodes = [], edges = [] }, knownTypes = null) {
     }
   });
 
-  // A sensing line from a junction port without a pipe senses nothing; the solver ignores that line
+  // A sensing line from a junction or boundary port without a pipe senses nothing; the solver ignores that line
   edges.forEach((e) => {
     const m = /^signal-port-(\d+)$/.exec(String(e.sourceHandle ?? ''));
     const host = m && byId.get(e.source);
-    if (!host || host.type !== 'junction' || !usable.has(host.id)) return;
+    if (!host || !(host.type === 'junction' || BOUNDARY_PORT_TYPES.has(host.type)) || !usable.has(host.id)) return;
     if ((portUse.get(`${host.id}|port-${m[1]}`) || []).length) return;
     add(warnings, 'warning', 'signal_port_unpiped',
       `${edgeName(e)} senses ${portNumberLabel(Number(m[1]))} of ${nodeName(host)}, which has no pipe, so the receiving instrument or valve senses nothing there.`,
@@ -275,7 +340,7 @@ export function validateNetwork({ nodes = [], edges = [] }, knownTypes = null) {
   groups.forEach((ids) => {
     if (!ids.some(id => BOUNDARY_TYPES.has(byId.get(id).type))) {
       add(warnings, 'warning', 'no_boundary',
-        'A group of connected components has no tank, pressure source or flow source, so it has no pressure reference and cannot be solved meaningfully.', ids);
+        'A group of connected components has no tank, pressure boundary or flow boundary, so it has no pressure reference and cannot be solved meaningfully.', ids);
     }
   });
 

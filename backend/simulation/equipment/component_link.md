@@ -47,3 +47,7 @@ No user parameters.
 ## 7. Verification Tests
 
 Covered by the property tests on drawing direction and port order and by the golden examples.
+
+## 8. Boundary Link
+
+`BoundaryLink` is the edge from a [flow boundary](flow_boundary.md#32-hidden-port-nodes-and-links) to the hidden junction at its port(s). It has no pressure drop and no slope, so the hidden junction is at the outlet pressure of the boundary's flow spring; the property pass carries the upstream fluid across unchanged. Its end velocity heads are those of the one pipe on the hidden junction (0 when several pipes share it), so the boundary's outlet and its port report the static pressure at that pipe's end. It is left out of the edge telemetry.

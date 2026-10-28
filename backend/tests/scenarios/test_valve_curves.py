@@ -4,6 +4,7 @@ argument it relies on, and a solved network whose operating point lies on the cu
 import contextlib
 import io
 
+from networks import neutral_graph
 import pytest
 from hypothesis import given, strategies as st
 
@@ -93,7 +94,7 @@ def _solved(node_type, opening_pct=40.0):
               "data": {"length_m": 5.0, "diameter_m": 0.05}} for i, (s, t) in enumerate([("t1", "v"), ("v", "t2")])]
     NetworkSolver.clear_warm_start_cache()
     with contextlib.redirect_stdout(io.StringIO()):
-        network = GraphParser.parse_graph(ReactFlowGraph(nodes=nodes, edges=edges))
+        network = GraphParser.parse_graph(neutral_graph(nodes=nodes, edges=edges))
         stats = NetworkSolver(network).solve()
     assert stats["success"], stats.get("error")
     return extract_telemetry(network), network

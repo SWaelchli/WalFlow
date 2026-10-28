@@ -19,11 +19,10 @@ from simulation.equipment.pressure_safety_valve import PressureSafetyValve
 from simulation.equipment.rupture_disc import RuptureDisc
 from simulation.equipment.calibrated_restriction import CalibratedRestriction
 from simulation.equipment.reducer import Reducer
-from simulation.equipment.pressure_source import PressureSource
-
-from simulation.equipment.flow_source import FlowSource
-from simulation.equipment.base_node import HydraulicNode, InlineNode, MIN_PUMP_EFFICIENCY
-from simulation.equipment.component_link import ComponentLink
+from simulation.equipment.pressure_boundary import PressureBoundary
+from simulation.equipment.flow_boundary import FlowBoundary, FLOW_DIRECTIONS, FLOW_SPLITS
+from simulation.equipment.base_node import HydraulicNode, InlineNode, NeutralPortNode, MIN_PUMP_EFFICIENCY
+from simulation.equipment.component_link import ComponentLink, BoundaryLink
 from simulation.fluid_utils import FluidProperties
 
 
@@ -72,8 +71,23 @@ class GraphParser:
         return v
 
     @staticmethod
+    def _num_ports(d: dict, name: str, cls) -> int:
+        """Number of neutral ports: a whole number cls.MIN_PORTS to cls.MAX_PORTS (4.0 and "4" pass, 4.6 / null / ""
+        do not), the rule of networkValidation.js."""
+        num_ports = d.get('num_ports', cls.MIN_PORTS)
+        try:
+            whole = float(num_ports) == int(float(num_ports))
+        except (TypeError, ValueError, OverflowError):
+            whole = False
+        num_ports = int(float(num_ports)) if whole else None
+        if num_ports is None or not cls.MIN_PORTS <= num_ports <= cls.MAX_PORTS:
+            raise ModelInputError(f"'{name}': number of ports must be a whole number {cls.MIN_PORTS} to {cls.MAX_PORTS}.")
+        return num_ports
+
+    @staticmethod
     def _max_discharge_pa(d: dict, name: str) -> float:
-        """Outlet pressure limit of a PD pump / flow source: bar(a) in the file, Pa(a) in the model (50 bar(a) default)."""
+        """Outlet pressure limit of a PD pump / supplying flow boundary: bar(a) in the file, Pa(a) in the model (50 bar(a)
+        default)."""
         bara = d.get('max_discharge_pressure_bara')
         bara = 50.0 if bara is None else float(bara)
         if bara <= 1.0:
@@ -238,6 +252,7 @@ class GraphParser:
         inline_nodes = {nid: n for nid, n in nodes_dict.items() if isinstance(n, InlineNode)}
         parsed_edges = GraphParser._build_component_links(nodes_dict, inline_nodes, parsed_edges,
                                                           resolved_graph.global_settings)
+        parsed_edges = GraphParser._build_boundary_links(nodes_dict, parsed_edges, resolved_graph.global_settings)
         GraphParser._assign_junction_ports(nodes_dict, parsed_edges)
         for edge in signal_edges:
             source_id, handle, k = edge.source, edge.sourceHandle, _neutral_port(edge.sourceHandle)
@@ -245,8 +260,14 @@ class GraphParser:
                 # A port of an in-line component: its hidden junction, at the pipe's slot (the link's on a free port)
                 source_id = f"{source_id}#port-{1 if k == 1 else 0}"
                 k = 0 if 0 in nodes_dict[source_id].port_slots else 1
+            elif isinstance(nodes_dict.get(source_id), FlowBoundary):
+                # A port of a flow boundary: its hidden node, at the pipe's port there
+                hub = nodes_dict[source_id].port_hubs.get(k)
+                if hub is None:   # a port without a pipe has nothing to sense
+                    continue
+                source_id, k = hub[0].id, hub[1]
             source_node = nodes_dict.get(source_id)
-            if isinstance(source_node, Junction):
+            if isinstance(source_node, NeutralPortNode):
                 slot = source_node.port_slots.get(k)
                 if slot is None and isinstance(source_node, MeasurePoint):
                     # The tap's one pin senses the node: at its other port when port 0 has no pipe
@@ -297,8 +318,8 @@ class GraphParser:
             return k
 
         def role(node_id, handle):
-            """'outlet' / 'inlet' of a role port, None for a neutral (junction) port."""
-            if isinstance(nodes_dict[node_id], Junction):
+            """'outlet' / 'inlet' of a role port, None for a neutral port (junction, tank, boundary)."""
+            if isinstance(nodes_dict[node_id], NeutralPortNode):
                 return None
             prefix = str(handle or "").split('-')[0]
             return prefix if prefix in ('inlet', 'outlet') else None
@@ -333,25 +354,86 @@ class GraphParser:
         return parsed_edges + list(links.values())
 
     @staticmethod
+    def _boundary_port(edge_info, side, node) -> int:
+        """Port index k of a pipe end on a neutral port (port-k) of node, within its number of ports."""
+        handle = str(edge_info[f"{side}_port"] or "")
+        k = _neutral_port(handle, pipe_end=True)
+        if k is None:
+            raise ModelInputError(f"Pipe '{edge_info['label']}': '{node.name}' has no port \"{handle}\".")
+        if k >= node.num_ports:   # ports are numbered from 1 on the canvas
+            raise ModelInputError(f"Pipe '{edge_info['label']}': '{node.name}' has no Port "
+                                  f"{k + 1} (it has {node.num_ports} port{'' if node.num_ports == 1 else 's'}).")
+        return k
+
+    @staticmethod
+    def _build_boundary_links(nodes_dict: Dict[str, HydraulicNode], parsed_edges: list, global_settings) -> list:
+        """The pipes of a flow boundary end on hidden junctions, each linked to an outlet of the boundary by a
+        BoundaryLink, so the boundary's flow spring acts on each link (flow_boundary.md): one junction with all the
+        pipes (port k of the boundary on its port k) for common_pressure, a two-port junction per connected port
+        otherwise (the pipe on port 0). The link ends on the junction's last port. A pipe runs out of a supply and
+        into a draw. A boundary without pipes gets no link and stays a lone node."""
+        links = []
+        for bid, boundary in [(i, n) for i, n in nodes_dict.items() if isinstance(n, FlowBoundary)]:
+            ends = {}   # port k -> (edge, side)
+            for edge_info in parsed_edges:
+                for side in ('source', 'target'):
+                    if edge_info[side] != bid:
+                        continue
+                    k = GraphParser._boundary_port(edge_info, side, boundary)
+                    if k in ends:
+                        raise ModelInputError(f"'{boundary.name}': Port {k + 1} takes one pipe.")
+                    if (side == 'target') != boundary.is_draw:
+                        raise ModelInputError(
+                            f"Pipe '{edge_info['label']}' runs {'out of' if boundary.is_draw else 'into'} flow boundary "
+                            f"'{boundary.name}', which {'draws' if boundary.is_draw else 'supplies'} flow. A pipe runs "
+                            f"{'into a drawing' if boundary.is_draw else 'out of a supplying'} flow boundary.")
+                    ends[k] = (edge_info, side)
+            if not ends:
+                continue
+            common = boundary.flow_split == 'common_pressure'
+            # An open port is ignored with a flow per port; an equal share needs every port connected
+            if boundary.flow_split == 'total_split' and len(ends) < boundary.num_ports:
+                free = min(set(range(boundary.num_ports)) - set(ends)) + 1
+                raise ModelInputError(f"'{boundary.name}': Port {free} has no pipe. With the flow distributed equally "
+                                      "every port needs a pipe: connect it, lower the number of ports or select another "
+                                      "flow split.")
+            groups = ([(f"{bid}#ports", f"{boundary.name} ports", sorted(ends))] if common
+                      else [(f"{bid}#port-{k}", f"{boundary.name} port {k + 1}", [k]) for k in sorted(ends)])
+            for hub_id, hub_name, ports in groups:
+                hub = Junction(name=hub_name, num_ports=boundary.num_ports + 1 if common else 2)
+                hub.id, hub.hidden = hub_id, True
+                hub.global_settings = global_settings
+                nodes_dict[hub_id] = hub
+                link = BoundaryLink()
+                for k in ports:
+                    edge_info, side = ends[k]
+                    hub_port = k if common else 0
+                    edge_info[side], edge_info[f"{side}_port"] = hub_id, f"port-{hub_port}"
+                    boundary.port_hubs[k] = (hub, hub_port)
+                    if len(ports) == 1:
+                        link.adjacent = edge_info["pipe"]
+                boundary.add_outlet()
+                boundary.outlet_ports.append(ports[0])
+                links.append({"id": f"{bid}#link" + ("" if common else f"-{ports[0]}"), "label": boundary.name,
+                              "source": bid, "target": hub_id, "source_port": f"outlet-{len(boundary.outlets) - 1}",
+                              "target_port": f"port-{hub.num_ports - 1}", "pipe": link})
+        return parsed_edges + links
+
+    @staticmethod
     def _assign_junction_ports(nodes_dict: Dict[str, HydraulicNode], parsed_edges: list) -> None:
-        """Gives every pipe end on a junction port (port-k) an inlet slot when the pipe is drawn into the junction
-        and an outlet slot when drawn out of it, and rewrites the edge's port to that slot for the solver."""
+        """Gives every pipe end on a neutral port (port-k) of a junction, tank or pressure boundary an inlet slot
+        when the pipe is drawn into the node and an outlet slot when drawn out of it, and rewrites the edge's port to
+        that slot for the solver."""
         for edge_info in parsed_edges:
             for end, as_inlet in (("source", False), ("target", True)):
                 node = nodes_dict[edge_info[end]]
-                if not isinstance(node, Junction):
+                if not isinstance(node, NeutralPortNode):
                     continue
-                handle = str(edge_info[f"{end}_port"] or "")
-                k = _neutral_port(handle, pipe_end=True)
-                if k is None:
-                    raise ModelInputError(f"Pipe '{edge_info['label']}': junction '{node.name}' has no port \"{handle}\".")
-                if k >= node.num_ports:   # ports are numbered from 1 on the canvas
-                    raise ModelInputError(f"Pipe '{edge_info['label']}': junction '{node.name}' has no Port "
-                                          f"{k + 1} (it has {node.num_ports} ports).")
+                k = GraphParser._boundary_port(edge_info, end, node)
                 try:
                     edge_info[f"{end}_port"] = node.assign_port(k, as_inlet)
                 except ValueError as e:
-                    raise ModelInputError(f"Junction '{node.name}': {e}.") from e
+                    raise ModelInputError(f"'{node.name}': {e}.") from e
 
     @staticmethod
     def create_node(node_data: ReactFlowNode, global_settings: Any = None) -> HydraulicNode:
@@ -406,7 +488,8 @@ class GraphParser:
                 elevation=float(d.get('elevation_m', 0.0)),
                 fluid_level=float(d.get('level_m', 1.0)),
                 temperature=float(d.get('temperature_k', 293.15)),
-                fluid_type=fluid_type
+                fluid_type=fluid_type,
+                num_ports=GraphParser._num_ports(d, name, Tank)
             )
         elif t == 'centrifugal_pump' or t == 'pump':
             flow_rated_lmin = float(d.get('flow_rated_lmin', 100.0))
@@ -547,16 +630,7 @@ class GraphParser:
             )
         elif t == 'junction':
             # Neutral ports port-0 .. port-(N-1); inlet / outlet slots are assigned from the pipes (_assign_junction_ports)
-            # A whole number 3 to 8 (4.0 and "4" pass, 4.6 / null / "" do not), the rule of networkValidation.js
-            num_ports = d.get('num_ports', Junction.MIN_PORTS)
-            try:
-                whole = float(num_ports) == int(float(num_ports))
-            except (TypeError, ValueError, OverflowError):
-                whole = False
-            num_ports = int(float(num_ports)) if whole else None
-            if num_ports is None or not Junction.MIN_PORTS <= num_ports <= Junction.MAX_PORTS:
-                raise ModelInputError(f"'{name}': number of ports must be a whole number {Junction.MIN_PORTS} to {Junction.MAX_PORTS}.")
-            node = Junction(name=name, num_ports=num_ports)
+            node = Junction(name=name, num_ports=GraphParser._num_ports(d, name, Junction))
         elif t == 'measure_point':
             # In-line tap: zero pressure drop, sensed through its pin (signal-inlet-0)
             node = MeasurePoint(name=name)
@@ -604,22 +678,46 @@ class GraphParser:
                 orifice_diameter=float(d.get('orifice_diameter_m', 0.01)),
                 forced_state=str(d.get('forced_state', 'auto'))
             )
-        elif t == 'pressure_source':
-            source_pressure_pa = float(d.get('source_pressure_bara', 6.0)) * 100_000.0
-            temperature_k = float(d.get('temperature_k', 293.15))
-            node = PressureSource(
+        elif t == 'pressure_boundary':
+            node = PressureBoundary(
                 name=name,
-                source_pressure=source_pressure_pa,
-                temperature=temperature_k,
+                set_pressure=float(d.get('set_pressure_bara', 6.0)) * 100_000.0,
+                temperature=float(d.get('temperature_k', 293.15)),
+                num_ports=GraphParser._num_ports(d, name, PressureBoundary),
             )
-        elif t == 'flow_source':
-            source_flow_m3s = float(d.get('source_flow_lmin', 50.0)) / 60_000.0
-            temperature_k = float(d.get('temperature_k', 293.15))
-            node = FlowSource(
+        elif t == 'flow_boundary':
+            direction = str(d.get('flow_direction', 'supply'))
+            if direction not in FLOW_DIRECTIONS:
+                raise ModelInputError(f"'{name}': flow direction must be supply or draw.")
+            flow_split = str(d.get('flow_split', 'common_pressure'))
+            if flow_split not in FLOW_SPLITS:
+                raise ModelInputError(f"'{name}': flow split must be common pressure, total split or per port.")
+            set_flow_lmin = float(d.get('set_flow_lmin', 50.0))
+            if set_flow_lmin < 0.0:
+                raise ModelInputError(f"'{name}': set flow must not be negative; select draw to withdraw flow.")
+            min_suction_bara = float(d.get('min_suction_pressure_bara', 0.0))
+            if min_suction_bara < 0.0:
+                raise ModelInputError(f"'{name}': min. suction pressure must not be below 0 bar(a).")
+            port_flows = None
+            if flow_split == 'per_port':
+                raw = d.get('port_flows_lmin') or []
+                port_flows = [float(raw[k]) if k < len(raw) and raw[k] is not None else set_flow_lmin
+                              for k in range(GraphParser._num_ports(d, name, FlowBoundary))]
+                if min(port_flows) < 0.0:
+                    raise ModelInputError(f"'{name}': port flows must not be negative; select draw to withdraw flow.")
+                port_flows = [q / 60_000.0 for q in port_flows]
+                set_flow_lmin = sum(port_flows) * 60_000.0   # the reference a relief ramp scales
+            node = FlowBoundary(
                 name=name,
-                source_flow=source_flow_m3s,
-                temperature=temperature_k,
-                max_discharge_pressure=GraphParser._max_discharge_pa(d, name),
+                set_flow=set_flow_lmin / 60_000.0,
+                temperature=float(d.get('temperature_k', 293.15)),
+                # the discharge limit only applies to a supply (a draw ignores a stale value)
+                max_discharge_pressure=GraphParser._max_discharge_pa(d, name) if direction == 'supply' else 50e5,
+                min_suction_pressure=min_suction_bara * 100_000.0,
+                direction=direction,
+                flow_split=flow_split,
+                num_ports=GraphParser._num_ports(d, name, FlowBoundary),
+                port_flows=port_flows,
             )
         else:
             raise ModelInputError(f"'{name}': unknown component type \"{t}\". Replace or delete it.")

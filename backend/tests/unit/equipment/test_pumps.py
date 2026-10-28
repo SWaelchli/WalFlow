@@ -1,5 +1,6 @@
 """Pump regressions: head-based curve and efficiency, reverse flow, pushed PD pump, shaft power KPI,
 rated head required."""
+from networks import neutral_graph
 import pytest
 
 
@@ -12,7 +13,7 @@ from physics_refs import solve
 from simulation.schemas import HydraulicNetwork
 from simulation.equipment.tank import Tank
 from simulation.equipment.pipe import Pipe
-from simulation.equipment.pressure_source import PressureSource
+from simulation.equipment.pressure_boundary import PressureBoundary
 from simulation.equipment.centrifugal_pump import CentrifugalPump
 from simulation.equipment.volumetric_pump import VolumetricPump
 from simulation.fluid_utils import FluidProperties
@@ -74,7 +75,7 @@ def test_stopped_pump_loses_rated_head_at_rated_flow():
 def test_pushed_pd_pump_passes_its_displacement():
     # 10 bar(a) header feeds a 100 L/min PD pump discharging to an open tank
     nodes = {
-        "src": PressureSource("Header", source_pressure=10.0e5),
+        "src": PressureBoundary("Header", set_pressure=10.0e5),
         "p": VolumetricPump("PD", flow_rated=Q_R, motor_power=5000.0, efficiency=0.85),
         "t": Tank("Sink", fluid_level=1.0),
     }
@@ -133,7 +134,7 @@ def test_kpi_power_is_shaft_power_and_stopped_pump_counts_zero():
 
 
 def _pump_graph(pump_data, pump_type="centrifugal_pump"):
-    return ReactFlowGraph(**{
+    return neutral_graph(**{
         "nodes": [
             {"id": "t1", "type": "tank", "position": {"x": 0, "y": 0}, "data": {"label": "T1", "level_m": 1.0}},
             {"id": "p1", "type": pump_type, "position": {"x": 1, "y": 0}, "data": {"label": "P-101", "flow_rated_lmin": 100.0, **pump_data}},

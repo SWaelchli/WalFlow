@@ -112,7 +112,7 @@ When `self.active = False`, the solver's DFS reachability pre-processor will aut
 
 | Attribute | Type | Default | Set `True` When... |
 | :--- | :--- | :--- | :--- |
-| `is_pressure_boundary` | `bool` | `False` | Component imposes a fixed pressure boundary (e.g. `Tank`, constant pressure source). |
+| `is_pressure_boundary` | `bool` | `False` | Component imposes a fixed pressure boundary (e.g. `Tank`, pressure boundary). |
 | `blocks_flow_on_shutdown` | `bool` | `False` | Component completely stops all flow through its ports when `self.active == False`. |
 | `use_mcp_formulation` | `bool` | `False` | Component switches states dynamically between closed/cracking/open using complementarity equations. |
 

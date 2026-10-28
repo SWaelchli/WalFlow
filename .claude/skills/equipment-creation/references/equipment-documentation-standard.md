@@ -74,7 +74,7 @@ The readers are developers and engineering users.
 - Short, plain sentences. One fact per sentence.
 - Equations in LaTeX (`$...$` inline, `$$...$$` display), SI units inside equations.
 - Define every symbol the first time it appears.
-- A small worked numeric table where it helps the reader judge magnitude (e.g. the entry-loss table in `pressure_source.md`).
+- A small worked numeric table where it helps the reader judge magnitude (e.g. the entry-loss table in `pressure_boundary.md`).
 - State a design decision and its reason where a reader would otherwise ask "why not ...?".
 - No marketing words, no emojis in the equipment documents.
 

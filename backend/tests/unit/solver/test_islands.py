@@ -1,7 +1,7 @@
 """A circuit without a pressure reference is an error with a message, not a silent success."""
 
 
-from physics_refs import solve
+from physics_refs import build_network, solve
 from simulation.equipment.centrifugal_pump import CentrifugalPump
 from simulation.equipment.linear_control_valve import LinearControlValve
 from simulation.equipment.pipe import Pipe
@@ -23,7 +23,7 @@ def test_closed_loop_without_tank_is_reported():
     assert stats["success"] is False
     assert "No pressure reference" in stats["error"]
     assert "Loop Pump" in stats["error"] and "Loop Valve" in stats["error"]
-    assert "no tank, pressure source or flow source" in stats["error"]
+    assert "no tank, pressure boundary or flow boundary" in stats["error"]
 
 
 def test_same_loop_with_a_tank_solves():
@@ -85,6 +85,6 @@ def test_island_error_is_passed_to_the_user_by_the_relief_wrapper():
     for p in pipes:
         p.global_settings = gs
     edges = [{"id": "e1", "source": "pump", "target": "valve", "pipe": pipes[0]}, {"id": "e2", "source": "valve", "target": "pump", "pipe": pipes[1]}]
-    network = HydraulicNetwork(nodes=nodes, edges=edges)
+    network = build_network(nodes=nodes, edges=edges)
     stats, *_ = run_sequential_relief_simulation(network, NetworkSolver(network), extract_telemetry)
     assert stats["success"] is False and stats["error_kind"] == "no_pressure_reference"

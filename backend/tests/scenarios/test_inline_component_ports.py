@@ -3,7 +3,7 @@ what its ports report, what can sense at them, and which drawings are refused.""
 import numpy as np
 import pytest
 
-from networks import component_line, graph_node, graph_pipe, graph_signal, solve_graph
+from networks import neutral_graph, component_line, graph_node, graph_pipe, graph_signal, solve_graph
 from simulation.equipment.base_node import total_of
 from simulation.equipment.component_link import canvas_id
 from simulation.equipment.orifice import Orifice
@@ -75,19 +75,19 @@ def _two_pipes_on_port_0():
 
 
 @pytest.mark.parametrize("build, message", [
-    pytest.param(lambda: _edit(component_line("orifice"), "e1", sourceHandle="inlet-0"), "joins two", id="pipe_from_a_role_inlet"),
-    pytest.param(lambda: _edit(component_line("orifice"), "e2", targetHandle="outlet-0"), "joins two", id="pipe_to_a_role_outlet"),
+    pytest.param(lambda: _edit(component_line("linear_control_valve"), "e2", sourceHandle="inlet-0"), "joins two", id="pipe_from_a_role_inlet"),
+    pytest.param(lambda: _edit(component_line("linear_control_valve"), "e1", targetHandle="outlet-0"), "joins two", id="pipe_to_a_role_outlet"),
     pytest.param(_two_pipes_on_port_0, "takes one pipe", id="two_pipes_on_one_port"),
 ])
 def test_drawings_a_component_port_cannot_take_are_refused(build, message):
     with pytest.raises(ModelInputError, match=message):
-        GraphParser.parse_graph(ReactFlowGraph(**build()))
+        GraphParser.parse_graph(neutral_graph(**build()))
 
 
 def _pilot_graph(port):
     """12.2 bara through a 30 mm plate to a header with a free-discharge line: the plate's two ports lie either
     side of the 10 barg set pressure of the pilot relief valve on the header, so its lift shows the port it reads."""
-    return {"nodes": [graph_node("src", "pressure_source", {"source_pressure_bara": 12.2}),
+    return {"nodes": [graph_node("src", "pressure_boundary", {"set_pressure_bara": 12.2}),
                       graph_node("c", "orifice", {"orifice_diameter_m": 0.03}),
                       graph_node("sp", "junction", {"num_ports": 3}),
                       graph_node("t", "tank", {"level_m": 0.0}), graph_node("drain", "tank", {"level_m": 0.0}),

@@ -18,11 +18,11 @@ import DraftNumberInput from '../common/DraftNumberInput';
 import { clickableProps } from '../../utils/a11yProps';
 const categorizedEquipment = [
   {
-    name: 'Fluid Sources',
+    name: 'Boundaries',
     items: [
       { type: 'tank', label: 'Tank', description: '' },
-      { type: 'pressure_source', label: 'Pressure Source', description: 'Constant Pressure Boundary' },
-      { type: 'flow_source', label: 'Flow Source', description: 'Constant Flow Boundary' },
+      { type: 'pressure_boundary', label: 'Pressure Boundary', description: 'Constant Pressure' },
+      { type: 'flow_boundary', label: 'Flow Boundary', description: 'Constant Flow' },
     ]
   },
   {

@@ -31,7 +31,7 @@ There is one equation per unknown:
 
 $$r_i = 5 \cdot \frac{\sum w_j q_{\text{in}} - \sum w_j q_{\text{out}}}{q_{\text{scale}}} + 10^{-9}\, \frac{p_i}{p_{\text{scale}}} = 0, \qquad w_j = \frac{\rho_j}{\bar\rho}$$
 
-The node conserves mass flow $\rho_j q_j$. $\rho_j$ is the density of edge $j$ at the end where it enters the next node, in the flow direction of the last property propagation (`_edge_weights`), the density that node mixes with, held fixed during each hydraulic solve like the densities of the edge rows; $\bar\rho$ is the mean edge density, so the row keeps the size and tolerance of a volume flow row. Before the first propagation all ports have the same default density and $w_j = 1$. Where a node changes or mixes temperatures the volume flow changes: water heated from 10 to 80 °C leaves with about 2.8 % more volume flow than it enters. The factor 5 balances the row against the pressure rows. The $10^{-9}$ term keeps the matrix from becoming exactly singular for a floating node. A flow source replaces its mass balance with $p_i = P_{\text{atm}}$, see [flow_source.md](flow_source.md).
+The node conserves mass flow $\rho_j q_j$. $\rho_j$ is the density of edge $j$ at the end where it enters the next node, in the flow direction of the last property propagation (`_edge_weights`), the density that node mixes with, held fixed during each hydraulic solve like the densities of the edge rows; $\bar\rho$ is the mean edge density, so the row keeps the size and tolerance of a volume flow row. Before the first propagation all ports have the same default density and $w_j = 1$. Where a node changes or mixes temperatures the volume flow changes: water heated from 10 to 80 °C leaves with about 2.8 % more volume flow than it enters. The factor 5 balances the row against the pressure rows. The $10^{-9}$ term keeps the matrix from becoming exactly singular for a floating node. A flow boundary replaces its mass balance with $p_i = P_{\text{atm}}$, see [flow_boundary.md](flow_boundary.md).
 
 **Pressure balance, one row per edge** from node $s$ to node $t$:
 
@@ -45,14 +45,14 @@ Scales: $p_{\text{scale}} = 10^5$ Pa, $q_{\text{scale}} = 10^{-3}$ m³/s.
 
 The component sets the outlet pressure $P_{\text{out},s}$ from its inlet pressure and its **inlet volume flow** $q = f_j\, q_j$: the mass flow of the edge $j$ that leaves it, divided by the density on its inlet port ($f_j = \rho_j / \rho_{\text{in}}$, `_edge_weights`). Inlet and outlet volume flows differ where the component changes the density (section 3.1). The inlet is the one place every component curve is evaluated, in the solve, its Jacobian, the report, the property pass (heat, `calculate()`) and the controllers: a pump displaces suction volume, and the valve and orifice equations take the flow at upstream conditions. A component must therefore read its flow from the inlet port, never from the outlet port. Flow and density always come from the same port, so $\rho\, q$ is the edge mass flow. In reverse flow the fluid enters at the outlet port. The solver therefore takes $\rho$ and $\mu$ from `upstream_fluid()`: the inlet port, or the outlet port when the flow runs backwards.
 
-An `InlineNode` (orifice, calibrated restriction, filter) has two neutral ports and no inlet or outlet. It is no node of the solve. The parser makes it a [component link](component_link.md) between two hidden junctions at its ports, which evaluates it at the port the flow enters by; its `calculate()` raises.
+A `NeutralPortNode` (junction, tank, pressure boundary) has 1 to 8 neutral ports; the parser gives each connected port an inlet or outlet slot from the drawn pipe direction. An `InlineNode` (orifice, calibrated restriction, filter) has two neutral ports and no inlet or outlet. It is no node of the solve. The parser makes it a [component link](component_link.md) between two hidden junctions at its ports, which evaluates it at the port the flow enters by; its `calculate()` raises.
 
 | Component kind | Outlet pressure |
 | :--- | :--- |
 | Resistance (valve, orifice, filter, ...) | $P_{\text{out}} = p_{\text{in}} - \Delta P(q, \rho, \mu)$ from `calculate_delta_p` |
 | Pump | $P_{\text{out}} = p_{\text{in}} + \Delta P(q, \rho, \mu)$ (a pressure rise) |
 | Junction, measure point, plain node | $P_{\text{out}} = p_{\text{in}}$ (no `calculate_delta_p`) |
-| Pressure boundary (tank, pressure source) | Fixed: the value returned by `calculate()` |
+| Pressure boundary (tank, pressure boundary) | Fixed: the value returned by `calculate()` |
 | MCP component (check valves, relief devices) | Complementarity row, see 3.4 |
 
 $\rho$ and $\mu$ are the values held on the component's upstream port (`upstream_fluid()`). They are constant during one Newton solve and updated between solves (section 4).
@@ -67,6 +67,7 @@ The solver builds a sparse Jacobian. The derivative of a pressure row with respe
 | :--- | :--- |
 | Pipe $\partial \Delta P_{\text{pipe,0}} / \partial q$ | `Pipe.stagnation_dp_derivative`, floored at $10^{-3}$ Pa·s/m³ |
 | Pump $\partial \Delta P / \partial q$ | the pump's `calculate_dp_derivative` (volumetric pump: `outlet_derivatives`) |
+| Flow boundary spring | `FlowBoundary.calculate_dp_derivative` ($k$ inside its pressure limits, 0 on a limit) |
 | Other resistances | central difference of the node outlet pressure, step $h = \max(10^{-12}, 10^{-4} |q|)$ m³/s |
 | MCP rows | central difference of the whole row residual |
 
@@ -93,9 +94,9 @@ Every side of a node holds one **total** pressure $p_0 = p + \rho v^2/2$. Where 
 
 - **Components** drop or raise the total pressure. A valve or orifice between two pipes of one size drops the static pressure by the same amount; a pump's rise is a total head rise (Hydraulic Institute); a reducer drops only its losses ([reducer.md](reducer.md)).
 - **Junctions** (junction, measuring point) pass the total pressure unchanged. They neither gain nor lose energy; a tee loss is not modelled.
-- **Reservoirs** (tank, pressure source) hold fluid at rest: their pressure is a stagnation pressure, and the pipe on them takes the entry or the exit, see [pipe.md](pipe.md#34-entry-from-a-reservoir).
+- **Reservoirs** (tank, pressure boundary) hold fluid at rest: their pressure is a stagnation pressure, and the pipe on them takes the entry or the exit, see [pipe.md](pipe.md#34-entry-from-a-reservoir).
 - **Reported pressures are static.** `_report_static_pressures` sets a port with one pipe to $p_0 - \rho v^2/2$ of that pipe (its velocity and density), and a pipe end on a node likewise. A port or pipe end on a reservoir reports the reservoir pressure. Only flowing pipes count (above `Q_DEAD_LEG`): a port with several flowing pipes has no single velocity and reports $p_0$ (the canvas allows one pipe per port; a hand-built network may have more). A port without flow on a side (inlets or outlets) that has flowing ports of the same total (within 1 Pa) reports the lowest static pressure among them, as a gauge on a dead tee branch reads the run's static pressure; the zero-flow section behind it, or behind a flowing port, drops by the same amount (its pipes and the nodes without flow, up to a reservoir and only between ports of the same total, so not across a closed check or relief valve or a stopped positive-displacement pump; a centrifugal pump passes it with its shutoff head). A section reached from several ports takes the largest drop. The highest reported pressure (`max_pressure_bar`) is therefore a static pressure. Each port keeps its total in `total_pressure` (read with `total_of`).
-- **What compares with which:** pressure controllers hold the static pressure they sense, as a gauge reads it. Relief devices compare total pressures, in the solve and between solves, so the held state and the solved flow agree; a closed device passes no flow, and at its set point both are equal. NPSHa uses the total suction pressure. Pump shaft power, motor load and the discharge pressure caps (volumetric pump, flow source) use the total pressures the solve uses.
+- **What compares with which:** pressure controllers hold the static pressure they sense, as a gauge reads it. Relief devices compare total pressures, in the solve and between solves, so the held state and the solved flow agree; a closed device passes no flow, and at its set point both are equal. NPSHa uses the total suction pressure. Pump shaft power, motor load and the discharge pressure caps (volumetric pump, flow boundary) use the total pressures the solve uses.
 
 ## 4. Thermal & Energy Balance
 
@@ -137,7 +138,7 @@ Once the temperatures change by less than 0.05 K between outer iterations, $\max
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | Label | text | `self.name` | - | `<type>_<id>` | any | Name shown in results and messages |
 | Active | bool | `self.active` | - | `true` | `true` / `false` | Component in service; effect per component (section 6) |
-| Ramp during relief analysis | bool | `self.relief_ramp_enabled` | - | `true` | `true` / `false` | A driver (pump, source; not a withdrawing flow source) takes part in the relief ramp |
+| Ramp during relief analysis | bool | `self.relief_ramp_enabled` | - | `true` | `true` / `false` | A driver (pump, supply; not a drawing flow boundary) takes part in the relief ramp |
 
 ### 5.1 Field naming rule
 
@@ -163,18 +164,18 @@ Each equipment document has a **Data Fields** section listing what the parser re
 - **One volume flow per pipe:** each edge carries one mass flow and reports its volume flow at the density where it enters the next node. A pipe whose temperature changes along its length does not model its own thermal expansion.
 - **No elevation along the network:** components and pipes have no height. Static head enters only through the tank level and elevation, see [tank.md](tank.md).
 - **Solver flags** (defaults on the base class):
-  - `is_pressure_boundary = False` — `True` fixes the node pressure to `calculate()` (tank, pressure source).
+  - `is_pressure_boundary = False` — `True` fixes the node pressure to `calculate()` (tank, pressure boundary).
   - `blocks_flow_on_shutdown = False` — `True` removes the component from the solve when it is inactive (positive displacement pump).
   - `use_mcp_formulation = False` — `True` gives the complementarity row of section 3.4.
   - `is_relief_driver = False` — `True` when `apply_relief_ramp` scales the component in the relief analysis.
 - **Inactive components:** `active = false` means the component is out of service. What that means is defined per component (a stopped centrifugal pump is a resistance, a stopped volumetric pump blocks, a heat exchanger stops transferring heat).
 - **Topology pruning** before each run (`prune_topology`):
   - stopped blocking pumps and forced-closed relief devices are removed with their edges;
-  - only nodes connected to a pressure boundary or a flow source are solved;
+  - only nodes connected to a pressure boundary or a flow boundary are solved;
   - dead ends (non-boundary nodes with at most one edge) are removed repeatedly.
-- **Islands:** a connected circuit of two or more nodes without a tank, pressure source or flow source has no defined pressure level. The solve stops with a message naming it.
+- **Islands:** a connected circuit of two or more nodes without a tank, pressure boundary or flow boundary has no defined pressure level. The solve stops with a message naming it.
 - **Pressures without flow:** removed dead legs and sections shut in by blocking devices get their pressure at zero flow from their neighbours (`_fill_pruned_pressures`, `_assign_stagnant_pressures`). Pumps keep their shutoff head, regulators their lock-up pressure. Their ports are flagged `stagnant`.
-- **Temperatures without flow:** a port with $|Q| \le$ `Q_DEAD_LEG` (1e-9 m³/s, where the flow sign is solver noise) carries no fluid, so it takes the temperature of the nearest seed, walking through stagnant ports only (`_fill_stagnant_temperatures`, end of each property propagation). Seeds are the ports of a pressure boundary or flow source, and the ports of a node with flow (a stagnant port of such a node takes its leaving temperature). Equally near seeds are ranked boundaries first, then by node name and id; seeds are never overwritten. A stagnant pipe has one temperature; crossing a stagnant node counts as one step, so each side of a closed check valve takes the temperature of its own neighbour. Density and viscosity are evaluated at that temperature with the system fluid, also next to a tank that holds its own fluid. No heat loss to ambient is modelled.
+- **Temperatures without flow:** a port with $|Q| \le$ `Q_DEAD_LEG` (1e-9 m³/s, where the flow sign is solver noise) carries no fluid, so it takes the temperature of the nearest seed, walking through stagnant ports only (`_fill_stagnant_temperatures`, end of each property propagation). Seeds are the ports of a pressure boundary or flow boundary, and the ports of a node with flow (a stagnant port of such a node takes its leaving temperature). Equally near seeds are ranked boundaries first, then by node name and id; seeds are never overwritten. A stagnant pipe has one temperature; crossing a stagnant node counts as one step, so each side of a closed check valve takes the temperature of its own neighbour. Density and viscosity are evaluated at that temperature with the system fluid, also next to a tank that holds its own fluid. No heat loss to ambient is modelled.
 - **Operating cases:** `GraphParser.resolve_graph_for_case` merges the active case's node overrides into the node's `data` (and its global setting overrides) before the parser builds the components. Every field in a **Data Fields** table can therefore be overridden per case.
 
 ## 7. Verification & Benchmarks

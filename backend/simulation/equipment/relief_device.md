@@ -99,8 +99,8 @@ A network with relief devices runs three kinds of solves. All are steady states;
 | :--- | :--- |
 | Centrifugal pump | affinity laws: $Q_r \lambda$, $H \lambda^2$ |
 | Volumetric pump | displacement $\lambda Q_r$ |
-| Pressure source | $P_{\text{atm}} + \lambda (P_{\text{set}} - P_{\text{atm}})$ |
-| Flow source | $\lambda Q_{\text{set}}$ |
+| Pressure boundary | $P_{\text{atm}} + \lambda (P_{\text{set}} - P_{\text{atm}})$ |
+| Flow boundary (supply) | $\lambda Q_{\text{set}}$ |
 
 Reported pressures (bar(a), the maximum over all ports):
 
@@ -138,7 +138,7 @@ Shared inputs (the component documents list the full tables):
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | Set Pressure / Burst Pressure | barg (psig) | `self.set_pressure_barg` | barg (→ Pa abs) | required | $> 0$ | Opening pressure, gauge |
 | Forced state | text | `self.forced_state` | - | auto | auto, forced_open, forced_closed | Contingency override |
-| Ramp during relief analysis | bool | `self.relief_ramp_enabled` | - | true | - | On the drivers (pumps, sources; not a withdrawing flow source), not on the device (see [base_node.md](base_node.md)) |
+| Ramp during relief analysis | bool | `self.relief_ramp_enabled` | - | true | - | On the drivers (pumps, supplies; not a drawing flow boundary), not on the device (see [base_node.md](base_node.md)) |
 
 ## 6. Operating Modes & Model Boundaries
 
@@ -163,7 +163,7 @@ Shared inputs (the component documents list the full tables):
 | `test_relief_devices.py::test_open_device_without_flow_is_not_reported_closed` | An open disc without flow is not reported intact; utilisation 0 % |
 | `backend/tests/scenarios/test_relief_peak.py::test_ramp_scales_and_restores_drivers` | Pump at $\lambda$ = 0.5: shutoff head $30 \cdot 1.2 \cdot 0.25$ m, flow halved, curve shape kept; restored afterwards; source ramp $P_{\text{atm}} + 5$ bar |
 | `test_relief_peak.py::test_pop_psv_opening_snapshot_is_at_set_pressure` | Opening snapshot inlet at 4.0 bar(a) within 10 mbar, at the expected ramp within 0.5 %; relieved between set and set + 10 %; unmitigated above peak |
-| `test_relief_peak.py::test_rupture_disc_on_pressure_source` | Disc on a pressure source: opening at 5.0 bar(a) within 10 mbar, ramp within 0.2 % |
+| `test_relief_peak.py::test_rupture_disc_on_pressure_boundary` | Disc on a pressure boundary: opening at 5.0 bar(a) within 10 mbar, ramp within 0.2 % |
 | `test_relief_peak.py::test_staggered_devices_open_in_order` | Two devices open in order at 4.0 and 6.0 bar(a) within 10 mbar; peak at least 5.98 bar(a) |
 | `test_relief_peak.py::test_no_enabled_driver_reports_peak_unavailable`, `test_no_opening_peak_equals_relieved` | No ramped driver: peak unavailable with a reason; no opening: peak = relieved |
 | `backend/tests/unit/solver/test_stagnant_branches.py::test_leakage_alone_does_not_open_a_psv_in_the_relief_passes` | A stagnant section's pressure does not lift a held PSV |

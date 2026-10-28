@@ -1,5 +1,6 @@
 
-from physics_refs import water_head
+from physics_refs import build_network, water_head
+from networks import neutral_graph
 from simulation.equipment.base_node import total_of
 from simulation.equipment.tank import Tank
 from simulation.equipment.centrifugal_pump import CentrifugalPump
@@ -25,7 +26,7 @@ def test_psv_pop_action_cracking():
         {"id": "e3", "source": "psv", "target": "t2", "pipe": pipe3}
     ]
 
-    net = HydraulicNetwork(nodes=nodes, edges=edges)
+    net = build_network(nodes=nodes, edges=edges)
     solver = NetworkSolver(net)
     stats = solver.solve()
 
@@ -56,7 +57,7 @@ def test_psv_unmitigated_higher_pressure():
         {"id": "e3", "source": "psv", "target": "t2", "pipe": pipe3}
     ]
 
-    net = HydraulicNetwork(nodes=nodes, edges=edges)
+    net = build_network(nodes=nodes, edges=edges)
     solver = NetworkSolver(net)
 
     # 1. Unmitigated pass (PSV forced closed)
@@ -89,7 +90,7 @@ def test_psv_modulating_and_pop_latching():
         {"id": "e3", "source": "psv", "target": "t2", "pipe": pipe3}
     ]
 
-    net = HydraulicNetwork(nodes=nodes, edges=edges)
+    net = build_network(nodes=nodes, edges=edges)
     solver = NetworkSolver(net)
 
     # Modulating test: lift linear from set (2.5 barg) to full lift at +10 % (2.75 barg)
@@ -120,7 +121,7 @@ import pytest
 
 from physics_refs import solve
 from routers.simulation import extract_telemetry
-from simulation.equipment.pressure_source import PressureSource
+from simulation.equipment.pressure_boundary import PressureBoundary
 from simulation.fluid_utils import FluidProperties
 from simulation.graph_parser import GraphParser
 from simulation.schemas import GlobalSettings, ReactFlowGraph
@@ -133,7 +134,7 @@ BIG = 0.2   # DN200: pipe losses negligible against the valve
 
 def _header_psv_tank(psv, header_barg, tank_level_m=0.0, outlet_pipe=(1.0, BIG)):
     """Header (fixed pressure) → PSV → tank; the tank level sets the superimposed backpressure."""
-    nodes = {"src": PressureSource("Header", source_pressure=P_ATM + header_barg * 1e5), "psv": psv,
+    nodes = {"src": PressureBoundary("Header", set_pressure=P_ATM + header_barg * 1e5), "psv": psv,
              "t": Tank("Drain", fluid_level=tank_level_m)}
     edges = [
         {"id": "e1", "source": "src", "target": "psv", "pipe": Pipe("p1", 1.0, BIG)},
@@ -148,7 +149,7 @@ def _relief_run(nodes, edges):
         n.global_settings = gs
     for e in edges:
         e["pipe"].global_settings = gs
-    net = HydraulicNetwork(nodes=nodes, edges=edges)
+    net = build_network(nodes=nodes, edges=edges)
     stats, tel, _, _, _ = run_sequential_relief_simulation(net, NetworkSolver(net), extract_telemetry)
     assert stats["success"]
     return tel
@@ -204,10 +205,10 @@ def _pilot_graph(with_line: bool, valve_type: str = "pilot"):
     if with_line:
         edges.append({"id": "s1", "source": "sp", "sourceHandle": "signal-port-0", "target": "psv",
                       "targetHandle": "signal-in", "data": {"type": "SIGNAL"}})
-    return ReactFlowGraph(
+    return neutral_graph(
         nodes=[
-            {"id": "src", "type": "pressure_source", "position": {"x": 0, "y": 0},
-             "data": {"label": "S", "source_pressure_bara": 10.5 + P_ATM / 1e5}},
+            {"id": "src", "type": "pressure_boundary", "position": {"x": 0, "y": 0},
+             "data": {"label": "S", "set_pressure_bara": 10.5 + P_ATM / 1e5}},
             {"id": "sp", "type": "junction", "position": {"x": 0, "y": 0}, "data": {"label": "SP"}},
             {"id": "psv", "type": "pressure_safety_valve", "position": {"x": 0, "y": 0},
              "data": {"label": "PSV", "set_pressure_barg": 10.0, "cv": 1.0, "action_mode": "modulating",
@@ -248,7 +249,7 @@ def _example(edits=None, case_prefix=None):
         n["data"].update((edits or {}).get(n["id"], {}))
     if case_prefix:
         data["active_case_id"] = next(c["id"] for c in data["cases"] if c["name"].startswith(case_prefix))
-    net = GraphParser.parse_graph(ReactFlowGraph(**data))
+    net = GraphParser.parse_graph(neutral_graph(**data))
     stats, _, _, _, _ = run_sequential_relief_simulation(net, NetworkSolver(net), extract_telemetry)
     assert stats["success"]
     return net
@@ -313,7 +314,7 @@ def test_closed_valve_sees_the_header_pressure_of_a_relieving_neighbour():
     from networks import make_junction
     a = PressureSafetyValve("A", set_pressure_barg=5.0, cv=2.0, action_mode="modulating", valve_type="balanced_bellows")
     b = PressureSafetyValve("B", set_pressure_barg=10.0, cv=2.0, action_mode="modulating", valve_type="balanced_bellows")
-    nodes = {"sa": PressureSource("SA", source_pressure=P_ATM + 6e5), "sb": PressureSource("SB", source_pressure=P_ATM + 2e5),
+    nodes = {"sa": PressureBoundary("SA", set_pressure=P_ATM + 6e5), "sb": PressureBoundary("SB", set_pressure=P_ATM + 2e5),
              "a": a, "b": b, "hdr": make_junction("Header", 2, 1), "t": Tank("Drain", fluid_level=0.0)}
     edges = [
         {"id": "e1", "source": "sa", "target": "a", "pipe": Pipe("p1", 1.0, BIG)},
@@ -355,7 +356,7 @@ def test_pilot_result_does_not_depend_on_node_order():
 
 def test_pilot_keeps_its_first_sensing_line():
     graph = _pilot_graph(with_line=True)
-    graph.edges.append(graph.edges[-1].model_copy(update={"id": "s2", "source": "src", "sourceHandle": "signal-outlet-0"}))
+    graph.edges.append(graph.edges[-1].model_copy(update={"id": "s2", "source": "src", "sourceHandle": "signal-port-0"}))
     net = GraphParser.parse_graph(graph)
     assert net.nodes["psv"].remote_sensing_config["node_id"] == "sp"
 

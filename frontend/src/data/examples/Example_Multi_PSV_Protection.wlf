@@ -78,7 +78,8 @@
         "rotation": 0,
         "level_m": 2.0,
         "elevation_m": 0.0,
-        "temperature_k": 313.15
+        "temperature_k": 313.15,
+        "num_ports": 1
       }
     },
     {
@@ -242,7 +243,8 @@
         "rotation": 0,
         "level_m": 2.0,
         "elevation_m": 0.0,
-        "temperature_k": 313.15
+        "temperature_k": 313.15,
+        "num_ports": 1
       }
     },
     {
@@ -341,7 +343,7 @@
     {
       "id": "pipe_suction",
       "source": "node_supply_tank",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-0",
       "target": "node_hp_pump",
       "targetHandle": "inlet-0",
       "type": "default",
@@ -679,7 +681,7 @@
       "source": "node_return_junction",
       "sourceHandle": "port-0",
       "target": "node_return_tank",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "type": "default",
       "data": {
         "label": "Common Return",

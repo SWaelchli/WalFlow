@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { validateNetwork, checkNewConnection, normalizeConnection, portsOf, PORTS_BY_TYPE, SAME_ROLE_MESSAGE } from './networkValidation';
+import { validateNetwork, checkNewConnection, normalizeConnection, flipBoundaryEdges, flipBlockedMessage, portsOf, PORTS_BY_TYPE, SAME_ROLE_MESSAGE } from './networkValidation';
 
 const node = (id, type, label) => ({ id, type, position: { x: 0, y: 0 }, data: { label: label || id } });
 const pipe = (id, source, target, sourceHandle = 'outlet-0', targetHandle = 'inlet-0') => (
@@ -12,14 +12,14 @@ const codes = (list) => list.map(f => f.code).sort();
 
 const good = () => ({
   nodes: [node('t1', 'tank'), node('p1', 'centrifugal_pump'), node('t2', 'tank')],
-  edges: [pipe('e1', 't1', 'p1'), pipe('e2', 'p1', 't2')],
+  edges: [pipe('e1', 't1', 'p1', 'port-0'), pipe('e2', 'p1', 't2', 'outlet-0', 'port-0')],
 });
 
 describe('measurement taps and instruments', () => {
   it('a tap is an in-line component and an instrument bubble is not part of the network', () => {
     const d = {
       nodes: [node('t1', 'tank'), node('tap', 'measure_point'), node('t2', 'tank'), node('i', 'instrument')],
-      edges: [pipe('e1', 't1', 'tap', 'outlet-0', 'port-0'), pipe('e2', 'tap', 't2', 'port-1', 'inlet-0'),
+      edges: [pipe('e1', 't1', 'tap', 'port-0', 'port-0'), pipe('e2', 'tap', 't2', 'port-1', 'port-0'),
         { id: 's', source: 'tap', target: 'i', sourceHandle: 'signal-inlet-0', targetHandle: 'signal-in', data: { type: 'SIGNAL' } }],
     };
     const r = validateNetwork(d);
@@ -120,7 +120,7 @@ describe('junction ports', () => {
   });
 
   it('a junction port takes one pipe in total, whichever end of the pipe it is on', () => {
-    const edges = [pipe('a', 't1', 'j', 'outlet-0', 'port-0'), pipe('b', 'j', 't2', 'port-1', 'inlet-0')];
+    const edges = [pipe('a', 't1', 'j', 'port-0', 'port-0'), pipe('b', 'j', 't2', 'port-1', 'port-0')];
     expect(checkNewConnection(edges, c('f', 'outlet-0', 'j', 'port-0')).ok).toBe(false);   // port-0 is a pipe target
     expect(checkNewConnection(edges, c('j', 'port-0', 'f', 'inlet-0')).ok).toBe(false);    // as a source
     expect(checkNewConnection(edges, c('f', 'outlet-0', 'j', 'port-1')).ok).toBe(false);   // port-1 is a pipe source
@@ -135,7 +135,148 @@ describe('junction ports', () => {
     expect(ids(8)).toEqual(Array.from({ length: 8 }, (_, k) => `port-${k}`));
     expect(ids(undefined)).toHaveLength(3);
     expect(ids(20)).toHaveLength(8);
-    expect(portsOf({ type: 'tank' })).toEqual({ either: [], inlets: ['inlet-0'], outlets: ['outlet-0'] });
+    expect(portsOf({ type: 'tank' })).toEqual({ either: ['port-0'], inlets: [], outlets: [] });
+  });
+});
+
+describe('flow boundary direction', () => {
+  const fb = (direction) => ({ ...node('b', 'flow_boundary'), data: { label: 'b', flow_direction: direction } });
+  const c = (source, sourceHandle, target, targetHandle) => ({ source, sourceHandle, target, targetHandle });
+
+  it.each([
+    ['supply: drawn out of the boundary is kept', 'supply', c('b', 'port-0', 'f', 'inlet-0'), false],
+    ['supply: drawn into the boundary is swapped', 'supply', c('f', 'inlet-0', 'b', 'port-0'), true],
+    ['draw: drawn into the boundary is kept', 'draw', c('f', 'outlet-0', 'b', 'port-0'), false],
+    ['draw: drawn out of the boundary is swapped', 'draw', c('b', 'port-0', 'f', 'outlet-0'), true],
+    ['no direction counts as supply', undefined, c('f', 'inlet-0', 'b', 'port-0'), true],
+  ])('%s', (_name, direction, conn, flips) => {
+    const r = normalizeConnection([fb(direction), node('f', 'filter')], conn);
+    expect(r.ok).toBe(true);
+    expect(r.connection).toEqual(flips ? c(conn.target, conn.targetHandle, conn.source, conn.sourceHandle) : conn);
+  });
+
+  it('flipBoundaryEdges turns only the hydraulic pipes of that node and keeps signal lines and other pipes', () => {
+    const edges = [
+      pipe('a', 'b', 'f', 'port-0', 'inlet-0'),
+      pipe('c', 'x', 'b', 'outlet-0', 'port-1'),
+      pipe('other', 'x', 'f'),
+      { id: 's', source: 'b', target: 'i', sourceHandle: 'signal-port-0', targetHandle: 'signal-in', data: { type: 'SIGNAL' } },
+    ];
+    const out = flipBoundaryEdges(edges, 'b');
+    expect(out[0]).toMatchObject({ source: 'f', sourceHandle: 'inlet-0', target: 'b', targetHandle: 'port-0' });
+    expect(out[1]).toMatchObject({ source: 'b', sourceHandle: 'port-1', target: 'x', targetHandle: 'outlet-0' });
+    expect(out[2]).toBe(edges[2]);
+    expect(out[3]).toBe(edges[3]);
+  });
+
+  it('flipBoundaryEdges drops the stale results of a turned pipe only', () => {
+    const tele = { inlet: { flow_rate: 1 } };
+    const edges = [
+      { ...pipe('a', 'b', 'f'), data: { type: 'PIPE', telemetry: tele } },
+      { ...pipe('other', 'x', 'f'), data: { type: 'PIPE', telemetry: tele } },
+    ];
+    const out = flipBoundaryEdges(edges, 'b');
+    expect(out[0].data).toEqual({ type: 'PIPE' });
+    expect(out[1].data.telemetry).toBe(tele);
+  });
+
+  const fbDir = (direction) => ({ ...node('b', 'flow_boundary', 'FB1'), data: { label: 'FB1', flow_direction: direction } });
+  const dirErrors = (direction, edge) => validateNetwork({ nodes: [fbDir(direction), node('f', 'filter'), node('t', 'tank')], edges: [edge] })
+    .errors.filter(f => f.code === 'flow_boundary_direction');
+
+  it.each([
+    ['draw boundary as pipe source', 'draw', pipe('e', 'b', 't', 'port-0', 'port-0'), /draws flow, so its pipes must run into it/],
+    ['supply boundary as pipe target', 'supply', pipe('e', 't', 'b', 'port-0', 'port-0'), /supplies flow, so its pipes must run out of it/],
+    ['missing direction counts as supply', undefined, pipe('e', 't', 'b', 'port-0', 'port-0'), /supplies flow/],
+  ])('direction error: %s', (_name, direction, edge, message) => {
+    const [f, ...rest] = dirErrors(direction, edge);
+    expect(rest).toEqual([]);
+    expect(f).toMatchObject({ severity: 'error', nodeIds: ['b'], edgeIds: ['e'] });
+    expect(f.message).toMatch(message);
+    expect(f.message).toMatch(/^Flow boundary 'FB1'/);
+  });
+
+  it.each([
+    ['supply out of the boundary', 'supply', pipe('e', 'b', 't', 'port-0', 'port-0')],
+    ['missing direction out of the boundary', undefined, pipe('e', 'b', 't', 'port-0', 'port-0')],
+    ['draw into the boundary', 'draw', pipe('e', 't', 'b', 'port-0', 'port-0')],
+    ['signal line on a boundary is not checked', 'draw',
+      { id: 'e', source: 'b', target: 't', sourceHandle: 'signal-port-0', targetHandle: 'signal-in', data: { type: 'SIGNAL' } }],
+  ])('no direction error: %s', (_name, direction, edge) => {
+    expect(dirErrors(direction, edge)).toEqual([]);
+  });
+
+  describe('flipBlockedMessage', () => {
+    const nodes = [fbDir('supply'), node('pump', 'centrifugal_pump', 'Pump 1'), node('f', 'filter'), node('t', 'tank'), node('j', 'junction'),
+      { id: 'v', type: 'check_valve', data: {} }];
+    const sig = { id: 's', source: 'b', target: 'pump', sourceHandle: 'signal-port-0', targetHandle: 'inlet-0', data: { type: 'SIGNAL' } };
+
+    it.each([
+      ['feeds a pump inlet', [pipe('e', 'b', 'pump', 'port-0', 'inlet-0')],
+        "Cannot switch 'FB1' to draw: its pipe feeds the inlet of 'Pump 1'. Reconnect it first."],
+      ['is fed by a pump outlet', [pipe('e', 'pump', 'b', 'outlet-0', 'port-0')],
+        "Cannot switch 'FB1' to draw: its pipe is fed by the outlet of 'Pump 1'. Reconnect it first."],
+      ['name falls back to the id', [pipe('e', 'b', 'v', 'port-0', 'inlet-0')],
+        "Cannot switch 'FB1' to draw: its pipe feeds the inlet of 'v'. Reconnect it first."],
+      ['first blocking pipe wins after neutral and signal ones',
+        [pipe('n', 'b', 't', 'port-0', 'port-0'), sig, pipe('e', 'pump', 'b', 'outlet-0', 'port-1')],
+        "Cannot switch 'FB1' to draw: its pipe is fed by the outlet of 'Pump 1'. Reconnect it first."],
+      ['neutral far ends do not block',
+        [pipe('a', 'b', 't', 'port-0', 'port-0'), pipe('c', 'j', 'b', 'port-1', 'port-1'), pipe('d', 'b', 'f', 'port-2', 'port-0')], null],
+      ['signal lines and unrelated pipes are ignored', [sig, pipe('e', 'pump', 't', 'outlet-0', 'port-0')], null],
+    ])('%s', (_name, edges, expected) => {
+      expect(flipBlockedMessage(nodes, edges, 'b', 'draw')).toBe(expected);
+    });
+
+    it('names a component by label, then tag, then id', () => {
+      const tagged = { id: 'n1', type: 'centrifugal_pump', data: { tag: 'P-7' } };
+      const out = flipBlockedMessage([fbDir('supply'), tagged], [pipe('e', 'b', 'n1', 'port-0', 'inlet-0')], 'b', 'draw');
+      expect(out).toMatch(/of 'P-7'/);
+    });
+  });
+});
+
+describe('boundary ports', () => {
+  const withPorts = (type, numPorts) => ({
+    nodes: [{ ...node('b', type), data: { label: 'b', num_ports: numPorts } }, node('t', 'tank')],
+    edges: [pipe('a', 'b', 't', 'port-0', 'port-0')],
+  });
+
+  it.each(['tank', 'pressure_boundary', 'flow_boundary'])('%s accepts 1 to 8 ports, rejects 0 and 9', (type) => {
+    [undefined, 1, 4, 8].forEach(k => expect(codes(validateNetwork(withPorts(type, k)).errors), `${k}`).toEqual([]));
+    [0, 9].forEach(k => expect(codes(validateNetwork(withPorts(type, k)).errors), `${k}`).toEqual(['invalid_num_ports']));
+    expect(portsOf({ type, data: { num_ports: 3 } }).either).toEqual(['port-0', 'port-1', 'port-2']);
+  });
+
+  it('a junction still needs 3 to 8 ports', () => {
+    expect(codes(validateNetwork(withPorts('junction', 2)).errors)).toEqual(['invalid_num_ports']);
+    expect(codes(validateNetwork(withPorts('junction', 3)).errors)).toEqual([]);
+  });
+
+  const split = (flowSplit, pipes, numPorts = 3) => ({
+    nodes: [{ ...node('b', 'flow_boundary'), data: { label: 'FB-1', num_ports: numPorts, flow_split: flowSplit } },
+      node('t1', 'tank'), node('t2', 'tank'), node('t3', 'tank')],
+    edges: [pipe('a', 'b', 't1', 'port-0', 'port-0'), pipe('b', 'b', 't2', 'port-1', 'port-0'), pipe('c', 'b', 't3', 'port-2', 'port-0')].slice(0, pipes),
+  });
+
+  it.each([
+    ['total_split', 2, true],
+    ['per_port', 1, false],
+    ['total_split', 3, false],
+    ['common_pressure', 2, false],
+    [undefined, 2, false],
+    ['per_port', 0, false],
+  ])('flow_split %s with %s pipes on 3 ports: port-open error is %s', (flowSplit, pipes, raised) => {
+    const r = validateNetwork(split(flowSplit, pipes));
+    expect(r.errors.filter(f => f.code === 'flow_split_port_open')).toHaveLength(raised ? 1 : 0);
+    if (raised) expect(r.errors.find(f => f.code === 'flow_split_port_open').message).toMatch(new RegExp(`Port ${pipes + 1} has no pipe`));
+  });
+
+  it('warns about a sensing line from an unpiped boundary port', () => {
+    const d = split('common_pressure', 1);
+    d.nodes.push(node('i', 'instrument'));
+    d.edges.push({ id: 's', source: 'b', target: 'i', sourceHandle: 'signal-port-2', targetHandle: 'signal-in', data: { type: 'SIGNAL' } });
+    expect(validateNetwork(d).warnings.filter(f => f.code === 'signal_port_unpiped')).toHaveLength(1);
   });
 });
 
@@ -165,7 +306,7 @@ describe('validateNetwork', () => {
   it('reports two pipes on one port as an error pointing to a junction', () => {
     const d = good();
     d.nodes.push(node('t3', 'tank'));
-    d.edges.push(pipe('e3', 't3', 'p1'));
+    d.edges.push(pipe('e3', 't3', 'p1', 'port-0'));
     const r = validateNetwork(d);
     expect(codes(r.errors)).toEqual(['port_shared']);
     expect(r.errors[0].edgeIds.sort()).toEqual(['e1', 'e3']);
@@ -174,7 +315,7 @@ describe('validateNetwork', () => {
 
   it('reports a pipe on a port the component does not have', () => {
     const d = good();
-    d.edges[0] = pipe('e1', 't1', 'p1', 'outlet-0', 'inlet-3');
+    d.edges[0] = pipe('e1', 't1', 'p1', 'port-0', 'inlet-3');
     expect(codes(validateNetwork(d).errors)).toEqual(['invalid_port']);
   });
 
@@ -187,7 +328,7 @@ describe('validateNetwork', () => {
   it('warns about an open outlet (orifice port left open)', () => {
     const d = {
       nodes: [node('t1', 'tank'), node('o1', 'orifice')],
-      edges: [pipe('e1', 't1', 'o1', 'outlet-0', 'port-0')],
+      edges: [pipe('e1', 't1', 'o1', 'port-0', 'port-0')],
     };
     const r = validateNetwork(d);
     expect(r.errors).toEqual([]);
@@ -198,7 +339,7 @@ describe('validateNetwork', () => {
   it('does not warn about unused tank ports or a vented relief outlet', () => {
     const d = {
       nodes: [node('t1', 'tank'), node('r1', 'pressure_safety_valve')],
-      edges: [pipe('e1', 't1', 'r1')],
+      edges: [pipe('e1', 't1', 'r1', 'port-0')],
     };
     expect(validateNetwork(d)).toEqual({ errors: [], warnings: [] });
   });
@@ -247,15 +388,16 @@ describe('validateNetwork', () => {
     const d = {
       nodes: [node('t1', 'tank'), jn, node('t2', 'tank'), node('t3', 'tank')],
       edges: [
-        pipe('a', 't1', 'j', 'outlet-0', 'port-0'),   // into the junction
-        pipe('b', 'j', 't2', 'port-1', 'inlet-0'),    // out of it
-        pipe('c', 't3', 'j', 'outlet-0', 'port-2'),
+        pipe('a', 't1', 'j', 'port-0', 'port-0'),   // into the junction
+        pipe('b', 'j', 't2', 'port-1', 'port-0'),    // out of it
+        pipe('c', 't3', 'j', 'port-0', 'port-2'),
       ],
     };
     const r = validateNetwork(d);
     expect(r.errors).toEqual([]);
     expect(r.warnings).toEqual([]);   // Port 4 (port-3) is unused, which is normal for a junction
-    d.edges.push(pipe('x', 'j', 't1', 'port-4', 'inlet-0'));
+    d.nodes.push(node('t4', 'tank'));
+    d.edges.push(pipe('x', 'j', 't4', 'port-4', 'port-0'));
     const bad = validateNetwork(d).errors;
     expect(codes(bad)).toEqual(['invalid_port']);
     expect(bad[0].message).toMatch(/Port 5/);   // 1-based, not "port-4"
@@ -265,7 +407,7 @@ describe('validateNetwork', () => {
   it('two pipes on one junction port are an error even when they run in opposite directions', () => {
     const d = {
       nodes: [node('t1', 'tank'), node('j', 'junction'), node('t2', 'tank')],
-      edges: [pipe('a', 't1', 'j', 'outlet-0', 'port-0'), pipe('b', 'j', 't2', 'port-0', 'inlet-0')],
+      edges: [pipe('a', 't1', 'j', 'port-0', 'port-0'), pipe('b', 'j', 't2', 'port-0', 'port-0')],
     };
     const r = validateNetwork(d);
     expect(codes(r.errors)).toEqual(['port_shared']);
@@ -279,7 +421,7 @@ describe('validateNetwork', () => {
     );
     const diagram = (port) => ({
       nodes: [node('t1', 'tank'), jn, node('t2', 'tank'), node('i', 'instrument')],
-      edges: [pipe('a', 't1', 'j', 'outlet-0', 'port-0'), pipe('b', 'j', 't2', 'port-1', 'inlet-0'), sense(port)],
+      edges: [pipe('a', 't1', 'j', 'port-0', 'port-0'), pipe('b', 'j', 't2', 'port-1', 'port-0'), sense(port)],
     });
     expect(validateNetwork(diagram(1)).warnings).toEqual([]);
     const r = validateNetwork(diagram(2));
@@ -316,7 +458,7 @@ describe('validateNetwork', () => {
     if (numPorts !== undefined) data.num_ports = numPorts;
     const d = {
       nodes: [node('t1', 'tank'), { ...node('j', 'junction'), data }],
-      edges: [pipe('a', 't1', 'j', 'outlet-0', 'port-0')],
+      edges: [pipe('a', 't1', 'j', 'port-0', 'port-0')],
     };
     const r = validateNetwork(d);
     expect(codes(r.errors)).toEqual(valid ? [] : ['invalid_num_ports']);

@@ -112,7 +112,7 @@ The parser rejects a bore or length $\le 0$ and a negative roughness. Missing va
 - **Solver flags:** all `False` (`is_pressure_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation`).
 - **Inactive:** `active` has no effect.
 - **Reverse flow:** supported. The form loss is odd in $Q$ and switches between contraction and enlargement with the flow direction; the Bernoulli term keeps its sign. Reverse flow through a 3" × 2" reducer is the mirror of forward flow through a 2" × 3" expander: $\Delta P_{\text{reverse}} = -\Delta P_{\text{forward}}$.
-- **Next to a reservoir:** the pipe from a tank or pressure source takes the entry, the pipe into one the exit loss, see [pipe.md](pipe.md#35-total-pressure-drop).
+- **Next to a reservoir:** the pipe from a tank or pressure boundary takes the entry, the pipe into one the exit loss, see [pipe.md](pipe.md#35-total-pressure-drop).
 - **Mismatched pipes:** the reducer's bores set its losses; the reported static pressures follow the velocities of the pipes on its ports.
 - **Operating cases:** all fields can be overridden per case.
 - **Not modelled:** eccentric versus concentric shape, flow separation in wide diffusers beyond the Crane coefficients, and cavitation at the small bore.

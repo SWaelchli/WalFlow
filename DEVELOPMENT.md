@@ -116,7 +116,7 @@ To ensure compatibility with the high-speed Newton solver:
    where $a = Q / Q_{scale}$ and $b = (P_{cracking} + \Delta P_{friction} - \Delta P_{valve}) / P_{scale}$.
 5. **Dynamic Topology Reduction for Static Inactive Components:** Components that block flow completely when inactive (like positive displacement pumps or forced-closed valves) should set `self.blocks_flow_on_shutdown = True` in their constructor. The solver will automatically perform DFS reachability analysis and leaf pruning to isolate and prune these inactive branches, preventing singular matrices and numerical collinearity.
 6. **Classification Attributes on base node:** When implementing new equipment, make sure to explicitly override the following boolean attributes in your node class:
-   - `is_pressure_boundary`: Set `True` if it is a constant pressure source/sink (e.g. `Tank`).
+   - `is_pressure_boundary`: Set `True` if it is a constant pressure boundary (e.g. `Tank`, `PressureBoundary`).
    - `blocks_flow_on_shutdown`: Set `True` if it blocks all flow when inactive.
    - `use_mcp_formulation`: Set `True` if it models dynamic closed-to-open logic using complementarity equations.
    - `is_relief_driver`: Set `True` if the equipment drives the system pressure (pump, source). The relief analysis then ramps it with a factor λ (0 = at rest, 1 = case value) to find the steady state at which each relief device reaches its set pressure. Also implement `apply_relief_ramp(lam)` (scale your driving parameters, keep the case values) and `reset_relief_ramp()` (restore them), and add the type to `RELIEF_DRIVER_TYPES` in `frontend/src/constants/case_constants.js` so the "Ramp during relief analysis" option (`relief_ramp_enabled`) appears in the setup panel.

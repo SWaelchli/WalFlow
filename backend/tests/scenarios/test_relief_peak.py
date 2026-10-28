@@ -6,14 +6,14 @@ The peak relief pressure is a steady state found on a ramp of the relief drivers
 
 import math
 
-from physics_refs import water_head
+from physics_refs import build_network, water_head
 from routers.simulation import extract_telemetry
 from simulation.equipment.base_node import HydraulicNode
 from simulation.equipment.tank import Tank
 from simulation.equipment.centrifugal_pump import CentrifugalPump
 from simulation.equipment.volumetric_pump import VolumetricPump
-from simulation.equipment.pressure_source import PressureSource
-from simulation.equipment.flow_source import FlowSource
+from simulation.equipment.pressure_boundary import PressureBoundary
+from simulation.equipment.flow_boundary import FlowBoundary
 from simulation.equipment.pressure_safety_valve import PressureSafetyValve
 from simulation.equipment.rupture_disc import RuptureDisc
 from simulation.equipment.pipe import Pipe
@@ -35,7 +35,7 @@ def _network(nodes, edges):
         n.global_settings = gs
     for e in edges:
         e["pipe"].global_settings = gs
-    return HydraulicNetwork(nodes=nodes, edges=edges)
+    return build_network(nodes=nodes, edges=edges)
 
 
 def _run(net):
@@ -61,11 +61,11 @@ def _blocked_outlet_pump(psv):
 def test_driver_flags():
     assert CentrifugalPump("P", 0.002, 30.0).is_relief_driver
     assert VolumetricPump("P", 0.001, 5000.0, 0.8).is_relief_driver
-    assert PressureSource("S").is_relief_driver
-    assert FlowSource("F").is_relief_driver
+    assert PressureBoundary("S").is_relief_driver
+    assert FlowBoundary("F").is_relief_driver
     assert not Tank("T").is_relief_driver
     assert not HydraulicNode("n", "generic").is_relief_driver
-    assert PressureSource("S").relief_ramp_enabled   # on by default
+    assert PressureBoundary("S").relief_ramp_enabled   # on by default
 
 
 def test_ramp_scales_and_restores_drivers():
@@ -77,11 +77,11 @@ def test_ramp_scales_and_restores_drivers():
     pump.reset_relief_ramp()
     assert pump.head_rated == 30.0 and pump.flow_rated == 0.002
 
-    src = PressureSource("S", source_pressure=1_101_325.0)
+    src = PressureBoundary("S", set_pressure=1_101_325.0)
     src.apply_relief_ramp(0.5)
-    assert math.isclose(src.source_pressure, 101325.0 + 500_000.0)
+    assert math.isclose(src.set_pressure, 101325.0 + 500_000.0)
     src.reset_relief_ramp()
-    assert src.source_pressure == 1_101_325.0
+    assert src.set_pressure == 1_101_325.0
 
 
 def test_pop_psv_opening_snapshot_is_at_set_pressure():
@@ -126,10 +126,10 @@ def test_relieved_network_and_drivers_are_untouched_by_the_ramp():
     assert math.isclose(psv.inlets[0].pressure, tel["nodes"]["psv"]["inlets"][0]["pressure"])
 
 
-def test_rupture_disc_on_pressure_source():
-    """Pressure source → disc → drain: closed disc sees the source pressure, λ is linear."""
+def test_rupture_disc_on_pressure_boundary():
+    """Pressure boundary → disc → drain: closed disc sees the source pressure, λ is linear."""
     nodes = {
-        "src": PressureSource("Header", source_pressure=1_001_325.0),   # 10 bar(a)
+        "src": PressureBoundary("Header", set_pressure=1_001_325.0),   # 10 bar(a)
         "rd": RuptureDisc("RD-1", burst_pressure_barg=barg(5.0), cv=10.0),
         "t2": Tank("Drain", fluid_level=0.0),
     }

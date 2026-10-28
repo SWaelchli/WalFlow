@@ -160,7 +160,7 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
     switch (propKey) {
       // Flow rates (base: L/min)
       case 'flow_rated_lmin':
-      case 'source_flow_lmin':
+      case 'set_flow_lmin':
       case 'rated_flow_lmin':
       case 'flow_ref_lmin':
       case 'flow_base_lmin':
@@ -175,7 +175,8 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
       case 'rated_dp_bar':
       case 'inlet_pressure_base_bara':
       case 'outlet_pressure_base_bara':
-      case 'source_pressure_bara':
+      case 'set_pressure_bara':
+      case 'min_suction_pressure_bara':
       case 'max_discharge_pressure_bara':
       case 'cracking_pressure_bar':
         return Number(barToPsi(num, 2));
@@ -246,7 +247,7 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
     switch (propKey) {
       // Flow rates (input: GPM -> base: L/min)
       case 'flow_rated_lmin':
-      case 'source_flow_lmin':
+      case 'set_flow_lmin':
       case 'rated_flow_lmin':
       case 'flow_ref_lmin':
       case 'flow_base_lmin':
@@ -261,7 +262,8 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
       case 'rated_dp_bar':
       case 'inlet_pressure_base_bara':
       case 'outlet_pressure_base_bara':
-      case 'source_pressure_bara':
+      case 'set_pressure_bara':
+      case 'min_suction_pressure_bara':
       case 'max_discharge_pressure_bara':
       case 'cracking_pressure_bar':
         return psiToBar(num);

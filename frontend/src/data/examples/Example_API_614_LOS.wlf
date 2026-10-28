@@ -16,7 +16,7 @@
     },
     {
       "id": "case_cold_start_10",
-      "name": "Cold start (10°C)",
+      "name": "Cold start (10\u00b0C)",
       "is_base": false,
       "overrides": {
         "nodes": {
@@ -31,7 +31,7 @@
     },
     {
       "id": "case_cold_start_20",
-      "name": "Cold start (20°C)",
+      "name": "Cold start (20\u00b0C)",
       "is_base": false,
       "overrides": {
         "nodes": {
@@ -144,7 +144,8 @@
         "level_m": 2,
         "elevation_m": 0,
         "temperature_k": 333.15,
-        "rotation": 0
+        "rotation": 0,
+        "num_ports": 1
       },
       "width": 60,
       "height": 143
@@ -217,7 +218,8 @@
         "level_m": 0.0002,
         "elevation_m": 0,
         "temperature_k": 313.15,
-        "rotation": 0
+        "rotation": 0,
+        "num_ports": 1
       },
       "width": 75,
       "height": 143
@@ -368,7 +370,8 @@
         "level_m": 0.0002,
         "elevation_m": 0,
         "temperature_k": 313.15,
-        "rotation": 0
+        "rotation": 0,
+        "num_ports": 1
       },
       "width": 73,
       "height": 143
@@ -385,7 +388,8 @@
         "level_m": 2e-05,
         "elevation_m": 0,
         "temperature_k": 313.15,
-        "rotation": 0
+        "rotation": 0,
+        "num_ports": 1
       },
       "width": 66,
       "height": 143
@@ -448,7 +452,8 @@
         "level_m": 2e-05,
         "elevation_m": 0,
         "temperature_k": 313.15,
-        "rotation": 0
+        "rotation": 0,
+        "num_ports": 1
       },
       "width": 61,
       "height": 143
@@ -570,7 +575,8 @@
         "level_m": 2e-05,
         "elevation_m": 0,
         "temperature_k": 313.15,
-        "rotation": 0
+        "rotation": 0,
+        "num_ports": 1
       },
       "width": 97,
       "height": 143
@@ -587,7 +593,8 @@
         "level_m": 0.0002,
         "elevation_m": 0,
         "temperature_k": 313.15,
-        "rotation": 0
+        "rotation": 0,
+        "num_ports": 1
       },
       "width": 105,
       "height": 143
@@ -604,7 +611,8 @@
         "level_m": 2e-05,
         "elevation_m": 0,
         "temperature_k": 313.15,
-        "rotation": 0
+        "rotation": 0,
+        "num_ports": 1
       },
       "width": 97,
       "height": 143
@@ -621,7 +629,8 @@
         "level_m": 0.0002,
         "elevation_m": 0,
         "temperature_k": 313.15,
-        "rotation": 0
+        "rotation": 0,
+        "num_ports": 1
       },
       "width": 105,
       "height": 143
@@ -753,7 +762,7 @@
     {
       "id": "pump-suction-line",
       "source": "main-reservoir",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-0",
       "target": "main-oil-pump",
       "targetHandle": "inlet-0",
       "label": "pump-suction-line",
@@ -821,7 +830,7 @@
       "source": "spill-over-valve",
       "sourceHandle": "outlet-0",
       "target": "reservoir-return-tank",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "label": "spill-over-return",
       "animated": true,
       "data": {
@@ -1041,7 +1050,7 @@
       "source": "orifice-motor-nde",
       "sourceHandle": "port-1",
       "target": "drain-motor-nde",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "label": "motor-nde-drain",
       "animated": true,
       "data": {
@@ -1063,7 +1072,7 @@
       "source": "orifice-motor-de",
       "sourceHandle": "port-1",
       "target": "drain-motor-de",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "label": "motor-de-drain",
       "animated": true,
       "data": {
@@ -1133,7 +1142,7 @@
       "source": "orifice-gearbox",
       "sourceHandle": "port-1",
       "target": "drain-gearbox",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "label": "gearbox-drain",
       "animated": true,
       "data": {
@@ -1199,7 +1208,7 @@
       "source": "orifice-comp1-de",
       "sourceHandle": "port-1",
       "target": "drain-comp1-de",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "label": "comp1-de-drain",
       "animated": true,
       "data": {
@@ -1265,7 +1274,7 @@
       "source": "orifice-comp1-nde",
       "sourceHandle": "port-1",
       "target": "drain-comp1-nde",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "label": "comp1-nde-drain",
       "animated": true,
       "data": {
@@ -1332,7 +1341,7 @@
       "source": "orifice-comp2-de",
       "sourceHandle": "port-1",
       "target": "drain-comp2-de",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "label": "comp2-de-drain",
       "animated": true,
       "data": {
@@ -1354,7 +1363,7 @@
       "source": "orifice-comp2-nde",
       "sourceHandle": "port-1",
       "target": "drain-comp2-nde",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "label": "comp2-nde-drain",
       "animated": true,
       "data": {

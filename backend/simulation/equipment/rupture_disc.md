@@ -91,7 +91,7 @@ An unknown bore type is read as `full_bore`. A missing burst pressure is an inpu
 | `test_rupture_disc.py::test_rupture_disc_full_bore_vs_reduced_bore` | Oil at 60 L/min: reduced bore (8 mm in DN50) drop above full bore (Cv 10) drop, both positive |
 | `backend/tests/unit/equipment/test_relief_devices.py::test_f1_38_reduced_bore_disc_capacity` | 10 barg reduced bore (20 mm in DN50) at 12.1 barg: utilisation $100\sqrt{\Delta p / 11\ \text{bar}}$ within 0.5 %, `overcapacity` |
 | `test_relief_devices.py::test_open_device_without_flow_is_not_reported_closed` | Forced-open disc without flow: not `intact`, utilisation 0 % |
-| `backend/tests/scenarios/test_relief_peak.py::test_rupture_disc_on_pressure_source` | Disc on a ramped pressure source: opening snapshot at 5.0 bar(a) within 10 mbar |
+| `backend/tests/scenarios/test_relief_peak.py::test_rupture_disc_on_pressure_boundary` | Disc on a ramped pressure boundary: opening snapshot at 5.0 bar(a) within 10 mbar |
 | `backend/tests/unit/fluids/test_throttling_heat.py::test_f1_16_throttling_heat_magnitude` | Burst disc: outlet temperature rise $= \Delta P/(\rho c_p)$ within 2 % |
 
 ## Data Fields

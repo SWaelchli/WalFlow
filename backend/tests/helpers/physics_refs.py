@@ -67,6 +67,32 @@ def throttling_dt(dp: float, rho: float, cp: float) -> float:
     return dp / (rho * cp)
 
 
+def attach_ports(nodes: dict, edges: list) -> None:
+    """Give a hand-built network the port slots the parser makes: every hand-built edge end on a tank or pressure
+    boundary gets its own slot (outlet for a pipe drawn out of the node, inlet for one drawn into it), and the edge
+    names it. A flow boundary gets an outlet per pipe (a draw too: its flow there is negative). Done once per edge."""
+    from simulation.equipment.flow_boundary import FlowBoundary
+    from simulation.equipment.pressure_boundary import PressureBoundary
+    from simulation.equipment.tank import Tank
+    for e in edges:
+        if e.get("_ports_attached"):
+            continue
+        for end, as_inlet in (("source", False), ("target", True)):
+            node = nodes.get(e[end])
+            if isinstance(node, (Tank, PressureBoundary)):
+                e[f"{end}_port"] = node.assign_port(len(node.port_slots), as_inlet)
+            elif isinstance(node, FlowBoundary) and not as_inlet:   # a pipe on a flow boundary leaves an outlet
+                node.add_outlet()
+                e["source_port"] = f"outlet-{len(node.outlets) - 1}"
+        e["_ports_attached"] = True
+
+
+def build_network(nodes: dict, edges: list, **kwargs) -> HydraulicNetwork:
+    """HydraulicNetwork of a hand-built network, with the port slots of its tanks and pressure boundaries."""
+    attach_ports(nodes, edges)
+    return HydraulicNetwork(nodes=nodes, edges=edges, **kwargs)
+
+
 def link_inline(nodes: dict, edges: list, gs):
     """Solver nodes and edges of a hand-built network that holds in-line components (orifice, restriction, filter),
     turned into component links between hidden junctions as the parser does. An edge without ports leaves a
@@ -93,6 +119,7 @@ def link_inline(nodes: dict, edges: list, gs):
 
 def solve(nodes: dict, edges: list, fluid: str = "water", **settings):
     """Build and solve a network; the system fluid is set in GlobalSettings like the app does."""
+    attach_ports(nodes, edges)
     gs = GlobalSettings(fluid_type=fluid, **settings)
     for n in nodes.values():
         n.global_settings = gs
@@ -149,7 +176,7 @@ def velocity_head(q: float, d: float, rho: float) -> float:
 
 def pipe_end_total(pipe, pipe_port, node) -> float:
     """Total pressure the solve holds at the node end of a pipe: the pipe end's static pressure plus its dynamic
-    pressure, except on a tank or pressure source, whose pipe ends report the reservoir pressure itself. As in the pipe's drop, the dynamic pressure is taken at the properties of the pipe's upstream end."""
+    pressure, except on a tank or pressure boundary, whose pipe ends report the reservoir pressure itself. As in the pipe's drop, the dynamic pressure is taken at the properties of the pipe's upstream end."""
     if node.is_pressure_boundary:
         return pipe_port.pressure
     return pipe_port.pressure + velocity_head(pipe.inlets[0].flow_rate, pipe.diameter, pipe.upstream_port().density)

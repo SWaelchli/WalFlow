@@ -21,8 +21,8 @@ const DEFAULTS_BY_TYPE = {
     sch_large: 'STD', sch_small: 'STD', length_m: 0.089, cone_angle_deg: 18.2,
     diameter_in_m: 0.07792, diameter_out_m: 0.05248, orientation: 'reducing',
   },
-  pressure_source: { source_pressure_bara: 6.0, temperature_k: 293.15 },
-  flow_source: { source_flow_lmin: 50.0, temperature_k: 293.15, max_discharge_pressure_bara: 50.0 },
+  pressure_boundary: { set_pressure_bara: 6.0, temperature_k: 293.15, num_ports: 1 },
+  flow_boundary: { set_flow_lmin: 50.0, flow_direction: 'supply', flow_split: 'common_pressure', temperature_k: 293.15, max_discharge_pressure_bara: 50.0, min_suction_pressure_bara: 0.0, num_ports: 1 },
   filter: { dp_clean_bar: 0.2, dp_terminal_bar: 1.0, flow_ref_lmin: 100.0, clogging_pct: 0.0 },
   heat_exchanger: HEAT_EXCHANGER_DEFAULTS,
   remote_control_valve: { max_cv: 0.05, set_pressure_pa: 500000.0, ...CONTROL_VALVE_STYLE_DEFAULTS },
@@ -49,7 +49,7 @@ export function defaultNodeData(type, { label, ambientTemperature, onRotate, onC
     onRotate,
     onChange: type === 'linear_control_valve' ? onChange : undefined,
     // a new tank starts at the drawing's ambient temperature
-    ...(type === 'tank' && { level_m: 1.0, elevation_m: 0.0, temperature_k: ambientTemperature }),
+    ...(type === 'tank' && { level_m: 1.0, elevation_m: 0.0, temperature_k: ambientTemperature, num_ports: 1 }),
     ...DEFAULTS_BY_TYPE[type],
   };
 }

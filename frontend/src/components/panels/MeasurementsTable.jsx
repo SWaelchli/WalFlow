@@ -51,12 +51,12 @@ export default function MeasurementsTable({
       const set = getCaseTelemetrySet(c, telemetryMode);
       out[caseId] = {};
       instruments.forEach((inst) => {
-        const value = set ? readInstrument(inst, edges, set, atmPa) : null;
+        const value = set ? readInstrument(inst, edges, set, atmPa, nodes) : null;
         out[caseId][inst.id] = { value, state: alarmState(value, inst.data) };
       });
     });
     return out;
-  }, [cases, instruments, edges, telemetryMode, globalSettings?.atmospheric_pressure]);
+  }, [cases, instruments, nodes, edges, telemetryMode, globalSettings?.atmospheric_pressure]);
 
   if (instruments.length === 0) {
     return (

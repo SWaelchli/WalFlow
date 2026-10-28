@@ -1,4 +1,5 @@
 
+from networks import neutral_graph
 from simulation.schemas import ReactFlowGraph, ReactFlowNode, ReactFlowEdge
 from simulation.graph_parser import GraphParser
 
@@ -15,7 +16,7 @@ def test_text_bubble_ignored_by_graph_parser():
         ReactFlowEdge(id="e1", source="tank1", target="tank2", data={"length_m": 10.0, "diameter_m": 0.05})
     ]
     
-    graph = ReactFlowGraph(nodes=nodes, edges=edges)
+    graph = neutral_graph(nodes=nodes, edges=edges)
     network = GraphParser.parse_graph(graph)
     
     assert "tank1" in network.nodes

@@ -7,16 +7,17 @@ pop action: full lift above the reseat pressure, "cycling" (solved like a modula
 capacity utilisation against the rated flow at 10 % overpressure, not against 1 bar
 the open/closed state is held during a Newton solve and changed only between solves
 """
+from networks import neutral_graph
 import pytest
 
 
 import math
 import pytest
 
-from physics_refs import solve, water_head
+from physics_refs import build_network, solve, water_head
 from routers.simulation import extract_telemetry
 from simulation.equipment.base_node import total_of
-from simulation.equipment.pressure_source import PressureSource
+from simulation.equipment.pressure_boundary import PressureBoundary
 from simulation.equipment.centrifugal_pump import CentrifugalPump
 from simulation.equipment.tank import Tank
 from simulation.equipment.pressure_safety_valve import PressureSafetyValve
@@ -39,7 +40,7 @@ def cv_flow_m3s(cv: float, dp_pa: float, rho: float) -> float:
 
 
 def _header_to_drain(device, source_pa, **settings):
-    nodes = {"src": PressureSource("Header", source_pressure=source_pa), "dev": device, "t": Tank("Drain", fluid_level=0.0)}
+    nodes = {"src": PressureBoundary("Header", set_pressure=source_pa), "dev": device, "t": Tank("Drain", fluid_level=0.0)}
     edges = [
         {"id": "e1", "source": "src", "target": "dev", "pipe": Pipe("p1", 1.0, BIG)},
         {"id": "e2", "source": "dev", "target": "t", "pipe": Pipe("p2", 1.0, BIG)},
@@ -65,7 +66,7 @@ def _pump_to_psv(psv, head_bar=6.0):
         n.global_settings = gs
     for e in edges:
         e["pipe"].global_settings = gs
-    return HydraulicNetwork(nodes=nodes, edges=edges)
+    return build_network(nodes=nodes, edges=edges)
 
 
 # --- gauge set pressure ------------------------------------------------------------------
@@ -227,9 +228,9 @@ def test_relief_state_is_held_during_each_hydraulic_solve(monkeypatch):
 # --- file input (D1) ----------------------------------------------------------------------------------
 
 def _graph(data):
-    return ReactFlowGraph(
+    return neutral_graph(
         nodes=[
-            {"id": "src", "type": "pressure_source", "position": {"x": 0, "y": 0}, "data": {"label": "S", "source_pressure_bara": 5.0}},
+            {"id": "src", "type": "pressure_boundary", "position": {"x": 0, "y": 0}, "data": {"label": "S", "set_pressure_bara": 5.0}},
             {"id": "psv", "type": "pressure_safety_valve", "position": {"x": 0, "y": 0}, "data": {"label": "PSV-7", **data}},
             {"id": "t", "type": "tank", "position": {"x": 0, "y": 0}, "data": {"label": "T"}},
         ],

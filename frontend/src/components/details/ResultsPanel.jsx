@@ -45,6 +45,9 @@ export default function ResultsPanel({ selectedNode, selectedEdge, allNodes, all
       case 'orifice':
         return <OrificeDetails node={selectedNode} />;
       case 'junction':
+      case 'tank':
+      case 'pressure_boundary':
+      case 'flow_boundary':
         return <JunctionPortsDetails node={selectedNode} />;
       case 'three_way_tcv':
         return <JunctionDetails 

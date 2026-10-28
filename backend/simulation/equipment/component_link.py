@@ -85,3 +85,46 @@ class ComponentLink:
             port.temperature, port.density, port.viscosity = node_port.temperature, node_port.density, node_port.viscosity
             port.stagnant = node_port.stagnant
             port.flow_rate = sign * mass / max(1e-9, port.density)
+
+
+class BoundaryLink:
+    """
+    The solver edge from a flow boundary to the hidden node at its port(s): no pressure drop, so the hidden node is at
+    the boundary's outlet pressure, the end of its flow spring (flow_boundary.md). The pipes of the canvas end on the
+    hidden node, drawn out of it for a supply and into it for a draw, so their flow is positive either way; the link
+    flow keeps the boundary's sign (negative for a draw).
+
+    The solver uses it like a Pipe: two end ports, a zero total-pressure drop, the end velocity heads and a property
+    pass that carries the upstream fluid across.
+    """
+    # Its ends are a flow boundary and a hidden node, never a reservoir
+    inlet_at_reservoir = False
+    outlet_at_reservoir = False
+
+    def __init__(self):
+        self.inlets, self.outlets = [Port()], [Port()]
+        self.adjacent = None   # the one pipe on the hidden node, for the velocity heads (None for several or none)
+
+    def upstream_port(self) -> Port:
+        """The end the flow enters by (last property pass)."""
+        return self.inlets[0] if self.inlets[0].flow_rate >= 0 else self.outlets[0]
+
+    def stagnation_delta_p(self, flow_rate: float, density: float, viscosity: float) -> float:
+        return 0.0
+
+    def stagnation_dp_derivative(self, flow_rate: float, density: float, viscosity: float) -> float:
+        return 0.0
+
+    def end_heads(self, flow_rate: float):
+        """Velocity heads at the two ends: those of the one pipe on the hidden node, so the boundary's outlet and its
+        port report the static pressure at that pipe's end; 0 when several pipes share the hidden node."""
+        if self.adjacent is None:
+            return 0.0, 0.0
+        head = self.adjacent.velocity_head(flow_rate, self.upstream_port().density)
+        return head, head
+
+    def calculate(self):
+        """Property pass: the downstream end gets the upstream fluid unchanged."""
+        q = self.inlets[0].flow_rate
+        up, down = (self.inlets[0], self.outlets[0]) if q >= 0 else (self.outlets[0], self.inlets[0])
+        down.temperature, down.density, down.viscosity = up.temperature, up.density, up.viscosity

@@ -10,8 +10,9 @@ import ReactFlow, {
   ReactFlowProvider
 } from 'reactflow';
 import { notify, confirmDialog } from './utils/dialogs';
-import { validateNetwork, checkNewConnection, normalizeConnection, PORT_TAKEN_MESSAGE } from './utils/networkValidation';
+import { validateNetwork, checkNewConnection, normalizeConnection, flipBoundaryEdges, flipBlockedMessage, PORT_TAKEN_MESSAGE } from './utils/networkValidation';
 import { junctionLayout, junctionPortCount, PIN_TIP, PIN_LENGTH } from './utils/junctionLayout';
+import { boundaryLayout, boundaryPortCount, BOUNDARY_PORT_TYPES } from './utils/boundaryLayout';
 import { summarizeStats, deriveRunState } from './utils/runStatus';
 import { portNumberLabel } from './utils/portLabels';
 import RunBanners from './components/overlays/RunBanners';
@@ -39,8 +40,8 @@ import RuptureDiscNode from './nodes/RuptureDiscNode';
 import TextBubbleNode from './nodes/TextBubbleNode';
 import CalibratedRestrictionNode from './nodes/CalibratedRestrictionNode';
 import ReducerNode from './nodes/ReducerNode';
-import PressureSourceNode from './nodes/PressureSourceNode';
-import FlowSourceNode from './nodes/FlowSourceNode';
+import PressureBoundaryNode from './nodes/PressureBoundaryNode';
+import FlowBoundaryNode from './nodes/FlowBoundaryNode';
 
 
 import Navbar from './components/layout/Navbar';
@@ -136,8 +137,8 @@ const nodeTypes = {
   calibrated_restriction: CalibratedRestrictionNode,
   reducer: ReducerNode,
   expander: ReducerNode,
-  pressure_source: PressureSourceNode,
-  flow_source: FlowSourceNode,
+  pressure_boundary: PressureBoundaryNode,
+  flow_boundary: FlowBoundaryNode,
 
 };
 
@@ -589,15 +590,18 @@ function WalFlowContent() {
     if (!host) return;
     // Up and to the right of the pin, so the signal line rises and turns into the bubble's left-hand input
     let position;
-    const jPort = host.type === 'junction' ? junctionLayout(junctionPortCount(host.data)) : null;
+    const isBoundary = BOUNDARY_PORT_TYPES.has(host.type);
+    const jPort = host.type === 'junction' ? junctionLayout(junctionPortCount(host.data))
+      : isBoundary ? boundaryLayout(host.type === 'tank' ? 'tank' : 'circle', boundaryPortCount(host.data)) : null;
     const jp = jPort?.ports.find(p => p.id === portId);
     if (jp) {
-      // Junction: the pin head, found from the port position and needle angle in the rotated frame
-      const half = jPort.size / 2;
+      // Junction and boundaries: the pin head, found from the port position and needle angle in the rotated frame
+      const halfX = (jPort.size ?? jPort.width) / 2;
+      const halfY = (jPort.size ?? jPort.height) / 2;
       const rot = ((host.data?.rotation || 0) * Math.PI) / 180;
-      const [ox, oy] = [jp.x - half, jp.y - half];
-      const px = host.position.x + half + ox * Math.cos(rot) - oy * Math.sin(rot);
-      const py = host.position.y + half + ox * Math.sin(rot) + oy * Math.cos(rot);
+      const [ox, oy] = [jp.x - halfX, jp.y - halfY];
+      const px = host.position.x + halfX + ox * Math.cos(rot) - oy * Math.sin(rot);
+      const py = host.position.y + halfY + ox * Math.sin(rot) + oy * Math.cos(rot);
       const pa = ((jp.pinAngle + (host.data?.rotation || 0)) * Math.PI) / 180;
       const head = PIN_TIP + PIN_LENGTH;
       const hx = px + Math.cos(pa) * head;
@@ -1028,6 +1032,29 @@ function WalFlowContent() {
     const targetCaseObj = cases.find(c => c.id === effectiveCaseId) || DEFAULT_BASE_CASE;
     const isBase = targetCaseObj.is_base;
 
+    // A flow boundary is stored as the pipe source when it supplies and as the pipe target when it draws,
+    // so a new direction (never a case override) turns every pipe on it around (signal lines stay).
+    const flowHost = nodesRef.current.find(n => n.id === nodeId && n.type === 'flow_boundary');
+    if (flowHost && newData.flow_direction && newData.flow_direction !== (flowHost.data?.flow_direction ?? 'supply')) {
+      const blocked = flipBlockedMessage(nodesRef.current, edgesRef.current, nodeId, newData.flow_direction);
+      if (blocked) {
+        notify(blocked, 'warning');
+        return;
+      }
+      // Pipes that turn around keep no results: their inlet and outlet values would show swapped until the next run
+      const flipped = new Set(edgesRef.current
+        .filter(e => (e.source === nodeId || e.target === nodeId) && String(e.data?.type ?? '').toUpperCase() !== 'SIGNAL'
+          && !String(e.sourceHandle ?? '').startsWith('signal-') && !String(e.targetHandle ?? '').startsWith('signal-'))
+        .map(e => e.id));
+      if (flipped.size) {
+        setCases(prev => prev.map(c => {
+          const strip = (set) => (set?.edges ? { ...set, edges: Object.fromEntries(Object.entries(set.edges).filter(([id]) => !flipped.has(id))) } : set);
+          return { ...c, telemetry: strip(c.telemetry), telemetry_unmitigated: strip(c.telemetry_unmitigated), telemetry_peak: strip(c.telemetry_peak) };
+        }));
+      }
+      setEdges((eds) => flipBoundaryEdges(eds, nodeId));
+    }
+
     // The selected node follows `nodes` in an effect, so the updaters below stay free of side effects
     if (isBase) {
       setNodes((nds) =>
@@ -1063,7 +1090,7 @@ function WalFlowContent() {
         );
       }
     }
-  }, [activeCaseId, cases, setNodes, setCases, activeDiagram, hasLock]);
+  }, [activeCaseId, cases, setNodes, setEdges, setCases, activeDiagram, hasLock]);
 
   // Canvas valve slider: live-preview the opening on the backend, then store it case-aware
   // (an override in a non-base case) so the case badge shows and the base case stays untouched.
@@ -1341,6 +1368,8 @@ function WalFlowContent() {
   // The inspector shows the selected component and pipe; they follow edits made to the lists
   const nodesRef = useRef(nodes);
   useEffect(() => { nodesRef.current = nodes; });
+  const edgesRef = useRef(edges);
+  useEffect(() => { edgesRef.current = edges; });
   useEffect(() => {
     if (selectedNode) {
       const liveNode = nodes.find(n => n.id === selectedNode.id);

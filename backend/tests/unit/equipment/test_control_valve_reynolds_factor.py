@@ -1,6 +1,7 @@
 """Linear control valve, remote control valve and 3-way TCV paths use the IEC 60534-2-1 Annex A Reynolds
 number factor: laws of their pressure drop in the laminar region and in both flow directions,
 and the F_L / F_d / line size inputs the parser feeds them."""
+from networks import neutral_graph
 import pytest
 from hypothesis import assume, given, strategies as st
 
@@ -63,7 +64,7 @@ def _graph(node_type, node_data=None, d_in=0.05, d_out=0.08):
               "data": {"length_m": 1.0, "diameter_m": d_in}},
              {"id": "e2", "source": "v", "target": "t2", "sourceHandle": "outlet-0", "targetHandle": "inlet-0",
               "data": {"length_m": 1.0, "diameter_m": d_out}}]
-    return ReactFlowGraph(nodes=nodes, edges=edges)
+    return neutral_graph(nodes=nodes, edges=edges)
 
 
 @pytest.mark.parametrize("node_type", VALVE_TYPES)

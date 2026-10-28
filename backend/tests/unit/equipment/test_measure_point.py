@@ -1,3 +1,4 @@
+from networks import neutral_graph
 import pytest
 
 from physics_refs import reservoir_entry_dp
@@ -25,7 +26,7 @@ def _signal(id_, src, src_port, tgt, tgt_port):
 
 
 def _solve(graph_dict):
-    network = GraphParser.parse_graph(ReactFlowGraph(**graph_dict))
+    network = GraphParser.parse_graph(neutral_graph(**graph_dict))
     stats = NetworkSolver(network).solve()
     assert stats["success"]
     return network
@@ -64,7 +65,7 @@ def test_instrument_bubble_and_its_signal_edge_do_not_enter_the_network():
             _signal("s1", "tap", "signal-port-0", "pit", "signal-in"),
         ],
     }
-    network = GraphParser.parse_graph(ReactFlowGraph(**graph))
+    network = GraphParser.parse_graph(neutral_graph(**graph))
     assert set(network.nodes) == {"t1", "t2", "tap"}
     assert [e["id"] for e in network.edges] == ["p1", "p2"]
 
@@ -102,6 +103,6 @@ def test_remote_control_valve_senses_a_dead_end_tap_piped_on_port_1_only():
             _signal("s1", "tap", "signal-port-0", "rcv", "signal-in"),
         ],
     }
-    network = GraphParser.parse_graph(ReactFlowGraph(**graph))
+    network = GraphParser.parse_graph(neutral_graph(**graph))
     assert network.nodes["rcv"].remote_sensing_config is not None
     assert network.nodes["rcv"].remote_sensing_config["node_id"] == "tap"

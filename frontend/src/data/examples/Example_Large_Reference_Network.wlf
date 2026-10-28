@@ -30,7 +30,7 @@
     },
     {
       "id": "case_92e739e5",
-      "name": "10° Start",
+      "name": "10\u00b0 Start",
       "description": "",
       "is_base": false,
       "overrides": {
@@ -47,7 +47,7 @@
     },
     {
       "id": "case_0781e168",
-      "name": "20° Start",
+      "name": "20\u00b0 Start",
       "description": "",
       "is_base": false,
       "overrides": {
@@ -84,7 +84,8 @@
         "rotation": 0,
         "level_m": 0.1,
         "elevation_m": 0.1,
-        "temperature_k": 338.15
+        "temperature_k": 338.15,
+        "num_ports": 2
       }
     },
     {
@@ -131,7 +132,8 @@
         "rotation": 0,
         "level_m": 0.1,
         "elevation_m": 0.1,
-        "temperature_k": 338.15
+        "temperature_k": 338.15,
+        "num_ports": 2
       }
     },
     {
@@ -352,7 +354,8 @@
         "rotation": 90,
         "level_m": 0.1,
         "elevation_m": 0.1,
-        "temperature_k": 338.15
+        "temperature_k": 338.15,
+        "num_ports": 1
       }
     },
     {
@@ -550,7 +553,8 @@
         "rotation": 90,
         "level_m": 0.1,
         "elevation_m": 0.1,
-        "temperature_k": 313.15
+        "temperature_k": 313.15,
+        "num_ports": 1
       }
     },
     {
@@ -896,7 +900,8 @@
         "rotation": 90,
         "level_m": 0.1,
         "elevation_m": 0.1,
-        "temperature_k": 338.15
+        "temperature_k": 338.15,
+        "num_ports": 1
       }
     },
     {
@@ -974,7 +979,8 @@
         "rotation": 90,
         "level_m": 0.1,
         "elevation_m": 0.1,
-        "temperature_k": 338.15
+        "temperature_k": 338.15,
+        "num_ports": 1
       }
     },
     {
@@ -997,7 +1003,8 @@
         "rotation": 90,
         "level_m": 0.1,
         "elevation_m": 0.1,
-        "temperature_k": 338.15
+        "temperature_k": 338.15,
+        "num_ports": 1
       }
     },
     {
@@ -1072,7 +1079,8 @@
         "rotation": 90,
         "level_m": 0.1,
         "elevation_m": 0.1,
-        "temperature_k": 338.15
+        "temperature_k": 338.15,
+        "num_ports": 1
       }
     },
     {
@@ -1095,7 +1103,8 @@
         "rotation": 0,
         "level_m": 0.1,
         "elevation_m": 0.1,
-        "temperature_k": 338.15
+        "temperature_k": 338.15,
+        "num_ports": 1
       }
     },
     {
@@ -1170,7 +1179,8 @@
         "rotation": 270,
         "level_m": 0.1,
         "elevation_m": 0.1,
-        "temperature_k": 338.15
+        "temperature_k": 338.15,
+        "num_ports": 1
       }
     },
     {
@@ -1193,7 +1203,8 @@
         "rotation": 270,
         "level_m": 0.1,
         "elevation_m": 0.1,
-        "temperature_k": 338.15
+        "temperature_k": 338.15,
+        "num_ports": 1
       }
     },
     {
@@ -1260,7 +1271,7 @@
         "y": -660
       },
       "data": {
-        "label": "νI 102",
+        "label": "\u03bdI 102",
         "rotation": 0,
         "variable": "nu",
         "pressure_basis": "gauge",
@@ -1360,7 +1371,7 @@
     },
     {
       "source": "node_8fd45f2a",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-0",
       "target": "node_032bb480",
       "targetHandle": "inlet-0",
       "id": "edge_91ca5581",
@@ -1387,7 +1398,7 @@
       "source": "node_3176b1fc",
       "sourceHandle": "outlet-0",
       "target": "node_8fd45f2a",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-1",
       "id": "edge_818a2b8d",
       "label": "Pipe 103",
       "animated": true,
@@ -1460,7 +1471,7 @@
     },
     {
       "source": "node_c2c3ec68",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-0",
       "target": "node_b4cf5bf5",
       "targetHandle": "inlet-0",
       "id": "edge_9adda717",
@@ -1537,7 +1548,7 @@
       "source": "node_2cc6a499",
       "sourceHandle": "outlet-0",
       "target": "node_c2c3ec68",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-1",
       "id": "edge_97bf71cd",
       "label": "Pipe 109",
       "animated": true,
@@ -1862,7 +1873,7 @@
       "source": "node_f9bb5ad9",
       "sourceHandle": "port-1",
       "target": "node_59ab52bf",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "id": "edge_3e4ce572",
       "label": "Pipe 123",
       "animated": true,
@@ -1987,7 +1998,7 @@
       "source": "node_70d07517",
       "sourceHandle": "port-1",
       "target": "node_da61ac05",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "id": "edge_925f633d",
       "label": "Pipe 128",
       "animated": true,
@@ -2062,7 +2073,7 @@
       "source": "node_a522310e",
       "sourceHandle": "port-1",
       "target": "node_d16d6bb3",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "id": "edge_b5754e39",
       "label": "Pipe 131",
       "animated": true,
@@ -2162,7 +2173,7 @@
       "source": "node_bcd1d1e9",
       "sourceHandle": "port-1",
       "target": "node_c255f237",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "id": "edge_8e602a2a",
       "label": "Pipe 135",
       "animated": true,
@@ -2462,7 +2473,7 @@
       "source": "node_9958a664",
       "sourceHandle": "port-1",
       "target": "node_a5dde124",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "id": "edge_92140094",
       "label": "Pipe 147",
       "animated": true,
@@ -2487,7 +2498,7 @@
       "source": "node_0099e94d",
       "sourceHandle": "port-1",
       "target": "node_79e1d31e",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "id": "edge_d6e628df",
       "label": "Pipe 148",
       "animated": true,
@@ -2512,7 +2523,7 @@
       "source": "node_89d45b5d",
       "sourceHandle": "port-1",
       "target": "node_9496a1ca",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "id": "edge_5caad4bb",
       "label": "Pipe 149",
       "animated": true,
@@ -2537,7 +2548,7 @@
       "source": "node_0effe165",
       "sourceHandle": "port-1",
       "target": "node_fcae2cd8",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "id": "edge_53f7304b",
       "label": "Pipe 150",
       "animated": true,
@@ -2587,7 +2598,7 @@
       "source": "node_37e0704c",
       "sourceHandle": "outlet-0",
       "target": "node_db1f9a5f",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "id": "edge_ae231821",
       "label": "Pipe 152",
       "animated": true,
@@ -2661,7 +2672,7 @@
       "sourceHandle": "signal-port-0",
       "target": "vi-102",
       "targetHandle": "signal-in",
-      "label": "νI 102 signal",
+      "label": "\u03bdI 102 signal",
       "animated": true,
       "type": "step",
       "style": {
@@ -2670,7 +2681,7 @@
         "strokeDasharray": "5,5"
       },
       "data": {
-        "label": "νI 102 signal",
+        "label": "\u03bdI 102 signal",
         "type": "SIGNAL"
       }
     },

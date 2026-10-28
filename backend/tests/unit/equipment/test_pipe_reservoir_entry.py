@@ -1,6 +1,6 @@
-"""Velocity head where fluid leaves a reservoir (tank or pressure source) into a pipe.
+"""Velocity head where fluid leaves a reservoir (tank or pressure boundary) into a pipe.
 
-Tanks and pressure sources hold fluid at rest. Leaving one, the fluid accelerates to the pipe
+Tanks and pressure boundaries hold fluid at rest. Leaving one, the fluid accelerates to the pipe
 velocity and pays the entrance loss, so the static pressure at the pipe end is
 P - (1 + K) rho v² / 2 with K = 0.5. Entering one, the kinetic energy is lost in the vessel
 (exit loss K = 1) and the static pressure at the pipe end equals the reservoir pressure.
@@ -9,9 +9,9 @@ import math
 
 import pytest
 
-from physics_refs import bisect_flow, darcy_friction, pipe_dp, reservoir_entry_dp, reservoir_pipe_flow, solve
+from physics_refs import build_network, bisect_flow, darcy_friction, pipe_dp, reservoir_entry_dp, reservoir_pipe_flow, solve
 from simulation.equipment.pipe import Pipe
-from simulation.equipment.pressure_source import PressureSource
+from simulation.equipment.pressure_boundary import PressureBoundary
 from simulation.equipment.reducer import Reducer
 from simulation.equipment.tank import Tank
 from simulation.fluid_utils import FluidProperties
@@ -28,7 +28,7 @@ ATM = 101325.0
 
 def _boundary(kind, pressure_pa):
     if kind == "source":
-        return PressureSource(name="Supply", source_pressure=pressure_pa, temperature=293.15)
+        return PressureBoundary(name="Supply", set_pressure=pressure_pa, temperature=293.15)
     return Tank(name="Supply", fluid_level=(pressure_pa - ATM) / (RHO * 9.81), temperature=293.15)
 
 
@@ -104,12 +104,12 @@ def test_network_marks_reservoir_pipe_ends_without_a_solver():
     p1, p2 = Pipe("p1", 1.0, D50, ROUGH), Pipe("p2", 1.0, D80, ROUGH)
     nodes = {"src": _boundary("source", ATM + 50000.0), "exp": exp, "tank": Tank(name="Sink", fluid_level=0.0)}
     edges = [{"source": "src", "target": "exp", "pipe": p1}, {"source": "exp", "target": "tank", "pipe": p2}]
-    HydraulicNetwork(nodes=nodes, edges=edges)
+    build_network(nodes=nodes, edges=edges)
     assert (p1.inlet_at_reservoir, p1.outlet_at_reservoir) == (True, False)
     assert (p2.inlet_at_reservoir, p2.outlet_at_reservoir) == (False, True)
 
     nodes["src"] = Reducer(name="Junction", diameter_in=D50, diameter_out=D50, length=0.1)
-    HydraulicNetwork(nodes=nodes, edges=edges)
+    build_network(nodes=nodes, edges=edges)
     assert p1.inlet_at_reservoir is False
 
 

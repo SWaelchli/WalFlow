@@ -258,26 +258,124 @@ describe('junction port count', () => {
   });
 });
 
-describe('flow source set flow', () => {
-  const source = (flow) => ({ id: 'fs1', type: 'flow_source', data: { source_flow_lmin: flow, label: 'Demand' } });
+describe('flow boundary inspector', () => {
+  const boundary = (data) => ({ id: 'fb1', type: 'flow_boundary', data: { label: 'Demand', ...data } });
 
-  it.each([['-3398', -3398], ['0', 0]])('accepts %s L/min (withdrawal / stopped source)', (typed, stored) => {
+  it.each([['0', 0], ['12.5', 12.5]])('accepts %s L/min as a set flow magnitude', (typed, stored) => {
     vi.mocked(notify).mockClear();
-    const onUpdate = renderNodePanel(source(40));
+    const onUpdate = renderNodePanel(boundary({ set_flow_lmin: 40 }));
     const input = screen.getByDisplayValue('40');
     fireEvent.change(input, { target: { value: typed } });
     fireEvent.blur(input);
     expect(onUpdate).toHaveBeenCalledTimes(1);
-    expect(onUpdate.mock.calls[0][1].source_flow_lmin).toBe(stored);
+    expect(onUpdate.mock.calls[0][1].set_flow_lmin).toBe(stored);
     expect(notify).not.toHaveBeenCalled();
   });
 
-  it('rejects a value that is not a number', () => {
+  it.each([['abc'], ['-5']])('rejects set flow %s (not a number, or negative: use draw)', (typed) => {
     vi.mocked(notify).mockClear();
-    const onUpdate = renderNodePanel(source(40));
+    const onUpdate = renderNodePanel(boundary({ set_flow_lmin: 40 }));
     const input = screen.getByDisplayValue('40');
-    fireEvent.change(input, { target: { value: 'abc' } });
+    fireEvent.change(input, { target: { value: typed } });
     fireEvent.blur(input);
     expect(onUpdate).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['supply, 1 port', { flow_direction: 'supply' }, { suction: false, discharge: true, split: false, injected: true }],
+    ['draw, 1 port', { flow_direction: 'draw' }, { suction: true, discharge: false, split: false, injected: false }],
+    ['supply, 3 ports', { flow_direction: 'supply', num_ports: 3 }, { suction: false, discharge: true, split: true, injected: true }],
+    ['draw, 3 ports', { flow_direction: 'draw', num_ports: 3 }, { suction: true, discharge: false, split: true, injected: false }],
+  ])('shows only the fields that apply: %s', (_name, data, shown) => {
+    renderNodePanel(boundary(data));
+    const has = (re) => screen.queryAllByText(re).length > 0;
+    expect(has(/Min\. Suction Pressure/)).toBe(shown.suction);
+    expect(has(/Max\. Discharge Pressure/)).toBe(shown.discharge);
+    expect(has(/Injected Temp/)).toBe(shown.injected);
+    expect(screen.queryByLabelText('Flow split') !== null).toBe(shown.split);
+  });
+
+  it('changing the direction updates only flow_direction', () => {
+    const onUpdate = renderNodePanel(boundary({ flow_direction: 'supply' }));
+    fireEvent.change(screen.getByLabelText('Direction'), { target: { value: 'draw' } });
+    expect(onUpdate).toHaveBeenCalledWith('fb1', { flow_direction: 'draw' });
+  });
+});
+
+describe('flow boundary with several ports', () => {
+  const renderWithEdges = (node, allEdges = []) => {
+    const onUpdate = vi.fn();
+    render(
+      <UnitProvider initialUnitSystem={UNIT_SYSTEMS.METRIC}>
+        <SetupPanel node={node} onUpdate={onUpdate} allEdges={allEdges} />
+      </UnitProvider>
+    );
+    return onUpdate;
+  };
+  const boundary = (data) => ({ id: 'fb1', type: 'flow_boundary', data: { label: 'Demand', num_ports: 3, set_flow_lmin: 40, ...data } });
+  const edgeTo = (k) => ({ id: `e${k}`, source: 'fb1', sourceHandle: `port-${k}`, target: `x${k}`, targetHandle: 'port-0' });
+
+  it('offers the flow split options with plain-language labels', () => {
+    renderWithEdges(boundary({}));
+    const options = [...screen.getByLabelText('Flow split').options].map(o => [o.value, o.textContent]);
+    expect(options).toEqual([
+      ['common_pressure', 'Calculate flow per port based on equal pressure'],
+      ['total_split', 'Distribute flow equally between ports'],
+      ['per_port', 'Set flow at every port'],
+    ]);
+  });
+
+  it.each(['junction', 'tank', 'pressure_boundary', 'flow_boundary'])('%s shows the port count directly below the Name tag, before sensing', (type) => {
+    renderWithEdges({ id: 'n1', type, data: { label: 'N', num_ports: 3 } });
+    const follows = (a, b) => Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+    const name = screen.getByText('Name tag');
+    const ports = screen.getByLabelText('Number of ports');
+    const sensing = screen.getByText(/Sensing nodes/);
+    expect(follows(name, ports)).toBe(true);
+    expect(follows(ports, sensing)).toBe(true);
+    // nothing but the name field sits between them
+    expect(name.parentElement.nextElementSibling).toBe(ports.parentElement);
+  });
+
+  it('per_port replaces the single Set Flow input by one input per port', () => {
+    renderWithEdges(boundary({ flow_split: 'per_port', port_flows_lmin: [10, 20, 30] }));
+    expect(screen.queryByText(/^Set Flow/)).toBeNull();
+    expect([1, 2, 3].map(n => screen.getByLabelText(`Port ${n}`).value)).toEqual(['10', '20', '30']);
+    expect(screen.queryByLabelText('Port 4')).toBeNull();
+  });
+
+  it.each(['common_pressure', 'total_split'])('%s keeps the single Set Flow input', (flow_split) => {
+    renderWithEdges(boundary({ flow_split }));
+    expect(screen.getByText(/^Set Flow/)).toBeTruthy();
+    expect(screen.queryByLabelText('Port 1')).toBeNull();
+  });
+
+  it('the total sums only connected ports and unconnected ports say so but stay editable', () => {
+    const onUpdate = renderWithEdges(boundary({ flow_split: 'per_port', port_flows_lmin: [10, 20, 30] }), [edgeTo(0), edgeTo(2)]);
+    expect(screen.getByText('Total (connected ports): 40.0 L/min')).toBeTruthy();
+    expect(screen.getAllByText('not connected')).toHaveLength(1);
+    const unconnected = screen.getByLabelText('Port 2');
+    expect(unconnected.disabled).toBe(false);
+    fireEvent.change(unconnected, { target: { value: '25' } });
+    fireEvent.blur(unconnected);
+    expect(onUpdate).toHaveBeenCalledWith('fb1', { port_flows_lmin: [10, 25, 30] });
+  });
+
+  it.each([
+    ['common_pressure', 'per_port', { flow_split: 'per_port', port_flows_lmin: [40, 40, 40] }],
+    ['per_port', 'total_split', { flow_split: 'total_split' }],
+  ])('switching the split from %s to %s writes %j', (from, to, expected) => {
+    const onUpdate = renderWithEdges(boundary({ flow_split: from, port_flows_lmin: from === 'per_port' ? [1, 2, 3] : undefined }));
+    fireEvent.change(screen.getByLabelText('Flow split'), { target: { value: to } });
+    expect(onUpdate).toHaveBeenCalledWith('fb1', expected);
+  });
+
+  it.each([
+    ['raising 3 to 5 repeats the last port', 5, [10, 20, 30], { num_ports: 5, port_flows_lmin: [10, 20, 30, 30, 30] }],
+    ['lowering 3 to 2 trims', 2, [10, 20, 30], { num_ports: 2, sensing: {}, port_flows_lmin: [10, 20] }],
+  ])('%s', (_name, count, flows, expected) => {
+    const onUpdate = renderWithEdges(boundary({ flow_split: 'per_port', port_flows_lmin: flows }));
+    fireEvent.change(screen.getByLabelText('Number of ports'), { target: { value: String(count) } });
+    expect(onUpdate).toHaveBeenCalledWith('fb1', expected);
   });
 });

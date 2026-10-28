@@ -31,10 +31,11 @@
         "y": 250
       },
       "data": {
-        "label": "Warm Oil Reservoir (55°C)",
+        "label": "Warm Oil Reservoir (55\u00b0C)",
         "level_m": 2.0,
         "elevation_m": 0.0,
-        "temperature_k": 328.15
+        "temperature_k": 328.15,
+        "num_ports": 1
       }
     },
     {
@@ -94,7 +95,7 @@
         "y": 250
       },
       "data": {
-        "label": "3-Way TCV (Target: 45°C)",
+        "label": "3-Way TCV (Target: 45\u00b0C)",
         "max_cv": 25.0,
         "set_temperature_c": 45.0,
         "hot_port_idx": 1,
@@ -133,7 +134,8 @@
         "label": "Header Return Tank",
         "level_m": 1.0,
         "elevation_m": 0.0,
-        "temperature_k": 318.15
+        "temperature_k": 318.15,
+        "num_ports": 1
       }
     },
     {
@@ -213,7 +215,7 @@
     {
       "id": "t1",
       "source": "warm-reservoir",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-0",
       "target": "oil-pump",
       "targetHandle": "inlet-0",
       "data": {
@@ -329,7 +331,7 @@
       "source": "process-heat-load",
       "sourceHandle": "outlet-0",
       "target": "return-reservoir",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "data": {
         "label": "Return Line",
         "length_m": 3,
@@ -443,7 +445,7 @@
     },
     {
       "id": "case_hot_oil",
-      "name": "Hot oil (70 °C)",
+      "name": "Hot oil (70 \u00b0C)",
       "is_base": false,
       "overrides": {
         "nodes": {
@@ -456,7 +458,7 @@
     },
     {
       "id": "case_cold_start",
-      "name": "Cold start (15 °C)",
+      "name": "Cold start (15 \u00b0C)",
       "is_base": false,
       "overrides": {
         "nodes": {

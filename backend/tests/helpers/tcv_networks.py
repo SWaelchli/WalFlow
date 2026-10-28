@@ -9,10 +9,10 @@ class _Graph:
     def __init__(self, fluid):
         self.nodes, self.edges = [], []
         self.fluid = fluid
-        self.junction_ports = {}   # junction id -> ports used so far (a pipe takes the next free port-k)
+        self.junction_ports = {}   # junction, tank, pressure boundary id -> ports used so far (a pipe takes the next free port-k)
 
     def node(self, node_id, node_type, **data):
-        if node_type == "junction":
+        if node_type in ("junction", "tank", "pressure_boundary"):
             self.junction_ports[node_id] = 0
         self.nodes.append({"id": node_id, "type": node_type, "position": {"x": 0, "y": 0},
                            "data": {"label": node_id, **data}})
@@ -31,6 +31,9 @@ class _Graph:
                            "data": {**PIPE, **(data or {})}})
 
     def graph(self):
+        for node in self.nodes:   # a tank or pressure boundary has as many ports as pipes
+            if node["type"] in ("tank", "pressure_boundary"):
+                node["data"]["num_ports"] = max(1, self.junction_ports[node["id"]])
         return ReactFlowGraph(nodes=self.nodes, edges=self.edges,
                               global_settings=GlobalSettings(fluid_type=self.fluid, solver_method="sparse_newton"))
 
@@ -38,14 +41,14 @@ class _Graph:
 def mixing_graph(t_hot_c=80.0, t_cold_c=20.0, set_c=40.0, fluid="water", max_cv=10.0, hot_port_idx=0,
                  p_hot_bara=3.0, p_cold_bara=3.0, load_cv=5.0, load_opening=100.0, hot_pipe=None, cold_pipe=None,
                  cold_check_valve=False, prv_bara=None):
-    """Two pressure sources at fixed temperatures mix in one TCV, then a load valve to a 1 bar(a) sink.
+    """Two pressure boundaries at fixed temperatures mix in one TCV, then a load valve to a 1 bar(a) sink.
     The port designated hot (hot_port_idx) is fed from the source at t_hot_c."""
     g = _Graph(fluid)
-    g.node("hot", "pressure_source", source_pressure_bara=p_hot_bara, temperature_k=t_hot_c + 273.15)
-    g.node("cold", "pressure_source", source_pressure_bara=p_cold_bara, temperature_k=t_cold_c + 273.15)
+    g.node("hot", "pressure_boundary", set_pressure_bara=p_hot_bara, temperature_k=t_hot_c + 273.15)
+    g.node("cold", "pressure_boundary", set_pressure_bara=p_cold_bara, temperature_k=t_cold_c + 273.15)
     g.node("tcv", "three_way_tcv", max_cv=max_cv, set_temperature_c=set_c, hot_port_idx=hot_port_idx)
     g.node("load", "linear_control_valve", max_cv=load_cv, opening_pct=load_opening)
-    g.node("sink", "pressure_source", source_pressure_bara=1.0, temperature_k=293.15)
+    g.node("sink", "pressure_boundary", set_pressure_bara=1.0, temperature_k=293.15)
     g.pipe("hot", "tcv", tgt_port=hot_port_idx, data=hot_pipe)
     if cold_check_valve:
         g.node("cv_cold", "check_valve", cv=15.0, cracking_pressure_bar=0.1)
@@ -66,13 +69,13 @@ def mixing_graph(t_hot_c=80.0, t_cold_c=20.0, set_c=40.0, fluid="water", max_cv=
 def series_graph(set1_c=50.0, set2_c=35.0, fluid="water"):
     """TCV 1 mixes 80 / 20 degC, TCV 2 mixes its outlet (hot port) with a third 10 degC source."""
     g = _Graph(fluid)
-    g.node("hot", "pressure_source", source_pressure_bara=4.0, temperature_k=353.15)
-    g.node("cold", "pressure_source", source_pressure_bara=4.0, temperature_k=293.15)
-    g.node("chill", "pressure_source", source_pressure_bara=3.5, temperature_k=283.15)
+    g.node("hot", "pressure_boundary", set_pressure_bara=4.0, temperature_k=353.15)
+    g.node("cold", "pressure_boundary", set_pressure_bara=4.0, temperature_k=293.15)
+    g.node("chill", "pressure_boundary", set_pressure_bara=3.5, temperature_k=283.15)
     g.node("tcv1", "three_way_tcv", max_cv=10.0, set_temperature_c=set1_c, hot_port_idx=0)
     g.node("tcv2", "three_way_tcv", max_cv=10.0, set_temperature_c=set2_c, hot_port_idx=0)
     g.node("load", "linear_control_valve", max_cv=5.0, opening_pct=100.0)
-    g.node("sink", "pressure_source", source_pressure_bara=1.0, temperature_k=293.15)
+    g.node("sink", "pressure_boundary", set_pressure_bara=1.0, temperature_k=293.15)
     g.pipe("hot", "tcv1", tgt_port=0)
     g.pipe("cold", "tcv1", tgt_port=1)
     g.pipe("tcv1", "tcv2", tgt_port=0)
@@ -85,15 +88,15 @@ def series_graph(set1_c=50.0, set2_c=35.0, fluid="water"):
 def parallel_graph(set_a_c=40.0, set_b_c=60.0, fluid="water"):
     """Two TCVs fed from one hot and one cold header, outlets joined in a junction before the load."""
     g = _Graph(fluid)
-    g.node("hot", "pressure_source", source_pressure_bara=3.0, temperature_k=353.15)
-    g.node("cold", "pressure_source", source_pressure_bara=3.0, temperature_k=293.15)
+    g.node("hot", "pressure_boundary", set_pressure_bara=3.0, temperature_k=353.15)
+    g.node("cold", "pressure_boundary", set_pressure_bara=3.0, temperature_k=293.15)
     g.node("sh", "junction")
     g.node("sc", "junction")
     g.node("tcv_a", "three_way_tcv", max_cv=10.0, set_temperature_c=set_a_c, hot_port_idx=0)
     g.node("tcv_b", "three_way_tcv", max_cv=10.0, set_temperature_c=set_b_c, hot_port_idx=1)
     g.node("mix", "junction")
     g.node("load", "linear_control_valve", max_cv=8.0, opening_pct=100.0)
-    g.node("sink", "pressure_source", source_pressure_bara=1.0, temperature_k=293.15)
+    g.node("sink", "pressure_boundary", set_pressure_bara=1.0, temperature_k=293.15)
     g.pipe("hot", "sh")
     g.pipe("cold", "sc")
     g.pipe("sh", "tcv_a", src_port=0, tgt_port=0)

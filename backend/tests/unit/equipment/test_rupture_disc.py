@@ -1,7 +1,7 @@
 import math
 
 from physics_refs import solve
-from simulation.equipment.pressure_source import PressureSource
+from simulation.equipment.pressure_boundary import PressureBoundary
 from simulation.equipment.tank import Tank
 from simulation.equipment.rupture_disc import RuptureDisc
 from simulation.equipment.pipe import Pipe
@@ -33,7 +33,7 @@ def test_rupture_disc_intact_and_burst():
 def test_burst_full_bore_disc_follows_the_cv_definition():
     """Header 10 bar(a) → burst disc (5 barg) → drain; DN200 lines keep pipe losses below 1 mbar."""
     nodes = {
-        "src": PressureSource("Header", source_pressure=1_000_000.0),
+        "src": PressureBoundary("Header", set_pressure=1_000_000.0),
         "rd": RuptureDisc("RD-1", burst_pressure_barg=5.0, cv=10.0),
         "t": Tank("Drain", fluid_level=0.0),
     }
