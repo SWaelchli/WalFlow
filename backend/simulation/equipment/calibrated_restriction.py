@@ -1,7 +1,7 @@
-from simulation.equipment.base_node import HydraulicNode
+from simulation.equipment.base_node import InlineNode
 from simulation.fluid_utils import FluidProperties
 
-class CalibratedRestriction(HydraulicNode):
+class CalibratedRestriction(InlineNode):
     """
     A Calibrated Restriction acts as a restriction in the hydraulic network,
     calibrated from a baseline flow, temperature, and pressure drop case.
@@ -29,10 +29,7 @@ class CalibratedRestriction(HydraulicNode):
         
         # Will be auto-set by graph parser based on connection, default to DN50
         self.pipe_diameter = 0.05248
-        
-        self.add_inlet()
-        self.add_outlet()
-        
+
         # Calibrated lazily at first use: the parser sets the pipe bore and the
         # global settings (system fluid) only after construction
         self._calibration_key = None
@@ -131,39 +128,3 @@ class CalibratedRestriction(HydraulicNode):
             orif_d = max(0.0001, getattr(self, 'eq_diameter', 0.01))
             return FluidProperties.get_classic_orifice_dp(flow_rate, density, viscosity, pipe_d, orif_d)
 
-    def calculate(self):
-        self._ensure_calibrated()
-        
-        inlet = self.inlets[0]
-        outlet = self.outlets[0]
-
-        # In reverse flow the fluid enters at the outlet port: the pressure drop uses its properties
-        if inlet.flow_rate < 0:
-            inlet.density = outlet.density
-            inlet.viscosity = outlet.viscosity
-
-        dp = self.calculate_delta_p(inlet.flow_rate, inlet.density, inlet.viscosity)
-
-        outlet.pressure = inlet.pressure - dp
-        outlet.flow_rate = inlet.flow_rate
-        outlet.density = inlet.density
-        outlet.viscosity = inlet.viscosity
-
-        # Throttling Heat: dT = abs(dP) / (rho * Cp)
-        fluid_type = getattr(self.global_settings, 'fluid_type', 'water')
-
-        if inlet.flow_rate >= 0:
-            cp = FluidProperties.get_specific_heat(fluid_type, inlet.temperature)
-            dt = abs(dp) / (inlet.density * cp)
-            outlet.temperature = inlet.temperature + dt
-        else:
-            cp = FluidProperties.get_specific_heat(fluid_type, outlet.temperature)
-            dt = abs(dp) / (outlet.density * cp)
-            inlet.temperature = outlet.temperature + dt
-
-        # Density and viscosity of each port at its own temperature (the leaving port includes the throttling heat)
-        for port in (inlet, outlet):
-            port.density = FluidProperties.get_density(fluid_type, port.temperature)
-            port.viscosity = FluidProperties.get_viscosity(fluid_type, port.temperature)
-
-        return dp

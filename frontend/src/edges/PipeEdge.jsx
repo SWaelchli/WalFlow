@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { getSmoothStepPath } from 'reactflow';
+import { useUnits } from '../context/UnitContext';
 
 /**
  * Custom Color Interpolation Utilities for Heatmaps
@@ -63,7 +64,9 @@ export default function PipeEdge({
   markerEnd,
   selected
 }) {
-  const [edgePath] = getSmoothStepPath({
+  const { formatFlowM3s, labels } = useUnits();
+  const [hovered, setHovered] = useState(false);
+  const [edgePath, labelX, labelY] = getSmoothStepPath({
     sourceX,
     sourceY,
     sourcePosition,
@@ -78,7 +81,9 @@ export default function PipeEdge({
 
   // Extract flow velocity / rate for particle animation
   const telemetry = data.telemetry || {};
+  // inlets[0] is the stored source end, flow_rate is positive source -> target
   const flowRateM3s = telemetry.inlets?.[0]?.flow_rate ?? 0.0;
+  const hasResult = telemetry.inlets?.[0]?.flow_rate != null;
   const flowLmin = flowRateM3s * 60000.0;
   const absFlow = Math.abs(flowLmin);
   const isReverse = flowRateM3s < 0;
@@ -91,7 +96,7 @@ export default function PipeEdge({
   const { stroke: _s, strokeWidth: _sw, strokeDasharray: _sd, ...cleanStyle } = style;
 
   return (
-    <>
+    <g onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
       {/* Outer glow stroke for selected state */}
       {selected && (
         <path
@@ -146,6 +151,22 @@ export default function PipeEdge({
           }}
         />
       )}
-    </>
+
+      {/* Flow magnitude, only while the pipe is hovered after a simulation */}
+      {hovered && hasResult && (
+        <text
+          x={labelX}
+          y={labelY}
+          textAnchor="middle"
+          dominantBaseline="central"
+          style={{
+            fontSize: 'var(--fs-sm)', fontWeight: 700, fill: 'var(--color-text-primary)',
+            stroke: '#fff', strokeWidth: 4, paintOrder: 'stroke', strokeLinejoin: 'round', pointerEvents: 'none'
+          }}
+        >
+          {formatFlowM3s(Math.abs(flowRateM3s))} {labels.flow}
+        </text>
+      )}
+    </g>
   );
 }

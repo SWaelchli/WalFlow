@@ -233,7 +233,7 @@
       "source": "prv-valve",
       "sourceHandle": "outlet-0",
       "target": "downstream-load",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "data": {
         "label": "Regulated Supply",
         "length_m": 2,
@@ -250,7 +250,7 @@
     {
       "id": "p7",
       "source": "downstream-load",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "process-sink",
       "targetHandle": "inlet-0",
       "data": {

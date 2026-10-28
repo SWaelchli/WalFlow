@@ -1,5 +1,6 @@
 // Turns the solver's stats into the status chip state and the banner texts.
 // Pure functions; the UI lives in StatusPanel / RunBanners / Navbar.
+import { portTitle } from './portLabels';
 
 const REASON_TEXT = {
   negative_absolute_pressure: 'pressure below absolute zero',
@@ -8,7 +9,11 @@ const REASON_TEXT = {
   temperature_out_of_range: 'temperature outside the range where the fluid properties are valid',
 };
 
-const portLabel = (port) => (port && port !== '-' ? ` ${String(port).replace('-', ' ')}` : '');
+// A neutral handle ("port-1") reads as the user label ("Port 2"); other strings are kept as they are
+const portLabel = (port) => {
+  if (!port || port === '-') return '';
+  return ` ${/^port-\d+$/.test(String(port)) ? portTitle(null, port) : String(port).replace('-', ' ')}`;
+};
 
 /**
  * What a result means for the user.

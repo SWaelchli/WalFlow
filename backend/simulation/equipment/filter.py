@@ -1,7 +1,7 @@
-from simulation.equipment.base_node import HydraulicNode
+from simulation.equipment.base_node import InlineNode
 from simulation.fluid_utils import FluidProperties
 
-class Filter(HydraulicNode):
+class Filter(InlineNode):
     """
     A Filter/Strainer with clogging logic.
     User defines pressure drop at a reference flow for clean and dirty states.
@@ -22,9 +22,6 @@ class Filter(HydraulicNode):
         # Viscosity of the fluid the datasheet dP refers to (mPa*s); None = system fluid at
         # its reference temperature (40 C for oils and fuels, 20 C for aqueous fluids)
         self.ref_viscosity_mpas = ref_viscosity_mpas
-        
-        self.add_inlet()
-        self.add_outlet()
 
     def _reference_state(self):
         """(rho_ref, mu_ref) of the datasheet fluid the clean / terminal dP refer to."""
@@ -65,34 +62,3 @@ class Filter(HydraulicNode):
         visc_factor = FluidProperties.get_filter_viscosity_factor(re_filter)
         return k_curr * density * flow_rate * abs(flow_rate) * visc_factor
 
-    def calculate(self):
-
-        inlet = self.inlets[0]
-        outlet = self.outlets[0]
-        dp = self.calculate_delta_p(inlet.flow_rate, inlet.density, inlet.viscosity)
-        
-        outlet.pressure = inlet.pressure - dp
-        outlet.flow_rate = inlet.flow_rate
-        outlet.density = inlet.density
-        outlet.viscosity = inlet.viscosity
-        
-        # Throttling Heat: dT = abs(dP) / (rho * Cp)
-        fluid_type = getattr(self.global_settings, 'fluid_type', 'water')
-        from simulation.fluid_utils import FluidProperties
-        
-        if inlet.flow_rate >= 0:
-            cp = FluidProperties.get_specific_heat(fluid_type, inlet.temperature)
-            dt = abs(dp) / (inlet.density * cp)
-            outlet.temperature = inlet.temperature + dt
-        else:
-            cp = FluidProperties.get_specific_heat(fluid_type, outlet.temperature)
-            dt = abs(dp) / (outlet.density * cp)
-            inlet.temperature = outlet.temperature + dt
-
-        # Dynamically update local properties based on temperature feedback
-        outlet.density = FluidProperties.get_density(fluid_type, outlet.temperature)
-        outlet.viscosity = FluidProperties.get_viscosity(fluid_type, outlet.temperature)
-        inlet.density = FluidProperties.get_density(fluid_type, inlet.temperature)
-        inlet.viscosity = FluidProperties.get_viscosity(fluid_type, inlet.temperature)
-        
-        return dp

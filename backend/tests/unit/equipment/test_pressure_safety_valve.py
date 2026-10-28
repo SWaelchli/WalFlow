@@ -365,8 +365,8 @@ def test_pilot_sensing_a_point_outside_the_solve_senses_its_own_inlet():
     graph = _pilot_graph(with_line=False)
     graph.nodes.append(graph.nodes[1].model_copy(update={"id": "mp", "type": "measure_point", "data": {"label": "MP"}}))
     graph.edges.append(graph.edges[0].model_copy(update={"id": "e4", "source": "sp", "sourceHandle": "port-2",
-                                                         "target": "mp", "targetHandle": None}))
-    graph.edges.append(graph.edges[0].model_copy(update={"id": "s1", "source": "mp", "sourceHandle": "signal-inlet-0",
+                                                         "target": "mp", "targetHandle": "port-0"}))
+    graph.edges.append(graph.edges[0].model_copy(update={"id": "s1", "source": "mp", "sourceHandle": "signal-port-0",
                                                          "target": "psv", "targetHandle": "signal-in",
                                                          "data": {"type": "SIGNAL"}}))
     net = GraphParser.parse_graph(graph)

@@ -15,6 +15,7 @@ from simulation.schemas import HydraulicNetwork
 from simulation.equipment.base_node import HydraulicNode, Q_DEAD_LEG, Q_STAGNANT, select_inward
 from simulation.equipment.tank import Tank
 from simulation.equipment.pipe import Pipe
+from simulation.equipment.component_link import ComponentLink, canvas_id
 from simulation.equipment.centrifugal_pump import CentrifugalPump
 from simulation.equipment.volumetric_pump import VolumetricPump
 from simulation.equipment.linear_control_valve import LinearControlValve
@@ -154,8 +155,10 @@ class NetworkSolver:
                         seen.add(v)
                         stack.append(v)
             has_reference = any(is_pressure_reference(self.network.nodes[n]) for n in group)
-            if len(group) >= 2 and not has_reference:
-                self.island_groups.append(sorted(group))
+            # The hidden port nodes of an in-line component count as the component (an unwired one is one node)
+            canvas_ids = sorted({canvas_id(n) for n in group})
+            if len(canvas_ids) >= 2 and not has_reference:
+                self.island_groups.append(canvas_ids)
 
         # 3. Reachability Analysis (undirected DFS from pressure boundaries or flow sources)
         boundary_ids = [nid for nid, node in self.network.nodes.items() if is_pressure_reference(node)]
@@ -1035,7 +1038,7 @@ class NetworkSolver:
             return None
         names = []
         for group in self.island_groups[:3]:
-            shown = [self.network.nodes[nid].name for nid in group[:4]]
+            shown = [(self.network.nodes.get(nid) or self.network.inline_nodes[nid]).name for nid in group[:4]]
             names.append(", ".join(shown) + (" …" if len(group) > 4 else ""))
         return ("No pressure reference: the circuit with " + "; and the circuit with ".join(names) +
                 " has no tank, pressure source or flow source, so its pressure level is undefined. "
@@ -1051,30 +1054,36 @@ class NetworkSolver:
             node = self.network.nodes[nid]
             if isinstance(node, Pipe):
                 continue
+            node_id, name = node.id, node.name
+            named_ports = [(f"{kind}-{i}", port) for kind, ports in (("inlet", node.inlets), ("outlet", node.outlets))
+                           for i, port in enumerate(ports)]
+            if getattr(node, 'hidden', False):   # a port of an in-line component: reported on the component
+                node_id, port_label = canvas_id(nid), nid.split('#')[1]
+                name = self.network.inline_nodes[node_id].name
+                named_ports = [(port_label, named_ports[0][1])] if named_ports else []
             # Fluid correlations are only valid inside the fluid's temperature range
-            t_ports = [p.temperature - 273.15 for p in node.inlets + node.outlets if p.flow_rate != 0.0]
+            t_ports = [p.temperature - 273.15 for _, p in named_ports if p.flow_rate != 0.0]
             if t_ports and (min(t_ports) < t_lo or max(t_ports) > t_hi):
                 t_bad = min(t_ports) if min(t_ports) < t_lo else max(t_ports)
-                issues.append({"node_id": node.id, "node": node.name, "port": "-", "temperature_c": t_bad,
+                issues.append({"node_id": node_id, "node": name, "port": "-", "temperature_c": t_bad,
                                "range_c": [t_lo, t_hi], "reason": "temperature_out_of_range"})
-            for kind, ports in (("inlet", node.inlets), ("outlet", node.outlets)):
-                for i, port in enumerate(ports):
-                    p = port.pressure
-                    if p < 0.0:
-                        reason = "negative_absolute_pressure"
+            for port_name, port in named_ports:
+                p = port.pressure
+                if p < 0.0:
+                    reason = "negative_absolute_pressure"
+                else:
+                    try:
+                        pv = FluidProperties.get_vapor_pressure(fluid, port.temperature)
+                    except Exception:
+                        pv = 0.0
+                    if pv > 0.0 and p < pv:
+                        reason = "below_vapor_pressure"
+                    elif pv <= 0.0 and p < 10000.0 and port.flow_rate > 0.0:
+                        reason = "near_vacuum"   # oils: vapour pressure negligible, flag below 0.1 bar(a)
                     else:
-                        try:
-                            pv = FluidProperties.get_vapor_pressure(fluid, port.temperature)
-                        except Exception:
-                            pv = 0.0
-                        if pv > 0.0 and p < pv:
-                            reason = "below_vapor_pressure"
-                        elif pv <= 0.0 and p < 10000.0 and port.flow_rate > 0.0:
-                            reason = "near_vacuum"   # oils: vapour pressure negligible, flag below 0.1 bar(a)
-                        else:
-                            continue
-                    issues.append({"node_id": node.id, "node": node.name, "port": f"{kind}-{i}",
-                                   "pressure_bara": p / 100000.0, "reason": reason})
+                        continue
+                issues.append({"node_id": node_id, "node": name, "port": port_name,
+                               "pressure_bara": p / 100000.0, "reason": reason})
         return {"valid": not issues, "issues": issues}
 
     def _identify_bottleneck(self, residuals) -> Dict[str, Any]:
@@ -1086,11 +1095,16 @@ class NetworkSolver:
         if max_idx < num_internal:
             node_idx = self.internal_node_indices[max_idx]
             node = self.nodes_list[node_idx]
-            return {"type": "Node", "name": node.name, "id": node.id, "error_type": "Mass Balance", "magnitude": max_val}
+            # A hidden port node of an in-line component is located on the component
+            name = self.network.inline_nodes[canvas_id(node.id)].name if getattr(node, 'hidden', False) else node.name
+            return {"type": "Node", "name": name, "id": canvas_id(node.id), "error_type": "Mass Balance", "magnitude": max_val}
         else:
             edge_idx = max_idx - num_internal
             edge = self.edges_list[edge_idx]
-            return {"type": "Connection", "name": edge.get('label') or edge.get('id'), "id": edge.get('id'), "error_type": "Pressure Balance", "magnitude": max_val}
+            inline = self.network.inline_nodes.get(canvas_id(edge.get('id') or ''))
+            if inline is not None and edge['id'].endswith('#link'):   # an in-line component is located on itself
+                return {"type": "Node", "name": inline.name, "id": canvas_id(edge['id']), "error_type": "Pressure Balance", "magnitude": max_val}
+            return {"type": "Connection", "name": edge.get('label') or edge.get('id'), "id": canvas_id(edge.get('id') or ''), "error_type": "Pressure Balance", "magnitude": max_val}
 
     def _generate_initial_guess(self):
         gs = getattr(self.network, 'global_settings', None)
@@ -1195,9 +1209,7 @@ class NetworkSolver:
                 # branch of its model applies at the current state, so differentiate exactly that function
                 # numerically instead of an analytic form that can describe a different branch.
                 pipe_density, pipe_viscosity = pipe.upstream_port().fluid()
-                inlet = src_node.inlets[0] if src_node.inlets else None
-                density = inlet.density if inlet else 1000.0
-                viscosity = inlet.viscosity if inlet else 0.001
+                density, viscosity = src_node.upstream_fluid()
 
                 def row_residual(p_src, p_tgt, q, sense=None):
                     # Same function as the objective's row for this edge
@@ -1277,9 +1289,7 @@ class NetworkSolver:
                     cols.append(num_internal + j)
                     data.append((q_scale / p_scale) * pd_derivs[1] * fj)
                 elif not src_locked and kind == "law":
-                    inlet = src_node.inlets[0] if src_node.inlets else None
-                    density = inlet.density if inlet else 1000.0
-                    viscosity = inlet.viscosity if inlet else 0.001
+                    density, viscosity = src_node.upstream_fluid()
                     
                     is_pump = isinstance(src_node, (CentrifugalPump, VolumetricPump))
                     if is_pump:
@@ -1400,8 +1410,8 @@ class NetworkSolver:
         - w: the edge density relative to the network mean, for the node mass rows. The density at the end where the
           flow enters the next node (flow direction of the last property pass), the density that node mixes with
           (calculate_temperature, _solve_mixing).
-        - f: edge flow -> volume flow at the inlet of the edge's source component (edge density / its inlet port
-          density). Component curves take their inlet volume flow, as in the property pass and the controllers.
+        - f: edge flow -> volume flow at the upstream port of the edge's source component (edge density / its
+          upstream port density). Component curves take their inlet volume flow, as in the property pass and the controllers.
         Both are 1 everywhere before the first pass (ports start at the same default density)."""
         rho = np.array([e['pipe'].outlets[0].density if e['pipe'].inlets[0].flow_rate >= 0
                         else e['pipe'].inlets[0].density for e in self.edges_list], dtype=float)
@@ -1411,7 +1421,7 @@ class NetworkSolver:
         for j, e in enumerate(self.edges_list):
             src = self.network.nodes[e['source']]
             if src.inlets and not isinstance(src, ThreeWayTCV):
-                f[j] = rho[j] / max(1e-9, src.inlets[0].density)
+                f[j] = rho[j] / max(1e-9, src.upstream_fluid()[0])
         return rho / float(np.mean(rho)), f
 
     def _current_weights(self) -> Tuple[np.ndarray, np.ndarray]:
@@ -1475,9 +1485,7 @@ class NetworkSolver:
                     dp_pipe = pipe.stagnation_delta_p(q_edges[j], *pipe.upstream_port().fluid())
                     p_out_est = p_in_all[tgt_idx] + dp_pipe + self._tcv_entry_dp(self.edges_list[j], tgt_node, q_edges[j])
 
-                    inlet = src_node.inlets[0] if src_node.inlets else None
-                    density = inlet.density if inlet else 1000.0
-                    viscosity = inlet.viscosity if inlet else 0.001
+                    density, viscosity = src_node.upstream_fluid()
                     sense = {}
                     if self._pilot_point(src_node) is not None:
                         sense = {"p_sense_pa": self._pilot_sense_pa(src_node, p_in_all, q_edges)}
@@ -1606,9 +1614,7 @@ class NetworkSolver:
 
     def _get_node_p_out(self, node, p_in, q_in, q_out, update_state: bool = False, p_in_all=None):
         """p_in_all (indexed like all_nodes_list) supplies the solved downstream pressure for relief devices."""
-        port = node.inlets[0] if node.inlets else (node.outlets[0] if node.outlets else None)
-        density = port.density if port else 1000.0
-        viscosity = port.viscosity if port else 0.001
+        density, viscosity = node.upstream_fluid()
         
         q_flow = q_out if getattr(node, 'node_type', '') == 'flow_source' else q_in
         
@@ -1763,18 +1769,22 @@ class NetworkSolver:
                     # A pipe end on a node is at the node's total pressure minus the velocity head; an end on a
                     # reservoir reports its pressure (the pipe's drop holds the entry, pipe.md)
                     # (at the upstream end's density, as in the solve, so it does not depend on the drawn direction)
-                    head = pipe.velocity_head(q, pipe.upstream_port().density)
+                    head_src, head_tgt = pipe.end_heads(q)
                     if not getattr(src_node, 'is_pressure_boundary', False):
-                        pipe.inlets[0].pressure -= head
-                        heads[id(src_port)].append(head)
+                        pipe.inlets[0].pressure -= head_src
+                        heads[id(src_port)].append(head_src)
                     if not getattr(tgt_node, 'is_pressure_boundary', False):
-                        pipe.outlets[0].pressure -= head
-                        heads[id(tgt_port)].append(head)
+                        pipe.outlets[0].pressure -= head_tgt
+                        heads[id(tgt_port)].append(head_tgt)
                 else:
                     still.append((src_node, src_port, tgt_node, tgt_port,
                                   ((pipe.inlets[0], src_port), (pipe.outlets[0], tgt_port))))
 
         self._report_static_pressures(heads, still)
+        for edge in self.all_edges_list:   # an in-line component's ports from its hidden port nodes
+            if isinstance(edge['pipe'], ComponentLink):
+                _, port0, _, port1 = self.edge_ports[id(edge)]
+                edge['pipe'].report(port0, port1)
 
         if not self.properties_frozen and property_flows is not None:
             self._propagate_properties(property_flows(q_edges))
@@ -2297,8 +2307,8 @@ def _telemetry_max_pressure_bara(tel) -> float:
     max_pa = 0.0
     for group in ("nodes", "edges"):
         for item in (tel or {}).get(group, {}).values():
-            for p in item.get("inlets", []) + item.get("outlets", []):
-                p_val = p.get("pressure")
+            for p in item.get("inlets", []) + item.get("outlets", []) + (item.get("ports") or []):
+                p_val = (p or {}).get("pressure")
                 if isinstance(p_val, (int, float)) and p_val > max_pa:
                     max_pa = p_val
     return max_pa / 100000.0 if max_pa > 0 else 1.01325

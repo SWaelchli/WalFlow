@@ -269,8 +269,8 @@
         "clogging_pct": 0,
         "rotation": 0,
         "sensing": {
-          "inlet-0": true,
-          "outlet-0": true
+          "port-0": true,
+          "port-1": true
         }
       },
       "width": 60,
@@ -287,7 +287,7 @@
         "label": "Header Restriction Orifice",
         "orifice_diameter_m": 0.0242,
         "sensing": {
-          "inlet-0": true
+          "port-0": true
         },
         "rotation": 0
       },
@@ -465,7 +465,7 @@
         "orifice_diameter_m": 0.0073,
         "rotation": 0,
         "sensing": {
-          "inlet-0": true
+          "port-0": true
         }
       },
       "width": 72,
@@ -885,9 +885,9 @@
     {
       "id": "filter-discharge-line",
       "source": "main-filter",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "flow-sensing-orifice",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "label": "filter-discharge-line",
       "animated": true,
       "data": {
@@ -907,9 +907,9 @@
     {
       "id": "sensing-line",
       "source": "flow-sensing-orifice",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "tap-header",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "label": "sensing-line",
       "animated": true,
       "data": {
@@ -929,7 +929,7 @@
     {
       "id": "sensing-line_b",
       "source": "tap-header",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "distribution-header-junction",
       "targetHandle": "port-1",
       "label": "sensing-line",
@@ -997,7 +997,7 @@
       "source": "motor-bearing-junction",
       "sourceHandle": "port-1",
       "target": "orifice-motor-nde",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "label": "motor-nde-supply",
       "animated": true,
       "data": {
@@ -1019,7 +1019,7 @@
       "source": "motor-bearing-junction",
       "sourceHandle": "port-2",
       "target": "orifice-motor-de",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "label": "motor-de-supply",
       "animated": true,
       "data": {
@@ -1039,7 +1039,7 @@
     {
       "id": "motor-nde-drain",
       "source": "orifice-motor-nde",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "drain-motor-nde",
       "targetHandle": "inlet-0",
       "label": "motor-nde-drain",
@@ -1061,7 +1061,7 @@
     {
       "id": "motor-de-drain",
       "source": "orifice-motor-de",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "drain-motor-de",
       "targetHandle": "inlet-0",
       "label": "motor-de-drain",
@@ -1085,7 +1085,7 @@
       "source": "gearbox-junction",
       "sourceHandle": "port-1",
       "target": "orifice-gearbox",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "label": "gearbox-supply",
       "animated": true,
       "data": {
@@ -1131,7 +1131,7 @@
     {
       "id": "gearbox-drain",
       "source": "orifice-gearbox",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "drain-gearbox",
       "targetHandle": "inlet-0",
       "label": "gearbox-drain",
@@ -1155,7 +1155,7 @@
       "source": "comp1-junction",
       "sourceHandle": "port-2",
       "target": "orifice-comp1-de",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "label": "comp1-de-supply",
       "animated": true,
       "data": {
@@ -1197,7 +1197,7 @@
     {
       "id": "comp1-de-drain",
       "source": "orifice-comp1-de",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "drain-comp1-de",
       "targetHandle": "inlet-0",
       "label": "comp1-de-drain",
@@ -1221,7 +1221,7 @@
       "source": "comp1-nde-junction",
       "sourceHandle": "port-2",
       "target": "orifice-comp1-nde",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "label": "comp1-nde-supply",
       "animated": true,
       "data": {
@@ -1263,7 +1263,7 @@
     {
       "id": "comp1-nde-drain",
       "source": "orifice-comp1-nde",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "drain-comp1-nde",
       "targetHandle": "inlet-0",
       "label": "comp1-nde-drain",
@@ -1287,7 +1287,7 @@
       "source": "comp2-junction",
       "sourceHandle": "port-2",
       "target": "orifice-comp2-de",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "label": "comp2-de-supply",
       "animated": true,
       "data": {
@@ -1309,7 +1309,7 @@
       "source": "comp2-junction",
       "sourceHandle": "port-0",
       "target": "orifice-comp2-nde",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "label": "comp2-nde-supply",
       "animated": true,
       "data": {
@@ -1330,7 +1330,7 @@
     {
       "id": "comp2-de-drain",
       "source": "orifice-comp2-de",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "drain-comp2-de",
       "targetHandle": "inlet-0",
       "label": "comp2-de-drain",
@@ -1352,7 +1352,7 @@
     {
       "id": "comp2-nde-drain",
       "source": "orifice-comp2-nde",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "drain-comp2-nde",
       "targetHandle": "inlet-0",
       "label": "comp2-nde-drain",
@@ -1375,7 +1375,7 @@
     {
       "id": "remote-pressure-signal",
       "source": "flow-sensing-orifice",
-      "sourceHandle": "signal-inlet-0",
+      "sourceHandle": "signal-port-0",
       "target": "spill-over-valve",
       "targetHandle": "signal-in",
       "label": "remote-pressure-signal",
@@ -1452,7 +1452,7 @@
       "source": "node_6f63ec38",
       "sourceHandle": "outlet-0",
       "target": "tap-oil-supply",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "id": "Pipe 104",
       "label": "Pipe 104",
       "animated": true,
@@ -1475,9 +1475,9 @@
     },
     {
       "source": "tap-oil-supply",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "main-filter",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "id": "Pipe 104_b",
       "label": "Pipe 104",
       "animated": true,
@@ -1501,7 +1501,7 @@
     {
       "id": "sig_tit-101_in",
       "source": "tap-oil-supply",
-      "sourceHandle": "signal-inlet-0",
+      "sourceHandle": "signal-port-0",
       "target": "tit-101",
       "targetHandle": "signal-in",
       "label": "TIT 101 signal",
@@ -1520,7 +1520,7 @@
     {
       "id": "sig_pdit-102_in",
       "source": "main-filter",
-      "sourceHandle": "signal-inlet-0",
+      "sourceHandle": "signal-port-0",
       "target": "pdit-102",
       "targetHandle": "signal-in",
       "label": "PDIT 102 (+)",
@@ -1539,7 +1539,7 @@
     {
       "id": "sig_pdit-102_ref",
       "source": "main-filter",
-      "sourceHandle": "signal-outlet-0",
+      "sourceHandle": "signal-port-1",
       "target": "pdit-102",
       "targetHandle": "signal-in-ref",
       "label": "PDIT 102 (-)",
@@ -1558,7 +1558,7 @@
     {
       "id": "sig_pit-103_in",
       "source": "tap-header",
-      "sourceHandle": "signal-inlet-0",
+      "sourceHandle": "signal-port-0",
       "target": "pit-103",
       "targetHandle": "signal-in",
       "label": "PIT 103 signal",
@@ -1577,7 +1577,7 @@
     {
       "id": "sig_fit-104_in",
       "source": "orifice-comp1-de",
-      "sourceHandle": "signal-inlet-0",
+      "sourceHandle": "signal-port-0",
       "target": "fit-104",
       "targetHandle": "signal-in",
       "label": "FIT 104 signal",

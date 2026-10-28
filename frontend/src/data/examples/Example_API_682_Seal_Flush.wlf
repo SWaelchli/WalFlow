@@ -181,7 +181,7 @@
       "source": "barrier-pump",
       "sourceHandle": "outlet-0",
       "target": "barrier-filter",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "data": {
         "label": "Pump Discharge",
         "length_m": 2,
@@ -199,7 +199,7 @@
     {
       "id": "e3",
       "source": "barrier-filter",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "seal-prv",
       "targetHandle": "inlet-0",
       "data": {
@@ -221,7 +221,7 @@
       "source": "seal-prv",
       "sourceHandle": "outlet-0",
       "target": "seal-chamber-orifice",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "data": {
         "label": "Seal Feed",
         "length_m": 2,
@@ -239,7 +239,7 @@
     {
       "id": "e5",
       "source": "seal-chamber-orifice",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "seal-bpr",
       "targetHandle": "inlet-0",
       "data": {

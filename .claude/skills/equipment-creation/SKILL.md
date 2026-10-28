@@ -44,11 +44,25 @@ Before writing code, define the component requirements:
 - **Node Type ID:** Unique snake_case string (e.g. `pressure_safety_valve`, `calibrated_restriction`).
 - **Archetype:** In-line resistance, flow source, boundary, dynamic closed valve (MCP), thermal unit, or multi-port junction.
 - **Governing Standard:** Formal standard (e.g. ISO 5167, ISO 4126, IEC 60534, Crane TP 410).
-- **Port Configuration:** Number of inlets and outlets (usually 1 inlet + 1 outlet, or multi-port like 1 in / 2 out).
+- **Port Configuration:** Neutral or role ports, and how many.
+  - **Neutral ports (`port-0`, `port-1`):** for a two-port component whose law is the same in both flow directions (orifice, filter, calibrated restriction). Its Δp is odd in Q. It has no inlet or outlet and no flip flag; the solved flow sign picks the upstream port. The measure point and the junction also have neutral ports, but they are junctions, not in-line components.
+  - **Role ports (`inlet-k`, `outlet-k`):** for anything whose physics depends on the direction: pumps, check valves, PSVs, regulators, control valves, heat exchangers, sources and boundaries. A line must run from an outlet to an inlet. Joining two outlets or two inlets is an input error.
+  - Never give a component role ports plus a "reversed" flag to imitate neutrality.
 - **Physical Parameters & Units:** Ensure parameters use standard engineering units in UI (bar, L/min, °C, kW) and convert to SI units (Pa, $\text{m}^3/\text{s}$, K, W) in backend.
 
 ### Step 2: Implement Backend Class
-Create `backend/simulation/equipment/<name>.py` inheriting from `HydraulicNode`:
+Create `backend/simulation/equipment/<name>.py`.
+
+**Neutral-port component:** inherit from `InlineNode` (`base_node.py`).
+- `InlineNode` creates `self.ports = [Port(), Port()]`. Do not call `add_inlet`/`add_outlet`.
+- Do not write `calculate()`.
+- Implement only `calculate_delta_p(flow_rate, density, viscosity)`. It must be correct for flow_rate ≥ 0 and odd in Q.
+- The parser makes the component a `ComponentLink` edge between two hidden junctions at its ports (see `component_link.md`). The link evaluates it at `|Q|` with the fluid of the upstream port, adds the throttling heat at the port the flow leaves by, and fills `ports[k]` with flow_rate positive into the component.
+- The component is no node of the solve, but each port has a solved pressure (its hidden junction): pilots and remote control valves can sense there.
+- Read the flow direction with `upstream_port()` / `downstream_port()`, e.g. for telemetry.
+- Register the type in the frontend `NEUTRAL_TYPES` in `frontend/src/utils/networkValidation.js`.
+
+**Role-port component:** inherit from `HydraulicNode`:
 - Initialize ports via `self.add_inlet()` and `self.add_outlet()`.
 - Set solver categorization flags (`is_pressure_boundary`, `blocks_flow_on_shutdown`, `use_mcp_formulation`).
 - Implement `calculate_delta_p(flow_rate, density, viscosity)`; `calculate_dp_derivative(flow_rate, density, viscosity)` is optional (the solver uses it for pipes and pumps only).
@@ -126,11 +140,11 @@ cd frontend && npm run lint && npm test && npm run build
 
 | Archetype | Examples | Key Base Flags | Reference |
 | :--- | :--- | :--- | :--- |
-| **Passive In-line Resistors** | Orifice, Filter, Calibrated Restriction | Defaults (`False`) | [equipment-archetypes.md#archetype-1](references/equipment-archetypes.md) |
+| **Passive In-line Resistors** | Orifice, Filter, Calibrated Restriction | `InlineNode`, neutral ports, odd Δp, no `calculate()` | [equipment-archetypes.md#archetype-1](references/equipment-archetypes.md) |
 | **Active Flow Sources** | Centrifugal Pump, Volumetric Pump | $H(Q)$ curve or displacement spring, `is_relief_driver = True`; PD pump `blocks_flow_on_shutdown = True` | [equipment-archetypes.md#archetype-2](references/equipment-archetypes.md) |
 | **Dynamic Closed / MCP Valves** | Check Valve, Relief Valve (PSV), Rupture Disc | `use_mcp_formulation = True` | [equipment-archetypes.md#archetype-3](references/equipment-archetypes.md) |
 | **Pressure Boundaries** | Tank, Reservoir, Fixed Pressure Point | `is_pressure_boundary = True` | [equipment-archetypes.md#archetype-4](references/equipment-archetypes.md) |
-| **Multi-port Flow Junctions** | Junction, 3-Way TCV | Direction-aware mixing | [equipment-archetypes.md#archetype-5](references/equipment-archetypes.md) |
+| **Multi-port Flow Junctions** | Junction, Measure Point (2-port junction), 3-Way TCV | Direction-aware mixing | [equipment-archetypes.md#archetype-5](references/equipment-archetypes.md) |
 | **Thermal Units** | Heat Exchanger, Cooler | Thermal duty / effectiveness | [equipment-archetypes.md#archetype-6](references/equipment-archetypes.md) |
 
 ---

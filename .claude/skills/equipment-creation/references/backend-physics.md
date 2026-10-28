@@ -40,6 +40,12 @@ Ports represent fluid connection points on the node.
 - `self.add_inlet()` appends a new `Port` object to `self.inlets`.
 - `self.add_outlet()` appends a new `Port` object to `self.outlets`.
 
+These are **role ports** (`inlet-k`, `outlet-k` on the canvas). A line must run from an outlet to an inlet.
+
+A component whose law is the same in both directions has **neutral ports** instead. It inherits from `InlineNode`, which creates `self.ports = [Port(), Port()]` (`port-0`, `port-1`). Such a component has no inlet or outlet and no `calculate()`. The parser makes it a `ComponentLink` edge between two hidden junctions at its ports (`component_link.md`), and the solved flow sign picks the upstream port. `ports[k].flow_rate` is positive into the component. See [equipment-archetypes.md#archetype-1](equipment-archetypes.md).
+
+Never imitate a neutral component with role ports and a flip flag. If the physics depends on the direction, keep role ports and model both directions in the component.
+
 ### Port Attributes (`simulation/schemas.py`)
 Each `Port` has:
 - `pressure`: Static pressure in Pascals [$\text{Pa}$]. The solver solves total pressures at nodes and reports static ones at ports.

@@ -22,7 +22,8 @@ from simulation.equipment.reducer import Reducer
 from simulation.equipment.pressure_source import PressureSource
 
 from simulation.equipment.flow_source import FlowSource
-from simulation.equipment.base_node import HydraulicNode, MIN_PUMP_EFFICIENCY
+from simulation.equipment.base_node import HydraulicNode, InlineNode, MIN_PUMP_EFFICIENCY
+from simulation.equipment.component_link import ComponentLink
 from simulation.fluid_utils import FluidProperties
 
 
@@ -49,6 +50,15 @@ def _parse_signal_handle(handle) -> tuple:
     if len(parts) >= 2 and parts[-1].isdigit() and parts[-2] in ("inlet", "outlet"):
         return parts[-2], int(parts[-1])
     return "outlet", 0
+
+
+def _neutral_port(handle, pipe_end: bool = False):
+    """Port number k of a neutral handle ("port-k" / "signal-port-k"; a pipe end takes only "port-k"), None for
+    any other handle."""
+    parts = str(handle or "").split('-')
+    if (len(parts) == 2 or not pipe_end and len(parts) > 2) and parts[-2] == 'port'             and parts[-1].isascii() and parts[-1].isdigit():
+        return int(parts[-1])
+    return None
 
 
 class GraphParser:
@@ -205,41 +215,48 @@ class GraphParser:
                     "pipe": pipe
                 })
 
-        GraphParser._assign_junction_ports(nodes_dict, parsed_edges)
-        for edge in signal_edges:
-            source_node, handle = nodes_dict.get(edge.source), edge.sourceHandle
-            if isinstance(source_node, Junction):
-                parts = str(handle or "").split('-')
-                slot = source_node.port_slots.get(int(parts[-1])) if parts[-1].isascii() and parts[-1].isdigit() and parts[-2:-1] == ['port'] else None
-                if slot is None:   # a port without a pipe has nothing to sense
-                    continue
-                handle = f"{slot[0]}-{slot[1]}"
-            GraphParser._attach_signal(edge.source, source_node, nodes_dict.get(edge.target), handle)
-
-        # Auto-detect connected pipe diameter for Orifice, CheckValveOrifice, and RuptureDisc nodes
+        # Auto-detect the connected pipe diameter (orifice bore ratio, reduced bores, IEC 60534-2-1 F_R valve size):
+        # the pipe at the inlet, else at the outlet; on an in-line component the pipe at port 0, else at port 1 (its
+        # ComponentLink then takes the upstream pipe's bore in each property pass)
         for node_id, node in nodes_dict.items():
             if (hasattr(node, 'orifice_diameter') or node.node_type == 'calibrated_restriction'
                     or getattr(node, 'bore_type', '') == 'reduced_bore'
-                    # IEC 60534-2-1 Annex A F_R takes the valve size from the line
                     or node.node_type in ('linear_control_valve', 'remote_control_valve', 'three_way_tcv')):
-                connected_d = None
-                # Check connected inlet pipes (upstream pipe diameter takes precedence)
-                for edge_info in parsed_edges:
-                    if edge_info["target"] == node_id and edge_info["pipe"].diameter > 0:
-                        connected_d = edge_info["pipe"].diameter
-                        break
-                # Check connected outlet pipes if no inlet pipe found
-                if connected_d is None:
-                    for edge_info in parsed_edges:
-                        if edge_info["source"] == node_id and edge_info["pipe"].diameter > 0:
-                            connected_d = edge_info["pipe"].diameter
-                            break
-                if connected_d is not None and connected_d > 0:
+                if isinstance(node, InlineNode):
+                    ends = [(e, side) for side in ('source', 'target') for e in parsed_edges if e[side] == node_id]
+                    ends.sort(key=lambda es: str(es[0][f"{es[1]}_port"]))
+                    pipes = [e["pipe"] for e, _ in ends]
+                else:
+                    pipes = ([e["pipe"] for e in parsed_edges if e["target"] == node_id]
+                             + [e["pipe"] for e in parsed_edges if e["source"] == node_id])
+                connected_d = next((p.diameter for p in pipes if p.diameter > 0), None)
+                if connected_d is not None:
                     node.pipe_diameter = connected_d
                 elif not getattr(node, 'pipe_diameter', 0):
                     node.pipe_diameter = 0.05248 # Default fallback (DN50)
 
-        network = HydraulicNetwork(nodes=nodes_dict, edges=parsed_edges)
+        inline_nodes = {nid: n for nid, n in nodes_dict.items() if isinstance(n, InlineNode)}
+        parsed_edges = GraphParser._build_component_links(nodes_dict, inline_nodes, parsed_edges,
+                                                          resolved_graph.global_settings)
+        GraphParser._assign_junction_ports(nodes_dict, parsed_edges)
+        for edge in signal_edges:
+            source_id, handle, k = edge.source, edge.sourceHandle, _neutral_port(edge.sourceHandle)
+            if source_id in inline_nodes:
+                # A port of an in-line component: its hidden junction, at the pipe's slot (the link's on a free port)
+                source_id = f"{source_id}#port-{1 if k == 1 else 0}"
+                k = 0 if 0 in nodes_dict[source_id].port_slots else 1
+            source_node = nodes_dict.get(source_id)
+            if isinstance(source_node, Junction):
+                slot = source_node.port_slots.get(k)
+                if slot is None and isinstance(source_node, MeasurePoint):
+                    # The tap's one pin senses the node: at its other port when port 0 has no pipe
+                    slot = next(iter(source_node.port_slots.values()), None)
+                if slot is None:   # a port without a pipe has nothing to sense
+                    continue
+                handle = f"{slot[0]}-{slot[1]}"
+            GraphParser._attach_signal(source_id, source_node, nodes_dict.get(edge.target), handle)
+
+        network = HydraulicNetwork(nodes=nodes_dict, edges=parsed_edges, inline_nodes=inline_nodes)
         network.global_settings = resolved_graph.global_settings
         network.active_case_id = resolved_graph.active_case_id
         return network
@@ -266,6 +283,56 @@ class GraphParser:
             }
 
     @staticmethod
+    def _build_component_links(nodes_dict: Dict[str, HydraulicNode], inline_nodes: Dict[str, InlineNode],
+                               parsed_edges: list, global_settings) -> list:
+        """The solver edges. Each in-line component leaves nodes_dict and becomes a ComponentLink edge between two
+        hidden two-port junctions, one at each of its ports (a valve link in EPANET): the pipe on port k ends on
+        port 0 of junction k, the link on its port 1. A free component port leaves its junction a dead end. A pipe
+        runs from an outlet to an inlet: a role port at its source is an outlet, at its target an inlet."""
+        def port_index(edge_info, side):
+            k = _neutral_port(edge_info[f"{side}_port"], pipe_end=True)
+            if k not in (0, 1):
+                raise ModelInputError(f"Pipe '{edge_info['label']}': '{inline_nodes[edge_info[side]].name}' has no "
+                                      f"port \"{edge_info[f'{side}_port']}\".")
+            return k
+
+        def role(node_id, handle):
+            """'outlet' / 'inlet' of a role port, None for a neutral (junction) port."""
+            if isinstance(nodes_dict[node_id], Junction):
+                return None
+            prefix = str(handle or "").split('-')[0]
+            return prefix if prefix in ('inlet', 'outlet') else None
+
+        links = {}
+        for nid, component in inline_nodes.items():
+            del nodes_dict[nid]
+            for k in (0, 1):
+                hub = Junction(name=f"{component.name} port {k + 1}", num_ports=2)
+                hub.id, hub.hidden = f"{nid}#port-{k}", True
+                hub.global_settings = global_settings
+                nodes_dict[hub.id] = hub
+            links[nid] = {"id": f"{nid}#link", "label": component.name, "source": f"{nid}#port-0",
+                          "target": f"{nid}#port-1", "source_port": "port-1", "target_port": "port-1",
+                          "pipe": ComponentLink(component, global_settings)}
+
+        for edge_info in parsed_edges:
+            for side in ('source', 'target'):
+                nid = edge_info[side]
+                if nid in inline_nodes:
+                    k = port_index(edge_info, side)
+                    link = links[nid]["pipe"]
+                    if link.adjacent[k] is not None:
+                        raise ModelInputError(f"'{inline_nodes[nid].name}': Port {k + 1} takes one pipe.")
+                    link.adjacent[k] = edge_info["pipe"]
+                    edge_info[side], edge_info[f"{side}_port"] = f"{nid}#port-{k}", "port-0"
+            if (role(edge_info["source"], edge_info["source_port"]) == 'inlet'
+                    or role(edge_info["target"], edge_info["target_port"]) == 'outlet'):
+                names = (nodes_dict[edge_info["source"]].name, nodes_dict[edge_info["target"]].name)
+                raise ModelInputError(f"Pipe '{edge_info['label']}' from '{names[0]}' to '{names[1]}' joins two outlets, "
+                                      "two inlets or runs from an inlet to an outlet. A line runs from an outlet to an inlet.")
+        return parsed_edges + list(links.values())
+
+    @staticmethod
     def _assign_junction_ports(nodes_dict: Dict[str, HydraulicNode], parsed_edges: list) -> None:
         """Gives every pipe end on a junction port (port-k) an inlet slot when the pipe is drawn into the junction
         and an outlet slot when drawn out of it, and rewrites the edge's port to that slot for the solver."""
@@ -275,14 +342,14 @@ class GraphParser:
                 if not isinstance(node, Junction):
                     continue
                 handle = str(edge_info[f"{end}_port"] or "")
-                parts = handle.split('-')
-                if len(parts) != 2 or parts[0] != 'port' or not (parts[1].isascii() and parts[1].isdigit()):
+                k = _neutral_port(handle, pipe_end=True)
+                if k is None:
                     raise ModelInputError(f"Pipe '{edge_info['label']}': junction '{node.name}' has no port \"{handle}\".")
-                if int(parts[1]) >= node.num_ports:   # ports are numbered from 1 on the canvas
+                if k >= node.num_ports:   # ports are numbered from 1 on the canvas
                     raise ModelInputError(f"Pipe '{edge_info['label']}': junction '{node.name}' has no Port "
-                                          f"{int(parts[1]) + 1} (it has {node.num_ports} ports).")
+                                          f"{k + 1} (it has {node.num_ports} ports).")
                 try:
-                    edge_info[f"{end}_port"] = node.assign_port(int(parts[1]), as_inlet)
+                    edge_info[f"{end}_port"] = node.assign_port(k, as_inlet)
                 except ValueError as e:
                     raise ModelInputError(f"Junction '{node.name}': {e}.") from e
 

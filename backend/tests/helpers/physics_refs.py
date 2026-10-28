@@ -67,6 +67,30 @@ def throttling_dt(dp: float, rho: float, cp: float) -> float:
     return dp / (rho * cp)
 
 
+def link_inline(nodes: dict, edges: list, gs):
+    """Solver nodes and edges of a hand-built network that holds in-line components (orifice, restriction, filter),
+    turned into component links between hidden junctions as the parser does. An edge without ports leaves a
+    component by port-1 and arrives at port-0. The caller's dict keeps the components, so a test reads their ports
+    after the solve."""
+    from simulation.equipment.base_node import InlineNode
+    from simulation.graph_parser import GraphParser
+    inline = {k: n for k, n in nodes.items() if isinstance(n, InlineNode)}
+    if not inline:
+        return nodes, edges, {}
+    solver_nodes = dict(nodes)
+    parsed = []
+    for i, e in enumerate(edges):
+        parsed.append({"id": f"e{i}", "label": e["pipe"].name,
+                       "source_port": "port-1" if e["source"] in inline else "outlet-0",
+                       "target_port": "port-0" if e["target"] in inline else "inlet-0", **e})
+    parsed = GraphParser._build_component_links(solver_nodes, inline, parsed, gs)
+    for e in parsed:   # the pipe ends and the link end on a hidden port junction take their slots
+        for end, as_inlet in (("source", False), ("target", True)):
+            if getattr(solver_nodes[e[end]], "hidden", False):
+                e[f"{end}_port"] = solver_nodes[e[end]].assign_port(int(e[f"{end}_port"].split("-")[1]), as_inlet)
+    return solver_nodes, parsed, inline
+
+
 def solve(nodes: dict, edges: list, fluid: str = "water", **settings):
     """Build and solve a network; the system fluid is set in GlobalSettings like the app does."""
     gs = GlobalSettings(fluid_type=fluid, **settings)
@@ -74,7 +98,8 @@ def solve(nodes: dict, edges: list, fluid: str = "water", **settings):
         n.global_settings = gs
     for e in edges:
         e["pipe"].global_settings = gs
-    network = HydraulicNetwork(nodes=nodes, edges=edges)
+    solver_nodes, solver_edges, inline = link_inline(nodes, edges, gs)
+    network = HydraulicNetwork(nodes=solver_nodes, edges=solver_edges, inline_nodes=inline)
     stats = NetworkSolver(network).solve()
     return stats
 
