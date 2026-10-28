@@ -1,7 +1,6 @@
 import { useUnits } from '../../context/UnitContext';
 import { junctionPortCount } from '../../utils/junctionLayout';
-
-const NO_FLOW_M3S = 1e-9;
+import { NO_FLOW_M3S } from '../../utils/nodeReadouts';
 
 // Flow is positive into the junction; a port without a pipe has no result
 function directionOf(flow) {

@@ -41,8 +41,10 @@ KPI_KEYS = ("max_pressure_bar", "min_pressure_bar", "total_flow_lmin", "total_pu
 
 
 def _ports(item):
+    # In-line components (orifice, restriction, filter) report neutral ports, flow positive into the component
+    ports = item["ports"] if "ports" in item and "inlets" not in item else item["inlets"] + item["outlets"]
     return [[round(p["pressure"] / 1e5, 5), round(p["temperature"] - 273.15, 3), round(p["flow_rate"] * 60000.0, 4)]
-            for p in item["inlets"] + item["outlets"]]
+            for p in ports]
 
 
 def run_case(data, case):

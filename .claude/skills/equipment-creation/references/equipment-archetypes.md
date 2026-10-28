@@ -7,47 +7,33 @@ This reference guide provides ready-to-use Python backend templates for all majo
 ## Archetype 1: Passive In-line Resistor
 *Examples:* Orifices, Strainers/Filters, Porous Elements, Calibrated Clearances.
 
-```python
-from simulation.equipment.base_node import HydraulicNode
-from simulation.fluid_utils import FluidProperties
-import math
+A component whose law is the same in both flow directions has two neutral ports (`port-0`, `port-1`) and no inlet or outlet. It inherits from `InlineNode`. The parser makes it a `ComponentLink` edge between two hidden junctions at its ports, so both ports have solved pressures (see `backend/simulation/equipment/component_link.md`). The link then:
+- evaluates `calculate_delta_p` at `|Q|` with the fluid of the upstream port;
+- applies the sign of the flow;
+- adds the throttling heat $dT = |\Delta P| / (\rho c_p)$ at the port the flow leaves by;
+- fills `ports[k]`, with flow_rate positive into the component.
 
-class InLineResistor(HydraulicNode):
+So the class holds only the law. Reference implementations: `orifice.py`, `filter.py`, `calibrated_restriction.py`.
+
+```python
+from simulation.equipment.base_node import InlineNode
+
+class InLineResistor(InlineNode):
     """
-    A 2-port passive hydraulic resistor with quadratic head loss and laminar blending.
+    A passive resistor with two neutral ports: quadratic loss, the same in both flow directions.
     """
     def __init__(self, name: str, resistance_k: float = 1000.0):
         super().__init__(name, node_type="in_line_resistor")
         self.k = float(resistance_k)
-        
-        self.add_inlet()
-        self.add_outlet()
 
     def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
-        # Standard Darcy-Weisbach or flow coefficient loss: dP = k * rho * Q * |Q|
+        # Odd in Q: dP = k * rho * Q * |Q|
         return self.k * density * flow_rate * abs(flow_rate)
 
-    # No calculate_dp_derivative: the solver differentiates this node numerically
-
-    def calculate(self):
-        inlet = self.inlets[0]
-        outlet = self.outlets[0]
-        
-        dp = self.calculate_delta_p(inlet.flow_rate, inlet.density, inlet.viscosity)
-        outlet.pressure = inlet.pressure - dp
-        outlet.flow_rate = inlet.flow_rate
-        outlet.density = inlet.density
-        outlet.viscosity = inlet.viscosity
-        
-        # Throttling temperature rise
-        fluid_type = getattr(self.global_settings, 'fluid_type', 'water')
-        cp = FluidProperties.get_specific_heat(fluid_type, inlet.temperature)
-        dt = abs(dp) / (inlet.density * cp)
-        outlet.temperature = inlet.temperature + dt
-        
-        self.calculate_temperature()
-        return dp
+    # No calculate(), no ports to add, no calculate_dp_derivative (the component link differentiates numerically)
 ```
+
+Use `upstream_port()` / `downstream_port()` where telemetry or a check needs the flow direction (e.g. the ISO 5167 validity of the orifice). If the physics depends on the direction (flow-to-open valve, counter-current exchanger), the component is not neutral. Use role ports and Archetype 3 or 6.
 
 ---
 
@@ -214,7 +200,7 @@ class BoundaryTank(HydraulicNode):
 ---
 
 ## Archetype 5: Multi-port Flow Junction
-*Examples:* Junction (3 to 8 neutral ports), 3-Way TCV.
+*Examples:* Junction (3 to 8 neutral ports), Measure Point (a junction of 2 neutral ports, `measure_point.py`), 3-Way TCV.
 
 The reference implementation is `backend/simulation/equipment/junction.py`: no `calculate_delta_p` (one total pressure at all ports), the default direction-aware `calculate_temperature`, and `calculate()` only copies the pressure and calls `update_outward_properties()`. Neutral ports are mapped to inlet / outlet slots by the parser from the drawn pipe direction (`GraphParser._assign_junction_ports`); a node whose ports all share one total pressure sets `single_side = True` for the static pressure report.
 

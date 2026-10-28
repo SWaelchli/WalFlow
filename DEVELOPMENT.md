@@ -60,7 +60,17 @@ Adding a new hydraulic component to WalFlow requires updating both the physics e
 ### 1. Backend Integration (Physics Engine)
 
 #### Step A: Create the Equipment Class
-Create a new file in `backend/simulation/equipment/<name>.py`. Your class must inherit from `HydraulicNode`.
+Create a new file in `backend/simulation/equipment/<name>.py`. First, decide the ports:
+
+- **Neutral ports:** for a two-port component whose law is the same in both flow directions (orifice, filter, calibrated restriction).
+  - Inherit from `InlineNode` and implement only `calculate_delta_p`, which must be odd in Q.
+  - There are no ports to add and no `calculate()`.
+  - The parser makes the component a `ComponentLink` edge between two hidden junctions at its ports, and the solved flow sign picks the upstream port. See `backend/simulation/equipment/component_link.md` and the `equipment-creation` skill (Archetype 1).
+- **Role ports:** for anything whose physics depends on the direction.
+  - Inherit from `HydraulicNode` and add inlets and outlets, as in the example below.
+  - A line must run from an outlet to an inlet.
+
+Do not add a "reversed" flag to a role-port component to imitate neutrality.
 
 ```python
 from simulation.equipment.base_node import HydraulicNode
@@ -139,7 +149,7 @@ elif t == 'new_equipment':
 ### 2. Frontend Integration (UI & ReactFlow)
 
 #### Step A: Create the Node Component
-Create a new React component in `frontend/src/nodes/NewNode.jsx`. Use ReactFlow `Handle` components for port connections:
+Create a new React component in `frontend/src/nodes/NewNode.jsx`. Use ReactFlow `Handle` components for port connections. Use `inlet-k` / `outlet-k` for role ports. For neutral ports, use `port-0` / `port-1` with `className="handle-neutral"`, register the type in `NEUTRAL_TYPES` (`utils/networkValidation.js`), and read `telemetry.ports` (see `OrificeNode.jsx`).
 
 ```jsx
 import { Handle, Position } from 'reactflow';

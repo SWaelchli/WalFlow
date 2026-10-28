@@ -33,7 +33,7 @@ export function splitEdgeWithTap({ nodes, edges, edgeId, position, tapId, tapDat
     ...edge,
     selected: false,
     target: tapId,
-    targetHandle: 'inlet-0',
+    targetHandle: 'port-0',
     data: { ...pipeData, length_m: halfLength },
   };
   const downstream = {
@@ -42,7 +42,7 @@ export function splitEdgeWithTap({ nodes, edges, edgeId, position, tapId, tapDat
     label: downstreamLabel,
     selected: false,
     source: tapId,
-    sourceHandle: 'outlet-0',
+    sourceHandle: 'port-1',
     data: { ...pipeData, label: downstreamLabel, length_m: halfLength },
   };
 

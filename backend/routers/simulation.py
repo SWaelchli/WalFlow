@@ -11,6 +11,8 @@ from simulation.solver import NetworkSolver, run_sequential_relief_simulation
 from simulation.equipment.volumetric_pump import VolumetricPump
 from simulation.equipment.centrifugal_pump import CentrifugalPump
 from simulation.equipment.junction import Junction
+from simulation.equipment.base_node import InlineNode
+from simulation.equipment.component_link import ComponentLink, canvas_id
 from simulation.fluid_utils import FluidProperties
 from limiter import limiter
 from simulation.limits import SolveTimeout, solve_deadline, solve_slot, max_nodes, max_cases
@@ -71,6 +73,9 @@ THROTTLING_TYPES = {"linear_control_valve", "linear_regulator", "remote_control_
 def _outlet_below_vapor_pressure(network, node) -> bool:
     """A throttling device whose downstream pressure is below the vapour pressure flashes / cavitates."""
     fluid = getattr(getattr(network, 'global_settings', None), 'fluid_type', 'water')
+    if isinstance(node, InlineNode):   # the port the flow leaves by (flow_rate positive into the component)
+        port = node.downstream_port()
+        return bool(port.flow_rate < 0.0 and port.pressure < FluidProperties.get_vapor_pressure(fluid, port.temperature))
     for port in node.outlets:
         if port.flow_rate > 0.0 and port.pressure < FluidProperties.get_vapor_pressure(fluid, port.temperature):
             return True
@@ -90,16 +95,14 @@ def calculate_case_kpis(network, telemetry: Dict[str, Any], stats: Dict[str, Any
     node_telemetry = telemetry.get("nodes", {})
     
     # Iterate nodes to aggregate system parameters
-    for node_id, node in network.nodes.items():
+    for node_id, node in [*network.nodes.items(), *network.inline_nodes.items()]:
         node_tel = node_telemetry.get(node_id, {})
         
-        # Check inlet/outlet pressures
-        for inlet in node_tel.get("inlets", []):
-            p = inlet.get("pressure", 101325.0)
-            if p > max_p_pa: max_p_pa = p
-            if p < min_p_pa: min_p_pa = p
-        for outlet in node_tel.get("outlets", []):
-            p = outlet.get("pressure", 101325.0)
+        # Check port pressures (an in-line component reports neutral ports, a junction's ports may be None)
+        for port in [*node_tel.get("inlets", []), *node_tel.get("outlets", []), *(node_tel.get("ports") or [])]:
+            if not port:
+                continue
+            p = port.get("pressure", 101325.0)
             if p > max_p_pa: max_p_pa = p
             if p < min_p_pa: min_p_pa = p
             
@@ -158,11 +161,17 @@ def valve_curves(node) -> Dict[str, List[float]]:
 def extract_telemetry(network) -> Dict[str, Any]:
     """Canonical telemetry extraction function for both REST and WebSocket simulation runs."""
     telemetry = {"nodes": {}, "edges": {}}
-    for node_id, node in network.nodes.items():
-        node_tel = {
-            "inlets": [p.model_dump() for p in node.inlets],
-            "outlets": [p.model_dump() for p in node.outlets]
-        }
+    for node_id, node in [*network.nodes.items(), *network.inline_nodes.items()]:
+        if getattr(node, 'hidden', False):
+            continue
+        if isinstance(node, InlineNode):
+            # Neutral ports in port order, flow_rate positive into the component
+            node_tel = {"ports": [p.model_dump() for p in node.ports]}
+        else:
+            node_tel = {
+                "inlets": [p.model_dump() for p in node.inlets],
+                "outlets": [p.model_dump() for p in node.outlets]
+            }
         if isinstance(node, Junction):
             # Per port-k in port order: the slot port with flow_rate positive into the junction; None without a pipe
             node_tel["ports"] = [
@@ -181,7 +190,7 @@ def extract_telemetry(network) -> Dict[str, Any]:
             node_tel["npshr_m"] = node.npshr_m
             node_tel["npsh_margin_m"] = node.npsh_margin_m
         if node.node_type == "orifice" and getattr(node, 'standard', None) == 'iso_5167':
-            inlet = node.inlets[0]
+            inlet = node.upstream_port()
             re_pipe = node._pipe_reynolds(inlet.flow_rate, inlet.density, inlet.viscosity, node.pipe_diameter)
             issues = node.iso_validity_issues(re_pipe if abs(inlet.flow_rate) > 0 else None)
             node_tel["iso_validity"] = {"valid": not issues, "issues": issues}
@@ -222,7 +231,7 @@ def extract_telemetry(network) -> Dict[str, Any]:
                 node_tel["valve_type"] = node.valve_type
                 node_tel["cdtp_barg"] = node.cdtp_barg
                 node_tel["opening_pressure_barg"] = node.opening_pressure_barg
-                node_tel["pilot_sensing_node_id"] = (node.remote_sensing_config or {}).get("node_id") if node.has_remote_pilot else None
+                node_tel["pilot_sensing_node_id"] = canvas_id(node.remote_sensing_config["node_id"]) if node.has_remote_pilot and node.remote_sensing_config else None
                 node_tel["cycle_low_barg"] = node.cycle_low_barg
                 node_tel["cycle_high_barg"] = node.cycle_high_barg
         if hasattr(node, 'forced_state'):
@@ -240,11 +249,11 @@ def extract_telemetry(network) -> Dict[str, Any]:
         telemetry["nodes"][node_id] = node_tel
 
     for edge in network.edges:
-        edge_id = edge["id"]
-        pipe = edge["pipe"]
-        telemetry["edges"][edge_id] = {
-            "inlets": [p.model_dump() for p in pipe.inlets],
-            "outlets": [p.model_dump() for p in pipe.outlets]
+        if isinstance(edge["pipe"], ComponentLink):   # reported on the component's ports
+            continue
+        telemetry["edges"][edge["id"]] = {
+            "inlets": [p.model_dump() for p in edge["pipe"].inlets],
+            "outlets": [p.model_dump() for p in edge["pipe"].outlets]
         }
     return telemetry
 

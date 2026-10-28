@@ -32,6 +32,8 @@ def test_reported_state_is_consistent(control_iterations):
 
     for edge in net.edges:
         pipe = edge["pipe"]
+        if not hasattr(pipe, "calculate_delta_p"):
+            continue        # a component link has no pipe law
         q = pipe.inlets[0].flow_rate
         dp_reported = pipe.inlets[0].pressure - pipe.outlets[0].pressure
         dp_model = pipe.calculate_delta_p(q, *pipe.upstream_port().fluid())

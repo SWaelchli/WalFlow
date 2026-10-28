@@ -38,7 +38,7 @@
   --color-info: #0284C7;
   --color-inlet: #0284C7;
   --color-outlet: #E11D48;
-  --color-port-neutral: #7C3AED; /* junction ports (either direction): violet, apart from blue inlet, rose outlet and slate signal; 5.7:1 on white */
+  --color-port-neutral: #587071; /* neutral ports (junction, orifice, filter, ...): muted teal-grey, apart from blue inlet and rose outlet; 5.3:1 on white */
 
   --shadow-sm: 0 1px 2px 0 rgba(57, 82, 83, 0.05);
   --shadow-md: 0 4px 12px -2px rgba(57, 82, 83, 0.1), 0 2px 4px -2px rgba(57, 82, 83, 0.06);
@@ -196,13 +196,16 @@ body {
   box-shadow: 0 0 8px rgba(225, 29, 72, 0.4);
 }
 
-.react-flow__handle.handle-port {
+/* Neutral ports (junction and two-port components): hollow rings */
+.react-flow__handle.handle-port,
+.react-flow__handle.handle-neutral {
   border-color: var(--color-port-neutral) !important;
 }
-.react-flow__handle.handle-port:hover {
+.react-flow__handle.handle-port:hover,
+.react-flow__handle.handle-neutral:hover {
   background-color: var(--color-port-neutral) !important;
   transform: scale(1.3);
-  box-shadow: 0 0 8px rgba(124, 58, 237, 0.4);
+  box-shadow: 0 0 8px rgba(88, 112, 113, 0.4);
 }
 
 /* Junction ports are placed with top/left/margin; the side-based React Flow offset must not apply, but hover still enlarges */

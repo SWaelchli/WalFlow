@@ -21,8 +21,8 @@ describe('splitEdgeWithTap', () => {
 
     const up = e.find((x) => x.id === 'e1');
     const down = e.find((x) => x.id === 'e2');
-    expect(up).toMatchObject({ source: 'a', sourceHandle: 'outlet-0', target: 'tap', targetHandle: 'inlet-0', label: 'Pipe 100' });
-    expect(down).toMatchObject({ source: 'tap', sourceHandle: 'outlet-0', target: 'b', targetHandle: 'inlet-0', label: 'Pipe 101' });
+    expect(up).toMatchObject({ source: 'a', sourceHandle: 'outlet-0', target: 'tap', targetHandle: 'port-0', label: 'Pipe 100' });
+    expect(down).toMatchObject({ source: 'tap', sourceHandle: 'port-1', target: 'b', targetHandle: 'inlet-0', label: 'Pipe 101' });
     expect(up.data).toMatchObject({ label: 'Pipe 100', length_m: 15, diameter_m: 0.05248, roughness_mm: 0.045, pipeClass: 'CS' });
     expect(down.data).toMatchObject({ label: 'Pipe 101', length_m: 15, diameter_m: 0.05248, roughness_mm: 0.045, pipeClass: 'CS' });
   });

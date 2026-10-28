@@ -9,6 +9,7 @@ import contextlib
 import pytest
 
 from physics_refs import solve
+from simulation.schemas import HydraulicNetwork
 from simulation.equipment.tank import Tank
 from simulation.equipment.pipe import Pipe
 from simulation.equipment.pressure_source import PressureSource
@@ -105,7 +106,7 @@ def _pd_network(drive):
 def test_fixed_speed_keeps_flow_and_flags_overload():
     nodes, stats = _pd_network("fixed_speed")
     pump = nodes["p"]
-    tel = extract_telemetry(type("N", (), {"nodes": nodes, "edges": []})())["nodes"]["p"]
+    tel = extract_telemetry(HydraulicNetwork(nodes=nodes, edges=[]))["nodes"]["p"]
     assert pump.inlets[0].flow_rate == pytest.approx(Q_R, rel=0.01)
     assert tel["motor_overload"] and not tel["power_limited"]
     dp = pump.outlets[0].pressure - pump.inlets[0].pressure
@@ -116,7 +117,7 @@ def test_fixed_speed_keeps_flow_and_flags_overload():
 def test_vfd_power_limit_reduces_flow_and_flags_it():
     nodes, stats = _pd_network("vfd_power_limit")
     pump = nodes["p"]
-    tel = extract_telemetry(type("N", (), {"nodes": nodes, "edges": []})())["nodes"]["p"]
+    tel = extract_telemetry(HydraulicNetwork(nodes=nodes, edges=[]))["nodes"]["p"]
     assert pump.inlets[0].flow_rate < 0.8 * Q_R
     assert tel["power_limited"] and not tel["motor_overload"]
     assert tel["shaft_power_kw"] == pytest.approx(5.0, rel=0.02)
@@ -124,7 +125,7 @@ def test_vfd_power_limit_reduces_flow_and_flags_it():
 
 def test_kpi_power_is_shaft_power_and_stopped_pump_counts_zero():
     nodes, stats = _pd_network("fixed_speed")
-    net = type("N", (), {"nodes": nodes, "edges": []})()
+    net = HydraulicNetwork(nodes=nodes, edges=[])
     kpi = calculate_case_kpis(net, extract_telemetry(net), stats)
     assert kpi["total_pump_power_kw"] == pytest.approx(round(nodes["p"].shaft_power() / 1000.0, 2), abs=0.01)
     nodes["p"].active = False

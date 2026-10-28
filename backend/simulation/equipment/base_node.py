@@ -169,6 +169,15 @@ class HydraulicNode:
         """Restores the case values changed by apply_relief_ramp()."""
         pass
 
+    def upstream_fluid(self) -> tuple:
+        """(density, viscosity) at the port the flow enters by in the last property pass (port 0 of its side): the
+        inlet in forward flow, the outlet in reverse flow, the inlet without flow. Held fixed during a solve."""
+        if self.inlets and (self.inlets[0].flow_rate >= 0 or not self.outlets):
+            return self.inlets[0].fluid()
+        if self.outlets:
+            return self.outlets[0].fluid()
+        return 1000.0, 0.001
+
     def calculate(self):
         """
         The simulation engine will call this method iteratively.
@@ -193,3 +202,25 @@ class HydraulicNode:
             dp_minus = self.calculate_delta_p(flow_rate - dq, density, viscosity)
 
         return (dp_plus - dp_minus) / (2.0 * dq)
+
+
+class InlineNode(HydraulicNode):
+    """
+    A component with two neutral ports (port-0, port-1) and the same law in both flow directions: an odd
+    calculate_delta_p. It is no node of the solve: the parser makes it a ComponentLink edge between two hidden
+    junctions at its ports, which evaluates it at its upstream fluid and fills its ports (flow_rate positive into the
+    component).
+    """
+    def __init__(self, name: str, node_type: str):
+        super().__init__(name, node_type)
+        self.ports: List[Port] = [Port(), Port()]
+
+    def calculate(self):
+        raise TypeError(f"'{self.name}' is solved by its ComponentLink, not as a node")
+
+    def upstream_port(self) -> Port:
+        """The port the flow enters by; port 0 without flow."""
+        return self.ports[1] if self.ports[1].flow_rate > 0 else self.ports[0]
+
+    def downstream_port(self) -> Port:
+        return self.ports[0] if self.ports[1].flow_rate > 0 else self.ports[1]

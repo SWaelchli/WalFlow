@@ -23,6 +23,8 @@ def test_property_loop_converges_and_pipes_are_consistent(case):
         if net.nodes[edge["target"]].node_type == "three_way_tcv":
             continue        # the reported pipe end pressure of a TCV feed includes the TCV path loss
         pipe = edge["pipe"]
+        if not hasattr(pipe, "calculate_delta_p"):
+            continue        # a component link has no pipe law
         q = pipe.inlets[0].flow_rate
         dp_reported = pipe.inlets[0].pressure - pipe.outlets[0].pressure
         dp_model = pipe.calculate_delta_p(q, *pipe.upstream_port().fluid())

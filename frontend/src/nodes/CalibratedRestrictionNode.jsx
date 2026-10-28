@@ -4,7 +4,7 @@ import { getRotatedPosition } from '../components/canvas/NodeRotationHandle';
 import { SensingPin } from '../components/canvas/SensingPin';
 import BaseNode from './BaseNode';
 import { useUnits } from '../context/UnitContext';
-import { pressureDrop } from '../utils/nodeReadouts';
+import { neutralDrop } from '../utils/nodeReadouts';
 
 /**
  * Calibrated Restriction Node (Orifice, Laminar, or Quadratic)
@@ -14,7 +14,7 @@ export default function CalibratedRestrictionNode({ id, data, selected }) {
   const telemetry = data.telemetry;
   const rotation = data.rotation || 0;
   const sensing = useMemo(() => data.sensing || {}, [data.sensing]);
-  const dP = pressureDrop(telemetry);
+  const dP = neutralDrop(telemetry);
   const dPFormatted = formatPressurePa(dP);
 
   // Pretty model badge name
@@ -58,30 +58,32 @@ export default function CalibratedRestrictionNode({ id, data, selected }) {
       <Handle 
         type="target" 
         position={getRotatedPosition(Position.Left, rotation)} 
-        id="inlet-0" 
-        className="handle-inlet"
+        id="port-0" 
+        className="handle-neutral"
+        title="Port 1"
         style={{ 
           top: '30px', left: '0px', 
           marginTop: '-5px', marginLeft: '-5px',
           right: 'auto', bottom: 'auto', transform: 'none',
-          background: 'var(--color-inlet)', width: '8px', height: '8px' 
+          width: '8px', height: '8px' 
         }} 
       />
-      {sensing['inlet-0'] && <SensingPin portId="inlet-0" offset={{ x: -20, y: 0 }} />}
+      {sensing['port-0'] && <SensingPin portId="port-0" offset={{ x: -20, y: 0 }} />}
 
       <Handle 
         type="source" 
         position={getRotatedPosition(Position.Right, rotation)} 
-        id="outlet-0" 
-        className="handle-outlet"
+        id="port-1" 
+        className="handle-neutral"
+        title="Port 2"
         style={{ 
           top: '30px', left: '40px', 
           marginTop: '-5px', marginLeft: '-5px',
           right: 'auto', bottom: 'auto', transform: 'none',
-          background: 'var(--color-outlet)', width: '8px', height: '8px' 
+          width: '8px', height: '8px' 
         }} 
       />
-      {sensing['outlet-0'] && <SensingPin portId="outlet-0" offset={{ x: 20, y: 0 }} />}
+      {sensing['port-1'] && <SensingPin portId="port-1" offset={{ x: 20, y: 0 }} />}
     </BaseNode>
   );
 }

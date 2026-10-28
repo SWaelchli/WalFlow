@@ -145,11 +145,15 @@ NETWORK_COMPONENTS = {
     "linear_control_valve": st.fixed_dictionaries({
         "max_cv": log_uniform(0.5, 50.0), "opening_pct": st.floats(5.0, 100.0)}),
     "filter": RESISTANCE_DATA["filter"],
+    "calibrated_restriction": RESISTANCE_DATA["calibrated_restriction"],
     "heat_exchanger": RESISTANCE_DATA["heat_exchanger"].flatmap(lambda d: st.fixed_dictionaries({
         **{k: st.just(v) for k, v in d.items()}, "medium_temp_c": st.floats(5.0, 60.0)})),
     "check_valve": st.fixed_dictionaries({"cv": log_uniform(0.5, 50.0), "cracking_pressure_bar": st.floats(0.0, 0.3)}),
     "measure_point": st.just({}),
 }
+# Components with two neutral ports (port-0, port-1): the in-line components (each a link between two hidden
+# junctions) and the measure point (a two-port junction)
+NEUTRAL_TWO_PORT = {"orifice", "filter", "calibrated_restriction", "measure_point"}
 # Components that add no heat source or sink of their own other than dissipation
 DISSIPATIVE_ONLY = set(NETWORK_COMPONENTS) - {"heat_exchanger"}
 
@@ -164,8 +168,8 @@ def networks(draw, max_depth: int = 3, components=tuple(sorted(NETWORK_COMPONENT
     """A saved-file graph (dict for ReactFlowGraph): a pressure source, a tank with a centrifugal pump, or two
     pressure sources at different temperatures joined in a junction, feeding a random series-parallel arrangement
     of components (junction pairs with 2 or 3 branches) into a tank. Every edge is a pipe with its own geometry.
-    A junction has 1 to 2 ports more than it uses, its pipes sit on shuffled ports, and a pipe between two
-    junctions is drawn in either direction. Node ids are n0, n1, ... in creation order."""
+    A junction has 1 to 2 ports more than it uses, its pipes sit on shuffled ports, a pipe between two neutral ports is drawn in either
+    direction and the in-line components are entered by either neutral port. Node ids are n0, n1, ... in creation order."""
     nodes, edges = [], []
 
     def add_node(node_type, data):
@@ -182,10 +186,18 @@ def networks(draw, max_depth: int = 3, components=tuple(sorted(NETWORK_COMPONENT
 
     def connect(src, dst):
         if src[1].startswith("port-") and dst[1].startswith("port-") and draw(st.booleans()):
-            src, dst = dst, src   # a pipe between two junctions can be drawn from either end
+            src, dst = dst, src   # between two neutral ports a pipe can be drawn from either end; a role port fixes it
         (s, s_port), (t, t_port) = src, dst
         edges.append({"id": f"e{len(edges)}", "source": s, "target": t, "sourceHandle": s_port,
                       "targetHandle": t_port, "data": draw(_pipe_data())})
+
+    def component_ports(node_type, node):
+        """(entry, exit) handles of a placed component: a role port pair, or the two neutral ports of an in-line
+        component or measure point in either order (which side the flow enters is not fixed by the drawing)."""
+        if node_type not in NEUTRAL_TWO_PORT:
+            return (node, "inlet-0"), (node, "outlet-0")
+        entry, leave = ("port-0", "port-1") if draw(st.booleans()) else ("port-1", "port-0")
+        return (node, entry), (node, leave)
 
     def place(src, dst, depth):
         """Connect port src to port dst through a random sub-network."""
@@ -196,13 +208,15 @@ def networks(draw, max_depth: int = 3, components=tuple(sorted(NETWORK_COMPONENT
         elif kind == "component":
             node_type = draw(st.sampled_from(components))
             node = add_node(node_type, draw(NETWORK_COMPONENTS[node_type]))
-            connect(src, (node, "inlet-0"))
-            connect((node, "outlet-0"), dst)
+            entry, leave = component_ports(node_type, node)
+            connect(src, entry)
+            connect(leave, dst)
         elif kind == "series":
             node_type = draw(st.sampled_from(components))
             node = add_node(node_type, draw(NETWORK_COMPONENTS[node_type]))
-            place(src, (node, "inlet-0"), depth + 1)
-            place((node, "outlet-0"), dst, depth + 1)
+            entry, leave = component_ports(node_type, node)
+            place(src, entry, depth + 1)
+            place(leave, dst, depth + 1)
         else:
             branches = draw(st.sampled_from([2, 2, 3]))
             split, split_ports = add_junction(branches + 1)

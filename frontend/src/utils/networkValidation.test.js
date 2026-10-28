@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { validateNetwork, checkNewConnection, normalizeConnection, portsOf, PORTS_BY_TYPE } from './networkValidation';
+import { validateNetwork, checkNewConnection, normalizeConnection, portsOf, PORTS_BY_TYPE, SAME_ROLE_MESSAGE } from './networkValidation';
 
 const node = (id, type, label) => ({ id, type, position: { x: 0, y: 0 }, data: { label: label || id } });
 const pipe = (id, source, target, sourceHandle = 'outlet-0', targetHandle = 'inlet-0') => (
@@ -19,7 +19,7 @@ describe('measurement taps and instruments', () => {
   it('a tap is an in-line component and an instrument bubble is not part of the network', () => {
     const d = {
       nodes: [node('t1', 'tank'), node('tap', 'measure_point'), node('t2', 'tank'), node('i', 'instrument')],
-      edges: [pipe('e1', 't1', 'tap'), pipe('e2', 'tap', 't2'),
+      edges: [pipe('e1', 't1', 'tap', 'outlet-0', 'port-0'), pipe('e2', 'tap', 't2', 'port-1', 'inlet-0'),
         { id: 's', source: 'tap', target: 'i', sourceHandle: 'signal-inlet-0', targetHandle: 'signal-in', data: { type: 'SIGNAL' } }],
     };
     const r = validateNetwork(d);
@@ -87,7 +87,8 @@ describe('junction ports', () => {
     ['junction port to an inlet is kept', c('j', 'port-1', 'f', 'inlet-0'), true, false],
     ['inlet dragged to a junction port is swapped', c('f', 'inlet-0', 'j', 'port-1'), true, true],
     ['junction port dragged to an outlet is swapped', c('j', 'port-1', 't1', 'outlet-0'), true, true],
-    ['junction port to a handle that is no port is rejected', c('j', 'port-0', 'f', 'port-0'), false],
+    ['junction port to a neutral component port is kept as dragged', c('j', 'port-0', 'f', 'port-0'), true, false],
+    ['junction port to a handle that is no port is rejected', c('j', 'port-0', 'f', 'bogus'), false],
     ['two junction ports are stored as dragged', c('k', 'port-2', 'j', 'port-0'), true, false],
     ['signal pin to an input is kept', c('f', 'signal-outlet-0', 'i', 'signal-in'), true, false],
     ['signal input dragged to a pin is swapped', c('i', 'signal-in-ref', 'j', 'signal-port-1'), true, true],
@@ -99,6 +100,13 @@ describe('junction ports', () => {
     const r = norm(conn);
     expect(r.ok).toBe(ok);
     if (ok) expect(r.connection).toEqual(flips ? swapped(conn) : conn);
+  });
+
+  it('gives the same-role reason only for two outlets or two inlets', () => {
+    expect(norm(c('t1', 'outlet-0', 'f', 'outlet-0')).message).toBe(SAME_ROLE_MESSAGE);
+    expect(norm(c('t1', 'inlet-0', 'f', 'inlet-0')).message).toBe(SAME_ROLE_MESSAGE);
+    expect(norm(c('j', 'port-0', 'f', 'bogus')).message).toBeUndefined();
+    expect(norm(c('f', 'signal-inlet-0', 'j', 'port-0')).message).toBeUndefined();
   });
 
   it('whatever pair of handles is dragged, a stored pipe never starts at an inlet or ends at an outlet', () => {
@@ -176,10 +184,10 @@ describe('validateNetwork', () => {
     expect(codes(validateNetwork(d).errors)).toContain('unknown_endpoint');
   });
 
-  it('warns about an open outlet (orifice outlet left open)', () => {
+  it('warns about an open outlet (orifice port left open)', () => {
     const d = {
       nodes: [node('t1', 'tank'), node('o1', 'orifice')],
-      edges: [pipe('e1', 't1', 'o1')],
+      edges: [pipe('e1', 't1', 'o1', 'outlet-0', 'port-0')],
     };
     const r = validateNetwork(d);
     expect(r.errors).toEqual([]);
@@ -220,7 +228,7 @@ describe('validateNetwork', () => {
   it('warns about a connected group without a boundary', () => {
     const d = {
       nodes: [node('p1', 'centrifugal_pump'), node('f1', 'filter')],
-      edges: [pipe('e1', 'p1', 'f1'), pipe('e2', 'f1', 'p1')],
+      edges: [pipe('e1', 'p1', 'f1', 'outlet-0', 'port-0'), pipe('e2', 'f1', 'p1', 'port-1', 'inlet-0')],
     };
     expect(codes(validateNetwork(d).warnings)).toEqual(['no_boundary']);
   });

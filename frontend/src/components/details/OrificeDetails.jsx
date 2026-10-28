@@ -4,6 +4,8 @@ import {
 } from 'recharts';
 import { useUnits } from '../../context/UnitContext';
 import { niceTicks, formatTick } from '../../utils/chartTicks';
+import { neutralPorts } from '../../utils/nodeReadouts';
+import NeutralFlowCaption from './NeutralFlowCaption';
 
 const smoothstep = (t) => {
   const x = Math.max(0, Math.min(1, t));
@@ -63,17 +65,17 @@ const OrificeDetails = memo(function OrificeDetails({ node }) {
   const { labels, isImperial, formatPressurePa } = useUnits();
   const { pipe_diameter_m, orifice_diameter_m, telemetry } = node.data;
   
-  const currentQ = telemetry?.inlets?.[0]?.flow_rate || 0;
-  const actualFlowLmin = Math.abs(currentQ) * 60000.0;
-  const rho = telemetry?.inlets?.[0]?.density || 1000;
-  const mu = telemetry?.inlets?.[0]?.viscosity || 0.001;
+  const neutral = neutralPorts(telemetry);
+  const actualFlowLmin = (neutral?.flow ?? 0) * 60000.0;
+  const rho = neutral?.up.density || 1000;
+  const mu = neutral?.up.viscosity || 0.001;
 
   const D = (telemetry?.pipe_diameter ?? pipe_diameter_m) || 0.1;
   const d = orifice_diameter_m || 0.07;
   const beta = d / D;
   const standard = telemetry?.standard ?? (node.data.standard || 'iso_5167');
 
-  const currentDpPa = Math.abs((telemetry?.inlets?.[0]?.pressure || 0) - (telemetry?.outlets?.[0]?.pressure || 0));
+  const currentDpPa = neutral ? Math.abs((neutral.up.pressure || 0) - (neutral.down.pressure || 0)) : 0;
   const currentDpBar = currentDpPa / 100000;
   const maxX_lmin = Math.max(actualFlowLmin * 1.2, actualFlowLmin + 10);
 
@@ -111,6 +113,7 @@ const OrificeDetails = memo(function OrificeDetails({ node }) {
       <div style={{ fontSize: 'var(--fs-xs)', fontWeight: '800', color: 'var(--color-brand-dark)', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '3px solid var(--color-primary)', paddingLeft: '8px' }}>
         Orifice Restriction Curve
       </div>
+      <NeutralFlowCaption telemetry={telemetry} />
       
       <div style={{ width: '100%', height: '240px', background: 'var(--color-surface)' }}>
         <ResponsiveContainer width="100%" height="100%">

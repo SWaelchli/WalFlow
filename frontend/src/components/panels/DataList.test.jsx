@@ -220,3 +220,28 @@ describe('pipe rows', () => {
     expect(onUpdateEdge).toHaveBeenCalledWith('e1', { length_m: 40 });
   });
 });
+
+describe('two-port neutral component row', () => {
+  const rowCells = (p0Flow) => {
+    const port = (flow_rate, pressure, temperature) => ({ flow_rate, pressure, temperature });
+    const orifice = [{
+      id: 'o1', type: 'orifice', position: { x: 0, y: 0 },
+      data: { label: 'FO-1', telemetry: { ports: [port(p0Flow, 300000, 350), port(-p0Flow, 200000, 300)] } },
+    }];
+    render(
+      <UnitProvider initialUnitSystem={UNIT_SYSTEMS.METRIC}>
+        <DataList nodes={orifice} edges={[]} rawNodes={orifice} rawEdges={[]} onSelectNode={vi.fn()} onSelectEdge={vi.fn()} />
+      </UnitProvider>
+    );
+    fireEvent.click(screen.getByText('Full Equipment & Pipeline Data'));
+    return [...screen.getByText('Orifice', { selector: 'td' }).closest('tr').querySelectorAll('td')].map((td) => td.textContent);
+  };
+
+  it('shows the temperature of the downstream port, which is port 0 for reverse flow', () => {
+    const forward = rowCells(0.01);
+    cleanup();
+    const reverse = rowCells(-0.01);
+    expect(forward.at(-1)).toBe('26.9');
+    expect(reverse.at(-1)).toBe('76.9');
+  });
+});

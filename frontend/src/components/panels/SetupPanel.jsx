@@ -7,7 +7,7 @@ import { FLUID_CATEGORIES, FLUID_LIBRARY } from '../../constants/fluid_library';
 import { getEffectiveNodeData } from '../../utils/case_resolver';
 import { GlobeIcon, BoltIcon, WarningIcon, CrossIcon, CaretDownIcon } from '../symbols/IconLibrary';
 import { componentLabel } from '../../constants/componentLabels';
-import { validPortCount } from '../../utils/networkValidation';
+import { validPortCount, NEUTRAL_TYPES } from '../../utils/networkValidation';
 import { MIN_JUNCTION_PORTS, MAX_JUNCTION_PORTS, junctionPortCount, junctionPortIds } from '../../utils/junctionLayout';
 
 import { useUnits } from '../../context/UnitContext';
@@ -22,6 +22,7 @@ import InstrumentSetup from './InstrumentSetup';
 
 
 import { clickableProps } from '../../utils/a11yProps';
+import { portNumberLabel } from '../../utils/portLabels';
 export default function SetupPanel({
   node,
   edge,
@@ -347,7 +348,7 @@ export default function SetupPanel({
       for (let k = next; k < current; k += 1) {
         const handle = `port-${k}`;
         if (allEdges.some(e => (e.source === id && (e.sourceHandle === handle || e.sourceHandle === `signal-${handle}`)) || (e.target === id && e.targetHandle === handle))) {
-          inUse.push(`Port ${k + 1}`);
+          inUse.push(portNumberLabel(k));
         }
       }
       if (inUse.length) {
@@ -362,8 +363,9 @@ export default function SetupPanel({
     onUpdate(id, { num_ports: next });
   };
 
-  const sensingPorts = type === 'junction' ? junctionPortIds(junctionPortCount(data)) : ['inlet-0', 'outlet-0'];
-  const sensingLabel = (portId) => (type === 'junction' ? `PORT ${Number(portId.slice(5)) + 1}` : portId.toUpperCase());
+  const sensingPorts = type === 'junction' ? junctionPortIds(junctionPortCount(data))
+    : NEUTRAL_TYPES.has(type) ? ['port-0', 'port-1'] : ['inlet-0', 'outlet-0'];
+  const sensingLabel = (portId) => (portId.startsWith('port-') ? portNumberLabel(Number(portId.slice(5))).toUpperCase() : portId.toUpperCase());
 
   const handleSensingToggle = (portId) => {
     const sensing = data.sensing || {};

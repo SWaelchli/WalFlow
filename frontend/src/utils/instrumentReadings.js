@@ -2,6 +2,7 @@
 // Values and alarm limits are kept in fixed base units: bar (gauge or absolute), bar, L/min, °C, m/s, cSt.
 import { barToPsi, psiToBar, lminToGpm, gpmToLmin, cToF, fToC, msToFts, ftsToMs } from './converters';
 import { nextNumberedTag } from './autoTag';
+import { portNumberLabel } from './portLabels';
 
 export const INSTRUMENT_VARIABLES = {
   P: { letters: 'PIT', name: 'Pressure' },
@@ -57,19 +58,17 @@ export const describeInstrumentInput = (input, nodes) => {
   const name = host?.data?.label || input.nodeId;
   if (host?.type === 'measure_point') return name;
   // A junction port is shown 1-based ("Port 3" for port-2), like the rest of the UI
-  const port = input.side === 'ports' ? `Port ${input.idx + 1}` : input.handle.replace('-', ' ');
+  const port = input.side === 'ports' ? portNumberLabel(input.idx) : input.handle.replace('-', ' ');
   return `${name} · ${port}`;
 };
 
 const finite = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 
-// Inside diameter (m) of the pipe on a port; for a tap that is the inlet-side pipe, since its pin senses inlet-0
+// Inside diameter (m) of the pipe on a port; a port holds one pipe, which may be stored in either direction
 const pipeDiameterAt = (input, edges) => {
-  const isInlet = input.side === 'inlets';
-  const isPort = input.side === 'ports'; // a junction port can be either end of its pipe
   const pipe = edges.find((e) => !isSignalEdge(e) && (
-    (isPort || isInlet) && e.target === input.nodeId && e.targetHandle === input.handle
-    || (isPort || !isInlet) && e.source === input.nodeId && e.sourceHandle === input.handle));
+    (e.target === input.nodeId && e.targetHandle === input.handle)
+    || (e.source === input.nodeId && e.sourceHandle === input.handle)));
   const d = Number(pipe?.data?.diameter_m);
   return d > 0 ? d : null;
 };
@@ -82,8 +81,14 @@ export function readInstrument(instrument, edges, telemetrySet, atmosphericPa = 
   const data = instrument?.data || {};
   const input = instrumentInput(instrument?.id, edges);
   if (!input) return null;
-  const port = telemetrySet?.nodes?.[input.nodeId]?.[input.side]?.[input.idx];
+  const ports = telemetrySet?.nodes?.[input.nodeId]?.[input.side];
+  const port = ports?.[input.idx];
   if (!port) return null;
+  // On a two-port neutral component a flow reads the flow through it (Port 1 to Port 2), whichever port is tapped;
+  // flow_rate is positive into the port, so Port 2's (when Port 1 is free) counts negative
+  const throughFlow = input.side === 'ports' && ports.length === 2
+    ? (ports[0] ? ports[0].flow_rate : -ports[1].flow_rate)
+    : port.flow_rate;
 
   switch (data.variable) {
     case 'dP': {
@@ -94,7 +99,7 @@ export function readInstrument(instrument, edges, telemetrySet, atmosphericPa = 
       return p1 !== null && p2 !== null ? (p1 - p2) / 1e5 : null;
     }
     case 'Q': {
-      const q = finite(port.flow_rate);
+      const q = finite(throughFlow);
       return q === null ? null : q * 60000;
     }
     case 'T': {
@@ -102,7 +107,7 @@ export function readInstrument(instrument, edges, telemetrySet, atmosphericPa = 
       return t === null ? null : t - 273.15;
     }
     case 'v': {
-      const q = finite(port.flow_rate);
+      const q = finite(throughFlow);
       const d = pipeDiameterAt(input, edges);
       return q === null || d === null ? null : q / (Math.PI * d * d / 4);
     }

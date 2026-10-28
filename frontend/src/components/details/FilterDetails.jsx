@@ -4,14 +4,16 @@ import {
 } from 'recharts';
 import { useUnits } from '../../context/UnitContext';
 import { niceTicks, formatTick } from '../../utils/chartTicks';
+import { neutralPorts } from '../../utils/nodeReadouts';
+import NeutralFlowCaption from './NeutralFlowCaption';
 
 const FilterDetails = memo(function FilterDetails({ node }) {
   const { labels, isImperial, formatPressurePa } = useUnits();
   const { dp_clean_bar, dp_terminal_bar, flow_ref_lmin, clogging_pct, telemetry } = node.data;
   
-  const currentQ = telemetry?.inlets?.[0]?.flow_rate || 0;
-  const actualFlowLmin = Math.abs(currentQ) * 60000.0;
-  const rho = telemetry?.inlets?.[0]?.density || 1000;
+  const neutral = neutralPorts(telemetry);
+  const actualFlowLmin = (neutral?.flow ?? 0) * 60000.0;
+  const rho = neutral?.up.density || 1000;
   
   const dpCleanPa = (dp_clean_bar || 0.2) * 100000.0;
   const dpTerminalPa = (dp_terminal_bar || 1.0) * 100000.0;
@@ -26,7 +28,7 @@ const FilterDetails = memo(function FilterDetails({ node }) {
 
   // The solver calibrates K to the datasheet fluid; scale the curves so that "Current" passes through
   // the solved operating point (reference viscosity / temperature effects).
-  const currentDpMeasuredPa = Math.abs((telemetry?.inlets?.[0]?.pressure || 0) - (telemetry?.outlets?.[0]?.pressure || 0));
+  const currentDpMeasuredPa = neutral ? Math.abs((neutral.up.pressure || 0) - (neutral.down.pressure || 0)) : 0;
   const modelAtOp = kCurr * rho * (actualFlowLmin / 60000) ** 2;
   const fluidScale = (telemetry && modelAtOp > 1e-6 && currentDpMeasuredPa > 0) ? currentDpMeasuredPa / modelAtOp : 1.0;
 
@@ -51,8 +53,7 @@ const FilterDetails = memo(function FilterDetails({ node }) {
     return data;
   }, [kClean, kTerminal, kCurr, rho, fluidScale, xMaxLmin, flowMultiplier, pressMultiplier]);
 
-  const currentDpPa = Math.abs((telemetry?.inlets?.[0]?.pressure || 0) - (telemetry?.outlets?.[0]?.pressure || 0));
-  const currentDpBar = currentDpPa / 100000;
+  const currentDpBar = currentDpMeasuredPa / 100000;
 
   const opPoint = useMemo(() => [{
     q: actualFlowLmin * flowMultiplier,
@@ -64,6 +65,7 @@ const FilterDetails = memo(function FilterDetails({ node }) {
       <div style={{ fontSize: 'var(--fs-xs)', fontWeight: '800', color: 'var(--color-brand-dark)', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '3px solid var(--color-primary)', paddingLeft: '8px' }}>
         Filter Performance (ΔP)
       </div>
+      <NeutralFlowCaption telemetry={telemetry} />
       
       <div style={{ width: '100%', height: '240px', background: 'var(--color-surface)' }}>
         <ResponsiveContainer width="100%" height="100%">
@@ -89,7 +91,7 @@ const FilterDetails = memo(function FilterDetails({ node }) {
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-text-secondary)', fontWeight: '500' }}>Current ΔP:</span>
-          <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-text-primary)', fontWeight: '700', fontFamily: 'var(--font-mono)' }}>{formatPressurePa(currentDpPa)} {labels.pressureDiff}</span>
+          <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-text-primary)', fontWeight: '700', fontFamily: 'var(--font-mono)' }}>{formatPressurePa(currentDpMeasuredPa)} {labels.pressureDiff}</span>
         </div>
       </div>
     </div>

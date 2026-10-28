@@ -43,17 +43,19 @@ Scales: $p_{\text{scale}} = 10^5$ Pa, $q_{\text{scale}} = 10^{-3}$ m³/s.
 
 ### 3.2 How a component enters the equations
 
-The component sets the outlet pressure $P_{\text{out},s}$ from its inlet pressure and its **inlet volume flow** $q = f_j\, q_j$: the mass flow of the edge $j$ that leaves it, divided by the density on its inlet port ($f_j = \rho_j / \rho_{\text{in}}$, `_edge_weights`). Inlet and outlet volume flows differ where the component changes the density (section 3.1). The inlet is the one place every component curve is evaluated, in the solve, its Jacobian, the report, the property pass (heat, `calculate()`) and the controllers: a pump displaces suction volume, and the valve and orifice equations take the flow at upstream conditions. A component must therefore read its flow from the inlet port, never from the outlet port. Flow and density always come from the same port, so $\rho\, q$ is the edge mass flow. In reverse flow the fluid enters at the outlet port; components that use the entering properties (orifice, calibrated restriction) copy them onto the inlet port in `calculate()`, so $f_j \approx 1$ and the pair stays consistent.
+The component sets the outlet pressure $P_{\text{out},s}$ from its inlet pressure and its **inlet volume flow** $q = f_j\, q_j$: the mass flow of the edge $j$ that leaves it, divided by the density on its inlet port ($f_j = \rho_j / \rho_{\text{in}}$, `_edge_weights`). Inlet and outlet volume flows differ where the component changes the density (section 3.1). The inlet is the one place every component curve is evaluated, in the solve, its Jacobian, the report, the property pass (heat, `calculate()`) and the controllers: a pump displaces suction volume, and the valve and orifice equations take the flow at upstream conditions. A component must therefore read its flow from the inlet port, never from the outlet port. Flow and density always come from the same port, so $\rho\, q$ is the edge mass flow. In reverse flow the fluid enters at the outlet port. The solver therefore takes $\rho$ and $\mu$ from `upstream_fluid()`: the inlet port, or the outlet port when the flow runs backwards.
+
+An `InlineNode` (orifice, calibrated restriction, filter) has two neutral ports and no inlet or outlet. It is no node of the solve. The parser makes it a [component link](component_link.md) between two hidden junctions at its ports, which evaluates it at the port the flow enters by; its `calculate()` raises.
 
 | Component kind | Outlet pressure |
 | :--- | :--- |
 | Resistance (valve, orifice, filter, ...) | $P_{\text{out}} = p_{\text{in}} - \Delta P(q, \rho, \mu)$ from `calculate_delta_p` |
 | Pump | $P_{\text{out}} = p_{\text{in}} + \Delta P(q, \rho, \mu)$ (a pressure rise) |
-| Junction, measurement tap, plain node | $P_{\text{out}} = p_{\text{in}}$ (no `calculate_delta_p`) |
+| Junction, measure point, plain node | $P_{\text{out}} = p_{\text{in}}$ (no `calculate_delta_p`) |
 | Pressure boundary (tank, pressure source) | Fixed: the value returned by `calculate()` |
 | MCP component (check valves, relief devices) | Complementarity row, see 3.4 |
 
-$\rho$ and $\mu$ are the values held on the component's inlet port. They are constant during one Newton solve and updated between solves (section 4).
+$\rho$ and $\mu$ are the values held on the component's upstream port (`upstream_fluid()`). They are constant during one Newton solve and updated between solves (section 4).
 
 Sign convention: `calculate_delta_p` is signed. A positive flow gives a positive drop; reverse flow gives a negative drop, unless the component models otherwise.
 

@@ -525,8 +525,8 @@
         "standardDn": 50,
         "standardSch": "40",
         "sensing": {
-          "inlet-0": true,
-          "outlet-0": false
+          "port-0": true,
+          "port-1": false
         }
       }
     },
@@ -687,7 +687,7 @@
         "standardDn": 50,
         "standardSch": "40",
         "sensing": {
-          "inlet-0": false
+          "port-0": false
         }
       }
     },
@@ -924,7 +924,7 @@
         "restriction_model": "laminar",
         "fluid_type": "system",
         "sensing": {
-          "inlet-0": true
+          "port-0": true
         }
       }
     },
@@ -1737,7 +1737,7 @@
       "source": "node_50250584",
       "sourceHandle": "outlet-0",
       "target": "tap-oil-supply",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "id": "edge_723416db",
       "label": "Pipe 119",
       "animated": true,
@@ -1760,9 +1760,9 @@
     },
     {
       "source": "tap-oil-supply",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "node_f59f6043",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "id": "edge_723416db_b",
       "label": "Pipe 119",
       "animated": true,
@@ -1785,7 +1785,7 @@
     },
     {
       "source": "node_f59f6043",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "node_8d84994e",
       "targetHandle": "inlet-0",
       "id": "edge_e91906bf",
@@ -1837,7 +1837,7 @@
       "source": "node_abab9f02",
       "sourceHandle": "port-2",
       "target": "node_f9bb5ad9",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "id": "edge_51d3e49c",
       "label": "Pipe 122",
       "animated": true,
@@ -1860,7 +1860,7 @@
     },
     {
       "source": "node_f9bb5ad9",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "node_59ab52bf",
       "targetHandle": "inlet-0",
       "id": "edge_3e4ce572",
@@ -1937,7 +1937,7 @@
       "source": "node_0f156414",
       "sourceHandle": "port-2",
       "target": "node_9a1b2114",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "id": "edge_7bed3ebe",
       "label": "Pipe 126",
       "animated": true,
@@ -1960,9 +1960,9 @@
     },
     {
       "source": "node_9a1b2114",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "node_70d07517",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "id": "edge_b863688c",
       "label": "Pipe 127",
       "animated": true,
@@ -1985,7 +1985,7 @@
     },
     {
       "source": "node_70d07517",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "node_da61ac05",
       "targetHandle": "inlet-0",
       "id": "edge_925f633d",
@@ -2012,7 +2012,7 @@
       "source": "node_0f156414",
       "sourceHandle": "port-0",
       "target": "node_d4dbe2e8",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "id": "edge_b7759f8c",
       "label": "Pipe 129",
       "animated": true,
@@ -2035,9 +2035,9 @@
     },
     {
       "source": "node_d4dbe2e8",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "node_a522310e",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "id": "edge_40e52e67",
       "label": "Pipe 130",
       "animated": true,
@@ -2060,7 +2060,7 @@
     },
     {
       "source": "node_a522310e",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "node_d16d6bb3",
       "targetHandle": "inlet-0",
       "id": "edge_b5754e39",
@@ -2112,7 +2112,7 @@
       "source": "node_a0ba4eba",
       "sourceHandle": "port-2",
       "target": "node_bf70bd63",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "id": "edge_a1f4c802",
       "label": "Pipe 133",
       "animated": true,
@@ -2135,9 +2135,9 @@
     },
     {
       "source": "node_bf70bd63",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "node_bcd1d1e9",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "id": "edge_a6ae3711",
       "label": "Pipe 134",
       "animated": true,
@@ -2160,7 +2160,7 @@
     },
     {
       "source": "node_bcd1d1e9",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "node_c255f237",
       "targetHandle": "inlet-0",
       "id": "edge_8e602a2a",
@@ -2262,7 +2262,7 @@
       "source": "node_327c00de",
       "sourceHandle": "port-2",
       "target": "node_f243d748",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "id": "edge_4e94df60",
       "label": "Pipe 139",
       "animated": true,
@@ -2285,9 +2285,9 @@
     },
     {
       "source": "node_f243d748",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "node_89d45b5d",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "id": "edge_23dcaaf2",
       "label": "Pipe 140",
       "animated": true,
@@ -2312,7 +2312,7 @@
       "source": "node_327c00de",
       "sourceHandle": "port-1",
       "target": "node_f57214b9",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "id": "edge_2473f595",
       "label": "Pipe 141",
       "animated": true,
@@ -2335,9 +2335,9 @@
     },
     {
       "source": "node_f57214b9",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "node_0effe165",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "id": "edge_fbbac487",
       "label": "Pipe 142",
       "animated": true,
@@ -2362,7 +2362,7 @@
       "source": "node_4211d433",
       "sourceHandle": "port-2",
       "target": "node_485f95a2",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "id": "edge_acc72dbe",
       "label": "Pipe 143",
       "animated": true,
@@ -2385,9 +2385,9 @@
     },
     {
       "source": "node_485f95a2",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "node_9958a664",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "id": "edge_2ee9068f",
       "label": "Pipe 144",
       "animated": true,
@@ -2412,7 +2412,7 @@
       "source": "node_6e5b1658",
       "sourceHandle": "port-2",
       "target": "node_8368ae5f",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "id": "edge_ed700842",
       "label": "Pipe 145",
       "animated": true,
@@ -2435,9 +2435,9 @@
     },
     {
       "source": "node_8368ae5f",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "node_0099e94d",
-      "targetHandle": "inlet-0",
+      "targetHandle": "port-0",
       "id": "edge_acedf874",
       "label": "Pipe 146",
       "animated": true,
@@ -2460,7 +2460,7 @@
     },
     {
       "source": "node_9958a664",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "node_a5dde124",
       "targetHandle": "inlet-0",
       "id": "edge_92140094",
@@ -2485,7 +2485,7 @@
     },
     {
       "source": "node_0099e94d",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "node_79e1d31e",
       "targetHandle": "inlet-0",
       "id": "edge_d6e628df",
@@ -2510,7 +2510,7 @@
     },
     {
       "source": "node_89d45b5d",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "node_9496a1ca",
       "targetHandle": "inlet-0",
       "id": "edge_5caad4bb",
@@ -2535,7 +2535,7 @@
     },
     {
       "source": "node_0effe165",
-      "sourceHandle": "outlet-0",
+      "sourceHandle": "port-1",
       "target": "node_fcae2cd8",
       "targetHandle": "inlet-0",
       "id": "edge_53f7304b",
@@ -2610,7 +2610,7 @@
     },
     {
       "source": "node_f9bb5ad9",
-      "sourceHandle": "signal-inlet-0",
+      "sourceHandle": "signal-port-0",
       "target": "node_37e0704c",
       "targetHandle": "signal-in",
       "id": "edge_4325cafa",
@@ -2639,7 +2639,7 @@
     {
       "id": "sig_tit-101_in",
       "source": "tap-oil-supply",
-      "sourceHandle": "signal-inlet-0",
+      "sourceHandle": "signal-port-0",
       "target": "tit-101",
       "targetHandle": "signal-in",
       "label": "TIT 101 signal",
@@ -2658,7 +2658,7 @@
     {
       "id": "sig_vi-102_in",
       "source": "tap-oil-supply",
-      "sourceHandle": "signal-inlet-0",
+      "sourceHandle": "signal-port-0",
       "target": "vi-102",
       "targetHandle": "signal-in",
       "label": "νI 102 signal",
@@ -2696,7 +2696,7 @@
     {
       "id": "sig_fit-104_in",
       "source": "node_9958a664",
-      "sourceHandle": "signal-inlet-0",
+      "sourceHandle": "signal-port-0",
       "target": "fit-104",
       "targetHandle": "signal-in",
       "label": "FIT 104 signal",

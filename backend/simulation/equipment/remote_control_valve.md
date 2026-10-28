@@ -35,7 +35,7 @@ The Results tab chart draws this equation at the current and the full opening; t
 
 ### 3.2 Sensed pressure
 
-The parser builds `remote_sensing_config = {node_id, port_type, port_idx}` from the signal line's source handle (e.g. `signal-inlet-0` → inlet 0). The sensed pressure is that port's pressure after each hydraulic solve. A legacy signal line without a port in its handle senses the source node's outlet 0; no signal line, or a missing node, means the valve's own outlet.
+The parser builds `remote_sensing_config = {node_id, port_type, port_idx}` from the signal line's source handle (e.g. `signal-inlet-0` → inlet 0). At a port of an in-line component (`signal-port-k` on an orifice, calibrated restriction or filter), the parser points the config at the hidden junction of that port ([component_link.md](component_link.md)), an ordinary node. A legacy signal line without a port in its handle senses the source node's outlet 0; no signal line, or a missing node, means the valve's own outlet.
 
 ### 3.3 Opening search
 
