@@ -43,6 +43,22 @@ def test_bad_pipe_input_is_a_model_input_error(edge_data, match):
         GraphParser.parse_graph(_graph("heat_exchanger", None, edge_data))
 
 
+@pytest.mark.parametrize("node_type", [
+    pytest.param("mixer", id="removed_mixer_type"),
+    pytest.param("splitter", id="removed_splitter_type"),
+    pytest.param("made_up_type", id="made_up_type"),
+])
+def test_unknown_component_type_is_a_model_input_error(node_type):
+    with pytest.raises(ModelInputError, match=rf'N1.*unknown component type "{node_type}"'):
+        GraphParser.parse_graph(_graph(node_type))
+
+
+@pytest.mark.parametrize("node_type", ["text_bubble", "note", "annotation", "instrument"])
+def test_annotation_types_are_skipped_not_rejected(node_type):
+    network = GraphParser.parse_graph(_graph(node_type))
+    assert "n1" not in network.nodes
+
+
 def _junction_graph(num_ports, handles):
     """A junction with one tank per given handle: ("in", handle) draws the pipe into it, ("out", handle) out of it."""
     nodes = [{"id": "j", "type": "junction", "position": {"x": 0, "y": 0}, "data": {"label": "J", "num_ports": num_ports}}]

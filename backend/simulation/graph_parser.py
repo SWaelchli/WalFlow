@@ -397,7 +397,6 @@ class GraphParser:
         d = node_data.data
         name = d.get('label', f"{t}_{node_data.id}")
         
-        node = None
         if t == 'tank':
             # A tank always uses the system fluid (a stale per-tank fluid_type in old files is ignored)
             fluid_type = getattr(global_settings, 'fluid_type', None) or 'water'
@@ -623,12 +622,11 @@ class GraphParser:
                 max_discharge_pressure=GraphParser._max_discharge_pa(d, name),
             )
         else:
-            node = HydraulicNode(name=name, node_type=t)
+            raise ModelInputError(f"'{name}': unknown component type \"{t}\". Replace or delete it.")
         
-        if node:
-            node.global_settings = global_settings
-            if 'active' in d:
-                node.active = bool(d['active'])
-            if 'relief_ramp_enabled' in d:
-                node.relief_ramp_enabled = bool(d['relief_ramp_enabled'])
+        node.global_settings = global_settings
+        if 'active' in d:
+            node.active = bool(d['active'])
+        if 'relief_ramp_enabled' in d:
+            node.relief_ramp_enabled = bool(d['relief_ramp_enabled'])
         return node
