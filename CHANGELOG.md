@@ -102,6 +102,7 @@ All notable changes to the WälFlow project will be documented in this file.
 
 ### Fixed
 
+- **Unknown component types**: The backend rejects a component of unknown type (e.g. the removed mixer and splitter) with an input error naming it, instead of failing the solve with an internal error.
 - **Pipes with reverse flow**: Friction uses the density and viscosity of the end the flow enters by, not the drawn inlet, so a heated viscous line gives the same result whichever way it is drawn.
 - **Components with reverse flow**: Valves, regulators and other components evaluate their pressure drop with the fluid of the port the flow enters by, not always the inlet.
 - **Pressure controllers with temperature-dependent fluids**: The extra solves that measure a controller's sensitivity hold the fluid properties fixed instead of recalculating them, so systems with controllers and a TCV settle in fewer iterations (shipped examples about 17 % faster overall) and a TCV ends closer to its setpoint (results change by up to 0.2 %).
