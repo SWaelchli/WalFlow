@@ -148,6 +148,20 @@ const edgeTypes = {
   signal: SignalEdge,
 };
 
+// Symbol size (px) of components that differ from the 60 x 60 default, to centre a dropped node on the cursor
+const DROP_NODE_SIZES = {
+  filter: { width: 60, height: 40 },
+  tank: { width: 60, height: 100 },
+  orifice: { width: 40, height: 60 },
+  calibrated_restriction: { width: 40, height: 60 },
+  measure_point: { width: 40, height: 20 },
+  reducer: { width: 54, height: 44 },
+  pressure_safety_valve: { width: 70, height: 70 },
+  psv: { width: 70, height: 70 },
+  rupture_disc: { width: 70, height: 70 },
+};
+const DEFAULT_DROP_NODE_SIZE = { width: 60, height: 60 };
+
 const KNOWN_NODE_TYPES = new Set(Object.keys(nodeTypes));
 
 const getId = () => `node_${crypto.randomUUID().split('-')[0]}`;
@@ -428,6 +442,7 @@ function WalFlowContent() {
       clipboardRef.current = {
         nodes: JSON.parse(JSON.stringify(cleanNodes)),
         edges: JSON.parse(JSON.stringify(cleanEdges)),
+        pasteCount: 0,
       };
     }
   }, [nodes, edges, selectedNode, selectedEdge]);
@@ -439,10 +454,15 @@ function WalFlowContent() {
     if (blockIfReadOnly()) return;
 
     const idMap = {};
-    const offset = 40;
+    // Each repeated paste of the same copy steps further away from the original
+    clipboardRef.current.pasteCount = (clipboardRef.current.pasteCount || 0) + 1;
+    const offset = 40 * clipboardRef.current.pasteCount;
+    const takenLabels = nodes.map((nd) => nd.data?.label);
 
     const newNodes = copiedNodes.map((n) => {
       const newId = getId();
+      const label = nextAutoTag(n.type, takenLabels);
+      takenLabels.push(label);
       idMap[n.id] = newId;
 
       return {
@@ -455,7 +475,7 @@ function WalFlowContent() {
         selected: true,
         data: {
           ...n.data,
-          label: n.data?.label ? `${n.data.label}_copy` : `${n.type}_copy`,
+          label,
           onRotate: handleRotation,
           onChange: (n.type === 'linear_control_valve' || n.type === 'remote_control_valve') ? handleValveChange : undefined,
         },
@@ -492,7 +512,7 @@ function WalFlowContent() {
       setSelectedNode(newNodes[0]);
       setSelectedEdge(null);
     }
-  }, [handleRotation, handleValveChange, setNodes, setEdges, edges, requestSnapshot, blockIfReadOnly]);
+  }, [handleRotation, handleValveChange, setNodes, setEdges, nodes, edges, requestSnapshot, blockIfReadOnly]);
 
   const duplicateSelected = useCallback(() => {
     copySelected();
@@ -796,6 +816,9 @@ function WalFlowContent() {
       return false;
     }
     resetRunState();
+    // The inspector must not keep showing an item of the drawing that is being replaced
+    setSelectedNode(null);
+    setSelectedEdge(null);
     showCanvasLoading();
     scheduleLoad(() => {
       // Results are never loaded from a file; old or hand-edited files may still carry them
@@ -1172,11 +1195,13 @@ function WalFlowContent() {
 
       if (!type || !reactFlowInstance) return;
 
-      const position = reactFlowInstance.screenToFlowPosition({
+      const size = DROP_NODE_SIZES[type] || DEFAULT_DROP_NODE_SIZE;
+      const cursor = reactFlowInstance.screenToFlowPosition({
         x: event.clientX,
         y: event.clientY,
       });
-      
+      const position = { x: cursor.x - size.width / 2, y: cursor.y - size.height / 2 };
+
       const newNode = {
         id: getId(),
         type,

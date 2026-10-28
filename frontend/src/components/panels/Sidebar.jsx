@@ -20,50 +20,50 @@ const categorizedEquipment = [
   {
     name: 'Boundaries',
     items: [
-      { type: 'tank', label: 'Tank', description: '' },
-      { type: 'pressure_boundary', label: 'Pressure Boundary', description: 'Constant Pressure' },
-      { type: 'flow_boundary', label: 'Flow Boundary', description: 'Constant Flow' },
+      { type: 'tank', label: 'Tank', description: '', keywords: ['tk', 'reservoir', 'vessel'] },
+      { type: 'pressure_boundary', label: 'Pressure Boundary', description: 'Constant Pressure', keywords: ['pb', 'source', 'sink', 'supply'] },
+      { type: 'flow_boundary', label: 'Flow Boundary', description: 'Constant Flow', keywords: ['fb', 'source', 'sink', 'feed'] },
     ]
   },
   {
     name: 'Power & Drive',
     items: [
-      { type: 'centrifugal_pump', label: 'Centrifugal Pump', description: 'Dynamic Pump' },
-      { type: 'volumetric_pump', label: 'Volumetric Pump', description: 'Positive Displacement Pump' },
+      { type: 'centrifugal_pump', label: 'Centrifugal Pump', description: 'Dynamic Pump', keywords: ['p', 'pump', 'cp'] },
+      { type: 'volumetric_pump', label: 'Volumetric Pump', description: 'Positive Displacement Pump', keywords: ['p', 'pump', 'pd', 'vp'] },
     ]
   },
   {
     name: 'Pressure & Flow Control',
     items: [
-      { type: 'linear_control_valve', label: 'Control Valve', description: '' },
-      { type: 'check_valve', label: 'Check Valve', description: '' },
-      { type: 'check_valve_orifice', label: 'Check Valve w/ Orifice', description: '' },
-      { type: 'pressure_safety_valve', label: 'Safety Relief Valve', description: '' },
-      { type: 'rupture_disc', label: 'Rupture Disc', description: '' },
-      { type: 'remote_control_valve', label: 'Remote Control Valve', description: '' },
-      { type: 'linear_regulator', label: 'Pressure Regulator', description: '' },
-      { type: 'three_way_tcv', label: '3-Way Temperature Valve', description: '' },
+      { type: 'linear_control_valve', label: 'Control Valve', description: '', keywords: ['cv', 'fcv', 'lcv', 'pcv', 'control'] },
+      { type: 'check_valve', label: 'Check Valve', description: '', keywords: ['nrv', 'non-return', 'nonreturn'] },
+      { type: 'check_valve_orifice', label: 'Check Valve w/ Orifice', description: '', keywords: ['nrv', 'non-return', 'nonreturn'] },
+      { type: 'pressure_safety_valve', label: 'Safety Relief Valve', description: '', keywords: ['psv', 'prv', 'srv', 'relief', 'safety'] },
+      { type: 'rupture_disc', label: 'Rupture Disc', description: '', keywords: ['rd', 'bursting', 'burst'] },
+      { type: 'remote_control_valve', label: 'Remote Control Valve', description: '', keywords: ['rcv', 'cv', 'fcv', 'lcv', 'pcv', 'control'] },
+      { type: 'linear_regulator', label: 'Pressure Regulator', description: '', keywords: ['pcv', 'prv', 'bpr', 'regulator'] },
+      { type: 'three_way_tcv', label: '3-Way Temperature Valve', description: '', keywords: ['tcv', 'temperature', 'mixing', 'diverting'] },
     ]
   },
   {
     name: 'Piping & Fittings',
     items: [
-      { type: 'reducer', label: 'Reducer / Expander', description: '' },
-      { type: 'orifice', label: 'Orifice', description: 'Flow Restriction Element' },
-      { type: 'calibrated_restriction', label: 'Calibrated Restriction', description: 'Flow/dP-calibrated' },
+      { type: 'reducer', label: 'Reducer / Expander', description: '', keywords: ['red', 'expander', 'swage'] },
+      { type: 'orifice', label: 'Orifice', description: 'Flow Restriction Element', keywords: ['fo', 'ro', 'restriction'] },
+      { type: 'calibrated_restriction', label: 'Calibrated Restriction', description: 'Flow/dP-calibrated', keywords: ['cr', 'restriction'] },
     ]
   },
   {
     name: 'Instrumentation',
     items: [
-      { type: 'measure_point', label: 'Measurement Tap', description: '' },
-      { type: 'instrument', label: 'Instrument', description: '' },
+      { type: 'measure_point', label: 'Measurement Tap', description: '', keywords: ['tap', 'mp', 'probe'] },
+      { type: 'instrument', label: 'Instrument', description: '', keywords: ['pit', 'tit', 'fit', 'transmitter', 'gauge'] },
     ]
   },
   {
     name: 'Distribution & Manifolds',
     items: [
-      { type: 'junction', label: 'Junction', description: 'Branch / Merge, 3 to 8 Ports' },
+      { type: 'junction', label: 'Junction', description: 'Branch / Merge, 3 to 8 Ports', keywords: ['tee', 'manifold', 'header', 'branch', 'merge'] },
     ]
   },
 
@@ -71,14 +71,14 @@ const categorizedEquipment = [
   {
     name: 'Auxiliary',
     items: [
-      { type: 'filter', label: 'Filter', description: '' },
-      { type: 'heat_exchanger', label: 'Cooler', description: '' },
+      { type: 'filter', label: 'Filter', description: '', keywords: ['f', 'strainer'] },
+      { type: 'heat_exchanger', label: 'Cooler', description: '', keywords: ['hx', 'e', 'cooler', 'exchanger'] },
     ]
   },
   {
     name: 'Documentation & Notes',
     items: [
-      { type: 'text_bubble', label: 'Note', description: '' },
+      { type: 'text_bubble', label: 'Note', description: '', keywords: ['note', 'comment', 'annotation'] },
     ]
   }
 ];
@@ -598,6 +598,9 @@ function DiagramRow({ diagram, isActive, isHighlighted, onClick, onOpen, onToggl
       >
         <FileIcon size={14} color={isActive ? '#ffffff' : 'var(--color-text-secondary)'} />
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexGrow: 1 }}>{diagram.title}</span>
+      </div>
+      {/* Action buttons sit beside the row button, not inside it */}
+      <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
         {(hovered || isHighlighted) && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
             <button
@@ -1092,7 +1095,8 @@ export default function Sidebar({
       items: category.items.filter(item => 
         item.label.toLowerCase().includes(query) ||
         item.description.toLowerCase().includes(query) ||
-        item.type.toLowerCase().includes(query)
+        item.type.toLowerCase().includes(query) ||
+        (item.keywords || []).some(k => k.includes(query))
       )
     })).filter(category => category.items.length > 0);
   }, [searchQuery]);

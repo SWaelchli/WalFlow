@@ -114,11 +114,11 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
     return formatPressureFromPa(valPa, unitSystem, decimals);
   }, [unitSystem]);
 
-  const formatFlow = useCallback((valLmin, decimals = 1) => {
+  const formatFlow = useCallback((valLmin, decimals) => {
     return formatFlowFromLmin(valLmin, unitSystem, decimals);
   }, [unitSystem]);
 
-  const formatFlowM3s = useCallback((valM3s, decimals = 1) => {
+  const formatFlowM3s = useCallback((valM3s, decimals) => {
     return formatFlowFromM3s(valM3s, unitSystem, decimals);
   }, [unitSystem]);
 

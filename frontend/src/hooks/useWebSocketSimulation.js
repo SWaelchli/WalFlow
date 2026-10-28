@@ -72,7 +72,8 @@ export function useWebSocketSimulation({ nodes, edges, globalSettings, cases = [
     };
 
     socket.onerror = (error) => {
-      console.error('WebSocket Error:', error);
+      // Closing a socket that is still connecting (cleanup, StrictMode) is intended, not an error
+      if (!isCleanClose) console.error('WebSocket Error:', error);
       setIsConnected(false);
       setIsSimulating(false);
     };

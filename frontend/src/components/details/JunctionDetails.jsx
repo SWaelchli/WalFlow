@@ -147,7 +147,7 @@ export default function JunctionDetails({ node, allNodes, allEdges }) {
 
       {/* Reduced height diagram (150px) with no labels */}
       <div style={{ width: '100%', height: '150px', background: theme.slate50, borderRadius: 'var(--radius-sm)', border: `1px solid var(--color-border)` }}>
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minWidth={0} initialDimension={{ width: 240, height: 160 }}>
           <Sankey
             data={sankeyData}
             node={<SimpleNode />}

@@ -103,6 +103,9 @@ All notable changes to the WälFlow project will be documented in this file.
 
 ### Fixed
 
+- **Canvas usability**: Pasted components are offset and get the next free tag; a dropped component is centred on the cursor; equipment search finds tag abbreviations (PCV, TCV, PSV, PRV, FCV, NRV, HX); loading a drawing clears the selection so the inspector no longer shows the previous drawing.
+- **Console and accessibility**: No WebSocket error logged on page load; inspector charts no longer warn about zero size; Pipe Network List fields have accessible labels and drawing-list buttons are no longer nested.
+- **Flow precision**: Flows below 10 show 2 decimals, so small flows no longer look unbalanced across a component.
 - **Unknown component types**: The backend rejects a component of unknown type (e.g. the removed mixer and splitter) with an input error naming it, instead of failing the solve with an internal error.
 - **Pipes with reverse flow**: Friction uses the density and viscosity of the end the flow enters by, not the drawn inlet, so a heated viscous line gives the same result whichever way it is drawn.
 - **Components with reverse flow**: Valves, regulators and other components evaluate their pressure drop with the fluid of the port the flow enters by, not always the inlet.

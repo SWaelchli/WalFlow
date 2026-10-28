@@ -68,7 +68,7 @@ const FilterDetails = memo(function FilterDetails({ node }) {
       <NeutralFlowCaption telemetry={telemetry} />
       
       <div style={{ width: '100%', height: '240px', background: 'var(--color-surface)' }}>
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minWidth={0} initialDimension={{ width: 240, height: 160 }}>
           <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 4, bottom: 10 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
             <XAxis dataKey="q" type="number" domain={[0, xMaxDisplay]} fontSize={10} tickCount={6} tickFormatter={formatTick} height={36}

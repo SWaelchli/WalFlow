@@ -293,26 +293,34 @@ export const formatPressureFromPa = (valPa, unitSystem = UNIT_SYSTEMS.METRIC, de
   return paToBar(valPa, decimals);
 };
 
+// Small flows get a second decimal so a split such as 0.85 + 0.84 does not look like a mass imbalance
+const flowDecimals = (displayed, decimals) => {
+  if (decimals !== undefined) return decimals;
+  return Math.abs(Number(displayed)) < 10 ? 2 : 1;
+};
+
 /**
  * Format a flow rate (given in L/min) to the selected unit system.
+ * Without explicit decimals: 2 below 10 in the displayed unit, 1 above.
  */
-export const formatFlowFromLmin = (valLmin, unitSystem = UNIT_SYSTEMS.METRIC, decimals = 1) => {
+export const formatFlowFromLmin = (valLmin, unitSystem = UNIT_SYSTEMS.METRIC, decimals) => {
   if (valLmin === null || valLmin === undefined || isNaN(valLmin)) return '—';
   if (unitSystem === UNIT_SYSTEMS.IMPERIAL) {
-    return lminToGpm(valLmin, decimals);
+    return lminToGpm(valLmin, flowDecimals(lminToGpm(valLmin, 3), decimals));
   }
-  return Number(valLmin).toFixed(decimals);
+  return Number(valLmin).toFixed(flowDecimals(valLmin, decimals));
 };
 
 /**
  * Format a flow rate (given in m³/s) to the selected unit system.
+ * Without explicit decimals: 2 below 10 in the displayed unit, 1 above.
  */
-export const formatFlowFromM3s = (valM3s, unitSystem = UNIT_SYSTEMS.METRIC, decimals = 1) => {
+export const formatFlowFromM3s = (valM3s, unitSystem = UNIT_SYSTEMS.METRIC, decimals) => {
   if (valM3s === null || valM3s === undefined || isNaN(valM3s)) return '—';
   if (unitSystem === UNIT_SYSTEMS.IMPERIAL) {
-    return m3sToGpm(valM3s, decimals);
+    return m3sToGpm(valM3s, flowDecimals(m3sToGpm(valM3s, 3), decimals));
   }
-  return m3sToLmin(valM3s, decimals);
+  return m3sToLmin(valM3s, flowDecimals(m3sToLmin(valM3s, 3), decimals));
 };
 
 /**

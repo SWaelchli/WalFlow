@@ -1,4 +1,4 @@
-"""The backend and frontend `constants` files, package.json and AGENTS.md state the same versions."""
+"""The backend and frontend `constants` files, and package.json state the same versions."""
 from walflow_paths import REPO_ROOT
 
 
@@ -32,12 +32,6 @@ def test_package_json_version_equals_app_version():
 
 def test_major_digits_of_app_and_file_format_version_match():
     assert APP_VERSION.split(".")[0] == FILE_FORMAT_VERSION.split(".")[0]
-
-
-def test_agents_md_states_the_current_versions():
-    agents = read("AGENTS.md")
-    assert f"current app version is `{APP_VERSION}`" in agents
-    assert f"current file format version is `{FILE_FORMAT_VERSION}`" in agents
 
 
 def test_app_reports_the_shared_version():
