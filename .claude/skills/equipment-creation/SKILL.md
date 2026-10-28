@@ -128,11 +128,7 @@ Update the following frontend files:
 5. *(Optional)* `frontend/src/components/details/<Name>Details.jsx` and `ResultsPanel.jsx` for dedicated live charts/telemetry.
 
 ### Step 7: Verify Everything
-Run the gate from the `walflow-qa` skill:
-```bash
-cd backend && python -m pytest
-cd frontend && npm run lint && npm test && npm run build
-```
+Run the gate from the `walflow-qa` skill (via `walflow-gate-runner`).
 
 ---
 

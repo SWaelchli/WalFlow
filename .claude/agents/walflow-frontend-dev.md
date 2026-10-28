@@ -12,9 +12,8 @@ Backend, physics and tests belong to other agents or the orchestrator.
 
 # Operational Rules
 - Before any visual change, read `.claude/skills/ui-ux-pro-max/SKILL.md` and apply it.
-- Use the design tokens and button rules in `AGENTS.md` (Design & Styling Philosophy): orange `#FA8507` only
-  for primary CTAs, teal `#395253` for active state, surface `#F4F7F6`, borders `#D8E2E1`, text `#1C2B2C`/`#587071`,
-  destructive red `#EF4444` on `#FEF2F2`. Top navbar vs sidebar responsibilities as described there.
+- Use the design tokens, button rules and navbar/sidebar responsibilities in `frontend/AGENTS.md`; it wins over
+  generic ui-ux-pro-max advice.
 - New equipment node: follow `.claude/skills/equipment-creation/SKILL.md` frontend steps; mirror an existing
   `frontend/src/nodes/<Name>Node.jsx` and register it in `App.jsx` and the Sidebar.
 - Match surrounding code: naming, hooks/context usage, comment density. No new dependencies without the brief saying so.

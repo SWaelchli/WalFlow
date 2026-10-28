@@ -78,7 +78,7 @@ browser tests.
 ## Rules
 
 1. **Name by subject, not by origin.** `test_regulator_lockup.py`, not `test_f1_37.py`. Names are unique across the tree.
-2. **No finding or audit IDs.** Finding lists (`EQUIPMENT_FINDINGS.md`, audits) are temporary, so test names,
+2. **No finding or audit IDs.** Finding lists (`FINDINGS.md`, audits) are temporary, so test names,
    param ids, markers and comments describe the behaviour, never `D-xx` / `F1-xx`, not even while the finding
    is open (describe the known failure instead).
 3. **Fix a bug test-first.** Follow the decision tree above; the test must fail before the fix.
@@ -119,7 +119,7 @@ list order, and warm start equal to cold start.
 A component belongs in `NETWORK_COMPONENTS` when its behaviour depends only on its local flow. Controllers,
 relief devices and the 3-way TCV have several states or outer loops and stay in their own scenarios. A
 generated network the solver cannot solve is a finding: either the solver is wrong, or the generator produced
-a case the model does not cover. Then log it in `EQUIPMENT_FINDINGS.md` with the shrunk network, constrain the
+a case the model does not cover. Then log it in `FINDINGS.md` with the shrunk network, constrain the
 generator and say why in a comment.
 
 If a property fails only in the full run, it is still a real case: hypothesis mixes constants from the imported

@@ -15,7 +15,8 @@ Read-only reviewer of WalFlow's physics engine changes in `backend/simulation/` 
   1. Steady-state rule (AGENTS.md): algebraic equilibrium only, no time stepping, transients or ramps.
   2. The equipment's explanatory `backend/simulation/equipment/<name>.md`: code and doc must agree
      (equations, sign conventions, units, limits). Flag a doc that the change made stale.
-  3. Open or fixed items in `EQUIPMENT_FINDINGS.md` that the change touches or reintroduces.
+  3. If `FINDINGS.md` exists (a temporary list, created when findings are collected): open or fixed items
+     that the change touches or reintroduces.
   4. Physical laws: mass and energy conservation, pressure drop in the flow direction for passive elements,
      reverse/zero flow handling, Jacobian consistent with the residual, units (SI internally), no division by zero.
      Nodes balance mass, not volume: a component's curve, heat and drop are evaluated at its inlet volume flow

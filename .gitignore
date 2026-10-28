@@ -16,15 +16,6 @@ perf_snapshots/
 .kilo/
 .vscode/
 
-#Skills
-
-.claude/skills/banner-design
-.claude/skills/brand
-.claude/skills/design
-.claude/skills/design-system
-.claude/skills/slides
-.claude/skills/ui-styling
-.claude/skills/ui-ux-pro-max
 # Local deployment secrets (see .env.example)
 .env
 

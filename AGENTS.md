@@ -30,22 +30,13 @@ cd frontend && npm install && npm run dev
 
 ### Adding New Equipment
 
-The project has a clear process for adding new hydraulic components, which involves updating both the backend and frontend. The [DEVELOPMENT.md](./DEVELOPMENT.md) file contains a detailed guide on how to:
-1.  Create a new equipment class in the Python backend.
-2.  Register the new equipment in the backend's graph parser.
-3.  Create a corresponding React component for the equipment in the frontend.
-4.  Register the new component in the frontend's `App.jsx` and `Sidebar.jsx`.
+Follow the `equipment-creation` skill ([.claude/skills/equipment-creation/SKILL.md](./.claude/skills/equipment-creation/SKILL.md)): backend class and its `<name>.md`, graph parser registration, tests, frontend node and registration.
 
 ### Testing
 
 Always read and follow the `walflow-qa` skill ([.claude/skills/walflow-qa/SKILL.md](./.claude/skills/walflow-qa/SKILL.md)) before writing, changing or deleting any test, fixing a bug, or adding equipment. It holds the test strategy (test pyramid, property tests with hypothesis), where each test belongs, the bug-fix decision tree, naming and audit-marker rules, and the gate. Prefer strengthening an existing property or adding a reference-table row over adding a new test function.
 
-Run the gate before finishing any change (via `walflow-gate-runner`, see below):
-```bash
-cd backend && python -m pytest
-cd frontend && npm run lint && npm test && npm run build
-```
-GitHub Actions runs the same gate only when a release tag is pushed, and blocks Docker publishing if it fails; pushes to `main` are not checked in CI.
+Run the gate defined in that skill before finishing any change (via `walflow-gate-runner`, see below). GitHub Actions runs the same gate only when a release tag is pushed, and blocks Docker publishing if it fails; pushes to `main` are not checked in CI.
 
 ### Performance
 
@@ -83,35 +74,16 @@ Rules:
 
 1. The user will advice on what feature they want to change or implement. Before changing any code, make sure to clarify the exact requirements. Write a prompt and wait for confirmation from user before proceeding.
 2. Git commits should ONLY be performed upon explicit user request. Do not automatically create git commits after completing a task or phase unless requested.
-3. Always read and consult the `ui-ux-pro-max` skill whenever changing the user interface (UI) or user experience (UX) to ensure premium visual compliance.
+3. Always read and consult the `ui-ux-pro-max` skill and [frontend/AGENTS.md](./frontend/AGENTS.md) whenever changing the user interface (UI) or user experience (UX) to ensure premium visual compliance.
 
 ## Versioning Policy
 
-1. **App Version**: The current app version is `0.2.0`. The app version must ONLY be raised after explicit user confirmation. The app version takes the lead on major version increments.
-2. **File Format Version**: The current file format version is `0.2`. The file format version should ONLY be raised when there would otherwise be a data format incompatibility.
+1. **App Version**: The current version is `APP_VERSION` in `backend/constants.py`, mirrored in `frontend/src/constants.js` and `frontend/package.json`; change all three together. The app version must ONLY be raised after explicit user confirmation. The app version takes the lead on major version increments.
+2. **File Format Version**: The current version is `FILE_FORMAT_VERSION` in `backend/constants.py`, mirrored in `frontend/src/constants.js`. The file format version should ONLY be raised when there would otherwise be a data format incompatibility.
 3. **Version Alignment**: The major (first) digit of the App Version and File Format Version must always match (e.g., App `0.2.0` maps to File Format `0.2`). When the App Version reaches `1.0.0`, the File Format Version must advance to `1.0`.
 4. **Git Release Tags**: Always use the `vX.X.X` format (e.g., `v0.1.1`) when creating and pushing new release tags to trigger automated Docker image builds via GitHub Actions.
 5. **Changelog Maintenance**: All implemented features and updates must be tracked in `CHANGELOG.md`. Keep changelog entries brief, concise, and high-level without going overboard with details. The changelog must be emptied after the version number is increased.
 
-## Design & Styling Philosophy
+## Design & Styling
 
-The WalFlow user interface follows a modern, clean, and engineering-focused design system.
-
-### Color Palette & Tokens
-* **Primary Accent (Action)**: `#FA8507` (WälFlow Orange) / Hover `#E07600`. Dedicated to primary calls-to-action (e.g. `Run Simulation`).
-* **Brand Dark (Active State)**: `#395253` / Hover `#253637`. Used for active tab selections, key dark brand headers, and active state highlights.
-* **Surface Light**: `#F4F7F6` / `#FFFFFF`. Backgrounds for secondary buttons, panels, card backgrounds, and inputs.
-* **Borders**: `#D8E2E1` (Standard subtle 1px border), `#EBF0EF` (Divider lines).
-* **Typography & Text**: `#1C2B2C` (Primary headers and text), `#587071` (Secondary/muted labels and subtexts).
-* **Destructive Actions**: Soft light red fill (`#FEF2F2`), border (`#FEE2E2`), and red text (`#EF4444`) for destructive triggers (e.g. `Clear Canvas`, `Log Out`).
-
-### Component Guidelines
-1. **Top Navbar**: Houses global layout controls, primary simulation action (`Run Simulation`), canvas management (`Export`, `Import`, `Clear Canvas`), user/auth status, and modal triggers (`Cloud Projects`, `Admin Hub`).
-2. **Sidebar**: Focused strictly on component drag-and-drop cards, scenario templates, global fluid/solver settings, and diagnostics statistics.
-3. **Buttons**:
-   - **Primary CTA**: WälFlow Orange, white text, subtle orange shadow.
-   - **Secondary Actions**: Soft light surface (`#F4F7F6`), `#D8E2E1` border, `#1C2B2C` text. Hover transitions to `#EBF0EF`.
-   - **Active Selection**: Dark brand teal (`#395253`), white text.
-   - **Destructive Ghost**: Soft red text (`#EF4444`) with subtle red hover fill (`#FEF2F2`).
-
-
+The UI design tokens, button rules and navbar/sidebar responsibilities are in [frontend/AGENTS.md](./frontend/AGENTS.md).

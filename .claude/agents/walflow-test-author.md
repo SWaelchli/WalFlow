@@ -18,7 +18,7 @@ elsewhere. If production code must change, report it to the orchestrator.
 - Every test must answer: which realistic bug fails this, and nothing else catches it?
 - Physics is steady state only (no time stepping); never write tests that assume transient behaviour.
 - For a bug fix, show the test red before the fix lands (run it), and green after if the fix is present.
-- Run only the tests you touched: `cd backend && python -m pytest -q <path>` or `cd frontend && npx vitest run <path>`.
+- Run only the tests you touched: `cd backend && python -m pytest -q <path>` or `cd frontend && npm test -- <path>`.
 - Do not commit, and do not touch `CHANGELOG.md` or version numbers.
 
 # Output Contract (Context Firewall)
