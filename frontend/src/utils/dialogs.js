@@ -21,14 +21,17 @@ const MAX_TOASTS = 4;
 
 export const dismissToast = (id) => setState({ toasts: state.toasts.filter((t) => t.id !== id) });
 
-/** Short message that does not interrupt the user. type: info | success | warning | error. */
-export function notify(message, type = 'info') {
+/** Short message that does not interrupt the user. type: info | success | warning | error.
+ *  options.action = { label, onClick } adds a button; clicking it runs onClick and dismisses the toast.
+ *  options.key replaces the message when deciding whether the same toast is already shown. */
+export function notify(message, type = 'info', options = {}) {
   const text = String(message ?? '');
   if (!text) return null;
-  const existing = state.toasts.find((t) => t.message === text && t.type === type);
+  const key = options?.key || text;
+  const existing = state.toasts.find((t) => t.key === key && t.type === type);
   if (existing) return existing.id; // the same message twice in a row is shown once
   const id = nextId++;
-  setState({ toasts: [...state.toasts, { id, message: text, type }].slice(-MAX_TOASTS) });
+  setState({ toasts: [...state.toasts, { id, message: text, type, key, action: options?.action || null }].slice(-MAX_TOASTS) });
   const ms = TOAST_MS[type] ?? TOAST_MS.info;
   setTimeout(() => dismissToast(id), ms);
   return id;

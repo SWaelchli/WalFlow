@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { persistKey } from '../utils/graphSignature';
+import { parseServerTime } from '../utils/serverTime';
 import { notify, confirmDialog } from '../utils/dialogs';
 import axios from 'axios';
 import { serializeDiagram, checkFormatVersion } from '../utils/diagramFile';
@@ -9,10 +10,25 @@ import { writeDraft, readDraft, removeDraft, startHeartbeat, pruneDrafts, findOr
 // One id per browser tab, sent with cloud saves so the server's "diagram updated" notice skips the saving tab
 const CLIENT_ID = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `tab-${Math.random().toString(36).slice(2)}`;
 
-// Content that decides whether a save is needed: everything except the timestamp and the viewport
+// Content that decides whether a save is needed: everything except the timestamp, viewport, the
+// project/drawing the file was attached to and the server version the payload was based on
 const contentKey = (payload) => {
-  const { timestamp: _t, viewport: _v, ...content } = payload;
+  const { timestamp: _t, viewport: _v, base_updated_at: _b, ...rest } = payload;
+  const content = {};
+  Object.keys(rest).forEach((k) => { if (!k.startsWith('active_')) content[k] = rest[k]; });
   return JSON.stringify(content);
+};
+
+// The content key a saved diagram has once it is on the canvas (same serializer as a save)
+const loadedContentKey = (data) => {
+  const { created_at: _createdAt, ...base } = serializeDiagram({
+    nodes: data.nodes || [],
+    edges: data.edges || [],
+    globalSettings: data.globalSettings || {},
+    cases: data.cases || [],
+    activeCaseId: data.active_case_id,
+  });
+  return contentKey(base);
 };
 
 const isStaleConflict = (err) => !!(err.response && err.response.status === 409 &&
@@ -35,7 +51,7 @@ export function useAutoSaveSession({
   activeDiagram,
   setActiveDiagram
 }) {
-  const { currentUser } = useAuth();
+  const { currentUser, loading: authLoading } = useAuth();
   const [saveStatus, setSaveStatus] = useState('saved_local'); // 'saved_cloud' | 'saving_cloud' | 'saved_local' | 'saving_local' | 'error' | 'locked'
   const [lastSavedTimestamp, setLastSavedTimestamp] = useState(null);
   const [isRestoredFromDraft, setIsRestoredFromDraft] = useState(false);
@@ -47,6 +63,17 @@ export function useAutoSaveSession({
   const baseUpdatedAtRef = useRef(null);
   // content of the last version known to be on the server, to skip saves that would change nothing
   const lastSavedKeyRef = useRef(null);
+
+  // Latest sign-in state for async boot code, and callers waiting until the sign-in check is done
+  const authRef = useRef({ isAuthenticated, loading: authLoading });
+  const authWaitersRef = useRef([]);
+  useEffect(() => {
+    authRef.current = { isAuthenticated, loading: authLoading };
+    if (!authLoading) {
+      authWaitersRef.current.forEach((resolve) => resolve());
+      authWaitersRef.current = [];
+    }
+  }, [isAuthenticated, authLoading]);
 
   // Collaboration Lock States
   const [lockInfo, setLockInfo] = useState(null); // { user_id, username, expires_at }
@@ -88,6 +115,7 @@ export function useAutoSaveSession({
     return {
       ...base,
       timestamp: new Date().toISOString(),
+      base_updated_at: baseUpdatedAtRef.current || null,
       active_project_id: activeProject?.id || null,
       active_project_title: activeProject?.title || null,
       active_diagram_id: activeDiagram?.id || null,
@@ -102,9 +130,41 @@ export function useAutoSaveSession({
     if (activeDiagram && activeDiagram.updated_at) baseUpdatedAtRef.current = activeDiagram.updated_at;
     if (!activeDiagram) baseUpdatedAtRef.current = null;
   }, [activeDiagram]);
+  // What a save would write. Selection, measuring and results do not change it, so they no longer start the
+  // save timers; a moved component does.
+  const contentSignature = useMemo(
+    () => persistKey({ nodes, edges, globalSettings, cases, activeCaseId }),
+    [nodes, edges, globalSettings, cases, activeCaseId]
+  );
+
   const activeDiagramId = activeDiagram ? activeDiagram.id : null;
+  // Content key of a cloud drawing that is being loaded onto the canvas. When the canvas content equals it,
+  // that content is the saved version and is not uploaded; anything else is a real change and is saved.
+  const expectedLoadKeyRef = useRef(null);
+  const markLoaded = useCallback((data) => {
+    try {
+      expectedLoadKeyRef.current = loadedContentKey(data);
+    } catch {
+      expectedLoadKeyRef.current = null;
+    }
+  }, []);
+  // Drawing whose content was just set from a local draft by reconcileDraft
+  const draftLoadedIdRef = useRef(null);
   useEffect(() => {
-    lastSavedKeyRef.current = activeDiagramId ? contentKey(serializeWorkspaceState()) : null;
+    if (!activeDiagramId) {
+      lastSavedKeyRef.current = null;
+      return;
+    }
+    if (draftLoadedIdRef.current === activeDiagramId) {
+      // The draft holds work the server does not have: it must be saved
+      draftLoadedIdRef.current = null;
+      expectedLoadKeyRef.current = null;
+      lastSavedKeyRef.current = null;
+      return;
+    }
+    // What is on the canvas now is not uploaded to the newly active drawing; a load that is still on its way
+    // is recognised by expectedLoadKeyRef when it lands
+    lastSavedKeyRef.current = contentKey(serializeWorkspaceState());
   }, [activeDiagramId, serializeWorkspaceState]);
 
   // Cloud save with the version check; remembers the new server version and content on success
@@ -117,6 +177,7 @@ export function useAutoSaveSession({
     }, { headers: { 'X-Walflow-Client-Id': CLIENT_ID } });
     if (response.data && response.data.updated_at) baseUpdatedAtRef.current = response.data.updated_at;
     lastSavedKeyRef.current = contentKey(payload);
+    expectedLoadKeyRef.current = null;
     return response;
   }, []);
 
@@ -143,14 +204,20 @@ export function useAutoSaveSession({
     return startHeartbeat();
   }, []);
 
+  // Lock status as the server reports it; throws when the request fails
+  const requestLockStatus = useCallback(async (diagramId) => {
+    const response = await axios.get(`/api/diagrams/${diagramId}/lock-status`);
+    return response.data;
+  }, []);
+
   // Fetch lock status for diagram
   const fetchLockStatus = useCallback(async (diagramId) => {
     if (!diagramId || !isAuthenticated) return null;
     try {
-      const response = await axios.get(`/api/diagrams/${diagramId}/lock-status`);
-      if (response.data.is_locked) {
-        setLockInfo(response.data.lock);
-        return response.data.lock;
+      const data = await requestLockStatus(diagramId);
+      if (data.is_locked) {
+        setLockInfo(data.lock);
+        return data.lock;
       } else {
         setLockInfo(null);
         return null;
@@ -159,19 +226,28 @@ export function useAutoSaveSession({
       console.error('Failed to fetch diagram lock status:', err);
       return null;
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, requestLockStatus]);
 
-  // Checkout diagram (Acquire Lock)
-  const checkoutDiagram = useCallback(async () => {
-    if (!activeDiagram || !activeDiagram.id || !isAuthenticated) return false;
+  // Acquire the lock of a diagram. silent: no toasts. isCurrent: false when the drawing changed while the
+  // request was out; the lock is then handed back instead of shown.
+  const checkoutDiagramById = useCallback(async (diagramId, { silent = false, isCurrent = () => true } = {}) => {
+    if (!diagramId || !isAuthenticated) return false;
     try {
-      const response = await axios.post(`/api/diagrams/${activeDiagram.id}/checkout`);
-      if (response.data.status === 'success') {
+      const response = await axios.post(`/api/diagrams/${diagramId}/checkout`);
+      if (!isCurrent()) {
+        axios.post(`/api/diagrams/${diagramId}/checkin`).catch(() => {});
+        return false;
+      }
+      if (response.data && response.data.status === 'success') {
         setLockInfo(response.data.lock);
         return true;
       }
       return false;
     } catch (err) {
+      if (silent) {
+        console.warn('Could not check out the diagram automatically:', err);
+        return false;
+      }
       console.error('Failed to checkout diagram:', err);
       if (err.response && err.response.data && err.response.data.detail) {
         notify(err.response.data.detail, 'warning');
@@ -179,10 +255,16 @@ export function useAutoSaveSession({
         notify('Could not check out diagram. It may be locked by another user.', 'error');
       }
       // Refresh status
-      fetchLockStatus(activeDiagram.id);
+      fetchLockStatus(diagramId);
       return false;
     }
-  }, [activeDiagram, isAuthenticated, fetchLockStatus]);
+  }, [isAuthenticated, fetchLockStatus]);
+
+  // Checkout diagram (Acquire Lock)
+  const checkoutDiagram = useCallback(
+    (options) => checkoutDiagramById(activeDiagram ? activeDiagram.id : null, { silent: !!(options && options.silent === true) }),
+    [activeDiagram, checkoutDiagramById]
+  );
 
   // Checkin diagram (Release Lock)
   const checkinDiagram = useCallback(async () => {
@@ -246,34 +328,36 @@ export function useAutoSaveSession({
     };
   }, [activeDiagram, currentUser]);
 
-  // Lock status fetch when diagram changes
+  // Lock status fetch when diagram changes; a free drawing is checked out right away
+  const autoCheckoutIdRef = useRef(null);
+  const currentUserId = currentUser ? currentUser.id : null;   // the user, not the object: a new object does not refetch
   useEffect(() => {
     let active = true;
     if (activeDiagram && activeDiagram.id) {
-      axios.get(`/api/diagrams/${activeDiagram.id}/lock-status`)
-        .then(response => {
-          if (active) {
-            Promise.resolve().then(() => {
-              if (active) {
-                if (response.data.is_locked) {
-                  setLockInfo(response.data.lock);
-                } else {
-                  setLockInfo(null);
-                }
-              }
-            });
+      const diagramId = activeDiagram.id;
+      requestLockStatus(diagramId)
+        .then(async (data) => {
+          if (!active) return;
+          if (data.is_locked) {
+            setLockInfo(data.lock);
+            return;
           }
+          setLockInfo(null);
+          if (!isAuthenticated || !currentUserId || autoCheckoutIdRef.current === diagramId) return;
+          autoCheckoutIdRef.current = diagramId;
+          await checkoutDiagramById(diagramId, { silent: true, isCurrent: () => active });
         })
         .catch(err => {
           console.error('Failed to fetch diagram lock status:', err);
         });
     } else {
+      autoCheckoutIdRef.current = null;
       Promise.resolve().then(() => {
         if (active) setLockInfo(null);
       });
     }
     return () => { active = false; };
-  }, [activeDiagram]);
+  }, [activeDiagram, isAuthenticated, currentUserId, requestLockStatus, checkoutDiagramById]);
 
   // Heartbeat lease extension (every 5 minutes if we hold the lock)
   useEffect(() => {
@@ -306,15 +390,9 @@ export function useAutoSaveSession({
     };
   }, [saveToLocalDraft, hasLock, activeDiagram]);
 
-  // What a save would write. Selection, measuring and results do not change it, so they no longer start the
-  // save timers; a moved component does.
-  const contentSignature = useMemo(
-    () => persistKey({ nodes, edges, globalSettings, cases, activeCaseId }),
-    [nodes, edges, globalSettings, cases, activeCaseId]
-  );
-
   // Skip initial mount effect trigger
   const isInitialMount = useRef(true);
+  const prevSignatureRef = useRef(contentSignature);
 
   // Debounced Local Draft & Cloud Auto-Save Engine
   useEffect(() => {
@@ -325,10 +403,24 @@ export function useAutoSaveSession({
 
     const isCloudSyncable = activeDiagram && activeDiagram.id && isAuthenticated && hasLock;
 
+    // The canvas content of a just opened drawing arrived: that is the saved version
+    const signatureChanged = prevSignatureRef.current !== contentSignature;
+    prevSignatureRef.current = contentSignature;
+    let loadMatched = false;
+    if (activeDiagram && activeDiagram.id && expectedLoadKeyRef.current !== null &&
+        contentKey(serializeWorkspaceState()) === expectedLoadKeyRef.current) {
+      lastSavedKeyRef.current = expectedLoadKeyRef.current;
+      expectedLoadKeyRef.current = null;
+      loadMatched = true;
+    }
+    // Nothing differs from the server version: the save status stays as it is
+    const inSync = !!(activeDiagram && activeDiagram.id && isAuthenticated) &&
+      (loadMatched || (!signatureChanged && contentKey(serializeWorkspaceState()) === lastSavedKeyRef.current));
+
     const pendingTimer = setTimeout(() => {
       if (isLockedByOther) {
         setSaveStatus('locked');
-      } else {
+      } else if (!inSync) {
         setSaveStatus(isCloudSyncable ? 'saving_cloud' : 'saving_local');
       }
     }, 0);
@@ -342,8 +434,12 @@ export function useAutoSaveSession({
           setSaveStatus('error');
           return;
         }
-        setSaveStatus(isLockedByOther ? 'locked' : 'saved_local');
-        setLastSavedTimestamp(new Date(ts).toLocaleTimeString());
+        if (isLockedByOther) {
+          setSaveStatus('locked');
+        } else if (!inSync) {
+          setSaveStatus('saved_local');
+        }
+        if (!inSync) setLastSavedTimestamp(new Date(ts).toLocaleTimeString());
       }
     }, 1000);
 
@@ -444,16 +540,62 @@ ${versionError}`, 'error'), 0);
         return null;
       }
 
-      setIsRestoredFromDraft(true);
-      if (parsed.timestamp) {
-        setRestoredDraftTime(new Date(parsed.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-      }
       return parsed;
     } catch (e) {
       console.warn('Failed to parse local session draft:', e);
       return null;
     }
   }, []);
+
+  // Compares a stored draft with the cloud copy of its drawing. The draft is only "restored" when it holds
+  // work the server does not have and was made on top of the server's current version; a draft based on an
+  // older version is reported as a conflict, so the caller can ask before it replaces anything.
+  const reconcileDraft = useCallback(async (draft) => {
+    const restoredResult = { source: 'draft', data: draft, restored: true };
+    const showDraftTime = () => {
+      if (draft.timestamp) {
+        setRestoredDraftTime(new Date(draft.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+      }
+    };
+    const markRestored = () => {
+      setIsRestoredFromDraft(true);
+      showDraftTime();
+      draftLoadedIdRef.current = draft.active_diagram_id || null;
+      return restoredResult;
+    };
+    if (!draft.active_diagram_id) return markRestored();
+    if (authRef.current.loading) await new Promise((resolve) => { authWaitersRef.current.push(resolve); });
+    if (!authRef.current.isAuthenticated) return markRestored();
+    let updatedAt;
+    let server;
+    try {
+      const response = await axios.get(`/api/diagrams/${draft.active_diagram_id}`);
+      updatedAt = response.data.updated_at;
+      const raw = response.data.diagram_data;
+      server = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    } catch (e) {
+      console.warn('Could not compare the draft with the cloud copy:', e);
+      baseUpdatedAtRef.current = draft.base_updated_at || null;
+      return markRestored();
+    }
+    if (contentKey(server) === contentKey(draft)) {
+      baseUpdatedAtRef.current = updatedAt;
+      markLoaded(server);
+      setSaveStatus('saved_cloud');
+      const savedAt = parseServerTime(updatedAt);
+      if (savedAt) setLastSavedTimestamp(savedAt.toLocaleTimeString());
+      return { source: 'server', data: server, restored: false, updatedAt };
+    }
+    const draftBase = parseServerTime(draft.base_updated_at);
+    const serverTime = parseServerTime(updatedAt);
+    if (draftBase && serverTime && draftBase.getTime() === serverTime.getTime()) {
+      baseUpdatedAtRef.current = draft.base_updated_at;
+      return markRestored();
+    }
+    showDraftTime();
+    markLoaded(server);   // if the cloud version is chosen, it is not uploaded again
+    return { source: 'server', data: server, restored: false, conflict: true, draft, updatedAt };
+  }, [markLoaded]);
 
   // This tab's own draft (after a reload)
   const loadLocalDraftOnBoot = useCallback(() => parseDraft(readDraft(), removeDraft), [parseDraft]);
@@ -494,6 +636,8 @@ ${versionError}`, 'error'), 0);
     clearLocalDraft,
     loadLocalDraftOnBoot,
     offerOrphanDraft,
+    reconcileDraft,
+    markLoaded,
     triggerManualCloudSave,
     // Co-editing locking details
     lockInfo,

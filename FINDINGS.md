@@ -18,12 +18,6 @@ Owner: `orch` (orchestrator: backend/simulation, API) · `fe` (`walflow-frontend
 
 Report: [docs/audit/2026-10-28-systems-engineer/report.md](docs/audit/2026-10-28-systems-engineer/report.md) · Verdict: FAIL (Critical 2, High 6, Medium 6, Low 6)
 
-### Critical
-
-| ID | Finding | Status | Owner | Where | Test |
-|---|---|---|---|---|---|
-| C1 | A new cloud drawing opens read-only, and the lock is lost silently on every reload. The read-only toast has no Check out action. | Open | fe | [useAutoSaveSession.js:250-276](frontend/src/hooks/useAutoSaveSession.js#L250-L276), [App.jsx:1307-1330](frontend/src/App.jsx#L1307-L1330) | Vitest case in `useAutoSaveSession.test.jsx`: when the lock status is free and the user is signed in, checkout is called. The server side is covered by `api/test_locks_and_lists.py`. |
-
 ### High
 
 | ID | Finding | Status | Owner | Where | Test |
@@ -46,7 +40,6 @@ Report: [docs/audit/2026-10-28-systems-engineer/report.md](docs/audit/2026-10-28
 
 | ID | Finding | Status | Owner | Where | Test |
 |---|---|---|---|---|---|
-| L3 | "Restored unsaved drawing" appears after a reload in which everything was saved. | Open | fe | useAutoSaveSession.js draft restore | Vitest case in `useAutoSaveSession.test.jsx`: a draft older than the server copy is not restored. |
 | L4 | The first run does not point this persona to the API 614 example. | Open | fe | EmptyCanvasHint | Gate. |
 | L5 | Port direction is shown by colour only. | Rejected (for now) | fe | node handles | Gate. |
 

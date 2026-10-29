@@ -14,6 +14,7 @@ const ProjectManagerModal = ({
   onClose,
   currentFlowData,
   onLoadDiagram,
+  markLoaded,
   activeProject,
   setActiveProject,
   activeDiagram,
@@ -224,6 +225,7 @@ const ProjectManagerModal = ({
         }
         return;
       }
+      if (markLoaded) markLoaded(parsedData);
 
       // Link Active contexts
       if (setActiveProject) {

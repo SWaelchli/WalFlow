@@ -701,6 +701,7 @@ export default function Sidebar({
   setActiveProject,
   activeDiagram,
   setActiveDiagram,
+  markLoaded,
   saveStatus,
   lastSavedTimestamp,
   hasLock,
@@ -1009,6 +1010,7 @@ export default function Sidebar({
       // Cloud diagrams carry their own project, so no "detach cloud sync" prompt.
       const accepted = await onLoad(parsedData, response.data.title, { skipProjectCheck: true });
       if (accepted === false) return;
+      if (markLoaded) markLoaded(parsedData);
 
       if (setActiveDiagram) {
         setActiveDiagram({
