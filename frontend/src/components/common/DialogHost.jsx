@@ -44,6 +44,18 @@ function Toasts({ toasts }) {
             <span style={{ flex: 1, whiteSpace: 'pre-line', overflowWrap: 'anywhere' }}>
               <span className="sr-only" style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)' }}>{s.label}: </span>
               {t.message}
+              {t.action && (
+                <button
+                  type="button"
+                  onClick={() => { t.action.onClick(); dismissToast(t.id); }}
+                  style={{
+                    display: 'block', marginTop: '8px', background: '#F4F7F6', border: '1px solid #D8E2E1', borderRadius: '6px',
+                    color: '#1C2B2C', cursor: 'pointer', padding: '4px 10px', fontSize: 'var(--fs-sm)', fontWeight: 600,
+                  }}
+                >
+                  {t.action.label}
+                </button>
+              )}
             </span>
             <button
               type="button"

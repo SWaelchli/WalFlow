@@ -294,6 +294,8 @@ function WalFlowContent() {
     clearLocalDraft,
     loadLocalDraftOnBoot,
     offerOrphanDraft,
+    reconcileDraft,
+    markLoaded,
     triggerManualCloudSave,
     lockInfo,
     isLockedByOther,
@@ -404,11 +406,32 @@ function WalFlowContent() {
   // History stack hook
   // A cloud drawing that is open but not checked out by this user
   const isReadOnly = !!activeDiagram && !hasLock;
+  // The toast's button must act on the drawing that is open now, not the one it was shown for
+  const checkoutRef = useRef(checkoutDiagram);
+  const openDiagramIdRef = useRef(activeDiagram?.id);
+  useEffect(() => {
+    checkoutRef.current = checkoutDiagram;
+    openDiagramIdRef.current = activeDiagram?.id;
+  }, [checkoutDiagram, activeDiagram]);
+  const readOnlyDiagramId = activeDiagram?.id;
+  const notifyReadOnly = useCallback(() => {
+    if (isLockedByOther) {
+      notify(`Read-only: ${lockInfo?.username || 'another user'} is editing this drawing.`, 'warning', { key: `read-only-locked:${readOnlyDiagramId}` });
+    } else {
+      notify('This drawing is read-only. Check it out to edit.', 'warning', {
+        key: `read-only:${readOnlyDiagramId}`,
+        action: {
+          label: 'Check out',
+          onClick: () => { if (openDiagramIdRef.current === readOnlyDiagramId) checkoutRef.current(); },
+        },
+      });
+    }
+  }, [isLockedByOther, lockInfo, readOnlyDiagramId]);
   const blockIfReadOnly = useCallback(() => {
     if (!isReadOnly) return false;
-    notify("This drawing is read-only. Please check out the drawing to edit.", 'warning');
+    notifyReadOnly();
     return true;
-  }, [isReadOnly]);
+  }, [isReadOnly, notifyReadOnly]);
 
   const { requestSnapshot, resetHistory, undo, redo } = useCanvasHistory({
     nodes,
@@ -911,8 +934,26 @@ function WalFlowContent() {
   }, [activeProject, activeDiagram, hasLock, triggerManualCloudSave, checkinDiagram, setActiveDiagram, loadData]);
 
   useEffect(() => {
-    const applyDraft = (draft) => {
-      loadData(draft);
+    const applyDraft = async (draft) => {
+      const result = await reconcileDraft(draft);
+      let data = result.data;
+      let attachDiagram = true;
+      let restored = result.restored;
+      if (result.conflict) {
+        const loadCloud = await confirmDialog({
+          title: 'Newer cloud version',
+          message: 'This drawing was saved elsewhere after your unsaved local changes. Load the cloud version, or keep your local copy detached from the cloud (it will not overwrite the cloud).',
+          confirmLabel: 'Load cloud version',
+          cancelLabel: 'Keep local copy',
+        });
+        if (!loadCloud) {
+          data = { ...draft, active_diagram_id: null, active_diagram_title: null, active_diagram_description: null };
+          attachDiagram = false;
+          restored = true;
+        }
+      }
+      if (attachDiagram && result.source === 'server') markLoaded(data);
+      loadData(data);
       if (draft.active_project_id && draft.active_project_title) {
         setActiveProject({
           id: draft.active_project_id,
@@ -921,15 +962,18 @@ function WalFlowContent() {
           updated_at: draft.timestamp || new Date().toISOString()
         });
       }
-      if (draft.active_diagram_id && draft.active_diagram_title) {
+      if (attachDiagram && draft.active_diagram_id && draft.active_diagram_title) {
         setActiveDiagram({
           id: draft.active_diagram_id,
           title: draft.active_diagram_title,
-          description: draft.active_diagram_description || ''
+          description: draft.active_diagram_description || '',
+          ...(result.source === 'server' ? { updated_at: result.updatedAt } : {})
         });
       }
-      setShowRestoredToast(true);
-      setTimeout(() => setShowRestoredToast(false), 5000);
+      if (restored) {
+        setShowRestoredToast(true);
+        setTimeout(() => setShowRestoredToast(false), 5000);
+      }
     };
 
     // This tab's own draft (reload) is restored directly; otherwise a draft left by a closed tab is offered
@@ -945,7 +989,7 @@ function WalFlowContent() {
 
   const onConnect = useCallback((rawParams) => {
     if (activeDiagram && !hasLock) {
-      notify("This drawing is read-only. Please check out the drawing to edit.", 'warning');
+      notifyReadOnly();
       return;
     }
     // The canvas connects in loose mode; a role outlet is stored as the source and a role inlet as the target, neutral ports as drawn
@@ -995,7 +1039,7 @@ function WalFlowContent() {
       return addEdge(newEdge, eds);
     });
     requestSnapshot();
-  }, [setEdges, edges, nodes, activeDiagram, hasLock, availablePipeClasses, allowCustomPipes, requestSnapshot]);
+  }, [setEdges, edges, nodes, activeDiagram, hasLock, notifyReadOnly, availablePipeClasses, allowCustomPipes, requestSnapshot]);
 
   // A port takes one pipe. The red handle while dragging comes from isValidConnection; the reason is
   // shown when the drag ends on a handle that was refused.
@@ -1048,7 +1092,7 @@ function WalFlowContent() {
 
   const updateNodeData = useCallback((nodeId, newData, targetCaseId = null) => {
     if (activeDiagram && !hasLock) {
-      notify("This drawing is read-only. Please check out the drawing to edit.", 'warning');
+      notifyReadOnly();
       return;
     }
     const effectiveCaseId = targetCaseId || activeCaseId;
@@ -1113,7 +1157,7 @@ function WalFlowContent() {
         );
       }
     }
-  }, [activeCaseId, cases, setNodes, setEdges, setCases, activeDiagram, hasLock]);
+  }, [activeCaseId, cases, setNodes, setEdges, setCases, activeDiagram, hasLock, notifyReadOnly]);
 
   // Canvas valve slider: live-preview the opening on the backend, then store it case-aware
   // (an override in a non-base case) so the case badge shows and the base case stays untouched.
@@ -1127,7 +1171,7 @@ function WalFlowContent() {
 
   const updateEdgeData = useCallback((edgeId, newData) => {
     if (activeDiagram && !hasLock) {
-      notify("This drawing is read-only. Please check out the drawing to edit.", 'warning');
+      notifyReadOnly();
       return;
     }
     // The selected pipe follows `edges` in an effect, so this updater stays free of side effects
@@ -1138,7 +1182,7 @@ function WalFlowContent() {
         data: { ...edge.data, ...newData }
       } : edge))
     );
-  }, [setEdges, activeDiagram, hasLock]);
+  }, [setEdges, activeDiagram, hasLock, notifyReadOnly]);
 
   const onDragEnter = useCallback((event) => {
     event.preventDefault();
@@ -1171,7 +1215,7 @@ function WalFlowContent() {
       
       const type = event.dataTransfer.getData('application/reactflow');
       if (type && activeDiagram && !hasLock) {
-        notify("This drawing is read-only. Please check out the drawing to edit.", 'warning');
+        notifyReadOnly();
         return;
       }
 
@@ -1217,7 +1261,7 @@ function WalFlowContent() {
       setNodes((nds) => nds.concat(newNode));
       requestSnapshot();
     },
-    [reactFlowInstance, handleValveChange, handleRotation, setNodes, handleLoadDiagramWithCheck, activeDiagram, hasLock, requestSnapshot, nodes, globalSettings.ambient_temperature]
+    [reactFlowInstance, handleValveChange, handleRotation, setNodes, handleLoadDiagramWithCheck, activeDiagram, hasLock, notifyReadOnly, requestSnapshot, nodes, globalSettings.ambient_temperature]
   );
 
   const onSave = useCallback(() => {
@@ -1233,24 +1277,24 @@ function WalFlowContent() {
 
   const onDeleteNode = useCallback((nodeId) => {
     if (activeDiagram && !hasLock) {
-      notify("This drawing is read-only. Please check out the drawing to edit.", 'warning');
+      notifyReadOnly();
       return;
     }
     setNodes((nds) => nds.filter((node) => node.id !== nodeId));
     setEdges((eds) => eds.filter((edge) => edge.source !== nodeId && edge.target !== nodeId));
     setSelectedNode(null);
     requestSnapshot();
-  }, [setNodes, setEdges, activeDiagram, hasLock, requestSnapshot]);
+  }, [setNodes, setEdges, activeDiagram, hasLock, notifyReadOnly, requestSnapshot]);
 
   const onDeleteEdge = useCallback((edgeId) => {
     if (activeDiagram && !hasLock) {
-      notify("This drawing is read-only. Please check out the drawing to edit.", 'warning');
+      notifyReadOnly();
       return;
     }
     setEdges((eds) => eds.filter((edge) => edge.id !== edgeId));
     setSelectedEdge(null);
     requestSnapshot();
-  }, [setEdges, activeDiagram, hasLock, requestSnapshot]);
+  }, [setEdges, activeDiagram, hasLock, notifyReadOnly, requestSnapshot]);
 
   const resetCanvas = useCallback(() => {
     fitViewPendingRef.current = true;
@@ -1329,6 +1373,7 @@ function WalFlowContent() {
         project_id
       });
 
+      markLoaded(blankPayload);
       setActiveDiagram({
         id: response.data.id,
         title: response.data.title,
@@ -1356,7 +1401,7 @@ function WalFlowContent() {
     } catch {
       notify("Failed to create new cloud drawing.", 'error');
     }
-  }, [resetCanvas, clearLocalDraft, setActiveDiagram, setActiveProject, loadData, showCanvasLoading]);
+  }, [resetCanvas, clearLocalDraft, setActiveDiagram, setActiveProject, loadData, markLoaded, showCanvasLoading]);
 
   // The solver gets the graph again only when something it uses changes: not on drag, selection or
   // when results arrive. The key is cheap; the graph itself is read from a ref when the timer fires.
@@ -1608,6 +1653,7 @@ function WalFlowContent() {
       <div style={{ flexGrow: 1, display: 'flex', height: 'calc(100vh - 56px)', overflow: 'hidden' }}>
         <Sidebar 
           onLoad={handleLoadDiagramWithCheck} 
+          markLoaded={markLoaded}
           globalSettings={globalSettings}
           onUpdateGlobalSettings={setGlobalSettings}
           userSettings={userSettings}
@@ -1842,6 +1888,7 @@ function WalFlowContent() {
     onClose={handleCloseModal}
     currentFlowData={{ nodes, edges, globalSettings, cases, activeCaseId }}
     onLoadDiagram={loadData}
+    markLoaded={markLoaded}
     activeProject={activeProject}
     setActiveProject={setActiveProject}
     activeDiagram={activeDiagram}

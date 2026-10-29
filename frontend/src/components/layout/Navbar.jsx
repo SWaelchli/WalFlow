@@ -29,7 +29,7 @@ function describeSaveState({ saveStatus, isCloudDoc, isLockedByOther, lastSavedT
   if (isLockedByOther || saveStatus === 'locked') return { dot: '#B45309', label: 'Read-only' };
   if (saveStatus === 'saving_cloud' || saveStatus === 'saving_local') return { dot: '#B45309', label: 'Saving…' };
   if (saveStatus === 'error') return { dot: '#B91C1C', label: 'Not saved' };
-  if (saveStatus === 'saved_cloud') return { dot: '#047857', label: lastSavedTimestamp ? `Saved ${lastSavedTimestamp}` : 'Saved' };
+  if (saveStatus === 'saved_cloud') return { dot: '#047857', label: lastSavedTimestamp ? `Saved to cloud ${lastSavedTimestamp}` : 'Saved to cloud' };
   return isCloudDoc
     ? { dot: '#587071', label: 'Saved in this browser' }
     : { dot: '#587071', label: 'Draft in this browser' };

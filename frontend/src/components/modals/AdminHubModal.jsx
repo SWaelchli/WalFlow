@@ -4,6 +4,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { CrownIcon, CrossIcon, TrashIcon, InfoIcon, UserIcon, CloudIcon, RefreshIcon, CheckIcon, CheckCircleIcon, EditIcon, CopyIcon, DownloadIcon, SearchIcon, FolderOpenIcon } from '../symbols/IconLibrary';
 
 import { modalA11yRef } from '../../hooks/useModalA11y';
+import { parseServerTime } from '../../utils/serverTime';
 const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
   const {
     fetchUsers,
@@ -629,7 +630,7 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
                               </select>
                             </td>
                             <td style={{ padding: '10px', color: 'var(--color-text-secondary)' }}>
-                              {diagram.updated_at ? new Date(diagram.updated_at).toLocaleDateString() : 'N/A'}
+                              {diagram.updated_at ? parseServerTime(diagram.updated_at).toLocaleDateString() : 'N/A'}
                             </td>
                             <td style={{ padding: '10px', textAlign: 'right' }}>
                               <div style={{ display: 'inline-flex', gap: '6px' }}>
