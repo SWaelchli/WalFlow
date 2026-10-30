@@ -193,6 +193,31 @@ describe('switching drawings', () => {
   });
 });
 
+describe('saved time on open', () => {
+  it('shows the opened drawing\'s own saved time, not the one that was left', async () => {
+    const clock = (s) => new Date(s).toLocaleTimeString();
+    const dA = { ...diagram, updated_at: '2026-01-01T08:15:00Z' };
+    const dB = { ...diagram, id: 'd2', updated_at: '2026-02-02T17:45:30Z' };
+    const { result, rerender } = await mount(baseProps({ activeDiagram: dA }));
+    expect(result.current.lastSavedTimestamp).toBe(clock(dA.updated_at));
+    rerender(baseProps({ activeDiagram: dB }));
+    expect(result.current.lastSavedTimestamp).toBe(clock(dB.updated_at));
+    expect(clock(dA.updated_at)).not.toBe(clock(dB.updated_at));
+  });
+
+  it.each([
+    ['detached (no drawing): the left drawing\'s time is cleared', null, false],
+    ['drawing without updated_at (restored draft): the previous time is kept', { id: 'd2', title: 'Draft', description: '' }, true],
+  ])('%s', async (_name, next, kept) => {
+    const dA = { ...diagram, updated_at: '2026-01-01T08:15:00Z' };
+    const shown = new Date(dA.updated_at).toLocaleTimeString();
+    const { result, rerender } = await mount(baseProps({ activeDiagram: dA }));
+    expect(result.current.lastSavedTimestamp).toBe(shown);
+    rerender(baseProps({ activeDiagram: next }));
+    expect(result.current.lastSavedTimestamp).toBe(kept ? shown : null);
+  });
+});
+
 describe('automatic checkout', () => {
   const free = { data: { is_locked: false } };
   const other = { data: { is_locked: true, lock: { user_id: 'u2', username: 'alex' } } };
