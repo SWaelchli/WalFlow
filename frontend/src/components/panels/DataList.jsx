@@ -14,6 +14,7 @@ import { useUnits } from '../../context/UnitContext';
 import { resolvePipeSelection, findPipeClass, manualSelectionPatch, classSelectionPatch, classSizePatch, schedulePatch, matchScheduleByInnerDiameter, nearestDnByInnerDiameter } from '../../utils/pipeDefaults';
 import DraftNumberInput from '../common/DraftNumberInput';
 import MeasurementsTable from './MeasurementsTable';
+import { buildCsv, buildCsvFileName } from '../../utils/csvExport';
 import usePanelHeight from '../../hooks/usePanelHeight';
 import { toSolverGraph } from '../../utils/diagramFile';
 import { computeCaseInputHashes, isCaseResultStale } from '../../utils/resultHash';
@@ -164,6 +165,8 @@ function ReliefDeviceResult({ result, hasResults, formatPressure, unit, formatPr
     </div>
   );
 }
+
+// A case has results once the solver has returned KPIs or telemetry for it
 
 export default function DataList({
   nodes,
@@ -488,6 +491,12 @@ export default function DataList({
     return items;
   }, [manualOrder, nodes, edges, activeTab, filterText, sortConfig]);
 
+  const selectTab = (tab) => {
+    if (panel.collapsed) panel.setCollapsed(false);
+    setActiveTab(tab);
+    setSortConfig({ key: null, direction: 'asc' });
+  };
+
   const exportCSV = useCallback(() => {
     const headers = ["Type", "Name", `Flow (${labels.flow})`, `Velocity (${labels.velocity})`, `ΔP (${labels.pressureDiff})`, `P Start (${labels.pressureAbs})`, `P End (${labels.pressureAbs})`, `Temp (${labels.temperature})`];
     if (activeTab === 'pipes') headers.push(`Length (${labels.length})`);
@@ -495,13 +504,14 @@ export default function DataList({
       const lenDisplay = isImperial ? (i.length * 3.280839895).toFixed(2) : i.length;
       const row = [i.displayType, i.label, formatFlowM3s(i.flow), formatVelocity(i.velocity), formatPressure(i.dp, 3), formatPressure(i.pStart), formatPressure(i.pEnd), formatTemperatureK(i.temp)];
       if (activeTab === 'pipes') row.push(lenDisplay);
-      return row.join(",");
+      return row;
     });
-    const blob = new Blob([[headers.join(","), ...rows].join("\n")], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([buildCsv(headers, rows)], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.setAttribute("href", url); link.setAttribute("download", `walflow_export_${activeTab}.csv`); link.click();
-  }, [processedItems, activeTab, labels, isImperial, formatFlowM3s, formatVelocity, formatPressure, formatTemperatureK]);
+    link.setAttribute("href", url); link.setAttribute("download", buildCsvFileName(cases.find(c => c.id === activeCaseId)?.name, activeTab)); link.click();
+    URL.revokeObjectURL(url);
+  }, [processedItems, activeTab, cases, activeCaseId, labels, isImperial, formatFlowM3s, formatVelocity, formatPressure, formatTemperatureK]);
 
   return (
     <div style={{ height: `${panel.height}px`, flexShrink: 0, background: '#ffffff', borderTop: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 -4px 16px rgba(57, 82, 83, 0.05)', position: 'relative' }}>
@@ -533,27 +543,27 @@ export default function DataList({
               <path d="M3 6l5 5 5-5" />
             </svg>
           </button>
-          <button onClick={() => { setActiveTab('pipes'); setSortConfig({key:null, direction:'asc'}); }}
+          <button onClick={() => selectTab('pipes')}
             className={`datalist-tab ${activeTab === 'pipes' ? 'active' : ''}`}
           >
             Pipe Network List
           </button>
-          <button onClick={() => { setActiveTab('all'); setSortConfig({key:null, direction:'asc'}); }}
+          <button onClick={() => selectTab('all')}
             className={`datalist-tab ${activeTab === 'all' ? 'active' : ''}`}
           >
             Full Equipment & Pipeline Data
           </button>
-          <button onClick={() => { setActiveTab('cases'); setSortConfig({key:null, direction:'asc'}); }}
+          <button onClick={() => selectTab('cases')}
             className={`datalist-tab ${activeTab === 'cases' ? 'active' : ''}`}
           >
             Operating Cases Matrix
           </button>
-          <button onClick={() => { setActiveTab('relief'); setSortConfig({key:null, direction:'asc'}); }}
+          <button onClick={() => selectTab('relief')}
             className={`datalist-tab ${activeTab === 'relief' ? 'active' : ''}`}
           >
             Relief Analysis Matrix
           </button>
-          <button onClick={() => { setActiveTab('measurements'); setSortConfig({key:null, direction:'asc'}); }}
+          <button onClick={() => selectTab('measurements')}
             className={`datalist-tab ${activeTab === 'measurements' ? 'active' : ''}`}
           >
             Measurements
@@ -814,11 +824,12 @@ export default function DataList({
                   <tr style={{ borderBottom: '1px solid var(--color-border-hover)', height: '36px' }}>
                     <td style={{ padding: '6px 12px', fontWeight: '700', color: 'var(--color-text-primary)', verticalAlign: 'middle', width: '200px', minWidth: '200px', maxWidth: '200px', whiteSpace: 'nowrap' }}>Cavitation Risk Status</td>
                     {displayCases.map((c, colIdx) => {
-                      const kpis = c.kpis || {};
-                      const hasCav = kpis.has_cavitation_warning;
+                      const hasCav = c.kpis?.has_cavitation_warning;
                       return (
                         <td key={c.case_id || c.id} style={{ padding: '6px 12px', borderLeft: caseDragOverIdx === colIdx ? '3px solid var(--color-primary)' : '1px solid var(--color-border)', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-                          {hasCav ? (
+                          {!c.kpis ? (
+                            <span style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>—</span>
+                          ) : hasCav ? (
                             <span style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', color: 'var(--color-danger-text)', background: '#fef2f2', padding: '2px 8px', borderRadius: '10px', border: '1px solid #fee2e2' }}>
                               <WarningIcon size={11} style={{ marginRight: '3px', verticalAlign: '-1px' }} />Cavitation risk
                             </span>
@@ -1075,7 +1086,7 @@ export default function DataList({
                       }, 0) * 60000;
                       return (
                         <td key={c.id || c.case_id} style={{ padding: '6px 12px', fontWeight: '600', color: 'var(--color-text-primary)', borderLeft: '1px solid var(--color-border)', verticalAlign: 'middle' }}>
-                          {formatFlow(totalReliefFlow)} {labels.flow}
+                          {c.telemetry ? `${formatFlow(totalReliefFlow)} ${labels.flow}` : '—'}
                         </td>
                       );
                     })}

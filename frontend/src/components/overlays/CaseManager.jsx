@@ -1,5 +1,5 @@
 import React from 'react';
-import { CrossIcon, CheckIcon } from '../symbols/IconLibrary';
+import { CrossIcon, CheckIcon, PlusIcon } from '../symbols/IconLibrary';
 
 /**
  * CaseManager component provides a floating dashboard panel on the canvas
@@ -9,6 +9,7 @@ export default function CaseManager({
   cases = [],
   activeCaseId = 'case_base',
   onSelectCase,
+  onAddCase,
   telemetryMode = 'mitigated',
   onToggleTelemetryMode,
   onClose,
@@ -161,6 +162,16 @@ export default function CaseManager({
             </option>
           ))}
         </select>
+        {onAddCase && (
+          <button
+            type="button"
+            onClick={() => onAddCase()}
+            className="btn-secondary btn-compact"
+            style={{ marginTop: '4px', justifyContent: 'center' }}
+          >
+            <PlusIcon size={14} style={{ marginRight: '6px' }} /> New case
+          </button>
+        )}
       </div>
 
       {/* Relief contingency selection */}

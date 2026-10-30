@@ -117,6 +117,52 @@ describe('relief analysis matrix', () => {
   });
 });
 
+describe('operating cases matrix without results', () => {
+  const psvNodes = [{ id: 'psv', type: 'pressure_safety_valve', position: { x: 0, y: 0 }, data: { label: 'PSV-1', set_pressure_barg: 5 } }];
+  const rowCell = (label) => screen.getByText(new RegExp(`^${label}`)).closest('tr').querySelectorAll('td')[1].textContent;
+
+  const base = { id: 'case_base', name: 'Case 1', is_base: true, overrides: { nodes: {} } };
+  const telemetry = { nodes: { psv: { outlets: [{ flow_rate: 0 }] } }, edges: {} };
+
+  it.each([
+    ['never run', base, '—', /^—$/],
+    ['run with zero relief', { ...base, kpis: {}, telemetry }, 'Normal', /^0(\.0+)? L\/min$/],
+    ['kpis but no telemetry', { ...base, kpis: {} }, 'Normal', /^—$/],
+    ['telemetry but no kpis', { ...base, telemetry }, '—', /^0(\.0+)? L\/min$/],
+  ])('%s: cavitation and total relief flow cells', (_, c, cavitation, relief) => {
+    render(
+      <UnitProvider initialUnitSystem={UNIT_SYSTEMS.METRIC}>
+        <DataList nodes={psvNodes} edges={[]} rawNodes={psvNodes} rawEdges={[]} cases={[c]} activeCaseId="case_base" onSelectNode={vi.fn()} onSelectEdge={vi.fn()} />
+      </UnitProvider>
+    );
+    fireEvent.click(screen.getByText('Operating Cases Matrix'));
+    expect(rowCell('Cavitation Risk Status')).toBe(cavitation);
+    fireEvent.click(screen.getByText('Relief Analysis Matrix'));
+    expect(rowCell('Total Relief Flow')).toMatch(relief);
+  });
+});
+
+describe('collapsed data panel', () => {
+  afterEach(() => localStorage.clear());
+  const mount = () => render(
+    <UnitProvider initialUnitSystem={UNIT_SYSTEMS.METRIC}>
+      <DataList nodes={nodes} edges={edges} rawNodes={nodes} rawEdges={edges} onUpdateEdge={vi.fn()} onSelectNode={vi.fn()} onSelectEdge={vi.fn()} />
+    </UnitProvider>
+  );
+
+  it.each([
+    ['collapsed', true],
+    ['expanded', false],
+  ])('a tab click when %s switches the tab and leaves the panel expanded', (_, collapsed) => {
+    localStorage.setItem('walflow_datalist_panel', JSON.stringify({ collapsed }));
+    mount();
+    expect(screen.getByLabelText(collapsed ? 'Expand data panel' : 'Collapse data panel')).toBeTruthy();
+    fireEvent.click(screen.getByText('Measurements'));
+    expect(screen.getByLabelText('Collapse data panel').getAttribute('aria-expanded')).toBe('true');
+    expect(screen.getByText('Measurements').className).toContain('active');
+  });
+});
+
 describe('changing a forced state in the relief matrix', () => {
   const baseCase = { id: 'case_base', name: 'Case 1', is_base: true, overrides: { nodes: {} } };
   const psvAt = (forced_state) => [{ id: 'psv', type: 'pressure_safety_valve', position: { x: 0, y: 0 }, data: { label: 'PSV-1', set_pressure_barg: 5.0, forced_state } }];
