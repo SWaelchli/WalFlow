@@ -65,7 +65,7 @@ The loop ends when every controller is at its setpoint or saturated, together wi
 | `closed` | $f > 0$ at the 0.05 % end stop | still above setpoint (BPR, or a PRV in a shared group) |
 | `lockup` | PRV `closed` | outlet pinned to $P_{\text{set}}$, zero flow, opening reported as 0 % |
 
-**Lock-up.** A PRV that would close completely (downstream consumer shut) holds its setpoint on the downstream side. In the edge pressure balance its outlet pressure is fixed: $P_{\text{out}} = P_{\text{set}}$. Lock-up ends when:
+**Lock-up.** A PRV that would close completely (downstream consumer shut) holds its setpoint on the downstream side. In the edge pressure balance its outlet pressure is fixed: $P_{\text{out}} = P_{\text{set}}$. The property update (`calculate`) uses the same $\Delta P = P_{\text{in}} - P_{\text{set}}$ for the throttling heat, not the Cv equation at the end stop. Lock-up ends when:
 
 - a downstream demand appears ($Q > 10^{-9}$ m³/s with $P_{\text{in}} > P_{\text{set}}$): the regulator opens just enough to carry it at the setpoint (opening found by bisection, `_opening_for_dp`; the end stop is lowered for a tiny demand);
 - flow comes back through the outlet: something else holds the downstream side above the setpoint, so the regulator is simply closed;
@@ -91,7 +91,7 @@ applied to the outlet for $Q \ge 0$ and to the inlet for $Q < 0$. A PRV reducing
 
 | Parameter (UI Label) | UI Unit | Backend Var | SI Unit | Default | Valid Range | Description |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| Max Cv | Cv | `self.max_cv` | Cv | 0.05 | $> 0$ | Flow coefficient at 100 % |
+| Max Cv | Cv | `self.max_cv` | Cv | 50 | $> 0$ | Flow coefficient at 100 % |
 | Mode | text | `self.backpressure` | bool | Pressure Reducing (Downstream) | Pressure Reducing / Backpressure | `false` = PRV, `true` = BPR |
 | Set Point | bar(a) (psi(a)) | `self.set_pressure` | Pa (absolute) | 5.0 bar(a) | $> 0$ | Pressure held at the sensed port |
 
@@ -131,6 +131,6 @@ Node type: `linear_regulator`. Field names follow the naming rule in [base_node.
 
 | Field | Unit in file | Default |
 |---|---|---|
-| `max_cv` | Cv | 0.05 |
+| `max_cv` | Cv | 50 |
 | `set_pressure_pa` | Pa | 500000 |
 | `backpressure` | bool | false |

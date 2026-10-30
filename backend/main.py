@@ -236,8 +236,13 @@ async def websocket_endpoint(websocket: WebSocket):
                         )
 
                         if stats.get("error_kind"):
-                            # Model problem the user can fix (e.g. a circuit without a tank): show it, not stale results
-                            await websocket.send_text(json.dumps({"status": "error", "message": stats["error"]}))
+                            # No result (a circuit without a tank, a component out of range, no convergence): show
+                            # the message, the component to select and the raw solver text, not stale results
+                            print(f"Simulation not solved: {stats['error_kind']}: {stats.get('error_detail') or stats['error']}")
+                            await websocket.send_text(json.dumps({
+                                "status": "error", "message": stats["error"], "kind": stats["error_kind"],
+                                "target": stats.get("error_target"), "detail": stats.get("error_detail"),
+                            }))
                             continue
 
                         print(f"Simulation Run: success={stats.get('success')}, error={stats.get('error')}, time={stats.get('time_ms', 0):.2f}ms, fallback={stats.get('fallback_used')}")

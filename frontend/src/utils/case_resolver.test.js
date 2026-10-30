@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { areValuesEquivalent, getCaseTelemetrySet, getEffectiveNodeData, getEffectiveEdgeData, updateCaseTelemetry } from './case_resolver';
+import { areValuesEquivalent, getCaseTelemetrySet, getEffectiveNodeData, getEffectiveEdgeData, updateCaseTelemetry, clearCaseTelemetry } from './case_resolver';
 
 const tel = (p) => ({ nodes: { psv: { inlets: [{ pressure: p }], outlets: [] } }, edges: {} });
 
@@ -44,6 +44,19 @@ describe('results come from the case only', () => {
   it('stores the input hash with the results', () => {
     const [updated] = updateCaseTelemetry([solved], 'case_base', tel(1), { k: 1 }, null, null, 'h1');
     expect(updated.result_hash).toBe('h1');
+  });
+});
+
+describe('clearCaseTelemetry', () => {
+  const full = (id) => ({ id, telemetry: tel(1), telemetry_unmitigated: tel(2), telemetry_peak: tel(3), kpis: { k: 1 }, result_hash: 'h' });
+
+  it('drops every result of the failed case only; an unknown id changes nothing', () => {
+    const cases = [full('case_base'), full('case_2')];
+    const [base, other] = clearCaseTelemetry(cases, 'case_base');
+    expect(base).toMatchObject({ id: 'case_base', telemetry: null, telemetry_unmitigated: null, telemetry_peak: null, kpis: null });
+    expect(base.result_hash).toBeNull();
+    expect(other).toBe(cases[1]);
+    expect(clearCaseTelemetry(cases, 'nope')).toEqual(cases);
   });
 });
 

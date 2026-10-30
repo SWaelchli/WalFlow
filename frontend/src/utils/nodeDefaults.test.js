@@ -36,6 +36,10 @@ describe('defaultNodeData', () => {
     expect(defaultNodeData('linear_regulator', ctx)).not.toHaveProperty('valve_style_id');
   });
 
+  it.each(['linear_control_valve', 'linear_regulator', 'remote_control_valve'])('sizes a new %s with a Cv of 50', (type) => {
+    expect(defaultNodeData(type, ctx).max_cv).toBe(50.0);
+  });
+
   it('only sets fields the backend reads (Data Fields tables in backend/simulation/equipment/*.md)', () => {
     expect(defaultNodeData('junction', ctx)).toEqual({ label: 'X', rotation: 0, onRotate: ctx.onRotate, onChange: undefined, num_ports: 3 });
   });

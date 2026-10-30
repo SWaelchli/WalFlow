@@ -10,15 +10,22 @@ const BANNER_TONES = {
  * Banners over the canvas for the outcome of the last run: solver errors and result warnings.
  * Dismissed banners stay hidden until a new result arrives. `children` (stale / rejected-change banner) share the stack.
  */
-export default function RunBanners({ runError, runErrorId, summary, resultKey, onSelect, onOpenStatus, children }) {
+export default function RunBanners({ runError, runErrorId, runErrorTarget = null, runErrorDetail = null, summary, resultKey, onSelect, onOpenStatus, children }) {
   // What was dismissed: the error id and the result object. A new error or result is a new key, so it shows again.
   const [dismissed, setDismissed] = useState({ error: null, summary: null });
+  // Raw solver text of the error, shown on request (the error id keys it, so a new error starts collapsed)
+  const [detailOpenId, setDetailOpenId] = useState(null);
 
   const summaryHidden = dismissed.summary === resultKey;
   const items = [];
 
   if (runError && dismissed.error !== runErrorId) {
-    items.push({ key: 'error', tone: 'error', text: runError, close: () => setDismissed(d => ({ ...d, error: runErrorId })) });
+    const detailOpen = detailOpenId === runErrorId;
+    items.push({
+      key: 'error', tone: 'error', text: runError, close: () => setDismissed(d => ({ ...d, error: runErrorId })),
+      target: runErrorTarget?.id, targetType: runErrorTarget?.type,
+      detail: runErrorDetail, detailOpen, toggleDetail: () => setDetailOpenId(detailOpen ? null : runErrorId),
+    });
   }
   if (summary && !summaryHidden) {
     const first = summary.notes[0];
@@ -58,10 +65,20 @@ export default function RunBanners({ runError, runErrorId, summary, resultKey, o
             <span style={{ flex: '0 0 auto', marginTop: '1px' }}>
               {it.tone === 'error' ? <CrossIcon size={13} color={t.color} /> : <WarningIcon size={13} color={t.color} />}
             </span>
-            <span style={{ flex: 1, overflowWrap: 'anywhere' }}>{it.text}</span>
+            <span style={{ flex: 1, overflowWrap: 'anywhere' }}>
+              {it.text}
+              {it.detail && it.detailOpen && (
+                <span style={{ display: 'block', marginTop: '4px', fontFamily: 'monospace', fontSize: 'var(--fs-xs)', fontWeight: 400 }}>{it.detail}</span>
+              )}
+            </span>
             {it.target && (
               <button type="button" className="btn-secondary" style={{ height: '24px', padding: '0 8px', fontSize: 'var(--fs-xs)', flex: '0 0 auto' }}
-                onClick={() => onSelect?.(it.target, 'Node')}>Show</button>
+                onClick={() => onSelect?.(it.target, it.targetType || 'Node')}>Show</button>
+            )}
+            {it.detail && (
+              <button type="button" className="btn-secondary" aria-expanded={it.detailOpen}
+                style={{ height: '24px', padding: '0 8px', fontSize: 'var(--fs-xs)', flex: '0 0 auto' }}
+                onClick={it.toggleDetail}>Details</button>
             )}
             {it.showStatus && (
               <button type="button" className="btn-secondary" style={{ height: '24px', padding: '0 8px', fontSize: 'var(--fs-xs)', flex: '0 0 auto' }}

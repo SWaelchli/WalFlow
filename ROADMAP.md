@@ -153,6 +153,7 @@ u$):** cSt at the local temperature. Derived, not an ISA variable.
 
 ## 📊 Analytics & Telemetry
 
+- [ ] **📏 Valve Opening Instrument**: Add instrument functionality to measure valve opening (control valves, regulators, 3-way TCV), so the opening of each valve can be compared per operating case in the Measurements tab, with alarm limits like the other instruments.
 - [ ] **🖥️ Server Resource Telemetry & Performance Dashboard**:
   * **System Resource Monitoring**: Track CPU % consumed by matrix calculations (SciPy/NumPy), RAM usage per active simulation WebSocket, and average solver iteration time (ms) using `psutil`.
   * **Session & User Usage Stats**: Record active connected user count, duration of simulation runs, and historical simulation sessions in the database.

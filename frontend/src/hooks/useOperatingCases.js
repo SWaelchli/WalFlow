@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { askName } from '../utils/dialogs';
 import { DEFAULT_BASE_CASE } from '../constants/case_constants';
-import { updateCaseTelemetry, updateCaseOverride, removeCaseOverride, duplicateCase } from '../utils/case_resolver';
+import { updateCaseTelemetry, clearCaseTelemetry, updateCaseOverride, removeCaseOverride, duplicateCase } from '../utils/case_resolver';
 
 /** Operating cases: list, active case, edits, overrides, and where solver results are stored. */
 export function useOperatingCases({ nodes }) {
@@ -62,11 +62,18 @@ export function useOperatingCases({ nodes }) {
     setCases(prev => updateCaseTelemetry(prev, targetCaseId, telemetry, kpis, telemetryUnmitigated, telemetryPeak, resultHash));
   }, []);
 
+  // A failed run: the case shows no results instead of the previous run's numbers
+  const handleClearCaseTelemetry = useCallback((targetCaseId) => {
+    setCases(prev => clearCaseTelemetry(prev, targetCaseId));
+  }, []);
+
   // inputHashes: { caseId: hash } of the inputs the batch was sent with
   const handleBatchResultsTelemetry = useCallback((batchResults, inputHashes = {}) => {
-    setCases(prev => prev.map(c => {
+    // A case that failed in the batch shows no results instead of its previous numbers
+    const failedIds = batchResults.filter(b => b.status === 'error').map(b => b.case_id);
+    setCases(prev => failedIds.reduce(clearCaseTelemetry, prev).map(c => {
       const match = batchResults.find(b => b.case_id === c.id);
-      return (match && (match.telemetry || match.kpis)) 
+      return (match && (match.telemetry || match.kpis))
         ? { 
             ...c, 
             telemetry: match.telemetry || c.telemetry, 
@@ -92,7 +99,7 @@ export function useOperatingCases({ nodes }) {
   return {
     cases, setCases, activeCaseId, setActiveCaseId, showCaseManager, setShowCaseManager,
     handleAddCase, handleRenameCase, handleDeleteCase, handleReorderCases, handleResetCaseOverride, handleSetCaseOverride,
-    handleUpdateCaseTelemetry, batchStats, handleBatchResultsTelemetry,
+    handleUpdateCaseTelemetry, handleClearCaseTelemetry, batchStats, handleBatchResultsTelemetry,
   };
 }
 
