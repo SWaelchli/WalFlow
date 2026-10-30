@@ -19,7 +19,6 @@ The only place that holds the status.
 
 | ID | Severity | Status | Finding | Proposed solution | Owner | Phase | Source |
 |---|---|---|---|---|---|---|---|
-| L4 | Low | Open | The first run does not point a new user to the example drawings. | Decided: point to the examples in general from the empty-canvas hint. | fe | 7 | UX audit 2026-10-28 |
 | H4 | High | Open | Layout collapses below 1280 px with inspector and data panel open; at 500 px the canvas width is 0. | Responsive navbar actions and inspector width, tuned to the final navbar. | fe | 8 | UX audit 2026-10-28 |
 | LK-L1 | Low | Open | The navbar is crowded: with the lock chip shown, the run status touches the Catalogue button. | Solve in the full layout review (phase 8). | fe | 8 | Lock re-check 2026-10-30 |
 | M1 | Medium | Deferred | A pump curve cannot be entered as several points (no table, no paste). | Point table with clipboard paste and a fitted curve (product roadmap). | orch + phys, fe | — | UX audit 2026-10-28 |
@@ -33,7 +32,6 @@ before each commit.
 
 | Phase | Entries | Why this order | Exit check |
 |---|---|---|---|
-| 7 Onboarding | L4 | L4 is a link to the examples. | Gate. |
 | 8 Layout | H4, LK-L1 | Last UI change. **Before starting, remind the user to run a full layout review first**: compare the current layout with industry-standard layouts of Windows desktop apps and similar engineering/diagram tools, then redo the layout to match them with no change in functionality, as a future-proof concept. H4 and LK-L1 are solved inside that redesign. | Layout review agreed with the user; re-audit at 1920 / 1440 / 1280 / 1024 / 768. |
 
 ## Details: UX audit 2026-10-28, systems-engineer
@@ -44,7 +42,6 @@ Report: [docs/audit/2026-10-28-systems-engineer/report.md](docs/audit/2026-10-28
 |---|---|---|---|
 | H4 | Top-bar actions are pushed off-screen below 1280 px with the inspector and data panel open. | Navbar.jsx right action group, inspector width in App.jsx | Gate (re-audit at 1280/1024/768). |
 | M1 | Deferred to the product roadmap. | Pump model + `<pump>.md`, PumpInspector | Feature: reference rows (fitted curve through the datasheet points) in `unit/equipment/test_<pump>.py`, keep the pump in `PUMP_DATA`, Vitest case for the clipboard paste parser. |
-| L4 | Link the examples in general, not one specific example. | EmptyCanvasHint | Gate. |
 | L5 | Rejected for now. | node handles | Gate. |
 
 ## Details: UX audit 2026-10-29, drawing lifecycle and locks

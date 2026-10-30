@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { notify, confirmDialog } from '../../utils/dialogs';
 import { summarizeStats } from '../../utils/runStatus';
 import axios from 'axios';
@@ -442,15 +442,24 @@ function CollapsibleCategory({ name, items, onDragStart }) {
   );
 }
 
-function CollapsibleScenarios({ templates, onLoad }) {
-  const [isExpanded, setIsExpanded] = useState(false);
+function CollapsibleScenarios({ templates, onLoad, isExpanded, setIsExpanded, focusPending = false, onFocused }) {
+  const headerRef = useRef(null);
+
+  // A pending request scrolls the section into view and focuses its header (the Sidebar expands it)
+  useEffect(() => {
+    if (!focusPending) return;
+    headerRef.current?.focus();
+    headerRef.current?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+    onFocused?.();
+  }, [focusPending, onFocused]);
 
   // Check if templates has categories (nested objects)
   const isCategorized = templates && Object.values(templates).some(v => v && typeof v === 'object' && !v.format && !v.nodes);
 
   return (
     <div style={{ marginBottom: '16px', borderRadius: '8px', overflow: 'hidden', border: `1px solid ${theme.slate200}` }}>
-      <div 
+      <div
+        ref={headerRef}
         onClick={() => setIsExpanded(!isExpanded)}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -461,15 +470,14 @@ function CollapsibleScenarios({ templates, onLoad }) {
         tabIndex="0"
         role="button"
         aria-expanded={isExpanded}
-        style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center', 
-          padding: '12px 16px', 
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '12px 16px',
           cursor: 'pointer',
           background: theme.slate100,
-          userSelect: 'none',
-          outline: 'none'
+          userSelect: 'none'
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -734,10 +742,23 @@ export default function Sidebar({
   onNewDrawingClick,
   onImportClick,
   onExportClick,
-  onOpenProjectsModal
+  onOpenProjectsModal,
+  examplesRequest = 0
 }) {
   const { unitSystem, setUnitSystem, isImperial, pressureBasis, setPressureBasis, flowUnit, setFlowUnit } = useUnits();
   const [activeTab, setActiveTab] = useState('library');
+  const [examplesExpanded, setExamplesExpanded] = useState(false);
+  const [focusExamplesPending, setFocusExamplesPending] = useState(false);
+
+  // Only a changed request shows the examples; the initial value does nothing
+  const [seenExamplesRequest, setSeenExamplesRequest] = useState(examplesRequest);
+  if (examplesRequest !== seenExamplesRequest) {
+    setSeenExamplesRequest(examplesRequest);
+    setActiveTab('library');
+    setExamplesExpanded(true);
+    setFocusExamplesPending(true);
+  }
+  const clearFocusExamples = useCallback(() => setFocusExamplesPending(false), []);
   const [settingsSubTab, setSettingsSubTab] = useState('drawing'); // 'drawing' | 'project' | 'global'
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -1241,7 +1262,7 @@ export default function Sidebar({
       <div style={{ flexGrow: 1 }}>
         {activeTab === 'library' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <CollapsibleScenarios templates={templates} onLoad={onLoad} />
+            <CollapsibleScenarios templates={templates} onLoad={onLoad} isExpanded={examplesExpanded} setIsExpanded={setExamplesExpanded} focusPending={focusExamplesPending} onFocused={clearFocusExamples} />
 
             <div style={{ 
               position: 'sticky', 

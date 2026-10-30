@@ -99,7 +99,7 @@ Rail items, top to bottom: **Components** (equipment palette and search), **Exam
 | Top right, one column with a gap | Heatmap legend, case manager. Stack with flex, never computed offsets |
 | Bottom left | Canvas controls: zoom in, zoom out, fit view, lock, heatmap. Each has `aria-label` and a tooltip with its shortcut |
 | Bottom right | Reserved (minimap) |
-| Centre | Empty-canvas hint, loading overlay, file-drop target |
+| Centre | Empty-canvas hint (with a "Browse examples" button that opens the Examples list), loading overlay, file-drop target |
 
 Only view controls belong on the canvas. Commands that change the drawing go through the command list.
 
