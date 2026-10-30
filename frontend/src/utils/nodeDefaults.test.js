@@ -12,6 +12,10 @@ describe('defaultNodeData', () => {
     expect(defaultNodeData('linear_control_valve', ctx).onChange).toBe(ctx.onChange);
   });
 
+  it.each([['absolute'], ['gauge']])('gives a new instrument the %s pressure basis of the session', (basis) => {
+    expect(defaultNodeData('instrument', { ...ctx, pressureBasis: basis }).pressure_basis).toBe(basis);
+  });
+
   it('starts a tank at the ambient temperature of the drawing and the parser default level of 1 m', () => {
     expect(defaultNodeData('tank', ctx)).toMatchObject({ level_m: 1.0, elevation_m: 0.0, temperature_k: 300 });
   });

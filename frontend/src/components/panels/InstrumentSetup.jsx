@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { notify } from '../../utils/dialogs';
+import { useUnits } from '../../context/UnitContext';
 import {
   INSTRUMENT_VARIABLES, ALARM_KEYS, instrumentInput, instrumentUnit, limitToDisplay, limitFromDisplay,
   limitOrderError, retagForVariable, describeInstrumentInput as describeInput,
@@ -13,10 +14,11 @@ const fieldLabel = { fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondar
  * so they are the same in every operating case; each case's reading is judged against them.
  */
 export default function InstrumentSetup({ id, data, allNodes = [], allEdges = [], isImperial, onUpdate }) {
+  const { flowUnit } = useUnits();
   const [drafts, setDrafts] = useState({});
   const variable = data.variable || 'P';
   const basis = data.pressure_basis || 'gauge';
-  const unit = instrumentUnit(variable, basis, isImperial);
+  const unit = instrumentUnit(variable, basis, isImperial, flowUnit);
   const isDp = variable === 'dP';
 
   const plus = describeInput(instrumentInput(id, allEdges), allNodes);
@@ -36,7 +38,7 @@ export default function InstrumentSetup({ id, data, allNodes = [], allEdges = []
 
   const commitLimit = (key) => {
     if (!Object.prototype.hasOwnProperty.call(drafts, key)) return;
-    const value = limitFromDisplay(variable, drafts[key], isImperial);
+    const value = limitFromDisplay(variable, drafts[key], isImperial, flowUnit);
     setDrafts(prev => { const next = { ...prev }; delete next[key]; return next; });
     const error = limitOrderError({ ...data, [key]: value });
     if (error) {
@@ -111,7 +113,7 @@ export default function InstrumentSetup({ id, data, allNodes = [], allEdges = []
                 id={`${key}-${id}`}
                 type="number" step="any" placeholder="off"
                 className="form-input" style={{ width: '100%' }}
-                value={drafts[key] !== undefined ? drafts[key] : limitToDisplay(variable, data[key], isImperial)}
+                value={drafts[key] !== undefined ? drafts[key] : limitToDisplay(variable, data[key], isImperial, flowUnit)}
                 onChange={(e) => setDrafts(prev => ({ ...prev, [key]: e.target.value }))}
                 onBlur={() => commitLimit(key)}
               />

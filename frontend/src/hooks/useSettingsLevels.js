@@ -23,16 +23,19 @@ const onlySolver = (obj) => Object.fromEntries(SOLVER_KEYS.filter(k => obj?.[k] 
  * Global settings live in the database for logged-in users and in localStorage otherwise; a local
  * preference moves to the database on the first login. The unit system is a display preference only.
  */
-export default function useSettingsLevels({ isAuthenticated, activeProjectId, unitSystem, setUnitSystem }) {
+export default function useSettingsLevels({ isAuthenticated, activeProjectId, unitSystem, setUnitSystem, pressureBasis, setPressureBasis, flowUnit, setFlowUnit }) {
   const [userSolver, setUserSolver] = useState(readLocalSolver);
   const [loadedProject, setLoadedProject] = useState({ id: null, settings: null });
   const syncedRef = useRef(false);
   const unitSystemRef = useRef(unitSystem);
+  const displayRef = useRef({ pressure_basis: pressureBasis, flow_unit: flowUnit });
   const userSolverRef = useRef(userSolver);
+  const lastUnitRef = useRef(`${unitSystem}|${pressureBasis}|${flowUnit}`);
   useEffect(() => {
     unitSystemRef.current = unitSystem;
+    displayRef.current = { pressure_basis: pressureBasis, flow_unit: flowUnit };
     userSolverRef.current = userSolver;
-  }, [unitSystem, userSolver]);
+  }, [unitSystem, userSolver, pressureBasis, flowUnit]);
 
   // Load (or migrate) the user's global settings when logging in
   useEffect(() => {
@@ -45,9 +48,13 @@ export default function useSettingsLevels({ isAuthenticated, activeProjectId, un
         if (cancelled) return;
         if (data.stored) {
           setUserSolver({ ...BUILTIN_SOLVER_SETTINGS, ...data.solver });
+          // The loaded values are already stored: mark them as persisted so applying them does not PUT them back
+          lastUnitRef.current = `${data.unit_system || unitSystemRef.current}|${data.pressure_basis || displayRef.current.pressure_basis}|${data.flow_unit || displayRef.current.flow_unit}`;
           if (data.unit_system) setUnitSystem(data.unit_system);
+          if (data.pressure_basis) setPressureBasis(data.pressure_basis);
+          if (data.flow_unit) setFlowUnit(data.flow_unit);
         } else {
-          await axios.put('/api/settings', { unit_system: unitSystemRef.current, solver: onlySolver(readLocalSolver()) });
+          await axios.put('/api/settings', { unit_system: unitSystemRef.current, ...displayRef.current, solver: onlySolver(readLocalSolver()) });
         }
         if (!cancelled) syncedRef.current = true;
       } catch {
@@ -55,11 +62,11 @@ export default function useSettingsLevels({ isAuthenticated, activeProjectId, un
       }
     })();
     return () => { cancelled = true; };
-  }, [isAuthenticated, setUnitSystem]);
+  }, [isAuthenticated, setUnitSystem, setPressureBasis, setFlowUnit]);
 
   const persistUser = useCallback((solver, unit) => {
     if (!isAuthenticated || !syncedRef.current) return;
-    axios.put('/api/settings', { unit_system: unit, solver: onlySolver(solver) }).catch(() => {});
+    axios.put('/api/settings', { unit_system: unit, ...displayRef.current, solver: onlySolver(solver) }).catch(() => {});
   }, [isAuthenticated]);
 
   const updateUserSolver = useCallback((patch) => {
@@ -70,13 +77,13 @@ export default function useSettingsLevels({ isAuthenticated, activeProjectId, un
     persistUser(next, unitSystemRef.current);
   }, [persistUser]);
 
-  // Unit preference changes are stored with the user
-  const lastUnitRef = useRef(unitSystem);
+  // Display preference changes (unit system, pressure basis, flow unit) are stored with the user
   useEffect(() => {
-    if (lastUnitRef.current === unitSystem) return;
-    lastUnitRef.current = unitSystem;
+    const key = `${unitSystem}|${pressureBasis}|${flowUnit}`;
+    if (lastUnitRef.current === key) return;
+    lastUnitRef.current = key;
     persistUser(userSolver, unitSystem);
-  }, [unitSystem, userSolver, persistUser]);
+  }, [unitSystem, pressureBasis, flowUnit, userSolver, persistUser]);
 
   // Project settings follow the open project
   useEffect(() => {
@@ -97,7 +104,7 @@ export default function useSettingsLevels({ isAuthenticated, activeProjectId, un
   }, [activeProjectId]);
 
   return {
-    userSettings: { unit_system: unitSystem, solver: userSolver },
+    userSettings: { unit_system: unitSystem, pressure_basis: pressureBasis, flow_unit: flowUnit, solver: userSolver },
     updateUserSolver,
     projectSettings,
     updateProjectSettings,

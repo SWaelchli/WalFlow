@@ -10,7 +10,7 @@ import { pressureRise, outletFlow } from '../utils/nodeReadouts';
  * Centrifugal Pump (ISA / PFD style)
  */
 export default function CentrifugalPumpNode({ id, data, selected }) {
-  const { formatPressurePa, formatFlowM3s, labels } = useUnits();
+  const { formatDiffPressurePa, formatFlowM3s, labels } = useUnits();
   const rotation = data.rotation || 0;
   const sensing = useMemo(() => data.sensing || {}, [data.sensing]);
   const q = outletFlow(data.telemetry);
@@ -29,7 +29,7 @@ export default function CentrifugalPumpNode({ id, data, selected }) {
       footer={
         <>
           <div style={{ fontSize: '9px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>{data.label || 'C-PUMP'}</div>
-          <div style={{ fontSize: '10px', fontWeight: 'bold', color: 'var(--color-brand-dark)' }}>ΔP {formatPressurePa(dP)} {labels.pressureDiff}</div>
+          <div style={{ fontSize: '10px', fontWeight: 'bold', color: 'var(--color-brand-dark)' }}>ΔP {formatDiffPressurePa(dP)} {labels.pressureDiff}</div>
           <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)' }}>{formatFlowM3s(q)} {labels.flow}</div>
         </>
       }

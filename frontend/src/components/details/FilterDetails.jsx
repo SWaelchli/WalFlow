@@ -8,7 +8,7 @@ import { neutralPorts } from '../../utils/nodeReadouts';
 import NeutralFlowCaption from './NeutralFlowCaption';
 
 const FilterDetails = memo(function FilterDetails({ node }) {
-  const { labels, isImperial, formatPressurePa } = useUnits();
+  const { labels, isImperial, lminToDisplay, formatDiffPressurePa } = useUnits();
   const { dp_clean_bar, dp_terminal_bar, flow_ref_lmin, clogging_pct, telemetry } = node.data;
   
   const neutral = neutralPorts(telemetry);
@@ -32,7 +32,7 @@ const FilterDetails = memo(function FilterDetails({ node }) {
   const modelAtOp = kCurr * rho * (actualFlowLmin / 60000) ** 2;
   const fluidScale = (telemetry && modelAtOp > 1e-6 && currentDpMeasuredPa > 0) ? currentDpMeasuredPa / modelAtOp : 1.0;
 
-  const flowMultiplier = isImperial ? 0.264172052 : 1.0;
+  const flowMultiplier = lminToDisplay(1);
   const pressMultiplier = isImperial ? 14.5037738 : 1.0;
   const xMaxDisplay = niceTicks(maxX_lmin * flowMultiplier, 5).pop();
   const xMaxLmin = xMaxDisplay / flowMultiplier;
@@ -91,7 +91,7 @@ const FilterDetails = memo(function FilterDetails({ node }) {
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-text-secondary)', fontWeight: '500' }}>Current ΔP:</span>
-          <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-text-primary)', fontWeight: '700', fontFamily: 'var(--font-mono)' }}>{formatPressurePa(currentDpMeasuredPa)} {labels.pressureDiff}</span>
+          <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-text-primary)', fontWeight: '700', fontFamily: 'var(--font-mono)' }}>{formatDiffPressurePa(currentDpMeasuredPa)} {labels.pressureDiff}</span>
         </div>
       </div>
     </div>

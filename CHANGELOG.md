@@ -44,6 +44,7 @@ All notable changes to the WälFlow project will be documented in this file.
 - **Flow source withdrawal**: A negative set flow on a flow source draws that flow out of the network (a junction demand); the node shows it as a draw-off.
 - **Junction**: One junction with 3 to 8 neutral ports replaces the mixer and splitter; a pipe connects to any port in either direction (tee, cross, header). The examples are converted; the Jeppson networks now show their four-pipe junctions as one node instead of chained tees.
 - **Neutral ports**: Orifice, calibrated restriction, filter and measure point have two neutral ports (Port 1 / Port 2) instead of an inlet and outlet; pipes connect either way and the flow direction follows from the result. The solver treats each of these components as a link between two hidden port nodes, so every port has a solved pressure and can be sensed. Role ports (pumps, valves, relief devices) keep inlet / outlet; two outlets or two inlets cannot be joined. Older diagram files with these components no longer load; the examples are converted.
+- **Pressure basis and flow unit**: Global settings choose bar a or bar g (psia / psig) for all pressures, offset by the site atmospheric pressure, and L/min or m³/h for flow; both are saved with the user. Pressure differences never get the offset, relief device set, burst and backpressure ratings stay in bar g, and each pressure instrument keeps its own basis. Gauge and absolute labels read "bar g" / "bar a" everywhere.
 
 ### Changed
 

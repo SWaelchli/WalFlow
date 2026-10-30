@@ -1,4 +1,5 @@
 import React from 'react';
+import { useUnits } from '../../context/UnitContext';
 import { CrossIcon, CheckIcon, PlusIcon } from '../symbols/IconLibrary';
 
 /**
@@ -15,10 +16,11 @@ export default function CaseManager({
   onClose,
   style = {}
 }) {
+  const { basisLabel } = useUnits();
   const reliefModes = [
     {
       id: 'mitigated',
-      label: 'Relieved system pressure (bar(a))',
+      label: `Relieved system pressure (${basisLabel})`,
       desc: 'Steady state with the relief devices in their final state',
       color: '#10B981',
       bgActive: '#ECFDF5',
@@ -27,7 +29,7 @@ export default function CaseManager({
     },
     {
       id: 'peak',
-      label: 'Peak system pressure (bar(a))',
+      label: `Peak system pressure (${basisLabel})`,
       desc: 'Steady state at the moment the governing relief device reaches its set pressure (pumps and sources ramped up)',
       color: 'var(--color-warning-text)',
       bgActive: 'var(--color-warning-bg)',
@@ -36,7 +38,7 @@ export default function CaseManager({
     },
     {
       id: 'unmitigated_global',
-      label: 'Unmitigated peak pressure (bar(a))',
+      label: `Unmitigated peak pressure (${basisLabel})`,
       desc: 'Steady state with all relief devices held closed',
       color: '#DC2626',
       bgActive: '#FEF2F2',

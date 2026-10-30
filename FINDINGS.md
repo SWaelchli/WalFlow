@@ -19,7 +19,6 @@ The only place that holds the status.
 
 | ID | Severity | Status | Finding | Proposed solution | Owner | Phase | Source |
 |---|---|---|---|---|---|---|---|
-| H5 | High | Open | No m³/h or bar g: flow is fixed to L/min, and pressures mix bar(a) and bar g. | Decided: flow unit and pressure basis in Global settings, applied to all readouts and inputs; backend stays Pa(a). | fe | 5 | UX audit 2026-10-28 |
 | H1 | High | Open | A failed solve shows a raw "math domain error" naming no component; "Show" selects nothing; stale readouts stay. | Decided: two messages by failure kind naming the largest-imbalance component; "Show" selects it; readouts blanked. | orch + phys, fe | 6 | UX audit 2026-10-28 |
 | P1 | — | Review | A regulator reported "wide open (100 %)" while carrying 4.22 bar ΔP at 0.8 L/min. | Check the regulator's default Cv and wide-open ΔP; fix only if wrong. | orch + phys | 6 | Physics review |
 | M3 | Medium | Open | The case matrix cannot compare per-point values such as header pressure or PCV opening. | Decided: per-case values in the Measurements tab (one value per case per instrument). | fe | 7 | UX audit 2026-10-28 |
@@ -37,7 +36,6 @@ before each commit.
 
 | Phase | Entries | Why this order | Exit check |
 |---|---|---|---|
-| 5 Units | H5 | Cross-cutting (every pressure input and readout); must land before M3 adds per-case values. | Converter reference rows; gate. |
 | 6 Solver feedback | H1, P1 | Backend solver messages + physics review; P1 is a check in the same area (regulator wide-open ΔP), fix only if wrong. | Scenario test; physics review; gate. |
 | 7 Compare and onboarding | M3, L4 | M3 shows per-case values in the chosen units; L4 is a link. | Gate. |
 | 8 Layout | H4, LK-L1 | Last UI change. **Before starting, remind the user to run a full layout review first**: compare the current layout with industry-standard layouts of Windows desktop apps and similar engineering/diagram tools, then redo the layout to match them with no change in functionality, as a future-proof concept. H4 and LK-L1 are solved inside that redesign. | Layout review agreed with the user; re-audit at 1920 / 1440 / 1280 / 1024 / 768. |
@@ -50,7 +48,6 @@ Report: [docs/audit/2026-10-28-systems-engineer/report.md](docs/audit/2026-10-28
 |---|---|---|---|
 | H1 | Decided: two messages by failure kind (component outside its valid range / did not converge), each short and naming the largest-imbalance component from `bottleneck`; "Show" selects it; raw text behind Details; readouts blanked on failure. | [solver.py:791-793](backend/simulation/solver.py#L791-L793), [RunBanners.jsx:62-65](frontend/src/components/overlays/RunBanners.jsx#L62-L65) | Scenario case (boundary pressure above pump shut-off head) asserting that the error names the cause and holds no Python exception text, in `unit/solver/test_solver_methods.py` or `test_physical_validity.py`. Frontend: Gate. |
 | H4 | Top-bar actions are pushed off-screen below 1280 px with the inspector and data panel open. | Navbar.jsx right action group, inspector width in App.jsx | Gate (re-audit at 1280/1024/768). |
-| H5 | Decided: flow unit (L/min, m³/h) and pressure basis (bar g / bar a, 1.01325 bar atm) in Global settings, applied to all pressure readouts and inputs; backend stays Pa(a). | [UnitContext.jsx:117-123, 160-182](frontend/src/context/UnitContext.jsx#L117-L123), utils/converters | Reference rows in a converters test (m³/h ↔ L/min, round trip through `toDisplayValue`/`fromInputValue`). |
 | M1 | Deferred to the product roadmap. | Pump model + `<pump>.md`, PumpInspector | Feature: reference rows (fitted curve through the datasheet points) in `unit/equipment/test_<pump>.py`, keep the pump in `PUMP_DATA`, Vitest case for the clipboard paste parser. |
 | M3 | Decided: compare per-case values in the Measurements tab (one value per case per instrument). | DataList.jsx matrix, Measurements tab | Vitest case: a measurement row shows one value per case. |
 | L4 | | EmptyCanvasHint | Gate. |

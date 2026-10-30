@@ -50,14 +50,14 @@ const loopNumber = (tag, letters) => {
  * Rotating moves the pins round the bubble; the text stays upright.
  */
 export default function InstrumentNode({ id, data, selected }) {
-  const { isImperial } = useUnits();
+  const { isImperial, flowUnit } = useUnits();
   const updateNodeInternals = useUpdateNodeInternals();
   const rotation = data.rotation || 0;
   const variable = data.variable || 'P';
   const letters = instrumentLetters(variable);
   const isDp = variable === 'dP';
   const state = data.reading?.state || null;
-  const { text, unit } = formatReading(variable, data.reading?.value ?? null, data.pressure_basis, isImperial);
+  const { text, unit } = formatReading(variable, data.reading?.value ?? null, data.pressure_basis, isImperial, flowUnit);
   const badge = BADGE[state] || { bg: 'var(--color-surface)', border: 'var(--color-border)', text: 'var(--color-brand-dark)' };
   const tag = data.label || letters;
 

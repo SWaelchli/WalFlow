@@ -31,10 +31,12 @@ class SolverSettings(BaseModel):
 
 
 class UserSettings(BaseModel):
-    """Global level: display unit preference plus the always-active global solver settings."""
+    """Global level: display unit preferences plus the always-active global solver settings."""
     model_config = ConfigDict(extra="forbid")
 
     unit_system: Literal["metric", "imperial"] = "metric"
+    pressure_basis: Literal["absolute", "gauge"] = "absolute"
+    flow_unit: Literal["lmin", "m3h"] = "lmin"
     solver: SolverSettings = Field(default_factory=SolverSettings)
 
 

@@ -48,6 +48,7 @@ class TestSettingsLevels(unittest.TestCase):
         self.assertEqual(r.json()["unit_system"], "metric")
         self.assertEqual(r.json()["solver"]["solver_method"], "sparse_newton")
         self.assertFalse(r.json()["stored"])
+        self.assertEqual((r.json()["pressure_basis"], r.json()["flow_unit"]), ("absolute", "lmin"))
 
         body = {"unit_system": "imperial", "solver": {"tolerance": 1e-8, "control_iterations": 50}}
         r = self.client.put("/api/settings", json=body, headers=self.owner)
@@ -56,6 +57,22 @@ class TestSettingsLevels(unittest.TestCase):
         self.assertEqual(r.json()["unit_system"], "imperial")
         self.assertEqual(r.json()["solver"]["tolerance"], 1e-8)
         self.assertTrue(r.json()["stored"])
+
+    def test_display_preferences_roundtrip_and_default_when_missing_in_stored_data(self):
+        for basis, flow in (("absolute", "lmin"), ("gauge", "m3h"), ("gauge", "lmin"), ("absolute", "m3h")):
+            body = {"unit_system": "metric", "pressure_basis": basis, "flow_unit": flow}
+            self.assertEqual(self.client.put("/api/settings", json=body, headers=self.owner).status_code, 200)
+            got = self.client.get("/api/settings", headers=self.owner).json()
+            self.assertEqual((got["pressure_basis"], got["flow_unit"]), (basis, flow))
+        # A row stored before the two preferences existed falls back to the defaults
+        db = SessionLocal()
+        try:
+            db.query(User).filter(User.id == "owner-id").update({User.settings: '{"unit_system": "imperial", "solver": {}}'})
+            db.commit()
+        finally:
+            db.close()
+        got = self.client.get("/api/settings", headers=self.owner).json()
+        self.assertEqual((got["unit_system"], got["pressure_basis"], got["flow_unit"]), ("imperial", "absolute", "lmin"))
 
     def test_user_settings_are_per_user_and_need_login(self):
         self.client.put("/api/settings", json={"unit_system": "imperial"}, headers=self.owner)
@@ -67,6 +84,9 @@ class TestSettingsLevels(unittest.TestCase):
         for solver in ({"tolerance": 1.0}, {"inner_iterations": 0}, {"solver_method": "x"}, {"unknown": 1}):
             r = self.client.put("/api/settings", json={"solver": solver}, headers=self.owner)
             self.assertEqual(r.status_code, 422, solver)
+        for body in ({"pressure_basis": "relative"}, {"pressure_basis": "barg"}, {"flow_unit": "gpm"}, {"flow_unit": "m3s"}):
+            r = self.client.put("/api/settings", json=body, headers=self.owner)
+            self.assertEqual(r.status_code, 422, body)
 
     def test_retired_damping_factor_is_accepted_and_dropped(self):
         # Older clients and stored rows still carry the retired TCV damping factor

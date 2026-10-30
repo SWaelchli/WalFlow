@@ -86,7 +86,7 @@ function PressureScale({ setBarg, openBarg, reseatBarg, inletBarg, cycleLow, cyc
 }
 
 const PressureSafetyValveDetails = memo(function PressureSafetyValveDetails({ node, unmitigatedTelemetry, allNodes = [] }) {
-  const { labels, formatPressureGauge, formatPressurePa, formatFlowM3s, formatFlow } = useUnits();
+  const { labels, formatPressureGauge, formatPressurePa, formatFlowM3s, formatFlow, atmosphericPa, pressureBasis } = useUnits();
   const data = node.data || {};
   const telemetry = data.telemetry || {};
 
@@ -99,9 +99,9 @@ const PressureSafetyValveDetails = memo(function PressureSafetyValveDetails({ no
 
   const hasResult = telemetry.inlets?.[0]?.pressure != null;
   const currentQ = Math.abs(telemetry?.outlets?.[0]?.flow_rate || 0);
-  const pIn = telemetry?.inlets?.[0]?.pressure || 101325;
-  // Set pressure is gauge; the atmospheric pressure follows from the solver's set pressure in bar(a)
-  const pAtmBar = setPressureBarg !== null && telemetry.set_pressure_bara != null ? telemetry.set_pressure_bara - setPressureBarg : 1.01325;
+  const pIn = telemetry?.inlets?.[0]?.pressure || atmosphericPa;
+  // Set pressure is gauge; the atmospheric pressure follows from the solver's absolute set pressure (bar a), else the site value
+  const pAtmBar = setPressureBarg !== null && telemetry.set_pressure_bara != null ? telemetry.set_pressure_bara - setPressureBarg : atmosphericPa / 100000;
   const inletBarg = hasResult ? pIn / 100000 - pAtmBar : null;
   const ratedFlowLmin = parseFloat(telemetry?.rated_flow_lmin || 0.0);
   const liftPct = telemetry?.lift_pct;
@@ -182,7 +182,9 @@ const PressureSafetyValveDetails = memo(function PressureSafetyValveDetails({ no
           <Row label="Inlet cycles between" color="var(--color-warning-text-strong)">{formatPressureGauge(cycleLow)} – {formatPressureGauge(cycleHigh)}</Row>
         ) : (
           <Row label="Inlet pressure" color={setPressureBarg !== null && inletBarg !== null && inletBarg >= openBarg ? 'var(--color-warning-text-strong)' : undefined}>
-            {inletBarg !== null ? formatPressureGauge(inletBarg) : '—'}
+            {!hasResult ? '—'
+              : pressureBasis === 'gauge' ? formatPressureGauge(inletBarg)
+              : `${formatPressurePa(pIn)} ${labels.pressureAbs} (${formatPressureGauge(inletBarg)})`}
           </Row>
         )}
         <Row label={isCycling ? 'Average relief load' : 'Relief flow'} color={currentQ > 1e-6 ? 'var(--color-warning-text-strong)' : undefined}>

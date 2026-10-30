@@ -10,13 +10,13 @@ import { neutralDrop } from '../utils/nodeReadouts';
  * Strainer (ISA style)
  */
 export default function FilterNode({ id, data, selected }) {
-  const { formatPressurePa, labels } = useUnits();
+  const { formatDiffPressurePa, labels } = useUnits();
   const telemetry = data.telemetry;
   const rotation = data.rotation || 0;
   const sensing = useMemo(() => data.sensing || {}, [data.sensing]);
   const dP = neutralDrop(telemetry);
   const clogging = data.clogging_pct || 0;
-  const dPFormatted = formatPressurePa(dP);
+  const dPFormatted = formatDiffPressurePa(dP);
 
   return (
     <BaseNode

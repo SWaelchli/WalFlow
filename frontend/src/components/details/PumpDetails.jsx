@@ -43,7 +43,7 @@ const PumpWarning = ({ title, text, tone = 'warning' }) => (
 );
 
 const PumpDetails = memo(function PumpDetails({ node }) {
-  const { labels, isImperial, formatPressurePa, formatFlowM3s, formatPower } = useUnits();
+  const { labels, isImperial, lminToDisplay, formatDiffPressurePa, formatPressure, formatFlowM3s, formatPower } = useUnits();
   const { type, data } = node;
   const { 
     flow_rated_lmin, head_rated_m, rise_to_shutoff_pct, 
@@ -75,7 +75,7 @@ const PumpDetails = memo(function PumpDetails({ node }) {
     let localMaxY = 0;
     const steps = 60;
 
-    const flowMultiplier = isImperial ? 0.264172052 : 1.0;
+    const flowMultiplier = lminToDisplay(1);
     const pressMultiplier = isImperial ? 14.5037738 : 1.0;
 
     for (let i = 0; i <= steps; i++) {
@@ -110,7 +110,7 @@ const PumpDetails = memo(function PumpDetails({ node }) {
       maxY: (localMaxY * pressMultiplier) * 1.1,
       opPoint: [{ q: opQ, p: opP }]
     };
-  }, [isVolumetric, isFixedSpeed, maxDischargeBara, currentPin, rho, flow_rated_lmin, head_rated_m, rise_to_shutoff_pct, motor_power_kw, efficiency_pct, currentQ, currentDpBar, maxX_lmin, isImperial, actualFlowLmin]);
+  }, [isVolumetric, isFixedSpeed, maxDischargeBara, currentPin, rho, flow_rated_lmin, head_rated_m, rise_to_shutoff_pct, motor_power_kw, efficiency_pct, currentQ, currentDpBar, maxX_lmin, isImperial, actualFlowLmin, lminToDisplay]);
 
   const xTicks = niceTicks(maxX, 5);
   const yTicks = niceTicks(maxY, 5);
@@ -146,7 +146,7 @@ const PumpDetails = memo(function PumpDetails({ node }) {
           text="The drive has reduced the speed to stay within the motor rating, so the flow is below displacement." />
       )}
       {telemetry?.pressure_cap_reached && (
-        <PumpWarning tone="danger" title={`DISCHARGE PRESSURE LIMIT REACHED (${isImperial ? `${(maxDischargeBara * 14.5037738).toFixed(0)} PSI(A)` : `${maxDischargeBara} BAR(A)`})`}
+        <PumpWarning tone="danger" title={`DISCHARGE PRESSURE LIMIT REACHED (${formatPressure(maxDischargeBara, isImperial ? 0 : 2)} ${labels.pressureAbs.toUpperCase()})`}
           text="The internal relief recirculates the excess flow to suction, so the delivered flow is below displacement. Check for a closed or undersized outlet path." />
       )}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -178,7 +178,7 @@ const PumpDetails = memo(function PumpDetails({ node }) {
         </div>
         <div style={{ background: 'var(--color-surface-hover)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
           <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '600', letterSpacing: '0.02em', marginBottom: '2px' }}>Pressure Increase</div>
-          <div style={{ fontSize: 'var(--fs-sm)', fontWeight: '700', color: 'var(--color-primary-text)', fontFamily: 'var(--font-mono)' }}>{formatPressurePa(currentDpPa)} <span style={{ fontSize: 'var(--fs-xs)', fontWeight: '500' }}>{labels.pressureDiff}</span></div>
+          <div style={{ fontSize: 'var(--fs-sm)', fontWeight: '700', color: 'var(--color-primary-text)', fontFamily: 'var(--font-mono)' }}>{formatDiffPressurePa(currentDpPa)} <span style={{ fontSize: 'var(--fs-xs)', fontWeight: '500' }}>{labels.pressureDiff}</span></div>
         </div>
         <div style={{ background: 'var(--color-surface-hover)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
           <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '600', letterSpacing: '0.02em', marginBottom: '2px' }}>Hydraulic Power</div>
