@@ -19,8 +19,7 @@ export default function HeatmapLegend({
   activeRange = { min: 0, max: 6 },
   customRange = { min: 0, max: 6 },
   onUpdateCustomRange,
-  onResetCustomRange,
-  style = {}
+  onResetCustomRange
 }) {
   const { labels, isImperial, flowUnit, absPaToDisplay, displayToAbsPa, lminToDisplay, displayToLmin } = useUnits();
 
@@ -80,24 +79,7 @@ export default function HeatmapLegend({
   const maxDisplay = formatVal(activeRange?.max ?? 10);
 
   return (
-    <div style={{
-      position: 'absolute',
-      top: '16px',
-      right: '16px',
-      backgroundColor: 'rgba(255, 255, 255, 0.96)',
-      backdropFilter: 'blur(10px)',
-      border: '1px solid var(--color-border)',
-      borderRadius: '14px',
-      padding: '14px 18px',
-      boxShadow: 'var(--shadow-lg)',
-      zIndex: 1000,
-      width: '330px',
-      maxWidth: 'calc(100vw - 32px)',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '12px',
-      ...style
-    }}>
+    <div className="canvas-overlay-card">
       <style>
         {`
           .heatmap-legend-close {

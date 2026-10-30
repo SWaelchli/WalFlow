@@ -194,6 +194,19 @@ export function useAutoSaveSession({
     [nodes, edges, globalSettings, cases, activeCaseId]
   );
 
+  // A draft stored at boot is kept until it has been restored, replaced or discarded: the boot canvas must not
+  // overwrite it, whatever re-runs the save effect meanwhile (StrictMode, sign-in, a drawing being attached)
+  const [bootDraft] = useState(() => ({ stored: !!readDraft(), signature: contentSignature }));
+  const bootDraftDoneRef = useRef(false);
+  const keepsBootDraft = useCallback((signature = bootDraft.signature) => {
+    if (!bootDraft.stored || bootDraftDoneRef.current) return false;
+    if (signature !== bootDraft.signature) {
+      bootDraftDoneRef.current = true;   // the canvas changed: the draft was restored or replaced
+      return false;
+    }
+    return true;
+  }, [bootDraft]);
+
   const activeDiagramId = activeDiagram ? activeDiagram.id : null;
   // Content key of a cloud drawing that is being loaded onto the canvas. When the canvas content equals it,
   // that content is the saved version and is not uploaded; anything else is a real change and is saved.
@@ -324,6 +337,7 @@ export function useAutoSaveSession({
   // Helper to purge local draft
   const clearLocalDraft = useCallback(() => {
     removeDraft();
+    bootDraftDoneRef.current = true;
   }, []);
 
   // This tab's draft stays out of other tabs' reach while the tab is open
@@ -663,7 +677,7 @@ export function useAutoSaveSession({
   // Synchronous saving on page unload / tab close
   useEffect(() => {
     const handleBeforeUnload = () => {
-      saveToLocalDraft();
+      if (!keepsBootDraft()) saveToLocalDraft();
     };
     // Give the edit lock back when the tab closes (the server also releases it when the socket drops)
     const handlePageHide = () => {
@@ -678,7 +692,7 @@ export function useAutoSaveSession({
       window.removeEventListener('beforeunload', handleBeforeUnload);
       window.removeEventListener('pagehide', handlePageHide);
     };
-  }, [saveToLocalDraft, hasLock, activeDiagram, tabId]);
+  }, [saveToLocalDraft, keepsBootDraft, hasLock, activeDiagram, tabId]);
 
   // Skip initial mount effect trigger
   const isInitialMount = useRef(true);
@@ -690,6 +704,7 @@ export function useAutoSaveSession({
       isInitialMount.current = false;
       return;
     }
+    if (keepsBootDraft(contentSignature)) return;
 
     const isCloudSyncable = activeDiagram && activeDiagram.id && isAuthenticated && hasLock;
 
@@ -799,7 +814,7 @@ export function useAutoSaveSession({
       clearTimeout(localTimer);
       if (cloudTimer) clearTimeout(cloudTimer);
     };
-  }, [contentSignature, activeProject, activeDiagram, isAuthenticated, hasLock, isLockedByOther, saveToLocalDraft, serializeWorkspaceState, setActiveDiagram, putDiagram, recoverRefusedSave]);
+  }, [contentSignature, keepsBootDraft, activeProject, activeDiagram, isAuthenticated, hasLock, isLockedByOther, saveToLocalDraft, serializeWorkspaceState, setActiveDiagram, putDiagram, recoverRefusedSave]);
 
   // Manual Trigger for Instant Cloud Save
   const triggerManualCloudSave = useCallback(async () => {

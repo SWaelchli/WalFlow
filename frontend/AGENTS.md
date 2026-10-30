@@ -20,8 +20,7 @@ Read these before any visual or layout change. Where they differ, the higher one
 
 * **App shell:** menu bar (File, Edit, View, Simulation, Tools, Help; drawing name, save and lock state; account),
   command bar (Undo, Redo, Run Simulation, case), activity rail with one side pane per job (Components, Examples,
-  Drawings, Settings), canvas, full-height inspector, results panel under the canvas, status bar. FINDINGS.md
-  phase 8 moves the app from the old navbar-and-sidebar layout to this shell.
+  Drawings, Settings), canvas, full-height inspector, results panel under the canvas, status bar.
 * **Commands** are defined once in the command list and shown in menus, the command bar, context menus and
   shortcuts. Never wire a handler straight into one surface.
 * **Buttons:** one primary (WälFlow orange) action per view, Run Simulation in the shell; secondary for neutral
@@ -32,4 +31,4 @@ Read these before any visual or layout change. Where they differ, the higher one
   tooltip.
 * **Supported windows:** full editing from 1024 px wide, overlays down to 768 px.
 * **Docs stay true:** a change that adds or alters a region, menu item, rule, token or size updates the
-  `walflow-ui-layout` skill or MASTER.md in the same change. A docs sync test in the gate (added in phase 8) checks tokens and menus.
+  `walflow-ui-layout` skill or MASTER.md in the same change. A docs sync test in the gate checks tokens and menus.

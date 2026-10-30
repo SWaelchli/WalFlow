@@ -108,6 +108,11 @@ This document outlines planned features, overlays, and enhancements for the WalF
   * **Concept:** Correct centrifugal pump head, flow and efficiency for viscous fluids (Hydraulic Institute 9.6.7 correction factors $C_H$, $C_Q$, $C_\eta$ from the water curve). Today the curve is head-based (B1a), so density is handled, but viscosity does not change the curve.
   * **Engineering Value:** Realistic duty points for cold lube and seal oils (VG32 to VG220), where the uncorrected water curve over-predicts head and efficiency.
 
+- [ ] **📈 Pump Curve from Datasheet Points**
+  * **Concept:** Enter a centrifugal pump curve as several (flow, head) points in a table in the pump inspector, with paste from the clipboard (e.g. columns copied from a datasheet or spreadsheet), and fit the model curve through them. Today the curve cannot be entered point by point (UX audit 2026-10-28, deferred from the findings list).
+  * **Implementation notes:** backend fit in the pump model and its `.md`; frontend point table and clipboard paste parser in the pump inspector. Tests: reference rows for the fitted curve through datasheet points in the pump's unit tests (keep the pump in `PUMP_DATA`), Vitest cases for the paste parser.
+  * **Engineering Value:** Models a real pump from its vendor datasheet without hand-deriving curve coefficients.
+
 - [ ] **💧 Valve Choked Flow & Cavitation (IEC 60534 $F_L$, $F_F$)**
   * **Concept:** Liquid pressure-recovery factor $F_L$ and critical pressure ratio $F_F$ per valve: choked-flow limit $\Delta P_{\max} = F_L^2 (P_1 - F_F P_v)$, flashing and cavitation onset indices.
   * **Status (B1d, 2026-10-14):** valves, regulators and orifices only flag an outlet pressure below the vapour pressure (`flashing_warning`); the flow is not limited by choking.
@@ -154,6 +159,10 @@ u$):** cSt at the local temperature. Derived, not an ISA variable.
 ## 📊 Analytics & Telemetry
 
 - [ ] **📏 Valve Opening Instrument**: Add instrument functionality to measure valve opening (control valves, regulators, 3-way TCV), so the opening of each valve can be compared per operating case in the Measurements tab, with alarm limits like the other instruments.
+- [ ] **📤 Rework of CSV Reports**
+  * **Concept:** Today File › Export table as CSV exports only the Pipes or Equipment table of the results panel, whichever tab is open. Rework it into an export dialog with scope settings (which list, active case or all cases, selected items or the whole drawing, units as displayed or SI) and more result lists to export (cases matrix, relief summary, measurements, per-equipment results).
+  * **Implementation notes:** one command in the File menu opening a dialog (per the `walflow-ui-layout` skill); the CSV builders move out of `DataList.jsx` into a shared export module; Vitest cases per list and scope.
+  * **Engineering Value:** Results go into reports and spreadsheets without copying tables by hand.
 - [ ] **🖥️ Server Resource Telemetry & Performance Dashboard**:
   * **System Resource Monitoring**: Track CPU % consumed by matrix calculations (SciPy/NumPy), RAM usage per active simulation WebSocket, and average solver iteration time (ms) using `psutil`.
   * **Session & User Usage Stats**: Record active connected user count, duration of simulation runs, and historical simulation sessions in the database.

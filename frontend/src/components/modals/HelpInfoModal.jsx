@@ -4,29 +4,8 @@ import { InfoIcon, CrossIcon, KeyboardIcon, BookIcon } from '../symbols/IconLibr
 
 import { GUIDE_SECTIONS, MODEL_SECTIONS } from './helpContent';
 import { modalA11yRef } from '../../hooks/useModalA11y';
-const SHORTCUT_GROUPS = [
-  {
-    title: 'Selection & Manipulation',
-    shortcuts: [
-      { keys: ['Ctrl', 'C'], label: 'Copy selected node(s) & connected edges' },
-      { keys: ['Ctrl', 'V'], label: 'Paste copied elements with spatial offset' },
-      { keys: ['Ctrl', 'D'], label: 'Duplicate selected elements instantly' },
-      { keys: ['Delete'], extraKeys: ['Backspace'], label: 'Delete selected nodes or edges' },
-      { keys: ['Ctrl', 'A'], label: 'Select all nodes on canvas' },
-      { keys: ['R'], label: 'Rotate selected node 90° clockwise' },
-      { keys: ['Esc'], label: 'Deselect all canvas items' },
-    ],
-  },
-  {
-    title: 'History & Canvas',
-    shortcuts: [
-      { keys: ['Ctrl', 'S'], label: 'Manual save session draft or cloud project' },
-      { keys: ['Ctrl', 'Z'], label: 'Undo previous canvas action' },
-      { keys: ['Ctrl', 'Y'], extraKeys: ['Ctrl', 'Shift', 'Z'], label: 'Redo canvas action' },
-      { keys: ['Shift', '?'], label: 'Open this Help screen (Esc closes it)' },
-    ],
-  },
-];
+import { shortcutGroups } from '../../commands';
+const SHORTCUT_GROUPS = shortcutGroups();
 
 export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts' }) {
   const [activeTab, setActiveTab] = useState(initialTab);

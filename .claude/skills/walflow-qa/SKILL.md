@@ -102,8 +102,8 @@ with a real account.
 ## Findings list (`FINDINGS.md`)
 
 `FINDINGS.md` in the repo root is a temporary list of open issues (from audits, standard verification, generated
-networks the solver cannot solve, physics reviews). Create it when the first finding comes in; delete it when the
-last entry is gone. Layout, top to bottom:
+networks the solver cannot solve, physics reviews). When the last entry is gone, keep the file as an empty
+template: the header, the section headings and the table header rows stay. Layout, top to bottom:
 
 1. **Header**: one paragraph on what the list is, the status values and owners used (below), and a pointer to
    these rules.

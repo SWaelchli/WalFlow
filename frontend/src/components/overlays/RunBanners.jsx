@@ -1,13 +1,11 @@
 import { useState } from 'react';
 import { CrossIcon, WarningIcon } from '../symbols/IconLibrary';
 
-const BANNER_TONES = {
-  error: { bg: '#FEF2F2', border: '#FEE2E2', color: '#B91C1C' },
-  warning: { bg: '#FFF7ED', border: '#FDE3C3', color: '#7A3E00' },
-};
+const ICON_COLOR = { error: 'var(--color-danger-text)', warning: 'var(--color-warning-text-strong)' };
 
 /**
- * Banners over the canvas for the outcome of the last run: solver errors and result warnings.
+ * Info bars at the top edge of the canvas for the outcome of the last run: solver errors and result warnings.
+ * Full canvas width, stacked inline (they push the canvas down, not over it).
  * Dismissed banners stay hidden until a new result arrives. `children` (stale / rejected-change banner) share the stack.
  */
 export default function RunBanners({ runError, runErrorId, runErrorTarget = null, runErrorDetail = null, summary, resultKey, onSelect, onOpenStatus, children }) {
@@ -46,51 +44,28 @@ export default function RunBanners({ runError, runErrorId, runErrorTarget = null
   if (items.length === 0 && !children) return null;
 
   return (
-    <div style={{
-      position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 20, display: 'flex',
-      flexDirection: 'column', gap: '8px', alignItems: 'center', width: 'min(640px, calc(100% - 32px))', pointerEvents: 'none',
-    }}>
-      {items.map((it) => {
-        const t = BANNER_TONES[it.tone];
-        return (
-          <div
-            key={it.key}
-            role={it.tone === 'error' ? 'alert' : 'status'}
-            style={{
-              pointerEvents: 'auto', display: 'flex', alignItems: 'flex-start', gap: '10px', width: '100%', boxSizing: 'border-box',
-              padding: '8px 12px', borderRadius: '8px', fontSize: 'var(--fs-sm)', fontWeight: 600, lineHeight: 1.45,
-              background: t.bg, border: `1px solid ${t.border}`, color: t.color, boxShadow: '0 2px 8px rgba(28, 43, 44, 0.12)',
-            }}
-          >
-            <span style={{ flex: '0 0 auto', marginTop: '1px' }}>
-              {it.tone === 'error' ? <CrossIcon size={13} color={t.color} /> : <WarningIcon size={13} color={t.color} />}
-            </span>
-            <span style={{ flex: 1, overflowWrap: 'anywhere' }}>
-              {it.text}
-              {it.detail && it.detailOpen && (
-                <span style={{ display: 'block', marginTop: '4px', fontFamily: 'monospace', fontSize: 'var(--fs-xs)', fontWeight: 400 }}>{it.detail}</span>
-              )}
-            </span>
-            {it.target && (
-              <button type="button" className="btn-secondary" style={{ height: '24px', padding: '0 8px', fontSize: 'var(--fs-xs)', flex: '0 0 auto' }}
-                onClick={() => onSelect?.(it.target, it.targetType || 'Node')}>Show</button>
-            )}
-            {it.detail && (
-              <button type="button" className="btn-secondary" aria-expanded={it.detailOpen}
-                style={{ height: '24px', padding: '0 8px', fontSize: 'var(--fs-xs)', flex: '0 0 auto' }}
-                onClick={it.toggleDetail}>Details</button>
-            )}
-            {it.showStatus && (
-              <button type="button" className="btn-secondary" style={{ height: '24px', padding: '0 8px', fontSize: 'var(--fs-xs)', flex: '0 0 auto' }}
-                onClick={onOpenStatus}>Details</button>
-            )}
-            <button type="button" onClick={it.close} aria-label="Dismiss message"
-              style={{ background: 'transparent', border: 'none', color: t.color, cursor: 'pointer', fontSize: 'var(--fs-lg)', lineHeight: 1, padding: '0 2px', flex: '0 0 auto' }}>
-              ×
-            </button>
-          </div>
-        );
-      })}
+    <div className="canvas-infobars">
+      {items.map((it) => (
+        <div key={it.key} role={it.tone === 'error' ? 'alert' : 'status'} className={`infobar infobar-${it.tone}`}>
+          <span className="infobar-icon">
+            {it.tone === 'error' ? <CrossIcon size={13} color={ICON_COLOR.error} /> : <WarningIcon size={13} color={ICON_COLOR.warning} />}
+          </span>
+          <span className="infobar-text">
+            {it.text}
+            {it.detail && it.detailOpen && <span className="infobar-detail">{it.detail}</span>}
+          </span>
+          {it.target && (
+            <button type="button" className="btn-secondary infobar-action" onClick={() => onSelect?.(it.target, it.targetType || 'Node')}>Show</button>
+          )}
+          {it.detail && (
+            <button type="button" className="btn-secondary infobar-action" aria-expanded={it.detailOpen} onClick={it.toggleDetail}>Details</button>
+          )}
+          {it.showStatus && (
+            <button type="button" className="btn-secondary infobar-action" onClick={onOpenStatus}>Details</button>
+          )}
+          <button type="button" onClick={it.close} aria-label="Dismiss message" className="infobar-close">×</button>
+        </div>
+      ))}
       {children}
     </div>
   );

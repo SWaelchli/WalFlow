@@ -7,7 +7,9 @@ import ReactFlow, {
   useEdgesState, 
   addEdge, 
   applyEdgeChanges,
-  ReactFlowProvider
+  ReactFlowProvider,
+  useStore,
+  useStoreApi
 } from 'reactflow';
 import { notify, confirmDialog } from './utils/dialogs';
 import { parseServerTime } from './utils/serverTime';
@@ -45,7 +47,8 @@ import PressureBoundaryNode from './nodes/PressureBoundaryNode';
 import FlowBoundaryNode from './nodes/FlowBoundaryNode';
 
 
-import Navbar from './components/layout/Navbar';
+import MenuBar from './components/layout/MenuBar';
+import CommandBar from './components/layout/CommandBar';
 import CollabNotice from './components/CollabNotice';
 import Sidebar from './components/panels/Sidebar';
 import InspectorPanel from './components/panels/InspectorPanel';
@@ -58,6 +61,11 @@ import HeatmapLegend from './components/overlays/HeatmapLegend';
 
 import CanvasLoadingOverlay from './components/overlays/CanvasLoadingOverlay';
 import { FlameIcon, CaseIcon, HelpIcon, InboxIcon, CrossIcon } from './components/symbols/IconLibrary';
+import AppShell from './components/layout/AppShell';
+import ActivityRail from './components/layout/ActivityRail';
+import { SIDE_PANES } from './components/layout/sidePanes';
+import useShellMode from './components/layout/useShellMode';
+import StatusBar from './components/layout/StatusBar';
 import CaseManager from './components/overlays/CaseManager';
 import { AuthProvider } from './context/AuthProvider';
 import { useAuth } from './hooks/useAuth';
@@ -67,6 +75,9 @@ import { useWebSocketSimulation } from './hooks/useWebSocketSimulation';
 import { useCanvasHistory } from './hooks/useCanvasHistory';
 import { getDefaultPipeData, DEFAULT_PIPE_LENGTH_M } from './utils/pipeDefaults';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
+import { runCommand } from './commands/commandList';
+import { buildContextMenuItems } from './commands';
+import { instrumentPinsOf } from './commands/context';
 import { useAutoSaveSession } from './hooks/useAutoSaveSession';
 import { getTabId } from './utils/draftStorage';
 import { HEAT_EXCHANGER_DEFAULTS } from './utils/equipmentDefaults';
@@ -185,14 +196,19 @@ const getNextLabelNumber = (edges) => {
 };
 
 function WalFlowContent() {
-  const { currentUser, isAuthenticated, adminStatus } = useAuth();
+  const { currentUser, isAuthenticated, isAdmin, adminStatus } = useAuth();
   const reactFlowWrapper = useRef(null);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   const fitViewPendingRef = useRef(false);
   
   const [selectedNode, setSelectedNode] = useState(null);
-  const [examplesRequest, setExamplesRequest] = useState(0); // bumped to ask the sidebar to show the examples
+  const [settingsRequest, setSettingsRequest] = useState(null); // { n, tab }: asks the Settings pane to show a tab
+  const [sidePane, setSidePane] = useState('components');
+  // The side pane remembers its docked and its overlay state apart: it starts closed when it overlays the canvas
+  const [dockedPaneOpen, setDockedPaneOpen] = useState(true);
+  const [overlayPaneOpen, setOverlayPaneOpen] = useState(false);
   const [inspectorTab, setInspectorTab] = useState('setup');
+  const [inspectorCollapsed, setInspectorCollapsed] = useState(false);
   const [selectedEdge, setSelectedEdge] = useState(null);
 
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
@@ -451,7 +467,7 @@ function WalFlowContent() {
     return handleAddCase();
   }, [blockIfReadOnly, handleAddCase]);
 
-  const { requestSnapshot, resetHistory, undo, redo } = useCanvasHistory({
+  const { requestSnapshot, resetHistory, hasEdits, undo, redo } = useCanvasHistory({
     nodes,
     edges,
     isReadOnly,
@@ -614,21 +630,6 @@ function WalFlowContent() {
     setSelectedEdge(null);
   }, [setNodes, setEdges]);
 
-  // Register Keyboard Shortcuts
-  useKeyboardShortcuts({
-    copySelected,
-    pasteCopied,
-    duplicateSelected,
-    deleteSelected,
-    selectAllNodes,
-    rotateSelectedNode,
-    deselectAll,
-    undo,
-    redo,
-    onSaveShortcut: triggerManualCloudSave,
-    onOpenHelp: () => handleOpenHelpModal('shortcuts'),
-  });
-
   // Right-click menus (components, pipes, empty canvas)
   const [contextMenu, setContextMenu] = useState(null);
   const closeContextMenu = useCallback(() => setContextMenu(null), []);
@@ -639,11 +640,7 @@ function WalFlowContent() {
     setEdges((eds) => eds.map((e) => ({ ...e, selected: false })));
     setSelectedNode(node);
     setSelectedEdge(null);
-    // Pins an instrument can be wired to: a tap's own pin, or the sensing pins switched on at a component
-    const pins = node.type === 'measure_point'
-      ? ['port-0']
-      : Object.entries(node.data?.sensing || {}).filter(([, on]) => on).map(([port]) => port);
-    setContextMenu({ x: event.clientX, y: event.clientY, kind: 'node', nodeId: node.id, isTap: node.type === 'measure_point', pins: node.type === 'instrument' ? [] : pins });
+    setContextMenu({ x: event.clientX, y: event.clientY, kind: 'node', nodeId: node.id });
   }, [setNodes, setEdges]);
 
   // Adds a pressure instrument above a component, wired to one of its pins (one undo step)
@@ -713,7 +710,7 @@ function WalFlowContent() {
     setEdges((eds) => eds.map((e) => ({ ...e, selected: e.id === edge.id })));
     setSelectedEdge(edge);
     setSelectedNode(null);
-    setContextMenu({ x: event.clientX, y: event.clientY, kind: 'edge', edgeId: edge.id, canTap: canInsertTap(edge) });
+    setContextMenu({ x: event.clientX, y: event.clientY, kind: 'edge', edgeId: edge.id });
   }, [setNodes, setEdges]);
 
   // Splits a pipe at the clicked point with a measurement tap (one undo step)
@@ -744,47 +741,8 @@ function WalFlowContent() {
 
   const onPaneContextMenu = useCallback((event) => {
     event.preventDefault();
-    setContextMenu({ x: event.clientX, y: event.clientY, kind: 'pane', canPaste: clipboardRef.current.nodes.length > 0 });
+    setContextMenu({ x: event.clientX, y: event.clientY, kind: 'pane' });
   }, []);
-
-  const contextMenuItems = useMemo(() => {
-    if (!contextMenu) return [];
-    const locked = isReadOnly;
-    if (contextMenu.kind === 'node') {
-      const pins = contextMenu.pins || [];
-      const instrumentItems = pins.map(port => ({
-        id: `add-instrument-${port}`,
-        label: contextMenu.isTap ? 'Add instrument' : `Add instrument at ${port.startsWith('port-') ? portNumberLabel(Number(port.slice(5))) : port.replace('-', ' ')}`,
-        disabled: locked,
-        onSelect: () => addInstrumentAtPin(contextMenu.nodeId, port),
-      }));
-      return [
-        ...instrumentItems,
-        ...(instrumentItems.length ? [{ separator: true }] : []),
-        { id: 'rotate', label: 'Rotate', shortcut: 'R', disabled: locked, onSelect: rotateSelectedNode },
-        { id: 'copy', label: 'Copy', shortcut: 'Ctrl+C', onSelect: copySelected },
-        { id: 'duplicate', label: 'Duplicate', shortcut: 'Ctrl+D', disabled: locked, onSelect: duplicateSelected },
-        { separator: true },
-        { id: 'delete', label: 'Delete', shortcut: 'Del', disabled: locked, danger: true, onSelect: deleteSelected },
-      ];
-    }
-    if (contextMenu.kind === 'edge') {
-      const items = [];
-      if (contextMenu.canTap) {
-        items.push(
-          { id: 'insert-tap', label: 'Insert measurement tap', disabled: locked, onSelect: () => insertTapOnEdge(contextMenu.edgeId, { x: contextMenu.x, y: contextMenu.y }) },
-          { separator: true },
-        );
-      }
-      return [...items, { id: 'delete', label: 'Delete pipe', shortcut: 'Del', disabled: locked, danger: true, onSelect: deleteSelected }];
-    }
-    return [
-      { id: 'paste', label: 'Paste', shortcut: 'Ctrl+V', disabled: locked || !contextMenu.canPaste, onSelect: pasteCopied },
-      { id: 'select-all', label: 'Select all', shortcut: 'Ctrl+A', onSelect: selectAllNodes },
-      { separator: true },
-      { id: 'fit', label: 'Fit view', onSelect: () => reactFlowInstance?.fitView({ padding: 0.2, duration: 250, maxZoom: 1.2 }) },
-    ];
-  }, [contextMenu, isReadOnly, rotateSelectedNode, copySelected, duplicateSelected, deleteSelected, pasteCopied, selectAllNodes, reactFlowInstance, insertTapOnEdge, addInstrumentAtPin]);
 
   const selectNodeById = useCallback((nodeId) => {
     const targetNode = nodes.find(n => n.id === nodeId);
@@ -956,13 +914,14 @@ function WalFlowContent() {
       }
       setActiveDiagram(null);
       setActiveProject(null);
-    } else if (diagramTitle && (options.isTemplate || options.promptConfirmation)) {
+    } else if (diagramTitle && (options.isTemplate || options.promptConfirmation) && nodes.length > 0 && hasEdits()) {
+      // Only work that would be lost needs a question; an empty or untouched canvas loads straight away
       const proceed = await confirmDialog({ title: 'Load example?', message: `Load "${diagramTitle}"?`, confirmLabel: 'Load' });
       if (!proceed) return false;
     }
 
     return loadData(data);
-  }, [activeProject, activeDiagram, hasLock, triggerManualCloudSave, checkinDiagram, setActiveDiagram, loadData]);
+  }, [activeProject, activeDiagram, hasLock, triggerManualCloudSave, checkinDiagram, setActiveDiagram, loadData, nodes.length, hasEdits]);
 
   // StrictMode runs the boot effect twice: the draft check (and its questions) must happen once per page load
   const bootDraftCheckedRef = useRef(false);
@@ -1616,21 +1575,124 @@ function WalFlowContent() {
     };
   }, [selectedEdge, edges, cases, activeCaseId, telemetryMode]);
 
+  // Command list: the context every command reads (selection, flags, state, and the existing handlers)
+  const rfStore = useStoreApi();
+  const canvasLocked = useStore((st) => !(st.nodesDraggable && st.nodesConnectable && st.elementsSelectable));
+  const resultsCommandsRef = useRef(null);
+  const shellMode = useShellMode(!!(selectedNode || selectedEdge) && !inspectorCollapsed);
+  const sidePaneOpen = shellMode.paneOverlay ? overlayPaneOpen : dockedPaneOpen;
+  const setSidePaneOpen = shellMode.paneOverlay ? setOverlayPaneOpen : setDockedPaneOpen;
+  const closeSidePane = useCallback(() => setSidePaneOpen(false), [setSidePaneOpen]);
+  const selectPane = useCallback((id) => {
+    if (id === sidePane) setSidePaneOpen(open => !open);
+    else { setSidePane(id); setSidePaneOpen(true); }
+  }, [sidePane, setSidePaneOpen]);
+  // Opens (never collapses) a pane, optionally on a tab; used by the empty-canvas hint and the status bar units slot
+  const openPane = useCallback((id, tab) => {
+    setSidePane(id);
+    setSidePaneOpen(true);
+    if (tab) setSettingsRequest(prev => ({ n: (prev?.n || 0) + 1, tab }));
+  }, [setSidePaneOpen]);
+  const fitView = useCallback(() => reactFlowInstance?.fitView({ padding: 0.2, duration: 250, maxZoom: 1.2 }), [reactFlowInstance]);
+  // Same switch as the lock button of the canvas controls
+  const toggleLock = useCallback(() => {
+    const { nodesDraggable, nodesConnectable, elementsSelectable } = rfStore.getState();
+    const interactive = nodesDraggable && nodesConnectable && elementsSelectable;
+    rfStore.setState({ nodesDraggable: !interactive, nodesConnectable: !interactive, elementsSelectable: !interactive });
+  }, [rfStore]);
+
+  const commandCtx = useMemo(() => {
+    const selectedNodes = nodes.filter((n) => n.selected || (selectedNode && n.id === selectedNode.id));
+    const selectedEdges = edges.filter((e) => e.selected || (selectedEdge && e.id === selectedEdge.id));
+    const menuNode = contextMenu?.kind === 'node' ? nodes.find((n) => n.id === contextMenu.nodeId) : null;
+    const menuEdge = contextMenu?.kind === 'edge' ? edges.find((e) => e.id === contextMenu.edgeId) : null;
+    // Component an instrument can be added to: the one right-clicked, else the single selected component
+    const instrumentNode = menuNode || (selectedNodes.length === 1 ? selectedNodes[0] : null);
+    // Pipe a tap can be inserted in: the one right-clicked, else the single selected pipe
+    const tapEdge = menuEdge || (selectedEdges.length === 1 ? selectedEdges[0] : null);
+    return {
+      isReadOnly,
+      isAuthenticated,
+      isAdmin,
+      isSimulating,
+      selection: { nodes: selectedNodes, edges: selectedEdges },
+      hasClipboard: () => clipboardRef.current.nodes.length > 0,
+      cases,
+      activeCaseId,
+      showCaseManager,
+      heatmapMode: heatmapSettings.mode,
+      sidePane,
+      sidePaneOpen,
+      hasInspectorTarget: !!(selectedNode || selectedEdge),
+      inspectorCollapsed,
+      canvasLocked,
+      hasCanvas: !!reactFlowInstance,
+      instrumentTarget: instrumentNode
+        ? { nodeId: instrumentNode.id, pins: instrumentPinsOf(instrumentNode), isTap: instrumentNode.type === 'measure_point' }
+        : null,
+      pinLabel: (port) => (port.startsWith('port-') ? portNumberLabel(Number(port.slice(5))) : port.replace('-', ' ')),
+      tapTarget: tapEdge ? {
+        edgeId: tapEdge.id,
+        canTap: canInsertTap(tapEdge),
+        // Where the tap goes: the right-click point, else the centre of the canvas
+        getPoint: () => {
+          if (menuEdge && contextMenu) return { x: contextMenu.x, y: contextMenu.y };
+          const rect = reactFlowWrapper.current?.getBoundingClientRect();
+          return { x: (rect?.left || 0) + (rect?.width || 0) / 2, y: (rect?.top || 0) + (rect?.height || 0) / 2 };
+        },
+      } : null,
+      getResults: () => resultsCommandsRef.current,
+      actions: {
+        newDrawing: handleOpenNewDrawingModal,
+        openDrawings: () => handleOpenProjectManagerModal(null),
+        save: triggerManualCloudSave,
+        saveAs: handleOpenSaveAsModal,
+        importFile: () => document.getElementById('sidebar-file-upload')?.click(),
+        exportFile: onSave,
+        undo,
+        redo,
+        copy: copySelected,
+        paste: pasteCopied,
+        duplicate: duplicateSelected,
+        deleteSelected,
+        selectAll: selectAllNodes,
+        rotate: rotateSelectedNode,
+        deselectAll,
+        addInstrument: addInstrumentAtPin,
+        insertTap: insertTapOnEdge,
+        selectPane, openPane,
+        toggleInspector: () => setInspectorCollapsed(prev => !prev),
+        zoomIn: () => reactFlowInstance?.zoomIn(),
+        zoomOut: () => reactFlowInstance?.zoomOut(),
+        fitView,
+        toggleLock,
+        setHeatmapMode: (mode) => setHeatmapSettings(prev => ({ ...prev, mode })),
+        toggleCaseManager: () => setShowCaseManager(prev => !prev),
+        run: () => runChecked(),
+        selectCase: setActiveCaseId,
+        addCase: handleAddCaseGuarded,
+        openCatalogue: () => navigateTo('/catalogue'),
+        openProjects: () => handleOpenProjectManagerModal(null),
+        openAdminHub: handleOpenAdminHub,
+        openHelp: handleOpenHelpModal,
+      },
+    };
+  }, [
+    nodes, edges, selectedNode, selectedEdge, contextMenu, isReadOnly, isAuthenticated, isAdmin, isSimulating,
+    cases, activeCaseId, showCaseManager, heatmapSettings.mode, sidePane, sidePaneOpen, inspectorCollapsed, canvasLocked, reactFlowInstance,
+    handleOpenNewDrawingModal, handleOpenProjectManagerModal, triggerManualCloudSave, handleOpenSaveAsModal, onSave,
+    undo, redo, copySelected, pasteCopied, duplicateSelected, deleteSelected, selectAllNodes, rotateSelectedNode, deselectAll,
+    addInstrumentAtPin, insertTapOnEdge, selectPane, openPane, fitView, toggleLock, setHeatmapSettings, setShowCaseManager,
+    runChecked, setActiveCaseId, handleAddCaseGuarded, navigateTo, handleOpenAdminHub, handleOpenHelpModal,
+  ]);
+
+  useKeyboardShortcuts(commandCtx);
+  const contextMenuItems = useMemo(
+    () => (contextMenu ? buildContextMenuItems(contextMenu.kind, commandCtx) : []),
+    [contextMenu, commandCtx]
+  );
+
   const heatmapActive = heatmapSettings.mode !== 'default';
-  const autoScale = heatmapSettings.autoScale;
-
-  // Calculate dynamic top positions to prevent panel overlap on the right side
-  let caseManagerTop = '16px';
-
-  if (heatmapActive) {
-    if (autoScale) {
-      caseManagerTop = '164px';
-    } else {
-      caseManagerTop = '188px';
-    }
-  } else {
-    caseManagerTop = '16px';
-  }
 
   if (currentPath === '/catalogue') {
 
@@ -1670,47 +1732,35 @@ function WalFlowContent() {
 
 
   return (
-    <div style={{ width: '100%', height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#F0F4F4', overflow: 'hidden' }}>
-      <Navbar 
-        onCalculate={runChecked}
-        isSimulating={isSimulating}
-        onOpenAuthModal={handleOpenAuthModal}
-        onOpenAdminHub={handleOpenAdminHub}
-        onOpenHelpModal={(tab) => handleOpenHelpModal(tab || 'about')}
-        onLogoutClear={resetCanvas}
-        onNavigateToCatalogue={() => navigateTo('/catalogue')}
-        currentRoute={currentPath === '/catalogue' ? 'catalogue' : 'canvas'}
-        cases={cases}
-        activeCaseId={activeCaseId}
-        onSelectCase={setActiveCaseId}
-        activeProject={activeProject}
-        activeDiagram={activeDiagram}
-        saveStatus={saveStatus}
-        lastSavedTimestamp={lastSavedTimestamp}
-        isLockedByOther={isLockedByOther}
-        lockInfo={lockInfo}
-        onNewDrawing={handleOpenNewDrawingModal}
-        onOpenDrawing={() => handleOpenProjectManagerModal(null)}
-        onSave={triggerManualCloudSave}
-        onSaveAs={handleOpenSaveAsModal}
-        onImportFile={() => document.getElementById('sidebar-file-upload').click()}
-        onExportFile={onSave}
-        runStatus={runStatus}
-        lastRunAt={lastRunAt}
-        findings={validation}
-        statusNotes={runSummary?.notes || []}
-        runError={runError}
-        runErrorDetail={runErrorDetail}
-        statusPanelOpen={statusPanelOpen}
-        onToggleStatusPanel={toggleStatusPanel}
-        onCloseStatusPanel={closeStatusPanel}
-        onSelectFinding={(id, type) => { setStatusPanelOpen(false); handleSelectComponent(id, type); }}
-      />
-
-
-      <div style={{ flexGrow: 1, display: 'flex', height: 'calc(100vh - 56px)', overflow: 'hidden' }}>
+    <AppShell
+      paneOpen={sidePaneOpen}
+      paneOverlay={shellMode.paneOverlay}
+      inspectorOverlay={shellMode.inspectorOverlay}
+      onClosePane={closeSidePane}
+      paneTitle={SIDE_PANES.find(p => p.id === sidePane)?.title}
+      header={<>
+        <MenuBar
+          ctx={commandCtx}
+          onOpenAuthModal={handleOpenAuthModal}
+          onLogoutClear={resetCanvas}
+          activeProject={activeProject}
+          activeDiagram={activeDiagram}
+          saveStatus={saveStatus}
+          lastSavedTimestamp={lastSavedTimestamp}
+          isLockedByOther={isLockedByOther}
+          lockInfo={lockInfo}
+        />
+        <CommandBar ctx={commandCtx} />
+      </>}
+      rail={<ActivityRail
+        activePane={sidePane}
+        paneOpen={sidePaneOpen}
+        onSelect={selectPane}
+      />}
+      pane={<>
         <Sidebar
-          examplesRequest={examplesRequest}
+          activeTab={sidePane}
+          settingsRequest={settingsRequest}
           onLoad={handleLoadDiagramWithCheck}
           markLoaded={markLoaded}
           globalSettings={globalSettings}
@@ -1719,9 +1769,6 @@ function WalFlowContent() {
           onUpdateUserSolver={updateUserSolver}
           projectSettings={projectSettings}
           onUpdateProjectSettings={updateProjectSettings}
-          lastStats={lastStats}
-          batchStats={batchStats}
-          onSelectComponent={handleSelectComponent}
           templates={{
             "Getting Started": {
               "Welcome canvas": greetingCanvas
@@ -1758,10 +1805,7 @@ function WalFlowContent() {
           lockInfo={lockInfo}
           onCheckout={checkoutDiagram}
           onCheckin={checkinDiagram}
-           onSaveAsClick={handleOpenSaveAsModal}
-           onNewDrawingClick={handleOpenNewDrawingModal}
-          onImportClick={() => document.getElementById('sidebar-file-upload').click()}
-          onExportClick={onSave}
+          onSaveAsClick={handleOpenSaveAsModal}
           onOpenProjectsModal={(projId) => {
             handleOpenProjectManagerModal(projId || null);
           }}
@@ -1790,15 +1834,33 @@ function WalFlowContent() {
             e.target.value = '';
           }}
         />
-
-        <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-          <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'row', overflow: 'hidden', position: 'relative' }}>
+      </>}
+      canvas={
             <div 
-              style={{ flexGrow: 1, position: 'relative' }} 
+              className="shell-canvas-surface"
               ref={reactFlowWrapper}
             onDragEnter={onDragEnter}
             onDragLeave={onDragLeave}
           >
+          <RunBanners
+            runError={runError}
+            runErrorId={runErrorId}
+            runErrorTarget={runErrorTarget}
+            runErrorDetail={runErrorDetail}
+            summary={runSummary}
+            resultKey={lastStats}
+            onSelect={handleSelectComponent}
+            onOpenStatus={() => setStatusPanelOpen(true)}
+          >
+            {graphError && (
+              <div role="status" className="infobar infobar-error">
+                <span className="infobar-icon"><CrossIcon size={13} color="var(--color-danger-text)" /></span>
+                <span className="infobar-text">{`The solver rejected the last change: ${graphError}`}</span>
+              </div>
+            )}
+          </RunBanners>
+
+          <div className="canvas-viewport">
           {isFileDragging && (
             <div style={{
               position: 'absolute',
@@ -1832,33 +1894,8 @@ function WalFlowContent() {
             </div>
           )}
 
-          <RunBanners
-            runError={runError}
-            runErrorId={runErrorId}
-            runErrorTarget={runErrorTarget}
-            runErrorDetail={runErrorDetail}
-            summary={runSummary}
-            resultKey={lastStats}
-            onSelect={handleSelectComponent}
-            onOpenStatus={() => setStatusPanelOpen(true)}
-          >
-            {graphError && (
-              <div
-                role="status"
-                style={{
-                  pointerEvents: 'auto', width: '100%', boxSizing: 'border-box',
-                  display: 'flex', alignItems: 'center', gap: '12px',
-                  padding: '8px 12px', borderRadius: '8px', fontSize: 'var(--fs-sm)', fontWeight: 600,
-                  background: '#FEF2F2', border: '1px solid #FEE2E2', color: '#B91C1C',
-                  boxShadow: '0 2px 8px rgba(28, 43, 44, 0.12)'
-                }}
-              >
-                <span style={{ flex: 1 }}>{`The solver rejected the last change: ${graphError}`}</span>
-              </div>
-            )}
-          </RunBanners>
 
-          {nodes.length === 0 && !isCanvasLoading && <EmptyCanvasHint onBrowseExamples={() => setExamplesRequest(n => n + 1)} />}
+          {nodes.length === 0 && !isCanvasLoading && <EmptyCanvasHint onBrowseExamples={() => runCommand('view.examples', commandCtx, { open: true })} />}
 
           <ReactFlow
             nodes={canvasNodes}
@@ -2043,64 +2080,68 @@ function WalFlowContent() {
     onLoadDiagram={loadData}
   />
 
-          {showCaseManager && (
-            <CaseManager
-              cases={cases}
-              activeCaseId={activeCaseId}
-              onSelectCase={setActiveCaseId}
-              onAddCase={handleAddCaseGuarded}
-              telemetryMode={telemetryMode}
-              onToggleTelemetryMode={setTelemetryMode}
-              onClose={() => setShowCaseManager(false)}
-              style={{ top: caseManagerTop }}
-            />
-          )}
-
-          <HeatmapLegend 
-            heatmapMode={heatmapSettings.mode} 
-            onModeChange={(mode) => setHeatmapSettings(prev => ({ ...prev, mode }))}
-            autoScale={heatmapSettings.autoScale}
-            onToggleAutoScale={() => setHeatmapSettings(prev => {
-              const nextAutoScale = !prev.autoScale;
-              if (!nextAutoScale) {
+          <div className="canvas-overlays">
+            <HeatmapLegend 
+              heatmapMode={heatmapSettings.mode} 
+              onModeChange={(mode) => setHeatmapSettings(prev => ({ ...prev, mode }))}
+              autoScale={heatmapSettings.autoScale}
+              onToggleAutoScale={() => setHeatmapSettings(prev => {
+                const nextAutoScale = !prev.autoScale;
+                if (!nextAutoScale) {
+                  const globalRange = computeGlobalHeatmapRange(prev.mode);
+                  return {
+                    ...prev,
+                    autoScale: false,
+                    customRanges: {
+                      ...prev.customRanges,
+                      [prev.mode]: globalRange
+                    }
+                  };
+                }
+                return { ...prev, autoScale: true };
+              })}
+              globalAutoScale={heatmapSettings.globalAutoScale}
+              onToggleGlobalAutoScale={() => setHeatmapSettings(prev => ({ ...prev, globalAutoScale: !prev.globalAutoScale }))}
+              activeRange={computedHeatmapRange}
+              customRange={heatmapSettings.customRanges[heatmapSettings.mode]}
+              onUpdateCustomRange={(min, max) => setHeatmapSettings(prev => ({
+                ...prev,
+                customRanges: {
+                  ...prev.customRanges,
+                  [prev.mode]: { min, max }
+                }
+              }))}
+              onResetCustomRange={() => setHeatmapSettings(prev => {
                 const globalRange = computeGlobalHeatmapRange(prev.mode);
                 return {
                   ...prev,
-                  autoScale: false,
                   customRanges: {
                     ...prev.customRanges,
                     [prev.mode]: globalRange
                   }
                 };
-              }
-              return { ...prev, autoScale: true };
-            })}
-            globalAutoScale={heatmapSettings.globalAutoScale}
-            onToggleGlobalAutoScale={() => setHeatmapSettings(prev => ({ ...prev, globalAutoScale: !prev.globalAutoScale }))}
-            activeRange={computedHeatmapRange}
-            customRange={heatmapSettings.customRanges[heatmapSettings.mode]}
-            onUpdateCustomRange={(min, max) => setHeatmapSettings(prev => ({
-              ...prev,
-              customRanges: {
-                ...prev.customRanges,
-                [prev.mode]: { min, max }
-              }
-            }))}
-            onResetCustomRange={() => setHeatmapSettings(prev => {
-              const globalRange = computeGlobalHeatmapRange(prev.mode);
-              return {
-                ...prev,
-                customRanges: {
-                  ...prev.customRanges,
-                  [prev.mode]: globalRange
-                }
-              };
-            })}
-          />
+              })}
+            />
+
+            {showCaseManager && (
+              <CaseManager
+                cases={cases}
+                activeCaseId={activeCaseId}
+                onSelectCase={setActiveCaseId}
+                onAddCase={handleAddCaseGuarded}
+                telemetryMode={telemetryMode}
+                onToggleTelemetryMode={setTelemetryMode}
+                onClose={() => setShowCaseManager(false)}
+              />
+            )}
+          </div>
 
           <CanvasLoadingOverlay visible={isCanvasLoading} label={canvasLoadingLabel} />
+          </div>
         </div>
-
+      }
+      inspector={(selectedNode || selectedEdge) && !inspectorCollapsed && (
+        <aside className="shell-inspector-area" aria-label="Inspector">
         <InspectorPanel
           key={selectedNode?.id || selectedEdge?.id || 'none'}
           node={selectedNode}
@@ -2111,6 +2152,7 @@ function WalFlowContent() {
           onUpdateEdge={updateEdgeData}
           onDelete={onDeleteNode}
           onDeleteEdge={onDeleteEdge}
+          onCollapse={() => setInspectorCollapsed(true)}
           heatmapActive={heatmapActive}
           cases={cases}
           activeCaseId={activeCaseId}
@@ -2123,9 +2165,9 @@ function WalFlowContent() {
           activeTab={inspectorTab}
           setActiveTab={setInspectorTab}
         />
-
-      </div>
-
+        </aside>
+      )}
+      results={
         <DataList 
           nodes={interactiveNodes} 
           edges={styledEdges} 
@@ -2149,17 +2191,40 @@ function WalFlowContent() {
           caseInputHashes={caseInputHashes}
           onSetCaseOverride={handleSetCaseOverride}
           runSimulation={runChecked}
+          commandsRef={resultsCommandsRef}
           showCaseManager={showCaseManager}
           onToggleCaseManager={() => setShowCaseManager(prev => !prev)}
           availablePipeClasses={availablePipeClasses}
           allowCustomPipes={allowCustomPipes}
         />
-
-
-      </div>
-    </div>
-  </div>
-);
+      }
+      status={
+        <StatusBar
+          ctx={commandCtx}
+          activeCaseName={activeCaseObj?.name || 'Base case'}
+          warningCount={validation.errors.length + validation.warnings.length}
+          hasErrors={validation.errors.length > 0}
+          onOpenWarnings={toggleStatusPanel}
+          onOpenUnits={() => runCommand('view.settings', commandCtx, { open: true, tab: 'global' })}
+          chip={{
+            status: runStatus,
+            lastRunAt,
+            errors: validation.errors,
+            warnings: validation.warnings,
+            notes: runSummary?.notes || [],
+            runError,
+            runErrorDetail,
+            stats: lastStats,
+            batchStats,
+            open: statusPanelOpen,
+            onToggle: toggleStatusPanel,
+            onClose: closeStatusPanel,
+            onSelect: (id, type) => { setStatusPanelOpen(false); handleSelectComponent(id, type); },
+          }}
+        />
+      }
+    />
+  );
 }
 
 export default function App() {

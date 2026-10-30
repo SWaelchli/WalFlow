@@ -6,7 +6,7 @@ export const GUIDE_SECTIONS = [
   {
     title: '1. Build the diagram',
     items: [
-      <>{b('Add components:')} drag pumps, tanks, valves, regulators, orifices, filters, heat exchangers, relief devices and junctions from the left sidebar onto the canvas. Right-click the canvas, a component or a pipe for a context menu.</>,
+      <>{b('Add components:')} drag pumps, tanks, valves, regulators, orifices, filters, heat exchangers, relief devices and junctions from the Components pane (left rail) onto the canvas. Right-click the canvas, a component or a pipe for a context menu.</>,
       <>{b('Connect ports:')} drag from an outlet handle to an inlet handle to create a pipe; the purple junction ports connect to either. A port takes one pipe; use a junction to branch. Drag the signal handles for control connections.</>,
       <>{b('Edit properties:')} click a component or pipe to open its inspector on the right. Pipe size, schedule and pipe class are also editable in the data list below the canvas.</>,
       <>{b('Layout:')} the data list below the canvas can be resized with its drag handle (arrow keys work too) and collapsed.</>,
@@ -25,7 +25,7 @@ export const GUIDE_SECTIONS = [
     title: '3. Run a simulation',
     items: [
       <>Click {b('Run Simulation')} in the top bar. The model is checked first: errors (empty drawing, unknown component, several pipes on one port) block the run; warnings (open ports, self-loops, isolated components, a circuit without tank or source, unwired instruments) still allow it.</>,
-      <>The {b('status chip')} next to the case switcher shows the state: not connected, running, converged, converged with warnings, failed, or out of date after you changed the drawing. Click it to see the checks, the notes from the last run and a Show button that selects the affected item.</>,
+      <>The {b('Run result')} at the left of the status bar (bottom) shows the state: not connected, running, converged, converged with warnings, failed, or out of date after you changed the drawing. Click it to see the checks, the notes from the last run, the solver statistics and a Show button that selects the affected item. The status bar also shows the active case, the number of model warnings, the units, the selection and the zoom.</>,
       <>Banners over the canvas report vacuum or sub-vapour-pressure ports, fluid temperatures outside the property range, and values the solver could not return.</>,
       <>Results appear on the components, on the pipes and in the data list. A dash ("-") means there is no result yet.</>,
     ],
@@ -60,7 +60,7 @@ export const GUIDE_SECTIONS = [
     items: [
       <>{b('Export / Import')} saves and loads .wlf files (older .json files also open); you can drop a file onto the canvas. Results are not stored in the file; run the simulation again after loading.</>,
       <>Signed-in users can save drawings to cloud projects. A draft is also kept in this browser and offered again after a crash or reload.</>,
-      <>The scenario templates in the sidebar are worked examples; each has a note saying what to check.</>,
+      <>The drawings in the Examples pane (left rail) are worked examples; each has a note saying what to check.</>,
     ],
   },
 ];
