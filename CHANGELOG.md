@@ -6,6 +6,13 @@ All notable changes to the WälFlow project will be documented in this file.
 
 ## [0.2.0]
 
+### Upgrade notes (breaking changes)
+
+- **Drawings**: The file format is 0.2. Drawings saved with 0.1.x (files, cloud and project drawings, local drafts) are refused with a message and are not converted; rebuild them or start from an example.
+- **Removed components**: Mixer and splitter are replaced by the junction; pressure source and flow source are now pressure boundary and flow boundary.
+- **Re-enter on rebuilt drawings**: Relief set and burst pressures are in gauge, centrifugal pumps are rated in head (m), and control valves pick a valve style.
+- **Deployment**: The compose file requires `WALFLOW_SECRET_KEY` (see `.env.example`); everyone is logged out once. The backend is published on 127.0.0.1 only. Building the frontend needs Node 22.12 or newer.
+
 ### Added
 
 - **Neutral ports on boundaries**: Tank, pressure boundary and flow boundary (renamed from pressure source / flow source) have 1 to 8 neutral ports. The flow boundary supplies or draws a set flow, shared over its ports at common pressure, as an equal share or with its own flow per port; a draw has a minimum suction pressure and its pipes show positive flow. The port count sits below the name tag for all multi-port equipment. New flow boundary symbol (radial arrows, out for supply, in for draw); the tank liquid follows the rounded bottom. Older files are not converted.
