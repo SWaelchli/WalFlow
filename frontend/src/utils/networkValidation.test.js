@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { validateNetwork, checkNewConnection, normalizeConnection, flipBoundaryEdges, flipBlockedMessage, portsOf, PORTS_BY_TYPE, SAME_ROLE_MESSAGE } from './networkValidation';
+import { validateNetwork, checkNewConnection, normalizeConnection, flipBoundaryEdges, flipBlockedMessage, portsOf, dropEdgesToMissingHandles, PORTS_BY_TYPE, SAME_ROLE_MESSAGE } from './networkValidation';
 
 const node = (id, type, label) => ({ id, type, position: { x: 0, y: 0 }, data: { label: label || id } });
 const pipe = (id, source, target, sourceHandle = 'outlet-0', targetHandle = 'inlet-0') => (
@@ -483,5 +483,44 @@ describe('shipped diagrams pass the model checks', () => {
   it.each(files)('%s has no errors or warnings', (file) => {
     const data = JSON.parse(readFileSync(file, 'utf-8'));
     expect(validateNetwork(data, new Set(Object.keys(PORTS_BY_TYPE)))).toEqual({ errors: [], warnings: [] });
+  });
+
+  // A handle the helper forgets would silently cut a valid pipe out of a shipped drawing on load
+  it.each(files)('%s loses no connection to a missing handle', (file) => {
+    const data = JSON.parse(readFileSync(file, 'utf-8'));
+    const r = dropEdgesToMissingHandles(data.nodes, data.edges);
+    expect(r.dropped).toBe(0);
+    expect(r.edges).toHaveLength(data.edges.length);
+  });
+});
+
+describe('dropEdgesToMissingHandles', () => {
+  const withData = (id, type, data) => ({ ...node(id, type), data });
+  const edge = (id, source, target, sourceHandle, targetHandle) => ({ id, source, target, sourceHandle, targetHandle });
+
+  it.each([
+    ['pump outlet to valve inlet', [node('p', 'centrifugal_pump'), node('v', 'check_valve')], edge('e', 'p', 'v', 'outlet-0', 'inlet-0'), 0],
+    ['junction port beyond num_ports', [withData('j', 'junction', { num_ports: 3 }), node('t', 'tank')], edge('e', 'j', 't', 'port-5', 'port-0'), 1],
+    ['junction port within num_ports', [withData('j', 'junction', { num_ports: 6 }), node('t', 'tank')], edge('e', 'j', 't', 'port-5', 'port-0'), 0],
+    ['dP instrument reference input', [node('t', 'tank'), withData('i', 'instrument', { variable: 'dP' })], edge('e', 't', 'i', 'port-0', 'signal-in-ref'), 0],
+    ['reference input on a non-dP instrument', [node('t', 'tank'), withData('i', 'instrument', { variable: 'P' })], edge('e', 't', 'i', 'port-0', 'signal-in-ref'), 1],
+    ['pilot PSV signal input', [node('i', 'tank'), withData('v', 'psv', { valve_type: 'pilot' })], edge('e', 'i', 'v', 'port-0', 'signal-in'), 0],
+    ['signal input on a non-pilot PSV', [node('i', 'tank'), withData('v', 'psv', { valve_type: 'direct' })], edge('e', 'i', 'v', 'port-0', 'signal-in'), 1],
+    ['sensing pin switched on', [withData('p', 'centrifugal_pump', { sensing: { 'outlet-0': true } }), node('i', 'instrument')], edge('e', 'p', 'i', 'signal-outlet-0', 'signal-in'), 0],
+    ['sensing pin switched off', [withData('p', 'centrifugal_pump', { sensing: { 'outlet-0': false } }), node('i', 'instrument')], edge('e', 'p', 'i', 'signal-outlet-0', 'signal-in'), 1],
+    ['null handle', [node('p', 'centrifugal_pump'), node('v', 'check_valve')], edge('e', 'p', 'v', null, undefined), 0],
+    ['unknown node type', [node('x', 'future_widget'), node('v', 'check_valve')], edge('e', 'x', 'v', 'whatever', 'inlet-0'), 0],
+    ['unknown type does not excuse a bad handle on the other end', [node('x', 'future_widget'), node('v', 'check_valve')], edge('e', 'x', 'v', 'whatever', 'inlet-9'), 1],
+  ])('%s', (_name, nodes, e, dropped) => {
+    const r = dropEdgesToMissingHandles(nodes, [e]);
+    expect(r.dropped).toBe(dropped);
+    expect(r.edges).toEqual(dropped ? [] : [e]);
+  });
+
+  it('keeps the good edges and counts only the dropped ones', () => {
+    const nodes = [node('p', 'centrifugal_pump'), node('v', 'check_valve')];
+    const good1 = edge('a', 'p', 'v', 'outlet-0', 'inlet-0');
+    const r = dropEdgesToMissingHandles(nodes, [good1, edge('b', 'p', 'v', 'outlet-3', 'inlet-0'), edge('c', 'p', 'v', 'outlet-0', 'inlet-7')]);
+    expect(r).toEqual({ edges: [good1], dropped: 2 });
   });
 });

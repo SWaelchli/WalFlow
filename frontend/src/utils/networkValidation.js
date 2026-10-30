@@ -54,6 +54,48 @@ export const portsOf = (node) => {
   return { either: [], ...PORTS_BY_TYPE[node?.type] };
 };
 
+/**
+ * Every handle id the node component renders for this node's data, or null for a type it does not know.
+ * The node components and this list must agree: hydraulic ports from portsOf, plus signal handles
+ * (instrument inputs, pilot PSV input, remote valve input, sensing pins that are switched on, the tap's own pin).
+ */
+export const handleIdsOf = (node) => {
+  const type = node?.type;
+  if (type === 'text_bubble') return new Set();
+  if (!Object.hasOwn(PORTS_BY_TYPE, type)) return null;
+  const data = node?.data || {};
+  const p = portsOf(node);
+  const hydraulic = [...p.inlets, ...p.outlets, ...p.either];
+  const ids = new Set(hydraulic);
+  if (type === 'instrument') {
+    ids.add('signal-in');
+    if (data.variable === 'dP') ids.add('signal-in-ref');
+    return ids;
+  }
+  if (type === 'remote_control_valve') ids.add('signal-in');
+  if ((type === 'pressure_safety_valve' || type === 'psv') && data.valve_type === 'pilot') ids.add('signal-in');
+  if (type === 'measure_point') ids.add('signal-port-0');
+  else for (const port of hydraulic) if (data.sensing?.[port]) ids.add(`signal-${port}`);
+  return ids;
+};
+
+/** Drops edges whose source or target handle is not rendered on its node (React Flow cannot draw them). */
+export const dropEdgesToMissingHandles = (nodes, edges) => {
+  const handles = new Map((nodes || []).map((n) => [n.id, handleIdsOf(n)]));
+  const missing = (nodeId, handle) => {
+    if (typeof handle !== 'string' || handle === '') return false;
+    const ids = handles.get(nodeId);
+    return !!ids && !ids.has(handle);
+  };
+  const kept = [];
+  let dropped = 0;
+  for (const e of edges || []) {
+    if (missing(e.source, e.sourceHandle) || missing(e.target, e.targetHandle)) dropped += 1;
+    else kept.push(e);
+  }
+  return { edges: kept, dropped };
+};
+
 export const ERROR_CODES = ['empty_drawing', 'unknown_type', 'unknown_endpoint', 'invalid_port', 'port_shared', 'invalid_num_ports', 'flow_split_port_open', 'flow_boundary_direction'];
 
 const isSignalEdge = (e) => String(e?.data?.type ?? '').toUpperCase() === 'SIGNAL'

@@ -19,7 +19,6 @@ The only place that holds the status.
 
 | ID | Severity | Status | Finding | Proposed solution | Owner | Phase | Source |
 |---|---|---|---|---|---|---|---|
-| LK-H4 | High | Open | React Flow warning #008 when a saved edge points to a missing handle. | Shared handle-id helper per node type, so load can drop or repair such edges. | fe | 1 | Lock audit 2026-10-29 |
 | M2 | Medium | Open | A never-run case shows "Cavitation ✓ Normal"; the status pill is not tied to the active case. | Show "—" for cases without telemetry and tie the pill to the active case. | fe | 4 | UX audit 2026-10-28 |
 | M4 | Medium | Open | CSV export has no quoting, no BOM, and does not name the case. | Quote values, add a BOM, put the case name in the file name. | fe | 4 | UX audit 2026-10-28 |
 | M6 | Medium | Open | The canvas "Case manager" cannot add cases; a tab of the collapsed data panel does not expand it. | Add "add case" to the popover; a tab click expands the panel. | fe | 4 | UX audit 2026-10-28 |
@@ -41,7 +40,6 @@ before each commit.
 
 | Phase | Entries | Why this order | Exit check |
 |---|---|---|---|
-| 1 Data safety (rest) | LK-H4 | The data-safety and lock-model fixes are done; this console warning is what is left of phase 1. Frontend only. | Gate. |
 | 4 Results panel (Batch C) | M2, M4, M6 | Independent DataList fixes; small. | Gate. |
 | 5 Units | H5 | Cross-cutting (every pressure input and readout); must land before M3 adds per-case values. | Converter reference rows; gate. |
 | 6 Solver feedback | H1, P1 | Backend solver messages + physics review; P1 is a check in the same area (regulator wide-open ΔP), fix only if wrong. | Scenario test; physics review; gate. |
@@ -73,7 +71,6 @@ Agreed design: one checked-out drawing per user (and per tab); opening another d
 
 | ID | Details | Where | Test |
 |---|---|---|---|
-| LK-H4 | Console gate. The expected 409 log and #002 are done; nodeTypes was already stable. Load needs a shared handle-id helper per node type before it can drop or repair edges to missing handles. | edge load path, node handle ids (`BoundaryPorts`, `portLabels.js`) | Gate. |
 | LK-L1 | Seen at 1568 px wide in the browser re-check of phase 3: the lock chip after the drawing name pushes "Not run yet" against "Catalogue". | Navbar.jsx centre and right groups | Gate (layout re-audit). |
 
 ## Details: physics review
