@@ -438,6 +438,10 @@ function WalFlowContent() {
     notifyReadOnly();
     return true;
   }, [isReadOnly, notifyReadOnly]);
+  const handleAddCaseGuarded = useCallback(() => {
+    if (blockIfReadOnly()) return;
+    return handleAddCase();
+  }, [blockIfReadOnly, handleAddCase]);
 
   const { requestSnapshot, resetHistory, undo, redo } = useCanvasHistory({
     nodes,
@@ -2018,6 +2022,7 @@ function WalFlowContent() {
               cases={cases}
               activeCaseId={activeCaseId}
               onSelectCase={setActiveCaseId}
+              onAddCase={handleAddCaseGuarded}
               telemetryMode={telemetryMode}
               onToggleTelemetryMode={setTelemetryMode}
               onClose={() => setShowCaseManager(false)}
@@ -2108,7 +2113,7 @@ function WalFlowContent() {
           activeCaseId={activeCaseId}
           globalSettings={effectiveGlobalSettings}
           onSelectCase={setActiveCaseId}
-          onAddCase={handleAddCase}
+          onAddCase={handleAddCaseGuarded}
           onRenameCase={handleRenameCase}
           onDeleteCase={handleDeleteCase}
           onReorderCases={handleReorderCases}
