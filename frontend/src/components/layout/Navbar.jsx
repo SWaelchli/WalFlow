@@ -5,6 +5,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { APP_VERSION, RELEASE_STAGE } from '../../constants';
 import StatusChip from './StatusChip';
 import { clickableProps } from '../../utils/a11yProps';
+import { describeLockState } from '../../utils/lockState';
 import { 
   PlusIcon, 
   CloudIcon, 
@@ -51,6 +52,7 @@ export default function Navbar({
   saveStatus = 'saved_local',
   lastSavedTimestamp = null,
   isLockedByOther = false,
+  lockInfo = null,
   onNewDrawing,
   onOpenDrawing,
   onSave,
@@ -91,6 +93,9 @@ export default function Navbar({
     onExportFile && { id: 'export', label: 'Export .wlf file', onSelect: onExportFile },
   ];
   const saveState = describeSaveState({ saveStatus, isCloudDoc: !!activeDiagram, isLockedByOther, lastSavedTimestamp });
+
+  const lockState = activeDiagram && isAuthenticated ? describeLockState(lockInfo, currentUser ? currentUser.id : null) : null;
+  const lockEditing = lockState && lockState.kind === 'mine';
 
   const handleUserLogout = () => {
     logout();
@@ -246,6 +251,29 @@ export default function Navbar({
               </span>
             </div>
           </div>
+
+          {lockState && lockState.kind !== 'free' && (
+            <span
+              role="status"
+              title={lockState.label}
+              aria-label={lockState.label}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                minWidth: 0,
+                maxWidth: '260px',
+                padding: '2px 8px',
+                borderRadius: '10px',
+                fontSize: 'var(--fs-xs)',
+                fontWeight: '600',
+                backgroundColor: lockEditing ? '#ECFDF5' : 'var(--color-warning-bg)',
+                color: lockEditing ? '#047857' : 'var(--color-warning-text)',
+                border: `1px solid ${lockEditing ? '#A7F3D0' : 'var(--color-warning-border)'}`
+              }}
+            >
+              <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{lockState.label}</span>
+            </span>
+          )}
         </div>
       </div>
 

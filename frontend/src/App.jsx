@@ -10,6 +10,7 @@ import ReactFlow, {
   ReactFlowProvider
 } from 'reactflow';
 import { notify, confirmDialog } from './utils/dialogs';
+import { parseServerTime } from './utils/serverTime';
 import { validateNetwork, checkNewConnection, normalizeConnection, flipBoundaryEdges, flipBlockedMessage, PORT_TAKEN_MESSAGE } from './utils/networkValidation';
 import { junctionLayout, junctionPortCount, PIN_TIP, PIN_LENGTH } from './utils/junctionLayout';
 import { boundaryLayout, boundaryPortCount, BOUNDARY_PORT_TYPES } from './utils/boundaryLayout';
@@ -949,9 +950,13 @@ function WalFlowContent() {
       let attachDiagram = true;
       let restored = result.restored;
       if (result.conflict) {
+        const savedAt = parseServerTime(result.updatedAt);
+        const savedWhen = savedAt && !Number.isNaN(savedAt.getTime())
+          ? `${savedAt.toDateString() === new Date().toDateString() ? '' : `${savedAt.toLocaleDateString()} `}${savedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+          : '';
         const loadCloud = await confirmDialog({
           title: 'Newer cloud version',
-          message: 'This drawing was saved elsewhere after your unsaved local changes. Load the cloud version, or keep your local copy detached from the cloud (it will not overwrite the cloud).',
+          message: `${draft.active_diagram_title ? `"${draft.active_diagram_title}"` : 'This drawing'} was saved elsewhere${savedWhen ? ` (cloud version saved ${savedWhen})` : ''} after your unsaved local changes. Load the cloud version, or keep your local copy detached from the cloud (it will not overwrite the cloud).`,
           confirmLabel: 'Load cloud version',
           cancelLabel: 'Keep local copy',
         });
@@ -1650,6 +1655,7 @@ function WalFlowContent() {
         saveStatus={saveStatus}
         lastSavedTimestamp={lastSavedTimestamp}
         isLockedByOther={isLockedByOther}
+        lockInfo={lockInfo}
         onNewDrawing={handleOpenNewDrawingModal}
         onOpenDrawing={() => handleOpenProjectManagerModal(null)}
         onSave={triggerManualCloudSave}

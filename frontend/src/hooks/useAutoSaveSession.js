@@ -173,6 +173,20 @@ export function useAutoSaveSession({
     if (activeDiagram && activeDiagram.updated_at) baseUpdatedAtRef.current = activeDiagram.updated_at;
     if (!activeDiagram) baseUpdatedAtRef.current = null;
   }, [activeDiagram]);
+  // The saved time shown is the opened (or newly created) drawing's own, not the one that was left
+  const [savedTimeId, setSavedTimeId] = useState(null);
+  const openId = activeDiagram ? activeDiagram.id : null;
+  if (openId !== savedTimeId) {
+    setSavedTimeId(openId);
+    if (!openId) {
+      // Detached: the previous drawing's time no longer applies (a local draft label shows no time)
+      setLastSavedTimestamp(null);
+    } else if (activeDiagram.updated_at) {
+      // Without updated_at (restored draft) the time set by reconcileDraft or the save path is kept
+      const savedAt = parseServerTime(activeDiagram.updated_at);
+      setLastSavedTimestamp(savedAt && !Number.isNaN(savedAt.getTime()) ? savedAt.toLocaleTimeString() : null);
+    }
+  }
   // What a save would write. Selection, measuring and results do not change it, so they no longer start the
   // save timers; a moved component does.
   const contentSignature = useMemo(
@@ -904,9 +918,13 @@ ${versionError}`, 'error'), 0);
 
   const askAboutOrphan = useCallback(async (orphan) => {
     const when = orphan.timestamp ? new Date(orphan.timestamp).toLocaleString() : 'an earlier session';
+    let name = '';
+    try {
+      name = JSON.parse(orphan.raw).active_diagram_title || '';
+    } catch { /* unreadable draft: asked without a name */ }
     const restore = await confirmDialog({
       title: 'Restore unsaved drawing?',
-      message: `An unsaved drawing from ${when} was found in this browser. Restore it? Choosing Discard removes it.`,
+      message: `An unsaved ${name ? `change to "${name}"` : 'drawing'} from ${when} was found in this browser. Restore it? Choosing Discard removes it.`,
       confirmLabel: 'Restore',
       cancelLabel: 'Discard',
     });

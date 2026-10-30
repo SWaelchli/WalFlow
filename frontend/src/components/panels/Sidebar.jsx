@@ -3,6 +3,7 @@ import { notify, confirmDialog } from '../../utils/dialogs';
 import { summarizeStats } from '../../utils/runStatus';
 import axios from 'axios';
 import { getTabId, isMyTabLock } from '../../utils/draftStorage';
+import { describeLockState } from '../../utils/lockState';
 import { EquipmentSymbol } from '../symbols/SymbolLibrary';
 import { InfoIcon, WarningIcon, CheckIcon, CrossIcon, FolderIcon, SearchIcon, TrashIcon, LockIcon, UnlockIcon, FolderOpenIcon, CaretDownIcon, CaretRightIcon, GearIcon, FileIcon, NoteEditIcon, SaveIcon, ImportIcon, ExportIcon, PlusIcon, DotIcon } from '../symbols/IconLibrary';
 import { FLUID_CATEGORIES, FLUID_LIBRARY } from '../../constants/fluid_library';
@@ -571,10 +572,13 @@ function DiagramRow({ diagram, isActive, isHighlighted, onClick, onOpen, onToggl
   const [hovered, setHovered] = useState(false);
 
   const lock = diagram.lock_info;
-  const isLocked = !!lock;
-  const isLockedByMe = lock && currentUser && lock.user_id === currentUser.id;
-  // This user's lock held by another tab: status only on the open drawing
-  const heldByOtherTab = !!(isLockedByMe && lock.session_id && lock.session_id !== getTabId());
+  const userId = currentUser ? currentUser.id : null;
+  let lockState = describeLockState(lock, userId);
+  // Only the active drawing can be held by this tab; a 'mine' lock on another row is a stale list entry
+  if (lockState.kind === 'mine' && !isActive) lockState = describeLockState(null, userId);
+  const isLocked = lockState.kind !== 'free';
+  const isLockedByMe = lockState.kind === 'mine';
+  const lockTip = lockState.kind === 'mine' ? 'Editing: checked out in this tab' : lockState.label;
 
   return (
     <div
@@ -648,39 +652,52 @@ function DiagramRow({ diagram, isActive, isHighlighted, onClick, onOpen, onToggl
             </button>
           </div>
         )}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            if (isLocked && !isLockedByMe) return;
-            onToggleLock();
-          }}
-          disabled={(isLocked && !isLockedByMe) || (isActive && heldByOtherTab)}
-          title={isLocked ? (isLockedByMe ? (heldByOtherTab ? 'Checked out in another tab' : isActive ? 'Release edit lock (check in)' : 'Open drawing') : `Locked by ${lock.username}`) : (isActive ? 'Check out to edit' : 'Open drawing')}
-          aria-label={isLocked ? (isLockedByMe ? (heldByOtherTab ? 'Checked out in another tab' : isActive ? 'Release edit lock' : 'Open drawing') : `Locked by ${lock.username}`) : (isActive ? 'Check out to edit' : 'Open drawing')}
-          style={{
-            background: 'transparent',
-            border: 'none',
-            padding: '2px',
-            cursor: ((isLocked && !isLockedByMe) || (isActive && heldByOtherTab)) ? 'not-allowed' : 'pointer',
-            display: 'inline-flex',
-            alignItems: 'center',
-            marginLeft: '4px',
-            borderRadius: '4px',
-            transition: 'opacity 0.15s'
-          }}
-        >
-          {isLocked ? (
-            <LockIcon 
-              size={12} 
-              color={isActive ? '#ffffff' : isLockedByMe ? '#10B981' : '#EF4444'} 
-            />
-          ) : (
-            <UnlockIcon 
-              size={12} 
-              color={isActive ? 'rgba(255,255,255,0.6)' : '#587071'} 
-            />
-          )}
-        </button>
+        {isLocked && (
+          <span
+            title={lockTip}
+            aria-label={lockTip}
+            style={{
+              marginLeft: '4px',
+              padding: '1px 6px',
+              borderRadius: '10px',
+              fontSize: '10px',
+              fontWeight: '700',
+              lineHeight: 1.4,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '3px',
+              whiteSpace: 'nowrap',
+              backgroundColor: isLockedByMe ? '#ECFDF5' : 'var(--color-warning-bg)',
+              color: isLockedByMe ? '#047857' : 'var(--color-warning-text)',
+              border: `1px solid ${isLockedByMe ? '#A7F3D0' : 'var(--color-warning-border)'}`
+            }}
+          >
+            {isLockedByMe ? 'Editing' : <><LockIcon size={10} />{lockState.initials}</>}
+          </span>
+        )}
+        {isActive && !(isLocked && !isLockedByMe) && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleLock();
+            }}
+            title={isLockedByMe ? 'Release edit lock (check in)' : 'Check out to edit'}
+            aria-label={isLockedByMe ? 'Release edit lock' : 'Check out to edit'}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              padding: '2px',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              marginLeft: '4px',
+              borderRadius: '4px',
+              transition: 'opacity 0.15s'
+            }}
+          >
+            {isLockedByMe ? <LockIcon size={12} color="#ffffff" /> : <UnlockIcon size={12} color="rgba(255,255,255,0.6)" />}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -993,17 +1010,91 @@ export default function Sidebar({
     }
   }, [isAuthenticated, currentUser, activeDiagram, onCheckout, onCheckin, updateDiagramLockState]);
 
+  const panelLock = describeLockState(lockInfo, currentUser ? currentUser.id : null);
+
+  // Changes whenever this tab completes a checkout (a new lock), also when switching between drawings
+  const checkoutKey = panelLock.kind === 'mine' ? (lockInfo.locked_at || 'mine') : null;
+
+  // The session's lock state for the open drawing is newer than any list response that was
+  // requested before the checkout, so list rows for the open drawing take it over.
+  const activeIdRef = React.useRef(null);
+  activeIdRef.current = activeDiagram ? activeDiagram.id : null;
+  const lockInfoRef = React.useRef(null);
+  lockInfoRef.current = lockInfo;
+  const withActiveLock = useCallback((list) => (
+    lockInfoRef.current && activeIdRef.current != null
+      ? list.map(d => (d.id === activeIdRef.current ? { ...d, lock_info: lockInfoRef.current } : d))
+      : list
+  ), []);
+
+  // Latest request number per project; a response from an older request is dropped
+  const projectRequestSeqRef = React.useRef({});
+  const fetchProjectDiagrams = useCallback(async (projectId) => {
+    const seq = (projectRequestSeqRef.current[projectId] || 0) + 1;
+    projectRequestSeqRef.current[projectId] = seq;
+    try {
+      const res = await axios.get(`/api/diagrams?project_id=${projectId}`);
+      if (projectRequestSeqRef.current[projectId] !== seq) return;
+      setProjectDiagrams(prev => ({ ...prev, [projectId]: withActiveLock(res.data) }));
+    } catch {
+      console.warn("Failed to fetch project diagrams");
+    }
+  }, [withActiveLock]);
+
+  const projectDiagramsRef = React.useRef(projectDiagrams);
+  projectDiagramsRef.current = projectDiagrams;
+
+  // A drawing that becomes active gets its project folder opened and the selection highlight.
+  // The folder's list is only fetched here if it was never loaded; otherwise it is fetched
+  // once its checkout completes (next effect), so the released lock of the previous drawing shows.
+  useEffect(() => {
+    if (!activeDiagram) return;
+    setHighlightedDiagramId(activeDiagram.id);
+    const projectId = activeProject ? activeProject.id : null;
+    if (!projectId) return;
+    setExpandedProjects(prev => (prev[projectId] ? prev : { ...prev, [projectId]: true }));
+    if (!projectDiagramsRef.current[projectId]) fetchProjectDiagrams(projectId);
+  }, [activeDiagram?.id, activeProject?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!checkoutKey || !activeProject) return;
+    fetchProjectDiagrams(activeProject.id);
+  }, [checkoutKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Lock events only reach the open drawing, so other rows go stale while the app is in the
+  // background. On regaining focus the expanded folders and the standalone list are refetched (data only).
+  const expandedProjectsRef = React.useRef(expandedProjects);
+  expandedProjectsRef.current = expandedProjects;
+  useEffect(() => {
+    if (!isAuthenticated) return undefined;
+    let timer = null;
+    const refetchExpanded = () => {
+      Object.keys(expandedProjectsRef.current).filter(id => expandedProjectsRef.current[id]).forEach(fetchProjectDiagrams);
+      axios.get('/api/diagrams')
+        .then(res => setStandaloneList(withActiveLock(res.data)))
+        .catch(() => console.warn("Failed to fetch standalone diagrams"));
+    };
+    // focus and visibilitychange usually fire together; one pending timer coalesces them
+    const schedule = () => {
+      if (timer) return;
+      timer = setTimeout(() => { timer = null; refetchExpanded(); }, 150);
+    };
+    const onVisibility = () => { if (document.visibilityState === 'visible') schedule(); };
+    window.addEventListener('focus', schedule);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('focus', schedule);
+      document.removeEventListener('visibilitychange', onVisibility);
+      if (timer) clearTimeout(timer);
+    };
+  }, [isAuthenticated, fetchProjectDiagrams, withActiveLock]);
+
   const toggleProjectExpand = async (projectId) => {
     const isExpanded = !!expandedProjects[projectId];
     setExpandedProjects(prev => ({ ...prev, [projectId]: !isExpanded }));
 
     if (!isExpanded && !projectDiagrams[projectId]) {
-      try {
-        const res = await axios.get(`/api/diagrams?project_id=${projectId}`);
-        setProjectDiagrams(prev => ({ ...prev, [projectId]: res.data }));
-      } catch {
-        console.warn("Failed to fetch project diagrams");
-      }
+      await fetchProjectDiagrams(projectId);
     }
   };
 
@@ -1305,7 +1396,7 @@ export default function Sidebar({
                   {activeDiagram && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px' }}>
                       <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
-                        {isLockedByOther ? 'Locked by another user' : hasLock ? 'Checked out (editing)' : 'Available (read-only)'}
+                        {isLockedByOther ? (panelLock.kind === 'my_other_tab' ? 'Open in another tab of yours' : 'Locked by another user') : hasLock ? 'Checked out (editing)' : 'Available (read-only)'}
                       </span>
                       {hasLock && (
                         <button
@@ -1828,7 +1919,7 @@ export default function Sidebar({
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
                     {isLockedByOther ? (
                       <span style={{ fontSize: 'var(--fs-xs)', padding: '2px 8px', borderRadius: '10px', backgroundColor: 'var(--color-warning-bg)', color: 'var(--color-warning-text)', border: '1px solid var(--color-warning-border)', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                        <LockIcon size={11} /> Locked by {lockInfo?.username}
+                        <LockIcon size={11} /> {panelLock.kind === 'my_other_tab' ? 'Open in another tab of yours' : `Locked by ${lockInfo?.username || 'another user'}`}
                       </span>
                     ) : hasLock ? (
                       <span style={{ fontSize: 'var(--fs-xs)', padding: '2px 8px', borderRadius: '10px', backgroundColor: '#ECFDF5', color: '#047857', border: '1px solid #A7F3D0', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
@@ -1842,7 +1933,7 @@ export default function Sidebar({
                   </div>
                   <div style={{ marginTop: '6px' }}>
                     {isLockedByOther ? (
-                      <p style={{ margin: 0, fontSize: 'var(--fs-xs)', color: 'var(--color-warning-text)' }}>Drawing is read-only while another user has it checked out.</p>
+                      <p style={{ margin: 0, fontSize: 'var(--fs-xs)', color: 'var(--color-warning-text)' }}>{panelLock.kind === 'my_other_tab' ? 'Drawing is read-only here while another tab of yours has it checked out.' : 'Drawing is read-only while another user has it checked out.'}</p>
                     ) : hasLock ? (
                       <button onClick={onCheckin} className="btn-secondary" style={{ width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                         <UnlockIcon size={14} /> Release edit lock
@@ -1919,7 +2010,7 @@ export default function Sidebar({
                                     isHighlighted={isHighlighted}
                                     onClick={() => setHighlightedDiagramId(d.id)}
                                     onOpen={() => handleLoadCloudDiagram(d.id, p)}
-                                    onToggleLock={() => (isActive ? handleToggleLock(d) : handleLoadCloudDiagram(d.id, p))}
+                                    onToggleLock={() => handleToggleLock(d)}
                                     onDelete={(e) => handleDeleteDiagram(e, d.id, d.title)}
                                     currentUser={currentUser}
                                   />
@@ -1949,7 +2040,7 @@ export default function Sidebar({
                             isHighlighted={isHighlighted}
                             onClick={() => setHighlightedDiagramId(d.id)}
                             onOpen={() => handleLoadCloudDiagram(d.id, null)}
-                            onToggleLock={() => (isActive ? handleToggleLock(d) : handleLoadCloudDiagram(d.id, null))}
+                            onToggleLock={() => handleToggleLock(d)}
                             onDelete={(e) => handleDeleteDiagram(e, d.id, d.title)}
                             currentUser={currentUser}
                           />
