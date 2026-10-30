@@ -1,24 +1,35 @@
 # WalFlow Frontend Context
 
-Applies to work in `frontend/`. The project-wide rules are in the root [AGENTS.md](../AGENTS.md). Before any visual change, also read the `ui-ux-pro-max` skill ([../.claude/skills/ui-ux-pro-max/SKILL.md](../.claude/skills/ui-ux-pro-max/SKILL.md)); where the two differ, this file wins for WalFlow.
+Applies to work in `frontend/`. The project-wide rules are in the root [AGENTS.md](../AGENTS.md).
 
-## Design & Styling Philosophy
+## Design & Layout Sources
 
-The WalFlow user interface follows a modern, clean, and engineering-focused design system.
+Read these before any visual or layout change. Where they differ, the higher one wins:
 
-### Color Palette & Tokens
-* **Primary Accent (Action)**: `#FA8507` (WälFlow Orange) / Hover `#E07600`. Dedicated to primary calls-to-action (e.g. `Run Simulation`).
-* **Brand Dark (Active State)**: `#395253` / Hover `#253637`. Used for active tab selections, key dark brand headers, and active state highlights.
-* **Surface Light**: `#F4F7F6` / `#FFFFFF`. Backgrounds for secondary buttons, panels, card backgrounds, and inputs.
-* **Borders**: `#D8E2E1` (Standard subtle 1px border), `#EBF0EF` (Divider lines).
-* **Typography & Text**: `#1C2B2C` (Primary headers and text), `#587071` (Secondary/muted labels and subtexts).
-* **Destructive Actions**: Soft light red fill (`#FEF2F2`), border (`#FEE2E2`), and red text (`#EF4444`) for destructive triggers (e.g. `Clear Canvas`, `Log Out`).
+1. **[design-system/walflow/MASTER.md](../design-system/walflow/MASTER.md)**: how WalFlow looks. Colour, spacing,
+   radius, shadow, type, shell size, icon and layer tokens; button, form, menu, modal and shell-bar specs;
+   breakpoints. It is the single source of truth for token values; `src/index.css` implements it with the same
+   names and values.
+2. **`walflow-ui-layout` skill** ([../.claude/skills/walflow-ui-layout/SKILL.md](../.claude/skills/walflow-ui-layout/SKILL.md)):
+   where things go. The placement rule, the regions and their rules, the command list and menus, dialogs vs info
+   bars vs toasts, responsive behaviour, checklist and verification.
+3. **`ui-ux-pro-max` skill** ([../.claude/skills/ui-ux-pro-max/SKILL.md](../.claude/skills/ui-ux-pro-max/SKILL.md)):
+   generic desktop UI/UX rules and searchable design data.
 
-### Component Guidelines
-1. **Top Navbar**: Houses global layout controls, primary simulation action (`Run Simulation`), canvas management (`Export`, `Import`, `Clear Canvas`), user/auth status, and modal triggers (`Cloud Projects`, `Admin Hub`).
-2. **Sidebar**: Focused strictly on component drag-and-drop cards, scenario templates, global fluid/solver settings, and diagnostics statistics.
-3. **Buttons**:
-   - **Primary CTA**: WälFlow Orange, white text, subtle orange shadow.
-   - **Secondary Actions**: Soft light surface (`#F4F7F6`), `#D8E2E1` border, `#1C2B2C` text. Hover transitions to `#EBF0EF`.
-   - **Active Selection**: Dark brand teal (`#395253`), white text.
-   - **Destructive Ghost**: Soft red text (`#EF4444`) with subtle red hover fill (`#FEF2F2`).
+## Essentials
+
+* **App shell:** menu bar (File, Edit, View, Simulation, Tools, Help; drawing name, save and lock state; account),
+  command bar (Undo, Redo, Run Simulation, case), activity rail with one side pane per job (Components, Examples,
+  Drawings, Settings), canvas, full-height inspector, results panel under the canvas, status bar. FINDINGS.md
+  phase 8 moves the app from the old navbar-and-sidebar layout to this shell.
+* **Commands** are defined once in the command list and shown in menus, the command bar, context menus and
+  shortcuts. Never wire a handler straight into one surface.
+* **Buttons:** one primary (WälFlow orange) action per view, Run Simulation in the shell; secondary for neutral
+  actions; dark teal for the active selection; danger ghost for destructive actions. Specs in MASTER.md.
+* **Styling:** tokens and classes from `src/index.css`. No new hex colours, raw px sizes or z-index numbers in
+  components; inline styles only for values computed at run time.
+* **Icons:** Phosphor through `components/symbols/IconLibrary.jsx`; icon-only buttons have an accessible name and a
+  tooltip.
+* **Supported windows:** full editing from 1024 px wide, overlays down to 768 px.
+* **Docs stay true:** a change that adds or alters a region, menu item, rule, token or size updates the
+  `walflow-ui-layout` skill or MASTER.md in the same change. A docs sync test in the gate (added in phase 8) checks tokens and menus.

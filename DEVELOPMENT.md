@@ -61,6 +61,10 @@ Adding a component touches the physics engine (backend) and the canvas (frontend
 
 The test strategy and the release gate are in the `walflow-qa` skill: [.claude/skills/walflow-qa/SKILL.md](.claude/skills/walflow-qa/SKILL.md).
 
+## 🎨 User Interface
+
+How the app looks (tokens, components, shell sizes, breakpoints) is in [design-system/walflow/MASTER.md](design-system/walflow/MASTER.md). Where a control goes (menu bar, command bar, side panes, inspector, results panel, status bar, dialogs) is in the `walflow-ui-layout` skill: [.claude/skills/walflow-ui-layout/SKILL.md](.claude/skills/walflow-ui-layout/SKILL.md). [frontend/AGENTS.md](frontend/AGENTS.md) gives the order of authority.
+
 ---
 
 ## 🏗️ Architecture & Solver Model
