@@ -27,6 +27,8 @@ Read these before any visual or layout change. Where they differ, the higher one
   actions; dark teal for the active selection; danger ghost for destructive actions. Specs in MASTER.md.
 * **Styling:** tokens and classes from `src/index.css`. No new hex colours, raw px sizes or z-index numbers in
   components; inline styles only for values computed at run time.
+* **Canvas values:** nodes show values through `NodeReadout` and states through `StatusBadge`, one style and one
+  colour for every number; colour only on a state badge (MASTER.md "Canvas values", enforced by a style guard test).
 * **Icons:** Phosphor through `components/symbols/IconLibrary.jsx`; icon-only buttons have an accessible name and a
   tooltip.
 * **Supported windows:** full editing from 1024 px wide, overlays down to 768 px.

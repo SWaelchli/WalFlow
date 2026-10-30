@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import BaseNode from './BaseNode';
+import NodeReadout from './NodeReadout';
 import BoundaryPorts from './BoundaryPorts';
 import { useUnits } from '../context/UnitContext';
 import { boundaryLayout, boundaryPortCount, boundaryFooterOffset } from '../utils/boundaryLayout';
@@ -36,17 +37,13 @@ export default function PressureBoundaryNode({ id, data, selected }) {
       height={60}
       footerOffset={boundaryFooterOffset(layout, rotation, sensing)}
       footer={
-        <>
-          <div style={{ fontSize: '9px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>
-            {data.label || 'PRESSURE BOUNDARY'}
-          </div>
-          <div style={{ fontSize: '10px', fontWeight: 'bold' }}>
-            {livePressureFormatted} {labels.pressureAbs}
-          </div>
-          <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)' }}>
-            {liveTempFormatted} {labels.temperature}
-          </div>
-        </>
+        <NodeReadout
+          name={data.label || 'PRESSURE BOUNDARY'}
+          rows={[
+            { value: livePressureFormatted, unit: labels.pressureAbs },
+            { value: liveTempFormatted, unit: labels.temperature },
+          ]}
+        />
       }
     >
       <svg width="60" height="60" viewBox="0 0 60 60">
@@ -60,7 +57,7 @@ export default function PressureBoundaryNode({ id, data, selected }) {
         {/* Inner solid circle (Constant pressure indicator) */}
         <circle
           cx="30" cy="30" r="7"
-          fill="#395253"
+          fill="var(--color-brand-dark)"
         />
       </svg>
 

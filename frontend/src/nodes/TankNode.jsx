@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import BaseNode from './BaseNode';
+import NodeReadout from './NodeReadout';
 import BoundaryPorts from './BoundaryPorts';
 import { boundaryLayout, boundaryPortCount, boundaryFooterOffset } from '../utils/boundaryLayout';
 import { firstPiped } from '../utils/nodeReadouts';
@@ -29,11 +30,13 @@ export default function TankNode({ id, data, selected }) {
       height={100}
       footerOffset={boundaryFooterOffset(layout, rotation, sensing)}
       footer={
-        <>
-          <div style={{ fontSize: '9px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>{data.label || 'TANK'}</div>
-          <div style={{ fontSize: '10px', fontWeight: 'bold', color: 'var(--color-brand-dark)' }}>{Number(toDisplayValue('level_m', level)).toFixed(2)} {labels.length}</div>
-          <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)' }}>{formatTemperatureK(tempK)} {labels.temperature}</div>
-        </>
+        <NodeReadout
+          name={data.label || 'TANK'}
+          rows={[
+            { value: Number(toDisplayValue('level_m', level)).toFixed(2), unit: labels.length },
+            { value: formatTemperatureK(tempK), unit: labels.temperature },
+          ]}
+        />
       }
     >
       <svg width="60" height="100" viewBox="0 0 60 100">
@@ -43,7 +46,7 @@ export default function TankNode({ id, data, selected }) {
           </clipPath>
         </defs>
         <path d={TANK_OUTLINE} fill="var(--color-surface)" />
-        <rect x="10" y={95 - fillH} width="40" height={fillH} fill="#3b82f6" fillOpacity="0.2" clipPath={`url(#tank-clip-${id})`} />
+        <rect x="10" y={95 - fillH} width="40" height={fillH} fill="var(--color-info)" fillOpacity="0.2" clipPath={`url(#tank-clip-${id})`} />
         <path d={TANK_OUTLINE} fill="none" stroke="var(--color-brand-dark)" strokeWidth="2.5" />
       </svg>
 

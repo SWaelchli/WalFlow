@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { getRotatedPosition } from '../components/canvas/NodeRotationHandle';
 import { SensingPin } from '../components/canvas/SensingPin';
 import BaseNode from './BaseNode';
+import NodeReadout from './NodeReadout';
 import { useUnits } from '../context/UnitContext';
 
 /**
@@ -27,17 +28,19 @@ export default function RemoteControlValveNode({ id, data, selected }) {
       width={60}
       height={60}
       footer={
-        <>
-          <div style={{ fontSize: '9px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>{data.label || 'RCV'}</div>
-          <div style={{ fontSize: '10px', fontWeight: 'bold', color: 'var(--color-brand-dark)' }}>{opening.toFixed(1)} %</div>
-          <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)' }}>{flowFormatted} {labels.flow}</div>
-          <div style={{ fontSize: '8px', color: '#854d0e', fontWeight: 'bold' }}>SET: {setPressureFormatted} {labels.pressureAbs}</div>
-        </>
+        <NodeReadout
+          name={data.label || 'RCV'}
+          rows={[
+            { value: opening.toFixed(1), unit: '%' },
+            { value: flowFormatted, unit: labels.flow },
+            { label: 'SET:', value: setPressureFormatted, unit: labels.pressureAbs },
+          ]}
+        />
       }
     >
       <svg width="60" height="60" viewBox="0 0 60 60">
         <line x1="30" y1="35" x2="30" y2="15" stroke="var(--color-brand-dark)" strokeWidth="1.5" />
-        <path d="M 20 15 Q 30 5 40 15 Z" fill="#fef08a" stroke="#854d0e" strokeWidth="1.5" />
+        <path d="M 20 15 Q 30 5 40 15 Z" fill="var(--color-warning-bg)" stroke="var(--color-warning-text-strong)" strokeWidth="1.5" />
         <path d="M 10 20 L 30 35 L 10 50 Z" fill="var(--color-surface)" stroke="var(--color-brand-dark)" strokeWidth="2.5" />
         <path d="M 50 20 L 30 35 L 50 50 Z" fill="var(--color-surface)" stroke="var(--color-brand-dark)" strokeWidth="2.5" />
       </svg>
@@ -56,7 +59,7 @@ export default function RemoteControlValveNode({ id, data, selected }) {
           width: '8px', 
           height: '8px',
           border: '1.5px solid var(--color-primary-hover)',
-          boxShadow: '0 1px 2px rgba(0,0,0,0.2)'
+          boxShadow: 'var(--shadow-sm)'
         }} 
       />
 

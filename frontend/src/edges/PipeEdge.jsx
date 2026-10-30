@@ -160,7 +160,7 @@ export default function PipeEdge({
           textAnchor="middle"
           dominantBaseline="central"
           style={{
-            fontSize: 'var(--fs-sm)', fontWeight: 700, fill: 'var(--color-text-primary)',
+            fontSize: 'var(--fs-canvas-value)', fontWeight: 600, fill: 'var(--color-brand-dark)', fontVariantNumeric: 'tabular-nums',
             stroke: '#fff', strokeWidth: 4, paintOrder: 'stroke', strokeLinejoin: 'round', pointerEvents: 'none'
           }}
         >

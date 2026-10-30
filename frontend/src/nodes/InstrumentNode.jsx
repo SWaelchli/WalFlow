@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Handle, Position, useUpdateNodeInternals } from 'reactflow';
 import { useUnits } from '../context/UnitContext';
 import { getRotatedPosition, RotateButton } from '../components/canvas/NodeRotationHandle';
+import NodeReadout from './NodeReadout';
 import { instrumentLetters, formatReading } from '../utils/instrumentReadings';
 
 const D = 42; // bubble height, and its width for a short tag; a longer tag only makes it wider
@@ -29,14 +30,10 @@ const MARK_OFFSET = {
   [Position.Bottom]: { bottom: '-16px', left: '6px' },
 };
 
-const markStyle = { position: 'absolute', fontSize: 'var(--fs-xs)', fontWeight: 800, color: 'var(--color-text-secondary)' };
+const markStyle = { position: 'absolute' };
 
-const BADGE = {
-  HH: { bg: '#FEF2F2', border: 'var(--color-danger)', text: 'var(--color-danger-text)' },
-  LL: { bg: '#FEF2F2', border: 'var(--color-danger)', text: 'var(--color-danger-text)' },
-  H: { bg: 'var(--color-warning-bg)', border: 'var(--color-primary)', text: 'var(--color-primary-text)' },
-  L: { bg: 'var(--color-warning-bg)', border: 'var(--color-primary)', text: 'var(--color-primary-text)' },
-};
+// Alarm state to badge kind: high-high and low-low are danger, high and low are warning
+const ALARM_KIND = { HH: 'danger', LL: 'danger', H: 'warning', L: 'warning' };
 
 /** Loop number shown in the lower half: the tag without its leading letters ("PIT 12" -> "12"). */
 const loopNumber = (tag, letters) => {
@@ -58,7 +55,6 @@ export default function InstrumentNode({ id, data, selected }) {
   const isDp = variable === 'dP';
   const state = data.reading?.state || null;
   const { text, unit } = formatReading(variable, data.reading?.value ?? null, data.pressure_basis, isImperial, flowUnit);
-  const badge = BADGE[state] || { bg: 'var(--color-surface)', border: 'var(--color-border)', text: 'var(--color-brand-dark)' };
   const tag = data.label || letters;
 
   const inPos = getRotatedPosition(Position.Left, rotation);
@@ -89,8 +85,8 @@ export default function InstrumentNode({ id, data, selected }) {
           lineHeight: 1.1, whiteSpace: 'nowrap', transition: 'box-shadow 0.15s ease',
         }}
       >
-        <span style={{ fontSize: 'var(--fs-xs)', fontWeight: 800, color: 'var(--color-brand-dark)' }}>{letters}</span>
-        <span style={{ fontSize: 'var(--fs-xs)', fontWeight: 600, color: 'var(--color-text-primary)' }}>
+        <span className="instrument-letters">{letters}</span>
+        <span className="instrument-loop">
           {loopNumber(tag, letters)}
         </span>
 
@@ -98,8 +94,8 @@ export default function InstrumentNode({ id, data, selected }) {
         {isDp && <Handle type="target" position={refPos} id="signal-in-ref" style={{ ...handleStyle, ...PIN_OFFSET[refPos] }} />}
         {isDp && (
           <>
-            <span aria-hidden style={{ ...markStyle, ...MARK_OFFSET[inPos] }}>+</span>
-            <span aria-hidden style={{ ...markStyle, ...MARK_OFFSET[refPos] }}>−</span>
+            <span aria-hidden className="instrument-mark" style={{ ...markStyle, ...MARK_OFFSET[inPos] }}>+</span>
+            <span aria-hidden className="instrument-mark" style={{ ...markStyle, ...MARK_OFFSET[refPos] }}>−</span>
           </>
         )}
       </div>
@@ -109,14 +105,12 @@ export default function InstrumentNode({ id, data, selected }) {
         ...(badgeRight
           ? { left: 'calc(100% + 8px)', top: '50%', transform: 'translateY(-50%)' }
           : { top: 'calc(100% + 4px)', left: '50%', transform: 'translateX(-50%)' }),
-        display: 'flex', alignItems: 'baseline', gap: '4px', whiteSpace: 'nowrap',
-        padding: '1px 6px', borderRadius: 'var(--radius-sm)',
-        background: badge.bg, border: `1px solid ${badge.border}`, color: badge.text,
-        fontSize: 'var(--fs-xs)', fontWeight: 700, fontFamily: 'var(--font-mono)',
+        whiteSpace: 'nowrap',
       }}>
-        {state && <span>{state}</span>}
-        <span>{text}</span>
-        <span style={{ fontWeight: 500 }}>{unit}</span>
+        <NodeReadout
+          rows={[{ value: text, unit }]}
+          badges={state ? [{ kind: ALARM_KIND[state] || 'neutral', label: state }] : []}
+        />
       </div>
     </div>
   );

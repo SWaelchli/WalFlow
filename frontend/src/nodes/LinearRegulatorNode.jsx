@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { getRotatedPosition } from '../components/canvas/NodeRotationHandle';
 import { SensingPin } from '../components/canvas/SensingPin';
 import BaseNode from './BaseNode';
+import NodeReadout from './NodeReadout';
 import { useUnits } from '../context/UnitContext';
 
 /**
@@ -24,11 +25,13 @@ export default function LinearRegulatorNode({ id, data, selected }) {
       width={60}
       height={60}
       footer={
-        <>
-          <div style={{ fontSize: '9px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>{data.label || 'REGULATOR'}</div>
-          <div style={{ fontSize: '10px', fontWeight: 'bold', color: 'var(--color-brand-dark)' }}>Set: {formatPressurePa(setP, 1)} {labels.pressureAbs}</div>
-          <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)' }}>Pos: {opening.toFixed(1)} %</div>
-        </>
+        <NodeReadout
+          name={data.label || 'REGULATOR'}
+          rows={[
+            { label: 'Set:', value: formatPressurePa(setP, 1), unit: labels.pressureAbs },
+            { label: 'Pos:', value: opening.toFixed(1), unit: '%' },
+          ]}
+        />
       }
     >
       <svg width="60" height="60" viewBox="0 0 60 60">

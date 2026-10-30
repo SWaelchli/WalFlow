@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { getRotatedPosition } from '../components/canvas/NodeRotationHandle';
 import { SensingPin } from '../components/canvas/SensingPin';
 import BaseNode from './BaseNode';
+import NodeReadout from './NodeReadout';
 import { useUnits } from '../context/UnitContext';
 
 /**
@@ -40,13 +41,13 @@ export default function HeatExchangerNode({ id, data, selected }) {
       width={60}
       height={60}
       footer={
-        <>
-          <div style={{ fontSize: '9px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>{data.label || 'HEAT EXCH'}</div>
-          <div style={{ fontSize: '10px', fontWeight: 'bold', color: dutyVal > 0.01 ? '#ef4444' : dutyVal < -0.01 ? '#3b82f6' : '#64748b' }}>
-            {dutyFormatted} {labels.heatDuty}
-          </div>
-          <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)' }}>ΔT: {deltaT} K</div>
-        </>
+        <NodeReadout
+          name={data.label || 'HEAT EXCH'}
+          rows={[
+            { value: dutyFormatted, unit: labels.heatDuty },
+            { label: 'ΔT:', value: deltaT, unit: 'K' },
+          ]}
+        />
       }
     >
       <svg width="60" height="60" viewBox="0 0 60 60">
