@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
   DRAFT_PREFIX, LEGACY_DRAFT_KEY, DRAFT_MAX_AGE_MS, ALIVE_WINDOW_MS,
   getTabId, resetTabIdCache, ownDraftKey, writeDraft, readDraft, removeDraft,
-  startHeartbeat, pruneDrafts, findOrphanDraft, adoptDraft, discardOrphan,
+  startHeartbeat, pruneDrafts, findOrphanDraft, adoptDraft, discardOrphan, isMyTabLock,
 } from './draftStorage';
 
 const draft = (iso) => JSON.stringify({ nodes: [], timestamp: iso });
@@ -14,11 +14,18 @@ beforeEach(() => {
 });
 
 describe('per-tab drafts', () => {
-  it('keeps the tab id across reloads (sessionStorage) and keys the draft by it', () => {
+  it('keeps the tab id across reloads only via pagehide, so a duplicated tab gets a new id', () => {
     const id = getTabId();
+    expect(sessionStorage.getItem('walflow_tab_id')).toBeNull();   // a duplicated tab copies sessionStorage: it must find nothing
     resetTabIdCache();
-    expect(getTabId()).toBe(id);
-    expect(ownDraftKey()).toBe(DRAFT_PREFIX + id);
+    expect(getTabId()).not.toBe(id);
+
+    const kept = getTabId();
+    window.dispatchEvent(new Event('pagehide'));
+    expect(sessionStorage.getItem('walflow_tab_id')).toBe(kept);
+    resetTabIdCache();                                              // reload
+    expect(getTabId()).toBe(kept);
+    expect(ownDraftKey()).toBe(DRAFT_PREFIX + kept);
   });
 
   it('two tabs write to different keys and do not overwrite each other', () => {
@@ -43,6 +50,20 @@ describe('per-tab drafts', () => {
     } finally {
       Storage.prototype.setItem = original;
     }
+  });
+});
+
+describe('isMyTabLock', () => {
+  it.each([
+    ['no lock', null, 'u1', false],
+    ['no user', { user_id: 'u1' }, null, false],
+    ['another user', { user_id: 'u2', session_id: '__tab__' }, 'u1', false],
+    ['same user, no session on the lock', { user_id: 'u1' }, 'u1', true],
+    ['same user, this tab', { user_id: 'u1', session_id: '__tab__' }, 'u1', true],
+    ['same user, another tab', { user_id: 'u1', session_id: 'some-other-tab' }, 'u1', false],
+  ])('%s', (_name, lock, userId, expected) => {
+    const held = lock && lock.session_id === '__tab__' ? { ...lock, session_id: getTabId() } : lock;
+    expect(isMyTabLock(held, userId)).toBe(expected);
   });
 });
 

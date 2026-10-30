@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { notify, confirmDialog } from '../../utils/dialogs';
 import { summarizeStats } from '../../utils/runStatus';
 import axios from 'axios';
+import { getTabId, isMyTabLock } from '../../utils/draftStorage';
 import { EquipmentSymbol } from '../symbols/SymbolLibrary';
 import { InfoIcon, WarningIcon, CheckIcon, CrossIcon, FolderIcon, SearchIcon, TrashIcon, LockIcon, UnlockIcon, FolderOpenIcon, CaretDownIcon, CaretRightIcon, GearIcon, FileIcon, NoteEditIcon, SaveIcon, ImportIcon, ExportIcon, PlusIcon, DotIcon } from '../symbols/IconLibrary';
 import { FLUID_CATEGORIES, FLUID_LIBRARY } from '../../constants/fluid_library';
@@ -572,6 +573,8 @@ function DiagramRow({ diagram, isActive, isHighlighted, onClick, onOpen, onToggl
   const lock = diagram.lock_info;
   const isLocked = !!lock;
   const isLockedByMe = lock && currentUser && lock.user_id === currentUser.id;
+  // This user's lock held by another tab: status only on the open drawing
+  const heldByOtherTab = !!(isLockedByMe && lock.session_id && lock.session_id !== getTabId());
 
   return (
     <div
@@ -651,14 +654,14 @@ function DiagramRow({ diagram, isActive, isHighlighted, onClick, onOpen, onToggl
             if (isLocked && !isLockedByMe) return;
             onToggleLock();
           }}
-          disabled={isLocked && !isLockedByMe}
-          title={isLocked ? (isLockedByMe ? 'Release edit lock (check in)' : `Locked by ${lock.username}`) : 'Check out to edit'}
-          aria-label={isLocked ? (isLockedByMe ? 'Release edit lock' : `Locked by ${lock.username}`) : 'Check out to edit'}
+          disabled={(isLocked && !isLockedByMe) || (isActive && heldByOtherTab)}
+          title={isLocked ? (isLockedByMe ? (heldByOtherTab ? 'Checked out in another tab' : isActive ? 'Release edit lock (check in)' : 'Open drawing') : `Locked by ${lock.username}`) : (isActive ? 'Check out to edit' : 'Open drawing')}
+          aria-label={isLocked ? (isLockedByMe ? (heldByOtherTab ? 'Checked out in another tab' : isActive ? 'Release edit lock' : 'Open drawing') : `Locked by ${lock.username}`) : (isActive ? 'Check out to edit' : 'Open drawing')}
           style={{
             background: 'transparent',
             border: 'none',
             padding: '2px',
-            cursor: (isLocked && !isLockedByMe) ? 'not-allowed' : 'pointer',
+            cursor: ((isLocked && !isLockedByMe) || (isActive && heldByOtherTab)) ? 'not-allowed' : 'pointer',
             display: 'inline-flex',
             alignItems: 'center',
             marginLeft: '4px',
@@ -878,7 +881,7 @@ export default function Sidebar({
       const res = await axios.put(`/api/diagrams/${activeDiagram.id}`, {
         title: drawingTitle.trim(),
         description: drawingDesc.trim()
-      });
+      }, { headers: { 'X-Walflow-Session': getTabId() } });
       if (setActiveDiagram) {
         setActiveDiagram(prev => ({
           ...prev,
@@ -949,16 +952,19 @@ export default function Sidebar({
     updateDiagramLockState(activeDiagram.id, lockInfo);
   }, [activeDiagram, lockInfo, updateDiagramLockState]);
 
+  // Only the open drawing can be checked out or in from the explorer; other rows just show their status
   const handleToggleLock = useCallback(async (diagram) => {
     if (!isAuthenticated) return;
+    if (activeDiagram?.id !== diagram.id) return;
+    const sessionConfig = { headers: { 'X-Walflow-Session': getTabId() } };
     const lock = diagram.lock_info;
     const isLocked = !!lock;
-    const isLockedByMe = lock && currentUser && lock.user_id === currentUser.id;
+    const isLockedByMe = isMyTabLock(lock, currentUser ? currentUser.id : null);
 
     if (isLocked) {
-      if (!isLockedByMe) return; // Safeguard: locked by someone else
+      if (!isLockedByMe) return; // Safeguard: locked by someone else or in another tab
       try {
-        await axios.post(`/api/diagrams/${diagram.id}/checkin`);
+        await axios.post(`/api/diagrams/${diagram.id}/checkin`, null, sessionConfig);
         updateDiagramLockState(diagram.id, null);
         if (activeDiagram?.id === diagram.id && onCheckin) {
           onCheckin();
@@ -968,7 +974,7 @@ export default function Sidebar({
       }
     } else {
       try {
-        const res = await axios.post(`/api/diagrams/${diagram.id}/checkout`);
+        const res = await axios.post(`/api/diagrams/${diagram.id}/checkout`, null, sessionConfig);
         if (res.data.status === 'success') {
           const newLock = res.data.lock;
           updateDiagramLockState(diagram.id, newLock);
@@ -1913,7 +1919,7 @@ export default function Sidebar({
                                     isHighlighted={isHighlighted}
                                     onClick={() => setHighlightedDiagramId(d.id)}
                                     onOpen={() => handleLoadCloudDiagram(d.id, p)}
-                                    onToggleLock={() => handleToggleLock(d)}
+                                    onToggleLock={() => (isActive ? handleToggleLock(d) : handleLoadCloudDiagram(d.id, p))}
                                     onDelete={(e) => handleDeleteDiagram(e, d.id, d.title)}
                                     currentUser={currentUser}
                                   />
@@ -1943,7 +1949,7 @@ export default function Sidebar({
                             isHighlighted={isHighlighted}
                             onClick={() => setHighlightedDiagramId(d.id)}
                             onOpen={() => handleLoadCloudDiagram(d.id, null)}
-                            onToggleLock={() => handleToggleLock(d)}
+                            onToggleLock={() => (isActive ? handleToggleLock(d) : handleLoadCloudDiagram(d.id, null))}
                             onDelete={(e) => handleDeleteDiagram(e, d.id, d.title)}
                             currentUser={currentUser}
                           />

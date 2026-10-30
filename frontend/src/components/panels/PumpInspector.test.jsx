@@ -26,7 +26,7 @@ const renderInspector = (node, unitSystem = UNIT_SYSTEMS.METRIC) => {
   return onUpdate;
 };
 
-describe('D1: centrifugal pump rated in head', () => {
+describe('centrifugal pump rated in head', () => {
   it('warns when an older pump only has a rated pressure', () => {
     renderInspector(pumpNode({ pressure_rated_bar: 6 }));
     expect(screen.getByRole('alert').textContent).toMatch(/Rated head missing.*6 bar/);
@@ -41,7 +41,7 @@ describe('D1: centrifugal pump rated in head', () => {
   });
 });
 
-describe('D4 / D2: efficiency and stopped pump notes', () => {
+describe('efficiency and stopped pump notes', () => {
   it('shows the efficiency with default 75 % and explains it excludes the motor', () => {
     renderInspector(pumpNode({ head_rated_m: 50 }));
     expect(screen.getByDisplayValue('75')).toBeTruthy();
@@ -54,7 +54,7 @@ describe('D4 / D2: efficiency and stopped pump notes', () => {
   });
 });
 
-describe('D3: PD pump drive and warnings', () => {
+describe('PD pump drive and warnings', () => {
   it('offers the drive type, defaulting to fixed speed', () => {
     renderInspector(pumpNode({ flow_rated_lmin: 100, motor_power_kw: 5, efficiency_pct: 85 }, 'volumetric_pump'));
     expect(screen.getByDisplayValue('Fixed speed (motor overload flagged)')).toBeTruthy();

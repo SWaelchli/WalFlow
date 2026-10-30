@@ -5,7 +5,7 @@ import { notify, confirmDialog } from '../utils/dialogs';
 import axios from 'axios';
 import { serializeDiagram, checkFormatVersion } from '../utils/diagramFile';
 import { useAuth } from './useAuth';
-import { writeDraft, readDraft, removeDraft, startHeartbeat, pruneDrafts, findOrphanDraft, adoptDraft, discardOrphan } from '../utils/draftStorage';
+import { writeDraft, readDraft, removeDraft, startHeartbeat, pruneDrafts, findOrphanDraft, adoptDraft, discardOrphan, getTabId, isMyTabLock } from '../utils/draftStorage';
 
 // One id per browser tab, sent with cloud saves so the server's "diagram updated" notice skips the saving tab
 const CLIENT_ID = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `tab-${Math.random().toString(36).slice(2)}`;
@@ -30,6 +30,27 @@ const loadedContentKey = (data) => {
   });
   return contentKey(base);
 };
+
+// The server ties each edit lock to a browser tab: it needs the tab id on checkout, check-in and saves
+const sessionHeaders = () => ({ 'X-Walflow-Session': getTabId() });
+
+// Why the server refused to keep a lock: 'moved' (the lock went to another drawing of this user), 'other_user', 'other_tab'
+const lockRefusalReason = (err) => (err && err.response && err.response.headers && err.response.headers['x-lock-reason']) || null;
+
+// A lock refusal (another user, another tab, not the holder) is an expected answer, not an error
+const isLockRefusal = (err) => !!(err && err.response && (err.response.status === 409 || err.response.status === 403));
+
+// Check-in that never throws: the lock may already be gone
+const sendCheckin = (diagramId) => Promise.resolve()
+  .then(() => axios.post(`/api/diagrams/${diagramId}/checkin`, null, { headers: sessionHeaders() }))
+  .then(() => true, () => false);
+
+// A lock held by this tab is released after this long without activity in the tab
+export const IDLE_RELEASE_MS = 30 * 60 * 1000;
+const IDLE_CHECK_MS = 30 * 1000;
+// The server lease is 180 s; it is extended while this tab holds the lock
+const HEARTBEAT_MS = 60 * 1000;
+const ACTIVITY_EVENTS = ['pointerdown', 'keydown', 'wheel', 'touchstart'];
 
 const isStaleConflict = (err) => !!(err.response && err.response.status === 409 &&
   err.response.headers && err.response.headers['x-walflow-conflict'] === 'stale');
@@ -77,8 +98,20 @@ export function useAutoSaveSession({
 
   // Collaboration Lock States
   const [lockInfo, setLockInfo] = useState(null); // { user_id, username, expires_at }
-  const hasLock = !!(lockInfo && currentUser && lockInfo.user_id === currentUser.id);
-  const isLockedByOther = !!(lockInfo && (!currentUser || lockInfo.user_id !== currentUser.id));
+  // The lock is this tab's only when it is this user's and not tied to another tab
+  const tabId = getTabId();
+  const isMyUser = !!(lockInfo && currentUser && lockInfo.user_id === currentUser.id);
+  const hasLock = isMyUser && isMyTabLock(lockInfo, currentUser.id);
+  const isLockedByOtherTab = isMyUser && !hasLock;
+  const isLockedByOther = !!(lockInfo && !hasLock);
+  const currentUserIdRef = useRef(currentUser ? currentUser.id : null);
+  useEffect(() => { currentUserIdRef.current = currentUser ? currentUser.id : null; }, [currentUser]);
+  // Drawing whose lock this tab holds, as far as this tab knows
+  const heldLockIdRef = useRef(null);
+  const applyLock = useCallback((diagramId, lock) => {
+    heldLockIdRef.current = isMyTabLock(lock, currentUserIdRef.current) ? diagramId : null;
+    setLockInfo(lock || null);
+  }, []);
 
   // Ref to track latest state for beforeunload and debounced saves
   const stateRef = useRef({
@@ -104,6 +137,16 @@ export function useAutoSaveSession({
       reactFlowInstance
     };
   }, [nodes, edges, globalSettings, cases, activeCaseId, activeProject, activeDiagram, reactFlowInstance]);
+
+  // The drawing open in this tab, for async code that must not act on a drawing that was left
+  const activeDiagramRef = useRef(activeDiagram);
+  useEffect(() => { activeDiagramRef.current = activeDiagram; }, [activeDiagram]);
+  // Set while the hook unmounts, so the cleanup of the last drawing does not mistake it for a reopened drawing
+  const unmountingRef = useRef(false);
+  useEffect(() => {
+    unmountingRef.current = false;
+    return () => { unmountingRef.current = true; };
+  }, []);
 
   // Serializer function
   const serializeWorkspaceState = useCallback(() => {
@@ -150,7 +193,21 @@ export function useAutoSaveSession({
   }, []);
   // Drawing whose content was just set from a local draft by reconcileDraft
   const draftLoadedIdRef = useRef(null);
+  // Change of the active drawing that is waiting for its cloud save: { diagram, payload }. Flushed when the
+  // drawing is switched or the hook unmounts.
+  const pendingFlushRef = useRef(null);
+  // The latest cloud save request (settles, never rejects): { id, result: Promise<{ ok, updatedAt }> }, id = its drawing
+  const lastPutRef = useRef(null);
+  // Settles when the save and check-in of the drawing that was left are done (never rejects)
+  const leavingSaveRef = useRef(Promise.resolve());
+  // After a drawing is opened, the first content change is the drawing arriving on the canvas (loading can
+  // normalise it), not an edit. Only valid for a short time.
+  const landingUntilRef = useRef(0);
+  const prevDiagramIdRef = useRef(null);
   useEffect(() => {
+    const prevId = prevDiagramIdRef.current;
+    prevDiagramIdRef.current = activeDiagramId;
+    landingUntilRef.current = 0;
     if (!activeDiagramId) {
       lastSavedKeyRef.current = null;
       return;
@@ -162,20 +219,77 @@ export function useAutoSaveSession({
       lastSavedKeyRef.current = null;
       return;
     }
+    // Only a drawing load (markLoaded was called) lands on the canvas; Save As changes the id without loading
+    if (prevId !== activeDiagramId && expectedLoadKeyRef.current !== null) landingUntilRef.current = Date.now() + 2000;
     // What is on the canvas now is not uploaded to the newly active drawing; a load that is still on its way
     // is recognised by expectedLoadKeyRef when it lands
     lastSavedKeyRef.current = contentKey(serializeWorkspaceState());
   }, [activeDiagramId, serializeWorkspaceState]);
 
+  // Switching drawings (or closing the app) must not drop an edit that is still waiting for its save: it is
+  // sent to the drawing it was made in, with the content it had then
+  useEffect(() => () => {
+    const pending = pendingFlushRef.current;
+    pendingFlushRef.current = null;
+    // The lock of the drawing that was left is given back once its last save has settled
+    const leftId = heldLockIdRef.current;
+    heldLockIdRef.current = null;
+    const unmounting = unmountingRef.current;
+    // A save of this drawing that is already on its way (autosave, manual save) must land before the flush
+    // and the check-in
+    const lastPut = lastPutRef.current;
+    // After a quick switch back to the drawing its lock is wanted again: no late check-in
+    const checkinLeft = () => {
+      if (!leftId) return;
+      const open = activeDiagramRef.current;
+      if (!unmounting && open && open.id === leftId) return;
+      sendCheckin(leftId);
+    };
+    leavingSaveRef.current = (async () => {
+      const put = lastPut ? await lastPut.result : null;
+      if (pending) {
+        const { diagram, payload } = pending;
+        // The flush builds on the version the save in flight produced, if that save was of the same drawing
+        const putUpdatedAt = put && lastPut.id === diagram.id ? put.updatedAt : null;
+        const base = putUpdatedAt || payload.base_updated_at || undefined;
+        try {
+          await axios.put(`/api/diagrams/${diagram.id}`, {
+            title: diagram.title,
+            description: diagram.description || '',
+            diagram_data: JSON.stringify(payload),
+            base_updated_at: base
+          }, { headers: { 'X-Walflow-Client-Id': CLIENT_ID, ...sessionHeaders() } });
+        } catch (err) {
+          // A refused save (changed elsewhere, lock lost) is reported; the edit may be gone with the next drawing
+          if (!(err.response && err.response.status === 409)) console.warn('Could not save the previous drawing:', err);
+          notify(`Your last changes to "${diagram.title}" could not be saved to the cloud.`, 'warning');
+        }
+      }
+      checkinLeft();
+    })();
+  }, [activeDiagramId]);
+
   // Cloud save with the version check; remembers the new server version and content on success
   const putDiagram = useCallback(async (diagram, payload) => {
-    const response = await axios.put(`/api/diagrams/${diagram.id}`, {
+    // This save is newer than any change waiting to be flushed for the same drawing
+    if (pendingFlushRef.current && pendingFlushRef.current.diagram.id === diagram.id) pendingFlushRef.current = null;
+    const request = axios.put(`/api/diagrams/${diagram.id}`, {
       title: diagram.title,
       description: diagram.description || '',
       diagram_data: JSON.stringify(payload),
       base_updated_at: baseUpdatedAtRef.current || undefined
-    }, { headers: { 'X-Walflow-Client-Id': CLIENT_ID } });
-    if (response.data && response.data.updated_at) baseUpdatedAtRef.current = response.data.updated_at;
+    }, { headers: { 'X-Walflow-Client-Id': CLIENT_ID, ...sessionHeaders() } });
+    lastPutRef.current = {
+      id: diagram.id,
+      result: Promise.resolve(request).then(
+        (r) => ({ ok: true, updatedAt: (r.data && r.data.updated_at) || null }),
+        () => ({ ok: false, updatedAt: null })
+      )
+    };
+    const response = await request;
+    // Not for a drawing that was left while the save was out: the open drawing has its own version
+    const open = activeDiagramRef.current;
+    if (response.data && response.data.updated_at && open && open.id === diagram.id) baseUpdatedAtRef.current = response.data.updated_at;
     lastSavedKeyRef.current = contentKey(payload);
     expectedLoadKeyRef.current = null;
     return response;
@@ -216,39 +330,48 @@ export function useAutoSaveSession({
     try {
       const data = await requestLockStatus(diagramId);
       if (data.is_locked) {
-        setLockInfo(data.lock);
+        applyLock(diagramId, data.lock);
         return data.lock;
       } else {
-        setLockInfo(null);
+        applyLock(diagramId, null);
         return null;
       }
     } catch (err) {
       console.error('Failed to fetch diagram lock status:', err);
       return null;
     }
-  }, [isAuthenticated, requestLockStatus]);
+  }, [isAuthenticated, requestLockStatus, applyLock]);
 
   // Acquire the lock of a diagram. silent: no toasts. isCurrent: false when the drawing changed while the
-  // request was out; the lock is then handed back instead of shown.
-  const checkoutDiagramById = useCallback(async (diagramId, { silent = false, isCurrent = () => true } = {}) => {
+  // request was out; the lock is then handed back instead of shown. resume: keep the lock this tab already has
+  // (or take a free drawing) without releasing the user's other locks; a refusal is passed to onRefused(err).
+  const checkoutDiagramById = useCallback(async (diagramId, { silent = false, isCurrent = () => true, onRefused = null, resume = false } = {}) => {
     if (!diagramId || !isAuthenticated) return false;
     try {
-      const response = await axios.post(`/api/diagrams/${diagramId}/checkout`);
+      const url = `/api/diagrams/${diagramId}/checkout${resume ? '?resume=true' : ''}`;
+      const response = await axios.post(url, null, { headers: sessionHeaders() });
       if (!isCurrent()) {
-        axios.post(`/api/diagrams/${diagramId}/checkin`).catch(() => {});
+        sendCheckin(diagramId);
         return false;
       }
       if (response.data && response.data.status === 'success') {
-        setLockInfo(response.data.lock);
+        applyLock(diagramId, response.data.lock);
         return true;
       }
       return false;
     } catch (err) {
       if (silent) {
-        console.warn('Could not check out the diagram automatically:', err);
+        if (isLockRefusal(err)) {
+          // Someone else holds it: show the read-only state
+          if (isCurrent()) {
+            if (onRefused) onRefused(err); else fetchLockStatus(diagramId);
+          }
+        } else {
+          console.warn('Could not check out the diagram automatically:', err);
+        }
         return false;
       }
-      console.error('Failed to checkout diagram:', err);
+      if (!isLockRefusal(err)) console.error('Failed to checkout diagram:', err);
       if (err.response && err.response.data && err.response.data.detail) {
         notify(err.response.data.detail, 'warning');
       } else {
@@ -258,7 +381,7 @@ export function useAutoSaveSession({
       fetchLockStatus(diagramId);
       return false;
     }
-  }, [isAuthenticated, fetchLockStatus]);
+  }, [isAuthenticated, fetchLockStatus, applyLock]);
 
   // Checkout diagram (Acquire Lock)
   const checkoutDiagram = useCallback(
@@ -270,14 +393,14 @@ export function useAutoSaveSession({
   const checkinDiagram = useCallback(async () => {
     if (!activeDiagram || !activeDiagram.id || !isAuthenticated) return false;
     try {
-      await axios.post(`/api/diagrams/${activeDiagram.id}/checkin`);
-      setLockInfo(null);
+      await axios.post(`/api/diagrams/${activeDiagram.id}/checkin`, null, { headers: sessionHeaders() });
+      applyLock(activeDiagram.id, null);
       return true;
     } catch (err) {
-      console.error('Failed to checkin diagram:', err);
+      if (!isLockRefusal(err)) console.error('Failed to checkin diagram:', err);
       return false;
     }
-  }, [activeDiagram, isAuthenticated]);
+  }, [activeDiagram, isAuthenticated, applyLock]);
 
   // Force checkin (Owner Override Lock Release)
   const forceCheckinDiagram = useCallback(async () => {
@@ -291,14 +414,89 @@ export function useAutoSaveSession({
     if (!ok) return false;
     try {
       await axios.post(`/api/diagrams/${activeDiagram.id}/force-checkin`);
-      setLockInfo(null);
+      applyLock(activeDiagram.id, null);
       return true;
     } catch (err) {
       console.error('Failed to force release lock:', err);
       notify('Failed to release lock. You must be an owner of this project.', 'error');
       return false;
     }
-  }, [activeDiagram, isAuthenticated]);
+  }, [activeDiagram, isAuthenticated, applyLock]);
+
+  // Tell the user the lock went to their other tab; Check out only acts while that drawing is still open here
+  const notifyMoved = useCallback((diagramId) => {
+    notify('Checked in because you opened another drawing in another tab. Check out to edit here.', 'warning', {
+      key: `lock-moved:${diagramId}`,
+      action: {
+        label: 'Check out',
+        onClick: () => {
+          const open = activeDiagramRef.current;
+          if (open && open.id === diagramId) checkoutDiagramById(diagramId);
+        },
+      },
+    });
+  }, [checkoutDiagramById]);
+
+  // The lock this tab thought it held is somewhere else (or gone): read-only, with the moved notice for own tabs
+  const handleLockLost = useCallback((diagramId, lock) => {
+    const wasHeldHere = heldLockIdRef.current === diagramId;
+    applyLock(diagramId, lock);
+    if (wasHeldHere && lock && currentUserIdRef.current && lock.user_id === currentUserIdRef.current) notifyMoved(diagramId);
+  }, [applyLock, notifyMoved]);
+
+  // Re-read the lock after a refused re-checkout
+  const refreshLostLock = useCallback(async (diagramId) => {
+    try {
+      const data = await requestLockStatus(diagramId);
+      const open = activeDiagramRef.current;
+      if (open && open.id === diagramId) handleLockLost(diagramId, data.is_locked ? data.lock : null);
+    } catch (err) {
+      console.warn('Could not read the lock status:', err);
+    }
+  }, [requestLockStatus, handleLockLost]);
+
+  // A refused keep-my-lock call (heartbeat, reconnect, retry after a refused save): the lock went to another
+  // drawing of this user, or to someone else
+  const handleResumeRefused = useCallback((diagramId, err) => {
+    if (lockRefusalReason(err) === 'moved') {
+      const open = activeDiagramRef.current;
+      if (!open || open.id !== diagramId) return;
+      const wasHeldHere = heldLockIdRef.current === diagramId;
+      applyLock(diagramId, null);
+      if (wasHeldHere) notifyMoved(diagramId);
+    } else {
+      refreshLostLock(diagramId);
+    }
+  }, [applyLock, notifyMoved, refreshLostLock]);
+
+  // A save was refused because the lock is not this tab's: ask the server who holds it. A free drawing is taken
+  // back and the save is tried once more (the edits stay); otherwise the real lock is shown.
+  // Resolves 'saved' | 'locked' | 'failed' | 'left' (the drawing is no longer open); a refused retry throws.
+  const recoverRefusedSave = useCallback(async (diagram) => {
+    const diagramId = diagram.id;
+    const isCurrent = () => !!activeDiagramRef.current && activeDiagramRef.current.id === diagramId;
+    let lock;
+    try {
+      const data = await requestLockStatus(diagramId);
+      lock = data.is_locked ? data.lock : null;
+    } catch (err) {
+      console.warn('Could not read the lock status after a refused save:', err);
+      return 'failed';
+    }
+    if (!isCurrent()) return 'left';
+    if (lock && !isMyTabLock(lock, currentUserIdRef.current)) {
+      handleLockLost(diagramId, lock);
+      return 'locked';
+    }
+    if (lock) {
+      applyLock(diagramId, lock);
+    } else {
+      const ok = await checkoutDiagramById(diagramId, { silent: true, resume: true, isCurrent, onRefused: (err) => handleResumeRefused(diagramId, err) });
+      if (!ok) return isCurrent() ? 'locked' : 'left';
+    }
+    await putDiagram(diagram, serializeWorkspaceState());
+    return 'saved';
+  }, [requestLockStatus, handleLockLost, applyLock, checkoutDiagramById, handleResumeRefused, putDiagram, serializeWorkspaceState]);
 
   // WebSocket Collaboration Event Listener
   useEffect(() => {
@@ -307,10 +505,13 @@ export function useAutoSaveSession({
       if (!activeDiagram || eventData.diagram_id !== activeDiagram.id) return;
 
       if (eventData.action === 'lock_acquired') {
-        setLockInfo(eventData.lock);
+        applyLock(activeDiagram.id, eventData.lock);
       } else if (eventData.action === 'lock_released') {
-        setLockInfo(null);
-        if (eventData.forced && eventData.by_username) {
+        const wasHeldHere = heldLockIdRef.current === activeDiagram.id;
+        applyLock(activeDiagram.id, null);
+        if (eventData.reason === 'moved' && currentUser && eventData.user_id === currentUser.id && wasHeldHere) {
+          notifyMoved(activeDiagram.id);
+        } else if (eventData.forced && eventData.by_username) {
           setCollabNotice({ kind: 'lock_released', message: `Your edit lock was released by project owner ${eventData.by_username}.` });
         }
       } else if (eventData.action === 'diagram_updated') {
@@ -326,7 +527,7 @@ export function useAutoSaveSession({
     return () => {
       window.removeEventListener('walflow_collab_event', handleCollabEvent);
     };
-  }, [activeDiagram, currentUser]);
+  }, [activeDiagram, currentUser, applyLock, notifyMoved]);
 
   // Lock status fetch when diagram changes; a free drawing is checked out right away
   const autoCheckoutIdRef = useRef(null);
@@ -339,11 +540,14 @@ export function useAutoSaveSession({
         .then(async (data) => {
           if (!active) return;
           if (data.is_locked) {
-            setLockInfo(data.lock);
+            applyLock(diagramId, data.lock);
             return;
           }
-          setLockInfo(null);
+          applyLock(diagramId, null);
           if (!isAuthenticated || !currentUserId || autoCheckoutIdRef.current === diagramId) return;
+          // The drawing that was left must have saved before this checkout releases its lock
+          await leavingSaveRef.current;
+          if (!active || autoCheckoutIdRef.current === diagramId) return;
           autoCheckoutIdRef.current = diagramId;
           await checkoutDiagramById(diagramId, { silent: true, isCurrent: () => active });
         })
@@ -353,22 +557,94 @@ export function useAutoSaveSession({
     } else {
       autoCheckoutIdRef.current = null;
       Promise.resolve().then(() => {
-        if (active) setLockInfo(null);
+        if (active) applyLock(null, null);
       });
     }
     return () => { active = false; };
-  }, [activeDiagram, isAuthenticated, currentUserId, requestLockStatus, checkoutDiagramById]);
+  }, [activeDiagram, isAuthenticated, currentUserId, requestLockStatus, checkoutDiagramById, applyLock]);
 
-  // Heartbeat lease extension (every 5 minutes if we hold the lock)
+  // Heartbeat lease extension (every minute while this tab holds the lock)
   useEffect(() => {
     if (!hasLock || !activeDiagram || !activeDiagram.id || !isAuthenticated) return;
 
+    const diagramId = activeDiagram.id;
     const intervalId = setInterval(() => {
-      checkoutDiagram();
-    }, 5 * 60 * 1000); // 5 minutes
+      // A refused heartbeat means the lock is no longer ours: read-only, no retry
+      checkoutDiagramById(diagramId, {
+        silent: true,
+        resume: true,
+        isCurrent: () => !!activeDiagramRef.current && activeDiagramRef.current.id === diagramId,
+        onRefused: (err) => handleResumeRefused(diagramId, err),
+      });
+    }, HEARTBEAT_MS);
 
     return () => clearInterval(intervalId);
-  }, [hasLock, activeDiagram, isAuthenticated, checkoutDiagram]);
+  }, [hasLock, activeDiagram, isAuthenticated, checkoutDiagramById, handleResumeRefused]);
+
+  // Idle release: a lock held 30 minutes without activity in this tab is given back; the next activity takes it again
+  const lastActivityRef = useRef(0);
+  const idleReleasedIdRef = useRef(null);
+  useEffect(() => {
+    const onActivity = () => {
+      lastActivityRef.current = Date.now();
+      const releasedId = idleReleasedIdRef.current;
+      if (!releasedId) return;
+      idleReleasedIdRef.current = null;
+      const open = activeDiagramRef.current;
+      if (!open || open.id !== releasedId) return;
+      checkoutDiagramById(releasedId, { silent: true, isCurrent: () => !!activeDiagramRef.current && activeDiagramRef.current.id === releasedId })
+        .then((ok) => { if (ok) setCollabNotice((n) => (n && n.kind === 'idle' ? null : n)); });
+    };
+    ACTIVITY_EVENTS.forEach((name) => window.addEventListener(name, onActivity, { passive: true }));
+    return () => ACTIVITY_EVENTS.forEach((name) => window.removeEventListener(name, onActivity));
+  }, [checkoutDiagramById]);
+  useEffect(() => {
+    if (!hasLock || !activeDiagramId || !isAuthenticated) return;
+    const diagramId = activeDiagramId;
+    let releasing = false;
+    // Taking the lock counts as activity
+    if (Date.now() - lastActivityRef.current >= IDLE_RELEASE_MS) lastActivityRef.current = Date.now();
+    const intervalId = setInterval(async () => {
+      if (releasing || Date.now() - lastActivityRef.current < IDLE_RELEASE_MS) return;
+      releasing = true;
+      const pending = pendingFlushRef.current;
+      if (pending && pending.diagram.id === diagramId) {
+        try {
+          await putDiagram(pending.diagram, pending.payload);
+        } catch { /* a refused save stays in the local draft */ }
+      }
+      if (activeDiagramRef.current && activeDiagramRef.current.id === diagramId) {
+        await sendCheckin(diagramId);
+        idleReleasedIdRef.current = diagramId;
+        applyLock(diagramId, null);
+        setCollabNotice({ kind: 'idle', message: 'Checked in after 30 minutes without activity.' });
+      }
+    }, IDLE_CHECK_MS);
+    return () => clearInterval(intervalId);
+  }, [hasLock, activeDiagramId, isAuthenticated, putDiagram, applyLock]);
+
+  // After the socket reconnects the server may have released the lock: take it again if this tab held it
+  const reacquireAfterReconnect = useCallback(async () => {
+    const open = activeDiagramRef.current;
+    if (!open || !open.id || heldLockIdRef.current !== open.id) return;
+    const diagramId = open.id;
+    const isCurrent = () => !!activeDiagramRef.current && activeDiagramRef.current.id === diagramId;
+    // The lock may have moved to another tab while the socket was down: look before taking it
+    let lock;
+    try {
+      const data = await requestLockStatus(diagramId);
+      lock = data.is_locked ? data.lock : null;
+    } catch (err) {
+      console.warn('Could not read the lock status after reconnecting:', err);
+      return;
+    }
+    if (!isCurrent()) return;
+    if (lock && !isMyTabLock(lock, currentUserIdRef.current)) {
+      handleLockLost(diagramId, lock);
+      return;
+    }
+    checkoutDiagramById(diagramId, { silent: true, resume: true, isCurrent, onRefused: (err) => handleResumeRefused(diagramId, err) });
+  }, [requestLockStatus, checkoutDiagramById, handleLockLost, handleResumeRefused]);
 
   // Synchronous saving on page unload / tab close
   useEffect(() => {
@@ -378,7 +654,7 @@ export function useAutoSaveSession({
     // Give the edit lock back when the tab closes (the server also releases it when the socket drops)
     const handlePageHide = () => {
       if (hasLock && activeDiagram && activeDiagram.id && navigator.sendBeacon) {
-        navigator.sendBeacon(`/api/diagrams/${activeDiagram.id}/checkin`);
+        navigator.sendBeacon(`/api/diagrams/${activeDiagram.id}/checkin?session=${encodeURIComponent(tabId)}`);
       }
     };
 
@@ -388,7 +664,7 @@ export function useAutoSaveSession({
       window.removeEventListener('beforeunload', handleBeforeUnload);
       window.removeEventListener('pagehide', handlePageHide);
     };
-  }, [saveToLocalDraft, hasLock, activeDiagram]);
+  }, [saveToLocalDraft, hasLock, activeDiagram, tabId]);
 
   // Skip initial mount effect trigger
   const isInitialMount = useRef(true);
@@ -407,15 +683,26 @@ export function useAutoSaveSession({
     const signatureChanged = prevSignatureRef.current !== contentSignature;
     prevSignatureRef.current = contentSignature;
     let loadMatched = false;
-    if (activeDiagram && activeDiagram.id && expectedLoadKeyRef.current !== null &&
-        contentKey(serializeWorkspaceState()) === expectedLoadKeyRef.current) {
+    const liveKey = contentKey(serializeWorkspaceState());
+    if (activeDiagram && activeDiagram.id && expectedLoadKeyRef.current !== null && liveKey === expectedLoadKeyRef.current) {
       lastSavedKeyRef.current = expectedLoadKeyRef.current;
       expectedLoadKeyRef.current = null;
       loadMatched = true;
+    } else if (activeDiagram && activeDiagram.id && signatureChanged && Date.now() < landingUntilRef.current) {
+      // The opened drawing as it landed on the canvas (loading may have normalised it) is the saved version
+      lastSavedKeyRef.current = liveKey;
+      expectedLoadKeyRef.current = null;
+      loadMatched = true;
     }
+    if (signatureChanged) landingUntilRef.current = 0;
     // Nothing differs from the server version: the save status stays as it is
     const inSync = !!(activeDiagram && activeDiagram.id && isAuthenticated) &&
-      (loadMatched || (!signatureChanged && contentKey(serializeWorkspaceState()) === lastSavedKeyRef.current));
+      (loadMatched || (!signatureChanged && liveKey === lastSavedKeyRef.current));
+    if (isCloudSyncable && liveKey !== lastSavedKeyRef.current) {
+      pendingFlushRef.current = { diagram: activeDiagram, payload: serializeWorkspaceState() };
+    } else {
+      pendingFlushRef.current = null;
+    }
 
     const pendingTimer = setTimeout(() => {
       if (isLockedByOther) {
@@ -445,7 +732,7 @@ export function useAutoSaveSession({
 
     // 2000ms delay for Cloud Auto-Sync
     let cloudTimer = null;
-    if (isCloudSyncable && !isLockedByOther) {
+    if (isCloudSyncable) {
       cloudTimer = setTimeout(async () => {
         try {
           const payload = serializeWorkspaceState();
@@ -458,19 +745,35 @@ export function useAutoSaveSession({
           setSaveStatus('saved_cloud');
           setLastSavedTimestamp(new Date().toLocaleTimeString());
         } catch (err) {
-          console.error('Cloud auto-save failed:', err);
           if (isStaleConflict(err)) {
             setSaveStatus('error');
             setCollabNotice({ kind: 'stale', message: STALE_MESSAGE });
           } else if (err.response && (err.response.status === 404 || err.response.status === 403)) {
-            console.warn('Active diagram no longer accessible. Detaching.');
             if (setActiveDiagram) setActiveDiagram(null);
             setSaveStatus('saved_local');
           } else if (err.response && err.response.status === 409) {
-            // Conflict (lost lock)
-            setSaveStatus('locked');
-            setLockInfo({ user_id: 'unknown', username: 'another user', expires_at: new Date().toISOString() });
+            // Not the lock holder: look at the real lock; a free drawing is taken back and the save repeated
+            try {
+              const outcome = await recoverRefusedSave(activeDiagram);
+              if (outcome === 'saved') {
+                setSaveStatus('saved_cloud');
+                setLastSavedTimestamp(new Date().toLocaleTimeString());
+              } else if (outcome === 'locked') {
+                setSaveStatus('locked');
+              } else if (outcome === 'failed') {
+                setSaveStatus('error');
+              }
+            } catch (retryErr) {
+              if (isStaleConflict(retryErr)) {
+                setSaveStatus('error');
+                setCollabNotice({ kind: 'stale', message: STALE_MESSAGE });
+              } else {
+                console.error('Cloud auto-save failed:', retryErr);
+                setSaveStatus('error');
+              }
+            }
           } else {
+            console.error('Cloud auto-save failed:', err);
             setSaveStatus('error');
           }
         }
@@ -482,7 +785,7 @@ export function useAutoSaveSession({
       clearTimeout(localTimer);
       if (cloudTimer) clearTimeout(cloudTimer);
     };
-  }, [contentSignature, activeProject, activeDiagram, isAuthenticated, hasLock, isLockedByOther, saveToLocalDraft, serializeWorkspaceState, setActiveDiagram, putDiagram]);
+  }, [contentSignature, activeProject, activeDiagram, isAuthenticated, hasLock, isLockedByOther, saveToLocalDraft, serializeWorkspaceState, setActiveDiagram, putDiagram, recoverRefusedSave]);
 
   // Manual Trigger for Instant Cloud Save
   const triggerManualCloudSave = useCallback(async () => {
@@ -503,18 +806,17 @@ export function useAutoSaveSession({
       setLastSavedTimestamp(timeStr);
       return true;
     } catch (err) {
-      console.error('Manual cloud save failed:', err);
       if (isStaleConflict(err)) {
         setSaveStatus('error');
         setCollabNotice({ kind: 'stale', message: STALE_MESSAGE });
         return false;
       }
       if (err.response && (err.response.status === 404 || err.response.status === 403)) {
-        console.warn('Active diagram no longer accessible. Detaching.');
         if (setActiveDiagram) setActiveDiagram(null);
         setSaveStatus('saved_local');
         return true;
       }
+      console.error('Manual cloud save failed:', err);
       setSaveStatus('error');
       return false;
     }
@@ -642,7 +944,9 @@ ${versionError}`, 'error'), 0);
     // Co-editing locking details
     lockInfo,
     isLockedByOther,
+    isLockedByOtherTab,
     hasLock,
+    reacquireAfterReconnect,
     checkoutDiagram,
     checkinDiagram,
     forceCheckinDiagram,

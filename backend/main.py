@@ -7,6 +7,7 @@ import uvicorn
 import json
 import traceback
 import logging
+import asyncio
 
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
@@ -24,7 +25,6 @@ from simulation.equipment.linear_control_valve import LinearControlValve
 from db.database import init_db, SessionLocal
 from routers.auth import router as auth_router
 from routers.diagrams import router as diagrams_router, collab_manager, user_can_access_diagram
-from services.lock_service import release_lock_after_disconnect
 from db.models import Diagram
 from simulation.limits import SolveTimeout, run_limited, max_nodes
 from routers.projects import router as projects_router
@@ -47,7 +47,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="WalFlow Engine", description="Hydraulic Simulation Backend", version=APP_VERSION, lifespan=lifespan)
 
-# Attach slowapi rate limiter state & middleware (R4 / Security)
+# Attach slowapi rate limiter state & middleware
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
@@ -157,7 +157,8 @@ async def websocket_endpoint(websocket: WebSocket):
                             "message": "Sign in with access to this diagram to receive collaboration updates."
                         }))
                         continue
-                    await collab_manager.connect(websocket, diagram_id, user_id)
+                    session_id = data.get("session_id")
+                    await collab_manager.connect(websocket, diagram_id, user_id, str(session_id)[:100] if session_id else None)
                     print(f"WS client joined diagram collab channel: {diagram_id}")
 
             elif action == "update_graph":
@@ -225,7 +226,6 @@ async def websocket_endpoint(websocket: WebSocket):
                 if solver_instance:
                     try:
                         # Offload CPU-heavy matrix solver to thread pool to prevent event loop starvation
-                        import asyncio
                         # Bounded by the solve timeout and the concurrent-solve cap
                         stats, telemetry_mitigated, telemetry_unmitigated, has_psv, telemetry_peak = await asyncio.to_thread(
                             run_limited,
@@ -274,8 +274,8 @@ async def websocket_endpoint(websocket: WebSocket):
     except WebSocketDisconnect:
         print("Frontend client disconnected.")
     finally:
-        # A closed tab must not keep the edit lock for its full 15 minutes
-        await release_lock_after_disconnect(collab_manager, collab_manager.disconnect(websocket))
+        # A closed tab gives its edit lock back after a short grace; a tab that reconnects in time keeps it
+        collab_manager.schedule_disconnect_release(collab_manager.disconnect(websocket))
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

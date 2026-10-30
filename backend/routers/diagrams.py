@@ -20,11 +20,21 @@ from services.lock_service import (
     collab_manager,
     acquire_lock,
     release_lock,
+    release_other_locks_of_user,
+    user_holds_other_lock,
     get_lock_status_info,
+    is_lock_holder,
+    lock_released_message,
     LOCAL_LOCKS,
 )
 
 router = APIRouter(prefix="/api/diagrams", tags=["diagrams"])
+
+
+def tab_session_id(request: Request) -> Optional[str]:
+    """The browser tab the request comes from (X-Walflow-Session header, or ?session= for sendBeacon)."""
+    value = request.headers.get("X-Walflow-Session") or request.query_params.get("session")
+    return value[:100] if value else None
 
 
 def user_can_access_diagram(db: Session, diagram: Diagram, user: User) -> bool:
@@ -172,13 +182,18 @@ async def update_diagram(
                 detail="You do not have access to this project."
             )
         
-        # Lock lease enforcement
+        # Lock lease enforcement: only the tab that holds the lock may save
+        session_id = tab_session_id(request)
         lock = get_lock_status_info(diagram.id)
-        if lock and lock["user_id"] != current_user.id:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=f"Cannot save: Diagram is currently locked by {lock['username']}."
-            )
+        if lock and not is_lock_holder(lock, current_user.id, session_id):
+            detail = ("Cannot save: you are editing this diagram in another tab."
+                      if lock["user_id"] == current_user.id
+                      else f"Cannot save: Diagram is currently locked by {lock['username']}.")
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=detail)
+        if not lock and payload.diagram_data is not None:
+            # Drawing content of a project diagram is saved only by the tab that checked it out
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+                                detail="Cannot save: check out this diagram before editing it.")
     else:
         # Standalone diagram
         if diagram.user_id != current_user.id:
@@ -201,9 +216,9 @@ async def update_diagram(
                 headers={"X-Walflow-Conflict": "stale"}
             )
 
-    if diagram.project_id:
-        # Extend current lock lease on save
-        acquire_lock(diagram.id, current_user.id, current_user.username)
+    if diagram.project_id and lock:
+        # Extend the caller's lease on save; a save to a free diagram does not check it out
+        acquire_lock(diagram.id, current_user.id, current_user.username, session_id=session_id)
 
     changed = False
     if payload.title is not None and payload.title != diagram.title:
@@ -279,22 +294,51 @@ async def delete_diagram(
 @router.post("/{diagram_id}/checkout")
 async def checkout_diagram(
     diagram_id: str,
+    request: Request,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    resume: bool = False
 ):
+    """Check out (or refresh the lease of) a diagram for the calling tab. A user holds one lock at a time:
+    checking out releases the user's lock on any other diagram.
+
+    resume=true (heartbeat, reconnect) only keeps a lock this tab still has: it extends the tab's own lock,
+    takes the diagram back if it is free and the user holds no other lock, and never releases other locks."""
     diagram = db.query(Diagram).filter(Diagram.id == diagram_id).first()
     if not diagram:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Diagram not found.")
 
     require_diagram_access(db, diagram, current_user)   # also for standalone diagrams
 
-    lock = acquire_lock(diagram_id, current_user.id, current_user.username)
+    session_id = tab_session_id(request)
+    was_free = get_lock_status_info(diagram_id) is None
+    if resume and was_free and user_holds_other_lock(current_user.id, diagram_id):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="You are now editing another PFD.",
+            headers={"X-Lock-Reason": "moved"}
+        )
+    lock = acquire_lock(diagram_id, current_user.id, current_user.username, session_id=session_id)
     if lock["user_id"] != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"This PFD is locked by {lock['username']}.",
-            headers={"X-Locked-By": lock["username"]}
+            headers={"X-Locked-By": lock["username"], "X-Lock-Reason": "other_user"}
         )
+    if not is_lock_holder(lock, current_user.id, session_id):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="You are editing this PFD in another tab.",
+            headers={"X-Locked-By": lock["username"], "X-Lock-Reason": "other_tab"}
+        )
+
+    if resume:
+        if was_free:
+            await collab_manager.broadcast_to_diagram(diagram_id, {"action": "lock_acquired", "diagram_id": diagram_id, "lock": lock})
+        return {"status": "success", "message": "Lock kept.", "lock": lock}
+
+    for other_id, other_lock in release_other_locks_of_user(current_user.id, diagram_id):
+        await collab_manager.broadcast_to_diagram(other_id, lock_released_message(other_id, other_lock, "moved"))
 
     # Broadcast lock acquisition
     await collab_manager.broadcast_to_diagram(
@@ -312,6 +356,7 @@ async def checkout_diagram(
 @router.post("/{diagram_id}/checkin")
 async def checkin_diagram(
     diagram_id: str,
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -321,26 +366,21 @@ async def checkin_diagram(
 
     require_diagram_access(db, diagram, current_user)
 
+    session_id = tab_session_id(request)
     lock = get_lock_status_info(diagram_id)
-    held_by_caller = bool(lock) and lock.get("user_id") == current_user.id
-    released = release_lock(diagram_id, current_user.id, force=False)
-    if not released:
+    held_by_caller = is_lock_holder(lock, current_user.id, session_id)
+    if lock and not held_by_caller:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Cannot check in: Lock is held by another user."
+            detail=("Cannot check in: the lock is held by another tab of yours."
+                    if lock.get("user_id") == current_user.id
+                    else "Cannot check in: Lock is held by another user.")
         )
+    release_lock(diagram_id, current_user.id, session_id=session_id)
 
     # Broadcast lock release only if the caller actually held the lock
     if held_by_caller:
-        await collab_manager.broadcast_to_diagram(
-            diagram_id,
-            {
-                "action": "lock_released",
-                "diagram_id": diagram_id,
-                "user_id": current_user.id,
-                "username": current_user.username
-            }
-        )
+        await collab_manager.broadcast_to_diagram(diagram_id, lock_released_message(diagram_id, lock, "checked_in"))
 
     return {"status": "success", "message": "Diagram checked in successfully."}
 

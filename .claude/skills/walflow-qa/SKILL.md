@@ -75,6 +75,11 @@ Keep them lean: the physics is tested in the backend, and the gate's `npm run bu
 Test only logic that can break silently (conversions, file export/import, inspector rules). No end-to-end or
 browser tests.
 
+Manual checks in the running app (browser walkthroughs, audits, multi-user or lock checks, API calls with a
+login) use the test accounts of the `walflow-test-users` skill
+([../walflow-test-users/SKILL.md](../walflow-test-users/SKILL.md)): sign out of the current user first, never test
+with a real account.
+
 ## Rules
 
 1. **Name by subject, not by origin.** `test_regulator_lockup.py`, not `test_f1_37.py`. Names are unique across the tree.

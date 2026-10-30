@@ -36,7 +36,9 @@ Follow the `equipment-creation` skill ([.claude/skills/equipment-creation/SKILL.
 
 Always read and follow the `walflow-qa` skill ([.claude/skills/walflow-qa/SKILL.md](./.claude/skills/walflow-qa/SKILL.md)) before writing, changing or deleting any test, fixing a bug, or adding equipment. It holds the test strategy (test pyramid, property tests with hypothesis), where each test belongs, the bug-fix decision tree, naming and audit-marker rules, and the gate. Prefer strengthening an existing property or adding a reference-table row over adding a new test function.
 
-Run the gate defined in that skill before finishing any change (via `walflow-gate-runner`, see below). GitHub Actions runs the same gate only when a release tag is pushed, and blocks Docker publishing if it fails; pushes to `main` are not checked in CI.
+Any check in the running app that needs a login (browser walkthrough, UX audit, multi-user or lock check) signs out of the current user and uses a test account from the `walflow-test-users` skill ([.claude/skills/walflow-test-users/SKILL.md](./.claude/skills/walflow-test-users/SKILL.md)).
+
+Run the gate defined in the `walflow-qa` skill before finishing any change (via `walflow-gate-runner`, see below). GitHub Actions runs the same gate only when a release tag is pushed, and blocks Docker publishing if it fails; pushes to `main` are not checked in CI.
 
 ### Performance
 
