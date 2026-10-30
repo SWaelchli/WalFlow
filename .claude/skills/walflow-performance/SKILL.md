@@ -76,7 +76,7 @@ edges or nodes inside the residual or Jacobian; repeated fluid-property calls wi
 matrices where the structure is sparse; outer loops (property, control, relief) that rebuild things the inner solve
 already has; iterations spent from a poor initial guess.
 
-A hotspot below about 5 % of total time is not worth the risk. Leave it.
+A hotspot below about 3 % of total time is not worth the risk. Leave it.
 
 ### 2. Assess: write a finding card
 

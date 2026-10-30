@@ -191,6 +191,7 @@ function WalFlowContent() {
   const fitViewPendingRef = useRef(false);
   
   const [selectedNode, setSelectedNode] = useState(null);
+  const [examplesRequest, setExamplesRequest] = useState(0); // bumped to ask the sidebar to show the examples
   const [inspectorTab, setInspectorTab] = useState('setup');
   const [selectedEdge, setSelectedEdge] = useState(null);
 
@@ -1708,8 +1709,9 @@ function WalFlowContent() {
 
 
       <div style={{ flexGrow: 1, display: 'flex', height: 'calc(100vh - 56px)', overflow: 'hidden' }}>
-        <Sidebar 
-          onLoad={handleLoadDiagramWithCheck} 
+        <Sidebar
+          examplesRequest={examplesRequest}
+          onLoad={handleLoadDiagramWithCheck}
           markLoaded={markLoaded}
           globalSettings={globalSettings}
           onUpdateGlobalSettings={setGlobalSettings}
@@ -1856,7 +1858,7 @@ function WalFlowContent() {
             )}
           </RunBanners>
 
-          {nodes.length === 0 && !isCanvasLoading && <EmptyCanvasHint />}
+          {nodes.length === 0 && !isCanvasLoading && <EmptyCanvasHint onBrowseExamples={() => setExamplesRequest(n => n + 1)} />}
 
           <ReactFlow
             nodes={canvasNodes}
