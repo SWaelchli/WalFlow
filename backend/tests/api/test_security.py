@@ -223,15 +223,210 @@ def test_lock_is_released_when_the_last_socket_of_the_holder_closes():
         manager = ConnectionManager()
         diagram_id = f"d_{uuid.uuid4().hex}"
         a1, a2, watcher = _FakeSocket(), _FakeSocket(), _FakeSocket()
-        await manager.connect(a1, diagram_id, "user-a")
-        await manager.connect(a2, diagram_id, "user-a")
+        await manager.connect(a1, diagram_id, "user-a", "tab-1")
+        await manager.connect(a2, diagram_id, "user-a", "tab-1")
         await manager.connect(watcher, diagram_id, "user-b")
-        acquire_lock(diagram_id, "user-a", "A")
+        acquire_lock(diagram_id, "user-a", "A", session_id="tab-1")
         await release_lock_after_disconnect(manager, manager.disconnect(a1))
-        assert get_lock_status_info(diagram_id) is not None            # a second tab of A is still open
+        assert get_lock_status_info(diagram_id) is not None            # a second socket of the tab is still open
         await release_lock_after_disconnect(manager, manager.disconnect(a2))
         assert get_lock_status_info(diagram_id) is None
         assert watcher.sent and watcher.sent[-1]["action"] == "lock_released"
+        assert watcher.sent[-1]["reason"] == "disconnected"
+    asyncio.run(scenario())
+
+
+def test_lock_survives_a_reconnect_within_the_grace_period():
+    async def scenario():
+        from services.lock_service import acquire_lock
+        manager = ConnectionManager()
+        diagram_id = f"d_{uuid.uuid4().hex}"
+        holder, watcher = _FakeSocket(), _FakeSocket()
+        await manager.connect(holder, diagram_id, "user-a", "tab-1")
+        await manager.connect(watcher, diagram_id, "user-b")
+        acquire_lock(diagram_id, "user-a", "A", session_id="tab-1")
+        # network drop, reconnect after 20 ms, grace 50 ms: lock stays
+        watch = asyncio.create_task(release_lock_after_disconnect(manager, manager.disconnect(holder), grace_s=0.05))
+        await asyncio.sleep(0.02)
+        await manager.connect(_FakeSocket(), diagram_id, "user-a", "tab-1")
+        await watch
+        assert get_lock_status_info(diagram_id) is not None
+        assert not watcher.sent
+        # no reconnect: released after the grace and announced
+        info = manager.disconnect(next(iter(manager.websocket_users.keys() - {watcher})))
+        await release_lock_after_disconnect(manager, info, grace_s=0.05)
+        assert get_lock_status_info(diagram_id) is None
+        assert watcher.sent[-1]["action"] == "lock_released" and watcher.sent[-1]["reason"] == "disconnected"
+    asyncio.run(scenario())
+
+
+# ---------------------------------------------------------------- one lock per user and per tab
+def _project_diagrams(client, headers, n=2):
+    pid = client.post("/api/projects", json={"title": "locks"}, headers=headers).json()["id"]
+    ids = []
+    for _ in range(n):
+        r = client.post("/api/diagrams", json={"title": "D", "diagram_data": "{}", "project_id": pid}, headers=headers)
+        assert r.status_code == 201
+        ids.append(r.json()["id"])
+    return ids
+
+
+def test_checking_out_another_diagram_releases_the_previous_lock(client):
+    from services.lock_service import acquire_lock, release_other_locks_of_user
+    _, owner, _ = _user()
+    a, b = _project_diagrams(client, owner)
+    assert client.post(f"/api/diagrams/{a}/checkout", headers=owner).status_code == 200
+    assert client.get(f"/api/diagrams/{a}/lock-status", headers=owner).json()["is_locked"] is True
+    assert client.post(f"/api/diagrams/{b}/checkout", headers=owner).status_code == 200
+    assert client.get(f"/api/diagrams/{a}/lock-status", headers=owner).json()["is_locked"] is False
+    assert client.get(f"/api/diagrams/{b}/lock-status", headers=owner).json()["is_locked"] is True
+    # service level: a lock on another diagram is released and reported
+    svc_user, svc_a, svc_b = f"u_{uuid.uuid4().hex}", f"d_{uuid.uuid4().hex}", f"d_{uuid.uuid4().hex}"
+    acquire_lock(svc_a, svc_user, "x", session_id="tab-1")
+    released = release_other_locks_of_user(svc_user, svc_b)
+    assert [d for d, _lock in released] == [svc_a]
+    assert get_lock_status_info(svc_a) is None
+
+
+@pytest.mark.parametrize("method, session, expected", [
+    pytest.param("checkout", "tab-2", 409, id="other_tab_cannot_checkout"),
+    pytest.param("put", "tab-2", 409, id="other_tab_cannot_save"),
+    pytest.param("checkin", "tab-2", 403, id="other_tab_cannot_checkin"),
+    pytest.param("checkout", "tab-1", 200, id="holder_tab_refreshes"),
+    pytest.param("put", "tab-1", 200, id="holder_tab_saves"),
+    pytest.param("checkout", None, 200, id="client_without_tab_id_counts_as_holder"),
+    pytest.param("put", None, 200, id="save_without_tab_id_counts_as_holder"),
+])
+def test_lock_belongs_to_one_tab_of_the_user(client, method, session, expected):
+    _, owner, _ = _user()
+    (d,) = _project_diagrams(client, owner, 1)
+    held = {**owner, "X-Walflow-Session": "tab-1"}
+    assert client.post(f"/api/diagrams/{d}/checkout", headers=held).status_code == 200
+    headers = {**owner, **({"X-Walflow-Session": session} if session else {})}
+    url = f"/api/diagrams/{d}"
+    if method == "put":
+        r = client.put(url, json={"diagram_data": '{"v":2}'}, headers=headers)
+    else:
+        r = client.post(f"{url}/{method}", headers=headers)
+    assert r.status_code == expected
+    if method == "checkout" and expected == 409:
+        assert r.headers["X-Lock-Reason"] == "other_tab"
+
+
+def test_resume_checkout_never_steals_the_lock_from_a_newer_drawing(client):
+    from services.lock_service import acquire_lock, user_holds_other_lock
+    _, owner, _ = _user()
+    a, b = _project_diagrams(client, owner)
+    tab1 = {**owner, "X-Walflow-Session": "tab-1"}
+    tab2 = {**owner, "X-Walflow-Session": "tab-2"}
+
+    def resume(headers, d):
+        return client.post(f"/api/diagrams/{d}/checkout?resume=true", headers=headers)
+
+    def locked(d):
+        return client.get(f"/api/diagrams/{d}/lock-status", headers=owner).json()["is_locked"]
+
+    assert resume(tab1, a).status_code == 200                      # free and nothing else held: taken
+    assert resume(tab1, a).status_code == 200 and locked(a)        # holder tab: lease refreshed
+    assert client.post(f"/api/diagrams/{b}/checkout", headers=tab2).status_code == 200   # plain checkout moves the lock
+    assert not locked(a) and locked(b)
+    moved = resume(tab1, a)                                        # tab-1 heartbeat after the move
+    assert moved.status_code == 409 and moved.headers["X-Lock-Reason"] == "moved"
+    assert locked(b) and not locked(a)
+    assert resume(tab1, b).status_code == 409 and resume(tab1, b).headers["X-Lock-Reason"] == "other_tab"
+    assert locked(b)
+    assert resume(tab2, b).status_code == 200 and locked(b)        # other locks of the holder stay untouched
+    # another user is refused with its own reason
+    _, other_user, _ = _user()
+    r = client.post(f"/api/diagrams/{b}/checkout?resume=true", headers=other_user)
+    assert r.status_code in (403, 409)
+    if r.status_code == 409:
+        assert r.headers["X-Lock-Reason"] == "other_user"
+    # service helper
+    svc_user, svc_a, svc_b = f"u_{uuid.uuid4().hex}", f"d_{uuid.uuid4().hex}", f"d_{uuid.uuid4().hex}"
+    acquire_lock(svc_a, svc_user, "x", session_id="tab-1")
+    assert user_holds_other_lock(svc_user, svc_b) is True
+    assert user_holds_other_lock(svc_user, svc_a) is False
+    assert user_holds_other_lock(f"u_{uuid.uuid4().hex}", svc_b) is False
+
+
+def test_saving_a_free_project_diagram_does_not_lock_it(client):
+    _, owner, _ = _user()
+    (d,) = _project_diagrams(client, owner, 1)
+    headers = {**owner, "X-Walflow-Session": "tab-1"}
+    # drawing content needs a checkout first; metadata does not and takes no lock
+    r = client.put(f"/api/diagrams/{d}", json={"diagram_data": '{"v":2}'}, headers=headers)
+    assert r.status_code == 409 and "check out" in r.json()["detail"].lower()
+    assert client.put(f"/api/diagrams/{d}", json={"title": "T", "description": "x"}, headers=headers).status_code == 200
+    assert client.get(f"/api/diagrams/{d}/lock-status", headers=owner).json()["is_locked"] is False
+
+
+@pytest.mark.parametrize("env, expected", [
+    pytest.param("30", 120, id="short_lease_is_raised_to_two_heartbeats"),
+    pytest.param(None, 180, id="default"),
+    pytest.param("600", 600, id="longer_lease_is_kept"),
+    pytest.param("abc", 180, id="invalid_falls_back_to_default"),
+])
+def test_lock_lease_never_below_two_heartbeats(monkeypatch, env, expected):
+    from services.lock_service import lock_lease_s
+    if env is None:
+        monkeypatch.delenv("WALFLOW_LOCK_LEASE_S", raising=False)
+    else:
+        monkeypatch.setenv("WALFLOW_LOCK_LEASE_S", env)
+    assert lock_lease_s() == expected
+
+
+class _DeadSocket(_FakeSocket):
+    async def send_text(self, text):
+        raise RuntimeError("connection closed")
+
+
+@pytest.mark.parametrize("reconnects", [
+    pytest.param(False, id="dead_socket_releases_lock_after_grace"),
+    pytest.param(True, id="reconnect_within_grace_keeps_lock"),
+])
+def test_failed_broadcast_send_is_treated_as_disconnect(monkeypatch, reconnects):
+    monkeypatch.setenv("WALFLOW_LOCK_DISCONNECT_GRACE_S", "0.05")
+
+    async def scenario():
+        from services.lock_service import acquire_lock
+        manager = ConnectionManager()
+        diagram_id = f"d_{uuid.uuid4().hex}"
+        holder, watcher = _DeadSocket(), _FakeSocket()
+        await manager.connect(holder, diagram_id, "user-a", "tab-1")
+        await manager.connect(watcher, diagram_id, "user-b")
+        acquire_lock(diagram_id, "user-a", "A", session_id="tab-1")
+        await manager.broadcast_to_diagram(diagram_id, {"action": "ping"})
+        assert holder not in manager.websocket_users
+        if reconnects:
+            await manager.connect(_FakeSocket(), diagram_id, "user-a", "tab-1")
+        await asyncio.gather(*manager._background)
+        if reconnects:
+            assert get_lock_status_info(diagram_id) is not None
+            assert all(m["action"] != "lock_released" for m in watcher.sent)
+        else:
+            assert get_lock_status_info(diagram_id) is None
+            assert watcher.sent[-1]["action"] == "lock_released" and watcher.sent[-1]["reason"] == "disconnected"
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("socket_tab", [
+    pytest.param(None, id="socket_without_tab_id_keeps_lock_of_a_tab"),
+    pytest.param("tab-2", id="socket_of_another_tab_keeps_lock"),
+    pytest.param("tab-1", id="socket_of_the_holder_tab_releases_lock"),
+])
+def test_only_the_holder_tab_disconnect_releases_the_lock(monkeypatch, socket_tab):
+    monkeypatch.setenv("WALFLOW_LOCK_DISCONNECT_GRACE_S", "0.01")
+
+    async def scenario():
+        from services.lock_service import acquire_lock
+        manager = ConnectionManager()
+        diagram_id = f"d_{uuid.uuid4().hex}"
+        sock = _FakeSocket()
+        await manager.connect(sock, diagram_id, "user-a", socket_tab)
+        acquire_lock(diagram_id, "user-a", "A", session_id="tab-1")
+        await release_lock_after_disconnect(manager, manager.disconnect(sock), grace_s=0.01)
+        assert (get_lock_status_info(diagram_id) is None) == (socket_tab == "tab-1")
     asyncio.run(scenario())
 
 

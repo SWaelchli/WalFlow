@@ -94,6 +94,11 @@ Do **not** silently fall back to a fresh Playwright session for an authenticated
 
 See [references/browser-tools.md](references/browser-tools.md) for commands.
 
+**WalFlow: sign in as a test account.** Never audit with the person's own account. Follow the `walflow-test-users`
+skill ([../walflow-test-users/SKILL.md](../walflow-test-users/SKILL.md)): run its seed script, sign out, sign in
+as `test_alice` (or `test_admin` for admin pages), work in the project "WalFlow Test Team", and record the account
+in the report header. Scenario 8 and every multi-user check use `test_bob` on the second host the skill names.
+
 ### 3. URL
 
 Prefer the deployed/live version — real auth, real latency, real CDN and CORS. Discovery: read project CLAUDE.md / README for "URL" → check stack config (`wrangler.jsonc`, `vite.config.ts`, `next.config.js`, `config/database.yml`, `manage.py`, `.env` `APP_URL`, `wp-config.php`) → `lsof -i :PORT` (common: 5173 Vite, 3000 Next/Rails, 8000 Django/Laravel, 8787 Wrangler, 4321 Astro) → ask. Stack-specific guide in [references/project-adaptation.md](references/project-adaptation.md). Use local only if the user asks or the feature isn't deployed.
@@ -294,7 +299,7 @@ All eleven, always. They catch what screen-by-screen testing misses. Full protoc
 5. **Keyboard Only** — every thread keyboard-only. Focus visible, tab order logical, Escape closes.
 6. **Heavy Data** — seed 500+ records. Lists virtualise, search returns the right thing, filters narrow.
 7. **Destructive Confidence** — every delete/send/publish/pay/share: consent clear, copy specific, undo available.
-8. **Second User (Role)** — restricted role (viewer not editor, client not staff). Read-only views, permission errors.
+8. **Second User (Role)** — restricted role (viewer not editor, client not staff). Read-only views, permission errors. WalFlow: `test_bob` from the `walflow-test-users` skill.
 9. **Lifecycle Position** — same role at user #1 (founder), #2 (first invitee, partial state), #N (later joiner, populated workspace). Each sees a different reality.
 10. **Round-Trip Workflow Integrity** — every A→B→A flow: complete mutation on B, verify A reflects new state on return without reload. Discoverable back affordance. Header badges update. The single biggest "the project is just empty when I go back" source.
 11. **Data Seasoning** — Day 0 / 1 / 7 / 30 seed horizons. Time-shaped data catches what quantity-only seeds miss: time dividers, recency sort, cron-fired side effects, notification badge overflow, search-with-history performance, chart bucketing. Skip only if no time-distributed data exists.

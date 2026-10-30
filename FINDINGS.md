@@ -14,6 +14,24 @@ Status: `Open` (agreed, to implement) · `Review` (needs a decision or a physics
 
 Owner: `orch` (orchestrator: backend/simulation, API) · `fe` (`walflow-frontend-dev`) · `phys` (`walflow-physics-reviewer` after the change)
 
+## Roadmap
+
+Order: data safety first, then the lock model, then UI that builds on it; units before anything that displays
+pressures in new places; layout last among UI work so it is tuned to the final navbar. One commit per phase, gate
+before each commit.
+
+| Phase | Entries | Why this order | Exit check |
+|---|---|---|---|
+| 1 Data safety (rest) | LK-H4 | The data-safety and lock-model fixes are done; this console warning is what is left of phase 1. Frontend only. | Gate. |
+| 3 Lock clarity | LK-M1, LK-M2, LK-M3, LK-M4 | UI on top of the final lock states; the navbar chip changes the navbar width, which H4 depends on. | Re-audit of the lifecycle as `test_alice` and `test_bob` (`walflow-test-users` skill; two users, two tabs). |
+| 4 Results panel (Batch C) | M2, M4, M6 | Independent DataList fixes; small. | Gate. |
+| 5 Units | H5 | Cross-cutting (every pressure input and readout); must land before M3 adds per-case values. | Converter reference rows; gate. |
+| 6 Solver feedback | H1, P1 | Backend solver messages + physics review; P1 is a check in the same area (regulator wide-open ΔP), fix only if wrong. | Scenario test; physics review; gate. |
+| 7 Compare and onboarding | M3, L4 | M3 shows per-case values in the chosen units; L4 is a link. | Gate. |
+| 8 Layout | H4 | Last UI change: responsive below 1280 px against the final navbar, inspector and data panel. | Re-audit at 1280 / 1024 / 768. |
+
+Not scheduled: M1 (deferred to the product roadmap), L5 (rejected for now).
+
 ## Source: UX audit 2026-10-28, systems-engineer
 
 Report: [docs/audit/2026-10-28-systems-engineer/report.md](docs/audit/2026-10-28-systems-engineer/report.md) · Verdict: FAIL (Critical 2, High 6, Medium 6, Low 6)
@@ -43,7 +61,28 @@ Report: [docs/audit/2026-10-28-systems-engineer/report.md](docs/audit/2026-10-28
 | L4 | The first run does not point this persona to the API 614 example. | Open | fe | EmptyCanvasHint | Gate. |
 | L5 | Port direction is shown by colour only. | Rejected (for now) | fe | node handles | Gate. |
 
-### Physics review (not UX findings)
+## Source: UX audit 2026-10-29, drawing lifecycle and locks
+
+Report: [docs/audit/2026-10-29-drawing-lifecycle/report.md](docs/audit/2026-10-29-drawing-lifecycle/report.md) · Verdict: FAIL (Critical 2, High 3 + console gate, Medium 4)
+
+Agreed design: one checked-out drawing per user (and per tab); opening another drawing saves, then releases the previous lock; lock released after 30 min without activity or when the app is closed; automatic release only (no take-over for non-owners).
+
+### High
+
+| ID | Finding | Status | Owner | Where | Test |
+|---|---|---|---|---|---|
+| LK-H4 | Console gate: React Flow warning #008 when a saved edge points to a missing handle (the expected 409 log and #002 are done; nodeTypes was already stable). Needs a shared handle-id helper per node type before load can drop or repair such edges. | Open | fe | edge load path, node handle ids (`BoundaryPorts`, `portLabels.js`) | Gate. |
+
+### Medium
+
+| ID | Finding | Status | Owner | Where | Test |
+|---|---|---|---|---|---|
+| LK-M1 | Padlock states unreadable: a padlock on every free row; red/green only; on the active row every state is white. No always-visible lock status in the navbar. The active-drawing panel says "Locked by <you>" (another user) when your own other tab holds the lock. | Open | fe | [Sidebar.jsx:669-680](frontend/src/components/panels/Sidebar.jsx#L669-L680), Navbar | Decided: badge "Editing" (mine), lock + initials (other), nothing (free), own background; navbar chip "Editing" / "Read-only · {name} is editing since HH:MM". Gate. |
+| LK-M2 | "Saved to cloud HH:MM" shows the previous drawing's time after opening or creating a drawing. | Open | fe | open path never sets `lastSavedTimestamp` from `updated_at` | Vitest: opening a drawing shows its `updated_at` time. |
+| LK-M3 | Restore and conflict dialogs do not name the drawing (or who saved the cloud version). | Open | fe | [useAutoSaveSession.js:604-610](frontend/src/hooks/useAutoSaveSession.js#L604-L610), [App.jsx:943-948](frontend/src/App.jsx#L943-L948) | Gate. |
+| LK-M4 | The active drawing can sit in a collapsed project folder; the selection highlight stays on the previous row. | Open | fe | Sidebar tree expand state | Gate. |
+
+## Physics review (not UX findings)
 
 | ID | Observation | Status | Owner | Test |
 |---|---|---|---|---|

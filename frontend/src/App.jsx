@@ -67,6 +67,7 @@ import { useCanvasHistory } from './hooks/useCanvasHistory';
 import { getDefaultPipeData, DEFAULT_PIPE_LENGTH_M } from './utils/pipeDefaults';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useAutoSaveSession } from './hooks/useAutoSaveSession';
+import { getTabId } from './utils/draftStorage';
 import { HEAT_EXCHANGER_DEFAULTS } from './utils/equipmentDefaults';
 import { serializeDiagram, toSolverGraph, checkDiagramFile, stripResults } from './utils/diagramFile';
 import { computeCaseInputHashes, isCaseResultStale } from './utils/resultHash';
@@ -299,7 +300,9 @@ function WalFlowContent() {
     triggerManualCloudSave,
     lockInfo,
     isLockedByOther,
+    isLockedByOtherTab,
     hasLock,
+    reacquireAfterReconnect,
     checkoutDiagram,
     checkinDiagram,
     collabNotice,
@@ -415,7 +418,9 @@ function WalFlowContent() {
   }, [checkoutDiagram, activeDiagram]);
   const readOnlyDiagramId = activeDiagram?.id;
   const notifyReadOnly = useCallback(() => {
-    if (isLockedByOther) {
+    if (isLockedByOtherTab) {
+      notify('You are editing this drawing in another tab.', 'warning', { key: `read-only-tab:${readOnlyDiagramId}` });
+    } else if (isLockedByOther) {
       notify(`Read-only: ${lockInfo?.username || 'another user'} is editing this drawing.`, 'warning', { key: `read-only-locked:${readOnlyDiagramId}` });
     } else {
       notify('This drawing is read-only. Check it out to edit.', 'warning', {
@@ -426,7 +431,7 @@ function WalFlowContent() {
         },
       });
     }
-  }, [isLockedByOther, lockInfo, readOnlyDiagramId]);
+  }, [isLockedByOther, isLockedByOtherTab, lockInfo, readOnlyDiagramId]);
   const blockIfReadOnly = useCallback(() => {
     if (!isReadOnly) return false;
     notifyReadOnly();
@@ -933,7 +938,11 @@ function WalFlowContent() {
     return loadData(data);
   }, [activeProject, activeDiagram, hasLock, triggerManualCloudSave, checkinDiagram, setActiveDiagram, loadData]);
 
+  // StrictMode runs the boot effect twice: the draft check (and its questions) must happen once per page load
+  const bootDraftCheckedRef = useRef(false);
   useEffect(() => {
+    if (bootDraftCheckedRef.current) return;
+    bootDraftCheckedRef.current = true;
     const applyDraft = async (draft) => {
       const result = await reconcileDraft(draft);
       let data = result.data;
@@ -950,6 +959,9 @@ function WalFlowContent() {
           data = { ...draft, active_diagram_id: null, active_diagram_title: null, active_diagram_description: null };
           attachDiagram = false;
           restored = true;
+        } else {
+          // The discarded draft is not offered again after a reload
+          clearLocalDraft();
         }
       }
       if (attachDiagram && result.source === 'server') markLoaded(data);
@@ -1430,10 +1442,16 @@ function WalFlowContent() {
     if (isConnected && ws.current && ws.current.readyState === WebSocket.OPEN && activeDiagram?.id) {
       ws.current.send(JSON.stringify({ 
         action: 'join_diagram', 
-        diagram_id: activeDiagram.id 
+        diagram_id: activeDiagram.id,
+        session_id: getTabId()
       }));
     }
   }, [isConnected, activeDiagram?.id, ws]);
+
+  // A reconnected socket: the server kept the lock for 60 s at most, so take it again if this tab held it
+  useEffect(() => {
+    if (isConnected) reacquireAfterReconnect();
+  }, [isConnected, reacquireAfterReconnect]);
 
   // The inspector shows the selected component and pipe; they follow edits made to the lists
   const nodesRef = useRef(nodes);

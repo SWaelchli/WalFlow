@@ -1,6 +1,7 @@
 // Local drafts, one per browser tab: two tabs no longer overwrite each other's draft.
 //
-// A tab's id lives in sessionStorage, so a reload keeps the tab's draft. The draft itself is in
+// A tab's id is kept in memory and only parked in sessionStorage while the page is being left (pagehide), so
+// a reload keeps the tab's draft but a duplicated tab (which copies sessionStorage) gets a new id. The draft itself is in
 // localStorage under `walflow_draft_<tabId>`. Every tab marks itself alive with a heartbeat; a draft whose
 // tab has gone quiet (closed, crashed, browser restarted) is "orphaned" and is offered to the next tab that
 // opens. Drafts older than a week are removed.
@@ -20,19 +21,46 @@ const makeId = () => ((typeof crypto !== 'undefined' && crypto.randomUUID)
   : `tab-${Math.random().toString(36).slice(2)}`);
 
 let cachedTabId = null;
+let leaveListenersAdded = false;
+
+// Park the id for the page that follows (reload, back navigation); taken out again when the page is shown from the bfcache
+const parkTabId = () => {
+  try {
+    if (cachedTabId) sessionStorage.setItem(TAB_ID_KEY, cachedTabId);
+  } catch {
+    // storage blocked: the next page gets a new id
+  }
+};
+
+const unparkTabId = (event) => {
+  if (!event.persisted) return;
+  try {
+    sessionStorage.removeItem(TAB_ID_KEY);
+  } catch {
+    // ignore
+  }
+};
 
 export function getTabId() {
   if (cachedTabId) return cachedTabId;
   try {
     cachedTabId = sessionStorage.getItem(TAB_ID_KEY);
-    if (!cachedTabId) {
-      cachedTabId = makeId();
-      sessionStorage.setItem(TAB_ID_KEY, cachedTabId);
-    }
+    if (cachedTabId) sessionStorage.removeItem(TAB_ID_KEY);   // a duplicated tab must not find it
   } catch {
-    cachedTabId = cachedTabId || makeId();   // storage blocked: the id lasts as long as the page
+    // storage blocked: the id lasts as long as the page
+  }
+  cachedTabId = cachedTabId || makeId();
+  if (!leaveListenersAdded && typeof window !== 'undefined') {
+    leaveListenersAdded = true;
+    window.addEventListener('pagehide', parkTabId);
+    window.addEventListener('pageshow', unparkTabId);
   }
   return cachedTabId;
+}
+
+/** True when the lock is this user's and tied to this tab (a lock without a session counts as this tab's). */
+export function isMyTabLock(lock, userId) {
+  return !!(lock && userId && lock.user_id === userId && (!lock.session_id || lock.session_id === getTabId()));
 }
 
 /** Test hook: forget the cached id so the next call reads sessionStorage again. */
