@@ -261,7 +261,7 @@ function WalFlowContent() {
   const {
     cases, setCases, activeCaseId, setActiveCaseId, showCaseManager, setShowCaseManager,
     handleAddCase, handleRenameCase, handleDeleteCase, handleReorderCases, handleResetCaseOverride, handleSetCaseOverride,
-    handleUpdateCaseTelemetry, batchStats, handleBatchResultsTelemetry,
+    handleUpdateCaseTelemetry, handleClearCaseTelemetry, batchStats, handleBatchResultsTelemetry,
   } = useOperatingCases({ nodes });
 
   const { unitSystem, setUnitSystem, pressureBasis, setPressureBasis, flowUnit, setFlowUnit, setAtmosphericPressure } = useUnits();
@@ -362,6 +362,8 @@ function WalFlowContent() {
     graphError,
     runError,
     runErrorId,
+    runErrorTarget,
+    runErrorDetail,
     loginRequired
   } = useWebSocketSimulation({
     nodes,
@@ -369,7 +371,8 @@ function WalFlowContent() {
     globalSettings: effectiveGlobalSettings,
     cases,
     activeCaseId,
-    onUpdateCaseTelemetry: handleUpdateCaseTelemetry
+    onUpdateCaseTelemetry: handleUpdateCaseTelemetry,
+    onClearCaseTelemetry: handleClearCaseTelemetry
   });
 
   // Model checks before a run. Errors block it, warnings are only listed in the status panel.
@@ -1696,6 +1699,7 @@ function WalFlowContent() {
         findings={validation}
         statusNotes={runSummary?.notes || []}
         runError={runError}
+        runErrorDetail={runErrorDetail}
         statusPanelOpen={statusPanelOpen}
         onToggleStatusPanel={toggleStatusPanel}
         onCloseStatusPanel={closeStatusPanel}
@@ -1829,6 +1833,8 @@ function WalFlowContent() {
           <RunBanners
             runError={runError}
             runErrorId={runErrorId}
+            runErrorTarget={runErrorTarget}
+            runErrorDetail={runErrorDetail}
             summary={runSummary}
             resultKey={lastStats}
             onSelect={handleSelectComponent}

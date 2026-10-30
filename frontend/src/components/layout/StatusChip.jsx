@@ -46,7 +46,7 @@ const FindingRow = ({ finding, onSelect }) => {
  * Navbar status chip. Click opens a panel with the result of the last run and the pre-run checks.
  * Findings come from utils/networkValidation, notes from utils/runStatus.
  */
-export default function StatusChip({ status, lastRunAt = null, errors = [], warnings = [], notes = [], runError, open, onToggle, onClose, onSelect }) {
+export default function StatusChip({ status, lastRunAt = null, errors = [], warnings = [], notes = [], runError, runErrorDetail = null, open, onToggle, onClose, onSelect }) {
   const rootRef = useRef(null);
   const panelId = useId();
   const tone = TONES[status.tone] || TONES.neutral;
@@ -112,6 +112,9 @@ export default function StatusChip({ status, lastRunAt = null, errors = [], warn
           {lastRunLabel && <p style={{ margin: '0 0 6px', fontSize: 'var(--fs-xs)', color: '#587071' }}>Last run at {lastRunLabel}</p>}
 
           {runError && <p style={{ margin: '4px 0 8px', fontSize: 'var(--fs-sm)', color: '#B91C1C', lineHeight: 1.45 }}>{runError}</p>}
+          {runError && runErrorDetail && (
+            <p style={{ margin: '-4px 0 8px', fontSize: 'var(--fs-xs)', color: '#587071', fontFamily: 'monospace', lineHeight: 1.4, overflowWrap: 'anywhere' }}>{runErrorDetail}</p>
+          )}
           {detailNotes.length > 0 && (
             <ul style={{ listStyle: 'none', margin: '4px 0 8px', padding: 0 }}>
               {detailNotes.map((n, i) => (

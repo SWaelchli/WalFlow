@@ -233,3 +233,40 @@ def solve_graph(graph_dict):
     stats = NetworkSolver(network).solve()
     assert stats["success"], stats
     return network, stats
+
+
+def oil_cooler_circuit_with_closed_prv(**solver_settings):
+    """Tank, pump, filter, water-cooled heat exchanger, PRV (Cv 0.05, 5 bar(a)) and a 6 bar(a) boundary, drawn
+    as a saved file: the boundary is above the PRV setpoint, so the PRV closes and the pump meets a blocked line."""
+    import contextlib
+    import io
+    from simulation.graph_parser import GraphParser
+    from simulation.schemas import ReactFlowGraph
+    from simulation.solver import NetworkSolver
+
+    hx = {"active": True, "cooler_type": "water_cooled", "rating_method": "rated_duty", "rated_cooling_kw": 300.0,
+          "rated_flow_lmin": 500.0, "design_inlet_temp_c": 50.0}
+    parts = [
+        ("tank", "t", {"level_m": 2.0, "elevation_m": 0.0, "temperature_k": 293.15, "num_ports": 1}),
+        ("centrifugal_pump", "p", {"flow_rated_lmin": 100.0, "head_rated_m": 50.0, "rise_to_shutoff_pct": 20.0,
+                                   "efficiency_pct": 75.0, "active": True}),
+        ("filter", "f", {"dp_clean_bar": 0.2, "dp_terminal_bar": 1.0, "flow_ref_lmin": 100.0, "clogging_pct": 0.0}),
+        ("heat_exchanger", "h", hx),
+        ("linear_regulator", "r", {"max_cv": 0.05, "set_pressure_pa": 500000.0, "backpressure": False}),
+        ("pressure_boundary", "b", {"set_pressure_bara": 6.0, "temperature_k": 293.15, "num_ports": 1}),
+    ]
+    nodes = [{"id": i, "type": t, "position": {"x": 0, "y": 0}, "data": {"label": f"{t} 1", **d}} for t, i, d in parts]
+
+    def edge(k, s, sh, t, th):
+        return {"id": k, "source": s, "sourceHandle": sh, "target": t, "targetHandle": th,
+                "data": {"length_m": 5, "diameter_m": 0.05248}}
+
+    edges = [edge("e1", "t", "port-0", "p", "inlet-0"), edge("e2", "p", "outlet-0", "f", "port-0"),
+             edge("e3", "f", "port-1", "h", "port-0"), edge("e4", "h", "port-1", "r", "inlet-0"),
+             edge("e5", "r", "outlet-0", "b", "port-0")]
+    graph = {"nodes": nodes, "edges": edges,
+             "globalSettings": {"fluid_type": "iso_vg_46", "ambient_temperature": 308.15, "atmospheric_pressure": 101325, **solver_settings}}
+    with contextlib.redirect_stdout(io.StringIO()):
+        network = GraphParser.parse_graph(ReactFlowGraph(**graph))
+        stats = NetworkSolver(network).solve()
+    return network, stats

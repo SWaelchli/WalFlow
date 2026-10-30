@@ -8,7 +8,7 @@ import { computeCaseInputHash } from '../utils/resultHash';
  * Custom hook managing WebSocket connection to FastAPI backend
  * and simulation message dispatches with Dual-Pass Telemetry support.
  */
-export function useWebSocketSimulation({ nodes, edges, globalSettings, cases = [], activeCaseId = 'case_base', onUpdateCaseTelemetry }) {
+export function useWebSocketSimulation({ nodes, edges, globalSettings, cases = [], activeCaseId = 'case_base', onUpdateCaseTelemetry, onClearCaseTelemetry }) {
   const { isAuthenticated } = useAuth();
   const ws = useRef(null);
   const [isSimulating, setIsSimulating] = useState(false);
@@ -22,21 +22,26 @@ export function useWebSocketSimulation({ nodes, edges, globalSettings, cases = [
   const [telemetryMode, setTelemetryMode] = useState('mitigated'); // 'mitigated' | 'peak' | 'unmitigated_global'
   const [graphError, setGraphError] = useState(null); // last rejected graph update (shown inline, not as a popup)
   // Last model error of a run, shown as a banner. `id` changes with every new error, so the same text is shown again.
-  const [runErrorState, setRunErrorState] = useState({ message: null, id: 0 });
-  const setRunError = useCallback((message) => setRunErrorState((prev) => ({ message, id: message ? prev.id + 1 : prev.id })), []);
+  // `target` ({type, id, name}) is the canvas component to select, `detail` the raw solver text; both clear with the message.
+  const [runErrorState, setRunErrorState] = useState({ message: null, id: 0, target: null, detail: null });
+  const setRunError = useCallback((message, target = null, detail = null) => setRunErrorState((prev) => ({
+    message, id: message ? prev.id + 1 : prev.id, target: message ? target : null, detail: message ? detail : null,
+  })), []);
   const runError = runErrorState.message;
   const [loginRequired, setLoginRequired] = useState(false); // server only lets logged-in users simulate
 
   // Refs to eliminate socket churn
   const activeCaseIdRef = useRef(activeCaseId);
   const onUpdateCaseTelemetryRef = useRef(onUpdateCaseTelemetry);
+  const onClearCaseTelemetryRef = useRef(onClearCaseTelemetry);
   // The run in flight: which case it solves, the hash of the inputs it was sent with, and whether errors stay quiet
   const pendingRunRef = useRef(null);
 
   useEffect(() => {
     activeCaseIdRef.current = activeCaseId;
     onUpdateCaseTelemetryRef.current = onUpdateCaseTelemetry;
-  }, [activeCaseId, onUpdateCaseTelemetry]);
+    onClearCaseTelemetryRef.current = onClearCaseTelemetry;
+  }, [activeCaseId, onUpdateCaseTelemetry, onClearCaseTelemetry]);
 
   useEffect(() => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -127,9 +132,17 @@ export function useWebSocketSimulation({ nodes, edges, globalSettings, cases = [
 
         } else if (response.status === 'error') {
           setIsSimulating(false);
+          // Only the case this run was for loses its readouts; the previous run's numbers no longer match the model
+          const failedCaseId = pendingRunRef.current?.caseId || activeCaseIdRef.current;
+          if (pendingRunRef.current && onClearCaseTelemetryRef.current && failedCaseId) {
+            onClearCaseTelemetryRef.current(failedCaseId);
+          }
           pendingRunRef.current = null;
+          // The previous run's stats and time no longer describe the model
+          setLastStats(null);
+          setLastRunAt(null);
           console.warn(`Simulation not run: ${response.message}`);
-          setRunError(response.message || 'The solver reported an error.');
+          setRunError(response.message || 'The solver reported an error.', response.target?.id ? response.target : null, response.detail || null);
         } else {
           setIsSimulating(false);
         }
@@ -217,6 +230,8 @@ export function useWebSocketSimulation({ nodes, edges, globalSettings, cases = [
     graphError,
     runError,
     runErrorId: runErrorState.id,
+    runErrorTarget: runErrorState.target,
+    runErrorDetail: runErrorState.detail,
     loginRequired
   };
 }

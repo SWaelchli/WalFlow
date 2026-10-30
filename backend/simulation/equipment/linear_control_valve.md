@@ -105,7 +105,7 @@ applied to the outlet for $Q \ge 0$ and to the inlet for $Q < 0$, with density a
 
 | Parameter (UI Label) | UI Unit | Backend Var | SI Unit | Default | Valid Range | Description |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| Max Cv | Cv (US gpm/psi^0.5) | `self.max_cv` | Cv | 0.05 | $> 0$ | Flow coefficient at 100 % opening |
+| Max Cv | Cv (US gpm/psi^0.5) | `self.max_cv` | Cv | 50 | $> 0$ | Flow coefficient at 100 % opening |
 | Opening | % | `self.opening_pct` | % | 50 | 0-100 | Valve position; below 0.1 % = closed |
 | Valve style | catalogue entry or Custom | `valve_style_id` | – | IEC Table D.2 globe single port, contoured plug, flow to open | catalogue `control_valve` rows, `custom` | Sets $F_L$ and $F_d$ from the [catalogue](../../../frontend/src/pages/CataloguePage.jsx) (Control valve styles); Custom makes them editable |
 | F_L (from the style, or Custom) | – | `self.fl` | – | 0.9 | $(0, 1]$ | Liquid pressure recovery factor $F_L$ (Table D.2) |
@@ -146,7 +146,7 @@ Node type: `linear_control_valve`. Field names follow the naming rule in [base_n
 
 | Field | Unit in file | Default |
 |---|---|---|
-| `max_cv` | Cv (US gpm/psi^0.5) | 0.05 |
+| `max_cv` | Cv (US gpm/psi^0.5) | 50 |
 | `opening_pct` | % | 50 |
 | `fl` | factor $F_L$ (IEC 60534-2-1) | 0.9 |
 | `fd` | factor $F_d$ (IEC 60534-2-1) | 0.46 |

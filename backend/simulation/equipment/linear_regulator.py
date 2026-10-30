@@ -46,7 +46,11 @@ class LinearRegulator(HydraulicNode):
 
         inlet = self.inlets[0]
         outlet = self.outlets[0]
-        dp = self.calculate_delta_p(inlet.flow_rate, inlet.density, inlet.viscosity)
+        if self.locked_up:
+            # Closed, holding its setpoint downstream: the solver pins the outlet there, not the Cv equation
+            dp = inlet.pressure - self.set_pressure
+        else:
+            dp = self.calculate_delta_p(inlet.flow_rate, inlet.density, inlet.viscosity)
         outlet.pressure = inlet.pressure - dp
         outlet.flow_rate = inlet.flow_rate
         outlet.density = inlet.density
@@ -56,13 +60,15 @@ class LinearRegulator(HydraulicNode):
         fluid_type = getattr(self.global_settings, 'fluid_type', 'water')
         from simulation.fluid_utils import FluidProperties
         
+        # Locked up with the supply below the setpoint (an intermediate solve) dissipates nothing
+        dp_heat = max(dp, 0.0) if self.locked_up else abs(dp)
         if inlet.flow_rate >= 0:
             cp = FluidProperties.get_specific_heat(fluid_type, inlet.temperature)
-            dt = abs(dp) / (inlet.density * cp)
+            dt = dp_heat / (inlet.density * cp)
             outlet.temperature = inlet.temperature + dt
         else:
             cp = FluidProperties.get_specific_heat(fluid_type, outlet.temperature)
-            dt = abs(dp) / (outlet.density * cp)
+            dt = dp_heat / (outlet.density * cp)
             inlet.temperature = outlet.temperature + dt
 
         # Dynamically update local properties based on temperature feedback

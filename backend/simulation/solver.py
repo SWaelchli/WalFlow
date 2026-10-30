@@ -40,6 +40,18 @@ def blocks_at_rest(node) -> bool:
     return is_closed_relief(node) or is_stopped_blocking(node)
 
 
+class ComponentRangeError(ValueError):
+    """A component's equations cannot be evaluated at the trial state (e.g. the root of a negative number).
+    `component` is the canvas component: {"type": "Node"|"Connection", "id", "name"}."""
+    def __init__(self, component, cause):
+        super().__init__(f"{component['name']}: {type(cause).__name__}: {cause}")
+        self.component = component
+
+
+class SolveNotConvergedError(ValueError):
+    """The hydraulic solve ended above the residual tolerance; its final residuals locate the largest imbalance."""
+
+
 def is_pressure_reference(node) -> bool:
     """A node that fixes the pressure (or the flow) of the circuit it sits in (topology pruning)."""
     return getattr(node, 'is_pressure_boundary', False) or getattr(node, 'node_type', None) == 'flow_boundary'
@@ -790,7 +802,7 @@ class NetworkSolver:
                                                   property_flows=relaxed_flows if propagate else None)
             except ValueError as e:
                 if fatal:
-                    state["error"] = str(e)
+                    state["error"] = e
                     state["residuals"] = getattr(self, '_last_evaluated_residuals', None)
                 return False
             finally:
@@ -978,9 +990,13 @@ class NetworkSolver:
         solve_error = state["error"]
         bottleneck = self._identify_bottleneck(last_residuals) if last_residuals is not None else None
         max_hydraulic_residual = float(np.max(np.abs(last_residuals))) if (last_residuals is not None and len(last_residuals) > 0) else 0.0
+        failure = self._failure_report(solve_error, bottleneck) if solve_error is not None else {}
         stats = {
             "success": solve_error is None,
-            "error": solve_error,
+            "error": failure.get("message"),
+            "error_kind": failure.get("kind"),
+            "error_detail": str(solve_error) if solve_error is not None else None,
+            "error_target": failure.get("target"),
             "time_ms": (time.perf_counter() - start_time) * 1000,
             "outer_iterations": outer_iterations,
             "total_inner_iterations": state["inner"],
@@ -1015,6 +1031,8 @@ class NetworkSolver:
             "success": False,
             "error": message,
             "error_kind": "no_pressure_reference",   # a model problem the user can fix, shown as an error
+            "error_detail": None,
+            "error_target": None,
             "time_ms": (time.perf_counter() - start_time) * 1000,
             "outer_iterations": 0,
             "total_inner_iterations": 0,
@@ -1032,6 +1050,35 @@ class NetworkSolver:
             "properties_converged": False,
             "physical_validity": {"valid": True, "issues": []},
         }
+
+    def _failure_report(self, error, bottleneck) -> Dict[str, Any]:
+        """Short message, kind and canvas target of a failed solve; the raw solver text goes to error_detail."""
+        if isinstance(error, ComponentRangeError):
+            target = error.component
+            return {"kind": "out_of_range", "target": target, "message": (
+                f"{target['name']} is outside its valid range: its equations cannot be evaluated at the pressures "
+                "and flows the solver tried. Check its inputs and the pressures around it, for example a boundary "
+                "pressure above a pump's shut-off head.")}
+        if isinstance(error, SolveNotConvergedError) and bottleneck and bottleneck.get("id"):
+            target = {k: bottleneck[k] for k in ("type", "id", "name")}
+            return {"kind": "not_converged", "target": target, "message": (
+                f"The solver did not converge. The largest imbalance is at {target['name']} "
+                f"({bottleneck['error_type'].lower()}). Check the inputs around it.")}
+        return {"kind": "not_converged", "target": None,
+                "message": "The solver did not converge. Check the inputs and the boundary pressures."}
+
+    def _component_ref(self, part, edge) -> Dict[str, Any]:
+        """The canvas component of a part evaluated for an edge row: its pipe, the link of an in-line
+        component or flow boundary, or a node (a hidden port node belongs to its component)."""
+        if edge is not None and part is edge['pipe']:
+            if isinstance(part, (ComponentLink, BoundaryLink)):
+                cid = canvas_id(edge['id'])
+                return {"type": "Node", "id": cid, "name": self._canvas_node(cid).name}
+            return {"type": "Connection", "id": canvas_id(edge.get('id') or ''), "name": edge.get('label') or edge.get('id')}
+        if getattr(part, 'hidden', False):
+            cid = canvas_id(part.id)
+            return {"type": "Node", "id": cid, "name": self._canvas_node(cid).name}
+        return {"type": "Node", "id": canvas_id(part.id), "name": part.name}
 
     def _canvas_node(self, cid):
         """The canvas component of id cid: a node or an in-line component."""
@@ -1490,34 +1537,47 @@ class NetworkSolver:
                 residuals.append(5.0 * (m_in - m_out) / q_scale + 1e-9 * x_scaled[i])
 
             # 2. Pressure Balance
-            for j, (src_idx, tgt_idx, _, _, src_node, tgt_node, tcv_port, pipe, kind) in enumerate(self._edge_rows):
-                if kind == "through":
-                    p_src_out = p_in_all[src_idx]
-                elif getattr(src_node, 'locked_up', False):
-                    p_src_out = src_node.set_pressure   # closed regulator holds its setpoint downstream
-                elif kind == "mcp":
-                    dp_pipe = pipe.stagnation_delta_p(q_edges[j], *pipe.upstream_port().fluid())
-                    p_out_est = p_in_all[tgt_idx] + dp_pipe + self._tcv_entry_dp(self.edges_list[j], tgt_node, q_edges[j])
+            part = None    # the component being evaluated: named when its equations cannot be evaluated
+            try:
+                for j, (src_idx, tgt_idx, _, _, src_node, tgt_node, tcv_port, pipe, kind) in enumerate(self._edge_rows):
+                    if kind == "through":
+                        p_src_out = p_in_all[src_idx]
+                    elif getattr(src_node, 'locked_up', False):
+                        p_src_out = src_node.set_pressure   # closed regulator holds its setpoint downstream
+                    elif kind == "mcp":
+                        part = pipe
+                        dp_pipe = pipe.stagnation_delta_p(q_edges[j], *pipe.upstream_port().fluid())
+                        part = tgt_node
+                        p_out_est = p_in_all[tgt_idx] + dp_pipe + self._tcv_entry_dp(self.edges_list[j], tgt_node, q_edges[j])
 
-                    density, viscosity = src_node.upstream_fluid()
-                    sense = {}
-                    if self._pilot_point(src_node) is not None:
-                        sense = {"p_sense_pa": self._pilot_sense_pa(src_node, p_in_all, q_edges)}
-                    dp_node = src_node.calculate_delta_p(f_comp[j] * q_edges[j], density, viscosity, p_in_pa=p_in_all[src_idx], p_out_pa=p_out_est, update_state=False, **sense)
-                    p_src_out = p_in_all[src_idx] - dp_node
-                else:
-                    # The component's curve at its inlet volume flow (f_comp: edge density / inlet density)
-                    q_comp = f_comp[j] * q_edges[j]
-                    p_src_out = self._get_node_p_out(src_node, p_in_all[src_idx], q_comp, q_comp,
-                                                     outlet=self._outlet_of(self.edges_list[j]))
-                
-                if tcv_port is not None:
-                    dp_tcv = tgt_node.calculate_path_dp(q_edges[j], tgt_node.inlets[tcv_port].density, tcv_port, tgt_node.inlets[tcv_port].viscosity)
-                    dp_pipe = pipe.stagnation_delta_p(q_edges[j], *pipe.upstream_port().fluid())
-                    residuals.append(((p_src_out - p_in_all[tgt_idx]) - (dp_pipe + dp_tcv)) / p_scale)
-                else:
-                    dp_pipe = pipe.stagnation_delta_p(q_edges[j], *pipe.upstream_port().fluid())
-                    residuals.append(((p_src_out - p_in_all[tgt_idx]) - dp_pipe) / p_scale)
+                        part = src_node
+                        density, viscosity = src_node.upstream_fluid()
+                        sense = {}
+                        if self._pilot_point(src_node) is not None:
+                            sense = {"p_sense_pa": self._pilot_sense_pa(src_node, p_in_all, q_edges)}
+                        dp_node = src_node.calculate_delta_p(f_comp[j] * q_edges[j], density, viscosity, p_in_pa=p_in_all[src_idx], p_out_pa=p_out_est, update_state=False, **sense)
+                        p_src_out = p_in_all[src_idx] - dp_node
+                    else:
+                        # The component's curve at its inlet volume flow (f_comp: edge density / inlet density)
+                        part = src_node
+                        q_comp = f_comp[j] * q_edges[j]
+                        p_src_out = self._get_node_p_out(src_node, p_in_all[src_idx], q_comp, q_comp,
+                                                         outlet=self._outlet_of(self.edges_list[j]))
+
+                    if tcv_port is not None:
+                        part = tgt_node
+                        dp_tcv = tgt_node.calculate_path_dp(q_edges[j], tgt_node.inlets[tcv_port].density, tcv_port, tgt_node.inlets[tcv_port].viscosity)
+                        part = pipe
+                        dp_pipe = pipe.stagnation_delta_p(q_edges[j], *pipe.upstream_port().fluid())
+                        residuals.append(((p_src_out - p_in_all[tgt_idx]) - (dp_pipe + dp_tcv)) / p_scale)
+                    else:
+                        part = pipe
+                        dp_pipe = pipe.stagnation_delta_p(q_edges[j], *pipe.upstream_port().fluid())
+                        residuals.append(((p_src_out - p_in_all[tgt_idx]) - dp_pipe) / p_scale)
+            except ValueError as e:
+                if isinstance(e, ComponentRangeError) or part is None:
+                    raise
+                raise ComponentRangeError(self._component_ref(part, self.edges_list[j]), e) from e
             return np.array(residuals)
 
         def is_physical(x_scaled):
@@ -1592,7 +1652,7 @@ class NetworkSolver:
         else:
             self._weights = prev_weights
             msg = getattr(sol, 'message', 'Residuals did not converge to tolerance')
-            raise ValueError(f"Solver failed to converge: message='{msg}', max_residual={max_res:.6f} (scaled)")
+            raise SolveNotConvergedError(f"Solver failed to converge: message='{msg}', max_residual={max_res:.6f} (scaled)")
 
 
     def _pilot_point(self, node):
@@ -2108,55 +2168,64 @@ class NetworkSolver:
         if self.nodes_list and self.nodes_list[0].global_settings:
             max_iterations = getattr(self.nodes_list[0].global_settings, 'property_iterations', 5)
         actual_iters = 0
-        for _ in range(max_iterations):
-            actual_iters += 1
-            max_temp_change = 0.0
-            for j, edge in enumerate(self.edges_list):
-                pipe = edge['pipe']
-                q = q_edges[j]
-                pipe.inlets[0].flow_rate = q
-                pipe.outlets[0].flow_rate = q
-                _, port, _, pipe_up, _ = self._upstream_end(edge, q)
-                pipe_up.temperature = port.temperature
-                pipe_up.density = port.density
-                pipe_up.viscosity = port.viscosity
-                pipe.calculate()
-            for node_id, node in self.network.nodes.items():
-                if isinstance(node, Tank):
+        part, part_edge = None, None    # the component being evaluated: named when its equations fail
+        try:
+            for _ in range(max_iterations):
+                actual_iters += 1
+                max_temp_change = 0.0
+                for j, edge in enumerate(self.edges_list):
+                    pipe = edge['pipe']
+                    part, part_edge = pipe, edge
+                    q = q_edges[j]
+                    pipe.inlets[0].flow_rate = q
+                    pipe.outlets[0].flow_rate = q
+                    _, port, _, pipe_up, _ = self._upstream_end(edge, q)
+                    pipe_up.temperature = port.temperature
+                    pipe_up.density = port.density
+                    pipe_up.viscosity = port.viscosity
+                    pipe.calculate()
+                for node_id, node in self.network.nodes.items():
+                    part, part_edge = node, None
+                    if isinstance(node, Tank):
+                        node.calculate()
+                        continue
+                    old_temps = [p.temperature for p in node.outlets] + [p.temperature for p in node.inlets]
+                    for j, edge, port in self.edges_into.get(node_id, ()):
+                        if port is not None:
+                            q = q_edges[j]
+                            port.flow_rate = q
+                            if q >= 0:
+                                pipe_end = edge['pipe'].outlets[0]
+                                port.temperature = pipe_end.temperature
+                                port.density = pipe_end.density
+                                port.viscosity = pipe_end.viscosity
+                    for j, edge, port in self.edges_out_of.get(node_id, ()):
+                        if port is not None:
+                            q = q_edges[j]
+                            port.flow_rate = q
+                            if q < 0:
+                                pipe_end = edge['pipe'].inlets[0]
+                                port.temperature = pipe_end.temperature
+                                port.density = pipe_end.density
+                                port.viscosity = pipe_end.viscosity
+                    if hasattr(node, 'calculate_temperature'):
+                        node.calculate_temperature()
                     node.calculate()
-                    continue
-                old_temps = [p.temperature for p in node.outlets] + [p.temperature for p in node.inlets]
-                for j, edge, port in self.edges_into.get(node_id, ()):
-                    if port is not None:
-                        q = q_edges[j]
-                        port.flow_rate = q
-                        if q >= 0:
-                            pipe_end = edge['pipe'].outlets[0]
-                            port.temperature = pipe_end.temperature
-                            port.density = pipe_end.density
-                            port.viscosity = pipe_end.viscosity
-                for j, edge, port in self.edges_out_of.get(node_id, ()):
-                    if port is not None:
-                        q = q_edges[j]
-                        port.flow_rate = q
-                        if q < 0:
-                            pipe_end = edge['pipe'].inlets[0]
-                            port.temperature = pipe_end.temperature
-                            port.density = pipe_end.density
-                            port.viscosity = pipe_end.viscosity
-                if hasattr(node, 'calculate_temperature'):
-                    node.calculate_temperature()
-                node.calculate()
-                new_temps = [p.temperature for p in node.outlets] + [p.temperature for p in node.inlets]
-                for old_t, new_t in zip(old_temps, new_temps):
-                    max_temp_change = max(max_temp_change, abs(new_t - old_t))
-            if actual_iters >= max_iterations:
-                break
-            # A pass in a loop with a small through-flow moves little even far from the steady state: a settled
-            # pass ends the propagation only when the mixing solve agrees within the outer loop's tolerance
-            settled = max_temp_change < 0.01
-            if self._solve_mixing(q_edges, min_change=0.05 if settled else 0.0) < 0.05 and settled:
-                break
+                    new_temps = [p.temperature for p in node.outlets] + [p.temperature for p in node.inlets]
+                    for old_t, new_t in zip(old_temps, new_temps):
+                        max_temp_change = max(max_temp_change, abs(new_t - old_t))
+                if actual_iters >= max_iterations:
+                    break
+                # A pass in a loop with a small through-flow moves little even far from the steady state: a settled
+                # pass ends the propagation only when the mixing solve agrees within the outer loop's tolerance
+                settled = max_temp_change < 0.01
+                part = None
+                if self._solve_mixing(q_edges, min_change=0.05 if settled else 0.0) < 0.05 and settled:
+                    break
+        except ValueError as e:
+            if isinstance(e, ComponentRangeError) or part is None:
+                raise
+            raise ComponentRangeError(self._component_ref(part, part_edge), e) from e
         self.last_prop_iters = actual_iters
         self._fill_stagnant_temperatures(q_edges)
 

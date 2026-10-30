@@ -4,6 +4,7 @@ import pytest
 
 import pytest
 
+from networks import oil_cooler_circuit_with_closed_prv
 from physics_refs import solve
 from simulation.equipment.linear_control_valve import LinearControlValve
 from simulation.equipment.linear_regulator import LinearRegulator
@@ -141,3 +142,17 @@ def test_report_matches_the_reported_solution_at_any_iteration_limit(limit):
         assert abs(err) < 1e-3 or states.get("PRV") in ("wide_open",)
     else:
         assert prv.opening_pct > 0.0       # not converged: no lock-up claimed
+
+
+def test_closed_prv_behind_in_line_components_solves_with_physical_temperatures():
+    # The PRV's heat at its end stop came from the Cv equation at a downstream pressure above its inlet's, which
+    # gave a negative dP and a math domain error in the property update
+    network, stats = oil_cooler_circuit_with_closed_prv()
+    assert stats["success"], stats["error"]
+    assert stats["error_kind"] is None
+    assert [(s["name"], s["state"]) for s in stats["saturated_controllers"]] == [("linear_regulator 1", "closed")]
+    pump = network.nodes["p"]
+    assert pump.outlets[0].flow_rate * 60000 > -0.05            # no reverse flow beyond leakage
+    for node in network.nodes.values():
+        for port in node.inlets + node.outlets:
+            assert 273.15 < port.temperature < 400.0, node.name

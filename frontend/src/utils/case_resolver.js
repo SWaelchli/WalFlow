@@ -85,6 +85,17 @@ export const updateCaseTelemetry = (cases = [], targetCaseId, telemetry, kpis, t
 };
 
 /**
+ * Drops the results of one case (a failed run must not leave the previous numbers on screen).
+ * Other cases keep theirs.
+ */
+export const clearCaseTelemetry = (cases = [], targetCaseId) => {
+  return cases.map(c => {
+    if (c.id !== targetCaseId) return c;
+    return { ...c, telemetry: null, telemetry_unmitigated: null, telemetry_peak: null, kpis: null, result_hash: null };
+  });
+};
+
+/**
  * Checks if a specific node property is overridden in the currently active case.
  */
 export const isPropertyOverridden = (nodeId, propKey, cases = [], activeCaseId = 'case_base') => {

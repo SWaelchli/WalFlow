@@ -64,6 +64,7 @@ export default function Navbar({
   findings = { errors: [], warnings: [] },
   statusNotes = [],
   runError = null,
+  runErrorDetail = null,
   statusPanelOpen = false,
   onToggleStatusPanel,
   onCloseStatusPanel,
@@ -286,6 +287,7 @@ export default function Navbar({
           warnings={findings.warnings}
           notes={statusNotes}
           runError={runError}
+          runErrorDetail={runErrorDetail}
           open={statusPanelOpen}
           onToggle={onToggleStatusPanel}
           onClose={onCloseStatusPanel}

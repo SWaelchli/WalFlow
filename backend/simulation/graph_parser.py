@@ -540,7 +540,7 @@ class GraphParser:
         elif t == 'linear_control_valve':
             node = LinearControlValve(
                 name=name,
-                max_cv=float(d.get('max_cv', 0.05)),
+                max_cv=float(d.get('max_cv', 50.0)),
                 opening_pct=float(d.get('opening_pct', 50.0)),
                 fl=float(d.get('fl', 0.9)),
                 fd=float(d.get('fd', 0.46))
@@ -548,7 +548,7 @@ class GraphParser:
         elif t == 'remote_control_valve':
             node = RemoteControlValve(
                 name=name,
-                max_cv=float(d.get('max_cv', 0.05)),
+                max_cv=float(d.get('max_cv', 50.0)),
                 set_pressure=float(d.get('set_pressure_pa', 500000.0)),
                 backpressure=bool(d.get('backpressure', False)),
                 fl=float(d.get('fl', 0.9)),
@@ -557,7 +557,7 @@ class GraphParser:
         elif t == 'linear_regulator':
             node = LinearRegulator(
                 name=name,
-                max_cv=float(d.get('max_cv', 0.05)),
+                max_cv=float(d.get('max_cv', 50.0)),
                 set_pressure=float(d.get('set_pressure_pa', 500000.0)),
                 backpressure=bool(d.get('backpressure', False))
             )
