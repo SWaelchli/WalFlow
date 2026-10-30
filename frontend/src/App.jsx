@@ -11,7 +11,7 @@ import ReactFlow, {
 } from 'reactflow';
 import { notify, confirmDialog } from './utils/dialogs';
 import { parseServerTime } from './utils/serverTime';
-import { validateNetwork, checkNewConnection, normalizeConnection, flipBoundaryEdges, flipBlockedMessage, PORT_TAKEN_MESSAGE } from './utils/networkValidation';
+import { validateNetwork, checkNewConnection, normalizeConnection, flipBoundaryEdges, flipBlockedMessage, dropEdgesToMissingHandles, PORT_TAKEN_MESSAGE } from './utils/networkValidation';
 import { junctionLayout, junctionPortCount, PIN_TIP, PIN_LENGTH } from './utils/junctionLayout';
 import { boundaryLayout, boundaryPortCount, BOUNDARY_PORT_TYPES } from './utils/boundaryLayout';
 import { summarizeStats, deriveRunState } from './utils/runStatus';
@@ -512,7 +512,7 @@ function WalFlowContent() {
     });
 
     const nextNum = getNextLabelNumber(edges);
-    const newEdges = (copiedEdges || [])
+    const pastedEdges = (copiedEdges || [])
       .filter((e) => idMap[e.source] && idMap[e.target])
       .map((e, idx) => {
         const isSignal = e.data?.type === 'SIGNAL';
@@ -532,6 +532,8 @@ function WalFlowContent() {
           },
         };
       });
+
+    const { edges: newEdges } = dropEdgesToMissingHandles(newNodes, pastedEdges);
 
     setNodes((nds) => nds.map((n) => ({ ...n, selected: false })).concat(newNodes));
     setEdges((eds) => eds.map((e) => ({ ...e, selected: false })).concat(newEdges));
@@ -884,9 +886,14 @@ function WalFlowContent() {
           label: edge.data?.label || uniqueId
         };
       });
+      // An edge to a port its component does not have cannot be drawn: remove it and say so once
+      const { edges: validEdges, dropped } = dropEdgesToMissingHandles(restoredNodes, restoredEdges);
+      if (dropped > 0) {
+        notify(`${dropped} ${dropped === 1 ? 'connection was' : 'connections were'} removed: ${dropped === 1 ? 'it pointed' : 'they pointed'} to a port the component does not have.`, 'warning');
+      }
       setNodes(restoredNodes);
-      setEdges(restoredEdges);
-      resetHistory(restoredNodes, restoredEdges);
+      setEdges(validEdges);
+      resetHistory(restoredNodes, validEdges);
       fitViewPendingRef.current = true;
       // Settings of the loaded drawing replace the previous ones; old files keep their solver values as a
       // ticked drawing override, and their stored unit system is ignored (display preference of the user)
