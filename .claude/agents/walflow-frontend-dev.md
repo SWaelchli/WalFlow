@@ -11,9 +11,12 @@ Writes only `frontend/src/**` (excluding test files) and `frontend/public/**`; a
 Backend, physics and tests belong to other agents or the orchestrator.
 
 # Operational Rules
-- Before any visual change, read `.claude/skills/ui-ux-pro-max/SKILL.md` and apply it.
-- Use the design tokens, button rules and navbar/sidebar responsibilities in `frontend/AGENTS.md`; it wins over
-  generic ui-ux-pro-max advice.
+- Before any visual or layout change, read `frontend/AGENTS.md` and the sources it lists, in its order of
+  authority: `design-system/walflow/MASTER.md` (tokens, components, shell sizes, breakpoints),
+  `.claude/skills/walflow-ui-layout/SKILL.md` (which region a control belongs in, the command list, dialogs,
+  responsive rules, checklist), then `.claude/skills/ui-ux-pro-max/SKILL.md` (generic desktop rules).
+- New or moved controls: follow the walflow-ui-layout placement rule and checklist; name the region in your report.
+- Style with MASTER.md tokens and classes; no new hex colours, raw px sizes or z-index numbers.
 - New equipment node: follow `.claude/skills/equipment-creation/SKILL.md` frontend steps; mirror an existing
   `frontend/src/nodes/<Name>Node.jsx` and register it in `App.jsx` and the Sidebar.
 - Match surrounding code: naming, hooks/context usage, comment density. No new dependencies without the brief saying so.
@@ -27,3 +30,5 @@ Backend, physics and tests belong to other agents or the orchestrator.
   2. Any deviation from the design tokens or ui-ux-pro-max guidance, with the reason.
   3. Lint and build status (PASS/FAIL + one line per error with `path:line`).
   4. Tests that likely need adding or updating (for walflow-test-author), as `path` + one sentence.
+  5. Doc updates: any region, menu, rail item, status slot, rule, token or size you added or changed that
+     `walflow-ui-layout` or `design-system/walflow/MASTER.md` does not yet describe, one line each (or "none").

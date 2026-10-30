@@ -76,7 +76,7 @@ Rules:
 
 1. The user will advice on what feature they want to change or implement. Before changing any code, make sure to clarify the exact requirements. Write a prompt and wait for confirmation from user before proceeding.
 2. Git commits should ONLY be performed upon explicit user request. Do not automatically create git commits after completing a task or phase unless requested.
-3. Always read and consult the `ui-ux-pro-max` skill and [frontend/AGENTS.md](./frontend/AGENTS.md) whenever changing the user interface (UI) or user experience (UX) to ensure premium visual compliance.
+3. Whenever changing the user interface (UI) or user experience (UX), read [frontend/AGENTS.md](./frontend/AGENTS.md) and the three sources it lists: the design system (`design-system/walflow/MASTER.md`), the `walflow-ui-layout` skill and the `ui-ux-pro-max` skill.
 
 ## Versioning Policy
 
@@ -88,4 +88,4 @@ Rules:
 
 ## Design & Styling
 
-The UI design tokens, button rules and navbar/sidebar responsibilities are in [frontend/AGENTS.md](./frontend/AGENTS.md).
+How WalFlow looks is defined in [design-system/walflow/MASTER.md](./design-system/walflow/MASTER.md); where controls go is in the `walflow-ui-layout` skill ([.claude/skills/walflow-ui-layout/SKILL.md](./.claude/skills/walflow-ui-layout/SKILL.md)). [frontend/AGENTS.md](./frontend/AGENTS.md) gives the order of authority and the essentials.

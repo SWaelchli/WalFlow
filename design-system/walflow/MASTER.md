@@ -1,6 +1,6 @@
 # Design System Master File (WalFlow)
 
-> **LOGIC:** When building a specific page, first check `design-system/pages/[page-name].md`.
+> **LOGIC:** When building a specific page, first check `design-system/walflow/pages/[page-name].md`.
 > If that file exists, its rules **override** this Master file.
 > If not, strictly follow the rules below.
 
@@ -8,7 +8,14 @@
 
 **Project:** WälFlow
 **Version:** 0.2.0
+**Platform:** desktop web app (mouse and keyboard, windows from 768 px wide). Mobile rules do not apply.
 **Design Dials:** Variance 3/10 (Clean Minimalism) | Motion 3/10 (Subtle Micro-interactions) | Density 8/10 (Compact Editor Density)
+
+This file is the **single source of truth** for how WalFlow looks: tokens, type, components and app shell sizes.
+`frontend/src/index.css` implements it and must use the same names and values; when they differ, this file wins
+and `index.css` is corrected. Where to place a control (menus, panes, status bar, dialogs) is in the
+`walflow-ui-layout` skill. Generic advice is in the `ui-ux-pro-max` skill. Edit this file by hand; do not
+regenerate it with `--persist`.
 
 ---
 
@@ -22,6 +29,7 @@
   --color-primary: #FA8507;
   --color-primary-hover: #E07600;
   --color-primary-active: #C86900;
+  --color-primary-text: #B45309; /* orange as text on light surfaces: 5.0:1 on white (#FA8507 is 2.49:1) */
   --color-primary-tint: rgba(250, 133, 7, 0.12);
   --color-primary-glow: rgba(250, 133, 7, 0.35);
 
@@ -35,6 +43,7 @@
   --color-bg-canvas: #F0F4F4;
   --color-surface: #FFFFFF;
   --color-surface-hover: #F8FAFA;
+  --color-surface-muted: #F4F7F6; /* secondary button hover, panel and rail backgrounds */
   --color-surface-dark: #223233;
 
   /* Borders & Dividers */
@@ -51,8 +60,21 @@
   /* Semantic Alerts */
   --color-success: #10B981;
   --color-warning: #F59E0B;
+  --color-warning-text: #B45309; /* amber as text: 5.0:1 on white */
+  --color-warning-text-strong: #92400E;
+  --color-warning-bg: #FFFBEB;
+  --color-warning-border: #FDE68A;
   --color-danger: #EF4444;
+  --color-danger-text: #B91C1C; /* red as small text: 6.5:1 on white (#EF4444 is 3.76:1) */
+  --color-danger-tint: #FEF2F2;
+  --color-danger-border: #FEE2E2;
   --color-info: #0284C7;
+
+  /* Diagram semantics (canvas) */
+  --color-signal: #587071;       /* signal (sensing) lines */
+  --color-inlet: #0284C7;
+  --color-outlet: #E11D48;
+  --color-port-neutral: #587071; /* junction, orifice, filter ports: 5.3:1 on white */
 
   /* Spacing Scale (Compact Density) */
   --space-xs: 2px;
@@ -75,11 +97,48 @@
   --shadow-lg: 0 10px 25px -3px rgba(57, 82, 83, 0.14), 0 4px 6px -2px rgba(57, 82, 83, 0.05);
   --shadow-xl: 0 20px 35px -5px rgba(57, 82, 83, 0.2);
 
+  /* Type Scale (nothing below 11px in UI chrome) */
+  --fs-xs: 11px;   /* captions, badges, table meta */
+  --fs-sm: 12px;   /* labels, secondary text, dense tables */
+  --fs-base: 13px; /* body, inputs, buttons */
+  --fs-md: 14px;   /* emphasised body, modal subtitles */
+  --fs-lg: 16px;   /* section and panel titles */
+  --fs-xl: 20px;   /* modal titles */
+  --fs-2xl: 24px;  /* page titles, empty-state glyphs */
+
   /* Typography Pairing */
   --font-sans: 'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', 'Roboto Mono', monospace;
+
+  /* App Shell Sizes (see "App Shell & Layout") */
+  --shell-menubar-h: 40px;
+  --shell-commandbar-h: 44px;
+  --shell-statusbar-h: 28px;
+  --shell-rail-w: 48px;
+  --shell-pane-w: 288px;       /* default; resizable 240-400 */
+  --shell-inspector-w: 320px;  /* default; resizable 280-480 */
+  --shell-results-h: 280px;    /* default; resizable 160 to 70% of the workspace */
+  --shell-results-collapsed-h: 36px;
+  --shell-canvas-min-w: 480px;
+  --shell-canvas-min-h: 320px;
+  --control-h: 30px;           /* buttons, inputs, selects */
+  --control-h-sm: 24px;        /* table cells, chips, status bar items */
+  --icon-sm: 16px;             /* menus, dense rows, status bar */
+  --icon-md: 20px;             /* command bar, rail */
+
+  /* Layers: use these, never raw z-index numbers */
+  --z-canvas-overlay: 10;      /* legend, case manager, run banners, canvas controls */
+  --z-pane-overlay: 100;       /* side pane or inspector shown over the canvas */
+  --z-popover: 1000;           /* menus, dropdowns, context menus, status flyouts, tooltips */
+  --z-modal: 2000;
+  --z-toast: 3000;
 }
 ```
+
+**Value conflicts settled in favour of this file** (correct them in `index.css`):
+`--color-primary-hover` is `#E07600` (index.css: `#E87F00`), `--color-primary-active` is `#C86900` (index.css:
+`#DE7500`). The spacing, shell, control, icon and layer tokens are missing from `index.css` and are added with the
+app shell work (FINDINGS.md phase 8).
 
 ---
 
@@ -149,7 +208,7 @@
   border: 1px solid var(--color-border);
 }
 .btn-secondary:hover {
-  background-color: #F4F7F6;
+  background-color: var(--color-surface-muted);
   border-color: var(--color-border-hover);
 }
 .btn-secondary:active {
@@ -166,11 +225,11 @@
   border: 1px solid transparent;
 }
 .btn-danger-ghost:hover {
-  background-color: #FEF2F2;
-  border-color: #FEE2E2;
+  background-color: var(--color-danger-tint);
+  border-color: var(--color-danger-border);
 }
 .btn-danger-ghost:active {
-  background-color: #FEE2E2;
+  background-color: var(--color-danger-border);
 }
 ```
 
@@ -276,7 +335,7 @@
   background-color: rgba(28, 43, 44, 0.5);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  z-index: 10000;
+  z-index: var(--z-modal);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -345,8 +404,81 @@
 }
 ```
 
+### 5. App Shell Bars
+
+```css
+/* Menu bar (row 1) and command bar (row 2) */
+.shell-menubar   { height: var(--shell-menubar-h);    background: var(--color-surface); border-bottom: 1px solid var(--color-border); }
+.shell-commandbar{ height: var(--shell-commandbar-h); background: var(--color-surface); border-bottom: 1px solid var(--color-border); gap: var(--space-md); padding: 0 var(--space-lg); }
+
+/* Menu bar entries: text buttons, no border; open menu uses the active state */
+.menubar-item         { height: 28px; padding: 0 var(--space-md); font-size: var(--fs-base); border-radius: var(--radius-sm); background: transparent; }
+.menubar-item:hover,
+.menubar-item[aria-expanded="true"] { background: var(--color-surface-muted); }
+
+/* Dropdown menus and context menus share one look */
+.menu      { min-width: 220px; padding: var(--space-sm); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); box-shadow: var(--shadow-lg); z-index: var(--z-popover); }
+.menu-item { height: 28px; padding: 0 var(--space-md); font-size: var(--fs-base); display: grid; grid-template-columns: var(--icon-sm) 1fr auto; gap: var(--space-md); align-items: center; }
+.menu-item kbd { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--color-text-muted); }
+
+/* Activity rail: icon buttons with a visible active marker */
+.shell-rail            { width: var(--shell-rail-w); background: var(--color-surface-muted); border-right: 1px solid var(--color-border); }
+.rail-button           { width: 40px; height: 40px; border-radius: var(--radius-sm); color: var(--color-text-secondary); }
+.rail-button[aria-pressed="true"] { color: var(--color-brand-dark); box-shadow: inset 2px 0 0 var(--color-primary); background: var(--color-surface); }
+
+/* Status bar: quiet, one line, small text; items are buttons when they open a flyout */
+.shell-statusbar { height: var(--shell-statusbar-h); background: var(--color-surface-muted); border-top: 1px solid var(--color-border); font-size: var(--fs-xs); color: var(--color-text-secondary); gap: var(--space-xl); padding: 0 var(--space-lg); }
+.status-item     { height: var(--control-h-sm); display: inline-flex; align-items: center; gap: var(--space-sm); }
+```
+
 ---
 
+## App Shell & Layout
+
+What goes into each region, and the rules for adding to it, are in the `walflow-ui-layout` skill. This section
+fixes the geometry.
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ Menu bar 40  Logo  File Edit View Simulation Tools Help  Drawing·saved  User │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Command bar 44  Undo  Redo  |  Run Simulation  |  Case ▾      panel toggles  │
+├────┬────────────┬───────────────────────────────────────────┬────────────────┤
+│Rail│ Side pane  │ Canvas (min 480×320)                      │ Inspector      │
+│ 48 │ 288        │                                           │ 320, full      │
+│    │            ├───────────────────────────────────────────┤ height         │
+│    │            │ Results panel 280 (collapsed 36)          │                │
+├────┴────────────┴───────────────────────────────────────────┴────────────────┤
+│ Status bar 28  run result · case · solve time · warnings  units · zoom       │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+* **Grid:** the shell is one CSS grid filling the window (`height: 100%`, no page scroll). Only pane, inspector,
+  results and dialog bodies scroll.
+* **Spacing:** multiples of 4 px, from the `--space-*` tokens. Panel padding `--space-lg`; gaps between groups
+  `--space-md`; between sections `--space-2xl`.
+* **Splitters:** between side pane and canvas, canvas and inspector, canvas and results panel. 4 px hit area
+  (8 px with padding), keyboard arrows step 24 px (Shift: 80 px), sizes remembered per browser.
+* **Canvas minimum:** `--shell-canvas-min-w` × `--shell-canvas-min-h`. A pane that would push the canvas below it
+  opens as an overlay over the canvas instead of docking.
+
+### Breakpoints (window width)
+
+| Name | Width | Shell behaviour |
+|---|---|---|
+| Wide | ≥ 1440 px | Side pane, inspector and results panel all docked. |
+| Large | 1008-1439 px | Docked while the canvas minimum holds; otherwise the side pane overlays when the inspector opens. |
+| Medium | 768-1007 px | Side pane and inspector open as overlays (`--z-pane-overlay`, shadow-lg, close on Esc or outside click). Results panel starts collapsed. Command bar shows icons with tooltips; Run keeps its label. Drawing name truncates. |
+| Small | < 768 px | Best effort only: same as medium, no layout guarantees. |
+
+Breakpoints are the Windows app breakpoints (641 / 1008 px) adapted to WalFlow's 768 px floor, plus a wide state.
+
+### Layers
+
+Use the `--z-*` tokens only. Canvas overlays never sit above menus; menus never above dialogs; toasts sit above
+everything and never block input.
+
+---
 
 ## Style Guidelines
 
@@ -365,3 +497,6 @@ Before delivering code changes, ensure compliance:
 - [ ] Focused elements have visual ring indicators (keyboard navigation compliance).
 - [ ] Contrast ratios meet WCAG AA standards.
 - [ ] Transitions remain fluid (150-200ms) with no layout jitter or shifting.
+- [ ] Colours, sizes, spacing and z-index come from the tokens above; no new hex or raw z-index values.
+- [ ] Icon-only buttons have an accessible name and a tooltip with the shortcut.
+- [ ] The shell holds at 1920, 1440, 1280, 1024 and 768 px wide: nothing clipped, canvas minimum kept.
