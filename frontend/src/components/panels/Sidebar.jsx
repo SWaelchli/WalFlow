@@ -8,6 +8,7 @@ import { EquipmentSymbol } from '../symbols/SymbolLibrary';
 import { InfoIcon, WarningIcon, CheckIcon, CrossIcon, FolderIcon, SearchIcon, TrashIcon, LockIcon, UnlockIcon, FolderOpenIcon, CaretDownIcon, CaretRightIcon, GearIcon, FileIcon, NoteEditIcon, SaveIcon, ImportIcon, ExportIcon, PlusIcon, DotIcon } from '../symbols/IconLibrary';
 import { FLUID_CATEGORIES, FLUID_LIBRARY } from '../../constants/fluid_library';
 import { useUnits } from '../../context/UnitContext';
+import { PRESSURE_BASES, FLOW_UNITS, pressureBasisLabel, flowUnitLabel } from '../../utils/converters';
 import { FILE_FORMAT_VERSION, APP_VERSION } from '../../constants';
 import { serializeDiagram } from '../../utils/diagramFile';
 import { DEFAULT_BASE_CASE } from '../../constants/case_constants';
@@ -735,7 +736,7 @@ export default function Sidebar({
   onExportClick,
   onOpenProjectsModal
 }) {
-  const { unitSystem, setUnitSystem, isImperial } = useUnits();
+  const { unitSystem, setUnitSystem, isImperial, pressureBasis, setPressureBasis, flowUnit, setFlowUnit } = useUnits();
   const [activeTab, setActiveTab] = useState('library');
   const [settingsSubTab, setSettingsSubTab] = useState('drawing'); // 'drawing' | 'project' | 'global'
   const [searchQuery, setSearchQuery] = useState('');
@@ -1461,7 +1462,7 @@ export default function Sidebar({
                   </div>
 
                   <div>
-                    <label style={labelStyle}>Atmospheric pressure ({isImperial ? 'psi(a)' : 'bar(a)'})</label>
+                    <label style={labelStyle}>Atmospheric pressure ({pressureBasisLabel(unitSystem, PRESSURE_BASES.ABSOLUTE)})</label>
                     <DraftNumberInput
                       step={isImperial ? "0.01" : "0.001"}
                       displayValue={
@@ -1831,11 +1832,75 @@ export default function Sidebar({
                       </button>
                     </div>
                     <p style={hintStyle}>
-                      {unitSystem === 'metric' 
-                        ? 'Displaying pressure in bar, flow in L/min, temp in °C, pipe in m/mm.'
-                        : 'Displaying pressure in psi, flow in GPM, temp in °F, pipe in ft/in.'}
+                      {unitSystem === 'metric'
+                        ? `Displaying pressure in bar, flow in ${flowUnitLabel(unitSystem, flowUnit)}, temp in °C, pipe in m/mm.`
+                        : 'Displaying pressure in psi, flow in gpm, temp in °F, pipe in ft/in.'}
                     </p>
                   </div>
+
+                  <div>
+                    <label style={labelStyle}>Pressure basis</label>
+                    <div role="group" aria-label="Pressure basis" style={{ display: 'flex', gap: '6px', background: '#F4F7F6', padding: '4px', borderRadius: '8px', border: '1px solid #D8E2E1' }}>
+                      {[PRESSURE_BASES.ABSOLUTE, PRESSURE_BASES.GAUGE].map((basis) => (
+                        <button
+                          key={basis}
+                          type="button"
+                          aria-pressed={pressureBasis === basis}
+                          onClick={() => setPressureBasis(basis)}
+                          style={{
+                            flex: 1,
+                            padding: '6px 8px',
+                            fontSize: 'var(--fs-sm)',
+                            fontWeight: '600',
+                            borderRadius: '6px',
+                            border: 'none',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                            backgroundColor: pressureBasis === basis ? 'var(--color-brand-dark)' : 'transparent',
+                            color: pressureBasis === basis ? '#ffffff' : 'var(--color-text-secondary)',
+                            boxShadow: pressureBasis === basis ? '0 1px 3px rgba(57, 82, 83, 0.15)' : 'none'
+                          }}
+                        >
+                          {pressureBasisLabel(unitSystem, basis)}
+                        </button>
+                      ))}
+                    </div>
+                    <p style={hintStyle}>
+                      Absolute pressures are shown and entered as {pressureBasisLabel(unitSystem, pressureBasis)}. Gauge subtracts the drawing's atmospheric pressure. Pressure differences, and relief set and burst pressures (always gauge), do not change.
+                    </p>
+                  </div>
+
+                  {!isImperial && (
+                    <div>
+                      <label style={labelStyle}>Flow unit</label>
+                      <div role="group" aria-label="Flow unit" style={{ display: 'flex', gap: '6px', background: '#F4F7F6', padding: '4px', borderRadius: '8px', border: '1px solid #D8E2E1' }}>
+                        {[FLOW_UNITS.LMIN, FLOW_UNITS.M3H].map((unit) => (
+                          <button
+                            key={unit}
+                            type="button"
+                            aria-pressed={flowUnit === unit}
+                            onClick={() => setFlowUnit(unit)}
+                            style={{
+                              flex: 1,
+                              padding: '6px 8px',
+                              fontSize: 'var(--fs-sm)',
+                              fontWeight: '600',
+                              borderRadius: '6px',
+                              border: 'none',
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease',
+                              backgroundColor: flowUnit === unit ? 'var(--color-brand-dark)' : 'transparent',
+                              color: flowUnit === unit ? '#ffffff' : 'var(--color-text-secondary)',
+                              boxShadow: flowUnit === unit ? '0 1px 3px rgba(57, 82, 83, 0.15)' : 'none'
+                            }}
+                          >
+                            {flowUnitLabel(unitSystem, unit)}
+                          </button>
+                        ))}
+                      </div>
+                      <p style={hintStyle}>Imperial keeps gpm.</p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Global solver settings: always active unless a project or drawing overrides them */}

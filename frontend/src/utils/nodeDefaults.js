@@ -40,9 +40,10 @@ const DEFAULTS_BY_TYPE = {
 /**
  * Data of a new component of `type`.
  * @param {string} type
- * @param {{label: string, ambientTemperature: number, onRotate: Function, onChange: Function}} ctx
+ * @param {{label: string, ambientTemperature: number, onRotate: Function, onChange: Function, pressureBasis?: string}} ctx
+ * A new instrument starts on `pressureBasis` (the global setting, default gauge).
  */
-export function defaultNodeData(type, { label, ambientTemperature, onRotate, onChange }) {
+export function defaultNodeData(type, { label, ambientTemperature, onRotate, onChange, pressureBasis }) {
   return {
     label,
     rotation: 0,
@@ -51,5 +52,6 @@ export function defaultNodeData(type, { label, ambientTemperature, onRotate, onC
     // a new tank starts at the drawing's ambient temperature
     ...(type === 'tank' && { level_m: 1.0, elevation_m: 0.0, temperature_k: ambientTemperature, num_ports: 1 }),
     ...DEFAULTS_BY_TYPE[type],
+    ...(type === 'instrument' && { pressure_basis: pressureBasis === 'absolute' ? 'absolute' : 'gauge' }),
   };
 }

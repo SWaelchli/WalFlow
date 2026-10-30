@@ -7,7 +7,7 @@ import { neutralPorts } from '../../utils/nodeReadouts';
 import NeutralFlowCaption from './NeutralFlowCaption';
 
 export default function GenericDetails({ node, edge, allNodes = [], allEdges = [] }) {
-  const { labels, isImperial, formatPressurePa, formatFlowM3s, formatTemperatureK, formatVelocity } = useUnits();
+  const { labels, isImperial, formatPressurePa, formatDiffPressurePa, formatFlowM3s, formatTemperatureK, formatVelocity } = useUnits();
   const isEdge = !!edge;
   const item = node || edge;
   if (!item) return null;
@@ -197,7 +197,7 @@ export default function GenericDetails({ node, edge, allNodes = [], allEdges = [
           </tr>
           <tr>
             <td className="details-label">Pressure Drop (ΔP)</td>
-            <td className="details-value" style={{ textAlign: 'right' }}>{formatPressurePa(dpPa, 3)} {labels.pressureDiff}</td>
+            <td className="details-value" style={{ textAlign: 'right' }}>{formatDiffPressurePa(dpPa, 3)} {labels.pressureDiff}</td>
           </tr>
           <tr>
             <td className="details-label">Flow Rate</td>

@@ -22,7 +22,7 @@ const ValveLegend = ({ payload }) => (
 );
 
 const ValveDetails = memo(function ValveDetails({ node }) {
-  const { labels, isImperial, formatPressurePa } = useUnits();
+  const { labels, isImperial, lminToDisplay, absPaToDisplay, formatPressurePa } = useUnits();
   const { type } = node;
   const { set_pressure_pa, backpressure, telemetry, opening_pct } = node.data;
   
@@ -36,6 +36,7 @@ const ValveDetails = memo(function ValveDetails({ node }) {
   
   const setPBar = (set_pressure_pa || 500000) / 100000;
   const sensedPBar = sensedP / 100000;
+  const setPDisp = absPaToDisplay(set_pressure_pa || 500000);
 
   const status = useMemo(() => {
     if (!isRegulator) return "ACTIVE";
@@ -46,8 +47,7 @@ const ValveDetails = memo(function ValveDetails({ node }) {
 
   const actualFlowLmin = Math.abs(currentQ) * 60000.0;
 
-  const flowMultiplier = isImperial ? 0.264172052 : 1.0;
-  const pressMultiplier = isImperial ? 14.5037738 : 1.0;
+  const flowMultiplier = lminToDisplay(1);
 
   // Valve curves come from the backend (SI: m3/s, Pa), only converted to display units here
   const curves = telemetry?.valve_curves;
@@ -57,16 +57,17 @@ const ValveDetails = memo(function ValveDetails({ node }) {
     return curves.flow_m3s.map((qM3s, i) => {
       const dpFullOpen = curves.dp_full_open_pa[i];
       const dpCurrent = curves.dp_current_pa[i];
-      const limitPBar = backpressure ? (pOut + dpFullOpen) / 100000 : (pIn - dpFullOpen) / 100000;
-      const currentPBar = backpressure ? (pOut + dpCurrent) / 100000 : (pIn - dpCurrent) / 100000;
+      // Rounded so float noise such as 3.0000000000000004 does not reach the chart
+      const limitP = Number(absPaToDisplay(backpressure ? pOut + dpFullOpen : pIn - dpFullOpen).toPrecision(10));
+      const currentP = Number(absPaToDisplay(backpressure ? pOut + dpCurrent : pIn - dpCurrent).toPrecision(10));
       return {
         q: qM3s * 60000 * flowMultiplier,
-        limit: limitPBar * pressMultiplier,
-        currentCurve: currentPBar * pressMultiplier,
-        setpoint: isRegulator ? setPBar * pressMultiplier : null
+        limit: limitP,
+        currentCurve: currentP,
+        setpoint: isRegulator ? setPDisp : null
       };
     });
-  }, [curves, setPBar, pIn, pOut, backpressure, isRegulator, flowMultiplier, pressMultiplier]);
+  }, [curves, setPDisp, pIn, pOut, backpressure, isRegulator, flowMultiplier, absPaToDisplay]);
 
   // Axis ends at the last curve point; round ticks stay within it
   const xMaxDisplay = chartData ? chartData[chartData.length - 1].q : 0;
@@ -76,11 +77,11 @@ const ValveDetails = memo(function ValveDetails({ node }) {
   );
 
   // Operating point sits on the valve's own curve: inlet pressure for backpressure, outlet otherwise
-  const ownPBar = (backpressure ? pIn : pOut) / 100000;
+  const ownPDisp = absPaToDisplay(backpressure ? pIn : pOut);
   const opPoint = useMemo(() => [{
     q: actualFlowLmin * flowMultiplier,
-    p: ownPBar * pressMultiplier
-  }], [actualFlowLmin, ownPBar, flowMultiplier, pressMultiplier]);
+    p: ownPDisp
+  }], [actualFlowLmin, ownPDisp, flowMultiplier]);
 
   const legendPayload = [
     ...(isRegulator ? [{ value: 'Setpoint', type: 'plainline', color: 'var(--color-primary)' }] : []),
@@ -90,12 +91,12 @@ const ValveDetails = memo(function ValveDetails({ node }) {
   ];
 
   const yDomain = useMemo(() => {
-    const vals = (isRegulator ? [setPBar, ownPBar] : [ownPBar]).map((v) => v * pressMultiplier);
+    const vals = isRegulator ? [setPDisp, ownPDisp] : [ownPDisp];
     const margin = isImperial ? 30 : 2;
-    const minV = Math.max(0, Math.min(...vals) - margin);
+    const minV = Math.min(...vals) - margin;
     const maxV = Math.max(...vals) + margin;
     return [Math.floor(minV), Math.ceil(maxV)];
-  }, [isRegulator, setPBar, ownPBar, pressMultiplier, isImperial]);
+  }, [isRegulator, setPDisp, ownPDisp, isImperial]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>

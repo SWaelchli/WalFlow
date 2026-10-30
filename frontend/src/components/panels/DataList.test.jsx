@@ -7,7 +7,7 @@ import { UNIT_SYSTEMS } from '../../utils/converters';
 // The schedule catalogue request has no server in jsdom; the bundled datasets are used instead
 vi.mock('axios', () => ({ default: { get: vi.fn(() => Promise.resolve({ data: [] })) } }));
 
-afterEach(cleanup);
+afterEach(() => { cleanup(); localStorage.clear(); });
 
 const nodes = [
   { id: 'n1', type: 'tank', position: { x: 0, y: 0 }, data: { label: 'T-1' } },
@@ -83,16 +83,16 @@ describe('relief analysis matrix', () => {
     expect(screen.getByText('Re-run the simulation')).toBeTruthy();
   });
 
-  it('Shows the set pressure in barg and a cycling result as text', () => {
+  it('Shows the set pressure in bar g and a cycling result as text', () => {
     renderRelief([reliefCase({
       peak: { available: true, pressure_bara: 4.2, source: 'relieved', device_ids: [] },
       devices: { psv: { status: 'cycling', forced_state: 'auto', opening_order: 1, opening_ramp_pct: 62.3, inlet_at_opening_bara: 4.0, inlet_relieved_bara: 4.21,
         cycle_low_barg: 2.78, cycle_high_barg: 2.99, relief_flow_lmin: 12.0, lift_pct: null } },
     })]);
-    expect(screen.getByText('2.99 barg')).toBeTruthy();
+    expect(screen.getByText('2.99 bar g')).toBeTruthy();
     const badge = screen.getByText('Cycling #1');
     expect(badge.closest('div[title]').title).toMatch(/cycles between reseat and set pressure/);
-    expect(screen.getByText('Cycles 2.78 barg–2.99 barg · avg 12.0 L/min')).toBeTruthy();
+    expect(screen.getByText('Cycles 2.78 bar g–2.99 bar g · avg 12.0 L/min')).toBeTruthy();
   });
 
   it('shows the lift of a modulating valve and a backpressure limit breach', () => {
@@ -139,6 +139,30 @@ describe('operating cases matrix without results', () => {
     expect(rowCell('Cavitation Risk Status')).toBe(cavitation);
     fireEvent.click(screen.getByText('Relief Analysis Matrix'));
     expect(rowCell('Total Relief Flow')).toMatch(relief);
+  });
+});
+
+describe('operating cases matrix in gauge basis', () => {
+  const caseList = [
+    { id: 'case_base', name: 'Case 1', is_base: true, overrides: { nodes: {} }, kpis: { max_pressure_bar: 5 } },
+    { id: 'case_2', name: 'Case 2', overrides: { nodes: {}, global_settings: { atmospheric_pressure: 85000 } }, kpis: { max_pressure_bar: 5 } },
+  ];
+  const maxPressureRow = (activeCaseId) => {
+    localStorage.setItem('walflow_pressure_basis', 'gauge');
+    render(
+      <UnitProvider initialUnitSystem={UNIT_SYSTEMS.METRIC}>
+        <DataList nodes={[]} edges={[]} rawNodes={[]} rawEdges={[]} cases={caseList} activeCaseId={activeCaseId}
+          globalSettings={{ atmospheric_pressure: 101325 }} onSelectNode={vi.fn()} onSelectEdge={vi.fn()} />
+      </UnitProvider>
+    );
+    fireEvent.click(screen.getByText('Operating Cases Matrix'));
+    return [...screen.getByText(/^System Max Pressure/).closest('tr').querySelectorAll('td')].slice(1).map(td => td.textContent);
+  };
+
+  it.each([['case_base'], ['case_2']])('converts each case with its own atmospheric pressure, active case %s', (active) => {
+    const [base, other] = maxPressureRow(active);
+    expect(base).toMatch(/^3\.99 bar g$/);        // 5 bar a - 1.01325
+    expect(other).toMatch(/^4\.15 bar g\s*\+0\.16 bar/);   // 5 bar a - 0.85, delta is the atmospheric difference
   });
 });
 
@@ -221,13 +245,13 @@ describe('Measurements tab', () => {
     renderMeasurements();
     expect(screen.getByText('PIT 1')).toBeTruthy();
     expect(screen.getByText('TAP-1')).toBeTruthy();
-    expect(screen.getByText('2.50').closest('td').textContent).toMatch(/^H2\.50bar\(g\)$/);
-    expect(screen.getByText('1.50').closest('td').textContent).toBe('1.50bar(g)');
+    expect(screen.getByText('2.50').closest('td').textContent).toMatch(/^H2\.50bar g$/);
+    expect(screen.getByText('1.50').closest('td').textContent).toBe('1.50bar g');
   });
 
   it('commits an edited limit to the instrument and rejects limits out of order', () => {
     const onUpdateNode = renderMeasurements();
-    const hh = screen.getByLabelText('HH limit of PIT 1 (bar(g))');
+    const hh = screen.getByLabelText('HH limit of PIT 1 (bar g)');
 
     fireEvent.change(hh, { target: { value: '1' } });
     fireEvent.blur(hh);

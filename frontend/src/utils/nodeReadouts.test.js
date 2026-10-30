@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { pressureDrop, pressureRise, outletFlow, neutralPorts, neutralDrop, nodePressure } from './nodeReadouts';
-import { formatPressureFromPa, formatFlowFromM3s } from './converters';
+import { formatDiffPressureFromPa, formatFlowFromM3s } from './converters';
 
 const solved = { inlets: [{ pressure: 500000 }], outlets: [{ pressure: 300000, flow_rate: 0.001 }] };
 
@@ -11,7 +11,7 @@ describe('readouts before a run', () => {
     expect(outletFlow(null)).toBeNull();
     expect(neutralPorts({ ports: [] })).toBeNull();
     expect(neutralDrop(undefined)).toBeNull();
-    expect(formatPressureFromPa(pressureDrop(undefined))).toBe('—');
+    expect(formatDiffPressureFromPa(pressureDrop(undefined))).toBe('—');
     expect(formatFlowFromM3s(outletFlow(undefined))).toBe('—');
   });
 

@@ -11,6 +11,7 @@ import { useFittingStandards } from '../../hooks/useFittingStandards';
 
 import { updateCaseOverride, effectiveForcedState } from '../../utils/case_resolver';
 import { useUnits } from '../../context/UnitContext';
+import { BAR_TO_PA, absPaToDisplayPressure, formatAbsPressureFromBar } from '../../utils/converters';
 import { resolvePipeSelection, findPipeClass, manualSelectionPatch, classSelectionPatch, classSizePatch, schedulePatch, matchScheduleByInnerDiameter, nearestDnByInnerDiameter } from '../../utils/pipeDefaults';
 import DraftNumberInput from '../common/DraftNumberInput';
 import MeasurementsTable from './MeasurementsTable';
@@ -196,9 +197,14 @@ export default function DataList({
   availablePipeClasses = [],
   allowCustomPipes = true
 }) {
-  const { labels, isImperial, formatPressure, formatPressureGauge, formatFlow, formatFlowM3s, formatPower, formatTemperatureK, formatVelocity } = useUnits();
+  const { labels, isImperial, unitSystem, pressureBasis, lminToDisplay, formatPressure, formatDiffPressure, formatPressureGauge, formatFlow, formatFlowM3s, formatPower, formatTemperatureK, formatVelocity } = useUnits();
 
   const classList = availablePipeClasses || [];
+
+  // Each case converts absolute pressures with its own site atmospheric pressure, so case deltas do not depend on the active case
+  const caseAtmPa = (c) => c?.overrides?.global_settings?.atmospheric_pressure ?? globalSettings?.atmospheric_pressure;
+  const caseFormatPressure = (c) => (valBar, decimals = 2) => formatAbsPressureFromBar(valBar, unitSystem, pressureBasis, caseAtmPa(c), decimals);
+  const caseDisplayPressure = (c, valBar) => absPaToDisplayPressure(valBar === undefined || valBar === null ? null : valBar * BAR_TO_PA, { unitSystem, basis: pressureBasis, atmPa: caseAtmPa(c) });
 
 
 
@@ -502,7 +508,7 @@ export default function DataList({
     if (activeTab === 'pipes') headers.push(`Length (${labels.length})`);
     const rows = processedItems.map(i => {
       const lenDisplay = isImperial ? (i.length * 3.280839895).toFixed(2) : i.length;
-      const row = [i.displayType, i.label, formatFlowM3s(i.flow), formatVelocity(i.velocity), formatPressure(i.dp, 3), formatPressure(i.pStart), formatPressure(i.pEnd), formatTemperatureK(i.temp)];
+      const row = [i.displayType, i.label, formatFlowM3s(i.flow), formatVelocity(i.velocity), formatDiffPressure(i.dp, 3), formatPressure(i.pStart), formatPressure(i.pEnd), formatTemperatureK(i.temp)];
       if (activeTab === 'pipes') row.push(lenDisplay);
       return row;
     });
@@ -511,7 +517,7 @@ export default function DataList({
     const link = document.createElement("a");
     link.setAttribute("href", url); link.setAttribute("download", buildCsvFileName(cases.find(c => c.id === activeCaseId)?.name, activeTab)); link.click();
     URL.revokeObjectURL(url);
-  }, [processedItems, activeTab, cases, activeCaseId, labels, isImperial, formatFlowM3s, formatVelocity, formatPressure, formatTemperatureK]);
+  }, [processedItems, activeTab, cases, activeCaseId, labels, isImperial, formatFlowM3s, formatVelocity, formatPressure, formatDiffPressure, formatTemperatureK]);
 
   return (
     <div style={{ height: `${panel.height}px`, flexShrink: 0, background: '#ffffff', borderTop: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 -4px 16px rgba(57, 82, 83, 0.05)', position: 'relative' }}>
@@ -763,10 +769,10 @@ export default function DataList({
                       const baseKpis = displayCases.find(b => b.is_base)?.kpis;
                       const kpis = c.kpis || {};
                       const val = kpis.max_pressure_bar;
-                      const deltaStr = !c.is_base && baseKpis ? formatDelta(isImperial ? val * 14.5037738 : val, isImperial ? baseKpis.max_pressure_bar * 14.5037738 : baseKpis.max_pressure_bar, labels.pressureAbs) : null;
+                      const deltaStr = !c.is_base && baseKpis ? formatDelta(caseDisplayPressure(c, val), caseDisplayPressure(displayCases.find(b => b.is_base), baseKpis.max_pressure_bar), labels.pressureDiff) : null;
                       return (
                         <td key={c.case_id || c.id} style={{ padding: '6px 12px', borderLeft: caseDragOverIdx === colIdx ? '3px solid var(--color-primary)' : '1px solid var(--color-border)', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-                          <span style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>{val !== undefined ? `${formatPressure(val)} ${labels.pressureAbs}` : '—'}</span>
+                          <span style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>{val !== undefined ? `${caseFormatPressure(c)(val)} ${labels.pressureAbs}` : '—'}</span>
                           {deltaStr && <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-warning-text)', marginLeft: '8px' }}>{deltaStr}</span>}
                         </td>
                       );
@@ -779,10 +785,10 @@ export default function DataList({
                       const baseKpis = displayCases.find(b => b.is_base)?.kpis;
                       const kpis = c.kpis || {};
                       const val = kpis.min_pressure_bar;
-                      const deltaStr = !c.is_base && baseKpis ? formatDelta(isImperial ? val * 14.5037738 : val, isImperial ? baseKpis.min_pressure_bar * 14.5037738 : baseKpis.min_pressure_bar, labels.pressureAbs) : null;
+                      const deltaStr = !c.is_base && baseKpis ? formatDelta(caseDisplayPressure(c, val), caseDisplayPressure(displayCases.find(b => b.is_base), baseKpis.min_pressure_bar), labels.pressureDiff) : null;
                       return (
                         <td key={c.case_id || c.id} style={{ padding: '6px 12px', borderLeft: caseDragOverIdx === colIdx ? '3px solid var(--color-primary)' : '1px solid var(--color-border)', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-                          <span style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>{val !== undefined ? `${formatPressure(val)} ${labels.pressureAbs}` : '—'}</span>
+                          <span style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>{val !== undefined ? `${caseFormatPressure(c)(val)} ${labels.pressureAbs}` : '—'}</span>
                           {deltaStr && <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-warning-text)', marginLeft: '8px' }}>{deltaStr}</span>}
                         </td>
                       );
@@ -795,7 +801,7 @@ export default function DataList({
                       const baseKpis = displayCases.find(b => b.is_base)?.kpis;
                       const kpis = c.kpis || {};
                       const val = kpis.total_flow_lmin;
-                      const deltaStr = !c.is_base && baseKpis ? formatDelta(isImperial ? val * 0.264172052 : val, isImperial ? baseKpis.total_flow_lmin * 0.264172052 : baseKpis.total_flow_lmin, labels.flow) : null;
+                      const deltaStr = !c.is_base && baseKpis ? formatDelta(lminToDisplay(val), lminToDisplay(baseKpis.total_flow_lmin), labels.flow) : null;
                       return (
                         <td key={c.case_id || c.id} style={{ padding: '6px 12px', borderLeft: caseDragOverIdx === colIdx ? '3px solid var(--color-primary)' : '1px solid var(--color-border)', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                           <span style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>{val !== undefined ? `${formatFlow(val)} ${labels.flow}` : '—'}</span>
@@ -958,7 +964,7 @@ export default function DataList({
                               <ReliefDeviceResult
                                 result={c.telemetry?.relief?.devices?.[dev.id]}
                                 hasResults={Boolean(c.telemetry?.relief)}
-                                formatPressure={formatPressure}
+                                formatPressure={caseFormatPressure(c)}
                                 unit={labels.pressureAbs}
                                 formatPressureGauge={formatPressureGauge}
                                 formatFlow={formatFlow}
@@ -999,7 +1005,7 @@ export default function DataList({
                        const pRelieved = c.kpis?.relieved_pressure_bara ?? c.kpis?.max_pressure_bar ?? calculateMaxPressureBar(c.telemetry);
                        return (
                          <td key={c.id || c.case_id} style={{ padding: '6px 12px', fontWeight: '700', color: '#047857', borderLeft: '1px solid var(--color-border)', verticalAlign: 'middle' }}>
-                           {pRelieved !== undefined ? `${formatPressure(pRelieved)} ${labels.pressureAbs}` : '—'}
+                           {pRelieved !== undefined ? `${caseFormatPressure(c)(pRelieved)} ${labels.pressureAbs}` : '—'}
                          </td>
                        );
                      })}
@@ -1020,7 +1026,7 @@ export default function DataList({
                          note = 'Not available';
                          title = peak.reason;
                        } else if (peak) {
-                         value = `${formatPressure(peak.pressure_bara)} ${labels.pressureAbs}`;
+                         value = `${caseFormatPressure(c)(peak.pressure_bara)} ${labels.pressureAbs}`;
                          note = peak.source === 'opening'
                            ? `At opening of ${peak.device_ids.map(reliefDeviceLabel).join(', ')} · ${peak.ramp_pct} % load`
                            : 'Equals the relieved state';
@@ -1045,7 +1051,7 @@ export default function DataList({
                        const pMaxUnmit = c.kpis?.unmitigated_peak_pressure_bara ?? calculateMaxPressureBar(unmit);
                        return (
                          <td key={caseId} style={{ padding: '6px 12px', fontWeight: '700', color: '#DC2626', borderLeft: '1px solid var(--color-border)', verticalAlign: 'middle' }}>
-                           {pMaxUnmit !== undefined ? `${formatPressure(pMaxUnmit)} ${labels.pressureAbs}` : '—'}
+                           {pMaxUnmit !== undefined ? `${caseFormatPressure(c)(pMaxUnmit)} ${labels.pressureAbs}` : '—'}
                          </td>
                        );
                      })}
@@ -1215,7 +1221,7 @@ export default function DataList({
                   <td style={{ padding: '8px', textAlign: 'right' }}>
                     {formatVelocity(entry.velocity)}
                   </td>
-                  <td style={{ padding: '8px', textAlign: 'right' }}>{formatPressure(entry.dp, 3)}</td>
+                  <td style={{ padding: '8px', textAlign: 'right' }}>{formatDiffPressure(entry.dp, 3)}</td>
                   <td style={{ padding: '8px', textAlign: 'right' }}>{formatPressure(entry.pStart)}</td>
                   <td style={{ padding: '8px', textAlign: 'right' }}>{formatPressure(entry.pEnd)}</td>
                   <td style={{ padding: '8px', textAlign: 'right' }}>{formatTemperatureK(entry.temp)}</td>

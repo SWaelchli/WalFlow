@@ -11,7 +11,7 @@ import { mToIn } from '../utils/converters';
  * Reducer / Expander Component Node (ASME B16.9 / Custom)
  */
 export default function ReducerNode({ id, data, selected }) {
-  const { formatPressurePa, labels, isImperial } = useUnits();
+  const { formatDiffPressurePa, labels, isImperial } = useUnits();
   const { getEdges } = useReactFlow();
 
   const telemetry = data.telemetry;
@@ -19,7 +19,7 @@ export default function ReducerNode({ id, data, selected }) {
   const sensing = useMemo(() => data.sensing || {}, [data.sensing]);
 
   const dP = pressureDrop(telemetry);
-  const dPFormatted = formatPressurePa(dP);
+  const dPFormatted = formatDiffPressurePa(dP);
 
   const isEccentric = data.reducer_type === 'eccentric';
   const dIn = Number(data.diameter_in_m || 0.07792);
@@ -76,7 +76,7 @@ export default function ReducerNode({ id, data, selected }) {
             </div>
           )}
           <div style={{ fontSize: '10px', fontWeight: 'bold', color: 'var(--color-brand-dark)', marginTop: '2px' }}>
-            ΔP {dP !== null && dP < 0 ? `${formatPressurePa(Math.abs(dP))} (recovery)` : dPFormatted} {labels.pressureDiff}
+            ΔP {dP !== null && dP < 0 ? `${formatDiffPressurePa(Math.abs(dP))} (recovery)` : dPFormatted} {labels.pressureDiff}
           </div>
         </>
       }

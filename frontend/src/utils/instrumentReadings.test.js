@@ -138,7 +138,7 @@ describe('tags and units', () => {
     expect(limitFromDisplay('Q', '', false)).toBeNull();
     expect(limitToDisplay('nu', 30, true)).toBe(30);
     expect(formatReading('dP', 0.015, 'gauge', false)).toEqual({ text: '15.0', unit: 'mbar' });
-    expect(formatReading('P', 2.5, 'absolute', false)).toEqual({ text: '2.50', unit: 'bar(a)' });
+    expect(formatReading('P', 2.5, 'absolute', false)).toEqual({ text: '2.50', unit: 'bar a' });
     expect(formatReading('Q', null, 'gauge', false)).toEqual({ text: '—', unit: 'L/min' });
   });
 });

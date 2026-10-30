@@ -5,7 +5,7 @@ import { useUnits } from '../../context/UnitContext';
  * Inspector detail card for Rupture Disc (Burst Diaphragm) equipment nodes.
  */
 export default function RuptureDiscDetails({ node, unmitigatedTelemetry }) {
-  const { labels, formatPressureGauge, formatPressurePa, formatFlowM3s, formatDiameter } = useUnits();
+  const { labels, formatPressureGauge, formatPressurePa, formatFlowM3s, formatDiameter, atmosphericPa, pressureBasis } = useUnits();
   if (!node) return null;
 
   const data = node.data || {};
@@ -13,8 +13,8 @@ export default function RuptureDiscDetails({ node, unmitigatedTelemetry }) {
   const unmitTelemetry = unmitigatedTelemetry?.nodes?.[node.id] || telemetry;
 
   const burstPressureBarg = data.burst_pressure_barg ? Number(data.burst_pressure_barg) : null;
-  // Burst pressure is gauge; the solver also reports it in bar(a) for comparison with port pressures
-  const burstPressureBara = telemetry?.set_pressure_bara ?? (burstPressureBarg !== null ? burstPressureBarg + 1.01325 : null);
+  // Burst pressure is gauge; the solver also reports it as absolute (bar a) for comparison with port pressures
+  const burstPressureBara = telemetry?.set_pressure_bara ?? (burstPressureBarg !== null ? burstPressureBarg + atmosphericPa / 100000 : null);
   const boreType = data.bore_type || 'full_bore';
   const cv = data.cv || 10.0;
   const orificeDiameterM = data.orifice_diameter_m || 0.01;
@@ -23,6 +23,9 @@ export default function RuptureDiscDetails({ node, unmitigatedTelemetry }) {
 
   const pIn = telemetry.inlets?.[0]?.pressure || 0;
   const pInBar = pIn / 100000.0;
+  // Gauge line pressure for comparison with the burst pressure; atmosphere from the solver's bar a / bar g pair
+  const pAtmBar = burstPressureBarg !== null && telemetry?.set_pressure_bara != null ? telemetry.set_pressure_bara - burstPressureBarg : atmosphericPa / 100000;
+  const pInBarg = pInBar - pAtmBar;
   const pUnmitigatedIn = unmitTelemetry.inlets?.[0]?.pressure || pIn;
   const actualFlow = telemetry.outlets?.[0]?.flow_rate || 0;
 
@@ -78,7 +81,9 @@ export default function RuptureDiscDetails({ node, unmitigatedTelemetry }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ color: 'var(--color-text-secondary)', fontWeight: '500' }}>Mitigated Line Pressure:</span>
           <span style={{ fontWeight: '700', color: burstPressureBara !== null && pInBar >= burstPressureBara ? 'var(--color-warning)' : 'var(--color-success)', fontFamily: 'var(--font-mono)' }}>
-            {formatPressurePa(pIn)} {labels.pressureAbs}
+            {pressureBasis === 'gauge'
+              ? formatPressureGauge(pInBarg)
+              : `${formatPressurePa(pIn)} ${labels.pressureAbs} (${formatPressureGauge(pInBarg)})`}
           </span>
         </div>
 

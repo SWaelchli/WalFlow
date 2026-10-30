@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { notify } from '../../utils/dialogs';
+import { useUnits } from '../../context/UnitContext';
 import { clickableProps } from '../../utils/a11yProps';
 import { getCaseTelemetrySet } from '../../utils/case_resolver';
 import { isCaseResultStale } from '../../utils/resultHash';
@@ -39,6 +40,7 @@ export default function MeasurementsTable({
   nodes = [], edges = [], cases = [], activeCaseId, onSelectCase, onSelectNode, onUpdateNode,
   caseInputHashes = {}, telemetryMode = 'mitigated', globalSettings, isImperial,
 }) {
+  const { flowUnit } = useUnits();
   const [drafts, setDrafts] = useState({});
   const instruments = useMemo(() => nodes.filter((n) => n.type === 'instrument'), [nodes]);
 
@@ -71,7 +73,7 @@ export default function MeasurementsTable({
   const commitLimit = (inst, key) => {
     const dk = draftKey(inst.id, key);
     if (!Object.prototype.hasOwnProperty.call(drafts, dk)) return;
-    const value = limitFromDisplay(inst.data?.variable || 'P', drafts[dk], isImperial);
+    const value = limitFromDisplay(inst.data?.variable || 'P', drafts[dk], isImperial, flowUnit);
     setDrafts((prev) => { const next = { ...prev }; delete next[dk]; return next; });
     const error = limitOrderError({ ...inst.data, [key]: value });
     if (error) {
@@ -128,7 +130,7 @@ export default function MeasurementsTable({
         {instruments.map((inst, idx) => {
           const data = inst.data || {};
           const variable = data.variable || 'P';
-          const unit = instrumentUnit(variable, data.pressure_basis, isImperial);
+          const unit = instrumentUnit(variable, data.pressure_basis, isImperial, flowUnit);
           const tag = data.label || inst.id;
           const location = locationText(inst, nodes, edges);
           return (
@@ -154,7 +156,7 @@ export default function MeasurementsTable({
                       type="number" step="any" placeholder="off"
                       aria-label={`${ALARM_LABELS[key]} limit of ${tag} (${unit})`}
                       className="form-input" style={{ width: '68px' }}
-                      value={drafts[dk] !== undefined ? drafts[dk] : limitToDisplay(variable, data[key], isImperial)}
+                      value={drafts[dk] !== undefined ? drafts[dk] : limitToDisplay(variable, data[key], isImperial, flowUnit)}
                       onChange={(e) => setDrafts((prev) => ({ ...prev, [dk]: e.target.value }))}
                       onBlur={() => commitLimit(inst, key)}
                       onKeyDown={(e) => {
@@ -168,7 +170,7 @@ export default function MeasurementsTable({
               {cases.map((c) => {
                 const caseId = c.id || c.case_id;
                 const reading = readings[caseId]?.[inst.id] || { value: null, state: null };
-                const { text, unit: shownUnit } = formatReading(variable, reading.value, data.pressure_basis, isImperial);
+                const { text, unit: shownUnit } = formatReading(variable, reading.value, data.pressure_basis, isImperial, flowUnit);
                 const s = STATE_STYLE[reading.state];
                 return (
                   <td key={caseId} style={{ ...td, background: caseId === activeCaseId ? ACTIVE_BG : 'inherit', borderLeft: '1px solid var(--color-border)', fontFamily: 'var(--font-mono)' }}>

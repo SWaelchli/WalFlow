@@ -1,5 +1,5 @@
 // Content of the Help modal's User Guide and Model & limits tabs.
-// Plain text units (bar(a), L/min, °C) are used instead of LaTeX so nothing renders as raw markup.
+// Plain text units (bar a, L/min, °C) are used instead of LaTeX so nothing renders as raw markup.
 const b = (text) => <strong>{text}</strong>;
 
 export const GUIDE_SECTIONS = [
@@ -41,7 +41,7 @@ export const GUIDE_SECTIONS = [
   {
     title: '5. Heatmap and results',
     items: [
-      <>Toggle the heatmap in the canvas controls to colour pipes by pressure (bar(a)), temperature (°C), volume flow (L/min) or velocity (m/s). The legend shows the numeric range; switch off auto-scale to set your own limits.</>,
+      <>Toggle the heatmap in the canvas controls to colour pipes by pressure (bar a or bar g, as chosen in the settings), temperature (°C), volume flow (L/min) or velocity (m/s). The legend shows the numeric range; switch off auto-scale to set your own limits.</>,
       <>Velocity above 2.5 m/s and 4 m/s is marked with a symbol and a tooltip in addition to colour.</>,
       <>Pressure drops and pump rises are shown as positive ΔP values. Pump and valve curves are in the inspector.</>,
     ],

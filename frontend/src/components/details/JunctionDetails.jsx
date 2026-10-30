@@ -75,11 +75,11 @@ function TelemetryList({ title, total, items, formatFlowM3s, formatTemperatureK,
 }
 
 export default function JunctionDetails({ node, allNodes, allEdges }) {
-  const { labels, isImperial, formatFlowM3s, formatTemperature, formatTemperatureK } = useUnits();
+  const { labels, lminToDisplay, formatFlow, formatFlowM3s, formatTemperature, formatTemperatureK } = useUnits();
   const { id, type, data } = node;
   const isTCV = type === 'three_way_tcv';
 
-  const flowMultiplier = isImperial ? 0.264172052 : 1.0;
+  const flowMultiplier = lminToDisplay(1);
 
   const { sankeyData, upstream, downstream, totalIn, totalOut } = useMemo(() => {
     const nodes = [];
@@ -156,7 +156,7 @@ export default function JunctionDetails({ node, allNodes, allEdges }) {
             nodePadding={20}
           >
             <Tooltip 
-              formatter={(value) => [`${value.toFixed(1)} ${labels.flow}`, 'Flow']}
+              formatter={(value) => [`${formatFlow(value / flowMultiplier)} ${labels.flow}`, 'Flow']}
               contentStyle={{ fontSize: 'var(--fs-xs)', borderRadius: 'var(--radius-sm)', border: `1px solid var(--color-border)` }}
             />
           </Sankey>

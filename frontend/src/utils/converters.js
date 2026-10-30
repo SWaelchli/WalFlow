@@ -231,7 +231,8 @@ export const UNIT_SYSTEMS = {
 export const UNIT_LABELS = {
   [UNIT_SYSTEMS.METRIC]: {
     pressure: 'bar',
-    pressureAbs: 'bar(a)',
+    pressureAbs: 'bar a',
+    pressureGauge: 'bar g',
     pressureDiff: 'bar',
     flow: 'L/min',
     flowM3h: 'm³/h',
@@ -247,7 +248,8 @@ export const UNIT_LABELS = {
   },
   [UNIT_SYSTEMS.IMPERIAL]: {
     pressure: 'psi',
-    pressureAbs: 'psi(a)',
+    pressureAbs: 'psia',
+    pressureGauge: 'psig',
     pressureDiff: 'psi',
     flow: 'gpm',
     flowM3h: 'gpm',
@@ -271,56 +273,128 @@ export const getUnitLabel = (quantity, unitSystem = UNIT_SYSTEMS.METRIC) => {
   return UNIT_LABELS[system][quantity] || '';
 };
 
+// ==========================================
+// PRESSURE BASIS (absolute / gauge) & FLOW UNIT SETTINGS
+// ==========================================
+// The backend works in absolute Pa and L/min. The pressure basis and the metric flow unit are display
+// settings only: the helpers below convert on the way out and back in, stored values never change.
+
+export const PRESSURE_BASES = { ABSOLUTE: 'absolute', GAUGE: 'gauge' };
+export const FLOW_UNITS = { LMIN: 'lmin', M3H: 'm3h' };
+export const DEFAULT_ATM_PA = 101325;
+
+export const normalizePressureBasis = (basis) => (basis === PRESSURE_BASES.GAUGE ? PRESSURE_BASES.GAUGE : PRESSURE_BASES.ABSOLUTE);
+export const normalizeFlowUnit = (flowUnit) => (flowUnit === FLOW_UNITS.M3H ? FLOW_UNITS.M3H : FLOW_UNITS.LMIN);
+
+const validAtm = (atmPa) => {
+  const n = Number(atmPa);
+  return atmPa === null || atmPa === undefined || atmPa === '' || !Number.isFinite(n) ? DEFAULT_ATM_PA : n;
+};
+const isImperialSystem = (unitSystem) => unitSystem === UNIT_SYSTEMS.IMPERIAL;
+const missing = (v) => v === null || v === undefined || v === '' || isNaN(v);
+
+/** Unit label of an absolute-pressure readout in the chosen basis: "bar a", "bar g", "psia", "psig". */
+export const pressureBasisLabel = (unitSystem = UNIT_SYSTEMS.METRIC, basis = PRESSURE_BASES.ABSOLUTE) => {
+  const labels = UNIT_LABELS[isImperialSystem(unitSystem) ? UNIT_SYSTEMS.IMPERIAL : UNIT_SYSTEMS.METRIC];
+  return normalizePressureBasis(basis) === PRESSURE_BASES.GAUGE ? labels.pressureGauge : labels.pressureAbs;
+};
+
+/** Unit label of a flow readout: "L/min" or "m³/h" (metric), "gpm" (imperial). */
+export const flowUnitLabel = (unitSystem = UNIT_SYSTEMS.METRIC, flowUnit = FLOW_UNITS.LMIN) => {
+  if (isImperialSystem(unitSystem)) return UNIT_LABELS[UNIT_SYSTEMS.IMPERIAL].flow;
+  return normalizeFlowUnit(flowUnit) === FLOW_UNITS.M3H ? UNIT_LABELS[UNIT_SYSTEMS.METRIC].flowM3h : UNIT_LABELS[UNIT_SYSTEMS.METRIC].flow;
+};
+
 /**
- * Format a pressure value (given in bar) to the selected unit system.
+ * Absolute pressure (Pa) as a number in the display unit (bar or psi) and basis.
+ * Gauge subtracts the site atmospheric pressure. Returns null for a missing value.
  */
-export const formatPressureFromBar = (valBar, unitSystem = UNIT_SYSTEMS.METRIC, decimals = 2) => {
-  if (valBar === null || valBar === undefined || isNaN(valBar)) return '—';
-  if (unitSystem === UNIT_SYSTEMS.IMPERIAL) {
+export const absPaToDisplayPressure = (pa, { unitSystem = UNIT_SYSTEMS.METRIC, basis = PRESSURE_BASES.ABSOLUTE, atmPa = DEFAULT_ATM_PA } = {}) => {
+  if (missing(pa)) return null;
+  const shifted = Number(pa) - (normalizePressureBasis(basis) === PRESSURE_BASES.GAUGE ? validAtm(atmPa) : 0);
+  return shifted * (isImperialSystem(unitSystem) ? PA_TO_PSI : PA_TO_BAR);
+};
+
+/** Pressure typed in the display unit and basis back to absolute Pa (inverse of absPaToDisplayPressure). */
+export const displayPressureToAbsPa = (value, { unitSystem = UNIT_SYSTEMS.METRIC, basis = PRESSURE_BASES.ABSOLUTE, atmPa = DEFAULT_ATM_PA } = {}) => {
+  const pa = Number(value) * (isImperialSystem(unitSystem) ? PSI_TO_PA : BAR_TO_PA);
+  return pa + (normalizePressureBasis(basis) === PRESSURE_BASES.GAUGE ? validAtm(atmPa) : 0);
+};
+
+/** Format an absolute pressure given in Pa in the chosen basis (no unit text). */
+export const formatAbsPressureFromPa = (valPa, unitSystem = UNIT_SYSTEMS.METRIC, basis = PRESSURE_BASES.ABSOLUTE, atmPa = DEFAULT_ATM_PA, decimals = 2) => {
+  const v = absPaToDisplayPressure(valPa, { unitSystem, basis, atmPa });
+  return v === null ? '—' : v.toFixed(decimals);
+};
+
+/** Same as formatAbsPressureFromPa for an absolute pressure given in bar. */
+export const formatAbsPressureFromBar = (valBar, unitSystem = UNIT_SYSTEMS.METRIC, basis = PRESSURE_BASES.ABSOLUTE, atmPa = DEFAULT_ATM_PA, decimals = 2) => {
+  if (missing(valBar)) return '—';
+  return formatAbsPressureFromPa(Number(valBar) * BAR_TO_PA, unitSystem, basis, atmPa, decimals);
+};
+
+/** Format a pressure DIFFERENCE (given in bar): never offset by the atmosphere, whatever the basis. */
+export const formatDiffPressureFromBar = (valBar, unitSystem = UNIT_SYSTEMS.METRIC, decimals = 2) => {
+  if (missing(valBar)) return '—';
+  if (isImperialSystem(unitSystem)) {
     return barToPsi(valBar, decimals);
   }
   return Number(valBar).toFixed(decimals);
 };
 
-/**
- * Format a pressure value (given in Pa) to the selected unit system.
- */
-export const formatPressureFromPa = (valPa, unitSystem = UNIT_SYSTEMS.METRIC, decimals = 2) => {
-  if (valPa === null || valPa === undefined || isNaN(valPa)) return '—';
-  if (unitSystem === UNIT_SYSTEMS.IMPERIAL) {
+/** Format a pressure DIFFERENCE (given in Pa): never offset by the atmosphere, whatever the basis. */
+export const formatDiffPressureFromPa = (valPa, unitSystem = UNIT_SYSTEMS.METRIC, decimals = 2) => {
+  if (missing(valPa)) return '—';
+  if (isImperialSystem(unitSystem)) {
     return paToPsi(valPa, decimals);
   }
   return paToBar(valPa, decimals);
 };
 
-// Small flows get a second decimal so a split such as 0.85 + 0.84 does not look like a mass imbalance
-const flowDecimals = (displayed, decimals) => {
+/** Gauge-only pressure (relief set / burst pressure, given in bar g) with its unit: "18.99 bar g" / "275.4 psig". */
+export const formatGaugeBarWithUnit = (valBarg, unitSystem = UNIT_SYSTEMS.METRIC, decimals = 2) => {
+  if (missing(valBarg)) return '—';
+  const imperial = isImperialSystem(unitSystem);
+  return `${formatDiffPressureFromBar(valBarg, unitSystem, imperial ? 1 : decimals)} ${pressureBasisLabel(unitSystem, PRESSURE_BASES.GAUGE)}`;
+};
+
+// Small flows get extra decimals so a split such as 0.85 + 0.84 does not look like a mass imbalance
+// (m³/h numbers are 0.06 times the L/min ones, so the thresholds there are 1 and 10)
+const flowDecimals = (displayed, decimals, flowUnit = FLOW_UNITS.LMIN) => {
   if (decimals !== undefined) return decimals;
-  return Math.abs(Number(displayed)) < 10 ? 2 : 1;
+  const abs = Math.abs(Number(displayed));
+  if (flowUnit === FLOW_UNITS.M3H) return abs < 1 ? 3 : abs < 10 ? 2 : 1;
+  return abs < 10 ? 2 : 1;
+};
+
+/** Flow in L/min as a number in the display unit (gpm in imperial, m³/h or L/min in metric). */
+export const lminToDisplayFlow = (lmin, unitSystem = UNIT_SYSTEMS.METRIC, flowUnit = FLOW_UNITS.LMIN) => {
+  if (missing(lmin)) return null;
+  if (isImperialSystem(unitSystem)) return Number(lmin) * LMIN_TO_GPM;
+  return Number(lmin) * (normalizeFlowUnit(flowUnit) === FLOW_UNITS.M3H ? LMIN_TO_M3H : 1);
+};
+
+/** Flow typed in the display unit back to L/min (inverse of lminToDisplayFlow). */
+export const displayFlowToLmin = (value, unitSystem = UNIT_SYSTEMS.METRIC, flowUnit = FLOW_UNITS.LMIN) => {
+  if (isImperialSystem(unitSystem)) return gpmToLmin(value);
+  return normalizeFlowUnit(flowUnit) === FLOW_UNITS.M3H ? m3hToLmin(value) : Number(value);
 };
 
 /**
- * Format a flow rate (given in L/min) to the selected unit system.
- * Without explicit decimals: 2 below 10 in the displayed unit, 1 above.
+ * Format a flow rate (given in L/min) to the selected unit system and metric flow unit.
+ * Without explicit decimals: more decimals for small values.
  */
-export const formatFlowFromLmin = (valLmin, unitSystem = UNIT_SYSTEMS.METRIC, decimals) => {
-  if (valLmin === null || valLmin === undefined || isNaN(valLmin)) return '—';
-  if (unitSystem === UNIT_SYSTEMS.IMPERIAL) {
-    return lminToGpm(valLmin, flowDecimals(lminToGpm(valLmin, 3), decimals));
-  }
-  return Number(valLmin).toFixed(flowDecimals(valLmin, decimals));
+export const formatFlowFromLmin = (valLmin, unitSystem = UNIT_SYSTEMS.METRIC, decimals, flowUnit = FLOW_UNITS.LMIN) => {
+  if (missing(valLmin)) return '—';
+  const unit = isImperialSystem(unitSystem) ? FLOW_UNITS.LMIN : normalizeFlowUnit(flowUnit);
+  const shown = lminToDisplayFlow(valLmin, unitSystem, unit);
+  return shown.toFixed(flowDecimals(shown, decimals, unit));
 };
 
-/**
- * Format a flow rate (given in m³/s) to the selected unit system.
- * Without explicit decimals: 2 below 10 in the displayed unit, 1 above.
- */
-export const formatFlowFromM3s = (valM3s, unitSystem = UNIT_SYSTEMS.METRIC, decimals) => {
-  if (valM3s === null || valM3s === undefined || isNaN(valM3s)) return '—';
-  if (unitSystem === UNIT_SYSTEMS.IMPERIAL) {
-    return m3sToGpm(valM3s, flowDecimals(m3sToGpm(valM3s, 3), decimals));
-  }
-  return m3sToLmin(valM3s, flowDecimals(m3sToLmin(valM3s, 3), decimals));
+/** Format a flow rate (given in m³/s) to the selected unit system and metric flow unit. */
+export const formatFlowFromM3s = (valM3s, unitSystem = UNIT_SYSTEMS.METRIC, decimals, flowUnit = FLOW_UNITS.LMIN) => {
+  if (missing(valM3s)) return '—';
+  return formatFlowFromLmin(Number(valM3s) * M3S_TO_LMIN, unitSystem, decimals, flowUnit);
 };
 
 /**

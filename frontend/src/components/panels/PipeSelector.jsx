@@ -13,7 +13,7 @@ import DraftNumberInput from '../common/DraftNumberInput';
  * Emits SI values (diameter_m in m, roughness_mm in mm).
  */
 const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPipes = true }) => {
-  const { isImperial } = useUnits();
+  const { isImperial, gaugeLabel } = useUnits();
   const classList = availablePipeClasses || [];
   const scheduleOptions = getScheduleStandardOptions(useFittingStandards('pipe_schedule'));
   const reducerOptions = getReducerStandardOptions(useFittingStandards('reducer'));
@@ -390,7 +390,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
               />
             </div>
             <div>
-              <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '600' }}>Design pressure ({isImperial ? 'psi' : 'bar(g)'})</label>
+              <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '600' }}>Design pressure ({gaugeLabel})</label>
               <input
                 type="number"
                 step="0.1"

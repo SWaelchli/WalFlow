@@ -55,8 +55,10 @@ describe('ValveDetails backend curves', () => {
     expect(screen.queryByText('Run a simulation to see the valve curves')).toBeNull();
     const rows = JSON.parse(screen.getByTestId('chart').dataset.rows);
     expect(rows.map((r) => r.q)).toEqual([0, 60]);
-    expect(rows.map((r) => r.currentCurve)).toEqual([3, 2.5]);
-    expect(rows.map((r) => r.limit)).toEqual([3, 2.9]);
+    expect(rows.map((r) => r.currentCurve)[0]).toBeCloseTo(3, 9);
+    expect(rows.map((r) => r.currentCurve)[1]).toBeCloseTo(2.5, 9);
+    expect(rows.map((r) => r.limit)[0]).toBeCloseTo(3, 9);
+    expect(rows.map((r) => r.limit)[1]).toBeCloseTo(2.9, 9);
     expect(JSON.parse(screen.getByTestId('xaxis').dataset.domain)).toEqual([0, 60]);
   });
 
@@ -72,7 +74,8 @@ describe('ValveDetails backend curves', () => {
     ['backpressure', true, 3],    // inlet pressure 3 bar
   ])('operating point is at the own pressure, not the sensed one (%s)', (_n, backpressure, ownBar) => {
     renderValve({ backpressure, telemetry: telemetry({ valve_curves: curves, sensed_pressure: 250000 }) });
-    expect(point('Operating Point')).toEqual({ q: 60, p: ownBar });
+    expect(point('Operating Point').q).toBe(60);
+    expect(point('Operating Point').p).toBeCloseTo(ownBar, 9);
   });
 
   it('remote-sensing regulator still plots the operating point at its own pressure', () => {

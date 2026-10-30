@@ -76,7 +76,7 @@ const renderNodePanel = (node, unitSystem = UNIT_SYSTEMS.METRIC) => {
 describe('leaving an untouched field does not rewrite it', () => {
   const regulator = { id: 'r1', type: 'linear_regulator', data: { max_cv: 0.05, set_pressure_pa: 225000, label: 'PRV' } };
 
-  it('keeps a 2.25 bar(a) setpoint exact and shows it without rounding to 2.3', () => {
+  it('keeps a 2.25 bar a setpoint exact and shows it without rounding to 2.3', () => {
     const onUpdate = renderNodePanel(regulator);
     const input = screen.getByDisplayValue('2.25');
     fireEvent.focus(input);
@@ -96,7 +96,7 @@ describe('leaving an untouched field does not rewrite it', () => {
   it('does not turn a 1 L/min restriction into 1.14 L/min by clicking through it in imperial', () => {
     const node = { id: 'cr1', type: 'calibrated_restriction', data: { flow_base_lmin: 1, inlet_pressure_base_bara: 3.5, outlet_pressure_base_bara: 1, temp_base_c: 45, restriction_model: 'orifice', fluid_type: 'system' } };
     const onUpdate = renderNodePanel(node, UNIT_SYSTEMS.IMPERIAL);
-    const input = screen.getByDisplayValue('0.3');
+    const input = screen.getByDisplayValue('0.26');
     fireEvent.focus(input);
     fireEvent.blur(input);
     expect(onUpdate).not.toHaveBeenCalled();

@@ -264,7 +264,7 @@ function WalFlowContent() {
     handleUpdateCaseTelemetry, batchStats, handleBatchResultsTelemetry,
   } = useOperatingCases({ nodes });
 
-  const { unitSystem, setUnitSystem } = useUnits();
+  const { unitSystem, setUnitSystem, pressureBasis, setPressureBasis, flowUnit, setFlowUnit, setAtmosphericPressure } = useUnits();
   const dragCounter = useRef(0);
   const [isFileDragging, setIsFileDragging] = useState(false);
 
@@ -279,7 +279,11 @@ function WalFlowContent() {
     isAuthenticated,
     activeProjectId: activeProject?.id || null,
     unitSystem,
-    setUnitSystem
+    setUnitSystem,
+    pressureBasis,
+    setPressureBasis,
+    flowUnit,
+    setFlowUnit
   });
   // Solver settings in force (Drawing > Project > Global): what the solver and the result hash see
   const effectiveGlobalSettings = useMemo(
@@ -672,7 +676,13 @@ function WalFlowContent() {
       type: 'instrument',
       position,
       selected: true,
-      data: defaultInstrumentData('P', nodes.map(n => n.data?.label)),
+      data: defaultNodeData('instrument', {
+        label: defaultInstrumentData('P', nodes.map(n => n.data?.label)).label,
+        ambientTemperature: globalSettings.ambient_temperature,
+        onRotate: handleRotation,
+        onChange: handleValveChange,
+        pressureBasis,
+      }),
     };
     const label = `Signal ${getNextLabelNumber(edges)}`;
     const signal = {
@@ -691,7 +701,7 @@ function WalFlowContent() {
     setSelectedNode(instrument);
     setSelectedEdge(null);
     requestSnapshot();
-  }, [nodes, edges, setNodes, setEdges, requestSnapshot, blockIfReadOnly]);
+  }, [nodes, edges, setNodes, setEdges, requestSnapshot, blockIfReadOnly, pressureBasis, globalSettings.ambient_temperature, handleRotation, handleValveChange]);
 
   const onEdgeContextMenu = useCallback((event, edge) => {
     event.preventDefault();
@@ -1278,18 +1288,21 @@ function WalFlowContent() {
         id: getId(),
         type,
         position,
-        data: defaultNodeData(type, {
-          label: nextAutoTag(type, nodes.map(n => n.data?.label)),
-          ambientTemperature: globalSettings.ambient_temperature,
-          onRotate: handleRotation,
-          onChange: handleValveChange,
-        }),
+        data: {
+          ...defaultNodeData(type, {
+            label: nextAutoTag(type, nodes.map(n => n.data?.label)),
+            ambientTemperature: globalSettings.ambient_temperature,
+            onRotate: handleRotation,
+            onChange: handleValveChange,
+            pressureBasis,
+          }),
+        },
       };
 
       setNodes((nds) => nds.concat(newNode));
       requestSnapshot();
     },
-    [reactFlowInstance, handleValveChange, handleRotation, setNodes, handleLoadDiagramWithCheck, activeDiagram, hasLock, notifyReadOnly, requestSnapshot, nodes, globalSettings.ambient_temperature]
+    [reactFlowInstance, handleValveChange, handleRotation, setNodes, handleLoadDiagramWithCheck, activeDiagram, hasLock, notifyReadOnly, requestSnapshot, nodes, globalSettings.ambient_temperature, pressureBasis]
   );
 
   const onSave = useCallback(() => {
@@ -1549,12 +1562,17 @@ function WalFlowContent() {
     });
   }, [nodes, nodeCache, cases, activeCaseId, telemetryMode, rotateNode, stableValveChange]);
 
+  // Site atmospheric pressure of the active case: the offset of the gauge pressure basis
+  const activeAtmosphericPa = getActiveCase(cases, activeCaseId)?.overrides?.global_settings?.atmospheric_pressure ?? effectiveGlobalSettings.atmospheric_pressure;
+  useEffect(() => {
+    setAtmosphericPressure(activeAtmosphericPa);
+  }, [activeAtmosphericPa, setAtmosphericPressure]);
+
   // Instrument readings of the active case; edited alarm limits apply at once, without a re-run
   const instrumentReadings = useMemo(() => {
     const activeCase = getActiveCase(cases, activeCaseId);
-    const atmPa = activeCase?.overrides?.global_settings?.atmospheric_pressure ?? effectiveGlobalSettings.atmospheric_pressure;
-    return readInstruments(nodes, edges, getCaseTelemetrySet(activeCase, telemetryMode), atmPa);
-  }, [nodes, edges, cases, activeCaseId, telemetryMode, effectiveGlobalSettings.atmospheric_pressure]);
+    return readInstruments(nodes, edges, getCaseTelemetrySet(activeCase, telemetryMode), activeAtmosphericPa);
+  }, [nodes, edges, cases, activeCaseId, telemetryMode, activeAtmosphericPa]);
 
   // An instrument keeps its object while its reading is unchanged, so a drag frame does not re-render it
   const [instrumentCache] = useState(() => new Map());

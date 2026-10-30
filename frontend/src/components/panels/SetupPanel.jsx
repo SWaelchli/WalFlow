@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 
 import { notify, confirmDialog } from '../../utils/dialogs';
-import { mToMm, mToIn, psiToPa } from '../../utils/converters';
+import { mToMm, mToIn } from '../../utils/converters';
 import { RELIEF_DRIVER_TYPES } from '../../constants/case_constants';
 import { FLUID_CATEGORIES, FLUID_LIBRARY } from '../../constants/fluid_library';
 import { getEffectiveNodeData } from '../../utils/case_resolver';
@@ -50,7 +50,7 @@ export default function SetupPanel({
   inline = false
 }) {
 
-  const { isImperial, fromInputValue, toDisplayValue, smallLengthToM, formatPressureGauge } = useUnits();
+  const { isImperial, fromInputValue, toDisplayValue, smallLengthToM, formatPressureGauge, labels, gaugeLabel, formatFlow } = useUnits();
 
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [localDrafts, setLocalDrafts] = useState({});
@@ -159,7 +159,7 @@ export default function SetupPanel({
         }
       } else if (field === 'max_discharge_pressure_bara') {
         if (isNaN(numericValue) || numericValue <= 1.0) {
-          notify(`Max. discharge pressure must be above 1 bar(a)${isImperial ? ' (14.5 psi(a))' : ''}.`, 'warning');
+          notify(`Max. discharge pressure must be above 1 bar absolute (14.5 psia).`, 'warning');
           setLocalDrafts({});
           return;
         }
@@ -596,11 +596,11 @@ export default function SetupPanel({
                 </select>
               </div>
               <div>
-                {renderLabel(`Rated Flow (${isImperial ? 'GPM' : 'L/min'})`, 'flow_rated_lmin')}
+                {renderLabel(`Rated Flow (${labels.flow})`, 'flow_rated_lmin')}
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
-                  value={localDrafts.flow_rated_lmin !== undefined ? localDrafts.flow_rated_lmin : (isImperial ? (Number(effectiveData.flow_rated_lmin || 100) * 0.264172052).toFixed(1) : (effectiveData.flow_rated_lmin || 100))} 
+                  value={localDrafts.flow_rated_lmin !== undefined ? localDrafts.flow_rated_lmin : toDisplayValue('flow_rated_lmin', effectiveData.flow_rated_lmin || 100)} 
                   onChange={(e) => handleDraftChange('flow_rated_lmin', e.target.value)}
                   onBlur={(e) => validateAndCommit('flow_rated_lmin', e.target.value, true)}
                 />
@@ -680,11 +680,11 @@ export default function SetupPanel({
                 </select>
               </div>
               <div>
-                {renderLabel(`Rated Flow (${isImperial ? 'GPM' : 'L/min'})`, 'flow_rated_lmin')}
+                {renderLabel(`Rated Flow (${labels.flow})`, 'flow_rated_lmin')}
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
-                  value={localDrafts.flow_rated_lmin !== undefined ? localDrafts.flow_rated_lmin : (isImperial ? (Number(effectiveData.flow_rated_lmin || 0) * 0.264172052).toFixed(1) : (effectiveData.flow_rated_lmin || 0))} 
+                  value={localDrafts.flow_rated_lmin !== undefined ? localDrafts.flow_rated_lmin : toDisplayValue('flow_rated_lmin', effectiveData.flow_rated_lmin || 0)} 
                   onChange={(e) => handleDraftChange('flow_rated_lmin', e.target.value)}
                   onBlur={(e) => validateAndCommit('flow_rated_lmin', e.target.value, true)}
                 />
@@ -707,14 +707,14 @@ export default function SetupPanel({
                 </p>
               </div>
               <div>
-                {renderLabel(`Max. Discharge Pressure (${isImperial ? 'psi(a)' : 'bar(a)'})`, 'max_discharge_pressure_bara')}
+                {renderLabel(`Max. Discharge Pressure (${labels.pressureAbs})`, 'max_discharge_pressure_bara')}
                 <input
                   type="number"
                   step="1"
                   className="form-input" style={{ width: '100%' }}
                   value={localDrafts.max_discharge_pressure_bara !== undefined
                     ? localDrafts.max_discharge_pressure_bara
-                    : (isImperial ? (Number(effectiveData.max_discharge_pressure_bara ?? 50.0) * 14.5037738).toFixed(1) : (effectiveData.max_discharge_pressure_bara ?? 50.0))}
+                    : toDisplayValue('max_discharge_pressure_bara', effectiveData.max_discharge_pressure_bara ?? 50.0)}
                   onChange={(e) => handleDraftChange('max_discharge_pressure_bara', e.target.value)}
                   onBlur={(e) => validateAndCommit('max_discharge_pressure_bara', e.target.value, true)}
                 />
@@ -753,14 +753,14 @@ export default function SetupPanel({
           {isNode && type === 'pressure_boundary' && (
             <>
               <div>
-                {renderLabel(`Set Pressure (${isImperial ? 'psi(a)' : 'bar(a)'})`, 'set_pressure_bara')}
+                {renderLabel(`Set Pressure (${labels.pressureAbs})`, 'set_pressure_bara')}
                 <input
                   type="number"
                   className="form-input" style={{ width: '100%' }}
                   step="0.1"
                   value={localDrafts.set_pressure_bara !== undefined
                     ? localDrafts.set_pressure_bara
-                    : (isImperial ? (Number(effectiveData.set_pressure_bara ?? 6.0) * 14.5037738).toFixed(1) : (effectiveData.set_pressure_bara ?? 6.0))}
+                    : toDisplayValue('set_pressure_bara', effectiveData.set_pressure_bara ?? 6.0)}
                   onChange={(e) => handleDraftChange('set_pressure_bara', e.target.value)}
                   onBlur={(e) => validateAndCommit('set_pressure_bara', e.target.value, true)}
                 />
@@ -787,10 +787,10 @@ export default function SetupPanel({
             const telemetry = node?.data?.telemetry;
             const alertStyle = { background: '#FEF2F2', border: '1px solid #FEE2E2', borderRadius: '4px', padding: '8px', fontSize: 'var(--fs-xs)', color: 'var(--color-danger-text)' };
             const hintStyle = { fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', margin: '4px 0 0' };
-            const pressureUnit = isImperial ? 'psi(a)' : 'bar(a)';
+            const pressureUnit = labels.pressureAbs;
             const pressureValue = (field, fallback) => (localDrafts[field] !== undefined
               ? localDrafts[field]
-              : (isImperial ? (Number(effectiveData[field] ?? fallback) * 14.5037738).toFixed(1) : (effectiveData[field] ?? fallback)));
+              : toDisplayValue(field, effectiveData[field] ?? fallback));
             const nPorts = boundaryPortCount(data);
             const flowSplit = effectiveData.flow_split ?? 'common_pressure';
             const perPort = nPorts > 1 && flowSplit === 'per_port';
@@ -805,7 +805,6 @@ export default function SetupPanel({
             const portFlowTotal = Array.from({ length: nPorts }, (_, k) => k)
               .filter(k => connectedPorts.has(k))
               .reduce((sum, k) => sum + Number(portFlows[k] ?? effectiveData.set_flow_lmin ?? 50.0), 0);
-            const formatFlow = (lmin) => (isImperial ? lmin * 0.264172052 : lmin).toFixed(1);
             const commitPortFlow = (k, raw) => {
               if (!Object.prototype.hasOwnProperty.call(localDrafts, `port_flow_${k}`)) return;
               const value = fromInputValue('set_flow_lmin', raw === '' ? 0 : raw);
@@ -850,7 +849,7 @@ export default function SetupPanel({
 
                 {!perPort && (
                 <div>
-                  {renderLabel(`Set Flow (${isImperial ? 'GPM' : 'L/min'})`, 'set_flow_lmin')}
+                  {renderLabel(`Set Flow (${labels.flow})`, 'set_flow_lmin')}
                   <input
                     type="number"
                     min="0"
@@ -858,7 +857,7 @@ export default function SetupPanel({
                     step={isImperial ? "0.1" : "1"}
                     value={localDrafts.set_flow_lmin !== undefined
                       ? localDrafts.set_flow_lmin
-                      : (isImperial ? (Number(effectiveData.set_flow_lmin ?? 50.0) * 0.264172052).toFixed(1) : (effectiveData.set_flow_lmin ?? 50.0))}
+                      : toDisplayValue('set_flow_lmin', effectiveData.set_flow_lmin ?? 50.0)}
                     onChange={(e) => handleDraftChange('set_flow_lmin', e.target.value)}
                     onBlur={(e) => validateAndCommit('set_flow_lmin', e.target.value, true)}
                   />
@@ -895,7 +894,7 @@ export default function SetupPanel({
                 {perPort && (
                   <div>
                     <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
-                      {`Flow per port (${isImperial ? 'GPM' : 'L/min'})`}
+                      {`Flow per port (${labels.flow})`}
                     </label>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '2px' }}>
                       {Array.from({ length: nPorts }, (_, k) => {
@@ -914,7 +913,7 @@ export default function SetupPanel({
                                 step={isImperial ? "0.1" : "1"}
                                 value={localDrafts[draftKey] !== undefined
                                   ? localDrafts[draftKey]
-                                  : (isImperial ? (stored * 0.264172052).toFixed(1) : stored)}
+                                  : toDisplayValue('set_flow_lmin', stored)}
                                 onChange={(e) => handleDraftChange(draftKey, e.target.value)}
                                 onBlur={(e) => commitPortFlow(k, e.target.value)}
                               />
@@ -925,7 +924,7 @@ export default function SetupPanel({
                       })}
                     </div>
                     <p style={hintStyle}>
-                      {`Total (connected ports): ${formatFlow(portFlowTotal)} ${isImperial ? 'GPM' : 'L/min'}`}
+                      {`Total (connected ports): ${formatFlow(portFlowTotal)} ${labels.flow}`}
                     </p>
                   </div>
                 )}
@@ -1026,16 +1025,16 @@ export default function SetupPanel({
                 </select>
               </div>
               <div>
-                {renderLabel(`Set Point (${isImperial ? 'psi(a)' : 'bar(a)'})`, 'set_pressure_pa')}
+                {renderLabel(`Set Point (${labels.pressureAbs})`, 'set_pressure_pa')}
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
                   step="0.1" 
-                  value={localDrafts.set_pressure_pa !== undefined ? localDrafts.set_pressure_pa : (isImperial ? +((Number(effectiveData.set_pressure_pa ?? 100000) / 100000) * 14.5037738).toFixed(2) : +(Number(effectiveData.set_pressure_pa ?? 100000) / 100000).toFixed(3))} 
+                  value={localDrafts.set_pressure_pa !== undefined ? localDrafts.set_pressure_pa : toDisplayValue('set_pressure_pa', effectiveData.set_pressure_pa ?? 100000)} 
                   onChange={(e) => handleDraftChange('set_pressure_pa', e.target.value)}
                   onBlur={(e) => {
                     if (isNaN(parseFloat(e.target.value))) return;
-                    validateAndCommit('set_pressure_pa', e.target.value, false, { toSi: (v) => (isImperial ? psiToPa(v) : Number(v) * 100000) });
+                    validateAndCommit('set_pressure_pa', e.target.value);
                   }}
                 />
               </div>
@@ -1114,12 +1113,12 @@ export default function SetupPanel({
           {isNode && (type === 'pressure_safety_valve' || type === 'psv') && (
             <>
               <div>
-                {renderLabel(`Set Pressure (${isImperial ? 'psig' : 'barg'})`, 'set_pressure_barg')}
+                {renderLabel(`Set Pressure (${gaugeLabel})`, 'set_pressure_barg')}
                 <input
                   type="number" step="0.1" min="0.01"
                   className="form-input" style={{ width: '100%' }}
                   placeholder={effectiveData.set_pressure_barg ? undefined : 'Enter set pressure (gauge)'}
-                  value={localDrafts.set_pressure_barg !== undefined ? localDrafts.set_pressure_barg : (effectiveData.set_pressure_barg ? (isImperial ? (Number(effectiveData.set_pressure_barg) * 14.5037738).toFixed(1) : effectiveData.set_pressure_barg) : '')}
+                  value={localDrafts.set_pressure_barg !== undefined ? localDrafts.set_pressure_barg : (effectiveData.set_pressure_barg ? toDisplayValue('set_pressure_barg', effectiveData.set_pressure_barg) : '')}
                   onChange={(e) => handleDraftChange('set_pressure_barg', e.target.value)}
                   onBlur={(e) => { if (e.target.value !== '' || effectiveData.set_pressure_barg) validateAndCommit('set_pressure_barg', e.target.value, true); }}
                 />
@@ -1127,7 +1126,7 @@ export default function SetupPanel({
                   <div role="alert" style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', marginTop: '6px', padding: '6px 8px', borderRadius: '6px', backgroundColor: '#FEF3C7', border: '1px solid #FCD34D', fontSize: 'var(--fs-xs)', color: 'var(--color-warning-text-strong)' }}>
                     <WarningIcon size={12} color="var(--color-warning-text-strong)" style={{ flexShrink: 0, marginTop: '1px' }} />
                     <span>
-                      Set Pressure (barg) missing. Relief devices are set in gauge pressure since v0.2; this device{effectiveData.set_pressure_bar ? ` had ${effectiveData.set_pressure_bar} bar(a)` : ''}. Enter the set pressure from the datasheet; the simulation will not run until then.
+                      Set Pressure ({gaugeLabel}) missing. Relief devices are set in gauge pressure since v0.2; this device{effectiveData.set_pressure_bar ? ` had ${effectiveData.set_pressure_bar} bar a` : ''}. Enter the set pressure from the datasheet; the simulation will not run until then.
                     </span>
                   </div>
                 ) : (
@@ -1167,11 +1166,11 @@ export default function SetupPanel({
               </div>
               {psvValveType === 'conventional' && (
                 <div>
-                  {renderLabel(`Design Superimposed Backpressure (${isImperial ? 'psig' : 'barg'})`, 'design_superimposed_bp_barg')}
+                  {renderLabel(`Design Superimposed Backpressure (${gaugeLabel})`, 'design_superimposed_bp_barg')}
                   <input
                     type="number" step="0.1" min="0"
                     className="form-input" style={{ width: '100%' }}
-                    value={localDrafts.design_superimposed_bp_barg !== undefined ? localDrafts.design_superimposed_bp_barg : (isImperial ? (Number(effectiveData.design_superimposed_bp_barg ?? 0) * 14.5037738).toFixed(1) : (effectiveData.design_superimposed_bp_barg ?? 0))}
+                    value={localDrafts.design_superimposed_bp_barg !== undefined ? localDrafts.design_superimposed_bp_barg : toDisplayValue('design_superimposed_bp_barg', effectiveData.design_superimposed_bp_barg ?? 0)}
                     onChange={(e) => handleDraftChange('design_superimposed_bp_barg', e.target.value)}
                     onBlur={(e) => validateAndCommit('design_superimposed_bp_barg', e.target.value)}
                   />
@@ -1237,12 +1236,12 @@ export default function SetupPanel({
           {isNode && type === 'rupture_disc' && (
             <>
               <div>
-                {renderLabel(`Burst Pressure (${isImperial ? 'psig' : 'barg'})`, 'burst_pressure_barg')}
+                {renderLabel(`Burst Pressure (${gaugeLabel})`, 'burst_pressure_barg')}
                 <input
                   type="number" step="0.1" min="0.01"
                   className="form-input" style={{ width: '100%' }}
                   placeholder={effectiveData.burst_pressure_barg ? undefined : 'Enter burst pressure (gauge)'}
-                  value={localDrafts.burst_pressure_barg !== undefined ? localDrafts.burst_pressure_barg : (effectiveData.burst_pressure_barg ? (isImperial ? (Number(effectiveData.burst_pressure_barg) * 14.5037738).toFixed(1) : effectiveData.burst_pressure_barg) : '')}
+                  value={localDrafts.burst_pressure_barg !== undefined ? localDrafts.burst_pressure_barg : (effectiveData.burst_pressure_barg ? toDisplayValue('burst_pressure_barg', effectiveData.burst_pressure_barg) : '')}
                   onChange={(e) => handleDraftChange('burst_pressure_barg', e.target.value)}
                   onBlur={(e) => { if (e.target.value !== '' || effectiveData.burst_pressure_barg) validateAndCommit('burst_pressure_barg', e.target.value, true); }}
                 />
@@ -1250,7 +1249,7 @@ export default function SetupPanel({
                   <div role="alert" style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', marginTop: '6px', padding: '6px 8px', borderRadius: '6px', backgroundColor: '#FEF3C7', border: '1px solid #FCD34D', fontSize: 'var(--fs-xs)', color: 'var(--color-warning-text-strong)' }}>
                     <WarningIcon size={12} color="var(--color-warning-text-strong)" style={{ flexShrink: 0, marginTop: '1px' }} />
                     <span>
-                      Burst Pressure (barg) missing. Relief devices are set in gauge pressure since v0.2; this device{effectiveData.burst_pressure_bar ? ` had ${effectiveData.burst_pressure_bar} bar(a)` : ''}. Enter the burst pressure from the datasheet; the simulation will not run until then.
+                      Burst Pressure ({gaugeLabel}) missing. Relief devices are set in gauge pressure since v0.2; this device{effectiveData.burst_pressure_bar ? ` had ${effectiveData.burst_pressure_bar} bar a` : ''}. Enter the burst pressure from the datasheet; the simulation will not run until then.
                     </span>
                   </div>
                 ) : (
@@ -1330,7 +1329,7 @@ export default function SetupPanel({
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
                   step="0.01" min="0"
-                  value={localDrafts.cracking_pressure_bar !== undefined ? localDrafts.cracking_pressure_bar : (isImperial ? (Number(effectiveData.cracking_pressure_bar ?? 0.05) * 14.5037738).toFixed(2) : (effectiveData.cracking_pressure_bar ?? 0.05))} 
+                  value={localDrafts.cracking_pressure_bar !== undefined ? localDrafts.cracking_pressure_bar : toDisplayValue('cracking_pressure_bar', effectiveData.cracking_pressure_bar ?? 0.05)} 
                   onChange={(e) => handleDraftChange('cracking_pressure_bar', e.target.value)}
                   onBlur={(e) => validateAndCommit('cracking_pressure_bar', e.target.value, true)}
                 />
@@ -1357,7 +1356,7 @@ export default function SetupPanel({
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
                   step="0.01" min="0"
-                  value={localDrafts.cracking_pressure_bar !== undefined ? localDrafts.cracking_pressure_bar : (isImperial ? (Number(effectiveData.cracking_pressure_bar ?? 0.05) * 14.5037738).toFixed(2) : (effectiveData.cracking_pressure_bar ?? 0.05))} 
+                  value={localDrafts.cracking_pressure_bar !== undefined ? localDrafts.cracking_pressure_bar : toDisplayValue('cracking_pressure_bar', effectiveData.cracking_pressure_bar ?? 0.05)} 
                   onChange={(e) => handleDraftChange('cracking_pressure_bar', e.target.value)}
                   onBlur={(e) => validateAndCommit('cracking_pressure_bar', e.target.value, true)}
                 />
@@ -1417,11 +1416,11 @@ export default function SetupPanel({
                 </select>
               </div>
               <div>
-                {renderLabel(`Rated Flow (${isImperial ? 'GPM' : 'L/min'})`, 'rated_flow_lmin')}
+                {renderLabel(`Rated Flow (${labels.flow})`, 'rated_flow_lmin')}
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
-                  value={localDrafts.rated_flow_lmin !== undefined ? localDrafts.rated_flow_lmin : (isImperial ? (Number(effectiveData.rated_flow_lmin || 500.0) * 0.264172052).toFixed(1) : (effectiveData.rated_flow_lmin || 500.0))} 
+                  value={localDrafts.rated_flow_lmin !== undefined ? localDrafts.rated_flow_lmin : toDisplayValue('rated_flow_lmin', effectiveData.rated_flow_lmin || 500.0)} 
                   onChange={(e) => handleDraftChange('rated_flow_lmin', e.target.value)}
                   onBlur={(e) => validateAndCommit('rated_flow_lmin', e.target.value, true)}
                 />
@@ -1505,7 +1504,7 @@ export default function SetupPanel({
                 <input 
                   type="number" step="0.01" 
                   className="form-input" style={{ width: '100%' }} 
-                  value={localDrafts.rated_dp_bar !== undefined ? localDrafts.rated_dp_bar : (isImperial ? (Number(effectiveData.rated_dp_bar ?? 0.5) * 14.5037738).toFixed(2) : (effectiveData.rated_dp_bar ?? 0.5))} 
+                  value={localDrafts.rated_dp_bar !== undefined ? localDrafts.rated_dp_bar : toDisplayValue('rated_dp_bar', effectiveData.rated_dp_bar ?? 0.5)} 
                   onChange={(e) => handleDraftChange('rated_dp_bar', e.target.value)}
                   onBlur={(e) => validateAndCommit('rated_dp_bar', e.target.value, true)}
                 />
@@ -1520,7 +1519,7 @@ export default function SetupPanel({
                 <input 
                   type="number" step="0.01" 
                   className="form-input" style={{ width: '100%' }} 
-                  value={localDrafts.dp_clean_bar !== undefined ? localDrafts.dp_clean_bar : (isImperial ? (Number(effectiveData.dp_clean_bar || 0.2) * 14.5037738).toFixed(2) : (effectiveData.dp_clean_bar || 0.2))} 
+                  value={localDrafts.dp_clean_bar !== undefined ? localDrafts.dp_clean_bar : toDisplayValue('dp_clean_bar', effectiveData.dp_clean_bar || 0.2)} 
                   onChange={(e) => handleDraftChange('dp_clean_bar', e.target.value)}
                   onBlur={(e) => validateAndCommit('dp_clean_bar', e.target.value, true)}
                 />
@@ -1530,17 +1529,17 @@ export default function SetupPanel({
                 <input 
                   type="number" step="0.1" 
                   className="form-input" style={{ width: '100%' }} 
-                  value={localDrafts.dp_terminal_bar !== undefined ? localDrafts.dp_terminal_bar : (isImperial ? (Number(effectiveData.dp_terminal_bar || 1.0) * 14.5037738).toFixed(2) : (effectiveData.dp_terminal_bar || 1.0))} 
+                  value={localDrafts.dp_terminal_bar !== undefined ? localDrafts.dp_terminal_bar : toDisplayValue('dp_terminal_bar', effectiveData.dp_terminal_bar || 1.0)} 
                   onChange={(e) => handleDraftChange('dp_terminal_bar', e.target.value)}
                   onBlur={(e) => validateAndCommit('dp_terminal_bar', e.target.value, true)}
                 />
               </div>
               <div>
-                {renderLabel(`Rated Flow (${isImperial ? 'GPM' : 'L/min'})`, 'flow_ref_lmin')}
+                {renderLabel(`Rated Flow (${labels.flow})`, 'flow_ref_lmin')}
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
-                  value={localDrafts.flow_ref_lmin !== undefined ? localDrafts.flow_ref_lmin : (isImperial ? (Number(effectiveData.flow_ref_lmin || 100.0) * 0.264172052).toFixed(1) : (effectiveData.flow_ref_lmin || 100.0))} 
+                  value={localDrafts.flow_ref_lmin !== undefined ? localDrafts.flow_ref_lmin : toDisplayValue('flow_ref_lmin', effectiveData.flow_ref_lmin || 100.0)} 
                   onChange={(e) => handleDraftChange('flow_ref_lmin', e.target.value)}
                   onBlur={(e) => validateAndCommit('flow_ref_lmin', e.target.value, true)}
                 />
@@ -1712,34 +1711,34 @@ export default function SetupPanel({
                 </select>
               </div>
               <div>
-                {renderLabel(`Baseline Flow (${isImperial ? 'GPM' : 'L/min'})`, 'flow_base_lmin')}
+                {renderLabel(`Baseline Flow (${labels.flow})`, 'flow_base_lmin')}
                 <input 
                   type="number" 
                   step="0.1"
                   className="form-input" style={{ width: '100%' }} 
-                  value={localDrafts.flow_base_lmin !== undefined ? localDrafts.flow_base_lmin : (isImperial ? (Number(effectiveData.flow_base_lmin || 10.0) * 0.264172052).toFixed(1) : (effectiveData.flow_base_lmin || 10.0))} 
+                  value={localDrafts.flow_base_lmin !== undefined ? localDrafts.flow_base_lmin : toDisplayValue('flow_base_lmin', effectiveData.flow_base_lmin || 10.0)} 
                   onChange={(e) => handleDraftChange('flow_base_lmin', e.target.value)}
                   onBlur={(e) => validateAndCommit('flow_base_lmin', e.target.value, true)}
                 />
               </div>
               <div>
-                {renderLabel(`Baseline Inlet Pressure (${isImperial ? 'psi(a)' : 'bar(a)'})`, 'inlet_pressure_base_bara')}
+                {renderLabel(`Baseline Inlet Pressure (${labels.pressureAbs})`, 'inlet_pressure_base_bara')}
                 <input 
                   type="number" 
                   step="0.05"
                   className="form-input" style={{ width: '100%' }} 
-                  value={localDrafts.inlet_pressure_base_bara !== undefined ? localDrafts.inlet_pressure_base_bara : (isImperial ? (Number(effectiveData.inlet_pressure_base_bara || 3.5) * 14.5037738).toFixed(2) : (effectiveData.inlet_pressure_base_bara || 3.5))} 
+                  value={localDrafts.inlet_pressure_base_bara !== undefined ? localDrafts.inlet_pressure_base_bara : toDisplayValue('inlet_pressure_base_bara', effectiveData.inlet_pressure_base_bara || 3.5)} 
                   onChange={(e) => handleDraftChange('inlet_pressure_base_bara', e.target.value)}
                   onBlur={(e) => validateAndCommit('inlet_pressure_base_bara', e.target.value, true)}
                 />
               </div>
               <div>
-                {renderLabel(`Baseline Outlet Pressure (${isImperial ? 'psi(a)' : 'bar(a)'})`, 'outlet_pressure_base_bara')}
+                {renderLabel(`Baseline Outlet Pressure (${labels.pressureAbs})`, 'outlet_pressure_base_bara')}
                 <input 
                   type="number" 
                   step="0.05"
                   className="form-input" style={{ width: '100%' }} 
-                  value={localDrafts.outlet_pressure_base_bara !== undefined ? localDrafts.outlet_pressure_base_bara : (isImperial ? (Number(effectiveData.outlet_pressure_base_bara || 1.0) * 14.5037738).toFixed(2) : (effectiveData.outlet_pressure_base_bara || 1.0))} 
+                  value={localDrafts.outlet_pressure_base_bara !== undefined ? localDrafts.outlet_pressure_base_bara : toDisplayValue('outlet_pressure_base_bara', effectiveData.outlet_pressure_base_bara || 1.0)} 
                   onChange={(e) => handleDraftChange('outlet_pressure_base_bara', e.target.value)}
                   onBlur={(e) => validateAndCommit('outlet_pressure_base_bara', e.target.value, true)}
                 />

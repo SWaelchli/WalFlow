@@ -3,9 +3,24 @@ import {
   UNIT_SYSTEMS,
   UNIT_LABELS,
   getUnitLabel,
-  formatPressureFromBar,
-  formatPressureFromPa,
+  formatAbsPressureFromBar,
+  formatAbsPressureFromPa,
+  formatDiffPressureFromBar,
+  formatDiffPressureFromPa,
+  formatGaugeBarWithUnit,
   formatFlowFromLmin,
+  PRESSURE_BASES,
+  FLOW_UNITS,
+  DEFAULT_ATM_PA,
+  normalizePressureBasis,
+  normalizeFlowUnit,
+  pressureBasisLabel,
+  flowUnitLabel,
+  absPaToDisplayPressure,
+  displayPressureToAbsPa,
+  lminToDisplayFlow,
+  displayFlowToLmin,
+  BAR_TO_PA,
   formatFlowFromM3s,
   formatTempFromC,
   formatTempFromK,
@@ -15,8 +30,6 @@ import {
   psiToBar,
   paToPsi,
   psiToPa,
-  lminToGpm,
-  gpmToLmin,
   cToF,
   fToC,
   cToK,
@@ -33,6 +46,41 @@ import {
 } from '../utils/converters';
 
 const STORAGE_KEY = 'walflow_unit_system';
+const BASIS_STORAGE_KEY = 'walflow_pressure_basis';
+const FLOW_STORAGE_KEY = 'walflow_flow_unit';
+
+const readStored = (key, allowed, fallback) => {
+  try {
+    const stored = localStorage.getItem(key);
+    if (stored && Object.values(allowed).includes(stored)) return stored;
+  } catch {
+    // localStorage not accessible
+  }
+  return fallback;
+};
+
+const writeStored = (key, value) => {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // ignore storage errors
+  }
+};
+
+// Absolute-pressure properties (stored in bar absolute, or Pa absolute): shown in the chosen basis
+const ABS_BAR_KEYS = new Set([
+  'set_pressure_bara',
+  'min_suction_pressure_bara',
+  'max_discharge_pressure_bara',
+  'inlet_pressure_base_bara',
+  'outlet_pressure_base_bara',
+]);
+const ABS_PA_KEYS = new Set(['set_pressure_pa']);
+// Flow properties (stored in L/min): shown in the active flow unit
+const FLOW_KEYS = new Set(['flow_rated_lmin', 'set_flow_lmin', 'rated_flow_lmin', 'flow_ref_lmin', 'flow_base_lmin']);
+
+// Trim float noise from converted values (9.213249999999999 -> 9.21325)
+const trimNoise = (v, digits = 10) => Number(Number(v).toPrecision(digits));
 
 const UnitContext = createContext({
   unitSystem: UNIT_SYSTEMS.METRIC,
@@ -41,9 +89,23 @@ const UnitContext = createContext({
   isMetric: true,
   labels: UNIT_LABELS[UNIT_SYSTEMS.METRIC],
   getLabel: () => '',
+  pressureBasis: PRESSURE_BASES.ABSOLUTE,
+  setPressureBasis: () => {},
+  flowUnit: FLOW_UNITS.LMIN,
+  setFlowUnit: () => {},
+  atmosphericPa: DEFAULT_ATM_PA,
+  setAtmosphericPressure: () => {},
+  basisLabel: 'bar a',
+  gaugeLabel: 'bar g',
   formatPressure: () => '',
   formatPressurePa: () => '',
+  formatDiffPressure: () => '',
+  formatDiffPressurePa: () => '',
   formatPressureGauge: () => '',
+  absPaToDisplay: () => null,
+  displayToAbsPa: () => 0,
+  lminToDisplay: () => null,
+  displayToLmin: () => 0,
   formatFlow: () => '',
   formatFlowM3s: () => '',
   formatTemperature: () => '',
@@ -91,36 +153,87 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
     }
   }, [onUnitSystemChange]);
 
+  const [pressureBasis, setPressureBasisState] = useState(() => readStored(BASIS_STORAGE_KEY, PRESSURE_BASES, PRESSURE_BASES.ABSOLUTE));
+  const [flowUnit, setFlowUnitState] = useState(() => readStored(FLOW_STORAGE_KEY, FLOW_UNITS, FLOW_UNITS.LMIN));
+  // Site atmospheric pressure of the open drawing (Pa): the offset between absolute and gauge
+  const [atmosphericPa, setAtmosphericPa] = useState(DEFAULT_ATM_PA);
+
+  const setPressureBasis = useCallback((basis) => {
+    const next = normalizePressureBasis(basis);
+    setPressureBasisState(next);
+    writeStored(BASIS_STORAGE_KEY, next);
+  }, []);
+
+  const setFlowUnit = useCallback((unit) => {
+    const next = normalizeFlowUnit(unit);
+    setFlowUnitState(next);
+    writeStored(FLOW_STORAGE_KEY, next);
+  }, []);
+
+  const setAtmosphericPressure = useCallback((pa) => {
+    const n = Number(pa);
+    setAtmosphericPa(Number.isFinite(n) && n > 0 ? n : DEFAULT_ATM_PA);
+  }, []);
+
   const isImperial = unitSystem === UNIT_SYSTEMS.IMPERIAL;
   const isMetric = !isImperial;
 
-  const labels = useMemo(() => UNIT_LABELS[unitSystem] || UNIT_LABELS[UNIT_SYSTEMS.METRIC], [unitSystem]);
+  const basisLabel = pressureBasisLabel(unitSystem, pressureBasis);
+  const gaugeLabel = pressureBasisLabel(unitSystem, PRESSURE_BASES.GAUGE);
+  const flowLabel = flowUnitLabel(unitSystem, flowUnit);
+
+  // pressureAbs follows the chosen basis; flow follows the chosen flow unit
+  const labels = useMemo(() => ({
+    ...(UNIT_LABELS[unitSystem] || UNIT_LABELS[UNIT_SYSTEMS.METRIC]),
+    pressureAbs: basisLabel,
+    flow: flowLabel,
+  }), [unitSystem, basisLabel, flowLabel]);
 
   const getLabel = useCallback((quantity) => {
     return getUnitLabel(quantity, unitSystem);
   }, [unitSystem]);
 
+  // Absolute pressures follow the basis; differences (formatDiffPressure*) never get the atmospheric offset
   const formatPressure = useCallback((valBar, decimals = 2) => {
-    return formatPressureFromBar(valBar, unitSystem, decimals);
-  }, [unitSystem]);
-
-  // Gauge pressure (relief set / burst pressure) with its unit: "18.99 barg" / "275.4 psig"
-  const formatPressureGauge = useCallback((valBarg, decimals = 2) => {
-    if (valBarg === null || valBarg === undefined || isNaN(valBarg)) return '—';
-    return `${formatPressureFromBar(valBarg, unitSystem, unitSystem === UNIT_SYSTEMS.IMPERIAL ? 1 : decimals)} ${unitSystem === UNIT_SYSTEMS.IMPERIAL ? 'psig' : 'barg'}`;
-  }, [unitSystem]);
+    return formatAbsPressureFromBar(valBar, unitSystem, pressureBasis, atmosphericPa, decimals);
+  }, [unitSystem, pressureBasis, atmosphericPa]);
 
   const formatPressurePa = useCallback((valPa, decimals = 2) => {
-    return formatPressureFromPa(valPa, unitSystem, decimals);
+    return formatAbsPressureFromPa(valPa, unitSystem, pressureBasis, atmosphericPa, decimals);
+  }, [unitSystem, pressureBasis, atmosphericPa]);
+
+  const formatDiffPressure = useCallback((valBar, decimals = 2) => {
+    return formatDiffPressureFromBar(valBar, unitSystem, decimals);
   }, [unitSystem]);
+
+  const formatDiffPressurePa = useCallback((valPa, decimals = 2) => {
+    return formatDiffPressureFromPa(valPa, unitSystem, decimals);
+  }, [unitSystem]);
+
+  // Gauge-only pressure (relief set / burst pressure) with its unit: "18.99 bar g" / "275.4 psig"
+  const formatPressureGauge = useCallback((valBarg, decimals = 2) => {
+    return formatGaugeBarWithUnit(valBarg, unitSystem, decimals);
+  }, [unitSystem]);
+
+  // Absolute Pa <-> number in the display unit and the chosen basis
+  const absPaToDisplay = useCallback((pa) => {
+    return absPaToDisplayPressure(pa, { unitSystem, basis: pressureBasis, atmPa: atmosphericPa });
+  }, [unitSystem, pressureBasis, atmosphericPa]);
+
+  const displayToAbsPa = useCallback((value) => {
+    return displayPressureToAbsPa(value, { unitSystem, basis: pressureBasis, atmPa: atmosphericPa });
+  }, [unitSystem, pressureBasis, atmosphericPa]);
+
+  const lminToDisplay = useCallback((lmin) => lminToDisplayFlow(lmin, unitSystem, flowUnit), [unitSystem, flowUnit]);
+  const displayToLmin = useCallback((value) => displayFlowToLmin(value, unitSystem, flowUnit), [unitSystem, flowUnit]);
 
   const formatFlow = useCallback((valLmin, decimals) => {
-    return formatFlowFromLmin(valLmin, unitSystem, decimals);
-  }, [unitSystem]);
+    return formatFlowFromLmin(valLmin, unitSystem, decimals, flowUnit);
+  }, [unitSystem, flowUnit]);
 
   const formatFlowM3s = useCallback((valM3s, decimals) => {
-    return formatFlowFromM3s(valM3s, unitSystem, decimals);
-  }, [unitSystem]);
+    return formatFlowFromM3s(valM3s, unitSystem, decimals, flowUnit);
+  }, [unitSystem, flowUnit]);
 
   const formatTemperature = useCallback((valC, decimals = 1) => {
     return formatTempFromC(valC, unitSystem, decimals);
@@ -154,30 +267,33 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
       return isImperial ? Number(((num - 273.15) * 1.8 + 32).toFixed(1)) : Number((num - 273.15).toFixed(1));
     }
     
-    if (!isImperial) return num;
+    // Absolute pressures: shown in the chosen basis
+    if (ABS_BAR_KEYS.has(propKey) || ABS_PA_KEYS.has(propKey)) {
+      const isPa = ABS_PA_KEYS.has(propKey);
+      const shown = absPaToDisplay(isPa ? num : num * BAR_TO_PA);
+      if (isImperial) return Number(shown.toFixed(2));
+      if (pressureBasis === PRESSURE_BASES.GAUGE) return Number(shown.toFixed(5));
+      return isPa ? Number(shown.toFixed(3)) : trimNoise(num);
+    }
+
+    // Flow rates (base: L/min): shown in the active flow unit
+    if (FLOW_KEYS.has(propKey)) {
+      const shown = lminToDisplay(num);
+      if (isImperial) return Number(shown.toFixed(2));
+      return flowUnit === FLOW_UNITS.M3H ? Number(shown.toFixed(4)) : trimNoise(num);
+    }
+
+    if (!isImperial) return trimNoise(num);
 
     // Convert based on property name pattern
     switch (propKey) {
-      // Flow rates (base: L/min)
-      case 'flow_rated_lmin':
-      case 'set_flow_lmin':
-      case 'rated_flow_lmin':
-      case 'flow_ref_lmin':
-      case 'flow_base_lmin':
-        return Number(lminToGpm(num, 2));
-
-      // Pressures (base: bar)
+      // Pressures (base: bar). Gauge-only and differential values carry no atmospheric offset.
       case 'set_pressure_barg':
       case 'design_superimposed_bp_barg':
       case 'burst_pressure_barg':
       case 'dp_clean_bar':
       case 'dp_terminal_bar':
       case 'rated_dp_bar':
-      case 'inlet_pressure_base_bara':
-      case 'outlet_pressure_base_bara':
-      case 'set_pressure_bara':
-      case 'min_suction_pressure_bara':
-      case 'max_discharge_pressure_bara':
       case 'cracking_pressure_bar':
         return Number(barToPsi(num, 2));
 
@@ -216,9 +332,9 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
         return Number((num * 39.37007874).toFixed(3));
 
       default:
-        return num;
+        return trimNoise(num);
     }
-  }, [isImperial]);
+  }, [isImperial, pressureBasis, flowUnit, absPaToDisplay, lminToDisplay]);
 
   /**
    * Convert an input string/number entered by the user in the active unit system
@@ -242,29 +358,24 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
       return isImperial ? fToK(num) : cToK(num);
     }
 
+    // Absolute pressures typed in the chosen basis -> absolute, in the stored unit (bar or Pa)
+    // Rounded to 1e-6 bar (0.1 Pa) so gauge input does not leave float noise in the stored absolute value
+    if (ABS_BAR_KEYS.has(propKey)) return Math.round(displayToAbsPa(num) * 10) / 10 / BAR_TO_PA;
+    if (ABS_PA_KEYS.has(propKey)) return Math.round(displayToAbsPa(num) * 10) / 10;
+
+    // Flow rates typed in the active flow unit -> L/min
+    if (FLOW_KEYS.has(propKey)) return trimNoise(displayToLmin(num), 12);
+
     if (!isImperial) return num;
 
     switch (propKey) {
-      // Flow rates (input: GPM -> base: L/min)
-      case 'flow_rated_lmin':
-      case 'set_flow_lmin':
-      case 'rated_flow_lmin':
-      case 'flow_ref_lmin':
-      case 'flow_base_lmin':
-        return gpmToLmin(num);
-
-      // Pressures (input: psi -> base: bar)
+      // Pressures (input: psi -> base: bar). Gauge-only and differential values carry no atmospheric offset.
       case 'set_pressure_barg':
       case 'design_superimposed_bp_barg':
       case 'burst_pressure_barg':
       case 'dp_clean_bar':
       case 'dp_terminal_bar':
       case 'rated_dp_bar':
-      case 'inlet_pressure_base_bara':
-      case 'outlet_pressure_base_bara':
-      case 'set_pressure_bara':
-      case 'min_suction_pressure_bara':
-      case 'max_discharge_pressure_bara':
       case 'cracking_pressure_bar':
         return psiToBar(num);
 
@@ -305,7 +416,7 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
       default:
         return num;
     }
-  }, [isImperial]);
+  }, [isImperial, displayToAbsPa, displayToLmin]);
 
   /**
    * Convert a small length typed in mm (metric) or inches (imperial), e.g. fitting bores and
@@ -323,6 +434,20 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
     formatPressure,
     formatPressurePa,
     formatPressureGauge,
+    formatDiffPressure,
+    formatDiffPressurePa,
+    pressureBasis,
+    setPressureBasis,
+    flowUnit,
+    setFlowUnit,
+    atmosphericPa,
+    setAtmosphericPressure,
+    basisLabel,
+    gaugeLabel,
+    absPaToDisplay,
+    displayToAbsPa,
+    lminToDisplay,
+    displayToLmin,
     formatFlow,
     formatFlowM3s,
     formatTemperature,
@@ -343,6 +468,20 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
     formatPressure,
     formatPressurePa,
     formatPressureGauge,
+    formatDiffPressure,
+    formatDiffPressurePa,
+    pressureBasis,
+    setPressureBasis,
+    flowUnit,
+    setFlowUnit,
+    atmosphericPa,
+    setAtmosphericPressure,
+    basisLabel,
+    gaugeLabel,
+    absPaToDisplay,
+    displayToAbsPa,
+    lminToDisplay,
+    displayToLmin,
     formatFlow,
     formatFlowM3s,
     formatTemperature,

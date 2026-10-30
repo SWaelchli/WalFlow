@@ -1,6 +1,6 @@
 // Instrument bubbles read the solved state at a sensing pin; they never feed back into the solver.
 // Values and alarm limits are kept in fixed base units: bar (gauge or absolute), bar, L/min, °C, m/s, cSt.
-import { barToPsi, psiToBar, lminToGpm, gpmToLmin, cToF, fToC, msToFts, ftsToMs } from './converters';
+import { barToPsi, psiToBar, lminToGpm, gpmToLmin, lminToM3h, m3hToLmin, cToF, fToC, msToFts, ftsToMs, FLOW_UNITS, DEFAULT_ATM_PA, pressureBasisLabel, flowUnitLabel } from './converters';
 import { nextNumberedTag } from './autoTag';
 import { portNumberLabel } from './portLabels';
 import { NEUTRAL_TYPES } from './networkValidation';
@@ -15,15 +15,17 @@ export const INSTRUMENT_VARIABLES = {
 };
 
 export const ALARM_KEYS = ['alarm_ll', 'alarm_l', 'alarm_h', 'alarm_hh'];
-const DEFAULT_ATM_PA = 101325;
 
 export const instrumentLetters = (variable) => (INSTRUMENT_VARIABLES[variable] || INSTRUMENT_VARIABLES.P).letters;
 
-/** Data of a new instrument measuring `variable`, tagged after the labels already on the canvas. */
-export const defaultInstrumentData = (variable, existingLabels) => ({
+/**
+ * Data of a new instrument measuring `variable`, tagged after the labels already on the canvas.
+ * The pressure basis starts on the global setting; each instrument keeps its own choice afterwards.
+ */
+export const defaultInstrumentData = (variable, existingLabels, pressureBasis = 'gauge') => ({
   label: nextNumberedTag(instrumentLetters(variable), existingLabels),
   variable,
-  pressure_basis: 'gauge',
+  pressure_basis: pressureBasis === 'absolute' ? 'absolute' : 'gauge',
   alarm_ll: null, alarm_l: null, alarm_h: null, alarm_hh: null,
 });
 
@@ -172,37 +174,43 @@ const CONVERT = {
   v: [(v) => Number(msToFts(v, 2)), ftsToMs],
 };
 
-export const limitToDisplay = (variable, base, isImperial) => {
+const isM3h = (variable, isImperial, flowUnit) => variable === 'Q' && !isImperial && flowUnit === FLOW_UNITS.M3H;
+
+export const limitToDisplay = (variable, base, isImperial, flowUnit) => {
   const v = limit(base);
   if (v === null) return '';
+  if (isM3h(variable, isImperial, flowUnit)) return Number(lminToM3h(v, 4));
   return isImperial && CONVERT[variable] ? CONVERT[variable][0](v) : v;
 };
 
-export const limitFromDisplay = (variable, input, isImperial) => {
+export const limitFromDisplay = (variable, input, isImperial, flowUnit) => {
   const v = limit(input);
   if (v === null) return null;
+  if (isM3h(variable, isImperial, flowUnit)) return m3hToLmin(v);
   return isImperial && CONVERT[variable] ? CONVERT[variable][1](v) : v;
 };
 
-/** Unit of a reading/limit for display. */
-export const instrumentUnit = (variable, basis, isImperial) => {
+/** Unit of a reading/limit for display. Pressure follows the instrument's own basis; flow the global flow unit. */
+export const instrumentUnit = (variable, basis, isImperial, flowUnit) => {
+  const system = isImperial ? 'imperial' : 'metric';
   switch (variable) {
     case 'dP': return isImperial ? 'psi' : 'bar';
-    case 'Q': return isImperial ? 'gpm' : 'L/min';
+    case 'Q': return flowUnitLabel(system, flowUnit);
     case 'T': return isImperial ? '°F' : '°C';
     case 'v': return isImperial ? 'ft/s' : 'm/s';
     case 'nu': return 'cSt';
     default:
-      if (isImperial) return basis === 'absolute' ? 'psi(a)' : 'psi(g)';
-      return basis === 'absolute' ? 'bar(a)' : 'bar(g)';
+      return pressureBasisLabel(system, basis === 'absolute' ? 'absolute' : 'gauge');
   }
 };
 
 /** Reading formatted for the badge: { text, unit }; "—" without a value. Small ΔP shows in mbar. */
-export function formatReading(variable, value, basis, isImperial) {
-  if (value === null || value === undefined) return { text: '—', unit: instrumentUnit(variable, basis, isImperial) };
+export function formatReading(variable, value, basis, isImperial, flowUnit) {
+  if (value === null || value === undefined) return { text: '—', unit: instrumentUnit(variable, basis, isImperial, flowUnit) };
   if (variable === 'dP' && !isImperial && Math.abs(value) < 0.1) return { text: (value * 1000).toFixed(1), unit: 'mbar' };
-  const shown = limitToDisplay(variable, value, isImperial);
-  const decimals = { P: 2, dP: 3, Q: 1, T: 1, v: 2, nu: 2 }[variable] ?? 2;
-  return { text: Number(shown).toFixed(decimals), unit: instrumentUnit(variable, basis, isImperial) };
+  const shown = limitToDisplay(variable, value, isImperial, flowUnit);
+  const decimals = isM3h(variable, isImperial, flowUnit)
+    ? (Math.abs(shown) < 1 ? 3 : 2)
+    : ({ P: 2, dP: 3, Q: 1, T: 1, v: 2, nu: 2 }[variable] ?? 2);
+  return { text: Number(shown).toFixed(decimals), unit: instrumentUnit(variable, basis, isImperial, flowUnit) };
 }

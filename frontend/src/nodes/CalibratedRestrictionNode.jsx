@@ -10,12 +10,12 @@ import { neutralDrop } from '../utils/nodeReadouts';
  * Calibrated Restriction Node (Orifice, Laminar, or Quadratic)
  */
 export default function CalibratedRestrictionNode({ id, data, selected }) {
-  const { formatPressurePa, labels } = useUnits();
+  const { formatDiffPressurePa, labels } = useUnits();
   const telemetry = data.telemetry;
   const rotation = data.rotation || 0;
   const sensing = useMemo(() => data.sensing || {}, [data.sensing]);
   const dP = neutralDrop(telemetry);
-  const dPFormatted = formatPressurePa(dP);
+  const dPFormatted = formatDiffPressurePa(dP);
 
   // Pretty model badge name
   const modelLabels = {

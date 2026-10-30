@@ -1,6 +1,13 @@
 import React from 'react';
 import { CrossIcon } from '../symbols/IconLibrary';
 import { useUnits } from '../../context/UnitContext';
+import { BAR_TO_PA, FLOW_UNITS } from '../../utils/converters';
+
+// A typed 0 is a valid bound; only an empty or invalid field falls back
+const parseOr = (text, fallback) => {
+  const n = parseFloat(text);
+  return Number.isFinite(n) ? n : fallback;
+};
 
 export default function HeatmapLegend({ 
   heatmapMode, 
@@ -15,7 +22,7 @@ export default function HeatmapLegend({
   onResetCustomRange,
   style = {}
 }) {
-  const { labels, isImperial } = useUnits();
+  const { labels, isImperial, flowUnit, absPaToDisplay, displayToAbsPa, lminToDisplay, displayToLmin } = useUnits();
 
   if (!heatmapMode || heatmapMode === 'default') return null;
 
@@ -47,16 +54,21 @@ export default function HeatmapLegend({
   const config = modeConfigs[heatmapMode];
   if (!config) return null;
 
+  // The range is kept in bar absolute / L/min; pressure and flow show in the chosen basis and flow unit
+  const toDisplay = (v) => (heatmapMode === 'pressure' ? absPaToDisplay(v * BAR_TO_PA) : heatmapMode === 'volumeflow' ? lminToDisplay(v) : v);
+  const displayToBase = (v) => (heatmapMode === 'pressure' ? displayToAbsPa(v) / BAR_TO_PA : heatmapMode === 'volumeflow' ? displayToLmin(v) : v);
+  const customToDisplay = (v) => (heatmapMode === 'pressure' || heatmapMode === 'volumeflow' ? Number(toDisplay(v).toFixed(3)) : v);
+
   const formatVal = (v) => {
     if (v === null || v === undefined || isNaN(v)) return '0.0';
     if (heatmapMode === 'pressure') {
-      return isImperial ? (v * 14.5037738).toFixed(1) : v.toFixed(1);
+      return toDisplay(v).toFixed(1);
     }
     if (heatmapMode === 'temperature') {
       return isImperial ? (v * 1.8 + 32).toFixed(1) : v.toFixed(1);
     }
     if (heatmapMode === 'volumeflow') {
-      return isImperial ? (v * 0.264172052).toFixed(1) : v.toFixed(1);
+      return toDisplay(v).toFixed(!isImperial && flowUnit === FLOW_UNITS.M3H ? 2 : 1);
     }
     if (heatmapMode === 'velocity') {
       return isImperial ? (v * 3.280839895).toFixed(2) : v.toFixed(2);
@@ -236,8 +248,8 @@ export default function HeatmapLegend({
               type="number"
               step="0.5"
               aria-label={`Minimum (${config.unit})`}
-              value={customRange?.min ?? 0}
-              onChange={(e) => onUpdateCustomRange && onUpdateCustomRange(parseFloat(e.target.value) || 0, customRange?.max ?? 10)}
+              value={customToDisplay(customRange?.min ?? 0)}
+              onChange={(e) => onUpdateCustomRange && onUpdateCustomRange(displayToBase(parseOr(e.target.value, 0)), customRange?.max ?? 10)}
               className="form-input"
               style={{
                 width: '60px',
@@ -259,8 +271,8 @@ export default function HeatmapLegend({
               type="number"
               step="0.5"
               aria-label={`Maximum (${config.unit})`}
-              value={customRange?.max ?? 10}
-              onChange={(e) => onUpdateCustomRange && onUpdateCustomRange(customRange?.min ?? 0, parseFloat(e.target.value) || 10)}
+              value={customToDisplay(customRange?.max ?? 10)}
+              onChange={(e) => onUpdateCustomRange && onUpdateCustomRange(customRange?.min ?? 0, displayToBase(parseOr(e.target.value, 10)))}
               className="form-input"
               style={{
                 width: '60px',

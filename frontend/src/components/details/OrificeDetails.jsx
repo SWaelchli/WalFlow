@@ -62,7 +62,7 @@ const calculateDp = (qM3s, density, viscosity, D, d, beta, standard) => {
 };
 
 const OrificeDetails = memo(function OrificeDetails({ node }) {
-  const { labels, isImperial, formatPressurePa } = useUnits();
+  const { labels, isImperial, lminToDisplay, formatDiffPressurePa } = useUnits();
   const { pipe_diameter_m, orifice_diameter_m, telemetry } = node.data;
   
   const neutral = neutralPorts(telemetry);
@@ -79,7 +79,7 @@ const OrificeDetails = memo(function OrificeDetails({ node }) {
   const currentDpBar = currentDpPa / 100000;
   const maxX_lmin = Math.max(actualFlowLmin * 1.2, actualFlowLmin + 10);
 
-  const flowMultiplier = isImperial ? 0.264172052 : 1.0;
+  const flowMultiplier = lminToDisplay(1);
   const pressMultiplier = isImperial ? 14.5037738 : 1.0;
   const xMaxDisplay = niceTicks(maxX_lmin * flowMultiplier, 5).pop();
   const xMaxLmin = xMaxDisplay / flowMultiplier;
@@ -137,7 +137,7 @@ const OrificeDetails = memo(function OrificeDetails({ node }) {
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-text-secondary)', fontWeight: '500' }}>Current ΔP:</span>
-          <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-text-primary)', fontWeight: '700', fontFamily: 'var(--font-mono)' }}>{formatPressurePa(currentDpPa)} {labels.pressureDiff}</span>
+          <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-text-primary)', fontWeight: '700', fontFamily: 'var(--font-mono)' }}>{formatDiffPressurePa(currentDpPa)} {labels.pressureDiff}</span>
         </div>
       </div>
     </div>
