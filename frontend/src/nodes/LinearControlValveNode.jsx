@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { getRotatedPosition } from '../components/canvas/NodeRotationHandle';
 import { SensingPin } from '../components/canvas/SensingPin';
 import BaseNode from './BaseNode';
+import NodeReadout from './NodeReadout';
 import { useUnits } from '../context/UnitContext';
 
 /**
@@ -39,9 +40,13 @@ export default function LinearControlValveNode({ id, data, selected }) {
               style={{ width: '60px', cursor: 'pointer', display: 'block', margin: '0 auto' }} 
             />
           </div>
-          <div style={{ fontSize: '9px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>{data.label || 'LIN VALVE'}</div>
-          <div style={{ fontSize: '10px', fontWeight: 'bold', color: 'var(--color-brand-dark)' }}>{opening.toFixed(1)} %</div>
-          <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)' }}>{flowFormatted} {labels.flow}</div>
+          <NodeReadout
+            name={data.label || 'LIN VALVE'}
+            rows={[
+              { value: opening.toFixed(1), unit: '%' },
+              { value: flowFormatted, unit: labels.flow },
+            ]}
+          />
         </>
       }
     >

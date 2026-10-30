@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useReactFlow, NodeResizer } from 'reactflow';
 
-const FONT_SIZES = {
-  sm: '12px',
-  md: '14px',
-  lg: '16px',
+const TEXT_CLASSES = {
+  sm: 'note-text-sm',
+  md: 'note-text-md',
+  lg: 'note-text-lg',
 };
 
 /**
@@ -19,7 +19,7 @@ export default function TextBubbleNode({ id, data, selected }) {
   const { setNodes } = useReactFlow();
 
   const text = draftText !== null ? draftText : (data.text || data.label || 'Double-click to edit note...');
-  const fontSize = FONT_SIZES[data.fontSize] || FONT_SIZES.md;
+  const textClass = TEXT_CLASSES[data.fontSize] || TEXT_CLASSES.md;
 
   useEffect(() => {
     if (isEditing && textareaRef.current) {
@@ -71,7 +71,7 @@ export default function TextBubbleNode({ id, data, selected }) {
           borderRadius: '50%',
           backgroundColor: 'var(--color-primary)',
           border: '2px solid var(--color-surface)',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+          boxShadow: 'var(--shadow-md)'
         }}
       />
       <div
@@ -97,6 +97,7 @@ export default function TextBubbleNode({ id, data, selected }) {
       >
         {/* Note Header Tag */}
         <div
+          className="note-header"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -104,7 +105,6 @@ export default function TextBubbleNode({ id, data, selected }) {
             marginBottom: '6px',
             paddingBottom: '4px',
             borderBottom: '1px dashed var(--color-border)',
-            fontSize: '11px',
             fontWeight: 600,
             color: 'var(--color-brand-dark)',
             userSelect: 'none',
@@ -119,7 +119,7 @@ export default function TextBubbleNode({ id, data, selected }) {
             <span>{data.title || 'NOTE'}</span>
           </span>
           {isEditing && (
-            <span style={{ fontSize: '9px', color: 'var(--color-text-secondary)', opacity: 0.85 }}>Ctrl+Enter to save</span>
+            <span className="note-hint">Ctrl+Enter to save</span>
           )}
         </div>
 
@@ -134,7 +134,7 @@ export default function TextBubbleNode({ id, data, selected }) {
               onKeyDown={handleKeyDown}
               onMouseDown={(e) => e.stopPropagation()}
               onPointerDown={(e) => e.stopPropagation()}
-              className="nowheel nodrag nopan"
+              className={`nowheel nodrag nopan ${textClass}`}
               style={{
                 width: '100%',
                 height: '100%',
@@ -143,15 +143,14 @@ export default function TextBubbleNode({ id, data, selected }) {
                 background: 'transparent',
                 resize: 'none',
                 fontFamily: 'inherit',
-                fontSize,
                 color: 'var(--color-text-primary)',
                 lineHeight: 1.4,
               }}
             />
           ) : (
             <div
+              className={textClass}
               style={{
-                fontSize,
                 color: 'var(--color-text-primary)',
                 whiteSpace: 'pre-wrap',
                 wordBreak: 'break-word',

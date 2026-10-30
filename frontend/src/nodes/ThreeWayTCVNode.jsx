@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { getRotatedPosition } from '../components/canvas/NodeRotationHandle';
 import { SensingPin } from '../components/canvas/SensingPin';
 import BaseNode from './BaseNode';
+import NodeReadout from './NodeReadout';
 import { useUnits } from '../context/UnitContext';
 
 /**
@@ -30,11 +31,13 @@ export default function ThreeWayTCVNode({ id, data, selected }) {
       width={60}
       height={60}
       footer={
-        <>
-          <div style={{ fontSize: '9px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>{data.label || '3-WAY TCV'}</div>
-          <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)' }}>{flowFormatted} {labels.flow}</div>
-          <div style={{ fontSize: '9px', color: 'var(--color-danger-text)', fontWeight: 'bold' }}>{tOutFormatted} {labels.temperature}</div>
-        </>
+        <NodeReadout
+          name={data.label || '3-WAY TCV'}
+          rows={[
+            { value: flowFormatted, unit: labels.flow },
+            { value: tOutFormatted, unit: labels.temperature },
+          ]}
+        />
       }
     >
       <svg width="60" height="60" viewBox="0 0 60 60">
@@ -44,14 +47,14 @@ export default function ThreeWayTCVNode({ id, data, selected }) {
         
         <circle cx="30" cy="35" r="2.5" fill="var(--color-brand-dark)" />
         
-        <rect x="24" y="5" width="12" height="12" fill="#f8fafc" stroke="var(--color-brand-dark)" strokeWidth="1.5" />
+        <rect x="24" y="5" width="12" height="12" fill="var(--color-surface-hover)" stroke="var(--color-brand-dark)" strokeWidth="1.5" />
         <line x1="30" y1="17" x2="30" y2="35" stroke="var(--color-brand-dark)" strokeWidth="1.5" />
-        <text x="30" y="14" textAnchor="middle" style={{ fontSize: '8px', fontWeight: '800', fill: '#334155' }}>T</text>
+        <text x="30" y="14" textAnchor="middle" className="symbol-text-meta">T</text>
 
-        <text x="20" y="37" textAnchor="middle" style={{ fontSize: '7px', fontWeight: 'bold', fill: hotIdx === 0 ? '#ef4444' : 'var(--color-primary)' }}>
+        <text x="20" y="37" textAnchor="middle" className={`symbol-text-meta ${hotIdx === 0 ? 'port-letter-hot' : 'port-letter-cold'}`}>
           {hotIdx === 0 ? 'H' : 'C'}
         </text>
-        <text x="30" y="50" textAnchor="middle" style={{ fontSize: '7px', fontWeight: 'bold', fill: hotIdx === 1 ? '#ef4444' : 'var(--color-primary)' }}>
+        <text x="30" y="50" textAnchor="middle" className={`symbol-text-meta ${hotIdx === 1 ? 'port-letter-hot' : 'port-letter-cold'}`}>
           {hotIdx === 1 ? 'H' : 'C'}
         </text>
       </svg>

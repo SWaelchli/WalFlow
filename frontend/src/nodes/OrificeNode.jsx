@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { getRotatedPosition } from '../components/canvas/NodeRotationHandle';
 import { SensingPin } from '../components/canvas/SensingPin';
 import BaseNode from './BaseNode';
+import NodeReadout from './NodeReadout';
 import { useUnits } from '../context/UnitContext';
 import { neutralDrop } from '../utils/nodeReadouts';
 
@@ -25,10 +26,10 @@ export default function OrificeNode({ id, data, selected }) {
       width={40}
       height={60}
       footer={
-        <>
-          <div style={{ fontSize: '9px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>{data.label || 'ORIFICE'}</div>
-          <div style={{ fontSize: '10px', fontWeight: 'bold', color: 'var(--color-brand-dark)' }}>ΔP {dPFormatted} {labels.pressureDiff}</div>
-        </>
+        <NodeReadout
+          name={data.label || 'ORIFICE'}
+          rows={[{ label: 'ΔP', value: dPFormatted, unit: labels.pressureDiff }]}
+        />
       }
     >
       <svg width="40" height="60" viewBox="0 0 40 60">

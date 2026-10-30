@@ -2,6 +2,7 @@ import { Handle, Position } from 'reactflow';
 import { getRotatedPosition } from '../components/canvas/NodeRotationHandle';
 import { SensingPin } from '../components/canvas/SensingPin';
 import BaseNode from './BaseNode';
+import NodeReadout from './NodeReadout';
 import { useUnits } from '../context/UnitContext';
 import { nodePressure } from '../utils/nodeReadouts';
 
@@ -22,10 +23,10 @@ export default function MeasurePointNode({ id, data, selected }) {
       width={40}
       height={20}
       footer={
-        <>
-          <div style={{ fontSize: '9px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>{data.label || 'TAP'}</div>
-          <div style={{ fontSize: '10px', fontWeight: 'bold', color: 'var(--color-brand-dark)' }}>P {formatPressurePa(pNode)} {labels.pressureAbs}</div>
-        </>
+        <NodeReadout
+          name={data.label || 'TAP'}
+          rows={[{ label: 'P', value: formatPressurePa(pNode), unit: labels.pressureAbs }]}
+        />
       }
     >
       <svg width="40" height="20" viewBox="0 0 40 20">

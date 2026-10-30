@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { getRotatedPosition } from '../components/canvas/NodeRotationHandle';
 import { SensingPin } from '../components/canvas/SensingPin';
 import BaseNode from './BaseNode';
+import NodeReadout from './NodeReadout';
 import { useUnits } from '../context/UnitContext';
 
 /**
@@ -20,13 +21,13 @@ export default function CheckValveOrificeNode({ id, data, selected }) {
   const isBypass = Math.abs(flow) > 1e-6 && !isOpen;
 
   let statusText = 'CLOSED';
-  let statusColor = '#64748b';
+  let statusKind = 'neutral';
   if (isOpen) {
     statusText = 'OPEN';
-    statusColor = '#16a34a';
+    statusKind = 'success';
   } else if (isBypass || flow < -1e-6) {
     statusText = 'BYPASS';
-    statusColor = 'var(--color-primary)';
+    statusKind = 'info';
   }
 
   return (
@@ -37,13 +38,11 @@ export default function CheckValveOrificeNode({ id, data, selected }) {
       width={60}
       height={60}
       footer={
-        <>
-          <div style={{ fontSize: '9px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>{data.label || 'CHECK W/ ORIFICE'}</div>
-          <div style={{ fontSize: '10px', fontWeight: 'bold', color: statusColor }}>
-            {statusText}
-          </div>
-          <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)' }}>{flowFormatted} {labels.flow}</div>
-        </>
+        <NodeReadout
+          name={data.label || 'CHECK W/ ORIFICE'}
+          rows={[{ value: flowFormatted, unit: labels.flow }]}
+          badges={[{ kind: statusKind, label: statusText }]}
+        />
       }
     >
       <svg width="60" height="60" viewBox="0 0 60 60">

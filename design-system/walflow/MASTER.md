@@ -72,6 +72,9 @@ regenerate it with `--persist`.
   --color-danger-tint: #FEF2F2;
   --color-danger-border: #FEE2E2;
   --color-info: #0284C7;
+  --color-info-text: #0369A1;    /* blue as text on its tint */
+  --color-info-tint: #F0F9FF;
+  --color-info-border: #BAE6FD;
 
   /* Diagram semantics (canvas) */
   --color-signal: #587071;       /* signal (sensing) lines */
@@ -109,6 +112,10 @@ regenerate it with `--persist`.
   --fs-xl: 20px;   /* modal titles */
   --fs-2xl: 24px;  /* page titles, empty-state glyphs */
 
+  /* Canvas text (zooms with the drawing; see "Canvas values") */
+  --fs-canvas-meta: 9px;    /* node name, secondary lines, status badges */
+  --fs-canvas-value: 10px;  /* values on nodes and the pipe hover label */
+
   /* Typography Pairing */
   --font-sans: 'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', 'Roboto Mono', monospace;
@@ -145,7 +152,7 @@ regenerate it with `--persist`.
 ## Typography
 
 *   **Font Family:** Inter, bundled through `@fontsource-variable/inter` (works offline).
-*   **Type scale (tokens in `frontend/src/index.css`):** `--fs-xs` 11px, `--fs-sm` 12px, `--fs-base` 13px, `--fs-md` 14px, `--fs-lg` 16px, `--fs-xl` 20px, `--fs-2xl` 24px. Use the tokens, not raw px; nothing below 11px in UI chrome (canvas symbols excepted).
+*   **Type scale (tokens in `frontend/src/index.css`):** `--fs-xs` 11px, `--fs-sm` 12px, `--fs-base` 13px, `--fs-md` 14px, `--fs-lg` 16px, `--fs-xl` 20px, `--fs-2xl` 24px. Use the tokens, not raw px; nothing below 11px in UI chrome. Text on the canvas zooms with the drawing and uses the canvas tokens `--fs-canvas-meta` and `--fs-canvas-value` (see "Canvas values").
 *   **Casing:** sentence case for labels, buttons, chips and badges; UPPERCASE only for small section headers.
 *   **Icons:** Phosphor (regular weight) through `components/symbols/IconLibrary.jsx` only; no emoji as icons.
 *   **Weights:** Light (300), Regular (400), Medium (500), SemiBold (600), Bold (700), Black (900).
@@ -430,6 +437,47 @@ regenerate it with `--persist`.
 .shell-statusbar { height: var(--shell-statusbar-h); background: var(--color-surface-muted); border-top: 1px solid var(--color-border); font-size: var(--fs-xs); color: var(--color-text-secondary); gap: var(--space-xl); padding: 0 var(--space-lg); }
 .status-item     { height: var(--control-h-sm); display: inline-flex; align-items: center; gap: var(--space-sm); }
 ```
+
+### 6. Canvas values
+
+Every text a node shows under its symbol goes through two shared components; nodes pass data and never style text
+themselves.
+
+* **Node readout** (`frontend/src/nodes/NodeReadout.jsx`, passed as `BaseNode`'s `footer`): an optional name line,
+  then rows of `{ label?, value, unit? }`, then optional secondary lines and optional status badges.
+* **Status badge** (`frontend/src/components/common/StatusBadge.jsx`): the only coloured mark on a node. Kinds
+  `neutral`, `success`, `warning`, `danger`, `info`; always words (OFF, OPEN, BURST, HH), never colour alone. The
+  same component is used in the inspector results views.
+
+```css
+.node-readout        { font-family: var(--font-sans); text-align: center; line-height: 1.25; }
+.node-readout-name   { font-size: var(--fs-canvas-meta); font-weight: 700; color: var(--color-text-primary); }
+.node-readout-value  { font-size: var(--fs-canvas-value); font-weight: 600; color: var(--color-brand-dark); font-variant-numeric: tabular-nums; }
+.node-readout-unit   { font-weight: 500; }
+.node-readout-meta   { font-size: var(--fs-canvas-meta); font-weight: 500; color: var(--color-text-secondary); }
+
+.status-badge          { display: inline-flex; align-items: center; gap: var(--space-xs); padding: 0 var(--space-sm); border: 1px solid; border-radius: var(--radius-full); font-size: var(--fs-canvas-meta); font-weight: 700; line-height: 1.5; }
+.status-badge-neutral  { color: var(--color-text-secondary);      background: var(--color-surface-muted); border-color: var(--color-border); }
+.status-badge-success  { color: var(--color-success-text);        background: var(--color-success-tint);  border-color: var(--color-success-border); }
+.status-badge-warning  { color: var(--color-warning-text-strong); background: var(--color-warning-bg);    border-color: var(--color-warning-border); }
+.status-badge-danger   { color: var(--color-danger-text);         background: var(--color-danger-tint);   border-color: var(--color-danger-border); }
+.status-badge-info     { color: var(--color-info-text);           background: var(--color-info-tint);     border-color: var(--color-info-border); }
+```
+
+Rules:
+
+* **A number never carries colour**, whatever its sign, size or state: heater duty, a setpoint, an outlet
+  temperature, an alarm limit are all values in `.node-readout-value`. A sign stays a sign (heating positive).
+* Colour on a node is allowed only on a state: the status badge, or the `BaseNode` warning icon
+  (`--color-danger-text`). Pipe heatmap colours are the one exception, because a legend explains them.
+* Port identities are not values and may keep a colour, from tokens only: the diagram tokens (`--color-inlet`,
+  `--color-outlet`, `--color-port-neutral`) for ports, `--color-danger-text` for a three-way valve's hot port letter.
+* Symbol strokes use tokens too (for example the rupture disc symbol).
+* Helper classes in `index.css` for the rest of the node text: `.node-readout-row/-label/-badges`,
+  `.symbol-text-meta/-value` (SVG letters in symbols), `.port-letter-hot/-cold`, `.instrument-*`, `.note-*`
+  (text bubble sizes from `--fs-*`), `.node-warning-icon`, `.node-off-badge`.
+* No hex literals, numeric `fontSize` or inline colour styles in `frontend/src/nodes/`; a static guard test
+  (`src/test/styleGuard.test.js`) enforces it.
 
 ---
 

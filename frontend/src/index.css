@@ -42,6 +42,9 @@
   --color-danger-tint: #FEF2F2;
   --color-danger-border: #FEE2E2;
   --color-info: #0284C7;
+  --color-info-text: #0369A1;    /* blue as text on its tint */
+  --color-info-tint: #F0F9FF;
+  --color-info-border: #BAE6FD;
   --color-inlet: #0284C7;
   --color-outlet: #E11D48;
   --color-port-neutral: #587071; /* neutral ports (junction, orifice, filter, ...): muted teal-grey, apart from blue inlet and rose outlet; 5.3:1 on white */
@@ -64,6 +67,10 @@
   --fs-lg: 16px;   /* section and panel titles */
   --fs-xl: 20px;   /* modal titles */
   --fs-2xl: 24px;  /* page titles, empty-state glyphs */
+
+  /* Canvas text (zooms with the drawing; see MASTER.md "Canvas values") */
+  --fs-canvas-meta: 9px;    /* node name, secondary lines, status badges */
+  --fs-canvas-value: 10px;  /* values on nodes and the pipe hover label */
 
   --font-sans: 'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', 'Roboto Mono', monospace;
@@ -1836,3 +1843,36 @@ button.status-slot:hover { background: var(--color-surface); color: var(--color-
 .stat-card-value { margin: var(--space-xs) 0; font-size: var(--fs-lg); font-weight: 700; color: var(--color-text-primary); }
 .is-clickable { cursor: pointer; }
 .is-static { cursor: default; }
+
+/* Canvas values: node readout and status badge (MASTER.md "Canvas values") */
+.node-readout        { font-family: var(--font-sans); text-align: center; line-height: 1.25; }
+.node-readout-name   { font-size: var(--fs-canvas-meta); font-weight: 700; color: var(--color-text-primary); }
+.node-readout-value  { font-size: var(--fs-canvas-value); font-weight: 600; color: var(--color-brand-dark); font-variant-numeric: tabular-nums; }
+.node-readout-unit   { font-weight: 500; }
+.node-readout-label  { font-size: var(--fs-canvas-value); font-weight: 500; color: var(--color-text-secondary); }
+.node-readout-meta   { font-size: var(--fs-canvas-meta); font-weight: 500; color: var(--color-text-secondary); }
+.node-readout-badges { display: flex; justify-content: center; flex-wrap: wrap; gap: var(--space-xs); margin-top: var(--space-xs); }
+
+.status-badge          { display: inline-flex; align-items: center; gap: var(--space-xs); padding: 0 var(--space-sm); border: 1px solid; border-radius: var(--radius-full); font-size: var(--fs-canvas-meta); font-weight: 700; line-height: 1.5; }
+.status-badge-neutral  { color: var(--color-text-secondary);      background: var(--color-surface-muted); border-color: var(--color-border); }
+.status-badge-success  { color: var(--color-success-text);        background: var(--color-success-tint);  border-color: var(--color-success-border); }
+.status-badge-warning  { color: var(--color-warning-text-strong); background: var(--color-warning-bg);    border-color: var(--color-warning-border); }
+.status-badge-danger   { color: var(--color-danger-text);         background: var(--color-danger-tint);   border-color: var(--color-danger-border); }
+.status-badge-info     { color: var(--color-info-text);           background: var(--color-info-tint);     border-color: var(--color-info-border); }
+
+.node-warning-icon   { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); color: var(--color-danger-text); z-index: 10; }
+.node-off-badge      { position: absolute; z-index: 15; }
+.symbol-text-meta    { font-size: var(--fs-canvas-meta); font-weight: 700; fill: var(--color-brand-dark); }
+.symbol-text-value   { font-size: var(--fs-canvas-value); font-weight: 600; fill: var(--color-brand-dark); }
+.port-letter-hot     { fill: var(--color-danger-text); }
+.port-letter-cold    { fill: var(--color-primary); }
+
+/* Instrument bubble text and note (text bubble) text on the canvas */
+.instrument-letters  { font-size: var(--fs-canvas-value); font-weight: 800; color: var(--color-brand-dark); }
+.instrument-loop     { font-size: var(--fs-canvas-value); font-weight: 600; color: var(--color-text-primary); }
+.instrument-mark     { font-size: var(--fs-canvas-value); font-weight: 800; color: var(--color-text-secondary); }
+.note-header         { font-size: var(--fs-xs); }
+.note-hint           { font-size: var(--fs-canvas-meta); color: var(--color-text-secondary); }
+.note-text-sm        { font-size: var(--fs-sm); }
+.note-text-md        { font-size: var(--fs-md); }
+.note-text-lg        { font-size: var(--fs-lg); }

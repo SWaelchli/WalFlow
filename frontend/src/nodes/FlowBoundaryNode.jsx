@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import BaseNode from './BaseNode';
+import NodeReadout from './NodeReadout';
 import BoundaryPorts from './BoundaryPorts';
 import { useUnits } from '../context/UnitContext';
 import { boundaryLayout, boundaryPortCount, boundaryFooterOffset } from '../utils/boundaryLayout';
@@ -44,19 +45,13 @@ export default function FlowBoundaryNode({ id, data, selected }) {
       warningMessage={limitMessage}
       footerOffset={footerOffset}
       footer={
-        <>
-          <div style={{ fontSize: '9px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>
-            {data.label || 'FLOW BOUNDARY'}
-          </div>
-          <div style={{ fontSize: '10px', fontWeight: 'bold' }}>
-            {isDraw ? 'Draw' : 'Supply'} {liveFlowFormatted} {labels.flow}
-          </div>
-          {port?.pressure != null && (
-            <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)' }}>
-              {formatPressurePa(port.pressure)} {labels.pressureAbs}
-            </div>
-          )}
-        </>
+        <NodeReadout
+          name={data.label || 'FLOW BOUNDARY'}
+          rows={[
+            { label: isDraw ? 'Draw' : 'Supply', value: liveFlowFormatted, unit: labels.flow },
+            { value: port?.pressure != null ? formatPressurePa(port.pressure) : null, unit: labels.pressureAbs },
+          ]}
+        />
       }
     >
       <svg width="60" height="60" viewBox="0 0 60 60">
@@ -72,7 +67,7 @@ export default function FlowBoundaryNode({ id, data, selected }) {
         <path
           d={flowBoundaryGlyphPath(isDraw)}
           fill="none"
-          stroke="#395253"
+          stroke="var(--color-brand-dark)"
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"

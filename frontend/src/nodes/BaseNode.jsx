@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo } from 'react';
 import { useUpdateNodeInternals } from 'reactflow';
 import { RotateButton } from '../components/canvas/NodeRotationHandle';
+import StatusBadge from '../components/common/StatusBadge';
 import { WarningIcon } from '../components/symbols/IconLibrary';
 
 /**
@@ -33,19 +34,8 @@ export default function BaseNode({
     <div style={{ position: 'relative', cursor: selected ? 'move' : 'pointer' }}>
 
       {warningMessage && (
-        <div 
-          className="animate-pulse"
-          style={{
-            position: 'absolute',
-            top: -15,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            color: 'var(--color-danger-text)',
-            fontSize: '20px',
-            fontWeight: 'bold',
-            textShadow: '0 0 5px rgba(239, 68, 68, 0.5)',
-            zIndex: 10
-          }}
+        <div
+          className="animate-pulse node-warning-icon"
           title={warningTitle || 'Warning'}
           role="img"
           aria-label={warningTitle || 'Warning'}
@@ -68,7 +58,7 @@ export default function BaseNode({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 1px 3px rgba(250, 133, 7, 0.25)',
+            boxShadow: 'var(--shadow-sm)',
             zIndex: 12
           }}
           title="Contains active operating case overrides"
@@ -83,22 +73,10 @@ export default function BaseNode({
 
       {data.active === false && (
         <div
-          style={{
-            position: 'absolute',
-            top: height - 12,
-            left: width - 15,
-            background: 'var(--color-danger)',
-            color: 'white',
-            fontSize: '9px',
-            fontWeight: 'bold',
-            padding: '1px 3px',
-            borderRadius: '3px',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-            zIndex: 15
-          }}
-          title="Component is currently inactive (Off)"
+          className="node-off-badge"
+          style={{ position: 'absolute', top: height - 12, left: width - 15 }}
         >
-          OFF
+          <StatusBadge kind="danger" title="Component is currently inactive (Off)">OFF</StatusBadge>
         </div>
       )}
 

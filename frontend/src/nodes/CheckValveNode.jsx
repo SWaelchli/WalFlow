@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { getRotatedPosition } from '../components/canvas/NodeRotationHandle';
 import { SensingPin } from '../components/canvas/SensingPin';
 import BaseNode from './BaseNode';
+import NodeReadout from './NodeReadout';
 import { useUnits } from '../context/UnitContext';
 
 /**
@@ -26,13 +27,11 @@ export default function CheckValveNode({ id, data, selected }) {
       width={60}
       height={60}
       footer={
-        <>
-          <div style={{ fontSize: '9px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>{data.label || 'CHECK VALVE'}</div>
-          <div style={{ fontSize: '10px', fontWeight: 'bold', color: isOpen ? '#16a34a' : '#64748b' }}>
-            {isOpen ? 'OPEN' : 'CLOSED'}
-          </div>
-          <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)' }}>{flowFormatted} {labels.flow}</div>
-        </>
+        <NodeReadout
+          name={data.label || 'CHECK VALVE'}
+          rows={[{ value: flowFormatted, unit: labels.flow }]}
+          badges={[{ kind: isOpen ? 'success' : 'neutral', label: isOpen ? 'OPEN' : 'CLOSED' }]}
+        />
       }
     >
       <svg width="60" height="60" viewBox="0 0 60 60">

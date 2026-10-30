@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { getRotatedPosition } from '../components/canvas/NodeRotationHandle';
 import { SensingPin } from '../components/canvas/SensingPin';
 import BaseNode from './BaseNode';
+import NodeReadout from './NodeReadout';
 import { useUnits } from '../context/UnitContext';
 import { neutralDrop } from '../utils/nodeReadouts';
 
@@ -26,11 +27,13 @@ export default function FilterNode({ id, data, selected }) {
       width={60}
       height={40}
       footer={
-        <>
-          <div style={{ fontSize: '9px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>{data.label || 'STRAINER'}</div>
-          <div style={{ fontSize: '10px', fontWeight: 'bold', color: 'var(--color-brand-dark)' }}>ΔP {dPFormatted} {labels.pressureDiff}</div>
-          <div style={{ fontSize: '8px', color: 'var(--color-text-secondary)' }}>Clogging: {clogging.toFixed(0)}%</div>
-        </>
+        <NodeReadout
+          name={data.label || 'STRAINER'}
+          rows={[
+            { label: 'ΔP', value: dPFormatted, unit: labels.pressureDiff },
+            { label: 'Clogging:', value: `${clogging.toFixed(0)}%` },
+          ]}
+        />
       }
     >
       <svg width="60" height="40" viewBox="0 0 60 40">

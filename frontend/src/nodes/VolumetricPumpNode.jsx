@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { getRotatedPosition } from '../components/canvas/NodeRotationHandle';
 import { SensingPin } from '../components/canvas/SensingPin';
 import BaseNode from './BaseNode';
+import NodeReadout from './NodeReadout';
 import { useUnits } from '../context/UnitContext';
 import { pressureRise, outletFlow } from '../utils/nodeReadouts';
 
@@ -27,11 +28,13 @@ export default function VolumetricPumpNode({ id, data, selected }) {
       warningMessage={cavitation ? 'Cavitation risk' : null}
       warningTitle="CAVITATION RISK: Low Suction Pressure"
       footer={
-        <>
-          <div style={{ fontSize: '9px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>{data.label || 'V-PUMP'}</div>
-          <div style={{ fontSize: '10px', fontWeight: 'bold', color: 'var(--color-brand-dark)' }}>ΔP {formatDiffPressurePa(dP)} {labels.pressureDiff}</div>
-          <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)' }}>{formatFlowM3s(q)} {labels.flow}</div>
-        </>
+        <NodeReadout
+          name={data.label || 'V-PUMP'}
+          rows={[
+            { label: 'ΔP', value: formatDiffPressurePa(dP), unit: labels.pressureDiff },
+            { value: formatFlowM3s(q), unit: labels.flow },
+          ]}
+        />
       }
     >
       <svg width="60" height="60" viewBox="0 0 60 60">

@@ -111,6 +111,9 @@ Create `frontend/src/nodes/<Name>Node.jsx`:
 - Render SVG icon / visual symbol.
 - Add `<Handle>` elements with rotation compensation (`getRotatedPosition(Position.Left, rotation)`).
 - Add `<SensingPin>` for signal telemetry if applicable.
+- Values under the symbol go through the shared `NodeReadout` as `footer` (rows of label, value, unit) and any
+  state through the shared `StatusBadge` (MASTER.md "Canvas values"). A number never carries a colour; no hex
+  literals, numeric `fontSize` or inline text styles in the node. The style guard test fails otherwise.
 
 📖 **Deep Dive Reference:** Read [references/frontend-integration.md](references/frontend-integration.md).
 

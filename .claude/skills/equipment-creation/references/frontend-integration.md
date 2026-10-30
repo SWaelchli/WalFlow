@@ -10,6 +10,10 @@ Create `frontend/src/nodes/<Name>Node.jsx`. Use `<BaseNode>` to handle selection
 
 The template below is for a component with role ports (`inlet-0`, `outlet-0`). For a neutral-port component, see section 1b.
 
+Text under the symbol goes through `NodeReadout` (values) and `StatusBadge` (states) only, as in MASTER.md "Canvas
+values": every number in one style and one colour, colour only on a state badge, no hex or numeric `fontSize` in
+the node. `src/test/styleGuard.test.js` checks this.
+
 ```jsx
 import { Handle, Position } from 'reactflow';
 import { useMemo } from 'react';
@@ -17,6 +21,7 @@ import { paToBar } from '../utils/converters';
 import { getRotatedPosition } from '../components/canvas/NodeRotationHandle';
 import { SensingPin } from '../components/canvas/SensingPin';
 import BaseNode from './BaseNode';
+import NodeReadout from './NodeReadout';
 
 export default function CustomEquipmentNode({ id, data, selected }) {
   const telemetry = data.telemetry;
@@ -37,14 +42,11 @@ export default function CustomEquipmentNode({ id, data, selected }) {
       width={60}
       height={60}
       footer={
-        <>
-          <div style={{ fontSize: '9px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>
-            {data.label || 'EQUIPMENT'}
-          </div>
-          <div style={{ fontSize: '10px', fontWeight: 'bold', color: 'var(--color-danger)' }}>
-            -{paToBar(dP)} bar(d)
-          </div>
-        </>
+        <NodeReadout
+          name={data.label || 'EQUIPMENT'}
+          rows={[{ label: 'ΔP', value: paToBar(dP), unit: 'bar(d)' }]}
+          // states only, e.g. badges={[{ kind: 'success', label: 'OPEN' }]}; BaseNode already shows OFF
+        />
       }
     >
       {/* 1. Component SVG Graphic */}

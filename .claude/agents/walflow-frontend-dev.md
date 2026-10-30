@@ -17,6 +17,8 @@ Backend, physics and tests belong to other agents or the orchestrator.
   responsive rules, checklist), then `.claude/skills/ui-ux-pro-max/SKILL.md` (generic desktop rules).
 - New or moved controls: follow the walflow-ui-layout placement rule and checklist; name the region in your report.
 - Style with MASTER.md tokens and classes; no new hex colours, raw px sizes or z-index numbers.
+- Canvas nodes show values only through the shared `NodeReadout` and states only through the shared `StatusBadge`
+  (MASTER.md "Canvas values"); a number never carries a colour. `src/test/styleGuard.test.js` enforces it.
 - New equipment node: follow `.claude/skills/equipment-creation/SKILL.md` frontend steps; mirror an existing
   `frontend/src/nodes/<Name>Node.jsx` and register it in `App.jsx` and the Sidebar.
 - Match surrounding code: naming, hooks/context usage, comment density. No new dependencies without the brief saying so.

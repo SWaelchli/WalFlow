@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { getRotatedPosition } from '../components/canvas/NodeRotationHandle';
 import { SensingPin } from '../components/canvas/SensingPin';
 import BaseNode from './BaseNode';
+import NodeReadout from './NodeReadout';
 import { useUnits } from '../context/UnitContext';
 
 /**
@@ -22,17 +23,14 @@ export default function RuptureDiscNode({ id, data, selected }) {
   const burstPressureFormatted = data.burst_pressure_barg ? formatPressureGauge(Number(data.burst_pressure_barg)) : 'missing';
 
   let statusText = 'INTACT';
-  let statusColor = 'var(--color-success)'; // Green
-  let badgeBg = 'rgba(16, 185, 129, 0.12)';
+  let statusKind = 'success';
 
   if (status === 'burst') {
     statusText = 'BURST';
-    statusColor = 'var(--color-danger)'; // Red
-    badgeBg = 'rgba(239, 68, 68, 0.12)';
+    statusKind = 'danger';
   } else if (status === 'overcapacity') {
     statusText = 'OVERCAPACITY';
-    statusColor = 'var(--color-danger)';
-    badgeBg = 'rgba(239, 68, 68, 0.12)';
+    statusKind = 'danger';
   }
 
   return (
@@ -43,28 +41,14 @@ export default function RuptureDiscNode({ id, data, selected }) {
       width={70}
       height={70}
       footer={
-        <>
-          <div style={{ fontSize: '9px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>{data.label || 'RD'}</div>
-          <div
-            style={{
-              fontSize: '8.5px',
-              fontWeight: 700,
-              color: statusColor,
-              backgroundColor: badgeBg,
-              padding: '1px 5px',
-              borderRadius: '4px',
-              marginTop: '2px',
-              display: 'inline-block',
-              letterSpacing: '0.3px',
-              border: `1px solid ${statusColor}33`
-            }}
-          >
-            {statusText}
-          </div>
-          <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)', marginTop: '1px' }}>
-            Burst: {burstPressureFormatted} | {flowFormatted} {labels.flow}
-          </div>
-        </>
+        <NodeReadout
+          name={data.label || 'RD'}
+          badges={[{ kind: statusKind, label: statusText }]}
+          rows={[
+            { label: 'Burst:', value: burstPressureFormatted },
+            { value: flowFormatted, unit: labels.flow },
+          ]}
+        />
       }
     >
       <svg width="70" height="70" viewBox="0 0 70 70">
@@ -92,7 +76,7 @@ export default function RuptureDiscNode({ id, data, selected }) {
           <path
             d="M 29,24 Q 32,30 30,34 M 29,46 Q 32,40 30,36"
             fill="none"
-            stroke="#DC2626"
+            stroke="var(--color-danger-text)"
             strokeWidth="3.5"
             strokeLinecap="round"
           />

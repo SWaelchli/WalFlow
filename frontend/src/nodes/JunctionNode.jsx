@@ -3,6 +3,7 @@ import { Handle, Position, useUpdateNodeInternals } from 'reactflow';
 import { getRotatedPosition } from '../components/canvas/NodeRotationHandle';
 import { SensingPin } from '../components/canvas/SensingPin';
 import BaseNode from './BaseNode';
+import NodeReadout from './NodeReadout';
 import { useUnits } from '../context/UnitContext';
 import { junctionLayout, junctionLabelPlacement, junctionPortCount, PIN_TIP, PIN_LENGTH } from '../utils/junctionLayout';
 import { portNumberLabel } from '../utils/portLabels';
@@ -48,10 +49,10 @@ export default function JunctionNode({ id, data, selected }) {
       height={size}
       footerStyle={footerStyle}
       footer={
-        <>
-          <div style={{ fontSize: '9px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>{data.label || 'JUNCTION'}</div>
-          <div style={{ fontSize: '10px', fontWeight: 'bold', color: 'var(--color-brand-dark)' }}>{formatFlowM3s(throughput)} {labels.flow}</div>
-        </>
+        <NodeReadout
+          name={data.label || 'JUNCTION'}
+          rows={[{ value: formatFlowM3s(throughput), unit: labels.flow }]}
+        />
       }
     >
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>

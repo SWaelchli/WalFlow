@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { getRotatedPosition } from '../components/canvas/NodeRotationHandle';
 import { SensingPin } from '../components/canvas/SensingPin';
 import BaseNode from './BaseNode';
+import NodeReadout from './NodeReadout';
 import { useUnits } from '../context/UnitContext';
 
 /**
@@ -27,26 +28,21 @@ export default function PressureSafetyValveNode({ id, data, selected }) {
   const isCycling = status === 'cycling' && cycleLow != null && cycleHigh != null;
 
   let statusText = 'CLOSED';
-  let statusColor = 'var(--color-text-secondary)'; // Muted Slate
-  let badgeBg = 'var(--color-surface-hover)';
+  let statusKind = 'neutral';
 
   if (status === 'modulating') {
     statusText = liftPct != null ? `MODULATING ${Math.round(liftPct)} %` : 'MODULATING';
-    statusColor = 'var(--color-warning)'; // Amber / Orange
-    badgeBg = 'rgba(245, 158, 11, 0.12)';
+    statusKind = 'warning';
   } else if (status === 'open' || status === 'cracked') {
     statusText = 'OPEN';
-    statusColor = 'var(--color-warning)';
-    badgeBg = 'rgba(245, 158, 11, 0.12)';
+    statusKind = 'warning';
   } else if (status === 'cycling') {
     // Pop valve oversized for the load: it would cycle between set and reseat pressure
     statusText = 'CYCLING';
-    statusColor = 'var(--color-warning)';
-    badgeBg = 'rgba(245, 158, 11, 0.12)';
+    statusKind = 'warning';
   } else if (status === 'overcapacity') {
     statusText = 'OVERCAPACITY';
-    statusColor = 'var(--color-danger)'; // Red
-    badgeBg = 'rgba(239, 68, 68, 0.12)';
+    statusKind = 'danger';
   }
 
   return (
@@ -57,30 +53,19 @@ export default function PressureSafetyValveNode({ id, data, selected }) {
       width={70}
       height={70}
       footer={
-        <>
-          <div style={{ fontSize: '9px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>{data.label || 'PSV'}</div>
-          <div
-            style={{
-              fontSize: '8.5px',
-              fontWeight: 700,
-              color: statusColor,
-              backgroundColor: badgeBg,
-              padding: '1px 5px',
-              borderRadius: '4px',
-              marginTop: '2px',
-              display: 'inline-block',
-              letterSpacing: '0.3px',
-              border: `1px solid ${statusColor}33`
-            }}
-          >
-            {statusText}
-          </div>
-          <div style={{ fontSize: '9px', color: 'var(--color-text-secondary)', marginTop: '1px' }}>
-            {isCycling
-              ? <>{formatPressureGauge(cycleLow)}–{formatPressureGauge(cycleHigh)} | avg {flowFormatted} {labels.flow}</>
-              : <>Set: {setPressureFormatted} | {flowFormatted} {labels.flow}</>}
-          </div>
-        </>
+        <NodeReadout
+          name={data.label || 'PSV'}
+          badges={[{ kind: statusKind, label: statusText }]}
+          rows={isCycling
+            ? [
+                { value: `${formatPressureGauge(cycleLow)}–${formatPressureGauge(cycleHigh)}` },
+                { label: 'avg', value: flowFormatted, unit: labels.flow },
+              ]
+            : [
+                { label: 'Set:', value: setPressureFormatted },
+                { value: flowFormatted, unit: labels.flow },
+              ]}
+        />
       }
     >
       <svg width="70" height="70" viewBox="0 0 70 70">
@@ -91,15 +76,15 @@ export default function PressureSafetyValveNode({ id, data, selected }) {
         <line x1="45" y1="35" x2="60" y2="35" stroke="var(--color-brand-dark)" strokeWidth="2.5" strokeLinecap="round" />
 
         {/* Opposite Triangles (Valve Seat) */}
-        <polygon points="25,23 25,47 35,35" fill={status !== 'closed' ? 'var(--color-primary)' : '#FFFFFF'} stroke="var(--color-brand-dark)" strokeWidth="2" />
-        <polygon points="45,23 45,47 35,35" fill={status !== 'closed' ? 'var(--color-primary)' : '#FFFFFF'} stroke="var(--color-brand-dark)" strokeWidth="2" />
+        <polygon points="25,23 25,47 35,35" fill={status !== 'closed' ? 'var(--color-primary)' : 'var(--color-surface)'} stroke="var(--color-brand-dark)" strokeWidth="2" />
+        <polygon points="45,23 45,47 35,35" fill={status !== 'closed' ? 'var(--color-primary)' : 'var(--color-surface)'} stroke="var(--color-brand-dark)" strokeWidth="2" />
 
         {/* Top Bonnet / Spring Box */}
         <line x1="35" y1="35" x2="35" y2="12" stroke="var(--color-brand-dark)" strokeWidth="2" />
         <rect x="29" y="8" width="12" height="10" fill="var(--color-surface-hover)" stroke="var(--color-brand-dark)" strokeWidth="1.8" rx="2" />
         {valveType === 'pilot' ? (
           // Pilot-operated: pilot box marked "P"
-          <text x="35" y="16.2" textAnchor="middle" fontSize="8" fontWeight="700" fill="var(--color-brand-dark)">P</text>
+          <text x="35" y="16.2" textAnchor="middle" className="symbol-text-meta">P</text>
         ) : (
           <>
             {/* Spring Coil Lines */}
@@ -130,7 +115,7 @@ export default function PressureSafetyValveNode({ id, data, selected }) {
             width: '8px',
             height: '8px',
             border: '1.5px solid var(--color-primary-hover)',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.2)'
+            boxShadow: 'var(--shadow-sm)'
           }}
         />
       )}
