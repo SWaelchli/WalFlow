@@ -52,6 +52,10 @@ import { ArrowsLeftRightIcon as PhArrowsLeftRight } from '@phosphor-icons/react/
 import { DotsSixVerticalIcon as PhDotsSixVertical } from '@phosphor-icons/react/DotsSixVertical';
 import { CircleIcon as PhCircle } from '@phosphor-icons/react/Circle';
 import { TrayArrowDownIcon as PhTrayArrowDown } from '@phosphor-icons/react/TrayArrowDown';
+import { ArrowUUpLeftIcon as PhArrowUUpLeft } from '@phosphor-icons/react/ArrowUUpLeft';
+import { ArrowUUpRightIcon as PhArrowUUpRight } from '@phosphor-icons/react/ArrowUUpRight';
+import { SidebarSimpleIcon as PhSidebarSimple } from '@phosphor-icons/react/SidebarSimple';
+import { SquareHalfBottomIcon as PhSquareHalfBottom } from '@phosphor-icons/react/SquareHalfBottom';
 
 /*
  * WalFlow icon set. Every UI icon goes through this file so the app uses one
@@ -62,6 +66,7 @@ const wrap = (PhIcon, defaults = {}) => {
   const Icon = ({ size = 16, color = 'currentColor', weight = defaults.weight || 'regular', style, ...props }) => (
     <PhIcon
       className={defaults.className}
+      mirrored={defaults.mirrored}
       aria-hidden={props['aria-label'] ? undefined : true}
       focusable="false"
       {...props}
@@ -126,4 +131,9 @@ export const RotateIcon = wrap(PhArrowClockwise, { weight: 'bold' });
 export const SwapIcon = wrap(PhArrowsLeftRight);
 export const DragHandleIcon = wrap(PhDotsSixVertical, { weight: 'bold' });
 export const DotIcon = wrap(PhCircle, { weight: 'fill' });
+export const UndoIcon = wrap(PhArrowUUpLeft);
+export const RedoIcon = wrap(PhArrowUUpRight);
+export const SidePaneIcon = wrap(PhSidebarSimple);
+export const InspectorPaneIcon = wrap(PhSidebarSimple, { mirrored: true });
+export const ResultsPaneIcon = wrap(PhSquareHalfBottom);
 export const InboxIcon = wrap(PhTrayArrowDown);

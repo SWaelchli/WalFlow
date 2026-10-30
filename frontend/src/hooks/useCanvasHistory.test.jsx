@@ -27,6 +27,16 @@ const load = (result, nodes) => act(() => {
 });
 
 describe('undo history', () => {
+  it('hasEdits is false after a load, true after an edit, false again after the next load', () => {
+    const { result } = setup();
+    load(result, [node('a1')]);
+    expect(result.current.hasEdits()).toBe(false);
+    act(() => { result.current.setNodes([node('a1', 100)]); result.current.requestSnapshot(); });
+    expect(result.current.hasEdits()).toBe(true);
+    load(result, []);
+    expect(result.current.hasEdits()).toBe(false);
+  });
+
   it('undo right after loading a diagram does nothing', () => {
     const { result } = setup();
     load(result, [node('a1')]);

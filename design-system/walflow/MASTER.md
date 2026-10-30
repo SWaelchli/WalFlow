@@ -59,6 +59,9 @@ regenerate it with `--persist`.
 
   /* Semantic Alerts */
   --color-success: #10B981;
+  --color-success-text: #166534; /* green as text and icon on its tint */
+  --color-success-tint: #F0FDF4;
+  --color-success-border: #BBF7D0;
   --color-warning: #F59E0B;
   --color-warning-text: #B45309; /* amber as text: 5.0:1 on white */
   --color-warning-text-strong: #92400E;
@@ -121,6 +124,8 @@ regenerate it with `--persist`.
   --shell-results-collapsed-h: 36px;
   --shell-canvas-min-w: 480px;
   --shell-canvas-min-h: 320px;
+  --shell-flyout-w: 576px;     /* status bar flyouts */
+  --shell-overlay-w: 336px;    /* canvas overlay cards (top right) */
   --control-h: 30px;           /* buttons, inputs, selects */
   --control-h-sm: 24px;        /* table cells, chips, status bar items */
   --icon-sm: 16px;             /* menus, dense rows, status bar */
@@ -134,11 +139,6 @@ regenerate it with `--persist`.
   --z-toast: 3000;
 }
 ```
-
-**Value conflicts settled in favour of this file** (correct them in `index.css`):
-`--color-primary-hover` is `#E07600` (index.css: `#E87F00`), `--color-primary-active` is `#C86900` (index.css:
-`#DE7500`). The spacing, shell, control, icon and layer tokens are missing from `index.css` and are added with the
-app shell work (FINDINGS.md phase 8).
 
 ---
 
@@ -467,11 +467,15 @@ fixes the geometry.
 | Name | Width | Shell behaviour |
 |---|---|---|
 | Wide | ≥ 1440 px | Side pane, inspector and results panel all docked. |
-| Large | 1008-1439 px | Docked while the canvas minimum holds; otherwise the side pane overlays when the inspector opens. |
+| Large | 1008-1439 px | Docked while the canvas minimum holds; otherwise the side pane overlays when the inspector opens (below 1136 px = rail + pane + inspector + canvas minimum). |
 | Medium | 768-1007 px | Side pane and inspector open as overlays (`--z-pane-overlay`, shadow-lg, close on Esc or outside click). Results panel starts collapsed. Command bar shows icons with tooltips; Run keeps its label. Drawing name truncates. |
 | Small | < 768 px | Best effort only: same as medium, no layout guarantees. |
 
 Breakpoints are the Windows app breakpoints (641 / 1008 px) adapted to WalFlow's 768 px floor, plus a wide state.
+
+Status bar slots hide one by one as the window narrows: zoom below 1008 px, selection below 900 px, units below
+820 px. Below 1008 px the menu bar also hides the app version and the project path, and the lock chip shows a lock
+icon plus the holder's name, "Editing" or "Other tab".
 
 ### Layers
 

@@ -30,7 +30,7 @@ export default function EmptyCanvasHint({ onBrowseExamples }) {
       <div style={{ textAlign: 'center', maxWidth: '360px', padding: '20px 24px', background: 'rgba(255,255,255,0.9)', border: '1px dashed var(--color-border-hover)', borderRadius: 'var(--radius-md)' }}>
         <div style={{ fontSize: 'var(--fs-md)', fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: '6px' }}>Start your diagram</div>
         <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>
-          Drag components from the library on the left onto the canvas, then connect their ports.
+          Drag components from the Components pane on the left onto the canvas, then connect their ports.
           Or start from one of the example drawings.
         </div>
         <button

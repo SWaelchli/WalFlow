@@ -22,6 +22,15 @@ import { computeCaseInputHashes, isCaseResultStale } from '../../utils/resultHas
 
 
 import { clickableProps, clickableRowProps } from '../../utils/a11yProps';
+
+// Short tab labels; the full title is the accessible name and the tooltip
+const RESULT_TABS = [
+  { id: 'pipes', label: 'Pipes', title: 'Pipe Network List' },
+  { id: 'all', label: 'Equipment', title: 'Full Equipment & Pipeline Data' },
+  { id: 'cases', label: 'Cases', title: 'Operating Cases Matrix' },
+  { id: 'relief', label: 'Relief', title: 'Relief Analysis Matrix' },
+  { id: 'measurements', label: 'Measurements', title: 'Measurements' },
+];
 const autoSortLogic = (nodes, edges) => {
   const ordered = [];
   const visitedNodes = new Set();
@@ -195,7 +204,8 @@ export default function DataList({
   showCaseManager = true,
   onToggleCaseManager,
   availablePipeClasses = [],
-  allowCustomPipes = true
+  allowCustomPipes = true,
+  commandsRef
 }) {
   const { labels, isImperial, unitSystem, pressureBasis, lminToDisplay, formatPressure, formatDiffPressure, formatPressureGauge, formatFlow, formatFlowM3s, formatPower, formatTemperatureK, formatVelocity } = useUnits();
 
@@ -519,8 +529,22 @@ export default function DataList({
     URL.revokeObjectURL(url);
   }, [processedItems, activeTab, cases, activeCaseId, labels, isImperial, formatFlowM3s, formatVelocity, formatPressure, formatDiffPressure, formatTemperatureK]);
 
+  // The command list reaches the results panel's actions through this ref (Solve all cases, Export table as CSV, collapse)
+  useEffect(() => {
+    if (!commandsRef) return undefined;
+    commandsRef.current = {
+      solveAll: () => fetchBatchSimulations(),
+      isBatchLoading,
+      exportCsv: exportCSV,
+      canExportCsv: activeTab === 'pipes' || activeTab === 'all',
+      collapsed: panel.collapsed,
+      toggleCollapsed: () => panel.setCollapsed(!panel.collapsed),
+    };
+    return () => { commandsRef.current = null; };
+  });
+
   return (
-    <div style={{ height: `${panel.height}px`, flexShrink: 0, background: '#ffffff', borderTop: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 -4px 16px rgba(57, 82, 83, 0.05)', position: 'relative' }}>
+    <section className="shell-results" aria-label="Results" style={{ height: `${panel.height}px` }}>
       {!panel.collapsed && (
         <div
           role="separator"
@@ -534,57 +558,43 @@ export default function DataList({
           title="Drag to resize (or use the arrow keys)"
         />
       )}
-      <div style={{ display: 'flex', background: 'var(--color-surface-hover)', borderBottom: '1px solid var(--color-border)', justifyContent: 'space-between', alignItems: 'center', padding: '0 16px' }}>
-        <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-          <button
-            type="button"
-            onClick={() => panel.setCollapsed(!panel.collapsed)}
-            aria-label={panel.collapsed ? 'Expand data panel' : 'Collapse data panel'}
-            aria-expanded={!panel.collapsed}
-            title={panel.collapsed ? 'Expand data panel' : 'Collapse data panel'}
-            className="panel-collapse-btn"
-          >
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
-              style={{ transform: panel.collapsed ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s ease' }}>
-              <path d="M3 6l5 5 5-5" />
-            </svg>
-          </button>
-          <button onClick={() => selectTab('pipes')}
-            className={`datalist-tab ${activeTab === 'pipes' ? 'active' : ''}`}
-          >
-            Pipe Network List
-          </button>
-          <button onClick={() => selectTab('all')}
-            className={`datalist-tab ${activeTab === 'all' ? 'active' : ''}`}
-          >
-            Full Equipment & Pipeline Data
-          </button>
-          <button onClick={() => selectTab('cases')}
-            className={`datalist-tab ${activeTab === 'cases' ? 'active' : ''}`}
-          >
-            Operating Cases Matrix
-          </button>
-          <button onClick={() => selectTab('relief')}
-            className={`datalist-tab ${activeTab === 'relief' ? 'active' : ''}`}
-          >
-            Relief Analysis Matrix
-          </button>
-          <button onClick={() => selectTab('measurements')}
-            className={`datalist-tab ${activeTab === 'measurements' ? 'active' : ''}`}
-          >
-            Measurements
-          </button>
+      <div className="datalist-header">
+        <button
+          type="button"
+          onClick={() => panel.setCollapsed(!panel.collapsed)}
+          aria-label={panel.collapsed ? 'Expand data panel' : 'Collapse data panel'}
+          aria-expanded={!panel.collapsed}
+          title={panel.collapsed ? 'Expand data panel' : 'Collapse data panel'}
+          className="panel-collapse-btn"
+        >
+          <svg className={`panel-collapse-glyph${panel.collapsed ? ' is-collapsed' : ''}`} width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M3 6l5 5 5-5" />
+          </svg>
+        </button>
+        <div className="datalist-tabs">
+          {RESULT_TABS.map(({ id, label, title }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => selectTab(id)}
+              className={`datalist-tab ${activeTab === id ? 'active' : ''}`}
+              title={title}
+            >
+              {label}
+            </button>
+          ))}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        {!panel.collapsed && (
+        <div className="datalist-toolbar">
           {activeTab === 'cases' ? (
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <>
               {onAddCase && (
                 <button
                   onClick={onAddCase}
                   className="btn-secondary btn-compact"
                 >
-                  <PlusIcon size={14} style={{ marginRight: '6px' }} /> New case
+                  <PlusIcon size={14} className="btn-glyph" /> New case
                 </button>
               )}
               <button
@@ -592,72 +602,70 @@ export default function DataList({
                 className={showCaseManager ? "btn-secondary btn-active btn-compact" : "btn-secondary btn-compact"}
                 aria-pressed={showCaseManager}
               >
-                <CaseIcon size={14} style={{ marginRight: '6px' }} /> {showCaseManager ? 'Hide case manager' : 'Case manager'}
+                <CaseIcon size={14} className="btn-glyph" /> {showCaseManager ? 'Hide case manager' : 'Case manager'}
               </button>
               <button
                 onClick={() => fetchBatchSimulations()}
                 disabled={isBatchLoading}
                 className="btn-primary btn-compact"
               >
-                <PlayIcon size={14} style={{ marginRight: '6px' }} /> {isBatchLoading ? 'Solving cases…' : 'Solve all cases'}
+                <PlayIcon size={14} className="btn-glyph" /> {isBatchLoading ? 'Solving cases…' : 'Solve all cases'}
               </button>
-            </div>
+            </>
           ) : activeTab === 'measurements' ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 0' }}>
+            <>
               <button
                 onClick={onToggleCaseManager}
                 className={showCaseManager ? "btn-secondary btn-active btn-compact" : "btn-secondary btn-compact"}
                 aria-pressed={showCaseManager}
               >
-                <CaseIcon size={14} style={{ marginRight: '6px' }} /> {showCaseManager ? 'Hide case manager' : 'Case manager'}
+                <CaseIcon size={14} className="btn-glyph" /> {showCaseManager ? 'Hide case manager' : 'Case manager'}
               </button>
               <button
                 onClick={() => fetchBatchSimulations()}
                 disabled={isBatchLoading}
                 className="btn-primary btn-compact"
               >
-                <PlayIcon size={14} style={{ marginRight: '6px' }} /> {isBatchLoading ? 'Solving cases…' : 'Solve all cases'}
+                <PlayIcon size={14} className="btn-glyph" /> {isBatchLoading ? 'Solving cases…' : 'Solve all cases'}
               </button>
-            </div>
+            </>
           ) : activeTab === 'relief' ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '6px 0' }}>
-              <button
-                onClick={onToggleCaseManager}
-                className={showCaseManager ? "btn-secondary btn-active btn-compact" : "btn-secondary btn-compact"}
-                aria-pressed={showCaseManager}
-              >
-                <CaseIcon size={14} style={{ marginRight: '6px' }} /> {showCaseManager ? 'Hide case manager' : 'Case manager'}
-              </button>
-            </div>
+            <button
+              onClick={onToggleCaseManager}
+              className={showCaseManager ? "btn-secondary btn-active btn-compact" : "btn-secondary btn-compact"}
+              aria-pressed={showCaseManager}
+            >
+              <CaseIcon size={14} className="btn-glyph" /> {showCaseManager ? 'Hide case manager' : 'Case manager'}
+            </button>
           ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                <input 
-                  type="text" 
+            <>
+              <div className="datalist-filter">
+                <input
+                  type="text"
                   placeholder="Filter list…"
-                  aria-label="Filter list" 
-                  value={filterText} 
+                  aria-label="Filter list"
+                  value={filterText}
                   onChange={(e) => setFilterText(e.target.value)}
-                  className="form-input"
-                  style={{ width: '160px' }} 
+                  className="form-input datalist-filter-input"
                 />
-                {filterText && <button onClick={() => setFilterText("")} aria-label="Clear filter" title="Clear filter" style={{ position:'absolute', right:5, top:'50%', transform:'translateY(-50%)', border:'none', background:'none', cursor:'pointer', color:'var(--color-text-secondary)', display: 'inline-flex' }}><CrossIcon size={12} /></button>}
+                {filterText && <button onClick={() => setFilterText("")} aria-label="Clear filter" title="Clear filter" className="datalist-filter-clear"><CrossIcon size={12} /></button>}
               </div>
-              <button 
-                onClick={handleAutoSortClick} 
+              <button
+                onClick={handleAutoSortClick}
                 className="btn-secondary btn-compact"
               >
                 Auto sort
               </button>
-              <button 
-                onClick={exportCSV} 
+              <button
+                onClick={exportCSV}
                 className="btn-secondary btn-compact"
               >
-                <ExportIcon size={14} style={{ marginRight: '6px' }} /> Export CSV
+                <ExportIcon size={14} className="btn-glyph" /> Export CSV
               </button>
-            </div>
+            </>
           )}
         </div>
+        )}
       </div>
 
       <div className="matrix-scroll-container" style={{ flexGrow: 1, overflowY: 'auto', overflowX: 'auto', maxWidth: '100%', display: 'block' }}>
@@ -1344,6 +1352,6 @@ export default function DataList({
         </table>
         )}
       </div>
-    </div>
+    </section>
   );
 }

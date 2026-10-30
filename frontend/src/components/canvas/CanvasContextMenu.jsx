@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 
 /**
  * Right-click menu for components, pipes and the empty canvas.
- * items: [{ id, label, shortcut, disabled, danger, onSelect }]; a falsy entry is skipped, `{ separator: true }` draws a rule.
+ * items: [{ id, label, shortcut, disabled, title (reason shown as tooltip), danger, onSelect }]; a falsy entry is skipped, `{ separator: true }` draws a rule.
  */
 export default function CanvasContextMenu({ x, y, items, onClose, label = 'Canvas actions', width = 200 }) {
   const ref = useRef(null);
@@ -54,6 +54,7 @@ export default function CanvasContextMenu({ x, y, items, onClose, label = 'Canva
           type="button"
           role="menuitem"
           disabled={item.disabled}
+          title={item.title}
           onClick={() => { onClose(); item.onSelect(); }}
           className="context-menu-item"
           style={item.danger ? { color: 'var(--color-danger-text)' } : undefined}

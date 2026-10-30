@@ -11,10 +11,9 @@ const err = { code: 'port_shared', severity: 'error', message: 'Two pipes on one
 const warn = { code: 'open_port', severity: 'warning', message: 'Orifice 1: outlet 0 is not connected.', nodeIds: ['o1'], edgeIds: [] };
 
 describe('StatusChip', () => {
-  it('shows the label and the finding count, collapsed by default', () => {
+  it('shows the label, collapsed by default', () => {
     render(<StatusChip status={status} errors={[err]} warnings={[warn]} open={false} onToggle={() => {}} onClose={() => {}} />);
     expect(screen.getByText('Not run yet')).toBeTruthy();
-    expect(screen.getByText('2')).toBeTruthy();
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
@@ -95,6 +94,12 @@ describe('RunBanners', () => {
     expect(screen.queryByRole('status')).toBeNull();
     rerender(<RunBanners summary={summarizeStats(stats)} resultKey={stats} />);
     expect(screen.getByRole('status').textContent).toMatch(/Converged with warnings/);
+  });
+
+  it('shows the failed-run bar from the stats when the solver gave no error text', () => {
+    const failed = { ...stats, success: false };
+    render(<RunBanners summary={summarizeStats(failed)} resultKey={failed} />);
+    expect(screen.getByRole('alert')).toBeTruthy();
   });
 
   it('does not call a run without equations converged', () => {

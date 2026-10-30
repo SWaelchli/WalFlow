@@ -24,6 +24,7 @@ const toSnapshot = (nodesState, edgesState) => {
  * - `resetHistory(nodes, edges)`: start a new history with the given state as its base
  *   (call after loading a diagram or clearing the canvas).
  * - `requestSnapshot()`: record the canvas once the pending node/edge update has been applied.
+ * - `hasEdits()`: true when the canvas was edited since the last load or clear (the undo step is not the base)
  * - `undo` / `redo` do nothing while `isReadOnly` is true.
  */
 export function useCanvasHistory({
@@ -102,10 +103,13 @@ export function useCanvasHistory({
     if (snapshot) restoreSnapshot(snapshot);
   }, [isReadOnly, restoreSnapshot]);
 
+  const hasEdits = useCallback(() => historyIndex.current > 0, []);
+
   return {
     pushHistorySnapshot,
     requestSnapshot,
     resetHistory,
+    hasEdits,
     undo,
     redo,
   };

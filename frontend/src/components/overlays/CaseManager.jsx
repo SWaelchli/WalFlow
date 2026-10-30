@@ -13,8 +13,7 @@ export default function CaseManager({
   onAddCase,
   telemetryMode = 'mitigated',
   onToggleTelemetryMode,
-  onClose,
-  style = {}
+  onClose
 }) {
   const { basisLabel } = useUnits();
   const reliefModes = [
@@ -56,25 +55,7 @@ export default function CaseManager({
   }
 
   return (
-    <div style={{
-      position: 'absolute',
-      top: '16px',
-      right: '16px',
-      backgroundColor: 'rgba(255, 255, 255, 0.96)',
-      backdropFilter: 'blur(10px)',
-      border: '1px solid var(--color-border)',
-      borderRadius: '14px',
-      padding: '14px 18px',
-      boxShadow: 'var(--shadow-lg)',
-      zIndex: 1000,
-      width: '330px',
-      maxWidth: 'calc(100vw - 32px)',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '12px',
-      transition: 'top 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-      ...style
-    }}>
+    <div className="canvas-overlay-card">
       <style>
         {`
           .case-manager-btn {

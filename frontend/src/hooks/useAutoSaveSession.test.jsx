@@ -1,8 +1,9 @@
+import { StrictMode } from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act, cleanup } from '@testing-library/react';
 import axios from 'axios';
 import { useAutoSaveSession } from './useAutoSaveSession';
-import { getTabId } from '../utils/draftStorage';
+import { getTabId, DRAFT_PREFIX } from '../utils/draftStorage';
 import { notify } from '../utils/dialogs';
 
 vi.mock('axios');
@@ -190,6 +191,24 @@ describe('switching drawings', () => {
     await settle();
     expect(putUrls()).toEqual(['/api/diagrams/d2']);
     expect(axios.put.mock.calls[0][1].diagram_data).toContain('"x":10');
+  });
+});
+
+describe('stored draft at boot', () => {
+  // A recent timestamp: drafts older than a week are pruned at mount
+  const stored = JSON.stringify({ nodes: [node('a', 100)], edges: [], timestamp: new Date().toISOString(), viewport: { x: 0, y: 0, zoom: 1 } });
+  const empty = (over = {}) => baseProps({ nodes: [], activeDiagram: null, isAuthenticated: false, ...over });
+
+  it.each([
+    ['StrictMode remounts the effect', { wrapper: StrictMode }, null],
+    ['sign-in answer arrives while the draft is still being offered', {}, { isAuthenticated: true }],
+    ['drawing attached while the draft is still being offered', {}, { activeDiagram: diagram }],
+  ])('an empty canvas does not overwrite it before it is restored: %s', async (_name, options, change) => {
+    localStorage.setItem(DRAFT_PREFIX + getTabId(), stored);
+    const { rerender } = renderHook((p) => useAutoSaveSession(p), { initialProps: empty(), ...options });
+    if (change) rerender(empty(change));
+    await act(async () => { await vi.advanceTimersByTimeAsync(2500); });
+    expect(localStorage.getItem(DRAFT_PREFIX + getTabId())).toBe(stored);
   });
 });
 

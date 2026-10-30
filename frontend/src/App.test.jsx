@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { StrictMode } from 'react';
-import { render, screen, waitFor, cleanup, act } from '@testing-library/react';
+import { render, screen, waitFor, cleanup, act, fireEvent } from '@testing-library/react';
 import axios from 'axios';
-import { getDialogState, resolveModal } from './utils/dialogs';
+import { getDialogState, resolveModal, resetDialogs } from './utils/dialogs';
 import { resetTabIdCache } from './utils/draftStorage';
 
 // Smoke test of the whole app shell: it must mount, load the welcome canvas and show its components.
@@ -27,8 +27,11 @@ class FakeWebSocket {
 }
 
 beforeEach(() => {
+  // No test inherits another's draft, tab-alive marker or tab id
+  Object.keys(localStorage).filter((k) => k.startsWith('walflow_draft_') || k.startsWith('walflow_tab_alive_')).forEach((k) => localStorage.removeItem(k));
   localStorage.clear();
   sessionStorage.clear();
+  resetTabIdCache();
   vi.stubGlobal('WebSocket', FakeWebSocket);
   vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
   vi.stubGlobal('DOMMatrixReadOnly', class { constructor() { this.m22 = 1; } });
@@ -37,6 +40,8 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  resetTabIdCache();
+  resetDialogs();
   vi.unstubAllGlobals();
 });
 
@@ -57,6 +62,40 @@ describe('App shell', () => {
     } finally {
       window.history.pushState({}, '', '/');
     }
+  }, 40000);
+});
+
+describe('side pane rail', () => {
+  it('the active button collapses the pane and another button opens its pane', async () => {
+    const { default: App } = await import('./App.jsx');
+    render(<App />);
+    const rail = await screen.findByRole('navigation', { name: 'Side panes' }, { timeout: 8000 });
+    const btn = (name) => Array.from(rail.querySelectorAll('button')).find((b) => b.getAttribute('aria-label') === name);
+    expect(btn('Components').getAttribute('aria-pressed')).toBe('true');
+
+    fireEvent.click(btn('Components'));
+    expect(btn('Components').getAttribute('aria-pressed')).toBe('false');
+
+    fireEvent.click(btn('Settings'));
+    expect(btn('Settings').getAttribute('aria-pressed')).toBe('true');
+    expect(btn('Components').getAttribute('aria-pressed')).toBe('false');
+    expect(screen.getByRole('heading', { name: 'Settings' })).toBeTruthy();
+  }, 40000);
+});
+
+describe('loading an example', () => {
+  it('loads without a question while the canvas has no edits', async () => {
+    const { default: App } = await import('./App.jsx');
+    render(<App />);
+    const rail = await screen.findByRole('navigation', { name: 'Side panes' }, { timeout: 8000 });
+    fireEvent.click(Array.from(rail.querySelectorAll('button')).find((b) => b.getAttribute('aria-label') === 'Examples'));
+    const example = await waitFor(() => { expect(document.querySelector('.examples-list button')).toBeTruthy(); }, { timeout: 8000 }).then(() => document.querySelector('.examples-list button'));
+    expect(example).toBeTruthy();
+    const before = document.querySelectorAll('.react-flow__node').length;
+    fireEvent.click(example);
+    // the example replaces the welcome canvas without a question
+    await waitFor(() => expect(document.querySelectorAll('.react-flow__node').length).not.toBe(before), { timeout: 8000 });
+    expect(getDialogState().modal).toBeNull();
   }, 40000);
 });
 
@@ -99,12 +138,13 @@ describe('boot with a local draft older than the cloud copy', () => {
         if (modal) { answered.push(modal.title); act(() => resolveModal(true)); }
         expect(answered).toContain('Newer cloud version');
       }, { timeout: 8000 });
-      await act(async () => { await new Promise((r) => setTimeout(r, 4500)); });   // canvas load, then both save debounces
+      // canvas load, then the local-draft debounce writes the chosen cloud copy
+      await waitFor(() => expect(JSON.parse(localStorage.getItem('walflow_draft_tab1')).nodes[0]?.position.x).toBe(5), { timeout: 8000 });
+      // the cloud debounce (2 s) has to pass before "never uploads" means anything
+      await act(async () => { await new Promise((r) => setTimeout(r, 2200)); });
 
       expect(axios.get.mock.calls.filter(([url]) => url === '/api/diagrams/d1')).toHaveLength(1);
       expect(axios.put).not.toHaveBeenCalled();
-      const savedDraft = JSON.parse(localStorage.getItem('walflow_draft_tab1'));
-      expect(savedDraft.nodes[0].position.x).toBe(5);
     } finally {
       axios.get.mockImplementation(originalGet);
       axios.post.mockImplementation(() => Promise.reject({ response: { status: 401 } }));

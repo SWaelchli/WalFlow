@@ -1,5 +1,5 @@
 // Turns the solver's stats into the status chip state and the banner texts.
-// Pure functions; the UI lives in StatusPanel / RunBanners / Navbar.
+// Pure functions; the UI lives in StatusPanel / RunBanners / MenuBar.
 import { portTitle } from './portLabels';
 
 const REASON_TEXT = {

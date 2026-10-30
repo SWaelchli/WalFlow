@@ -4,7 +4,7 @@ import CanvasContextMenu from './CanvasContextMenu';
 
 const items = (h) => [
   { id: 'rotate', label: 'Rotate', shortcut: 'R', onSelect: h.rotate },
-  { id: 'dup', label: 'Duplicate', shortcut: 'Ctrl+D', disabled: true, onSelect: h.dup },
+  { id: 'dup', label: 'Duplicate', shortcut: 'Ctrl+D', disabled: true, title: 'Select a component first', onSelect: h.dup },
   { separator: true },
   { id: 'del', label: 'Delete', danger: true, onSelect: h.del },
 ];
@@ -23,11 +23,12 @@ describe('context menu', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('does not run a disabled action', () => {
+  it('does not run a disabled action and shows its reason as a tooltip', () => {
     const h = { rotate: vi.fn(), dup: vi.fn(), del: vi.fn() };
     render(<CanvasContextMenu x={10} y={10} items={items(h)} onClose={() => {}} />);
     const dup = screen.getByRole('menuitem', { name: /Duplicate/ });
     expect(dup.disabled).toBe(true);
+    expect(dup.getAttribute('title')).toBe('Select a component first');
     fireEvent.click(dup);
     expect(h.dup).not.toHaveBeenCalled();
   });

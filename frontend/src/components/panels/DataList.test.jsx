@@ -41,7 +41,7 @@ describe('results table headers line up with the cells', () => {
 
   it('full equipment list has one header per cell', () => {
     renderList();
-    fireEvent.click(screen.getByText('Full Equipment & Pipeline Data'));
+    fireEvent.click(screen.getByRole('button', { name: 'Equipment' }));
     const [th, td] = headerAndCellCounts();
     expect(th).toBe(td);
   });
@@ -59,7 +59,7 @@ describe('relief analysis matrix', () => {
         <DataList nodes={psvNodes} edges={[]} rawNodes={psvNodes} rawEdges={[]} cases={cases} onSelectNode={vi.fn()} onSelectEdge={vi.fn()} />
       </UnitProvider>
     );
-    fireEvent.click(screen.getByText('Relief Analysis Matrix'));
+    fireEvent.click(screen.getByRole('button', { name: 'Relief' }));
   };
 
   it('shows the peak at the governing opening and the device result', () => {
@@ -112,7 +112,7 @@ describe('relief analysis matrix', () => {
         <DataList nodes={oldNodes} edges={[]} rawNodes={oldNodes} rawEdges={[]} cases={[reliefCase(undefined)]} onSelectNode={vi.fn()} onSelectEdge={vi.fn()} />
       </UnitProvider>
     );
-    fireEvent.click(screen.getByText('Relief Analysis Matrix'));
+    fireEvent.click(screen.getByRole('button', { name: 'Relief' }));
     expect(screen.getByText('missing')).toBeTruthy();
   });
 });
@@ -135,9 +135,9 @@ describe('operating cases matrix without results', () => {
         <DataList nodes={psvNodes} edges={[]} rawNodes={psvNodes} rawEdges={[]} cases={[c]} activeCaseId="case_base" onSelectNode={vi.fn()} onSelectEdge={vi.fn()} />
       </UnitProvider>
     );
-    fireEvent.click(screen.getByText('Operating Cases Matrix'));
+    fireEvent.click(screen.getByRole('button', { name: 'Cases' }));
     expect(rowCell('Cavitation Risk Status')).toBe(cavitation);
-    fireEvent.click(screen.getByText('Relief Analysis Matrix'));
+    fireEvent.click(screen.getByRole('button', { name: 'Relief' }));
     expect(rowCell('Total Relief Flow')).toMatch(relief);
   });
 });
@@ -155,7 +155,7 @@ describe('operating cases matrix in gauge basis', () => {
           globalSettings={{ atmospheric_pressure: 101325 }} onSelectNode={vi.fn()} onSelectEdge={vi.fn()} />
       </UnitProvider>
     );
-    fireEvent.click(screen.getByText('Operating Cases Matrix'));
+    fireEvent.click(screen.getByRole('button', { name: 'Cases' }));
     return [...screen.getByText(/^System Max Pressure/).closest('tr').querySelectorAll('td')].slice(1).map(td => td.textContent);
   };
 
@@ -181,9 +181,17 @@ describe('collapsed data panel', () => {
     localStorage.setItem('walflow_datalist_panel', JSON.stringify({ collapsed }));
     mount();
     expect(screen.getByLabelText(collapsed ? 'Expand data panel' : 'Collapse data panel')).toBeTruthy();
-    fireEvent.click(screen.getByText('Measurements'));
+    fireEvent.click(screen.getByRole('button', { name: 'Measurements' }));
     expect(screen.getByLabelText('Collapse data panel').getAttribute('aria-expanded')).toBe('true');
-    expect(screen.getByText('Measurements').className).toContain('active');
+    expect(screen.getByRole('button', { name: 'Measurements' }).className).toContain('active');
+  });
+
+  it('hides the filter toolbar while collapsed and shows it again on expand', () => {
+    localStorage.setItem('walflow_datalist_panel', JSON.stringify({ collapsed: true }));
+    mount();
+    expect(screen.queryByLabelText('Filter list')).toBeNull();
+    fireEvent.click(screen.getByLabelText('Expand data panel'));
+    expect(screen.getByLabelText('Filter list')).toBeTruthy();
   });
 });
 
@@ -205,7 +213,7 @@ describe('changing a forced state in the relief matrix', () => {
     const onUpdateNode = vi.fn();
     const props = { runSimulation, onUpdateNode };
     const { rerender } = render(tree(psvAt('auto'), props));
-    fireEvent.click(screen.getByText('Relief Analysis Matrix'));
+    fireEvent.click(screen.getByRole('button', { name: 'Relief' }));
 
     fireEvent.change(screen.getByDisplayValue('Auto (Normal Relief)'), { target: { value: 'forced_open' } });
 
@@ -237,7 +245,7 @@ describe('Measurements tab', () => {
         <DataList nodes={nodesList} edges={signal} rawNodes={nodesList} rawEdges={signal} cases={cases} activeCaseId="case_base" onUpdateNode={onUpdateNode} onSelectNode={vi.fn()} onSelectEdge={vi.fn()} />
       </UnitProvider>
     );
-    fireEvent.click(screen.getByText('Measurements'));
+    fireEvent.click(screen.getByRole('button', { name: 'Measurements' }));
     return onUpdateNode;
   };
 
@@ -303,7 +311,7 @@ describe('two-port neutral component row', () => {
         <DataList nodes={orifice} edges={[]} rawNodes={orifice} rawEdges={[]} onSelectNode={vi.fn()} onSelectEdge={vi.fn()} />
       </UnitProvider>
     );
-    fireEvent.click(screen.getByText('Full Equipment & Pipeline Data'));
+    fireEvent.click(screen.getByRole('button', { name: 'Equipment' }));
     return [...screen.getByText('Orifice', { selector: 'td' }).closest('tr').querySelectorAll('td')].map((td) => td.textContent);
   };
 

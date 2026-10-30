@@ -1,11 +1,10 @@
-import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { notify, confirmDialog } from '../../utils/dialogs';
-import { summarizeStats } from '../../utils/runStatus';
 import axios from 'axios';
 import { getTabId, isMyTabLock } from '../../utils/draftStorage';
 import { describeLockState } from '../../utils/lockState';
 import { EquipmentSymbol } from '../symbols/SymbolLibrary';
-import { InfoIcon, WarningIcon, CheckIcon, CrossIcon, FolderIcon, SearchIcon, TrashIcon, LockIcon, UnlockIcon, FolderOpenIcon, CaretDownIcon, CaretRightIcon, GearIcon, FileIcon, NoteEditIcon, SaveIcon, ImportIcon, ExportIcon, PlusIcon, DotIcon } from '../symbols/IconLibrary';
+import { InfoIcon, WarningIcon, CheckIcon, CrossIcon, FolderIcon, SearchIcon, TrashIcon, LockIcon, UnlockIcon, FolderOpenIcon, CaretDownIcon, CaretRightIcon, GearIcon, FileIcon, NoteEditIcon, DotIcon } from '../symbols/IconLibrary';
 import { FLUID_CATEGORIES, FLUID_LIBRARY } from '../../constants/fluid_library';
 import { useUnits } from '../../context/UnitContext';
 import { PRESSURE_BASES, FLOW_UNITS, pressureBasisLabel, flowUnitLabel } from '../../utils/converters';
@@ -92,7 +91,7 @@ const theme = {
   brandDark: 'var(--color-brand-dark)',
   brandDarker: 'var(--color-brand-darker)',
   slate50: 'var(--color-surface-hover)',
-  slate100: '#EBF0EF',
+  slate100: 'var(--color-border)',
   slate200: 'var(--color-border)',
   slate500: 'var(--color-text-secondary)',
   slate800: 'var(--color-text-primary)',
@@ -100,288 +99,6 @@ const theme = {
   shadow: 'var(--shadow-md)'
 };
 
-
-function formatSolverName(method, fallbackUsed = false) {
-  if (fallbackUsed) {
-    return 'Levenberg-Marq (fallback)';
-  }
-  if (!method) return 'N/A';
-  if (method === 'sparse_newton') return 'Sparse Newton';
-  if (method === 'lm') return 'Levenberg-Marq';
-  return method;
-}
-
-function DiagnosticsContent({ stats, batchStats, onSelectComponent }) {
-  const [statsSource, setStatsSource] = useState('single');
-  const [selectedBatchCaseId, setSelectedBatchCaseId] = useState('');
-
-  const [prevStats, setPrevStats] = useState(stats);
-  const [prevBatchStats, setPrevBatchStats] = useState(batchStats);
-
-  if (stats !== prevStats) {
-    setPrevStats(stats);
-    setStatsSource('single');
-  }
-
-  if (batchStats !== prevBatchStats) {
-    setPrevBatchStats(batchStats);
-    setStatsSource('batch');
-    if (batchStats && batchStats.length > 0) {
-      setSelectedBatchCaseId(batchStats[0].case_id);
-    }
-  }
-
-  if (!stats && (!batchStats || batchStats.length === 0)) {
-    return (
-      <div style={{ textAlign: 'center', padding: '40px 20px', color: theme.slate500 }}>
-        <div style={{ marginBottom: '12px', display: 'flex', justifyContent: 'center' }}>
-          <InfoIcon size={32} color="var(--color-text-muted)" />
-        </div>
-        <p style={{ fontSize: 'var(--fs-base)', margin: 0 }}>No simulation data yet.</p>
-        <p style={{ fontSize: 'var(--fs-xs)', marginTop: '4px' }}>Run a simulation or batch solve to see performance.</p>
-      </div>
-    );
-  }
-
-  const hasSingle = !!stats;
-  const hasBatch = batchStats && batchStats.length > 0;
-  const activeSource = (statsSource === 'batch' && hasBatch) ? 'batch' : (hasSingle ? 'single' : 'batch');
-
-  // Single Case Stats
-  const { success, time_ms, outer_iterations, total_inner_iterations, fallback_used, system_size, bottleneck } = stats || {};
-  const summary = summarizeStats(stats);
-  const SUMMARY_TONE = {
-    ok: { bg: '#f0fdf4', border: '#bbf7d0', title: '#166534', text: '#15803d' },
-    warning: { bg: '#FFF7ED', border: '#FDE3C3', title: '#7A3E00', text: '#7A3E00' },
-    nothing: { bg: '#FFF7ED', border: '#FDE3C3', title: '#7A3E00', text: '#7A3E00' },
-    failed: { bg: '#fef2f2', border: '#fecaca', title: '#991b1b', text: '#b91c1c' },
-  };
-  const tone = SUMMARY_TONE[summary?.level] || SUMMARY_TONE.failed;
-
-  // Selected Batch Case Stats
-  const selectedCase = hasBatch ? (batchStats.find(c => c.case_id === selectedBatchCaseId) || batchStats[0]) : null;
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      {hasSingle && hasBatch && (
-        <div style={{ display: 'flex', gap: '4px', background: theme.slate55 || '#F4F7F6', padding: '3px', borderRadius: '8px', border: `1px solid ${theme.slate200}` }}>
-          <button
-            onClick={() => setStatsSource('single')}
-            style={{
-              flex: 1, padding: '6px', border: 'none', borderRadius: '6px',
-              fontSize: 'var(--fs-xs)', fontWeight: '700', cursor: 'pointer',
-              background: statsSource === 'single' ? theme.brandDark : 'transparent',
-              color: statsSource === 'single' ? theme.white : theme.slate500,
-              transition: 'all 0.15s ease'
-            }}
-          >
-            Single Run
-          </button>
-          <button
-            onClick={() => setStatsSource('batch')}
-            style={{
-              flex: 1, padding: '6px', border: 'none', borderRadius: '6px',
-              fontSize: 'var(--fs-xs)', fontWeight: '700', cursor: 'pointer',
-              background: statsSource === 'batch' ? theme.brandDark : 'transparent',
-              color: statsSource === 'batch' ? theme.white : theme.slate500,
-              transition: 'all 0.15s ease'
-            }}
-          >
-            Batch Solve ({batchStats.length})
-          </button>
-        </div>
-      )}
-
-      {activeSource === 'single' && stats && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={{ 
-            padding: '16px', 
-            borderRadius: '8px', 
-            background: tone.bg,
-            border: `1px solid ${tone.border}`,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              {summary.level === 'ok' ? <CheckIcon size={20} color={tone.title} />
-                : summary.level === 'failed' ? <CrossIcon size={20} color={tone.title} />
-                : <WarningIcon size={20} color={tone.title} />}
-            </div>
-            <div>
-              <div style={{ fontSize: 'var(--fs-md)', fontWeight: '700', color: tone.title }}>
-                {summary.headline.toUpperCase()}
-              </div>
-              <div style={{ fontSize: 'var(--fs-xs)', color: tone.text }}>
-                {summary.detail}
-              </div>
-            </div>
-          </div>
-
-          {summary.level === 'warning' && summary.notes.length > 1 && (
-            <ul style={{ margin: 0, paddingLeft: '18px', fontSize: 'var(--fs-xs)', color: '#7A3E00', lineHeight: 1.5 }}>
-              {summary.notes.slice(1).map((n, i) => <li key={i}>{n.text}</li>)}
-            </ul>
-          )}
-
-          {bottleneck && !success && (
-            <div {...clickableProps} 
-              onClick={() => bottleneck.id && onSelectComponent && onSelectComponent(bottleneck.id, bottleneck.type)}
-              className="sidebar-bottleneck-card"
-              style={{ cursor: bottleneck.id ? 'pointer' : 'default' }}
-            >
-              <div style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', textTransform: 'uppercase', color: 'var(--color-text-muted)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span>Critical Bottleneck</span>
-                {bottleneck.id && <span style={{ fontSize: 'var(--fs-xs)', color: theme.primary, fontWeight: '700' }}>Click to locate</span>}
-              </div>
-              <div>
-                <div style={{ fontSize: 'var(--fs-md)', fontWeight: '700' }}>{bottleneck.name}</div>
-                <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-muted)' }}>{bottleneck.error_type}</div>
-              </div>
-              <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', borderTop: '1px solid #334155', paddingTop: '8px', marginTop: '4px' }}>
-                This component has the largest mathematical error. Check its sizing or connections.
-              </div>
-            </div>
-          )}
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            <StatCard label="Total Time" value={`${time_ms.toFixed(1)} ms`} />
-            <StatCard label="System Size" value={`${system_size} Eq.`} hint={stats.num_nodes !== undefined ? `${stats.num_nodes} Nodes / ${stats.num_edges} Pipes` : null} />
-            <StatCard label="Control Steps" value={outer_iterations} hint="Outer Loop" />
-            <StatCard label="Math Steps" value={total_inner_iterations} hint="Total Inner" />
-            <StatCard label="Prop Steps" value={stats.property_iterations || 0} hint="Property Loops" />
-            <StatCard label="Max Residual" value={stats.max_residual !== undefined ? stats.max_residual.toExponential(2) : 'N/A'} hint="Balance Error" />
-            <StatCard label="Solver Method" value={formatSolverName(stats.solver_method, fallback_used)} />
-            <StatCard label="Warm-Start" value={stats.warm_start_status || 'N/A'} />
-          </div>
-        </div>
-      )}
-
-      {activeSource === 'batch' && hasBatch && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={{ 
-            padding: '12px', 
-            borderRadius: '8px', 
-            background: theme.slate50, 
-            border: `1px solid ${theme.slate200}`,
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: '8px'
-          }}>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: 'var(--fs-xs)', color: theme.slate500, fontWeight: '600' }}>Total Batch Time</span>
-              <span style={{ fontSize: 'var(--fs-md)', fontWeight: '700', color: theme.slate800 }}>
-                {batchStats.reduce((sum, c) => sum + (c.time_ms || 0), 0).toFixed(1)} ms
-              </span>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: 'var(--fs-xs)', color: theme.slate500, fontWeight: '600' }}>Success Rate</span>
-              <span style={{ fontSize: 'var(--fs-md)', fontWeight: '700', color: theme.slate800 }}>
-                {((batchStats.filter(c => c.status === 'success' && !c.error_message).length / batchStats.length) * 100).toFixed(0)}%
-              </span>
-            </div>
-          </div>
-
-          <div>
-            <label style={{ display: 'block', fontSize: 'var(--fs-xs)', fontWeight: '600', color: theme.slate500, marginBottom: '6px' }}>
-              Select operating case
-            </label>
-            <select
-              value={selectedBatchCaseId}
-              onChange={(e) => setSelectedBatchCaseId(e.target.value)}
-              className="form-select"
-              style={{ width: '100%' }}
-            >
-              {batchStats.map(c => {
-                const caseSuccess = c.status === 'success' && !c.error_message;
-                return (
-                  <option key={c.case_id} value={c.case_id}>
-                    {c.case_name} ({caseSuccess ? 'Success' : 'Failed'})
-                  </option>
-                );
-              })}
-            </select>
-          </div>
-
-          {selectedCase && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {(() => {
-                const caseSuccess = selectedCase.status === 'success' && !selectedCase.error_message;
-                const caseErr = selectedCase.error_message || selectedCase.error;
-                return (
-                  <>
-                    <div style={{ 
-                      padding: '16px', 
-                      borderRadius: '8px', 
-                      background: caseSuccess ? '#f0fdf4' : '#fef2f2',
-                      border: `1px solid ${caseSuccess ? '#bbf7d0' : '#fecaca'}`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px'
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center' }}>{caseSuccess ? <CheckIcon size={20} color="#166534" /> : <CrossIcon size={20} color="#991b1b" />}</div>
-                      <div>
-                        <div style={{ fontSize: 'var(--fs-md)', fontWeight: '700', color: caseSuccess ? '#166534' : '#991b1b' }}>
-                          {caseSuccess ? 'CASE CONVERGED' : 'CASE FAILED'}
-                        </div>
-                        <div style={{ fontSize: 'var(--fs-xs)', color: caseSuccess ? '#15803d' : '#b91c1c' }}>
-                          {caseSuccess ? 'System is balanced.' : caseErr || 'Non-physical results found.'}
-                        </div>
-                      </div>
-                    </div>
-
-                    {selectedCase.bottleneck && !caseSuccess && (
-                      <div {...clickableProps} 
-                        onClick={() => selectedCase.bottleneck.id && onSelectComponent && onSelectComponent(selectedCase.bottleneck.id, selectedCase.bottleneck.type)}
-                        className="sidebar-bottleneck-card"
-                        style={{ cursor: selectedCase.bottleneck.id ? 'pointer' : 'default' }}
-                      >
-                        <div style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', textTransform: 'uppercase', color: 'var(--color-text-muted)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span>Critical Bottleneck</span>
-                          {selectedCase.bottleneck.id && <span style={{ fontSize: 'var(--fs-xs)', color: theme.primary, fontWeight: '700' }}>Click to locate</span>}
-                        </div>
-                        <div>
-                          <div style={{ fontSize: 'var(--fs-md)', fontWeight: '700' }}>{selectedCase.bottleneck.name}</div>
-                          <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-muted)' }}>{selectedCase.bottleneck.error_type}</div>
-                        </div>
-                        <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', borderTop: '1px solid #334155', paddingTop: '8px', marginTop: '4px' }}>
-                          This component has the largest mathematical error. Check its sizing or connections.
-                        </div>
-                      </div>
-                    )}
-
-                    {caseSuccess && (
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                        <StatCard label="Solve Time" value={`${(selectedCase.time_ms || 0).toFixed(1)} ms`} />
-                        <StatCard label="System Size" value={`${selectedCase.system_size || 0} Eq.`} hint={selectedCase.num_nodes !== undefined ? `${selectedCase.num_nodes} Nodes / ${selectedCase.num_edges} Pipes` : null} />
-                        <StatCard label="Control Steps" value={selectedCase.outer_iterations || 0} hint="Outer Loop" />
-                        <StatCard label="Math Steps" value={selectedCase.total_inner_iterations || 0} hint="Total Inner" />
-                        <StatCard label="Prop Steps" value={selectedCase.property_iterations || 0} hint="Property Loops" />
-                        <StatCard label="Max Residual" value={selectedCase.max_residual !== undefined ? selectedCase.max_residual.toExponential(2) : 'N/A'} hint="Balance Error" />
-                        <StatCard label="Solver Method" value={formatSolverName(selectedCase.solver_method, selectedCase.fallback_used)} />
-                        <StatCard label="Warm-Start" value={selectedCase.warm_start_status || 'N/A'} />
-                      </div>
-                    )}
-                  </>
-                );
-              })()}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function StatCard({ label, value, hint }) {
-  return (
-    <div style={{ background: theme.white, padding: '12px', borderRadius: '8px', border: `1px solid ${theme.slate200}` }}>
-      <div style={{ fontSize: 'var(--fs-xs)', fontWeight: '600', color: theme.slate500 }}>{label}</div>
-      <div style={{ fontSize: 'var(--fs-lg)', fontWeight: '700', color: theme.slate800, margin: '2px 0' }}>{value}</div>
-      {hint && <div style={{ fontSize: 'var(--fs-xs)', color: theme.slate500 }}>{hint}</div>}
-    </div>
-  );
-}
 
 function CollapsibleCategory({ name, items, onDragStart }) {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -442,85 +159,29 @@ function CollapsibleCategory({ name, items, onDragStart }) {
   );
 }
 
-function CollapsibleScenarios({ templates, onLoad, isExpanded, setIsExpanded, focusPending = false, onFocused }) {
-  const headerRef = useRef(null);
-
-  // A pending request scrolls the section into view and focuses its header (the Sidebar expands it)
-  useEffect(() => {
-    if (!focusPending) return;
-    headerRef.current?.focus();
-    headerRef.current?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
-    onFocused?.();
-  }, [focusPending, onFocused]);
-
+function ExamplesList({ templates, onLoad }) {
   // Check if templates has categories (nested objects)
   const isCategorized = templates && Object.values(templates).some(v => v && typeof v === 'object' && !v.format && !v.nodes);
+  const groups = isCategorized ? Object.entries(templates || {}) : [[null, templates || {}]];
 
   return (
-    <div style={{ marginBottom: '16px', borderRadius: '8px', overflow: 'hidden', border: `1px solid ${theme.slate200}` }}>
-      <div
-        ref={headerRef}
-        onClick={() => setIsExpanded(!isExpanded)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            setIsExpanded(!isExpanded);
-          }
-        }}
-        tabIndex="0"
-        role="button"
-        aria-expanded={isExpanded}
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '12px 16px',
-          cursor: 'pointer',
-          background: theme.slate100,
-          userSelect: 'none'
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <FolderIcon size={16} color="var(--color-brand-dark)" />
-          <h3 style={{ fontSize: 'var(--fs-sm)', fontWeight: '600', color: theme.slate800, margin: 0 }}>Library & Examples</h3>
+    <div className="examples-list">
+      {groups.map(([category, items]) => (
+        <div key={category || 'all'} className="examples-group">
+          {category && <h3 className="examples-group-title">{category}</h3>}
+          {Object.entries(items || {}).map(([name, data]) => (
+            <button
+              key={name}
+              type="button"
+              onClick={() => onLoad(data, name, { isTemplate: true })}
+              className="sidebar-list-item"
+            >
+              <span className="examples-bullet">•</span>
+              <span>{name}</span>
+            </button>
+          ))}
         </div>
-        <CaretDownIcon size={10} color={theme.slate500} style={{ transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }} />
-      </div>
-      
-      {isExpanded && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: theme.white, maxHeight: '400px', overflowY: 'auto' }}>
-          {isCategorized ? (
-            Object.entries(templates || {}).map(([category, items]) => (
-              <div key={category} style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                <div style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', color: theme.slate500, textTransform: 'uppercase', letterSpacing: '0.5px', padding: '4px 8px 2px 8px' }}>
-                  {category}
-                </div>
-                {Object.entries(items || {}).map(([name, data]) => (
-                  <button 
-                    key={name}
-                    onClick={() => onLoad(data, name, { isTemplate: true })}
-                    className="sidebar-list-item"
-                  >
-                    <span style={{ fontSize: 'var(--fs-xs)', color: theme.primary }}>•</span>
-                    <span>{name}</span>
-                  </button>
-                ))}
-              </div>
-            ))
-          ) : (
-            Object.entries(templates || {}).map(([name, data]) => (
-              <button 
-                key={name}
-                onClick={() => onLoad(data, name, { isTemplate: true })}
-                className="sidebar-list-item"
-              >
-                <span style={{ fontSize: 'var(--fs-xs)', color: theme.primary }}>•</span>
-                <span>{name}</span>
-              </button>
-            ))
-          )}
-        </div>
-      )}
+      ))}
     </div>
   );
 }
@@ -539,15 +200,15 @@ function ProjectFolderRow({ project, isExpanded, onToggle, onManage }) {
         padding: '6px 8px',
         borderRadius: '6px',
         cursor: 'pointer',
-        backgroundColor: hovered ? '#EBF0EF' : 'transparent',
+        backgroundColor: hovered ? 'var(--color-border)' : 'transparent',
         transition: 'background-color 0.15s ease',
         fontSize: 'var(--fs-sm)',
         fontWeight: '600',
-        color: '#1C2B2C'
+        color: 'var(--color-text-primary)'
       }}
     >
       <div {...clickableProps} onClick={onToggle} style={{ display: 'flex', alignItems: 'center', gap: '6px', flexGrow: 1, overflow: 'hidden' }}>
-        {isExpanded ? <CaretDownIcon size={10} color="#587071" /> : <CaretRightIcon size={10} color="#587071" />}
+        {isExpanded ? <CaretDownIcon size={10} color="var(--color-text-secondary)" /> : <CaretRightIcon size={10} color="var(--color-text-secondary)" />}
         <FolderIcon size={14} color="var(--color-brand-dark)" />
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{project.title}</span>
       </div>
@@ -562,7 +223,7 @@ function ProjectFolderRow({ project, isExpanded, onToggle, onManage }) {
           style={{
             background: 'transparent',
             border: 'none',
-            color: '#395253',
+            color: 'var(--color-brand-dark)',
             cursor: 'pointer',
             padding: '2px 4px',
             display: 'flex',
@@ -601,8 +262,8 @@ function DiagramRow({ diagram, isActive, isHighlighted, onClick, onOpen, onToggl
         borderRadius: '4px',
         cursor: 'pointer',
         fontSize: 'var(--fs-xs)',
-        backgroundColor: isActive ? '#395253' : isHighlighted ? '#EBF0EF' : hovered ? '#F4F7F6' : 'transparent',
-        color: isActive ? '#ffffff' : '#1C2B2C',
+        backgroundColor: isActive ? 'var(--color-brand-dark)' : isHighlighted ? 'var(--color-border)' : hovered ? 'var(--color-surface-muted)' : 'transparent',
+        color: isActive ? 'var(--color-text-inverse)' : 'var(--color-text-primary)',
         fontWeight: isActive ? '700' : isHighlighted ? '600' : '500',
         transition: 'all 0.15s ease'
       }}
@@ -612,7 +273,7 @@ function DiagramRow({ diagram, isActive, isHighlighted, onClick, onOpen, onToggl
         onDoubleClick={onOpen}
         style={{ display: 'flex', alignItems: 'center', gap: '6px', flexGrow: 1, overflow: 'hidden' }}
       >
-        <FileIcon size={14} color={isActive ? '#ffffff' : 'var(--color-text-secondary)'} />
+        <FileIcon size={14} color={isActive ? 'var(--color-text-inverse)' : 'var(--color-text-secondary)'} />
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexGrow: 1 }}>{diagram.title}</span>
       </div>
       {/* Action buttons sit beside the row button, not inside it */}
@@ -629,7 +290,7 @@ function DiagramRow({ diagram, isActive, isHighlighted, onClick, onOpen, onToggl
               style={{
                 background: 'transparent',
                 border: 'none',
-                color: isActive ? '#ffffff' : '#395253',
+                color: isActive ? 'var(--color-text-inverse)' : 'var(--color-brand-dark)',
                 cursor: 'pointer',
                 padding: '2px 4px',
                 display: 'flex',
@@ -637,7 +298,7 @@ function DiagramRow({ diagram, isActive, isHighlighted, onClick, onOpen, onToggl
                 borderRadius: '4px'
               }}
             >
-              <FolderOpenIcon size={12} color={isActive ? '#ffffff' : '#395253'} />
+              <FolderOpenIcon size={12} color={isActive ? 'var(--color-text-inverse)' : 'var(--color-brand-dark)'} />
             </button>
             <button
               onClick={(e) => {
@@ -649,7 +310,7 @@ function DiagramRow({ diagram, isActive, isHighlighted, onClick, onOpen, onToggl
               style={{
                 background: 'transparent',
                 border: 'none',
-                color: isActive ? '#ffffff' : '#EF4444',
+                color: isActive ? 'var(--color-text-inverse)' : 'var(--color-danger)',
                 cursor: 'pointer',
                 padding: '2px 4px',
                 display: 'flex',
@@ -657,7 +318,7 @@ function DiagramRow({ diagram, isActive, isHighlighted, onClick, onOpen, onToggl
                 borderRadius: '4px'
               }}
             >
-              <TrashIcon size={12} color={isActive ? '#ffffff' : '#EF4444'} />
+              <TrashIcon size={12} color={isActive ? 'var(--color-text-inverse)' : 'var(--color-danger)'} />
             </button>
           </div>
         )}
@@ -676,9 +337,9 @@ function DiagramRow({ diagram, isActive, isHighlighted, onClick, onOpen, onToggl
               alignItems: 'center',
               gap: '3px',
               whiteSpace: 'nowrap',
-              backgroundColor: isLockedByMe ? '#ECFDF5' : 'var(--color-warning-bg)',
-              color: isLockedByMe ? '#047857' : 'var(--color-warning-text)',
-              border: `1px solid ${isLockedByMe ? '#A7F3D0' : 'var(--color-warning-border)'}`
+              backgroundColor: isLockedByMe ? 'var(--color-success-tint)' : 'var(--color-warning-bg)',
+              color: isLockedByMe ? 'var(--color-success-text)' : 'var(--color-warning-text)',
+              border: `1px solid ${isLockedByMe ? 'var(--color-success-border)' : 'var(--color-warning-border)'}`
             }}
           >
             {isLockedByMe ? 'Editing' : <><LockIcon size={10} />{lockState.initials}</>}
@@ -704,7 +365,7 @@ function DiagramRow({ diagram, isActive, isHighlighted, onClick, onOpen, onToggl
               transition: 'opacity 0.15s'
             }}
           >
-            {isLockedByMe ? <LockIcon size={12} color="#ffffff" /> : <UnlockIcon size={12} color="rgba(255,255,255,0.6)" />}
+            {isLockedByMe ? <LockIcon size={12} color="var(--color-text-inverse)" /> : <UnlockIcon size={12} color="rgba(255,255,255,0.6)" />}
           </button>
         )}
       </div>
@@ -721,9 +382,6 @@ export default function Sidebar({
   projectSettings,
   onUpdateProjectSettings,
   templates,
-  lastStats,
-  batchStats,
-  onSelectComponent,
   isAuthenticated,
   currentUser,
   activeProject,
@@ -739,27 +397,18 @@ export default function Sidebar({
   onCheckout,
   onCheckin,
   onSaveAsClick,
-  onNewDrawingClick,
-  onImportClick,
-  onExportClick,
   onOpenProjectsModal,
-  examplesRequest = 0
+  settingsRequest = null,
+  activeTab = 'components'
 }) {
   const { unitSystem, setUnitSystem, isImperial, pressureBasis, setPressureBasis, flowUnit, setFlowUnit } = useUnits();
-  const [activeTab, setActiveTab] = useState('library');
-  const [examplesExpanded, setExamplesExpanded] = useState(false);
-  const [focusExamplesPending, setFocusExamplesPending] = useState(false);
-
-  // Only a changed request shows the examples; the initial value does nothing
-  const [seenExamplesRequest, setSeenExamplesRequest] = useState(examplesRequest);
-  if (examplesRequest !== seenExamplesRequest) {
-    setSeenExamplesRequest(examplesRequest);
-    setActiveTab('library');
-    setExamplesExpanded(true);
-    setFocusExamplesPending(true);
-  }
-  const clearFocusExamples = useCallback(() => setFocusExamplesPending(false), []);
   const [settingsSubTab, setSettingsSubTab] = useState('drawing'); // 'drawing' | 'project' | 'global'
+  // A new request (the status bar units slot) switches the Settings tab; the initial value does nothing
+  const [seenSettingsRequest, setSeenSettingsRequest] = useState(settingsRequest);
+  if (settingsRequest !== seenSettingsRequest) {
+    setSeenSettingsRequest(settingsRequest);
+    if (settingsRequest?.tab) setSettingsSubTab(settingsRequest.tab);
+  }
   const [searchQuery, setSearchQuery] = useState('');
 
   // Solver settings on the three levels: Drawing > Project > Global
@@ -953,7 +602,7 @@ export default function Sidebar({
   }, [isAuthenticated]);
 
   useEffect(() => {
-    if (activeTab === 'workspace' && isAuthenticated) {
+    if (activeTab === 'drawings' && isAuthenticated) {
       fetchWorkspaceFiles();
     }
   }, [activeTab, isAuthenticated, fetchWorkspaceFiles, activeDiagram]);
@@ -1232,38 +881,11 @@ export default function Sidebar({
   const hintStyle = { fontSize: 'var(--fs-xs)', color: theme.slate500, marginTop: '4px' };
 
   return (
-    <aside style={{
-      width: '320px', minWidth: '320px', background: theme.white, borderRight: `1px solid ${theme.slate200}`,
-      padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px',
-      overflowY: 'auto', zIndex: 10, position: 'relative', boxShadow: '2px 0 12px rgba(57,82,83,0.03)'
-    }}>
-      <div style={{ display: 'flex', background: theme.slate50, padding: '4px', borderRadius: '10px', border: `1px solid ${theme.slate200}` }}>
-        {['library', 'settings', 'diagnostics', 'workspace'].map((tab) => (
-          <button 
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            style={{
-              flex: 1, padding: '6px 2px', border: 'none', borderRadius: '7px',
-              fontSize: 'var(--fs-xs)', fontWeight: '700', cursor: 'pointer',
-              textTransform: 'capitalize',
-              background: activeTab === tab ? theme.brandDark : 'transparent',
-              color: activeTab === tab ? theme.white : theme.slate500,
-              boxShadow: activeTab === tab ? theme.shadow : 'none',
-              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
-            }}
-          >
-            {tab === 'diagnostics' ? 'stats' : tab}
-          </button>
-        ))}
-      </div>
-
-
+    <div className="shell-pane-body">
 
       <div style={{ flexGrow: 1 }}>
-        {activeTab === 'library' && (
+        {activeTab === 'components' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <CollapsibleScenarios templates={templates} onLoad={onLoad} isExpanded={examplesExpanded} setIsExpanded={setExamplesExpanded} focusPending={focusExamplesPending} onFocused={clearFocusExamples} />
-
             <div style={{ 
               position: 'sticky', 
               top: '-16px', 
@@ -1317,10 +939,10 @@ export default function Sidebar({
             {/* 3-Tier Segmented Sub-Tab Switcher */}
             <div style={{
               display: 'flex',
-              background: '#F4F7F6',
+              background: 'var(--color-surface-muted)',
               padding: '3px',
               borderRadius: '8px',
-              border: '1px solid #D8E2E1'
+              border: '1px solid var(--color-border)'
             }}>
               {[
                 { id: 'drawing', label: 'Drawing' },
@@ -1343,7 +965,7 @@ export default function Sidebar({
                       cursor: 'pointer',
                       transition: 'all 0.15s ease',
                       backgroundColor: isActive ? 'var(--color-brand-dark)' : 'transparent',
-                      color: isActive ? '#ffffff' : 'var(--color-text-secondary)',
+                      color: isActive ? 'var(--color-text-inverse)' : 'var(--color-text-secondary)',
                       boxShadow: isActive ? '0 1px 3px rgba(57, 82, 83, 0.18)' : 'none'
                     }}
                   >
@@ -1358,8 +980,8 @@ export default function Sidebar({
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 {/* Drawing Info & Metadata Card */}
                 <div style={{
-                  backgroundColor: '#FFFFFF',
-                  border: '1px solid #D8E2E1',
+                  backgroundColor: 'var(--color-surface)',
+                  border: '1px solid var(--color-border)',
                   borderRadius: '8px',
                   padding: '14px',
                   display: 'flex',
@@ -1375,9 +997,9 @@ export default function Sidebar({
                       fontWeight: '700',
                       padding: '2px 6px',
                       borderRadius: '10px',
-                      backgroundColor: '#F4F7F6',
+                      backgroundColor: 'var(--color-surface-muted)',
                       color: 'var(--color-brand-dark)',
-                      border: '1px solid #D8E2E1'
+                      border: '1px solid var(--color-border)'
                     }}>
                       Format v{FILE_FORMAT_VERSION}
                     </span>
@@ -1524,8 +1146,8 @@ export default function Sidebar({
                   <>
                     {/* Active Project Card */}
                     <div style={{
-                      backgroundColor: '#FFFFFF',
-                      border: '1px solid #D8E2E1',
+                      backgroundColor: 'var(--color-surface)',
+                      border: '1px solid var(--color-border)',
                       borderRadius: '8px',
                       padding: '12px 14px',
                       display: 'flex',
@@ -1560,8 +1182,8 @@ export default function Sidebar({
 
                     {/* Available pipe classes */}
                     <div style={{
-                      backgroundColor: '#FFFFFF',
-                      border: '1px solid #D8E2E1',
+                      backgroundColor: 'var(--color-surface)',
+                      border: '1px solid var(--color-border)',
                       borderRadius: '8px',
                       padding: '14px',
                       display: 'flex',
@@ -1579,7 +1201,7 @@ export default function Sidebar({
                               onClick={() => handleSetAllPipeClasses(true)}
                               disabled={savingPipeSpecs}
                               className="btn-secondary"
-                              style={{ height: '20px', fontSize: 'var(--fs-xs)', padding: '0 6px', borderRadius: '4px', backgroundColor: '#F4F7F6', border: '1px solid #D8E2E1' }}
+                              style={{ height: '20px', fontSize: 'var(--fs-xs)', padding: '0 6px', borderRadius: '4px', backgroundColor: 'var(--color-surface-muted)', border: '1px solid var(--color-border)' }}
                             >
                               All
                             </button>
@@ -1588,7 +1210,7 @@ export default function Sidebar({
                               onClick={() => handleSetAllPipeClasses(false)}
                               disabled={savingPipeSpecs}
                               className="btn-secondary"
-                              style={{ height: '20px', fontSize: 'var(--fs-xs)', padding: '0 6px', borderRadius: '4px', backgroundColor: '#F4F7F6', border: '1px solid #D8E2E1' }}
+                              style={{ height: '20px', fontSize: 'var(--fs-xs)', padding: '0 6px', borderRadius: '4px', backgroundColor: 'var(--color-surface-muted)', border: '1px solid var(--color-border)' }}
                             >
                               None
                             </button>
@@ -1641,8 +1263,8 @@ export default function Sidebar({
                                     gap: '8px',
                                     padding: '6px 8px',
                                     borderRadius: '6px',
-                                    backgroundColor: isAllowed ? '#F4F7F6' : 'transparent',
-                                    border: `1px solid ${isAllowed ? '#D8E2E1' : 'transparent'}`,
+                                    backgroundColor: isAllowed ? 'var(--color-surface-muted)' : 'transparent',
+                                    border: `1px solid ${isAllowed ? 'var(--color-border)' : 'transparent'}`,
                                     fontSize: 'var(--fs-xs)',
                                     color: isAllowed ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
                                     cursor: isOwnerOfActiveProject ? 'pointer' : 'default',
@@ -1675,7 +1297,7 @@ export default function Sidebar({
                       <div style={{
                         marginTop: '6px',
                         paddingTop: '10px',
-                        borderTop: '1px solid #D8E2E1',
+                        borderTop: '1px solid var(--color-border)',
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center'
@@ -1688,7 +1310,7 @@ export default function Sidebar({
                             Allow manual pipe diameters
                           </span>
                         </div>
-                        <div style={{ display: 'flex', gap: '4px', backgroundColor: '#F4F7F6', padding: '2px', borderRadius: '6px', border: '1px solid #D8E2E1' }}>
+                        <div style={{ display: 'flex', gap: '4px', backgroundColor: 'var(--color-surface-muted)', padding: '2px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
                           <button
                             type="button"
                             onClick={() => handleSetAllowCustomPipes(true)}
@@ -1701,7 +1323,7 @@ export default function Sidebar({
                               border: 'none',
                               cursor: isOwnerOfActiveProject ? 'pointer' : 'default',
                               backgroundColor: activeProject.allow_custom_pipes !== false ? 'var(--color-brand-dark)' : 'transparent',
-                              color: activeProject.allow_custom_pipes !== false ? '#ffffff' : 'var(--color-text-secondary)',
+                              color: activeProject.allow_custom_pipes !== false ? 'var(--color-text-inverse)' : 'var(--color-text-secondary)',
                               boxShadow: activeProject.allow_custom_pipes !== false ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
                               transition: 'all 0.15s ease'
                             }}
@@ -1720,7 +1342,7 @@ export default function Sidebar({
                               border: 'none',
                               cursor: isOwnerOfActiveProject ? 'pointer' : 'default',
                               backgroundColor: activeProject.allow_custom_pipes === false ? 'var(--color-brand-dark)' : 'transparent',
-                              color: activeProject.allow_custom_pipes === false ? '#ffffff' : 'var(--color-text-secondary)',
+                              color: activeProject.allow_custom_pipes === false ? 'var(--color-text-inverse)' : 'var(--color-text-secondary)',
                               boxShadow: activeProject.allow_custom_pipes === false ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
                               transition: 'all 0.15s ease'
                             }}
@@ -1753,8 +1375,8 @@ export default function Sidebar({
                 ) : (
                   /* Standalone Mode Banner */
                   <div style={{
-                    backgroundColor: '#FFFFFF',
-                    border: '1px solid #D8E2E1',
+                    backgroundColor: 'var(--color-surface)',
+                    border: '1px solid var(--color-border)',
                     borderRadius: '8px',
                     padding: '20px 16px',
                     textAlign: 'center',
@@ -1767,7 +1389,7 @@ export default function Sidebar({
                       width: '40px',
                       height: '40px',
                       borderRadius: '10px',
-                      backgroundColor: '#F4F7F6',
+                      backgroundColor: 'var(--color-surface-muted)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center'
@@ -1808,7 +1430,7 @@ export default function Sidebar({
                   
                   <div>
                     <label style={labelStyle}>Engineering units</label>
-                    <div style={{ display: 'flex', gap: '6px', background: '#F4F7F6', padding: '4px', borderRadius: '8px', border: '1px solid #D8E2E1' }}>
+                    <div style={{ display: 'flex', gap: '6px', background: 'var(--color-surface-muted)', padding: '4px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
                       <button
                         type="button"
                         onClick={() => {
@@ -1824,7 +1446,7 @@ export default function Sidebar({
                           cursor: 'pointer',
                           transition: 'all 0.15s ease',
                           backgroundColor: unitSystem === 'metric' ? 'var(--color-brand-dark)' : 'transparent',
-                          color: unitSystem === 'metric' ? '#ffffff' : 'var(--color-text-secondary)',
+                          color: unitSystem === 'metric' ? 'var(--color-text-inverse)' : 'var(--color-text-secondary)',
                           boxShadow: unitSystem === 'metric' ? '0 1px 3px rgba(57, 82, 83, 0.15)' : 'none'
                         }}
                       >
@@ -1845,7 +1467,7 @@ export default function Sidebar({
                           cursor: 'pointer',
                           transition: 'all 0.15s ease',
                           backgroundColor: unitSystem === 'imperial' ? 'var(--color-brand-dark)' : 'transparent',
-                          color: unitSystem === 'imperial' ? '#ffffff' : 'var(--color-text-secondary)',
+                          color: unitSystem === 'imperial' ? 'var(--color-text-inverse)' : 'var(--color-text-secondary)',
                           boxShadow: unitSystem === 'imperial' ? '0 1px 3px rgba(57, 82, 83, 0.15)' : 'none'
                         }}
                       >
@@ -1861,7 +1483,7 @@ export default function Sidebar({
 
                   <div>
                     <label style={labelStyle}>Pressure basis</label>
-                    <div role="group" aria-label="Pressure basis" style={{ display: 'flex', gap: '6px', background: '#F4F7F6', padding: '4px', borderRadius: '8px', border: '1px solid #D8E2E1' }}>
+                    <div role="group" aria-label="Pressure basis" style={{ display: 'flex', gap: '6px', background: 'var(--color-surface-muted)', padding: '4px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
                       {[PRESSURE_BASES.ABSOLUTE, PRESSURE_BASES.GAUGE].map((basis) => (
                         <button
                           key={basis}
@@ -1878,7 +1500,7 @@ export default function Sidebar({
                             cursor: 'pointer',
                             transition: 'all 0.15s ease',
                             backgroundColor: pressureBasis === basis ? 'var(--color-brand-dark)' : 'transparent',
-                            color: pressureBasis === basis ? '#ffffff' : 'var(--color-text-secondary)',
+                            color: pressureBasis === basis ? 'var(--color-text-inverse)' : 'var(--color-text-secondary)',
                             boxShadow: pressureBasis === basis ? '0 1px 3px rgba(57, 82, 83, 0.15)' : 'none'
                           }}
                         >
@@ -1894,7 +1516,7 @@ export default function Sidebar({
                   {!isImperial && (
                     <div>
                       <label style={labelStyle}>Flow unit</label>
-                      <div role="group" aria-label="Flow unit" style={{ display: 'flex', gap: '6px', background: '#F4F7F6', padding: '4px', borderRadius: '8px', border: '1px solid #D8E2E1' }}>
+                      <div role="group" aria-label="Flow unit" style={{ display: 'flex', gap: '6px', background: 'var(--color-surface-muted)', padding: '4px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
                         {[FLOW_UNITS.LMIN, FLOW_UNITS.M3H].map((unit) => (
                           <button
                             key={unit}
@@ -1911,7 +1533,7 @@ export default function Sidebar({
                               cursor: 'pointer',
                               transition: 'all 0.15s ease',
                               backgroundColor: flowUnit === unit ? 'var(--color-brand-dark)' : 'transparent',
-                              color: flowUnit === unit ? '#ffffff' : 'var(--color-text-secondary)',
+                              color: flowUnit === unit ? 'var(--color-text-inverse)' : 'var(--color-text-secondary)',
                               boxShadow: flowUnit === unit ? '0 1px 3px rgba(57, 82, 83, 0.15)' : 'none'
                             }}
                           >
@@ -1941,8 +1563,8 @@ export default function Sidebar({
 
                 {/* System Specs & Version Info */}
                 <div style={{
-                  backgroundColor: '#FFFFFF',
-                  border: '1px solid #D8E2E1',
+                  backgroundColor: 'var(--color-surface)',
+                  border: '1px solid var(--color-border)',
                   borderRadius: '8px',
                   padding: '14px',
                   display: 'flex',
@@ -1970,11 +1592,9 @@ export default function Sidebar({
           </div>
         )}
 
-        {activeTab === 'diagnostics' && (
-          <DiagnosticsContent stats={lastStats} batchStats={batchStats} onSelectComponent={onSelectComponent} />
-        )}
+        {activeTab === 'examples' && <ExamplesList templates={templates} onLoad={onLoad} />}
 
-        {activeTab === 'workspace' && (
+        {activeTab === 'drawings' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', height: '100%' }}>
             {/* Active Drawing Card */}
             <div style={{
@@ -2008,11 +1628,11 @@ export default function Sidebar({
                         <LockIcon size={11} /> {panelLock.kind === 'my_other_tab' ? 'Open in another tab of yours' : `Locked by ${lockInfo?.username || 'another user'}`}
                       </span>
                     ) : hasLock ? (
-                      <span style={{ fontSize: 'var(--fs-xs)', padding: '2px 8px', borderRadius: '10px', backgroundColor: '#ECFDF5', color: '#047857', border: '1px solid #A7F3D0', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ fontSize: 'var(--fs-xs)', padding: '2px 8px', borderRadius: '10px', backgroundColor: 'var(--color-success-tint)', color: 'var(--color-success-text)', border: '1px solid var(--color-success-border)', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                         <DotIcon size={8} /> Checked out
                       </span>
                     ) : (
-                      <span style={{ fontSize: 'var(--fs-xs)', padding: '2px 8px', borderRadius: '10px', backgroundColor: '#F4F7F6', color: '#587071', border: '1px solid #D8E2E1', fontWeight: '600' }}>
+                      <span style={{ fontSize: 'var(--fs-xs)', padding: '2px 8px', borderRadius: '10px', backgroundColor: 'var(--color-surface-muted)', color: 'var(--color-text-secondary)', border: '1px solid var(--color-border)', fontWeight: '600' }}>
                         Available (read-only)
                       </span>
                     )}
@@ -2052,7 +1672,7 @@ export default function Sidebar({
                 {isAuthenticated && onOpenProjectsModal && (
                   <button 
                     onClick={() => onOpenProjectsModal(null)} 
-                    style={{ background: 'transparent', border: 'none', color: '#395253', fontSize: 'var(--fs-xs)', fontWeight: '600', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                    style={{ background: 'transparent', border: 'none', color: 'var(--color-brand-dark)', fontSize: 'var(--fs-xs)', fontWeight: '600', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                   >
                     <GearIcon size={12} /> Manage projects
                   </button>
@@ -2143,35 +1763,9 @@ export default function Sidebar({
                 </div>
               )}
             </div>
-
-            {/* Quick Actions Panel */}
-            <div style={{
-              borderTop: `1px solid ${theme.slate200}`,
-              paddingTop: '12px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '8px'
-            }}>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button onClick={onNewDrawingClick} className="btn-secondary" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                  <PlusIcon size={14} /> New
-                </button>
-                <button onClick={onSaveAsClick} className="btn-secondary" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                  <SaveIcon size={14} /> Save as…
-                </button>
-              </div>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button onClick={onImportClick} className="btn-secondary" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                  <ImportIcon size={14} /> Import
-                </button>
-                <button onClick={onExportClick} className="btn-secondary" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                  <ExportIcon size={14} /> Export
-                </button>
-              </div>
-            </div>
           </div>
         )}
       </div>
-    </aside>
+    </div>
   );
 }

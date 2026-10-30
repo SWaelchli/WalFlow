@@ -33,7 +33,7 @@ Copyright: in the public repo cite the clause, equation, table or figure number 
 6. **Record** (public repo):
    - register Part B: status, "Verified against" (edition), clause, date, note;
    - register Part C: one log row for the session;
-   - equipment `.md` section 2: the status cell, e.g. `✅ 10th ed. (2020) §5.8` or `⚠️ Re limit flat 16 000, §5.3.1 gives 16 000·β²` while the deviation is open (a short description, never the `D-xx` ID: `FINDINGS.md` will be deleted, so code, docs, register, skills and tests never carry a finding ID); once it is fixed, the cell becomes ✅ with the clause;
+   - equipment `.md` section 2: the status cell, e.g. `✅ 10th ed. (2020) §5.8` or `⚠️ Re limit flat 16 000, §5.3.1 gives 16 000·β²` while the deviation is open (a short description, never the `D-xx` ID: `FINDINGS.md` entries are deleted once fixed, so code, docs, register, skills and tests never carry a finding ID); once it is fixed, the cell becomes ✅ with the clause;
    - the 🚩 flag is removed once the flagged question is answered.
 7. **Deviation.** Add a `D-xx` finding to `FINDINGS.md` in the repo root (create it if it does not exist; layout in the `walflow-qa` skill, "Findings list") with the clause and the expected value. Do not change model code in the verification task: a fix is a separate task after the user confirms it, following the bug-fix decision tree of the `walflow-qa` skill.
 8. **Not in source.** Propose a replacement source or the removal of the citation; change the doc only after the user agrees.

@@ -6,7 +6,17 @@ const COLLAPSED_HEIGHT = 44; // tab header only
 /** Default height: 40 % of the window, between 300 and 480 px. */
 export const defaultPanelHeight = (viewportHeight) => Math.min(480, Math.max(300, Math.round(viewportHeight * 0.4)));
 
-export const clampPanelHeight = (value, viewportHeight) => Math.min(Math.round(viewportHeight * 0.8), Math.max(MIN_HEIGHT, Math.round(value)));
+// Shell rows that are not the canvas or the panel: menu bar 40 + command bar 44 + status bar 28 (--shell-*-h), plus the canvas minimum height 320
+const SHELL_CHROME_HEIGHT = 112;
+const CANVAS_MIN_HEIGHT = 320;
+
+/** Largest height that still leaves the canvas its minimum (the panel's grid row), and at most 80 % of the window. */
+export const maxPanelHeight = (viewportHeight) => Math.min(Math.round(viewportHeight * 0.8), Math.max(0, viewportHeight - SHELL_CHROME_HEIGHT - CANVAS_MIN_HEIGHT));
+
+export const clampPanelHeight = (value, viewportHeight) => Math.min(maxPanelHeight(viewportHeight), Math.max(MIN_HEIGHT, Math.round(value)));
+
+/** Windows narrower than this (the medium breakpoint) start with the panel collapsed. */
+export const COLLAPSE_BELOW_WIDTH = 1008;
 
 const read = (key) => {
   try {
@@ -22,7 +32,8 @@ const write = (key, value) => {
 export default function usePanelHeight(storageKey) {
   const [state, setState] = useState(() => {
     const stored = read(storageKey);
-    return { height: Number.isFinite(stored.height) ? stored.height : null, collapsed: stored.collapsed === true };
+    const narrow = typeof window !== 'undefined' && window.innerWidth < COLLAPSE_BELOW_WIDTH;
+    return { height: Number.isFinite(stored.height) ? stored.height : null, collapsed: typeof stored.collapsed === 'boolean' ? stored.collapsed : narrow };
   });
   const dragRef = useRef(null);
 

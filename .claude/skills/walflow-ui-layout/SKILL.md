@@ -1,6 +1,6 @@
 ---
 name: walflow-ui-layout
-description: Where things go in the WalFlow user interface - the app shell regions (menu bar, command bar, activity rail and side pane, canvas, inspector, results panel, status bar, pages, dialogs), the placement rule for new features, the command list and menu structure, responsive behaviour, and the layout checklist and verification. Use whenever adding or moving a button, menu item, panel, tab, overlay, dialog, toast or status display, adding a feature that needs UI, reviewing the layout, or working on FINDINGS.md phase 8.
+description: Where things go in the WalFlow user interface - the app shell regions (menu bar, command bar, activity rail and side pane, canvas, inspector, results panel, status bar, pages, dialogs), the placement rule for new features, the command list and menu structure, responsive behaviour, and the layout checklist and verification. Use whenever adding or moving a button, menu item, panel, tab, overlay, dialog, toast or status display, adding a feature that needs UI, or reviewing the layout.
 metadata:
   version: "1.0.0"
 ---
@@ -58,7 +58,7 @@ Left: logo (opens About), then the menus. Centre: `Project / Drawing` name, save
 | **File** | New drawing… · Open… (Drawings pane) · Save `Ctrl+S` · Save as… · — · Import .wlf file… · Export .wlf file · Export table as CSV |
 | **Edit** | Undo `Ctrl+Z` · Redo `Ctrl+Y` · — · Copy `Ctrl+C` · Paste `Ctrl+V` · Duplicate `Ctrl+D` · Delete `Del` · — · Select all `Ctrl+A` · Rotate `R` · — · Add instrument · Insert measurement tap |
 | **View** | Components · Examples · Drawings · Settings (side panes) · Inspector · Results panel · — · Zoom in · Zoom out · Fit view · Lock canvas · — · Heatmap ▸ · Case manager |
-| **Simulation** | Run simulation `Ctrl+Enter` · Solve all cases · — · Active case ▸ (radio list) · New case… · Case manager |
+| **Simulation** | Run simulation `Ctrl+Enter` · Solve all cases · — · Active case ▸ (radio list) · New case… |
 | **Tools** | Catalogue · Manage projects… · Admin hub… (admins only) |
 | **Help** | User guide · Keyboard shortcuts `?` · Model & limits · About WalFlow |
 
@@ -69,6 +69,13 @@ Rules:
 - Labels: sentence case, verb first, `…` when more input follows before the action runs. Shortcut shown right.
 - Unavailable now (nothing selected, read-only drawing, signed out): **disabled**, with the reason in a tooltip.
   Not allowed for this user (role): **hidden**.
+- Checkable items (`checked`) are `menuitemcheckbox` with a check in the icon slot; choices in a submenu (Active
+  case, Heatmap) are `menuitemradio`.
+- Keyboard: one tab stop on the bar (roving focus); Left/Right moves between menus and wraps; Down, Enter or Space
+  opens; Up/Down moves inside; Right/Left opens and closes a submenu; Esc closes and returns focus to the trigger.
+  With one menu open, hovering another menu opens it. A click outside closes.
+- Account (right): the user name with a caret opens a menu with Sign out; signed out, a Sign in button. The centre
+  shows "Local draft" when no cloud drawing is open.
 
 ### Command bar (row 2)
 
@@ -79,6 +86,8 @@ Left to right: Undo, Redo │ **Run Simulation** │ Case selector │ (room for
 - Only commands used many times per session go here, in order of importance, at most 8 besides the panel toggles.
   Everything here is also in a menu.
 - No status, no file commands, no navigation to pages.
+- Icon buttons (`.icon-btn`) have an accessible name and a tooltip with the shortcut; panel toggles use
+  `aria-pressed`. Every button runs its command through `runCommand(id, ctx)`.
 
 ### Activity rail and side pane (left)
 
@@ -87,7 +96,8 @@ Rail items, top to bottom: **Components** (equipment palette and search), **Exam
 
 - One job per pane. The pane has a header (title, optional pane actions) and scrolls on its own.
 - Tabs at most two levels deep: rail item → tabs inside the pane (Settings uses this). Never a third level.
-- Clicking the active rail item collapses the pane; the rail stays.
+- Clicking the active rail item collapses the pane; the rail stays. Links into a pane from elsewhere (empty-canvas
+  hint, status bar) run the pane command with `{ open: true, tab }`, which opens and never collapses.
 - No duplicate commands in panes: New, Save as, Import, Export live in the File menu only.
 - A new rail item needs the user's approval; keep the rail at 6 items or fewer.
 
@@ -95,8 +105,8 @@ Rail items, top to bottom: **Components** (equipment palette and search), **Exam
 
 | Position | Holds |
 |---|---|
-| Top edge, full width | Info bars (run failed, graph error, read-only, stale results), stacked, inline |
-| Top right, one column with a gap | Heatmap legend, case manager. Stack with flex, never computed offsets |
+| Top edge, full width | Info bars (`.canvas-infobars`: run failed, graph error, stale results), stacked above `.canvas-viewport`, which shrinks; never over the diagram |
+| Top right, one column with a gap | Heatmap legend, case manager (`.canvas-overlays`, cards `.canvas-overlay-card`). Stack with flex, never computed offsets |
 | Bottom left | Canvas controls: zoom in, zoom out, fit view, lock, heatmap. Each has `aria-label` and a tooltip with its shortcut |
 | Bottom right | Reserved (minimap) |
 | Centre | Empty-canvas hint (with a "Browse examples" button that opens the Examples list), loading overlay, file-drop target |
@@ -105,16 +115,20 @@ Only view controls belong on the canvas. Commands that change the drawing go thr
 
 ### Inspector (right, full height)
 
-- Opens when something is selected, hidden when nothing is, so the canvas takes the space. Collapsible.
-- Header: item name, type, Delete (danger ghost). Tabs: Setup, Results. No further tab level.
+- Opens when something is selected, hidden when nothing is, so the canvas takes the space. View › Inspector (and
+  its command bar toggle) collapses it; it stays collapsed across selections until shown again.
+- Header: item name, type, Delete (danger ghost), Collapse inspector (same as View › Inspector). Tabs: Setup,
+  Results. No further tab level.
 - Equipment fields are added in `SetupPanel.jsx` / `details/*` per the `equipment-creation` skill. The shell does not change.
 
 ### Results panel (under the canvas)
 
 - Tabs: Pipes, Equipment, Cases, Relief, Measurements (short labels; the full title is the tooltip). Labels never
   wrap; at narrow widths the tab strip scrolls.
-- Toolbar on the right shows only the controls that apply to the active tab.
-- Collapsible to its tab strip; size and collapsed state are remembered (`usePanelHeight`).
+- Toolbar on the right shows only the controls that apply to the active tab; when it does not fit beside the tabs
+  it wraps onto its own row, never clipped. Hidden while the panel is collapsed.
+- Collapsible to its tab strip; size and collapsed state are remembered (`usePanelHeight`). Its height is clamped
+  so the canvas keeps its minimum height.
 
 ### Status bar (bottom)
 
@@ -123,9 +137,9 @@ Fixed slots, left to right:
 | Slot | Shows | Click |
 |---|---|---|
 | Run result | Not run yet / Converged · time / Failed / Out of date, with icon | Flyout: solver statistics and run messages |
-| Case | Active case name | Simulation › Active case |
-| Warnings | Count, hidden when zero | Results panel or flyout with the list |
-| Units (right) | Pressure basis and flow unit | Settings pane, Global |
+| Case | Active case name | View › Case manager |
+| Warnings | Count of model errors and warnings, hidden when zero | The run result flyout with the list |
+| Units (right) | Pressure basis and flow unit | Settings pane, Global tab (`view.settings` with `{ open: true, tab: 'global' }`) |
 | Selection (right) | `n selected`, hidden when zero | — |
 | Zoom (right) | `85 %` | Fit view |
 
@@ -143,7 +157,7 @@ otherwise.
 
 | Use | When | Never for |
 |---|---|---|
-| **Dialog** (`confirmDialog`, `confirmDiscard`, `askName` in `utils/dialogs.js`, or a modal) | Unsaved work would be lost; permanent delete of a stored item (drawing, project, user, catalogue entry); overwriting a newer version; input needed before an action | Reversible canvas edits (undo exists); loading an example onto an unchanged canvas; information only |
+| **Dialog** (`confirmDialog`, `confirmDiscard`, `askName` in `utils/dialogs.js`, or a modal) | Unsaved work would be lost; permanent delete of a stored item (drawing, project, user, catalogue entry); overwriting a newer version; input needed before an action | Reversible canvas edits (undo exists); loading an example onto an empty or unedited canvas (`useCanvasHistory().hasEdits()`); information only |
 | **Info bar** | A state that lasts and may need action. Closable once the state is resolved | Confirmations of a user action |
 | **Toast** | A short confirmation or a background event finished | Errors the user must act on; anything the user needs later |
 
@@ -152,20 +166,21 @@ change anything. Focus returns to the control that opened the dialog.
 
 ## The command list
 
-All user commands are defined once, in `frontend/src/commands/` (introduced in phase 8), as entries with:
-`id`, `label`, `menu` and `group`, `icon`, `shortcut`, `isEnabled(ctx)` with a reason when false, `isVisible(ctx)`
-(role only), and `run(ctx)`. The menu bar, command bar, context menus, keyboard shortcuts and the Help shortcut
-list all read this list.
+All user commands are defined once, in `frontend/src/commands/commandList.js`, as entries with: `id`
+(`<menu>.<name>`, e.g. `edit.duplicate`), `label`, `menu` and `group` (separators), `icon`, `shortcut`,
+`contexts` (`node`, `edge`, `pane`: which context menus show it), `isEnabled(ctx)` returning `true` or the reason
+it is unavailable, `isVisible(ctx)` (role only), `run(ctx)`, and for submenus `children(ctx)`. `ctx` is built once
+per render in `App.jsx` from the existing handlers and state. The menu bar, command bar, context menus, keyboard
+shortcuts (`hooks/useKeyboardShortcuts.js`) and the Help shortcut list all read this list.
+`listCommandsByMenu()` returns the menus in order; the docs sync test compares it with the menu table above.
 
 - Add a command once. Never wire a handler straight into a button, menu item or key listener.
 - Every command has a menu entry. A context menu or command bar entry is an extra way in, never the only one.
 - Read-only drawings disable edit commands through `isEnabled`, so every surface agrees.
+- Esc (clear selection, close the top layer) is a key-only command (`KEY_ONLY_COMMANDS`), not in a menu.
 - Shortcuts: one per command, unique. Single keys (`R`, `Del`, `?`) only act while focus is on the canvas, never
   while typing. Do not take browser-reserved keys: `Ctrl+N/T/W`, `Ctrl+Shift+N/T/W`, `Ctrl+Tab`, `Ctrl+L`,
   `Ctrl+R`, `F5`, `F6`, `F10`, `Alt+letter`.
-
-Today the handlers are `useCallback`s in `App.jsx` passed as props, and keys are in `hooks/useKeyboardShortcuts.js`.
-Phase 8 moves them into the list without changing what they do.
 
 ## Responsive behaviour
 
@@ -176,18 +191,22 @@ Breakpoints and the canvas minimum are in MASTER.md. When the window narrows, gi
 3. Side pane: overlays the canvas instead of docking.
 4. Inspector: overlays the canvas instead of docking.
 5. Results panel: starts collapsed.
-6. Drawing name: truncates with an ellipsis, full name in a tooltip.
+6. Drawing name: the project path hides, then the name truncates with an ellipsis; full "Project / Drawing" in a
+   tooltip. The lock chip shortens to a lock icon plus the holder's name, "Editing" or "Other tab" (full label in
+   its tooltip and accessible name).
 
 Never: controls clipped or pushed off-screen, wrapped tab labels, a canvas below its minimum while a pane is docked,
 horizontal page scroll. Menus do not collapse.
 
 ## Accessibility
 
-- Landmarks: menu bar `header` with `role="menubar"` (menus `menu`, items `menuitem` / `menuitemcheckbox` /
+- Landmarks: one `header` holding the menu bar (`role="menubar"`) and the command bar (`role="toolbar"`) (menus `menu`, items `menuitem` / `menuitemcheckbox` /
   `menuitemradio`, arrow-key navigation); rail `nav` (`aria-label="Side panes"`, items `aria-pressed`); canvas
   `main`; inspector `aside` (`aria-label="Inspector"`); results panel `section` with a label; status bar `footer`,
   run result `role="status"`.
-- Esc closes the top layer only: menu, then flyout, then overlay pane, then dialog.
+- Esc closes the top layer only: menu, then flyout, then overlay pane, then dialog. An overlay side pane also
+  closes on a click outside it; a click on the canvas that closes it is consumed (Windows light dismiss), so it does
+  not select or pan. An overlay inspector closes when the selection is cleared.
 - Splitters are focusable `role="separator"` with `aria-valuenow`, arrow keys resize.
 
 ## Checklist for a new feature or a layout change
@@ -237,28 +256,3 @@ When the docs sync test fails, fix the doc or the code so they agree; never loos
 | Update or add tests | `walflow-test-author` |
 | Gate | `walflow-gate-runner` |
 | Browser verification, decisions, CHANGELOG | orchestrator |
-
-## Phase 8: from today's layout to the target
-
-> **Temporary section.** Delete this whole section, down to the end of the file, once every step below is
-> implemented and verified (FINDINGS.md phase 8 closed). The rest of this skill then describes the app as built.
-
-Today (before phase 8): one 56 px navbar (`layout/Navbar.jsx`) holds File, Run, case, save and lock chips, run
-status (`StatusChip.jsx`), Catalogue, Help, Admin hub and the account. A 320 px sidebar (`panels/Sidebar.jsx`) has
-Library, Settings, Stats and Workspace tabs. The inspector (`panels/InspectorPanel.jsx`) stops above the data panel
-(`panels/DataList.jsx`). There is no status bar, no command list and one `@media` rule.
-
-Order of work, each step shippable on its own:
-
-1. Tokens: align `index.css` with MASTER.md (values, missing tokens). Then `walflow-test-author` adds the token half
-   of the docs sync test (see "Keeping this skill and MASTER.md true").
-2. Shell: a grid with menu bar, command bar, rail, pane, canvas, inspector (full height), results panel, status
-   bar. Existing panels move in unchanged.
-3. Command list: move handlers and shortcuts into it; build the menu bar, command bar and context menus from it.
-   Remove the Workspace quick-action duplicates. Generate the Help shortcut list from it. Then `walflow-test-author`
-   adds the menu half of the docs sync test.
-4. Re-home content: run status and statistics to the status bar, examples to their own pane, canvas overlays to
-   their corners, info bars to the canvas top, confirm-on-load only with unsaved changes.
-5. Responsive: breakpoints and the give-up order; then the verification above. This closes H4 and LK-L1.
-6. Clean-up: delete this section; remove the phase 8 sentence from `frontend/AGENTS.md` ("FINDINGS.md phase 8
-   moves the app...") and the matching note in MASTER.md ("Value conflicts settled...").

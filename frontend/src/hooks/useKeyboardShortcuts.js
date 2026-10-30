@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { findCommandForKey, READ_ONLY_REASON } from '../commands';
 
 /** An open modal owns the keyboard; the canvas shortcuts must not act behind it. */
 export const isModalOpen = () => typeof document !== 'undefined' && document.querySelector('.modal-overlay, [role="dialog"], [aria-modal="true"]') !== null;
@@ -10,21 +11,13 @@ export const hasTextSelection = () => {
 };
 
 /**
- * Custom hook for keyboard shortcut event listeners
+ * Keyboard shortcuts, taken from the command list. `ctx` is the command context App.jsx builds each render.
+ * A command runs when it is enabled; on a read-only drawing it still runs, so its handler shows the read-only notice.
  */
-export function useKeyboardShortcuts({
-  copySelected,
-  pasteCopied,
-  duplicateSelected,
-  deleteSelected,
-  selectAllNodes,
-  rotateSelectedNode,
-  deselectAll,
-  undo,
-  redo,
-  onSaveShortcut,
-  onOpenHelp,
-}) {
+export function useKeyboardShortcuts(ctx) {
+  const ctxRef = useRef(ctx);
+  useEffect(() => { ctxRef.current = ctx; });
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Enter') {
@@ -51,101 +44,20 @@ export function useKeyboardShortcuts({
         return;
       }
 
-      const isMod = e.ctrlKey || e.metaKey;
-      const key = e.key.toLowerCase();
+      const command = findCommandForKey(e);
+      if (!command) return;
 
-      // Save: Ctrl + S
-      if (isMod && key === 's') {
-        e.preventDefault();
-        if (onSaveShortcut) onSaveShortcut();
-        return;
-      }
+      // Text selected on the page is copied natively, not as canvas components
+      if (command.id === 'edit.copy' && hasTextSelection()) return;
 
-      // Copy: Ctrl + C
-      if (isMod && key === 'c') {
-        if (hasTextSelection()) return; // let the browser copy the selected text
-        e.preventDefault();
-        copySelected();
-        return;
-      }
-
-      // Paste: Ctrl + V
-      if (isMod && key === 'v') {
-        e.preventDefault();
-        pasteCopied();
-        return;
-      }
-
-      // Duplicate: Ctrl + D
-      if (isMod && key === 'd') {
-        e.preventDefault();
-        duplicateSelected();
-        return;
-      }
-
-      // Select All: Ctrl + A
-      if (isMod && key === 'a') {
-        e.preventDefault();
-        selectAllNodes();
-        return;
-      }
-
-      // Undo: Ctrl + Z
-      if (isMod && !e.shiftKey && key === 'z') {
-        e.preventDefault();
-        undo();
-        return;
-      }
-
-      // Redo: Ctrl + Y or Ctrl + Shift + Z
-      if ((isMod && key === 'y') || (isMod && e.shiftKey && key === 'z')) {
-        e.preventDefault();
-        redo();
-        return;
-      }
-
-      // Rotate: R
-      if (!isMod && key === 'r') {
-        e.preventDefault();
-        rotateSelectedNode();
-        return;
-      }
-
-      // Delete: Delete or Backspace
-      if (e.key === 'Delete' || e.key === 'Backspace') {
-        e.preventDefault();
-        deleteSelected();
-        return;
-      }
-
-      // Help: Shift + ? (opens the Help screen; Esc closes it)
-      if (e.key === '?' && !isMod) {
-        e.preventDefault();
-        if (onOpenHelp) onOpenHelp();
-        return;
-      }
-
-      // Deselect / Cancel: Escape
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        deselectAll();
-        return;
-      }
+      e.preventDefault();
+      const current = ctxRef.current;
+      if (!current) return;
+      const enabled = command.isEnabled(current);
+      if (enabled === true || enabled === READ_ONLY_REASON) command.run(current);
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [
-    copySelected,
-    pasteCopied,
-    duplicateSelected,
-    deleteSelected,
-    selectAllNodes,
-    rotateSelectedNode,
-    deselectAll,
-    undo,
-    redo,
-    onSaveShortcut,
-    onOpenHelp,
-  ]);
+  }, []);
 }
