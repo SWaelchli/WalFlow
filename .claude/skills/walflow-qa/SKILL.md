@@ -2,7 +2,7 @@
 name: walflow-qa
 description: WalFlow test strategy and rules (replaces TESTING.md). Use whenever writing, changing, moving or deleting a test, fixing a bug, adding equipment, or deciding whether a change needs a test, in the backend (pytest, hypothesis) or the frontend (Vitest). Covers the test pyramid, where a test belongs, the bug-fix decision tree, property tests, golden examples and the local release gate.
 metadata:
-  version: "1.0.0"
+  version: "1.1.0"
 ---
 
 # WalFlow QA
@@ -98,6 +98,39 @@ with a real account.
 8. **Tests must pass in any order.** `pytest-randomly` shuffles the run. Give every test its own state.
 9. **Test what the app uses.** Do not test dead code paths. Example: the solver differentiates most components
    numerically, so their `calculate_dp_derivative` is not checked; pipe and pump derivatives are.
+
+## Findings list (`FINDINGS.md`)
+
+`FINDINGS.md` in the repo root is a temporary list of open issues (from audits, standard verification, generated
+networks the solver cannot solve, physics reviews). Create it when the first finding comes in; delete it when the
+last entry is gone. Layout, top to bottom:
+
+1. **Header**: one paragraph on what the list is, the status values and owners used (below), and a pointer to
+   these rules.
+2. **Overview**: one table with **every** finding, including deferred and rejected ones, sorted by roadmap
+   phase and then by severity. It is the only place that holds the status, so a status change is one edit:
+
+   | ID | Severity | Status | Finding | Proposed solution | Owner | Phase | Source |
+   |---|---|---|---|---|---|---|---|
+   | H1 | High | Open | A failed solve shows raw exception text and names no component. | Two messages by failure kind naming the largest-imbalance component; "Show" selects it. | orch + phys, fe | 6 | UX audit 2026-10-28 |
+
+   - **Finding**: one sentence, the observed behaviour, readable without the details section.
+   - **Proposed solution**: one sentence. Mark it `Decided:` once the user has agreed to it; write `To decide`
+     while it is open.
+   - **Severity**: Critical, High, Medium or Low (as in the source; `—` for a pure check).
+   - **Status**: `Open` (agreed, to implement) · `Review` (needs a decision or physics check first) ·
+     `In progress` · `Fixed` (remove the entry at commit) · `Deferred` · `Rejected`.
+   - **Owner**: `orch` (orchestrator: backend/simulation, API) · `fe` (`walflow-frontend-dev`) ·
+     `phys` (`walflow-physics-reviewer` after the change).
+   - **Phase**: the roadmap phase, or `—` when unscheduled.
+3. **Roadmap** (when there is more than one phase): phase, entries, why this order, exit check.
+4. **Details**, one section per source (link to the report and its verdict): a table with ID, Details (the full
+   description and decided design where the overview sentence is not enough; empty otherwise), Where (code
+   links) and Test (the decision-tree step from above, or "Gate" when lint/build is the check). No status
+   column here.
+
+IDs are for this list only (rule 2 above). Delete a finding's overview row and detail row in the same change that
+commits its fix; the commit and `CHANGELOG.md` are the record.
 
 ## Property tests (hypothesis)
 
