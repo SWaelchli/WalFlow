@@ -12,7 +12,7 @@ from datetime import datetime
 _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path[:0] = [os.path.join(_HERE, "..", "helpers"), os.path.join(_HERE, "..", "..")]  # tests/helpers, backend/
 
-from networks import generate_stress_network
+from networks import generate_stress_network, neutral_graph
 from simulation.schemas import ReactFlowGraph
 from simulation.graph_parser import GraphParser
 from simulation.solver import NetworkSolver
@@ -53,7 +53,7 @@ def main():
     all_ok = True
     for comp in COMPLEXITIES:
         data = generate_stress_network(comp)
-        graph = ReactFlowGraph(**data)
+        graph = neutral_graph(**data)
         for method in METHODS:
             _, solve_ms, stats = bench(graph, method)
             all_ok = all_ok and bool(stats.get("success"))
