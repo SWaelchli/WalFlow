@@ -409,11 +409,12 @@ class FluidProperties:
         return 8.0 * ((8.0 / re) ** 12 + 1.0 / (a + b) ** 1.5) ** (1.0 / 12.0)
 
     @staticmethod
-    def get_darcy_friction_slope(reynolds_number: float, rel_roughness: float) -> float:
-        """Exact df/dln(Re) of get_darcy_friction_factor (-f in the laminar range)."""
+    def get_darcy_friction_and_slope(reynolds_number: float, rel_roughness: float) -> tuple:
+        """Returns (f, df/dln(Re)) computed together from Churchill (1977)."""
         re = max(1e-6, abs(reynolds_number))
         if re < 10.0:
-            return -64.0 / re
+            f = 64.0 / re
+            return f, -f
         r7 = (7.0 / re) ** 0.9
         x = r7 + 0.27 * rel_roughness
         ln_inv_x = math.log(1.0 / x)
@@ -424,7 +425,12 @@ class FluidProperties:
         f = 8.0 * s ** (1.0 / 12.0)
         da = 16.0 * a * (0.9 * r7 / x) / ln_inv_x
         ds = -12.0 * c - 1.5 * (da - 16.0 * b) / (a + b) ** 2.5
-        return f * ds / (12.0 * s)
+        return f, f * ds / (12.0 * s)
+
+    @staticmethod
+    def get_darcy_friction_slope(reynolds_number: float, rel_roughness: float) -> float:
+        """Exact df/dln(Re) of get_darcy_friction_factor (-f in the laminar range)."""
+        return FluidProperties.get_darcy_friction_and_slope(reynolds_number, rel_roughness)[1]
 
     @staticmethod
     def get_valve_fr(reynolds_number: float) -> float:

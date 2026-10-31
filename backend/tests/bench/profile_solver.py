@@ -22,7 +22,7 @@ import time
 _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path[:0] = [os.path.join(_HERE, "..", "helpers"), os.path.join(_HERE, "..", "..")]  # tests/helpers, backend/
 
-from networks import generate_stress_network
+from networks import generate_stress_network, neutral_graph
 from walflow_paths import EXAMPLES_DIR
 from simulation.schemas import ReactFlowGraph
 from simulation.graph_parser import GraphParser
@@ -64,7 +64,7 @@ def run_example(data, case):
 def run_stress(n):
     NetworkSolver._warm_start_cache.clear()
     with contextlib.redirect_stdout(io.StringIO()):
-        network = GraphParser.parse_graph(ReactFlowGraph(**generate_stress_network(n)))
+        network = GraphParser.parse_graph(neutral_graph(**generate_stress_network(n)))
         stats = NetworkSolver(network).solve()
         telemetry = extract_telemetry(network)
     return stats, telemetry
