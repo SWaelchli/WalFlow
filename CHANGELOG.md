@@ -56,6 +56,7 @@ All notable changes to the WälFlow project will be documented in this file.
 
 ### Changed
 
+- **Frontend loading performance**: Example diagrams are dynamically code-split on demand (-18.7% main JS bundle size); eliminated artificial loading wait lockout and coordinated canvas loading state with initial simulation solve and DOM frame painting to eliminate UI freezes on large networks.
 - **Source and instrument symbol size**: The flow and pressure source symbols are 60 px like the pumps and valves (were 70 px), and their circles and the instrument bubble have the same diameter as the pump circle; the Jeppson examples keep their layout.
 - **Signal lines**: Sensing/signal lines draw as one static dashed line in muted slate instead of two overlaid yellow/orange animated dashes; saved files render the new style unchanged.
 - **Unit in every field name**: Node and pipe data fields carry their unit (`level_m`, `temperature_k`, `set_pressure_pa`, `opening_pct`, pipe `length_m` / `diameter_m`, …). Old 0.2 pre-release files are not converted; the file format stays 0.2. The field list per component now lives in `backend/simulation/equipment/<type>.md`.

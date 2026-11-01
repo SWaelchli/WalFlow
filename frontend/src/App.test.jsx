@@ -89,7 +89,12 @@ describe('loading an example', () => {
     render(<App />);
     const rail = await screen.findByRole('navigation', { name: 'Side panes' }, { timeout: 8000 });
     fireEvent.click(Array.from(rail.querySelectorAll('button')).find((b) => b.getAttribute('aria-label') === 'Examples'));
-    const example = await waitFor(() => { expect(document.querySelector('.examples-list button')).toBeTruthy(); }, { timeout: 8000 }).then(() => document.querySelector('.examples-list button'));
+    const example = await waitFor(() => {
+      const btns = Array.from(document.querySelectorAll('.examples-list button'));
+      const found = btns.find((b) => b.textContent.includes('API 614'));
+      expect(found).toBeTruthy();
+      return found;
+    }, { timeout: 8000 });
     expect(example).toBeTruthy();
     const before = document.querySelectorAll('.react-flow__node').length;
     fireEvent.click(example);
