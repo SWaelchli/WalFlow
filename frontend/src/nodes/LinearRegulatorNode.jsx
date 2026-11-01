@@ -36,10 +36,9 @@ export default function LinearRegulatorNode({ id, data, selected }) {
     >
       <svg width="60" height="60" viewBox="0 0 60 60">
         <line x1="30" y1="35" x2="30" y2="15" stroke="var(--color-brand-dark)" strokeWidth="1.5" />
-        <path d="M 15 15 L 45 15" stroke="var(--color-brand-dark)" strokeWidth="2.5" />
+        <path d="M 15 15 L 45 15" stroke="var(--color-brand-dark)" strokeWidth="2" />
         <path d="M 10 20 L 30 35 L 10 50 Z" fill="var(--color-surface)" stroke="var(--color-brand-dark)" strokeWidth="2.5" />
         <path d="M 50 20 L 30 35 L 50 50 Z" fill="var(--color-surface)" stroke="var(--color-brand-dark)" strokeWidth="2.5" />
-        <line x1="15" y1="15" x2="10" y2="20" stroke="var(--color-brand-dark)" strokeWidth="1" strokeDasharray="2,2" />
       </svg>
 
       <Handle 

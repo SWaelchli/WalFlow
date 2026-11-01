@@ -93,10 +93,9 @@ export const EquipmentSymbol = ({ type, size = 40, style = {} }) => {
         return (
           <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
             <line x1="30" y1="35" x2="30" y2="15" stroke="#334155" strokeWidth="1.5" />
-            <path d="M 15 15 L 45 15" stroke="#334155" strokeWidth="2.5" />
+            <path d="M 15 15 L 45 15" stroke="#334155" strokeWidth="2" />
             <path d="M 10 20 L 30 35 L 10 50 Z" fill="white" stroke="#334155" strokeWidth="2.5" />
             <path d="M 50 20 L 30 35 L 50 50 Z" fill="white" stroke="#334155" strokeWidth="2.5" />
-            <line x1="15" y1="15" x2="10" y2="20" stroke="#334155" strokeWidth="1" strokeDasharray="2,2" />
           </svg>
         );
       case 'three_way_tcv':
@@ -109,6 +108,40 @@ export const EquipmentSymbol = ({ type, size = 40, style = {} }) => {
             <rect x="24" y="5" width="12" height="12" fill="#f8fafc" stroke="#334155" strokeWidth="1.5" />
             <line x1="30" y1="17" x2="30" y2="35" stroke="#334155" strokeWidth="1.5" />
             <text x="30" y="14" textAnchor="middle" style={{ fontSize: '8px', fontWeight: '800', fill: '#334155' }}>T</text>
+            <text
+              x="19.5"
+              y="35"
+              textAnchor="middle"
+              dominantBaseline="central"
+              style={{
+                fontSize: '7px',
+                fontWeight: '800',
+                fill: '#B91C1C',
+                paintOrder: 'stroke fill',
+                stroke: '#ffffff',
+                strokeWidth: '1.5px',
+                strokeLinejoin: 'round',
+              }}
+            >
+              H
+            </text>
+            <text
+              x="30"
+              y="49"
+              textAnchor="middle"
+              dominantBaseline="central"
+              style={{
+                fontSize: '7px',
+                fontWeight: '800',
+                fill: '#0369A1',
+                paintOrder: 'stroke fill',
+                stroke: '#ffffff',
+                strokeWidth: '1.5px',
+                strokeLinejoin: 'round',
+              }}
+            >
+              C
+            </text>
           </svg>
         );
       case 'check_valve':
@@ -137,15 +170,13 @@ export const EquipmentSymbol = ({ type, size = 40, style = {} }) => {
       case 'psv':
         return (
           <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
-            <line x1="10" y1="35" x2="25" y2="35" stroke="#334155" strokeWidth="2.5" />
-            <line x1="45" y1="35" x2="60" y2="35" stroke="#334155" strokeWidth="2.5" />
-            <polygon points="25,23 25,47 35,35" fill="white" stroke="#334155" strokeWidth="2" />
-            <polygon points="45,23 45,47 35,35" fill="white" stroke="#334155" strokeWidth="2" />
-            <line x1="35" y1="35" x2="35" y2="12" stroke="#334155" strokeWidth="2" />
-            <rect x="29" y="8" width="12" height="10" fill="#f8fafc" stroke="#334155" strokeWidth="1.8" rx="2" />
-            <line x1="32" y1="11" x2="38" y2="11" stroke="#334155" strokeWidth="1.5" />
-            <line x1="32" y1="13.5" x2="38" y2="13.5" stroke="#334155" strokeWidth="1.5" />
-            <line x1="32" y1="16" x2="38" y2="16" stroke="#334155" strokeWidth="1.5" />
+            <polygon points="10,20 10,50 30,35" fill="white" stroke="#334155" strokeWidth="2.5" />
+            <polygon points="50,20 50,50 30,35" fill="white" stroke="#334155" strokeWidth="2.5" />
+            <line x1="30" y1="35" x2="30" y2="14" stroke="#334155" strokeWidth="1.5" />
+            <rect x="24" y="6" width="12" height="10" fill="#f8fafc" stroke="#334155" strokeWidth="1.8" rx="2" />
+            <line x1="27" y1="9" x2="33" y2="9" stroke="#334155" strokeWidth="1.5" />
+            <line x1="27" y1="11.5" x2="33" y2="11.5" stroke="#334155" strokeWidth="1.5" />
+            <line x1="27" y1="14" x2="33" y2="14" stroke="#334155" strokeWidth="1.5" />
           </svg>
         );
       case 'rupture_disc':

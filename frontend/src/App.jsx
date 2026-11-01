@@ -169,8 +169,8 @@ const DROP_NODE_SIZES = {
   calibrated_restriction: { width: 40, height: 60 },
   measure_point: { width: 40, height: 20 },
   reducer: { width: 54, height: 44 },
-  pressure_safety_valve: { width: 70, height: 70 },
-  psv: { width: 70, height: 70 },
+
+
   rupture_disc: { width: 70, height: 70 },
 };
 const DEFAULT_DROP_NODE_SIZE = { width: 60, height: 60 };

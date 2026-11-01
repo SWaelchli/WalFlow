@@ -51,10 +51,23 @@ export default function ThreeWayTCVNode({ id, data, selected }) {
         <line x1="30" y1="17" x2="30" y2="35" stroke="var(--color-brand-dark)" strokeWidth="1.5" />
         <text x="30" y="14" textAnchor="middle" className="symbol-text-meta">T</text>
 
-        <text x="20" y="37" textAnchor="middle" className={`symbol-text-meta ${hotIdx === 0 ? 'port-letter-hot' : 'port-letter-cold'}`}>
+        <text
+          x="19.5"
+          y="35"
+          textAnchor="middle"
+          dominantBaseline="central"
+          className={`symbol-text-meta ${hotIdx === 0 ? 'port-letter-hot' : 'port-letter-cold'}`}
+        >
           {hotIdx === 0 ? 'H' : 'C'}
         </text>
-        <text x="30" y="50" textAnchor="middle" className={`symbol-text-meta ${hotIdx === 1 ? 'port-letter-hot' : 'port-letter-cold'}`}>
+
+        <text
+          x="30"
+          y="49"
+          textAnchor="middle"
+          dominantBaseline="central"
+          className={`symbol-text-meta ${hotIdx === 1 ? 'port-letter-hot' : 'port-letter-cold'}`}
+        >
           {hotIdx === 1 ? 'H' : 'C'}
         </text>
       </svg>
