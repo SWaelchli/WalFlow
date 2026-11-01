@@ -57,6 +57,7 @@ All notable changes to the WälFlow project will be documented in this file.
 ### Changed
 
 - **Valve symbols and sizing standardization**: Standardized all valve symbols to a 60 × 60 px footprint with consistent 40 px port-to-port spans and matching body triangle sizing across all equipment (resizing the pressure safety valve from 70 × 70 px to 60 × 60 px and centering its palette icon). Removed the stray dashed impulse line on the pressure regulator and standardized actuator strokes. Centered the H (Hot, red) and C (Cold, blue) port indicators inside the 3-Way TCV body triangles with protective surface halos to prevent stroke collision.
+- **Junction sidebar symbol**: Corrected junction port colors in the sidebar preview from legacy solid purple (`#7C3AED`) to hollow rings with `var(--color-port-neutral)` stroke, matching the canvas neutral port handles.
 
 - **Source and instrument symbol size**: The flow and pressure source symbols are 60 px like the pumps and valves (were 70 px), and their circles and the instrument bubble have the same diameter as the pump circle; the Jeppson examples keep their layout.
 - **Signal lines**: Sensing/signal lines draw as one static dashed line in muted slate instead of two overlaid yellow/orange animated dashes; saved files render the new style unchanged.

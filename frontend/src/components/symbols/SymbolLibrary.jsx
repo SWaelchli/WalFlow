@@ -237,9 +237,9 @@ export const EquipmentSymbol = ({ type, size = 40, style = {} }) => {
           <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
             <path d="M 3 20 L 37 20 M 20 20 L 20 37" fill="none" stroke="#334155" strokeWidth="2.5" strokeLinecap="round" />
             <circle cx="20" cy="20" r="5" fill="white" stroke="#334155" strokeWidth="2.5" />
-            <circle cx="3" cy="20" r="2.5" fill="#7C3AED" />
-            <circle cx="37" cy="20" r="2.5" fill="#7C3AED" />
-            <circle cx="20" cy="37" r="2.5" fill="#7C3AED" />
+            <circle cx="3" cy="20" r="2.5" fill="white" stroke="var(--color-port-neutral)" strokeWidth="1.5" />
+            <circle cx="37" cy="20" r="2.5" fill="white" stroke="var(--color-port-neutral)" strokeWidth="1.5" />
+            <circle cx="20" cy="37" r="2.5" fill="white" stroke="var(--color-port-neutral)" strokeWidth="1.5" />
           </svg>
         );
       case 'measure_point':
