@@ -180,6 +180,10 @@ def extract_telemetry(network) -> Dict[str, Any]:
             ]
         if hasattr(node, 'opening_pct'):
             node_tel["opening_pct"] = node.opening_pct
+        if hasattr(node, 'port_openings_pct'):
+            node_tel["port_openings_pct"] = node.port_openings_pct
+        if hasattr(node, 'mix_ratio'):
+            node_tel["mix_ratio"] = node.mix_ratio
         if hasattr(node, 'sensed_pressure'):
             node_tel["sensed_pressure"] = node.sensed_pressure
         if hasattr(node, 'cavitation_warning'):

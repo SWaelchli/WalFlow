@@ -81,31 +81,42 @@ export default function JunctionDetails({ node, allNodes, allEdges }) {
 
   const flowMultiplier = lminToDisplay(1);
 
-  const { sankeyData, upstream, downstream, totalIn, totalOut } = useMemo(() => {
+  const { sankeyData, upstream, downstream, totalIn, totalOut, totalMassIn, totalMassOut, qInP1, qInP2 } = useMemo(() => {
     const nodes = [];
     const links = [];
     const up = [];
     const down = [];
     let tIn = 0;
     let tOut = 0;
+    let mIn = 0;
+    let mOut = 0;
+    let inP1 = 0;
+    let inP2 = 0;
 
     allEdges.forEach(edge => {
+      const inletData = edge.data?.telemetry?.inlets?.[0];
+      const flow = Math.abs(inletData?.flow_rate || 0);
+      const density = inletData?.density || 1000.0;
+      const massFlow = flow * density;
+
       if (edge.target === id) {
         const src = allNodes.find(n => n.id === edge.source);
-        const flow = Math.abs(edge.data?.telemetry?.inlets?.[0]?.flow_rate || 0);
         if (src && flow > 1e-8) {
-          const info = { name: src.data?.label || src.type.toUpperCase(), flow, temp: edge.data?.telemetry?.inlets?.[0]?.temperature || 293.15 };
+          const info = { name: src.data?.label || src.type.toUpperCase(), flow, temp: inletData?.temperature || 293.15 };
           up.push(info);
           tIn += flow;
+          mIn += massFlow;
+          if (edge.targetHandle === 'inlet-0') inP1 += flow;
+          if (edge.targetHandle === 'inlet-1') inP2 += flow;
         }
       }
       if (edge.source === id) {
         const tgt = allNodes.find(n => n.id === edge.target);
-        const flow = Math.abs(edge.data?.telemetry?.inlets?.[0]?.flow_rate || 0);
         if (tgt) {
-          const info = { name: tgt.data?.label || tgt.type.toUpperCase(), flow, temp: edge.data?.telemetry?.inlets?.[0]?.temperature || 293.15 };
+          const info = { name: tgt.data?.label || tgt.type.toUpperCase(), flow, temp: inletData?.temperature || 293.15 };
           down.push(info);
           tOut += flow;
+          mOut += massFlow;
         }
       }
     });
@@ -123,7 +134,17 @@ export default function JunctionDetails({ node, allNodes, allEdges }) {
       });
     }
 
-    return { sankeyData: { nodes, links }, upstream: up, downstream: down, totalIn: tIn, totalOut: tOut };
+    return {
+      sankeyData: { nodes, links },
+      upstream: up,
+      downstream: down,
+      totalIn: tIn,
+      totalOut: tOut,
+      totalMassIn: mIn,
+      totalMassOut: mOut,
+      qInP1: inP1,
+      qInP2: inP2,
+    };
   }, [id, allNodes, allEdges, flowMultiplier]);
 
   if (sankeyData.links.length === 0) {
@@ -135,7 +156,12 @@ export default function JunctionDetails({ node, allNodes, allEdges }) {
   }
 
   const imbalance = Math.abs(totalIn - totalOut);
-  const hasError = imbalance > 1e-7;
+  const massImbalance = Math.abs(totalMassIn - totalMassOut);
+  const maxMass = Math.max(totalMassIn, totalMassOut, 1e-6);
+  // Physical mass conservation: thermal mixing across different temperatures changes fluid density,
+  // meaning volume is not conserved even when mass is strictly conserved. We only flag genuine
+  // mass conservation errors (> 0.1 g/s and > 0.5% relative mismatch).
+  const hasError = massImbalance > 1e-4 && (massImbalance / maxMass) > 0.005;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -168,36 +194,64 @@ export default function JunctionDetails({ node, allNodes, allEdges }) {
         <TelemetryList title="Demand" total={totalOut} items={downstream} formatFlowM3s={formatFlowM3s} formatTemperatureK={formatTemperatureK} labels={labels} />
       </div>
 
-      {isTCV && (
-        <div style={{ 
-          background: 'var(--color-surface-hover)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)',
-          display: 'flex', flexDirection: 'column', gap: '12px'
-        }}>
-          <div style={{ fontSize: 'var(--fs-xs)', fontWeight: '800', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Mixing Balance</div>
-          
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-            <span style={{ fontSize: 'var(--fs-xl)', fontWeight: '800', color: 'var(--color-primary-text)' }}>
-              {formatTemperatureK(data.telemetry?.outlets?.[0]?.temperature || 293.15)} {labels.temperature}
-            </span>
-            <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
-              Target: {formatTemperature(parseFloat(data.set_temperature_c) || 20.0)} {labels.temperature}
-            </span>
-          </div>
+      {isTCV && (() => {
+        // 3-way TCV mechanical trim opening vs actual hydraulic flow distribution
+        const portOpenings = data.telemetry?.port_openings_pct;
+        const hotOpening = data.telemetry?.opening_pct ?? 50;
+        const openingP1 = portOpenings ? portOpenings[0] : (data.hot_port_idx === 0 ? hotOpening : (100 - hotOpening));
+        const openingP2 = portOpenings ? portOpenings[1] : (data.hot_port_idx === 1 ? hotOpening : (100 - hotOpening));
+        const roleP1 = data.hot_port_idx === 0 ? 'Hot' : 'Cold';
+        const roleP2 = data.hot_port_idx === 1 ? 'Hot' : 'Cold';
 
-          <div style={{ width: '100%', height: '8px', background: 'var(--color-border)', borderRadius: '4px', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ 
-              position: 'absolute', left: 0, top: 0, height: '100%', 
-              width: `${(data.telemetry?.opening_pct || 50)}%`, 
-              background: 'var(--color-primary)', transition: 'width 0.3s' 
-            }} />
+        const totalMeasuredIn = (qInP1 + qInP2);
+        const flowPctP1 = totalMeasuredIn > 1e-9 ? (qInP1 / totalMeasuredIn) * 100 : 50;
+        const flowPctP2 = totalMeasuredIn > 1e-9 ? (qInP2 / totalMeasuredIn) * 100 : 50;
+
+        return (
+          <div style={{ 
+            background: 'var(--color-surface-hover)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)',
+            display: 'flex', flexDirection: 'column', gap: '12px'
+          }}>
+            <div style={{ fontSize: 'var(--fs-xs)', fontWeight: '800', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Mixing Balance</div>
+            
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+              <span style={{ fontSize: 'var(--fs-xl)', fontWeight: '800', color: 'var(--color-primary-text)' }}>
+                {formatTemperatureK(data.telemetry?.outlets?.[0]?.temperature || 293.15)} {labels.temperature}
+              </span>
+              <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
+                Target: {formatTemperature(parseFloat(data.set_temperature_c) || 20.0)} {labels.temperature}
+              </span>
+            </div>
+
+            {/* Valve Trim Opening (Mechanical Position) */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
+                <span style={{ fontWeight: '600' }}>Valve Opening:</span>
+                <span>Port 1: {openingP1.toFixed(0)}% | Port 2: {openingP2.toFixed(0)}%</span>
+              </div>
+              <div style={{ width: '100%', height: '8px', background: 'var(--color-border)', borderRadius: '4px', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ 
+                  position: 'absolute', left: 0, top: 0, height: '100%', 
+                  width: `${Math.min(100, Math.max(0, openingP1))}%`, 
+                  background: 'var(--color-primary)', transition: 'width 0.3s' 
+                }} />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
+                <span>Port 1 ({roleP1})</span>
+                <span>Port 2 ({roleP2})</span>
+              </div>
+            </div>
+
+            {/* Actual Hydraulic Flow Split */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--fs-xs)', borderTop: '1px solid var(--color-border)', paddingTop: '8px', color: 'var(--color-text-secondary)' }}>
+              <span style={{ fontWeight: '600' }}>Flow Split:</span>
+              <span>
+                Port 1: {flowPctP1.toFixed(0)}% | Port 2: {flowPctP2.toFixed(0)}%
+              </span>
+            </div>
           </div>
-          
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--fs-xs)', fontWeight: '600' }}>
-            <span>Port 1: {(data.telemetry?.opening_pct || 50).toFixed(0)}%</span>
-            <span>Port 2: {(100 - (data.telemetry?.opening_pct || 50)).toFixed(0)}%</span>
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       {hasError && (
         <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-danger-text)', background: '#FEF2F2', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid #FEE2E2' }}>

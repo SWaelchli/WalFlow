@@ -28,6 +28,18 @@ class ThreeWayTCV(HydraulicNode):
         self.add_inlet() # Port 1
         self.add_outlet() # Port 0 (Mixed Outlet)
 
+    @property
+    def opening_pct(self) -> float:
+        """Opening percentage of the hot port (0.0 to 100.0)."""
+        return self.mix_ratio * 100.0
+
+    @property
+    def port_openings_pct(self) -> list:
+        """Opening percentage of inlet port 0 and inlet port 1 [0..100]."""
+        p0 = (self.mix_ratio if self.hot_port_idx == 0 else (1.0 - self.mix_ratio)) * 100.0
+        p1 = (self.mix_ratio if self.hot_port_idx == 1 else (1.0 - self.mix_ratio)) * 100.0
+        return [p0, p1]
+
     def calculate_path_dp(self, flow: float, density: float, port_idx: int, viscosity: float = 0.001) -> float:
         """
         Calculates pressure drop based on the PHYSICAL role of the port and viscosity.

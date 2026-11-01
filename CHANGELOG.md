@@ -113,6 +113,7 @@ All notable changes to the WälFlow project will be documented in this file.
 
 ### Fixed
 
+- **TCV flow balance and telemetry**: Fixed false flow imbalance warnings on 3-Way Temperature Control Valves caused by checking volumetric flow rather than physical mass conservation during thermal mixing. Serialized valve trim position and port openings, and aligned the Mixing Balance results panel with valve opening and flow split readouts.
 - **Canvas usability**: Pasted components are offset and get the next free tag; a dropped component is centred on the cursor; equipment search finds tag abbreviations (PCV, TCV, PSV, PRV, FCV, NRV, HX); loading a drawing clears the selection so the inspector no longer shows the previous drawing.
 - **Console and accessibility**: No WebSocket error logged on page load; inspector charts no longer warn about zero size; Pipe Network List fields have accessible labels and drawing-list buttons are no longer nested.
 - **Cloud drawing lock and restore**: Opening a free cloud drawing (new, opened or restored after a reload) checks it out automatically; the read-only notice has a Check out button or names the user editing it. After a reload the local draft is only restored, with its notice, when it holds unsaved changes; if the cloud copy changed meanwhile, you choose between the cloud version and the local copy instead of the draft overwriting it. No re-upload after opening a drawing; the status reads "Saved to cloud HH:MM".
