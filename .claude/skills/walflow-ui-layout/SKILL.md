@@ -57,7 +57,7 @@ Left: logo (opens About), then the menus. Centre: `Project / Drawing` name, save
 |---|---|
 | **File** | New drawing… · Open… (Drawings pane) · Save `Ctrl+S` · Save as… · — · Import .wlf file… · Export .wlf file · Export table as CSV |
 | **Edit** | Undo `Ctrl+Z` · Redo `Ctrl+Y` · — · Copy `Ctrl+C` · Paste `Ctrl+V` · Duplicate `Ctrl+D` · Delete `Del` · — · Select all `Ctrl+A` · Rotate `R` · — · Add instrument · Insert measurement tap |
-| **View** | Components · Examples · Drawings · Settings (side panes) · Inspector · Results panel · — · Zoom in · Zoom out · Fit view · Lock canvas · — · Heatmap ▸ · Relief scenario ▸ · Relief scenario manager |
+| **View** | Components · Examples · Drawings · Settings (side panes) · Inspector · Results panel · — · Zoom in · Zoom out · Fit view · Lock canvas · — · Heatmap ▸ · Relief scenario ▸ |
 | **Simulation** | Run simulation `Ctrl+Enter` · Solve all cases · — · Active case ▸ (radio list) · New case… |
 | **Tools** | Catalogue · Manage projects… · Admin hub… (admins only) |
 | **Help** | User guide · Keyboard shortcuts `?` · Model & limits · About WalFlow |
@@ -70,7 +70,8 @@ Rules:
 - Unavailable now (nothing selected, read-only drawing, signed out): **disabled**, with the reason in a tooltip.
   Not allowed for this user (role): **hidden**.
 - Checkable items (`checked`) are `menuitemcheckbox` with a check in the icon slot; choices in a submenu (Active
-  case, Heatmap) are `menuitemradio`.
+  case, Heatmap, Relief scenario) are `menuitemradio`. A submenu can end with a separator and a toggle: Relief
+  scenario ends with Relief scenario manager, a `menuitemcheckbox`.
 - Keyboard: one tab stop on the bar (roving focus); Left/Right moves between menus and wraps; Down, Enter or Space
   opens; Up/Down moves inside; Right/Left opens and closes a submenu; Esc closes and returns focus to the trigger.
   With one menu open, hovering another menu opens it. A click outside closes.

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { runCommand, getCommand } from './commandList';
+import { runCommand, getCommand, listCommandsByMenu } from './commandList';
 import { makeCommandCtx } from '../test/commandCtx';
 
 describe('pane commands', () => {
@@ -22,10 +22,13 @@ describe('pane commands', () => {
 });
 
 describe('relief scenario commands', () => {
-  it('the manager command is checked by showReliefScenarios and toggles through its action', () => {
+  it('the manager command stays runnable by id for the canvas button but has no top-level menu entry', () => {
     expect(getCommand('view.case-manager')).toBeUndefined();
     const command = getCommand('view.relief-scenarios');
     expect(command.label).toBe('Relief scenario manager');
+    expect(command.menu).toBeUndefined();
+    expect(command.shortcut).toBeUndefined();
+    expect(Object.values(listCommandsByMenu()).flat().map((c) => c.id)).not.toContain('view.relief-scenarios');
     expect(command.checked(makeCommandCtx({ showReliefScenarios: true }))).toBe(true);
     const ctx = makeCommandCtx();
     runCommand('view.relief-scenarios', ctx);
@@ -37,10 +40,24 @@ describe('relief scenario commands', () => {
     const menu = getCommand('view.relief-view');
     expect(menu.label).toBe('Relief scenario');
     const children = menu.children(ctx);
-    expect(children.map((c) => c.id)).toEqual(['view.relief-view.mitigated', 'view.relief-view.peak', 'view.relief-view.unmitigated_global']);
-    expect(children.map((c) => c.checked)).toEqual([false, true, false]);
+    expect(children.map((c) => c.id)).toEqual([
+      'view.relief-view.mitigated', 'view.relief-view.peak', 'view.relief-view.unmitigated_global',
+      'view.relief-view.sep', 'view.relief-view.manager',
+    ]);
+    expect(children.slice(0, 3).map((c) => c.checked)).toEqual([false, true, false]);
     children[2].run();
     expect(ctx.actions.setTelemetryMode).toHaveBeenCalledWith('unmitigated_global');
+    expect(children[3].separator).toBe(true);
+  });
+
+  it('the submenu ends with the manager toggle, checked by showReliefScenarios', () => {
+    const menu = getCommand('view.relief-view');
+    const off = makeCommandCtx({ showReliefScenarios: false });
+    const manager = menu.children(off).at(-1);
+    expect(manager).toMatchObject({ label: 'Relief scenario manager', toggle: true, checked: false });
+    expect(menu.children(makeCommandCtx({ showReliefScenarios: true })).at(-1).checked).toBe(true);
+    manager.run();
+    expect(off.actions.toggleReliefScenarios).toHaveBeenCalledTimes(1);
   });
 });
 

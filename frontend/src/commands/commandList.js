@@ -17,7 +17,8 @@
  *   isVisible(ctx)  role only: false hides the command
  *   isEnabled(ctx)  true, or the reason (string) it cannot run now
  *   checked(ctx)    optional state of a toggle
- *   children(ctx)   optional submenu: [{ id, label, checked, run() }]
+ *   children(ctx)   optional submenu: [{ id, label, checked, run() }] (radio items); a child may instead be
+ *                   { id, separator: true } (a rule) or carry toggle: true (a checkbox item, ticked when checked)
  *   expand(ctx)     optional context menu variants: [{ key, label, arg }], run(ctx, arg)
  *   showInContext(ctx, kind)  optional extra condition for a context menu
  *   run(ctx, arg)   calls the existing handler
@@ -177,12 +178,15 @@ export const COMMANDS = [
     run: (ctx) => ctx.actions.setHeatmapMode(ctx.heatmapMode === 'default' ? 'pressure' : 'default') },
   { id: 'view.relief-view', label: 'Relief scenario', menu: 'View', group: 'overlays', icon: ReliefValveIcon,
     isEnabled: () => true,
-    children: (ctx) => RELIEF_SCENARIOS.map((m) => ({
-      id: `view.relief-view.${m.id}`, label: m.label, checked: ctx.telemetryMode === m.id, run: () => ctx.actions.setTelemetryMode(m.id),
-    })),
+    children: (ctx) => [
+      ...RELIEF_SCENARIOS.map((m) => ({
+        id: `view.relief-view.${m.id}`, label: m.label, checked: ctx.telemetryMode === m.id, run: () => ctx.actions.setTelemetryMode(m.id),
+      })),
+      { id: 'view.relief-view.sep', separator: true },
+      { id: 'view.relief-view.manager', label: 'Relief scenario manager', toggle: true, checked: !!ctx.showReliefScenarios,
+        run: () => ctx.actions.toggleReliefScenarios() },
+    ],
     run: () => {} },
-  { id: 'view.relief-scenarios', label: 'Relief scenario manager', menu: 'View', group: 'overlays', icon: ReliefValveIcon,
-    isEnabled: () => true, checked: (ctx) => ctx.showReliefScenarios, run: (ctx) => ctx.actions.toggleReliefScenarios() },
 
   // Simulation
   { id: 'simulation.run', label: 'Run simulation', menu: 'Simulation', group: 'run', icon: PlayIcon,
@@ -229,8 +233,12 @@ export const COMMANDS = [
     isEnabled: () => true, run: (ctx) => ctx.actions.openHelp('about') },
 ].map((c) => ({ isVisible: () => true, contexts: [], ...c }));
 
-/** Keys that act on the canvas but are not menu commands. Listed in Help; not part of any menu. */
+/** Commands with no top-level menu entry: canvas keys and commands reached from a submenu or canvas button. */
 export const KEY_ONLY_COMMANDS = [
+  // Also the Relief scenario submenu's manager item and the canvas button
+  { id: 'view.relief-scenarios', label: 'Relief scenario manager', group: 'View', contexts: [],
+    isEnabled: () => true, isVisible: () => true, checked: (ctx) => ctx.showReliefScenarios,
+    run: (ctx) => ctx.actions.toggleReliefScenarios() },
   { id: 'canvas.deselect', label: 'Deselect all', group: 'Canvas', contexts: [],
     shortcut: { keys: ['Esc'], match: (e) => e.key === 'Escape' },
     help: 'Deselect all canvas items',
@@ -282,7 +290,7 @@ export function shortcutGroups() {
     });
   };
   COMMANDS.filter((c) => c.shortcut).forEach((c) => add(c.menu, c));
-  KEY_ONLY_COMMANDS.forEach((c) => add(c.group, c));
+  KEY_ONLY_COMMANDS.filter((c) => c.shortcut).forEach((c) => add(c.group, c));
   return groups;
 }
 

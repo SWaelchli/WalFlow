@@ -77,6 +77,43 @@ describe('MenuBar menus', () => {
     expect(screen.getByRole('menuitemradio', { name: 'Winter' }).getAttribute('aria-checked')).toBe('false');
   });
 
+  it('View > Relief scenario lists the scenarios, a separator and the manager toggle; Heatmap has neither', () => {
+    const ctx = setup({}, { showReliefScenarios: true });
+    fireEvent.click(trigger('View'));
+    fireEvent.click(screen.getByRole('menuitem', { name: /^Relief scenario$/ }));
+    const sub = screen.getByRole('menu', { name: 'Relief scenario' });
+    const within = (role) => [...sub.querySelectorAll(`[role="${role}"]`)];
+    expect(within('menuitemradio')).toHaveLength(3);
+    expect(within('separator')).toHaveLength(1);
+    expect(within('separator')[0].hasAttribute('data-menu-item')).toBe(false);
+    const manager = within('menuitemcheckbox');
+    expect(manager.map((m) => m.textContent)).toEqual(['Relief scenario manager']);
+    expect(manager[0].getAttribute('aria-checked')).toBe('true');
+    // Arrow keys walk the three scenarios and the manager, never the separator.
+    const items = [...sub.querySelectorAll('[data-menu-item]')];
+    expect(items).toHaveLength(4);
+    items[2].focus();
+    fireEvent.keyDown(items[2], { key: 'ArrowDown' });
+    expect(document.activeElement).toBe(manager[0]);
+    fireEvent.keyDown(manager[0], { key: 'ArrowUp' });
+    expect(document.activeElement).toBe(items[2]);
+    fireEvent.click(manager[0]);
+    expect(ctx.actions.toggleReliefScenarios).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('menu', { name: 'Relief scenario' })).toBeNull();
+
+    fireEvent.click(trigger('View'));
+    fireEvent.click(screen.getByRole('menuitem', { name: /^Heatmap$/ }));
+    const heat = screen.getByRole('menu', { name: 'Heatmap' });
+    expect(heat.querySelector('[role="menuitemcheckbox"], [role="separator"]')).toBeNull();
+  });
+
+  it('the manager toggle is unchecked when the manager is hidden', () => {
+    setup({}, { showReliefScenarios: false });
+    fireEvent.click(trigger('View'));
+    fireEvent.click(screen.getByRole('menuitem', { name: /^Relief scenario$/ }));
+    expect(screen.getByRole('menuitemcheckbox', { name: 'Relief scenario manager' }).getAttribute('aria-checked')).toBe('false');
+  });
+
   it.each([
     ['administrator', true],
     ['regular user', false],

@@ -261,22 +261,25 @@ export default function MenuBar({
               </button>
               {hasSub && openSub === command.id && !disabled && (
                 <div className="menu menu-sub" role="menu" aria-label={command.label} data-submenu-of={command.id}>
-                  {command.children(ctx).map((child) => (
-                    <button
-                      key={child.id}
-                      type="button"
-                      role="menuitemradio"
-                      aria-checked={!!child.checked}
-                      tabIndex={-1}
-                      data-menu-item=""
-                      className="menu-item"
-                      onKeyDown={(e) => onItemKeyDown(e, index, entry)}
-                      onClick={() => runAndClose(index, () => child.run())}
-                    >
-                      <span className="menu-item-icon">{child.checked && <CheckIcon size={14} />}</span>
-                      <span className="menu-item-label">{child.label}</span>
-                    </button>
-                  ))}
+                  {command.children(ctx).map((child) => {
+                    if (child.separator) return <div key={child.id} role="separator" className="menu-separator" />;
+                    return (
+                      <button
+                        key={child.id}
+                        type="button"
+                        role={child.toggle ? 'menuitemcheckbox' : 'menuitemradio'}
+                        aria-checked={!!child.checked}
+                        tabIndex={-1}
+                        data-menu-item=""
+                        className="menu-item"
+                        onKeyDown={(e) => onItemKeyDown(e, index, entry)}
+                        onClick={() => runAndClose(index, () => child.run())}
+                      >
+                        <span className="menu-item-icon">{child.checked && <CheckIcon size={14} />}</span>
+                        <span className="menu-item-label">{child.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
