@@ -1,8 +1,9 @@
 import React from 'react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, fireEvent, cleanup } from '@testing-library/react';
+import { render, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { useKeyboardShortcuts } from './useKeyboardShortcuts';
 import { getCommand, runCommand } from '../commands';
+import { makePageState } from '../test/commandCtx';
 
 const makeCtx = (over = {}) => ({
   isReadOnly: false,
@@ -115,6 +116,32 @@ describe('keyboard shortcuts', () => {
     fireEvent.keyDown(window, { key: 'z', ctrlKey: true });
     expect(readOnly.actions.undo).toHaveBeenCalledTimes(1);
   });
+
+  it('Ctrl+S saves also while typing in a field, committing the field first; other keys stay ignored', async () => {
+    const ctx = makeCtx();
+    render(<><Host ctx={ctx} /><input aria-label="value" /></>);
+    const input = document.querySelector('input');
+    input.focus();
+    const event = new KeyboardEvent('keydown', { key: 's', ctrlKey: true, cancelable: true, bubbles: true });
+    window.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(true);
+    expect(document.activeElement).not.toBe(input);
+    await waitFor(() => expect(ctx.actions.save).toHaveBeenCalledTimes(1));
+  });
+});
+
+describe('keyboard shortcuts behind an open menu on the drawing', () => {
+  it('Delete and Ctrl+Z do nothing, and Ctrl+S still never opens the browser Save dialog', () => {
+    const ctx = makeCtx();
+    render(<Host ctx={ctx} />);
+    const menu = document.createElement('div');
+    menu.setAttribute('role', 'menu');
+    document.body.appendChild(menu);
+    press({ key: 'Delete' });
+    press({ key: 'z', ctrlKey: true });
+    expect(press({ key: 's', ctrlKey: true }).defaultPrevented).toBe(true);
+    Object.values(ctx.actions).forEach((fn) => expect(fn).not.toHaveBeenCalled());
+  });
 });
 
 describe('view.inspector command', () => {
@@ -135,29 +162,152 @@ describe('view.inspector command', () => {
   });
 });
 
+const pageCtx = (stateOver = {}) => makeCtx({ page: 'catalogue', pageState: makePageState(stateOver) });
+const press = (init) => {
+  const event = new KeyboardEvent('keydown', { ...init, cancelable: true, bubbles: true });
+  window.dispatchEvent(event);
+  return event;
+};
+const noPageActionRan = (ctx) => Object.values(ctx.pageState.actions).forEach((fn) => expect(fn).not.toHaveBeenCalled());
+const noDrawingActionRan = (ctx) => Object.values(ctx.actions).forEach((fn) => expect(fn).not.toHaveBeenCalled());
+
 describe('keyboard shortcuts on the Catalogue page', () => {
-  it('never run a drawing command; only Ctrl+S is prevented (no browser Save dialog), the rest stays with the browser', () => {
-    const ctx = makeCtx({ page: 'catalogue' });
+  it('never run a drawing command, and leave Ctrl+C/V/A/Z and Backspace to the browser', () => {
+    const ctx = pageCtx();
     render(<Host ctx={ctx} />);
-    const table = [
-      [{ key: 'a', ctrlKey: true }, false],
-      [{ key: 'c', ctrlKey: true }, false],
-      [{ key: 'z', ctrlKey: true }, false],
-      [{ key: 'Delete' }, false],
-      [{ key: 's', ctrlKey: true }, true],
-    ];
-    table.forEach(([init, prevented]) => {
-      const event = new KeyboardEvent('keydown', { ...init, cancelable: true, bubbles: true });
-      window.dispatchEvent(event);
-      expect(event.defaultPrevented, JSON.stringify(init)).toBe(prevented);
-    });
-    Object.values(ctx.actions).forEach((fn) => expect(fn).not.toHaveBeenCalled());
+    [
+      { key: 'a', ctrlKey: true }, { key: 'c', ctrlKey: true }, { key: 'v', ctrlKey: true }, { key: 'z', ctrlKey: true },
+      { key: 'Backspace' }, { key: 'r' }, { key: 'Enter', ctrlKey: true },
+    ].forEach((init) => expect(press(init).defaultPrevented, JSON.stringify(init)).toBe(false));
+    noDrawingActionRan(ctx);
+    noPageActionRan(ctx);
   });
 
+  it.each([
+    ['n', { key: 'n' }, 'newEntry'],
+    ['e', { key: 'e' }, 'edit'],
+    ['Ctrl+D', { key: 'd', ctrlKey: true }, 'clone'],
+    ['Delete', { key: 'Delete' }, 'remove'],
+    ['ArrowDown', { key: 'ArrowDown' }, 'step'],
+    ['/', { key: '/' }, 'focusSearch'],
+    ['Alt+2', { key: '2', code: 'Digit2', altKey: true }, 'selectTab'],
+  ])('%s runs its page action once and not a drawing action', (_n, init, action) => {
+    const ctx = pageCtx();
+    render(<Host ctx={ctx} />);
+    press(init);
+    expect(ctx.pageState.actions[action]).toHaveBeenCalledTimes(1);
+    noDrawingActionRan(ctx);
+  });
+
+  it('Escape discards only while editing', () => {
+    const idle = pageCtx();
+    const { unmount } = render(<Host ctx={idle} />);
+    expect(press({ key: 'Escape' }).defaultPrevented).toBe(false);
+    expect(idle.pageState.actions.discard).not.toHaveBeenCalled();
+    unmount();
+    const editing = pageCtx({ isEditing: true });
+    render(<Host ctx={editing} />);
+    press({ key: 'Escape' });
+    expect(editing.pageState.actions.discard).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    ['nothing to save', {}],
+    ['editing', { isEditing: true }],
+  ])('Ctrl+S never reaches the browser: %s', (_n, stateOver) => {
+    render(<Host ctx={pageCtx(stateOver)} />);
+    expect(press({ key: 's', ctrlKey: true }).defaultPrevented).toBe(true);
+  });
+
+  it('Ctrl+S saves while editing and runs nothing when there is nothing to save', () => {
+    const idle = pageCtx();
+    const { unmount } = render(<Host ctx={idle} />);
+    press({ key: 's', ctrlKey: true });
+    expect(idle.pageState.actions.save).not.toHaveBeenCalled();
+    unmount();
+    const editing = pageCtx({ isEditing: true });
+    render(<Host ctx={editing} />);
+    press({ key: 's', ctrlKey: true });
+    expect(editing.pageState.actions.save).toHaveBeenCalledTimes(1);
+    noDrawingActionRan(editing);
+  });
+
+  it('inside a text field only Save fires: it commits the field first, and every other key is ignored', async () => {
+    const ctx = pageCtx({ isEditing: true });
+    render(<><Host ctx={ctx} /><input aria-label="name" /></>);
+    const input = document.querySelector('input');
+    input.focus();
+    ['n', 'e', 'Delete', 'Escape', 'ArrowDown', '/'].forEach((key) => expect(press({ key }).defaultPrevented, key).toBe(false));
+    press({ key: 'd', ctrlKey: true });
+    expect(ctx.pageState.actions.save).not.toHaveBeenCalled();
+    const event = press({ key: 's', ctrlKey: true });
+    expect(event.defaultPrevented).toBe(true);
+    expect(document.activeElement).not.toBe(input);
+    await waitFor(() => expect(ctx.pageState.actions.save).toHaveBeenCalledTimes(1));
+    ['newEntry', 'edit', 'remove', 'discard', 'step', 'focusSearch', 'clone'].forEach((name) => {
+      expect(ctx.pageState.actions[name], name).not.toHaveBeenCalled();
+    });
+    noDrawingActionRan(ctx);
+  });
+
+  it('Ctrl+S in a text field with nothing to save keeps the field focused and runs nothing', async () => {
+    const ctx = pageCtx({ isEditing: false });
+    render(<><Host ctx={ctx} /><input aria-label="search" /></>);
+    const input = document.querySelector('input');
+    input.focus();
+    expect(press({ key: 's', ctrlKey: true }).defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(input);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(ctx.pageState.actions.save).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['a menu', () => { const m = document.createElement('div'); m.setAttribute('role', 'menu'); return m; }],
+    ['a modal', () => { const m = document.createElement('div'); m.className = 'modal-overlay'; return m; }],
+  ])('keys do nothing while %s is open, but Ctrl+S still never opens the browser Save dialog', (_n, make) => {
+    const ctx = pageCtx({ isEditing: true });
+    render(<Host ctx={ctx} />);
+    document.body.appendChild(make());
+    [{ key: 'n' }, { key: 'Escape' }, { key: 'ArrowDown' }, { key: 'd', ctrlKey: true }].forEach((init) => press(init));
+    expect(press({ key: 's', ctrlKey: true }).defaultPrevented).toBe(true);
+    Object.values(ctx.pageState.actions).forEach((fn) => expect(fn).not.toHaveBeenCalled());
+  });
+
+  it('a disabled key stays with the browser, except a Ctrl combination, which never reaches it', () => {
+    const ctx = pageCtx({ hasSelection: false, selectedIndex: 2 });
+    render(<Host ctx={ctx} />);
+    expect(press({ key: 'e' }).defaultPrevented).toBe(false);
+    expect(press({ key: 'ArrowDown' }).defaultPrevented).toBe(false);
+    expect(press({ key: 'd', ctrlKey: true }).defaultPrevented).toBe(true);
+    expect(ctx.pageState.actions.edit).not.toHaveBeenCalled();
+    expect(ctx.pageState.actions.clone).not.toHaveBeenCalled();
+  });
+
+  it('a read-only user pressing N, E, Delete, Ctrl+D or Esc gets nothing, and Ctrl+S still never opens the browser Save dialog', () => {
+    const ctx = pageCtx({ canManage: false, isEditing: true });
+    render(<Host ctx={ctx} />);
+    [{ key: 'n' }, { key: 'e' }, { key: 'Delete' }, { key: 'd', ctrlKey: true }, { key: 'Escape' }].forEach((init) => press(init));
+    expect(press({ key: 's', ctrlKey: true }).defaultPrevented).toBe(true);
+    Object.values(ctx.pageState.actions).forEach((fn) => expect(fn).not.toHaveBeenCalled());
+    // A key that stays visible for everyone still works
+    press({ key: '/' });
+    expect(ctx.pageState.actions.focusSearch).toHaveBeenCalledTimes(1);
+  });
+
+  it('a key already handled by someone else (a menu, a number field) is not run again', () => {
+    const ctx = pageCtx();
+    render(<Host ctx={ctx} />);
+    const first = (e) => e.preventDefault();
+    window.addEventListener('keydown', first, true);
+    press({ key: 'ArrowDown' });
+    window.removeEventListener('keydown', first, true);
+    expect(ctx.pageState.actions.step).not.toHaveBeenCalled();
+  });
+});
+
+describe('keyboard shortcuts on the drawing (unchanged)', () => {
   it('still prevents the default of a drawing shortcut that is disabled for another reason', () => {
     render(<Host ctx={makeCtx({ selection: { nodes: [], edges: [] } })} />);
-    const event = new KeyboardEvent('keydown', { key: 'Delete', cancelable: true, bubbles: true });
-    window.dispatchEvent(event);
-    expect(event.defaultPrevented).toBe(true);
+    expect(press({ key: 'Delete' }).defaultPrevented).toBe(true);
   });
 });

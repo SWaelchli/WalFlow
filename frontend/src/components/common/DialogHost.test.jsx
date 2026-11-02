@@ -91,6 +91,31 @@ describe('dialog service', () => {
     expect(await result).toBeNull();
   });
 
+  it.each([
+    ['confirmDialog', () => confirmDialog({ message: 'Go?', confirmLabel: 'Go' }), 'Go'],
+    ['danger confirmDialog', () => confirmDialog({ message: 'Delete it?', confirmLabel: 'Delete', danger: true }), 'Delete'],
+    ['confirmDiscard', () => confirmDiscard('switch'), /Discard/],
+  ])('%s: focus starts on the confirm button (so Enter confirms), Esc cancels', async (_n, open, confirmName) => {
+    render(<DialogHost />);
+    let result;
+    act(() => { result = open(); });
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: confirmName }));
+    fireEvent.keyDown(document.activeElement, { key: 'Escape' });
+    expect(await result).toBe(false);
+  });
+
+  it('askName ignores Enter while the name is empty', async () => {
+    render(<DialogHost />);
+    let result;
+    act(() => { result = askName({ title: 'New case', label: 'Case name', initial: 'x', confirmLabel: 'Create' }); });
+    const input = screen.getByLabelText('Case name');
+    fireEvent.change(input, { target: { value: ' ' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(screen.getByRole('dialog')).toBeTruthy();
+    fireEvent.keyDown(input, { key: 'Escape' });
+    expect(await result).toBeNull();
+  });
+
   it('queues a second question behind the first', async () => {
     render(<DialogHost />);
     let first; let second;

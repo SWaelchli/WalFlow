@@ -15,8 +15,10 @@
  *   contextLabel   { edge: 'Delete pipe' } label overrides per context
  *   danger     draws the item as destructive
  *   isVisible(ctx)  role only: false hides the command
- *   isEnabled(ctx)  true, or the reason (string) it cannot run now. While a page is open (`ctx.page` is not
- *                   'drawing') every command except WORKS_ON_PAGE returns PAGE_REASON
+ *   isEnabled(ctx)  true, or the reason (string) it cannot run now
+ *   getLabel(ctx)   optional label that follows the state (`label` stays the static name for lists and Help)
+ *   radio       the item is one of a group of radio items (shows a tick while checked())
+ *   firesInInputs   the shortcut also works while a text field has focus (only Save); every other key is ignored there
  *   checked(ctx)    optional state of a toggle
  *   children(ctx)   optional submenu: [{ id, label, checked, run() }] (radio items); a child may instead be
  *                   { id, separator: true } (a rule) or carry toggle: true (a checkbox item, ticked when checked)
@@ -25,31 +27,25 @@
  *   run(ctx, arg)   calls the existing handler
  *
  * `ctx` is built by App.jsx on every render: `page` ('drawing' | 'catalogue'), selection, flags, state and `actions`
- * (the existing handlers).
+ * (the existing handlers), plus `pageState` (what the open page reports about itself).
+ *
+ * Each page has one definition (the drawing's is the list below; the others are in `pages/`): its name, menu order,
+ * commands and key-only commands. The shared Tools and Help commands (`sharedCommands.js`) are appended to every
+ * page. A new page adds one definition file and one entry in PAGES.
  */
 import {
   PlusIcon, FolderOpenIcon, SaveIcon, ImportIcon, ExportIcon, CopyIcon, ClipboardIcon, TrashIcon, RotateIcon,
-  PlayIcon, CaseIcon, FlameIcon, ReliefValveIcon, LockIcon, HelpIcon, KeyboardIcon, InfoIcon, BookIcon, FolderIcon, GearIcon,
-  CrownIcon, DownloadIcon, PaletteIcon,
+  PlayIcon, CaseIcon, FlameIcon, ReliefValveIcon, LockIcon, BookIcon, FolderIcon, GearIcon,
+  DownloadIcon, PaletteIcon,
 } from '../components/symbols/IconLibrary';
+import { isMod, key, defineCommands } from './define';
+import { SHARED_COMMANDS } from './sharedCommands';
+import { CATALOGUE_PAGE } from './pages/catalogue';
 
 export const MENU_ORDER = ['File', 'Edit', 'View', 'Simulation', 'Tools', 'Help'];
 
 /** The reason shown for an edit on a drawing the user has not checked out. */
 export const READ_ONLY_REASON = 'This drawing is read-only. Check it out to edit.';
-
-/** The reason shown for a drawing command while a page (the Catalogue) is open. */
-export const PAGE_REASON = 'Go back to the drawing first';
-
-// Commands that work on every page; all others act on the drawing and are disabled while a page is open
-const WORKS_ON_PAGE = new Set(['tools.catalogue', 'tools.admin', 'help.guide', 'help.shortcuts', 'help.model', 'help.about']);
-const onPage = (ctx) => (ctx.page ?? 'drawing') !== 'drawing';
-const withPageGuard = (c) => (WORKS_ON_PAGE.has(c.id)
-  ? c
-  : { ...c, isEnabled: (ctx) => (onPage(ctx) ? PAGE_REASON : c.isEnabled(ctx)) });
-
-const isMod = (e) => e.ctrlKey || e.metaKey;
-const key = (e) => e.key.toLowerCase();
 
 const needsEdit = (ctx) => (ctx.isReadOnly ? READ_ONLY_REASON : true);
 const selectedCount = (ctx) => ctx.selection.nodes.length + ctx.selection.edges.length;
@@ -76,7 +72,7 @@ const paneCommand = (id, label, icon, pane) => ({
   run: (ctx, arg) => (arg?.open ? ctx.actions.openPane(pane, arg.tab) : ctx.actions.selectPane(pane)),
 });
 
-export const COMMANDS = [
+const DRAWING_COMMANDS = defineCommands([
   // File
   { id: 'file.new', label: 'New drawing…', menu: 'File', group: 'document', icon: PlusIcon,
     isEnabled: () => true, run: (ctx) => ctx.actions.newDrawing() },
@@ -86,6 +82,7 @@ export const COMMANDS = [
   { id: 'file.save', label: 'Save', menu: 'File', group: 'save', icon: SaveIcon,
     shortcut: { keys: ['Ctrl', 'S'], match: (e) => isMod(e) && key(e) === 's' },
     help: 'Manual save session draft or cloud project',
+    firesInInputs: true,
     isEnabled: () => true, run: (ctx) => ctx.actions.save() },
   { id: 'file.save-as', label: 'Save as…', menu: 'File', group: 'save',
     isEnabled: () => true, run: (ctx) => ctx.actions.saveAs() },
@@ -221,30 +218,7 @@ export const COMMANDS = [
     run: () => {} },
   { id: 'simulation.new-case', label: 'New case…', menu: 'Simulation', group: 'cases', icon: PlusIcon,
     isEnabled: needsEdit, run: (ctx) => ctx.actions.addCase() },
-
-  // Tools
-  // A toggle: checked while the Catalogue page is open; running it there goes back to the drawing
-  { id: 'tools.catalogue', label: 'Catalogue', menu: 'Tools', group: 'pages', icon: BookIcon,
-    isEnabled: () => true, checked: (ctx) => ctx.page === 'catalogue', run: (ctx) => ctx.actions.toggleCatalogue() },
-  { id: 'tools.projects', label: 'Manage projects…', menu: 'Tools', group: 'pages', icon: FolderIcon,
-    isEnabled: (ctx) => (ctx.isAuthenticated ? true : 'Sign in to manage projects'),
-    run: (ctx) => ctx.actions.openProjects() },
-  { id: 'tools.admin', label: 'Admin hub…', menu: 'Tools', group: 'pages', icon: CrownIcon,
-    isVisible: (ctx) => !!ctx.isAdmin,
-    isEnabled: () => true, run: (ctx) => ctx.actions.openAdminHub() },
-
-  // Help
-  { id: 'help.guide', label: 'User guide', menu: 'Help', group: 'help', icon: BookIcon,
-    isEnabled: () => true, run: (ctx) => ctx.actions.openHelp('guide') },
-  { id: 'help.shortcuts', label: 'Keyboard shortcuts', menu: 'Help', group: 'help', icon: KeyboardIcon,
-    shortcut: { keys: ['Shift', '?'], display: '?', match: (e) => e.key === '?' && !isMod(e) },
-    help: 'Open this Help screen (Esc closes it)',
-    isEnabled: () => true, run: (ctx) => ctx.actions.openHelp('shortcuts') },
-  { id: 'help.model', label: 'Model & limits', menu: 'Help', group: 'help', icon: HelpIcon,
-    isEnabled: () => true, run: (ctx) => ctx.actions.openHelp('model') },
-  { id: 'help.about', label: 'About WalFlow', menu: 'Help', group: 'about', icon: InfoIcon,
-    isEnabled: () => true, run: (ctx) => ctx.actions.openHelp('about') },
-].map((c) => ({ isVisible: () => true, contexts: [], ...c })).map(withPageGuard);
+]);
 
 /** Commands with no top-level menu entry: canvas keys and commands reached from a submenu or canvas button. */
 export const KEY_ONLY_COMMANDS = [
@@ -256,42 +230,80 @@ export const KEY_ONLY_COMMANDS = [
     shortcut: { keys: ['Esc'], match: (e) => e.key === 'Escape' },
     help: 'Deselect all canvas items',
     isEnabled: () => true, isVisible: () => true, run: (ctx) => ctx.actions.deselectAll() },
-].map(withPageGuard);
+];
 
-/** `{ File: [{ id, label }], ... }` in menu and list order; for menus, tests and the docs sync test. */
-export function listCommandsByMenu() {
-  const byMenu = Object.fromEntries(MENU_ORDER.map((m) => [m, []]));
-  COMMANDS.forEach((c) => byMenu[c.menu].push({ id: c.id, label: c.label }));
+const withShared = (page) => ({
+  ...page,
+  commands: [...page.commands, ...SHARED_COMMANDS.filter((c) => !page.hideShared?.includes(c.id))],
+});
+
+/** The drawing: the list above, then the shared Tools and Help commands. It has no page name (the menu bar shows the document). */
+const DRAWING_PAGE = withShared({
+  id: 'drawing', name: null, menuOrder: MENU_ORDER, commands: DRAWING_COMMANDS, keyOnlyCommands: KEY_ONLY_COMMANDS,
+});
+
+/** Every page by id: the one place a new page is registered. */
+const PAGES = {
+  drawing: DRAWING_PAGE,
+  catalogue: withShared(CATALOGUE_PAGE),
+};
+
+export const COMMANDS = DRAWING_PAGE.commands;
+
+/** The definition of a page `{ id, name, menuOrder, commands, keyOnlyCommands }`, shared commands included. Unknown ids give the drawing. */
+export const getPageDefinition = (page = 'drawing') => PAGES[page] || DRAWING_PAGE;
+
+const pageCommands = (page) => {
+  const definition = getPageDefinition(page);
+  return [...definition.commands, ...definition.keyOnlyCommands];
+};
+
+/** `{ File: [{ id, label }], ... }` in menu and list order for a page; for menus, tests and the docs sync test. */
+export function listCommandsByMenu(page = 'drawing') {
+  const definition = getPageDefinition(page);
+  const byMenu = Object.fromEntries(definition.menuOrder.map((m) => [m, []]));
+  definition.commands.forEach((c) => byMenu[c.menu].push({ id: c.id, label: c.label }));
   return byMenu;
 }
 
-export const getCommand = (id) => COMMANDS.find((c) => c.id === id) || KEY_ONLY_COMMANDS.find((c) => c.id === id);
+export const getCommand = (id, page = 'drawing') => pageCommands(page).find((c) => c.id === id);
 
-/** Runs a command by id if it is enabled; returns whether it ran. The menu bar and command bar go through this. */
+/** The label of a command in the current state (`New pipe class` rather than `New entry`). */
+export const commandLabel = (command, ctx) => (command.getLabel ? command.getLabel(ctx) : command.label);
+
+/** Runs a command of the open page by id if it is enabled; returns whether it ran. The menu bar and command bar go through this. */
 export function runCommand(id, ctx, arg) {
-  const command = getCommand(id);
-  if (!command || command.isEnabled(ctx) !== true) return false;
+  const command = getCommand(id, ctx.page);
+  if (!command || (command.isVisible && !command.isVisible(ctx)) || command.isEnabled(ctx) !== true) return false;
   command.run(ctx, arg);
   return true;
 }
 
-/** The command a key press triggers, or null. Commands are tried in list order. */
-export function findCommandForKey(event) {
-  return [...COMMANDS, ...KEY_ONLY_COMMANDS].find((c) => c.shortcut?.match(event)) || null;
+/** The command a key press triggers on a page, or null. Commands are tried in list order. */
+export function findCommandForKey(event, page = 'drawing') {
+  return pageCommands(page).find((c) => c.shortcut?.match(event)) || null;
 }
 
 const isMacPlatform = () => typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform || '');
+
+/** One key as this platform names it. */
+export const formatKey = (k, isMac = isMacPlatform()) => (isMac ? ({ Ctrl: '⌘', Alt: '⌥' }[k] || k) : k);
 
 /** Display text of a shortcut, as shown at the right of a menu item (`Ctrl+V`, `⌘V` on Mac, `Del`, `?`). */
 export function formatShortcut(shortcut, isMac = isMacPlatform()) {
   if (!shortcut) return '';
   if (shortcut.display) return shortcut.display;
-  const keys = shortcut.keys.map((k) => (k === 'Ctrl' && isMac ? '⌘' : k));
+  const keys = shortcut.keys.map((k) => formatKey(k, isMac));
   return keys.join(isMac ? '' : '+');
 }
 
-/** Rows of the Help shortcut list: `[{ title, shortcuts: [{ keys, extraKeys?, label }] }]`, grouped by menu. */
-export function shortcutGroups() {
+/**
+ * Rows of the Help shortcut list of a page: `[{ title, shortcuts: [{ keys, extraKeys?, label }] }]`, grouped by menu.
+ * With `ctx`, a command hidden for this user is left out: its key does nothing for them.
+ */
+export function shortcutGroups(page = 'drawing', ctx = null) {
+  const definition = getPageDefinition(page);
+  const listed = (c) => c.shortcut && (!ctx || c.isVisible(ctx));
   const groups = [];
   const add = (title, command) => {
     let group = groups.find((g) => g.title === title);
@@ -302,8 +314,8 @@ export function shortcutGroups() {
       label: command.help || command.label,
     });
   };
-  COMMANDS.filter((c) => c.shortcut).forEach((c) => add(c.menu, c));
-  KEY_ONLY_COMMANDS.filter((c) => c.shortcut).forEach((c) => add(c.group, c));
+  definition.commands.filter(listed).forEach((c) => add(c.menu, c));
+  definition.keyOnlyCommands.filter(listed).forEach((c) => add(c.group, c));
   return groups;
 }
 

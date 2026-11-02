@@ -24,7 +24,8 @@ import {
   EditIcon
 } from '../components/symbols/IconLibrary';
 import FittingStandardsTab from '../components/piping/FittingStandardsTab';
-import LibraryActions, { DetailToolbar } from '../components/piping/LibraryActions';
+import { DetailToolbar, ListNewButton, EmptyLibrary, EditBar } from '../components/piping/LibraryActions';
+import usePageState from '../hooks/usePageState';
 import { useFittingStandards } from '../hooks/useFittingStandards';
 import {
   getScheduleStandardOptions,
@@ -43,6 +44,8 @@ import { specUnits } from '../utils/specUnits';
 import DraftNumberInput from '../components/common/DraftNumberInput';
 
 import { modalA11yRef } from '../hooks/useModalA11y';
+import useEscapeKey from '../hooks/useEscapeKey';
+import useEnterKey from '../hooks/useEnterKey';
 import { clickableProps, clickableRowProps } from '../utils/a11yProps';
 
 // Readable names for internal catalogue identifiers. The raw code stays available as a tooltip.
@@ -90,14 +93,16 @@ const CataloguePage = ({ menuBar, ctx, leaveGuardRef }) => {
   const fileInputRef = useRef(null);
   const [importReport, setImportReport] = useState(null);
   const [isImportReportModalOpen, setIsImportReportModalOpen] = useState(false);
-  const [isSeedingExamples, setIsSeedingExamples] = useState(false);
 
   // Inline Editing & New Class states
   const [isEditing, setIsEditing] = useState(false);
   const [isNewDraft, setIsNewDraft] = useState(false);
   const [formData, setFormData] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
-  const hasUnsavedEdit = isEditing || isFittingDirty;
+  // The form as it was when editing started: a draft or clone that was not changed is not "unsaved"
+  const [editSnapshot, setEditSnapshot] = useState('');
+  const isDirty = isEditing && !!formData && JSON.stringify(formData) !== editSnapshot;
+  const hasUnsavedEdit = isDirty || isFittingDirty;
 
   // Back to drawing is the Tools > Catalogue command; it asks through this check when there are unsaved edits
   useEffect(() => {
@@ -152,16 +157,20 @@ const CataloguePage = ({ menuBar, ctx, leaveGuardRef }) => {
     fetchClasses();
   }, [fetchClasses]);
 
+  // Restore defaults: the server only re-creates example classes that are missing and never changes existing ones
   const handleSeedExamples = async () => {
-    setIsSeedingExamples(true);
+    const confirmed = await confirmDialog({
+      title: 'Restore example pipe classes?',
+      message: 'Example pipe classes (CS01, SS01, LT01, DX01) that are missing are created again. Existing pipe classes, including edited examples, are not changed.',
+      confirmLabel: 'Restore',
+    });
+    if (!confirmed) return;
     try {
       const res = await axios.post('/api/pipe-classes/seed-examples');
       notify(res.data.message || `Created ${res.data.created_count} example pipe classes.`, 'success');
       fetchClasses();
     } catch {
       notify('Failed to restore the example pipe classes.', 'error');
-    } finally {
-      setIsSeedingExamples(false);
     }
   };
 
@@ -223,6 +232,13 @@ const CataloguePage = ({ menuBar, ctx, leaveGuardRef }) => {
 
   // Current display object (formData in edit mode, activeClass in view mode)
   const currentSpec = isEditing && formData ? formData : activeClass;
+  // The library itself has no entries (not merely no match for the filter)
+  const isEmptyLibrary = !loading && !error && pipeClasses.length === 0;
+
+  // Keep the selected row in view when the arrow keys move it
+  useEffect(() => {
+    document.querySelector('[data-entry-selected]')?.scrollIntoView?.({ block: 'nearest' });
+  }, [activeClass?.id]);
 
   const fetchTr2000Search = async (plantId, query) => {
     setIsSearchingTr2000(true);
@@ -241,10 +257,7 @@ const CataloguePage = ({ menuBar, ctx, leaveGuardRef }) => {
   };
 
   const handleOpenTr2000Modal = async () => {
-    if (isEditing) {
-      if (!(await confirmDiscard('import from TR2000'))) return;
-      handleCancelEdit();
-    }
+    if (!(await askDiscard('import from TR2000'))) return;
     setIsTr2000ModalOpen(true);
     setTr2000Error('');
     setSelectedTr2000Codes(new Set());
@@ -425,24 +438,37 @@ const CataloguePage = ({ menuBar, ctx, leaveGuardRef }) => {
 
   // --- Inline Edit & New Class Actions ---
 
+  // Opens the form on `data` and remembers it, so changes can be told from an untouched start
+  const beginEdit = (data, asNewDraft) => {
+    setIsNewDraft(asNewDraft);
+    setIsEditing(true);
+    setFormData(data);
+    setEditSnapshot(JSON.stringify(data));
+  };
+
+  // Leaving the form: asks first only when something changed
+  const askDiscard = async (action) => {
+    if (!isEditing) return true;
+    if (isDirty && !(await confirmDiscard(action))) return false;
+    handleCancelEdit();
+    return true;
+  };
+
+  const handleDiscard = () => askDiscard('stop editing');
+
   const handleStartEdit = () => {
     if (!activeClass) return;
-    setIsNewDraft(false);
-    setIsEditing(true);
-    setFormData({
+    beginEdit({
       ...activeClass,
       reducer_standard_codes: [...classReducerCodes(activeClass)],
       schedule_standard_codes: [...classScheduleCodes(activeClass)],
       sizes: activeClass.sizes.map(s => ({ ...s })),
       temp_pressures: (activeClass.temp_pressures || []).map(tp => ({ ...tp }))
-    });
+    }, false);
   };
 
   const handleStartNewClass = async () => {
-    if (isEditing) {
-      if (!(await confirmDiscard('create a new pipe class'))) return;
-      handleCancelEdit();
-    }
+    if (!(await askDiscard('create a new pipe class'))) return;
     setNewClassCode('CS02');
     setNewClassName('');
     setIsNewClassModalOpen(true);
@@ -457,9 +483,7 @@ const CataloguePage = ({ menuBar, ctx, leaveGuardRef }) => {
     const code = newClassCode.trim().toUpperCase();
     const name = newClassName.trim();
     setIsNewClassModalOpen(false);
-    setIsNewDraft(true);
-    setIsEditing(true);
-    setFormData({
+    beginEdit({
       id: `draft_${Date.now()}`,
       code: code,
       name: name,
@@ -481,16 +505,12 @@ const CataloguePage = ({ menuBar, ctx, leaveGuardRef }) => {
       temp_pressures: [
         { temp_c: 20.0, press_bar: 19.6 }
       ]
-    });
+    }, true);
   };
 
   const handleCloneClass = async (source) => {
-    if (isEditing) {
-      if (!(await confirmDiscard('clone this pipe class'))) return;
-    }
-    setIsNewDraft(true);
-    setIsEditing(true);
-    setFormData({
+    if (!(await askDiscard('clone this pipe class'))) return;
+    beginEdit({
       id: `draft_${Date.now()}`,
       code: `${source.code}_COPY`,
       name: `${source.name} (Copy)`,
@@ -508,7 +528,7 @@ const CataloguePage = ({ menuBar, ctx, leaveGuardRef }) => {
       max_temp_c: source.max_temp_c ?? 200,
       sizes: source.sizes.map(s => ({ ...s })),
       temp_pressures: (source.temp_pressures || []).map(tp => ({ ...tp }))
-    });
+    }, true);
   };
 
   const handleCancelEdit = () => {
@@ -611,11 +631,15 @@ const CataloguePage = ({ menuBar, ctx, leaveGuardRef }) => {
   };
 
   const handleSelectSidebarClass = async (id) => {
-    if (isEditing) {
-      if (!(await confirmDiscard('switch'))) return;
-      handleCancelEdit();
-    }
+    if (!(await askDiscard('switch'))) return;
     setSelectedClassId(id);
+  };
+
+  // Previous / next class of the filtered list (menu and arrow keys)
+  const handleStep = async (direction) => {
+    const index = filteredClasses.findIndex(c => c.id === activeClass?.id);
+    const target = filteredClasses[index + direction];
+    if (target) await handleSelectSidebarClass(target.id);
   };
 
   // Form field mutators
@@ -743,22 +767,7 @@ const CataloguePage = ({ menuBar, ctx, leaveGuardRef }) => {
     }));
   };
 
-  const libraryActions = (
-    <LibraryActions
-      canManage={canManage}
-      newLabel="New pipe class"
-      onNew={handleStartNewClass}
-      onImportTr2000={handleOpenTr2000Modal}
-      onImport={() => fileInputRef.current?.click()}
-      importTitle="Import pipe classes from a JSON file"
-      onExport={handleExportLibrary}
-      exportTitle="Export all pipe classes as a JSON file"
-      onRestore={handleSeedExamples}
-      restoreTitle="Restore the example pipe classes (CS01, SS01, LT01, DX01)"
-      isRestoring={isSeedingExamples}
-    />
-  );
-
+  // Import library runs from the menu: this input stays mounted so the command can open the file picker at once
   const hiddenFileInput = (
     <input
       type="file"
@@ -775,6 +784,50 @@ const CataloguePage = ({ menuBar, ctx, leaveGuardRef }) => {
     handleCancelEdit();
     setActiveTab(id);
   };
+
+  // Opens the list if it is collapsed and puts the cursor in its search box
+  const focusSearch = () => {
+    setPaneOpen(true);
+    requestAnimationFrame(() => {
+      const search = document.querySelector('[data-catalogue-search]');
+      search?.focus();
+      search?.select?.();
+    });
+  };
+
+  // The page's own controls the fitting tabs hand to the menu bar with their own state
+  const pageShell = { tab: activeTab, listOpen: paneOpen, selectTab, toggleList: () => setPaneOpen((open) => !open), focusSearch };
+
+  // The menu bar's view of the pipe classes tab (Catalogue menus, keys); the other tabs register their own
+  usePageState(ctx?.registerPageState, activeTab === 'pipe_classes' ? {
+    tab: 'pipe_classes',
+    entryLabel: 'pipe class',
+    canManage,
+    hasSelection: !!activeClass,
+    isEditing,
+    isDirty,
+    isSaving,
+    listOpen: paneOpen,
+    listLength: filteredClasses.length,
+    selectedIndex: isNewDraft ? -1 : filteredClasses.findIndex(c => c.id === activeClass?.id),
+    editBlocked: null,
+    deleteBlocked: null,
+  } : null, {
+    newEntry: handleStartNewClass,
+    save: handleSaveEdit,
+    discard: handleDiscard,
+    edit: () => { if (activeClass && !isEditing) handleStartEdit(); },
+    clone: () => { if (activeClass && !isEditing) handleCloneClass(activeClass); },
+    remove: () => { if (activeClass && !isEditing) handleDeleteClass(activeClass); },
+    importTr2000: handleOpenTr2000Modal,
+    importLibrary: () => fileInputRef.current?.click(),
+    exportLibrary: handleExportLibrary,
+    restoreDefaults: handleSeedExamples,
+    selectTab,
+    toggleList: pageShell.toggleList,
+    focusSearch,
+    step: handleStep,
+  });
 
   // Row 2: Back to drawing (a command), then the catalogue tabs; right: the list toggle
   const header = (
@@ -806,13 +859,22 @@ const CataloguePage = ({ menuBar, ctx, leaveGuardRef }) => {
           aria-pressed={paneOpen}
           title={paneOpen ? 'Hide the list' : 'Show the list'}
           data-pane-toggle=""
-          onClick={() => setPaneOpen((open) => !open)}
+          onClick={pageShell.toggleList}
         >
           <SidePaneIcon size={20} />
         </button>
       </div>
     </>
   );
+
+  // Esc = the dialog's own Cancel/Close; only the top dialog reacts, and none while its import runs
+  useEscapeKey(() => setIsNewClassModalOpen(false), isNewClassModalOpen);
+  useEscapeKey(() => setIsTr2000ModalOpen(false), isTr2000ModalOpen && !isConflictModalOpen && !isSyncingTr2000);
+  useEscapeKey(() => setIsConflictModalOpen(false), isConflictModalOpen);
+  useEscapeKey(() => setIsImportReportModalOpen(false), isImportReportModalOpen && !!importReport);
+  // Enter = the primary button: the new-class and TR2000 search dialogs are forms and submit themselves
+  useEnterKey(() => executeBatchImport([...nonConflictList, ...conflictList]), isConflictModalOpen);
+  useEnterKey(() => setIsImportReportModalOpen(false), isImportReportModalOpen && !!importReport);
 
   const renderShell = ({ pane, details, extras, count, filterLabel }) => (
     <AppShell
@@ -837,6 +899,8 @@ const CataloguePage = ({ menuBar, ctx, leaveGuardRef }) => {
         currentUser={currentUser}
         canManage={canManage}
         onDirtyChange={setIsFittingDirty}
+        registerPageState={ctx?.registerPageState}
+        pageShell={pageShell}
         renderLayout={renderShell}
       />
     );
@@ -844,12 +908,15 @@ const CataloguePage = ({ menuBar, ctx, leaveGuardRef }) => {
 
   const paneContent = (
     <div className="page-list">
+          {!isEmptyLibrary && <ListNewButton canManage={canManage} label="New pipe class" onNew={handleStartNewClass} />}
           {/* Search & Filter Header */}
           <div className="page-list-filter">
             <input
               type="text"
+              data-catalogue-search=""
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Escape') { e.preventDefault(); e.currentTarget.blur(); } }}
               placeholder="Search code, name, grade..."
               className="form-input"
               style={{ width: '100%', height: '34px', fontSize: 'var(--fs-sm)' }}
@@ -905,12 +972,23 @@ const CataloguePage = ({ menuBar, ctx, leaveGuardRef }) => {
 
             {loading && <div style={{ textAlign: 'center', padding: '20px', fontSize: 'var(--fs-sm)', color: 'var(--color-text-secondary)' }}>Loading catalog...</div>}
             {error && <div style={{ color: 'var(--color-danger-text)', fontSize: 'var(--fs-sm)', padding: '10px' }}>{error}</div>}
-            
+            {isEmptyLibrary && (
+              <EmptyLibrary
+                message="The pipe class library is empty."
+                canManage={canManage}
+                newLabel="New pipe class"
+                onNew={handleStartNewClass}
+                onImportTr2000={handleOpenTr2000Modal}
+                onImport={() => fileInputRef.current?.click()}
+              />
+            )}
+
             {!loading && filteredClasses.map(pc => {
               const isSelected = (!isNewDraft && activeClass?.id === pc.id);
               return (
                 <div {...clickableProps}
                   key={pc.id}
+                  data-entry-selected={isSelected ? '' : undefined}
                   onClick={() => { handleSelectSidebarClass(pc.id); if (shellMode.paneOverlay) closePane(); }}
                   style={{
                     padding: '10px 12px',
@@ -954,6 +1032,9 @@ const CataloguePage = ({ menuBar, ctx, leaveGuardRef }) => {
     <div className="page-details">
           {currentSpec ? (
             <>
+              {isEditing && canManage && formData && (
+                <EditBar label={formData.code || 'pipe class'} isDirty={isDirty} isSaving={isSaving} onCancel={handleDiscard} onSave={handleSaveEdit} />
+              )}
               <details
                 data-testid="pipe-class-explainer"
                 style={{ backgroundColor: 'var(--color-surface-muted)', border: '1px solid var(--color-border)', borderRadius: '12px', padding: '10px 16px', fontSize: 'var(--fs-sm)', color: 'var(--color-text-secondary)', lineHeight: 1.6 }}
@@ -985,215 +1066,183 @@ const CataloguePage = ({ menuBar, ctx, leaveGuardRef }) => {
                 transition: 'border 0.2s, box-shadow 0.2s'
               }}>
                 {!isEditing && (
-                  <DetailToolbar library={libraryActions}>
+                  <DetailToolbar>
                     {canManage && (
-                      <>
-                        <button
-                          onClick={() => handleCloneClass(activeClass)}
-                          className="btn-secondary"
-                          style={{ height: '32px', padding: '0 12px', fontSize: 'var(--fs-xs)', fontWeight: '700', gap: '4px' }}
-                        >
-                          <CopyIcon size={12} />
-                          Clone / Duplicate
-                        </button>
-                        <button
-                          onClick={handleStartEdit}
-                          className="btn-secondary"
-                          style={{ height: '32px', padding: '0 12px', fontSize: 'var(--fs-xs)', fontWeight: '700', gap: '4px' }}
-                        >
-                          <EditIcon size={12} />
-                          Edit Pipe Class
-                        </button>
-                        <button aria-label="Delete class"
-                          onClick={() => handleDeleteClass(activeClass)}
-                          className="btn-danger-ghost"
-                          style={{ height: '32px', width: '32px', padding: 0, borderRadius: '6px' }}
-                          title="Delete Class"
-                        >
-                          <TrashIcon size={14} />
-                        </button>
-                      </>
+                      <button
+                        onClick={() => handleCloneClass(activeClass)}
+                        className="btn-secondary btn-compact"
+                        title="Clone this pipe class into a new draft"
+                      >
+                        <CopyIcon size={12} />
+                        Clone
+                      </button>
+                    )}
+                    {canManage && (
+                      <button
+                        onClick={handleStartEdit}
+                        className="btn-secondary btn-compact"
+                        title="Edit this pipe class"
+                      >
+                        <EditIcon size={12} />
+                        Edit
+                      </button>
+                    )}
+                    {canManage && (
+                      <button
+                        onClick={() => handleDeleteClass(activeClass)}
+                        className="btn-danger-ghost btn-compact"
+                        title="Delete this pipe class"
+                      >
+                        <TrashIcon size={12} />
+                        Delete
+                      </button>
                     )}
                   </DetailToolbar>
                 )}
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
-                  
-                  {isEditing ? (
-                    /* Inline Editing Header Fields */
-                    <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div>
-                          <label className="form-label" style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', marginBottom: '2px' }}>Class code *</label>
-                          <input
-                            type="text"
-                            value={formData.code}
-                            onChange={(e) => updateFormField('code', e.target.value)}
-                            placeholder="e.g. CS02"
-                            className="form-input"
-                            style={{ width: '130px', fontWeight: '800', height: '34px' }}
-                            required
-                          />
-                        </div>
-                        <div style={{ flexGrow: 1 }}>
-                          <label className="form-label" style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', marginBottom: '2px' }}>Pipe class name *</label>
-                          <input
-                            type="text"
-                            value={formData.name}
-                            onChange={(e) => updateFormField('name', e.target.value)}
-                            placeholder="e.g. High Pressure Carbon Steel 300#"
-                            className="form-input"
-                            style={{ width: '100%', fontWeight: '700', height: '34px' }}
-                            required
-                          />
-                        </div>
-                        <div>
-                          <label className="form-label" style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', marginBottom: '2px' }}>Standard category</label>
-                          <select
-                            value={formData.standard}
-                            onChange={(e) => updateFormField('standard', e.target.value)}
-                            className="form-select"
-                            style={{ height: '34px', fontSize: 'var(--fs-xs)', fontWeight: '700' }}
-                          >
-                            <option value="CUSTOM">CUSTOM</option>
-                            <option value="ASME">ASME</option>
-                            <option value="EN">EN</option>
-                            <option value="DIN">DIN</option>
-                            <option value="ISO">ISO</option>
-                            <option value="TR2000">TR2000</option>
-                          </select>
-                        </div>
-                      </div>
+                {!isEditing && (
+                  /* Read-Only Header View */
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                      <h2 style={{ margin: 0, fontSize: 'var(--fs-2xl)', fontWeight: '800', color: 'var(--color-brand-dark)' }}>
+                        {activeClass.code} — {activeClass.name}
+                      </h2>
+                      <span title={activeClass.standard} style={{
+                        fontSize: 'var(--fs-xs)',
+                        fontWeight: '600',
+                        padding: '3px 8px',
+                        borderRadius: '6px',
+                        backgroundColor: activeClass.is_builtin ? 'var(--color-surface-muted)' : 'var(--color-success-tint)',
+                        color: activeClass.is_builtin ? 'var(--color-text-secondary)' : 'var(--color-success-text)',
+                        border: '1px solid var(--color-border)'
+                      }}>
+                        {sourceLabel(activeClass.standard)}
+                      </span>
+                    </div>
+                    <p style={{ margin: 0, fontSize: 'var(--fs-base)', color: 'var(--color-text-secondary)' }}>
+                      Standard: <strong>{activeClass.design_code}</strong> • Revision: <strong>{activeClass.revision}</strong>
+                    </p>
+                  </div>
+                )}
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div>
-                          <label className="form-label" style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', marginBottom: '2px' }}>Design standard / code *</label>
-                          <input
-                            type="text"
-                            value={formData.design_code}
-                            onChange={(e) => updateFormField('design_code', e.target.value)}
-                            placeholder="e.g. ASME B31.3"
-                            className="form-input"
-                            style={{ width: '200px', height: '30px', fontSize: 'var(--fs-sm)' }}
-                          />
-                        </div>
-                        <div>
-                          <label className="form-label" style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', marginBottom: '2px' }}>Revision *</label>
-                          <input
-                            type="text"
-                            value={formData.revision}
-                            onChange={(e) => updateFormField('revision', e.target.value)}
-                            placeholder="e.g. 1.0, Rev B"
-                            className="form-input"
-                            style={{ width: '110px', height: '30px', fontSize: 'var(--fs-sm)' }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    /* Read-Only Header View */
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-                        <h2 style={{ margin: 0, fontSize: 'var(--fs-2xl)', fontWeight: '800', color: 'var(--color-brand-dark)' }}>
-                          {activeClass.code} — {activeClass.name}
-                        </h2>
-                        <span title={activeClass.standard} style={{
-                          fontSize: 'var(--fs-xs)',
-                          fontWeight: '600',
-                          padding: '3px 8px',
-                          borderRadius: '6px',
-                          backgroundColor: activeClass.is_builtin ? 'var(--color-surface-muted)' : 'var(--color-success-tint)',
-                          color: activeClass.is_builtin ? 'var(--color-text-secondary)' : 'var(--color-success-text)',
-                          border: '1px solid var(--color-border)'
-                        }}>
-                          {sourceLabel(activeClass.standard)}
-                        </span>
-                      </div>
-                      <p style={{ margin: 0, fontSize: 'var(--fs-base)', color: 'var(--color-text-secondary)' }}>
-                        Standard: <strong>{activeClass.design_code}</strong> • Revision: <strong>{activeClass.revision}</strong>
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Save / discard while editing; view-mode actions sit in the toolbar above */}
-                  {canManage && isEditing && (
-                    <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-                      <button
-                        type="button"
-                        onClick={handleCancelEdit}
-                        className="btn-secondary"
-                        style={{ height: '34px', padding: '0 14px', borderRadius: '8px', fontSize: 'var(--fs-sm)', fontWeight: '700' }}
-                      >
-                        Cancel / Discard
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleSaveEdit}
-                        disabled={isSaving}
-                        className="btn-primary"
-                        style={{ height: '34px', padding: '0 18px', borderRadius: '8px', fontSize: 'var(--fs-sm)', fontWeight: '700' }}
-                      >
-                        {isSaving ? 'Saving...' : 'Save Changes'}
-                      </button>
-                    </div>
-                  )}
-                </div>
 
                 {/* Key Properties Grid */}
                 {isEditing ? (
                   /* Editable Properties Grid */
                   <>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr 1fr 1fr', gap: '12px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--color-border)' }}>
-                      <div>
-                        <label className="form-label" style={{ fontSize: 'var(--fs-xs)', fontWeight: '700' }}>Material grade *</label>
+                    <div className="form-grid form-grid-4">
+                      <div className="form-field">
+                        <label htmlFor="pc-code" className="form-label">Class code *</label>
                         <input
+                          id="pc-code"
                           type="text"
-                          value={formData.material_grade}
-                          onChange={(e) => updateFormField('material_grade', e.target.value)}
-                          placeholder="ASTM A106 Gr. B"
-                          className="form-input"
-                          style={{ height: '30px', fontSize: 'var(--fs-sm)' }}
+                          value={formData.code}
+                          onChange={(e) => updateFormField('code', e.target.value)}
+                          placeholder="e.g. CS02"
+                          className="form-input form-input-strong"
+                          required
                         />
                       </div>
-                      <div>
-                        <label className="form-label" style={{ fontSize: 'var(--fs-xs)', fontWeight: '700' }}>Material group</label>
+                      <div className="form-field form-span-2">
+                        <label htmlFor="pc-name" className="form-label">Pipe class name *</label>
                         <input
+                          id="pc-name"
                           type="text"
-                          value={formData.material_group}
-                          onChange={(e) => updateFormField('material_group', e.target.value)}
-                          placeholder="CS / SS / DX"
-                          className="form-input"
-                          style={{ height: '30px', fontSize: 'var(--fs-sm)' }}
+                          value={formData.name}
+                          onChange={(e) => updateFormField('name', e.target.value)}
+                          placeholder="e.g. High Pressure Carbon Steel 300#"
+                          className="form-input form-input-strong"
+                          required
                         />
                       </div>
-                      <div>
-                        <label className="form-label" style={{ fontSize: 'var(--fs-xs)', fontWeight: '700' }}>Pressure rating</label>
+                      <div className="form-field">
+                        <label htmlFor="pc-standard" className="form-label">Standard category</label>
+                        <select
+                          id="pc-standard"
+                          value={formData.standard}
+                          onChange={(e) => updateFormField('standard', e.target.value)}
+                          className="form-select"
+                        >
+                          <option value="CUSTOM">CUSTOM</option>
+                          <option value="ASME">ASME</option>
+                          <option value="EN">EN</option>
+                          <option value="DIN">DIN</option>
+                          <option value="ISO">ISO</option>
+                          <option value="TR2000">TR2000</option>
+                        </select>
+                      </div>
+
+                      <div className="form-field form-span-2">
+                        <label htmlFor="pc-design-code" className="form-label">Design standard / code *</label>
                         <input
+                          id="pc-design-code"
+                          type="text"
+                          value={formData.design_code}
+                          onChange={(e) => updateFormField('design_code', e.target.value)}
+                          placeholder="e.g. ASME B31.3"
+                          className="form-input"
+                        />
+                      </div>
+                      <div className="form-field">
+                        <label htmlFor="pc-revision" className="form-label">Revision *</label>
+                        <input
+                          id="pc-revision"
+                          type="text"
+                          value={formData.revision}
+                          onChange={(e) => updateFormField('revision', e.target.value)}
+                          placeholder="e.g. 1.0, Rev B"
+                          className="form-input"
+                        />
+                      </div>
+                      <div className="form-field">
+                        <label htmlFor="pc-rating" className="form-label">Pressure rating</label>
+                        <input
+                          id="pc-rating"
                           type="text"
                           value={formData.rating_class}
                           onChange={(e) => updateFormField('rating_class', e.target.value)}
                           placeholder="CL150 / PN16"
                           className="form-input"
-                          style={{ height: '30px', fontSize: 'var(--fs-sm)' }}
                         />
                       </div>
-                      <div>
-                        <label className="form-label" style={{ fontSize: 'var(--fs-xs)', fontWeight: '700' }}>Roughness (ε mm)</label>
+
+                      <div className="form-field form-span-2">
+                        <label htmlFor="pc-grade" className="form-label">Material grade *</label>
                         <input
+                          id="pc-grade"
+                          type="text"
+                          value={formData.material_grade}
+                          onChange={(e) => updateFormField('material_grade', e.target.value)}
+                          placeholder="ASTM A106 Gr. B"
+                          className="form-input"
+                        />
+                      </div>
+                      <div className="form-field">
+                        <label htmlFor="pc-group" className="form-label">Material group</label>
+                        <input
+                          id="pc-group"
+                          type="text"
+                          value={formData.material_group}
+                          onChange={(e) => updateFormField('material_group', e.target.value)}
+                          placeholder="CS / SS / DX"
+                          className="form-input"
+                        />
+                      </div>
+                      <div className="form-field">
+                        <label htmlFor="pc-roughness" className="form-label">Roughness (ε mm)</label>
+                        <input
+                          id="pc-roughness"
                           type="number"
                           step="0.001"
                           value={formData.roughness_mm}
                           onChange={(e) => updateFormField('roughness_mm', e.target.value)}
                           className="form-input"
-                          style={{ height: '30px', fontSize: 'var(--fs-sm)' }}
                         />
                       </div>
-                    </div>
 
-                    {/* Design limits: class default corrosion allowance and design temperature range */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginTop: '12px' }}>
-                      <div>
-                        <label htmlFor="pc-default-ca" className="form-label" style={{ fontSize: 'var(--fs-xs)', fontWeight: '700' }}>Default corrosion allowance [{units.length}]</label>
+                      {/* Design limits: class default corrosion allowance and design temperature range */}
+                      <div className="form-field">
+                        <label htmlFor="pc-default-ca" className="form-label">Default corrosion allowance [{units.length}]</label>
                         <DraftNumberInput
                           id="pc-default-ca"
                           step="any"
@@ -1201,35 +1250,32 @@ const CataloguePage = ({ menuBar, ctx, leaveGuardRef }) => {
                           displayValue={units.lengthOut(formData.corrosion_allowance_mm)}
                           onCommit={(text) => { const v = units.lengthIn(text); if (v !== null && v >= 0) updateFormField('corrosion_allowance_mm', v); }}
                           className="form-input"
-                          style={{ height: '30px', fontSize: 'var(--fs-sm)' }}
                         />
                       </div>
-                      <div>
-                        <label htmlFor="pc-min-temp" className="form-label" style={{ fontSize: 'var(--fs-xs)', fontWeight: '700' }}>Min design temperature [{units.temperature}]</label>
+                      <div className="form-field">
+                        <label htmlFor="pc-min-temp" className="form-label">Min design temperature [{units.temperature}]</label>
                         <DraftNumberInput
                           id="pc-min-temp"
                           step="any"
                           displayValue={units.temperatureOut(formData.min_temp_c)}
                           onCommit={(text) => updateFormField('min_temp_c', units.temperatureIn(text))}
                           className="form-input"
-                          style={{ height: '30px', fontSize: 'var(--fs-sm)' }}
                         />
                       </div>
-                      <div>
-                        <label htmlFor="pc-max-temp" className="form-label" style={{ fontSize: 'var(--fs-xs)', fontWeight: '700' }}>Max design temperature [{units.temperature}]</label>
+                      <div className="form-field">
+                        <label htmlFor="pc-max-temp" className="form-label">Max design temperature [{units.temperature}]</label>
                         <DraftNumberInput
                           id="pc-max-temp"
                           step="any"
                           displayValue={units.temperatureOut(formData.max_temp_c)}
                           onCommit={(text) => updateFormField('max_temp_c', units.temperatureIn(text))}
                           className="form-input"
-                          style={{ height: '30px', fontSize: 'var(--fs-sm)' }}
                         />
                       </div>
                     </div>
 
                     {/* Catalogs of the class: sizes and reducers are taken from the ticked fitting catalogs */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '12px', paddingTop: '12px', borderTop: '1px dashed var(--color-border)' }}>
+                    <div className="form-grid form-grid-2 form-divider">
                       {[
                         { field: 'schedule_standard_codes', legend: 'Pipe dimension catalogs', options: scheduleStandardOptions },
                         { field: 'reducer_standard_codes', legend: 'Reducer catalogs', options: reducerStandardOptions },
@@ -1237,8 +1283,8 @@ const CataloguePage = ({ menuBar, ctx, leaveGuardRef }) => {
                         const selected = formData[field] || [];
                         const missing = selected.filter(code => !options.some(o => o.code === code));
                         return (
-                          <fieldset key={field} style={{ border: '1px solid var(--color-border)', borderRadius: '8px', padding: '8px 12px', margin: 0 }}>
-                            <legend className="form-label" style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', padding: '0 4px' }}>{legend}</legend>
+                          <fieldset key={field} className="form-fieldset">
+                            <legend className="form-label">{legend}</legend>
                             {options.length === 0 && (
                               <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-warning-text)' }}>Catalog not loaded.</div>
                             )}
@@ -1639,7 +1685,6 @@ const CataloguePage = ({ menuBar, ctx, leaveGuardRef }) => {
               {loading ? 'Loading catalog...' : pipeClasses.length === 0
                 ? 'The pipe class library is empty. Create, import or restore pipe classes to get started.'
                 : 'Select a pipe class from the left sidebar to view details.'}
-              {!loading && libraryActions}
             </div>
           )}
     </div>
@@ -2190,6 +2235,7 @@ const CataloguePage = ({ menuBar, ctx, leaveGuardRef }) => {
                 <button
                   type="button"
                   onClick={() => executeBatchImport([...nonConflictList, ...conflictList])}
+                  data-autofocus=""
                   className="btn-primary"
                   style={{ height: '34px', padding: '0 16px', fontWeight: '700' }}
                 >
@@ -2325,6 +2371,7 @@ const CataloguePage = ({ menuBar, ctx, leaveGuardRef }) => {
                 <button
                   type="button"
                   onClick={() => setIsImportReportModalOpen(false)}
+                  data-autofocus=""
                   className="btn-primary"
                   style={{ padding: '0 18px', height: '34px', fontSize: 'var(--fs-sm)', fontWeight: '700' }}
                 >

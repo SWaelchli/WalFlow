@@ -96,7 +96,7 @@ const SaveAsModal = ({ isOpen, onClose, onSaveAs, currentTitle = "" }) => {
 
   return (
     <div className="modal-overlay">
-      <div className="modal-container" ref={modalA11yRef} style={{ maxWidth: '480px' }}>
+      <div className="modal-container" ref={modalA11yRef} aria-busy={saving} style={{ maxWidth: '480px' }}>
         {/* Header */}
         <div className="modal-header">
           <h3 className="modal-title">

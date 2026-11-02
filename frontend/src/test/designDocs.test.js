@@ -1,8 +1,8 @@
 // Docs sync test, two halves.
 // Tokens: the `:root` custom properties in design-system/walflow/MASTER.md and frontend/src/index.css must match
 // in name and value, so the design system stays the single source of truth.
-// Menus: the menu bar table in the walflow-ui-layout skill must list the same menus and item labels, in order,
-// as the command list (commands/commandList.js). A failure means fixing the doc or the code so they agree, never loosening this test.
+// Menus: the menu tables of the Drawing and the Catalogue page in the walflow-ui-layout skill must list the same menus
+// and item labels, in order, as the command list of that page (commands/commandList.js). A failure means fixing the doc or the code so they agree, never loosening this test.
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -70,12 +70,12 @@ const cleanItem = (item) => item
   .replace(/\s+/g, ' ')
   .trim();
 
-// `{ File: ['New drawing…', ...] }` from the rows `| **File** | a · b · — · c |` of the skill's menu table.
-function docMenus(md) {
+// `{ File: ['New drawing…', ...] }` from the rows `| **File** | a · b · — · c |` of the table under a heading of the skill.
+function docMenus(md, heading) {
   const menus = {};
-  // Only the "Menu bar" section; other tables in the skill use the same `| **Name** |` row shape
-  const start = md.indexOf('### Menu bar');
-  expect(start, 'no "### Menu bar" section in the skill').toBeGreaterThan(-1);
+  // Only the section of one page; other tables in the skill use the same `| **Name** |` row shape
+  const start = md.indexOf(heading);
+  expect(start, `no "${heading}" section in the skill`).toBeGreaterThan(-1);
   const end = md.indexOf('\n### ', start + 1);
   md = md.slice(start, end === -1 ? undefined : end);
   const rowRe = /^\|\s*\*\*([^*]+)\*\*\s*\|(.*)\|\s*$/gm;
@@ -86,11 +86,15 @@ function docMenus(md) {
   return menus;
 }
 
+// A page's New command has a label that follows the tab; the doc lists its static label (`New entry…`)
 describe('design docs sync: menus', () => {
-  it('the menu table in the walflow-ui-layout skill lists the menus and items of the command list', () => {
-    const doc = docMenus(readFileSync(SKILL_PATH, 'utf8'));
-    const code = Object.fromEntries(Object.entries(listCommandsByMenu()).map(([menu, items]) => [menu, items.map((i) => cleanItem(i.label))]));
-    expect(Object.keys(doc).length, 'no menu rows found in the skill').toBeGreaterThan(0);
+  it.each([
+    ['drawing', '### Drawing menus'],
+    ['catalogue', '### Catalogue menus'],
+  ])('the %s menu table in the walflow-ui-layout skill lists the menus and items of the command list', (page, heading) => {
+    const doc = docMenus(readFileSync(SKILL_PATH, 'utf8'), heading);
+    const code = Object.fromEntries(Object.entries(listCommandsByMenu(page)).map(([menu, items]) => [menu, items.map((i) => cleanItem(i.label))]));
+    expect(Object.keys(doc).length, `no menu rows found under ${heading}`).toBeGreaterThan(0);
 
     const problems = [];
     if (Object.keys(doc).join(',') !== Object.keys(code).join(',')) {

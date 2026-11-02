@@ -53,6 +53,10 @@ Geometry (sizes, tokens, breakpoints, layers) is in MASTER.md, "App Shell & Layo
 Left: logo (opens About), then the menus. Centre: `Project / Drawing` name, save state, lock chip. Right: account
 (Sign in button, or user name menu with Sign out).
 
+Each page has its own menus and keys (see "The command list"). Tools and Help are shared by all pages.
+
+### Drawing menus
+
 | Menu | Items (current command → place) |
 |---|---|
 | **File** | New drawing… · Open… (Drawings pane) · Save `Ctrl+S` · Save as… · — · Import .wlf file… · Export .wlf file · Export table as CSV |
@@ -62,8 +66,20 @@ Left: logo (opens About), then the menus. Centre: `Project / Drawing` name, save
 | **Tools** | Catalogue · Manage projects… · Admin hub… (admins only) |
 | **Help** | User guide · Keyboard shortcuts `?` · Model & limits · About WalFlow |
 
+### Catalogue menus
+
+| Menu | Items (current command → place) |
+|---|---|
+| **File** | New entry… (label follows the tab) `N` · — · Save changes `Ctrl+S` · — · Import from TR2000… (pipe classes tab only) · Import library… · Export library · — · Back to drawing |
+| **Edit** | Edit selected `E` · Clone selected `Ctrl+D` · Delete selected `Del` · — · Discard changes `Esc` · Restore defaults… |
+| **View** | Pipe classes `Alt+1` · Fitting standards `Alt+2` · Control valve styles `Alt+3` · — · Show list · Search the list `/` · — · Previous entry `Up` · Next entry `Down` |
+| **Tools** | Catalogue · Admin hub… (admins only) |
+| **Help** | User guide · Keyboard shortcuts `?` · Model & limits · About WalFlow |
+
 Rules:
-- Menu order is fixed: File, Edit, View, Simulation, Tools, Help. A new menu needs the user's approval.
+- Menu order is fixed for each page: File, Edit, View, Simulation (drawing only), Tools, Help. A new menu needs the
+  user's approval. A page never shows the drawing's commands greyed out; it lists only what works there. A menu with no
+  visible item is hidden.
 - Every command appears in exactly one menu. Group with separators; at most about 12 items per menu, use a
   submenu (`▸`) beyond that.
 - Labels: sentence case, verb first, `…` when more input follows before the action runs. Shortcut shown right.
@@ -162,20 +178,32 @@ The Catalogue is a page: a page mode of the app shell (`AppShell mode="page"`), 
 management screen is a page in the same pattern. Admin hub and Project manager stay dialogs until the user decides
 otherwise.
 
-- **Menu bar:** the same menus and account area. The centre shows the page name instead of `Project / Drawing`; save
-  state and lock chip are hidden. A page has no sign-in box or Admin hub button of its own.
+- **Menu bar:** the page's own menus (Catalogue: see "Catalogue menus"), and the same account area. The centre shows
+  the page name instead of `Project / Drawing`; save state and lock chip are hidden. A page has no sign-in box or Admin
+  hub button of its own.
 - **Command bar row:** a page tab strip: "← Back to drawing", then the page's tabs (results panel tab classes). A list
   toggle at the right of the strip shows or hides the list.
 - **Pane column:** the page's list, with the side pane's styles and width, and its overlay behaviour below 1008 px.
-  No activity rail.
-- **Main area:** the details; it scrolls. No canvas, inspector or results panel.
+  No activity rail. The page's main action (New) sits at the top of the list. An empty library shows New and the
+  import commands in the list; a filter with no match shows only its message.
+- **Main area:** the details; it scrolls. No canvas, inspector or results panel. Actions on the selected entry (Clone,
+  Edit, Delete) sit at the top of the details as well as in the menu. Actions on the whole library (import, export,
+  restore) are in the menu only. While editing, Save and Cancel stick to the top of the details so they stay reachable
+  in a long entry.
 - **Status bar:** page slots (`PageStatusBar`): entry count of the current list, source filter, and "Read-only" or
   "Can edit" for the user's role.
-- **Commands:** `ctx.page` carries the current page. Every command not in `WORKS_ON_PAGE` (`commandList.js`) is
-  disabled on a page with the tooltip "Go back to the drawing first", and its shortcut does nothing. Add a command to
-  that set only if it works without the drawing.
-- **Back to the drawing** is the page's toggle command (Tools › Catalogue, checked on the page). It goes through
-  `confirmDiscard` when the page has unsaved edits.
+- **Commands:** `ctx.page` carries the current page, and each page has one definition file in `commands/pages/` (see
+  "The command list"). No drawing command runs on a page. Ctrl+S never reaches the browser's Save dialog, even with
+  nothing to save; other keys the page does not use stay with the browser (copy, select all, ...).
+- **Live state:** the page registers its tab, selection, edit state and handlers with `usePageState`, read as
+  `ctx.pageState`; the state stays in the page.
+- **Back to the drawing** is the page's toggle command (Tools › Catalogue, checked on the page), and is also in File.
+  It goes through `confirmDiscard` when the page has unsaved edits.
+- **Unsaved edits:** Cancel, Discard changes, switching tab or entry and New all ask first when there are changes, and
+  do not ask when there are none.
+
+To add a page: one definition file (`{ id, name, menuOrder, commands, keyOnlyCommands, hideShared }`), one entry in
+`PAGES` (`commandList.js`), one "<Page> menus" table above, and the page registers its state.
 
 ### Dialogs, info bars and toasts
 
@@ -188,22 +216,35 @@ otherwise.
 Dialog buttons: secondary left, primary right (WalFlow convention, MASTER.md modal footer). Esc and Cancel never
 change anything. Focus returns to the control that opened the dialog.
 
+Every dialog takes these keys, and only the top dialog reacts:
+- **Esc** does what its Cancel or Close button does. It does nothing while the dialog's action runs (`aria-busy` on the
+  dialog) or when the dialog has no way to close (first-admin setup).
+- **Enter** runs the primary action, with the same validation as clicking it; a disabled primary does nothing. It also
+  confirms Delete and Discard: `confirmDialog` starts with focus on the confirm button (`data-autofocus`). A textarea
+  keeps Enter for a new line, and a focused button or link runs itself. A dialog with no single primary action (Help,
+  Admin hub, Project manager) has no Enter action of its own.
+- Prefer a real `<form onSubmit>`; otherwise use `useEscapeKey` and `useEnterKey`. The key that closes a dialog must not
+  also run a page or canvas command.
+
 ## The command list
 
-All user commands are defined once, in `frontend/src/commands/commandList.js`, as entries with: `id`
-(`<menu>.<name>`, e.g. `edit.duplicate`), `label`, `menu` and `group` (separators), `icon`, `shortcut`,
-`contexts` (`node`, `edge`, `pane`: which context menus show it), `isEnabled(ctx)` returning `true` or the reason
-it is unavailable, `isVisible(ctx)` (role only), `run(ctx)`, and for submenus `children(ctx)`. `ctx` is built once
-per render in `App.jsx` from the existing handlers and state. The menu bar, command bar, context menus, keyboard
-shortcuts (`hooks/useKeyboardShortcuts.js`) and the Help shortcut list all read this list.
-`listCommandsByMenu()` returns the menus in order; the docs sync test compares it with the menu table above.
+All user commands are defined once: the drawing's in `frontend/src/commands/commandList.js`, Tools and Help in
+`commands/sharedCommands.js`, a page's in `commands/pages/<page>.js`. `getPageDefinition(page)` is the one lookup.
+Entries have: `id` (`<menu>.<name>`, e.g. `edit.duplicate`), `label` (`getLabel(ctx)` when it changes with the state),
+`menu` and `group` (separators), `icon`, `shortcut`, `firesInInputs` (Save only), `radio` (a choice among items of the
+menu), `contexts` (`node`, `edge`, `pane`: which context menus show it), `isEnabled(ctx)` returning `true` or the
+reason it is unavailable, `isVisible(ctx)`, `run(ctx)`, and for submenus `children(ctx)`. `ctx` is built once per
+render in `App.jsx` from the existing handlers and state. The menu bar, command bar, context menus, keyboard shortcuts
+(`hooks/useKeyboardShortcuts.js`) and the Help shortcut list all read these lists.
+`listCommandsByMenu(page)` returns a page's menus in order; the docs sync test compares it with the menu tables above.
 
 - Add a command once. Never wire a handler straight into a button, menu item or key listener.
 - Every command has a menu entry. A context menu or command bar entry is an extra way in, never the only one.
 - Read-only drawings disable edit commands through `isEnabled`, so every surface agrees.
 - Esc (clear selection, close the top layer) is a key-only command (`KEY_ONLY_COMMANDS`), not in a menu.
-- Shortcuts: one per command, unique. Single keys (`R`, `Del`, `?`) only act while focus is on the canvas, never
-  while typing. Do not take browser-reserved keys: `Ctrl+N/T/W`, `Ctrl+Shift+N/T/W`, `Ctrl+Tab`, `Ctrl+L`,
+- Shortcuts: one per command, unique within a page. The same action keeps the same key on every page (`Ctrl+D`,
+  `Del`, `Ctrl+S`). Single keys (`R`, `Del`, `?`, `N`, `E`) only act outside inputs, never while typing, and not with
+  a menu or dialog open. Do not take browser-reserved keys: `Ctrl+N/T/W`, `Ctrl+Shift+N/T/W`, `Ctrl+Tab`, `Ctrl+L`,
   `Ctrl+R`, `F5`, `F6`, `F10`, `Alt+letter`.
 
 ## Responsive behaviour

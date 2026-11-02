@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { isHostDialogOpen } from './useEscapeKey';
 
 /** Which dialog is open (one at a time), their open/close handlers, and Escape to close. */
 export function useModalManager() {
@@ -30,9 +31,12 @@ export function useModalManager() {
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && activeModal) {
-        handleCloseModal();
-      }
+      if (e.key !== 'Escape' || !activeModal || e.defaultPrevented) return;
+      // Only the top dialog reacts: not with another dialog on top, and not while its action runs
+      if (document.querySelectorAll('.modal-overlay').length > 1) return;
+      if (isHostDialogOpen() || document.querySelector('.modal-overlay [aria-busy="true"]')) return;
+      e.preventDefault();
+      handleCloseModal();
     };
 
     window.addEventListener('keydown', handleKeyDown);

@@ -4,10 +4,10 @@ import { InfoIcon, CrossIcon, KeyboardIcon, BookIcon } from '../symbols/IconLibr
 
 import { GUIDE_SECTIONS, MODEL_SECTIONS } from './helpContent';
 import { modalA11yRef } from '../../hooks/useModalA11y';
-import { shortcutGroups } from '../../commands';
-const SHORTCUT_GROUPS = shortcutGroups();
+import { formatKey, shortcutGroups } from '../../commands';
 
-export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts' }) {
+/** `page` is the open page ('drawing' | 'catalogue') and `ctx` the command context: the list shows the keys this user has there. */
+export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts', page = 'drawing', ctx = null }) {
   const [activeTab, setActiveTab] = useState(initialTab);
 
   // Sync activeTab when modal transitions from closed to open or initialTab changes
@@ -24,9 +24,7 @@ export default function HelpInfoModal({ isOpen, onClose, initialTab = 'shortcuts
 
   if (!isOpen) return null;
 
-  const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
-  const modKey = isMac ? '⌘' : 'Ctrl';
-  const formatKey = (key) => (key === 'Ctrl' ? modKey : key);
+  const SHORTCUT_GROUPS = shortcutGroups(page, ctx);
 
   return (
     <div

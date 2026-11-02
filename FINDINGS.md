@@ -19,50 +19,23 @@ The only place that holds the status.
 
 | ID | Severity | Status | Finding | Proposed solution | Owner | Phase | Source |
 |---|---|---|---|---|---|---|---|
-| MN1 | Medium | Review | On a page the menu bar keeps the drawing's menus and shows nearly every item disabled ("Go back to the drawing first"), so on `/catalogue` the menu is mostly useless. The user wants each page to have its own working menu and its own keyboard shortcuts. | Do a full review of `/catalogue` first, then design it; see "Details: Page menus". | orch, fe | 4b | User request 2026-11-02 |
 | ZX1 | Low | Review | Raw z-index values remain across the app and do not follow the `--z-*` tokens: `.modal-overlay` 10000 (`MASTER.md` says `--z-modal`, 2000), `DialogHost` 100000 and 100001, `CollabNotice` and `App.jsx` 99999 and 9999, canvas context menu 9000. Moving `.modal-overlay` alone would put modals under some of these. | Move all of them to the tokens in one change. | fe | — | Phase 4 review 2026-11-02 |
 | EX1 | Medium | Open | The example drawings are not neat: readouts and badges run into symbols, signal lines cross text, pipes bend or cross where they need not. | Some equipment names are meaningless, such as `TANK_985_copy_copy_copy` in the Large Reference Network. Decided: re-lay out and rename across all 13 examples to the rules in the details below, without changing any parameter or result. | orch, fe | 5 | User request 2026-11-02 |
 | EX2 | Low | Open | An example loaded after another one keeps the previous zoom and pan, so it can open cut off until fit-view is pressed. | Decided: fit the view when a drawing is opened. | fe | 5 | Browser check 2026-11-02 |
 | EX3 | — | Open | Nothing keeps future examples neat. | Decided: the layout and naming rules go in the `walflow-ui-layout` skill, and `equipment-creation` points to them for its example. | orch | 5 | User request 2026-11-02 |
 | DR1 | Medium | Review | A new tab showed "Restored unsaved drawing" with an empty canvas and "1 problem" in the status bar. It is unknown whether an empty draft was saved or a real one failed to load, so it could mean lost work. | Find the cause first, then decide. | fe | — | Browser check 2026-11-02 |
 | PF1 | Low | Review | A fresh load of the Large Reference Network blocks the page for about 2.2 s on the dev server (a repeat load was fast). One load during a gate run froze the tab for about 30 s and showed "Solver not connected" until it reconnected. | Measure on a production build first, under the `walflow-performance` skill rules where they apply. | fe | — | Browser check 2026-11-02 |
+| CT3 | Low | Open | Two Catalogue list details noted before the page menu work and not changed by it: the status bar's entry count leaves out an unsaved draft shown in the list (4 entries with 5 rows), and picking a row in the fitting lists does not close the overlay list, while picking a pipe class row does. | Count the draft and close the overlay on pick. Confirm the count in the browser first. | fe | 4c | Page menu review 2026-11-02 |
 
 ## Roadmap
 
 | Phase | Entries | Why this order | Exit check |
 |---|---|---|---|
-| 4b | MN1 | Needs page mode, which is on main. The user parked it to do later; it does not depend on phase 5. | Review agreed with the user; gate green; browser check of the menu and shortcuts on `/catalogue` per role. |
-| 5 | EX1, EX2, EX3 | Last step before the v0.2.0 release. Starts only when phases 1–4 and every other branch are on main, because symbol sizes and node footers set the layout. | Gate green with `golden_examples.json` unchanged; browser check of all 13 examples against the layout and naming rules; user sign-off of each drawing. |
+| 4c | DR1, ZX1, PF1, CT3 | User decision 2026-11-02: every other finding is closed before phase 5. | Each finding fixed or decided with the user, and its rows deleted. |
+| 5 | EX1, EX2, EX3 | Last step before the v0.2.0 release. Starts only when every other finding is closed and every other branch is on main, because symbol sizes and node footers set the layout. | Gate green with `golden_examples.json` unchanged; browser check of all 13 examples against the layout and naming rules; user sign-off of each drawing. |
 
 The layout work is committed (5a364a0). Commit each phase only when the user asks.
 
-
-## Details: Page menus
-
-What the user asked for (MN1):
-
-- Each page has its own menu options and its own keyboard shortcuts. No menu full of greyed-out drawing commands: a
-  fully working menu, adapted to the page.
-- Buttons now on the Catalogue page can move into the menu where that serves the user.
-- Start with a full review of `/catalogue`, to find how the menu can be most effective and useful there. The review
-  needs the user's agreement before implementation.
-- Future-proof: a later page, such as an admin page, must be able to define its menu and shortcuts the same way.
-
-Where the code is today:
-
-- `commands/commandList.js`: one flat `COMMANDS` list with `MENU_ORDER`. `withPageGuard` disables every command not in
-  `WORKS_ON_PAGE` on a page, with `PAGE_REASON`.
-- `hooks/useKeyboardShortcuts.js`: on a page, disabled keys are left to the browser, except Ctrl+S, which is blocked so
-  the browser's Save dialog does not open.
-- `components/layout/MenuBar.jsx`: `pageName` swaps the centre area; the menus are the same on all pages.
-- `pages/CataloguePage.jsx`: per tab, the actions at the top of the details are Clone, Edit, Delete, New, Import from
-  TR2000 (pipe classes only), Import library, Export library, Restore defaults; while editing, Save and Cancel. They
-  depend on the tab, the selected entry and the role (`canManage`).
-- `test/designDocs.test.js` compares `listCommandsByMenu()` to the menu table in the `walflow-ui-layout` skill, and that
-  table assumes one menu set; the skill's rule "Menu order is fixed" and its "Pages" section will change too.
-
-Also look at in the review: the status bar's entry count leaves out an unsaved draft shown in the list (4 entries with
-5 rows), and picking a row in the fitting lists does not close the overlay list, while picking a pipe class row does.
 
 ## Details: Example drawings
 

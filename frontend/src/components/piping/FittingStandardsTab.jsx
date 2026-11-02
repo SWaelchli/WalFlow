@@ -22,9 +22,12 @@ import {
 import { coneAngleFromGeometry } from '../../utils/reducer_catalog';
 import { specUnits } from '../../utils/specUnits';
 import DraftNumberInput from '../common/DraftNumberInput';
-import LibraryActions, { DetailToolbar } from './LibraryActions';
+import { DetailToolbar, ListNewButton, EmptyLibrary, EditBar } from './LibraryActions';
+import usePageState from '../../hooks/usePageState';
 
 import { modalA11yRef } from '../../hooks/useModalA11y';
+import useEscapeKey from '../../hooks/useEscapeKey';
+import useEnterKey from '../../hooks/useEnterKey';
 import { clickableProps } from '../../utils/a11yProps';
 
 const STANDARD_GROUPS = ['ASME', 'DIN_EN', 'ISO', 'CUSTOM'];
@@ -251,7 +254,9 @@ function ValveStyleTable({ rows, isEditing, onChange, onNumber, onRemove }) {
  */
 // `renderLayout({ pane, details, extras, count, filterLabel })` places the list, the details and the dialogs in a page
 // shell (the Catalogue); without it the tab lays out its own list and details side by side.
-const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUser, onDirtyChange, fittingType = null, renderLayout = null }) {
+// `registerPageState` (ctx.registerPageState) and `pageShell` ({ tab, listOpen, selectTab, toggleList, focusSearch },
+// the page's own tabs and list) let the menu bar see and drive this tab.
+const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUser, onDirtyChange, fittingType = null, renderLayout = null, registerPageState = null, pageShell = null }) {
   const isValve = fittingType === 'control_valve';
   const groups = isValve ? VALVE_GROUPS : STANDARD_GROUPS;
   const { isImperial } = useUnits();
@@ -284,6 +289,8 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const [newStandardData, setNewStandardData] = useState(null);
   const [newCodeTouched, setNewCodeTouched] = useState(false);
+  // The Clone or New dialog's request is running: its keys and primary button wait
+  const [isDialogBusy, setIsDialogBusy] = useState(false);
 
   // Notification Toast state
   const [toastMessage, setToastMessage] = useState(null); // { type: 'success'|'error', text: '' }
@@ -361,10 +368,19 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
 
   // Restore Defaults: re-adds missing built-in catalogs from the seed; admins may also reset edited built-ins
   const handleSeedDefaults = async () => {
+    const kind = isValve ? 'control valve style catalogues' : 'fitting catalogs';
+    const confirmed = await confirmDialog({
+      title: 'Restore default catalogs?',
+      message: isAdmin
+        ? `Built-in ${kind} that are missing are added again. Next you can choose whether built-in catalogs you edited are overwritten too.`
+        : `Built-in ${kind} that are missing are added again. Existing catalogs, including built-in ones you or others edited, are not changed.`,
+      confirmLabel: 'Restore',
+    });
+    if (!confirmed) return;
     const resetBuiltins = isAdmin && await confirmDialog({
-      title: 'Restore default catalogs',
-      message: `Missing built-in catalogs are added again. Also reset edited built-in catalogs to the shipped data?${isValve ? '' : ' Sizes that pipe classes use cannot be removed.'}`,
-      confirmLabel: 'Also reset edited',
+      title: 'Overwrite edited built-in catalogs?',
+      message: `Edited built-in catalogs are overwritten with the shipped data and their changes are lost.${isValve ? '' : ' Sizes that pipe classes use cannot be removed.'}`,
+      confirmLabel: 'Overwrite edited',
       cancelLabel: 'Only add missing',
     });
     try {
@@ -415,6 +431,15 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
     reader.readAsText(file);
   };
 
+  // Previous / next entry of the filtered list (menu and arrow keys)
+  const handleStep = async (direction) => {
+    const index = filteredStandards.findIndex(item => item.id === selectedStandard?.id);
+    const target = filteredStandards[index + direction];
+    if (!target) return;
+    if (!(await askDiscard('switch'))) return;
+    setSelectedId(target.id);
+  };
+
   // --- Clone ---
   const handleOpenCloneModal = () => {
     if (!selectedStandard) return;
@@ -430,6 +455,7 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
       showToast('Please enter a name and an identifier.', 'error');
       return;
     }
+    setIsDialogBusy(true);
     try {
       const res = await axios.post(`/api/fitting-standards/${selectedStandard.id}/clone`, {
         new_code: cloneCode.trim().toUpperCase(),
@@ -441,6 +467,8 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
       setSelectedId(res.data.id);
     } catch (err) {
       showToast(`Clone failed: ${err?.response?.data?.detail || err.message}`, 'error');
+    } finally {
+      setIsDialogBusy(false);
     }
   };
 
@@ -457,6 +485,7 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
       showToast('Please enter a name and an identifier.', 'error');
       return;
     }
+    setIsDialogBusy(true);
     try {
       const res = await axios.post('/api/fitting-standards', {
         code: newStandardData.code.trim().toUpperCase(),
@@ -475,6 +504,8 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
       startEdit(res.data);
     } catch (err) {
       showToast(`Creation failed: ${err?.response?.data?.detail || err.message}`, 'error');
+    } finally {
+      setIsDialogBusy(false);
     }
   };
 
@@ -677,19 +708,44 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
     }));
   };
 
-  const libraryActions = (
-    <LibraryActions
-      canManage={canManage}
-      newLabel={isValve ? 'New control valve catalogue' : 'New fitting standard'}
-      onNew={handleOpenNewModal}
-      onImport={() => fileInputRef.current?.click()}
-      importTitle={isValve ? 'Import catalogues from a JSON file' : 'Import fitting standards from a JSON file'}
-      onExport={handleExportLibrary}
-      exportTitle={isValve ? 'Export the catalogue library as a JSON file' : 'Export all fitting standards and schedules as a JSON file'}
-      onRestore={handleSeedDefaults}
-      restoreTitle={isValve ? 'Restore the built-in control valve style catalogues' : 'Restore the built-in fitting catalogs (reducers and pipe schedules)'}
-    />
-  );
+  const entryLabel = isValve ? 'control valve catalogue' : 'fitting standard';
+  const isEmptyLibrary = !loading && !error && standards.length === 0;
+
+  // The menu bar's view of this tab (Catalogue menus, keys); import / export / restore live there only
+  usePageState(registerPageState, registerPageState ? {
+    tab: pageShell?.tab ?? (isValve ? 'control_valves' : 'fitting_standards'),
+    entryLabel,
+    canManage: !!canManage,
+    hasSelection: !!selectedStandard,
+    isEditing,
+    isDirty,
+    isSaving,
+    listOpen: pageShell?.listOpen ?? true,
+    listLength: filteredStandards.length,
+    selectedIndex: filteredStandards.findIndex(item => item.id === selectedStandard?.id),
+    editBlocked: selectedStandard && canManage && !canEdit(selectedStandard) ? 'Only an admin can edit built-in standards' : null,
+    deleteBlocked: selectedStandard?.is_builtin ? 'Built-in standards cannot be deleted' : null,
+  } : null, {
+    newEntry: handleOpenNewModal,
+    save: handleSaveEdit,
+    discard: handleCancelEdit,
+    edit: () => { if (canEdit(selectedStandard)) startEdit(selectedStandard); },
+    clone: handleOpenCloneModal,
+    remove: () => { if (selectedStandard) handleDeleteStandard(selectedStandard); },
+    importTr2000: () => {},
+    importLibrary: () => fileInputRef.current?.click(),
+    exportLibrary: handleExportLibrary,
+    restoreDefaults: handleSeedDefaults,
+    selectTab: (id) => pageShell?.selectTab(id),
+    toggleList: () => pageShell?.toggleList(),
+    focusSearch: () => pageShell?.focusSearch(),
+    step: handleStep,
+  });
+
+  // Keep the selected row in view when the arrow keys move it
+  useEffect(() => {
+    document.querySelector('[data-entry-selected]')?.scrollIntoView?.({ block: 'nearest' });
+  }, [selectedStandard?.id]);
 
   const dims = shown?.dimensions || [];
 
@@ -742,16 +798,19 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
 
   const paneContent = (
     <div className="page-list">
+        {!isEmptyLibrary && <ListNewButton canManage={canManage} label={`New ${entryLabel}`} onNew={handleOpenNewModal} />}
         {/* Search & Filter Header */}
         <div className="page-list-filter">
           <input
             type="text"
+            data-catalogue-search=""
             className="form-input"
             style={{ width: '100%', height: '34px', fontSize: 'var(--fs-sm)' }}
             placeholder={isValve ? 'Search valve style catalogues...' : 'Search standards & schedules...'}
             aria-label={isValve ? 'Search valve style catalogues' : 'Search standards and schedules'}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Escape') { e.preventDefault(); e.currentTarget.blur(); } }}
           />
 
           {/* Type Filter Pills */}
@@ -799,6 +858,14 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
             <div style={{ textAlign: 'center', padding: '20px', fontSize: 'var(--fs-sm)', color: 'var(--color-text-secondary)' }}>
               Loading catalog...
             </div>
+          ) : isEmptyLibrary ? (
+            <EmptyLibrary
+              message={isValve ? 'There are no control valve style catalogues.' : 'The fitting catalog is empty.'}
+              canManage={canManage}
+              newLabel={`New ${entryLabel}`}
+              onNew={handleOpenNewModal}
+              onImport={() => fileInputRef.current?.click()}
+            />
           ) : filteredStandards.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '20px', fontSize: 'var(--fs-sm)', color: 'var(--color-text-secondary)' }}>
               {isValve ? 'No control valve style catalogues match criteria.' : 'No fitting standards match criteria.'}
@@ -810,6 +877,7 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
               return (
                 <div {...clickableProps}
                   key={item.id}
+                  data-entry-selected={isSelected ? '' : undefined}
                   title={item.code}
                   onClick={async () => {
                     if (item.id === selectedStandard?.id) return;
@@ -864,6 +932,9 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
     <div className="page-details">
         {shown ? (
           <>
+            {isEditing && editFormData && (
+              <EditBar label={editFormData.name || entryLabel} isDirty={isDirty} isSaving={isSaving} onCancel={handleCancelEdit} onSave={handleSaveEdit} />
+            )}
             {/* Card 1: Standard Header */}
             <div style={{
               borderRadius: '12px',
@@ -874,36 +945,35 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
               transition: 'border 0.2s, box-shadow 0.2s'
             }}>
               {!isEditing && (
-                <DetailToolbar library={libraryActions}>
+                <DetailToolbar>
                   {canManage && (
                     <button
                       onClick={handleOpenCloneModal}
-                      className="btn-secondary"
-                      style={toolbarBtn}
+                      className="btn-secondary btn-compact"
                       title="Clone into an editable custom version"
                     >
                       <CopyIcon size={12} />
-                      {isValve ? 'Clone Catalogue' : 'Clone Standard'}
+                      Clone
                     </button>
                   )}
                   {canEdit(selectedStandard) && (
                     <button
                       onClick={() => startEdit(selectedStandard)}
-                      className="btn-secondary"
-                      style={toolbarBtn}
+                      className="btn-secondary btn-compact"
+                      title={`Edit this ${entryLabel}`}
                     >
                       <EditIcon size={12} />
-                      {isValve ? 'Edit Catalogue' : 'Edit Standard'}
+                      Edit
                     </button>
                   )}
                   {canManage && !selectedStandard.is_builtin && (
-                    <button aria-label="Delete standard"
+                    <button
                       onClick={() => handleDeleteStandard(selectedStandard)}
-                      className="btn-danger-ghost"
-                      style={{ height: '32px', width: '32px', padding: 0, borderRadius: '6px' }}
-                      title="Delete standard"
+                      className="btn-danger-ghost btn-compact"
+                      title={`Delete this ${entryLabel}`}
                     >
-                      <TrashIcon size={14} />
+                      <TrashIcon size={12} />
+                      Delete
                     </button>
                   )}
                 </DetailToolbar>
@@ -954,25 +1024,6 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
                         </select>
                       </div>
                     )}
-                    <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-                      <button
-                        type="button"
-                        onClick={handleCancelEdit}
-                        className="btn-secondary"
-                        style={{ height: '34px', padding: '0 14px', borderRadius: '8px', fontSize: 'var(--fs-sm)', fontWeight: '700' }}
-                      >
-                        Cancel / Discard
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleSaveEdit}
-                        disabled={isSaving}
-                        className="btn-primary"
-                        style={{ height: '34px', padding: '0 18px', borderRadius: '8px', fontSize: 'var(--fs-sm)', fontWeight: '700' }}
-                      >
-                        {isSaving ? 'Saving...' : 'Save Changes'}
-                      </button>
-                    </div>
                   </div>
                   <div>
                     <label htmlFor="fs-description" style={fieldLabel}>Description</label>
@@ -1347,18 +1398,23 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
             {loading ? 'Loading catalog...' : standards.length === 0
               ? (isValve ? 'There are no control valve style catalogues. Restore the defaults, import a library or create a catalogue.' : 'The fitting catalog is empty. Restore the defaults, import a library or create a standard.')
               : (isValve ? 'Select a catalogue from the left sidebar to view details.' : 'Select a fitting standard from the left sidebar to view details.')}
-            {!loading && libraryActions}
           </div>
         )}
     </div>
   );
+
+  useEscapeKey(() => setIsCloneModalOpen(false), isCloneModalOpen && !isDialogBusy);
+  useEscapeKey(() => setIsNewModalOpen(false), isNewModalOpen && !isDialogBusy);
+  // Enter = the dialog's primary button (same validation as the click); not in the description text area
+  useEnterKey(handleConfirmClone, isCloneModalOpen && !isDialogBusy);
+  useEnterKey(handleCreateNewStandard, isNewModalOpen && !isDialogBusy);
 
   const modals = (
     <>
       {/* CLONE STANDARD MODAL */}
       {isCloneModalOpen && (
         <div className="modal-overlay">
-          <div className="modal-container" ref={modalA11yRef} style={{ maxWidth: '440px' }}>
+          <div className="modal-container" ref={modalA11yRef} aria-busy={isDialogBusy} style={{ maxWidth: '440px' }}>
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div style={{
@@ -1422,7 +1478,7 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
               <button onClick={() => setIsCloneModalOpen(false)} className="btn-secondary">
                 Cancel
               </button>
-              <button onClick={handleConfirmClone} className="btn-primary">
+              <button onClick={handleConfirmClone} disabled={isDialogBusy} className="btn-primary">
                 Create Clone
               </button>
             </div>
@@ -1433,7 +1489,7 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
       {/* CREATE NEW STANDARD MODAL */}
       {isNewModalOpen && newStandardData && (
         <div className="modal-overlay">
-          <div className="modal-container" ref={modalA11yRef} style={{ maxWidth: '480px' }}>
+          <div className="modal-container" ref={modalA11yRef} aria-busy={isDialogBusy} style={{ maxWidth: '480px' }}>
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div style={{
@@ -1536,7 +1592,7 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
               <button onClick={() => setIsNewModalOpen(false)} className="btn-secondary">
                 Cancel
               </button>
-              <button onClick={handleCreateNewStandard} className="btn-primary">
+              <button onClick={handleCreateNewStandard} disabled={isDialogBusy} className="btn-primary">
                 {isValve ? 'Create Catalogue' : 'Create Standard'}
               </button>
             </div>

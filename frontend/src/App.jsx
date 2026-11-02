@@ -1660,6 +1660,16 @@ function WalFlowContent() {
     navigateTo('/');
   }, [currentPath, navigateTo, fetchPipeClasses]);
 
+  // What the open page reports about itself (usePageState): the menu bar and the keys read it through ctx.pageState
+  const [pageRegistration, setPageRegistration] = useState(null);
+  const registerPageState = useCallback((owner, state) => {
+    setPageRegistration((prev) => {
+      if (state) return { owner, state };
+      return prev?.owner === owner ? null : prev;
+    });
+  }, []);
+  const pageState = pageRegistration?.state ?? null;
+
   const commandCtx = useMemo(() => {
     const selectedNodes = nodes.filter((n) => n.selected || (selectedNode && n.id === selectedNode.id));
     const selectedEdges = edges.filter((e) => e.selected || (selectedEdge && e.id === selectedEdge.id));
@@ -1671,6 +1681,8 @@ function WalFlowContent() {
     const tapEdge = menuEdge || (selectedEdges.length === 1 ? selectedEdges[0] : null);
     return {
       page: currentPath === '/catalogue' ? 'catalogue' : 'drawing',
+      pageState: currentPath === '/catalogue' ? pageState : null,
+      registerPageState,
       isReadOnly,
       isAuthenticated,
       isAdmin,
@@ -1746,6 +1758,7 @@ function WalFlowContent() {
     undo, redo, copySelected, pasteCopied, duplicateSelected, deleteSelected, selectAllNodes, rotateSelectedNode, deselectAll,
     addInstrumentAtPin, insertTapOnEdge, selectPane, openPane, fitView, toggleLock, setHeatmapSettings, setShowReliefScenarios, setTelemetryMode,
     runChecked, setActiveCaseId, handleAddCaseGuarded, currentPath, toggleCatalogue, handleOpenAdminHub, handleOpenHelpModal,
+    pageState, registerPageState,
   ]);
 
   useKeyboardShortcuts(commandCtx);
@@ -1764,7 +1777,7 @@ function WalFlowContent() {
           <CataloguePage
             ctx={commandCtx}
             leaveGuardRef={pageLeaveGuardRef}
-            menuBar={<MenuBar ctx={commandCtx} pageName="Catalogue" onOpenAuthModal={handleOpenAuthModal} />}
+            menuBar={<MenuBar ctx={commandCtx} onOpenAuthModal={handleOpenAuthModal} />}
           />
         </LazyPage>
         <LazyModal
@@ -1784,6 +1797,8 @@ function WalFlowContent() {
           isOpen={isHelpModalOpen}
           onClose={handleCloseModal}
           initialTab={helpModalInitialTab}
+          page={commandCtx.page}
+          ctx={commandCtx}
         />
 
 
@@ -2026,6 +2041,8 @@ function WalFlowContent() {
     isOpen={isHelpModalOpen}
     onClose={handleCloseModal}
     initialTab={helpModalInitialTab}
+    page={commandCtx.page}
+    ctx={commandCtx}
   />
 
   <LazyModal

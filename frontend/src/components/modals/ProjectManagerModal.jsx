@@ -415,7 +415,7 @@ const ok = await confirmDialog({
 
   return (
     <div className="modal-overlay">
-      <div className="modal-container" ref={modalA11yRef} style={{ maxWidth: '820px', maxHeight: '90vh' }}>
+      <div className="modal-container" ref={modalA11yRef} aria-busy={isCreatingProject || isCreatingDiagram || isAddingMember || isGeneratingLink} style={{ maxWidth: '820px', maxHeight: '90vh' }}>
         <style>
           {`
             .breadcrumb-link {

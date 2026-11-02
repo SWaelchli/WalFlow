@@ -579,7 +579,7 @@ inspector and results panel:
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│ Menu bar 40  Logo  File Edit View Simulation Tools Help  Page name      User │
+│ Menu bar 40  Logo  The page's menus              Page name              User │
 ├──────────────────────────────────────────────────────────────────────────────┤
 │ Page tab strip 44  ← Back to drawing  Tab  Tab  Tab                          │
 ├────────────┬─────────────────────────────────────────────────────────────────┤
@@ -590,7 +590,9 @@ inspector and results panel:
 ```
 
 The list uses the side pane's styles and width, and overlays below 1008 px. Classes: `.page-tabbar`, `.page-tabs`,
-`.page-list`, `.page-list-filter`, `.page-list-items`, `.page-details`, `.shell-page-main`. What goes where is in the
+`.page-list`, `.page-list-actions`, `.page-list-filter`, `.page-list-items`, `.page-empty`, `.page-details`,
+`.page-toolbar`, `.page-edit-bar` (sticks to the top of the details while editing, at `--z-canvas-overlay`),
+`.shell-page-main`. Edit forms use `.form-grid` with `.form-label` above each input. What goes where is in the
 `walflow-ui-layout` skill.
 
 ### Layers

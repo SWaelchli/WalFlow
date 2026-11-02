@@ -4,6 +4,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { CrownIcon, CrossIcon, TrashIcon, InfoIcon, UserIcon, CloudIcon, RefreshIcon, CheckIcon, CheckCircleIcon, EditIcon, CopyIcon, DownloadIcon, SearchIcon, FolderOpenIcon } from '../symbols/IconLibrary';
 
 import { modalA11yRef } from '../../hooks/useModalA11y';
+import useEscapeKey from '../../hooks/useEscapeKey';
 import { parseServerTime } from '../../utils/serverTime';
 const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
   const {
@@ -198,6 +199,10 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
       showMessage(err.response?.data?.detail || 'Failed to update metadata.', 'error');
     }
   };
+
+  // Esc closes the dialog on top only (the hub's own Esc is in useModalManager and waits for these)
+  useEscapeKey(() => setDiagramToDelete(null), !!diagramToDelete);
+  useEscapeKey(() => setEditingDiagram(null), !!editingDiagram && !diagramToDelete);
 
   if (!isOpen) return null;
 
@@ -720,6 +725,7 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
               </button>
               <button
                 onClick={confirmDeleteDiagramAction}
+                data-autofocus=""
                 style={{
                   backgroundColor: 'var(--color-danger)',
                   color: '#FFFFFF',

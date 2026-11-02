@@ -99,7 +99,7 @@ const NewDrawingModal = ({ isOpen, onClose, onCreateNew }) => {
 
   return (
     <div className="modal-overlay">
-      <div className="modal-container" ref={modalA11yRef} style={{ maxWidth: '480px' }}>
+      <div className="modal-container" ref={modalA11yRef} aria-busy={creating} style={{ maxWidth: '480px' }}>
         {/* Header */}
         <div className="modal-header">
           <h3 className="modal-title">

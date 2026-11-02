@@ -152,7 +152,7 @@ function ModalDialog({ modal }) {
           </p>
         )}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-          <button type="button" className="btn-secondary" onClick={cancel} data-autofocus={modal.danger ? '' : undefined}>
+          <button type="button" className="btn-secondary" onClick={cancel}>
             {modal.cancelLabel}
           </button>
           <button
@@ -160,7 +160,7 @@ function ModalDialog({ modal }) {
             className={modal.danger ? undefined : 'btn-primary'}
             onClick={submit}
             disabled={!canSubmit}
-            data-autofocus={modal.danger ? undefined : ''}
+            data-autofocus=""
             style={modal.danger ? {
               background: '#B91C1C', color: '#FFFFFF', border: 'none', borderRadius: '8px', padding: '0 16px',
               height: '34px', fontWeight: 700, fontSize: 'var(--fs-base)', cursor: 'pointer',

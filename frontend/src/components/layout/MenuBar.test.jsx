@@ -2,7 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import MenuBar from './MenuBar';
 import { getTabId } from '../../utils/draftStorage';
-import { makeCommandCtx } from '../../test/commandCtx';
+import { makeCommandCtx, makePageState } from '../../test/commandCtx';
 
 const auth = vi.hoisted(() => ({ value: null }));
 vi.mock('../../hooks/useAuth', () => ({ useAuth: () => auth.value }));
@@ -52,14 +52,57 @@ describe('MenuBar menus', () => {
     expect(screen.queryByRole('menu', { name: 'Tools' })).toBeNull();
   });
 
-  it('on a page, drawing items show the page reason and do not run', () => {
-    const ctx = setup({}, { page: 'catalogue' });
+  it('on the Catalogue page the bar shows the page menus only, with no drawing command greyed out', () => {
+    setup({}, { page: 'catalogue', pageState: makePageState() });
+    const bar = screen.getByRole('menubar');
+    expect([...bar.querySelectorAll('[role="menuitem"]')].map((el) => el.textContent)).toEqual(['File', 'Edit', 'View', 'Tools', 'Help']);
     fireEvent.click(trigger('File'));
-    const save = screen.getByRole('menuitem', { name: /^Save(?! as)/ });
-    expect(save.getAttribute('aria-disabled')).toBe('true');
-    expect(save.getAttribute('title')).toBe('Go back to the drawing first');
-    fireEvent.click(save);
-    expect(ctx.actions.save).not.toHaveBeenCalled();
+    expect(screen.queryByRole('menuitem', { name: /Save as|Open/ })).toBeNull();
+    expect(screen.getByRole('menuitem', { name: /^New pipe class…/ })).toBeTruthy();
+  });
+
+  it('the New label follows the tab, Import from TR2000 is on the pipe classes tab only', () => {
+    setup({}, { page: 'catalogue', pageState: makePageState() });
+    fireEvent.click(trigger('File'));
+    expect(screen.getByRole('menuitem', { name: /Import from TR2000…/ })).toBeTruthy();
+    cleanup();
+    setup({}, { page: 'catalogue', pageState: makePageState({ tab: 'control_valves', entryLabel: 'control valve catalogue' }) });
+    fireEvent.click(trigger('File'));
+    expect(screen.getByRole('menuitem', { name: /^New control valve catalogue…/ })).toBeTruthy();
+    expect(screen.queryByRole('menuitem', { name: /TR2000/ })).toBeNull();
+  });
+
+  it('page items run the page action; a disabled one shows its reason and does not run', () => {
+    const ctx = setup({}, { page: 'catalogue', pageState: makePageState({ hasSelection: false, isEditing: false }) });
+    fireEvent.click(trigger('Edit'));
+    const clone = screen.getByRole('menuitem', { name: /^Clone selected/ });
+    expect(clone.getAttribute('aria-disabled')).toBe('true');
+    expect(clone.getAttribute('title')).toBe('Select an entry first');
+    fireEvent.click(clone);
+    expect(ctx.pageState.actions.clone).not.toHaveBeenCalled();
+    if (!screen.queryByRole('menu', { name: 'Edit' })) fireEvent.click(trigger('Edit'));
+    fireEvent.click(screen.getByRole('menuitem', { name: /^Restore defaults…/ }));
+    expect(ctx.pageState.actions.restoreDefaults).toHaveBeenCalledTimes(1);
+  });
+
+  it('the three catalogue tabs are radio items, ticked for the open tab', () => {
+    setup({}, { page: 'catalogue', pageState: makePageState({ tab: 'fitting_standards' }) });
+    fireEvent.click(trigger('View'));
+    const radios = screen.getAllByRole('menuitemradio');
+    expect(radios.map((r) => [r.textContent.replace(/Alt\+\d$/, ''), r.getAttribute('aria-checked')])).toEqual([
+      ['Pipe classes', 'false'], ['Fitting standards', 'true'], ['Control valve styles', 'false'],
+    ]);
+  });
+
+  it('a read-only user has no Edit menu, and arrow keys skip to the next visible menu', () => {
+    setup({}, { page: 'catalogue', pageState: makePageState({ canManage: false }) });
+    expect(screen.queryByRole('menuitem', { name: 'Edit' })).toBeNull();
+    trigger('File').focus();
+    fireEvent.keyDown(trigger('File'), { key: 'ArrowRight' });
+    expect(document.activeElement).toBe(trigger('View'));
+    fireEvent.click(trigger('File'));
+    const items = screen.getByRole('menu', { name: 'File' }).querySelectorAll('[role="menuitem"]');
+    expect([...items].map((el) => el.textContent.replace(/\s+/g, ' ').trim())).toEqual(['Export library', 'Back to drawing']);
   });
 
   it('keyboard: Right moves, Down opens, Esc closes and refocuses the trigger', () => {
@@ -140,11 +183,11 @@ describe('MenuBar menus', () => {
 });
 
 describe('MenuBar header', () => {
-  it('pageName replaces the drawing name, save state and lock chip', () => {
+  it('a page name replaces the drawing name, save state and lock chip', () => {
     setup({
-      pageName: 'Catalogue', activeDiagram: { id: 'd1', title: 'My drawing' }, saveStatus: 'error',
+      activeDiagram: { id: 'd1', title: 'My drawing' }, saveStatus: 'error',
       lockInfo: { user_id: 'u2', username: 'alex' },
-    });
+    }, { page: 'catalogue', pageState: makePageState() });
     expect(screen.getByText('Catalogue', { selector: '.menubar-doc-name' })).toBeTruthy();
     expect(screen.queryByText('My drawing')).toBeNull();
     expect(screen.queryByRole('status')).toBeNull();

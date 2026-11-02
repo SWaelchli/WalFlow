@@ -31,7 +31,8 @@ export function attachModalA11y(panel) {
 
   // Focus the first field, otherwise the first control that is not the close button, otherwise the panel
   if (!panel.contains(document.activeElement)) {
-    const target = panel.querySelector('input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled])')
+    const target = panel.querySelector('[data-autofocus]:not([disabled])')
+      || panel.querySelector('input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled])')
       || panel.querySelector('.modal-footer button:not([disabled])')
       || panel.querySelector(FOCUSABLE)
       || panel;

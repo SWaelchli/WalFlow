@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
-  runCommand, getCommand, listCommandsByMenu, shortcutGroups, COMMANDS, KEY_ONLY_COMMANDS, PAGE_REASON,
+  runCommand, getCommand, listCommandsByMenu, shortcutGroups, getPageDefinition, commandLabel, findCommandForKey,
+  COMMANDS, KEY_ONLY_COMMANDS,
 } from './commandList';
-import { makeCommandCtx } from '../test/commandCtx';
+import { makeCommandCtx, makePageState } from '../test/commandCtx';
 
 describe('pane commands', () => {
   it('toggle through selectPane without an argument', () => {
@@ -73,52 +74,221 @@ describe('Export table as CSV', () => {
   });
 });
 
-describe('commands while the Catalogue page is open', () => {
-  const works = new Set(['tools.catalogue', 'tools.admin', 'help.guide', 'help.shortcuts', 'help.model', 'help.about']);
-  const onPage = makeCommandCtx({ page: 'catalogue', isAdmin: true });
+const catalogueCtx = (stateOver = {}, ctxOver = {}) => makeCommandCtx({ page: 'catalogue', pageState: makePageState(stateOver), ...ctxOver });
+const visibleLabels = (menu, ctx) => getPageDefinition('catalogue').commands
+  .filter((c) => c.menu === menu && c.isVisible(ctx)).map((c) => commandLabel(c, ctx));
 
-  it.each(COMMANDS.filter((c) => !works.has(c.id)).map((c) => [c.id]))('%s is disabled with the page reason and does not run', (id) => {
-    const ctx = makeCommandCtx({ page: 'catalogue' });
-    expect(getCommand(id).isEnabled(ctx)).toBe(PAGE_REASON);
-    expect(runCommand(id, ctx)).toBe(false);
+describe('Catalogue page menus', () => {
+  it('has File, Edit, View, Tools and Help and no Simulation menu', () => {
+    expect(Object.keys(listCommandsByMenu('catalogue'))).toEqual(['File', 'Edit', 'View', 'Tools', 'Help']);
   });
 
-  it.each([...works])('%s stays enabled', (id) => {
-    expect(getCommand(id).isEnabled(onPage)).toBe(true);
+  it('holds no drawing command, and each page finds only its own commands by id', () => {
+    const page = new Set(getPageDefinition('catalogue').commands.map((c) => c.id));
+    COMMANDS.filter((c) => c.menu !== 'Tools' && c.menu !== 'Help').forEach((c) => expect(page.has(c.id), c.id).toBe(false));
+    expect(Object.keys(listCommandsByMenu())).toContain('Simulation');
+    expect(getCommand('file.save', 'catalogue')).toBeUndefined();
+    expect(getCommand('catalogue.save', 'catalogue')).toBeDefined();
+    expect(getCommand('catalogue.save')).toBeUndefined();
   });
 
-  it('the canvas-only keys are disabled too', () => {
-    KEY_ONLY_COMMANDS.forEach((c) => expect(c.isEnabled(onPage), c.id).toBe(PAGE_REASON));
+  it('Tools lists Catalogue ticked, Admin hub for admins only, and never Manage projects', () => {
+    expect(visibleLabels('Tools', catalogueCtx({}, { isAdmin: false }))).toEqual(['Catalogue']);
+    expect(visibleLabels('Tools', catalogueCtx({}, { isAdmin: true }))).toEqual(['Catalogue', 'Admin hub…']);
+    expect(getCommand('tools.catalogue', 'catalogue').checked(catalogueCtx())).toBe(true);
   });
 
-  it('a missing ctx.page counts as the drawing, so no command reports the page reason', () => {
-    const ctx = makeCommandCtx();
-    expect(ctx.page).toBeUndefined();
-    [...COMMANDS, ...KEY_ONLY_COMMANDS].forEach((c) => {
-      expect(c.isEnabled(ctx), c.id).not.toBe(PAGE_REASON);
-      expect(c.isEnabled(ctx), c.id).toEqual(c.isEnabled(makeCommandCtx({ page: 'drawing' })));
-    });
+  it('a manager sees every command in the documented order', () => {
+    const ctx = catalogueCtx();
+    expect(visibleLabels('File', ctx)).toEqual([
+      'New pipe class…', 'Save changes', 'Import from TR2000…', 'Import library…', 'Export library', 'Back to drawing',
+    ]);
+    expect(visibleLabels('Edit', ctx)).toEqual([
+      'Edit selected', 'Clone selected', 'Delete selected', 'Discard changes', 'Restore defaults…',
+    ]);
+    expect(visibleLabels('View', ctx)).toEqual([
+      'Pipe classes', 'Fitting standards', 'Control valve styles', 'Show list', 'Search the list', 'Previous entry', 'Next entry',
+    ]);
   });
 
-  it('Tools > Catalogue is a toggle: checked only on the page, and it runs toggleCatalogue from both', () => {
-    const catalogue = getCommand('tools.catalogue');
-    expect(catalogue.checked(onPage)).toBe(true);
-    expect(catalogue.checked(makeCommandCtx({ page: 'drawing' }))).toBe(false);
-    expect(catalogue.checked(makeCommandCtx())).toBe(false);
-    [onPage, makeCommandCtx()].forEach((ctx) => {
-      expect(runCommand('tools.catalogue', ctx)).toBe(true);
-      expect(ctx.actions.toggleCatalogue).toHaveBeenCalledTimes(1);
-    });
+  it.each([
+    ['pipe_classes', 'pipe class', 'New pipe class…', true],
+    ['fitting_standards', 'fitting standard', 'New fitting standard…', false],
+    ['control_valves', 'control valve catalogue', 'New control valve catalogue…', false],
+  ])('the New label and the TR2000 import follow the tab: %s', (tab, entryLabel, label, tr2000) => {
+    const ctx = catalogueCtx({ tab, entryLabel });
+    expect(commandLabel(getCommand('catalogue.new', 'catalogue'), ctx)).toBe(label);
+    expect(getCommand('catalogue.import-tr2000', 'catalogue').isVisible(ctx)).toBe(tr2000);
+  });
+
+  it('a read-only user loses every write command and the whole Edit menu, but keeps Export library', () => {
+    const ctx = catalogueCtx({ canManage: false });
+    expect(visibleLabels('File', ctx)).toEqual(['Export library', 'Back to drawing']);
+    expect(visibleLabels('Edit', ctx)).toEqual([]);
+    expect(visibleLabels('View', ctx)).toHaveLength(7);
+  });
+
+  it('without any page state (a tab still loading) no command throws or runs', () => {
+    const ctx = makeCommandCtx({ page: 'catalogue', pageState: null });
+    getPageDefinition('catalogue').commands.forEach((c) => expect(() => c.isEnabled(ctx), c.id).not.toThrow());
+    expect(runCommand('catalogue.save', ctx)).toBe(false);
+    // Always-enabled commands run on a key pressed before the page chunk registered: they do nothing
+    ['catalogue.tab-pipe-classes', 'catalogue.tab-fitting-standards', 'catalogue.tab-control-valves',
+      'catalogue.show-list', 'catalogue.search', 'catalogue.export-library']
+      .forEach((id) => expect(() => runCommand(id, ctx), id).not.toThrow());
+  });
+
+  it.each([
+    ['catalogue.edit', { hasSelection: false }, 'Select an entry first'],
+    ['catalogue.clone', { hasSelection: false }, 'Select an entry first'],
+    ['catalogue.delete', { hasSelection: false }, 'Select an entry first'],
+    ['catalogue.edit', { isEditing: true }, 'Finish editing first'],
+    ['catalogue.clone', { isEditing: true }, 'Finish editing first'],
+    ['catalogue.delete', { isEditing: true }, 'Finish editing first'],
+    ['catalogue.restore', { isEditing: true }, 'Finish editing first'],
+    ['catalogue.edit', { editBlocked: 'Only an admin can edit built-in standards' }, 'Only an admin can edit built-in standards'],
+    ['catalogue.delete', { deleteBlocked: 'Built-in standards cannot be deleted' }, 'Built-in standards cannot be deleted'],
+    ['catalogue.clone', { editBlocked: 'x', deleteBlocked: 'y' }, true],
+    ['catalogue.save', { isEditing: false }, 'Nothing to save'],
+    ['catalogue.save', { isEditing: true, isSaving: true }, 'Saving in progress'],
+    ['catalogue.save', { isEditing: true }, true],
+    ['catalogue.discard', { isEditing: false }, 'Nothing to discard'],
+    ['catalogue.discard', { isEditing: true }, true],
+    ['catalogue.restore', {}, true],
+    ['catalogue.import-library', { isEditing: true }, 'Finish editing first'],
+    ['catalogue.import-library', {}, true],
+    ['catalogue.previous', { selectedIndex: 0 }, 'This is the first entry'],
+    ['catalogue.next', { selectedIndex: 2 }, 'This is the last entry'],
+    ['catalogue.previous', { selectedIndex: -1 }, 'Select an entry first'],
+    ['catalogue.next', { listLength: 0, selectedIndex: -1 }, 'The list is empty'],
+    ['catalogue.next', { isEditing: true }, 'Finish editing first'],
+    ['catalogue.next', {}, true],
+  ])('%s with %j is enabled as %j', (id, stateOver, expected) => {
+    expect(getCommand(id, 'catalogue').isEnabled(catalogueCtx(stateOver))).toBe(expected);
+  });
+
+  it('a disabled command does not run; an enabled one calls the page action once', () => {
+    const blocked = catalogueCtx({ hasSelection: false });
+    expect(runCommand('catalogue.clone', blocked)).toBe(false);
+    expect(blocked.pageState.actions.clone).not.toHaveBeenCalled();
+
+    const ok = catalogueCtx({ isEditing: true });
+    expect(runCommand('catalogue.save', ok)).toBe(true);
+    expect(ok.pageState.actions.save).toHaveBeenCalledTimes(1);
+  });
+
+  it('a command hidden for the role never runs, by key lookup or by id', () => {
+    const ctx = catalogueCtx({ canManage: false, isEditing: true });
+    ['catalogue.new', 'catalogue.save', 'catalogue.edit', 'catalogue.clone', 'catalogue.delete', 'catalogue.discard', 'catalogue.restore', 'catalogue.import-library']
+      .forEach((id) => {
+        expect(runCommand(id, ctx), id).toBe(false);
+        expect(getCommand(id, 'catalogue').isVisible(ctx), id).toBe(false);
+      });
+    Object.values(ctx.pageState.actions).forEach((fn) => expect(fn).not.toHaveBeenCalled());
+    expect(runCommand('catalogue.export-library', ctx)).toBe(true);
+    expect(ctx.pageState.actions.exportLibrary).toHaveBeenCalledTimes(1);
+  });
+
+  it('the three tabs are radios that tick the active tab and select a tab through the page', () => {
+    const ctx = catalogueCtx({ tab: 'fitting_standards' });
+    const tabs = ['catalogue.tab-pipe-classes', 'catalogue.tab-fitting-standards', 'catalogue.tab-control-valves'].map((id) => getCommand(id, 'catalogue'));
+    tabs.forEach((c) => expect(c.radio).toBe(true));
+    expect(tabs.map((c) => c.checked(ctx))).toEqual([false, true, false]);
+    runCommand('catalogue.tab-control-valves', ctx);
+    expect(ctx.pageState.actions.selectTab).toHaveBeenCalledWith('control_valves');
+  });
+
+  it('Show list is ticked only while the list is open', () => {
+    expect(getCommand('catalogue.show-list', 'catalogue').checked(catalogueCtx({ listOpen: false }))).toBe(false);
+    expect(getCommand('catalogue.show-list', 'catalogue').checked(catalogueCtx({ listOpen: true }))).toBe(true);
+  });
+
+  it('Back to drawing runs the Tools > Catalogue toggle of the app', () => {
+    const ctx = catalogueCtx();
+    runCommand('catalogue.back', ctx);
+    expect(ctx.actions.toggleCatalogue).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('commandLabel', () => {
+  it('uses getLabel when the command has one and the static label otherwise', () => {
+    const ctx = catalogueCtx({ entryLabel: 'fitting standard' });
+    expect(commandLabel(getCommand('catalogue.new', 'catalogue'), ctx)).toBe('New fitting standard…');
+    expect(commandLabel(getCommand('file.save'), makeCommandCtx())).toBe('Save');
+  });
+});
+
+describe('key lookup per page', () => {
+  const press = (init) => ({ ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, ...init });
+
+  it.each([
+    ['n', { key: 'n' }, 'catalogue.new'],
+    ['e', { key: 'e' }, 'catalogue.edit'],
+    ['Ctrl+S', { key: 's', ctrlKey: true }, 'catalogue.save'],
+    ['Ctrl+D', { key: 'd', ctrlKey: true }, 'catalogue.clone'],
+    ['Delete', { key: 'Delete' }, 'catalogue.delete'],
+    ['Escape', { key: 'Escape' }, 'catalogue.discard'],
+    ['/', { key: '/' }, 'catalogue.search'],
+    ['ArrowUp', { key: 'ArrowUp' }, 'catalogue.previous'],
+    ['ArrowDown', { key: 'ArrowDown' }, 'catalogue.next'],
+    ['Alt+1 by physical key', { key: '&', code: 'Digit1', altKey: true }, 'catalogue.tab-pipe-classes'],
+    ['Alt+2 on the numpad', { key: '2', code: 'Numpad2', altKey: true }, 'catalogue.tab-fitting-standards'],
+    ['Alt+3', { key: '3', code: 'Digit3', altKey: true }, 'catalogue.tab-control-valves'],
+    ['? (shared Help)', { key: '?', shiftKey: true }, 'help.shortcuts'],
+  ])('on the page %s finds %s', (_n, init, id) => {
+    expect(findCommandForKey(press(init), 'catalogue')?.id).toBe(id);
+  });
+
+  it.each([
+    ['Backspace', { key: 'Backspace' }],
+    ['Ctrl+C', { key: 'c', ctrlKey: true }],
+    ['Ctrl+V', { key: 'v', ctrlKey: true }],
+    ['Ctrl+A', { key: 'a', ctrlKey: true }],
+    ['Ctrl+Z', { key: 'z', ctrlKey: true }],
+    ['r', { key: 'r' }],
+    ['Ctrl+Enter', { key: 'Enter', ctrlKey: true }],
+    ['Ctrl+E (browser)', { key: 'e', ctrlKey: true }],
+    ['Shift+Delete', { key: 'Delete', shiftKey: true }],
+  ])('on the page %s is no command', (_n, init) => {
+    expect(findCommandForKey(press(init), 'catalogue')).toBeNull();
+  });
+
+  it('the same keys still mean the drawing commands on the drawing', () => {
+    expect(findCommandForKey(press({ key: 'Backspace' }))?.id).toBe('edit.delete');
+    expect(findCommandForKey(press({ key: 'Enter', ctrlKey: true }))?.id).toBe('simulation.run');
+    expect(findCommandForKey(press({ key: 'n' }))).toBeNull();
+  });
+
+  it('only Save fires inside text fields, on both pages', () => {
+    const all = [...getPageDefinition('catalogue').commands, ...COMMANDS, ...KEY_ONLY_COMMANDS].filter((c) => c.firesInInputs);
+    expect(all.map((c) => c.id).sort()).toEqual(['catalogue.save', 'file.save']);
   });
 });
 
 describe('shortcutGroups', () => {
-  it('lists every bound command with its keys and a label, whatever the command kind', () => {
-    const rows = shortcutGroups().flatMap((g) => g.shortcuts);
-    expect(rows).toHaveLength([...COMMANDS, ...KEY_ONLY_COMMANDS].filter((c) => c.shortcut).length);
+  it.each(['drawing', 'catalogue'])('lists every bound command of the %s page with keys and a label', (page) => {
+    const def = getPageDefinition(page);
+    const rows = shortcutGroups(page).flatMap((g) => g.shortcuts);
+    expect(rows).toHaveLength([...def.commands, ...def.keyOnlyCommands].filter((c) => c.shortcut).length);
     rows.forEach((r) => {
       expect(r.keys.length).toBeGreaterThan(0);
       expect(r.label).toBeTruthy();
     });
+  });
+
+  it('the Catalogue list holds its own keys and none of the drawing keys', () => {
+    const keys = shortcutGroups('catalogue').flatMap((g) => g.shortcuts.map((s) => s.keys.join('+')));
+    expect(keys).toEqual(expect.arrayContaining(['N', 'E', 'Ctrl+S', 'Ctrl+D', 'Delete', 'Esc', 'Alt+1', 'Alt+2', 'Alt+3', '/', 'Up', 'Down', 'Shift+?']));
+    ['Ctrl+Z', 'Ctrl+Enter', 'R'].forEach((k) => expect(keys).not.toContain(k));
+    expect(shortcutGroups('drawing').flatMap((g) => g.shortcuts.map((s) => s.keys.join('+')))).not.toContain('Alt+1');
+  });
+
+  it('given a context, the Catalogue list omits the keys hidden for that user and lists them for a manager', () => {
+    const keysFor = (canManage) => shortcutGroups('catalogue', catalogueCtx({ canManage })).flatMap((g) => g.shortcuts.map((s) => s.keys.join('+')));
+    const writeKeys = ['N', 'E', 'Ctrl+D', 'Delete', 'Ctrl+S', 'Esc'];
+    const readOnly = keysFor(false);
+    writeKeys.forEach((k) => expect(readOnly, k).not.toContain(k));
+    expect(readOnly).toEqual(expect.arrayContaining(['/', 'Up', 'Down', 'Alt+1']));
+    expect(keysFor(true)).toEqual(expect.arrayContaining(writeKeys));
   });
 });

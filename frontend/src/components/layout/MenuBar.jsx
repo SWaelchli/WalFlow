@@ -3,7 +3,7 @@ import walflowLogo from '../../assets/Logo_WalFlow.svg';
 import { useAuth } from '../../hooks/useAuth';
 import { APP_VERSION, RELEASE_STAGE } from '../../constants';
 import { describeLockState } from '../../utils/lockState';
-import { COMMANDS, MENU_ORDER, formatShortcut, runCommand } from '../../commands';
+import { getPageDefinition, commandLabel, formatShortcut, runCommand } from '../../commands';
 import { BookIcon, CaretDownIcon, CaretRightIcon, CheckIcon, CloudIcon, CrownIcon, FileIcon, LockIcon, SignInIcon, SignOutIcon } from '../symbols/IconLibrary';
 
 /** Save state shown next to the drawing name: a dot tone + a short label. */
@@ -26,11 +26,11 @@ const itemsOf =(menuEl) => (menuEl
   ? [...menuEl.querySelectorAll('[data-menu-item]')].filter((el) => el.closest('[role="menu"]') === menuEl)
   : []);
 
-/** The visible commands of one menu, in list order, with `separator` markers between groups. */
-function menuEntries(menu, ctx) {
+/** The visible commands of one menu of a page, in list order, with `separator` markers between groups. */
+function menuEntries(definition, menu, ctx) {
   const entries = [];
   let lastGroup = null;
-  COMMANDS.filter((c) => c.menu === menu && c.isVisible(ctx)).forEach((command) => {
+  definition.commands.filter((c) => c.menu === menu && c.isVisible(ctx)).forEach((command) => {
     if (lastGroup !== null && command.group !== lastGroup) entries.push({ separator: `${menu}/${command.group}` });
     lastGroup = command.group;
     entries.push({ command });
@@ -114,10 +114,13 @@ export default function MenuBar({
   lastSavedTimestamp = null,
   isLockedByOther = false,
   lockInfo = null,
-  pageName = null,
 }) {
   const { currentUser, isAuthenticated, adminStatus } = useAuth();
-  const [openMenu, setOpenMenu] = useState(null); // index into MENU_ORDER
+  // The open page's menus; a menu whose items are all hidden is left out (a read-only user has no Edit menu on a page)
+  const definition = getPageDefinition(ctx.page);
+  const pageName = definition.name;
+  const menus = definition.menuOrder.filter((menu) => menuEntries(definition, menu, ctx).length > 0);
+  const [openMenu, setOpenMenu] = useState(null); // index into menus
   const [openSub, setOpenSub] = useState(null); // id of the item whose submenu is open
   const [tabStop, setTabStop] = useState(0); // roving tabindex: the one trigger Tab reaches
   const barRef = useRef(null);
@@ -156,7 +159,7 @@ export default function MenuBar({
   const focusTrigger = (index) => triggerRefs.current[index]?.focus();
 
   const moveTop = (from, step) => {
-    const next = (from + step + MENU_ORDER.length) % MENU_ORDER.length;
+    const next = (from + step + menus.length) % menus.length;
     if (openMenu !== null) openTop(next);
     else focusTrigger(next);
   };
@@ -215,7 +218,7 @@ export default function MenuBar({
   };
 
   const renderMenu = (menu, index) => {
-    const entries = menuEntries(menu, ctx);
+    const entries = menuEntries(definition, menu, ctx);
     return (
       <div className="menu" role="menu" aria-label={menu} data-menu-level="top">
         {entries.map((entry) => {
@@ -233,7 +236,7 @@ export default function MenuBar({
             <div key={command.id} role="none" className="menu-item-anchor">
               <button
                 type="button"
-                role={hasChecked ? 'menuitemcheckbox' : 'menuitem'}
+                role={command.radio ? 'menuitemradio' : hasChecked ? 'menuitemcheckbox' : 'menuitem'}
                 aria-checked={hasChecked ? isChecked : undefined}
                 aria-disabled={disabled || undefined}
                 aria-haspopup={hasSub ? 'menu' : undefined}
@@ -256,7 +259,7 @@ export default function MenuBar({
                 <span className="menu-item-icon">
                   {hasChecked ? (isChecked && <CheckIcon size={14} />) : (Icon && <Icon size={16} />)}
                 </span>
-                <span className="menu-item-label">{command.label}</span>
+                <span className="menu-item-label">{commandLabel(command, ctx)}</span>
                 {badge > 0 && <span className="menu-item-badge" aria-label={`${badge} pending registration requests`}>{badge}</span>}
                 {hasSub ? <CaretRightIcon size={10} /> : shortcut && <kbd>{shortcut}</kbd>}
               </button>
@@ -312,7 +315,7 @@ export default function MenuBar({
         </button>
 
         <div role="menubar" aria-label="Main menu" className="menubar-menus" ref={barRef}>
-          {MENU_ORDER.map((menu, index) => (
+          {menus.map((menu, index) => (
             <div key={menu} className="menubar-menu" role="none">
               <button
                 ref={(el) => { triggerRefs.current[index] = el; }}
@@ -321,7 +324,7 @@ export default function MenuBar({
                 className="menubar-item"
                 aria-haspopup="menu"
                 aria-expanded={openMenu === index}
-                tabIndex={index === tabStop ? 0 : -1}
+                tabIndex={index === Math.min(tabStop, menus.length - 1) ? 0 : -1}
                 onFocus={() => setTabStop(index)}
                 onClick={() => (openMenu === index ? closeAll() : openTop(index, 'first'))}
                 onMouseEnter={() => { if (openMenu !== null && openMenu !== index) { setOpenSub(null); setOpenMenu(index); } }}
