@@ -173,8 +173,8 @@ class Pipe(HydraulicNode):
             re = (density * abs_v * self.diameter) / viscosity
 
             # dP = f(Re) (L/D) rho Q|Q| / (2 A^2), Re ~ |Q|  ->  dP/dQ = (L/D) rho |Q| / (2 A^2) (2 f + dF/dlnRe)
-            f = self._friction_factor(re)
-            dfdlnre = FluidProperties.get_darcy_friction_slope(re, self.rel_roughness)
+            f, dfdlnre = FluidProperties.get_darcy_friction_and_slope(re, self.rel_roughness)
+            self._last_friction = ((re, self.rel_roughness), f)
             return (self.length / self.diameter) * density * abs(flow_rate) / (2.0 * self.area ** 2) * (2.0 * f + dfdlnre)
         elif viscosity > 0:
             # Zero flow: laminar limit instead of a zero slope, so a dead leg keeps a usable Jacobian

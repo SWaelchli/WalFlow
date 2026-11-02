@@ -303,6 +303,7 @@ class NetworkSolver:
                                     self.internal_pos.get(tgt_idx, -1), src_node, tgt_node,
                                     tcv_port, edge['pipe'], kind))
         self._mass_jacobian = None   # (w_mass it was built with, rows, cols, data), calculate_jacobian
+        self._edge_fluids = None
 
     def _all_pressures(self, p_in_internal) -> np.ndarray:
         """Pressures of all active nodes: the fixed boundary pressures and the internal unknowns."""
@@ -1256,25 +1257,23 @@ class NetworkSolver:
         rows, cols, data = (list(v) for v in self._mass_jacobian[1:])
 
         # 2. Pressure Balance Rows (a_row = num_internal + j)
+        edge_fluids = self._current_edge_fluids()
         for j, (src_idx, tgt_idx, src_internal_idx, tgt_internal_idx, src_node, tgt_node_obj, tcv_port, pipe, kind) \
                 in enumerate(self._edge_rows):
             a_row = num_internal + j
             fj = f_comp[j]   # the source component sees its inlet volume flow fj*q_j
+            (pipe_density, pipe_viscosity), (density, viscosity), tcv_fluid = edge_fluids[j]
 
             if kind == "mcp":
                 # Complementarity rows (check valves, closed relief devices): the node itself decides which
                 # branch of its model applies at the current state, so differentiate exactly that function
                 # numerically instead of an analytic form that can describe a different branch.
-                pipe_density, pipe_viscosity = pipe.upstream_port().fluid()
-                density, viscosity = src_node.upstream_fluid()
-
                 def row_residual(p_src, p_tgt, q, sense=None):
                     # Same function as the objective's row for this edge
                     dp_pipe_ = pipe.stagnation_delta_p(q, pipe_density, pipe_viscosity)
                     dp_tcv_ = 0.0
                     if tcv_port is not None:
-                        port = tgt_node_obj.inlets[tcv_port]
-                        dp_tcv_ = tgt_node_obj.calculate_path_dp(q, port.density, tcv_port, port.viscosity)
+                        dp_tcv_ = tgt_node_obj.calculate_path_dp(q, tcv_fluid[0], tcv_port, tcv_fluid[1])
                     dp_node_ = src_node.calculate_delta_p(fj * q, density, viscosity, p_in_pa=p_src,
                                                           p_out_pa=p_tgt + dp_pipe_ + dp_tcv_, update_state=False,
                                                           **sense or {})
@@ -1366,16 +1365,13 @@ class NetworkSolver:
                     data.append((q_scale / p_scale) * dp_deriv_src_signed * fj)
 
                 # Term 2: d(dp_pipe)/dq_j
-                pipe_density, pipe_viscosity = pipe.upstream_port().fluid()
                 dp_deriv_pipe = max(1e-3, pipe.stagnation_dp_derivative(q_edges[j], pipe_density, pipe_viscosity))
                 
                 # Term 3: d(dp_tcv)/dq_j
                 dp_deriv_tcv = 0.0
                 if tcv_port is not None:
-                    tcv_density = tgt_node_obj.inlets[tcv_port].density
-                    tcv_viscosity = tgt_node_obj.inlets[tcv_port].viscosity
                     dp_deriv_tcv = max(100.0, self._numeric_derivative(
-                        lambda q_: tgt_node_obj.calculate_path_dp(q_, tcv_density, tcv_port, tcv_viscosity), q_edges[j]))
+                        lambda q_: tgt_node_obj.calculate_path_dp(q_, tcv_fluid[0], tcv_port, tcv_fluid[1]), q_edges[j]))
 
                 rows.append(a_row)
                 cols.append(num_internal + j)
@@ -1491,6 +1487,18 @@ class NetworkSolver:
             return self._edge_weights()
         return self._weights
 
+    def _current_edge_fluids(self):
+        """(pipe_fluid, src_fluid, tcv_fluid) per edge, held fixed during a solve like _edge_weights."""
+        if self._edge_fluids is None or len(self._edge_fluids) != len(self.edges_list):
+            fluids = []
+            for src_idx, _, _, _, src_node, tgt_node_obj, tcv_port, pipe, _ in self._edge_rows:
+                pipe_fluid = pipe.upstream_port().fluid()
+                src_fluid = src_node.upstream_fluid() if hasattr(src_node, 'upstream_fluid') else (1000.0, 0.001)
+                tcv_fluid = (tgt_node_obj.inlets[tcv_port].density, tgt_node_obj.inlets[tcv_port].viscosity) if tcv_port is not None else None
+                fluids.append((pipe_fluid, src_fluid, tcv_fluid))
+            self._edge_fluids = fluids
+        return self._edge_fluids
+
     def _solve_hydraulics_core(self, method='sparse_newton', x0_custom=None,
                                property_flows=None) -> Tuple[np.ndarray, int, int, bool, np.ndarray]:
         num_internal = len(self.internal_node_indices)
@@ -1499,6 +1507,8 @@ class NetworkSolver:
         # and the report use the same weights; a failed solve restores those of the last converged objective)
         prev_weights = self._weights
         self._weights = (w_mass, f_comp) = self._edge_weights()
+        self._edge_fluids = None
+        edge_fluids = self._current_edge_fluids()
         if (num_internal + num_edges) == 0:
             self._update_telemetry(np.array([]), np.array([]))
             self._last_evaluated_residuals = np.array([])
@@ -1521,6 +1531,7 @@ class NetworkSolver:
 
             residuals = []
             # 1. Mass Balance
+            w_q = w_mass * q_edges
             for i, (is_flow_boundary, incoming, outgoing) in enumerate(self._mass_rows):
                 # If a flow boundary is present, bypass mass balance and pin its reference pressure
                 # to the ambient/atmospheric pressure instead.
@@ -1532,30 +1543,30 @@ class NetworkSolver:
                     continue
 
                 # Mass flow, as volume flow at the mean density: the row keeps the size and tolerance of a q row
-                m_in = sum(w_mass[j] * q_edges[j] for j in incoming)
-                m_out = sum(w_mass[j] * q_edges[j] for j in outgoing)
+                m_in = sum(w_q[j] for j in incoming)
+                m_out = sum(w_q[j] for j in outgoing)
                 residuals.append(5.0 * (m_in - m_out) / q_scale + 1e-9 * x_scaled[i])
 
             # 2. Pressure Balance
             part = None    # the component being evaluated: named when its equations cannot be evaluated
             try:
                 for j, (src_idx, tgt_idx, _, _, src_node, tgt_node, tcv_port, pipe, kind) in enumerate(self._edge_rows):
+                    (pipe_rho, pipe_mu), (src_rho, src_mu), tcv_fluid = edge_fluids[j]
                     if kind == "through":
                         p_src_out = p_in_all[src_idx]
                     elif getattr(src_node, 'locked_up', False):
                         p_src_out = src_node.set_pressure   # closed regulator holds its setpoint downstream
                     elif kind == "mcp":
                         part = pipe
-                        dp_pipe = pipe.stagnation_delta_p(q_edges[j], *pipe.upstream_port().fluid())
+                        dp_pipe = pipe.stagnation_delta_p(q_edges[j], pipe_rho, pipe_mu)
                         part = tgt_node
                         p_out_est = p_in_all[tgt_idx] + dp_pipe + self._tcv_entry_dp(self.edges_list[j], tgt_node, q_edges[j])
 
                         part = src_node
-                        density, viscosity = src_node.upstream_fluid()
                         sense = {}
                         if self._pilot_point(src_node) is not None:
                             sense = {"p_sense_pa": self._pilot_sense_pa(src_node, p_in_all, q_edges)}
-                        dp_node = src_node.calculate_delta_p(f_comp[j] * q_edges[j], density, viscosity, p_in_pa=p_in_all[src_idx], p_out_pa=p_out_est, update_state=False, **sense)
+                        dp_node = src_node.calculate_delta_p(f_comp[j] * q_edges[j], src_rho, src_mu, p_in_pa=p_in_all[src_idx], p_out_pa=p_out_est, update_state=False, **sense)
                         p_src_out = p_in_all[src_idx] - dp_node
                     else:
                         # The component's curve at its inlet volume flow (f_comp: edge density / inlet density)
@@ -1564,15 +1575,15 @@ class NetworkSolver:
                         p_src_out = self._get_node_p_out(src_node, p_in_all[src_idx], q_comp, q_comp,
                                                          outlet=self._outlet_of(self.edges_list[j]))
 
+                    if kind != "mcp":
+                        part = pipe
+                        dp_pipe = pipe.stagnation_delta_p(q_edges[j], pipe_rho, pipe_mu)
+
                     if tcv_port is not None:
                         part = tgt_node
-                        dp_tcv = tgt_node.calculate_path_dp(q_edges[j], tgt_node.inlets[tcv_port].density, tcv_port, tgt_node.inlets[tcv_port].viscosity)
-                        part = pipe
-                        dp_pipe = pipe.stagnation_delta_p(q_edges[j], *pipe.upstream_port().fluid())
+                        dp_tcv = tgt_node.calculate_path_dp(q_edges[j], tcv_fluid[0], tcv_port, tcv_fluid[1])
                         residuals.append(((p_src_out - p_in_all[tgt_idx]) - (dp_pipe + dp_tcv)) / p_scale)
                     else:
-                        part = pipe
-                        dp_pipe = pipe.stagnation_delta_p(q_edges[j], *pipe.upstream_port().fluid())
                         residuals.append(((p_src_out - p_in_all[tgt_idx]) - dp_pipe) / p_scale)
             except ValueError as e:
                 if isinstance(e, ComponentRangeError) or part is None:
@@ -1651,6 +1662,7 @@ class NetworkSolver:
             return converged_x, num_internal, getattr(sol, 'nfev', 0), fallback_used, final_residuals
         else:
             self._weights = prev_weights
+            self._edge_fluids = None
             msg = getattr(sol, 'message', 'Residuals did not converge to tolerance')
             raise SolveNotConvergedError(f"Solver failed to converge: message='{msg}', max_residual={max_res:.6f} (scaled)")
 

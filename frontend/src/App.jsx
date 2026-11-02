@@ -111,19 +111,6 @@ import {
   updateCaseOverride
 } from './utils/case_resolver';
 
-// Import Examples
-import exampleAPI614 from './data/examples/Example_API_614_LOS.wlf';
-import exampleAPI682 from './data/examples/Example_API_682_Seal_Flush.wlf';
-import exampleChilledWater from './data/examples/Example_Chilled_Water_Loop.wlf';
-import examplePressureReg from './data/examples/Example_Pressure_Regulation.wlf';
-import exampleThermal from './data/examples/Example_Thermal_Management.wlf';
-import examplePumpComp from './data/examples/Example_Pump_Comparison.wlf';
-import exampleRemoteControl from './data/examples/Example_Remote_Control.wlf';
-import exampleParallelPumps from './data/examples/Example_Parallel_Pumps.wlf';
-import exampleLargeNetwork from './data/examples/Example_Large_Reference_Network.wlf';
-import exampleMultiPsv from './data/examples/Example_Multi_PSV_Protection.wlf';
-import exampleJeppson from './data/examples/Example_Jeppson_7Pipe_Network.wlf';
-import exampleJeppson48 from './data/examples/Example_Jeppson_48Pipe_Network.wlf';
 import greetingCanvas from './data/GreetingCanvas.wlf';
 
 const nodeTypes = {
@@ -254,7 +241,8 @@ function WalFlowContent() {
   useFittingStandards('reducer');
 
 
-  const { isCanvasLoading, canvasLoadingLabel, showCanvasLoading, hideCanvasLoading, scheduleLoad } = useCanvasLoading({ nodes, edges });
+  const [awaitingInitialSolve, setAwaitingInitialSolve] = useState(false);
+  const { isCanvasLoading, canvasLoadingLabel, showCanvasLoading, hideCanvasLoading, scheduleLoad } = useCanvasLoading({ nodes, edges, awaitingInitialSolve });
 
   // Frame the diagram after a load, an example or a new drawing
   useEffect(() => {
@@ -416,6 +404,28 @@ function WalFlowContent() {
     setAutoRunPending(false);
     runChecked({ silent: true });
   }, [autoRunPending, isConnected, runChecked]);
+
+  // Track initial simulation solve completion to coordinate canvas loading overlay dismissal
+  const initialSolveStartedRef = useRef(false);
+  useEffect(() => {
+    if (!awaitingInitialSolve) {
+      initialSolveStartedRef.current = false;
+      return;
+    }
+
+    if (!isConnected || validation.errors.length > 0 || runError) {
+      setAwaitingInitialSolve(false);
+      initialSolveStartedRef.current = false;
+      return;
+    }
+
+    if (isSimulating) {
+      initialSolveStartedRef.current = true;
+    } else if (initialSolveStartedRef.current) {
+      setAwaitingInitialSolve(false);
+      initialSolveStartedRef.current = false;
+    }
+  }, [awaitingInitialSolve, isConnected, validation.errors.length, runError, isSimulating]);
 
   // Hash of the inputs each case is solved from, and whether its stored results still match
   const caseInputHashes = useMemo(
@@ -819,6 +829,7 @@ function WalFlowContent() {
     const check = checkDiagramFile(data, KNOWN_NODE_TYPES);
     if (!check.ok) {
       hideCanvasLoading();
+      setAwaitingInitialSolve(false);
       notify(check.message, 'warning');
       return false;
     }
@@ -882,15 +893,38 @@ function WalFlowContent() {
         setActiveCaseId('case_base');
       }
       // Solve the loaded diagram so it opens with results, as soon as the solver is connected
-      setAutoRunPending(restoredNodes.length > 0);
-    }, 50);
+      if (restoredNodes.length > 0) {
+        setAutoRunPending(true);
+        setAwaitingInitialSolve(isConnected);
+      } else {
+        setAutoRunPending(false);
+        setAwaitingInitialSolve(false);
+      }
+    });
     return true;
-  }, [handleValveChange, handleRotation, setNodes, setEdges, setCases, setActiveCaseId, showCanvasLoading, hideCanvasLoading, scheduleLoad, resetHistory, resetRunState]);
+  }, [handleValveChange, handleRotation, setNodes, setEdges, setCases, setActiveCaseId, showCanvasLoading, hideCanvasLoading, scheduleLoad, resetHistory, resetRunState, isConnected]);
 
-  const handleLoadDiagramWithCheck = useCallback(async (data, diagramTitle = '', options = {}) => {
+  const handleLoadDiagramWithCheck = useCallback(async (dataOrLoader, diagramTitle = '', options = {}) => {
+    showCanvasLoading('Opening drawing…');
+    setAwaitingInitialSolve(isConnected);
+    let data = dataOrLoader;
+    if (typeof dataOrLoader === 'function') {
+      try {
+        const mod = await dataOrLoader();
+        data = mod?.default || mod;
+      } catch (err) {
+        hideCanvasLoading();
+        setAwaitingInitialSolve(false);
+        console.error('Failed to load diagram:', err);
+        notify('Failed to load diagram.', 'error');
+        return false;
+      }
+    }
     // Reject a bad file before anything about the open drawing changes
     const check = checkDiagramFile(data, KNOWN_NODE_TYPES);
     if (!check.ok) {
+      hideCanvasLoading();
+      setAwaitingInitialSolve(false);
       notify(check.message, 'warning');
       return false;
     }
@@ -900,12 +934,18 @@ function WalFlowContent() {
       const cloudTarget = hasCloudDiagram ? `drawing "${activeDiagram.title}"` : `project "${activeProject.title}"`;
       const confirmText = `Are you sure you want to load ${displayTitle}?\n\nNote: This closes the cloud ${cloudTarget} and detaches cloud sync, so the cloud copy is not overwritten.`;
 
+      hideCanvasLoading();
       const proceed = await confirmDialog({
         title: 'Load diagram?',
         message: confirmText,
         confirmLabel: 'Load',
       });
-      if (!proceed) return false;
+      if (!proceed) {
+        hideCanvasLoading();
+        setAwaitingInitialSolve(false);
+        return false;
+      }
+      showCanvasLoading('Opening drawing…');
 
       // Detach cloud sync FIRST: save pending edits of the open drawing
       // (serialized now, before the new content loads), then release its lock.
@@ -916,12 +956,18 @@ function WalFlowContent() {
       setActiveProject(null);
     } else if (diagramTitle && (options.isTemplate || options.promptConfirmation) && nodes.length > 0 && hasEdits()) {
       // Only work that would be lost needs a question; an empty or untouched canvas loads straight away
+      hideCanvasLoading();
       const proceed = await confirmDialog({ title: 'Load example?', message: `Load "${diagramTitle}"?`, confirmLabel: 'Load' });
-      if (!proceed) return false;
+      if (!proceed) {
+        hideCanvasLoading();
+        setAwaitingInitialSolve(false);
+        return false;
+      }
+      showCanvasLoading('Opening drawing…');
     }
 
     return loadData(data);
-  }, [activeProject, activeDiagram, hasLock, triggerManualCloudSave, checkinDiagram, setActiveDiagram, loadData, nodes.length, hasEdits]);
+  }, [showCanvasLoading, hideCanvasLoading, setAwaitingInitialSolve, isConnected, activeProject, activeDiagram, hasLock, triggerManualCloudSave, checkinDiagram, setActiveDiagram, loadData, nodes.length, hasEdits]);
 
   // StrictMode runs the boot effect twice: the draft check (and its questions) must happen once per page load
   const bootDraftCheckedRef = useRef(false);
@@ -1311,6 +1357,7 @@ function WalFlowContent() {
     setActiveCaseId('case_base');
     setGlobalSettings(DEFAULT_DRAWING_SETTINGS);
     resetRunState();
+    setAwaitingInitialSolve(false);
   }, [setNodes, setEdges, setCases, setActiveCaseId, resetHistory, resetRunState]);
 
   const handleSaveAs = useCallback(async ({ title, description, project_id }) => {
@@ -1774,22 +1821,22 @@ function WalFlowContent() {
               "Welcome canvas": greetingCanvas
             },
             "Industrial Process Systems": {
-              "API 614 Lube Oil System (LOS)": exampleAPI614,
-              "API 682 Mechanical Seal Flush": exampleAPI682,
-              "Industrial Chilled Water Circuit": exampleChilledWater,
-              "Large Reference Network": exampleLargeNetwork
+              "API 614 Lube Oil System (LOS)": () => import('./data/examples/Example_API_614_LOS.wlf'),
+              "API 682 Mechanical Seal Flush": () => import('./data/examples/Example_API_682_Seal_Flush.wlf'),
+              "Industrial Chilled Water Circuit": () => import('./data/examples/Example_Chilled_Water_Loop.wlf'),
+              "Large Reference Network": () => import('./data/examples/Example_Large_Reference_Network.wlf')
             },
             "Capability Spotlights": {
-              "Pressure Regulation: PRV vs BPR": examplePressureReg,
-              "Thermal Management & 3-Way TCV": exampleThermal,
-              "Centrifugal vs Volumetric Pumping": examplePumpComp,
-              "Remote Control & Interlocks": exampleRemoteControl,
-              "Parallel Pumping & Min-Flow": exampleParallelPumps,
-              "Multi-PSV & Rupture Disc Protection": exampleMultiPsv
+              "Pressure Regulation: PRV vs BPR": () => import('./data/examples/Example_Pressure_Regulation.wlf'),
+              "Thermal Management & 3-Way TCV": () => import('./data/examples/Example_Thermal_Management.wlf'),
+              "Centrifugal vs Volumetric Pumping": () => import('./data/examples/Example_Pump_Comparison.wlf'),
+              "Remote Control & Interlocks": () => import('./data/examples/Example_Remote_Control.wlf'),
+              "Parallel Pumping & Min-Flow": () => import('./data/examples/Example_Parallel_Pumps.wlf'),
+              "Multi-PSV & Rupture Disc Protection": () => import('./data/examples/Example_Multi_PSV_Protection.wlf')
             },
             "Validation Benchmarks": {
-              "Jeppson (1974) 7-Pipe Network": exampleJeppson,
-              "Jeppson (1974) 48-Pipe Network": exampleJeppson48
+              "Jeppson (1974) 7-Pipe Network": () => import('./data/examples/Example_Jeppson_7Pipe_Network.wlf'),
+              "Jeppson (1974) 48-Pipe Network": () => import('./data/examples/Example_Jeppson_48Pipe_Network.wlf')
             }
           }}
           isAuthenticated={isAuthenticated}
