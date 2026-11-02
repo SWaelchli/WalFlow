@@ -14,9 +14,20 @@ const TANK_OUTLINE = 'M 10 20 L 10 80 Q 10 95 30 95 Q 50 95 50 80 L 50 20 Q 50 5
 export default function TankNode({ id, data, selected }) {
   const { toDisplayValue, labels, formatTemperatureK } = useUnits();
   const rotation = data.rotation || 0;
+  const normRotation = ((data.rotation || 0) % 360 + 360) % 360;
   const sensing = useMemo(() => data.sensing || {}, [data.sensing]);
   const level = data.level_m ?? 1.0;
   const fillH = Math.min(60, (level / 5) * 60);
+  const fillH_h = Math.min(27, (level / 5) * 27);
+
+  const liquidRect = normRotation === 180
+    ? { x: 10, y: 5, width: 40, height: fillH }
+    : normRotation === 90
+    ? { x: 50 - fillH_h, y: 5, width: fillH_h, height: 90 }
+    : normRotation === 270
+    ? { x: 10, y: 5, width: fillH_h, height: 90 }
+    : { x: 10, y: 95 - fillH, width: 40, height: fillH };
+
   const numPorts = boundaryPortCount(data);
   const layout = useMemo(() => boundaryLayout('tank', numPorts), [numPorts]);
   const tempK = (data.temperature_k !== undefined ? data.temperature_k : firstPiped(data.telemetry)?.temperature) || 293.15;
@@ -46,7 +57,7 @@ export default function TankNode({ id, data, selected }) {
           </clipPath>
         </defs>
         <path d={TANK_OUTLINE} fill="var(--color-surface)" />
-        <rect x="10" y={95 - fillH} width="40" height={fillH} fill="var(--color-info)" fillOpacity="0.2" clipPath={`url(#tank-clip-${id})`} />
+        <rect x={liquidRect.x} y={liquidRect.y} width={liquidRect.width} height={liquidRect.height} fill="var(--color-info)" fillOpacity="0.2" clipPath={`url(#tank-clip-${id})`} />
         <path d={TANK_OUTLINE} fill="none" stroke="var(--color-brand-dark)" strokeWidth="2.5" />
       </svg>
 

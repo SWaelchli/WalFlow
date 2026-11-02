@@ -19,7 +19,7 @@ export function centrifugalDpBar(pump, qM3s, rho) {
 
 /**
  * Positive-displacement pump: dP (bar) at flow `qM3s`; the lower of the displacement spring, the power
- * limit (VFD drive only) and the discharge limit (absolute pressure minus suction pressure).
+ * limit (VFD drive only) and the discharge limit (with 1% accumulation).
  * @param {{flowRatedLmin: number, motorPowerKw: number, efficiencyPct: number, fixedSpeed: boolean,
  *          maxDischargeBara: number, suctionPa: number}} pump
  */
@@ -30,6 +30,14 @@ export function volumetricDpBar(pump, qM3s) {
   const stiffness = 10_000_000.0 / (0.01 * qRated);
   const dpDisplacement = Math.max(0, stiffness * (qRated - qM3s));
   const dpPower = pump.fixedSpeed ? Infinity : (powerW * eff) / Math.sqrt(qM3s ** 2 + 1e-10);
-  const dpLimit = Math.max(0, pump.maxDischargeBara * 100000 - (pump.suctionPa || 101325));
-  return Math.min(dpDisplacement, dpPower, dpLimit) / 100000;
+  const dpUnlimited = Math.min(dpDisplacement, dpPower);
+  const maxDischargePa = (parseFloat(pump.maxDischargeBara) || 50) * 100000;
+  const riseLimit = maxDischargePa - (pump.suctionPa || 101325);
+  let dp = dpUnlimited;
+  if (dpUnlimited > riseLimit) {
+    const slope = (0.01 * maxDischargePa) / Math.max(qRated, 1e-9);
+    const limitRatio = slope / stiffness;
+    dp = riseLimit + limitRatio * (dpUnlimited - riseLimit);
+  }
+  return Math.max(0, dp) / 100000;
 }

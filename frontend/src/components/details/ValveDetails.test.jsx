@@ -85,4 +85,49 @@ describe('ValveDetails backend curves', () => {
     );
     expect(point('Operating Point')).toEqual({ q: 60, p: 2 });
   });
+
+  it.each([
+    ['reducing', false, 200000],       // outlet pressure 2 bar
+    ['backpressure', true, 300000],    // inlet pressure 3 bar
+  ])('operating point matches current curve at operating flow with unequal pipe bores (%s)', (_name, backpressure, ownPa) => {
+    const unequalTelemetry = {
+      opening_pct: 50,
+      inlets: [{ flow_rate: 0.001, pressure: 300000, total_pressure: 340000 }],
+      outlets: [{ pressure: 200000, total_pressure: 210000 }],
+      valve_curves: {
+        flow_m3s: [0, 0.001],
+        dp_current_pa: [0, 130000],
+        dp_full_open_pa: [0, 30000],
+      },
+    };
+    renderValve({ backpressure, telemetry: unequalTelemetry });
+    const rows = JSON.parse(screen.getByTestId('chart').dataset.rows);
+    const opRow = rows.find((r) => Math.abs(r.q - 60) < 1e-6);
+    expect(opRow).toBeDefined();
+    const opP = point('Operating Point').p;
+    expect(opP).toBeCloseTo(ownPa / 100000, 6);
+    expect(opRow.currentCurve).toBeCloseTo(opP, 6);
+  });
+
+  it.each([
+    ['reducing', false],
+    ['backpressure', true],
+  ])('operating point matches current curve under reverse flow (%s)', (_name, backpressure) => {
+    const reverseTelemetry = {
+      opening_pct: 50,
+      inlets: [{ flow_rate: -0.001, pressure: 200000, total_pressure: 205000 }],
+      outlets: [{ pressure: 300000, total_pressure: 305000 }],
+      valve_curves: {
+        flow_m3s: [0, 0.001],
+        dp_current_pa: [0, 100000],
+        dp_full_open_pa: [0, 20000],
+      },
+    };
+    renderValve({ backpressure, telemetry: reverseTelemetry });
+    const rows = JSON.parse(screen.getByTestId('chart').dataset.rows);
+    const opRow = rows.find((r) => Math.abs(r.q - 60) < 1e-6);
+    expect(opRow).toBeDefined();
+    const opP = point('Operating Point').p;
+    expect(opRow.currentCurve).toBeCloseTo(opP, 6);
+  });
 });

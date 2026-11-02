@@ -56,6 +56,9 @@ All notable changes to the WälFlow project will be documented in this file.
 
 ### Changed
 
+- **Valve symbols and sizing standardization**: Standardized all valve symbols to a 60 × 60 px footprint with consistent 40 px port-to-port spans and matching body triangle sizing across all equipment (resizing the pressure safety valve from 70 × 70 px to 60 × 60 px and centering its palette icon). Removed the stray dashed impulse line on the pressure regulator and standardized actuator strokes. Centered the H (Hot, red) and C (Cold, blue) port indicators inside the 3-Way TCV body triangles with protective surface halos to prevent stroke collision.
+- **Junction sidebar symbol**: Corrected junction port colors in the sidebar preview from legacy solid purple (`#7C3AED`) to hollow rings with `var(--color-port-neutral)` stroke, matching the canvas neutral port handles.
+
 - **Source and instrument symbol size**: The flow and pressure source symbols are 60 px like the pumps and valves (were 70 px), and their circles and the instrument bubble have the same diameter as the pump circle; the Jeppson examples keep their layout.
 - **Signal lines**: Sensing/signal lines draw as one static dashed line in muted slate instead of two overlaid yellow/orange animated dashes; saved files render the new style unchanged.
 - **Unit in every field name**: Node and pipe data fields carry their unit (`level_m`, `temperature_k`, `set_pressure_pa`, `opening_pct`, pipe `length_m` / `diameter_m`, …). Old 0.2 pre-release files are not converted; the file format stays 0.2. The field list per component now lives in `backend/simulation/equipment/<type>.md`.
@@ -113,6 +116,7 @@ All notable changes to the WälFlow project will be documented in this file.
 
 ### Fixed
 
+- **TCV flow balance and telemetry**: Fixed false flow imbalance warnings on 3-Way Temperature Control Valves caused by checking volumetric flow rather than physical mass conservation during thermal mixing. Serialized valve trim position and port openings, and aligned the Mixing Balance results panel with valve opening and flow split readouts.
 - **Canvas usability**: Pasted components are offset and get the next free tag; a dropped component is centred on the cursor; equipment search finds tag abbreviations (PCV, TCV, PSV, PRV, FCV, NRV, HX); loading a drawing clears the selection so the inspector no longer shows the previous drawing.
 - **Console and accessibility**: No WebSocket error logged on page load; inspector charts no longer warn about zero size; Pipe Network List fields have accessible labels and drawing-list buttons are no longer nested.
 - **Cloud drawing lock and restore**: Opening a free cloud drawing (new, opened or restored after a reload) checks it out automatically; the read-only notice has a Check out button or names the user editing it. After a reload the local draft is only restored, with its notice, when it holds unsaved changes; if the cloud copy changed meanwhile, you choose between the cloud version and the local copy instead of the draft overwriting it. No re-upload after opening a drawing; the status reads "Saved to cloud HH:MM".
@@ -183,3 +187,6 @@ All notable changes to the WälFlow project will be documented in this file.
 - **Fitting standards edits**: Changing a reducer DN no longer leaves a stale OD and cone angle; saved schedule IDs and cone angles are recalculated by the server; unsaved fitting edits are no longer lost silently when switching tabs; the pipe class tab picks up catalog edits without a reload.
 - **Failed runs**: A failed solve shows a short message by cause (a component outside its valid range, or no convergence) that names the component; "Show" selects it, "Details" shows the raw solver text, and the readouts of that case are cleared instead of showing the previous run.
 - **Pressure regulator lock-up**: A locked-up regulator with flow pushed back through its outlet no longer breaks the temperature update ("math domain error"); the run now ends with the regulator closed.
+- **Detail chart curves and operating points**: Orifice, filter and pump detail charts now draw the curves sent by the solver (matching control valves) and align total vs. static pressures across unequal pipe sizes and reverse flow, so the operating point always sits on the curve (with a cross legend marker).
+- **Tank liquid orientation**: The liquid fill in the tank symbol now always settles at the bottom of the vessel across all rotations (0°, 90°, 180°, 270°), matching gravity and preventing liquid from appearing on the sides or hanging from the top.
+- **Status bar units slot**: Shows temperature engineering units (`°C` in metric, `°F` in imperial) alongside pressure basis and flow unit in the status bar footer slot.

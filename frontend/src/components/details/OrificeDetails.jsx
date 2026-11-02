@@ -6,60 +6,7 @@ import { useUnits } from '../../context/UnitContext';
 import { niceTicks, formatTick } from '../../utils/chartTicks';
 import { neutralPorts } from '../../utils/nodeReadouts';
 import NeutralFlowCaption from './NeutralFlowCaption';
-
-const smoothstep = (t) => {
-  const x = Math.max(0, Math.min(1, t));
-  return x * x * (3 - 2 * x);
-};
-
-const reValid = (beta) => {
-  return beta <= 0.56 ? 5000 : 16000;
-};
-
-const rgCoefficient = (beta, pipeD, rePipe) => {
-  const reSafe = Math.max(1e-9, rePipe);
-  const a = (19000 * beta / reSafe) ** 0.8;
-  let c = 0.5961
-    + 0.0261 * beta ** 2
-    - 0.216 * beta ** 8
-    + 0.000521 * (1e6 * beta / reSafe) ** 0.7
-    + (0.0188 + 0.0063 * a) * beta ** 3.5 * (1e6 / reSafe) ** 0.3;
-  if (pipeD < 0.07112) c += 0.011 * (0.75 - beta) * (2.8 - pipeD / 0.0254);
-  return c;
-};
-
-const calculateDp = (qM3s, density, viscosity, D, d, beta, standard) => {
-  if (D <= 0 || d <= 0) return 0;
-  const betaEff = Math.min(0.75, Math.max(0.1, beta));
-  const areaPipe = Math.PI * (D / 2) ** 2;
-  const areaOrifice = Math.PI * (d / 2) ** 2;
-  const rePipe = density * Math.abs(qM3s) * D / (areaPipe * viscosity);
-
-  let cMeter;
-  let r;
-  if (standard === 'classic_cd') {
-    const betaLegacy = Math.min(0.99, beta);
-    const reOrifice = Math.max(1e-6, rePipe / betaLegacy);
-    const cd = Math.max(0.05, 0.6 / Math.sqrt(1 + 250 / reOrifice));
-    cMeter = cd / Math.sqrt(1 - betaLegacy ** 4);
-    r = 1 - betaLegacy ** 2;
-  } else {
-    const rv = reValid(betaEff);
-    const reLo = 0.4 * rv;
-    const cdRg = rgCoefficient(betaEff, D, rePipe);
-    const cRg = cdRg / Math.sqrt(1 - betaEff ** 4);
-    const reO = Math.max(1e-6, rePipe / betaEff);
-    const cLow = (0.6 / Math.sqrt(1 + 250 / reO)) / Math.sqrt(1 - betaEff ** 4);
-    const w = smoothstep((rePipe - reLo) / (rv - reLo));
-    cMeter = (1 - w) * cLow + w * cRg;
-    const cd = cMeter * Math.sqrt(1 - betaEff ** 4);
-    const s = Math.sqrt(1 - betaEff ** 4 * (1 - cd ** 2));
-    r = (s - cd * betaEff ** 2) / (s + cd * betaEff ** 2);
-  }
-
-  const tapDp = 0.5 * density * qM3s * Math.abs(qM3s) / (areaOrifice ** 2 * cMeter ** 2);
-  return r * tapDp;
-};
+import ChartLegend from './ChartLegend';
 
 const OrificeDetails = memo(function OrificeDetails({ node }) {
   const { labels, isImperial, lminToDisplay, formatDiffPressurePa } = useUnits();
@@ -67,46 +14,54 @@ const OrificeDetails = memo(function OrificeDetails({ node }) {
   
   const neutral = neutralPorts(telemetry);
   const actualFlowLmin = (neutral?.flow ?? 0) * 60000.0;
-  const rho = neutral?.up.density || 1000;
-  const mu = neutral?.up.viscosity || 0.001;
+
+  const portTotal = (p) => p?.total_pressure ?? p?.pressure ?? 0;
+  const currentDpPa = neutral ? Math.max(0, portTotal(neutral.up) - portTotal(neutral.down)) : 0;
+  const currentDpBar = currentDpPa / 100000;
 
   const D = (telemetry?.pipe_diameter ?? pipe_diameter_m) || 0.1;
   const d = orifice_diameter_m || 0.07;
   const beta = d / D;
-  const standard = telemetry?.standard ?? (node.data.standard || 'iso_5167');
-
-  const currentDpPa = neutral ? Math.abs((neutral.up.pressure || 0) - (neutral.down.pressure || 0)) : 0;
-  const currentDpBar = currentDpPa / 100000;
-  const maxX_lmin = Math.max(actualFlowLmin * 1.2, actualFlowLmin + 10);
 
   const flowMultiplier = lminToDisplay(1);
   const pressMultiplier = isImperial ? 14.5037738 : 1.0;
-  const xMaxDisplay = niceTicks(maxX_lmin * flowMultiplier, 5).pop();
-  const xMaxLmin = xMaxDisplay / flowMultiplier;
 
-  const maxY = useMemo(() => {
-    const rawMax = Math.max(Math.abs(currentDpBar) * 1.5, Math.abs(currentDpBar) + 0.5);
-    return niceTicks(rawMax * pressMultiplier, 5).pop();
-  }, [currentDpBar, pressMultiplier]);
+  const curves = telemetry?.orifice_curves;
 
   const chartData = useMemo(() => {
-    const data = [];
-    const steps = 60;
-    for (let i = 0; i <= steps; i++) {
-      const qLmin = (xMaxLmin * i) / steps;
-      const qM3s = qLmin / 60000;
-      data.push({
-        q: qLmin * flowMultiplier,
-        dp: (calculateDp(qM3s, rho, mu, D, d, beta, standard) / 100000) * pressMultiplier
-      });
+    if (!curves?.flow_m3s?.length) return null;
+    return curves.flow_m3s.map((qM3s, i) => ({
+      q: qM3s * 60000 * flowMultiplier,
+      dp: (curves.dp_pa[i] / 100000) * pressMultiplier,
+    }));
+  }, [curves, flowMultiplier, pressMultiplier]);
+
+  const xMaxDisplay = chartData ? chartData[chartData.length - 1].q : 0;
+  const xTicks = useMemo(
+    () => (xMaxDisplay > 0 ? niceTicks(xMaxDisplay, 5).filter((t) => t <= xMaxDisplay * (1 + 1e-9)) : undefined),
+    [xMaxDisplay]
+  );
+
+  const maxY = useMemo(() => {
+    let maxVal = currentDpBar * pressMultiplier;
+    if (chartData?.length) {
+      for (const pt of chartData) {
+        if (pt.dp > maxVal) maxVal = pt.dp;
+      }
     }
-    return data;
-  }, [D, d, beta, rho, mu, standard, xMaxLmin, flowMultiplier, pressMultiplier]);
+    const rawMax = Math.max(maxVal * 1.1, maxVal + (isImperial ? 5 : 0.5));
+    return niceTicks(rawMax, 5).pop() || 1;
+  }, [chartData, currentDpBar, pressMultiplier, isImperial]);
 
   const opPoint = useMemo(() => [{
     q: actualFlowLmin * flowMultiplier,
-    dp: currentDpBar * pressMultiplier
+    dp: currentDpBar * pressMultiplier,
   }], [actualFlowLmin, currentDpBar, flowMultiplier, pressMultiplier]);
+
+  const legendPayload = [
+    { value: 'Pressure Loss', type: 'plainline', color: 'var(--color-primary)' },
+    { value: 'Operating Point', type: 'cross', color: 'var(--color-brand-dark)' },
+  ];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
@@ -116,18 +71,24 @@ const OrificeDetails = memo(function OrificeDetails({ node }) {
       <NeutralFlowCaption telemetry={telemetry} />
       
       <div style={{ width: '100%', height: '240px', background: 'var(--color-surface)' }}>
-        <ResponsiveContainer width="100%" height="100%" minWidth={0} initialDimension={{ width: 240, height: 160 }}>
-          <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 4, bottom: 10 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
-            <XAxis dataKey="q" type="number" domain={[0, xMaxDisplay]} fontSize={10} tickCount={6} tickFormatter={formatTick} height={36}
-              label={{ value: labels.flow, position: 'insideBottomRight', offset: -2, fontSize: 10, fill: 'var(--color-text-secondary)' }} />
-            <YAxis type="number" domain={[0, maxY]} fontSize={10} tickCount={6} tickFormatter={formatTick} width={45}
-              label={{ value: labels.pressureDiff, angle: -90, position: 'insideLeft', offset: 10, fontSize: 10, fill: 'var(--color-text-secondary)', style: { textAnchor: 'middle' } }} />
-            <Legend verticalAlign="top" align="right" height={40} iconType="plainline" wrapperStyle={{ fontSize: 'var(--fs-xs)' }} />
-            <Line dataKey="dp" stroke="var(--color-primary)" strokeWidth={2.5} dot={false} name="Pressure Loss" isAnimationActive={false} />
-            {telemetry && <Scatter name="Operating Point" dataKey="dp" data={opPoint} fill="var(--color-brand-dark)" isAnimationActive={false} shape="cross" />}
-          </ComposedChart>
-        </ResponsiveContainer>
+        {!chartData ? (
+          <div style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--fs-sm)', fontStyle: 'italic', padding: '10px 0', textAlign: 'center' }}>
+            Run a simulation to see the orifice curve
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%" minWidth={0} initialDimension={{ width: 240, height: 160 }}>
+            <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 4, bottom: 10 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
+              <XAxis dataKey="q" type="number" domain={[0, xMaxDisplay]} ticks={xTicks} fontSize={10} tickFormatter={formatTick} height={36}
+                label={{ value: labels.flow, position: 'insideBottomRight', offset: -2, fontSize: 10, fill: 'var(--color-text-secondary)' }} />
+              <YAxis type="number" domain={[0, maxY]} fontSize={10} tickCount={6} tickFormatter={formatTick} width={45}
+                label={{ value: labels.pressureDiff, angle: -90, position: 'insideLeft', offset: 10, fontSize: 10, fill: 'var(--color-text-secondary)', style: { textAnchor: 'middle' } }} />
+              <Legend verticalAlign="top" align="right" height={40} content={() => <ChartLegend payload={legendPayload} />} />
+              <Line dataKey="dp" stroke="var(--color-primary)" strokeWidth={2.5} dot={false} name="Pressure Loss" legendType="plainline" activeDot={false} isAnimationActive={false} />
+              {telemetry && <Scatter name="Operating Point" dataKey="dp" data={opPoint} fill="var(--color-brand-dark)" isAnimationActive={false} shape="cross" legendType="cross" />}
+            </ComposedChart>
+          </ResponsiveContainer>
+        )}
       </div>
 
       <div style={{ background: 'var(--color-surface-hover)', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: '4px' }}>

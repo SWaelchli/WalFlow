@@ -11,6 +11,7 @@ from hypothesis import given, strategies as st
 
 from strategies import build, fluid_states, log_uniform
 from routers.simulation import VALVE_CURVE_MIN_FLOW, VALVE_CURVE_POINTS, extract_telemetry, valve_curves
+from simulation.equipment.base_node import Q_DEAD_LEG
 from simulation.graph_parser import GraphParser
 from simulation.schemas import ReactFlowGraph
 from simulation.solver import NetworkSolver
@@ -24,6 +25,7 @@ def _valve(node_type, state, flow, opening_pct, cv=1.0, **data):
     valve = build(node_type, {"max_cv": cv, **data}, fluid)
     valve.opening_pct = opening_pct
     valve.inlets[0].flow_rate, valve.inlets[0].density, valve.inlets[0].viscosity = flow, rho, mu
+    valve.outlets[0].density, valve.outlets[0].viscosity = rho, mu
     return valve
 
 
@@ -35,7 +37,7 @@ def test_curve_points_are_the_valves_own_delta_p_over_the_documented_range(node_
     valve = _valve(node_type, state, flow, opening, cv)
     rho, mu = state[2], state[3]
     curves = valve_curves(valve)
-    q_max = max(VALVE_CURVE_MIN_FLOW, 2.0 * abs(flow))
+    q_max = 2.0 * abs(flow) if abs(flow) > Q_DEAD_LEG else VALVE_CURVE_MIN_FLOW
     flows = curves["flow_m3s"]
 
     assert len(flows) == len(curves["dp_current_pa"]) == len(curves["dp_full_open_pa"]) == VALVE_CURVE_POINTS == 61
@@ -112,9 +114,9 @@ def test_solved_operating_point_lies_on_the_current_curve(node_type):
 
     # The shipped points bracket the operating point: linear interpolation lands near it
     flows, dps = curves["flow_m3s"], curves["dp_current_pa"]
-    assert flows[-1] == pytest.approx(max(VALVE_CURVE_MIN_FLOW, 2 * q))
+    assert flows[-1] == pytest.approx(2.0 * q if q > Q_DEAD_LEG else VALVE_CURVE_MIN_FLOW)
     i = max(k for k, f in enumerate(flows) if f <= q)
-    interp = dps[i] + (dps[i + 1] - dps[i]) * (q - flows[i]) / (flows[i + 1] - flows[i])
+    interp = dps[i] if q == flows[i] else dps[i] + (dps[i + 1] - dps[i]) * (q - flows[i]) / (flows[i + 1] - flows[i])
     assert interp == pytest.approx(dp_solved, rel=2e-3)
     assert all(a <= b for a, b in zip(curves["dp_full_open_pa"], curves["dp_current_pa"]))  # full open drops least
 

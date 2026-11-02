@@ -19,6 +19,6 @@ describe('pump chart curves match the backend pump models', () => {
 
   it('caps the volumetric rise at the discharge limit minus suction pressure', () => {
     const pump = { flowRatedLmin: 100, motorPowerKw: 5, efficiencyPct: 85, fixedSpeed: true, maxDischargeBara: 10, suctionPa: 2e5 };
-    expect(volumetricDpBar(pump, 0)).toBeCloseTo(8, 6);
+    expect(volumetricDpBar(pump, 0)).toBeCloseTo(8.09992, 5);
   });
 });

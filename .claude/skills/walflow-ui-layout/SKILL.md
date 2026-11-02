@@ -139,7 +139,7 @@ Fixed slots, left to right:
 | Run result | Not run yet / Converged · time / Failed / Out of date, with icon | Flyout: solver statistics and run messages |
 | Case | Active case name | View › Case manager |
 | Warnings | Count of model errors and warnings, hidden when zero | The run result flyout with the list |
-| Units (right) | Pressure basis and flow unit | Settings pane, Global tab (`view.settings` with `{ open: true, tab: 'global' }`) |
+| Units (right) | Pressure basis, flow unit and temperature unit | Settings pane, Global tab (`view.settings` with `{ open: true, tab: 'global' }`) |
 | Selection (right) | `n selected`, hidden when zero | — |
 | Zoom (right) | `85 %` | Fit view |
 

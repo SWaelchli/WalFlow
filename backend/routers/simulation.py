@@ -10,7 +10,7 @@ from simulation.graph_parser import GraphParser, ModelInputError
 from simulation.solver import NetworkSolver, run_sequential_relief_simulation
 from simulation.equipment.volumetric_pump import VolumetricPump
 from simulation.equipment.centrifugal_pump import CentrifugalPump
-from simulation.equipment.base_node import InlineNode, NeutralPortNode
+from simulation.equipment.base_node import InlineNode, NeutralPortNode, Q_DEAD_LEG, total_of
 from simulation.equipment.flow_boundary import FlowBoundary
 from simulation.equipment.component_link import ComponentLink, BoundaryLink, canvas_id
 from simulation.fluid_utils import FluidProperties
@@ -138,23 +138,105 @@ def calculate_case_kpis(network, telemetry: Dict[str, Any], stats: Dict[str, Any
     return kpi_res
 
 VALVE_CURVE_TYPES = {"linear_control_valve", "linear_regulator", "remote_control_valve"}
-VALVE_CURVE_POINTS = 61
-VALVE_CURVE_MIN_FLOW = 0.005  # m^3/s (300 L/min), smallest flow range of the curve
+CURVE_POINTS = 61
+VALVE_CURVE_POINTS = CURVE_POINTS
+VALVE_CURVE_MIN_FLOW = 0.005  # m^3/s (300 L/min), zero-flow fallback range for valve curves
+
+
+def _curve_flows(q_max: float, *exact_flows: float, points: int = CURVE_POINTS) -> List[float]:
+    """Uniform 0..q_max flow grid with exact operating/knee flows snapped or inserted so
+    piecewise-linear charts pass directly through the solved operating point."""
+    q_end = max(1e-9, float(q_max))
+    flows = [q_end * i / (points - 1) for i in range(points)]
+    tol = 1e-12 * max(1.0, q_end)
+    for q_ex in exact_flows:
+        if q_ex is not None and 0.0 <= q_ex <= q_end:
+            q_val = float(q_ex)
+            nearest = min(range(len(flows)), key=lambda idx: abs(flows[idx] - q_val))
+            if abs(flows[nearest] - q_val) <= tol:
+                flows[nearest] = q_val
+            else:
+                flows.append(q_val)
+    flows.sort()
+    return flows
+
+
+def orifice_curves(node) -> Dict[str, List[float]]:
+    """Permanent total-pressure loss over flow from Orifice.calculate_delta_p at the solved upstream fluid."""
+    inlet = node.upstream_port()
+    q_op = abs(inlet.flow_rate)
+    if q_op > Q_DEAD_LEG:
+        q_max = 2.0 * q_op
+    else:
+        area_o = math.pi * (max(1e-4, node.orifice_diameter) / 2.0) ** 2
+        q_max = max(1e-5, area_o * 0.6 * math.sqrt(2e5 / max(1.0, inlet.density)))
+    flows = _curve_flows(q_max, q_op)
+    return {
+        "flow_m3s": flows,
+        "dp_pa": [node.calculate_delta_p(q, inlet.density, inlet.viscosity) for q in flows],
+    }
+
+
+def filter_curves(node) -> Dict[str, List[float]]:
+    """Clean, current and terminal Δp over flow from Filter.calculate_delta_p at the solved upstream fluid."""
+    inlet = node.upstream_port()
+    q_op = abs(inlet.flow_rate)
+    q_max = 2.0 * q_op if q_op > Q_DEAD_LEG else max(1e-4, 2.0 * node.flow_ref)
+    flows = _curve_flows(q_max, q_op)
+    return {
+        "flow_m3s": flows,
+        "dp_clean_pa": [node.calculate_delta_p(q, inlet.density, inlet.viscosity, clogging_pct=0.0) for q in flows],
+        "dp_current_pa": [node.calculate_delta_p(q, inlet.density, inlet.viscosity) for q in flows],
+        "dp_terminal_pa": [node.calculate_delta_p(q, inlet.density, inlet.viscosity, clogging_pct=100.0) for q in flows],
+    }
+
+
+def pump_curves(node) -> Dict[str, List[float]]:
+    """Total-pressure rise over flow from the pump's own calculate_delta_p at the solved upstream fluid."""
+    inlet = node.inlets[0]
+    q_in = inlet.flow_rate
+    q_op = abs(q_in)
+    rho, mu = node.upstream_fluid()
+    q_rated = max(0.0, getattr(node, "flow_rated", 0.0))
+    q_max = max(200.0 / 60000.0, 1.5 * q_rated, 1.2 * q_op)
+
+    knees = [q_op, q_rated]
+    p_in_total = total_of(inlet)
+    if isinstance(node, VolumetricPump) and getattr(node, "active", True):
+        stiffness = node._stiffness()
+        if stiffness > 0:
+            knees.append(q_rated - (node.max_discharge_pressure - p_in_total) / stiffness)
+
+    flows = _curve_flows(q_max, *knees)
+    sign = -1.0 if (isinstance(node, CentrifugalPump) and q_in < -Q_DEAD_LEG) else 1.0
+    if isinstance(node, VolumetricPump):
+        # When downstream head exceeds max_discharge_pressure (q_in < 0), the internal check-valve spring
+        # holds at q_op while the forward curve still displays the pump's forward characteristic.
+        dps = [
+            node.calculate_delta_p(q_in if (q_in < 0 and q == q_op) else q, rho, mu, p_in_pa=p_in_total)
+            for q in flows
+        ]
+    else:
+        dps = [node.calculate_delta_p(sign * q, rho, mu) for q in flows]
+    return {"flow_m3s": flows, "dp_pa": dps}
 
 
 def valve_curves(node) -> Dict[str, List[float]]:
     """Δp over flow at the current and the full opening, from the valve's own calculate_delta_p.
 
-    Uses the solved inlet fluid, so F_R, F_L, F_d and the valve size match the solve. Range 0 to
-    max(300 L/min, 2 × the current flow).
+    Uses the solved upstream fluid, so F_R, F_L, F_d and the valve size match the solve. Range 0 to
+    2 × |Q| when flowing (300 L/min without flow).
     """
     inlet = node.inlets[0]
-    q_max = max(VALVE_CURVE_MIN_FLOW, 2.0 * abs(inlet.flow_rate))
-    flows = [q_max * i / (VALVE_CURVE_POINTS - 1) for i in range(VALVE_CURVE_POINTS)]
+    q_op = abs(inlet.flow_rate)
+    rho, mu = node.upstream_fluid()
+    q_max = 2.0 * q_op if q_op > Q_DEAD_LEG else VALVE_CURVE_MIN_FLOW
+    flows = _curve_flows(q_max, q_op)
+    # Grid includes q_op explicitly so the operating point sits on a curve vertex
     return {
         "flow_m3s": flows,
-        "dp_current_pa": [node.calculate_delta_p(q, inlet.density, inlet.viscosity) for q in flows],
-        "dp_full_open_pa": [node.calculate_delta_p(q, inlet.density, inlet.viscosity, opening_pct=100.0) for q in flows],
+        "dp_current_pa": [node.calculate_delta_p(q, rho, mu) for q in flows],
+        "dp_full_open_pa": [node.calculate_delta_p(q, rho, mu, opening_pct=100.0) for q in flows],
     }
 
 
@@ -180,6 +262,10 @@ def extract_telemetry(network) -> Dict[str, Any]:
             ]
         if hasattr(node, 'opening_pct'):
             node_tel["opening_pct"] = node.opening_pct
+        if hasattr(node, 'port_openings_pct'):
+            node_tel["port_openings_pct"] = node.port_openings_pct
+        if hasattr(node, 'mix_ratio'):
+            node_tel["mix_ratio"] = node.mix_ratio
         if hasattr(node, 'sensed_pressure'):
             node_tel["sensed_pressure"] = node.sensed_pressure
         if hasattr(node, 'cavitation_warning'):
@@ -248,6 +334,12 @@ def extract_telemetry(network) -> Dict[str, Any]:
             node_tel["standard"] = node.standard
         if node.node_type in VALVE_CURVE_TYPES:
             node_tel["valve_curves"] = valve_curves(node)
+        if node.node_type == "orifice":
+            node_tel["orifice_curves"] = orifice_curves(node)
+        if node.node_type == "filter":
+            node_tel["filter_curves"] = filter_curves(node)
+        if isinstance(node, (VolumetricPump, CentrifugalPump)):
+            node_tel["pump_curves"] = pump_curves(node)
         telemetry["nodes"][node_id] = node_tel
 
     for edge in network.edges:

@@ -1864,8 +1864,17 @@ button.status-slot:hover { background: var(--color-surface); color: var(--color-
 .node-off-badge      { position: absolute; z-index: 15; }
 .symbol-text-meta    { font-size: var(--fs-canvas-meta); font-weight: 700; fill: var(--color-brand-dark); }
 .symbol-text-value   { font-size: var(--fs-canvas-value); font-weight: 600; fill: var(--color-brand-dark); }
-.port-letter-hot     { fill: var(--color-danger-text); }
-.port-letter-cold    { fill: var(--color-primary); }
+.port-letter-hot,
+.port-letter-cold {
+  font-size: 7px;
+  font-weight: 800;
+  paint-order: stroke fill;
+  stroke: var(--color-surface);
+  stroke-width: 1.5px;
+  stroke-linejoin: round;
+}
+.port-letter-hot  { fill: var(--color-danger-text); }
+.port-letter-cold { fill: var(--color-info-text); }
 
 /* Instrument bubble text and note (text bubble) text on the canvas */
 .instrument-letters  { font-size: var(--fs-canvas-value); font-weight: 800; color: var(--color-brand-dark); }

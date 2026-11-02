@@ -23,6 +23,26 @@ Write-Host "🚀 Ready to go! (Node: $nodeVer)" -ForegroundColor Magenta
 $rootDir = $PSScriptRoot
 if (-not $rootDir) { $rootDir = (Get-Location).Path }
 
+# 3b. Ensure Antigravity (.agents) bridges to .claude skills and agents
+$agentsDir = Join-Path $rootDir ".agents"
+$claudeDir = Join-Path $rootDir ".claude"
+
+if (Test-Path $claudeDir) {
+    if (-not (Test-Path $agentsDir)) {
+        New-Item -ItemType Directory -Path $agentsDir -Force | Out-Null
+    }
+
+    # Ensure skills.json manifest exists for Antigravity engine discovery
+    $skillsJson = Join-Path $agentsDir "skills.json"
+    if (-not (Test-Path $skillsJson)) {
+        Set-Content -Path $skillsJson -Value '{"entries":[{"path":".claude/skills"}]}'
+    }
+
+    $skillCount = (Get-ChildItem -Directory -Path (Join-Path $claudeDir "skills") -ErrorAction SilentlyContinue | Measure-Object).Count
+    $agentCount = (Get-ChildItem -File -Path (Join-Path $claudeDir "agents") -Filter "*.md" -ErrorAction SilentlyContinue | Measure-Object).Count
+    Write-Host "✅ Antigravity bridge active ($skillCount skills, $agentCount agents configured)." -ForegroundColor Green
+}
+
 # 4. Start the backend in a new window
 Write-Host "Starting Backend in a new window..." -ForegroundColor Green
 # Disable WebSocket authentication requirement for local development guest simulations
