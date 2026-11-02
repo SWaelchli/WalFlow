@@ -796,7 +796,7 @@ const CataloguePage = ({ menuBar, ctx, leaveGuardRef }) => {
   };
 
   // The page's own controls the fitting tabs hand to the menu bar with their own state
-  const pageShell = { tab: activeTab, listOpen: paneOpen, selectTab, toggleList: () => setPaneOpen((open) => !open), focusSearch };
+  const pageShell = { tab: activeTab, listOpen: paneOpen, paneOverlay: shellMode.paneOverlay, selectTab, toggleList: () => setPaneOpen((open) => !open), closeList: closePane, focusSearch };
 
   // The menu bar's view of the pipe classes tab (Catalogue menus, keys); the other tabs register their own
   usePageState(ctx?.registerPageState, activeTab === 'pipe_classes' ? {
@@ -2389,7 +2389,7 @@ const CataloguePage = ({ menuBar, ctx, leaveGuardRef }) => {
     pane: paneContent,
     details,
     extras: <>{hiddenFileInput}{modals}</>,
-    count: filteredClasses.length,
+    count: filteredClasses.length + (isNewDraft && formData ? 1 : 0),
     filterLabel: sourceLabel(standardFilter),
   });
 };

@@ -10,7 +10,7 @@ export default function CanvasLoadingOverlay({ visible, label = 'Opening drawing
         left: 0,
         right: 0,
         bottom: 0,
-        zIndex: 50,
+        zIndex: 'calc(var(--z-canvas-overlay) + 1)',
         pointerEvents: visible ? 'auto' : 'none',
         display: 'flex',
         flexDirection: 'column',

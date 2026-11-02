@@ -42,7 +42,7 @@ export default function CanvasContextMenu({ x, y, items, onClose, label = 'Canva
       aria-label={label}
       onContextMenu={(e) => e.preventDefault()}
       style={{
-        position: 'fixed', left, top, width, zIndex: 9000, padding: '6px', background: 'var(--color-surface)',
+        position: 'fixed', left, top, width, zIndex: 'var(--z-popover)', padding: '6px', background: 'var(--color-surface)',
         border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-lg)',
       }}
     >

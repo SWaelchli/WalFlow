@@ -79,7 +79,7 @@ import { runCommand } from './commands/commandList';
 import { buildContextMenuItems } from './commands';
 import { instrumentPinsOf } from './commands/context';
 import { useAutoSaveSession } from './hooks/useAutoSaveSession';
-import { getTabId } from './utils/draftStorage';
+import { getTabId, isEmptyDraft } from './utils/draftStorage';
 import { HEAT_EXCHANGER_DEFAULTS } from './utils/equipmentDefaults';
 import { serializeDiagram, toSolverGraph, checkDiagramFile, stripResults } from './utils/diagramFile';
 import { computeCaseInputHashes, isCaseResultStale } from './utils/resultHash';
@@ -305,6 +305,8 @@ function WalFlowContent() {
     clearLocalDraft,
     loadLocalDraftOnBoot,
     offerOrphanDraft,
+    adoptOfferedOrphan,
+    keepUnopenedOwnDraft,
     reconcileDraft,
     markLoaded,
     triggerManualCloudSave,
@@ -974,7 +976,7 @@ function WalFlowContent() {
   useEffect(() => {
     if (bootDraftCheckedRef.current) return;
     bootDraftCheckedRef.current = true;
-    const applyDraft = async (draft) => {
+    const applyDraft = async (draft, isOrphan = false) => {
       const result = await reconcileDraft(draft);
       let data = result.data;
       let attachDiagram = true;
@@ -1000,7 +1002,13 @@ function WalFlowContent() {
         }
       }
       if (attachDiagram && result.source === 'server') markLoaded(data);
-      loadData(data);
+      if (!loadData(data)) {
+        // The stored draft stays where it is: an orphan stays an orphan, this tab's own draft is set aside before an edit replaces it
+        if (!isOrphan) keepUnopenedOwnDraft();
+        notify('The unsaved drawing could not be opened. It is kept in this browser.', 'warning');
+        return;
+      }
+      if (isOrphan) adoptOfferedOrphan();
       if (draft.active_project_id && draft.active_project_title) {
         setActiveProject({
           id: draft.active_project_id,
@@ -1017,7 +1025,7 @@ function WalFlowContent() {
           ...(result.source === 'server' ? { updated_at: result.updatedAt } : {})
         });
       }
-      if (restored) {
+      if (restored && !isEmptyDraft(draft)) {
         setShowRestoredToast(true);
         setTimeout(() => setShowRestoredToast(false), 5000);
       }
@@ -1029,7 +1037,7 @@ function WalFlowContent() {
       applyDraft(draft);
     } else {
       loadData(greetingCanvas);
-      offerOrphanDraft().then((orphan) => { if (orphan) applyDraft(orphan); });
+      offerOrphanDraft().then((orphan) => { if (orphan) applyDraft(orphan, true); });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -1947,7 +1955,7 @@ function WalFlowContent() {
               backgroundColor: 'rgba(15, 23, 42, 0.88)',
               backdropFilter: 'blur(8px)',
               WebkitBackdropFilter: 'blur(8px)',
-              zIndex: 9999,
+              zIndex: 'calc(var(--z-modal) - 1)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
@@ -2097,7 +2105,7 @@ function WalFlowContent() {
                 fontSize: 'var(--fs-base)',
                 fontWeight: '600',
                 boxShadow: '0 10px 25px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--color-primary-tint)',
-                zIndex: 99999,
+                zIndex: 'var(--z-toast)',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '12px',

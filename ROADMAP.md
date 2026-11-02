@@ -98,6 +98,13 @@ Items move between releases as priorities change. Done items stay in "Done in 0.
     * `3. App Default`: Else fall back to system built-in application default value.
   * **Engineering Value:** Streamlines model building by eliminating repetitive property adjustments for standard project or user engineering conventions.
 
+### 🐛 Maintenance
+
+- [ ] **⏱️ Potential Improvement: Faster Opening of Large Drawings**
+  * **Problem:** Opening the Large Reference Network (54 nodes, 57 edges) blocks the page for about 0.2-3 s on a production build, usually 1.5-3 s (2026-11-02, corporate PC, spread is large).
+  * **Findings:** One profile shows most of the time in React rendering and commit, with no single slow function; `DataList` is the largest app code at about 8 %. A real gain likely means changing how the canvas and data list render. The reactflow upgrade (see 0.2.x) may help. One load during a heavy CPU run froze the tab for about 30 s and showed "Solver not connected"; this did not recur and the cause is unknown.
+  * **Decision needed:** Measure again first, and only build this if the delay still matters in use.
+
 ---
 
 ## Later

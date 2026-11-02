@@ -19,19 +19,14 @@ The only place that holds the status.
 
 | ID | Severity | Status | Finding | Proposed solution | Owner | Phase | Source |
 |---|---|---|---|---|---|---|---|
-| ZX1 | Low | Review | Raw z-index values remain across the app and do not follow the `--z-*` tokens: `.modal-overlay` 10000 (`MASTER.md` says `--z-modal`, 2000), `DialogHost` 100000 and 100001, `CollabNotice` and `App.jsx` 99999 and 9999, canvas context menu 9000. Moving `.modal-overlay` alone would put modals under some of these. | Move all of them to the tokens in one change. | fe | — | Phase 4 review 2026-11-02 |
 | EX1 | Medium | Open | The example drawings are not neat: readouts and badges run into symbols, signal lines cross text, pipes bend or cross where they need not. | Some equipment names are meaningless, such as `TANK_985_copy_copy_copy` in the Large Reference Network. Decided: re-lay out and rename across all 13 examples to the rules in the details below, without changing any parameter or result. | orch, fe | 5 | User request 2026-11-02 |
 | EX2 | Low | Open | An example loaded after another one keeps the previous zoom and pan, so it can open cut off until fit-view is pressed. | Decided: fit the view when a drawing is opened. | fe | 5 | Browser check 2026-11-02 |
 | EX3 | — | Open | Nothing keeps future examples neat. | Decided: the layout and naming rules go in the `walflow-ui-layout` skill, and `equipment-creation` points to them for its example. | orch | 5 | User request 2026-11-02 |
-| DR1 | Medium | Review | A new tab showed "Restored unsaved drawing" with an empty canvas and "1 problem" in the status bar. It is unknown whether an empty draft was saved or a real one failed to load, so it could mean lost work. | Find the cause first, then decide. | fe | — | Browser check 2026-11-02 |
-| PF1 | Low | Review | A fresh load of the Large Reference Network blocks the page for about 2.2 s on the dev server (a repeat load was fast). One load during a gate run froze the tab for about 30 s and showed "Solver not connected" until it reconnected. | Measure on a production build first, under the `walflow-performance` skill rules where they apply. | fe | — | Browser check 2026-11-02 |
-| CT3 | Low | Open | Two Catalogue list details noted before the page menu work and not changed by it: the status bar's entry count leaves out an unsaved draft shown in the list (4 entries with 5 rows), and picking a row in the fitting lists does not close the overlay list, while picking a pipe class row does. | Count the draft and close the overlay on pick. Confirm the count in the browser first. | fe | 4c | Page menu review 2026-11-02 |
 
 ## Roadmap
 
 | Phase | Entries | Why this order | Exit check |
 |---|---|---|---|
-| 4c | DR1, ZX1, PF1, CT3 | User decision 2026-11-02: every other finding is closed before phase 5. | Each finding fixed or decided with the user, and its rows deleted. |
 | 5 | EX1, EX2, EX3 | Last step before the v0.2.0 release. Starts only when every other finding is closed and every other branch is on main, because symbol sizes and node footers set the layout. | Gate green with `golden_examples.json` unchanged; browser check of all 13 examples against the layout and naming rules; user sign-off of each drawing. |
 
 The layout work is committed (5a364a0). Commit each phase only when the user asks.
@@ -77,11 +72,6 @@ working tree of 2026-10-30; re-check them before editing.
 Read before any change: `frontend/AGENTS.md`, `design-system/walflow/MASTER.md`, `.claude/skills/walflow-ui-layout/SKILL.md`,
 `.claude/skills/ui-ux-pro-max/SKILL.md`, and `walflow-qa` for tests. Frontend code goes through `walflow-frontend-dev`,
 tests through `walflow-test-author`, the gate through `walflow-gate-runner`.
-
-| ID | Details | Where | Test |
-|---|---|---|---|
-| DR1 | Seen after signing in on a new tab with several `walflow_draft_*` keys in `localStorage`; the last drawing in the previous tab was a loaded example. Trace which draft the restore picks and why it was empty. | `frontend/src/hooks/useAutoSaveSession.js` | Hook test if a bug is confirmed. |
-| PF1 | Long-task timing from the Multi-PSV example to the large one: one task of 2185 ms. | `frontend/src/App.jsx`, example loading path | None unless a fix follows. |
 
 ### Decided design: Canvas values
 

@@ -23,7 +23,7 @@ export default function CollabNotice({ notice, onDismiss }) {
         fontSize: 'var(--fs-base)',
         lineHeight: 1.4,
         boxShadow: '0 10px 25px rgba(28, 43, 44, 0.18)',
-        zIndex: 99999,
+        zIndex: 'var(--z-toast)',
         display: 'flex',
         alignItems: 'center',
         gap: '12px',

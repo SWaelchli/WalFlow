@@ -370,3 +370,54 @@ describe('Esc and Enter in the dialogs of the page', () => {
     });
   });
 });
+
+describe('Entry count in the status bar', () => {
+  it('counts the unsaved new pipe class that the list shows as a row', async () => {
+    setup('admin');
+    await waitFor(() => expect(listPane().textContent).toContain('CS01'));
+    expect(screen.getByText('1 entry')).toBeTruthy();
+    fireEvent.click(within(listPane()).getByRole('button', { name: 'New pipe class' }));
+    const code = await screen.findByPlaceholderText(/e\.g\. CS02/);
+    fireEvent.change(code.form.querySelectorAll('input')[1], { target: { value: 'Second class' } });
+    fireEvent.submit(code.form);
+    await screen.findByText(/\(Draft\)/);
+    expect(screen.getByText('2 entries')).toBeTruthy();
+  });
+});
+
+describe('Picking a fitting standard in the list', () => {
+  const reducers = (id, code) => ({
+    id, code, name: `Reducers ${code}`, standard: 'CUSTOM', fitting_type: 'reducer', subtype: 'concentric',
+    is_builtin: false, description: '', dimensions: [],
+  });
+  const originalWidth = window.innerWidth;
+  afterEach(() => { window.innerWidth = originalWidth; });
+
+  const openFittingList = async (width) => {
+    window.innerWidth = width;
+    vi.mocked(axios.get).mockImplementation((url, config) => {
+      if (url === '/api/pipe-classes') return Promise.resolve({ data: classes });
+      if (url === '/api/fitting-standards') return Promise.resolve({ data: config?.params?.fitting_type ? [] : [reducers(11, 'RED_A'), reducers(12, 'RED_B')] });
+      return Promise.resolve({ data: [] });
+    });
+    const { reg } = setup('admin');
+    fireEvent.click(tab('Fitting standards and schedules'));
+    await waitFor(() => expect(reg.state?.tab).toBe('fitting_standards'));
+    if (!reg.state.listOpen) act(() => reg.state.actions.toggleList());
+    await waitFor(() => expect(reg.state.listOpen).toBe(true));
+    return { reg, row: await screen.findByTitle('RED_B') };
+  };
+
+  it('closes the list when it is shown over the page', async () => {
+    const { reg, row } = await openFittingList(900);
+    fireEvent.click(row);
+    await waitFor(() => expect(reg.state.listOpen).toBe(false));
+  });
+
+  it('keeps the list open when it is docked beside the details', async () => {
+    const { reg, row } = await openFittingList(1400);
+    fireEvent.click(row);
+    await waitFor(() => expect(row.getAttribute('data-entry-selected')).not.toBeNull());
+    expect(reg.state.listOpen).toBe(true);
+  });
+});

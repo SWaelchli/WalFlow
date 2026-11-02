@@ -254,7 +254,7 @@ function ValveStyleTable({ rows, isEditing, onChange, onNumber, onRemove }) {
  */
 // `renderLayout({ pane, details, extras, count, filterLabel })` places the list, the details and the dialogs in a page
 // shell (the Catalogue); without it the tab lays out its own list and details side by side.
-// `registerPageState` (ctx.registerPageState) and `pageShell` ({ tab, listOpen, selectTab, toggleList, focusSearch },
+// `registerPageState` (ctx.registerPageState) and `pageShell` ({ tab, listOpen, paneOverlay, selectTab, toggleList, closeList, focusSearch },
 // the page's own tabs and list) let the menu bar see and drive this tab.
 const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUser, onDirtyChange, fittingType = null, renderLayout = null, registerPageState = null, pageShell = null }) {
   const isValve = fittingType === 'control_valve';
@@ -766,7 +766,7 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
           position: 'absolute',
           top: '16px',
           right: '24px',
-          zIndex: 1100,
+          zIndex: 'var(--z-toast)',
           display: 'flex',
           alignItems: 'center',
           gap: '8px',
@@ -880,9 +880,11 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
                   data-entry-selected={isSelected ? '' : undefined}
                   title={item.code}
                   onClick={async () => {
-                    if (item.id === selectedStandard?.id) return;
-                    if (!(await askDiscard('switch'))) return;
-                    setSelectedId(item.id);
+                    if (item.id !== selectedStandard?.id) {
+                      if (!(await askDiscard('switch'))) return;
+                      setSelectedId(item.id);
+                    }
+                    if (pageShell?.paneOverlay) pageShell.closeList();
                   }}
                   style={{
                     padding: '10px 12px',

@@ -143,6 +143,7 @@ regenerate it with `--persist`.
   --z-pane-overlay: 100;       /* side pane or inspector shown over the canvas */
   --z-popover: 1000;           /* menus, dropdowns, context menus, status flyouts, tooltips */
   --z-modal: 2000;
+  --z-dialog: 2500;            /* confirm and name dialogs, which can open over a modal */
   --z-toast: 3000;
 }
 ```

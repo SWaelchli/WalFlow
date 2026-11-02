@@ -104,6 +104,7 @@
   --z-pane-overlay: 100;       /* side pane or inspector shown over the canvas */
   --z-popover: 1000;           /* menus, dropdowns, context menus, status flyouts, tooltips */
   --z-modal: 2000;
+  --z-dialog: 2500;            /* confirm and name dialogs above modals */
   --z-toast: 3000;
 }
 
@@ -984,7 +985,7 @@ textarea:focus-visible,
   background-color: rgba(28, 43, 44, 0.5);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  z-index: 10000;
+  z-index: var(--z-modal);
   display: flex;
   align-items: center;
   justify-content: center;

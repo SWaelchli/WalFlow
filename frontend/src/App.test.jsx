@@ -157,3 +157,57 @@ describe('boot with a local draft older than the cloud copy', () => {
     }
   }, 40000);
 });
+
+describe('boot with a stored draft that holds no usable drawing', () => {
+  const ago = (minutes) => new Date(Date.now() - minutes * 60000).toISOString();
+  const draftOf = (nodes, minutesAgo = 1) => JSON.stringify({ version: '0.2', nodes, edges: [], globalSettings: {}, cases: [], timestamp: ago(minutesAgo) });
+  const unknownType = { id: 'n1', type: 'no_such_component', position: { x: 0, y: 0 }, data: {} };
+  const note = { id: 'note1', type: 'text_bubble', position: { x: 0, y: 0 }, data: { text: 'remember' } };
+  const restoredMessage = () => screen.queryByText('Restored unsaved drawing');
+  const pause = (ms) => act(async () => { await new Promise((r) => setTimeout(r, ms)); });
+  const ownKey = () => { sessionStorage.setItem('walflow_tab_id', 'tab1'); resetTabIdCache(); return 'walflow_draft_tab1'; };
+  const boot = async () => {
+    const { default: App } = await import('./App.jsx');
+    render(<App />);
+    await screen.findByRole('navigation', { name: 'Side panes' }, { timeout: 8000 });
+  };
+  const answerRestore = async () => {
+    await waitFor(() => expect(getDialogState().modal?.title).toBe('Restore unsaved drawing?'), { timeout: 8000 });
+    act(() => resolveModal(true));
+  };
+
+  it('an empty drawing of this tab is not announced as restored', async () => {
+    localStorage.setItem(ownKey(), draftOf([]));
+    await boot();
+    await pause(500);
+    expect(restoredMessage()).toBeNull();
+  }, 40000);
+
+  it('a drawing of only a note is restored and announced', async () => {
+    localStorage.setItem(ownKey(), draftOf([note]));
+    await boot();
+    await waitFor(() => expect(restoredMessage()).toBeTruthy(), { timeout: 8000 });
+  }, 40000);
+
+  it('a drawing of this tab that fails the file check is not announced, is warned about and stays stored', async () => {
+    const key = ownKey();
+    const raw = draftOf([unknownType]);
+    localStorage.setItem(key, raw);
+    await boot();
+    await waitFor(() => expect(getDialogState().toasts.length).toBeGreaterThan(0), { timeout: 8000 });
+    await pause(1600);   // past the local autosave debounce
+    expect(restoredMessage()).toBeNull();
+    expect(localStorage.getItem(key)).toBe(raw);
+  }, 40000);
+
+  it('an orphan accepted by the user that fails the file check is warned about and its key keeps the draft', async () => {
+    const raw = draftOf([unknownType], 5);
+    localStorage.setItem('walflow_draft_gone', raw);
+    await boot();
+    await answerRestore();
+    await waitFor(() => expect(getDialogState().toasts.length).toBeGreaterThan(0), { timeout: 8000 });
+    await pause(1600);
+    expect(restoredMessage()).toBeNull();
+    expect(localStorage.getItem('walflow_draft_gone')).toBe(raw);
+  }, 40000);
+});

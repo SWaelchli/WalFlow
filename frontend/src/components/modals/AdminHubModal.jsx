@@ -699,7 +699,7 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
 
       {/* Delete Confirmation Modal Popup */}
       {diagramToDelete && (
-        <div className="modal-overlay" style={{ zIndex: 10000 }}>
+        <div className="modal-overlay">
           <div className="modal-container" ref={modalA11yRef} style={{
             maxWidth: '440px',
             padding: '24px',
@@ -746,7 +746,7 @@ const AdminHubModal = ({ isOpen, onClose, onLoadDiagram }) => {
 
       {/* Edit Metadata Modal Popup */}
       {editingDiagram && (
-        <div className="modal-overlay" style={{ zIndex: 10000 }}>
+        <div className="modal-overlay">
           <form onSubmit={handleSaveMetadata} className="modal-container" ref={modalA11yRef} style={{
             maxWidth: '460px',
             padding: '24px'

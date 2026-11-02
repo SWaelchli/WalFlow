@@ -5,7 +5,7 @@ import { notify, confirmDialog } from '../utils/dialogs';
 import axios from 'axios';
 import { serializeDiagram, checkFormatVersion } from '../utils/diagramFile';
 import { useAuth } from './useAuth';
-import { writeDraft, readDraft, removeDraft, startHeartbeat, pruneDrafts, findOrphanDraft, adoptDraft, discardOrphan, getTabId, isMyTabLock } from '../utils/draftStorage';
+import { writeDraft, readDraft, removeDraft, startHeartbeat, pruneDrafts, findOrphanDraft, adoptDraft, discardOrphan, keepDraftCopy, getTabId, isMyTabLock } from '../utils/draftStorage';
 
 // One id per browser tab, sent with cloud saves so the server's "diagram updated" notice skips the saving tab
 const CLIENT_ID = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `tab-${Math.random().toString(36).slice(2)}`;
@@ -198,10 +198,17 @@ export function useAutoSaveSession({
   // overwrite it, whatever re-runs the save effect meanwhile (StrictMode, sign-in, a drawing being attached)
   const [bootDraft] = useState(() => ({ stored: !!readDraft(), signature: contentSignature }));
   const bootDraftDoneRef = useRef(false);
+  // Stored text of this tab's draft when it could not be opened. The first edit of the blank canvas replaces
+  // it, so it is set aside first.
+  const unopenedDraftRef = useRef(null);
   const keepsBootDraft = useCallback((signature = bootDraft.signature) => {
     if (!bootDraft.stored || bootDraftDoneRef.current) return false;
     if (signature !== bootDraft.signature) {
       bootDraftDoneRef.current = true;   // the canvas changed: the draft was restored or replaced
+      if (unopenedDraftRef.current) {
+        keepDraftCopy(unopenedDraftRef.current);
+        unopenedDraftRef.current = null;
+      }
       return false;
     }
     return true;
@@ -948,9 +955,21 @@ ${versionError}`, 'error'), 0);
       return null;
     }
     const draft = parseDraft(orphan.raw, () => discardOrphan(orphan));
-    if (draft) adoptDraft(orphan);
+    offeredOrphanRef.current = draft ? orphan : null;
     return draft;
   }, [parseDraft]);
+
+  // The orphan is taken over (and its old key removed) only once the caller has opened it
+  const offeredOrphanRef = useRef(null);
+  const adoptOfferedOrphan = useCallback(() => {
+    if (offeredOrphanRef.current) adoptDraft(offeredOrphanRef.current);
+    offeredOrphanRef.current = null;
+  }, []);
+
+  // This tab's own draft could not be opened: it stays stored, and is set aside before an edit replaces it
+  const keepUnopenedOwnDraft = useCallback(() => {
+    unopenedDraftRef.current = readDraft();
+  }, []);
 
   // A new tab: offer the newest draft of a tab that is gone (closed, crashed, browser restarted)
   const offerOrphanDraft = useCallback(async () => {
@@ -971,6 +990,8 @@ ${versionError}`, 'error'), 0);
     clearLocalDraft,
     loadLocalDraftOnBoot,
     offerOrphanDraft,
+    adoptOfferedOrphan,
+    keepUnopenedOwnDraft,
     reconcileDraft,
     markLoaded,
     triggerManualCloudSave,

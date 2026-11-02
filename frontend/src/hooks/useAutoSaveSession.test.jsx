@@ -3,8 +3,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act, cleanup } from '@testing-library/react';
 import axios from 'axios';
 import { useAutoSaveSession } from './useAutoSaveSession';
-import { getTabId, DRAFT_PREFIX } from '../utils/draftStorage';
-import { notify } from '../utils/dialogs';
+import { getTabId, resetTabIdCache, DRAFT_PREFIX } from '../utils/draftStorage';
+import { notify, getDialogState, resolveModal, resetDialogs } from '../utils/dialogs';
+import { FILE_FORMAT_VERSION } from '../constants';
 
 vi.mock('axios');
 vi.mock('../utils/dialogs', async (importOriginal) => ({ ...(await importOriginal()), notify: vi.fn() }));
@@ -527,5 +528,64 @@ describe('one lock per tab', () => {
       expect(checkouts()).toBe(before);
       expect(before).toBeLessThanOrEqual(31);
     }
+  });
+});
+
+describe('orphaned draft offered at boot', () => {
+  const orphanKey = (id) => `${DRAFT_PREFIX}${id}`;
+  const draftOf = (nodes, minutesAgo) => JSON.stringify({
+    version: FILE_FORMAT_VERSION, nodes, edges: [], timestamp: new Date(Date.now() - minutesAgo * 60000).toISOString(),
+  });
+  const note = { id: 'note1', type: 'text_bubble', position: { x: 0, y: 0 }, data: { text: 'remember' } };
+  const mountEmpty = () => mount(baseProps({ nodes: [], activeDiagram: null, isAuthenticated: false }));
+  // Starts the offer, answers "Restore" when a question appears, and returns what the offer produced
+  const offer = async (view, restore = true) => {
+    let result;
+    const pending = view.result.current.offerOrphanDraft().then((d) => { result = d; });
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    if (getDialogState().modal) await act(async () => { resolveModal(restore); await vi.advanceTimersByTimeAsync(0); });
+    await pending;
+    return result;
+  };
+  afterEach(() => resetDialogs());
+
+  it('never offers an empty drawing, even when it is the newest: the next newest is offered and the empty one removed', async () => {
+    localStorage.setItem(orphanKey('real'), draftOf([node('a', 100)], 30));
+    localStorage.setItem(orphanKey('empty'), draftOf([], 1));
+    const draft = await offer(await mountEmpty());
+    expect(draft?.nodes.map((n) => n.id)).toEqual(['a']);
+    expect(localStorage.getItem(orphanKey('empty'))).toBeNull();
+  });
+
+  it('offers nothing when the only orphan is an empty drawing, and removes it', async () => {
+    localStorage.setItem(orphanKey('empty'), draftOf([], 1));
+    const view = await mountEmpty();
+    expect(await offer(view)).toBeNull();
+    expect(getDialogState().modal).toBeNull();
+    expect(localStorage.getItem(orphanKey('empty'))).toBeNull();
+  });
+
+  it('still offers a drawing that holds only a note', async () => {
+    localStorage.setItem(orphanKey('notes'), draftOf([note], 5));
+    const draft = await offer(await mountEmpty());
+    expect(draft?.nodes.map((n) => n.id)).toEqual(['note1']);
+  });
+
+  it('a draft of this tab that could not be opened is set aside at the first edit, and a later new tab offers it', async () => {
+    const failed = draftOf([{ id: 'bad', type: 'no_such_component', position: { x: 0, y: 0 }, data: { label: 'failed text' } }], 10);
+    localStorage.setItem(`${DRAFT_PREFIX}${getTabId()}`, failed);
+    const first = await mountEmpty();
+    act(() => { first.result.current.keepUnopenedOwnDraft(); });   // the app could not open it and left the canvas blank
+    first.rerender(baseProps({ nodes: [node('a', 5)], activeDiagram: null, isAuthenticated: false }));   // the user's first edit
+    await settle();
+    expect(localStorage.getItem(`${DRAFT_PREFIX}${getTabId()}`)).not.toBe(failed);   // autosave replaced the own key
+    expect(localStorage.getItem(`${DRAFT_PREFIX}kept_${getTabId()}`)).toBe(failed);
+    cleanup();   // the tab is closed
+
+    sessionStorage.clear();
+    resetTabIdCache();   // a new tab
+    const second = await mountEmpty();
+    expect(await offer(second, false)).toBeNull();   // newest first: the edited drawing, declined
+    expect((await offer(second))?.nodes.map((n) => n.id)).toEqual(['bad']);
   });
 });

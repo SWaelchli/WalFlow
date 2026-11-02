@@ -16,7 +16,7 @@ function Toasts({ toasts }) {
     <div
       aria-live="polite"
       style={{
-        position: 'fixed', top: '68px', right: '16px', zIndex: 100000, display: 'flex', flexDirection: 'column',
+        position: 'fixed', top: '68px', right: '16px', zIndex: 'var(--z-toast)', display: 'flex', flexDirection: 'column',
         gap: '8px', width: 'min(380px, calc(100vw - 32px))', pointerEvents: 'none',
       }}
     >
@@ -113,7 +113,7 @@ function ModalDialog({ modal }) {
     <div
       onMouseDown={(e) => { if (e.target === e.currentTarget) cancel(); }}
       style={{
-        position: 'fixed', inset: 0, background: 'rgba(28, 43, 44, 0.5)', zIndex: 100001,
+        position: 'fixed', inset: 0, background: 'rgba(28, 43, 44, 0.5)', zIndex: 'var(--z-dialog)',
         display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px',
       }}
     >

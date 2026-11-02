@@ -128,6 +128,16 @@ const parseTimestamp = (raw) => {
   }
 };
 
+/** True when a stored draft (JSON text or parsed) has no nodes at all. A drawing of only notes is not empty. */
+export function isEmptyDraft(draft) {
+  try {
+    const parsed = typeof draft === 'string' ? JSON.parse(draft) : draft;
+    return !!parsed && Array.isArray(parsed.nodes) && parsed.nodes.length === 0;
+  } catch {
+    return false;
+  }
+}
+
 const isTabAlive = (tabId, now) => {
   if (tabId === getTabId()) return true;
   const last = Number(localStorage.getItem(ALIVE_PREFIX + tabId));
@@ -152,7 +162,7 @@ export function pruneDrafts(now = Date.now()) {
   }
 }
 
-/** The newest draft whose tab is no longer open: { key, raw, timestamp }, or null. */
+/** The newest real (not empty) draft whose tab is no longer open: { key, raw, timestamp }, or null. Empty ones of closed tabs are removed. */
 export function findOrphanDraft(now = Date.now()) {
   try {
     let best = null;
@@ -162,12 +172,27 @@ export function findOrphanDraft(now = Date.now()) {
       if (tabId && isTabAlive(tabId, now)) continue;
       const raw = localStorage.getItem(key);
       if (!raw) continue;
+      if (isEmptyDraft(raw)) {
+        localStorage.removeItem(key);
+        continue;
+      }
       const timestamp = parseTimestamp(raw);
       if (!best || timestamp > best.timestamp) best = { key, raw, timestamp };
     }
     return best;
   } catch {
     return null;
+  }
+}
+
+const KEPT_PREFIX = DRAFT_PREFIX + 'kept_';
+
+/** Sets a draft that could not be opened aside under a key of no live tab, so it is offered again later. */
+export function keepDraftCopy(raw) {
+  try {
+    localStorage.setItem(KEPT_PREFIX + getTabId(), raw);
+  } catch {
+    // full or blocked: the draft stays where it is
   }
 }
 

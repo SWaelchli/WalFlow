@@ -2,10 +2,12 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
   DRAFT_PREFIX, LEGACY_DRAFT_KEY, DRAFT_MAX_AGE_MS, ALIVE_WINDOW_MS,
   getTabId, resetTabIdCache, ownDraftKey, writeDraft, readDraft, removeDraft,
-  startHeartbeat, pruneDrafts, findOrphanDraft, adoptDraft, discardOrphan, isMyTabLock,
+  startHeartbeat, pruneDrafts, findOrphanDraft, adoptDraft, discardOrphan, isMyTabLock, isEmptyDraft, keepDraftCopy,
 } from './draftStorage';
 
-const draft = (iso) => JSON.stringify({ nodes: [], timestamp: iso });
+const tankNode = { id: 'n1', type: 'tank', position: { x: 0, y: 0 }, data: {} };
+const noteNode = { id: 'note1', type: 'text_bubble', position: { x: 0, y: 0 }, data: { text: 'remember' } };
+const draft = (iso, nodes = [tankNode]) => JSON.stringify({ nodes, timestamp: iso });
 
 beforeEach(() => {
   localStorage.clear();
@@ -67,6 +69,20 @@ describe('isMyTabLock', () => {
   });
 });
 
+describe('isEmptyDraft', () => {
+  it.each([
+    ['no nodes', JSON.stringify({ nodes: [] }), true],
+    ['no nodes, already parsed', { nodes: [] }, true],
+    ['one component', JSON.stringify({ nodes: [tankNode] }), false],
+    ['only a note', JSON.stringify({ nodes: [noteNode] }), false],
+    ['no nodes list at all: not judged empty', JSON.stringify({ edges: [] }), false],
+    ['unreadable text: not judged empty, so it is kept', '{not json', false],
+    ['nothing stored', null, false],
+  ])('%s', (_name, stored, expected) => {
+    expect(isEmptyDraft(stored)).toBe(expected);
+  });
+});
+
 describe('orphaned drafts', () => {
   const now = Date.parse('2026-10-15T12:00:00Z');
   const other = (id, iso, aliveAt) => {
@@ -95,6 +111,33 @@ describe('orphaned drafts', () => {
     expect(localStorage.getItem(LEGACY_DRAFT_KEY)).toBeNull();
     expect(readDraft()).toBe(orphan.raw);
     expect(findOrphanDraft(now)).toBeNull();
+  });
+
+  it('removes the empty draft of a closed tab but never one whose tab is alive, nor the own draft of this tab', () => {
+    localStorage.setItem(`${DRAFT_PREFIX}closed-empty`, draft('2026-10-15T09:00:00Z', []));
+    localStorage.setItem(`${DRAFT_PREFIX}live-empty`, draft('2026-10-15T09:00:00Z', []));
+    localStorage.setItem('walflow_tab_alive_live-empty', String(now - 1000));
+    const own = draft('2026-10-15T09:00:00Z', []);
+    writeDraft(own);
+    other('real', '2026-10-14T09:00:00Z');
+    expect(findOrphanDraft(now).key).toBe(`${DRAFT_PREFIX}real`);
+    expect(localStorage.getItem(`${DRAFT_PREFIX}closed-empty`)).toBeNull();
+    expect(localStorage.getItem(`${DRAFT_PREFIX}live-empty`)).not.toBeNull();
+    expect(readDraft()).toBe(own);
+  });
+
+  it('a draft set aside by keepDraftCopy leaves the own draft alone and is offered once the tab is gone', () => {
+    const own = draft('2026-10-15T09:00:00Z');
+    const aside = draft('2026-10-15T08:00:00Z', [noteNode]);
+    writeDraft(own);
+    keepDraftCopy(aside);
+    const keptKey = `${DRAFT_PREFIX}kept_${getTabId()}`;
+    expect(localStorage.getItem(keptKey)).toBe(aside);
+    expect(readDraft()).toBe(own);
+    removeDraft();
+    expect(findOrphanDraft(now).raw).toBe(aside);   // the kept key belongs to no live tab
+    adoptDraft(findOrphanDraft(now));
+    expect(localStorage.getItem(keptKey)).toBeNull();
   });
 
   it('discarding removes the orphan', () => {
