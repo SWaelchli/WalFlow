@@ -4,22 +4,7 @@ import {
 } from 'recharts';
 import { useUnits } from '../../context/UnitContext';
 import { niceTicks, formatTick } from '../../utils/chartTicks';
-
-// Legend with an inline SVG icon per entry type (line, cross)
-const LEGEND_ICON = {
-  plainline: (c) => <line x1="0" y1="7" x2="14" y2="7" stroke={c} strokeWidth="2" />,
-  cross: (c) => <path d="M7 1V13M1 7H13" stroke={c} strokeWidth="2.5" />
-};
-const ValveLegend = ({ payload }) => (
-  <div style={{ display: 'flex', justifyContent: 'flex-end', flexWrap: 'wrap', gap: '10px', fontSize: 'var(--fs-xs)' }}>
-    {payload.map((e) => (
-      <span key={e.value} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: e.color }}>
-        <svg width="14" height="14" viewBox="0 0 14 14">{LEGEND_ICON[e.type](e.color)}</svg>
-        {e.value}
-      </span>
-    ))}
-  </div>
-);
+import ChartLegend from './ChartLegend';
 
 const ValveDetails = memo(function ValveDetails({ node }) {
   const { labels, isImperial, lminToDisplay, absPaToDisplay, formatPressurePa } = useUnits();
@@ -27,9 +12,17 @@ const ValveDetails = memo(function ValveDetails({ node }) {
   const { set_pressure_pa, backpressure, telemetry, opening_pct } = node.data;
   
   const currentOpening = telemetry?.opening_pct ?? (opening_pct ?? 100);
-  const currentQ = telemetry?.inlets?.[0]?.flow_rate || 0;
-  const pIn = telemetry?.inlets?.[0]?.pressure || 101325;
-  const pOut = telemetry?.outlets?.[0]?.pressure || 101325;
+  const inPort = telemetry?.inlets?.[0];
+  const outPort = telemetry?.outlets?.[0];
+  const currentQ = inPort?.flow_rate || 0;
+  const qOp = Math.abs(currentQ);
+  const pIn = inPort?.pressure ?? 101325;
+  const pOut = outPort?.pressure ?? 101325;
+  const p0In = inPort?.total_pressure ?? pIn;
+  const p0Out = outPort?.total_pressure ?? pOut;
+  const sign = currentQ < 0 ? -1 : 1;
+  const hvInOp = p0In - pIn;
+  const hvOutOp = p0Out - pOut;
   
   const isRegulator = type === 'linear_regulator' || type === 'remote_control_valve';
   const sensedP = telemetry?.sensed_pressure !== undefined ? telemetry.sensed_pressure : (backpressure ? pIn : pOut);
@@ -45,7 +38,7 @@ const ValveDetails = memo(function ValveDetails({ node }) {
     return error < 0.1 ? "REGULATING" : (isSaturated ? "SATURATED" : "ADJUSTING");
   }, [isRegulator, sensedPBar, setPBar, currentOpening]);
 
-  const actualFlowLmin = Math.abs(currentQ) * 60000.0;
+  const actualFlowLmin = qOp * 60000.0;
 
   const flowMultiplier = lminToDisplay(1);
 
@@ -57,9 +50,16 @@ const ValveDetails = memo(function ValveDetails({ node }) {
     return curves.flow_m3s.map((qM3s, i) => {
       const dpFullOpen = curves.dp_full_open_pa[i];
       const dpCurrent = curves.dp_current_pa[i];
+      const scaleHv = qOp > 1e-9 ? (qM3s / qOp) ** 2 : 0;
+      const limitPa = backpressure
+        ? (p0Out + sign * dpFullOpen - hvInOp * scaleHv)
+        : (p0In - sign * dpFullOpen - hvOutOp * scaleHv);
+      const currentPa = backpressure
+        ? (p0Out + sign * dpCurrent - hvInOp * scaleHv)
+        : (p0In - sign * dpCurrent - hvOutOp * scaleHv);
       // Rounded so float noise such as 3.0000000000000004 does not reach the chart
-      const limitP = Number(absPaToDisplay(backpressure ? pOut + dpFullOpen : pIn - dpFullOpen).toPrecision(10));
-      const currentP = Number(absPaToDisplay(backpressure ? pOut + dpCurrent : pIn - dpCurrent).toPrecision(10));
+      const limitP = Number(absPaToDisplay(limitPa).toPrecision(10));
+      const currentP = Number(absPaToDisplay(currentPa).toPrecision(10));
       return {
         q: qM3s * 60000 * flowMultiplier,
         limit: limitP,
@@ -67,7 +67,7 @@ const ValveDetails = memo(function ValveDetails({ node }) {
         setpoint: isRegulator ? setPDisp : null
       };
     });
-  }, [curves, setPDisp, pIn, pOut, backpressure, isRegulator, flowMultiplier, absPaToDisplay]);
+  }, [curves, qOp, backpressure, p0Out, sign, hvInOp, p0In, hvOutOp, absPaToDisplay, flowMultiplier, isRegulator, setPDisp]);
 
   // Axis ends at the last curve point; round ticks stay within it
   const xMaxDisplay = chartData ? chartData[chartData.length - 1].q : 0;
@@ -124,7 +124,7 @@ const ValveDetails = memo(function ValveDetails({ node }) {
               label={{ value: labels.flow, position: 'insideBottomRight', offset: -2, fontSize: 10, fill: 'var(--color-text-secondary)' }} />
             <YAxis type="number" domain={yDomain} fontSize={10} tickCount={6} tickFormatter={formatTick} width={45}
               label={{ value: labels.pressureAbs, angle: -90, position: 'insideLeft', offset: 10, fontSize: 10, fill: 'var(--color-text-secondary)', style: { textAnchor: 'middle' } }} />
-            <Legend verticalAlign="top" align="right" height={40} content={() => <ValveLegend payload={legendPayload} />} />
+            <Legend verticalAlign="top" align="right" height={40} content={() => <ChartLegend payload={legendPayload} />} />
             
             {isRegulator && <Line dataKey="setpoint" stroke="var(--color-primary)" strokeWidth={2} dot={false} name="Setpoint" legendType="plainline" activeDot={false} isAnimationActive={false} />}
             <Line dataKey="currentCurve" stroke="var(--color-brand-dark)" strokeWidth={2.5} dot={false} name="Current Pos" legendType="plainline" activeDot={false} isAnimationActive={false} />

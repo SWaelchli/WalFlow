@@ -4,7 +4,7 @@ import {
 } from 'recharts';
 import { useUnits } from '../../context/UnitContext';
 import { niceTicks, formatTick } from '../../utils/chartTicks';
-import { centrifugalDpBar, volumetricDpBar } from '../../utils/pumpCurves';
+import ChartLegend from './ChartLegend';
 
 const CavitationWarning = ({ npsha, required, unit, mult }) => (
   <div style={{
@@ -45,75 +45,75 @@ const PumpWarning = ({ title, text, tone = 'warning' }) => (
 const PumpDetails = memo(function PumpDetails({ node }) {
   const { labels, isImperial, lminToDisplay, formatDiffPressurePa, formatPressure, formatFlowM3s, formatPower } = useUnits();
   const { type, data } = node;
-  const { 
-    flow_rated_lmin, head_rated_m, rise_to_shutoff_pct, 
-    motor_power_kw, efficiency_pct, drive_type, max_discharge_pressure_bara, telemetry 
-  } = data;
+  const { max_discharge_pressure_bara, telemetry } = data;
   const maxDischargeBara = parseFloat(max_discharge_pressure_bara ?? 50) || 50;
-  const isFixedSpeed = (drive_type || 'fixed_speed') === 'fixed_speed';
-  // Density of the last result; the curve is in head, so ΔP follows ρ
-  const rho = telemetry?.inlets?.[0]?.density || 1000;
   
   const showCavitationWarning = telemetry?.cavitation_warning === true;
-  const currentQ = telemetry?.inlets?.[0]?.flow_rate || 0;
-  const currentPin = telemetry?.inlets?.[0]?.pressure || 0;
-  const currentPout = telemetry?.outlets?.[0]?.pressure || 0;
-  const currentDpPa = currentPout - currentPin;
+  const inPort = telemetry?.inlets?.[0];
+  const outPort = telemetry?.outlets?.[0];
+  const currentQ = inPort?.flow_rate || 0;
+  const pInTotal = inPort?.total_pressure ?? inPort?.pressure ?? 0;
+  const pOutTotal = outPort?.total_pressure ?? outPort?.pressure ?? 0;
+  const currentDpPa = pOutTotal - pInTotal;
   const currentDpBar = currentDpPa / 100000;
   
   const actualFlowLmin = Math.abs(currentQ) * 60000.0;
   const isVolumetric = type === 'volumetric_pump';
-  
-  const ratedFlow = parseFloat(flow_rated_lmin || 100);
-  const maxX_lmin = Math.max(200, ratedFlow * 1.5, actualFlowLmin * 1.2);
 
-  const { chartData, maxX, maxY, opPoint } = useMemo(() => {
-    const dataPoints = [];
+  const flowMultiplier = lminToDisplay(1);
+  const pressMultiplier = isImperial ? 14.5037738 : 1.0;
+
+  const curves = telemetry?.pump_curves;
+
+  const chartData = useMemo(() => {
+    if (!curves?.flow_m3s?.length) return null;
     const absQ = Math.abs(currentQ);
     const K = (absQ > 1e-7) ? Math.max(0, currentDpBar) / (absQ ** 2) : 0;
-
-    let localMaxY = 0;
-    const steps = 60;
-
-    const flowMultiplier = lminToDisplay(1);
-    const pressMultiplier = isImperial ? 14.5037738 : 1.0;
-
-    for (let i = 0; i <= steps; i++) {
-      const qLmin = (maxX_lmin * i) / steps;
-      const qM3s = qLmin / 60000;
-      
-      // Discharge limit of a PD pump is absolute: the rise is capped at limit − suction pressure
-      const pumpBar = isVolumetric
-        ? volumetricDpBar({
-            flowRatedLmin: flow_rated_lmin, motorPowerKw: motor_power_kw, efficiencyPct: efficiency_pct,
-            fixedSpeed: isFixedSpeed, maxDischargeBara, suctionPa: currentPin || 101325,
-          }, qM3s)
-        : centrifugalDpBar({ flowRatedLmin: flow_rated_lmin, headRatedM: head_rated_m, risePct: rise_to_shutoff_pct }, qM3s, rho);
-
+    return curves.flow_m3s.map((qM3s, i) => {
+      const pumpBar = curves.dp_pa[i] / 100000;
       const systemBar = K * (qM3s ** 2);
+      return {
+        q: qM3s * 60000 * flowMultiplier,
+        pump: pumpBar * pressMultiplier,
+        system: systemBar * pressMultiplier,
+      };
+    });
+  }, [curves, currentQ, currentDpBar, flowMultiplier, pressMultiplier]);
+
+  const xMaxDisplay = chartData ? chartData[chartData.length - 1].q : 0;
+  const xTicks = useMemo(
+    () => (xMaxDisplay > 0 ? niceTicks(xMaxDisplay, 5).filter((t) => t <= xMaxDisplay * (1 + 1e-9)) : undefined),
+    [xMaxDisplay]
+  );
+
+  const { minY, maxY } = useMemo(() => {
+    if (!chartData || !chartData.length) return { minY: 0, maxY: 10 };
+    let localMinY = currentDpBar;
+    let localMaxY = currentDpBar;
+    for (let i = 0; i < (curves?.dp_pa?.length || 0); i++) {
+      const pumpBar = curves.dp_pa[i] / 100000;
+      if (pumpBar < localMinY) localMinY = pumpBar;
       if (pumpBar > localMaxY) localMaxY = pumpBar;
-      if (systemBar > localMaxY && qLmin <= maxX_lmin) localMaxY = systemBar;
-
-      dataPoints.push({ 
-        q: qLmin * flowMultiplier, 
-        pump: pumpBar * pressMultiplier, 
-        system: systemBar * pressMultiplier 
-      });
     }
+    for (const pt of chartData) {
+      const sysBar = pt.system / pressMultiplier;
+      if (sysBar > localMaxY) localMaxY = sysBar;
+    }
+    const minY = localMinY < 0 ? Math.floor(localMinY * pressMultiplier * 1.1) : 0;
+    const rawMaxY = Math.max(localMaxY * pressMultiplier * 1.1, (localMinY < 0 ? 0 : 0.5));
+    const maxY = niceTicks(rawMaxY, 5).pop() || 1;
+    return { minY, maxY };
+  }, [chartData, curves, currentDpBar, pressMultiplier]);
 
-    const opQ = actualFlowLmin * flowMultiplier;
-    const opP = currentDpBar * pressMultiplier;
+  const opQ = actualFlowLmin * flowMultiplier;
+  const opP = currentDpBar * pressMultiplier;
+  const opPoint = useMemo(() => [{ q: opQ, p: opP }], [opQ, opP]);
 
-    return { 
-      chartData: dataPoints, 
-      maxX: maxX_lmin * flowMultiplier, 
-      maxY: (localMaxY * pressMultiplier) * 1.1,
-      opPoint: [{ q: opQ, p: opP }]
-    };
-  }, [isVolumetric, isFixedSpeed, maxDischargeBara, currentPin, rho, flow_rated_lmin, head_rated_m, rise_to_shutoff_pct, motor_power_kw, efficiency_pct, currentQ, currentDpBar, maxX_lmin, isImperial, actualFlowLmin, lminToDisplay]);
-
-  const xTicks = niceTicks(maxX, 5);
-  const yTicks = niceTicks(maxY, 5);
+  const legendPayload = [
+    { value: 'Pump Curve', type: 'plainline', color: 'var(--color-primary)' },
+    { value: 'System', type: 'plainline', color: 'var(--color-success)' },
+    ...(telemetry ? [{ value: 'Operating Point', type: 'cross', color: 'var(--color-brand-dark)' }] : []),
+  ];
 
   const hydraulicPowerKW = (currentDpPa * Math.abs(currentQ)) / 1000;
   const motorLoadPct = telemetry?.motor_load_pct;
@@ -156,19 +156,25 @@ const PumpDetails = memo(function PumpDetails({ node }) {
       </div>
       
       <div style={{ width: '100%', height: '240px', background: 'var(--color-surface)', borderRadius: 'var(--radius-md)' }}>
-        <ResponsiveContainer width="100%" height="100%" minWidth={0} initialDimension={{ width: 240, height: 160 }}>
-          <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 4, bottom: 10 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
-            <XAxis dataKey="q" type="number" domain={[0, xTicks[xTicks.length - 1]]} ticks={xTicks} tickFormatter={formatTick} fontSize={10}
-              label={{ value: `Flow (${labels.flow})`, position: 'insideBottom', offset: -6, fontSize: 'var(--fs-xs)' }} height={36} />
-            <YAxis type="number" domain={[0, yTicks[yTicks.length - 1]]} ticks={yTicks} tickFormatter={formatTick} fontSize={10} width={44}
-              label={{ value: `Pressure (${labels.pressureDiff})`, angle: -90, position: 'insideLeft', offset: 14, fontSize: 'var(--fs-xs)', style: { textAnchor: 'middle' } }} />
-            <Legend verticalAlign="top" align="right" height={40} iconType="plainline" wrapperStyle={{ fontSize: 'var(--fs-xs)' }} />
-            <Line dataKey="pump" stroke="var(--color-primary)" strokeWidth={2.5} dot={false} name="Pump Curve" isAnimationActive={false} />
-            <Line dataKey="system" stroke="var(--color-success)" strokeWidth={2} dot={false} name="System" isAnimationActive={false} />
-            {telemetry && <Scatter name="Operating Point" dataKey="p" data={opPoint} fill="var(--color-brand-dark)" isAnimationActive={false} shape="cross" />}
-          </ComposedChart>
-        </ResponsiveContainer>
+        {!chartData ? (
+          <div style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--fs-sm)', fontStyle: 'italic', padding: '10px 0', textAlign: 'center' }}>
+            Run a simulation to see the pump curve
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%" minWidth={0} initialDimension={{ width: 240, height: 160 }}>
+            <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 4, bottom: 10 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
+              <XAxis dataKey="q" type="number" domain={[0, xMaxDisplay]} ticks={xTicks} tickFormatter={formatTick} fontSize={10} height={36}
+                label={{ value: labels.flow, position: 'insideBottomRight', offset: -2, fontSize: 10, fill: 'var(--color-text-secondary)' }} />
+              <YAxis type="number" domain={[minY, maxY]} tickCount={6} tickFormatter={formatTick} fontSize={10} width={45}
+                label={{ value: labels.pressureDiff, angle: -90, position: 'insideLeft', offset: 10, fontSize: 10, fill: 'var(--color-text-secondary)', style: { textAnchor: 'middle' } }} />
+              <Legend verticalAlign="top" align="right" height={40} content={() => <ChartLegend payload={legendPayload} />} />
+              <Line dataKey="pump" stroke="var(--color-primary)" strokeWidth={2.5} dot={false} name="Pump Curve" legendType="plainline" activeDot={false} isAnimationActive={false} />
+              <Line dataKey="system" stroke="var(--color-success)" strokeWidth={2} dot={false} name="System" legendType="plainline" activeDot={false} isAnimationActive={false} />
+              {telemetry && <Scatter name="Operating Point" dataKey="p" data={opPoint} fill="var(--color-brand-dark)" isAnimationActive={false} shape="cross" legendType="cross" />}
+            </ComposedChart>
+          </ResponsiveContainer>
+        )}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -178,7 +184,7 @@ const PumpDetails = memo(function PumpDetails({ node }) {
         </div>
         <div style={{ background: 'var(--color-surface-hover)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
           <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '600', letterSpacing: '0.02em', marginBottom: '2px' }}>Pressure Increase</div>
-          <div style={{ fontSize: 'var(--fs-sm)', fontWeight: '700', color: 'var(--color-primary-text)', fontFamily: 'var(--font-mono)' }}>{formatDiffPressurePa(currentDpPa)} <span style={{ fontSize: 'var(--fs-xs)', fontWeight: '500' }}>{labels.pressureDiff}</span></div>
+          <div style={{ fontSize: 'var(--fs-sm)', fontWeight: '700', color: 'var(--color-primary-text)', fontFamily: 'var(--font-mono)' }}>{formatDiffPressurePa(currentDpPa)} {labels.pressureDiff}</div>
         </div>
         <div style={{ background: 'var(--color-surface-hover)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
           <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '600', letterSpacing: '0.02em', marginBottom: '2px' }}>Hydraulic Power</div>

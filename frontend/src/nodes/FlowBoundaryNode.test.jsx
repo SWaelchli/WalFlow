@@ -25,7 +25,7 @@ describe('flow boundary node', () => {
     ['no direction stored means supply', { set_flow_lmin: 50 }, /Supply/, /Draw/],
   ])('labels the direction: %s', (_name, data, shown, hidden) => {
     renderNode(data);
-    expect(screen.getByText(shown).textContent).toMatch(/50/);
+    expect(screen.getByText(shown).closest('.node-readout-row').textContent).toMatch(/50/);
     expect(screen.queryByText(hidden)).toBeNull();
   });
 
@@ -35,7 +35,7 @@ describe('flow boundary node', () => {
     ['per_port without port flows falls back to the set flow', { flow_split: 'per_port', set_flow_lmin: 50 }, /50/],
   ])('footer flow before a run: %s', (_name, data, expected) => {
     renderNode(data);
-    expect(screen.getByText(/Supply/).textContent).toMatch(expected);
+    expect(screen.getByText(/Supply/).closest('.node-readout-row').textContent).toMatch(expected);
   });
 
   it.each([[undefined, 1], [1, 1], [3, 3], [8, 8], [20, 8]])('num_ports %s renders %s neutral handles port-0..', (numPorts, count) => {

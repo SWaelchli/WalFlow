@@ -42,7 +42,7 @@ class Filter(InlineNode):
         v_elem = flow_rate / self._element_area()
         return (density * abs(v_elem) * 0.001) / max(1e-7, viscosity)
 
-    def get_resistance_k(self):
+    def get_resistance_k(self, clogging_pct: float = None):
         """Current K factor (dP = K * rho * Q^2 * f(Re)), calibrated so that the datasheet dP is
         reproduced at the reference flow in the reference fluid."""
         rho_ref, mu_ref = self._reference_state()
@@ -52,11 +52,12 @@ class Filter(InlineNode):
         k_terminal = self.dp_terminal / (rho_ref * q_ref**2 * f_ref)
 
         # Linear interpolation of resistance
-        clog_factor = self.clogging_pct / 100.0
+        pct = self.clogging_pct if clogging_pct is None else clogging_pct
+        clog_factor = pct / 100.0
         return k_clean + clog_factor * (k_terminal - k_clean)
 
-    def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001) -> float:
-        k_curr = self.get_resistance_k()
+    def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001, clogging_pct: float = None) -> float:
+        k_curr = self.get_resistance_k(clogging_pct=clogging_pct)
         re_filter = self._reynolds(flow_rate, density, viscosity)
         
         visc_factor = FluidProperties.get_filter_viscosity_factor(re_filter)

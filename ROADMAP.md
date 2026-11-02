@@ -34,6 +34,11 @@ Items move between releases as priorities change. Done items stay in "Done in 0.
   * **Concept:** Optional "certified capacity (L/min)" field from the valve datasheet / nameplate (API 526 orifice letter, ASME-stamped capacity). When set, capacity utilisation and overcapacity use it instead of the Cv-derived rated flow.
   * **Engineering Value:** Matches the relief study to the purchased valve; the Cv-derived value (B1c) stays the default when no certified figure is known.
 
+- [ ] **🔄 Hydraulic Power Recovery Turbine (Expander)**
+  * **Concept:** Add a hydraulic turbine / expander component to model energy recovery from high-pressure liquid letdown streams. Operates as the inverse of a centrifugal pump, extracting hydraulic head to calculate recovered mechanical shaft power ($P_{\text{shaft}} = \eta \cdot \rho g Q H$) rather than dissipating energy as waste heat across a throttling valve.
+  * **Implementation notes:** Backend equipment model in `backend/simulation/equipment/` with steady-state head-extraction vs. flow characteristic curve ($\Delta H = -f(Q)$) and efficiency $\eta$; telemetry output for generated power; equipment documentation `.md`; frontend node, inspector, and palette registration.
+  * **Engineering Value:** Essential for energy efficiency audits and modeling power recovery in high-pressure letdown stations, reverse osmosis units, and process loops.
+
 ### 📊 Analytics & Telemetry
 
 - [ ] **📏 Valve Opening Instrument**: Add instrument functionality to measure valve opening (control valves, regulators, 3-way TCV), so the opening of each valve can be compared per operating case in the Measurements tab, with alarm limits like the other instruments.
