@@ -37,11 +37,11 @@ describe('StatusBar', () => {
     expect(screen.getByText('3 selected')).toBeTruthy();
   });
 
-  it('the case slot toggles the case manager, zoom fits the view, units open the settings', () => {
+  it('the case slot is static text, zoom fits the view, units open the settings', () => {
     const onOpenUnits = vi.fn();
     const ctx = setup({ onOpenUnits });
-    fireEvent.click(screen.getByRole('button', { name: /Case: Base/ }));
-    expect(ctx.actions.toggleCaseManager).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('Case: Base')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Case: Base/ })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: /percent, fit view/ }));
     expect(ctx.actions.fitView).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByRole('button', { name: 'bar a · L/min · °C' }));

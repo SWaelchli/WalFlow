@@ -31,7 +31,7 @@ Read these before any visual or layout change. Where they differ, the higher one
   colour for every number; colour only on a state badge (MASTER.md "Canvas values", enforced by a style guard test).
 * **Results views:** built from the shared results blocks, numbers through the formatters, no `toFixed` (MASTER.md
   "Results display", enforced by the same guard test).
-* **Icons:** Phosphor through `components/symbols/IconLibrary.jsx`; icon-only buttons have an accessible name and a
+* **Icons:** Phosphor, or a hand-drawn SVG on the same grid when Phosphor has none, through `components/symbols/IconLibrary.jsx`; icon-only buttons have an accessible name and a
   tooltip.
 * **Supported windows:** full editing from 1024 px wide, overlays down to 768 px.
 * **Docs stay true:** a change that adds or alters a region, menu item, rule, token or size updates the

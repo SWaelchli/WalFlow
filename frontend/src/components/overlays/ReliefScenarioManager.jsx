@@ -1,16 +1,14 @@
 import React from 'react';
 import { useUnits } from '../../context/UnitContext';
-import { CrossIcon, CheckIcon, PlusIcon } from '../symbols/IconLibrary';
+import { CrossIcon, CheckIcon } from '../symbols/IconLibrary';
 
 /**
- * CaseManager component provides a floating dashboard panel on the canvas
- * to control active Operating Scenario and Contingency Telemetry View (Relief Case).
+ * ReliefScenarioManager is a floating panel on the canvas to choose which relief scenario
+ * (Contingency Telemetry View) the canvas, inspector and measurements show.
  */
-export default function CaseManager({
+export default function ReliefScenarioManager({
   cases = [],
   activeCaseId = 'case_base',
-  onSelectCase,
-  onAddCase,
   telemetryMode = 'mitigated',
   onToggleTelemetryMode,
   onClose
@@ -21,10 +19,10 @@ export default function CaseManager({
       id: 'mitigated',
       label: `Relieved system pressure (${basisLabel})`,
       desc: 'Steady state with the relief devices in their final state',
-      color: '#10B981',
-      bgActive: '#ECFDF5',
-      borderActive: '#10B981',
-      textActive: '#065F46'
+      color: 'var(--color-success)',
+      bgActive: 'var(--color-success-tint)',
+      borderActive: 'var(--color-success)',
+      textActive: 'var(--color-success-text)'
     },
     {
       id: 'peak',
@@ -39,10 +37,10 @@ export default function CaseManager({
       id: 'unmitigated_global',
       label: `Unmitigated peak pressure (${basisLabel})`,
       desc: 'Steady state with all relief devices held closed',
-      color: '#DC2626',
-      bgActive: '#FEF2F2',
-      borderActive: '#DC2626',
-      textActive: '#991B1B'
+      color: 'var(--color-danger)',
+      bgActive: 'var(--color-danger-tint)',
+      borderActive: 'var(--color-danger)',
+      textActive: 'var(--color-danger-text)'
     }
   ];
 
@@ -58,7 +56,7 @@ export default function CaseManager({
     <div className="canvas-overlay-card">
       <style>
         {`
-          .case-manager-btn {
+          .relief-scenario-btn {
             display: flex;
             align-items: center;
             gap: 8px;
@@ -71,15 +69,15 @@ export default function CaseManager({
             font-family: inherit;
             transition: all 0.15s ease;
           }
-          .case-manager-btn:hover {
+          .relief-scenario-btn:hover {
             background-color: var(--color-surface-hover);
             border-color: var(--color-border-hover);
           }
-          .case-manager-btn:focus-visible {
+          .relief-scenario-btn:focus-visible {
             border-color: var(--color-primary);
             box-shadow: 0 0 0 2px var(--color-primary-glow);
           }
-          .case-manager-close {
+          .relief-scenario-close {
             position: absolute;
             top: 10px;
             right: 12px;
@@ -94,11 +92,11 @@ export default function CaseManager({
             justify-content: center;
             transition: all 0.15s ease;
           }
-          .case-manager-close:hover {
+          .relief-scenario-close:hover {
             background-color: var(--color-surface-hover);
             color: var(--color-text-primary);
           }
-          .case-manager-close:focus-visible {
+          .relief-scenario-close:focus-visible {
             border-color: var(--color-primary);
             box-shadow: 0 0 0 2px var(--color-primary-glow);
           }
@@ -109,9 +107,9 @@ export default function CaseManager({
       {onClose && (
         <button 
           onClick={onClose} 
-          className="case-manager-close"
-          title="Close case manager"
-          aria-label="Close case manager"
+          className="relief-scenario-close"
+          title="Close relief scenario manager"
+          aria-label="Close relief scenario manager"
         >
           <CrossIcon size={14} />
         </button>
@@ -120,47 +118,14 @@ export default function CaseManager({
       {/* Panel Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--color-brand-dark)' }}>
-          Scenario & Case Manager
+          Relief scenario manager
         </span>
       </div>
 
-      {/* Operating Case Selection */}
+      {/* Relief scenario selection */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
         <label style={{ fontSize: 'var(--fs-xs)', fontWeight: 700, color: 'var(--color-text-secondary)', letterSpacing: '0.04em' }}>
-          Operating case
-        </label>
-        <select
-          value={activeCaseId}
-          onChange={(e) => onSelectCase && onSelectCase(e.target.value)}
-          className="form-select"
-          style={{
-            width: '100%',
-            fontWeight: '700',
-            fontSize: 'var(--fs-xs)'
-          }}
-        >
-          {cases.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name} {c.is_base ? '(Base Case)' : ''}
-            </option>
-          ))}
-        </select>
-        {onAddCase && (
-          <button
-            type="button"
-            onClick={() => onAddCase()}
-            className="btn-secondary btn-compact"
-            style={{ marginTop: '4px', justifyContent: 'center' }}
-          >
-            <PlusIcon size={14} style={{ marginRight: '6px' }} /> New case
-          </button>
-        )}
-      </div>
-
-      {/* Relief contingency selection */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-        <label style={{ fontSize: 'var(--fs-xs)', fontWeight: 700, color: 'var(--color-text-secondary)', letterSpacing: '0.04em' }}>
-          Relief case view
+          Relief scenario
         </label>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {reliefModes.map((mode) => {
@@ -171,11 +136,11 @@ export default function CaseManager({
                 onClick={() => onToggleTelemetryMode && onToggleTelemetryMode(mode.id)}
                 aria-pressed={isActive}
                 title={mode.desc}
-                className="case-manager-btn"
+                className="relief-scenario-btn"
                 style={{
                   borderColor: isActive ? mode.borderActive : 'var(--color-border)',
                   backgroundColor: isActive ? mode.bgActive : 'var(--color-surface)',
-                  boxShadow: isActive ? `0 2px 8px rgba(0, 0, 0, 0.04)` : 'none'
+                  boxShadow: isActive ? 'var(--shadow-sm)' : 'none'
                 }}
               >
                 {/* Status Dot */}

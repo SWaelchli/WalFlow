@@ -1,14 +1,14 @@
 import React from 'react';
 import { getCommand, formatShortcut, runCommand } from '../../commands';
-import { PlayIcon, SpinnerIcon, UndoIcon, RedoIcon, SidePaneIcon, ResultsPaneIcon, InspectorPaneIcon } from '../symbols/IconLibrary';
+import { PlayIcon, PlusIcon, SpinnerIcon, UndoIcon, RedoIcon, SidePaneIcon, ResultsPaneIcon, InspectorPaneIcon } from '../symbols/IconLibrary';
 
 /** Icon-only command button: accessible name + tooltip (reason when disabled, else label and shortcut). */
-function IconCommand({ commandId, ctx, icon, label, pressed }) {
+function IconCommand({ commandId, ctx, icon, label, tooltip = label, pressed }) {
   const Glyph = icon;
   const command = getCommand(commandId);
   const enabled = command.isEnabled(ctx);
   const shortcut = formatShortcut(command.shortcut);
-  const tip = enabled === true ? `${label}${shortcut ? ` (${shortcut})` : ''}` : enabled;
+  const tip = enabled === true ? `${tooltip}${shortcut ? ` (${shortcut})` : ''}` : enabled;
   return (
     <button
       type="button"
@@ -64,7 +64,7 @@ export default function CommandBar({ ctx }) {
         <span className="case-switcher-label">Case:</span>
         <select
           aria-label="Active operating case"
-          title="Switch operating case. Add cases in the Operating cases tab below the canvas."
+          title="Switch operating case. Add a case with Simulation › New case…"
           value={ctx.activeCaseId}
           onChange={(e) => caseOptions[ctx.cases.findIndex((c) => c.id === e.target.value)]?.run()}
           className="form-select case-switcher-select"
@@ -75,6 +75,7 @@ export default function CommandBar({ ctx }) {
             </option>
           ))}
         </select>
+        <IconCommand commandId="simulation.new-case" ctx={ctx} icon={PlusIcon} label="New case" tooltip="New case…" />
       </div>
 
       <div className="commandbar-spacer" />

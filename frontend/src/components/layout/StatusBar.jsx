@@ -23,7 +23,7 @@ function ZoomSlot({ onClick }) {
 
 /**
  * Status bar, fixed slots left to right: Run result, Case, Warnings; right: Units, Selection, Zoom.
- * Slots never wrap. Clicks run commands through `runCommand` where a command exists.
+ * Slots never wrap. Clicks run commands through `runCommand` where a command exists; the Case and Selection slots are static.
  */
 export default function StatusBar({ ctx, chip, activeCaseName, warningCount, hasErrors, onOpenWarnings, onOpenUnits }) {
   const { basisLabel, labels } = useUnits();
@@ -32,13 +32,10 @@ export default function StatusBar({ ctx, chip, activeCaseName, warningCount, has
   return (
     <>
       <StatusChip {...chip} />
-      <Slot
-        icon={CaseIcon}
-        label={`Case: ${activeCaseName}`}
-        title="Active case: click to show the case manager"
-        onClick={() => runCommand('view.case-manager', ctx)}
-        className="status-slot-case"
-      />
+      <span className="status-slot status-slot-static status-slot-case" title="Active case">
+        <CaseIcon size={14} />
+        <span>{`Case: ${activeCaseName}`}</span>
+      </span>
       {warningCount > 0 && (
         <Slot
           icon={WarningIcon}

@@ -40,4 +40,20 @@ describe('CommandBar', () => {
     fireEvent.click(undo);
     expect(ctx.actions.undo).not.toHaveBeenCalled();
   });
+
+  it('the + button next to the case selector adds a case, and is disabled with the reason on a read-only drawing', () => {
+    const ctx = makeCommandCtx();
+    const { unmount } = render(<CommandBar ctx={ctx} />);
+    fireEvent.click(screen.getByRole('button', { name: 'New case' }));
+    expect(ctx.actions.addCase).toHaveBeenCalledTimes(1);
+    unmount();
+
+    const ro = makeCommandCtx({ isReadOnly: true });
+    render(<CommandBar ctx={ro} />);
+    const add = screen.getByRole('button', { name: 'New case' });
+    expect(add.getAttribute('aria-disabled')).toBe('true');
+    expect(add.getAttribute('title')).toMatch(/read-only/);
+    fireEvent.click(add);
+    expect(ro.actions.addCase).not.toHaveBeenCalled();
+  });
 });

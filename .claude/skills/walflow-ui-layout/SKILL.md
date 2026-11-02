@@ -42,7 +42,7 @@ nothing fits, ask the user.
 | A short confirmation of something that just happened | **Toast** | "Saved to cloud" |
 | A decision the user must make before going on | **Dialog** | Unsaved changes, permanent delete |
 | A large management task that replaces the editor | **Page** | Catalogue |
-| A visual layer over the diagram | **Canvas overlay**, in its corner | Heatmap legend, case manager |
+| A visual layer over the diagram | **Canvas overlay**, in its corner | Heatmap legend, relief scenario manager |
 
 ## Regions
 
@@ -57,7 +57,7 @@ Left: logo (opens About), then the menus. Centre: `Project / Drawing` name, save
 |---|---|
 | **File** | New drawing… · Open… (Drawings pane) · Save `Ctrl+S` · Save as… · — · Import .wlf file… · Export .wlf file · Export table as CSV |
 | **Edit** | Undo `Ctrl+Z` · Redo `Ctrl+Y` · — · Copy `Ctrl+C` · Paste `Ctrl+V` · Duplicate `Ctrl+D` · Delete `Del` · — · Select all `Ctrl+A` · Rotate `R` · — · Add instrument · Insert measurement tap |
-| **View** | Components · Examples · Drawings · Settings (side panes) · Inspector · Results panel · — · Zoom in · Zoom out · Fit view · Lock canvas · — · Heatmap ▸ · Case manager |
+| **View** | Components · Examples · Drawings · Settings (side panes) · Inspector · Results panel · — · Zoom in · Zoom out · Fit view · Lock canvas · — · Heatmap ▸ · Relief scenario ▸ · Relief scenario manager |
 | **Simulation** | Run simulation `Ctrl+Enter` · Solve all cases · — · Active case ▸ (radio list) · New case… |
 | **Tools** | Catalogue · Manage projects… · Admin hub… (admins only) |
 | **Help** | User guide · Keyboard shortcuts `?` · Model & limits · About WalFlow |
@@ -79,7 +79,7 @@ Rules:
 
 ### Command bar (row 2)
 
-Left to right: Undo, Redo │ **Run Simulation** │ Case selector │ (room for frequent commands) — right: panel toggles
+Left to right: Undo, Redo │ **Run Simulation** │ Case selector, New case │ (room for frequent commands) — right: panel toggles
 (side pane, results panel, inspector).
 
 - Run Simulation is the only primary (orange) button in the shell.
@@ -106,8 +106,8 @@ Rail items, top to bottom: **Components** (equipment palette and search), **Exam
 | Position | Holds |
 |---|---|
 | Top edge, full width | Info bars (`.canvas-infobars`: run failed, graph error, stale results), stacked above `.canvas-viewport`, which shrinks; never over the diagram |
-| Top right, one column with a gap | Heatmap legend, case manager (`.canvas-overlays`, cards `.canvas-overlay-card`). Stack with flex, never computed offsets |
-| Bottom left | Canvas controls: zoom in, zoom out, fit view, lock, heatmap. Each has `aria-label` and a tooltip with its shortcut |
+| Top right, one column with a gap | Heatmap legend, relief scenario manager (`.canvas-overlays`, cards `.canvas-overlay-card`). Stack with flex, never computed offsets |
+| Bottom left | Canvas controls: zoom in, zoom out, fit view, lock, heatmap, relief scenario manager. Each has `aria-label` and a tooltip with its shortcut |
 | Bottom right | Reserved (minimap) |
 | Centre | Empty-canvas hint (with a "Browse examples" button that opens the Examples list), loading overlay, file-drop target |
 
@@ -126,10 +126,16 @@ Only view controls belong on the canvas. Commands that change the drawing go thr
 
 - Tabs: Pipes, Equipment, Cases, Relief, Measurements (short labels; the full title is the tooltip). Labels never
   wrap; at narrow widths the tab strip scrolls.
-- Toolbar on the right shows only the controls that apply to the active tab; when it does not fit beside the tabs
-  it wraps onto its own row, never clipped. Hidden while the panel is collapsed.
+- Toolbar on the right holds only view controls of the active tab (filter, auto sort); commands live in their menus.
+  When it does not fit beside the tabs it wraps onto its own row, never clipped. Hidden while the panel is collapsed.
 - Collapsible to its tab strip; size and collapsed state are remembered (`usePanelHeight`). Its height is clamped
   so the canvas keeps its minimum height.
+- A results-panel table may edit a property only when it edits many items or many cases at once, and it must use the
+  same data change as the inspector. Two deliberate exceptions to "a property of the selected item goes in the
+  Inspector" follow this rule:
+  - The Pipes table edits pipe name, NPS, schedule, pipe class and length for many pipes at once.
+  - The Relief case matrix edits the forced state per device and case; the inspector Setup tab edits it per device.
+    Both write the same field and case override.
 
 ### Status bar (bottom)
 
@@ -138,7 +144,7 @@ Fixed slots, left to right:
 | Slot | Shows | Click |
 |---|---|---|
 | Run result | Not run yet / Converged · time / Failed / Out of date, with icon | Flyout: solver statistics and run messages |
-| Case | Active case name | View › Case manager |
+| Case | Active case name | — |
 | Warnings | Count of model errors and warnings, hidden when zero | The run result flyout with the list |
 | Units (right) | Pressure basis, flow unit and temperature unit | Settings pane, Global tab (`view.settings` with `{ open: true, tab: 'global' }`) |
 | Selection (right) | `n selected`, hidden when zero | — |

@@ -27,7 +27,7 @@ const renderList = (onUpdateEdge = vi.fn(), unitSystem = UNIT_SYSTEMS.METRIC) =>
 };
 
 const headerAndCellCounts = () => {
-  const table = screen.getByDisplayValue('Pipe 1').closest('table');
+  const table = document.querySelector('table');
   return [table.querySelectorAll('thead th').length, table.querySelectorAll('tbody tr')[0].querySelectorAll('td').length];
 };
 
@@ -39,11 +39,51 @@ describe('results table headers line up with the cells', () => {
     expect(th).toBe(td);
   });
 
-  it('full equipment list has one header per cell', () => {
+  it('full equipment list has one header per cell and no pipe rows', () => {
     renderList();
-    fireEvent.click(screen.getByRole('button', { name: 'Equipment' }));
+    const equipmentTab = screen.getByRole('button', { name: 'Equipment' });
+    expect(equipmentTab.title).toBe('Full Equipment Data');
+    fireEvent.click(equipmentTab);
     const [th, td] = headerAndCellCounts();
     expect(th).toBe(td);
+    expect(screen.queryByDisplayValue('Pipe 1')).toBeNull();
+    expect(screen.queryByText('Pipe', { selector: 'td' })).toBeNull();
+  });
+});
+
+describe('results toolbar and case columns', () => {
+  const psvNodes = [{ id: 'psv', type: 'pressure_safety_valve', position: { x: 0, y: 0 }, data: { label: 'PSV-1', set_pressure_barg: 5 } }];
+  const stale = { id: 'case_2', name: 'Case 2', overrides: { nodes: {} }, kpis: {}, telemetry: { nodes: {}, edges: {}, relief: {} } };
+  const base = { id: 'case_base', name: 'Case 1', is_base: true, overrides: { nodes: {} }, kpis: {}, telemetry: { nodes: {}, edges: {}, relief: {} } };
+
+  it.each([
+    ['Pipes', true], ['Equipment', true], ['Cases', false], ['Relief', false], ['Measurements', false],
+  ])('%s tab: filter and auto sort only where the table is a list', (tab, hasControls) => {
+    render(
+      <UnitProvider initialUnitSystem={UNIT_SYSTEMS.METRIC}>
+        <DataList nodes={psvNodes} edges={[]} rawNodes={psvNodes} rawEdges={[]} cases={[base, stale]} activeCaseId="case_2" onSelectNode={vi.fn()} onSelectEdge={vi.fn()} />
+      </UnitProvider>
+    );
+    fireEvent.click(screen.getByRole('button', { name: tab }));
+    const toolbar = document.querySelector('.datalist-toolbar');
+    expect(!!screen.queryByLabelText('Filter list')).toBe(hasControls);
+    expect(!!screen.queryByRole('button', { name: 'Auto sort' })).toBe(hasControls);
+    expect(toolbar.querySelectorAll('button').length).toBe(hasControls ? 1 : 0);
+    expect(screen.queryByRole('button', { name: /New case|Case manager|Solve all|Export CSV|Switch/i })).toBeNull();
+  });
+
+  it.each(['Cases', 'Relief'])('%s tab marks the active case column with aria-current and has no Switch button or Active badge', (tab) => {
+    render(
+      <UnitProvider initialUnitSystem={UNIT_SYSTEMS.METRIC}>
+        <DataList nodes={psvNodes} edges={[]} rawNodes={psvNodes} rawEdges={[]} cases={[base, stale]} activeCaseId="case_2" onSelectNode={vi.fn()} onSelectEdge={vi.fn()} />
+      </UnitProvider>
+    );
+    fireEvent.click(screen.getByRole('button', { name: tab }));
+    const current = document.querySelectorAll('th[aria-current="true"]');
+    expect(current.length).toBe(1);
+    expect(current[0].textContent + (current[0].querySelector('input')?.value ?? '')).toMatch(/Case 2/);
+    expect(screen.queryByRole('button', { name: /Switch/ })).toBeNull();
+    expect(screen.queryByText('Active')).toBeNull();
   });
 });
 
@@ -67,15 +107,25 @@ describe('relief analysis matrix', () => {
       peak: { available: true, pressure_bara: 4.0, source: 'opening', device_ids: ['psv'], ramp_pct: 62.3 },
       devices: { psv: { status: 'overcapacity', forced_state: 'auto', opening_order: 1, opening_ramp_pct: 62.3, inlet_at_opening_bara: 4.0, inlet_relieved_bara: 2.548 } },
     })]);
-    expect(screen.getByText('At opening of PSV-1 · 62.3 % load')).toBeTruthy();
-    expect(screen.getByText('PSV-1 · 62.3 % load')).toBeTruthy();
+    // The opening is stated once, in the First relief opening row, not under the peak value
+    expect(screen.getAllByText(/62\.3 % load/).length).toBe(1);
+    expect(screen.getByText('PSV-1 · 62.3 % load').closest('tr').textContent).toMatch(/^First relief opening/);
+    expect(screen.queryByText(/At opening of/)).toBeNull();
     expect(screen.getByText('Overcapacity #1')).toBeTruthy();
+    // One header row: no second row repeating the case names
+    expect(document.querySelectorAll('thead tr').length).toBe(1);
+    expect(screen.queryByText('Run the simulation for results.')).toBeNull();
   });
 
   it('says why the peak is not available', () => {
     renderRelief([reliefCase({ peak: { available: false, reason: 'No ramped driver.', pressure_bara: null }, devices: {} })]);
     expect(screen.getAllByText('Not available').length).toBe(2);
     expect(screen.getAllByText('Not available')[0].closest('td').title).toBe('No ramped driver.');
+  });
+
+  it('says once that there are no results, not in every device cell', () => {
+    renderRelief([reliefCase(undefined), { ...reliefCase(undefined), id: 'case_2', name: 'Case 2', is_base: false }]);
+    expect(screen.getAllByText('Run the simulation for results.').length).toBe(1);
   });
 
   it('asks for a re-run on results from before the relief analysis', () => {
@@ -126,9 +176,9 @@ describe('operating cases matrix without results', () => {
 
   it.each([
     ['never run', base, '—', /^—$/],
-    ['run with zero relief', { ...base, kpis: {}, telemetry }, 'Normal', /^0(\.0+)? L\/min$/],
+    ['run with zero relief', { ...base, kpis: {}, telemetry }, 'Normal', /^0(\.0+)?$/],
     ['kpis but no telemetry', { ...base, kpis: {} }, 'Normal', /^—$/],
-    ['telemetry but no kpis', { ...base, telemetry }, '—', /^0(\.0+)? L\/min$/],
+    ['telemetry but no kpis', { ...base, telemetry }, '—', /^0(\.0+)?$/],
   ])('%s: cavitation and total relief flow cells', (_, c, cavitation, relief) => {
     render(
       <UnitProvider initialUnitSystem={UNIT_SYSTEMS.METRIC}>
@@ -139,6 +189,8 @@ describe('operating cases matrix without results', () => {
     expect(rowCell('Cavitation Risk Status')).toBe(cavitation);
     fireEvent.click(screen.getByRole('button', { name: 'Relief' }));
     expect(rowCell('Total Relief Flow')).toMatch(relief);
+    // The unit sits in the row label only
+    expect(screen.getByText(/^Total Relief Flow \(L\/min\)$/)).toBeTruthy();
   });
 });
 
@@ -161,8 +213,9 @@ describe('operating cases matrix in gauge basis', () => {
 
   it.each([['case_base'], ['case_2']])('converts each case with its own atmospheric pressure, active case %s', (active) => {
     const [base, other] = maxPressureRow(active);
-    expect(base).toMatch(/^3\.99 bar g$/);        // 5 bar a - 1.01325
-    expect(other).toMatch(/^4\.15 bar g\s*\+0\.16 bar/);   // 5 bar a - 0.85, delta is the atmospheric difference
+    expect(screen.getByText(/^System Max Pressure \(bar g\)$/)).toBeTruthy();
+    expect(base).toMatch(/^3\.99$/);        // 5 bar a - 1.01325
+    expect(other).toMatch(/^4\.15\s*\+0\.16 bar/);   // 5 bar a - 0.85, delta is the atmospheric difference
   });
 });
 
@@ -255,6 +308,10 @@ describe('Measurements tab', () => {
     expect(screen.getByText('TAP-1')).toBeTruthy();
     expect(screen.getByText('2.50').closest('td').textContent).toMatch(/^H2\.50bar g$/);
     expect(screen.getByText('1.50').closest('td').textContent).toBe('1.50bar g');
+    // The active case is marked for assistive tech; there is no Switch button or Active badge
+    expect(document.querySelectorAll('th[aria-current="true"]').length).toBe(1);
+    expect(screen.queryByRole('button', { name: /Switch/ })).toBeNull();
+    expect(screen.queryByText('Active')).toBeNull();
   });
 
   it('commits an edited limit to the instrument and rejects limits out of order', () => {

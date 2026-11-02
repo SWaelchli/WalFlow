@@ -139,7 +139,7 @@ regenerate it with `--persist`.
   --icon-md: 20px;             /* command bar, rail */
 
   /* Layers: use these, never raw z-index numbers */
-  --z-canvas-overlay: 10;      /* legend, case manager, run banners, canvas controls */
+  --z-canvas-overlay: 10;      /* legend, relief scenario manager, run banners, canvas controls */
   --z-pane-overlay: 100;       /* side pane or inspector shown over the canvas */
   --z-popover: 1000;           /* menus, dropdowns, context menus, status flyouts, tooltips */
   --z-modal: 2000;
@@ -154,7 +154,7 @@ regenerate it with `--persist`.
 *   **Font Family:** Inter, bundled through `@fontsource-variable/inter` (works offline).
 *   **Type scale (tokens in `frontend/src/index.css`):** `--fs-xs` 11px, `--fs-sm` 12px, `--fs-base` 13px, `--fs-md` 14px, `--fs-lg` 16px, `--fs-xl` 20px, `--fs-2xl` 24px. Use the tokens, not raw px; nothing below 11px in UI chrome. Text on the canvas zooms with the drawing and uses the canvas tokens `--fs-canvas-meta` and `--fs-canvas-value` (see "Canvas values").
 *   **Casing:** sentence case for labels, buttons, chips and badges; UPPERCASE only for small section headers.
-*   **Icons:** Phosphor (regular weight) through `components/symbols/IconLibrary.jsx` only; no emoji as icons.
+*   **Icons:** Phosphor (regular weight) through `components/symbols/IconLibrary.jsx` only; no emoji as icons. When Phosphor has no fitting icon, a hand-drawn SVG goes in `IconLibrary.jsx` on the same grid and stroke (for example `ReliefValveIcon`).
 *   **Weights:** Light (300), Regular (400), Medium (500), SemiBold (600), Bold (700), Black (900).
 *   **Header Selection:** Strict bold/heavy weight selectors to emphasize visual landmarks.
 

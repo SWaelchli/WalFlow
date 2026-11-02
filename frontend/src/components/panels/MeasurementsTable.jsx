@@ -37,7 +37,7 @@ const locationText = (inst, nodes, edges) => {
  * so it shows which case trips an alarm. Limits are stored on the instrument, so they are the same in every case.
  */
 export default function MeasurementsTable({
-  nodes = [], edges = [], cases = [], activeCaseId, onSelectCase, onSelectNode, onUpdateNode,
+  nodes = [], edges = [], cases = [], activeCaseId, onSelectNode, onUpdateNode,
   caseInputHashes = {}, telemetryMode = 'mitigated', globalSettings, isImperial,
 }) {
   const { flowUnit } = useUnits();
@@ -105,18 +105,9 @@ export default function MeasurementsTable({
             const caseId = c.id || c.case_id;
             const isActive = caseId === activeCaseId;
             return (
-              <th key={caseId} style={{ ...th, minWidth: '140px', background: isActive ? ACTIVE_BG : 'inherit', borderLeft: '1px solid var(--color-border)' }}>
+              <th key={caseId} aria-current={isActive ? 'true' : undefined} style={{ ...th, minWidth: '140px', background: isActive ? ACTIVE_BG : 'inherit', borderLeft: '1px solid var(--color-border)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span>{c.name || c.case_name} {c.is_base ? '(Base)' : ''}</span>
-                  {!isActive && onSelectCase && (
-                    <button
-                      onClick={() => onSelectCase(caseId)}
-                      style={{ padding: '2px 6px', fontSize: 'var(--fs-xs)', borderRadius: '4px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', cursor: 'pointer', color: 'var(--color-brand-dark)', fontWeight: '600' }}
-                    >
-                      Switch
-                    </button>
-                  )}
-                  {isActive && <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-primary-text)', fontWeight: 'bold' }}>Active</span>}
                   {isCaseResultStale(c, caseInputHashes) && (
                     <span title="The diagram changed since this case was solved. Run the simulation again." style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', color: 'var(--color-warning-text-strong)', background: 'var(--color-warning-bg)', border: '1px solid var(--color-warning-border)', padding: '1px 6px', borderRadius: '10px' }}>Out of date</span>
                   )}

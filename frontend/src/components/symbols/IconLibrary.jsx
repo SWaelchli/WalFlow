@@ -104,6 +104,29 @@ export const GlobeIcon = wrap(PhGlobe);
 export const BoltIcon = wrap(PhLightning);
 export const SpinnerIcon = wrap(PhCircleNotch, { className: 'spinner-loader', weight: 'bold' });
 export const FlameIcon = wrap(PhFlame);
+// Simplified pressure safety valve (angle body, inlet up, outlet left, spring above), outline only.
+// Phosphor grid: 256 viewBox, 16-unit stroke (1 px at size 16), round caps and joins, geometry on half pixels.
+export const ReliefValveIcon = ({ size = 16, color = 'currentColor', style, ...props }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 256 256"
+    width={size}
+    height={size}
+    fill="none"
+    stroke={color}
+    strokeWidth="16"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden={props['aria-label'] ? undefined : true}
+    focusable="false"
+    {...props}
+    style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0, ...style }}
+  >
+    <path d="M64 232H160L112 144Z" />
+    <path d="M200 96V192L112 144Z" />
+    <path d="M112 144V112L152 92L72 60L112 40" />
+  </svg>
+);
 export const LockIcon = wrap(PhLock);
 export const UnlockIcon = wrap(PhLockOpen);
 export const FolderOpenIcon = wrap(PhFolderOpen);

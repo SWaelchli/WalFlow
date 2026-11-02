@@ -60,13 +60,13 @@ import { CataloguePage, HelpInfoModal, LoginModal, ProjectManagerModal, AdminSet
 import HeatmapLegend from './components/overlays/HeatmapLegend';
 
 import CanvasLoadingOverlay from './components/overlays/CanvasLoadingOverlay';
-import { FlameIcon, CaseIcon, HelpIcon, InboxIcon, CrossIcon } from './components/symbols/IconLibrary';
+import { FlameIcon, InboxIcon, CrossIcon, ReliefValveIcon } from './components/symbols/IconLibrary';
 import AppShell from './components/layout/AppShell';
 import ActivityRail from './components/layout/ActivityRail';
 import { SIDE_PANES } from './components/layout/sidePanes';
 import useShellMode from './components/layout/useShellMode';
 import StatusBar from './components/layout/StatusBar';
-import CaseManager from './components/overlays/CaseManager';
+import ReliefScenarioManager from './components/overlays/ReliefScenarioManager';
 import { AuthProvider } from './context/AuthProvider';
 import { useAuth } from './hooks/useAuth';
 import { UnitProvider, useUnits } from './context/UnitContext';
@@ -264,7 +264,7 @@ function WalFlowContent() {
   }, [currentUser?.id]);
 
   const {
-    cases, setCases, activeCaseId, setActiveCaseId, showCaseManager, setShowCaseManager,
+    cases, setCases, activeCaseId, setActiveCaseId, showReliefScenarios, setShowReliefScenarios,
     handleAddCase, handleRenameCase, handleDeleteCase, handleReorderCases, handleResetCaseOverride, handleSetCaseOverride,
     handleUpdateCaseTelemetry, handleClearCaseTelemetry, batchStats, handleBatchResultsTelemetry,
   } = useOperatingCases({ nodes });
@@ -1666,7 +1666,8 @@ function WalFlowContent() {
       hasClipboard: () => clipboardRef.current.nodes.length > 0,
       cases,
       activeCaseId,
-      showCaseManager,
+      showReliefScenarios,
+      telemetryMode,
       heatmapMode: heatmapSettings.mode,
       sidePane,
       sidePaneOpen,
@@ -1714,7 +1715,8 @@ function WalFlowContent() {
         fitView,
         toggleLock,
         setHeatmapMode: (mode) => setHeatmapSettings(prev => ({ ...prev, mode })),
-        toggleCaseManager: () => setShowCaseManager(prev => !prev),
+        toggleReliefScenarios: () => setShowReliefScenarios(prev => !prev),
+        setTelemetryMode,
         run: () => runChecked(),
         selectCase: setActiveCaseId,
         addCase: handleAddCaseGuarded,
@@ -1726,10 +1728,10 @@ function WalFlowContent() {
     };
   }, [
     nodes, edges, selectedNode, selectedEdge, contextMenu, isReadOnly, isAuthenticated, isAdmin, isSimulating,
-    cases, activeCaseId, showCaseManager, heatmapSettings.mode, sidePane, sidePaneOpen, inspectorCollapsed, canvasLocked, reactFlowInstance,
+    cases, activeCaseId, showReliefScenarios, telemetryMode, heatmapSettings.mode, sidePane, sidePaneOpen, inspectorCollapsed, canvasLocked, reactFlowInstance,
     handleOpenNewDrawingModal, handleOpenProjectManagerModal, triggerManualCloudSave, handleOpenSaveAsModal, onSave,
     undo, redo, copySelected, pasteCopied, duplicateSelected, deleteSelected, selectAllNodes, rotateSelectedNode, deselectAll,
-    addInstrumentAtPin, insertTapOnEdge, selectPane, openPane, fitView, toggleLock, setHeatmapSettings, setShowCaseManager,
+    addInstrumentAtPin, insertTapOnEdge, selectPane, openPane, fitView, toggleLock, setHeatmapSettings, setShowReliefScenarios, setTelemetryMode,
     runChecked, setActiveCaseId, handleAddCaseGuarded, navigateTo, handleOpenAdminHub, handleOpenHelpModal,
   ]);
 
@@ -1983,7 +1985,7 @@ function WalFlowContent() {
             <Background color="#B8C9C8" gap={16} size={1} />
             <Controls>
               <ControlButton 
-                onClick={() => setHeatmapSettings(prev => ({ ...prev, mode: prev.mode === 'default' ? 'pressure' : 'default' }))}
+                onClick={() => runCommand('view.heatmap', commandCtx)}
                 title={heatmapSettings.mode === 'default' ? "Show pressure heatmap" : "Hide pressure heatmap"}
                 aria-label="Pressure heatmap"
                 aria-pressed={heatmapSettings.mode !== 'default'}
@@ -1991,21 +1993,14 @@ function WalFlowContent() {
               >
                 <FlameIcon size={14} />
               </ControlButton>
-              <ControlButton 
-                onClick={() => setShowCaseManager(prev => !prev)}
-                title={showCaseManager ? "Hide case manager" : "Show case manager"}
-                aria-label="Case manager"
-                aria-pressed={showCaseManager}
-                className={showCaseManager ? 'active' : ''}
+              <ControlButton
+                onClick={() => runCommand('view.relief-scenarios', commandCtx)}
+                title={showReliefScenarios ? "Hide relief scenario manager" : "Show relief scenario manager"}
+                aria-label="Relief scenario manager"
+                aria-pressed={showReliefScenarios}
+                className={showReliefScenarios ? 'active' : ''}
               >
-                <CaseIcon size={14} />
-              </ControlButton>
-              <ControlButton 
-                onClick={() => handleOpenHelpModal('shortcuts')}
-                title="Keyboard shortcuts and help (?)"
-                aria-label="Keyboard shortcuts and help"
-              >
-                <HelpIcon size={14} />
+                <ReliefValveIcon size={14} />
               </ControlButton>
             </Controls>
           </ReactFlow>
@@ -2170,15 +2165,13 @@ function WalFlowContent() {
               })}
             />
 
-            {showCaseManager && (
-              <CaseManager
+            {showReliefScenarios && (
+              <ReliefScenarioManager
                 cases={cases}
                 activeCaseId={activeCaseId}
-                onSelectCase={setActiveCaseId}
-                onAddCase={handleAddCaseGuarded}
                 telemetryMode={telemetryMode}
                 onToggleTelemetryMode={setTelemetryMode}
-                onClose={() => setShowCaseManager(false)}
+                onClose={() => setShowReliefScenarios(false)}
               />
             )}
           </div>
@@ -2227,8 +2220,6 @@ function WalFlowContent() {
           cases={cases}
           activeCaseId={activeCaseId}
           globalSettings={effectiveGlobalSettings}
-          onSelectCase={setActiveCaseId}
-          onAddCase={handleAddCaseGuarded}
           onRenameCase={handleRenameCase}
           onDeleteCase={handleDeleteCase}
           onReorderCases={handleReorderCases}
@@ -2239,8 +2230,6 @@ function WalFlowContent() {
           onSetCaseOverride={handleSetCaseOverride}
           runSimulation={runChecked}
           commandsRef={resultsCommandsRef}
-          showCaseManager={showCaseManager}
-          onToggleCaseManager={() => setShowCaseManager(prev => !prev)}
           availablePipeClasses={availablePipeClasses}
           allowCustomPipes={allowCustomPipes}
         />

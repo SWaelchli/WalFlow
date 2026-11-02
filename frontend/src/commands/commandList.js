@@ -26,7 +26,7 @@
  */
 import {
   PlusIcon, FolderOpenIcon, SaveIcon, ImportIcon, ExportIcon, CopyIcon, ClipboardIcon, TrashIcon, RotateIcon,
-  PlayIcon, CaseIcon, FlameIcon, LockIcon, HelpIcon, KeyboardIcon, InfoIcon, BookIcon, FolderIcon, GearIcon,
+  PlayIcon, CaseIcon, FlameIcon, ReliefValveIcon, LockIcon, HelpIcon, KeyboardIcon, InfoIcon, BookIcon, FolderIcon, GearIcon,
   CrownIcon, DownloadIcon, PaletteIcon,
 } from '../components/symbols/IconLibrary';
 
@@ -47,6 +47,12 @@ const HEATMAP_MODES = [
   { id: 'temperature', label: 'Temperature' },
   { id: 'volumeflow', label: 'Flow' },
   { id: 'velocity', label: 'Velocity' },
+];
+
+const RELIEF_SCENARIOS = [
+  { id: 'mitigated', label: 'Relieved system pressure' },
+  { id: 'peak', label: 'Peak system pressure' },
+  { id: 'unmitigated_global', label: 'Unmitigated peak pressure' },
 ];
 
 const paneCommand = (id, label, icon, pane) => ({
@@ -78,7 +84,7 @@ export const COMMANDS = [
     isEnabled: (ctx) => {
       const results = ctx.getResults();
       if (!results) return 'The results panel is not available';
-      return results.canExportCsv ? true : 'Open the Pipe Network List or Full Equipment tab in the results panel';
+      return results.canExportCsv ? true : 'Open the Pipes or Equipment tab in the results panel';
     },
     run: (ctx) => ctx.getResults()?.exportCsv() },
 
@@ -169,8 +175,14 @@ export const COMMANDS = [
       id: `view.heatmap.${m.id}`, label: m.label, checked: ctx.heatmapMode === m.id, run: () => ctx.actions.setHeatmapMode(m.id),
     })),
     run: (ctx) => ctx.actions.setHeatmapMode(ctx.heatmapMode === 'default' ? 'pressure' : 'default') },
-  { id: 'view.case-manager', label: 'Case manager', menu: 'View', group: 'overlays', icon: CaseIcon,
-    isEnabled: () => true, checked: (ctx) => ctx.showCaseManager, run: (ctx) => ctx.actions.toggleCaseManager() },
+  { id: 'view.relief-view', label: 'Relief scenario', menu: 'View', group: 'overlays', icon: ReliefValveIcon,
+    isEnabled: () => true,
+    children: (ctx) => RELIEF_SCENARIOS.map((m) => ({
+      id: `view.relief-view.${m.id}`, label: m.label, checked: ctx.telemetryMode === m.id, run: () => ctx.actions.setTelemetryMode(m.id),
+    })),
+    run: () => {} },
+  { id: 'view.relief-scenarios', label: 'Relief scenario manager', menu: 'View', group: 'overlays', icon: ReliefValveIcon,
+    isEnabled: () => true, checked: (ctx) => ctx.showReliefScenarios, run: (ctx) => ctx.actions.toggleReliefScenarios() },
 
   // Simulation
   { id: 'simulation.run', label: 'Run simulation', menu: 'Simulation', group: 'run', icon: PlayIcon,

@@ -8,7 +8,7 @@ export function useOperatingCases({ nodes }) {
   // Operating Case Manager State
   const [cases, setCases] = useState([DEFAULT_BASE_CASE]);
   const [activeCaseId, setActiveCaseId] = useState('case_base');
-  const [showCaseManager, setShowCaseManager] = useState(false);
+  const [showReliefScenarios, setShowReliefScenarios] = useState(false);
 
   const handleAddCase = useCallback(async () => {
     const currentActiveCase = cases.find(c => c.id === activeCaseId) || cases[0] || DEFAULT_BASE_CASE;
@@ -97,7 +97,7 @@ export function useOperatingCases({ nodes }) {
   }, []);
 
   return {
-    cases, setCases, activeCaseId, setActiveCaseId, showCaseManager, setShowCaseManager,
+    cases, setCases, activeCaseId, setActiveCaseId, showReliefScenarios, setShowReliefScenarios,
     handleAddCase, handleRenameCase, handleDeleteCase, handleReorderCases, handleResetCaseOverride, handleSetCaseOverride,
     handleUpdateCaseTelemetry, handleClearCaseTelemetry, batchStats, handleBatchResultsTelemetry,
   };

@@ -100,7 +100,7 @@
   --icon-sm: 16px;             /* menus, dense rows, status bar */
   --icon-md: 20px;             /* command bar, rail */
 
-  --z-canvas-overlay: 10;      /* legend, case manager, run banners, canvas controls */
+  --z-canvas-overlay: 10;      /* legend, relief scenario manager, run banners, canvas controls */
   --z-pane-overlay: 100;       /* side pane or inspector shown over the canvas */
   --z-popover: 1000;           /* menus, dropdowns, context menus, status flyouts, tooltips */
   --z-modal: 2000;

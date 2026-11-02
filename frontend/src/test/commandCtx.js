@@ -21,7 +21,8 @@ export function makeCommandCtx(over = {}) {
     hasCanvas: true,
     canvasLocked: false,
     heatmapMode: 'default',
-    showCaseManager: false,
+    showReliefScenarios: false,
+    telemetryMode: 'mitigated',
     actions,
     ...over,
   };
