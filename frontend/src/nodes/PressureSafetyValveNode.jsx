@@ -11,21 +11,15 @@ import { useUnits } from '../context/UnitContext';
  * Represents an ISA standard 90-degree angle relief valve with live relief badging.
  */
 export default function PressureSafetyValveNode({ id, data, selected }) {
-  const { formatFlowM3s, formatPressureGauge, labels } = useUnits();
+  const { formatPressureGauge } = useUnits();
   const telemetry = data.telemetry;
   const rotation = data.rotation || 0;
   const sensing = useMemo(() => data.sensing || {}, [data.sensing]);
 
-  const flow = telemetry?.outlets?.[0]?.flow_rate || 0;
-  const flowFormatted = formatFlowM3s(Math.abs(flow));
-  
   const status = telemetry?.status || 'closed'; // 'closed', 'modulating', 'open', 'cycling', 'overcapacity'
   const setPressureFormatted = data.set_pressure_barg ? formatPressureGauge(Number(data.set_pressure_barg)) : 'missing';
   const valveType = data.valve_type || 'conventional';
   const liftPct = telemetry?.lift_pct;
-  const cycleLow = telemetry?.cycle_low_barg;
-  const cycleHigh = telemetry?.cycle_high_barg;
-  const isCycling = status === 'cycling' && cycleLow != null && cycleHigh != null;
 
   let statusText = 'CLOSED';
   let statusKind = 'neutral';
@@ -56,15 +50,7 @@ export default function PressureSafetyValveNode({ id, data, selected }) {
         <NodeReadout
           name={data.label || 'PSV'}
           badges={[{ kind: statusKind, label: statusText }]}
-          rows={isCycling
-            ? [
-                { value: `${formatPressureGauge(cycleLow)}–${formatPressureGauge(cycleHigh)}` },
-                { label: 'avg', value: flowFormatted, unit: labels.flow },
-              ]
-            : [
-                { label: 'Set:', value: setPressureFormatted },
-                { value: flowFormatted, unit: labels.flow },
-              ]}
+          rows={[{ label: 'Set:', value: setPressureFormatted }]}
         />
       }
     >

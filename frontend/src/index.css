@@ -1845,7 +1845,7 @@ button.status-slot:hover { background: var(--color-surface); color: var(--color-
 .is-static { cursor: default; }
 
 /* Canvas values: node readout and status badge (MASTER.md "Canvas values") */
-.node-readout        { font-family: var(--font-sans); text-align: center; line-height: 1.25; }
+.node-readout        { font-family: var(--font-sans); text-align: center; line-height: 1.1; }
 .node-readout-name   { font-size: var(--fs-canvas-meta); font-weight: 700; color: var(--color-text-primary); }
 .node-readout-value  { font-size: var(--fs-canvas-value); font-weight: 600; color: var(--color-brand-dark); font-variant-numeric: tabular-nums; }
 .node-readout-unit   { font-weight: 500; }

@@ -11,14 +11,11 @@ import { useUnits } from '../context/UnitContext';
  * Represents an ISA standard rupture disc mechanical pressure relief diaphragm with live burst telemetry.
  */
 export default function RuptureDiscNode({ id, data, selected }) {
-  const { formatFlowM3s, formatPressureGauge, labels } = useUnits();
+  const { formatPressureGauge } = useUnits();
   const telemetry = data.telemetry;
   const rotation = data.rotation || 0;
   const sensing = useMemo(() => data.sensing || {}, [data.sensing]);
 
-  const flow = telemetry?.outlets?.[0]?.flow_rate || 0;
-  const flowFormatted = formatFlowM3s(Math.abs(flow));
-  
   const status = telemetry?.status || 'intact'; // 'intact', 'burst', 'overcapacity'
   const burstPressureFormatted = data.burst_pressure_barg ? formatPressureGauge(Number(data.burst_pressure_barg)) : 'missing';
 
@@ -44,10 +41,7 @@ export default function RuptureDiscNode({ id, data, selected }) {
         <NodeReadout
           name={data.label || 'RD'}
           badges={[{ kind: statusKind, label: statusText }]}
-          rows={[
-            { label: 'Burst:', value: burstPressureFormatted },
-            { value: flowFormatted, unit: labels.flow },
-          ]}
+          rows={[{ label: 'Burst:', value: burstPressureFormatted }]}
         />
       }
     >

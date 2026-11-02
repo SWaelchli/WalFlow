@@ -450,7 +450,7 @@ themselves.
   same component is used in the inspector results views.
 
 ```css
-.node-readout        { font-family: var(--font-sans); text-align: center; line-height: 1.25; }
+.node-readout        { font-family: var(--font-sans); text-align: center; line-height: 1.1; }
 .node-readout-name   { font-size: var(--fs-canvas-meta); font-weight: 700; color: var(--color-text-primary); }
 .node-readout-value  { font-size: var(--fs-canvas-value); font-weight: 600; color: var(--color-brand-dark); font-variant-numeric: tabular-nums; }
 .node-readout-unit   { font-weight: 500; }
@@ -468,6 +468,8 @@ Rules:
 
 * **A number never carries colour**, whatever its sign, size or state: heater duty, a setpoint, an outlet
   temperature, an alarm limit are all values in `.node-readout-value`. A sign stays a sign (heating positive).
+* **Relief devices show the set or burst pressure and their state only.** Relief flow belongs in the inspector and
+  the Relief tab, which keeps the readout short.
 * Colour on a node is allowed only on a state: the status badge, or the `BaseNode` warning icon
   (`--color-danger-text`). Pipe heatmap colours are the one exception, because a legend explains them.
 * Port identities are not values and may keep a colour, from tokens only: the diagram tokens (`--color-inlet`,
