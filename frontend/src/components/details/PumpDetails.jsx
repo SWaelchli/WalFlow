@@ -1,49 +1,17 @@
 import React, { useMemo, memo } from 'react';
 import { 
-  ComposedChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Scatter, Legend
+  ComposedChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Scatter
 } from 'recharts';
 import { useUnits } from '../../context/UnitContext';
 import { niceTicks, formatTick } from '../../utils/chartTicks';
-import ChartLegend from './ChartLegend';
+import { ResultSection, ResultTable, ResultRow, ResultCallout, ResultChart } from './ResultBlocks';
+import { CHART_TICK, CHART_MARGIN, CHART_GRID, chartAxisLabel, CHART_Y_WIDTH } from './chartProps';
+import { isNodeOff } from '../../utils/nodeReadouts';
 
-const CavitationWarning = ({ npsha, required, unit, mult }) => (
-  <div style={{
-    background: '#fff1f2',
-    padding: '10px',
-    borderRadius: 'var(--radius-sm)',
-    border: '1px solid var(--color-danger)',
-    display: 'flex',
-    flexDirection: 'column', gap: '4px', marginBottom: '10px'
-  }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: 'var(--fs-sm)', color: 'var(--color-danger-text)', fontWeight: 'bold' }}>
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 9v4m0 4h.01M2.75 12A9.25 9.25 0 0 1 12 2.75 9.25 9.25 0 0 1 21.25 12 9.25 9.25 0 0 1 12 21.25 9.25 9.25 0 0 1 2.75 12Z"/>
-      </svg>
-      CAVITATION RISK
-    </div>
-    <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-danger-text)', margin: 0, paddingLeft: '24px' }}>
-      {npsha != null
-        ? `NPSHa ${(npsha * mult).toFixed(1)} ${unit} is below NPSHr + margin (${(required * mult).toFixed(1)} ${unit}). Pump may be cavitating, leading to damage.`
-        : 'Suction pressure is critically low. Pump may be cavitating, leading to damage.'}
-    </p>
-  </div>
-);
-
-const PumpWarning = ({ title, text, tone = 'warning' }) => (
-  <div role="alert" style={{
-    background: tone === 'danger' ? '#fff1f2' : '#FEF3C7',
-    padding: '10px',
-    borderRadius: 'var(--radius-sm)',
-    border: `1px solid ${tone === 'danger' ? 'var(--color-danger)' : '#FCD34D'}`,
-    display: 'flex', flexDirection: 'column', gap: '4px'
-  }}>
-    <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 'bold', color: tone === 'danger' ? 'var(--color-danger)' : 'var(--color-warning-text-strong)' }}>{title}</div>
-    <p style={{ fontSize: 'var(--fs-xs)', color: tone === 'danger' ? 'var(--color-danger)' : 'var(--color-warning-text-strong)', margin: 0 }}>{text}</p>
-  </div>
-);
+const OFF_BADGE = { text: 'OFF', kind: 'danger', title: 'Component is currently inactive (Off)' };
 
 const PumpDetails = memo(function PumpDetails({ node }) {
-  const { labels, isImperial, lminToDisplay, formatDiffPressurePa, formatPressure, formatFlowM3s, formatPower } = useUnits();
+  const { labels, isImperial, lminToDisplay, formatDiffPressurePa, formatPressure, formatFlowM3s, formatPower, formatLength, formatDimensionless } = useUnits();
   const { type, data } = node;
   const { max_discharge_pressure_bara, telemetry } = data;
   const maxDischargeBara = parseFloat(max_discharge_pressure_bara ?? 50) || 50;
@@ -99,11 +67,13 @@ const PumpDetails = memo(function PumpDetails({ node }) {
       const sysBar = pt.system / pressMultiplier;
       if (sysBar > localMaxY) localMaxY = sysBar;
     }
-    const minY = localMinY < 0 ? Math.floor(localMinY * pressMultiplier * 1.1) : 0;
+    // A volumetric curve keeps falling past its limit; show from 0 (or the operating point) and let the axis clip it
+    const minY = isVolumetric ? Math.floor(Math.min(0, currentDpBar * pressMultiplier))
+      : (localMinY < 0 ? Math.floor(localMinY * pressMultiplier * 1.1) : 0);
     const rawMaxY = Math.max(localMaxY * pressMultiplier * 1.1, (localMinY < 0 ? 0 : 0.5));
     const maxY = niceTicks(rawMaxY, 5).pop() || 1;
     return { minY, maxY };
-  }, [chartData, curves, currentDpBar, pressMultiplier]);
+  }, [chartData, curves, currentDpBar, pressMultiplier, isVolumetric]);
 
   const opQ = actualFlowLmin * flowMultiplier;
   const opP = currentDpBar * pressMultiplier;
@@ -119,96 +89,72 @@ const PumpDetails = memo(function PumpDetails({ node }) {
   const motorLoadPct = telemetry?.motor_load_pct;
   const shaftPowerKW = telemetry?.shaft_power_kw;
 
+  const hasAlerts = showCavitationWarning || telemetry?.motor_overload || telemetry?.power_limited || telemetry?.pressure_cap_reached;
+  const npshaM = telemetry?.npsha_m;
+  const npshRequiredM = (telemetry?.npshr_m || 0) + (telemetry?.npsh_margin_m ?? 0.5);
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', fontFamily: 'inherit' }}>
-      {showCavitationWarning && (
-        <CavitationWarning
-          npsha={telemetry?.npsha_m}
-          required={(telemetry?.npshr_m || 0) + (telemetry?.npsh_margin_m ?? 0.5)}
-          unit={isImperial ? 'ft' : 'm'}
-          mult={isImperial ? 3.280839895 : 1}
-        />
+    <>
+      {hasAlerts && (
+        <ResultSection title="Alerts">
+          {showCavitationWarning && (
+            <ResultCallout tone="danger" title="CAVITATION RISK">
+              {npshaM != null
+                ? `NPSHa ${formatLength(npshaM)} ${labels.length} is below NPSHr + margin (${formatLength(npshRequiredM)} ${labels.length}). Pump may be cavitating, leading to damage.`
+                : 'Suction pressure is critically low. Pump may be cavitating, leading to damage.'}
+            </ResultCallout>
+          )}
+          {telemetry?.motor_overload && (
+            <ResultCallout tone="danger" title={`MOTOR OVERLOADED (${Math.round(motorLoadPct || 0)} % OF RATING)`}>
+              Shaft power exceeds the motor rating. A fixed-speed motor keeps the flow but would overheat and trip; reduce the discharge pressure or use a larger motor.
+            </ResultCallout>
+          )}
+          {telemetry?.power_limited && (
+            <ResultCallout tone="warning" title="POWER-LIMITED">
+              The drive has reduced the speed to stay within the motor rating, so the flow is below displacement.
+            </ResultCallout>
+          )}
+          {telemetry?.pressure_cap_reached && (
+            <ResultCallout tone="danger" title={`DISCHARGE PRESSURE LIMIT REACHED (${formatPressure(maxDischargeBara, isImperial ? 0 : 2)} ${labels.pressureAbs.toUpperCase()})`}>
+              The internal relief recirculates the excess flow to suction, so the delivered flow is below displacement. Check for a closed or undersized outlet path.
+            </ResultCallout>
+          )}
+        </ResultSection>
       )}
-      {telemetry?.npsha_m != null && (
-        <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-text-secondary)', display: 'flex', justifyContent: 'space-between' }}>
-          <span>NPSHa:</span>
-          <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--color-text-primary)' }}>
-            {(telemetry.npsha_m * (isImperial ? 3.280839895 : 1)).toFixed(1)} {isImperial ? 'ft' : 'm'}
-          </span>
-        </div>
-      )}
-      {telemetry?.motor_overload && (
-        <PumpWarning tone="danger" title={`MOTOR OVERLOADED (${Math.round(motorLoadPct || 0)} % OF RATING)`}
-          text="Shaft power exceeds the motor rating. A fixed-speed motor keeps the flow but would overheat and trip; reduce the discharge pressure or use a larger motor." />
-      )}
-      {telemetry?.power_limited && (
-        <PumpWarning title="POWER-LIMITED"
-          text="The drive has reduced the speed to stay within the motor rating, so the flow is below displacement." />
-      )}
-      {telemetry?.pressure_cap_reached && (
-        <PumpWarning tone="danger" title={`DISCHARGE PRESSURE LIMIT REACHED (${formatPressure(maxDischargeBara, isImperial ? 0 : 2)} ${labels.pressureAbs.toUpperCase()})`}
-          text="The internal relief recirculates the excess flow to suction, so the delivered flow is below displacement. Check for a closed or undersized outlet path." />
-      )}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <span style={{ fontSize: 'var(--fs-xs)', fontWeight: '800', color: 'var(--color-brand-dark)', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '3px solid var(--color-primary)', paddingLeft: '8px' }}>
-          Performance Curve
-        </span>
-      </div>
-      
-      <div style={{ width: '100%', height: '240px', background: 'var(--color-surface)', borderRadius: 'var(--radius-md)' }}>
-        {!chartData ? (
-          <div style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--fs-sm)', fontStyle: 'italic', padding: '10px 0', textAlign: 'center' }}>
-            Run a simulation to see the pump curve
-          </div>
-        ) : (
+
+      <ResultSection title="Performance Curve" badge={isNodeOff(data) ? OFF_BADGE : undefined}>
+        <ResultChart legend={legendPayload}
+          empty={isNodeOff(data) ? 'Pump is off, so there is no curve to show.' : (!chartData && 'Run a simulation to see the pump curve')}>
           <ResponsiveContainer width="100%" height="100%" minWidth={0} initialDimension={{ width: 240, height: 160 }}>
-            <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 4, bottom: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
-              <XAxis dataKey="q" type="number" domain={[0, xMaxDisplay]} ticks={xTicks} tickFormatter={formatTick} fontSize={10} height={36}
-                label={{ value: labels.flow, position: 'insideBottomRight', offset: -2, fontSize: 10, fill: 'var(--color-text-secondary)' }} />
-              <YAxis type="number" domain={[minY, maxY]} tickCount={6} tickFormatter={formatTick} fontSize={10} width={45}
-                label={{ value: labels.pressureDiff, angle: -90, position: 'insideLeft', offset: 10, fontSize: 10, fill: 'var(--color-text-secondary)', style: { textAnchor: 'middle' } }} />
-              <Legend verticalAlign="top" align="right" height={40} content={() => <ChartLegend payload={legendPayload} />} />
+            <ComposedChart data={chartData} margin={CHART_MARGIN}>
+              <CartesianGrid {...CHART_GRID} />
+              <XAxis dataKey="q" type="number" domain={[0, xMaxDisplay]} ticks={xTicks} tickFormatter={formatTick} tick={CHART_TICK} height={36}
+                label={chartAxisLabel(labels.flow)} />
+              <YAxis type="number" domain={[minY, maxY]} tickCount={6} tickFormatter={formatTick} tick={CHART_TICK} width={CHART_Y_WIDTH} allowDataOverflow
+                label={chartAxisLabel(labels.pressureDiff, true)} />
               <Line dataKey="pump" stroke="var(--color-primary)" strokeWidth={2.5} dot={false} name="Pump Curve" legendType="plainline" activeDot={false} isAnimationActive={false} />
               <Line dataKey="system" stroke="var(--color-success)" strokeWidth={2} dot={false} name="System" legendType="plainline" activeDot={false} isAnimationActive={false} />
               {telemetry && <Scatter name="Operating Point" dataKey="p" data={opPoint} fill="var(--color-brand-dark)" isAnimationActive={false} shape="cross" legendType="cross" />}
             </ComposedChart>
           </ResponsiveContainer>
-        )}
-      </div>
+        </ResultChart>
+      </ResultSection>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-        <div style={{ background: 'var(--color-surface-hover)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
-          <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '600', letterSpacing: '0.02em', marginBottom: '2px' }}>Flow</div>
-          <div style={{ fontSize: 'var(--fs-sm)', fontWeight: '700', color: 'var(--color-text-primary)', fontFamily: 'var(--font-mono)' }}>{formatFlowM3s(Math.abs(currentQ))} <span style={{ fontSize: 'var(--fs-xs)', fontWeight: '500' }}>{labels.flow}</span></div>
-        </div>
-        <div style={{ background: 'var(--color-surface-hover)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
-          <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '600', letterSpacing: '0.02em', marginBottom: '2px' }}>Pressure Increase</div>
-          <div style={{ fontSize: 'var(--fs-sm)', fontWeight: '700', color: 'var(--color-primary-text)', fontFamily: 'var(--font-mono)' }}>{formatDiffPressurePa(currentDpPa)} {labels.pressureDiff}</div>
-        </div>
-        <div style={{ background: 'var(--color-surface-hover)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
-          <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '600', letterSpacing: '0.02em', marginBottom: '2px' }}>Hydraulic Power</div>
-          <div style={{ fontSize: 'var(--fs-sm)', fontWeight: '700', color: 'var(--color-text-primary)', fontFamily: 'var(--font-mono)' }}>{formatPower(Math.max(0, hydraulicPowerKW))} <span style={{ fontSize: 'var(--fs-xs)', fontWeight: '500' }}>{labels.power}</span></div>
-        </div>
-        <div style={{ background: 'var(--color-surface-hover)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
+      <ResultSection title="Operating Point">
+        <ResultTable>
+          <ResultRow label="Flow" value={formatFlowM3s(Math.abs(currentQ))} unit={labels.flow} />
+          <ResultRow label="Pressure Increase" value={formatDiffPressurePa(currentDpPa)} unit={labels.pressureDiff} />
+          <ResultRow label="Hydraulic Power" value={formatPower(Math.max(0, hydraulicPowerKW))} unit={labels.power} />
           {isVolumetric ? (
-            <>
-              <div title="Shaft power as a percentage of the motor rating" style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '600', letterSpacing: '0.02em', marginBottom: '2px', cursor: 'help' }}>Motor Load (% of rating)</div>
-              <div style={{ fontSize: 'var(--fs-sm)', fontWeight: '700', color: (motorLoadPct || 0) > 100 ? 'var(--color-danger)' : 'var(--color-success)', fontFamily: 'var(--font-mono)' }}>
-                {motorLoadPct !== undefined ? motorLoadPct.toFixed(0) : '—'} <span style={{ fontSize: 'var(--fs-xs)', fontWeight: '500' }}>%</span>
-              </div>
-            </>
+            <ResultRow label="Motor Load (% of rating)" title="Shaft power as a percentage of the motor rating"
+              value={motorLoadPct !== undefined ? formatDimensionless(motorLoadPct, 'percentWhole') : null} unit="%" />
           ) : (
-            <>
-              <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '600', letterSpacing: '0.02em', marginBottom: '2px' }}>Shaft Power</div>
-              <div style={{ fontSize: 'var(--fs-sm)', fontWeight: '700', color: 'var(--color-text-primary)', fontFamily: 'var(--font-mono)' }}>
-                {shaftPowerKW !== undefined ? formatPower(shaftPowerKW) : '—'} <span style={{ fontSize: 'var(--fs-xs)', fontWeight: '500' }}>{labels.power}</span>
-              </div>
-            </>
+            <ResultRow label="Shaft Power" value={shaftPowerKW !== undefined ? formatPower(shaftPowerKW) : null} unit={labels.power} />
           )}
-        </div>
-      </div>
-    </div>
+          {npshaM != null && <ResultRow label="NPSHa" value={formatLength(npshaM)} unit={labels.length} />}
+        </ResultTable>
+      </ResultSection>
+    </>
   );
 });
 

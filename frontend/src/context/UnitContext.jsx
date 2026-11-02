@@ -38,6 +38,11 @@ import {
   kwToBtuh,
   btuhToKw,
   formatHeatDutyFromKw,
+  formatGaugeBar,
+  formatLengthFromM,
+  formatDiameterFromM,
+  formatPressureGradientFromPa,
+  formatDimensionless,
   hpToKw,
   mToFt,
   ftToM,
@@ -113,6 +118,11 @@ const UnitContext = createContext({
   formatVelocity: () => '',
   formatPower: () => '',
   formatHeatDuty: () => '',
+  formatGaugeValue: () => '',
+  formatLength: () => '',
+  formatDiameter: () => '',
+  formatPressureGradient: () => '',
+  formatDimensionless: () => '',
   toDisplayValue: () => '',
   fromInputValue: () => 0,
   smallLengthToM: () => 0
@@ -254,6 +264,12 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
   const formatHeatDuty = useCallback((valKw, decimals = 1) => {
     return formatHeatDutyFromKw(valKw, unitSystem, decimals);
   }, [unitSystem]);
+
+  // Number-only formatters for results views; the unit comes from labels
+  const formatGaugeValue = useCallback((valBarg, decimals = 2) => formatGaugeBar(valBarg, unitSystem, decimals), [unitSystem]);
+  const formatLength = useCallback((valM, decimals = 1) => formatLengthFromM(valM, unitSystem, decimals), [unitSystem]);
+  const formatDiameter = useCallback((valM, decimals = 1) => formatDiameterFromM(valM, unitSystem, decimals), [unitSystem]);
+  const formatPressureGradient = useCallback((valPa, lengthM) => formatPressureGradientFromPa(valPa, lengthM, unitSystem), [unitSystem]);
 
   /**
    * Convert a base Metric property value to a display value string for property editors.
@@ -455,6 +471,11 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
     formatVelocity,
     formatPower,
     formatHeatDuty,
+    formatGaugeValue,
+    formatLength,
+    formatDiameter,
+    formatPressureGradient,
+    formatDimensionless,
     toDisplayValue,
     fromInputValue,
     smallLengthToM
@@ -489,6 +510,10 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
     formatVelocity,
     formatPower,
     formatHeatDuty,
+    formatGaugeValue,
+    formatLength,
+    formatDiameter,
+    formatPressureGradient,
     toDisplayValue,
     fromInputValue,
     smallLengthToM

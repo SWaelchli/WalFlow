@@ -29,6 +29,8 @@ Read these before any visual or layout change. Where they differ, the higher one
   components; inline styles only for values computed at run time.
 * **Canvas values:** nodes show values through `NodeReadout` and states through `StatusBadge`, one style and one
   colour for every number; colour only on a state badge (MASTER.md "Canvas values", enforced by a style guard test).
+* **Results views:** built from the shared results blocks, numbers through the formatters, no `toFixed` (MASTER.md
+  "Results display", enforced by the same guard test).
 * **Icons:** Phosphor through `components/symbols/IconLibrary.jsx`; icon-only buttons have an accessible name and a
   tooltip.
 * **Supported windows:** full editing from 1024 px wide, overlays down to 768 px.

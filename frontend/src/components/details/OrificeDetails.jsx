@@ -1,15 +1,16 @@
 import React, { useMemo, memo } from 'react';
 import { 
-  ComposedChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Scatter, Legend
+  ComposedChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Scatter
 } from 'recharts';
 import { useUnits } from '../../context/UnitContext';
 import { niceTicks, formatTick } from '../../utils/chartTicks';
 import { neutralPorts } from '../../utils/nodeReadouts';
 import NeutralFlowCaption from './NeutralFlowCaption';
-import ChartLegend from './ChartLegend';
+import { ResultSection, ResultTable, ResultRow, ResultChart } from './ResultBlocks';
+import { CHART_TICK, CHART_MARGIN, CHART_GRID, chartAxisLabel, CHART_Y_WIDTH } from './chartProps';
 
 const OrificeDetails = memo(function OrificeDetails({ node }) {
-  const { labels, isImperial, lminToDisplay, formatDiffPressurePa } = useUnits();
+  const { labels, isImperial, lminToDisplay, formatDiffPressurePa, formatDimensionless } = useUnits();
   const { pipe_diameter_m, orifice_diameter_m, telemetry } = node.data;
   
   const neutral = neutralPorts(telemetry);
@@ -64,44 +65,31 @@ const OrificeDetails = memo(function OrificeDetails({ node }) {
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-      <div style={{ fontSize: 'var(--fs-xs)', fontWeight: '800', color: 'var(--color-brand-dark)', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '3px solid var(--color-primary)', paddingLeft: '8px' }}>
-        Orifice Restriction Curve
-      </div>
-      <NeutralFlowCaption telemetry={telemetry} />
-      
-      <div style={{ width: '100%', height: '240px', background: 'var(--color-surface)' }}>
-        {!chartData ? (
-          <div style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--fs-sm)', fontStyle: 'italic', padding: '10px 0', textAlign: 'center' }}>
-            Run a simulation to see the orifice curve
-          </div>
-        ) : (
+    <>
+      <ResultSection title="Orifice Restriction Curve">
+        <NeutralFlowCaption telemetry={telemetry} />
+        <ResultChart legend={legendPayload} empty={!chartData && 'Run a simulation to see the orifice curve'}>
           <ResponsiveContainer width="100%" height="100%" minWidth={0} initialDimension={{ width: 240, height: 160 }}>
-            <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 4, bottom: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
-              <XAxis dataKey="q" type="number" domain={[0, xMaxDisplay]} ticks={xTicks} fontSize={10} tickFormatter={formatTick} height={36}
-                label={{ value: labels.flow, position: 'insideBottomRight', offset: -2, fontSize: 10, fill: 'var(--color-text-secondary)' }} />
-              <YAxis type="number" domain={[0, maxY]} fontSize={10} tickCount={6} tickFormatter={formatTick} width={45}
-                label={{ value: labels.pressureDiff, angle: -90, position: 'insideLeft', offset: 10, fontSize: 10, fill: 'var(--color-text-secondary)', style: { textAnchor: 'middle' } }} />
-              <Legend verticalAlign="top" align="right" height={40} content={() => <ChartLegend payload={legendPayload} />} />
+            <ComposedChart data={chartData} margin={CHART_MARGIN}>
+              <CartesianGrid {...CHART_GRID} />
+              <XAxis dataKey="q" type="number" domain={[0, xMaxDisplay]} ticks={xTicks} tick={CHART_TICK} tickFormatter={formatTick} height={36}
+                label={chartAxisLabel(labels.flow)} />
+              <YAxis type="number" domain={[0, maxY]} tick={CHART_TICK} tickCount={6} tickFormatter={formatTick} width={CHART_Y_WIDTH} allowDataOverflow
+                label={chartAxisLabel(labels.pressureDiff, true)} />
               <Line dataKey="dp" stroke="var(--color-primary)" strokeWidth={2.5} dot={false} name="Pressure Loss" legendType="plainline" activeDot={false} isAnimationActive={false} />
               {telemetry && <Scatter name="Operating Point" dataKey="dp" data={opPoint} fill="var(--color-brand-dark)" isAnimationActive={false} shape="cross" legendType="cross" />}
             </ComposedChart>
           </ResponsiveContainer>
-        )}
-      </div>
+        </ResultChart>
+      </ResultSection>
 
-      <div style={{ background: 'var(--color-surface-hover)', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-text-secondary)', fontWeight: '500' }}>Beta Ratio:</span>
-          <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-text-primary)', fontWeight: '700', fontFamily: 'var(--font-mono)' }}>{beta.toFixed(3)}</span>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-text-secondary)', fontWeight: '500' }}>Current ΔP:</span>
-          <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-text-primary)', fontWeight: '700', fontFamily: 'var(--font-mono)' }}>{formatDiffPressurePa(currentDpPa)} {labels.pressureDiff}</span>
-        </div>
-      </div>
-    </div>
+      <ResultSection title="Operating Point">
+        <ResultTable>
+          <ResultRow label="Beta Ratio" value={formatDimensionless(beta, 'ratio')} />
+          <ResultRow label="Current ΔP" value={formatDiffPressurePa(currentDpPa)} unit={labels.pressureDiff} />
+        </ResultTable>
+      </ResultSection>
+    </>
   );
 });
 

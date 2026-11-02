@@ -8,7 +8,7 @@ export default function NeutralFlowCaption({ telemetry }) {
   const s = neutralPorts(telemetry);
   if (!s) return null;
   return (
-    <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-text-secondary)' }}>
+    <div className="result-caption">
       Flow {formatFlowM3s(s.flow)} {labels.flow}{s.flow < NO_FLOW_M3S ? '' : `, ${portNumberLabel(s.upIdx)} → ${portNumberLabel(s.downIdx)}`}
     </div>
   );

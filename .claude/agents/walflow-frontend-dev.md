@@ -18,7 +18,10 @@ Backend, physics and tests belong to other agents or the orchestrator.
 - New or moved controls: follow the walflow-ui-layout placement rule and checklist; name the region in your report.
 - Style with MASTER.md tokens and classes; no new hex colours, raw px sizes or z-index numbers.
 - Canvas nodes show values only through the shared `NodeReadout` and states only through the shared `StatusBadge`
-  (MASTER.md "Canvas values"); a number never carries a colour. `src/test/styleGuard.test.js` enforces it.
+  (MASTER.md "Canvas values"); a label has no colon and a number never carries a colour. `src/test/styleGuard.test.js`
+  enforces it.
+- Results views are built from the shared results blocks, and numbers go through the `UnitContext` formatters or the
+  shared dimensionless formatter, never `toFixed` (MASTER.md "Results display", same guard test).
 - New equipment node: follow `.claude/skills/equipment-creation/SKILL.md` frontend steps; mirror an existing
   `frontend/src/nodes/<Name>Node.jsx` and register it in `App.jsx` and the Sidebar.
 - Match surrounding code: naming, hooks/context usage, comment density. No new dependencies without the brief saying so.

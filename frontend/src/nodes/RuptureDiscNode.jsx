@@ -41,7 +41,7 @@ export default function RuptureDiscNode({ id, data, selected }) {
         <NodeReadout
           name={data.label || 'RD'}
           badges={[{ kind: statusKind, label: statusText }]}
-          rows={[{ label: 'Burst:', value: burstPressureFormatted }]}
+          rows={[{ label: 'Burst', value: burstPressureFormatted }]}
         />
       }
     >

@@ -13,24 +13,17 @@ vi.mock('recharts', () => {
       <div data-testid="chart" data-rows={JSON.stringify(data)}>{children}</div>
     ),
     XAxis: Null,
-    YAxis: Null,
+    YAxis: ({ domain }) => <i data-testid="y-axis" data-domain={JSON.stringify(domain)} />,
     CartesianGrid: Null,
     Line: Null,
-    Legend: ({ content, iconType }) => {
-      if (typeof content === 'function') {
-        try {
-          return <div data-testid="legend">{content({ payload: [] })}</div>;
-        } catch {
-          return <div data-testid="legend">{content()}</div>;
-        }
-      }
-      return <div data-testid="legend" data-icon-type={iconType} />;
-    },
     Scatter: ({ name, data }) => <i data-testid={`scatter-${name}`} data-points={JSON.stringify(data)} />,
   };
 });
 
 afterEach(cleanup);
+
+// Text of the result row with this label: value and unit sit in separate cells
+const rowText = (label) => screen.getByText(label).closest('tr').textContent;
 
 describe('CurveDetails equipment curves and operating points', () => {
   describe('placeholder before simulation', () => {
@@ -92,7 +85,7 @@ describe('CurveDetails equipment curves and operating points', () => {
       expect(op.q).toBeCloseTo(60, 6);
       expect(op.dp).toBeCloseTo(1.3, 6);
       expect(op.dp).toBeCloseTo(curvePoint.dp, 6);
-      expect(screen.getByText(/1\.30\s*bar/)).not.toBeNull();
+      expect(rowText('Current ΔP')).toMatch(/1\.30\s*bar/);
     });
 
     it('plots backend curve and places operating point on curve for FilterDetails', () => {
@@ -123,7 +116,7 @@ describe('CurveDetails equipment curves and operating points', () => {
       expect(op.q).toBeCloseTo(60, 6);
       expect(op.dp).toBeCloseTo(1.3, 6);
       expect(op.dp).toBeCloseTo(curvePoint.current, 6);
-      expect(screen.getByText(/1\.30\s*bar/)).not.toBeNull();
+      expect(rowText('Current ΔP')).toMatch(/1\.30\s*bar/);
     });
 
     it('plots backend curve and places operating point on curve for PumpDetails', () => {
@@ -150,7 +143,7 @@ describe('CurveDetails equipment curves and operating points', () => {
       expect(op.q).toBeCloseTo(60, 6);
       expect(op.p).toBeCloseTo(1.3, 6);
       expect(op.p).toBeCloseTo(curvePoint.pump, 6);
-      expect(screen.getByText(/1\.30\s*bar/)).not.toBeNull();
+      expect(rowText('Pressure Increase')).toMatch(/1\.30\s*bar/);
     });
   });
 
@@ -181,9 +174,30 @@ describe('CurveDetails equipment curves and operating points', () => {
           <Component node={{ type, data: { telemetry } }} />
         </UnitProvider>
       );
-      const legend = screen.getByTestId('legend');
-      const crossPath = legend.querySelector('svg path[d*="M7 1V13"], svg path[d*="M1 7H13"]');
-      expect(crossPath).not.toBeNull();
+      const entry = Array.from(document.querySelectorAll('.result-chart-legend-item')).find((e) => e.textContent === 'Operating Point');
+      expect(entry.querySelector('svg path[d*="M7 1V13"]')).not.toBeNull();
+    });
+  });
+
+  describe('volumetric pump y-axis floor', () => {
+    const yDomain = (outletPa) => {
+      render(
+        <UnitProvider>
+          <PumpDetails node={{ type: 'volumetric_pump', data: { telemetry: {
+            inlets: [{ flow_rate: 0.001, pressure: 100000, total_pressure: 100000, density: 1000 }],
+            outlets: [{ flow_rate: 0.001, pressure: outletPa, total_pressure: outletPa, density: 1000 }],
+            pump_curves: { flow_m3s: [0, 0.001], dp_pa: [150000, 130000] },
+          } } }} />
+        </UnitProvider>
+      );
+      return JSON.parse(screen.getByTestId('y-axis').dataset.domain);
+    };
+
+    it.each([
+      ['positive operating point starts at 0', 300000, 0],
+      ['negative operating point (-1.3 bar) floors below it', -30000, -2],
+    ])('%s', (_name, outletPa, expectedMin) => {
+      expect(yDomain(outletPa)[0]).toBe(expectedMin);
     });
   });
 });

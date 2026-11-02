@@ -67,26 +67,39 @@ describe('relief set pressure in gauge', () => {
 describe('relief line pressure under the pressure basis', () => {
   // 4 bar a at the inlet, 1.01325 bar atmosphere implied by set pressure 5 bar g = 6.01325 bar a
   const inlet = [{ pressure: 400000 }];
-  const detailsText = (Component, node, label) => {
+  // gauge value of the pressure is its own row beside the absolute one
+  const rowTexts = (Component, node, label) => {
     render(<UnitProvider initialUnitSystem={UNIT_SYSTEMS.METRIC}><Component node={node} /></UnitProvider>);
-    return screen.getByText(label).nextSibling.textContent;
+    return [label, `${label} (gauge)`].map((l) => screen.queryByText(l)?.closest('tr').textContent.replace(l, '') ?? null);
   };
   const psvNode = psv({ set_pressure_barg: 5, telemetry: { status: 'closed', set_pressure_bara: 6.01325, inlets: inlet, outlets: [{ flow_rate: 0 }] } });
   const discNode = disc({ burst_pressure_barg: 5, telemetry: { status: 'intact', set_pressure_bara: 6.01325, inlets: inlet, outlets: [{ flow_rate: 0 }] } });
 
   it.each([
-    ['absolute', /^4\.00 bar a \(2\.99 bar g\)$/],
-    ['gauge', /^2\.99 bar g$/],
+    ['absolute', [/^4\.00\s*bar a$/, /^2\.99\s*bar g$/]],
+    ['gauge', [/^2\.99\s*bar g$/, null]],
   ])('shows the PSV inlet pressure under the %s basis', (basis, expected) => {
     localStorage.setItem('walflow_pressure_basis', basis);
-    expect(detailsText(PressureSafetyValveDetails, psvNode, 'Inlet pressure')).toMatch(expected);
+    const [abs, gauge] = rowTexts(PressureSafetyValveDetails, psvNode, 'Inlet pressure');
+    expect(abs).toMatch(expected[0]);
+    if (expected[1]) expect(gauge).toMatch(expected[1]); else expect(gauge).toBeNull();
   });
 
   it.each([
-    ['absolute', /^4\.00 bar a \(2\.99 bar g\)$/],
-    ['gauge', /^2\.99 bar g$/],
+    ['absolute', [/^4\.00\s*bar a$/, /^2\.99\s*bar g$/]],
+    ['gauge', [/^2\.99\s*bar g$/, null]],
   ])('shows the rupture disc mitigated line pressure under the %s basis', (basis, expected) => {
     localStorage.setItem('walflow_pressure_basis', basis);
-    expect(detailsText(RuptureDiscDetails, discNode, 'Mitigated Line Pressure:')).toMatch(expected);
+    const [abs, gauge] = rowTexts(RuptureDiscDetails, discNode, 'Mitigated Line Pressure');
+    expect(abs).toMatch(expected[0]);
+    if (expected[1]) expect(gauge).toMatch(expected[1]); else expect(gauge).toBeNull();
+  });
+});
+
+describe('rupture disc results', () => {
+  it('renders the reduced bore configuration with the orifice diameter in the display unit', () => {
+    const node = disc({ burst_pressure_barg: 5, bore_type: 'reduced_bore', orifice_diameter_m: 0.0125, telemetry: { status: 'intact', inlets: [{ pressure: 400000 }], outlets: [{ flow_rate: 0 }] } });
+    render(<UnitProvider initialUnitSystem={UNIT_SYSTEMS.METRIC}><RuptureDiscDetails node={node} /></UnitProvider>);
+    expect(screen.getByText('Bore Configuration').closest('tr').textContent).toMatch(/Reduced Bore \(12\.5 mm Orifice\)/);
   });
 });

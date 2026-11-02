@@ -1,13 +1,14 @@
 import React, { useMemo, memo } from 'react';
 import { 
-  ComposedChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Scatter, Legend
+  ComposedChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Scatter
 } from 'recharts';
 import { useUnits } from '../../context/UnitContext';
 import { niceTicks, formatTick } from '../../utils/chartTicks';
-import ChartLegend from './ChartLegend';
+import { ResultSection, ResultTable, ResultRow, ResultChart } from './ResultBlocks';
+import { CHART_TICK, CHART_MARGIN, CHART_GRID, chartAxisLabel, CHART_Y_WIDTH } from './chartProps';
 
 const ValveDetails = memo(function ValveDetails({ node }) {
-  const { labels, isImperial, lminToDisplay, absPaToDisplay, formatPressurePa } = useUnits();
+  const { labels, isImperial, lminToDisplay, absPaToDisplay, formatPressurePa, formatDimensionless } = useUnits();
   const { type } = node;
   const { set_pressure_pa, backpressure, telemetry, opening_pct } = node.data;
   
@@ -90,69 +91,47 @@ const ValveDetails = memo(function ValveDetails({ node }) {
     ...(telemetry ? [{ value: 'Operating Point', type: 'cross', color: 'var(--color-primary)' }] : [])
   ];
 
+  // The plot frames the setpoint, the operating point and the start of both curves (zero flow), so every curve
+  // in the legend is drawn. Further along they fall away steeply and the axis clips them, so the scale stays readable.
+  // An absolute pressure is never below zero.
   const yDomain = useMemo(() => {
-    const vals = isRegulator ? [setPDisp, ownPDisp] : [ownPDisp];
+    const vals = [ownPDisp, ...(isRegulator ? [setPDisp] : [])];
+    if (chartData?.length) vals.push(chartData[0].limit, chartData[0].currentCurve);
+    const finite = vals.filter(Number.isFinite);
     const margin = isImperial ? 30 : 2;
-    const minV = Math.min(...vals) - margin;
-    const maxV = Math.max(...vals) + margin;
-    return [Math.floor(minV), Math.ceil(maxV)];
-  }, [isRegulator, setPDisp, ownPDisp, isImperial]);
+    return [Math.max(0, Math.floor(Math.min(...finite) - margin)), Math.ceil(Math.max(...finite) + margin)];
+  }, [isRegulator, setPDisp, ownPDisp, isImperial, chartData]);
+
+  const statusBadge = { text: status, kind: (status === 'REGULATING' || status === 'ACTIVE') ? 'success' : 'warning' };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ fontSize: 'var(--fs-xs)', fontWeight: '800', color: 'var(--color-brand-dark)', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '3px solid var(--color-primary)', paddingLeft: '8px' }}>
-          {isRegulator ? 'Regulation Envelope' : 'Valve Performance'}
-        </div>
-        <span style={{ 
-          fontSize: 'var(--fs-xs)', fontWeight: 'bold', padding: '2px 6px', borderRadius: 'var(--radius-sm)',
-          background: (status === "REGULATING" || status === "ACTIVE") ? '#dcfce7' : '#fee2e2',
-          color: (status === "REGULATING" || status === "ACTIVE") ? 'var(--color-success)' : 'var(--color-danger)'
-        }}>{status}</span>
-      </div>
-      
-      <div style={{ width: '100%', height: '240px', background: 'var(--color-surface)' }}>
-        {!chartData ? (
-          <div style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--fs-sm)', fontStyle: 'italic', padding: '10px 0', textAlign: 'center' }}>
-            Run a simulation to see the valve curves
-          </div>
-        ) : (
-        <ResponsiveContainer width="100%" height="100%" minWidth={0} initialDimension={{ width: 240, height: 160 }}>
-          <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 4, bottom: 10 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
-            <XAxis dataKey="q" type="number" domain={[0, xMaxDisplay]} ticks={xTicks} fontSize={10} tickFormatter={formatTick} height={36}
-              label={{ value: labels.flow, position: 'insideBottomRight', offset: -2, fontSize: 10, fill: 'var(--color-text-secondary)' }} />
-            <YAxis type="number" domain={yDomain} fontSize={10} tickCount={6} tickFormatter={formatTick} width={45}
-              label={{ value: labels.pressureAbs, angle: -90, position: 'insideLeft', offset: 10, fontSize: 10, fill: 'var(--color-text-secondary)', style: { textAnchor: 'middle' } }} />
-            <Legend verticalAlign="top" align="right" height={40} content={() => <ChartLegend payload={legendPayload} />} />
-            
-            {isRegulator && <Line dataKey="setpoint" stroke="var(--color-primary)" strokeWidth={2} dot={false} name="Setpoint" legendType="plainline" activeDot={false} isAnimationActive={false} />}
-            <Line dataKey="currentCurve" stroke="var(--color-brand-dark)" strokeWidth={2.5} dot={false} name="Current Pos" legendType="plainline" activeDot={false} isAnimationActive={false} />
-            <Line dataKey="limit" stroke="var(--color-border-hover)" strokeWidth={1} dot={false} name="Max Open" legendType="plainline" activeDot={false} isAnimationActive={false} />
-            
-            {telemetry && <Scatter name="Operating Point" dataKey="p" data={opPoint} fill="var(--color-primary)" isAnimationActive={false} shape="cross" activeShape="cross" legendType="cross" />}
-          </ComposedChart>
-        </ResponsiveContainer>
-        )}
-      </div>
+    <>
+      <ResultSection title={isRegulator ? 'Regulation Envelope' : 'Valve Performance'} badge={statusBadge}>
+        <ResultChart legend={legendPayload} empty={!chartData && 'Run a simulation to see the valve curves'}>
+          <ResponsiveContainer width="100%" height="100%" minWidth={0} initialDimension={{ width: 240, height: 160 }}>
+            <ComposedChart data={chartData} margin={CHART_MARGIN}>
+              <CartesianGrid {...CHART_GRID} />
+              <XAxis dataKey="q" type="number" domain={[0, xMaxDisplay]} ticks={xTicks} tick={CHART_TICK} tickFormatter={formatTick} height={36}
+                label={chartAxisLabel(labels.flow)} />
+              <YAxis type="number" domain={yDomain} tick={CHART_TICK} tickCount={6} tickFormatter={formatTick} width={CHART_Y_WIDTH} allowDataOverflow
+                label={chartAxisLabel(labels.pressureAbs, true)} />
+              {isRegulator && <Line dataKey="setpoint" stroke="var(--color-primary)" strokeWidth={2} dot={false} name="Setpoint" legendType="plainline" activeDot={false} isAnimationActive={false} />}
+              <Line dataKey="currentCurve" stroke="var(--color-brand-dark)" strokeWidth={2.5} dot={false} name="Current Pos" legendType="plainline" activeDot={false} isAnimationActive={false} />
+              <Line dataKey="limit" stroke="var(--color-border-hover)" strokeWidth={1} dot={false} name="Max Open" legendType="plainline" activeDot={false} isAnimationActive={false} />
+              {telemetry && <Scatter name="Operating Point" dataKey="p" data={opPoint} fill="var(--color-primary)" isAnimationActive={false} shape="cross" activeShape="cross" legendType="cross" />}
+            </ComposedChart>
+          </ResponsiveContainer>
+        </ResultChart>
+      </ResultSection>
 
-      <div style={{ background: 'var(--color-surface-hover)', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-text-secondary)', fontWeight: '500' }}>Current Opening:</span>
-          <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-text-primary)', fontWeight: '700', fontFamily: 'var(--font-mono)' }}>{currentOpening?.toFixed(1)} %</span>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-text-secondary)', fontWeight: '500' }}>Sensed Pressure:</span>
-          <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-primary-text)', fontWeight: '700', fontFamily: 'var(--font-mono)' }}>{formatPressurePa(sensedP)} {labels.pressureAbs}</span>
-        </div>
-        {isRegulator && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-text-secondary)', fontWeight: '500' }}>Target Setpoint:</span>
-            <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-text-primary)', fontWeight: '700', fontFamily: 'var(--font-mono)' }}>{formatPressurePa(set_pressure_pa || 500000)} {labels.pressureAbs}</span>
-          </div>
-        )}
-      </div>
-    </div>
+      <ResultSection title="Operating Point">
+        <ResultTable>
+          <ResultRow label="Current Opening" value={formatDimensionless(currentOpening, 'percent')} unit="%" />
+          <ResultRow label="Sensed Pressure" value={formatPressurePa(sensedP)} unit={labels.pressureAbs} />
+          {isRegulator && <ResultRow label="Target Setpoint" value={formatPressurePa(set_pressure_pa || 500000)} unit={labels.pressureAbs} />}
+        </ResultTable>
+      </ResultSection>
+    </>
   );
 });
 

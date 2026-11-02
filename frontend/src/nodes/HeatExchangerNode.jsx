@@ -5,32 +5,19 @@ import { SensingPin } from '../components/canvas/SensingPin';
 import BaseNode from './BaseNode';
 import NodeReadout from './NodeReadout';
 import { useUnits } from '../context/UnitContext';
+import { heatExchangerReadout } from '../utils/nodeReadouts';
 
 /**
  * Shell and Tube Heat Exchanger (ISA / PFD style)
  */
 export default function HeatExchangerNode({ id, data, selected }) {
-  const { formatHeatDuty, labels } = useUnits();
+  const { formatHeatDuty, formatDimensionless, labels } = useUnits();
   const telemetry = data.telemetry;
   const rotation = data.rotation || 0;
   const sensing = useMemo(() => data.sensing || {}, [data.sensing]);
-  const tIn = telemetry?.inlets?.[0]?.temperature || 293.15;
-  const tOut = telemetry?.outlets?.[0]?.temperature || 293.15;
-  const flowRate = telemetry?.inlets?.[0]?.flow_rate || 0;
-  const density = telemetry?.inlets?.[0]?.density || 1000;
+  const { dutyKw: dutyVal, deltaTK } = heatExchangerReadout(telemetry);
 
-  // Calculate or read duty in kW
-  let dutyVal = 0;
-  if (telemetry?.actual_duty_kw !== undefined && telemetry?.actual_duty_kw !== null) {
-    dutyVal = telemetry.actual_duty_kw;
-  } else if (Math.abs(flowRate) > 1e-9) {
-    // Dynamic thermodynamic fallback: Q = m_dot * Cp * deltaT
-    const cp = (density < 900) ? 2000 : 4184; // Approx Cp for oil vs water
-    const mDot = Math.abs(flowRate) * density;
-    dutyVal = (mDot * cp * (tIn - tOut)) / 1000.0;
-  }
-
-  const deltaT = (tOut - tIn).toFixed(1);
+  const deltaT = formatDimensionless(deltaTK, 'temperatureDiff');
   const dutyFormatted = Math.abs(dutyVal) < 0.01 ? '0' : formatHeatDuty(dutyVal);
 
   return (
@@ -45,7 +32,7 @@ export default function HeatExchangerNode({ id, data, selected }) {
           name={data.label || 'HEAT EXCH'}
           rows={[
             { value: dutyFormatted, unit: labels.heatDuty },
-            { label: 'ΔT:', value: deltaT, unit: 'K' },
+            { label: 'ΔT', value: deltaT, unit: 'K' },
           ]}
         />
       }

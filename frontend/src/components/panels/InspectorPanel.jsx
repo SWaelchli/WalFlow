@@ -123,7 +123,6 @@ export default function InspectorPanel({
             allNodes={allNodes}
             allEdges={allEdges}
             unmitigatedTelemetry={unmitigatedTelemetry}
-            inline={true}
           />
         )}
       </div>

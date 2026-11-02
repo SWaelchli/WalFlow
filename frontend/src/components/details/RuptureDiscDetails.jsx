@@ -1,11 +1,20 @@
 import React from 'react';
 import { useUnits } from '../../context/UnitContext';
+import { ResultSection, ResultTable, ResultRow, ResultMeter } from './ResultBlocks';
+import { utilisationTone } from './resultTone';
+import LinePressureRows from './LinePressureRows';
+
+const STATUS_BADGES = {
+  intact: { text: 'INTACT', kind: 'success' },
+  burst: { text: 'BURST', kind: 'danger' },
+  overcapacity: { text: 'OVERCAPACITY (>100%)', kind: 'danger' },
+};
 
 /**
  * Inspector detail card for Rupture Disc (Burst Diaphragm) equipment nodes.
  */
 export default function RuptureDiscDetails({ node, unmitigatedTelemetry }) {
-  const { labels, formatPressureGauge, formatPressurePa, formatFlowM3s, formatDiameter, atmosphericPa, pressureBasis } = useUnits();
+  const { labels, formatGaugeValue, formatPressurePa, formatFlowM3s, formatDiameter, formatDimensionless, atmosphericPa } = useUnits();
   if (!node) return null;
 
   const data = node.data || {};
@@ -13,8 +22,6 @@ export default function RuptureDiscDetails({ node, unmitigatedTelemetry }) {
   const unmitTelemetry = unmitigatedTelemetry?.nodes?.[node.id] || telemetry;
 
   const burstPressureBarg = data.burst_pressure_barg ? Number(data.burst_pressure_barg) : null;
-  // Burst pressure is gauge; the solver also reports it as absolute (bar a) for comparison with port pressures
-  const burstPressureBara = telemetry?.set_pressure_bara ?? (burstPressureBarg !== null ? burstPressureBarg + atmosphericPa / 100000 : null);
   const boreType = data.bore_type || 'full_bore';
   const cv = data.cv || 10.0;
   const orificeDiameterM = data.orifice_diameter_m || 0.01;
@@ -29,98 +36,30 @@ export default function RuptureDiscDetails({ node, unmitigatedTelemetry }) {
   const pUnmitigatedIn = unmitTelemetry.inlets?.[0]?.pressure || pIn;
   const actualFlow = telemetry.outlets?.[0]?.flow_rate || 0;
 
-  let statusBadgeColor = 'var(--color-success)';
-  let statusBadgeBg = '#DCFCE7';
-  let statusLabel = 'INTACT';
+  const badge = STATUS_BADGES[status] || STATUS_BADGES.intact;
 
-  if (status === 'burst') {
-    statusBadgeColor = 'var(--color-danger)';
-    statusBadgeBg = '#FEE2E2';
-    statusLabel = 'BURST';
-  } else if (status === 'overcapacity') {
-    statusBadgeColor = 'var(--color-danger)';
-    statusBadgeBg = '#FEE2E2';
-    statusLabel = 'OVERCAPACITY (>100%)';
-  }
-
-  const boreDisplay = boreType === 'reduced_bore' 
+  const boreDisplay = boreType === 'reduced_bore'
     ? `Reduced Bore (${formatDiameter(orificeDiameterM)} ${labels.diameter} Orifice)`
-    : `Full Bore (Cv ${cv.toFixed(1)})`;
+    : `Full Bore (Cv ${formatDimensionless(cv, 'cv')})`;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-      {/* Diaphragm Status Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ fontSize: 'var(--fs-xs)', fontWeight: '800', color: 'var(--color-brand-dark)', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '3px solid var(--color-primary)', paddingLeft: '8px' }}>
-          Safety Relief Assessment
-        </div>
-        <span style={{ fontSize: 'var(--fs-xs)', fontWeight: '800', color: statusBadgeColor, backgroundColor: statusBadgeBg, padding: '2px 8px', borderRadius: 'var(--radius-sm)', border: `1px solid var(--color-border)` }}>
-          {statusLabel}
-        </span>
-      </div>
+    <>
+      <ResultSection title="Safety Relief Assessment" badge={badge}>
+        <ResultTable>
+          <ResultRow label="Burst Pressure" text={burstPressureBarg === null} {...(burstPressureBarg !== null ? { value: formatGaugeValue(burstPressureBarg), unit: labels.pressureGauge } : { value: 'missing' })} />
+          <ResultRow label="Bore Configuration" text value={boreDisplay} />
+        </ResultTable>
+      </ResultSection>
 
-      <div style={{ background: 'var(--color-surface-hover)', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontSize: 'var(--fs-sm)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ color: 'var(--color-text-secondary)', fontWeight: '500' }}>Burst Pressure:</span>
-          <span style={{ fontWeight: '700', color: 'var(--color-primary-text)', fontFamily: 'var(--font-mono)' }}>{burstPressureBarg !== null ? formatPressureGauge(burstPressureBarg) : 'missing'}</span>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ color: 'var(--color-text-secondary)', fontWeight: '500' }}>Bore Configuration:</span>
-          <span style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>
-            {boreDisplay}
-          </span>
-        </div>
-      </div>
-
-      {/* Telemetry & Sizing Card */}
-      <div style={{ background: 'var(--color-surface)', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontSize: 'var(--fs-sm)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        <div style={{ fontWeight: '800', fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', borderBottom: '1px solid var(--color-border)', paddingBottom: '4px' }}>
-          Operational Telemetry & Safety Baseline
-        </div>
-
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ color: 'var(--color-text-secondary)', fontWeight: '500' }}>Mitigated Line Pressure:</span>
-          <span style={{ fontWeight: '700', color: burstPressureBara !== null && pInBar >= burstPressureBara ? 'var(--color-warning)' : 'var(--color-success)', fontFamily: 'var(--font-mono)' }}>
-            {pressureBasis === 'gauge'
-              ? formatPressureGauge(pInBarg)
-              : `${formatPressurePa(pIn)} ${labels.pressureAbs} (${formatPressureGauge(pInBarg)})`}
-          </span>
-        </div>
-
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ color: 'var(--color-text-secondary)', fontWeight: '500' }}>Relief Flow (Q relief):</span>
-          <span style={{ fontWeight: '700', color: Math.abs(actualFlow) > 1e-6 ? 'var(--color-warning)' : 'var(--color-text-secondary)', fontFamily: 'var(--font-mono)' }}>
-            {formatFlowM3s(Math.abs(actualFlow))} {labels.flow}
-          </span>
-        </div>
-
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FEF2F2', padding: '6px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid #FEE2E2' }}>
-          <span style={{ color: 'var(--color-danger-text)', fontWeight: '600' }}>Unmitigated Peak Pressure:</span>
-          <span style={{ fontWeight: '800', color: 'var(--color-danger-text)', fontFamily: 'var(--font-mono)' }}>
-            {formatPressurePa(pUnmitigatedIn)} {labels.pressureAbs}
-          </span>
-        </div>
-
-        {/* Orifice / Seat Capacity Utilization Bar */}
-        <div style={{ marginTop: '4px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--fs-sm)', marginBottom: '3px', alignItems: 'center' }}>
-            <span style={{ color: 'var(--color-text-secondary)', fontWeight: '500' }}>Capacity Used (of rated flow at 110 % burst):</span>
-            <span style={{ fontWeight: '700', color: capacityPct > 100 ? 'var(--color-danger)' : (capacityPct > 80 ? 'var(--color-warning)' : 'var(--color-success)'), fontFamily: 'var(--font-mono)' }}>
-              {capacityPct.toFixed(1)}%
-            </span>
-          </div>
-          <div style={{ width: '100%', height: '8px', backgroundColor: 'var(--color-border)', borderRadius: '4px', overflow: 'hidden' }}>
-            <div
-              style={{
-                height: '100%',
-                width: `${Math.min(100, capacityPct)}%`,
-                backgroundColor: capacityPct > 100 ? 'var(--color-danger)' : (capacityPct > 80 ? 'var(--color-warning)' : 'var(--color-success)'),
-                transition: 'width 0.3s ease'
-              }}
-            />
-          </div>
-        </div>
-      </div>
-    </div>
+      <ResultSection title="Operational Telemetry & Safety Baseline">
+        <ResultTable>
+          <LinePressureRows label="Mitigated Line Pressure" pPa={pIn} pBarg={pInBarg} />
+          <ResultRow label="Relief Flow (Q relief)" value={formatFlowM3s(Math.abs(actualFlow))} unit={labels.flow} />
+          <ResultRow label="Unmitigated Peak Pressure" value={formatPressurePa(pUnmitigatedIn)} unit={labels.pressureAbs} />
+          <ResultRow label="Capacity Used (of rated flow at 110 % burst)" value={formatDimensionless(capacityPct, 'percent')} unit="%" />
+        </ResultTable>
+        <ResultMeter value={capacityPct} tone={utilisationTone(capacityPct)} />
+      </ResultSection>
+    </>
   );
 }

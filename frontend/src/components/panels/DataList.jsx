@@ -1225,14 +1225,14 @@ export default function DataList({
                       draggable={false}
                     />
                   </td>
-                  <td style={{ padding: '8px', textAlign: 'right', fontWeight: '600' }}>{formatFlowM3s(entry.flow)}</td>
-                  <td style={{ padding: '8px', textAlign: 'right' }}>
+                  <td className="result-value" style={{ padding: '8px' }}>{formatFlowM3s(entry.flow)}</td>
+                  <td className="result-value" style={{ padding: '8px' }}>
                     {formatVelocity(entry.velocity)}
                   </td>
-                  <td style={{ padding: '8px', textAlign: 'right' }}>{formatDiffPressure(entry.dp, 3)}</td>
-                  <td style={{ padding: '8px', textAlign: 'right' }}>{formatPressure(entry.pStart)}</td>
-                  <td style={{ padding: '8px', textAlign: 'right' }}>{formatPressure(entry.pEnd)}</td>
-                  <td style={{ padding: '8px', textAlign: 'right' }}>{formatTemperatureK(entry.temp)}</td>
+                  <td className="result-value" style={{ padding: '8px' }}>{formatDiffPressure(entry.dp, 3)}</td>
+                  <td className="result-value" style={{ padding: '8px' }}>{formatPressure(entry.pStart)}</td>
+                  <td className="result-value" style={{ padding: '8px' }}>{formatPressure(entry.pEnd)}</td>
+                  <td className="result-value" style={{ padding: '8px' }}>{formatTemperatureK(entry.temp)}</td>
                   {activeTab === 'pipes' && (
                     <td style={{ padding: '8px' }} onClick={(e) => e.stopPropagation()}>
                       {!isNode ? (

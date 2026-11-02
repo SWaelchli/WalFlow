@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { pressureDrop, pressureRise, outletFlow, neutralPorts, neutralDrop, nodePressure } from './nodeReadouts';
+import { pressureDrop, pressureRise, outletFlow, neutralPorts, neutralDrop, nodePressure, isNodeOff, heatExchangerReadout } from './nodeReadouts';
 import { formatDiffPressureFromPa, formatFlowFromM3s } from './converters';
 
 const solved = { inlets: [{ pressure: 500000 }], outlets: [{ pressure: 300000, flow_rate: 0.001 }] };
@@ -35,5 +35,35 @@ describe('readouts before a run', () => {
     expect(neutralDrop(ports(-0.001, 0.001))).toBe(200000);
     expect(neutralDrop(ports(0.001, -0.001))).toBe(-200000);
     expect(neutralPorts(ports(0, 0)).upIdx).toBe(0);
+  });
+});
+
+describe('isNodeOff', () => {
+  it.each([
+    ['switched off', { active: false }, true],
+    ['active', { active: true }, false],
+    ['flag never set', {}, false],
+    ['no data', undefined, false],
+  ])('%s', (_n, data, expected) => {
+    expect(isNodeOff(data)).toBe(expected);
+  });
+});
+
+describe('heatExchangerReadout', () => {
+  const ports = (tIn, tOut, q = 0.001, density = 1000) => ({ inlets: [{ temperature: tIn, flow_rate: q, density }], outlets: [{ temperature: tOut }] });
+
+  it.each([
+    ['solver duty wins over the estimate', { ...ports(350, 330), actual_duty_kw: 12.5 }, 12.5, -20],
+    ['solver duty of zero is a value', { ...ports(350, 330), actual_duty_kw: 0 }, 0, -20],
+    ['water estimate m*cp*dT, positive when cooled', ports(350, 330), 0.001 * 1000 * 4184 * 20 / 1000, -20],
+    ['oil estimate uses the lower cp', ports(350, 330, 0.001, 850), 0.001 * 850 * 2000 * 20 / 1000, -20],
+    ['reverse flow still gives a duty by magnitude', ports(350, 330, -0.001), 0.001 * 1000 * 4184 * 20 / 1000, -20],
+    ['heating gives a negative duty', ports(300, 320), -0.001 * 1000 * 4184 * 20 / 1000, 20],
+    ['no flow, no estimate', ports(350, 330, 0), 0, -20],
+    ['no result', undefined, 0, 0],
+  ])('%s', (_n, telemetry, duty, dT) => {
+    const r = heatExchangerReadout(telemetry);
+    expect(r.dutyKw).toBeCloseTo(duty, 9);
+    expect(r.deltaTK).toBeCloseTo(dT, 9);
   });
 });

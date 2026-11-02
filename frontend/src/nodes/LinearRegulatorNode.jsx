@@ -28,8 +28,8 @@ export default function LinearRegulatorNode({ id, data, selected }) {
         <NodeReadout
           name={data.label || 'REGULATOR'}
           rows={[
-            { label: 'Set:', value: formatPressurePa(setP, 1), unit: labels.pressureAbs },
-            { label: 'Pos:', value: opening.toFixed(1), unit: '%' },
+            { label: 'Set', value: formatPressurePa(setP, 1), unit: labels.pressureAbs },
+            { label: 'Pos', value: opening.toFixed(1), unit: '%' },
           ]}
         />
       }

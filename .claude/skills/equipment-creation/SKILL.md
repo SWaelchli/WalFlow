@@ -112,7 +112,8 @@ Create `frontend/src/nodes/<Name>Node.jsx`:
 - Add `<Handle>` elements with rotation compensation (`getRotatedPosition(Position.Left, rotation)`).
 - Add `<SensingPin>` for signal telemetry if applicable.
 - Values under the symbol go through the shared `NodeReadout` as `footer` (rows of label, value, unit) and any
-  state through the shared `StatusBadge` (MASTER.md "Canvas values"). A number never carries a colour; no hex
+  state through the shared `StatusBadge` (MASTER.md "Canvas values"). A label has no colon and a number never
+  carries a colour; no hex
   literals, numeric `fontSize` or inline text styles in the node. The style guard test fails otherwise.
 
 📖 **Deep Dive Reference:** Read [references/frontend-integration.md](references/frontend-integration.md).
@@ -128,7 +129,7 @@ Update the following frontend files:
    - Add input controls for editing component properties.
 4. `frontend/src/components/symbols/SymbolLibrary.jsx`:
    - Add SVG symbol rendering case under `EquipmentSymbol`.
-5. *(Optional)* `frontend/src/components/details/<Name>Details.jsx` and `ResultsPanel.jsx` for dedicated live charts/telemetry.
+5. *(Optional)* `frontend/src/components/details/<Name>Details.jsx` and `ResultsPanel.jsx` for dedicated live charts/telemetry. A results view is a list of the shared results blocks, with equipment-specific content inside them, and all numbers go through the formatters (MASTER.md "Results display"). Without a dedicated view the equipment gets the generic view.
 
 ### Step 7: Verify Everything
 Run the gate from the `walflow-qa` skill (via `walflow-gate-runner`).

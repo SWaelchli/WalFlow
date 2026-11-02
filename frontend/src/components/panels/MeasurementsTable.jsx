@@ -14,13 +14,13 @@ const isTrip = (key) => key === 'alarm_ll' || key === 'alarm_hh';
 
 // Alarm state as text first; the colour only backs it up
 const STATE_STYLE = {
-  HH: { bg: '#FEF2F2', border: 'var(--color-danger)', text: 'var(--color-danger-text)' },
-  LL: { bg: '#FEF2F2', border: 'var(--color-danger)', text: 'var(--color-danger-text)' },
+  HH: { bg: 'var(--color-danger-tint)', border: 'var(--color-danger)', text: 'var(--color-danger-text)' },
+  LL: { bg: 'var(--color-danger-tint)', border: 'var(--color-danger)', text: 'var(--color-danger-text)' },
   H: { bg: 'var(--color-warning-bg)', border: 'var(--color-primary)', text: 'var(--color-primary-text)' },
   L: { bg: 'var(--color-warning-bg)', border: 'var(--color-primary)', text: 'var(--color-primary-text)' },
 };
 
-const ACTIVE_BG = '#fff7ed';
+const ACTIVE_BG = 'var(--color-primary-tint)';
 const th = { padding: '6px 12px', verticalAlign: 'middle', whiteSpace: 'nowrap' };
 const td = { padding: '4px 12px', verticalAlign: 'middle', whiteSpace: 'nowrap' };
 
@@ -111,14 +111,14 @@ export default function MeasurementsTable({
                   {!isActive && onSelectCase && (
                     <button
                       onClick={() => onSelectCase(caseId)}
-                      style={{ padding: '2px 6px', fontSize: 'var(--fs-xs)', borderRadius: '4px', border: '1px solid var(--color-border)', background: '#ffffff', cursor: 'pointer', color: 'var(--color-brand-dark)', fontWeight: '600' }}
+                      style={{ padding: '2px 6px', fontSize: 'var(--fs-xs)', borderRadius: '4px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', cursor: 'pointer', color: 'var(--color-brand-dark)', fontWeight: '600' }}
                     >
                       Switch
                     </button>
                   )}
                   {isActive && <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-primary-text)', fontWeight: 'bold' }}>Active</span>}
                   {isCaseResultStale(c, caseInputHashes) && (
-                    <span title="The diagram changed since this case was solved. Run the simulation again." style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', color: '#7A3E00', background: '#FFF7ED', border: '1px solid #FDE3C3', padding: '1px 6px', borderRadius: '10px' }}>Out of date</span>
+                    <span title="The diagram changed since this case was solved. Run the simulation again." style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', color: 'var(--color-warning-text-strong)', background: 'var(--color-warning-bg)', border: '1px solid var(--color-warning-border)', padding: '1px 6px', borderRadius: '10px' }}>Out of date</span>
                   )}
                 </div>
               </th>
@@ -134,7 +134,7 @@ export default function MeasurementsTable({
           const tag = data.label || inst.id;
           const location = locationText(inst, nodes, edges);
           return (
-            <tr key={inst.id} style={{ borderBottom: '1px solid var(--color-border-hover)', background: idx % 2 === 0 ? '#FFFFFF' : '#F8FAFA', height: '36px' }}>
+            <tr key={inst.id} style={{ borderBottom: '1px solid var(--color-border-hover)', background: idx % 2 === 0 ? 'var(--color-surface)' : 'var(--color-surface-hover)', height: '36px' }}>
               <td {...clickableProps}
                 onClick={() => onSelectNode && onSelectNode(inst.id)}
                 style={{ ...td, fontWeight: '700', color: 'var(--color-primary-text)', cursor: 'pointer' }}

@@ -59,3 +59,25 @@ export const netPortFlow = (telemetry) => {
   const piped = (telemetry?.ports || []).filter(Boolean);
   return piped.length ? piped.reduce((s, p) => s + (p.flow_rate ?? 0), 0) : null;
 };
+
+/** True for a component the user switched off; the canvas OFF badge and the Results OFF badge both use it. */
+export const isNodeOff = (data) => data?.active === false;
+
+/**
+ * Heat duty (kW, positive when the fluid is cooled) and temperature change (K, outlet minus inlet) of a heat exchanger.
+ * The duty is the solver's `actual_duty_kw`; without it, m_dot * cp * dT from the port values.
+ */
+export const heatExchangerReadout = (telemetry) => {
+  const tIn = telemetry?.inlets?.[0]?.temperature || 293.15;
+  const tOut = telemetry?.outlets?.[0]?.temperature || 293.15;
+  const flowRate = telemetry?.inlets?.[0]?.flow_rate || 0;
+  const density = telemetry?.inlets?.[0]?.density || 1000;
+  let dutyKw = 0;
+  if (telemetry?.actual_duty_kw !== undefined && telemetry?.actual_duty_kw !== null) {
+    dutyKw = telemetry.actual_duty_kw;
+  } else if (Math.abs(flowRate) > 1e-9) {
+    const cp = (density < 900) ? 2000 : 4184; // Approx Cp for oil vs water
+    dutyKw = (Math.abs(flowRate) * density * cp * (tIn - tOut)) / 1000.0;
+  }
+  return { dutyKw, deltaTK: tOut - tIn };
+};

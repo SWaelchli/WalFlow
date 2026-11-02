@@ -31,7 +31,7 @@ export default function FilterNode({ id, data, selected }) {
           name={data.label || 'STRAINER'}
           rows={[
             { label: 'ΔP', value: dPFormatted, unit: labels.pressureDiff },
-            { label: 'Clogging:', value: `${clogging.toFixed(0)}%` },
+            { label: 'Clogging', value: `${clogging.toFixed(0)}%` },
           ]}
         />
       }

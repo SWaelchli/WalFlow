@@ -13,7 +13,8 @@ vi.mock('recharts', () => {
       <div data-testid="chart" data-rows={JSON.stringify(data)}>{children}</div>
     ),
     XAxis: ({ domain }) => <i data-testid="xaxis" data-domain={JSON.stringify(domain)} />,
-    YAxis: Null, CartesianGrid: Null, Legend: Null, Line: Null,
+    YAxis: ({ domain }) => <i data-testid="yaxis" data-domain={JSON.stringify(domain)} />,
+    CartesianGrid: Null, Legend: Null, Line: Null,
     Scatter: ({ name, data }) => <i data-testid={`scatter-${name}`} data-points={JSON.stringify(data)} />,  };
 });
 
@@ -129,5 +130,21 @@ describe('ValveDetails backend curves', () => {
     expect(opRow).toBeDefined();
     const opP = point('Operating Point').p;
     expect(opRow.currentCurve).toBeCloseTo(opP, 6);
+  });
+  it.each([
+    ['regulator frames its setpoint below the operating point', 'linear_regulator', 250000, 300000, [0, 12]],
+    ['plain valve ignores the unused setpoint', 'linear_control_valve', 250000, 300000, [1, 12]],
+    ['regulator frames setpoint above the operating point', 'linear_regulator', 400000, 300000, [1, 12]],
+    ['absolute pressure axis never goes below zero', 'linear_control_valve', 400000, 150000, [0, 12]],
+  ])('y axis for 10 bar a throttled to an outlet: %s', (_n, type, setPa, outPa, expected) => {
+    const t = {
+      opening_pct: 50,
+      inlets: [{ flow_rate: 0.001, pressure: 1000000 }],
+      outlets: [{ pressure: outPa }],
+      valve_curves: { flow_m3s: [0, 0.001], dp_current_pa: [0, 700000], dp_full_open_pa: [0, 100000] },
+    };
+    renderValve({ set_pressure_pa: setPa, telemetry: t }, type);
+    // Max Open and Current Pos both start at 10 bar a (zero flow), so the top frames the inlet pressure
+    expect(JSON.parse(screen.getByTestId('yaxis').dataset.domain)).toEqual(expected);
   });
 });

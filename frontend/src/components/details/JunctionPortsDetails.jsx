@@ -2,11 +2,12 @@ import { useUnits } from '../../context/UnitContext';
 import { junctionPortCount } from '../../utils/junctionLayout';
 import { boundaryPortCount, BOUNDARY_PORT_TYPES } from '../../utils/boundaryLayout';
 import { NO_FLOW_M3S } from '../../utils/nodeReadouts';
+import { ResultSection, ResultTable, ResultRow } from './ResultBlocks';
 
 // Flow is positive into the component; a port without a pipe has no result
-function directionOf(flow, noun) {
-  if (Math.abs(flow) < NO_FLOW_M3S) return 'no flow';
-  return flow > 0 ? `into ${noun}` : `out of ${noun}`;
+function directionOf(flow) {
+  if (Math.abs(flow) < NO_FLOW_M3S) return 'No flow';
+  return flow > 0 ? 'In' : 'Out';
 }
 
 /** Per-port results of a junction, tank or boundary: flow magnitude and direction, static pressure and temperature. */
@@ -14,38 +15,21 @@ export default function JunctionPortsDetails({ node }) {
   const { labels, formatFlowM3s, formatPressurePa, formatTemperatureK } = useUnits();
   const isBoundary = BOUNDARY_PORT_TYPES.has(node.type);
   const count = isBoundary ? boundaryPortCount(node.data) : junctionPortCount(node.data);
-  const noun = node.type === 'junction' ? 'junction' : node.type === 'tank' ? 'tank' : 'boundary';
-  const ports = node.data?.telemetry?.ports || [];
+  const telemetryPorts = node.data?.telemetry?.ports;
+  const ports = telemetryPorts || [];
+  const indices = Array.from({ length: count }, (_, k) => k);
+  // `absent` is shown for a port without a result: after a run that is a port with no pipe, before a run nothing yet
+  const perPort = (fn, absent = null) => indices.map((k) => (ports[k] ? fn(ports[k]) : absent));
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-      <div style={{ fontSize: 'var(--fs-xs)', fontWeight: '800', color: 'var(--color-brand-dark)', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '3px solid var(--color-primary)', paddingLeft: '8px', marginBottom: '8px' }}>
-        Port Results
-      </div>
-      {Array.from({ length: count }, (_, k) => {
-        const p = ports[k];
-        return (
-          <div key={k} style={{
-            display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px',
-            fontSize: 'var(--fs-xs)', background: 'var(--color-surface-hover)', padding: '6px 8px',
-            borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)',
-          }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-              <span style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>Port {k + 1}</span>
-              <span style={{ color: 'var(--color-text-secondary)' }}>{p ? directionOf(p.flow_rate || 0, noun) : 'not connected'}</span>
-            </div>
-            {p && (
-              <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                <div style={{ fontWeight: '700', color: 'var(--color-primary-text)' }}>
-                  {formatFlowM3s(Math.abs(p.flow_rate || 0))} <span style={{ fontWeight: '500' }}>{labels.flow}</span>
-                </div>
-                <div style={{ color: 'var(--color-text-secondary)' }}>{formatPressurePa(p.pressure)} {labels.pressureAbs}</div>
-                <div style={{ color: 'var(--color-text-secondary)' }}>{formatTemperatureK(p.temperature)} {labels.temperature}</div>
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
+    <ResultSection title="Port Results">
+      <ResultTable columns={indices.map((k) => `Port ${k + 1}`)}>
+        <ResultRow label="Direction" text title="In: flow enters this component; Out: flow leaves it; Not connected: no pipe on this port"
+          values={perPort((p) => directionOf(p.flow_rate || 0), telemetryPorts ? 'Not connected' : null)} />
+        <ResultRow label="Flow" labelUnit={labels.flow} values={perPort((p) => formatFlowM3s(Math.abs(p.flow_rate || 0)))} />
+        <ResultRow label="Pressure" labelUnit={labels.pressureAbs} values={perPort((p) => formatPressurePa(p.pressure))} />
+        <ResultRow label="Temperature" labelUnit={labels.temperature} values={perPort((p) => formatTemperatureK(p.temperature))} />
+      </ResultTable>
+    </ResultSection>
   );
 }

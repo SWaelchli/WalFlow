@@ -8,9 +8,9 @@ const LEGEND_ICON = {
 export default function ChartLegend({ payload = [] }) {
   if (!payload || !payload.length) return null;
   return (
-    <div style={{ display: 'flex', justifyContent: 'flex-end', flexWrap: 'wrap', gap: '10px', fontSize: 'var(--fs-xs)' }}>
+    <div className="result-chart-legend">
       {payload.map((e) => (
-        <span key={e.value} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: e.color }}>
+        <span key={e.value} className="result-chart-legend-item" style={{ color: e.color }}>
           <svg width="14" height="14" viewBox="0 0 14 14">
             {LEGEND_ICON[e.type]?.(e.color)}
           </svg>

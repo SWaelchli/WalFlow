@@ -3,6 +3,7 @@ import { useUpdateNodeInternals } from 'reactflow';
 import { RotateButton } from '../components/canvas/NodeRotationHandle';
 import StatusBadge from '../components/common/StatusBadge';
 import { WarningIcon } from '../components/symbols/IconLibrary';
+import { isNodeOff } from '../utils/nodeReadouts';
 
 /**
  * BaseNode component wrapper
@@ -71,7 +72,7 @@ export default function BaseNode({
 
       <RotateButton visible={selected} onClick={() => data.onRotate && data.onRotate(id)} />
 
-      {data.active === false && (
+      {isNodeOff(data) && (
         <div
           className="node-off-badge"
           style={{ position: 'absolute', top: height - 12, left: width - 15 }}

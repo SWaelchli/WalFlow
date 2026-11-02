@@ -1,5 +1,8 @@
 import React, { memo } from 'react';
 import { useUnits } from '../../context/UnitContext';
+import { ResultSection, ResultTable, ResultRow, ResultCallout, ResultMeter } from './ResultBlocks';
+import LinePressureRows from './LinePressureRows';
+import { utilisationTone } from './resultTone';
 
 const VALVE_TYPE_LABELS = {
   conventional: 'Conventional (spring)',
@@ -15,27 +18,12 @@ const MODE_LABELS = {
 
 // Status text first, colour second
 const STATUS_BADGES = {
-  closed: { text: 'CLOSED', bg: 'var(--color-bg-canvas)', color: 'var(--color-text-secondary)' },
-  modulating: { text: 'MODULATING', bg: '#FEF3C7', color: 'var(--color-warning-text-strong)' },
-  open: { text: 'OPEN (FULL LIFT)', bg: '#FEF3C7', color: 'var(--color-warning-text-strong)' },
-  cycling: { text: 'CYCLING (OVERSIZED)', bg: '#FEF3C7', color: 'var(--color-warning-text-strong)' },
-  overcapacity: { text: 'OVERCAPACITY (UNDERSIZED)', bg: '#FEE2E2', color: 'var(--color-danger-text)' }
+  closed: { text: 'CLOSED', kind: 'neutral' },
+  modulating: { text: 'MODULATING', kind: 'warning' },
+  open: { text: 'OPEN (FULL LIFT)', kind: 'warning' },
+  cycling: { text: 'CYCLING (OVERSIZED)', kind: 'warning' },
+  overcapacity: { text: 'OVERCAPACITY (UNDERSIZED)', kind: 'danger' }
 };
-
-const card = { background: 'var(--color-surface)', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontSize: 'var(--fs-sm)', display: 'flex', flexDirection: 'column', gap: '6px' };
-const cardTitle = { fontWeight: '800', fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', borderBottom: '1px solid var(--color-border)', paddingBottom: '4px', marginBottom: '2px' };
-const rowStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '8px' };
-const labelStyle = { color: 'var(--color-text-secondary)', fontWeight: '500' };
-const valueStyle = { fontWeight: '700', color: 'var(--color-text-primary)', fontFamily: 'var(--font-mono)', textAlign: 'right' };
-
-function Row({ label, children, color }) {
-  return (
-    <div style={rowStyle}>
-      <span style={labelStyle}>{label}</span>
-      <span style={color ? { ...valueStyle, color } : valueStyle}>{children}</span>
-    </div>
-  );
-}
 
 /**
  * Inlet pressure against the valve's characteristic pressures: ticks at reseat, opening and +10 % overpressure,
@@ -64,29 +52,29 @@ function PressureScale({ setBarg, openBarg, reseatBarg, inletBarg, cycleLow, cyc
       aria-label={band
         ? `Inlet cycles between ${formatPressureGauge(cycleLow)} and ${formatPressureGauge(cycleHigh)}`
         : `Inlet ${formatPressureGauge(inletBarg)}, opens at ${formatPressureGauge(openBarg)}`}
-      style={{ position: 'relative', height: '40px', margin: '4px 6px 2px' }}
+      className="result-scale"
     >
-      <div style={{ position: 'absolute', top: '10px', left: 0, right: 0, height: '6px', borderRadius: '3px', background: 'var(--color-border)' }} />
+      <div className="result-scale-track" />
       {/* Relief zone: opening to +10 % overpressure */}
-      <div style={{ position: 'absolute', top: '10px', height: '6px', left: pos(openBarg), width: `calc(${pos(fullLiftBarg)} - ${pos(openBarg)})`, background: 'rgba(245, 158, 11, 0.35)' }} />
+      <div className="result-scale-relief" style={{ left: pos(openBarg), width: `calc(${pos(fullLiftBarg)} - ${pos(openBarg)})` }} />
       {band && (
-        <div style={{ position: 'absolute', top: '7px', height: '12px', left: pos(cycleLow), width: `calc(${pos(cycleHigh)} - ${pos(cycleLow)})`, background: 'rgba(250, 133, 7, 0.55)', border: '1px solid var(--color-primary)', borderRadius: '2px' }} />
+        <div className="result-scale-band" style={{ left: pos(cycleLow), width: `calc(${pos(cycleHigh)} - ${pos(cycleLow)})` }} />
       )}
       {ticks.map(t => (
-        <div key={t.label} style={{ position: 'absolute', left: pos(t.v), top: '4px', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div style={{ width: '1.5px', height: '18px', background: 'var(--color-text-secondary)' }} />
-          <span style={{ fontSize: '10px', color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' }}>{t.label}</span>
+        <div key={t.label} className="result-scale-tick" style={{ left: pos(t.v) }}>
+          <div className="result-scale-tick-line" />
+          <span className="result-scale-tick-label">{t.label}</span>
         </div>
       ))}
       {!band && inletBarg != null && (
-        <div title={`Inlet ${formatPressureGauge(inletBarg)}`} style={{ position: 'absolute', left: pos(inletBarg), top: '2px', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '6px solid transparent', borderRight: '6px solid transparent', borderTop: '8px solid var(--color-brand-dark)' }} />
+        <div title={`Inlet ${formatPressureGauge(inletBarg)}`} className="result-scale-marker" style={{ left: pos(inletBarg) }} />
       )}
     </div>
   );
 }
 
 const PressureSafetyValveDetails = memo(function PressureSafetyValveDetails({ node, unmitigatedTelemetry, allNodes = [] }) {
-  const { labels, formatPressureGauge, formatPressurePa, formatFlowM3s, formatFlow, atmosphericPa, pressureBasis } = useUnits();
+  const { labels, formatPressureGauge, formatGaugeValue, formatPressurePa, formatFlowM3s, formatFlow, formatDimensionless, atmosphericPa } = useUnits();
   const data = node.data || {};
   const telemetry = data.telemetry || {};
 
@@ -124,49 +112,46 @@ const PressureSafetyValveDetails = memo(function PressureSafetyValveDetails({ no
 
   const pilotNode = telemetry.pilot_sensing_node_id ? allNodes.find(n => n.id === telemetry.pilot_sensing_node_id) : null;
   const bp = telemetry.backpressure;
-  const capColor = capUtil > 100 ? 'var(--color-danger)' : (capUtil > 80 ? 'var(--color-warning)' : 'var(--color-success)');
 
   let liftText = '—';
   if (isCycling) liftText = '— (cycling)';
-  else if (liftPct != null && status !== 'closed') liftText = liftPct >= 99.9 ? 'Full lift' : `${liftPct.toFixed(0)} %`;
+  else if (liftPct != null && status !== 'closed') liftText = liftPct >= 99.9 ? 'Full lift' : `${formatDimensionless(liftPct, 'percentWhole')} %`;
   else if (status === 'closed') liftText = '0 %';
 
+  const gaugeUnit = labels.pressureGauge;
+  const gauge = (barg) => ({ value: formatGaugeValue(barg), unit: gaugeUnit });
+  const pctOfSet = (barg) => (setPressureBarg ? { value: formatDimensionless(100 * barg / setPressureBarg, 'percent'), unit: '%' } : null);
+  const bpValues = (barg) => [gauge(barg), pctOfSet(barg)].filter(Boolean);
+
+  const bpLimitBarg = bp?.bp_limit_pct != null && setPressureBarg ? setPressureBarg * bp.bp_limit_pct / 100 : null;
+  const bpVerdict = bp?.bp_limit_pct != null
+    ? { text: bp.bp_exceeded ? `EXCEEDS ${bp.bp_limit_pct} % LIMIT` : 'WITHIN LIMIT', kind: bp.bp_exceeded ? 'danger' : 'success' }
+    : undefined;
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-      {/* Header Badge */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
-        <div style={{ fontSize: 'var(--fs-xs)', fontWeight: '800', color: 'var(--color-brand-dark)', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '3px solid var(--color-primary)', paddingLeft: '8px' }}>
-          Safety Relief Assessment
-        </div>
-        <span style={{ fontSize: 'var(--fs-xs)', fontWeight: '800', padding: '2px 8px', borderRadius: 'var(--radius-sm)', background: badge.bg, color: badge.color, border: '1px solid var(--color-border)', whiteSpace: 'nowrap' }}>
-          {badgeText}
-        </span>
-      </div>
+    <>
+      <ResultSection title="Safety Relief Assessment" badge={{ text: badgeText, kind: badge.kind }}>
+        <ResultTable>
+          <ResultRow label="Valve type" text value={VALVE_TYPE_LABELS[valveType] || valveType} />
+          {valveType === 'pilot' && (
+            <ResultRow label="Pilot senses" text value={pilotNode ? (pilotNode.data?.label || pilotNode.id) : 'Own inlet'} />
+          )}
+          <ResultRow label="Action" text value={MODE_LABELS[actionMode] || actionMode} />
+          <ResultRow label="Set pressure" text={setPressureBarg === null} {...(setPressureBarg !== null ? gauge(setPressureBarg) : { value: 'missing' })} />
+          {valveType === 'conventional' && cdtpBarg !== null && (
+            <ResultRow label="Spring set (CDTP)" {...gauge(cdtpBarg)} />
+          )}
+          {openBarg !== null && setPressureBarg !== null && Math.abs(openBarg - setPressureBarg) >= 0.005 && (
+            <ResultRow label="Opens at inlet" {...gauge(openBarg)} />
+          )}
+          {reseatBarg !== null && (
+            <ResultRow label="Reseat at inlet" value={formatGaugeValue(reseatBarg)} unit={`${gaugeUnit} (${blowdownPct} % blowdown)`} />
+          )}
+          <ResultRow label="Flow coefficient (Cv)" value={formatDimensionless(cv, 'cv')} />
+        </ResultTable>
+      </ResultSection>
 
-      {/* Configuration */}
-      <div style={{ ...card, background: 'var(--color-surface-hover)' }}>
-        <div style={cardTitle}>Configuration</div>
-        <Row label="Valve type">{VALVE_TYPE_LABELS[valveType] || valveType}</Row>
-        {valveType === 'pilot' && (
-          <Row label="Pilot senses">{pilotNode ? (pilotNode.data?.label || pilotNode.id) : 'Own inlet'}</Row>
-        )}
-        <Row label="Action">{MODE_LABELS[actionMode] || actionMode}</Row>
-        <Row label="Set pressure" color="var(--color-primary-text)">{setPressureBarg !== null ? formatPressureGauge(setPressureBarg) : 'missing'}</Row>
-        {valveType === 'conventional' && cdtpBarg !== null && (
-          <Row label="Spring set (CDTP)">{formatPressureGauge(cdtpBarg)}</Row>
-        )}
-        {openBarg !== null && setPressureBarg !== null && Math.abs(openBarg - setPressureBarg) >= 0.005 && (
-          <Row label="Opens at inlet">{formatPressureGauge(openBarg)}</Row>
-        )}
-        {reseatBarg !== null && (
-          <Row label="Reseat at inlet">{formatPressureGauge(reseatBarg)} ({blowdownPct} % blowdown)</Row>
-        )}
-        <Row label="Flow coefficient (Cv)">{cv.toFixed(2)}</Row>
-      </div>
-
-      {/* Relief result */}
-      <div style={card}>
-        <div style={cardTitle}>Relief Result</div>
+      <ResultSection title="Relief Result">
         {setPressureBarg !== null && hasResult && (
           <PressureScale
             setBarg={setPressureBarg}
@@ -178,75 +163,56 @@ const PressureSafetyValveDetails = memo(function PressureSafetyValveDetails({ no
             formatPressureGauge={formatPressureGauge}
           />
         )}
-        {isCycling ? (
-          <Row label="Inlet cycles between" color="var(--color-warning-text-strong)">{formatPressureGauge(cycleLow)} – {formatPressureGauge(cycleHigh)}</Row>
-        ) : (
-          <Row label="Inlet pressure" color={setPressureBarg !== null && inletBarg !== null && inletBarg >= openBarg ? 'var(--color-warning-text-strong)' : undefined}>
-            {!hasResult ? '—'
-              : pressureBasis === 'gauge' ? formatPressureGauge(inletBarg)
-              : `${formatPressurePa(pIn)} ${labels.pressureAbs} (${formatPressureGauge(inletBarg)})`}
-          </Row>
-        )}
-        <Row label={isCycling ? 'Average relief load' : 'Relief flow'} color={currentQ > 1e-6 ? 'var(--color-warning-text-strong)' : undefined}>
-          {formatFlowM3s(currentQ)} {labels.flow}
-        </Row>
-        <Row label="Lift">{liftText}</Row>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '2px' }}>
-          <Row label="Capacity used (of rated)" color={capColor}>{capUtil.toFixed(1)} %</Row>
-          {ratedFlowLmin > 0 && (
-            <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
-              Rated {formatFlow(ratedFlowLmin)} {labels.flow} at full lift, 10 % overpressure
-            </div>
-          )}
-          <div style={{ width: '100%', height: '6px', background: 'var(--color-border)', borderRadius: '3px', overflow: 'hidden' }}>
-            <div style={{ width: `${Math.min(100, capUtil)}%`, height: '100%', background: capColor, transition: 'width 0.3s ease' }} />
-          </div>
-        </div>
-        <div style={{ ...rowStyle, background: '#FEF2F2', padding: '6px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid #FEE2E2', marginTop: '4px' }}>
-          <span style={{ color: 'var(--color-danger-text)', fontWeight: '600' }}>Unmitigated peak pressure</span>
-          <span style={{ fontWeight: '800', color: 'var(--color-danger-text)', fontFamily: 'var(--font-mono)' }}>
-            {formatPressurePa(pUnmitigatedIn)} {labels.pressureAbs}
-          </span>
-        </div>
-        {isCycling && (
-          <div role="status" style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-warning-text-strong)', background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: 'var(--radius-sm)', padding: '6px 8px', lineHeight: 1.45 }}>
-            Pop valve oversized for this load: the inlet cycles between reseat and set; the flow is the average relief load.
-          </div>
-        )}
-      </div>
-
-      {/* Backpressure */}
-      {bp && (
-        <div style={card}>
-          <div style={cardTitle}>Backpressure</div>
-          <Row label="Superimposed">{formatPressureGauge(bp.superimposed_bp_barg)}{setPressureBarg ? ` · ${(100 * bp.superimposed_bp_barg / setPressureBarg).toFixed(1)} %` : ''}</Row>
-          <Row label="Built-up">{formatPressureGauge(bp.built_up_bp_barg)}{setPressureBarg ? ` · ${(100 * bp.built_up_bp_barg / setPressureBarg).toFixed(1)} %` : ''}</Row>
-          <Row label="Total">{formatPressureGauge(bp.total_bp_barg)}{setPressureBarg ? ` · ${(100 * bp.total_bp_barg / setPressureBarg).toFixed(1)} %` : ''}</Row>
-          {bp.bp_limit_pct != null ? (
-            <div style={{ ...rowStyle, alignItems: 'center' }}>
-              <span style={labelStyle}>Limit ({bp.bp_basis === 'built_up' ? 'built-up' : 'total'} ≤ {bp.bp_limit_pct} % of set)</span>
-              <span style={{
-                fontSize: 'var(--fs-xs)', fontWeight: '800', padding: '1px 8px', borderRadius: '10px', whiteSpace: 'nowrap',
-                background: bp.bp_exceeded ? '#FEF2F2' : 'var(--color-bg-canvas)',
-                color: bp.bp_exceeded ? 'var(--color-danger-text)' : 'var(--color-success)',
-                border: `1px solid ${bp.bp_exceeded ? '#FEE2E2' : 'var(--color-border)'}`
-              }}>
-                {bp.bp_exceeded ? `EXCEEDS ${bp.bp_limit_pct} %` : 'OK'}
-              </span>
-            </div>
+        <ResultTable>
+          {isCycling ? (
+            <ResultRow label="Inlet cycles between" value={`${formatGaugeValue(cycleLow)} – ${formatGaugeValue(cycleHigh)}`} unit={gaugeUnit} />
           ) : (
-            <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>Pilot-operated: opening independent of backpressure.</div>
+            <LinePressureRows label="Inlet pressure" pPa={hasResult ? pIn : null} pBarg={inletBarg} />
+          )}
+          <ResultRow label={isCycling ? 'Average relief load' : 'Relief flow'} value={formatFlowM3s(currentQ)} unit={labels.flow} />
+          <ResultRow label="Lift" text value={liftText} />
+          <ResultRow label="Unmitigated peak pressure" value={formatPressurePa(pUnmitigatedIn)} unit={labels.pressureAbs} />
+          <ResultRow label="Capacity used (of rated)" value={formatDimensionless(capUtil, 'percent')} unit="%" />
+        </ResultTable>
+        <ResultMeter value={capUtil} tone={utilisationTone(capUtil)} />
+        {ratedFlowLmin > 0 && (
+          <div className="result-caption-sm">
+            Rated {formatFlow(ratedFlowLmin)} {labels.flow} at full lift, 10 % overpressure
+          </div>
+        )}
+        {isCycling && (
+          <ResultCallout tone="warning" role="status">
+            Pop valve oversized for this load: the inlet cycles between reseat and set; the flow is the average relief load.
+          </ResultCallout>
+        )}
+      </ResultSection>
+
+      {bp && (
+        <ResultSection title="Backpressure" badge={bpVerdict}>
+          <ResultTable columns={setPressureBarg ? ['Pressure', '% of set'] : ['Pressure']}>
+            <ResultRow label="Superimposed" values={bpValues(bp.superimposed_bp_barg)} />
+            <ResultRow label="Built-up" values={bpValues(bp.built_up_bp_barg)} />
+            <ResultRow label="Total" values={bpValues(bp.total_bp_barg)} />
+            {bpLimitBarg !== null && (
+              <ResultRow
+                label={`Limit (${bp.bp_basis === 'built_up' ? 'built-up' : 'total'})`}
+                values={[gauge(bpLimitBarg), { value: formatDimensionless(bp.bp_limit_pct, 'percent'), unit: '%' }]}
+              />
+            )}
+          </ResultTable>
+          {bp.bp_limit_pct == null && (
+            <div className="result-caption-sm">Pilot-operated: opening independent of backpressure.</div>
           )}
           {bp.bp_exceeded && (
-            <div role="alert" style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-danger-text)', background: '#FEF2F2', border: '1px solid #FEE2E2', borderRadius: 'var(--radius-sm)', padding: '6px 8px', lineHeight: 1.45 }}>
+            <ResultCallout tone="danger">
               {bp.bp_basis === 'built_up'
-                ? `Built-up backpressure ${bp.bp_pct_of_set.toFixed(1)} % of set exceeds the 10 % limit of a conventional valve: enlarge the outlet line or use a balanced bellows or pilot valve.`
-                : `Total backpressure ${bp.bp_pct_of_set.toFixed(1)} % of set exceeds the 50 % limit of a balanced bellows valve: enlarge the outlet line or use a pilot valve.`}
-            </div>
+                ? `Built-up backpressure ${formatDimensionless(bp.bp_pct_of_set, 'percent')} % of set exceeds the 10 % limit of a conventional valve: enlarge the outlet line or use a balanced bellows or pilot valve.`
+                : `Total backpressure ${formatDimensionless(bp.bp_pct_of_set, 'percent')} % of set exceeds the 50 % limit of a balanced bellows valve: enlarge the outlet line or use a pilot valve.`}
+            </ResultCallout>
           )}
-        </div>
+        </ResultSection>
       )}
-    </div>
+    </>
   );
 });
 

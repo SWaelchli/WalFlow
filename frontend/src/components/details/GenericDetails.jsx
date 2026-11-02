@@ -3,11 +3,12 @@ import React from 'react';
 import { useUnits } from '../../context/UnitContext';
 import { isNeutralPort, NEUTRAL_TYPES } from '../../utils/networkValidation';
 import { portTitle } from '../../utils/portLabels';
-import { neutralPorts } from '../../utils/nodeReadouts';
+import { neutralPorts, heatExchangerReadout } from '../../utils/nodeReadouts';
 import NeutralFlowCaption from './NeutralFlowCaption';
+import { ResultSection, ResultTable, ResultRow, ResultCallout } from './ResultBlocks';
 
 export default function GenericDetails({ node, edge, allNodes = [], allEdges = [] }) {
-  const { labels, isImperial, formatPressurePa, formatDiffPressurePa, formatFlowM3s, formatTemperatureK, formatVelocity } = useUnits();
+  const { labels, formatPressurePa, formatDiffPressurePa, formatFlowM3s, formatTemperatureK, formatVelocity, formatPressureGradient, formatDimensionless, formatHeatDuty } = useUnits();
   const isEdge = !!edge;
   const item = node || edge;
   if (!item) return null;
@@ -17,9 +18,9 @@ export default function GenericDetails({ node, edge, allNodes = [], allEdges = [
 
   if (!telemetry) {
     return (
-      <div style={{ color: '#587071', fontSize: 'var(--fs-sm)', fontStyle: 'italic', padding: '10px 0' }}>
-        No simulation data available. Click "Calculate Network" to generate results.
-      </div>
+      <ResultSection title="Operational Telemetry">
+        <ResultCallout tone="info">No simulation data available. Run a simulation to see the results.</ResultCallout>
+      </ResultSection>
     );
   }
 
@@ -100,34 +101,26 @@ export default function GenericDetails({ node, edge, allNodes = [], allEdges = [
   }
 
   const flowPathCard = (
-    <div style={{
-      background: 'var(--color-surface-hover)',
-      border: '1px solid var(--color-border)',
-      borderRadius: 'var(--radius-sm)',
-      padding: '8px 12px',
-      fontSize: 'var(--fs-sm)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: '6px',
-      color: 'var(--color-text-primary)',
-      marginBottom: '10px'
-    }}>
-      <div style={{ flex: 1, textAlign: 'left', fontWeight: '600' }}>
-        {upLabel}
-      </div>
+    <div className="result-flowpath">
+      <div className="result-flowpath-end">{upLabel}</div>
       <ArrowRightIcon size={14} color="var(--color-text-secondary)" />
-      <div style={{ flex: 1, textAlign: 'right', fontWeight: '600' }}>
-        {downLabel}
-      </div>
+      <div className="result-flowpath-end">{downLabel}</div>
     </div>
   );
 
-  const flowCaptionRow = flowCaption && (
-    <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--color-text-secondary)', marginBottom: '10px' }}>
-      {flowCaption}
-    </div>
-  );
+  const flowCaptionRow = flowCaption && <div className="result-caption">{flowCaption}</div>;
+
+  // Heat exchanger: duty and temperature change, the same values as its canvas readout
+  let heatRows = null;
+  if (!isEdge && node.type === 'heat_exchanger') {
+    const { dutyKw, deltaTK } = heatExchangerReadout(telemetry);
+    heatRows = (
+      <>
+        <ResultRow label="Heat Duty" title="Positive when the fluid is cooled" value={Math.abs(dutyKw) < 0.01 ? '0' : formatHeatDuty(dutyKw)} unit={labels.heatDuty} />
+        <ResultRow label="Temperature Change (ΔT)" title="Outlet minus inlet" value={formatDimensionless(deltaTK, 'temperatureDiff')} unit="K" />
+      </>
+    );
+  }
 
   // Pipe details
   let pipeRows = null;
@@ -146,71 +139,31 @@ export default function GenericDetails({ node, edge, allNodes = [], allEdges = [
     let regime = 'Laminar';
     if (re > 4000) regime = 'Turbulent';
     else if (re >= 2000) regime = 'Transition';
-    const dpBar = dpPa / 100000;
-    const dpPerMeterMbar = length > 0 ? (dpBar * 1000) / length : 0;
-    const dpPerFtPsi = length > 0 ? (dpBar * 14.5037738) / (length * 3.280839895) : 0;
 
     pipeRows = (
       <>
-        <tr>
-          <td className="details-label">Fluid Velocity</td>
-          <td className="details-value" style={{ textAlign: 'right' }}>{formatVelocity(velocity)} {labels.velocity}</td>
-        </tr>
-        <tr>
-          <td className="details-label">Reynolds Number</td>
-          <td className="details-value" style={{ textAlign: 'right' }}>
-            {re.toFixed(0)} ({regime})
-          </td>
-        </tr>
-        <tr>
-          <td className="details-label">Pressure Gradient</td>
-          <td className="details-value" style={{ textAlign: 'right' }}>
-            {isImperial ? `${dpPerFtPsi.toFixed(4)} psi/ft` : `${dpPerMeterMbar.toFixed(2)} mbar/m`}
-          </td>
-        </tr>
+        <ResultRow label="Fluid Velocity" value={formatVelocity(velocity)} unit={labels.velocity} />
+        <ResultRow label="Reynolds Number" value={<>{formatDimensionless(re, 'reynolds')}<span className="result-unit">{regime}</span></>} />
+        <ResultRow label="Pressure Gradient" value={formatPressureGradient(dpPa, length)} unit={labels.pressureGradient} />
       </>
     );
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-      
-      <div style={{ fontSize: 'var(--fs-xs)', fontWeight: '800', color: 'var(--color-brand-dark)', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '3px solid var(--color-primary)', paddingLeft: '8px', marginBottom: '8px' }}>
-        Operational Telemetry
-      </div>
-
-      {/* Flow Path Card */}
+    <ResultSection title="Operational Telemetry">
       {flowPathCard}
       {flowCaptionRow}
-      {neutral && <div style={{ marginBottom: '10px' }}><NeutralFlowCaption telemetry={telemetry} /></div>}
+      {neutral && <NeutralFlowCaption telemetry={telemetry} />}
 
-      {/* Structured Key-Value Table */}
-      <table className="details-table">
-        <tbody>
-          <tr>
-            <td className="details-label">Upstream Pressure</td>
-            <td className="details-value" style={{ textAlign: 'right' }}>{formatPressurePa(pUp)} {labels.pressureAbs}</td>
-          </tr>
-          <tr>
-            <td className="details-label">Downstream Pressure</td>
-            <td className="details-value" style={{ textAlign: 'right' }}>{formatPressurePa(pDown)} {labels.pressureAbs}</td>
-          </tr>
-          <tr>
-            <td className="details-label">Pressure Drop (ΔP)</td>
-            <td className="details-value" style={{ textAlign: 'right' }}>{formatDiffPressurePa(dpPa, 3)} {labels.pressureDiff}</td>
-          </tr>
-          <tr>
-            <td className="details-label">Flow Rate</td>
-            <td className="details-value" style={{ textAlign: 'right' }}>{formatFlowM3s(Math.abs(flowM3s))} {labels.flow}</td>
-          </tr>
-          <tr>
-            <td className="details-label">Temperature</td>
-            <td className="details-value" style={{ textAlign: 'right' }}>{formatTemperatureK(temp)} {labels.temperature}</td>
-          </tr>
-          {pipeRows}
-        </tbody>
-      </table>
-
-    </div>
+      <ResultTable>
+        <ResultRow label="Upstream Pressure" value={formatPressurePa(pUp)} unit={labels.pressureAbs} />
+        <ResultRow label="Downstream Pressure" value={formatPressurePa(pDown)} unit={labels.pressureAbs} />
+        <ResultRow label="Pressure Drop (ΔP)" value={formatDiffPressurePa(dpPa, 3)} unit={labels.pressureDiff} />
+        <ResultRow label="Flow Rate" value={formatFlowM3s(Math.abs(flowM3s))} unit={labels.flow} />
+        <ResultRow label="Temperature" value={formatTemperatureK(temp)} unit={labels.temperature} />
+        {heatRows}
+        {pipeRows}
+      </ResultTable>
+    </ResultSection>
   );
 }

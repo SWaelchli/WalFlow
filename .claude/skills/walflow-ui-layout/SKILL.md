@@ -120,6 +120,7 @@ Only view controls belong on the canvas. Commands that change the drawing go thr
 - Header: item name, type, Delete (danger ghost), Collapse inspector (same as View › Inspector). Tabs: Setup,
   Results. No further tab level.
 - Equipment fields are added in `SetupPanel.jsx` / `details/*` per the `equipment-creation` skill. The shell does not change.
+- What the Results tab shows and how it looks: MASTER.md "Results display" (shared results blocks).
 
 ### Results panel (under the canvas)
 

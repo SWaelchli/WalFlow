@@ -33,7 +33,7 @@ export default function RemoteControlValveNode({ id, data, selected }) {
           rows={[
             { value: opening.toFixed(1), unit: '%' },
             { value: flowFormatted, unit: labels.flow },
-            { label: 'SET:', value: setPressureFormatted, unit: labels.pressureAbs },
+            { label: 'Set', value: setPressureFormatted, unit: labels.pressureAbs },
           ]}
         />
       }

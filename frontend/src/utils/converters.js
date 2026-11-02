@@ -244,7 +244,8 @@ export const UNIT_LABELS = {
     diameter: 'mm',
     diameterNps: 'in',
     roughness: 'm',
-    velocity: 'm/s'
+    velocity: 'm/s',
+    pressureGradient: 'mbar/m'
   },
   [UNIT_SYSTEMS.IMPERIAL]: {
     pressure: 'psi',
@@ -261,7 +262,8 @@ export const UNIT_LABELS = {
     diameter: 'in',
     diameterNps: 'in',
     roughness: 'in',
-    velocity: 'ft/s'
+    velocity: 'ft/s',
+    pressureGradient: 'psi/ft'
   }
 };
 
@@ -351,11 +353,52 @@ export const formatDiffPressureFromPa = (valPa, unitSystem = UNIT_SYSTEMS.METRIC
   return paToBar(valPa, decimals);
 };
 
+/** Gauge-only pressure (relief set / burst pressure, given in bar g) as a number, no unit text: "18.99" / "275.4". */
+export const formatGaugeBar = (valBarg, unitSystem = UNIT_SYSTEMS.METRIC, decimals = 2) => {
+  if (missing(valBarg)) return '—';
+  return formatDiffPressureFromBar(valBarg, unitSystem, isImperialSystem(unitSystem) ? 1 : decimals);
+};
+
 /** Gauge-only pressure (relief set / burst pressure, given in bar g) with its unit: "18.99 bar g" / "275.4 psig". */
 export const formatGaugeBarWithUnit = (valBarg, unitSystem = UNIT_SYSTEMS.METRIC, decimals = 2) => {
   if (missing(valBarg)) return '—';
-  const imperial = isImperialSystem(unitSystem);
-  return `${formatDiffPressureFromBar(valBarg, unitSystem, imperial ? 1 : decimals)} ${pressureBasisLabel(unitSystem, PRESSURE_BASES.GAUGE)}`;
+  return `${formatGaugeBar(valBarg, unitSystem, decimals)} ${pressureBasisLabel(unitSystem, PRESSURE_BASES.GAUGE)}`;
+};
+
+/** Length in m as a number in the display unit (m or ft), e.g. NPSH. */
+export const formatLengthFromM = (valM, unitSystem = UNIT_SYSTEMS.METRIC, decimals = 1) => {
+  if (missing(valM)) return '—';
+  return isImperialSystem(unitSystem) ? mToFt(valM, decimals) : Number(valM).toFixed(decimals);
+};
+
+/** Diameter in m as a number in the display unit (mm or in). */
+export const formatDiameterFromM = (valM, unitSystem = UNIT_SYSTEMS.METRIC, decimals = 1) => {
+  if (missing(valM)) return '—';
+  return isImperialSystem(unitSystem) ? mmToIn(Number(valM) * 1000, decimals + 1) : mToMm(valM, decimals);
+};
+
+/** Pressure gradient along a pipe (pressure drop in Pa over a length in m) in mbar/m or psi/ft. */
+export const formatPressureGradientFromPa = (valPa, lengthM, unitSystem = UNIT_SYSTEMS.METRIC) => {
+  if (missing(valPa) || missing(lengthM)) return '—';
+  const len = Number(lengthM);
+  if (isImperialSystem(unitSystem)) return (len > 0 ? (Number(valPa) * PA_TO_PSI) / (len * M_TO_FT) : 0).toFixed(4);
+  return (len > 0 ? (Number(valPa) / 100) / len : 0).toFixed(2);
+};
+
+/** Decimals of each dimensionless quantity, so one quantity looks the same in every view. */
+export const DIMENSIONLESS_DECIMALS = {
+  percent: 1,      // valve opening, filter clogging, capacity used, backpressure
+  percentWhole: 0, // motor load, lift, valve opening split
+  ratio: 3,        // orifice beta
+  reynolds: 0,
+  cv: 2,
+  temperatureDiff: 1, // temperature change across a heat exchanger, in K (the same size in °C)
+};
+
+/** Format a dimensionless value (percent, ratio, Reynolds number, Cv) with the fixed decimals of its quantity. */
+export const formatDimensionless = (value, quantity = 'percent') => {
+  if (missing(value)) return '—';
+  return Number(value).toFixed(DIMENSIONLESS_DECIMALS[quantity] ?? 1);
 };
 
 // Small flows get extra decimals so a split such as 0.85 + 0.84 does not look like a mass imbalance

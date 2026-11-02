@@ -466,6 +466,8 @@ themselves.
 
 Rules:
 
+* **A readout label has no colon**: "ΔT -21.5 K", "ΔP 4.93 bar", "Set 19.00 bar g". The guard test fails on a label
+  ending in a colon.
 * **A number never carries colour**, whatever its sign, size or state: heater duty, a setpoint, an outlet
   temperature, an alarm limit are all values in `.node-readout-value`. A sign stays a sign (heating positive).
 * **Relief devices show the set or burst pressure and their state only.** Relief flow belongs in the inspector and
@@ -479,6 +481,49 @@ Rules:
   `.symbol-text-meta/-value` (SVG letters in symbols), `.port-letter-hot/-cold`, `.instrument-*`, `.note-*`
   (text bubble sizes from `--fs-*`), `.node-warning-icon`, `.node-off-badge`.
 * No hex literals, numeric `fontSize` or inline colour styles in `frontend/src/nodes/`; a static guard test
+  (`src/test/styleGuard.test.js`) enforces it.
+
+### 7. Results display
+
+Every view in the inspector Results tab is a list of `ResultSection`s built from the shared blocks in
+`frontend/src/components/details/`. Views pass data and do not style text themselves.
+
+| Block | Use | Style |
+|---|---|---|
+| `ResultSection` | Every group of results: a title plus content | The one section header: `--fs-xs`, weight 700, uppercase, 3px `--color-primary` left border |
+| `ResultTable` / `ResultRow` | Every key/value result; optional extra columns (ports, cases) | Label left, secondary colour, weight 500, no colon; value right-aligned, `--font-mono`, tabular, weight 600, primary text; unit after the value, `--fs-xs`, secondary; `—` for no value |
+| `StatusBadge` | Any state (open/closed, intact/burst, OFF, alarm) | The canvas component (`components/common/StatusBadge.jsx`) |
+| `ResultCallout` | Warnings, errors and notices (cavitation, overload, no results) | Info-bar style; tone `warning`, `danger` or `info`; icon plus words |
+| `ResultChart` | Every chart frame, 240px high, or 150px with `compact` | Chart font sizes and colours from tokens; shared axis and grid props in `chartProps.js` |
+| `ResultMeter` | A share or utilisation bar | State colour on the bar, never on the number |
+
+Rules:
+
+* Equipment-specific content (pump curves, PSV pressure scale, mixing balance) goes inside a section as its own
+  child. It may have its own layout, but any label/value, badge or warning in it uses the blocks.
+* **All numbers go through the `UnitContext` formatters or the shared dimensionless formatter**; no `toFixed` in a view.
+  `formatDimensionless(value, quantity)` uses fixed decimals: `percent` 1, `percentWhole` 0, `ratio` 3, `reynolds` 0,
+  `cv` 2, `temperatureDiff` 1.
+* A number never carries colour here either; colour belongs to a badge or callout.
+* A section's overall verdict or state (OFF, WITHIN LIMIT, EXCEEDS 10 % LIMIT) is its `ResultSection` badge, not a
+  table cell. Canvas and Results take a shared state from one helper in `utils/nodeReadouts.js`, so they cannot disagree.
+* A meter sits directly under the row it illustrates, and its heading or caption says what it shows. A valve opening has
+  its own section, apart from any flow split.
+* Mono is for numbers. A text value (valve type, action, port direction) uses `ResultRow`'s `text` prop
+  (`.result-value-text`, sans). A value never breaks inside a number, and a unit stays on one line, so nothing but the
+  unit goes in the `unit` prop: a second value, such as gauge pressure, gets its own row (`LinePressureRows`).
+* A long name in a label column may break, so the value columns fit the pane.
+* `—` means no value. A port without a pipe reads "Not connected" after a run.
+* Tables with one column per port or case put the unit once beside the label (`labelUnit`), so the cells hold only
+  numbers; `.result-table-wrap` scrolls a table that still does not fit, without widening the pane.
+* A chart legend sits above the plot in normal flow (`ResultChart`'s `legend` prop), never inside the plot, and
+  curves are clipped to the plot area. The y-range contains every curve the legend lists. With nothing to draw, such as
+  an OFF pump, the chart shows `ResultChart`'s `empty` text instead of an empty plot and legend.
+* Equipment without a dedicated view gets the generic view, which is itself built from these blocks.
+* The results panel tables (`DataList.jsx`) use the same value cell style (`.result-value`); their table layout stays.
+* Classes live in `index.css` under the `.result-` prefix (`result-section`, `result-table`, `result-label`,
+  `result-value`, `result-unit`, `result-callout`, `result-chart`, `result-meter`, `result-scale`).
+* No hex literals, numeric `fontSize`, or `toFixed(` in `frontend/src/components/details/`; the style guard test
   (`src/test/styleGuard.test.js`) enforces it.
 
 ---

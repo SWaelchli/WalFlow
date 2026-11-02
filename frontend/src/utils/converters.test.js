@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { inToM, mToIn, psiToPa, gpmToLmin, fToK, cToK, paToBar, m3sToLmin, kwToBtuh, btuhToKw,
   pressureBasisLabel, flowUnitLabel, absPaToDisplayPressure, displayPressureToAbsPa, formatAbsPressureFromPa,
-  formatDiffPressureFromPa, lminToDisplayFlow, displayFlowToLmin, formatFlowFromLmin } from './converters';
+  formatDiffPressureFromPa, lminToDisplayFlow, displayFlowToLmin, formatFlowFromLmin,
+  formatDimensionless, formatGaugeBar, formatLengthFromM, formatDiameterFromM, formatPressureGradientFromPa, UNIT_SYSTEMS } from './converters';
 
 describe('unit converters', () => {
   it('round-trips DN50 STD inner diameter (52.48 mm = 2.067 in)', () => {
@@ -84,5 +85,42 @@ describe('pressure basis (absolute / gauge) and flow unit', () => {
     expect(formatFlowFromLmin(1000, M, undefined, 'm3h')).toBe('60.0');
     expect(formatFlowFromLmin(10, M, 2, 'm3h')).toBe('0.60');
     expect(formatFlowFromLmin(10, I, 1, 'm3h')).toBe('2.6');
+  });
+});
+
+describe('number-only result formatters', () => {
+  it.each([
+    [12.345, 'percent', '12.3'],
+    [12.5, 'percentWhole', '13'],
+    [0.4567, 'ratio', '0.457'],
+    [2300.6, 'reynolds', '2301'],
+    [10, 'cv', '10.00'],
+    [7, undefined, '7.0'],
+    [0, 'percent', '0.0'],
+    [null, 'percent', '—'],
+    [undefined, 'cv', '—'],
+    [NaN, 'ratio', '—'],
+  ])('formatDimensionless(%s, %s) = %s', (value, quantity, expected) => {
+    expect(formatDimensionless(value, quantity)).toBe(expected);
+  });
+
+  const { METRIC, IMPERIAL } = UNIT_SYSTEMS;
+  it.each([
+    ['gauge bar', () => formatGaugeBar(2.994, METRIC), '2.99'],
+    ['gauge psi', () => formatGaugeBar(1, IMPERIAL), '14.5'],
+    ['gauge missing', () => formatGaugeBar(null, METRIC), '—'],
+    ['length m', () => formatLengthFromM(3.04, METRIC), '3.0'],
+    ['length ft', () => formatLengthFromM(1, IMPERIAL), '3.3'],
+    ['length missing', () => formatLengthFromM(undefined, METRIC), '—'],
+    ['diameter mm', () => formatDiameterFromM(0.0525, METRIC), '52.5'],
+    ['diameter in', () => formatDiameterFromM(0.0254, IMPERIAL), '1.00'],
+    ['diameter missing', () => formatDiameterFromM(NaN, METRIC), '—'],
+    ['gradient mbar/m', () => formatPressureGradientFromPa(10000, 100, METRIC), '1.00'],
+    ['gradient psi/ft', () => formatPressureGradientFromPa(6894.757, 0.3048, IMPERIAL), '1.0000'],
+    ['gradient zero length', () => formatPressureGradientFromPa(10000, 0, METRIC), '0.00'],
+    ['gradient missing', () => formatPressureGradientFromPa(null, 10, METRIC), '—'],
+    ['gradient missing length', () => formatPressureGradientFromPa(100, undefined, METRIC), '—'],
+  ])('%s', (_name, run, expected) => {
+    expect(run()).toBe(expected);
   });
 });

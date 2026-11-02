@@ -50,7 +50,7 @@ export default function PressureSafetyValveNode({ id, data, selected }) {
         <NodeReadout
           name={data.label || 'PSV'}
           badges={[{ kind: statusKind, label: statusText }]}
-          rows={[{ label: 'Set:', value: setPressureFormatted }]}
+          rows={[{ label: 'Set', value: setPressureFormatted }]}
         />
       }
     >
