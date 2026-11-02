@@ -166,7 +166,7 @@ function ValveStyleTable({ rows, isEditing, onChange, onNumber, onRemove }) {
         <tbody>
           {byType.map(group => (
             <React.Fragment key={group.type}>
-              <tr style={{ backgroundColor: 'var(--color-surface-light)' }}>
+              <tr style={{ backgroundColor: 'var(--color-surface-muted)' }}>
                 <td colSpan={7} style={{ ...thStyle, fontWeight: '800', color: 'var(--color-brand-dark)' }}>{group.type}</td>
               </tr>
               {group.rows.map(row => (
@@ -249,7 +249,9 @@ function ValveStyleTable({ rows, isEditing, onChange, onNumber, onRemove }) {
  * Catalogue tab for fitting standards. `fittingType` 'control_valve' switches it to the control valve
  * style catalogues (same layout and flows); otherwise it shows reducers and pipe schedules.
  */
-const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUser, onDirtyChange, fittingType = null }) {
+// `renderLayout({ pane, details, extras, count, filterLabel })` places the list, the details and the dialogs in a page
+// shell (the Catalogue); without it the tab lays out its own list and details side by side.
+const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUser, onDirtyChange, fittingType = null, renderLayout = null }) {
   const isValve = fittingType === 'control_valve';
   const groups = isValve ? VALVE_GROUPS : STANDARD_GROUPS;
   const { isImperial } = useUnits();
@@ -691,8 +693,8 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
 
   const dims = shown?.dimensions || [];
 
-  return (
-    <div style={{ display: 'flex', flexGrow: 1, overflow: 'hidden', position: 'relative' }}>
+  const extras = (
+    <>
       {/* Hidden File Input for Import */}
       <input
         type="file"
@@ -735,17 +737,13 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
         </div>
       )}
 
-      {/* Left Sidebar: Catalog Listing & Segmented Filter Pills */}
-      <aside style={{
-        width: '320px',
-        borderRight: '1px solid var(--color-border)',
-        backgroundColor: '#FFFFFF',
-        display: 'flex',
-        flexDirection: 'column',
-        flexShrink: 0
-      }}>
+    </>
+  );
+
+  const paneContent = (
+    <div className="page-list">
         {/* Search & Filter Header */}
-        <div style={{ padding: '16px', borderBottom: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div className="page-list-filter">
           <input
             type="text"
             className="form-input"
@@ -757,7 +755,7 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
           />
 
           {/* Type Filter Pills */}
-          {!isValve && <div style={{ display: 'flex', gap: '6px' }}>
+          {!isValve && <div className="page-filter-pills">
             {[
               { key: 'ALL', label: 'All' },
               { key: 'reducer', label: 'Reducers' },
@@ -767,17 +765,7 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
                 key={item.key}
                 onClick={() => setTypeFilter(item.key)}
                 aria-pressed={typeFilter === item.key}
-                style={{
-                  flex: 1,
-                  padding: '4px 6px',
-                  fontSize: 'var(--fs-xs)',
-                  fontWeight: '700',
-                  borderRadius: '6px',
-                  border: '1px solid var(--color-border)',
-                  backgroundColor: typeFilter === item.key ? 'var(--color-brand-dark)' : 'var(--color-surface-light)',
-                  color: typeFilter === item.key ? '#FFFFFF' : 'var(--color-text-secondary)',
-                  cursor: 'pointer'
-                }}
+                className="page-filter-pill"
               >
                 {item.label}
               </button>
@@ -785,23 +773,13 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
           </div>}
 
           {/* Standard Filter Pills */}
-          <div style={{ display: 'flex', gap: '6px' }}>
+          <div className="page-filter-pills">
             {['ALL', ...groups.filter(g => g !== 'ISO')].map(key => (
               <button
                 key={key}
                 onClick={() => setStandardFilter(key)}
                 aria-pressed={standardFilter === key}
-                style={{
-                  flex: 1,
-                  padding: '4px 6px',
-                  fontSize: 'var(--fs-xs)',
-                  fontWeight: '700',
-                  borderRadius: '6px',
-                  border: '1px solid var(--color-border)',
-                  backgroundColor: standardFilter === key ? 'var(--color-brand-dark)' : 'var(--color-surface-light)',
-                  color: standardFilter === key ? '#FFFFFF' : 'var(--color-text-secondary)',
-                  cursor: 'pointer'
-                }}
+                className="page-filter-pill"
               >
                 {key === 'ALL' ? 'All' : groupLabel(key)}
               </button>
@@ -810,7 +788,7 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
         </div>
 
         {/* List of Standards: the name leads; the identifier is searchable but not shown */}
-        <div style={{ flexGrow: 1, overflowY: 'auto', padding: '10px' }}>
+        <div className="page-list-items">
           {error && (
             <div style={{ color: 'var(--color-danger-text)', fontSize: 'var(--fs-sm)', padding: '10px' }}>
               {error}
@@ -879,18 +857,11 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
             })
           )}
         </div>
-      </aside>
+    </div>
+  );
 
-      {/* Main Panel: Elevated Card-Based Detail View */}
-      <main style={{
-        flexGrow: 1,
-        backgroundColor: 'var(--color-bg-canvas)',
-        overflowY: 'auto',
-        padding: '24px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '20px'
-      }}>
+  const details = (
+    <div className="page-details">
         {shown ? (
           <>
             {/* Card 1: Standard Header */}
@@ -1046,7 +1017,7 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
                       fontWeight: '600',
                       padding: '3px 8px',
                       borderRadius: '6px',
-                      backgroundColor: 'var(--color-surface-light)',
+                      backgroundColor: 'var(--color-surface-muted)',
                       color: 'var(--color-text-secondary)',
                       border: '1px solid var(--color-border)'
                     }}>
@@ -1379,8 +1350,11 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
             {!loading && libraryActions}
           </div>
         )}
-      </main>
+    </div>
+  );
 
+  const modals = (
+    <>
       {/* CLONE STANDARD MODAL */}
       {isCloneModalOpen && (
         <div className="modal-overlay">
@@ -1569,6 +1543,29 @@ const FittingStandardsTab = function FittingStandardsTab({ canManage, currentUse
           </div>
         </div>
       )}
+    </>
+  );
+
+  if (renderLayout) {
+    return renderLayout({
+      pane: paneContent,
+      details,
+      extras: <>{extras}{modals}</>,
+      count: filteredStandards.length,
+      filterLabel: standardFilter === 'ALL' ? 'All' : groupLabel(standardFilter),
+    });
+  }
+
+  return (
+    <div style={{ display: 'flex', flexGrow: 1, overflow: 'hidden', position: 'relative' }}>
+      {extras}
+      <aside style={{ width: '320px', borderRight: '1px solid var(--color-border)', backgroundColor: 'var(--color-surface)', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+        {paneContent}
+      </aside>
+      <main style={{ flexGrow: 1, backgroundColor: 'var(--color-bg-canvas)', overflowY: 'auto' }}>
+        {details}
+      </main>
+      {modals}
     </div>
   );
 };

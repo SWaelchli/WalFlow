@@ -1648,6 +1648,18 @@ function WalFlowContent() {
     rfStore.setState({ nodesDraggable: !interactive, nodesConnectable: !interactive, elementsSelectable: !interactive });
   }, [rfStore]);
 
+  // Tools > Catalogue: opens the page, and on the page goes back to the drawing (after the page's unsaved-edit check)
+  const pageLeaveGuardRef = useRef(null);
+  const toggleCatalogue = useCallback(async () => {
+    if (currentPath !== '/catalogue') {
+      navigateTo('/catalogue');
+      return;
+    }
+    if (pageLeaveGuardRef.current && !(await pageLeaveGuardRef.current())) return;
+    fetchPipeClasses();
+    navigateTo('/');
+  }, [currentPath, navigateTo, fetchPipeClasses]);
+
   const commandCtx = useMemo(() => {
     const selectedNodes = nodes.filter((n) => n.selected || (selectedNode && n.id === selectedNode.id));
     const selectedEdges = edges.filter((e) => e.selected || (selectedEdge && e.id === selectedEdge.id));
@@ -1658,6 +1670,7 @@ function WalFlowContent() {
     // Pipe a tap can be inserted in: the one right-clicked, else the single selected pipe
     const tapEdge = menuEdge || (selectedEdges.length === 1 ? selectedEdges[0] : null);
     return {
+      page: currentPath === '/catalogue' ? 'catalogue' : 'drawing',
       isReadOnly,
       isAuthenticated,
       isAdmin,
@@ -1720,7 +1733,7 @@ function WalFlowContent() {
         run: () => runChecked(),
         selectCase: setActiveCaseId,
         addCase: handleAddCaseGuarded,
-        openCatalogue: () => navigateTo('/catalogue'),
+        toggleCatalogue,
         openProjects: () => handleOpenProjectManagerModal(null),
         openAdminHub: handleOpenAdminHub,
         openHelp: handleOpenHelpModal,
@@ -1732,7 +1745,7 @@ function WalFlowContent() {
     handleOpenNewDrawingModal, handleOpenProjectManagerModal, triggerManualCloudSave, handleOpenSaveAsModal, onSave,
     undo, redo, copySelected, pasteCopied, duplicateSelected, deleteSelected, selectAllNodes, rotateSelectedNode, deselectAll,
     addInstrumentAtPin, insertTapOnEdge, selectPane, openPane, fitView, toggleLock, setHeatmapSettings, setShowReliefScenarios, setTelemetryMode,
-    runChecked, setActiveCaseId, handleAddCaseGuarded, navigateTo, handleOpenAdminHub, handleOpenHelpModal,
+    runChecked, setActiveCaseId, handleAddCaseGuarded, currentPath, toggleCatalogue, handleOpenAdminHub, handleOpenHelpModal,
   ]);
 
   useKeyboardShortcuts(commandCtx);
@@ -1749,10 +1762,9 @@ function WalFlowContent() {
       <>
         <LazyPage>
           <CataloguePage
-            onNavigateToCanvas={() => { fetchPipeClasses(); navigateTo('/'); }}
-            onOpenAuthModal={handleOpenAuthModal}
-            onOpenAdminHub={handleOpenAdminHub}
-            onOpenHelpModal={(tab) => handleOpenHelpModal(tab || 'about')}
+            ctx={commandCtx}
+            leaveGuardRef={pageLeaveGuardRef}
+            menuBar={<MenuBar ctx={commandCtx} pageName="Catalogue" onOpenAuthModal={handleOpenAuthModal} />}
           />
         </LazyPage>
         <LazyModal

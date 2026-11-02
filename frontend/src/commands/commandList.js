@@ -15,7 +15,8 @@
  *   contextLabel   { edge: 'Delete pipe' } label overrides per context
  *   danger     draws the item as destructive
  *   isVisible(ctx)  role only: false hides the command
- *   isEnabled(ctx)  true, or the reason (string) it cannot run now
+ *   isEnabled(ctx)  true, or the reason (string) it cannot run now. While a page is open (`ctx.page` is not
+ *                   'drawing') every command except WORKS_ON_PAGE returns PAGE_REASON
  *   checked(ctx)    optional state of a toggle
  *   children(ctx)   optional submenu: [{ id, label, checked, run() }] (radio items); a child may instead be
  *                   { id, separator: true } (a rule) or carry toggle: true (a checkbox item, ticked when checked)
@@ -23,7 +24,8 @@
  *   showInContext(ctx, kind)  optional extra condition for a context menu
  *   run(ctx, arg)   calls the existing handler
  *
- * `ctx` is built by App.jsx on every render: selection, flags, state and `actions` (the existing handlers).
+ * `ctx` is built by App.jsx on every render: `page` ('drawing' | 'catalogue'), selection, flags, state and `actions`
+ * (the existing handlers).
  */
 import {
   PlusIcon, FolderOpenIcon, SaveIcon, ImportIcon, ExportIcon, CopyIcon, ClipboardIcon, TrashIcon, RotateIcon,
@@ -35,6 +37,16 @@ export const MENU_ORDER = ['File', 'Edit', 'View', 'Simulation', 'Tools', 'Help'
 
 /** The reason shown for an edit on a drawing the user has not checked out. */
 export const READ_ONLY_REASON = 'This drawing is read-only. Check it out to edit.';
+
+/** The reason shown for a drawing command while a page (the Catalogue) is open. */
+export const PAGE_REASON = 'Go back to the drawing first';
+
+// Commands that work on every page; all others act on the drawing and are disabled while a page is open
+const WORKS_ON_PAGE = new Set(['tools.catalogue', 'tools.admin', 'help.guide', 'help.shortcuts', 'help.model', 'help.about']);
+const onPage = (ctx) => (ctx.page ?? 'drawing') !== 'drawing';
+const withPageGuard = (c) => (WORKS_ON_PAGE.has(c.id)
+  ? c
+  : { ...c, isEnabled: (ctx) => (onPage(ctx) ? PAGE_REASON : c.isEnabled(ctx)) });
 
 const isMod = (e) => e.ctrlKey || e.metaKey;
 const key = (e) => e.key.toLowerCase();
@@ -211,8 +223,9 @@ export const COMMANDS = [
     isEnabled: needsEdit, run: (ctx) => ctx.actions.addCase() },
 
   // Tools
+  // A toggle: checked while the Catalogue page is open; running it there goes back to the drawing
   { id: 'tools.catalogue', label: 'Catalogue', menu: 'Tools', group: 'pages', icon: BookIcon,
-    isEnabled: () => true, run: (ctx) => ctx.actions.openCatalogue() },
+    isEnabled: () => true, checked: (ctx) => ctx.page === 'catalogue', run: (ctx) => ctx.actions.toggleCatalogue() },
   { id: 'tools.projects', label: 'Manage projects…', menu: 'Tools', group: 'pages', icon: FolderIcon,
     isEnabled: (ctx) => (ctx.isAuthenticated ? true : 'Sign in to manage projects'),
     run: (ctx) => ctx.actions.openProjects() },
@@ -231,7 +244,7 @@ export const COMMANDS = [
     isEnabled: () => true, run: (ctx) => ctx.actions.openHelp('model') },
   { id: 'help.about', label: 'About WalFlow', menu: 'Help', group: 'about', icon: InfoIcon,
     isEnabled: () => true, run: (ctx) => ctx.actions.openHelp('about') },
-].map((c) => ({ isVisible: () => true, contexts: [], ...c }));
+].map((c) => ({ isVisible: () => true, contexts: [], ...c })).map(withPageGuard);
 
 /** Commands with no top-level menu entry: canvas keys and commands reached from a submenu or canvas button. */
 export const KEY_ONLY_COMMANDS = [
@@ -243,7 +256,7 @@ export const KEY_ONLY_COMMANDS = [
     shortcut: { keys: ['Esc'], match: (e) => e.key === 'Escape' },
     help: 'Deselect all canvas items',
     isEnabled: () => true, isVisible: () => true, run: (ctx) => ctx.actions.deselectAll() },
-];
+].map(withPageGuard);
 
 /** `{ File: [{ id, label }], ... }` in menu and list order; for menus, tests and the docs sync test. */
 export function listCommandsByMenu() {

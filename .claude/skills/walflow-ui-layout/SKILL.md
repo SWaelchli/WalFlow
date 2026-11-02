@@ -71,7 +71,8 @@ Rules:
   Not allowed for this user (role): **hidden**.
 - Checkable items (`checked`) are `menuitemcheckbox` with a check in the icon slot; choices in a submenu (Active
   case, Heatmap, Relief scenario) are `menuitemradio`. A submenu can end with a separator and a toggle: Relief
-  scenario ends with Relief scenario manager, a `menuitemcheckbox`.
+  scenario ends with Relief scenario manager, a `menuitemcheckbox`. Tools › Catalogue is checkable: checked on the
+  Catalogue page, and running it there goes back to the drawing.
 - Keyboard: one tab stop on the bar (roving focus); Left/Right moves between menus and wraps; Down, Enter or Space
   opens; Up/Down moves inside; Right/Left opens and closes a submenu; Esc closes and returns focus to the trigger.
   With one menu open, hovering another menu opens it. A click outside closes.
@@ -157,9 +158,24 @@ Fixed slots, left to right:
 
 ### Pages
 
-The Catalogue is a page: its own top row (logo, Back to drawing, page tabs) and a list/details layout. A new large
+The Catalogue is a page: a page mode of the app shell (`AppShell mode="page"`), not a separate layout. A new large
 management screen is a page in the same pattern. Admin hub and Project manager stay dialogs until the user decides
 otherwise.
+
+- **Menu bar:** the same menus and account area. The centre shows the page name instead of `Project / Drawing`; save
+  state and lock chip are hidden. A page has no sign-in box or Admin hub button of its own.
+- **Command bar row:** a page tab strip: "← Back to drawing", then the page's tabs (results panel tab classes). A list
+  toggle at the right of the strip shows or hides the list.
+- **Pane column:** the page's list, with the side pane's styles and width, and its overlay behaviour below 1008 px.
+  No activity rail.
+- **Main area:** the details; it scrolls. No canvas, inspector or results panel.
+- **Status bar:** page slots (`PageStatusBar`): entry count of the current list, source filter, and "Read-only" or
+  "Can edit" for the user's role.
+- **Commands:** `ctx.page` carries the current page. Every command not in `WORKS_ON_PAGE` (`commandList.js`) is
+  disabled on a page with the tooltip "Go back to the drawing first", and its shortcut does nothing. Add a command to
+  that set only if it works without the drawing.
+- **Back to the drawing** is the page's toggle command (Tools › Catalogue, checked on the page). It goes through
+  `confirmDiscard` when the page has unsaved edits.
 
 ### Dialogs, info bars and toasts
 

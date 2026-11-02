@@ -39,12 +39,27 @@ describe('MenuBar menus', () => {
     expect(ctx.actions.openDrawings).not.toHaveBeenCalled();
   });
 
-  it('runs an enabled item (Tools > Catalogue) and closes the menu', () => {
-    const ctx = setup();
+  it.each([
+    ['drawing', undefined, 'false'],
+    ['catalogue page', 'catalogue', 'true'],
+  ])('Tools > Catalogue is a checkbox item that toggles and closes the menu: %s', (_n, page, checked) => {
+    const ctx = setup({}, { page });
     fireEvent.click(trigger('Tools'));
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Catalogue' }));
-    expect(ctx.actions.openCatalogue).toHaveBeenCalledTimes(1);
+    const item = screen.getByRole('menuitemcheckbox', { name: 'Catalogue' });
+    expect(item.getAttribute('aria-checked')).toBe(checked);
+    fireEvent.click(item);
+    expect(ctx.actions.toggleCatalogue).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole('menu', { name: 'Tools' })).toBeNull();
+  });
+
+  it('on a page, drawing items show the page reason and do not run', () => {
+    const ctx = setup({}, { page: 'catalogue' });
+    fireEvent.click(trigger('File'));
+    const save = screen.getByRole('menuitem', { name: /^Save(?! as)/ });
+    expect(save.getAttribute('aria-disabled')).toBe('true');
+    expect(save.getAttribute('title')).toBe('Go back to the drawing first');
+    fireEvent.click(save);
+    expect(ctx.actions.save).not.toHaveBeenCalled();
   });
 
   it('keyboard: Right moves, Down opens, Esc closes and refocuses the trigger', () => {
@@ -125,6 +140,17 @@ describe('MenuBar menus', () => {
 });
 
 describe('MenuBar header', () => {
+  it('pageName replaces the drawing name, save state and lock chip', () => {
+    setup({
+      pageName: 'Catalogue', activeDiagram: { id: 'd1', title: 'My drawing' }, saveStatus: 'error',
+      lockInfo: { user_id: 'u2', username: 'alex' },
+    });
+    expect(screen.getByText('Catalogue', { selector: '.menubar-doc-name' })).toBeTruthy();
+    expect(screen.queryByText('My drawing')).toBeNull();
+    expect(screen.queryByRole('status')).toBeNull();
+    expect(screen.queryByText('Not saved')).toBeNull();
+  });
+
   it('opens About from the logo', () => {
     const ctx = setup();
     fireEvent.click(screen.getByRole('button', { name: /^About/ }));

@@ -101,3 +101,54 @@ describe('overlay side pane dismissal', () => {
     expect(onClosePane).not.toHaveBeenCalled();
   });
 });
+
+describe('page mode', () => {
+  const page = (props = {}) => shell({
+    mode: 'page', paneLabel: 'Catalogue list', rail: <nav aria-label="Side panes" />,
+    results: <div>results</div>, inspector: <aside aria-label="Inspector">inspector</aside>,
+    canvas: <div>details</div>, status: <span>status bar</span>, ...props,
+  });
+
+  it('renders the named list pane and the scrolling main, without rail, results or inspector', () => {
+    const { container } = page();
+    expect(container.querySelector('.app-shell').getAttribute('data-mode')).toBe('page');
+    expect(screen.getByRole('complementary', { name: 'Catalogue list' })).toBeTruthy();
+    expect(screen.queryByRole('complementary', { name: 'Side pane' })).toBeNull();
+    expect(screen.getByRole('main').classList.contains('shell-page-main')).toBe(true);
+    expect(screen.getByText('details')).toBeTruthy();
+    expect(screen.getByText('status bar')).toBeTruthy();
+    expect(screen.queryByRole('navigation', { name: 'Side panes' })).toBeNull();
+    expect(screen.queryByText('results')).toBeNull();
+    expect(screen.queryByText('inspector')).toBeNull();
+    expect(container.querySelector('.shell-results-area')).toBeNull();
+  });
+
+  it('the drawing mode keeps rail, results and inspector', () => {
+    shell({ results: <div>results</div>, inspector: <aside aria-label="Inspector">inspector</aside> });
+    expect(screen.getByRole('navigation', { name: 'Side panes' })).toBeTruthy();
+    expect(screen.getByText('results')).toBeTruthy();
+    expect(screen.getByText('inspector')).toBeTruthy();
+  });
+
+  it('Esc closes the overlay list and focuses the list toggle', () => {
+    const onClosePane = vi.fn();
+    page({ onClosePane, headerExtra: <button type="button" data-pane-toggle="">List</button> });
+    esc();
+    expect(onClosePane).toHaveBeenCalledTimes(1);
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'List' }));
+  });
+
+  it('a click on the details closes the overlay list and is not consumed', () => {
+    const onClosePane = vi.fn();
+    page({ onClosePane });
+    const details = screen.getByText('details');
+    const seen = [];
+    details.addEventListener('click', () => seen.push('click'));
+    const down = new MouseEvent('pointerdown', { bubbles: true, cancelable: true });
+    details.dispatchEvent(down);
+    fireEvent.click(details);
+    expect(onClosePane).toHaveBeenCalledTimes(1);
+    expect(down.defaultPrevented).toBe(false);
+    expect(seen).toEqual(['click']);
+  });
+});

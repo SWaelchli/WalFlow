@@ -30,8 +30,9 @@ function consumeGesture() {
  * Like a Windows flyout, a click on the canvas that dismisses the pane is consumed (pointerdown and the
  * mouse events that follow), so it does not also select, deselect, pan or start a marquee. Clicks on other
  * regions (menu bar, results, inspector, status bar) close the pane and still do their own action.
+ * In page mode there is no canvas to protect: the click is not consumed, and Esc returns focus to the list toggle.
  */
-function useOverlayPaneDismiss(active, onClose) {
+function useOverlayPaneDismiss(active, onClose, pageMode) {
   useEffect(() => {
     if (!active) return undefined;
     const onKeyDown = (e) => {
@@ -41,12 +42,12 @@ function useOverlayPaneDismiss(active, onClose) {
       if (document.querySelector(TOP_LAYERS)) return;
       e.stopPropagation();
       onClose();
-      document.querySelector('.shell-rail .rail-button')?.focus();
+      document.querySelector(pageMode ? '[data-pane-toggle]' : '.shell-rail .rail-button')?.focus();
     };
     const onPointerDown = (e) => {
       if (!(e.target instanceof Element) || e.target.closest(INSIDE_PANE)) return;
       onClose();
-      if (e.target.closest('.shell-canvas')) {
+      if (!pageMode && e.target.closest('.shell-canvas')) {
         e.preventDefault();
         e.stopPropagation();
         consumeGesture();
@@ -58,7 +59,7 @@ function useOverlayPaneDismiss(active, onClose) {
       window.removeEventListener('keydown', onKeyDown, true);
       document.removeEventListener('pointerdown', onPointerDown, true);
     };
-  }, [active, onClose]);
+  }, [active, onClose, pageMode]);
 }
 
 /**
@@ -66,28 +67,32 @@ function useOverlayPaneDismiss(active, onClose) {
  * Geometry lives in index.css (.app-shell); this component only places the regions.
  * `paneOverlay` / `inspectorOverlay` set the data attributes that switch the pane and inspector from docked to
  * over the canvas (see useShellMode).
+ * `mode="page"` is a page of the app (the Catalogue): no rail, inspector or results panel. The pane holds the
+ * page's list (`paneLabel` names it), `canvas` holds the details and scrolls.
  */
 export default function AppShell({
-  header, rail, paneTitle, pane, paneOpen, paneOverlay = false, inspectorOverlay = false, onClosePane,
-  canvas, results, inspector, status,
+  mode = 'drawing', header, rail, paneTitle, paneLabel = 'Side pane', pane, paneOpen, paneOverlay = false,
+  inspectorOverlay = false, onClosePane, canvas, results, inspector, status,
 }) {
-  useOverlayPaneDismiss(paneOverlay && paneOpen, onClosePane);
+  const isPage = mode === 'page';
+  useOverlayPaneDismiss(paneOverlay && paneOpen, onClosePane, isPage);
   return (
     <div
       className="app-shell"
+      data-mode={mode}
       data-pane={paneOpen ? 'open' : 'closed'}
       data-pane-mode={paneOverlay ? 'overlay' : 'docked'}
       data-inspector-mode={inspectorOverlay ? 'overlay' : 'docked'}
     >
       <header className="shell-header">{header}</header>
-      {rail}
-      <aside className="shell-pane" aria-label="Side pane">
+      {!isPage && rail}
+      <aside className="shell-pane" aria-label={paneLabel}>
         <h2 className="shell-pane-header">{paneTitle}</h2>
         {pane}
       </aside>
-      <main className="shell-canvas">{canvas}</main>
-      <div className="shell-results-area">{results}</div>
-      {inspector}
+      <main className={isPage ? 'shell-canvas shell-page-main' : 'shell-canvas'}>{canvas}</main>
+      {!isPage && <div className="shell-results-area">{results}</div>}
+      {!isPage && inspector}
       <footer className="shell-statusbar">{status}</footer>
     </div>
   );

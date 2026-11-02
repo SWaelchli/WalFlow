@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { findCommandForKey, READ_ONLY_REASON } from '../commands';
+import { findCommandForKey, READ_ONLY_REASON, PAGE_REASON } from '../commands';
 
 /** An open modal owns the keyboard; the canvas shortcuts must not act behind it. */
 export const isModalOpen = () => typeof document !== 'undefined' && document.querySelector('.modal-overlay, [role="dialog"], [aria-modal="true"]') !== null;
@@ -50,10 +50,13 @@ export function useKeyboardShortcuts(ctx) {
       // Text selected on the page is copied natively, not as canvas components
       if (command.id === 'edit.copy' && hasTextSelection()) return;
 
-      e.preventDefault();
       const current = ctxRef.current;
       if (!current) return;
       const enabled = command.isEnabled(current);
+      // On a page the drawing's keys do nothing, and the browser keeps them (copy, select all, ...),
+      // except Ctrl+S, which would open the browser's own Save dialog
+      if (enabled === PAGE_REASON && command.id !== 'file.save') return;
+      e.preventDefault();
       if (enabled === true || enabled === READ_ONLY_REASON) command.run(current);
     };
 

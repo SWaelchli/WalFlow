@@ -117,7 +117,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
           {/* Enhanced Spec Dimensional Summary Card */}
           <div style={{
             fontSize: 'var(--fs-xs)',
-            backgroundColor: 'var(--color-surface-light)',
+            backgroundColor: 'var(--color-surface-muted)',
             padding: '10px 12px',
             borderRadius: '8px',
             border: '1px solid var(--color-border)',
@@ -159,7 +159,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
           </div>
           <div style={{
             fontSize: 'var(--fs-xs)',
-            backgroundColor: 'var(--color-surface-light)',
+            backgroundColor: 'var(--color-surface-muted)',
             padding: '8px 10px',
             borderRadius: '8px',
             border: '1px solid var(--color-border)',
@@ -182,7 +182,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
       {isManual && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {/* Sizing Mode Toggle */}
-          <div style={{ display: 'flex', gap: '4px', backgroundColor: 'var(--color-surface-light)', padding: '2px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+          <div style={{ display: 'flex', gap: '4px', backgroundColor: 'var(--color-surface-muted)', padding: '2px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
             <button
               type="button"
               onClick={() => setManualMode('preset')}
@@ -290,7 +290,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
                         fontWeight: '700',
                         borderRadius: '4px',
                         border: isCurrent ? '1px solid var(--color-primary)' : '1px solid var(--color-border)',
-                        backgroundColor: isCurrent ? 'rgba(250, 133, 7, 0.12)' : 'var(--color-surface-light)',
+                        backgroundColor: isCurrent ? 'rgba(250, 133, 7, 0.12)' : 'var(--color-surface-muted)',
                         color: isCurrent ? 'var(--color-primary)' : 'var(--color-text-secondary)',
                         cursor: 'pointer'
                       }}
@@ -304,7 +304,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
               {/* Dimensional Preview Card */}
               <div style={{
                 fontSize: 'var(--fs-xs)',
-                backgroundColor: 'var(--color-surface-light)',
+                backgroundColor: 'var(--color-surface-muted)',
                 padding: '8px 10px',
                 borderRadius: '8px',
                 border: '1px solid var(--color-border)',

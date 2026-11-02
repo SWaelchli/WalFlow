@@ -4,7 +4,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { APP_VERSION, RELEASE_STAGE } from '../../constants';
 import { describeLockState } from '../../utils/lockState';
 import { COMMANDS, MENU_ORDER, formatShortcut, runCommand } from '../../commands';
-import { CaretDownIcon, CaretRightIcon, CheckIcon, CloudIcon, CrownIcon, FileIcon, LockIcon, SignInIcon, SignOutIcon } from '../symbols/IconLibrary';
+import { BookIcon, CaretDownIcon, CaretRightIcon, CheckIcon, CloudIcon, CrownIcon, FileIcon, LockIcon, SignInIcon, SignOutIcon } from '../symbols/IconLibrary';
 
 /** Save state shown next to the drawing name: a dot tone + a short label. */
 function describeSaveState({ saveStatus, isCloudDoc, isLockedByOther, lastSavedTimestamp }) {
@@ -114,6 +114,7 @@ export default function MenuBar({
   lastSavedTimestamp = null,
   isLockedByOther = false,
   lockInfo = null,
+  pageName = null,
 }) {
   const { currentUser, isAuthenticated, adminStatus } = useAuth();
   const [openMenu, setOpenMenu] = useState(null); // index into MENU_ORDER
@@ -334,6 +335,12 @@ export default function MenuBar({
         </div>
       </div>
 
+      {pageName ? (
+        <div className="menubar-doc" title={pageName}>
+          <BookIcon size={14} color="var(--color-text-secondary)" />
+          <span className="menubar-doc-name">{pageName}</span>
+        </div>
+      ) : (
       <div className="menubar-doc" title={`${docName}, ${saveState.label}`}>
         {activeDiagram ? <CloudIcon size={14} color="var(--color-text-secondary)" /> : <FileIcon size={14} color="var(--color-text-secondary)" />}
         <span className="menubar-doc-name">
@@ -357,6 +364,7 @@ export default function MenuBar({
           </span>
         )}
       </div>
+      )}
 
       <div className="menubar-right">
         <AccountMenu onOpenAuthModal={onOpenAuthModal} onLogoutClear={onLogoutClear} />

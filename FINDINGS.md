@@ -19,8 +19,8 @@ The only place that holds the status.
 
 | ID | Severity | Status | Finding | Proposed solution | Owner | Phase | Source |
 |---|---|---|---|---|---|---|---|
-| CT1 | Medium | Open | `/catalogue` renders outside the app shell with its own 56 px inline-styled header (old navbar copy), inline tab pills and inline modals. | Decided: a page mode of the app shell (same menu bar, page tab strip in the command bar row, list in the pane column, details in the main area, page status bar). | fe, orch | 4 | Layout review 2026-10-30 |
-| CT2 | Low | Open | `--color-surface-light` is used but never defined (catalogue, fitting standards, editor pipe selector), so those backgrounds fall back to transparent. | Decided: replace with `--color-surface-muted`. | fe | 4 | Layout review 2026-10-30 |
+| MN1 | Medium | Review | On a page the menu bar keeps the drawing's menus and shows nearly every item disabled ("Go back to the drawing first"), so on `/catalogue` the menu is mostly useless. The user wants each page to have its own working menu and its own keyboard shortcuts. | Do a full review of `/catalogue` first, then design it; see "Details: Page menus". | orch, fe | 4b | User request 2026-11-02 |
+| ZX1 | Low | Review | Raw z-index values remain across the app and do not follow the `--z-*` tokens: `.modal-overlay` 10000 (`MASTER.md` says `--z-modal`, 2000), `DialogHost` 100000 and 100001, `CollabNotice` and `App.jsx` 99999 and 9999, canvas context menu 9000. Moving `.modal-overlay` alone would put modals under some of these. | Move all of them to the tokens in one change. | fe | — | Phase 4 review 2026-11-02 |
 | EX1 | Medium | Open | The example drawings are not neat: readouts and badges run into symbols, signal lines cross text, pipes bend or cross where they need not. | Some equipment names are meaningless, such as `TANK_985_copy_copy_copy` in the Large Reference Network. Decided: re-lay out and rename across all 13 examples to the rules in the details below, without changing any parameter or result. | orch, fe | 5 | User request 2026-11-02 |
 | EX2 | Low | Open | An example loaded after another one keeps the previous zoom and pan, so it can open cut off until fit-view is pressed. | Decided: fit the view when a drawing is opened. | fe | 5 | Browser check 2026-11-02 |
 | EX3 | — | Open | Nothing keeps future examples neat. | Decided: the layout and naming rules go in the `walflow-ui-layout` skill, and `equipment-creation` points to them for its example. | orch | 5 | User request 2026-11-02 |
@@ -31,11 +31,38 @@ The only place that holds the status.
 
 | Phase | Entries | Why this order | Exit check |
 |---|---|---|---|
-| 4 | CT1, CT2 | Largest change; needs the shell to grow a page mode. | Gate green; browser check signed in as `test_pipes`, `test_admin` and `test_alice` (see CT1). |
+| 4b | MN1 | Needs page mode, which is on main. The user parked it to do later; it does not depend on phase 5. | Review agreed with the user; gate green; browser check of the menu and shortcuts on `/catalogue` per role. |
 | 5 | EX1, EX2, EX3 | Last step before the v0.2.0 release. Starts only when phases 1–4 and every other branch are on main, because symbol sizes and node footers set the layout. | Gate green with `golden_examples.json` unchanged; browser check of all 13 examples against the layout and naming rules; user sign-off of each drawing. |
 
 The layout work is committed (5a364a0). Commit each phase only when the user asks.
 
+
+## Details: Page menus
+
+What the user asked for (MN1):
+
+- Each page has its own menu options and its own keyboard shortcuts. No menu full of greyed-out drawing commands: a
+  fully working menu, adapted to the page.
+- Buttons now on the Catalogue page can move into the menu where that serves the user.
+- Start with a full review of `/catalogue`, to find how the menu can be most effective and useful there. The review
+  needs the user's agreement before implementation.
+- Future-proof: a later page, such as an admin page, must be able to define its menu and shortcuts the same way.
+
+Where the code is today:
+
+- `commands/commandList.js`: one flat `COMMANDS` list with `MENU_ORDER`. `withPageGuard` disables every command not in
+  `WORKS_ON_PAGE` on a page, with `PAGE_REASON`.
+- `hooks/useKeyboardShortcuts.js`: on a page, disabled keys are left to the browser, except Ctrl+S, which is blocked so
+  the browser's Save dialog does not open.
+- `components/layout/MenuBar.jsx`: `pageName` swaps the centre area; the menus are the same on all pages.
+- `pages/CataloguePage.jsx`: per tab, the actions at the top of the details are Clone, Edit, Delete, New, Import from
+  TR2000 (pipe classes only), Import library, Export library, Restore defaults; while editing, Save and Cancel. They
+  depend on the tab, the selected entry and the role (`canManage`).
+- `test/designDocs.test.js` compares `listCommandsByMenu()` to the menu table in the `walflow-ui-layout` skill, and that
+  table assumes one menu set; the skill's rule "Menu order is fixed" and its "Pages" section will change too.
+
+Also look at in the review: the status bar's entry count leaves out an unsaved draft shown in the list (4 entries with
+5 rows), and picking a row in the fitting lists does not close the overlay list, while picking a pipe class row does.
 
 ## Details: Example drawings
 
@@ -82,8 +109,6 @@ tests through `walflow-test-author`, the gate through `walflow-gate-runner`.
 |---|---|---|---|
 | DR1 | Seen after signing in on a new tab with several `walflow_draft_*` keys in `localStorage`; the last drawing in the previous tab was a loaded example. Trace which draft the restore picks and why it was empty. | `frontend/src/hooks/useAutoSaveSession.js` | Hook test if a bug is confirmed. |
 | PF1 | Long-task timing from the Multi-PSV example to the large one: one task of 2185 ms. | `frontend/src/App.jsx`, example loading path | None unless a fix follows. |
-| CT1 | Today: no router; `App.jsx:228-249` reads `window.location.pathname` (`/pipes` → `/catalogue`); `App.jsx:1697-1731` renders only `LazyPage > CataloguePage` plus Login, Admin hub and Help modals, no `AppShell`. `pages/CataloguePage.jsx`: own `<header>` 751-986 (56px, `#FFFFFF`, logo + version, Back to drawing 795-812 with `confirmDiscard`, three tab pills 825-893, Admin hub button 899-921 for admins, sign-in box 924-984); body: `FittingStandardsTab` for two tabs (989-993), otherwise `<aside>` 999-1119 (320px: search, source filter) and `<main>` 1122+ (explainer, spec card, tables ~1522 and ~1732, edit form); inline `.modal-overlay` markup at ~1820, ~1891, ~2218 (`zIndex 20000` inline), ~2381; hex at 754, 928-929, 941. Roles: `canManage` = admin or pipe_manager (`CataloguePage.jsx:108`) gates Clone/Edit (1157-1173) and the fitting standards editing. Shell today assumes a canvas: `AppShell.jsx:70-94` (props header, rail, pane, canvas, results, inspector, status; `<main class="shell-canvas">`), `useOverlayPaneDismiss` keys on `.shell-canvas` (3-49); `MenuBar.jsx:107-117` props are drawing-bound; `StatusBar.jsx` reads canvas zoom (`useStore`, needs ReactFlow provider). Fix: see "Catalogue page mode" design below. Browser check (see `walflow-test-users` skill): `test_pipes` (pipe_manager: clone, edit, fitting standards, save, discard confirm), `test_admin` (everything plus Tools › Admin hub from the page), `test_alice` (read-only: no edit controls); at widths 1440, 1100 and 900; sign out afterwards and tell the user. | `App.jsx:228-249,1674,1697-1731`, `pages/CataloguePage.jsx`, `components/piping/FittingStandardsTab.jsx`, `components/piping/LibraryActions.jsx`, `components/layout/AppShell.jsx`, `MenuBar.jsx`, `StatusBar.jsx`, `commands/commandList.js:198-205`, `index.css:403-551,890-961,1177-1500`, `components/common/LazyModal.jsx:11,30` | Vitest: `AppShell` page-mode test (no canvas region, pane and main render, dismiss logic does not break); `CataloguePage` tests updated (tabs, back to drawing runs the command, role gating per role); `commandList` test for drawing-bound commands disabled on the page; docs sync test for the menu table. |
-| CT2 | `--color-surface-light` has no definition (MASTER has `--color-surface-muted` / `--color-surface-hover`). Used at `CataloguePage.jsx:1029,1475,1522,1732,1790,1965`, `FittingStandardsTab.jsx:169,777,801,1049`, `components/piping/PipeSelector.jsx:120-307` (editor inspector). Replace with `--color-surface-muted`; check PipeSelector in the editor visually after. | files listed | Gate; the RL1 guard may also reject `--color-` names that `index.css` does not define. |
 
 ### Decided design: Canvas values
 
@@ -118,24 +143,3 @@ MASTER tokens, no inline style objects:
 - Equipment without a dedicated view gets the generic view, which is itself built from these blocks.
 - The results panel tables (`DataList.jsx`) use the same value cell style; their table layout stays.
 
-### Decided design: Catalogue page mode (CT1)
-
-- `AppShell` gets a page mode (prop such as `mode="page"`): same grid and classes; no rail, no inspector, no results
-  panel; the pane column holds the page's list (same pane styles and width token, same overlay behaviour below
-  1008 px); the main area holds the details and scrolls; overlay-dismiss logic must not assume `.shell-canvas`.
-- Row 1: the same `MenuBar` with the same menus and account area (the page's own sign-in box and Admin hub button
-  go away; Admin hub is Tools › Admin hub…). Centre shows the page name ("Catalogue") instead of
-  `Project / Drawing`; save state and lock chip hidden.
-- Commands that need the drawing (save, edit, canvas view, panels, simulation) return a reason from `isEnabled`
-  while on the page ("Go back to the drawing first"), so they show disabled with a tooltip; keyboard shortcuts for
-  them do nothing on the page. `ctx` carries the current page.
-- Row 2 (command bar row): a page tab strip: "← Back to drawing" then the catalogue tabs (same tab classes as the
-  results panel tabs). Back to drawing must be a command: make `tools.catalogue` a checked toggle (checked on the
-  page; running it on the page goes back, still through `confirmDiscard` when there are unsaved catalogue edits).
-  Update the menu table in the skill (docs sync test).
-- Status bar on the page: page slots (entry count of the current list, source filter, "Read-only" or "Can edit" for
-  the user's role). It must not use ReactFlow's store outside a provider.
-- Inline modals in `CataloguePage.jsx` → the shared modal component / `utils/dialogs.js`, layers from tokens (no
-  `zIndex 20000`). Inline header and tab-pill styles deleted; hex → tokens.
-- `walflow-ui-layout` "Pages" section and MASTER.md "App Shell & Layout" rewritten to describe page mode, so a
-  future page follows the same pattern. Admin hub and Project manager stay dialogs.

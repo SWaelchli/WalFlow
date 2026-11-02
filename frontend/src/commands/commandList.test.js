@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { runCommand, getCommand, listCommandsByMenu } from './commandList';
+import {
+  runCommand, getCommand, listCommandsByMenu, shortcutGroups, COMMANDS, KEY_ONLY_COMMANDS, PAGE_REASON,
+} from './commandList';
 import { makeCommandCtx } from '../test/commandCtx';
 
 describe('pane commands', () => {
@@ -68,5 +70,55 @@ describe('Export table as CSV', () => {
     ['the Pipes or Equipment tab', { canExportCsv: true }, true],
   ])('is enabled only with a list tab open: %s', (_n, results, expected) => {
     expect(getCommand('file.export-csv').isEnabled(makeCommandCtx({ getResults: () => results }))).toBe(expected);
+  });
+});
+
+describe('commands while the Catalogue page is open', () => {
+  const works = new Set(['tools.catalogue', 'tools.admin', 'help.guide', 'help.shortcuts', 'help.model', 'help.about']);
+  const onPage = makeCommandCtx({ page: 'catalogue', isAdmin: true });
+
+  it.each(COMMANDS.filter((c) => !works.has(c.id)).map((c) => [c.id]))('%s is disabled with the page reason and does not run', (id) => {
+    const ctx = makeCommandCtx({ page: 'catalogue' });
+    expect(getCommand(id).isEnabled(ctx)).toBe(PAGE_REASON);
+    expect(runCommand(id, ctx)).toBe(false);
+  });
+
+  it.each([...works])('%s stays enabled', (id) => {
+    expect(getCommand(id).isEnabled(onPage)).toBe(true);
+  });
+
+  it('the canvas-only keys are disabled too', () => {
+    KEY_ONLY_COMMANDS.forEach((c) => expect(c.isEnabled(onPage), c.id).toBe(PAGE_REASON));
+  });
+
+  it('a missing ctx.page counts as the drawing, so no command reports the page reason', () => {
+    const ctx = makeCommandCtx();
+    expect(ctx.page).toBeUndefined();
+    [...COMMANDS, ...KEY_ONLY_COMMANDS].forEach((c) => {
+      expect(c.isEnabled(ctx), c.id).not.toBe(PAGE_REASON);
+      expect(c.isEnabled(ctx), c.id).toEqual(c.isEnabled(makeCommandCtx({ page: 'drawing' })));
+    });
+  });
+
+  it('Tools > Catalogue is a toggle: checked only on the page, and it runs toggleCatalogue from both', () => {
+    const catalogue = getCommand('tools.catalogue');
+    expect(catalogue.checked(onPage)).toBe(true);
+    expect(catalogue.checked(makeCommandCtx({ page: 'drawing' }))).toBe(false);
+    expect(catalogue.checked(makeCommandCtx())).toBe(false);
+    [onPage, makeCommandCtx()].forEach((ctx) => {
+      expect(runCommand('tools.catalogue', ctx)).toBe(true);
+      expect(ctx.actions.toggleCatalogue).toHaveBeenCalledTimes(1);
+    });
+  });
+});
+
+describe('shortcutGroups', () => {
+  it('lists every bound command with its keys and a label, whatever the command kind', () => {
+    const rows = shortcutGroups().flatMap((g) => g.shortcuts);
+    expect(rows).toHaveLength([...COMMANDS, ...KEY_ONLY_COMMANDS].filter((c) => c.shortcut).length);
+    rows.forEach((r) => {
+      expect(r.keys.length).toBeGreaterThan(0);
+      expect(r.label).toBeTruthy();
+    });
   });
 });

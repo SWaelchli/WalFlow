@@ -134,3 +134,30 @@ describe('view.inspector command', () => {
     expect(open.actions.toggleInspector).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('keyboard shortcuts on the Catalogue page', () => {
+  it('never run a drawing command; only Ctrl+S is prevented (no browser Save dialog), the rest stays with the browser', () => {
+    const ctx = makeCtx({ page: 'catalogue' });
+    render(<Host ctx={ctx} />);
+    const table = [
+      [{ key: 'a', ctrlKey: true }, false],
+      [{ key: 'c', ctrlKey: true }, false],
+      [{ key: 'z', ctrlKey: true }, false],
+      [{ key: 'Delete' }, false],
+      [{ key: 's', ctrlKey: true }, true],
+    ];
+    table.forEach(([init, prevented]) => {
+      const event = new KeyboardEvent('keydown', { ...init, cancelable: true, bubbles: true });
+      window.dispatchEvent(event);
+      expect(event.defaultPrevented, JSON.stringify(init)).toBe(prevented);
+    });
+    Object.values(ctx.actions).forEach((fn) => expect(fn).not.toHaveBeenCalled());
+  });
+
+  it('still prevents the default of a drawing shortcut that is disabled for another reason', () => {
+    render(<Host ctx={makeCtx({ selection: { nodes: [], edges: [] } })} />);
+    const event = new KeyboardEvent('keydown', { key: 'Delete', cancelable: true, bubbles: true });
+    window.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(true);
+  });
+});

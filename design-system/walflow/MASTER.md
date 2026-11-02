@@ -572,6 +572,27 @@ Status bar slots hide one by one as the window narrows: zoom below 1008 px, sele
 820 px. Below 1008 px the menu bar also hides the app version and the project path, and the lock chip shows a lock
 icon plus the holder's name, "Editing" or "Other tab".
 
+### Page mode
+
+A page (`AppShell mode="page"`, `.app-shell[data-mode="page"]`) uses the same grid, bars and tokens, without the rail,
+inspector and results panel:
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ Menu bar 40  Logo  File Edit View Simulation Tools Help  Page name      User │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Page tab strip 44  ← Back to drawing  Tab  Tab  Tab                          │
+├────────────┬─────────────────────────────────────────────────────────────────┤
+│ List 288   │ Details (scrolls)                                               │
+├────────────┴─────────────────────────────────────────────────────────────────┤
+│ Status bar 28  entries · source · Read-only / Can edit                       │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+The list uses the side pane's styles and width, and overlays below 1008 px. Classes: `.page-tabbar`, `.page-tabs`,
+`.page-list`, `.page-list-filter`, `.page-list-items`, `.page-details`, `.shell-page-main`. What goes where is in the
+`walflow-ui-layout` skill.
+
 ### Layers
 
 Use the `--z-*` tokens only. Canvas overlays never sit above menus; menus never above dialogs; toasts sit above

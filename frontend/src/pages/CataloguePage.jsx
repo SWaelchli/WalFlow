@@ -1,23 +1,23 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { notify, confirmDialog, confirmDiscard } from '../utils/dialogs';
 import axios from 'axios';
-import walflowLogo from '../assets/Logo_WalFlow.svg';
 import { useAuth } from '../hooks/useAuth';
 import { useUnits } from '../context/UnitContext';
-import { APP_VERSION, RELEASE_STAGE } from '../constants';
+import { runCommand } from '../commands';
+import AppShell from '../components/layout/AppShell';
+import PageStatusBar from '../components/layout/PageStatusBar';
+import useShellMode from '../components/layout/useShellMode';
 import { 
   PlusIcon, 
   TrashIcon, 
   CrossIcon, 
   ImportIcon, 
-  CrownIcon, 
-  SignOutIcon, 
-  SignInIcon,
   GlobeIcon,
   WarningIcon,
   CheckCircleIcon,
   SpinnerIcon,
   ArrowLeftIcon,
+  SidePaneIcon,
   RulerIcon,
   ClipboardIcon,
   CopyIcon,
@@ -50,9 +50,26 @@ const SOURCE_LABELS = { ALL: 'All', WALFLOW_EXAMPLE: 'Example', TR2000: 'TR2000'
 const sourceLabel = (code) => SOURCE_LABELS[code] || code;
 // Catalog names come from the fitting catalog (database); the code shows while it is not loaded
 const catalogName = (code, options) => options.find(o => o.code === code)?.name || code;
-const CataloguePage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, onOpenHelpModal }) => {
-  const { currentUser, isAuthenticated, isAdmin, adminStatus, logout } = useAuth();
+const PAGE_TABS = [
+  { id: 'pipe_classes', label: 'Pipe classes' },
+  { id: 'fitting_standards', label: 'Fitting standards and schedules' },
+  { id: 'control_valves', label: 'Control valve styles' },
+];
+
+/**
+ * The Catalogue page, a page mode of the app shell. menuBar is the menu bar of the app (App.jsx builds it with the
+ * page name), ctx the command context, and leaveGuardRef receives the check that runs before the page is left
+ * (unsaved catalogue edits ask first).
+ */
+const CataloguePage = ({ menuBar, ctx, leaveGuardRef }) => {
+  const { currentUser } = useAuth();
   const { isImperial } = useUnits();
+  const shellMode = useShellMode(false);
+  const [dockedPaneOpen, setDockedPaneOpen] = useState(true);
+  const [overlayPaneOpen, setOverlayPaneOpen] = useState(false);
+  const paneOpen = shellMode.paneOverlay ? overlayPaneOpen : dockedPaneOpen;
+  const setPaneOpen = shellMode.paneOverlay ? setOverlayPaneOpen : setDockedPaneOpen;
+  const closePane = useCallback(() => setPaneOpen(false), [setPaneOpen]);
 
   const [activeTab, setActiveTab] = useState('pipe_classes'); // 'pipe_classes' | 'fitting_standards' | 'control_valves'
   const scheduleStandardOptions = getScheduleStandardOptions(useFittingStandards('pipe_schedule'));
@@ -81,6 +98,13 @@ const CataloguePage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, on
   const [formData, setFormData] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const hasUnsavedEdit = isEditing || isFittingDirty;
+
+  // Back to drawing is the Tools > Catalogue command; it asks through this check when there are unsaved edits
+  useEffect(() => {
+    if (!leaveGuardRef) return undefined;
+    leaveGuardRef.current = async () => (hasUnsavedEdit ? confirmDiscard('return to the canvas') : true);
+    return () => { leaveGuardRef.current = null; };
+  }, [leaveGuardRef, hasUnsavedEdit]);
 
   // New Class Mini-Dialog state
   const [isNewClassModalOpen, setIsNewClassModalOpen] = useState(false);
@@ -735,277 +759,93 @@ const CataloguePage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, on
     />
   );
 
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', width: '100vw', height: '100vh', backgroundColor: 'var(--color-bg-canvas)', color: 'var(--color-text-primary)', overflow: 'hidden' }}>
-      
-      {/* Hidden File Input for Library Import */}
-      <input
-        type="file"
-        ref={fileInputRef}
-        accept=".json,application/json"
-        onChange={handleFileImport}
-        style={{ display: 'none' }}
+  const hiddenFileInput = (
+    <input
+      type="file"
+      ref={fileInputRef}
+      accept=".json,application/json"
+      onChange={handleFileImport}
+      hidden
+    />
+  );
+
+  const selectTab = async (id) => {
+    if (activeTab === id) return;
+    if (hasUnsavedEdit && !(await confirmDiscard('switch tabs'))) return;
+    handleCancelEdit();
+    setActiveTab(id);
+  };
+
+  // Row 2: Back to drawing (a command), then the catalogue tabs; right: the list toggle
+  const header = (
+    <>
+      {menuBar}
+      <div className="shell-commandbar page-tabbar" role="toolbar" aria-label="Catalogue pages">
+        <button type="button" className="btn-secondary" title="Back to the drawing" onClick={() => runCommand('tools.catalogue', ctx)}>
+          <ArrowLeftIcon size={14} /> Back to drawing
+        </button>
+        <span className="commandbar-divider" role="separator" aria-orientation="vertical" />
+        <div className="datalist-tabs page-tabs">
+          {PAGE_TABS.map(({ id, label }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => selectTab(id)}
+              className={`datalist-tab ${activeTab === id ? 'active' : ''}`}
+              aria-current={activeTab === id ? 'page' : undefined}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="commandbar-spacer" />
+        <button
+          type="button"
+          className="icon-btn"
+          aria-label="List"
+          aria-pressed={paneOpen}
+          title={paneOpen ? 'Hide the list' : 'Show the list'}
+          data-pane-toggle=""
+          onClick={() => setPaneOpen((open) => !open)}
+        >
+          <SidePaneIcon size={20} />
+        </button>
+      </div>
+    </>
+  );
+
+  const renderShell = ({ pane, details, extras, count, filterLabel }) => (
+    <AppShell
+      mode="page"
+      header={header}
+      paneTitle={PAGE_TABS.find((t) => t.id === activeTab)?.label}
+      paneLabel="Catalogue list"
+      pane={pane}
+      paneOpen={paneOpen}
+      paneOverlay={shellMode.paneOverlay}
+      onClosePane={closePane}
+      canvas={<>{extras}{details}</>}
+      status={<PageStatusBar count={count} filterLabel={filterLabel} canEdit={canManage} />}
+    />
+  );
+
+  if (activeTab === 'fitting_standards' || activeTab === 'control_valves') {
+    return (
+      <FittingStandardsTab
+        key={activeTab}
+        fittingType={activeTab === 'control_valves' ? 'control_valve' : null}
+        currentUser={currentUser}
+        canManage={canManage}
+        onDirtyChange={setIsFittingDirty}
+        renderLayout={renderShell}
       />
+    );
+  }
 
-      {/* Top Navbar Header */}
-      <header style={{
-        height: '56px',
-        minHeight: '56px',
-        backgroundColor: '#FFFFFF',
-        borderBottom: '1px solid var(--color-border)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0 20px',
-        flexShrink: 0,
-        zIndex: 20,
-        boxShadow: '0 1px 3px rgba(57, 82, 83, 0.05)'
-      }}>
-        {/* Left Side: Brand Logo, Version, and Navigation */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px' }}>
-            <img
-              src={walflowLogo}
-              alt="WälFlow Logo"
-              onClick={() => onOpenHelpModal && onOpenHelpModal('about')}
-              title="Click for Help & Documentation"
-              style={{ height: '28px', display: 'block', cursor: 'pointer' }}
-            />
-            <span {...clickableProps}
-              onClick={() => onOpenHelpModal && onOpenHelpModal('about')}
-              title="Click for Help & Documentation"
-              style={{
-                fontSize: 'var(--fs-xs)',
-                fontWeight: '600',
-                color: 'var(--color-brand-dark)',
-                cursor: 'pointer',
-                userSelect: 'none',
-                fontFamily: 'inherit',
-                lineHeight: '1',
-                marginBottom: '2px',
-                whiteSpace: 'nowrap'
-              }}
-            >
-              v{APP_VERSION} {RELEASE_STAGE ? `• ${RELEASE_STAGE}` : ''}
-            </span>
-          </div>
-
-          <div style={{ width: '1px', height: '24px', backgroundColor: 'var(--color-border)' }} />
-
-          <button
-            onClick={async () => {
-              if (hasUnsavedEdit) {
-                if (!(await confirmDiscard('return to the canvas'))) return;
-              }
-              onNavigateToCanvas();
-            }}
-            className="btn-secondary"
-            style={{
-              height: '32px',
-              padding: '0 12px',
-              fontSize: 'var(--fs-sm)',
-              fontWeight: '700',
-              gap: '6px'
-            }}
-          >
-            <ArrowLeftIcon size={14} /> Back to drawing
-          </button>
-
-          {/* Navigation Tabs */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            backgroundColor: 'var(--color-surface-hover)',
-            padding: '3px',
-            borderRadius: '10px',
-            border: '1px solid var(--color-border)',
-            marginLeft: '8px',
-            gap: '2px'
-          }}>
-            <button
-              onClick={async () => {
-                if (activeTab === 'pipe_classes') return;
-                if (hasUnsavedEdit && !(await confirmDiscard('switch tabs'))) return;
-                handleCancelEdit();
-                setActiveTab('pipe_classes');
-              }}
-              style={{
-                height: '28px',
-                padding: '0 12px',
-                fontSize: 'var(--fs-sm)',
-                fontWeight: '600',
-                borderRadius: '7px',
-                border: 'none',
-                cursor: 'pointer',
-                backgroundColor: activeTab === 'pipe_classes' ? 'var(--color-brand-dark)' : 'transparent',
-                color: activeTab === 'pipe_classes' ? 'var(--color-text-inverse)' : 'var(--color-text-secondary)',
-                boxShadow: activeTab === 'pipe_classes' ? 'var(--shadow-sm)' : 'none',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              Pipe classes
-            </button>
-            <button
-              onClick={async () => {
-                if (activeTab === 'fitting_standards') return;
-                if (hasUnsavedEdit && !(await confirmDiscard('switch tabs'))) return;
-                handleCancelEdit();
-                setActiveTab('fitting_standards');
-              }}
-              style={{
-                height: '28px',
-                padding: '0 12px',
-                fontSize: 'var(--fs-sm)',
-                fontWeight: '600',
-                borderRadius: '7px',
-                border: 'none',
-                cursor: 'pointer',
-                backgroundColor: activeTab === 'fitting_standards' ? 'var(--color-brand-dark)' : 'transparent',
-                color: activeTab === 'fitting_standards' ? 'var(--color-text-inverse)' : 'var(--color-text-secondary)',
-                boxShadow: activeTab === 'fitting_standards' ? 'var(--shadow-sm)' : 'none',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              Fitting standards and schedules
-            </button>
-            <button
-              onClick={async () => {
-                if (activeTab === 'control_valves') return;
-                if (hasUnsavedEdit && !(await confirmDiscard('switch tabs'))) return;
-                handleCancelEdit();
-                setActiveTab('control_valves');
-              }}
-              style={{
-                height: '28px',
-                padding: '0 12px',
-                fontSize: 'var(--fs-sm)',
-                fontWeight: '600',
-                borderRadius: '7px',
-                border: 'none',
-                cursor: 'pointer',
-                backgroundColor: activeTab === 'control_valves' ? 'var(--color-brand-dark)' : 'transparent',
-                color: activeTab === 'control_valves' ? 'var(--color-text-inverse)' : 'var(--color-text-secondary)',
-                boxShadow: activeTab === 'control_valves' ? 'var(--shadow-sm)' : 'none',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              Control valve styles
-            </button>
-          </div>
-        </div>
-
-        {/* Right Side: Catalog Actions, Admin Hub, and User Profile */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {isAdmin && (
-            <button
-              onClick={onOpenAdminHub}
-              className="btn-secondary"
-              style={{ height: '32px', padding: '0 10px', fontSize: 'var(--fs-xs)', fontWeight: '700', gap: '4px' }}
-            >
-              <CrownIcon size={12} />
-              Admin Hub
-              {adminStatus?.pendingCount > 0 && (
-                <span aria-label={`${adminStatus.pendingCount} pending registration requests`} style={{
-                  backgroundColor: 'var(--color-danger)',
-                  color: '#FFFFFF',
-                  borderRadius: '10px',
-                  padding: '1px 6px',
-                  fontSize: 'var(--fs-xs)',
-                  fontWeight: '700',
-                  marginLeft: '2px'
-                }}>
-                  {adminStatus.pendingCount}
-                </span>
-              )}
-            </button>
-          )}
-
-          {/* User Auth Profile Box */}
-          <div style={{
-            height: '34px',
-            padding: '0 12px',
-            borderRadius: '8px',
-            background: '#F4F7F6',
-            border: '1px solid #D8E2E1',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            boxSizing: 'border-box'
-          }}>
-            {isAuthenticated ? (
-              <>
-                <span style={{
-                  fontSize: 'var(--fs-sm)',
-                  fontWeight: '600',
-                  fontFamily: 'inherit',
-                  color: '#1C2B2C',
-                  whiteSpace: 'nowrap',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px'
-                }}>
-                  {isAdmin && <CrownIcon size={12} color="var(--color-text-secondary)" aria-label="Administrator" />}
-                  {currentUser?.username}
-                </span>
-
-                <button
-                  onClick={() => logout()}
-                  title="Sign out"
-                  className="btn-danger-ghost"
-                  style={{
-                    backgroundColor: 'transparent',
-                    border: 'none',
-                    height: '24px',
-                    padding: '2px 6px',
-                    borderRadius: '4px',
-                    gap: '4px'
-                  }}
-                >
-                  <SignOutIcon size={12} />
-                  Sign out
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={onOpenAuthModal}
-                className="btn-secondary"
-                style={{
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  color: 'var(--color-primary-text)',
-                  padding: '0 6px',
-                  gap: '4px'
-                }}
-              >
-                <SignInIcon size={12} />
-                Sign in
-              </button>
-            )}
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content Area: Pipe Classes Catalog vs Fitting Standards & Schedules */}
-      {activeTab === 'fitting_standards' ? (
-        <FittingStandardsTab key="fittings" currentUser={currentUser} canManage={canManage} onDirtyChange={setIsFittingDirty} />
-      ) : activeTab === 'control_valves' ? (
-        <FittingStandardsTab key="control_valves" fittingType="control_valve" currentUser={currentUser} canManage={canManage} onDirtyChange={setIsFittingDirty} />
-      ) : (
-
-        <div style={{ display: 'flex', flexGrow: 1, overflow: 'hidden' }}>
-
-        
-        {/* Left Sidebar: Catalog Listing */}
-        <aside style={{
-          width: '320px',
-          borderRight: '1px solid var(--color-border)',
-          backgroundColor: '#FFFFFF',
-          display: 'flex',
-          flexDirection: 'column',
-          flexShrink: 0
-        }}>
+  const paneContent = (
+    <div className="page-list">
           {/* Search & Filter Header */}
-          <div style={{ padding: '16px', borderBottom: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div className="page-list-filter">
             <input
               type="text"
               value={searchQuery}
@@ -1014,22 +854,13 @@ const CataloguePage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, on
               className="form-input"
               style={{ width: '100%', height: '34px', fontSize: 'var(--fs-sm)' }}
             />
-            <div style={{ display: 'flex', gap: '6px' }}>
+            <div className="page-filter-pills">
               {['ALL', 'WALFLOW_EXAMPLE', 'TR2000', 'CUSTOM'].map(st => (
                 <button
                   key={st}
                   onClick={() => setStandardFilter(st)}
-                  style={{
-                    flex: 1,
-                    padding: '4px 6px',
-                    fontSize: 'var(--fs-xs)',
-                    fontWeight: '600',
-                    borderRadius: '6px',
-                    border: '1px solid var(--color-border)',
-                    backgroundColor: standardFilter === st ? 'var(--color-brand-dark)' : 'var(--color-surface-light)',
-                    color: standardFilter === st ? '#FFFFFF' : 'var(--color-text-secondary)',
-                    cursor: 'pointer'
-                  }}
+                  aria-pressed={standardFilter === st}
+                  className="page-filter-pill"
                 >
                   {sourceLabel(st)}
                 </button>
@@ -1038,7 +869,7 @@ const CataloguePage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, on
           </div>
 
           {/* List of pipe classes */}
-          <div style={{ flexGrow: 1, overflowY: 'auto', padding: '10px' }}>
+          <div className="page-list-items">
             {/* If currently creating a new draft, show draft item at top */}
             {isNewDraft && formData && (
               <div
@@ -1080,7 +911,7 @@ const CataloguePage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, on
               return (
                 <div {...clickableProps}
                   key={pc.id}
-                  onClick={() => handleSelectSidebarClass(pc.id)}
+                  onClick={() => { handleSelectSidebarClass(pc.id); if (shellMode.paneOverlay) closePane(); }}
                   style={{
                     padding: '10px 12px',
                     borderRadius: '8px',
@@ -1100,8 +931,8 @@ const CataloguePage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, on
                       fontWeight: '600',
                       padding: '2px 6px',
                       borderRadius: '4px',
-                      backgroundColor: pc.is_builtin ? '#E2E8F0' : 'rgba(16, 185, 129, 0.15)',
-                      color: pc.is_builtin ? 'var(--color-text-secondary)' : '#059669'
+                      backgroundColor: pc.is_builtin ? 'var(--color-border)' : 'var(--color-success-tint)',
+                      color: pc.is_builtin ? 'var(--color-text-secondary)' : 'var(--color-success-text)'
                     }}>
                       {sourceLabel(pc.standard)}
                     </span>
@@ -1116,15 +947,16 @@ const CataloguePage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, on
               );
             })}
           </div>
-        </aside>
+    </div>
+  );
 
-        {/* Right Pane: Selected Pipe Class Details */}
-        <main style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', padding: '24px', gap: '20px' }}>
+  const details = (
+    <div className="page-details">
           {currentSpec ? (
             <>
               <details
                 data-testid="pipe-class-explainer"
-                style={{ backgroundColor: '#F4F7F6', border: '1px solid var(--color-border)', borderRadius: '12px', padding: '10px 16px', fontSize: 'var(--fs-sm)', color: 'var(--color-text-secondary)', lineHeight: 1.6 }}
+                style={{ backgroundColor: 'var(--color-surface-muted)', border: '1px solid var(--color-border)', borderRadius: '12px', padding: '10px 16px', fontSize: 'var(--fs-sm)', color: 'var(--color-text-secondary)', lineHeight: 1.6 }}
               >
                 <summary style={{ cursor: 'pointer', fontWeight: 700, color: 'var(--color-brand-dark)' }}>What is a pipe class, and what does the solver use?</summary>
                 <div style={{ marginTop: '8px' }}>
@@ -1145,7 +977,7 @@ const CataloguePage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, on
 
               {/* Header Spec Banner Card */}
               <div style={{
-                backgroundColor: '#FFFFFF',
+                backgroundColor: 'var(--color-surface)',
                 borderRadius: '12px',
                 border: isEditing ? '1.5px solid var(--color-primary)' : '1px solid var(--color-border)',
                 padding: '20px 24px',
@@ -1270,8 +1102,8 @@ const CataloguePage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, on
                           fontWeight: '600',
                           padding: '3px 8px',
                           borderRadius: '6px',
-                          backgroundColor: activeClass.is_builtin ? '#F1F5F9' : 'rgba(16, 185, 129, 0.12)',
-                          color: activeClass.is_builtin ? 'var(--color-text-secondary)' : '#059669',
+                          backgroundColor: activeClass.is_builtin ? 'var(--color-surface-muted)' : 'var(--color-success-tint)',
+                          color: activeClass.is_builtin ? 'var(--color-text-secondary)' : 'var(--color-success-text)',
                           border: '1px solid var(--color-border)'
                         }}>
                           {sourceLabel(activeClass.standard)}
@@ -1472,7 +1304,7 @@ const CataloguePage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, on
                         { label: 'Pipe dimension catalogs', codes: classScheduleCodes(activeClass), options: scheduleStandardOptions, icon: <ClipboardIcon size={18} color="var(--color-text-secondary)" /> },
                         { label: 'Reducer catalogs', codes: classReducerCodes(activeClass), options: reducerStandardOptions, icon: <RulerIcon size={18} color="var(--color-text-secondary)" /> },
                       ].map(({ label, codes, options, icon }) => (
-                        <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '10px', backgroundColor: 'var(--color-surface-light)', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                        <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '10px', backgroundColor: 'var(--color-surface-muted)', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
                           {icon}
                           <div>
                             <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '600', display: 'block' }}>{label}</span>
@@ -1494,7 +1326,7 @@ const CataloguePage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, on
 
               {/* Data Grid of Supported Nominal Sizes */}
               <div style={{
-                backgroundColor: '#FFFFFF',
+                backgroundColor: 'var(--color-surface)',
                 borderRadius: '12px',
                 border: '1px solid var(--color-border)',
                 padding: '20px 24px',
@@ -1519,7 +1351,7 @@ const CataloguePage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, on
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--fs-sm)' }}>
                     <thead>
-                      <tr style={{ backgroundColor: 'var(--color-surface-light)', borderBottom: '2px solid var(--color-border)', textAlign: 'left' }}>
+                      <tr style={{ backgroundColor: 'var(--color-surface-muted)', borderBottom: '2px solid var(--color-border)', textAlign: 'left' }}>
                         <th style={{ padding: '8px 12px' }}>Nominal size</th>
                         <th style={{ padding: '8px 12px' }}>NPS [in]</th>
                         <th style={{ padding: '8px 12px' }}>Schedule</th>
@@ -1702,7 +1534,7 @@ const CataloguePage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, on
 
               {/* Temperature - Pressure Ratings Table */}
               <div style={{
-                backgroundColor: '#FFFFFF',
+                backgroundColor: 'var(--color-surface)',
                 borderRadius: '12px',
                 border: '1px solid var(--color-border)',
                 padding: '20px 24px',
@@ -1729,7 +1561,7 @@ const CataloguePage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, on
                   <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', maxWidth: '600px', borderCollapse: 'collapse', fontSize: 'var(--fs-sm)' }}>
                       <thead>
-                        <tr style={{ backgroundColor: 'var(--color-surface-light)', borderBottom: '2px solid var(--color-border)', textAlign: 'left' }}>
+                        <tr style={{ backgroundColor: 'var(--color-surface-muted)', borderBottom: '2px solid var(--color-border)', textAlign: 'left' }}>
                           <th style={{ padding: '8px 12px' }}>Temperature [{units.temperature}]</th>
                           <th style={{ padding: '8px 12px' }}>Maximum pressure [{units.pressure}]</th>
                           <th style={{ padding: '8px 12px', textAlign: 'center', width: '80px' }}>Action</th>
@@ -1787,7 +1619,7 @@ const CataloguePage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, on
                   activeClass.temp_pressures && activeClass.temp_pressures.length > 0 ? (
                     <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                       {activeClass.temp_pressures.map((tp, idx) => (
-                        <div key={idx} style={{ padding: '10px 16px', borderRadius: '8px', backgroundColor: 'var(--color-surface-light)', border: '1px solid var(--color-border)', minWidth: '120px' }}>
+                        <div key={idx} style={{ padding: '10px 16px', borderRadius: '8px', backgroundColor: 'var(--color-surface-muted)', border: '1px solid var(--color-border)', minWidth: '120px' }}>
                           <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '700' }}>{units.temperatureOut(tp.temp_c)}{units.temperature}</div>
                           <div style={{ fontSize: 'var(--fs-lg)', fontWeight: '800', color: 'var(--color-brand-dark)', marginTop: '2px' }}>{units.pressureOut(tp.press_bar)} {units.pressure}</div>
                         </div>
@@ -1810,11 +1642,11 @@ const CataloguePage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, on
               {!loading && libraryActions}
             </div>
           )}
-        </main>
-      </div>
-      )}
+    </div>
+  );
 
-
+  const modals = (
+    <>
       {/* NEW PIPE CLASS MINI-DIALOG */}
       {isNewClassModalOpen && (
         <div className="modal-overlay">
@@ -1962,7 +1794,7 @@ const CataloguePage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, on
               <div style={{
                 padding: '12px 14px',
                 borderRadius: '8px',
-                backgroundColor: 'var(--color-surface-light)',
+                backgroundColor: 'var(--color-surface-muted)',
                 border: '1px solid var(--color-border)',
                 display: 'flex',
                 alignItems: 'flex-start',
@@ -2001,7 +1833,7 @@ const CataloguePage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, on
                         fontSize: 'var(--fs-xs)',
                         fontWeight: '700',
                         backgroundColor: 'var(--color-brand-dark)',
-                        color: '#ffffff',
+                        color: 'var(--color-text-inverse)',
                         padding: '2px 8px',
                         borderRadius: '10px'
                       }}>
@@ -2032,7 +1864,7 @@ const CataloguePage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, on
                   </div>
                 </div>
 
-                <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid var(--color-border)', borderRadius: '8px', backgroundColor: '#FFFFFF' }}>
+                <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid var(--color-border)', borderRadius: '8px', backgroundColor: 'var(--color-surface)' }}>
                   {isSearchingTr2000 ? (
                     <div style={{ textAlign: 'center', padding: '30px', fontSize: 'var(--fs-sm)', color: 'var(--color-text-secondary)' }}>
                       Querying TR2000 API...
@@ -2043,15 +1875,14 @@ const CataloguePage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, on
                     </div>
                   ) : (
                     <table style={{ width: '100%', fontSize: 'var(--fs-sm)', borderCollapse: 'collapse' }}>
-                      <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
+                      <thead style={{ position: 'sticky', top: 0 }}>
                         <tr style={{ textAlign: 'left' }}>
                           <th style={{
                             width: '36px',
                             padding: '10px',
-                            backgroundColor: '#F4F7F6',
+                            backgroundColor: 'var(--color-surface-muted)',
                             position: 'sticky',
                             top: 0,
-                            zIndex: 10,
                             borderBottom: '1px solid var(--color-border)',
                             boxShadow: '0 1px 0 var(--color-border)',
                             textAlign: 'center'
@@ -2066,10 +1897,9 @@ const CataloguePage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, on
                           </th>
                           <th style={{
                             padding: '10px',
-                            backgroundColor: '#F4F7F6',
+                            backgroundColor: 'var(--color-surface-muted)',
                             position: 'sticky',
                             top: 0,
-                            zIndex: 10,
                             borderBottom: '1px solid var(--color-border)',
                             boxShadow: '0 1px 0 var(--color-border)',
                             color: 'var(--color-text-primary)'
@@ -2078,10 +1908,9 @@ const CataloguePage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, on
                           </th>
                           <th style={{
                             padding: '10px',
-                            backgroundColor: '#F4F7F6',
+                            backgroundColor: 'var(--color-surface-muted)',
                             position: 'sticky',
                             top: 0,
-                            zIndex: 10,
                             borderBottom: '1px solid var(--color-border)',
                             boxShadow: '0 1px 0 var(--color-border)',
                             color: 'var(--color-text-primary)'
@@ -2090,10 +1919,9 @@ const CataloguePage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, on
                           </th>
                           <th style={{
                             padding: '10px',
-                            backgroundColor: '#F4F7F6',
+                            backgroundColor: 'var(--color-surface-muted)',
                             position: 'sticky',
                             top: 0,
-                            zIndex: 10,
                             borderBottom: '1px solid var(--color-border)',
                             boxShadow: '0 1px 0 var(--color-border)',
                             color: 'var(--color-text-primary)'
@@ -2102,10 +1930,9 @@ const CataloguePage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, on
                           </th>
                           <th style={{
                             padding: '10px',
-                            backgroundColor: '#F4F7F6',
+                            backgroundColor: 'var(--color-surface-muted)',
                             position: 'sticky',
                             top: 0,
-                            zIndex: 10,
                             borderBottom: '1px solid var(--color-border)',
                             boxShadow: '0 1px 0 var(--color-border)',
                             color: 'var(--color-text-primary)'
@@ -2114,10 +1941,9 @@ const CataloguePage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, on
                           </th>
                           <th style={{
                             padding: '10px',
-                            backgroundColor: '#F4F7F6',
+                            backgroundColor: 'var(--color-surface-muted)',
                             position: 'sticky',
                             top: 0,
-                            zIndex: 10,
                             borderBottom: '1px solid var(--color-border)',
                             boxShadow: '0 1px 0 var(--color-border)',
                             color: 'var(--color-text-primary)'
@@ -2215,7 +2041,7 @@ const CataloguePage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, on
 
       {/* DUPLICATE PIPE CLASS CONFLICT RESOLUTION MODAL */}
       {isConflictModalOpen && (
-        <div className="modal-overlay" style={{ zIndex: 20000 }}>
+        <div className="modal-overlay">
           <div className="modal-container" ref={modalA11yRef} style={{ maxWidth: '600px' }}>
 
             <div className="modal-header">
@@ -2279,7 +2105,7 @@ const CataloguePage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, on
               <div style={{ maxHeight: '240px', overflowY: 'auto', border: '1px solid var(--color-border)', borderRadius: '8px' }}>
                 <table style={{ width: '100%', fontSize: 'var(--fs-xs)', borderCollapse: 'collapse' }}>
                   <thead>
-                    <tr style={{ backgroundColor: '#F4F7F6', textAlign: 'left', borderBottom: '1px solid var(--color-border)' }}>
+                    <tr style={{ backgroundColor: 'var(--color-surface-muted)', textAlign: 'left', borderBottom: '1px solid var(--color-border)' }}>
                       <th style={{ padding: '8px 10px' }}>PCS Code</th>
                       <th style={{ padding: '8px 10px' }}>Description</th>
                       <th style={{ padding: '8px 10px', textAlign: 'right' }}>Resolution Action</th>
@@ -2303,7 +2129,7 @@ const CataloguePage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, on
                                 border: 'none',
                                 cursor: 'pointer',
                                 backgroundColor: item.action === 'update' ? 'var(--color-brand-dark)' : 'transparent',
-                                color: item.action === 'update' ? '#ffffff' : 'var(--color-text-secondary)'
+                                color: item.action === 'update' ? 'var(--color-text-inverse)' : 'var(--color-text-secondary)'
                               }}
                               title="Overwrite/Update the existing local pipe class"
                             >
@@ -2320,7 +2146,7 @@ const CataloguePage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, on
                                 border: 'none',
                                 cursor: 'pointer',
                                 backgroundColor: item.action === 'copy' ? 'var(--color-brand-dark)' : 'transparent',
-                                color: item.action === 'copy' ? '#ffffff' : 'var(--color-text-secondary)'
+                                color: item.action === 'copy' ? 'var(--color-text-inverse)' : 'var(--color-text-secondary)'
                               }}
                               title="Import as copy with (1) suffix"
                             >
@@ -2337,7 +2163,7 @@ const CataloguePage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, on
                                 border: 'none',
                                 cursor: 'pointer',
                                 backgroundColor: item.action === 'skip' ? 'var(--color-brand-dark)' : 'transparent',
-                                color: item.action === 'skip' ? '#ffffff' : 'var(--color-text-secondary)'
+                                color: item.action === 'skip' ? 'var(--color-text-inverse)' : 'var(--color-text-secondary)'
                               }}
                               title="Skip importing this pipe class"
                             >
@@ -2417,13 +2243,13 @@ const CataloguePage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, on
                 alignItems: 'center',
                 gap: '10px'
               }}>
-                <CheckCircleIcon size={20} color="#059669" />
+                <CheckCircleIcon size={20} color="var(--color-success-text)" />
                 <div>
-                  <div style={{ fontWeight: '700', fontSize: 'var(--fs-sm)', color: '#065F46' }}>
+                  <div style={{ fontWeight: '700', fontSize: 'var(--fs-sm)', color: 'var(--color-success-text)' }}>
                     {importReport.imported_count} pipe classes successfully imported
                   </div>
                   {importReport.imported?.length > 0 && (
-                    <div style={{ fontSize: 'var(--fs-xs)', color: '#047857', marginTop: '2px' }}>
+                    <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-success-text)', marginTop: '2px' }}>
                       Codes: {importReport.imported.join(', ')}
                     </div>
                   )}
@@ -2455,18 +2281,18 @@ const CataloguePage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, on
                         style={{
                           padding: '2px 8px',
                           borderRadius: '4px',
-                          backgroundColor: '#FEF3C7',
+                          backgroundColor: 'var(--color-warning-bg)',
                           color: 'var(--color-warning-text-strong)',
                           fontWeight: '700',
                           fontSize: 'var(--fs-xs)',
-                          border: '1px solid #FCD34D'
+                          border: '1px solid var(--color-warning-border)'
                         }}
                       >
                         {code}
                       </span>
                     ))}
                   </div>
-                  <p style={{ margin: '4px 0 0 0', fontSize: 'var(--fs-xs)', color: '#B45309' }}>
+                  <p style={{ margin: '4px 0 0 0', fontSize: 'var(--fs-xs)', color: 'var(--color-warning-text)' }}>
                     Existing classes with matching codes were preserved to prevent accidental overwriting.
                   </p>
                 </div>
@@ -2509,9 +2335,16 @@ const CataloguePage = ({ onNavigateToCanvas, onOpenAuthModal, onOpenAdminHub, on
           </div>
         </div>
       )}
-
-    </div>
+    </>
   );
+
+  return renderShell({
+    pane: paneContent,
+    details,
+    extras: <>{hiddenFileInput}{modals}</>,
+    count: filteredClasses.length,
+    filterLabel: sourceLabel(standardFilter),
+  });
 };
 
 export default CataloguePage;
