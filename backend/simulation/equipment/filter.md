@@ -51,6 +51,8 @@ $$K = K_{\text{clean}} + \frac{\text{clogging}}{100}\,(K_{\text{term}} - K_{\tex
 
 At the rated flow in the reference fluid, the drop is exactly the datasheet value, interpolated linearly with clogging.
 
+`get_resistance_k` and `calculate_delta_p` take an optional `clogging_pct` that replaces the node's own value for that call. The results chart uses it to draw the clean (0 %), current and terminal (100 %) curves at the solved upstream fluid (telemetry `filter_curves`).
+
 ### 3.5 Worked example
 
 Clean 0.2 bar, terminal 1.0 bar at 100 L/min:

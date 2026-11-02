@@ -95,6 +95,16 @@ class VolumetricPump(HydraulicNode):
             delta_p = min(delta_p, self._power_limit_dp(flow_rate))
         return delta_p
 
+    def limit_onset_flow(self, p_in_pa: float) -> float:
+        """Flow at which the rise of _unlimited_dp falls to the pressure limit (the kink of the curve at this inlet).
+        Both the displacement line and the power curve fall with flow, so their minimum crosses first at the lower flow."""
+        rise_limit = self.max_discharge_pressure - p_in_pa
+        q_onset = self.flow_rated - rise_limit / self._stiffness()
+        if self._uses_power_limit() and rise_limit > 0:
+            q_power = self.motor_power * self.efficiency / rise_limit
+            q_onset = min(q_onset, math.sqrt(max(0.0, q_power**2 - 1e-10)))
+        return q_onset
+
     def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001, p_in_pa: float = None) -> float:
         """Pressure rise (Pa); negative when the pump is pushed faster than its displacement.
         With p_in_pa the outlet is held at max_discharge_pressure (plus accumulation) once reached."""

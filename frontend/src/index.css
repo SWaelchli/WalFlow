@@ -1866,7 +1866,6 @@ button.status-slot:hover { background: var(--color-surface); color: var(--color-
 .symbol-text-value   { font-size: var(--fs-canvas-value); font-weight: 600; fill: var(--color-brand-dark); }
 .port-letter-hot,
 .port-letter-cold {
-  font-size: 7px;
   font-weight: 800;
   paint-order: stroke fill;
   stroke: var(--color-surface);

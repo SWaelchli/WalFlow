@@ -42,7 +42,7 @@ export default function ThreeWayTCVNode({ id, data, selected }) {
     >
       <svg width="60" height="60" viewBox="0 0 60 60">
         <path d="M 10 20 L 30 35 L 10 50 Z" fill="var(--color-surface)" stroke="var(--color-brand-dark)" strokeWidth="2.5" />
-        <path d="M 20 60 L 30 35 L 40 60 Z" fill="var(--color-surface)" stroke="var(--color-brand-dark)" strokeWidth="2.5" />
+        <path d="M 17 60 L 30 35 L 43 60 Z" fill="var(--color-surface)" stroke="var(--color-brand-dark)" strokeWidth="2.5" />
         <path d="M 50 20 L 30 35 L 50 50 Z" fill="var(--color-surface)" stroke="var(--color-brand-dark)" strokeWidth="2.5" />
         
         <circle cx="30" cy="35" r="2.5" fill="var(--color-brand-dark)" />
@@ -52,7 +52,7 @@ export default function ThreeWayTCVNode({ id, data, selected }) {
         <text x="30" y="14" textAnchor="middle" className="symbol-text-meta">T</text>
 
         <text
-          x="19.5"
+          x="19"
           y="35"
           textAnchor="middle"
           dominantBaseline="central"
@@ -63,7 +63,7 @@ export default function ThreeWayTCVNode({ id, data, selected }) {
 
         <text
           x="30"
-          y="49"
+          y="50.5"
           textAnchor="middle"
           dominantBaseline="central"
           className={`symbol-text-meta ${hotIdx === 1 ? 'port-letter-hot' : 'port-letter-cold'}`}

@@ -92,7 +92,7 @@ Friction, with $\mathrm{Re} \propto |Q|$:
 
 $$\frac{\partial \Delta P_{\text{f}}}{\partial Q} = \frac{L}{D}\, \frac{\rho\, |Q|}{2 A^2} \left(2 f + \frac{df}{d \ln \mathrm{Re}}\right)$$
 
-$df/d\ln\mathrm{Re}$ is the exact derivative of the Churchill expression (`FluidProperties.get_darcy_friction_slope`, $-f$ in the laminar range). At $Q = 0$ the slope is the laminar (Hagen-Poiseuille) limit instead of zero, so a dead leg keeps a usable Jacobian:
+$df/d\ln\mathrm{Re}$ is the exact derivative of the Churchill expression (`FluidProperties.get_darcy_friction_and_slope`, which returns $f$ and the slope together; $-f$ in the laminar range). At $Q = 0$ the slope is the laminar (Hagen-Poiseuille) limit instead of zero, so a dead leg keeps a usable Jacobian:
 
 $$\left.\frac{\partial \Delta P_{\text{f}}}{\partial Q}\right|_{Q=0} = \frac{32\, \mu\, L}{D^2 A}$$
 

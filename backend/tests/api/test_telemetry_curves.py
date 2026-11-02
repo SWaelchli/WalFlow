@@ -8,7 +8,8 @@ import math
 import pytest
 
 from networks import neutral_graph
-from routers.simulation import extract_telemetry
+from routers.simulation import extract_telemetry, pump_curves
+from simulation.equipment.volumetric_pump import VolumetricPump
 from simulation.graph_parser import GraphParser
 from simulation.schemas import GlobalSettings
 from simulation.solver import NetworkSolver
@@ -244,3 +245,35 @@ def test_pump_curves_contain_operating_point_and_match_total_pressure_rise(case_
     assert math.isclose(dps[idx], dp_total, rel_tol=1e-4, abs_tol=1.0)
     if expect_negative:
         assert dps[idx] < 0.0
+
+
+PD_Q_RATED = 100.0 / 60000.0
+
+
+@pytest.mark.parametrize("drive_kwargs, power_governs", [
+    pytest.param(dict(), False, id="fixed_speed_ignores_motor_rating"),
+    pytest.param(dict(drive_type="vfd_power_limit", motor_power=1e6), False, id="vfd_displacement_governs"),
+    pytest.param(dict(drive_type="vfd_power_limit", motor_power=5000.0), True, id="vfd_power_curve_governs"),
+])
+@pytest.mark.parametrize("p_in", [1e5, 20e5, 49e5, 60e5])
+def test_volumetric_pump_curve_kink_sits_where_unlimited_rise_meets_the_limit(drive_kwargs, power_governs, p_in):
+    """The curve's kink is where the rise (displacement line, or the power curve on a power-limited drive) falls to
+    the pressure limit at this inlet pressure, and the pump_curves flow grid holds that flow as a vertex."""
+    pump = VolumetricPump("PD", flow_rated=PD_Q_RATED, efficiency=0.8, **{"motor_power": 5000.0, **drive_kwargs})
+    pump.inlets[0].pressure = p_in
+    pump.inlets[0].flow_rate = 0.0
+    rise_limit = pump.max_discharge_pressure - p_in
+
+    q_onset = pump.limit_onset_flow(p_in)
+    displacement_q = PD_Q_RATED - rise_limit / pump._stiffness()
+    assert q_onset > 0.0
+    assert pump._unlimited_dp(q_onset) == pytest.approx(rise_limit, rel=1e-6, abs=1.0)
+    # Usable power 4000 W beats the displacement line only above a 24 bar rise (4000 / Q_rated = 24 bar)
+    if power_governs and rise_limit > 24e5:
+        # Closed form of P_usable / sqrt(q^2 + 1e-10) = rise, below the displacement-line value
+        assert q_onset == pytest.approx(math.sqrt((4000.0 / rise_limit) ** 2 - 1e-10), rel=1e-9)
+        assert q_onset < displacement_q
+    else:
+        assert q_onset == pytest.approx(displacement_q, rel=1e-9)
+
+    assert q_onset in pump_curves(pump)["flow_m3s"]

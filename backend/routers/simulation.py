@@ -203,9 +203,7 @@ def pump_curves(node) -> Dict[str, List[float]]:
     knees = [q_op, q_rated]
     p_in_total = total_of(inlet)
     if isinstance(node, VolumetricPump) and getattr(node, "active", True):
-        stiffness = node._stiffness()
-        if stiffness > 0:
-            knees.append(q_rated - (node.max_discharge_pressure - p_in_total) / stiffness)
+        knees.append(node.limit_onset_flow(p_in_total))
 
     flows = _curve_flows(q_max, *knees)
     sign = -1.0 if (isinstance(node, CentrifugalPump) and q_in < -Q_DEAD_LEG) else 1.0

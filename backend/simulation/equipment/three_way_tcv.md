@@ -73,7 +73,7 @@ For equal mass flows at 80 °C and 20 °C the enthalpy mix is 0.02 K above the m
 | F_d (from the style, or Custom) | – | `self.fd` | – | 0.46 | $> 0$ | Valve style modifier $F_d$ of each path (Table D.2) |
 | — (from connected pipe) | – | `self.pipe_diameter` | m | 0.05248 | $> 0$ | Valve size $d = D$ for $F_R$ |
 
-The mix ratio (`self.mix_ratio`) is a result.
+The mix ratio (`self.mix_ratio`) is a result. It is reported as `mix_ratio`, as `opening_pct` (read-only: the opening of the hot port, 0 to 100 %) and as `port_openings_pct` (read-only: the openings of inlet 0 and inlet 1).
 
 ## 6. Operating Modes & Model Boundaries
 
