@@ -45,14 +45,14 @@
       "id": "greeting-note",
       "type": "text_bubble",
       "position": {
-        "x": 200,
-        "y": 30
+        "x": 40,
+        "y": 250
       },
-      "width": 560,
-      "height": 260,
+      "width": 440,
+      "height": 300,
       "style": {
-        "width": 560,
-        "height": 260
+        "width": 440,
+        "height": 300
       },
       "data": {
         "label": "Note",
@@ -65,8 +65,8 @@
       "id": "greeting-tank-1",
       "type": "tank",
       "position": {
-        "x": 120,
-        "y": 350
+        "x": 520,
+        "y": 305
       },
       "data": {
         "label": "Supply Reservoir",
@@ -80,7 +80,7 @@
       "id": "greeting-pump",
       "type": "centrifugal_pump",
       "position": {
-        "x": 320,
+        "x": 660,
         "y": 350
       },
       "data": {
@@ -94,8 +94,8 @@
       "id": "greeting-valve",
       "type": "linear_control_valve",
       "position": {
-        "x": 520,
-        "y": 350
+        "x": 820,
+        "y": 330
       },
       "data": {
         "label": "FCV-101 Flow Control",
@@ -110,10 +110,11 @@
       "id": "greeting-tank-2",
       "type": "tank",
       "position": {
-        "x": 720,
-        "y": 350
+        "x": 980,
+        "y": 345
       },
       "data": {
+        "rotation": 180,
         "label": "Return Reservoir",
         "level_m": 1.0,
         "elevation_m": 2.0,

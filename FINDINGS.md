@@ -46,16 +46,31 @@ Layout rules, highest first. A lower rule gives way to a higher one:
 5. **The process reads left to right,** supply on the left and return on the right, with notes beside the drawing,
    not inside it.
 6. **It fits and stays legible:** the drawing fits the canvas at fit-view in a 1512 × 800 window with the results
-   panel open.
+   panel open, readouts included. Decided 2026-11-02: the fit zoom floor drops to about 0.2 so every drawing fits;
+   drawings of up to about 20 items aim for zoom 0.7 or higher; LOS, Large Reference and Jeppson 48 are overviews
+   read by zooming in.
 
 Naming rule: every equipment and pipe name is meaningful and says what the item is or does in that process, for example
 "Cooling Water Tank" or "Pump A Discharge". No copy suffixes and no generated names: the Large Reference Network has
 `TANK_985_copy_copy_copy_copy_copy` and `BRANCH_770_copy_copy`. Names are unique within a drawing. A benchmark that
-follows a published figure keeps that figure's numbering.
+follows a published figure keeps that figure's numbering. Decided 2026-11-02: Jeppson 48 adds the junction number where
+names repeat (`N13 Demand 2 cfs`, `N13 Demand link`) and keeps `P1` to `P48`.
+
+App change decided 2026-11-02, outside the data-only limits below: on a node rotated 90° or 270° the readout sits beside
+the symbol, so vertical runs do not pass through their own text.
 
 Limits: only names (labels), node positions, rotation, note position and size, and edge handles may change. Parameters,
 pipe lengths, connections and internal IDs stay as they are, so the results stay the same. A benchmark that follows a
 published figure keeps that figure's arrangement.
+
+Progress 2026-11-02: the fit on opening (EX2) and the readout beside rotated symbols are built. Welcome canvas and API 614
+LOS are re-laid out and signed off. Next is API 682 seal flush, then the rest of the order in EX1. Still to do at the
+end: tests for the fit and readout helpers, EX3, and a final browser check of all 13.
+
+Notes for the remaining drawings: the app reads a pipe's name from `data.label` when a drawing loads, so a rename writes
+both `label` and `data.label`. Junction port handles may be swapped to get a straight run or avoid a crossing. Signal
+lines are drawn as curves, so check them against symbols as well as text. The Large Reference names go to the user as a
+list first, because they infer what each item does.
 
 | ID | Details | Where | Test |
 |---|---|---|---|

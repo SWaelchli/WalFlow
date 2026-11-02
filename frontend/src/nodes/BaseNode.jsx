@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo } from 'react';
-import { useUpdateNodeInternals } from 'reactflow';
+import { useStore, useUpdateNodeInternals, internalsSymbol } from 'reactflow';
 import { RotateButton } from '../components/canvas/NodeRotationHandle';
 import StatusBadge from '../components/common/StatusBadge';
 import { WarningIcon } from '../components/symbols/IconLibrary';
 import { isNodeOff } from '../utils/nodeReadouts';
+import { readoutSide, sideReadoutStyle } from '../utils/readoutPlacement';
 
 /**
  * BaseNode component wrapper
@@ -26,6 +27,15 @@ export default function BaseNode({
   const updateNodeInternals = useUpdateNodeInternals();
   const rotation = data.rotation || 0;
   const sensing = useMemo(() => data.sensing || {}, [data.sensing]);
+  const sideways = Math.abs(rotation % 180) === 90;
+  // Sides that a port or signal pin faces on screen, as measured by React Flow (only needed for the sideways readout)
+  const facing = useStore((s) => {
+    if (!sideways) return '';
+    const bounds = s.nodeInternals.get(id)?.[internalsSymbol]?.handleBounds;
+    const sides = [...(bounds?.source || []), ...(bounds?.target || [])].map((h) => h.position);
+    return ['left', 'right'].filter((side) => sides.includes(side)).join(',');
+  });
+  const side = readoutSide(rotation, facing ? facing.split(',') : []);
 
   useEffect(() => {
     updateNodeInternals(id);
@@ -88,9 +98,10 @@ export default function BaseNode({
         {children}
       </div>
 
-      {/* Centred under the symbol and kept out of the node box, so a long readout neither shifts the text nor moves the pins */}
+      {/* Centred under the symbol and kept out of the node box, so a long readout neither shifts the text nor moves the pins.
+          On a node turned 90 or 270 degrees it sits beside the symbol, clear of the vertical pipe runs. */}
       {footer && (
-        <div style={footerStyle || { position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', width: 'max-content', textAlign: 'center', marginTop: `${5 + footerOffset}px` }}>
+        <div style={footerStyle || (side !== 'below' ? sideReadoutStyle(side, height) : { position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', width: 'max-content', textAlign: 'center', marginTop: `${5 + footerOffset}px` })}>
           {footer}
         </div>
       )}

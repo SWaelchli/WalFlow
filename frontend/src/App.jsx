@@ -18,6 +18,7 @@ import { junctionLayout, junctionPortCount, PIN_TIP, PIN_LENGTH } from './utils/
 import { boundaryLayout, boundaryPortCount, BOUNDARY_PORT_TYPES } from './utils/boundaryLayout';
 import { summarizeStats, deriveRunState } from './utils/runStatus';
 import { portNumberLabel } from './utils/portLabels';
+import { MIN_ZOOM, fitDiagram, fitWhenDrawn, sameViewport } from './utils/canvasFit';
 import RunBanners from './components/overlays/RunBanners';
 import 'reactflow/dist/style.css'; 
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
@@ -244,11 +245,21 @@ function WalFlowContent() {
   const [awaitingInitialSolve, setAwaitingInitialSolve] = useState(false);
   const { isCanvasLoading, canvasLoadingLabel, showCanvasLoading, hideCanvasLoading, scheduleLoad } = useCanvasLoading({ nodes, edges, awaitingInitialSolve });
 
-  // Frame the diagram after a load, an example or a new drawing
+  // Frame the diagram after a load, an example or a new drawing. The fit waits until the loaded nodes are drawn and
+  // measured (React Flow cannot frame nodes it has not measured yet), so it stays pending until it has run.
+  const [openFitViewport, setOpenFitViewport] = useState(null); // view set by the fit on opening, until the first results are framed
   useEffect(() => {
-    if (!fitViewPendingRef.current || !reactFlowInstance) return;
-    fitViewPendingRef.current = false;
-    requestAnimationFrame(() => reactFlowInstance.fitView({ padding: 0.2, duration: 250, maxZoom: 1.2 }));
+    if (!fitViewPendingRef.current || !reactFlowInstance) return undefined;
+    if (nodes.length === 0) {
+      fitViewPendingRef.current = false;
+      return undefined;
+    }
+    return fitWhenDrawn(reactFlowInstance, nodes.map((n) => n.id), {
+      onFit: (viewport) => {
+        fitViewPendingRef.current = false;
+        setOpenFitViewport(viewport);
+      }
+    });
   }, [nodes, reactFlowInstance]);
 
   // Reset active cloud project when user switches accounts or logs out
@@ -406,6 +417,26 @@ function WalFlowContent() {
     setAutoRunPending(false);
     runChecked({ silent: true });
   }, [autoRunPending, isConnected, runChecked]);
+
+  // The readouts grow when the first results of an opening arrive: frame once more, unless the user has moved the view
+  // since the fit on opening. Later runs never move the view.
+  useEffect(() => {
+    if (!openFitViewport || !reactFlowInstance) return undefined;
+    if (!lastRunAt) {
+      // No results to wait for: the opening's run has finished (or failed) or was never started
+      if (!autoRunPending && !awaitingInitialSolve && !isSimulating) setOpenFitViewport(null);
+      return undefined;
+    }
+    return fitWhenDrawn(reactFlowInstance, nodes.map((n) => n.id), {
+      duration: 250,
+      shouldFit: () => {
+        const unmoved = sameViewport(reactFlowInstance.getViewport(), openFitViewport);
+        if (!unmoved) setOpenFitViewport(null);
+        return unmoved;
+      },
+      onFit: () => setOpenFitViewport(null)
+    });
+  }, [openFitViewport, lastRunAt, autoRunPending, awaitingInitialSolve, isSimulating, nodes, reactFlowInstance]);
 
   // Track initial simulation solve completion to coordinate canvas loading overlay dismissal
   const initialSolveStartedRef = useRef(false);
@@ -1648,7 +1679,7 @@ function WalFlowContent() {
     setSidePaneOpen(true);
     if (tab) setSettingsRequest(prev => ({ n: (prev?.n || 0) + 1, tab }));
   }, [setSidePaneOpen]);
-  const fitView = useCallback(() => reactFlowInstance?.fitView({ padding: 0.2, duration: 250, maxZoom: 1.2 }), [reactFlowInstance]);
+  const fitView = useCallback(() => { fitDiagram(reactFlowInstance, { duration: 250 }); }, [reactFlowInstance]);
   // Same switch as the lock button of the canvas controls
   const toggleLock = useCallback(() => {
     const { nodesDraggable, nodesConnectable, elementsSelectable } = rfStore.getState();
@@ -2015,7 +2046,7 @@ function WalFlowContent() {
             nodesConnectable={!activeDiagram || hasLock}
             deleteKeyCode={isReadOnly || activeModal ? null : 'Backspace'}
             elementsSelectable={true}
-            fitView
+            minZoom={MIN_ZOOM}
           >
             <Background color="#B8C9C8" gap={16} size={1} />
             <Controls>

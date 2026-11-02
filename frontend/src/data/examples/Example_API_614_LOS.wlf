@@ -115,8 +115,8 @@
       "id": "note-overview",
       "type": "text_bubble",
       "position": {
-        "x": 220,
-        "y": -680
+        "x": -480,
+        "y": -300
       },
       "width": 420,
       "height": 430,
@@ -136,8 +136,8 @@
       "id": "main-reservoir",
       "type": "tank",
       "position": {
-        "x": 200,
-        "y": 240
+        "x": 0,
+        "y": -60
       },
       "data": {
         "label": "Oil Reservoir",
@@ -154,33 +154,32 @@
       "id": "main-oil-pump",
       "type": "pump",
       "position": {
-        "x": 300,
-        "y": 220
+        "x": 140,
+        "y": -15
       },
       "data": {
         "label": "Main Oil Pump",
-        "rotation": 270,
+        "rotation": 0,
         "flow_rated_lmin": 500,
         "head_rated_m": 120.3,
         "rise_to_shutoff_pct": 20
       },
       "width": 63,
       "height": 103,
-      "selected": false,
       "dragging": false
     },
     {
       "id": "pump-discharge-junction",
       "type": "junction",
       "position": {
-        "x": 295,
-        "y": 120
+        "x": 290,
+        "y": -20
       },
       "width": 110,
       "height": 71,
       "data": {
         "label": "Pump Discharge Manifold",
-        "rotation": 0,
+        "rotation": 180,
         "num_ports": 3
       }
     },
@@ -188,8 +187,8 @@
       "id": "spill-over-valve",
       "type": "remote_control_valve",
       "position": {
-        "x": 480,
-        "y": 120
+        "x": 420,
+        "y": -325
       },
       "data": {
         "label": "Spill Over Valve",
@@ -203,22 +202,21 @@
       },
       "width": 66,
       "height": 114,
-      "selected": false,
       "dragging": false
     },
     {
       "id": "reservoir-return-tank",
       "type": "tank",
       "position": {
-        "x": 680,
-        "y": 105
+        "x": 540,
+        "y": -310
       },
       "data": {
         "label": "Main Tank Return",
         "level_m": 0.0002,
         "elevation_m": 0,
         "temperature_k": 313.15,
-        "rotation": 0,
+        "rotation": 180,
         "num_ports": 1
       },
       "width": 75,
@@ -228,8 +226,8 @@
       "id": "cooler-bypass-junction",
       "type": "junction",
       "position": {
-        "x": 80,
-        "y": 120
+        "x": 470,
+        "y": -20
       },
       "width": 76,
       "height": 71,
@@ -243,28 +241,27 @@
       "id": "oil-cooler",
       "type": "heat_exchanger",
       "position": {
-        "x": 0,
-        "y": -60
+        "x": 547,
+        "y": -140
       },
       "data": {
-        "label": "Cooler",
-        "rotation": 270,
+        "label": "Oil Cooler",
+        "rotation": 0,
         "rated_dp_bar": 0.5
       },
       "width": 60,
       "height": 103,
-      "selected": false,
       "dragging": false
     },
     {
       "id": "main-filter",
       "type": "filter",
       "position": {
-        "x": 360,
-        "y": -45
+        "x": 970,
+        "y": 70
       },
       "data": {
-        "label": "Filter 60",
+        "label": "Oil Filter",
         "dp_clean_bar": 0.2,
         "dp_terminal_bar": 1,
         "flow_ref_lmin": 550,
@@ -282,8 +279,8 @@
       "id": "flow-sensing-orifice",
       "type": "orifice",
       "position": {
-        "x": 560,
-        "y": -55
+        "x": 1100,
+        "y": 60
       },
       "data": {
         "label": "Header Restriction Orifice",
@@ -295,15 +292,14 @@
       },
       "width": 109,
       "height": 91,
-      "selected": false,
       "dragging": false
     },
     {
       "id": "distribution-header-junction",
       "type": "junction",
       "position": {
-        "x": 740,
-        "y": -45
+        "x": 1350,
+        "y": 70
       },
       "width": 125,
       "height": 71,
@@ -317,14 +313,14 @@
       "id": "motor-bearing-junction",
       "type": "junction",
       "position": {
-        "x": 880,
-        "y": -340
+        "x": 1350,
+        "y": -90
       },
       "width": 75,
       "height": 71,
       "data": {
         "label": "Motor Supply Tee",
-        "rotation": 0,
+        "rotation": 270,
         "num_ports": 3
       }
     },
@@ -332,8 +328,8 @@
       "id": "orifice-motor-nde",
       "type": "orifice",
       "position": {
-        "x": 1120,
-        "y": -360
+        "x": 1700,
+        "y": -260
       },
       "data": {
         "label": "Motor NDE Bearing",
@@ -347,8 +343,8 @@
       "id": "orifice-motor-de",
       "type": "orifice",
       "position": {
-        "x": 1120,
-        "y": -190
+        "x": 1700,
+        "y": -100
       },
       "data": {
         "label": "Motor DE Bearing",
@@ -362,15 +358,15 @@
       "id": "drain-motor-nde",
       "type": "tank",
       "position": {
-        "x": 1340,
-        "y": -380
+        "x": 1860,
+        "y": -250
       },
       "data": {
         "label": "Motor NDE Drain",
         "level_m": 0.0002,
         "elevation_m": 0,
         "temperature_k": 313.15,
-        "rotation": 0,
+        "rotation": 180,
         "num_ports": 1
       },
       "width": 73,
@@ -380,15 +376,15 @@
       "id": "drain-motor-de",
       "type": "tank",
       "position": {
-        "x": 1340,
-        "y": -210
+        "x": 1860,
+        "y": -90
       },
       "data": {
         "label": "Motor DE Drain",
         "level_m": 2e-05,
         "elevation_m": 0,
         "temperature_k": 313.15,
-        "rotation": 0,
+        "rotation": 180,
         "num_ports": 1
       },
       "width": 66,
@@ -398,8 +394,8 @@
       "id": "gearbox-junction",
       "type": "junction",
       "position": {
-        "x": 880,
-        "y": 0
+        "x": 1530,
+        "y": 70
       },
       "width": 93,
       "height": 71,
@@ -413,8 +409,8 @@
       "id": "orifice-gearbox",
       "type": "orifice",
       "position": {
-        "x": 1120,
-        "y": -20
+        "x": 1700,
+        "y": 60
       },
       "data": {
         "label": "Gearbox Bearing",
@@ -428,12 +424,11 @@
       "id": "comp1-junction",
       "type": "junction",
       "position": {
-        "x": 880,
-        "y": 170
+        "x": 1530,
+        "y": 230
       },
       "width": 131,
       "height": 71,
-      "selected": false,
       "data": {
         "label": "Compressor 1 Supply Manifold",
         "rotation": 270,
@@ -444,15 +439,15 @@
       "id": "drain-gearbox",
       "type": "tank",
       "position": {
-        "x": 1340,
-        "y": -40
+        "x": 1860,
+        "y": 70
       },
       "data": {
         "label": "Gearbox Drain",
         "level_m": 2e-05,
         "elevation_m": 0,
         "temperature_k": 313.15,
-        "rotation": 0,
+        "rotation": 180,
         "num_ports": 1
       },
       "width": 61,
@@ -462,8 +457,8 @@
       "id": "orifice-comp1-de",
       "type": "orifice",
       "position": {
-        "x": 1120,
-        "y": 150
+        "x": 1700,
+        "y": 220
       },
       "data": {
         "label": "Compressor 1 DE",
@@ -480,8 +475,8 @@
       "id": "comp1-nde-junction",
       "type": "junction",
       "position": {
-        "x": 880,
-        "y": 340
+        "x": 1530,
+        "y": 390
       },
       "width": 107,
       "height": 71,
@@ -495,8 +490,8 @@
       "id": "orifice-comp1-nde",
       "type": "orifice",
       "position": {
-        "x": 1120,
-        "y": 320
+        "x": 1700,
+        "y": 380
       },
       "data": {
         "label": "Compressor 1 NDE",
@@ -510,15 +505,14 @@
       "id": "comp2-junction",
       "type": "junction",
       "position": {
-        "x": 880,
-        "y": 510
+        "x": 1530,
+        "y": 550
       },
       "width": 131,
       "height": 71,
-      "selected": false,
       "positionAbsolute": {
-        "x": 880,
-        "y": 510
+        "x": 1530,
+        "y": 550
       },
       "dragging": false,
       "data": {
@@ -531,8 +525,8 @@
       "id": "orifice-comp2-de",
       "type": "orifice",
       "position": {
-        "x": 1120,
-        "y": 490
+        "x": 1700,
+        "y": 540
       },
       "data": {
         "label": "Compressor 2 DE",
@@ -541,10 +535,9 @@
       },
       "width": 72,
       "height": 91,
-      "selected": false,
       "positionAbsolute": {
-        "x": 1120,
-        "y": 490
+        "x": 1700,
+        "y": 540
       },
       "dragging": false
     },
@@ -552,8 +545,8 @@
       "id": "orifice-comp2-nde",
       "type": "orifice",
       "position": {
-        "x": 1120,
-        "y": 660
+        "x": 1700,
+        "y": 700
       },
       "data": {
         "label": "Compressor 2 NDE",
@@ -567,15 +560,15 @@
       "id": "drain-comp1-de",
       "type": "tank",
       "position": {
-        "x": 1340,
-        "y": 130
+        "x": 1860,
+        "y": 230
       },
       "data": {
         "label": "Compressor 1 DE Drain",
         "level_m": 2e-05,
         "elevation_m": 0,
         "temperature_k": 313.15,
-        "rotation": 0,
+        "rotation": 180,
         "num_ports": 1
       },
       "width": 97,
@@ -585,15 +578,15 @@
       "id": "drain-comp1-nde",
       "type": "tank",
       "position": {
-        "x": 1340,
-        "y": 300
+        "x": 1860,
+        "y": 390
       },
       "data": {
         "label": "Compressor 1 NDE Drain",
         "level_m": 0.0002,
         "elevation_m": 0,
         "temperature_k": 313.15,
-        "rotation": 0,
+        "rotation": 180,
         "num_ports": 1
       },
       "width": 105,
@@ -603,15 +596,15 @@
       "id": "drain-comp2-de",
       "type": "tank",
       "position": {
-        "x": 1340,
-        "y": 470
+        "x": 1860,
+        "y": 550
       },
       "data": {
         "label": "Compressor 2 DE Drain",
         "level_m": 2e-05,
         "elevation_m": 0,
         "temperature_k": 313.15,
-        "rotation": 0,
+        "rotation": 180,
         "num_ports": 1
       },
       "width": 97,
@@ -621,15 +614,15 @@
       "id": "drain-comp2-nde",
       "type": "tank",
       "position": {
-        "x": 1340,
-        "y": 640
+        "x": 1860,
+        "y": 710
       },
       "data": {
         "label": "Compressor 2 NDE Drain",
         "level_m": 0.0002,
         "elevation_m": 0,
         "temperature_k": 313.15,
-        "rotation": 0,
+        "rotation": 180,
         "num_ports": 1
       },
       "width": 105,
@@ -639,12 +632,12 @@
       "id": "node_6f63ec38",
       "type": "three_way_tcv",
       "position": {
-        "x": 160,
-        "y": -60
+        "x": 640,
+        "y": -30
       },
       "data": {
         "label": "Temperature Control Valve",
-        "rotation": 0,
+        "rotation": 90,
         "max_cv": 40,
         "set_temperature_c": 45,
         "hot_port_idx": 1,
@@ -654,10 +647,9 @@
       },
       "width": 113,
       "height": 101,
-      "selected": false,
       "positionAbsolute": {
-        "x": 160,
-        "y": -60
+        "x": 640,
+        "y": -30
       },
       "dragging": false
     },
@@ -665,8 +657,8 @@
       "id": "tap-oil-supply",
       "type": "measure_point",
       "position": {
-        "x": 267,
-        "y": -35
+        "x": 850,
+        "y": 80
       },
       "data": {
         "label": "Supply Tap",
@@ -677,8 +669,8 @@
       "id": "tap-header",
       "type": "measure_point",
       "position": {
-        "x": 630,
-        "y": -35
+        "x": 1220,
+        "y": 80
       },
       "data": {
         "label": "Header Tap",
@@ -689,8 +681,8 @@
       "id": "tit-101",
       "type": "instrument",
       "position": {
-        "x": 250,
-        "y": -150
+        "x": 890,
+        "y": 10
       },
       "data": {
         "label": "TIT 101",
@@ -707,8 +699,8 @@
       "id": "pdit-102",
       "type": "instrument",
       "position": {
-        "x": 355,
-        "y": -150
+        "x": 975,
+        "y": -35
       },
       "data": {
         "label": "PDIT 102",
@@ -725,8 +717,8 @@
       "id": "pit-103",
       "type": "instrument",
       "position": {
-        "x": 663,
-        "y": -150
+        "x": 1260,
+        "y": 10
       },
       "data": {
         "label": "PIT 103",
@@ -743,8 +735,8 @@
       "id": "fit-104",
       "type": "instrument",
       "position": {
-        "x": 1010,
-        "y": 75
+        "x": 1625,
+        "y": 165
       },
       "data": {
         "label": "FIT 104",
@@ -765,9 +757,10 @@
       "sourceHandle": "port-0",
       "target": "main-oil-pump",
       "targetHandle": "inlet-0",
-      "label": "pump-suction-line",
+      "label": "Pump Suction",
       "animated": true,
       "data": {
+        "label": "Pump Suction",
         "length_m": 8,
         "diameter_m": 0.15408,
         "type": "PIPE",
@@ -786,10 +779,11 @@
       "source": "main-oil-pump",
       "sourceHandle": "outlet-0",
       "target": "pump-discharge-junction",
-      "targetHandle": "port-2",
-      "label": "pump-discharge-line",
+      "targetHandle": "port-1",
+      "label": "Pump Discharge",
       "animated": true,
       "data": {
+        "label": "Pump Discharge",
         "length_m": 8,
         "diameter_m": 0.07792,
         "type": "PIPE",
@@ -806,12 +800,13 @@
     {
       "id": "spill-over-line",
       "source": "pump-discharge-junction",
-      "sourceHandle": "port-1",
+      "sourceHandle": "port-2",
       "target": "spill-over-valve",
       "targetHandle": "inlet-0",
-      "label": "spill-over-line",
+      "label": "Spill Over Supply",
       "animated": true,
       "data": {
+        "label": "Spill Over Supply",
         "length_m": 8,
         "diameter_m": 0.07792,
         "type": "PIPE",
@@ -831,9 +826,10 @@
       "sourceHandle": "outlet-0",
       "target": "reservoir-return-tank",
       "targetHandle": "port-0",
-      "label": "spill-over-return",
+      "label": "Spill Over Return",
       "animated": true,
       "data": {
+        "label": "Spill Over Return",
         "length_m": 10,
         "diameter_m": 0.07792,
         "type": "PIPE",
@@ -852,10 +848,11 @@
       "source": "pump-discharge-junction",
       "sourceHandle": "port-0",
       "target": "cooler-bypass-junction",
-      "targetHandle": "port-0",
-      "label": "main-supply-header",
+      "targetHandle": "port-1",
+      "label": "Main Supply Header",
       "animated": true,
       "data": {
+        "label": "Main Supply Header",
         "length_m": 1,
         "diameter_m": 0.10226,
         "type": "PIPE",
@@ -872,12 +869,13 @@
     {
       "id": "cooler-supply-line",
       "source": "cooler-bypass-junction",
-      "sourceHandle": "port-1",
+      "sourceHandle": "port-2",
       "target": "oil-cooler",
       "targetHandle": "inlet-0",
-      "label": "cooler-supply-line",
+      "label": "Cooler Supply",
       "animated": true,
       "data": {
+        "label": "Cooler Supply",
         "length_m": 1,
         "diameter_m": 0.07792,
         "type": "PIPE",
@@ -897,9 +895,10 @@
       "sourceHandle": "port-1",
       "target": "flow-sensing-orifice",
       "targetHandle": "port-0",
-      "label": "filter-discharge-line",
+      "label": "Filter Outlet",
       "animated": true,
       "data": {
+        "label": "Filter Outlet",
         "length_m": 1,
         "diameter_m": 0.07792,
         "type": "PIPE",
@@ -919,9 +918,10 @@
       "sourceHandle": "port-1",
       "target": "tap-header",
       "targetHandle": "port-0",
-      "label": "sensing-line",
+      "label": "Orifice Outlet",
       "animated": true,
       "data": {
+        "label": "Orifice Outlet",
         "length_m": 1.0,
         "diameter_m": 0.07792,
         "type": "PIPE",
@@ -941,9 +941,10 @@
       "sourceHandle": "port-1",
       "target": "distribution-header-junction",
       "targetHandle": "port-1",
-      "label": "sensing-line",
+      "label": "Header Feed",
       "animated": true,
       "data": {
+        "label": "Header Feed",
         "length_m": 1.0,
         "diameter_m": 0.07792,
         "type": "PIPE",
@@ -963,9 +964,10 @@
       "sourceHandle": "port-2",
       "target": "motor-bearing-junction",
       "targetHandle": "port-0",
-      "label": "motor-supply-line",
+      "label": "Motor Supply",
       "animated": true,
       "data": {
+        "label": "Motor Supply",
         "length_m": 2,
         "diameter_m": 0.02116,
         "type": "PIPE",
@@ -985,9 +987,10 @@
       "sourceHandle": "port-0",
       "target": "gearbox-junction",
       "targetHandle": "port-0",
-      "label": "main-distribution-line",
+      "label": "Machinery Supply",
       "animated": true,
       "data": {
+        "label": "Machinery Supply",
         "length_m": 24,
         "diameter_m": 0.07792,
         "type": "PIPE",
@@ -1007,9 +1010,10 @@
       "sourceHandle": "port-1",
       "target": "orifice-motor-nde",
       "targetHandle": "port-0",
-      "label": "motor-nde-supply",
+      "label": "Motor NDE Supply",
       "animated": true,
       "data": {
+        "label": "Motor NDE Supply",
         "length_m": 2,
         "diameter_m": 0.02116,
         "type": "PIPE",
@@ -1029,9 +1033,10 @@
       "sourceHandle": "port-2",
       "target": "orifice-motor-de",
       "targetHandle": "port-0",
-      "label": "motor-de-supply",
+      "label": "Motor DE Supply",
       "animated": true,
       "data": {
+        "label": "Motor DE Supply",
         "length_m": 2,
         "diameter_m": 0.02116,
         "type": "PIPE",
@@ -1051,9 +1056,10 @@
       "sourceHandle": "port-1",
       "target": "drain-motor-nde",
       "targetHandle": "port-0",
-      "label": "motor-nde-drain",
+      "label": "Motor NDE Drain Line",
       "animated": true,
       "data": {
+        "label": "Motor NDE Drain Line",
         "length_m": 0,
         "diameter_m": 0.05248,
         "type": "PIPE",
@@ -1073,9 +1079,10 @@
       "sourceHandle": "port-1",
       "target": "drain-motor-de",
       "targetHandle": "port-0",
-      "label": "motor-de-drain",
+      "label": "Motor DE Drain Line",
       "animated": true,
       "data": {
+        "label": "Motor DE Drain Line",
         "length_m": 0,
         "diameter_m": 0.05248,
         "type": "PIPE",
@@ -1095,9 +1102,10 @@
       "sourceHandle": "port-1",
       "target": "orifice-gearbox",
       "targetHandle": "port-0",
-      "label": "gearbox-supply",
+      "label": "Gearbox Supply",
       "animated": true,
       "data": {
+        "label": "Gearbox Supply",
         "length_m": 5,
         "diameter_m": 0.04094,
         "type": "PIPE",
@@ -1112,8 +1120,7 @@
       "style": {
         "stroke": "#3b82f6",
         "strokeWidth": 3
-      },
-      "selected": true
+      }
     },
     {
       "id": "aux-distribution-line",
@@ -1121,9 +1128,10 @@
       "sourceHandle": "port-2",
       "target": "comp1-junction",
       "targetHandle": "port-1",
-      "label": "aux-distribution-line",
+      "label": "Compressor 1 Supply",
       "animated": true,
       "data": {
+        "label": "Compressor 1 Supply",
         "length_m": 1,
         "diameter_m": 0.05248,
         "type": "PIPE",
@@ -1143,9 +1151,10 @@
       "sourceHandle": "port-1",
       "target": "drain-gearbox",
       "targetHandle": "port-0",
-      "label": "gearbox-drain",
+      "label": "Gearbox Drain Line",
       "animated": true,
       "data": {
+        "label": "Gearbox Drain Line",
         "length_m": 0,
         "diameter_m": 0.05248,
         "type": "PIPE",
@@ -1165,9 +1174,10 @@
       "sourceHandle": "port-2",
       "target": "orifice-comp1-de",
       "targetHandle": "port-0",
-      "label": "comp1-de-supply",
+      "label": "Compressor 1 DE Supply",
       "animated": true,
       "data": {
+        "label": "Compressor 1 DE Supply",
         "length_m": 2,
         "diameter_m": 0.05248,
         "type": "PIPE",
@@ -1187,9 +1197,10 @@
       "sourceHandle": "port-0",
       "target": "comp1-nde-junction",
       "targetHandle": "port-1",
-      "label": "comp1-nde-manifold",
+      "label": "Compressor 1 NDE Branch",
       "animated": true,
       "data": {
+        "label": "Compressor 1 NDE Branch",
         "length_m": 1,
         "diameter_m": 0.05248,
         "type": "PIPE",
@@ -1209,9 +1220,10 @@
       "sourceHandle": "port-1",
       "target": "drain-comp1-de",
       "targetHandle": "port-0",
-      "label": "comp1-de-drain",
+      "label": "Compressor 1 DE Drain Line",
       "animated": true,
       "data": {
+        "label": "Compressor 1 DE Drain Line",
         "length_m": 0,
         "diameter_m": 0.05248,
         "type": "PIPE",
@@ -1231,9 +1243,10 @@
       "sourceHandle": "port-2",
       "target": "orifice-comp1-nde",
       "targetHandle": "port-0",
-      "label": "comp1-nde-supply",
+      "label": "Compressor 1 NDE Supply",
       "animated": true,
       "data": {
+        "label": "Compressor 1 NDE Supply",
         "length_m": 2,
         "diameter_m": 0.05248,
         "type": "PIPE",
@@ -1253,9 +1266,10 @@
       "sourceHandle": "port-0",
       "target": "comp2-junction",
       "targetHandle": "port-1",
-      "label": "comp2-manifold",
+      "label": "Compressor 2 Supply",
       "animated": true,
       "data": {
+        "label": "Compressor 2 Supply",
         "length_m": 1,
         "diameter_m": 0.04094,
         "type": "PIPE",
@@ -1275,9 +1289,10 @@
       "sourceHandle": "port-1",
       "target": "drain-comp1-nde",
       "targetHandle": "port-0",
-      "label": "comp1-nde-drain",
+      "label": "Compressor 1 NDE Drain Line",
       "animated": true,
       "data": {
+        "label": "Compressor 1 NDE Drain Line",
         "length_m": 0,
         "diameter_m": 0.05248,
         "type": "PIPE",
@@ -1297,9 +1312,10 @@
       "sourceHandle": "port-2",
       "target": "orifice-comp2-de",
       "targetHandle": "port-0",
-      "label": "comp2-de-supply",
+      "label": "Compressor 2 DE Supply",
       "animated": true,
       "data": {
+        "label": "Compressor 2 DE Supply",
         "length_m": 2,
         "diameter_m": 0.02116,
         "type": "PIPE",
@@ -1319,9 +1335,10 @@
       "sourceHandle": "port-0",
       "target": "orifice-comp2-nde",
       "targetHandle": "port-0",
-      "label": "comp2-nde-supply",
+      "label": "Compressor 2 NDE Supply",
       "animated": true,
       "data": {
+        "label": "Compressor 2 NDE Supply",
         "length_m": 2,
         "diameter_m": 0.04094,
         "type": "PIPE",
@@ -1333,8 +1350,7 @@
         "wall_thickness_mm": 3.68,
         "roughness_mm": 0.045
       },
-      "style": {},
-      "selected": false
+      "style": {}
     },
     {
       "id": "comp2-de-drain",
@@ -1342,9 +1358,10 @@
       "sourceHandle": "port-1",
       "target": "drain-comp2-de",
       "targetHandle": "port-0",
-      "label": "comp2-de-drain",
+      "label": "Compressor 2 DE Drain Line",
       "animated": true,
       "data": {
+        "label": "Compressor 2 DE Drain Line",
         "length_m": 0,
         "diameter_m": 0.05248,
         "type": "PIPE",
@@ -1364,9 +1381,10 @@
       "sourceHandle": "port-1",
       "target": "drain-comp2-nde",
       "targetHandle": "port-0",
-      "label": "comp2-nde-drain",
+      "label": "Compressor 2 NDE Drain Line",
       "animated": true,
       "data": {
+        "label": "Compressor 2 NDE Drain Line",
         "length_m": 0,
         "diameter_m": 0.05248,
         "type": "PIPE",
@@ -1378,8 +1396,7 @@
         "wall_thickness_mm": 3.91,
         "roughness_mm": 0.045
       },
-      "style": {},
-      "selected": false
+      "style": {}
     },
     {
       "id": "remote-pressure-signal",
@@ -1387,7 +1404,7 @@
       "sourceHandle": "signal-port-0",
       "target": "spill-over-valve",
       "targetHandle": "signal-in",
-      "label": "remote-pressure-signal",
+      "label": "Spill Over Pressure Signal",
       "animated": true,
       "type": "step",
       "style": {
@@ -1396,6 +1413,7 @@
         "strokeDasharray": "5,5"
       },
       "data": {
+        "label": "Spill Over Pressure Signal",
         "type": "SIGNAL",
         "pipe_class_id": "walflow-cs01",
         "pipe_class_code": "CS01",
@@ -1409,16 +1427,16 @@
     },
     {
       "source": "cooler-bypass-junction",
-      "sourceHandle": "port-2",
+      "sourceHandle": "port-0",
       "target": "node_6f63ec38",
       "targetHandle": "inlet-1",
       "id": "Pipe 100",
-      "label": "Pipe 100",
+      "label": "Cooler Bypass",
       "animated": true,
       "type": "default",
       "style": {},
       "data": {
-        "label": "Pipe 100",
+        "label": "Cooler Bypass",
         "type": "PIPE",
         "length_m": 2,
         "diameter_m": 0.07792,
@@ -1429,8 +1447,7 @@
         "outer_diameter_mm": 88.9,
         "wall_thickness_mm": 5.49,
         "roughness_mm": 0.045
-      },
-      "selected": false
+      }
     },
     {
       "source": "oil-cooler",
@@ -1438,12 +1455,12 @@
       "target": "node_6f63ec38",
       "targetHandle": "inlet-0",
       "id": "Pipe 102",
-      "label": "Pipe 102",
+      "label": "Cooler Outlet",
       "animated": true,
       "type": "default",
       "style": {},
       "data": {
-        "label": "Pipe 102",
+        "label": "Cooler Outlet",
         "type": "PIPE",
         "length_m": 1,
         "diameter_m": 0.07792,
@@ -1454,8 +1471,7 @@
         "outer_diameter_mm": 88.9,
         "wall_thickness_mm": 5.49,
         "roughness_mm": 0.045
-      },
-      "selected": false
+      }
     },
     {
       "source": "node_6f63ec38",
@@ -1463,12 +1479,12 @@
       "target": "tap-oil-supply",
       "targetHandle": "port-0",
       "id": "Pipe 104",
-      "label": "Pipe 104",
+      "label": "Control Valve Outlet",
       "animated": true,
       "type": "default",
       "style": {},
       "data": {
-        "label": "Pipe 104",
+        "label": "Control Valve Outlet",
         "type": "PIPE",
         "length_m": 0.5,
         "diameter_m": 0.07792,
@@ -1479,8 +1495,7 @@
         "outer_diameter_mm": 88.9,
         "wall_thickness_mm": 5.49,
         "roughness_mm": 0.045
-      },
-      "selected": false
+      }
     },
     {
       "source": "tap-oil-supply",
@@ -1488,12 +1503,12 @@
       "target": "main-filter",
       "targetHandle": "port-0",
       "id": "Pipe 104_b",
-      "label": "Pipe 104",
+      "label": "Filter Inlet",
       "animated": true,
       "type": "default",
       "style": {},
       "data": {
-        "label": "Pipe 104",
+        "label": "Filter Inlet",
         "type": "PIPE",
         "length_m": 0.5,
         "diameter_m": 0.07792,
@@ -1504,8 +1519,7 @@
         "outer_diameter_mm": 88.9,
         "wall_thickness_mm": 5.49,
         "roughness_mm": 0.045
-      },
-      "selected": false
+      }
     },
     {
       "id": "sig_tit-101_in",
