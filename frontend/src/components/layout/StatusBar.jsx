@@ -49,7 +49,7 @@ export default function StatusBar({ ctx, chip, activeCaseName, warningCount, has
         />
       )}
       <span className="status-spacer" />
-      <Slot icon={RulerIcon} label={`${basisLabel} · ${labels.flow}`} title="Units: click to open the global settings" onClick={onOpenUnits} className="status-slot-units" />
+      <Slot icon={RulerIcon} label={`${basisLabel} · ${labels.flow} · ${labels.temperature}`} title="Units: click to open the global settings" onClick={onOpenUnits} className="status-slot-units" />
       {selected > 0 && <span className="status-slot status-slot-static status-slot-selection">{selected} selected</span>}
       <ZoomSlot onClick={() => runCommand('view.fit', ctx)} />
     </>

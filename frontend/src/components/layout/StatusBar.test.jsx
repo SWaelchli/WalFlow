@@ -9,10 +9,10 @@ afterEach(cleanup);
 
 const chip = { status: { state: 'idle', label: 'Not run yet', tone: 'neutral' }, open: false, onToggle: () => {}, onClose: () => {} };
 
-function setup(props = {}, ctxOver = {}) {
+function setup(props = {}, ctxOver = {}, unitSystem = 'metric') {
   const ctx = makeCommandCtx(ctxOver);
   render(
-    <UnitProvider>
+    <UnitProvider initialUnitSystem={unitSystem}>
       <ReactFlowProvider>
         <StatusBar ctx={ctx} chip={chip} activeCaseName="Base" warningCount={0} hasErrors={false} onOpenWarnings={() => {}} onOpenUnits={() => {}} {...props} />
       </ReactFlowProvider>
@@ -44,7 +44,15 @@ describe('StatusBar', () => {
     expect(ctx.actions.toggleCaseManager).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByRole('button', { name: /percent, fit view/ }));
     expect(ctx.actions.fitView).toHaveBeenCalledTimes(1);
-    fireEvent.click(screen.getByRole('button', { name: /^bar|psi|kPa|MPa/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'bar a · L/min · °C' }));
     expect(onOpenUnits).toHaveBeenCalledTimes(1);
+  });
+
+  it('displays pressure, flow, and temperature units in the units slot for metric and imperial', () => {
+    setup({}, {}, 'metric');
+    expect(screen.getByRole('button', { name: 'bar a · L/min · °C' })).toBeTruthy();
+    cleanup();
+    setup({}, {}, 'imperial');
+    expect(screen.getByRole('button', { name: /psia · gpm · °F/i })).toBeTruthy();
   });
 });
