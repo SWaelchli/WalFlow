@@ -19,6 +19,19 @@ Items move between releases as priorities change. Done items stay in "Done in 0.
   * **Concept:** Show ports and pipes that the solver marks `stagnant: true` (sections shut in by a stopped PD pump, a check valve without flow or a closed relief device, see Undefined Pressure in Stagnant Branches) on the canvas and in the results, so a zero-flow branch reads as shut in rather than as a result.
   * **Today:** the flag is in the telemetry; the frontend does not show it.
 
+- [ ] **🌡️ Sensing Pins on All Three 3-Way TCV Ports**
+  * **Concept:** Give the 3-way temperature control valve a sensing pin on each of its 3 ports.
+  * **Today:** it has only 2 sensing pin options.
+
+- [ ] **🔀 Switch Cases from the Data List Header**
+  * **Concept:** In the Cases, Measurements and Relief tabs of the data list, selecting a case header switches to that case.
+
+- [ ] **▶️ Solve All Cases Button in the Data List**
+  * **Concept:** Add the Solve all cases button back to the Cases, Measurements and Relief tabs of the data list, at the top right and with the same styling as the Auto sort button.
+
+- [ ] **🎯 Scroll the Data List to the Selected Item**
+  * **Concept:** When a pipe or piece of equipment is selected on the canvas and its data list tab (Pipes or Equipment) is open, the list scrolls to that item.
+
 ---
 
 ## 0.2.x
