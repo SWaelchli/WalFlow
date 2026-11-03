@@ -3,9 +3,10 @@ FROM python:3.13-slim
 
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies. gosu lets the entrypoint drop root before launching uvicorn.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    gosu \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy and install requirements
@@ -14,6 +15,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy backend code
 COPY backend ./backend
+
+# Unprivileged user the app runs as (the entrypoint can re-point it via PUID/PGID).
+RUN groupadd -g 1000 walflow \
+    && useradd -u 1000 -g 1000 -m -s /usr/sbin/nologin walflow \
+    && mkdir -p /app/data \
+    && chown -R walflow:walflow /app
 
 # Environment variables
 ENV PYTHONUNBUFFERED=1
@@ -25,6 +32,12 @@ ENV UVICORN_WS_MAX_SIZE=2097152
 WORKDIR /app/backend
 
 EXPOSE 8000
+
+# Entrypoint starts as root only to fix volume ownership, then drops to the unprivileged
+# user via gosu; uvicorn (the CMD) runs unprivileged.
+COPY docker-entrypoint.backend.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 
 # Launch Uvicorn FastAPI server
 CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
