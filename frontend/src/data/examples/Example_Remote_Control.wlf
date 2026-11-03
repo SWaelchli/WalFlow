@@ -7,14 +7,14 @@
       "id": "note-overview",
       "type": "text_bubble",
       "position": {
-        "x": 100,
-        "y": -20
+        "x": 850,
+        "y": 250
       },
-      "width": 400,
-      "height": 210,
+      "width": 420,
+      "height": 225,
       "style": {
-        "width": 400,
-        "height": 210
+        "width": 420,
+        "height": 225
       },
       "data": {
         "label": "Note",
@@ -27,7 +27,7 @@
       "id": "suction-tank",
       "type": "tank",
       "position": {
-        "x": 100,
+        "x": 0,
         "y": 250
       },
       "data": {
@@ -42,8 +42,8 @@
       "id": "feed-pump",
       "type": "centrifugal_pump",
       "position": {
-        "x": 260,
-        "y": 250
+        "x": 150,
+        "y": 295
       },
       "data": {
         "label": "High-Pressure Feed Pump",
@@ -56,8 +56,8 @@
       "id": "sensing-node",
       "type": "orifice",
       "position": {
-        "x": 420,
-        "y": 250
+        "x": 340,
+        "y": 280
       },
       "data": {
         "label": "Header Pressure Sensor Orifice",
@@ -71,8 +71,8 @@
       "id": "remote-valve",
       "type": "remote_control_valve",
       "position": {
-        "x": 620,
-        "y": 250
+        "x": 520,
+        "y": 275
       },
       "data": {
         "label": "Remote Emergency Cutoff Valve",
@@ -89,10 +89,11 @@
       "id": "process-sink",
       "type": "tank",
       "position": {
-        "x": 800,
-        "y": 250
+        "x": 700,
+        "y": 290
       },
       "data": {
+        "rotation": 180,
         "label": "Receiving Tank",
         "level_m": 0.5,
         "elevation_m": 0.0,

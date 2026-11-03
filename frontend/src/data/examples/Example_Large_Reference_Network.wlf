@@ -68,20 +68,19 @@
       "id": "node_8fd45f2a",
       "type": "tank",
       "position": {
-        "x": -127,
-        "y": 65
+        "x": -85,
+        "y": 20
       },
       "width": 60,
       "height": 143,
-      "selected": false,
       "positionAbsolute": {
-        "x": -127,
-        "y": 65
+        "x": -85,
+        "y": 20
       },
       "dragging": false,
       "data": {
-        "label": "TANK_330",
-        "rotation": 0,
+        "label": "Oil Reservoir A",
+        "rotation": 270,
         "level_m": 0.1,
         "elevation_m": 0.1,
         "temperature_k": 338.15,
@@ -92,20 +91,19 @@
       "id": "node_032bb480",
       "type": "volumetric_pump",
       "position": {
-        "x": 39,
-        "y": 72
+        "x": 100,
+        "y": -15
       },
       "width": 60,
       "height": 103,
-      "selected": false,
       "positionAbsolute": {
-        "x": 39,
-        "y": 72
+        "x": 100,
+        "y": -15
       },
       "dragging": false,
       "data": {
         "label": "P-2358A",
-        "rotation": 270,
+        "rotation": 0,
         "flow_rated_lmin": 505,
         "motor_power_kw": 18.5,
         "efficiency_pct": 63,
@@ -116,20 +114,19 @@
       "id": "node_c2c3ec68",
       "type": "tank",
       "position": {
-        "x": -128,
+        "x": -85,
         "y": 390
       },
       "width": 67,
       "height": 143,
-      "selected": false,
       "positionAbsolute": {
-        "x": -128,
+        "x": -85,
         "y": 390
       },
       "dragging": false,
       "data": {
-        "label": "TANK_330_copy",
-        "rotation": 0,
+        "label": "Oil Reservoir B",
+        "rotation": 270,
         "level_m": 0.1,
         "elevation_m": 0.1,
         "temperature_k": 338.15,
@@ -140,20 +137,19 @@
       "id": "node_b4cf5bf5",
       "type": "volumetric_pump",
       "position": {
-        "x": 52,
-        "y": 377
+        "x": 100,
+        "y": 355
       },
       "width": 60,
       "height": 103,
-      "selected": false,
       "positionAbsolute": {
-        "x": 52,
-        "y": 377
+        "x": 100,
+        "y": 355
       },
       "dragging": false,
       "data": {
         "label": "P-2358B",
-        "rotation": 270,
+        "rotation": 0,
         "flow_rated_lmin": 505,
         "motor_power_kw": 18.5,
         "efficiency_pct": 63,
@@ -164,19 +160,18 @@
       "id": "node_31c4a871",
       "type": "junction",
       "position": {
-        "x": 50,
-        "y": 261
+        "x": 200,
+        "y": 350
       },
       "width": 59,
       "height": 71,
-      "selected": false,
       "positionAbsolute": {
-        "x": 50,
-        "y": 261
+        "x": 200,
+        "y": 350
       },
       "dragging": false,
       "data": {
-        "label": "JUNCTION_804",
+        "label": "Pump B Discharge Junction",
         "rotation": 0,
         "num_ports": 3
       }
@@ -185,19 +180,18 @@
       "id": "node_713c04c3",
       "type": "junction",
       "position": {
-        "x": 35,
-        "y": -40
+        "x": 200,
+        "y": -20
       },
       "width": 83,
       "height": 71,
-      "selected": false,
       "positionAbsolute": {
-        "x": 35,
-        "y": -40
+        "x": 200,
+        "y": -20
       },
       "dragging": false,
       "data": {
-        "label": "JUNCTION_804_copy",
+        "label": "Pump A Discharge Junction",
         "rotation": 0,
         "num_ports": 3
       }
@@ -206,15 +200,14 @@
       "id": "node_2cc6a499",
       "type": "pressure_safety_valve",
       "position": {
-        "x": -110,
-        "y": 203
+        "x": 110,
+        "y": 505
       },
       "width": 86,
       "height": 121,
-      "selected": false,
       "positionAbsolute": {
-        "x": -110,
-        "y": 203
+        "x": 110,
+        "y": 505
       },
       "dragging": false,
       "data": {
@@ -229,15 +222,14 @@
       "id": "node_3176b1fc",
       "type": "pressure_safety_valve",
       "position": {
-        "x": -100,
-        "y": -128
+        "x": 110,
+        "y": 135
       },
       "width": 86,
       "height": 121,
-      "selected": false,
       "positionAbsolute": {
-        "x": -100,
-        "y": -128
+        "x": 110,
+        "y": 135
       },
       "dragging": false,
       "data": {
@@ -252,19 +244,18 @@
       "id": "node_807e08c4",
       "type": "check_valve",
       "position": {
-        "x": 199,
-        "y": -94
+        "x": 260,
+        "y": -35
       },
       "width": 79,
       "height": 103,
-      "selected": false,
       "positionAbsolute": {
-        "x": 199,
-        "y": -94
+        "x": 260,
+        "y": -35
       },
       "dragging": false,
       "data": {
-        "label": "CHECK_VALVE_724",
+        "label": "Pump A Check Valve",
         "rotation": 0,
         "cv": 104.0,
         "cracking_pressure_bar": 0.03
@@ -274,19 +265,18 @@
       "id": "node_d26da9b2",
       "type": "check_valve",
       "position": {
-        "x": 189,
-        "y": 202
+        "x": 260,
+        "y": 335
       },
       "width": 79,
       "height": 103,
-      "selected": false,
       "positionAbsolute": {
-        "x": 189,
-        "y": 202
+        "x": 260,
+        "y": 335
       },
       "dragging": false,
       "data": {
-        "label": "CHECK_VALVE_460",
+        "label": "Pump B Check Valve",
         "rotation": 0,
         "cv": 104.0,
         "cracking_pressure_bar": 0.03
@@ -296,20 +286,19 @@
       "id": "node_6a53fcc0",
       "type": "junction",
       "position": {
-        "x": 339,
-        "y": -79
+        "x": 380,
+        "y": -20
       },
       "width": 59,
       "height": 71,
-      "selected": false,
       "positionAbsolute": {
-        "x": 339,
-        "y": -79
+        "x": 380,
+        "y": -20
       },
       "dragging": false,
       "data": {
-        "label": "JUNCTION_109",
-        "rotation": 90,
+        "label": "Pump Header Junction",
+        "rotation": 0,
         "num_ports": 3
       }
     },
@@ -317,20 +306,19 @@
       "id": "node_192e77a1",
       "type": "junction",
       "position": {
-        "x": 376,
-        "y": 252
+        "x": 380,
+        "y": 350
       },
       "width": 56,
       "height": 71,
-      "selected": false,
       "positionAbsolute": {
-        "x": 376,
-        "y": 252
+        "x": 380,
+        "y": 350
       },
       "dragging": false,
       "data": {
-        "label": "JUNCTION_682",
-        "rotation": 90,
+        "label": "Spillback Junction",
+        "rotation": 180,
         "num_ports": 3
       }
     },
@@ -338,20 +326,19 @@
       "id": "node_db1f9a5f",
       "type": "tank",
       "position": {
-        "x": 365,
-        "y": 578
+        "x": 1460,
+        "y": 350
       },
       "width": 60,
       "height": 143,
-      "selected": false,
       "positionAbsolute": {
-        "x": 365,
-        "y": 578
+        "x": 1460,
+        "y": 350
       },
       "dragging": false,
       "data": {
-        "label": "TANK_985",
-        "rotation": 90,
+        "label": "Spillback Return Tank",
+        "rotation": 180,
         "level_m": 0.1,
         "elevation_m": 0.1,
         "temperature_k": 338.15,
@@ -362,20 +349,19 @@
       "id": "node_d8aa69c8",
       "type": "junction",
       "position": {
-        "x": 381,
-        "y": -233
+        "x": 460,
+        "y": -20
       },
       "width": 59,
       "height": 71,
-      "selected": false,
       "positionAbsolute": {
-        "x": 381,
-        "y": -233
+        "x": 460,
+        "y": -20
       },
       "dragging": false,
       "data": {
-        "label": "JUNCTION_702",
-        "rotation": 270,
+        "label": "Cooler Split Junction",
+        "rotation": 180,
         "num_ports": 3
       }
     },
@@ -383,20 +369,19 @@
       "id": "node_c2678a3e",
       "type": "heat_exchanger",
       "position": {
-        "x": 477,
-        "y": -386
+        "x": 530,
+        "y": -30
       },
       "width": 100,
       "height": 103,
-      "selected": true,
       "positionAbsolute": {
-        "x": 477,
-        "y": -386
+        "x": 530,
+        "y": -30
       },
       "dragging": false,
       "data": {
-        "label": "HEAT_EXCHANGER_884",
-        "rotation": 270,
+        "label": "Oil Cooler",
+        "rotation": 0,
         "active": true,
         "rated_cooling_kw": 260,
         "design_inlet_temp_c": 65,
@@ -409,20 +394,19 @@
       "id": "node_50250584",
       "type": "three_way_tcv",
       "position": {
-        "x": 482,
-        "y": -549
+        "x": 630,
+        "y": -30
       },
       "width": 91,
       "height": 101,
-      "selected": false,
       "positionAbsolute": {
-        "x": 482,
-        "y": -549
+        "x": 630,
+        "y": -30
       },
       "dragging": false,
       "data": {
-        "label": "THREE_WAY_TCV_832",
-        "rotation": 0,
+        "label": "Oil Temperature Control Valve",
+        "rotation": 90,
         "max_cv": 127.8,
         "set_temperature_c": 40,
         "hot_port_idx": 0,
@@ -435,19 +419,18 @@
       "id": "node_f59f6043",
       "type": "filter",
       "position": {
-        "x": 663,
-        "y": -534
+        "x": 930,
+        "y": 110
       },
       "width": 60,
       "height": 82,
-      "selected": false,
       "positionAbsolute": {
-        "x": 663,
-        "y": -534
+        "x": 930,
+        "y": 110
       },
       "dragging": false,
       "data": {
-        "label": "FILTER_998",
+        "label": "Oil Filter",
         "rotation": 0,
         "dp_clean_bar": 0.3,
         "dp_terminal_bar": 1,
@@ -459,19 +442,18 @@
       "id": "node_8d84994e",
       "type": "check_valve",
       "position": {
-        "x": 787,
-        "y": -548
+        "x": 1020,
+        "y": 95
       },
       "width": 103,
       "height": 103,
-      "selected": false,
       "positionAbsolute": {
-        "x": 787,
-        "y": -548
+        "x": 1020,
+        "y": 95
       },
       "dragging": false,
       "data": {
-        "label": "CHECK_VALVE_724_copy",
+        "label": "Filter Outlet Check Valve",
         "rotation": 0,
         "cv": 104.0,
         "cracking_pressure_bar": 0.03,
@@ -484,19 +466,18 @@
       "id": "node_abab9f02",
       "type": "junction",
       "position": {
-        "x": 926,
-        "y": -532
+        "x": 1160,
+        "y": 110
       },
       "width": 56,
       "height": 71,
-      "selected": false,
       "positionAbsolute": {
-        "x": 926,
-        "y": -532
+        "x": 1160,
+        "y": 110
       },
       "dragging": false,
       "data": {
-        "label": "JUNCTION_25",
+        "label": "Supply Header Junction",
         "rotation": 0,
         "sensing": {
           "outlet-0": false,
@@ -509,20 +490,19 @@
       "id": "node_f9bb5ad9",
       "type": "orifice",
       "position": {
-        "x": 992,
-        "y": -290
+        "x": 1210,
+        "y": 190
       },
       "width": 53,
       "height": 91,
-      "selected": false,
       "positionAbsolute": {
-        "x": 992,
-        "y": -290
+        "x": 1210,
+        "y": 190
       },
       "dragging": false,
       "data": {
-        "label": "ORIFICE_604",
-        "rotation": 90,
+        "label": "Header Bleed Orifice",
+        "rotation": 0,
         "pipe_diameter_m": 0.05248,
         "orifice_diameter_m": 0.002,
         "standardDn": 50,
@@ -537,20 +517,19 @@
       "id": "node_59ab52bf",
       "type": "tank",
       "position": {
-        "x": 996,
-        "y": -151
+        "x": 1280,
+        "y": 200
       },
       "width": 60,
       "height": 143,
-      "selected": false,
       "positionAbsolute": {
-        "x": 996,
-        "y": -151
+        "x": 1280,
+        "y": 200
       },
       "dragging": false,
       "data": {
-        "label": "TANK_603",
-        "rotation": 90,
+        "label": "Header Bleed Tank",
+        "rotation": 180,
         "level_m": 0.1,
         "elevation_m": 0.1,
         "temperature_k": 313.15,
@@ -561,19 +540,18 @@
       "id": "node_d7a7dc67",
       "type": "junction",
       "position": {
-        "x": 1249,
-        "y": -472
+        "x": 1540,
+        "y": 110
       },
       "width": 59,
       "height": 71,
-      "selected": false,
       "positionAbsolute": {
-        "x": 1249,
-        "y": -472
+        "x": 1540,
+        "y": 110
       },
       "dragging": false,
       "data": {
-        "label": "JUNCTION_770",
+        "label": "Motor Feed Junction",
         "rotation": 0,
         "num_ports": 3
       }
@@ -582,20 +560,19 @@
       "id": "node_9a1b2114",
       "type": "orifice",
       "position": {
-        "x": 1792,
-        "y": -882
+        "x": 1705,
+        "y": 220
       },
       "width": 43,
       "height": 91,
-      "selected": false,
       "positionAbsolute": {
-        "x": 1792,
-        "y": -882
+        "x": 1705,
+        "y": 220
       },
       "dragging": false,
       "data": {
         "label": "RO-2301A",
-        "rotation": 270,
+        "rotation": 90,
         "pipe_diameter_m": 0.05248,
         "orifice_diameter_m": 0.0082,
         "standardDn": 50,
@@ -606,20 +583,19 @@
       "id": "node_d4dbe2e8",
       "type": "orifice",
       "position": {
-        "x": 1941,
-        "y": -851
+        "x": 1540,
+        "y": 220
       },
       "width": 43,
       "height": 91,
-      "selected": false,
       "positionAbsolute": {
-        "x": 1941,
-        "y": -851
+        "x": 1540,
+        "y": 220
       },
       "dragging": false,
       "data": {
-        "label": "RO-2301A",
-        "rotation": 270,
+        "label": "RO-2301B",
+        "rotation": 90,
         "pipe_diameter_m": 0.05248,
         "orifice_diameter_m": 0.0082,
         "standardDn": 50,
@@ -630,20 +606,19 @@
       "id": "node_0f156414",
       "type": "junction",
       "position": {
-        "x": 1724,
-        "y": -627
+        "x": 1540,
+        "y": 170
       },
       "width": 107,
       "height": 71,
-      "selected": false,
       "positionAbsolute": {
-        "x": 1724,
-        "y": -627
+        "x": 1540,
+        "y": 170
       },
       "dragging": false,
       "data": {
-        "label": "BRANCH_770_copy_copy",
-        "rotation": 180,
+        "label": "Motor Bearing Junction",
+        "rotation": 270,
         "num_ports": 3
       }
     },
@@ -651,19 +626,18 @@
       "id": "node_a0ba4eba",
       "type": "junction",
       "position": {
-        "x": 1446,
-        "y": -371
+        "x": 1870,
+        "y": 110
       },
       "width": 83,
       "height": 71,
-      "selected": false,
       "positionAbsolute": {
-        "x": 1446,
-        "y": -371
+        "x": 1870,
+        "y": 110
       },
       "dragging": false,
       "data": {
-        "label": "JUNCTION_770_copy",
+        "label": "Gearbox Junction",
         "rotation": 0,
         "num_ports": 3
       }
@@ -672,15 +646,14 @@
       "id": "node_bf70bd63",
       "type": "orifice",
       "position": {
-        "x": 1512,
-        "y": -188
+        "x": 1870,
+        "y": 220
       },
       "width": 43,
       "height": 91,
-      "selected": false,
       "positionAbsolute": {
-        "x": 1512,
-        "y": -188
+        "x": 1870,
+        "y": 220
       },
       "dragging": false,
       "data": {
@@ -699,19 +672,18 @@
       "id": "node_4211d433",
       "type": "junction",
       "position": {
-        "x": 1805,
-        "y": -375
+        "x": 2035,
+        "y": 110
       },
       "width": 107,
       "height": 71,
-      "selected": false,
       "positionAbsolute": {
-        "x": 1805,
-        "y": -375
+        "x": 2035,
+        "y": 110
       },
       "dragging": false,
       "data": {
-        "label": "BRANCH_770_copy_copy",
+        "label": "Compressor DE Junction",
         "rotation": 0,
         "num_ports": 3
       }
@@ -720,15 +692,14 @@
       "id": "node_485f95a2",
       "type": "orifice",
       "position": {
-        "x": 1933,
-        "y": -224
+        "x": 2035,
+        "y": 220
       },
       "width": 44,
       "height": 91,
-      "selected": false,
       "positionAbsolute": {
-        "x": 1933,
-        "y": -224
+        "x": 2035,
+        "y": 220
       },
       "dragging": false,
       "data": {
@@ -744,15 +715,14 @@
       "id": "node_8368ae5f",
       "type": "orifice",
       "position": {
-        "x": 2184,
-        "y": -224
+        "x": 2235,
+        "y": 220
       },
       "width": 42,
       "height": 91,
-      "selected": false,
       "positionAbsolute": {
-        "x": 2184,
-        "y": -224
+        "x": 2235,
+        "y": 220
       },
       "dragging": false,
       "data": {
@@ -768,19 +738,18 @@
       "id": "node_6e5b1658",
       "type": "junction",
       "position": {
-        "x": 2126,
-        "y": -379
+        "x": 2235,
+        "y": 110
       },
       "width": 131,
       "height": 71,
-      "selected": false,
       "positionAbsolute": {
-        "x": 2126,
-        "y": -379
+        "x": 2235,
+        "y": 110
       },
       "dragging": false,
       "data": {
-        "label": "JUNCTION_770_copy_copy_copy",
+        "label": "Compressor NDE Junction",
         "rotation": 0,
         "num_ports": 3
       }
@@ -789,19 +758,18 @@
       "id": "node_f243d748",
       "type": "orifice",
       "position": {
-        "x": 2318,
-        "y": -249
+        "x": 2400,
+        "y": 220
       },
       "width": 71,
       "height": 91,
-      "selected": false,
       "positionAbsolute": {
-        "x": 2318,
-        "y": -249
+        "x": 2400,
+        "y": 220
       },
       "dragging": false,
       "data": {
-        "label": "Internal Orifice 1",
+        "label": "Thrust 1 Orifice",
         "rotation": 90,
         "pipe_diameter_m": 0.05248,
         "orifice_diameter_m": 0.01,
@@ -813,19 +781,18 @@
       "id": "node_f57214b9",
       "type": "orifice",
       "position": {
-        "x": 2408,
-        "y": -245
+        "x": 2565,
+        "y": 220
       },
       "width": 71,
       "height": 91,
-      "selected": false,
       "positionAbsolute": {
-        "x": 2408,
-        "y": -245
+        "x": 2565,
+        "y": 220
       },
       "dragging": false,
       "data": {
-        "label": "Internal Orifice 2",
+        "label": "Thrust 2 Orifice",
         "rotation": 90,
         "pipe_diameter_m": 0.05248,
         "orifice_diameter_m": 0.01,
@@ -837,19 +804,18 @@
       "id": "node_327c00de",
       "type": "junction",
       "position": {
-        "x": 2360,
-        "y": -359
+        "x": 2400,
+        "y": 110
       },
       "width": 155,
       "height": 71,
-      "selected": false,
       "positionAbsolute": {
-        "x": 2360,
-        "y": -359
+        "x": 2400,
+        "y": 110
       },
       "dragging": false,
       "data": {
-        "label": "JUNCTION_770_copy_copy_copy_copy",
+        "label": "Compressor Thrust Junction",
         "rotation": 0,
         "num_ports": 3
       }
@@ -858,15 +824,14 @@
       "id": "node_bcd1d1e9",
       "type": "calibrated_restriction",
       "position": {
-        "x": 1514,
-        "y": -52
+        "x": 1870,
+        "y": 280
       },
       "width": 42,
       "height": 105,
-      "selected": false,
       "positionAbsolute": {
-        "x": 1514,
-        "y": -52
+        "x": 1870,
+        "y": 280
       },
       "dragging": false,
       "data": {
@@ -884,20 +849,19 @@
       "id": "node_c255f237",
       "type": "tank",
       "position": {
-        "x": 1503,
-        "y": 71
+        "x": 1910,
+        "y": 350
       },
       "width": 67,
       "height": 143,
-      "selected": false,
       "positionAbsolute": {
-        "x": 1503,
-        "y": 71
+        "x": 1910,
+        "y": 350
       },
       "dragging": false,
       "data": {
-        "label": "TANK_985_copy",
-        "rotation": 90,
+        "label": "Gearbox Return",
+        "rotation": 180,
         "level_m": 0.1,
         "elevation_m": 0.1,
         "temperature_k": 338.15,
@@ -908,20 +872,19 @@
       "id": "node_9958a664",
       "type": "calibrated_restriction",
       "position": {
-        "x": 1939,
-        "y": -72
+        "x": 2085,
+        "y": 310
       },
       "width": 64,
       "height": 105,
-      "selected": false,
       "positionAbsolute": {
-        "x": 1939,
-        "y": -72
+        "x": 2085,
+        "y": 310
       },
       "dragging": false,
       "data": {
         "label": "Compressor DE",
-        "rotation": 90,
+        "rotation": 0,
         "flow_base_lmin": 30,
         "inlet_pressure_base_bara": 1.8,
         "outlet_pressure_base_bara": 1,
@@ -937,15 +900,14 @@
       "id": "node_0099e94d",
       "type": "calibrated_restriction",
       "position": {
-        "x": 2187,
-        "y": -85
+        "x": 2235,
+        "y": 280
       },
       "width": 71,
       "height": 105,
-      "selected": false,
       "positionAbsolute": {
-        "x": 2187,
-        "y": -85
+        "x": 2235,
+        "y": 280
       },
       "dragging": false,
       "data": {
@@ -963,20 +925,19 @@
       "id": "node_a5dde124",
       "type": "tank",
       "position": {
-        "x": 1934,
-        "y": 42
+        "x": 2155,
+        "y": 320
       },
       "width": 91,
       "height": 143,
-      "selected": false,
       "positionAbsolute": {
-        "x": 1934,
-        "y": 42
+        "x": 2155,
+        "y": 320
       },
       "dragging": false,
       "data": {
-        "label": "TANK_985_copy_copy",
-        "rotation": 90,
+        "label": "Compressor DE Return",
+        "rotation": 180,
         "level_m": 0.1,
         "elevation_m": 0.1,
         "temperature_k": 338.15,
@@ -987,20 +948,19 @@
       "id": "node_79e1d31e",
       "type": "tank",
       "position": {
-        "x": 2178,
-        "y": 42
+        "x": 2275,
+        "y": 350
       },
       "width": 115,
       "height": 143,
-      "selected": false,
       "positionAbsolute": {
-        "x": 2178,
-        "y": 42
+        "x": 2275,
+        "y": 350
       },
       "dragging": false,
       "data": {
-        "label": "TANK_985_copy_copy_copy",
-        "rotation": 90,
+        "label": "Compressor NDE Return",
+        "rotation": 180,
         "level_m": 0.1,
         "elevation_m": 0.1,
         "temperature_k": 338.15,
@@ -1011,15 +971,14 @@
       "id": "node_89d45b5d",
       "type": "calibrated_restriction",
       "position": {
-        "x": 2317,
-        "y": -99
+        "x": 2400,
+        "y": 280
       },
       "width": 88,
       "height": 105,
-      "selected": false,
       "positionAbsolute": {
-        "x": 2317,
-        "y": -99
+        "x": 2400,
+        "y": 280
       },
       "dragging": false,
       "data": {
@@ -1037,20 +996,19 @@
       "id": "node_0effe165",
       "type": "calibrated_restriction",
       "position": {
-        "x": 2486,
-        "y": -110
+        "x": 2565,
+        "y": 280
       },
       "width": 88,
       "height": 105,
-      "selected": false,
       "positionAbsolute": {
-        "x": 2486,
-        "y": -110
+        "x": 2565,
+        "y": 280
       },
       "dragging": false,
       "data": {
         "label": "Compressor Thrust 2",
-        "rotation": 0,
+        "rotation": 90,
         "flow_base_lmin": 27.9,
         "inlet_pressure_base_bara": 3,
         "outlet_pressure_base_bara": 1,
@@ -1063,20 +1021,19 @@
       "id": "node_9496a1ca",
       "type": "tank",
       "position": {
-        "x": 2308,
-        "y": 40
+        "x": 2440,
+        "y": 350
       },
       "width": 139,
       "height": 143,
-      "selected": false,
       "positionAbsolute": {
-        "x": 2308,
-        "y": 40
+        "x": 2440,
+        "y": 350
       },
       "dragging": false,
       "data": {
-        "label": "TANK_985_copy_copy_copy_copy",
-        "rotation": 90,
+        "label": "Compressor Thrust 1 Return",
+        "rotation": 180,
         "level_m": 0.1,
         "elevation_m": 0.1,
         "temperature_k": 338.15,
@@ -1087,20 +1044,19 @@
       "id": "node_fcae2cd8",
       "type": "tank",
       "position": {
-        "x": 2595,
-        "y": -130
+        "x": 2605,
+        "y": 350
       },
       "width": 163,
       "height": 143,
-      "selected": false,
       "positionAbsolute": {
-        "x": 2595,
-        "y": -130
+        "x": 2605,
+        "y": 350
       },
       "dragging": false,
       "data": {
-        "label": "TANK_985_copy_copy_copy_copy_copy",
-        "rotation": 0,
+        "label": "Compressor Thrust 2 Return",
+        "rotation": 180,
         "level_m": 0.1,
         "elevation_m": 0.1,
         "temperature_k": 338.15,
@@ -1111,20 +1067,19 @@
       "id": "node_70d07517",
       "type": "calibrated_restriction",
       "position": {
-        "x": 1792,
-        "y": -1002
+        "x": 1705,
+        "y": 280
       },
       "width": 48,
       "height": 105,
-      "selected": false,
       "positionAbsolute": {
-        "x": 1792,
-        "y": -1002
+        "x": 1705,
+        "y": 280
       },
       "dragging": false,
       "data": {
         "label": "Motor NDE",
-        "rotation": 270,
+        "rotation": 90,
         "flow_base_lmin": 15,
         "inlet_pressure_base_bara": 2.8,
         "outlet_pressure_base_bara": 1,
@@ -1137,20 +1092,19 @@
       "id": "node_a522310e",
       "type": "calibrated_restriction",
       "position": {
-        "x": 1936,
-        "y": -996
+        "x": 1540,
+        "y": 280
       },
       "width": 42,
       "height": 105,
-      "selected": false,
       "positionAbsolute": {
-        "x": 1936,
-        "y": -996
+        "x": 1540,
+        "y": 280
       },
       "dragging": false,
       "data": {
         "label": "Motor DE",
-        "rotation": 270,
+        "rotation": 90,
         "flow_base_lmin": 15,
         "inlet_pressure_base_bara": 2.8,
         "outlet_pressure_base_bara": 1,
@@ -1163,20 +1117,19 @@
       "id": "node_da61ac05",
       "type": "tank",
       "position": {
-        "x": 1765,
-        "y": -1159
+        "x": 1745,
+        "y": 350
       },
       "width": 79,
       "height": 143,
-      "selected": false,
       "positionAbsolute": {
-        "x": 1765,
-        "y": -1159
+        "x": 1745,
+        "y": 350
       },
       "dragging": false,
       "data": {
         "label": "Motor NDE Return",
-        "rotation": 270,
+        "rotation": 180,
         "level_m": 0.1,
         "elevation_m": 0.1,
         "temperature_k": 338.15,
@@ -1187,20 +1140,19 @@
       "id": "node_d16d6bb3",
       "type": "tank",
       "position": {
-        "x": 1928,
-        "y": -1170
+        "x": 1580,
+        "y": 350
       },
       "width": 72,
       "height": 143,
-      "selected": false,
       "positionAbsolute": {
-        "x": 1928,
-        "y": -1170
+        "x": 1580,
+        "y": 350
       },
       "dragging": false,
       "data": {
         "label": "Motor DE Return",
-        "rotation": 270,
+        "rotation": 180,
         "level_m": 0.1,
         "elevation_m": 0.1,
         "temperature_k": 338.15,
@@ -1211,12 +1163,12 @@
       "id": "node_37e0704c",
       "type": "remote_control_valve",
       "position": {
-        "x": 368,
-        "y": 400
+        "x": 1355,
+        "y": 335
       },
       "data": {
-        "label": "REMOTE_CONTROL_VALVE_976",
-        "rotation": 90,
+        "label": "Backpressure Control Valve",
+        "rotation": 0,
         "max_cv": 54,
         "set_pressure_pa": 300000,
         "backpressure": true,
@@ -1226,10 +1178,9 @@
       },
       "width": 131,
       "height": 114,
-      "selected": false,
       "positionAbsolute": {
-        "x": 368,
-        "y": 400
+        "x": 1355,
+        "y": 335
       },
       "dragging": false
     },
@@ -1237,8 +1188,8 @@
       "id": "tap-oil-supply",
       "type": "measure_point",
       "position": {
-        "x": 580,
-        "y": -524
+        "x": 850,
+        "y": 120
       },
       "data": {
         "label": "Oil Supply Tap",
@@ -1249,8 +1200,8 @@
       "id": "tit-101",
       "type": "instrument",
       "position": {
-        "x": 545,
-        "y": -660
+        "x": 765,
+        "y": 13
       },
       "data": {
         "label": "TIT 101",
@@ -1267,8 +1218,8 @@
       "id": "vi-102",
       "type": "instrument",
       "position": {
-        "x": 640,
-        "y": -660
+        "x": 890,
+        "y": 13
       },
       "data": {
         "label": "\u03bdI 102",
@@ -1285,8 +1236,8 @@
       "id": "pit-103",
       "type": "instrument",
       "position": {
-        "x": 860,
-        "y": -660
+        "x": 1090,
+        "y": 0
       },
       "data": {
         "label": "PIT 103",
@@ -1303,8 +1254,8 @@
       "id": "fit-104",
       "type": "instrument",
       "position": {
-        "x": 2010,
-        "y": -140
+        "x": 2160,
+        "y": 249
       },
       "data": {
         "label": "FIT 104",
@@ -1323,15 +1274,14 @@
       "source": "node_032bb480",
       "sourceHandle": "outlet-0",
       "target": "node_713c04c3",
-      "targetHandle": "port-2",
+      "targetHandle": "port-0",
       "id": "edge_7b5a055f",
-      "label": "Pipe 100",
+      "label": "Pump A Discharge",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 100",
+        "label": "Pump A Discharge",
         "type": "PIPE",
         "length_m": 0.1,
         "diameter_m": 0.07792,
@@ -1346,17 +1296,16 @@
     },
     {
       "source": "node_713c04c3",
-      "sourceHandle": "port-0",
+      "sourceHandle": "port-2",
       "target": "node_3176b1fc",
       "targetHandle": "inlet-0",
       "id": "edge_0980b47c",
-      "label": "Pipe 101",
+      "label": "RV-2358A Inlet",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 101",
+        "label": "RV-2358A Inlet",
         "type": "PIPE",
         "length_m": 0.4,
         "diameter_m": 0.07792,
@@ -1375,13 +1324,12 @@
       "target": "node_032bb480",
       "targetHandle": "inlet-0",
       "id": "edge_91ca5581",
-      "label": "Pipe 102",
+      "label": "Pump A Suction",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 102",
+        "label": "Pump A Suction",
         "type": "PIPE",
         "length_m": 0.5,
         "diameter_m": 0.07792,
@@ -1400,13 +1348,12 @@
       "target": "node_8fd45f2a",
       "targetHandle": "port-1",
       "id": "edge_818a2b8d",
-      "label": "Pipe 103",
+      "label": "RV-2358A Return",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 103",
+        "label": "RV-2358A Return",
         "type": "PIPE",
         "length_m": 0.5,
         "diameter_m": 0.07792,
@@ -1425,13 +1372,12 @@
       "target": "node_807e08c4",
       "targetHandle": "inlet-0",
       "id": "edge_16ad7d6d",
-      "label": "Pipe 104",
+      "label": "Pump A to Check Valve",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 104",
+        "label": "Pump A to Check Valve",
         "type": "PIPE",
         "length_m": 0.5,
         "diameter_m": 0.07792,
@@ -1448,15 +1394,14 @@
       "source": "node_807e08c4",
       "sourceHandle": "outlet-0",
       "target": "node_6a53fcc0",
-      "targetHandle": "port-2",
+      "targetHandle": "port-0",
       "id": "edge_314fc373",
-      "label": "Pipe 105",
+      "label": "Pump A Header Feed",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 105",
+        "label": "Pump A Header Feed",
         "type": "PIPE",
         "length_m": 0.5,
         "diameter_m": 0.07792,
@@ -1475,13 +1420,12 @@
       "target": "node_b4cf5bf5",
       "targetHandle": "inlet-0",
       "id": "edge_9adda717",
-      "label": "Pipe 106",
+      "label": "Pump B Suction",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 106",
+        "label": "Pump B Suction",
         "type": "PIPE",
         "length_m": 0.2,
         "diameter_m": 0.07792,
@@ -1498,15 +1442,14 @@
       "source": "node_b4cf5bf5",
       "sourceHandle": "outlet-0",
       "target": "node_31c4a871",
-      "targetHandle": "port-2",
+      "targetHandle": "port-0",
       "id": "edge_f943b257",
-      "label": "Pipe 107",
+      "label": "Pump B Discharge",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 107",
+        "label": "Pump B Discharge",
         "type": "PIPE",
         "length_m": 0.3,
         "diameter_m": 0.07792,
@@ -1521,17 +1464,16 @@
     },
     {
       "source": "node_31c4a871",
-      "sourceHandle": "port-0",
+      "sourceHandle": "port-2",
       "target": "node_2cc6a499",
       "targetHandle": "inlet-0",
       "id": "edge_fe80816f",
-      "label": "Pipe 108",
+      "label": "RV-2358B Inlet",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 108",
+        "label": "RV-2358B Inlet",
         "type": "PIPE",
         "length_m": 0.5,
         "diameter_m": 0.07792,
@@ -1550,13 +1492,12 @@
       "target": "node_c2c3ec68",
       "targetHandle": "port-1",
       "id": "edge_97bf71cd",
-      "label": "Pipe 109",
+      "label": "RV-2358B Return",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 109",
+        "label": "RV-2358B Return",
         "type": "PIPE",
         "length_m": 0.4,
         "diameter_m": 0.07792,
@@ -1575,13 +1516,12 @@
       "target": "node_d26da9b2",
       "targetHandle": "inlet-0",
       "id": "edge_36ed9d2b",
-      "label": "Pipe 110",
+      "label": "Pump B to Check Valve",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 110",
+        "label": "Pump B to Check Valve",
         "type": "PIPE",
         "length_m": 0.2,
         "diameter_m": 0.07792,
@@ -1598,15 +1538,14 @@
       "source": "node_d26da9b2",
       "sourceHandle": "outlet-0",
       "target": "node_192e77a1",
-      "targetHandle": "port-2",
+      "targetHandle": "port-1",
       "id": "edge_e0479ed5",
-      "label": "Pipe 111",
+      "label": "Pump B Header Feed",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 111",
+        "label": "Pump B Header Feed",
         "type": "PIPE",
         "length_m": 0.4,
         "diameter_m": 0.07792,
@@ -1621,17 +1560,16 @@
     },
     {
       "source": "node_6a53fcc0",
-      "sourceHandle": "port-1",
+      "sourceHandle": "port-2",
       "target": "node_192e77a1",
-      "targetHandle": "port-0",
+      "targetHandle": "port-2",
       "id": "edge_1f99d337",
-      "label": "Pipe 112",
+      "label": "Pump Header Crossover",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 112",
+        "label": "Pump Header Crossover",
         "type": "PIPE",
         "length_m": 0.5,
         "diameter_m": 0.07792,
@@ -1646,17 +1584,16 @@
     },
     {
       "source": "node_6a53fcc0",
-      "sourceHandle": "port-0",
+      "sourceHandle": "port-1",
       "target": "node_d8aa69c8",
-      "targetHandle": "port-0",
+      "targetHandle": "port-1",
       "id": "edge_431d2b59",
-      "label": "Pipe 115",
+      "label": "Cooler Feed",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 115",
+        "label": "Cooler Feed",
         "type": "PIPE",
         "length_m": 0.5,
         "diameter_m": 0.07792,
@@ -1671,17 +1608,16 @@
     },
     {
       "source": "node_d8aa69c8",
-      "sourceHandle": "port-2",
+      "sourceHandle": "port-0",
       "target": "node_c2678a3e",
       "targetHandle": "inlet-0",
       "id": "edge_48c2ae58",
-      "label": "Pipe 116",
+      "label": "Oil Cooler Inlet",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 116",
+        "label": "Oil Cooler Inlet",
         "type": "PIPE",
         "length_m": 8,
         "diameter_m": 0.07792,
@@ -1696,17 +1632,16 @@
     },
     {
       "source": "node_d8aa69c8",
-      "sourceHandle": "port-1",
+      "sourceHandle": "port-2",
       "target": "node_50250584",
       "targetHandle": "inlet-0",
       "id": "edge_caf4ff7f",
-      "label": "Pipe 117",
+      "label": "Cooler Bypass",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 117",
+        "label": "Cooler Bypass",
         "type": "PIPE",
         "length_m": 1,
         "diameter_m": 0.07792,
@@ -1725,13 +1660,12 @@
       "target": "node_50250584",
       "targetHandle": "inlet-1",
       "id": "edge_e22a6391",
-      "label": "Pipe 118",
+      "label": "Oil Cooler Outlet",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 118",
+        "label": "Oil Cooler Outlet",
         "type": "PIPE",
         "length_m": 8,
         "diameter_m": 0.07792,
@@ -1750,13 +1684,12 @@
       "target": "tap-oil-supply",
       "targetHandle": "port-0",
       "id": "edge_723416db",
-      "label": "Pipe 119",
+      "label": "Temperature Control Outlet",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 119",
+        "label": "Temperature Control Outlet",
         "type": "PIPE",
         "length_m": 0.15,
         "diameter_m": 0.07792,
@@ -1775,13 +1708,12 @@
       "target": "node_f59f6043",
       "targetHandle": "port-0",
       "id": "edge_723416db_b",
-      "label": "Pipe 119",
+      "label": "Filter Inlet",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 119",
+        "label": "Filter Inlet",
         "type": "PIPE",
         "length_m": 0.15,
         "diameter_m": 0.07792,
@@ -1800,13 +1732,12 @@
       "target": "node_8d84994e",
       "targetHandle": "inlet-0",
       "id": "edge_e91906bf",
-      "label": "Pipe 120",
+      "label": "Filter Outlet",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 120",
+        "label": "Filter Outlet",
         "type": "PIPE",
         "length_m": 0.5,
         "diameter_m": 0.07792,
@@ -1825,13 +1756,12 @@
       "target": "node_abab9f02",
       "targetHandle": "port-0",
       "id": "edge_7e5e672e",
-      "label": "Pipe 121",
+      "label": "Supply Header Feed",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 121",
+        "label": "Supply Header Feed",
         "type": "PIPE",
         "length_m": 0.5,
         "diameter_m": 0.07792,
@@ -1850,13 +1780,12 @@
       "target": "node_f9bb5ad9",
       "targetHandle": "port-0",
       "id": "edge_51d3e49c",
-      "label": "Pipe 122",
+      "label": "Bleed Orifice Inlet",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 122",
+        "label": "Bleed Orifice Inlet",
         "type": "PIPE",
         "length_m": 2,
         "diameter_m": 0.02116,
@@ -1875,13 +1804,12 @@
       "target": "node_59ab52bf",
       "targetHandle": "port-0",
       "id": "edge_3e4ce572",
-      "label": "Pipe 123",
+      "label": "Bleed Orifice Outlet",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 123",
+        "label": "Bleed Orifice Outlet",
         "type": "PIPE",
         "length_m": 1,
         "diameter_m": 0.02116,
@@ -1900,13 +1828,12 @@
       "target": "node_d7a7dc67",
       "targetHandle": "port-0",
       "id": "edge_5ad159b8",
-      "label": "Pipe 124",
+      "label": "Supply Header",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 124",
+        "label": "Supply Header",
         "type": "PIPE",
         "length_m": 1,
         "diameter_m": 0.07792,
@@ -1921,17 +1848,16 @@
     },
     {
       "source": "node_d7a7dc67",
-      "sourceHandle": "port-1",
+      "sourceHandle": "port-2",
       "target": "node_0f156414",
       "targetHandle": "port-1",
       "id": "edge_9def537d",
-      "label": "Pipe 125",
+      "label": "Motor Bearing Feed",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 125",
+        "label": "Motor Bearing Feed",
         "type": "PIPE",
         "length_m": 2,
         "diameter_m": 0.02116,
@@ -1950,13 +1876,12 @@
       "target": "node_9a1b2114",
       "targetHandle": "port-0",
       "id": "edge_7bed3ebe",
-      "label": "Pipe 126",
+      "label": "Motor NDE Feed",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 126",
+        "label": "Motor NDE Feed",
         "type": "PIPE",
         "length_m": 1,
         "diameter_m": 0.02116,
@@ -1975,13 +1900,12 @@
       "target": "node_70d07517",
       "targetHandle": "port-0",
       "id": "edge_b863688c",
-      "label": "Pipe 127",
+      "label": "Motor NDE Bearing Inlet",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 127",
+        "label": "Motor NDE Bearing Inlet",
         "type": "PIPE",
         "length_m": 0.3,
         "diameter_m": 0.02116,
@@ -2000,13 +1924,12 @@
       "target": "node_da61ac05",
       "targetHandle": "port-0",
       "id": "edge_925f633d",
-      "label": "Pipe 128",
+      "label": "Motor NDE Return Line",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 128",
+        "label": "Motor NDE Return Line",
         "type": "PIPE",
         "length_m": 0.1,
         "diameter_m": 0.07792,
@@ -2025,13 +1948,12 @@
       "target": "node_d4dbe2e8",
       "targetHandle": "port-0",
       "id": "edge_b7759f8c",
-      "label": "Pipe 129",
+      "label": "Motor DE Feed",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 129",
+        "label": "Motor DE Feed",
         "type": "PIPE",
         "length_m": 1,
         "diameter_m": 0.02116,
@@ -2050,13 +1972,12 @@
       "target": "node_a522310e",
       "targetHandle": "port-0",
       "id": "edge_40e52e67",
-      "label": "Pipe 130",
+      "label": "Motor DE Bearing Inlet",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 130",
+        "label": "Motor DE Bearing Inlet",
         "type": "PIPE",
         "length_m": 0.3,
         "diameter_m": 0.02116,
@@ -2075,13 +1996,12 @@
       "target": "node_d16d6bb3",
       "targetHandle": "port-0",
       "id": "edge_b5754e39",
-      "label": "Pipe 131",
+      "label": "Motor DE Return Line",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 131",
+        "label": "Motor DE Return Line",
         "type": "PIPE",
         "length_m": 0.1,
         "diameter_m": 0.07792,
@@ -2096,17 +2016,16 @@
     },
     {
       "source": "node_d7a7dc67",
-      "sourceHandle": "port-2",
+      "sourceHandle": "port-1",
       "target": "node_a0ba4eba",
       "targetHandle": "port-0",
       "id": "edge_72fd1f72",
-      "label": "Pipe 132",
+      "label": "Gearbox Header Feed",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 132",
+        "label": "Gearbox Header Feed",
         "type": "PIPE",
         "length_m": 1,
         "diameter_m": 0.07792,
@@ -2125,13 +2044,12 @@
       "target": "node_bf70bd63",
       "targetHandle": "port-0",
       "id": "edge_a1f4c802",
-      "label": "Pipe 133",
+      "label": "Gearbox Feed",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 133",
+        "label": "Gearbox Feed",
         "type": "PIPE",
         "length_m": 0.3,
         "diameter_m": 0.07792,
@@ -2150,13 +2068,12 @@
       "target": "node_bcd1d1e9",
       "targetHandle": "port-0",
       "id": "edge_a6ae3711",
-      "label": "Pipe 134",
+      "label": "Gearbox Inlet",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 134",
+        "label": "Gearbox Inlet",
         "type": "PIPE",
         "length_m": 0.3,
         "diameter_m": 0.07792,
@@ -2175,13 +2092,12 @@
       "target": "node_c255f237",
       "targetHandle": "port-0",
       "id": "edge_8e602a2a",
-      "label": "Pipe 135",
+      "label": "Gearbox Return Line",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 135",
+        "label": "Gearbox Return Line",
         "type": "PIPE",
         "length_m": 0.1,
         "diameter_m": 0.07792,
@@ -2200,13 +2116,12 @@
       "target": "node_4211d433",
       "targetHandle": "port-0",
       "id": "edge_98f23a82",
-      "label": "Pipe 136",
+      "label": "Compressor DE Header Feed",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 136",
+        "label": "Compressor DE Header Feed",
         "type": "PIPE",
         "length_m": 0.3,
         "diameter_m": 0.04094,
@@ -2225,13 +2140,12 @@
       "target": "node_6e5b1658",
       "targetHandle": "port-0",
       "id": "edge_c4ee725e",
-      "label": "Pipe 137",
+      "label": "Compressor NDE Header Feed",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 137",
+        "label": "Compressor NDE Header Feed",
         "type": "PIPE",
         "length_m": 0.5,
         "diameter_m": 0.04094,
@@ -2250,13 +2164,12 @@
       "target": "node_327c00de",
       "targetHandle": "port-0",
       "id": "edge_0efa5689",
-      "label": "Pipe 138",
+      "label": "Compressor Thrust Header Feed",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 138",
+        "label": "Compressor Thrust Header Feed",
         "type": "PIPE",
         "length_m": 0.8,
         "diameter_m": 0.04094,
@@ -2275,13 +2188,12 @@
       "target": "node_f243d748",
       "targetHandle": "port-0",
       "id": "edge_4e94df60",
-      "label": "Pipe 139",
+      "label": "Thrust 1 Feed",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 139",
+        "label": "Thrust 1 Feed",
         "type": "PIPE",
         "length_m": 0.5,
         "diameter_m": 0.04094,
@@ -2300,13 +2212,12 @@
       "target": "node_89d45b5d",
       "targetHandle": "port-0",
       "id": "edge_23dcaaf2",
-      "label": "Pipe 140",
+      "label": "Thrust 1 Bearing Inlet",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 140",
+        "label": "Thrust 1 Bearing Inlet",
         "type": "PIPE",
         "length_m": 0.3,
         "diameter_m": 0.04094,
@@ -2325,13 +2236,12 @@
       "target": "node_f57214b9",
       "targetHandle": "port-0",
       "id": "edge_2473f595",
-      "label": "Pipe 141",
+      "label": "Thrust 2 Feed",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 141",
+        "label": "Thrust 2 Feed",
         "type": "PIPE",
         "length_m": 0.5,
         "diameter_m": 0.04094,
@@ -2350,13 +2260,12 @@
       "target": "node_0effe165",
       "targetHandle": "port-0",
       "id": "edge_fbbac487",
-      "label": "Pipe 142",
+      "label": "Thrust 2 Bearing Inlet",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 142",
+        "label": "Thrust 2 Bearing Inlet",
         "type": "PIPE",
         "length_m": 0.3,
         "diameter_m": 0.04094,
@@ -2375,13 +2284,12 @@
       "target": "node_485f95a2",
       "targetHandle": "port-0",
       "id": "edge_acc72dbe",
-      "label": "Pipe 143",
+      "label": "Compressor DE Feed",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 143",
+        "label": "Compressor DE Feed",
         "type": "PIPE",
         "length_m": 0.6,
         "diameter_m": 0.02116,
@@ -2400,13 +2308,12 @@
       "target": "node_9958a664",
       "targetHandle": "port-0",
       "id": "edge_2ee9068f",
-      "label": "Pipe 144",
+      "label": "Compressor DE Bearing Inlet",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 144",
+        "label": "Compressor DE Bearing Inlet",
         "type": "PIPE",
         "length_m": 0.3,
         "diameter_m": 0.02116,
@@ -2425,13 +2332,12 @@
       "target": "node_8368ae5f",
       "targetHandle": "port-0",
       "id": "edge_ed700842",
-      "label": "Pipe 145",
+      "label": "Compressor NDE Feed",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 145",
+        "label": "Compressor NDE Feed",
         "type": "PIPE",
         "length_m": 0.8,
         "diameter_m": 0.02116,
@@ -2450,13 +2356,12 @@
       "target": "node_0099e94d",
       "targetHandle": "port-0",
       "id": "edge_acedf874",
-      "label": "Pipe 146",
+      "label": "Compressor NDE Bearing Inlet",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 146",
+        "label": "Compressor NDE Bearing Inlet",
         "type": "PIPE",
         "length_m": 0.3,
         "diameter_m": 0.02116,
@@ -2475,13 +2380,12 @@
       "target": "node_a5dde124",
       "targetHandle": "port-0",
       "id": "edge_92140094",
-      "label": "Pipe 147",
+      "label": "Compressor DE Return Line",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 147",
+        "label": "Compressor DE Return Line",
         "type": "PIPE",
         "length_m": 0.1,
         "diameter_m": 0.10226,
@@ -2500,13 +2404,12 @@
       "target": "node_79e1d31e",
       "targetHandle": "port-0",
       "id": "edge_d6e628df",
-      "label": "Pipe 148",
+      "label": "Compressor NDE Return Line",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 148",
+        "label": "Compressor NDE Return Line",
         "type": "PIPE",
         "length_m": 0.1,
         "diameter_m": 0.10226,
@@ -2525,13 +2428,12 @@
       "target": "node_9496a1ca",
       "targetHandle": "port-0",
       "id": "edge_5caad4bb",
-      "label": "Pipe 149",
+      "label": "Thrust 1 Return Line",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 149",
+        "label": "Thrust 1 Return Line",
         "type": "PIPE",
         "length_m": 0.1,
         "diameter_m": 0.10226,
@@ -2550,13 +2452,12 @@
       "target": "node_fcae2cd8",
       "targetHandle": "port-0",
       "id": "edge_53f7304b",
-      "label": "Pipe 150",
+      "label": "Thrust 2 Return Line",
       "animated": true,
       "type": "default",
       "style": {},
-      "selected": false,
       "data": {
-        "label": "Pipe 150",
+        "label": "Thrust 2 Return Line",
         "type": "PIPE",
         "length_m": 0.1,
         "diameter_m": 0.10226,
@@ -2571,16 +2472,16 @@
     },
     {
       "source": "node_192e77a1",
-      "sourceHandle": "port-1",
+      "sourceHandle": "port-0",
       "target": "node_37e0704c",
       "targetHandle": "inlet-0",
       "id": "edge_750a271f",
-      "label": "Pipe 151",
+      "label": "Spillback Valve Inlet",
       "animated": true,
       "type": "default",
       "style": {},
       "data": {
-        "label": "Pipe 151",
+        "label": "Spillback Valve Inlet",
         "type": "PIPE",
         "length_m": 25,
         "diameter_m": 0.05248,
@@ -2591,8 +2492,7 @@
         "outer_diameter_mm": 60.3,
         "wall_thickness_mm": 3.91,
         "roughness_mm": 0.045
-      },
-      "selected": false
+      }
     },
     {
       "source": "node_37e0704c",
@@ -2600,12 +2500,12 @@
       "target": "node_db1f9a5f",
       "targetHandle": "port-0",
       "id": "edge_ae231821",
-      "label": "Pipe 152",
+      "label": "Spillback Return Line",
       "animated": true,
       "type": "default",
       "style": {},
       "data": {
-        "label": "Pipe 152",
+        "label": "Spillback Return Line",
         "type": "PIPE",
         "length_m": 25,
         "diameter_m": 0.05248,
@@ -2616,8 +2516,7 @@
         "outer_diameter_mm": 60.3,
         "wall_thickness_mm": 3.91,
         "roughness_mm": 0.045
-      },
-      "selected": false
+      }
     },
     {
       "source": "node_f9bb5ad9",
@@ -2625,7 +2524,7 @@
       "target": "node_37e0704c",
       "targetHandle": "signal-in",
       "id": "edge_4325cafa",
-      "label": "Signal 153",
+      "label": "Header Pressure Signal",
       "animated": true,
       "type": "step",
       "style": {
@@ -2634,7 +2533,7 @@
         "strokeDasharray": "5,5"
       },
       "data": {
-        "label": "Signal 153",
+        "label": "Header Pressure Signal",
         "type": "SIGNAL",
         "length_m": 25,
         "diameter_m": 0.05248,

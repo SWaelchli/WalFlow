@@ -426,7 +426,7 @@
         "y": 1490
       },
       "data": {
-        "label": "Demand 2 cfs",
+        "label": "B1 Demand 2 cfs",
         "temperature_k": 293.15,
         "num_ports": 1,
         "set_flow_lmin": 3398.02,
@@ -442,7 +442,7 @@
       },
       "data": {
         "rotation": 270,
-        "label": "Demand 3 cfs",
+        "label": "B2 Demand 3 cfs",
         "temperature_k": 293.15,
         "num_ports": 1,
         "set_flow_lmin": 5097.03,
@@ -474,7 +474,7 @@
       },
       "data": {
         "rotation": 270,
-        "label": "Demand 2 cfs",
+        "label": "B4 Demand 2 cfs",
         "temperature_k": 293.15,
         "num_ports": 1,
         "set_flow_lmin": 3398.02,
@@ -490,7 +490,7 @@
       },
       "data": {
         "rotation": 270,
-        "label": "Demand 3 cfs",
+        "label": "B5 Demand 3 cfs",
         "temperature_k": 293.15,
         "num_ports": 1,
         "set_flow_lmin": 5097.03,
@@ -506,7 +506,7 @@
       },
       "data": {
         "rotation": 270,
-        "label": "Demand 2 cfs",
+        "label": "B6 Demand 2 cfs",
         "temperature_k": 293.15,
         "num_ports": 1,
         "set_flow_lmin": 3398.02,
@@ -517,12 +517,12 @@
       "id": "demand-M1",
       "type": "flow_boundary",
       "position": {
-        "x": 927.3,
-        "y": 1276.5
+        "x": 880,
+        "y": 1277
       },
       "data": {
         "rotation": 270,
-        "label": "Demand 2 cfs",
+        "label": "M1 Demand 2 cfs",
         "temperature_k": 293.15,
         "num_ports": 1,
         "set_flow_lmin": 3398.02,
@@ -538,7 +538,7 @@
       },
       "data": {
         "rotation": 180,
-        "label": "Demand 3 cfs",
+        "label": "M2 Demand 3 cfs",
         "temperature_k": 293.15,
         "num_ports": 1,
         "set_flow_lmin": 5097.03,
@@ -554,7 +554,7 @@
       },
       "data": {
         "rotation": 180,
-        "label": "Demand 2 cfs",
+        "label": "M3 Demand 2 cfs",
         "temperature_k": 293.15,
         "num_ports": 1,
         "set_flow_lmin": 3398.02,
@@ -570,7 +570,7 @@
       },
       "data": {
         "rotation": 270,
-        "label": "Demand 5 cfs",
+        "label": "M4 Demand 5 cfs",
         "temperature_k": 293.15,
         "num_ports": 1,
         "set_flow_lmin": 8495.05,
@@ -586,7 +586,7 @@
       },
       "data": {
         "rotation": 180,
-        "label": "Demand 1 cfs",
+        "label": "M5 Demand 1 cfs",
         "temperature_k": 293.15,
         "num_ports": 1,
         "set_flow_lmin": 1699.01,
@@ -602,7 +602,7 @@
       },
       "data": {
         "rotation": 180,
-        "label": "Demand 1.74 cfs",
+        "label": "E Demand 1.74 cfs",
         "temperature_k": 293.15,
         "num_ports": 1,
         "set_flow_lmin": 2956.28,
@@ -618,7 +618,7 @@
       },
       "data": {
         "rotation": 180,
-        "label": "Demand 3 cfs",
+        "label": "N13 Demand 3 cfs",
         "temperature_k": 293.15,
         "num_ports": 1,
         "set_flow_lmin": 5097.03,
@@ -634,7 +634,7 @@
       },
       "data": {
         "rotation": 180,
-        "label": "Demand 4 cfs",
+        "label": "N3 Demand 4 cfs",
         "temperature_k": 293.15,
         "num_ports": 1,
         "set_flow_lmin": 6796.04,
@@ -650,7 +650,7 @@
       },
       "data": {
         "rotation": 180,
-        "label": "Demand 4 cfs",
+        "label": "N26 Demand 4 cfs",
         "temperature_k": 293.15,
         "num_ports": 1,
         "set_flow_lmin": 6796.04,
@@ -666,7 +666,7 @@
       },
       "data": {
         "rotation": 180,
-        "label": "Demand 3 cfs",
+        "label": "N41 Demand 3 cfs",
         "temperature_k": 293.15,
         "num_ports": 1,
         "set_flow_lmin": 5097.03,
@@ -682,7 +682,7 @@
       },
       "data": {
         "rotation": 180,
-        "label": "Demand 2.5 cfs",
+        "label": "N28 Demand 2.5 cfs",
         "temperature_k": 293.15,
         "num_ports": 1,
         "set_flow_lmin": 4247.53,
@@ -697,7 +697,7 @@
         "y": 500
       },
       "data": {
-        "label": "Demand 4 cfs",
+        "label": "N23 Demand 4 cfs",
         "temperature_k": 293.15,
         "num_ports": 1,
         "set_flow_lmin": 6796.04,
@@ -713,7 +713,7 @@
       },
       "data": {
         "rotation": 180,
-        "label": "Demand 4 cfs",
+        "label": "N24 Demand 4 cfs",
         "temperature_k": 293.15,
         "num_ports": 1,
         "set_flow_lmin": 6796.04,
@@ -728,7 +728,7 @@
         "y": 500
       },
       "data": {
-        "label": "Demand 2 cfs",
+        "label": "N17 Demand 2 cfs",
         "temperature_k": 293.15,
         "num_ports": 1,
         "set_flow_lmin": 3398.02,
@@ -744,7 +744,7 @@
       },
       "data": {
         "rotation": 180,
-        "label": "Demand 1.5 cfs",
+        "label": "N18 Demand 1.5 cfs",
         "temperature_k": 293.15,
         "num_ports": 1,
         "set_flow_lmin": 2548.52,
@@ -759,7 +759,7 @@
         "y": 500
       },
       "data": {
-        "label": "Demand 2 cfs",
+        "label": "N19 Demand 2 cfs",
         "temperature_k": 293.15,
         "num_ports": 1,
         "set_flow_lmin": 3398.02,
@@ -790,7 +790,7 @@
       },
       "data": {
         "rotation": 180,
-        "label": "Demand 2 cfs",
+        "label": "N40 Demand 2 cfs",
         "temperature_k": 293.15,
         "num_ports": 1,
         "set_flow_lmin": 3398.02,
@@ -806,7 +806,7 @@
       },
       "data": {
         "rotation": 180,
-        "label": "Demand 4 cfs",
+        "label": "N42 Demand 4 cfs",
         "temperature_k": 293.15,
         "num_ports": 1,
         "set_flow_lmin": 6796.04,
@@ -821,7 +821,7 @@
         "y": 501.7
       },
       "data": {
-        "label": "Demand 2 cfs",
+        "label": "N43 Demand 2 cfs",
         "temperature_k": 293.15,
         "num_ports": 1,
         "set_flow_lmin": 3398.02,
@@ -836,7 +836,7 @@
         "y": 829
       },
       "data": {
-        "label": "Demand 3 cfs",
+        "label": "N36 Demand 3 cfs",
         "temperature_k": 293.15,
         "num_ports": 1,
         "set_flow_lmin": 5097.03,
@@ -852,7 +852,7 @@
       },
       "data": {
         "rotation": 270,
-        "label": "Demand 3 cfs",
+        "label": "N38 Demand 3 cfs",
         "temperature_k": 293.15,
         "num_ports": 1,
         "set_flow_lmin": 5097.03,
@@ -867,7 +867,7 @@
         "y": 1154.6
       },
       "data": {
-        "label": "Demand 2 cfs",
+        "label": "N35 Demand 2 cfs",
         "temperature_k": 293.15,
         "num_ports": 1,
         "set_flow_lmin": 3398.02,
@@ -883,7 +883,7 @@
       },
       "data": {
         "rotation": 270,
-        "label": "Demand 4 cfs",
+        "label": "N33 Demand 4 cfs",
         "temperature_k": 293.15,
         "num_ports": 1,
         "set_flow_lmin": 6796.04,
@@ -1523,7 +1523,7 @@
       "target": "demand-B1",
       "targetHandle": "port-0",
       "data": {
-        "label": "Demand link",
+        "label": "B1 Demand link",
         "length_m": 0.01,
         "diameter_m": 0.6,
         "roughness_mm": 0.3048
@@ -1536,7 +1536,7 @@
       "target": "demand-B2",
       "targetHandle": "port-0",
       "data": {
-        "label": "Demand link",
+        "label": "B2 Demand link",
         "length_m": 0.01,
         "diameter_m": 0.6,
         "roughness_mm": 0.3048
@@ -1549,7 +1549,7 @@
       "target": "B3",
       "targetHandle": "port-2",
       "data": {
-        "label": "Supply link",
+        "label": "B3 Supply link",
         "length_m": 0.01,
         "diameter_m": 0.6,
         "roughness_mm": 0.3048
@@ -1562,7 +1562,7 @@
       "target": "demand-B4",
       "targetHandle": "port-0",
       "data": {
-        "label": "Demand link",
+        "label": "B4 Demand link",
         "length_m": 0.01,
         "diameter_m": 0.6,
         "roughness_mm": 0.3048
@@ -1575,7 +1575,7 @@
       "target": "demand-B5",
       "targetHandle": "port-0",
       "data": {
-        "label": "Demand link",
+        "label": "B5 Demand link",
         "length_m": 0.01,
         "diameter_m": 0.6,
         "roughness_mm": 0.3048
@@ -1588,7 +1588,7 @@
       "target": "demand-B6",
       "targetHandle": "port-0",
       "data": {
-        "label": "Demand link",
+        "label": "B6 Demand link",
         "length_m": 0.01,
         "diameter_m": 0.6,
         "roughness_mm": 0.3048
@@ -1601,7 +1601,7 @@
       "target": "demand-M1",
       "targetHandle": "port-0",
       "data": {
-        "label": "Demand link",
+        "label": "M1 Demand link",
         "length_m": 0.01,
         "diameter_m": 0.6,
         "roughness_mm": 0.3048
@@ -1614,7 +1614,7 @@
       "target": "demand-M2",
       "targetHandle": "port-0",
       "data": {
-        "label": "Demand link",
+        "label": "M2 Demand link",
         "length_m": 0.01,
         "diameter_m": 0.6,
         "roughness_mm": 0.3048
@@ -1627,7 +1627,7 @@
       "target": "demand-M3",
       "targetHandle": "port-0",
       "data": {
-        "label": "Demand link",
+        "label": "M3 Demand link",
         "length_m": 0.01,
         "diameter_m": 0.6,
         "roughness_mm": 0.3048
@@ -1640,7 +1640,7 @@
       "target": "demand-M4",
       "targetHandle": "port-0",
       "data": {
-        "label": "Demand link",
+        "label": "M4 Demand link",
         "length_m": 0.01,
         "diameter_m": 0.6,
         "roughness_mm": 0.3048
@@ -1653,7 +1653,7 @@
       "target": "demand-M5",
       "targetHandle": "port-0",
       "data": {
-        "label": "Demand link",
+        "label": "M5 Demand link",
         "length_m": 0.01,
         "diameter_m": 0.6,
         "roughness_mm": 0.3048
@@ -1666,7 +1666,7 @@
       "target": "demand-E",
       "targetHandle": "port-0",
       "data": {
-        "label": "Demand link",
+        "label": "E Demand link",
         "length_m": 0.01,
         "diameter_m": 0.6,
         "roughness_mm": 0.3048
@@ -1679,7 +1679,7 @@
       "target": "demand-N13",
       "targetHandle": "port-0",
       "data": {
-        "label": "Demand link",
+        "label": "N13 Demand link",
         "length_m": 0.01,
         "diameter_m": 0.6,
         "roughness_mm": 0.3048
@@ -1692,7 +1692,7 @@
       "target": "demand-N3",
       "targetHandle": "port-0",
       "data": {
-        "label": "Demand link",
+        "label": "N3 Demand link",
         "length_m": 0.01,
         "diameter_m": 0.6,
         "roughness_mm": 0.3048
@@ -1705,7 +1705,7 @@
       "target": "demand-N26",
       "targetHandle": "port-0",
       "data": {
-        "label": "Demand link",
+        "label": "N26 Demand link",
         "length_m": 0.01,
         "diameter_m": 0.6,
         "roughness_mm": 0.3048
@@ -1718,7 +1718,7 @@
       "target": "demand-N41",
       "targetHandle": "port-0",
       "data": {
-        "label": "Demand link",
+        "label": "N41 Demand link",
         "length_m": 0.01,
         "diameter_m": 0.6,
         "roughness_mm": 0.3048
@@ -1731,7 +1731,7 @@
       "target": "demand-N28",
       "targetHandle": "port-0",
       "data": {
-        "label": "Demand link",
+        "label": "N28 Demand link",
         "length_m": 0.01,
         "diameter_m": 0.6,
         "roughness_mm": 0.3048
@@ -1744,7 +1744,7 @@
       "target": "demand-N23",
       "targetHandle": "port-0",
       "data": {
-        "label": "Demand link",
+        "label": "N23 Demand link",
         "length_m": 0.01,
         "diameter_m": 0.6,
         "roughness_mm": 0.3048
@@ -1757,7 +1757,7 @@
       "target": "demand-N24",
       "targetHandle": "port-0",
       "data": {
-        "label": "Demand link",
+        "label": "N24 Demand link",
         "length_m": 0.01,
         "diameter_m": 0.6,
         "roughness_mm": 0.3048
@@ -1770,7 +1770,7 @@
       "target": "demand-N17",
       "targetHandle": "port-0",
       "data": {
-        "label": "Demand link",
+        "label": "N17 Demand link",
         "length_m": 0.01,
         "diameter_m": 0.6,
         "roughness_mm": 0.3048
@@ -1783,7 +1783,7 @@
       "target": "demand-N18",
       "targetHandle": "port-0",
       "data": {
-        "label": "Demand link",
+        "label": "N18 Demand link",
         "length_m": 0.01,
         "diameter_m": 0.6,
         "roughness_mm": 0.3048
@@ -1796,7 +1796,7 @@
       "target": "demand-N19",
       "targetHandle": "port-0",
       "data": {
-        "label": "Demand link",
+        "label": "N19 Demand link",
         "length_m": 0.01,
         "diameter_m": 0.6,
         "roughness_mm": 0.3048
@@ -1809,7 +1809,7 @@
       "target": "N44",
       "targetHandle": "port-0",
       "data": {
-        "label": "Supply link",
+        "label": "N44 Supply link",
         "length_m": 0.01,
         "diameter_m": 0.6,
         "roughness_mm": 0.3048
@@ -1822,7 +1822,7 @@
       "target": "demand-N40",
       "targetHandle": "port-0",
       "data": {
-        "label": "Demand link",
+        "label": "N40 Demand link",
         "length_m": 0.01,
         "diameter_m": 0.6,
         "roughness_mm": 0.3048
@@ -1835,7 +1835,7 @@
       "target": "demand-N42",
       "targetHandle": "port-0",
       "data": {
-        "label": "Demand link",
+        "label": "N42 Demand link",
         "length_m": 0.01,
         "diameter_m": 0.6,
         "roughness_mm": 0.3048
@@ -1848,7 +1848,7 @@
       "target": "demand-N43",
       "targetHandle": "port-0",
       "data": {
-        "label": "Demand link",
+        "label": "N43 Demand link",
         "length_m": 0.01,
         "diameter_m": 0.6,
         "roughness_mm": 0.3048
@@ -1861,7 +1861,7 @@
       "target": "demand-N36",
       "targetHandle": "port-0",
       "data": {
-        "label": "Demand link",
+        "label": "N36 Demand link",
         "length_m": 0.01,
         "diameter_m": 0.6,
         "roughness_mm": 0.3048
@@ -1874,7 +1874,7 @@
       "target": "demand-N38",
       "targetHandle": "port-0",
       "data": {
-        "label": "Demand link",
+        "label": "N38 Demand link",
         "length_m": 0.01,
         "diameter_m": 0.6,
         "roughness_mm": 0.3048
@@ -1887,7 +1887,7 @@
       "target": "demand-N35",
       "targetHandle": "port-0",
       "data": {
-        "label": "Demand link",
+        "label": "N35 Demand link",
         "length_m": 0.01,
         "diameter_m": 0.6,
         "roughness_mm": 0.3048
@@ -1900,7 +1900,7 @@
       "target": "demand-N33",
       "targetHandle": "port-0",
       "data": {
-        "label": "Demand link",
+        "label": "N33 Demand link",
         "length_m": 0.01,
         "diameter_m": 0.6,
         "roughness_mm": 0.3048

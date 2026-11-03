@@ -7,14 +7,14 @@
       "id": "note-jeppson",
       "type": "text_bubble",
       "position": {
-        "x": -560,
-        "y": 0
+        "x": 920,
+        "y": -15
       },
-      "width": 460,
-      "height": 600,
+      "width": 560,
+      "height": 490,
       "style": {
-        "width": 460,
-        "height": 600
+        "width": 560,
+        "height": 490
       },
       "data": {
         "label": "Note",
@@ -26,8 +26,8 @@
       "id": "res-100",
       "type": "tank",
       "position": {
-        "x": 630,
-        "y": 120
+        "x": 300,
+        "y": -15
       },
       "data": {
         "label": "Reservoir 100 ft",
@@ -41,10 +41,11 @@
       "id": "res-105",
       "type": "tank",
       "position": {
-        "x": 1360,
-        "y": 450
+        "x": 830,
+        "y": 125
       },
       "data": {
+        "rotation": 180,
         "label": "Reservoir 105 ft",
         "elevation_m": 0.0,
         "level_m": 7.62,
@@ -56,8 +57,8 @@
       "id": "res-95",
       "type": "tank",
       "position": {
-        "x": 70,
-        "y": 640
+        "x": 0,
+        "y": 170
       },
       "data": {
         "label": "Pump Sump 95 ft",
@@ -71,8 +72,8 @@
       "id": "demand-2",
       "type": "flow_boundary",
       "position": {
-        "x": 1370,
-        "y": 170
+        "x": 740,
+        "y": 35
       },
       "data": {
         "label": "Demand 2.0 cfs",
@@ -87,8 +88,8 @@
       "id": "junction-1",
       "type": "junction",
       "position": {
-        "x": 830,
-        "y": 180
+        "x": 490,
+        "y": 45
       },
       "data": {
         "rotation": 0,
@@ -100,8 +101,8 @@
       "id": "junction-2",
       "type": "junction",
       "position": {
-        "x": 1180,
-        "y": 180
+        "x": 660,
+        "y": 45
       },
       "data": {
         "label": "Junction 2",
@@ -113,8 +114,8 @@
       "id": "junction-3",
       "type": "junction",
       "position": {
-        "x": 1180,
-        "y": 480
+        "x": 660,
+        "y": 125
       },
       "data": {
         "rotation": 180,
@@ -126,8 +127,8 @@
       "id": "junction-4",
       "type": "junction",
       "position": {
-        "x": 830,
-        "y": 480
+        "x": 490,
+        "y": 125
       },
       "data": {
         "rotation": 270,
@@ -139,8 +140,8 @@
       "id": "sump-header",
       "type": "junction",
       "position": {
-        "x": 250,
-        "y": 700
+        "x": 100,
+        "y": 230
       },
       "data": {
         "rotation": 0,
@@ -152,8 +153,8 @@
       "id": "pump-valve",
       "type": "linear_control_valve",
       "position": {
-        "x": 390,
-        "y": 685
+        "x": 180,
+        "y": 215
       },
       "data": {
         "label": "Pump Isolation",
@@ -165,8 +166,8 @@
       "id": "pump",
       "type": "centrifugal_pump",
       "position": {
-        "x": 560,
-        "y": 685
+        "x": 290,
+        "y": 215
       },
       "data": {
         "label": "Pump",
@@ -180,8 +181,8 @@
       "id": "bypass-valve",
       "type": "linear_control_valve",
       "position": {
-        "x": 390,
-        "y": 885
+        "x": 180,
+        "y": 350
       },
       "data": {
         "label": "Pump Bypass",
@@ -193,8 +194,8 @@
       "id": "discharge-header",
       "type": "junction",
       "position": {
-        "x": 730,
-        "y": 680
+        "x": 410,
+        "y": 210
       },
       "data": {
         "rotation": 0,

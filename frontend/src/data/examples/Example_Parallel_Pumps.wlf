@@ -7,14 +7,14 @@
       "id": "note-overview",
       "type": "text_bubble",
       "position": {
-        "x": 100,
-        "y": -120
+        "x": 1080,
+        "y": 170
       },
-      "width": 400,
-      "height": 210,
+      "width": 300,
+      "height": 265,
       "style": {
-        "width": 400,
-        "height": 210
+        "width": 300,
+        "height": 265
       },
       "data": {
         "label": "Note",
@@ -27,8 +27,8 @@
       "id": "common-suction-tank",
       "type": "tank",
       "position": {
-        "x": -50,
-        "y": 250
+        "x": 0,
+        "y": 170
       },
       "data": {
         "label": "Suction Storage Tank",
@@ -42,8 +42,8 @@
       "id": "pump-a",
       "type": "centrifugal_pump",
       "position": {
-        "x": 260,
-        "y": 140
+        "x": 220,
+        "y": 215
       },
       "data": {
         "label": "Duty Pump A",
@@ -56,8 +56,8 @@
       "id": "check-bypass-a",
       "type": "check_valve_orifice",
       "position": {
-        "x": 420,
-        "y": 140
+        "x": 380,
+        "y": 195
       },
       "data": {
         "label": "Check Valve + Min Flow Bypass A",
@@ -70,8 +70,8 @@
       "id": "pump-b",
       "type": "centrifugal_pump",
       "position": {
-        "x": 260,
-        "y": 360
+        "x": 220,
+        "y": 370
       },
       "data": {
         "label": "Standby Pump B",
@@ -84,8 +84,8 @@
       "id": "check-bypass-b",
       "type": "check_valve_orifice",
       "position": {
-        "x": 420,
-        "y": 360
+        "x": 380,
+        "y": 350
       },
       "data": {
         "label": "Check Valve + Min Flow Bypass B",
@@ -98,8 +98,8 @@
       "id": "common-header-junction",
       "type": "junction",
       "position": {
-        "x": 580,
-        "y": 250
+        "x": 510,
+        "y": 210
       },
       "data": {
         "label": "Common Discharge Header Junction",
@@ -110,8 +110,8 @@
       "id": "header-junction",
       "type": "junction",
       "position": {
-        "x": 720,
-        "y": 250
+        "x": 660,
+        "y": 210
       },
       "data": {
         "label": "Distribution Junction",
@@ -122,8 +122,8 @@
       "id": "load-a",
       "type": "orifice",
       "position": {
-        "x": 860,
-        "y": 160
+        "x": 760,
+        "y": 200
       },
       "data": {
         "label": "Process Load Branch 1",
@@ -134,8 +134,8 @@
       "id": "load-b",
       "type": "orifice",
       "position": {
-        "x": 860,
-        "y": 340
+        "x": 760,
+        "y": 355
       },
       "data": {
         "label": "Process Load Branch 2",
@@ -146,10 +146,11 @@
       "id": "discharge-sink",
       "type": "tank",
       "position": {
-        "x": 1190,
-        "y": 250
+        "x": 980,
+        "y": 210
       },
       "data": {
+        "rotation": 180,
         "label": "Header Sink Tank",
         "level_m": 1.0,
         "elevation_m": 0.0,
@@ -162,7 +163,7 @@
       "type": "junction",
       "position": {
         "x": 120,
-        "y": 250
+        "y": 230
       },
       "data": {
         "label": "Common Suction Junction",
@@ -174,8 +175,8 @@
       "id": "return-junction",
       "type": "junction",
       "position": {
-        "x": 1050,
-        "y": 250
+        "x": 880,
+        "y": 210
       },
       "data": {
         "label": "Common Return Junction",

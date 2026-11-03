@@ -49,14 +49,14 @@
       "id": "note-overview",
       "type": "text_bubble",
       "position": {
-        "x": 80,
-        "y": 440
+        "x": 960,
+        "y": 0
       },
-      "width": 440,
-      "height": 390,
+      "width": 540,
+      "height": 440,
       "style": {
-        "width": 440,
-        "height": 390
+        "width": 540,
+        "height": 440
       },
       "data": {
         "label": "Note",
@@ -70,11 +70,11 @@
       "id": "node_supply_tank",
       "type": "tank",
       "position": {
-        "x": 80,
-        "y": 300
+        "x": 0,
+        "y": 272
       },
       "data": {
-        "label": "TANK_SUPPLY",
+        "label": "Supply Tank",
         "rotation": 0,
         "level_m": 2.0,
         "elevation_m": 0.0,
@@ -86,11 +86,11 @@
       "id": "node_hp_pump",
       "type": "volumetric_pump",
       "position": {
-        "x": 240,
-        "y": 300
+        "x": 110,
+        "y": 317
       },
       "data": {
-        "label": "PUMP_HP_101",
+        "label": "HP Pump 101",
         "rotation": 0,
         "flow_rated_lmin": 120.0,
         "motor_power_kw": 7.5,
@@ -104,11 +104,11 @@
       "id": "node_header_junction",
       "type": "junction",
       "position": {
-        "x": 400,
-        "y": 300
+        "x": 332,
+        "y": 312
       },
       "data": {
-        "label": "MAIN_HEADER_JUNCTION",
+        "label": "Main Header Junction",
         "rotation": 180,
         "num_ports": 3
       }
@@ -117,11 +117,11 @@
       "id": "node_relief_branch_1",
       "type": "junction",
       "position": {
-        "x": 400,
-        "y": 180
+        "x": 332,
+        "y": 230
       },
       "data": {
-        "label": "RELIEF_BRANCH_1",
+        "label": "Relief Branch 1",
         "rotation": 270,
         "num_ports": 3
       }
@@ -130,11 +130,11 @@
       "id": "node_relief_branch_2",
       "type": "junction",
       "position": {
-        "x": 400,
-        "y": 60
+        "x": 332,
+        "y": 115
       },
       "data": {
-        "label": "RELIEF_BRANCH_2",
+        "label": "Relief Branch 2",
         "rotation": 270,
         "num_ports": 3
       }
@@ -143,8 +143,8 @@
       "id": "node_psv_primary",
       "type": "pressure_safety_valve",
       "position": {
-        "x": 580,
-        "y": 180
+        "x": 420,
+        "y": 215
       },
       "data": {
         "label": "PSV-101 (Primary Pop)",
@@ -161,8 +161,8 @@
       "id": "node_psv_secondary",
       "type": "pressure_safety_valve",
       "position": {
-        "x": 580,
-        "y": 60
+        "x": 420,
+        "y": 0
       },
       "data": {
         "label": "PSV-102 (Pilot Modulating)",
@@ -178,8 +178,8 @@
       "id": "node_rupture_disc",
       "type": "rupture_disc",
       "position": {
-        "x": 580,
-        "y": -60
+        "x": 420,
+        "y": 100
       },
       "data": {
         "label": "RD-101 (Burst Diaphragm)",
@@ -194,11 +194,11 @@
       "id": "node_relief_merge_1",
       "type": "junction",
       "position": {
-        "x": 760,
-        "y": 60
+        "x": 540,
+        "y": 115
       },
       "data": {
-        "label": "RELIEF_MERGE_1",
+        "label": "Relief Merge 1",
         "rotation": 90,
         "num_ports": 3
       }
@@ -207,11 +207,11 @@
       "id": "node_relief_merge_2",
       "type": "junction",
       "position": {
-        "x": 760,
-        "y": 180
+        "x": 540,
+        "y": 230
       },
       "data": {
-        "label": "RELIEF_MERGE_2",
+        "label": "Relief Merge 2",
         "rotation": 180,
         "num_ports": 3
       }
@@ -220,11 +220,11 @@
       "id": "node_process_restriction",
       "type": "orifice",
       "position": {
-        "x": 600,
-        "y": 300
+        "x": 530,
+        "y": 302
       },
       "data": {
-        "label": "PROCESS_RESTRICTION",
+        "label": "Process Restriction",
         "rotation": 0,
         "orifice_diameter_m": 0.004,
         "standardDn": 50,
@@ -235,12 +235,12 @@
       "id": "node_return_tank",
       "type": "tank",
       "position": {
-        "x": 1100,
-        "y": 300
+        "x": 855,
+        "y": 230
       },
       "data": {
-        "label": "TANK_RETURN",
-        "rotation": 0,
+        "label": "Return Tank",
+        "rotation": 180,
         "level_m": 2.0,
         "elevation_m": 0.0,
         "temperature_k": 313.15,
@@ -251,12 +251,12 @@
       "id": "node_return_junction",
       "type": "junction",
       "position": {
-        "x": 960,
-        "y": 300
+        "x": 785,
+        "y": 230
       },
       "data": {
-        "label": "RETURN_JUNCTION",
-        "rotation": 180,
+        "label": "Return Junction",
+        "rotation": 0,
         "num_ports": 3
       }
     },
@@ -264,8 +264,8 @@
       "id": "tap-relief-return",
       "type": "measure_point",
       "position": {
-        "x": 860,
-        "y": 245
+        "x": 625,
+        "y": 240
       },
       "data": {
         "label": "Relief Return Tap",
@@ -277,7 +277,7 @@
       "type": "measure_point",
       "position": {
         "x": 690,
-        "y": 320
+        "y": 322
       },
       "data": {
         "label": "Process Tap",
@@ -288,12 +288,12 @@
       "id": "pit-101",
       "type": "instrument",
       "position": {
-        "x": 320,
-        "y": 200
+        "x": 85,
+        "y": 225
       },
       "data": {
         "label": "PIT 101",
-        "rotation": 0,
+        "rotation": 180,
         "variable": "P",
         "pressure_basis": "gauge",
         "alarm_ll": null,
@@ -306,8 +306,8 @@
       "id": "fit-102",
       "type": "instrument",
       "position": {
-        "x": 900,
-        "y": 140
+        "x": 685,
+        "y": 163
       },
       "data": {
         "label": "FIT 102",
@@ -324,8 +324,8 @@
       "id": "fit-103",
       "type": "instrument",
       "position": {
-        "x": 720,
-        "y": 250
+        "x": 735,
+        "y": 258
       },
       "data": {
         "label": "FIT 103",
@@ -411,7 +411,7 @@
       "targetHandle": "port-0",
       "type": "default",
       "data": {
-        "label": "Process Return",
+        "label": "Restriction Outlet",
         "type": "PIPE",
         "length_m": 7.5,
         "diameter_m": 0.05248,
@@ -429,7 +429,7 @@
       "source": "tap-process-return",
       "sourceHandle": "port-1",
       "target": "node_return_junction",
-      "targetHandle": "port-1",
+      "targetHandle": "port-2",
       "type": "default",
       "data": {
         "label": "Process Return",
@@ -511,7 +511,7 @@
     {
       "id": "pipe_psv102_inlet",
       "source": "node_relief_branch_2",
-      "sourceHandle": "port-2",
+      "sourceHandle": "port-1",
       "target": "node_psv_secondary",
       "targetHandle": "inlet-0",
       "type": "default",
@@ -532,7 +532,7 @@
     {
       "id": "pipe_rd101_inlet",
       "source": "node_relief_branch_2",
-      "sourceHandle": "port-1",
+      "sourceHandle": "port-2",
       "target": "node_rupture_disc",
       "targetHandle": "inlet-0",
       "type": "default",
@@ -555,7 +555,7 @@
       "source": "node_rupture_disc",
       "sourceHandle": "outlet-0",
       "target": "node_relief_merge_1",
-      "targetHandle": "port-0",
+      "targetHandle": "port-2",
       "type": "default",
       "data": {
         "label": "RD-101 Relief Line",
@@ -576,7 +576,7 @@
       "source": "node_psv_secondary",
       "sourceHandle": "outlet-0",
       "target": "node_relief_merge_1",
-      "targetHandle": "port-2",
+      "targetHandle": "port-0",
       "type": "default",
       "data": {
         "label": "PSV-102 Relief Line",
@@ -660,10 +660,10 @@
       "source": "tap-relief-return",
       "sourceHandle": "port-1",
       "target": "node_return_junction",
-      "targetHandle": "port-2",
+      "targetHandle": "port-0",
       "type": "default",
       "data": {
-        "label": "Common Relief Discharge",
+        "label": "Relief Return Line",
         "type": "PIPE",
         "length_m": 10.0,
         "diameter_m": 0.05248,
@@ -679,7 +679,7 @@
     {
       "id": "pipe_common_return",
       "source": "node_return_junction",
-      "sourceHandle": "port-0",
+      "sourceHandle": "port-1",
       "target": "node_return_tank",
       "targetHandle": "port-0",
       "type": "default",

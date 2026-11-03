@@ -7,14 +7,14 @@
       "id": "note-overview",
       "type": "text_bubble",
       "position": {
-        "x": 100,
-        "y": -340
+        "x": 1100,
+        "y": 107
       },
-      "width": 400,
-      "height": 410,
+      "width": 380,
+      "height": 430,
       "style": {
-        "width": 400,
-        "height": 410
+        "width": 380,
+        "height": 430
       },
       "data": {
         "label": "Note",
@@ -42,8 +42,8 @@
       "id": "oil-pump",
       "type": "centrifugal_pump",
       "position": {
-        "x": 260,
-        "y": 250
+        "x": 230,
+        "y": 295
       },
       "data": {
         "label": "Circulation Pump",
@@ -59,8 +59,8 @@
       "id": "cooler-junction",
       "type": "junction",
       "position": {
-        "x": 420,
-        "y": 250
+        "x": 380,
+        "y": 290
       },
       "data": {
         "rotation": 180,
@@ -72,8 +72,8 @@
       "id": "oil-cooler",
       "type": "heat_exchanger",
       "position": {
-        "x": 580,
-        "y": 140
+        "x": 470,
+        "y": 160
       },
       "data": {
         "label": "Oil Cooler (Heat Exchanger)",
@@ -91,10 +91,11 @@
       "id": "tcv-3way",
       "type": "three_way_tcv",
       "position": {
-        "x": 760,
-        "y": 250
+        "x": 620,
+        "y": 280
       },
       "data": {
+        "rotation": 90,
         "label": "3-Way TCV (Target: 45\u00b0C)",
         "max_cv": 25.0,
         "set_temperature_c": 45.0,
@@ -108,8 +109,8 @@
       "id": "process-heat-load",
       "type": "linear_control_valve",
       "position": {
-        "x": 920,
-        "y": 250
+        "x": 870,
+        "y": 365
       },
       "data": {
         "label": "Process Throttling Valve",
@@ -127,10 +128,11 @@
       "id": "return-reservoir",
       "type": "tank",
       "position": {
-        "x": 1080,
-        "y": 250
+        "x": 1010,
+        "y": 380
       },
       "data": {
+        "rotation": 180,
         "label": "Header Return Tank",
         "level_m": 1.0,
         "elevation_m": 0.0,
@@ -142,8 +144,8 @@
       "id": "tit-101",
       "type": "instrument",
       "position": {
-        "x": 840,
-        "y": 140
+        "x": 810,
+        "y": 263
       },
       "data": {
         "label": "TIT 101",
@@ -160,8 +162,8 @@
       "id": "fit-102",
       "type": "instrument",
       "position": {
-        "x": 975,
-        "y": 140
+        "x": 940,
+        "y": 263
       },
       "data": {
         "label": "FIT 102",
@@ -178,8 +180,8 @@
       "id": "fit-103",
       "type": "instrument",
       "position": {
-        "x": 665,
-        "y": 60
+        "x": 565,
+        "y": 107
       },
       "data": {
         "label": "FIT 103",
@@ -196,8 +198,8 @@
       "id": "pit-104",
       "type": "instrument",
       "position": {
-        "x": 360,
-        "y": 150
+        "x": 310,
+        "y": 190
       },
       "data": {
         "label": "PIT 104",

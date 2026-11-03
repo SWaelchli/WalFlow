@@ -7,14 +7,14 @@
       "id": "note-overview",
       "type": "text_bubble",
       "position": {
-        "x": 100,
-        "y": -120
+        "x": 750,
+        "y": 250
       },
-      "width": 400,
-      "height": 210,
+      "width": 420,
+      "height": 225,
       "style": {
-        "width": 400,
-        "height": 210
+        "width": 420,
+        "height": 225
       },
       "data": {
         "label": "Note",
@@ -27,7 +27,7 @@
       "id": "source-reservoir",
       "type": "tank",
       "position": {
-        "x": -50,
+        "x": 0,
         "y": 250
       },
       "data": {
@@ -42,8 +42,8 @@
       "id": "centrifugal-pump",
       "type": "centrifugal_pump",
       "position": {
-        "x": 300,
-        "y": 140
+        "x": 260,
+        "y": 295
       },
       "data": {
         "label": "Centrifugal Pump (Dynamic H-Q)",
@@ -56,8 +56,8 @@
       "id": "centrifugal-throttle",
       "type": "linear_control_valve",
       "position": {
-        "x": 500,
-        "y": 140
+        "x": 440,
+        "y": 275
       },
       "data": {
         "label": "Throttling Valve (50%)",
@@ -72,10 +72,11 @@
       "id": "centrifugal-sink",
       "type": "tank",
       "position": {
-        "x": 700,
-        "y": 140
+        "x": 600,
+        "y": 290
       },
       "data": {
+        "rotation": 180,
         "label": "Centrifugal Train Discharge Tank",
         "level_m": 0.5,
         "elevation_m": 0.0,
@@ -87,8 +88,8 @@
       "id": "volumetric-pump",
       "type": "volumetric_pump",
       "position": {
-        "x": 300,
-        "y": 360
+        "x": 260,
+        "y": 450
       },
       "data": {
         "label": "Volumetric Pump (Constant Flow)",
@@ -101,8 +102,8 @@
       "id": "volumetric-prv",
       "type": "linear_regulator",
       "position": {
-        "x": 500,
-        "y": 360
+        "x": 440,
+        "y": 430
       },
       "data": {
         "label": "Safety PRV / Relief Dump",
@@ -115,10 +116,11 @@
       "id": "volumetric-sink",
       "type": "tank",
       "position": {
-        "x": 700,
-        "y": 360
+        "x": 600,
+        "y": 445
       },
       "data": {
+        "rotation": 180,
         "label": "Volumetric Train Discharge Tank",
         "level_m": 0.5,
         "elevation_m": 0.0,
@@ -130,8 +132,8 @@
       "id": "suction-junction",
       "type": "junction",
       "position": {
-        "x": 120,
-        "y": 250
+        "x": 130,
+        "y": 310
       },
       "data": {
         "label": "Common Suction Junction",
@@ -186,7 +188,7 @@
       "target": "centrifugal-sink",
       "targetHandle": "port-0",
       "data": {
-        "label": "Delivery 1",
+        "label": "Centrifugal Delivery",
         "length_m": 2,
         "diameter_m": 0.02664,
         "pipe_class_id": "walflow-cs01",
@@ -243,7 +245,7 @@
       "target": "volumetric-sink",
       "targetHandle": "port-0",
       "data": {
-        "label": "Delivery 2",
+        "label": "Volumetric Delivery",
         "length_m": 2,
         "diameter_m": 0.02664,
         "pipe_class_id": "walflow-cs01",

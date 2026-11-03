@@ -7,14 +7,14 @@
       "id": "note-overview",
       "type": "text_bubble",
       "position": {
-        "x": 100,
-        "y": -120
+        "x": 960,
+        "y": 230
       },
-      "width": 400,
-      "height": 210,
+      "width": 420,
+      "height": 290,
       "style": {
-        "width": 400,
-        "height": 210
+        "width": 420,
+        "height": 290
       },
       "data": {
         "label": "Note",
@@ -28,7 +28,7 @@
       "type": "tank",
       "position": {
         "x": 100,
-        "y": 250
+        "y": 230
       },
       "data": {
         "label": "Feed Tank",
@@ -43,7 +43,7 @@
       "type": "centrifugal_pump",
       "position": {
         "x": 260,
-        "y": 250
+        "y": 275
       },
       "data": {
         "label": "Supply Pump",
@@ -57,7 +57,7 @@
       "type": "junction",
       "position": {
         "x": 420,
-        "y": 250
+        "y": 270
       },
       "data": {
         "label": "Header Manifold Junction",
@@ -68,8 +68,8 @@
       "id": "bpr-valve",
       "type": "linear_regulator",
       "position": {
-        "x": 580,
-        "y": 140
+        "x": 560,
+        "y": 255
       },
       "data": {
         "label": "BPR (Upstream Set: 5 bar(a))",
@@ -82,10 +82,11 @@
       "id": "bpr-tank",
       "type": "tank",
       "position": {
-        "x": 780,
-        "y": 140
+        "x": 720,
+        "y": 270
       },
       "data": {
+        "rotation": 180,
         "label": "Overpressure Bypass Tank",
         "level_m": 0.5,
         "elevation_m": 0.0,
@@ -97,8 +98,8 @@
       "id": "prv-valve",
       "type": "linear_regulator",
       "position": {
-        "x": 580,
-        "y": 360
+        "x": 560,
+        "y": 415
       },
       "data": {
         "label": "PRV (Downstream Set: 3 bar(a))",
@@ -111,8 +112,8 @@
       "id": "downstream-load",
       "type": "orifice",
       "position": {
-        "x": 740,
-        "y": 360
+        "x": 720,
+        "y": 420
       },
       "data": {
         "label": "Process Load Orifice",
@@ -123,10 +124,11 @@
       "id": "process-sink",
       "type": "tank",
       "position": {
-        "x": 900,
-        "y": 360
+        "x": 860,
+        "y": 430
       },
       "data": {
+        "rotation": 180,
         "label": "Process Sink Tank",
         "level_m": 0.5,
         "elevation_m": 0.0,
