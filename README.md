@@ -67,6 +67,7 @@ services:
       - PYTHONUNBUFFERED=1
       - ENVIRONMENT=production
       - WALFLOW_SECRET_KEY=${WALFLOW_SECRET_KEY:?set it in .env}
+      - WALFLOW_ADMIN_SETUP_TOKEN=${WALFLOW_ADMIN_SETUP_TOKEN:-}
 
   walflow-frontend:
     image: ghcr.io/swaelchli/walflow-frontend:latest
@@ -91,6 +92,7 @@ Copy [`.env.example`](./.env.example) to `.env` next to `docker-compose.yml` and
 | Variable | Default | What it does |
 |---|---|---|
 | `WALFLOW_SECRET_KEY` | none, **required** in compose | Key that signs login tokens. Generate with `openssl rand -hex 32`. Changing it logs everybody out. Without it the backend would invent a random key at each start and, with `ENVIRONMENT=production`, refuses to start. |
+| `WALFLOW_ADMIN_SETUP_TOKEN` | none | Optional secret that creating the first administrator asks for. Generate with `openssl rand -hex 32`. Left out, whoever opens a new install first can become its administrator, so set it when others can reach the site before you have created the admin. Not used once an administrator exists. |
 | `ENVIRONMENT` | `production` in compose | `production` enforces the checks above. |
 | `WALFLOW_SECURE_COOKIES` | `true` | Login cookies are sent over HTTPS only. Set to `false` for a plain-HTTP LAN install, otherwise login does not work. |
 | `WALFLOW_TRUSTED_PROXY_HOPS` | `1` | Number of reverse proxies that append the client address to `X-Forwarded-For` (the bundled nginx is 1; use `2` when another proxy such as Traefik or Nginx Proxy Manager sits in front of it; `0` ignores the header). The login rate limit uses this address, so a wrong value either lets clients spoof their address or puts all users into one bucket. |

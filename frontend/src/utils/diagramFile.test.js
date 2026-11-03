@@ -3,7 +3,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  checkFormatVersion, validateDiagramStructure, checkDiagramFile, stripResults, serializeDiagram, toSolverGraph,
+  checkFormatVersion, validateDiagramStructure, checkDiagramFile, stripResults, serializeDiagram, toSolverGraph, sanitizeDiagramElements,
 } from './diagramFile';
 import { HEAT_EXCHANGER_DEFAULTS } from './equipmentDefaults';
 
@@ -104,5 +104,53 @@ describe('shipped diagrams', () => {
     expect(ignore(exported)).toEqual(ignore({ ...data, ...stripResults(data) }));
     expect(text).not.toMatch(/"telemetry"|"kpis"|"_scalingInfo"|"result_hash"/);
     data.nodes.filter(n => n.type === 'heat_exchanger').forEach(n => expect(n.data.rated_dp_bar).toBeGreaterThan(0));
+  });
+});
+
+describe('imported nodes and edges keep only what the canvas needs', () => {
+  const n = (extra) => ({ id: 'a', type: 'tank', position: { x: 1, y: 2 }, data: { label: 'A' }, ...extra });
+  const e = (extra) => ({ id: 'e', source: 'a', target: 'b', data: { length_m: 5 }, ...extra });
+  const cleanNode = (extra) => sanitizeDiagramElements({ nodes: [n(extra)], edges: [] }).nodes[0];
+  const cleanEdge = (extra) => sanitizeDiagramElements({ nodes: [], edges: [e(extra)] }).edges[0];
+
+  it.each([
+    ['unlisted node keys', () => cleanNode({ className: 'x', hidden: true, parentNode: 'p', zIndex: 9, ariaLabel: 'l', domAttributes: { onclick: 'x' } }), n()],
+    ['unlisted edge keys', () => cleanEdge({ className: 'x', hidden: true, markerEnd: 'url(#m)', zIndex: 9 }), e()],
+    ['an own __proto__ key', () => cleanNode(JSON.parse('{"__proto__": {"polluted": 1}}')), n()],
+    ['a valid node geometry', () => cleanNode({ width: 40, height: 50, dragging: false, positionAbsolute: { x: 3, y: 4 } }),
+      n({ width: 40, height: 50, dragging: false, positionAbsolute: { x: 3, y: 4 } })],
+    ['wrongly typed node geometry', () => cleanNode({ width: '40', height: NaN, dragging: 'yes', positionAbsolute: { x: 1, y: Infinity } }), n()],
+    ['a valid edge label and flag', () => cleanEdge({ label: 'L', animated: true }), e({ label: 'L', animated: true })],
+    ['wrongly typed edge label and flag', () => cleanEdge({ label: { a: 1 }, animated: 'true' }), e()],
+    ['node style width and height only', () => cleanNode({ style: { width: 120, height: '80px', position: 'fixed', backgroundImage: 'url(https://x)' } }),
+      n({ style: { width: 120, height: '80px' } })],
+    ['node style numbers as strings', () => cleanNode({ style: { width: '120', height: Infinity } }), n({ style: { width: '120' } })],
+    ['node style with a bad size', () => cleanNode({ style: { width: 'calc(1px + 2px)', height: 'url(x)' } }), n({ style: {} })],
+    ['edge style that is safe', () => cleanEdge({ style: { stroke: '#3b82f6', strokeWidth: 3, strokeDasharray: '5, 5.5' } }),
+      e({ style: { stroke: '#3b82f6', strokeWidth: 3, strokeDasharray: '5, 5.5' } })],
+    ['edge colours as short hex, alpha hex and variable', () => [
+      cleanEdge({ style: { stroke: '#fff' } }).style.stroke, cleanEdge({ style: { stroke: '#11223344' } }).style.stroke,
+      cleanEdge({ style: { stroke: 'var(--color-primary)' } }).style.stroke], ['#fff', '#11223344', 'var(--color-primary)']],
+    ['edge style keys dropped one by one', () => cleanEdge({ style: { stroke: 'url(https://x)', strokeWidth: '2', strokeDasharray: '4;x', position: 'fixed', backgroundImage: 'url(https://x)' } }),
+      e({ style: { strokeWidth: '2' } })],
+    ['edge stroke that is not a colour', () => cleanEdge({ style: { stroke: 'red', strokeWidth: 'thick' } }), e({ style: {} })],
+  ])('%s', (_name, run, expected) => {
+    expect(run()).toEqual(expected);
+  });
+
+  it('does not touch the input, passes data through and never pollutes Object', () => {
+    const input = { nodes: [n({ className: 'x', style: { width: 5, position: 'fixed' } })], edges: [e({ className: 'x' })] };
+    const before = JSON.stringify(input);
+    const out = sanitizeDiagramElements(input);
+    expect(JSON.stringify(input)).toBe(before);
+    expect(out.nodes[0].data).toEqual(input.nodes[0].data);
+    expect({}.polluted).toBeUndefined();
+  });
+
+  const dataDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'data', 'examples');
+  const examples = readdirSync(dataDir).filter(f => f.endsWith('.wlf'));
+  it.each(examples)('%s loses nothing', (file) => {
+    const { nodes, edges } = JSON.parse(readFileSync(join(dataDir, file), 'utf-8'));
+    expect(sanitizeDiagramElements({ nodes, edges })).toEqual({ nodes, edges });
   });
 });

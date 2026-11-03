@@ -1,4 +1,7 @@
 import os
+import secrets
+from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
@@ -13,6 +16,9 @@ router = APIRouter(prefix="/api/auth", tags=["authentication"])
 class UserRegisterSchema(BaseModel):
     username: str
     password: str
+
+class AdminSetupSchema(UserRegisterSchema):
+    setup_token: Optional[str] = None
 
 class UserLoginSchema(BaseModel):
     username: str
@@ -44,21 +50,31 @@ def _set_auth_cookie(response: Response, token: str):
         max_age=60 * 60  # 60 minutes (3600 seconds)
     )
 
+def _configured_setup_token() -> str:
+    return os.getenv("WALFLOW_ADMIN_SETUP_TOKEN", "").strip()
+
 @router.get("/admin-status")
 def get_admin_status(db: Session = Depends(get_db)):
     admin_exists = db.query(User).filter(User.role == "admin").first() is not None
     pending_count = db.query(User).filter(User.status == "pending_approval").count()
     return {
         "admin_exists": admin_exists,
-        "pending_count": pending_count
+        "pending_count": pending_count,
+        "setup_token_required": not admin_exists and bool(_configured_setup_token())
     }
 
 @router.post("/setup-admin", response_model=UserResponseSchema, status_code=status.HTTP_201_CREATED)
 @limiter.limit("10/minute")
-def setup_first_admin(request: Request, payload: UserRegisterSchema, db: Session = Depends(get_db)):
+def setup_first_admin(request: Request, payload: AdminSetupSchema, db: Session = Depends(get_db)):
     admin_exists = db.query(User).filter(User.role == "admin").first() is not None
     if admin_exists:
         raise HTTPException(status_code=400, detail="An administrator account already exists.")
+
+    # Optional: without a configured token, whoever reaches this first becomes the administrator.
+    expected_token = _configured_setup_token()
+    # Compared as bytes: compare_digest raises on non-ASCII strings.
+    if expected_token and not secrets.compare_digest((payload.setup_token or "").encode(), expected_token.encode()):
+        raise HTTPException(status_code=403, detail="The setup token is not correct.")
 
     clean_username = payload.username.strip()
     if len(clean_username) < 3:
@@ -94,17 +110,12 @@ def register_user(request: Request, payload: UserRegisterSchema, db: Session = D
     if existing_user:
         raise HTTPException(status_code=400, detail="Username already exists.")
 
-    admin_exists = db.query(User).filter(User.role == "admin").first() is not None
-    
-    # If no admin exists yet, make this user the admin & approve. Otherwise, user is pending approval.
-    initial_role = "admin" if not admin_exists else "user"
-    initial_status = "approved" if not admin_exists else "pending_approval"
-
+    # The first administrator comes only from /setup-admin, so registering can never grant admin rights.
     new_user = User(
         username=clean_username,
         password_hash=hash_password(payload.password),
-        role=initial_role,
-        status=initial_status
+        role="user",
+        status="pending_approval"
     )
     db.add(new_user)
     db.commit()

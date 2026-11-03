@@ -69,6 +69,58 @@ export const checkFormatVersion = (data) => {
 
 const isFiniteNumber = (v) => typeof v === 'number' && Number.isFinite(v);
 
+const NODE_KEYS = ['id', 'type', 'position', 'positionAbsolute', 'width', 'height', 'dragging', 'data', 'style'];
+const EDGE_KEYS = ['id', 'source', 'target', 'sourceHandle', 'targetHandle', 'type', 'label', 'animated', 'data', 'style'];
+const SIZE_RE = /^\d+(\.\d+)?(px)?$/;
+const NUMERIC_RE = /^\d+(\.\d+)?$/;
+const COLOR_RE = /^(#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})|var\(--[\w-]+\))$/i;
+const DASH_RE = /^[\d.,\s]+$/;
+
+const isSize = (v) => isFiniteNumber(v) || (typeof v === 'string' && SIZE_RE.test(v));
+const isNumeric = (v) => isFiniteNumber(v) || (typeof v === 'string' && NUMERIC_RE.test(v));
+const isDash = (v) => isFiniteNumber(v) || (typeof v === 'string' && DASH_RE.test(v));
+
+const pickStyle = (style, rules) => {
+  if (!style || typeof style !== 'object' || Array.isArray(style)) return undefined;
+  const out = {};
+  Object.entries(rules).forEach(([key, ok]) => {
+    if (Object.prototype.hasOwnProperty.call(style, key) && ok(style[key])) out[key] = style[key];
+  });
+  return out;
+};
+
+const NODE_STYLE_RULES = { width: isSize, height: isSize };
+const EDGE_STYLE_RULES = {
+  stroke: (v) => typeof v === 'string' && COLOR_RE.test(v),
+  strokeWidth: isNumeric,
+  strokeDasharray: isDash,
+};
+
+const sanitizeElement = (el, keys, styleRules) => {
+  const out = {};
+  if (!el || typeof el !== 'object') return out;
+  keys.forEach((k) => {
+    if (!Object.prototype.hasOwnProperty.call(el, k)) return;
+    const v = el[k];
+    if (k === 'width' || k === 'height') { if (isFiniteNumber(v)) out[k] = v; }
+    else if (k === 'positionAbsolute') { if (v && isFiniteNumber(v.x) && isFiniteNumber(v.y)) out[k] = { x: v.x, y: v.y }; }
+    else if (k === 'dragging' || k === 'animated') { if (typeof v === 'boolean') out[k] = v; }
+    else if (k === 'label') { if (typeof v === 'string') out[k] = v; }
+    else if (k === 'style') { const s = pickStyle(v, styleRules); if (s) out[k] = s; }
+    else out[k] = v;
+  });
+  return out;
+};
+
+/**
+ * Keeps only the node and pipe fields the canvas needs, so a crafted file cannot set other ReactFlow
+ * props (CSS, class names, visibility). `data` passes through untouched. Returns new objects.
+ */
+export const sanitizeDiagramElements = ({ nodes = [], edges = [] } = {}) => ({
+  nodes: nodes.map((n) => sanitizeElement(n, NODE_KEYS, NODE_STYLE_RULES)),
+  edges: edges.map((e) => sanitizeElement(e, EDGE_KEYS, EDGE_STYLE_RULES)),
+});
+
 /**
  * Structural check of a diagram before it reaches the canvas.
  * Returns a list of problems (empty when the diagram is usable).

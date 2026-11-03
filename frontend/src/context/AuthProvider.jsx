@@ -57,7 +57,8 @@ export const AuthProvider = ({ children }) => {
         if (res.data && typeof res.data.admin_exists === 'boolean') {
           setAdminStatus({
             adminExists: res.data.admin_exists,
-            pendingCount: res.data.pending_count || 0
+            pendingCount: res.data.pending_count || 0,
+            setupTokenRequired: res.data.setup_token_required === true
           });
           return res.data;
         }
@@ -92,8 +93,9 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const setupFirstAdmin = async (username, password) => {
-    const response = await axios.post('/api/auth/setup-admin', { username, password });
+  const setupFirstAdmin = async (username, password, setupToken) => {
+    const payload = setupToken ? { username, password, setup_token: setupToken } : { username, password };
+    const response = await axios.post('/api/auth/setup-admin', payload);
     await checkAdminStatus();
     if (response.data) {
       await login(username, password);

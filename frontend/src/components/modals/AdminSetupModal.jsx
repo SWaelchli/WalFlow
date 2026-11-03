@@ -4,7 +4,9 @@ import { CrownIcon, WarningIcon } from '../symbols/IconLibrary';
 
 import { modalA11yRef } from '../../hooks/useModalA11y';
 const AdminSetupModal = ({ isOpen, onClose }) => {
-  const { setupFirstAdmin } = useAuth();
+  const { setupFirstAdmin, adminStatus } = useAuth();
+  const tokenRequired = Boolean(adminStatus?.setupTokenRequired);
+  const [setupToken, setSetupToken] = useState('');
   const [username, setUsername] = useState('admin');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -17,7 +19,7 @@ const AdminSetupModal = ({ isOpen, onClose }) => {
     e.preventDefault();
     setError('');
 
-    if (!username.trim() || !password.trim()) {
+    if (!username.trim() || !password.trim() || (tokenRequired && !setupToken.trim())) {
       setError('Please fill in all fields.');
       return;
     }
@@ -34,7 +36,7 @@ const AdminSetupModal = ({ isOpen, onClose }) => {
 
     setSubmitting(true);
     try {
-      await setupFirstAdmin(username.trim(), password);
+      await setupFirstAdmin(username.trim(), password, tokenRequired ? setupToken.trim() : undefined);
       onClose();
     } catch (err) {
       const msg = err.response?.data?.detail || 'Failed to complete initial admin setup.';
@@ -90,6 +92,31 @@ const AdminSetupModal = ({ isOpen, onClose }) => {
               lineHeight: '1.4'
             }}>
               <WarningIcon size={14} style={{ marginRight: '6px', verticalAlign: '-2px' }} />{error}
+            </div>
+          )}
+
+          {tokenRequired && (
+            <div style={{ marginBottom: '18px' }}>
+              <label htmlFor="admin-setup-token" style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: 'var(--fs-xs)', fontWeight: '600', marginBottom: '6px' }}>
+                Setup token
+              </label>
+              <input
+                id="admin-setup-token"
+                type="password"
+                value={setupToken}
+                onChange={(e) => setSetupToken(e.target.value)}
+                autoComplete="off"
+                className="form-input"
+                style={{
+                  width: '100%',
+                  height: '38px',
+                  fontSize: 'var(--fs-md)'
+                }}
+                required
+              />
+              <p style={{ margin: '6px 0 0 0', color: 'var(--color-text-secondary)', fontSize: 'var(--fs-xs)' }}>
+                The value of WALFLOW_ADMIN_SETUP_TOKEN on the server.
+              </p>
             </div>
           )}
 

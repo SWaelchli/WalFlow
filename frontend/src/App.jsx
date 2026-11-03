@@ -82,7 +82,7 @@ import { instrumentPinsOf } from './commands/context';
 import { useAutoSaveSession } from './hooks/useAutoSaveSession';
 import { getTabId, isEmptyDraft } from './utils/draftStorage';
 import { HEAT_EXCHANGER_DEFAULTS } from './utils/equipmentDefaults';
-import { serializeDiagram, toSolverGraph, checkDiagramFile, stripResults } from './utils/diagramFile';
+import { serializeDiagram, toSolverGraph, checkDiagramFile, stripResults, sanitizeDiagramElements } from './utils/diagramFile';
 import { computeCaseInputHashes, isCaseResultStale } from './utils/resultHash';
 import { solverMessageKey } from './utils/graphSignature';
 import { mapCached } from './utils/itemMemo';
@@ -873,7 +873,9 @@ function WalFlowContent() {
     showCanvasLoading();
     scheduleLoad(() => {
       // Results are never loaded from a file; old or hand-edited files may still carry them
-      const clean = stripResults({ nodes: data.nodes, edges: data.edges, cases: data.cases || [] });
+      const stripped = stripResults({ nodes: data.nodes, edges: data.edges, cases: data.cases || [] });
+      // A file may only set the node and pipe fields the canvas needs
+      const clean = { ...stripped, ...sanitizeDiagramElements(stripped) };
       const seenNodeIds = new Set();
       const restoredNodes = clean.nodes.map((node, idx) => {
         let uniqueId = node.id || `node_${idx}`;

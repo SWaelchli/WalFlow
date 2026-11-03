@@ -179,6 +179,72 @@ def test_pipe_manager_can_be_assigned(client):
     assert client.put(f"/api/admin/users/{user_id}/role", json={"role": "root"}, headers=admin_headers).status_code == 400
 
 
+# ---------------------------------------------------------------- first administrator
+SETUP_TOKEN = "s3tup-token-value"
+
+
+def _no_admin_env(monkeypatch, environment, token):
+    """A database without an administrator, and the deployment environment of the case."""
+    _drop_other_admins("")
+    for name, value in (("ENVIRONMENT", environment), ("WALFLOW_ADMIN_SETUP_TOKEN", token)):
+        monkeypatch.delenv(name, raising=False) if value is None else monkeypatch.setenv(name, value)
+
+
+def _user_count(username):
+    db = SessionLocal()
+    try:
+        return db.query(User).filter(User.username == username).count()
+    finally:
+        db.close()
+
+
+@pytest.mark.parametrize("environment, env_token, sent, expected", [
+    pytest.param("production", None, None, 201, id="production_open_without_configured_token"),
+    pytest.param("production", None, SETUP_TOKEN, 201, id="production_sent_token_ignored_without_configured_token"),
+    pytest.param("production", "   ", None, 201, id="production_whitespace_token_counts_as_unset"),
+    pytest.param("production", SETUP_TOKEN, None, 403, id="production_configured_token_is_required"),
+    pytest.param("production", SETUP_TOKEN, "wrong", 403, id="production_wrong_token"),
+    pytest.param("production", SETUP_TOKEN, SETUP_TOKEN, 201, id="production_right_token"),
+    pytest.param(None, None, None, 201, id="no_environment_open_without_configured_token"),
+    pytest.param(None, SETUP_TOKEN, None, 403, id="no_environment_configured_token_is_required"),
+    pytest.param(None, SETUP_TOKEN, SETUP_TOKEN, 201, id="no_environment_right_token"),
+])
+def test_first_admin_setup_needs_a_configured_token(client, monkeypatch, environment, env_token, sent, expected):
+    _no_admin_env(monkeypatch, environment, env_token)
+    username = f"first_{uuid.uuid4().hex[:8]}"
+    body = {"username": username, "password": "admin_secret_pass", **({} if sent is None else {"setup_token": sent})}
+    resp = client.post("/api/auth/setup-admin", json=body)
+    assert resp.status_code == expected
+    assert _user_count(username) == (1 if expected == 201 else 0)
+    if expected == 201:
+        assert resp.json()["role"] == "admin"
+
+
+@pytest.mark.parametrize("environment, env_token, admin_exists, required", [
+    pytest.param("production", None, False, False, id="production_without_token_or_admin"),
+    pytest.param(None, SETUP_TOKEN, False, True, id="no_environment_token_without_admin"),
+    pytest.param("production", SETUP_TOKEN, False, True, id="production_token_without_admin"),
+    pytest.param("production", SETUP_TOKEN, True, False, id="no_token_needed_once_an_admin_exists"),
+])
+def test_admin_status_tells_whether_a_setup_token_is_needed(client, monkeypatch, environment, env_token, admin_exists, required):
+    _no_admin_env(monkeypatch, environment, env_token)
+    if admin_exists:
+        _user("admin")
+    resp = client.get("/api/auth/admin-status")
+    assert resp.json()["admin_exists"] is admin_exists
+    assert resp.json()["setup_token_required"] is required
+    assert SETUP_TOKEN not in resp.text
+
+
+def test_registering_without_an_admin_never_creates_one(client, monkeypatch):
+    _no_admin_env(monkeypatch, None, None)
+    username = f"reg_{uuid.uuid4().hex[:8]}"
+    resp = client.post("/api/auth/register", json={"username": username, "password": "user_secret_pass"})
+    assert resp.status_code == 201
+    assert (resp.json()["role"], resp.json()["status"]) == ("user", "pending_approval")
+    assert client.post("/api/auth/login", json={"username": username, "password": "user_secret_pass"}).status_code == 403
+
+
 # ---------------------------------------------------------------- diagram locks and saves
 def _standalone_diagram(client, headers, data="{}"):
     resp = client.post("/api/diagrams", json={"title": "D", "diagram_data": data}, headers=headers)

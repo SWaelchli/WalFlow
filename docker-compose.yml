@@ -22,6 +22,8 @@ services:
       - ENVIRONMENT=production
       # Required: signs login tokens. Put it in .env, e.g. WALFLOW_SECRET_KEY=<output of: openssl rand -hex 32>
       - WALFLOW_SECRET_KEY=${WALFLOW_SECRET_KEY:?Set WALFLOW_SECRET_KEY in .env (see .env.example)}
+      # Optional: protects creating the first administrator on a new install (see .env.example)
+      - WALFLOW_ADMIN_SETUP_TOKEN=${WALFLOW_ADMIN_SETUP_TOKEN:-}
       # Cookies are Secure (HTTPS only). Set to false in .env for a plain-HTTP LAN install.
       - WALFLOW_SECURE_COOKIES=${WALFLOW_SECURE_COOKIES:-true}
       # Proxies in front of the backend that append to X-Forwarded-For: 1 = the bundled nginx, 2 = one more in front
