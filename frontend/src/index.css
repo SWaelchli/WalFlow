@@ -1329,6 +1329,16 @@ body,
   text-overflow: ellipsis;
 }
 .menubar-doc-project { font-weight: 500; color: var(--color-text-secondary); }
+.menubar-doc-project-btn {
+  padding: 0 var(--space-xs);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.menubar-doc-project-btn:hover { background: var(--color-surface-muted); color: var(--color-text-primary); }
 .menubar-save {
   flex-shrink: 0;
   display: inline-flex;

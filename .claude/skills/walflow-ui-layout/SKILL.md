@@ -50,7 +50,8 @@ Geometry (sizes, tokens, breakpoints, layers) is in MASTER.md, "App Shell & Layo
 
 ### Menu bar (row 1)
 
-Left: logo (opens About), then the menus. Centre: `Project / Drawing` name, save state, lock chip. Right: account
+Left: logo (opens About), then the menus. Centre: `Project / Drawing` name (`Project / Local draft` when no drawing is
+open; the project name is a button running `file.open`), save state, lock chip. Right: account
 (Sign in button, or user name menu with Sign out).
 
 Each page has its own menus and keys (see "The command list"). Tools and Help are shared by all pages.

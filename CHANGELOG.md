@@ -25,5 +25,7 @@ All notable changes to the WälFlow project will be documented in this file.
 - **WebSocket start-up**: a socket still connecting is closed once it opens, which removes the browser's premature-close warning.
 - **WebSocket replacement**: a socket being replaced after sign-in or sign-out can no longer mark the new connection as disconnected or deliver a late result.
 - **Rejected diagrams**: a run whose diagram fails to parse now clears the previous model, so a later run cannot return results for the old diagram.
+- **Active project in the menu bar**: the project name shows whenever a project is active, also without an open drawing, and opens the Project Manager when clicked.
+- **Case comparison label**: "Total Pump Flow" is now "Sum of Pump Flows", because the value adds every pump and so counts pumps in series more than once.
 
 ---

@@ -735,9 +735,9 @@ export default function DataList({
                       );
                     })}
                   </tr>
-                  {/* Total Pump Flow */}
+                  {/* Sum of Pump Flows */}
                   <tr style={{ borderBottom: '1px solid var(--color-border-hover)', height: '36px' }}>
-                    <td style={{ padding: '6px 12px', fontWeight: '700', color: 'var(--color-text-primary)', verticalAlign: 'middle', width: '200px', minWidth: '200px', maxWidth: '200px', whiteSpace: 'nowrap' }}>Total Pump Flow ({labels.flow})</td>
+                    <td style={{ padding: '6px 12px', fontWeight: '700', color: 'var(--color-text-primary)', verticalAlign: 'middle', width: '200px', minWidth: '200px', maxWidth: '200px', whiteSpace: 'nowrap' }}>Sum of Pump Flows ({labels.flow})</td>
                     {displayCases.map((c, colIdx) => {
                       const baseKpis = displayCases.find(b => b.is_base)?.kpis;
                       const kpis = c.kpis || {};

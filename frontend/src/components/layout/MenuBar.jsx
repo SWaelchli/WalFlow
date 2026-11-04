@@ -296,9 +296,8 @@ export default function MenuBar({
   const saveState = describeSaveState({ saveStatus, isCloudDoc: !!activeDiagram, isLockedByOther, lastSavedTimestamp });
   const lockState = activeDiagram && isAuthenticated ? describeLockState(lockInfo, currentUser ? currentUser.id : null) : null;
   const lockEditing = lockState && lockState.kind === 'mine';
-  const docName = activeDiagram
-    ? `${activeProject ? `${activeProject.title} / ` : ''}${activeDiagram.title}`
-    : 'Local draft';
+  const diagramName = activeDiagram ? activeDiagram.title : 'Local draft';
+  const docName = activeProject ? `${activeProject.title} / ${diagramName}` : diagramName;
 
   return (
     <div className="shell-menubar">
@@ -347,8 +346,21 @@ export default function MenuBar({
       <div className="menubar-doc" title={`${docName}, ${saveState.label}`}>
         {activeDiagram ? <CloudIcon size={14} color="var(--color-text-secondary)" /> : <FileIcon size={14} color="var(--color-text-secondary)" />}
         <span className="menubar-doc-name">
-          {activeDiagram && activeProject && <span className="menubar-doc-project">{activeProject.title} / </span>}
-          {activeDiagram ? activeDiagram.title : 'Local draft'}
+          {activeProject && (
+            <span className="menubar-doc-project">
+              <button
+                type="button"
+                className="menubar-doc-project-btn"
+                title={`Switch project (current: ${activeProject.title})`}
+                aria-label={`Switch project, current project ${activeProject.title}`}
+                onClick={() => runCommand('file.open', ctx)}
+              >
+                {activeProject.title}
+              </button>
+              {' / '}
+            </span>
+          )}
+          {diagramName}
         </span>
         <span role="status" className="menubar-save">
           <span aria-hidden="true" className={`save-dot save-dot-${saveState.tone}`} />

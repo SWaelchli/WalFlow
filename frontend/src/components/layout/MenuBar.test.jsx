@@ -195,6 +195,36 @@ describe('MenuBar header', () => {
     expect(screen.queryByText('Not saved')).toBeNull();
   });
 
+  describe('project switcher', () => {
+    const switcher = () => screen.queryByRole('button', { name: 'Switch project, current project P' });
+    const docName = () => document.querySelector('.menubar-doc-name').textContent.replace(/\s+/g, ' ').trim();
+    const project = { id: 'p1', title: 'P' };
+
+    it.each([
+      ['project and drawing', { activeProject: project, activeDiagram: { id: 'd1', title: 'D' } }, true, 'P / D'],
+      ['project, no drawing', { activeProject: project }, true, 'P / Local draft'],
+      ['no project', {}, false, 'Local draft'],
+    ])('%s', (_n, props, hasButton, name) => {
+      setup(props);
+      expect(!!switcher()).toBe(hasButton);
+      expect(docName()).toBe(name);
+      const label = screen.getByRole('status', { name: '' }).textContent;
+      expect(document.querySelector('.menubar-doc').getAttribute('title')).toBe(`${name}, ${label}`);
+    });
+
+    it('opens the drawings list like File > Open, outside the menu bar tab stop', () => {
+      const ctx = setup({ activeProject: project });
+      expect(screen.getByRole('menubar').contains(switcher())).toBe(false);
+      fireEvent.click(switcher());
+      expect(ctx.actions.openDrawings).toHaveBeenCalledTimes(1);
+    });
+
+    it('is not shown on a page', () => {
+      setup({ activeProject: project }, { page: 'catalogue', pageState: makePageState() });
+      expect(switcher()).toBeNull();
+    });
+  });
+
   it('opens About from the logo', () => {
     const ctx = setup();
     fireEvent.click(screen.getByRole('button', { name: /^About/ }));
