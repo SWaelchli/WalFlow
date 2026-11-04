@@ -755,6 +755,7 @@ const ok = await confirmDialog({
                         <label style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: 'var(--fs-xs)', fontWeight: '700', marginBottom: '4px' }}>Link password (optional)</label>
                         <input
                           type="password"
+                          autoComplete="new-password"
                           value={sharePassword}
                           onChange={(e) => setSharePassword(e.target.value)}
                           placeholder="Leave empty for public link"

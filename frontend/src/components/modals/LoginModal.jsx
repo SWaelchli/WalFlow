@@ -160,6 +160,7 @@ const LoginModal = ({ isOpen, onClose }) => {
             </label>
             <input
               type="text"
+              autoComplete="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="e.g. engineer_alex"
@@ -179,6 +180,7 @@ const LoginModal = ({ isOpen, onClose }) => {
             </label>
             <input
               type="password"
+              autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder=""
@@ -199,6 +201,7 @@ const LoginModal = ({ isOpen, onClose }) => {
               </label>
               <input
                 type="password"
+                autoComplete="new-password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder=""

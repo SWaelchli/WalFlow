@@ -427,7 +427,8 @@ regenerate it with `--persist`.
 /* Dropdown menus and context menus share one look */
 .menu      { min-width: 220px; padding: var(--space-sm); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); box-shadow: var(--shadow-lg); z-index: var(--z-popover); }
 .menu-item { height: 28px; padding: 0 var(--space-md); font-size: var(--fs-base); display: grid; grid-template-columns: var(--icon-sm) 1fr auto; gap: var(--space-md); align-items: center; }
-.menu-item kbd { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--color-text-muted); }
+.menu-item kbd { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--color-text-secondary); }
+.menu-item[aria-disabled="true"] kbd { color: inherit; }
 
 /* Activity rail: icon buttons with a visible active marker */
 .shell-rail            { width: var(--shell-rail-w); background: var(--color-surface-muted); border-right: 1px solid var(--color-border); }

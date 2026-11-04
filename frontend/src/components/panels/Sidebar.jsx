@@ -1059,9 +1059,9 @@ export default function Sidebar({
 
                 {/* Fluid Dynamics */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  <h4 style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', textTransform: 'uppercase', color: theme.slate500, margin: 0, letterSpacing: '0.05em' }}>
+                  <h3 style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', textTransform: 'uppercase', color: theme.slate500, margin: 0, letterSpacing: '0.05em' }}>
                     Fluid Dynamics
-                  </h4>
+                  </h3>
                   
                   <div>
                     <label style={labelStyle}>System fluid</label>
@@ -1191,9 +1191,9 @@ export default function Sidebar({
                       gap: '10px'
                     }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <h4 style={{ margin: 0, color: 'var(--color-primary-text)', fontSize: 'var(--fs-xs)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        <h3 style={{ margin: 0, color: 'var(--color-primary-text)', fontSize: 'var(--fs-xs)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                           Available Pipe Classes
-                        </h4>
+                        </h3>
                         {isOwnerOfActiveProject && (
                           <div style={{ display: 'flex', gap: '4px' }}>
                             <button
@@ -1397,9 +1397,9 @@ export default function Sidebar({
                       <FolderIcon size={20} color="var(--color-brand-dark)" />
                     </div>
                     <div>
-                      <h4 style={{ margin: '0 0 4px 0', fontSize: 'var(--fs-base)', fontWeight: '700', color: 'var(--color-text-primary)' }}>
+                      <h3 style={{ margin: '0 0 4px 0', fontSize: 'var(--fs-base)', fontWeight: '700', color: 'var(--color-text-primary)' }}>
                         Standalone Drawing
-                      </h4>
+                      </h3>
                       <p style={{ margin: 0, fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', lineHeight: '1.4' }}>
                         This drawing is not part of a cloud project. All pipe classes and manual pipe dimensions are available.
                       </p>
@@ -1424,9 +1424,9 @@ export default function Sidebar({
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 {/* Engineering Unit System */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <h4 style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', textTransform: 'uppercase', color: theme.slate500, margin: 0, letterSpacing: '0.05em' }}>
+                  <h3 style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', textTransform: 'uppercase', color: theme.slate500, margin: 0, letterSpacing: '0.05em' }}>
                     Unit System
-                  </h4>
+                  </h3>
                   
                   <div>
                     <label style={labelStyle}>Engineering units</label>
@@ -1571,9 +1571,9 @@ export default function Sidebar({
                   flexDirection: 'column',
                   gap: '8px'
                 }}>
-                  <h4 style={{ margin: 0, fontSize: 'var(--fs-xs)', fontWeight: '700', textTransform: 'uppercase', color: 'var(--color-text-secondary)', letterSpacing: '0.04em' }}>
+                  <h3 style={{ margin: 0, fontSize: 'var(--fs-xs)', fontWeight: '700', textTransform: 'uppercase', color: 'var(--color-text-secondary)', letterSpacing: '0.04em' }}>
                     System Specifications
-                  </h4>
+                  </h3>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--fs-sm)' }}>
                     <span style={{ color: 'var(--color-text-secondary)' }}>App Version:</span>
                     <span style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>v{APP_VERSION}</span>

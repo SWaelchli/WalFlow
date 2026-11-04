@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import MenuBar from './MenuBar';
+import { APP_VERSION, RELEASE_STAGE } from '../../constants';
 import { getTabId } from '../../utils/draftStorage';
 import { makeCommandCtx, makePageState } from '../../test/commandCtx';
 
@@ -198,6 +199,14 @@ describe('MenuBar header', () => {
     const ctx = setup();
     fireEvent.click(screen.getByRole('button', { name: /^About/ }));
     expect(ctx.actions.openHelp).toHaveBeenCalledWith('about');
+  });
+
+  it('brand button name contains its visible version text, with the stage only when set', () => {
+    setup();
+    const brand = screen.getByRole('button', { name: /^About/ });
+    const stage = RELEASE_STAGE ? ` • ${RELEASE_STAGE}` : '';
+    expect(brand.getAttribute('aria-label')).toBe(`About WälFlow v${APP_VERSION}${stage}`);
+    expect(brand.getAttribute('aria-label')).toContain(brand.textContent.replace(/\s+/g, ' ').trim());
   });
 
   it('offers Sign in when signed out', () => {

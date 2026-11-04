@@ -48,7 +48,6 @@ export function useWebSocketSimulation({ nodes, edges, globalSettings, cases = [
     const wsUrl = `${protocol}//${window.location.host}/ws/simulate`;
 
     let reconnectTimeoutId = null;
-    let isCleanClose = false;
 
     const socket = new WebSocket(wsUrl);
     ws.current = socket;
@@ -68,17 +67,14 @@ export function useWebSocketSimulation({ nodes, edges, globalSettings, cases = [
         return;
       }
 
-      if (!isCleanClose) {
-        console.log('WebSocket disconnected unexpectedly. Retrying in 3 seconds...');
-        reconnectTimeoutId = setTimeout(() => {
-          setReconnectTrigger(prev => prev + 1);
-        }, 3000);
-      }
+      console.log('WebSocket disconnected unexpectedly. Retrying in 3 seconds...');
+      reconnectTimeoutId = setTimeout(() => {
+        setReconnectTrigger(prev => prev + 1);
+      }, 3000);
     };
 
     socket.onerror = (error) => {
-      // Closing a socket that is still connecting (cleanup, StrictMode) is intended, not an error
-      if (!isCleanClose) console.error('WebSocket Error:', error);
+      console.error('WebSocket Error:', error);
       setIsConnected(false);
       setIsSimulating(false);
     };
@@ -156,12 +152,21 @@ export function useWebSocketSimulation({ nodes, edges, globalSettings, cases = [
     };
 
     return () => {
-      isCleanClose = true;
       if (reconnectTimeoutId) {
         clearTimeout(reconnectTimeoutId);
       }
-      if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+      // Detach first: a replaced socket must not report its late close or results over the new socket's state.
+      // Its onclose no longer runs, so the connection state is reset here (App effects re-send on false -> true).
+      socket.onmessage = null;
+      socket.onerror = null;
+      socket.onclose = null;
+      setIsConnected(false);
+      setIsSimulating(false);
+      if (socket.readyState === WebSocket.OPEN) {
         socket.close();
+      } else if (socket.readyState === WebSocket.CONNECTING) {
+        // Closing a connecting socket logs a browser warning; let it open, then close it
+        socket.onopen = () => socket.close();
       }
     };
   }, [isAuthenticated, reconnectTrigger, setRunError]);

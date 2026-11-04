@@ -145,6 +145,7 @@ const AdminSetupModal = ({ isOpen, onClose }) => {
             </label>
             <input
               type="password"
+              autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder=""
@@ -164,6 +165,7 @@ const AdminSetupModal = ({ isOpen, onClose }) => {
             </label>
             <input
               type="password"
+              autoComplete="new-password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder=""

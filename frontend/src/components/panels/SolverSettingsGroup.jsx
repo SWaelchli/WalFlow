@@ -29,9 +29,9 @@ export default function SolverSettingsGroup({ values, onChange, toggle, inherite
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-        <h4 style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', textTransform: 'uppercase', color: 'var(--color-text-secondary)', margin: 0, letterSpacing: '0.05em' }}>
+        <h3 style={{ fontSize: 'var(--fs-xs)', fontWeight: '700', textTransform: 'uppercase', color: 'var(--color-text-secondary)', margin: 0, letterSpacing: '0.05em' }}>
           Numerical solver
-        </h4>
+        </h3>
         {inForce !== undefined && (
           <span
             title={inForce ? 'The solver uses these settings for the open drawing' : 'Another level supplies the solver settings for the open drawing'}

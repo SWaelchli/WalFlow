@@ -307,11 +307,11 @@ export default function MenuBar({
           type="button"
           className="menubar-brand"
           title="About WälFlow"
-          aria-label={`About WälFlow, version ${APP_VERSION}`}
+          aria-label={`About WälFlow v${APP_VERSION}${RELEASE_STAGE ? ` • ${RELEASE_STAGE}` : ''}`}
           onClick={() => runCommand('help.about', ctx)}
         >
           <img src={walflowLogo} alt="" className="menubar-logo" />
-          <span className="menubar-version">v{APP_VERSION} {RELEASE_STAGE ? `• ${RELEASE_STAGE}` : ''}</span>
+          <span className="menubar-version">v{APP_VERSION}{RELEASE_STAGE ? ` • ${RELEASE_STAGE}` : ''}</span>
         </button>
 
         <div role="menubar" aria-label="Main menu" className="menubar-menus" ref={barRef}>

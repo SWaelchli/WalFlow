@@ -32,4 +32,14 @@ describe('first administrator setup token', () => {
     const [username, password, token] = auth.setupFirstAdmin.mock.calls[0];
     expect([username, password, token || undefined]).toEqual(['boss', 'long_enough_pw', sent]);
   });
+
+  it('new passwords are marked for the password manager, the setup token is not', () => {
+    auth.adminStatus = { adminExists: false, setupTokenRequired: true };
+    render(<AdminSetupModal isOpen onClose={() => {}} />);
+    const token = screen.getByLabelText(/setup token/i);
+    const passwords = [...document.querySelectorAll('input[type="password"]')].filter(i => i !== token);
+    expect(passwords).toHaveLength(2);
+    passwords.forEach(i => expect(i.getAttribute('autocomplete')).toBe('new-password'));
+    expect(token.getAttribute('autocomplete')).toBe('off');
+  });
 });

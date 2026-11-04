@@ -1408,7 +1408,8 @@ body,
 .menu-item[aria-disabled="true"]:hover { background: transparent; }
 .menu-item-danger { color: var(--color-danger-text); }
 .menu-item-icon { display: inline-flex; align-items: center; justify-content: center; }
-.menu-item kbd { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--color-text-muted); }
+.menu-item kbd { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--color-text-secondary); }
+.menu-item[aria-disabled="true"] kbd { color: inherit; }
 .menu-item-badge {
   grid-column: 3;
   padding: 1px var(--space-md);
@@ -1569,7 +1570,7 @@ body,
   white-space: nowrap;
   cursor: pointer;
 }
-.status-chip-time { font-weight: 500; opacity: 0.8; }
+.status-chip-time { font-weight: 500; }
 .status-slot {
   display: inline-flex;
   align-items: center;

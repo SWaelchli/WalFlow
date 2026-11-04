@@ -32,6 +32,29 @@ describe('Enter in a form dialog', () => {
     expect(submit.disabled).toBe(false);
   });
 
+  it.each([
+    ['sign-in', () => render(<LoginModal isOpen onClose={() => {}} />)],
+    ['new drawing', () => render(<NewDrawingModal isOpen onClose={() => {}} onCreateNew={vi.fn()} />)],
+  ])('%s: the dialog is announced as a modal dialog', (_n, open) => {
+    open();
+    const dialog = document.querySelector('.modal-container');
+    expect(dialog.getAttribute('role')).toBe('dialog');
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
+  });
+
+  it.each([
+    ['Sign In', 'current-password'],
+    ['Register', 'new-password'],
+  ])('%s: user name and password fields carry autocomplete hints for the password manager', (tab, passwordHint) => {
+    render(<LoginModal isOpen onClose={() => {}} />);
+    fireEvent.click(screen.getAllByRole('button', { name: tab })[0]);
+    const passwords = [...document.querySelectorAll('input[type="password"]')];
+    expect(screen.getByPlaceholderText('e.g. engineer_alex').getAttribute('autocomplete')).toBe('username');
+    expect(passwords).toHaveLength(tab === 'Register' ? 2 : 1);
+    expect(passwords[0].getAttribute('autocomplete')).toBe(passwordHint);
+    if (tab === 'Register') expect(passwords[1].getAttribute('autocomplete')).toBe('new-password');
+  });
+
   it('sign-in submits the trimmed user name and the password, and closes', async () => {
     auth.login.mockResolvedValue({});
     const onClose = vi.fn();
