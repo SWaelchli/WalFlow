@@ -14,7 +14,7 @@ import os
 
 import pytest
 
-from routers.simulation import calculate_case_kpis, extract_telemetry
+from services.simulation_service import calculate_case_kpis, extract_telemetry
 from simulation.graph_parser import GraphParser
 from simulation.schemas import ReactFlowGraph
 from simulation.solver import NetworkSolver, run_sequential_relief_simulation

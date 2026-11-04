@@ -13,7 +13,7 @@ import pytest
 from simulation.schemas import ReactFlowGraph
 from simulation.graph_parser import GraphParser
 from simulation.solver import NetworkSolver, run_sequential_relief_simulation
-from routers.simulation import calculate_case_kpis, extract_telemetry, numpy_json_default
+from services.simulation_service import calculate_case_kpis, extract_telemetry, numpy_json_default
 
 EXAMPLES_DIR = EXAMPLES_DIR
 EXAMPLES = sorted(os.path.splitext(os.path.basename(p))[0] for p in glob.glob(os.path.join(EXAMPLES_DIR, "*.wlf")))

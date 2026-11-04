@@ -3,7 +3,7 @@
 
 
 from physics_refs import solve
-from routers.simulation import extract_telemetry
+from services.simulation_service import extract_telemetry
 from simulation.equipment.heat_exchanger import HeatExchanger
 from simulation.equipment.pipe import Pipe
 from simulation.equipment.tank import Tank

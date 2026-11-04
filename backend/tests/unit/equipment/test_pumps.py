@@ -19,7 +19,7 @@ from simulation.equipment.volumetric_pump import VolumetricPump
 from simulation.fluid_utils import FluidProperties
 from simulation.graph_parser import GraphParser, ModelInputError
 from simulation.schemas import ReactFlowGraph
-from routers.simulation import calculate_case_kpis, extract_telemetry
+from services.simulation_service import calculate_case_kpis, extract_telemetry
 
 G = 9.81
 Q_R = 100.0 / 60000.0

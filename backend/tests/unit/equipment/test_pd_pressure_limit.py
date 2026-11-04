@@ -13,7 +13,7 @@ from simulation.equipment.volumetric_pump import VolumetricPump
 from simulation.graph_parser import GraphParser, ModelInputError
 from simulation.schemas import GlobalSettings, ReactFlowGraph
 from simulation.solver import NetworkSolver, run_sequential_relief_simulation
-from routers.simulation import extract_telemetry
+from services.simulation_service import extract_telemetry
 from networks import neutral_graph, create_simple_network
 
 Q_R = 100.0 / 60000.0

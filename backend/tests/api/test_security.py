@@ -132,6 +132,16 @@ def test_websocket_rejects_oversized_graph(monkeypatch):
     assert reply["status"] == "error" and "too large" in reply["message"]
 
 
+def test_websocket_rejected_graph_discards_the_previous_model():
+    with TestClient(app).websocket_connect("/ws/simulate") as ws:
+        ws.send_text(json.dumps({"action": "run_simulation", "graph": _graph(2)}))
+        ws.receive_text()
+        ws.send_text(json.dumps({"action": "run_simulation", "graph": {"nodes": "x"}}))
+        assert json.loads(ws.receive_text())["status"] == "error"
+        ws.send_text(json.dumps({"action": "run_simulation"}))
+        assert json.loads(ws.receive_text())["status"] == "waiting"
+
+
 # ---------------------------------------------------------------- simulation socket access
 def test_anonymous_user_can_use_the_simulation_socket(monkeypatch):
     monkeypatch.delenv("WALFLOW_REQUIRE_WS_AUTH", raising=False)

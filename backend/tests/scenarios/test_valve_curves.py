@@ -10,7 +10,7 @@ from hypothesis import given, strategies as st
 
 
 from strategies import build, fluid_states, log_uniform
-from routers.simulation import VALVE_CURVE_MIN_FLOW, VALVE_CURVE_POINTS, extract_telemetry, valve_curves
+from services.simulation_service import VALVE_CURVE_MIN_FLOW, VALVE_CURVE_POINTS, extract_telemetry, valve_curves
 from simulation.equipment.base_node import Q_DEAD_LEG
 from simulation.graph_parser import GraphParser
 from simulation.schemas import ReactFlowGraph

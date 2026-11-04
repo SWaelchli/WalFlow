@@ -2,7 +2,7 @@
 import pytest
 
 from networks import graph_node, graph_pipe, solve_graph
-from routers.simulation import extract_telemetry
+from services.simulation_service import extract_telemetry
 
 LMIN = 1.0 / 60000.0   # m³/s per L/min
 

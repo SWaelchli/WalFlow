@@ -70,7 +70,7 @@ def test_pump_switched_off_between_a_tank_and_a_dead_end_is_not_an_island():
 
 
 def test_island_error_is_passed_to_the_user_by_the_relief_wrapper():
-    from routers.simulation import extract_telemetry
+    from services.simulation_service import extract_telemetry
     from simulation.schemas import HydraulicNetwork, GlobalSettings
     from simulation.solver import NetworkSolver, run_sequential_relief_simulation
 

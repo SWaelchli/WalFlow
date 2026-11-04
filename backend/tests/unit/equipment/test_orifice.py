@@ -289,7 +289,7 @@ def test_extract_telemetry_carries_solver_effective_geometry():
     solver-effective pipe diameter (auto-detected from the connected pipe) and
     standard, so the frontend chart mirrors the same geometry as the solve.
     """
-    from routers.simulation import extract_telemetry_dict
+    from services.simulation_service import extract_telemetry
 
     gs = GlobalSettings(fluid_type="water")
     nodes = [
@@ -316,7 +316,7 @@ def test_extract_telemetry_carries_solver_effective_geometry():
 
     solver = NetworkSolver(network)
     solver.solve()
-    telemetry = extract_telemetry_dict(network)
+    telemetry = extract_telemetry(network)
     ori_tel = telemetry["nodes"]["ori"]
 
     assert ori_tel["pipe_diameter"] == 0.08

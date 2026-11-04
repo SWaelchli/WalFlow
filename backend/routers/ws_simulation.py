@@ -10,12 +10,12 @@ from db.database import SessionLocal
 from db.models import Diagram
 from services.lock_service import collab_manager
 from services.project_service import user_can_access_diagram
-from simulation.schemas import ReactFlowGraph
-from simulation.graph_parser import GraphParser, ModelInputError
-from simulation.solver import NetworkSolver, run_sequential_relief_simulation
+from simulation.graph_parser import ModelInputError
+from simulation.solver import run_sequential_relief_simulation
 from simulation.equipment.linear_control_valve import LinearControlValve
-from simulation.limits import max_nodes, run_limited, SolveTimeout
-from routers.simulation import (
+from simulation.limits import run_limited, SolveTimeout
+from services.simulation_service import (
+    build_network,
     extract_telemetry,
     calculate_case_kpis,
     sanitize_result,
@@ -113,11 +113,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 if graph_data:
                     try:
                         # Parse the React Flow JSON into our HydraulicNetwork model
-                        rf_graph = ReactFlowGraph(**graph_data)
-                        if len(rf_graph.nodes) > max_nodes():
-                            raise ModelInputError(f"Diagram too large: {len(rf_graph.nodes)} components (limit {max_nodes()}).")
-                        network_instance = GraphParser.parse_graph(rf_graph)
-                        solver_instance = NetworkSolver(network_instance)
+                        network_instance, solver_instance = build_network(graph_data)
                         print(f"Graph updated: {len(network_instance.nodes)} nodes, {len(network_instance.edges)} edges.")
                         await websocket.send_text(json.dumps({"status": "graph_accepted"}))
                     except ModelInputError:
@@ -155,11 +151,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 graph_data = data.get("graph")
                 if graph_data:
                     try:
-                        rf_graph = ReactFlowGraph(**graph_data)
-                        if len(rf_graph.nodes) > max_nodes():
-                            raise ModelInputError(f"Diagram too large: {len(rf_graph.nodes)} components (limit {max_nodes()}).")
-                        network_instance = GraphParser.parse_graph(rf_graph)
-                        solver_instance = NetworkSolver(network_instance)
+                        network_instance, solver_instance = build_network(graph_data)
                     except ModelInputError as e:
                         network_instance, solver_instance = None, None
                         await websocket.send_text(json.dumps({"status": "error", "message": str(e)}))
@@ -167,6 +159,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     except Exception as e:
                         print(f"Graph Parse Error during Simulation: {e}")
                         traceback.print_exc()
+                        network_instance, solver_instance = None, None
                         safe_msg = "Graph configuration error during simulation initialization."
                         await websocket.send_text(json.dumps({"status": "error", "message": safe_msg}))
                         continue

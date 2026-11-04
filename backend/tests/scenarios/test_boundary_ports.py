@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from networks import graph_node, graph_pipe, graph_signal, solve_graph
-from routers.simulation import extract_telemetry
+from services.simulation_service import extract_telemetry
 from simulation.solver import NetworkSolver
 
 LMIN = 1.0 / 60000.0   # m³/s per L/min

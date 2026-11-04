@@ -120,7 +120,7 @@ import numpy as np
 import pytest
 
 from physics_refs import solve
-from routers.simulation import extract_telemetry
+from services.simulation_service import extract_telemetry
 from simulation.equipment.pressure_boundary import PressureBoundary
 from simulation.fluid_utils import FluidProperties
 from simulation.graph_parser import GraphParser

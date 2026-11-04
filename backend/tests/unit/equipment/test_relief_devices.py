@@ -15,7 +15,7 @@ import math
 import pytest
 
 from physics_refs import build_network, solve, water_head
-from routers.simulation import extract_telemetry
+from services.simulation_service import extract_telemetry
 from simulation.equipment.base_node import total_of
 from simulation.equipment.pressure_boundary import PressureBoundary
 from simulation.equipment.centrifugal_pump import CentrifugalPump

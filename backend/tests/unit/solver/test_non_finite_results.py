@@ -5,7 +5,7 @@ import json
 
 import numpy as np
 
-from routers.simulation import sanitize_non_finite, sanitize_result
+from services.simulation_service import sanitize_non_finite, sanitize_result
 
 
 def test_non_finite_become_null_and_are_listed():

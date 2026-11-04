@@ -8,7 +8,7 @@ import pytest
 from simulation.graph_parser import GraphParser
 from simulation.schemas import ReactFlowGraph
 from simulation.solver import NetworkSolver
-from routers.simulation import extract_telemetry
+from services.simulation_service import extract_telemetry
 
 P_ATM = 101325.0
 

@@ -27,7 +27,7 @@ from walflow_paths import EXAMPLES_DIR
 from simulation.schemas import ReactFlowGraph
 from simulation.graph_parser import GraphParser
 from simulation.solver import NetworkSolver, run_sequential_relief_simulation
-from routers.simulation import extract_telemetry
+from services.simulation_service import extract_telemetry
 
 STRESS_SIZES = (5, 15, 30, 50, 100)
 SNAPSHOT_DIR = os.path.join(_HERE, "perf_snapshots")

@@ -20,13 +20,14 @@ The only place that holds the status.
 | ID | Severity | Status | Finding | Proposed solution | Owner | Phase | Source |
 |---|---|---|---|---|---|---|---|
 | UX1 | Low | Rejected | React Flow warns twice on mount in dev that `nodeTypes` and `edgeTypes` are created anew, although both are module constants: StrictMode runs its check twice | Accepted by the user as a dev-only false positive; no code change | fe | — | Systems-engineer UX audit 2026-11-03 |
-| RF1 | Low | Open | `ws_simulation.py` imports solver helpers from `routers/simulation.py` and repeats the parse-and-build block in `update_graph` and `run_simulation` | Move the helpers to `services/` and extract one network build helper | orch | 3 | Code review 2026-11-04 |
+| PF1 | Medium | Review | `build_network` runs on the WebSocket event loop, outside the solve slot and deadline, so a large diagram delays lock and collaboration frames for every connected user | Measure the blocking time at the node limit; if it matters, run it with `asyncio.to_thread` after checking the parser is thread-safe | orch | 1 | Code review 2026-11-04 |
+| KP1 | Medium | Review | The `total_flow_lmin` KPI adds the flow of every pump, so two pumps in series carrying 500 L/min report 1000 L/min in the case comparison | Decide what "total flow" means (for example flow leaving the sources), then change the sum | orch + phys | 1 | Code review 2026-11-04 |
 
 ## Roadmap
 
 | Phase | Entries | Why this order | Exit check |
 |---|---|---|---|
-| 3 | RF1 | Backend refactor, kept apart from the UI fixes. | Gate green; only import lines change in tests. |
+| 1 | PF1, KP1 | Both need a measurement or a decision before any code changes. | Gate green; physics review for KP1; PF1 measured per `walflow-performance`. |
 
 Commit each phase only when the user asks.
 
@@ -44,7 +45,8 @@ Source: code review of `v0.2.0..HEAD` (2026-11-04). No published report.
 
 | ID | Details | Where | Test |
 |---|---|---|---|
-| RF1 | Limit or validation changes must be made twice, and the WebSocket module also loads the HTTP router's limiter and FastAPI setup. | `backend/routers/ws_simulation.py`, `backend/routers/simulation.py`, `backend/services/simulation_service.py` | Refactor: no new test; test imports repointed, nothing else changed. |
+| PF1 | The frontend sends `update_graph` 250 ms after edits and anonymous sockets are allowed by default. HTTP `/batch` parses inside `solve_slot` and `solve_deadline`; the WebSocket does not. Existing behaviour, not caused by the move to the service. | `backend/routers/ws_simulation.py`, `backend/services/simulation_service.py` | Measurement first; test decided with the fix. |
+| KP1 | The same sum also adds pumps on separate islands and recirculation loops. Existing behaviour, moved unchanged to the service. Shown in `DataList.jsx`. | `backend/services/simulation_service.py` (`calculate_case_kpis`) | Reference-table row with series and parallel pumps. |
 
 ## Details: Layout review 2026-10-30
 

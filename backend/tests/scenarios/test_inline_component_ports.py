@@ -10,7 +10,7 @@ from simulation.equipment.orifice import Orifice
 from simulation.graph_parser import GraphParser, ModelInputError
 from simulation.schemas import ReactFlowGraph
 from simulation.solver import NetworkSolver, _telemetry_max_pressure_bara
-from routers.simulation import calculate_case_kpis, extract_telemetry
+from services.simulation_service import calculate_case_kpis, extract_telemetry
 
 ORIFICE = {"orifice_diameter_m": 0.015}
 

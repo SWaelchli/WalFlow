@@ -8,7 +8,7 @@ import math
 import pytest
 
 from networks import neutral_graph
-from routers.simulation import extract_telemetry, pump_curves
+from services.simulation_service import extract_telemetry, pump_curves
 from simulation.equipment.volumetric_pump import VolumetricPump
 from simulation.graph_parser import GraphParser
 from simulation.schemas import GlobalSettings
