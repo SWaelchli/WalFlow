@@ -3,7 +3,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  checkFormatVersion, validateDiagramStructure, checkDiagramFile, stripResults, serializeDiagram, toSolverGraph, sanitizeDiagramElements,
+  checkFormatVersion, validateDiagramStructure, checkDiagramFile, stripResults, serializeDiagram, toSolverGraph, sanitizeDiagramElements, blankDiagram,
 } from './diagramFile';
 import { HEAT_EXCHANGER_DEFAULTS } from './nodeDefaults';
 
@@ -47,6 +47,19 @@ describe('structural validation', () => {
     bad.nodes[0].id = '';
     expect(checkDiagramFile(bad, TYPES)).toEqual({ ok: false, message: expect.stringMatching(/cannot be loaded/) });
     expect(checkDiagramFile(good(), TYPES)).toEqual({ ok: true });
+  });
+});
+
+describe('blank diagram', () => {
+  it('is an empty canvas with one base case', () => {
+    const blank = blankDiagram();
+    expect(blank.nodes).toEqual([]);
+    expect(blank.edges).toEqual([]);
+    expect(blank.cases).toHaveLength(1);
+    expect(blank.cases[0].id).toBe('case_base');
+    expect(blank.active_case_id).toBe('case_base');
+    expect(blank.format).toBe('walflow');
+    expect(checkFormatVersion(blank)).toBeNull();
   });
 });
 

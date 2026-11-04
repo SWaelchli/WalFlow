@@ -70,7 +70,8 @@ export function useAutoSaveSession({
   isAuthenticated,
   activeProject,
   activeDiagram,
-  setActiveDiagram
+  setActiveDiagram,
+  isCanvasLoadPending
 }) {
   const { currentUser, loading: authLoading } = useAuth();
   const [saveStatus, setSaveStatus] = useState('saved_local'); // 'saved_cloud' | 'saving_cloud' | 'saved_local' | 'saving_local' | 'error' | 'locked'
@@ -147,6 +148,11 @@ export function useAutoSaveSession({
     unmountingRef.current = false;
     return () => { unmountingRef.current = true; };
   }, []);
+
+  // While a drawing is still being loaded onto the canvas, the canvas is not yet the active drawing's content
+  const loadPendingRef = useRef(isCanvasLoadPending);
+  useEffect(() => { loadPendingRef.current = isCanvasLoadPending; }, [isCanvasLoadPending]);
+  const isLoadPending = useCallback(() => !!(loadPendingRef.current && loadPendingRef.current()), []);
 
   // Serializer function
   const serializeWorkspaceState = useCallback(() => {
@@ -529,9 +535,11 @@ export function useAutoSaveSession({
       const ok = await checkoutDiagramById(diagramId, { silent: true, resume: true, isCurrent, onRefused: (err) => handleResumeRefused(diagramId, err) });
       if (!ok) return isCurrent() ? 'locked' : 'left';
     }
+    // The canvas must be this drawing's content: not while another drawing is still loading onto it
+    if (!isCurrent() || isLoadPending()) return 'left';
     await putDiagram(diagram, serializeWorkspaceState());
     return 'saved';
-  }, [requestLockStatus, handleLockLost, applyLock, checkoutDiagramById, handleResumeRefused, putDiagram, serializeWorkspaceState]);
+  }, [requestLockStatus, handleLockLost, applyLock, checkoutDiagramById, handleResumeRefused, putDiagram, serializeWorkspaceState, isLoadPending]);
 
   // WebSocket Collaboration Event Listener
   useEffect(() => {
@@ -712,6 +720,9 @@ export function useAutoSaveSession({
       return;
     }
     if (keepsBootDraft(contentSignature)) return;
+    // The canvas is still the previous drawing's: nothing is armed, and a change waiting for the previous
+    // drawing stays in pendingFlushRef. The landing content changes the signature and runs this again.
+    if (isLoadPending()) return;
 
     const isCloudSyncable = activeDiagram && activeDiagram.id && isAuthenticated && hasLock;
 
@@ -770,6 +781,7 @@ export function useAutoSaveSession({
     let cloudTimer = null;
     if (isCloudSyncable) {
       cloudTimer = setTimeout(async () => {
+        if (isLoadPending()) return;
         try {
           const payload = serializeWorkspaceState();
           // Nothing but selection, viewport or results changed since the last save: nothing to send
@@ -821,10 +833,12 @@ export function useAutoSaveSession({
       clearTimeout(localTimer);
       if (cloudTimer) clearTimeout(cloudTimer);
     };
-  }, [contentSignature, keepsBootDraft, activeProject, activeDiagram, isAuthenticated, hasLock, isLockedByOther, saveToLocalDraft, serializeWorkspaceState, setActiveDiagram, putDiagram, recoverRefusedSave]);
+  }, [contentSignature, keepsBootDraft, activeProject, activeDiagram, isAuthenticated, hasLock, isLockedByOther, saveToLocalDraft, serializeWorkspaceState, setActiveDiagram, putDiagram, recoverRefusedSave, isLoadPending]);
 
   // Manual Trigger for Instant Cloud Save
   const triggerManualCloudSave = useCallback(async () => {
+    // Nothing is owed: the canvas is not yet the open drawing's content
+    if (isLoadPending()) return true;
     const isCloudSyncable = activeDiagram && activeDiagram.id && isAuthenticated && hasLock;
 
     if (!isCloudSyncable) {
@@ -856,7 +870,7 @@ export function useAutoSaveSession({
       setSaveStatus('error');
       return false;
     }
-  }, [activeDiagram, isAuthenticated, hasLock, isLockedByOther, saveToLocalDraft, serializeWorkspaceState, setActiveDiagram, putDiagram]);
+  }, [activeDiagram, isAuthenticated, hasLock, isLockedByOther, saveToLocalDraft, serializeWorkspaceState, setActiveDiagram, putDiagram, isLoadPending]);
 
   // Hydration Loader on Boot
   // Reads a stored draft; null when it is empty, unreadable or in another file format (say so once)

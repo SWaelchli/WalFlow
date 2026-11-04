@@ -81,7 +81,7 @@ import { buildContextMenuItems } from './commands';
 import { instrumentPinsOf } from './commands/context';
 import { useAutoSaveSession } from './hooks/useAutoSaveSession';
 import { getTabId, isEmptyDraft } from './utils/draftStorage';
-import { serializeDiagram, toSolverGraph, checkDiagramFile, stripResults, sanitizeDiagramElements } from './utils/diagramFile';
+import { serializeDiagram, blankDiagram, toSolverGraph, checkDiagramFile, stripResults, sanitizeDiagramElements } from './utils/diagramFile';
 import { computeCaseInputHashes, isCaseResultStale } from './utils/resultHash';
 import { solverMessageKey } from './utils/graphSignature';
 import { mapCached } from './utils/itemMemo';
@@ -242,7 +242,7 @@ function WalFlowContent() {
 
 
   const [awaitingInitialSolve, setAwaitingInitialSolve] = useState(false);
-  const { isCanvasLoading, canvasLoadingLabel, showCanvasLoading, hideCanvasLoading, scheduleLoad } = useCanvasLoading({ nodes, edges, awaitingInitialSolve });
+  const { isCanvasLoading, canvasLoadingLabel, showCanvasLoading, hideCanvasLoading, scheduleLoad, isLoadScheduled } = useCanvasLoading({ nodes, edges, awaitingInitialSolve });
 
   // Frame the diagram after a load, an example or a new drawing. The fit waits until the loaded nodes are drawn and
   // measured (React Flow cannot frame nodes it has not measured yet), so it stays pending until it has run.
@@ -340,7 +340,8 @@ function WalFlowContent() {
     activeProject,
     setActiveProject,
     activeDiagram,
-    setActiveDiagram
+    setActiveDiagram,
+    isCanvasLoadPending: isLoadScheduled
   });
 
   // Global UI Body Fix
@@ -1449,13 +1450,7 @@ function WalFlowContent() {
     }
 
     try {
-      const blankPayload = serializeDiagram({
-        nodes: [],
-        edges: [],
-        globalSettings: { ...DEFAULT_DRAWING_SETTINGS },
-        cases: [DEFAULT_BASE_CASE],
-        activeCaseId: 'case_base'
-      });
+      const blankPayload = blankDiagram();
 
       const response = await axios.post('/api/diagrams', {
         title,
@@ -1464,6 +1459,20 @@ function WalFlowContent() {
         project_id
       });
 
+      let project = null;
+      if (project_id) {
+        const projRes = await axios.get(`/api/projects/${project_id}`);
+        project = {
+          id: projRes.data.id,
+          title: projRes.data.title,
+          description: projRes.data.description,
+          allowed_pipe_classes: projRes.data.allowed_pipe_classes,
+          allow_custom_pipes: projRes.data.allow_custom_pipes !== false
+        };
+      }
+
+      // Load first; the drawing becomes active only once its content is on its way to the canvas
+      if (loadData(blankPayload) === false) return;
       markLoaded(blankPayload);
       setActiveDiagram({
         id: response.data.id,
@@ -1471,23 +1480,7 @@ function WalFlowContent() {
         description: response.data.description,
         updated_at: response.data.updated_at
       });
-
-      if (project_id) {
-        const projRes = await axios.get(`/api/projects/${project_id}`);
-        setActiveProject({
-          id: projRes.data.id,
-          title: projRes.data.title,
-          description: projRes.data.description,
-          allowed_pipe_classes: projRes.data.allowed_pipe_classes,
-          allow_custom_pipes: projRes.data.allow_custom_pipes !== false
-        });
-      } else {
-        setActiveProject(null);
-      }
-
-
-
-      loadData(blankPayload);
+      setActiveProject(project);
       notify("New cloud drawing created successfully.", 'success');
     } catch {
       notify("Failed to create new cloud drawing.", 'error');
@@ -2095,7 +2088,6 @@ function WalFlowContent() {
     as={ProjectManagerModal}
     isOpen={isProjectManagerModalOpen}
     onClose={handleCloseModal}
-    currentFlowData={{ nodes, edges, globalSettings, cases, activeCaseId }}
     onLoadDiagram={loadData}
     markLoaded={markLoaded}
     activeProject={activeProject}

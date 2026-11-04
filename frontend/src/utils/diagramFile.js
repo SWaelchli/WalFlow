@@ -1,4 +1,6 @@
 import { FILE_FORMAT_VERSION, APP_VERSION } from '../constants';
+import { DEFAULT_DRAWING_SETTINGS } from './settingsLevels';
+import { DEFAULT_BASE_CASE } from '../constants/case_constants';
 
 // Simulation results live only in memory (per case). They are never written to files, drafts, cloud
 // saves or solver messages; a diagram is re-solved after loading.
@@ -52,6 +54,15 @@ export const serializeDiagram = ({ nodes, edges, globalSettings, cases, activeCa
     ...extra,
   };
 };
+
+/** An empty drawing with default settings and one base case. */
+export const blankDiagram = () => serializeDiagram({
+  nodes: [],
+  edges: [],
+  globalSettings: { ...DEFAULT_DRAWING_SETTINGS },
+  cases: [DEFAULT_BASE_CASE],
+  activeCaseId: 'case_base',
+});
 
 /**
  * One version check for every load path (import, drop, example, cloud, project, draft).

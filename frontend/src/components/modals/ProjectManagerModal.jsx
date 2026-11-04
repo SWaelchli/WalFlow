@@ -4,7 +4,7 @@ import { notify, confirmDialog } from '../../utils/dialogs';
 import axios from 'axios';
 import { useAuth } from '../../hooks/useAuth';
 import { FILE_EXTENSION } from '../../constants';
-import { serializeDiagram } from '../../utils/diagramFile';
+import { blankDiagram } from '../../utils/diagramFile';
 import { CloudIcon, ExportIcon, TrashIcon, CrossIcon, PlusIcon } from '../symbols/IconLibrary';
 
 import { modalA11yRef } from '../../hooks/useModalA11y';
@@ -12,7 +12,6 @@ import { clickableProps } from '../../utils/a11yProps';
 const ProjectManagerModal = ({
   isOpen,
   onClose,
-  currentFlowData,
   onLoadDiagram,
   markLoaded,
   activeProject,
@@ -181,13 +180,7 @@ const ProjectManagerModal = ({
     if (!newDiagramTitle.trim() || !projectDetail) return;
     setIsCreatingDiagram(true);
     try {
-      const emptyPayload = serializeDiagram({
-        nodes: currentFlowData.nodes || [],
-        edges: currentFlowData.edges || [],
-        globalSettings: currentFlowData.globalSettings || {},
-        cases: currentFlowData.cases || [],
-        activeCaseId: currentFlowData.activeCaseId || 'case_base'
-      });
+      const emptyPayload = blankDiagram();
 
       const response = await axios.post('/api/diagrams', {
         title: newDiagramTitle.trim(),

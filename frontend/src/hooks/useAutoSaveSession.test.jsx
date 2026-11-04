@@ -126,6 +126,57 @@ describe('switching drawings', () => {
     expect(putUrls()).toEqual(['/api/diagrams/d2']);
   });
 
+  describe('while the opened drawing is still being loaded onto the canvas', () => {
+    let pending;
+    const loading = (over = {}) => baseProps({ isCanvasLoadPending: () => pending, ...over });
+    const saved = { nodes: [node('b', 3)], edges: [], active_diagram_id: 'd2' };
+
+    it('sends no cloud save for the new drawing, by timer or by manual save, and records nothing to flush', async () => {
+      pending = true;
+      const { result, rerender } = await mount(loading());
+      act(() => { result.current.markLoaded(saved); });
+      rerender(loading({ activeDiagram: d2 }));                              // d2 active, canvas still the old drawing
+      rerender(loading({ activeDiagram: d2, nodes: [node('a', 10)] }));     // an edit of the old canvas
+      await settle();
+      await act(async () => { await result.current.triggerManualCloudSave(); });
+      expect(putUrls()).toEqual([]);
+
+      rerender(loading({ activeDiagram: { ...diagram, id: 'd3' }, nodes: [node('a', 10)] }));
+      await settle();
+      expect(putUrls()).toEqual([]);                                         // leaving d2 flushes nothing to it
+    });
+
+    it('resumes normal saving once the content landed: no upload of the opened drawing, later edits are saved', async () => {
+      pending = true;
+      const { result, rerender } = await mount(loading());
+      act(() => { result.current.markLoaded(saved); });
+      rerender(loading({ activeDiagram: d2 }));
+      pending = false;
+      rerender(loading({ activeDiagram: d2, nodes: saved.nodes }));
+      await settle();
+      expect(putUrls()).toEqual([]);
+
+      rerender(loading({ activeDiagram: d2, nodes: [node('b', 30)] }));
+      await settle();
+      expect(putUrls()).toEqual(['/api/diagrams/d2']);
+      expect(axios.put.mock.calls[0][1].diagram_data).toContain('"x":30');
+    });
+
+    it('still flushes a change waiting for the previous drawing to that drawing', async () => {
+      pending = true;
+      const { result, rerender } = await mount(loading({ isCanvasLoadPending: () => false }));
+      rerender(baseProps({ nodes: [node('a', 10)], isCanvasLoadPending: () => false }));   // edit of d1, save still waiting
+      await act(async () => { await vi.advanceTimersByTimeAsync(500); });
+      act(() => { result.current.markLoaded(saved); });
+      rerender(loading({ nodes: [node('a', 10)], activeDiagram: d2 }));
+      await settle();
+      const toFirst = axios.put.mock.calls.filter(([url]) => url === '/api/diagrams/d1');
+      expect(toFirst).toHaveLength(1);
+      expect(toFirst[0][1].diagram_data).toContain('"x":10');
+      expect(putUrls()).not.toContain('/api/diagrams/d2');
+    });
+  });
+
   it('flushes a pending edit only after the save in flight resolved, based on the version it returned', async () => {
     let resolveFirst;
     axios.put = vi.fn()

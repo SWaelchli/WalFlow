@@ -35,22 +35,22 @@ Items move between releases as priorities change.
 - [ ] **🐛 Bug: Pipe Class Selection in Project Settings Not Saved**
   * **Today:** the pipe classes selected in Project settings are not being saved.
 
-- [ ] **🐛 Bug: New Drawing Opens with the Content of the Previous Drawing**
+- [x] **🐛 Bug: New Drawing Opens with the Content of the Previous Drawing**
   * **Steps:** with a drawing open on the canvas, create a new project, create a new drawing in it and open that drawing.
   * **Today:** the new drawing opens with the same content as the drawing that was open before.
   * **Expected:** a new drawing is always empty, unless it was explicitly created as a copy (see Create a Drawing as a Copy under 0.2.x).
 
-- [ ] **🐛 Bug: File › New Drawing Deletes the Content of the Previous Drawing**
+- [x] **🐛 Bug: File › New Drawing Deletes the Content of the Previous Drawing**
   * **Steps:** with a drawing open, create a new drawing with File › New Drawing, then switch back to the old drawing.
   * **Today:** the new drawing opens with an empty canvas as it should, but the old drawing is now empty too and its content is lost.
   * **Expected:** the old drawing keeps its content.
 
-- [ ] **🐛 Bug: Empty Drawing Receives a Copy of the Drawing Opened After It**
+- [x] **🐛 Bug: Empty Drawing Receives a Copy of the Drawing Opened After It**
   * **Steps:** with a drawing with an empty canvas open, switch to a drawing with content, then switch back.
   * **Today:** the formerly empty drawing now contains a copy of the drawing just opened.
   * **Expected:** the empty drawing stays empty.
 
-- [ ] **🐛 Bug: Switching to an Empty Drawing Deletes the Content of the Previous Drawing**
+- [x] **🐛 Bug: Switching to an Empty Drawing Deletes the Content of the Previous Drawing**
   * **Steps:** with a drawing with content open, switch to a drawing with an empty canvas, then switch back.
   * **Today:** the empty canvas opens as it should, but the original drawing is now empty too and its content is lost.
   * **Expected:** the original drawing keeps its content.

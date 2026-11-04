@@ -147,6 +147,61 @@ describe('useCanvasLoading', () => {
     expect(fn2).toHaveBeenCalledTimes(1);
   });
 
+  describe('scheduled load while the overlay waits for the canvas', () => {
+    const NODE = [{ id: 'tank_1' }];
+
+    it.each([
+      ['the initial-solve flag goes true and back to false', (rerender) => {
+        rerender({ nodes: [], edges: [], awaitingInitialSolve: false });
+      }],
+      ['the current canvas changes', (rerender) => {
+        rerender({ nodes: NODE, edges: [], awaitingInitialSolve: false });
+      }],
+    ])('still runs when %s before it fires', (_name, change) => {
+      const { result, rerender } = renderHook((p) => useCanvasLoading(p), { initialProps: { nodes: [], edges: [], awaitingInitialSolve: false } });
+      const fn = vi.fn();
+
+      act(() => { result.current.showCanvasLoading(); });
+      rerender({ nodes: [], edges: [], awaitingInitialSolve: true });
+      act(() => { result.current.scheduleLoad(fn, 0); });
+      change(rerender);
+
+      act(() => { vi.advanceTimersByTime(100); });
+      expect(fn).toHaveBeenCalledTimes(1);
+    });
+
+    it('is dismissed when the canvas changes after the load ran', () => {
+      const { result, rerender } = renderHook((p) => useCanvasLoading(p), { initialProps: { nodes: [], edges: [], awaitingInitialSolve: false } });
+      const fn = vi.fn();
+
+      act(() => { result.current.showCanvasLoading(); });
+      act(() => { result.current.scheduleLoad(fn, 0); });
+      act(() => { vi.advanceTimersByTime(100); });
+      expect(fn).toHaveBeenCalledTimes(1);
+      expect(result.current.isCanvasLoading).toBe(true);
+
+      rerender({ nodes: NODE, edges: [], awaitingInitialSolve: false });
+      act(() => { vi.advanceTimersByTime(400); });
+      expect(result.current.isCanvasLoading).toBe(false);
+    });
+
+    it('isLoadScheduled is true from scheduling until the load starts, and false after a cancel', () => {
+      const { result } = renderHook(() => useCanvasLoading(EMPTY_PROPS));
+      expect(result.current.isLoadScheduled()).toBe(false);
+
+      act(() => { result.current.scheduleLoad(vi.fn(), 0); });
+      expect(result.current.isLoadScheduled()).toBe(true);
+      act(() => { vi.advanceTimersByTime(20); });
+      expect(result.current.isLoadScheduled()).toBe(true);   // between the two frames
+      act(() => { vi.advanceTimersByTime(20); });
+      expect(result.current.isLoadScheduled()).toBe(false);
+
+      act(() => { result.current.scheduleLoad(vi.fn(), 0); });
+      act(() => { result.current.hideCanvasLoading(); });
+      expect(result.current.isLoadScheduled()).toBe(false);
+    });
+  });
+
   describe('awaitingInitialSolve coordination', () => {
     it('remains visible and updates canvasLoadingLabel to solving message on canvas commit when awaitingInitialSolve is true', () => {
       let props = { nodes: [], edges: [], awaitingInitialSolve: true };

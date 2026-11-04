@@ -16,6 +16,8 @@ export function useCanvasLoading({ nodes, edges, awaitingInitialSolve = false })
   const hideTimerRef = useRef(null);
   const scheduleFrameRef = useRef(null);
   const loadTimeoutRef = useRef(null);
+  // True from scheduleLoad until its fn starts; only the load landing may commit the canvas meanwhile
+  const loadScheduledRef = useRef(false);
   const safetyTimeoutRef = useRef(null);
 
   const showCanvasLoading = useCallback((label = 'Opening drawing…') => {
@@ -34,6 +36,7 @@ export function useCanvasLoading({ nodes, edges, awaitingInitialSolve = false })
       clearTimeout(loadTimeoutRef.current);
       loadTimeoutRef.current = null;
     }
+    loadScheduledRef.current = false;
     if (safetyTimeoutRef.current) {
       clearTimeout(safetyTimeoutRef.current);
     }
@@ -66,6 +69,7 @@ export function useCanvasLoading({ nodes, edges, awaitingInitialSolve = false })
       clearTimeout(loadTimeoutRef.current);
       loadTimeoutRef.current = null;
     }
+    loadScheduledRef.current = false;
     if (safetyTimeoutRef.current) {
       clearTimeout(safetyTimeoutRef.current);
     }
@@ -101,6 +105,7 @@ export function useCanvasLoading({ nodes, edges, awaitingInitialSolve = false })
       clearTimeout(loadTimeoutRef.current);
       loadTimeoutRef.current = null;
     }
+    loadScheduledRef.current = false;
     if (hideTimerRef.current) {
       clearTimeout(hideTimerRef.current);
       hideTimerRef.current = null;
@@ -123,7 +128,7 @@ export function useCanvasLoading({ nodes, edges, awaitingInitialSolve = false })
   // When [nodes, edges] changes and a load was pending, mark canvas committed.
   // If awaitingInitialSolve is true at this point, update canvasLoadingLabel to 'Solving initial flow network…'.
   useEffect(() => {
-    if (!pendingLoadRef.current) return;
+    if (!pendingLoadRef.current || loadScheduledRef.current) return;
     canvasCommittedRef.current = true;
     if (awaitingInitialSolve) {
       requestAnimationFrame(() => {
@@ -134,7 +139,7 @@ export function useCanvasLoading({ nodes, edges, awaitingInitialSolve = false })
 
   // Only dismiss the loading overlay once BOTH the canvas has committed and awaitingInitialSolve is false.
   useEffect(() => {
-    if (!pendingLoadRef.current) return;
+    if (!pendingLoadRef.current || loadScheduledRef.current) return;
     if (canvasCommittedRef.current && !awaitingInitialSolve) {
       dismiss();
     }
@@ -150,15 +155,22 @@ export function useCanvasLoading({ nodes, edges, awaitingInitialSolve = false })
       clearTimeout(loadTimeoutRef.current);
       loadTimeoutRef.current = null;
     }
+    loadScheduledRef.current = true;
     scheduleFrameRef.current = requestAnimationFrame(() => {
       scheduleFrameRef.current = requestAnimationFrame(() => {
         scheduleFrameRef.current = null;
-        loadTimeoutRef.current = setTimeout(fn, delayMs);
+        loadTimeoutRef.current = setTimeout(() => {
+          loadTimeoutRef.current = null;
+          loadScheduledRef.current = false;
+          fn();
+        }, delayMs);
       });
     });
   }, []);
 
-  return { isCanvasLoading, canvasLoadingLabel, showCanvasLoading, hideCanvasLoading, scheduleLoad };
+  const isLoadScheduled = useCallback(() => loadScheduledRef.current, []);
+
+  return { isCanvasLoading, canvasLoadingLabel, showCanvasLoading, hideCanvasLoading, scheduleLoad, isLoadScheduled };
 }
 
 export default useCanvasLoading;
