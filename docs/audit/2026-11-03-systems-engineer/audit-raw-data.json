@@ -1,0 +1,176 @@
+{
+  "date": "2026-11-04T01:20:39.627Z",
+  "persona": "systems-engineer",
+  "target": "http://localhost:5173",
+  "account": "test_alice",
+  "manifest": [
+    "[✓] 01:20:15 Navigate to http://localhost:5173",
+    "[✓] 01:20:16 Verified landing page rendered, initial screenshot captured",
+    "[✓] 01:20:16 Clicked \"Sign in\" in menu bar (button.menubar-signin)",
+    "[✓] 01:20:17 Typed \"test_alice\" into username input (input[placeholder*=\"engineer\"])",
+    "[✓] 01:20:17 Typed password into password input (input[type=\"password\"])",
+    "[✓] 01:20:17 Pressed Enter to submit login form (form)",
+    "[✓] 01:20:19 Verified signed in state: user account chip active",
+    "[✓] 01:20:19 Click \"Examples\" icon in activity rail (button[title=\"Examples\"])",
+    "[✓] 01:20:20 Clicked example item: \"•\nAPI 614 Lube Oil System (LOS)\" (.sidebar-list-item)",
+    "[✓] 01:20:24 Example diagram loaded onto canvas; nodes & connections visible",
+    "[✓] 01:20:24 Clicked \"Run Simulation\" in command bar (button:contains(\"Run Simulation\"))",
+    "[✓] 01:20:24 Waiting for solver WebSocket response...",
+    "[✓] 01:20:27 Solver result received: \"Converged · · 07:20:24 PM · Case: Case 1 · bar a · L/min · °C · 30 %\"",
+    "[✓] 01:20:27 Click \"Pipes\" tab in results data panel (button:contains(\"Pipes\"))",
+    "[✓] 01:20:28 Pipes results table displayed with per-pipe hydraulics",
+    "[✓] 01:20:28 Click \"Equipment\" tab in results data panel (button:contains(\"Equipment\"))",
+    "[✓] 01:20:29 Equipment table displayed with operating points and status badges",
+    "[✓] 01:20:29 Click component node on canvas to open Inspector (.react-flow__node)",
+    "[✓] 01:20:29 Inspector panel open showing component parameters and operating state",
+    "[✓] 01:20:29 Open \"File\" menu in menu bar (button:contains(\"File\"))",
+    "[✓] 01:20:30 Clicked \"New drawing\" menu item (menuitem:contains(\"New drawing\"))",
+    "[✓] 01:20:31 New drawing modal opened (.modal-container)",
+    "[✓] 01:20:31 Set drawing title \"LO Skid K-101 – Compressor Lube Oil\"",
+    "[✓] 01:20:31 Submitted New Drawing creation",
+    "[✓] 01:20:32 New drawing created on canvas; verified lock status & title",
+    "[✓] 01:20:32 Open \"Settings\" in activity rail (button[title=\"Settings\"])",
+    "[✓] 01:20:33 Settings side pane opened; units and fluid options displayed",
+    "[✓] 01:20:33 Click \"Cases\" tab in results data panel (button:contains(\"Cases\"))",
+    "[✓] 01:20:34 Operating Cases Matrix tab displayed",
+    "[✓] 01:20:34 Clicked \"New case…\" button in command bar",
+    "[✓] 01:20:34 Created second operating case \"Cold Start 10 °C\"",
+    "[✓] 01:20:35 Operating Cases updated with multiple cases",
+    "[✓] 01:20:36 Viewport 1920×1080: scrollWidth=1920px (overflow: false)",
+    "[✓] 01:20:37 Viewport 1280×800: scrollWidth=1280px (overflow: false)",
+    "[✓] 01:20:37 Viewport 1024×768: scrollWidth=1024px (overflow: false)",
+    "[✓] 01:20:38 Viewport 768×1024: scrollWidth=768px (overflow: false)",
+    "[✓] 01:20:39 Viewport 375×667: scrollWidth=375px (overflow: false)"
+  ],
+  "consoleLogs": [
+    {
+      "type": "debug",
+      "text": "[vite] connecting...",
+      "time": "2026-11-04T01:20:15.899Z"
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connected.",
+      "time": "2026-11-04T01:20:15.909Z"
+    },
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold",
+      "time": "2026-11-04T01:20:16.086Z"
+    },
+    {
+      "type": "warn",
+      "text": "[React Flow]: It looks like you've created a new nodeTypes or edgeTypes object. If this wasn't on purpose please define the nodeTypes/edgeTypes outside of the component or memoize them. Help: https://reactflow.dev/error#002",
+      "time": "2026-11-04T01:20:16.144Z"
+    },
+    {
+      "type": "warn",
+      "text": "[React Flow]: It looks like you've created a new nodeTypes or edgeTypes object. If this wasn't on purpose please define the nodeTypes/edgeTypes outside of the component or memoize them. Help: https://reactflow.dev/error#002",
+      "time": "2026-11-04T01:20:16.144Z"
+    },
+    {
+      "type": "warn",
+      "text": "WebSocket connection to 'ws://localhost:5173/ws/simulate' failed: WebSocket is closed before the connection is established.",
+      "time": "2026-11-04T01:20:16.212Z"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "time": "2026-11-04T01:20:16.268Z"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "time": "2026-11-04T01:20:16.269Z"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Input elements should have autocomplete attributes (suggested: \"current-password\"): (More info: https://goo.gl/9p2vKq) %o",
+      "time": "2026-11-04T01:20:17.353Z"
+    }
+  ],
+  "networkFailures": [
+    {
+      "url": "http://localhost:5173/api/auth/me",
+      "status": 401,
+      "time": "2026-11-04T01:20:16.268Z"
+    },
+    {
+      "url": "http://localhost:5173/api/auth/me",
+      "status": 401,
+      "time": "2026-11-04T01:20:16.269Z"
+    }
+  ],
+  "axeViolations": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+      "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/color-contrast?application=axeAPI",
+      "nodesCount": 3,
+      "selectors": [
+        "kbd",
+        "input[value=\"Case 1\"]",
+        ".status-chip-time"
+      ]
+    },
+    {
+      "id": "heading-order",
+      "impact": "moderate",
+      "description": "Ensure the order of headings is semantically correct",
+      "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/heading-order?application=axeAPI",
+      "nodesCount": 1,
+      "selectors": [
+        "div:nth-child(2) > h4"
+      ]
+    },
+    {
+      "id": "label-content-name-mismatch",
+      "impact": "serious",
+      "description": "Ensure that elements labelled through their content must have their visible text as part of their accessible name",
+      "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/label-content-name-mismatch?application=axeAPI",
+      "nodesCount": 1,
+      "selectors": [
+        ".menubar-brand"
+      ]
+    }
+  ],
+  "perfMetrics": {
+    "fcpMs": 396,
+    "domContentLoadedMs": 228,
+    "loadMs": 229,
+    "transferSizeBytes": 1444
+  },
+  "layoutResults": [
+    {
+      "vp": "1920×1080",
+      "hasHScroll": false,
+      "docW": 1920,
+      "winW": 1920
+    },
+    {
+      "vp": "1280×800",
+      "hasHScroll": false,
+      "docW": 1280,
+      "winW": 1280
+    },
+    {
+      "vp": "1024×768",
+      "hasHScroll": false,
+      "docW": 1024,
+      "winW": 1024
+    },
+    {
+      "vp": "768×1024",
+      "hasHScroll": false,
+      "docW": 768,
+      "winW": 768
+    },
+    {
+      "vp": "375×667",
+      "hasHScroll": false,
+      "docW": 375,
+      "winW": 375
+    }
+  ]
+}
