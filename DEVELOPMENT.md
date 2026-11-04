@@ -51,6 +51,21 @@ This guide is intended for developers and contributors looking to understand the
    npm run lint
    ```
 
+### 🚀 One-Click Windows Launcher
+On Windows PowerShell, you can launch both backend and frontend development servers in separate windows using:
+```powershell
+.\start.ps1
+```
+
+### 🐳 Local Docker Testing
+To test the production container build locally from source (without pulling pre-built images from GHCR):
+```bash
+docker compose --project-directory . -f deploy/docker-compose.local.yml up --build
+```
+This builds both deploy/Dockerfile.backend and deploy/Dockerfile.frontend and maps local persistence to named volume walflow-data.
+
+
+
 ---
 
 ## 🧩 How to Add New Equipment

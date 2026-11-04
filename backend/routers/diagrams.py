@@ -1,22 +1,14 @@
-import os
-import json
 from typing import List, Optional
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session, defer
 
-try:
-    import redis
-except ImportError:
-    redis = None
-
 from db.database import get_db
-from db.models import User, Diagram, ProjectMember, Project
+from db.models import User, Diagram
 from auth import get_current_user
-from routers.projects import get_user_project_role
+from services.project_service import get_user_project_role, user_can_access_diagram
 from services.lock_service import (
-    ConnectionManager,
     collab_manager,
     acquire_lock,
     release_lock,
@@ -25,7 +17,6 @@ from services.lock_service import (
     get_lock_status_info,
     is_lock_holder,
     lock_released_message,
-    LOCAL_LOCKS,
 )
 
 router = APIRouter(prefix="/api/diagrams", tags=["diagrams"])
@@ -35,13 +26,6 @@ def tab_session_id(request: Request) -> Optional[str]:
     """The browser tab the request comes from (X-Walflow-Session header, or ?session= for sendBeacon)."""
     value = request.headers.get("X-Walflow-Session") or request.query_params.get("session")
     return value[:100] if value else None
-
-
-def user_can_access_diagram(db: Session, diagram: Diagram, user: User) -> bool:
-    """Same rule as GET /diagrams/{id}: project members, or the owner of a standalone diagram."""
-    if diagram.project_id:
-        return bool(get_user_project_role(db, diagram.project_id, user.id))
-    return diagram.user_id == user.id
 
 
 def require_diagram_access(db: Session, diagram: Diagram, user: User):

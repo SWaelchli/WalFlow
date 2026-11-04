@@ -5,7 +5,7 @@ import { mToMm, mToIn } from '../../utils/converters';
 import { RELIEF_DRIVER_TYPES } from '../../constants/case_constants';
 import { FLUID_CATEGORIES, FLUID_LIBRARY } from '../../constants/fluid_library';
 import { getEffectiveNodeData } from '../../utils/case_resolver';
-import { GlobeIcon, BoltIcon, WarningIcon, CrossIcon, CaretDownIcon } from '../symbols/IconLibrary';
+import { WarningIcon, CaretDownIcon } from '../symbols/IconLibrary';
 import { componentLabel } from '../../constants/componentLabels';
 import { validPortCount, NEUTRAL_TYPES } from '../../utils/networkValidation';
 import { MIN_JUNCTION_PORTS, MAX_JUNCTION_PORTS, junctionPortCount, junctionPortIds } from '../../utils/junctionLayout';
@@ -13,7 +13,6 @@ import { MIN_BOUNDARY_PORTS, MAX_BOUNDARY_PORTS, BOUNDARY_PORT_TYPES, boundaryPo
 
 import { useUnits } from '../../context/UnitContext';
 import { useFittingStandards } from '../../hooks/useFittingStandards';
-import { DEFAULT_REDUCER_STANDARD, CUSTOM_REDUCER_STANDARD } from '../../utils/reducer_catalog';
 import { CONTROL_VALVE_STYLE_DEFAULTS } from '../../utils/nodeDefaults';
 import DraftNumberInput from '../common/DraftNumberInput';
 import PropertyBadge from './PropertyBadge';

@@ -1,9 +1,11 @@
-# Local build for Docker Desktop: docker compose -f docker-compose.local.yml up --build -d
+# Local build for Docker Desktop: docker compose --project-directory . -f deploy/docker-compose.local.yml up --build -d
+name: walflow
+
 services:
   walflow-backend:
     build:
-      context: .
-      dockerfile: Dockerfile.backend
+      context: ..
+      dockerfile: deploy/Dockerfile.backend
     container_name: walflow-backend
     restart: unless-stopped
     ports:
@@ -22,8 +24,8 @@ services:
 
   walflow-frontend:
     build:
-      context: .
-      dockerfile: Dockerfile.frontend
+      context: ..
+      dockerfile: deploy/Dockerfile.frontend
     container_name: walflow-frontend
     restart: unless-stopped
     ports:

@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from db.database import get_db
 from db.models import User, Project, ProjectMember, ProjectInvitation
 from auth import get_current_user, hash_password, verify_password
-from routers.projects import get_user_project_role
+from services.project_service import get_user_project_role
 
 router = APIRouter(prefix="/api/invitations", tags=["invitations"])
 

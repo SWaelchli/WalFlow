@@ -162,3 +162,14 @@ def test_deleted_user_token_gives_401(client):
     db.commit()
     db.close()
     assert client.get("/api/diagrams", headers=h).status_code == 401
+
+
+def test_project_detail_with_diagrams_returns_200(client):
+    owner, owner_h = _user()
+    pid = _project(owner)
+    _diagram(owner, project_id=pid)
+    r = client.get(f"/api/projects/{pid}", headers=owner_h)
+    assert r.status_code == 200
+    data = r.json()
+    assert len(data["diagrams"]) == 1
+    assert data["diagrams"][0]["title"] == "D"

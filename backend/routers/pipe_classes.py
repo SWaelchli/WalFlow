@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session, object_session
 from db.database import get_db
 from db.models import PipeClass, User, Project
 from auth import get_current_user, get_current_pipe_manager_user
-from routers.projects import _parse_allowed_pipe_classes
+from services.project_service import parse_allowed_pipe_classes
 from services.pipe_class_catalog import (
     DEFAULT_REDUCER_CATALOG, DEFAULT_SCHEDULE_CATALOG, Catalogs, catalog_type_errors, custom_row,
     load_schedule_catalogs, match_catalog_size, normalize_codes, reference_rows_from_dimensions,
@@ -587,7 +587,7 @@ def delete_pipe_class(
 
     # Allow-lists may hold the class id or (older entries) its code
     for project in db.query(Project).filter(Project.allowed_pipe_classes.isnot(None)).all():
-        allowed = _parse_allowed_pipe_classes(project.allowed_pipe_classes)
+        allowed = parse_allowed_pipe_classes(project.allowed_pipe_classes)
         if allowed is None:
             continue
         remaining = [ref for ref in allowed if ref not in (item.id, item.code)]

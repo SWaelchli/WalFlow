@@ -17,9 +17,6 @@ export const stripCaseResults = (c) => omit(c, CASE_RESULT_KEYS);
 export const stripNodeRuntime = (n) => ({ ...n, data: omit(n.data, NODE_RUNTIME_KEYS) });
 export const stripEdgeRuntime = (e) => ({ ...e, data: omit(e.data, EDGE_RUNTIME_KEYS) });
 
-/** True if the case holds solver results. */
-export const hasCaseResults = (c) => Boolean(c && (c.telemetry || c.kpis));
-
 /** Nodes, edges and cases without results or runtime-only fields (what a file or solver message may carry). */
 export const stripResults = ({ nodes = [], edges = [], cases = [] }) => ({
   nodes: nodes.map(stripNodeRuntime),

@@ -50,7 +50,7 @@ import FlowBoundaryNode from './nodes/FlowBoundaryNode';
 
 import MenuBar from './components/layout/MenuBar';
 import CommandBar from './components/layout/CommandBar';
-import CollabNotice from './components/CollabNotice';
+import CollabNotice from './components/overlays/CollabNotice';
 import Sidebar from './components/panels/Sidebar';
 import InspectorPanel from './components/panels/InspectorPanel';
 import DataList from './components/panels/DataList';
@@ -81,7 +81,6 @@ import { buildContextMenuItems } from './commands';
 import { instrumentPinsOf } from './commands/context';
 import { useAutoSaveSession } from './hooks/useAutoSaveSession';
 import { getTabId, isEmptyDraft } from './utils/draftStorage';
-import { HEAT_EXCHANGER_DEFAULTS } from './utils/equipmentDefaults';
 import { serializeDiagram, toSolverGraph, checkDiagramFile, stripResults, sanitizeDiagramElements } from './utils/diagramFile';
 import { computeCaseInputHashes, isCaseResultStale } from './utils/resultHash';
 import { solverMessageKey } from './utils/graphSignature';

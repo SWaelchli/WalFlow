@@ -5,7 +5,7 @@ import axios from 'axios';
 import { useAuth } from '../../hooks/useAuth';
 import { FILE_EXTENSION } from '../../constants';
 import { serializeDiagram } from '../../utils/diagramFile';
-import { CloudIcon, ExportIcon, ImportIcon, TrashIcon, CrossIcon, PlusIcon } from '../symbols/IconLibrary';
+import { CloudIcon, ExportIcon, TrashIcon, CrossIcon, PlusIcon } from '../symbols/IconLibrary';
 
 import { modalA11yRef } from '../../hooks/useModalA11y';
 import { clickableProps } from '../../utils/a11yProps';

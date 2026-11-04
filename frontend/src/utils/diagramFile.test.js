@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import {
   checkFormatVersion, validateDiagramStructure, checkDiagramFile, stripResults, serializeDiagram, toSolverGraph, sanitizeDiagramElements,
 } from './diagramFile';
-import { HEAT_EXCHANGER_DEFAULTS } from './equipmentDefaults';
+import { HEAT_EXCHANGER_DEFAULTS } from './nodeDefaults';
 
 const node = (id, extra = {}) => ({ id, type: 'tank', position: { x: 0, y: 0 }, data: { label: id }, ...extra });
 const good = () => ({ version: '0.2', nodes: [node('a'), node('b')], edges: [{ id: 'e', source: 'a', target: 'b', data: {} }] });

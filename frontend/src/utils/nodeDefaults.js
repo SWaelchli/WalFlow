@@ -1,4 +1,15 @@
-import { HEAT_EXCHANGER_DEFAULTS } from './equipmentDefaults';
+export const HEAT_EXCHANGER_DEFAULTS = {
+  active: true,
+  cooler_type: 'water_cooled',
+  rating_method: 'rated_duty',
+  rated_cooling_kw: 300.0,
+  rated_flow_lmin: 500.0,
+  design_inlet_temp_c: 50.0,
+  design_outlet_temp_c: 40.0,
+  medium_temp_c: 10.0,
+  ua_direct_w_k: 1000.0,
+  rated_dp_bar: 0.5,
+};
 
 const PUMP_DEFAULTS = { flow_rated_lmin: 100.0, head_rated_m: 50.0, rise_to_shutoff_pct: 20.0, efficiency_pct: 75.0, active: true };
 

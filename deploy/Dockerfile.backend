@@ -35,7 +35,7 @@ EXPOSE 8000
 
 # Entrypoint starts as root only to fix volume ownership, then drops to the unprivileged
 # user via gosu; uvicorn (the CMD) runs unprivileged.
-COPY docker-entrypoint.backend.sh /usr/local/bin/docker-entrypoint.sh
+COPY deploy/docker-entrypoint.backend.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 

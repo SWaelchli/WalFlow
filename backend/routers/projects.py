@@ -1,18 +1,19 @@
-from typing import List, Optional
+import json
 from datetime import datetime, timezone
+from typing import List, Optional
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
+from auth import get_current_user
 from db.database import get_db
 from db.models import User, Project, ProjectMember, Diagram
-from auth import get_current_user
 from services.lock_service import get_lock_status_info
+from services.project_service import get_user_project_role, parse_allowed_pipe_classes
 from services.settings_schema import ProjectSettings, dump_settings, load_settings
 
 router = APIRouter(prefix="/api/projects", tags=["projects"])
-
-import json
 
 # Pydantic Schemas
 class ProjectCreateSchema(BaseModel):
@@ -81,23 +82,6 @@ class MemberAddSchema(BaseModel):
 class MemberRoleUpdateSchema(BaseModel):
     role: str
 
-# Helper: Check if user has access & get role
-def get_user_project_role(db: Session, project_id: str, user_id: str) -> Optional[str]:
-    membership = db.query(ProjectMember).filter(
-        ProjectMember.project_id == project_id,
-        ProjectMember.user_id == user_id
-    ).first()
-    return membership.role if membership else None
-
-def _parse_allowed_pipe_classes(raw_val: Optional[str]) -> Optional[List[str]]:
-    if not raw_val:
-        return None
-    try:
-        parsed = json.loads(raw_val)
-        return parsed if isinstance(parsed, list) else None
-    except Exception:
-        return None
-
 @router.post("", response_model=ProjectDetailSchema, status_code=status.HTTP_201_CREATED)
 def create_project(
     payload: ProjectCreateSchema,
@@ -142,7 +126,7 @@ def create_project(
         id=new_project.id,
         title=new_project.title,
         description=new_project.description,
-        allowed_pipe_classes=_parse_allowed_pipe_classes(new_project.allowed_pipe_classes),
+        allowed_pipe_classes=parse_allowed_pipe_classes(new_project.allowed_pipe_classes),
         allow_custom_pipes=new_project.allow_custom_pipes if new_project.allow_custom_pipes is not None else True,
         settings=load_settings(new_project.settings, ProjectSettings),
         created_at=new_project.created_at,
@@ -165,7 +149,7 @@ def list_user_projects(
                 id=p.id,
                 title=p.title,
                 description=p.description,
-                allowed_pipe_classes=_parse_allowed_pipe_classes(p.allowed_pipe_classes),
+                allowed_pipe_classes=parse_allowed_pipe_classes(p.allowed_pipe_classes),
                 allow_custom_pipes=p.allow_custom_pipes if p.allow_custom_pipes is not None else True,
                 settings=load_settings(p.settings, ProjectSettings),
                 created_at=p.created_at,
@@ -225,7 +209,7 @@ def get_project_detail(
         id=project.id,
         title=project.title,
         description=project.description,
-        allowed_pipe_classes=_parse_allowed_pipe_classes(project.allowed_pipe_classes),
+        allowed_pipe_classes=parse_allowed_pipe_classes(project.allowed_pipe_classes),
         allow_custom_pipes=project.allow_custom_pipes if project.allow_custom_pipes is not None else True,
         settings=load_settings(project.settings, ProjectSettings),
         created_at=project.created_at,

@@ -4,7 +4,7 @@ import axios from 'axios';
 import { getTabId, isMyTabLock } from '../../utils/draftStorage';
 import { describeLockState } from '../../utils/lockState';
 import { EquipmentSymbol } from '../symbols/SymbolLibrary';
-import { InfoIcon, WarningIcon, CheckIcon, CrossIcon, FolderIcon, SearchIcon, TrashIcon, LockIcon, UnlockIcon, FolderOpenIcon, CaretDownIcon, CaretRightIcon, GearIcon, FileIcon, NoteEditIcon, DotIcon } from '../symbols/IconLibrary';
+import { CrossIcon, FolderIcon, SearchIcon, TrashIcon, LockIcon, UnlockIcon, FolderOpenIcon, CaretDownIcon, CaretRightIcon, GearIcon, FileIcon, NoteEditIcon, DotIcon } from '../symbols/IconLibrary';
 import { FLUID_CATEGORIES, FLUID_LIBRARY } from '../../constants/fluid_library';
 import { useUnits } from '../../context/UnitContext';
 import { PRESSURE_BASES, FLOW_UNITS, pressureBasisLabel, flowUnitLabel } from '../../utils/converters';

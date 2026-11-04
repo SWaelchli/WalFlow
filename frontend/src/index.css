@@ -350,23 +350,6 @@ body {
   backdrop-filter: blur(8px);
 }
 
-/* Animations */
-@keyframes pulseGlow {
-  0% {
-    box-shadow: 0 0 0 0 rgba(250, 133, 7, 0.5);
-  }
-  70% {
-    box-shadow: 0 0 0 10px rgba(250, 133, 7, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(250, 133, 7, 0);
-  }
-}
-
-.pulse-primary {
-  animation: pulseGlow 2s infinite;
-}
-
 /* Hide ReactFlow Attribution Watermark */
 .react-flow__attribution {
   display: none !important;
@@ -818,23 +801,6 @@ textarea:focus-visible,
   border-top: var(--space-md) solid var(--color-brand-dark);
 }
 
-/* DataList Sortable Tab Header */
-.datalist-sortable-header {
-  cursor: pointer;
-  user-select: none;
-  transition: background-color 0.15s ease, color 0.15s ease;
-}
-
-.datalist-sortable-header:hover {
-  background-color: var(--color-surface-hover);
-}
-
-.datalist-active-tab {
-  border-bottom: 2px solid var(--color-brand-dark);
-  color: var(--color-brand-dark) !important;
-  font-weight: 700;
-}
-
 /* Canvas Rotate Button Class Styling */
 .rotate-btn {
   position: absolute;
@@ -945,7 +911,7 @@ textarea:focus-visible,
   cursor: pointer;
   color: var(--color-text-secondary);
 }
-.btn-glyph { margin-right: 6px; }
+
 .panel-collapse-glyph { transition: transform 0.15s ease; }
 .panel-collapse-glyph.is-collapsed { transform: rotate(180deg); }
 .datalist-tab {
@@ -1891,7 +1857,7 @@ button.status-slot:hover { background: var(--color-surface); color: var(--color-
 }
 .form-grid { display: grid; gap: var(--space-lg); }
 .form-grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.form-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
 .form-grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .form-span-2 { grid-column: span 2; }
 .form-field { display: flex; flex-direction: column; min-width: 0; }

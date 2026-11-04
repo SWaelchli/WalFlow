@@ -16,7 +16,7 @@ RUN npm run build
 FROM nginx:alpine AS production
 
 # Nginx configuration as a template: ${NGINX_*} variables are substituted from the environment at container start
-COPY nginx.conf /etc/nginx/templates/default.conf.template
+COPY deploy/nginx.conf /etc/nginx/templates/default.conf.template
 ENV NGINX_ENVSUBST_FILTER=^NGINX_
 ENV NGINX_MAX_BODY_SIZE=5m
 

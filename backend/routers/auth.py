@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from db.database import get_db
 from db.models import User
-from auth import hash_password, verify_password, create_access_token, decode_access_token, get_current_user, revoke_token
+from auth import hash_password, verify_password, create_access_token, get_current_user, revoke_token
 from limiter import limiter
 
 router = APIRouter(prefix="/api/auth", tags=["authentication"])

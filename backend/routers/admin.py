@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, ConfigDict
-from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+from typing import Optional
 from sqlalchemy.orm import Session
 
 from db.database import get_db
@@ -15,16 +15,6 @@ router = APIRouter(
 
 class RoleUpdateSchema(BaseModel):
     role: str
-
-class UserAdminResponseSchema(BaseModel):
-    id: str
-    username: str
-    role: str
-    status: str
-    created_at: str
-    diagram_count: int
-
-    model_config = ConfigDict(from_attributes=True)
 
 @router.get("/users")
 def get_all_users(db: Session = Depends(get_db)):
