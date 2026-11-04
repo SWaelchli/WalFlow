@@ -35,6 +35,26 @@ Items move between releases as priorities change.
 - [ ] **🐛 Bug: Pipe Class Selection in Project Settings Not Saved**
   * **Today:** the pipe classes selected in Project settings are not being saved.
 
+- [ ] **🐛 Bug: New Drawing Opens with the Content of the Previous Drawing**
+  * **Steps:** with a drawing open on the canvas, create a new project, create a new drawing in it and open that drawing.
+  * **Today:** the new drawing opens with the same content as the drawing that was open before.
+  * **Expected:** a new drawing is always empty, unless it was explicitly created as a copy (see Create a Drawing as a Copy under 0.2.x).
+
+- [ ] **🐛 Bug: File › New Drawing Deletes the Content of the Previous Drawing**
+  * **Steps:** with a drawing open, create a new drawing with File › New Drawing, then switch back to the old drawing.
+  * **Today:** the new drawing opens with an empty canvas as it should, but the old drawing is now empty too and its content is lost.
+  * **Expected:** the old drawing keeps its content.
+
+- [ ] **🐛 Bug: Empty Drawing Receives a Copy of the Drawing Opened After It**
+  * **Steps:** with a drawing with an empty canvas open, switch to a drawing with content, then switch back.
+  * **Today:** the formerly empty drawing now contains a copy of the drawing just opened.
+  * **Expected:** the empty drawing stays empty.
+
+- [ ] **🐛 Bug: Switching to an Empty Drawing Deletes the Content of the Previous Drawing**
+  * **Steps:** with a drawing with content open, switch to a drawing with an empty canvas, then switch back.
+  * **Today:** the empty canvas opens as it should, but the original drawing is now empty too and its content is lost.
+  * **Expected:** the original drawing keeps its content.
+
 ---
 
 ## 0.2.x
@@ -63,6 +83,13 @@ Items move between releases as priorities change.
   * **Concept:** Today File › Export table as CSV exports only the Pipes or Equipment table of the results panel, whichever tab is open. Rework it into an export dialog with scope settings (which list, active case or all cases, selected items or the whole drawing, units as displayed or SI) and more result lists to export (cases matrix, relief summary, measurements, per-equipment results).
   * **Implementation notes:** one command in the File menu opening a dialog (per the `walflow-ui-layout` skill); the CSV builders move out of `DataList.jsx` into a shared export module; Vitest cases per list and scope.
   * **Engineering Value:** Results go into reports and spreadsheets without copying tables by hand.
+
+### 📁 Project Management & Collaboration
+
+- [ ] **📄 Create a Drawing as a Copy**
+  * **Concept:** Let users explicitly create a new drawing as a copy of an existing one. Every other new drawing starts empty.
+  * **Today:** only the admin area has a duplicate action (`POST /api/admin/diagrams/{id}/duplicate`); regular users have none.
+  * **Engineering Value:** Variants of a system can start from an existing drawing without redrawing it.
 
 ### 🐛 Maintenance
 
@@ -113,6 +140,10 @@ Items move between releases as priorities change.
     * `2. User Setting / Default`: Elif configured in user settings, use user preferred default value.
     * `3. App Default`: Else fall back to system built-in application default value.
   * **Engineering Value:** Streamlines model building by eliminating repetitive property adjustments for standard project or user engineering conventions.
+
+- [ ] **🔖 Drawing Revisions**
+  * **Concept:** Release a revision of a drawing, which is permanently saved as read-only. The work-in-progress version can always be modified. A drawing can store multiple revisions, e.g. Rev 00, Rev 01, Rev 02, Rev A, Rev B.
+  * **Engineering Value:** Issued revisions stay on record exactly as released while work on the drawing continues.
 
 ### 🐛 Maintenance
 

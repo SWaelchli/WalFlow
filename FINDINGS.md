@@ -19,7 +19,9 @@ The only place that holds the status.
 
 | ID | Severity | Status | Finding | Proposed solution | Owner | Phase | Source |
 |---|---|---|---|---|---|---|---|
-| UX1 | Low | Rejected | React Flow warns twice on mount in dev that `nodeTypes` and `edgeTypes` are created anew, although both are module constants: StrictMode runs its check twice | Accepted by the user as a dev-only false positive; no code change | fe | — | Systems-engineer UX audit 2026-11-03 |
+| UX1 | High | Open | React Flow warns on mount that `nodeTypes` and `edgeTypes` are created anew on every render | Ensure `nodeTypes` and `edgeTypes` definitions are stably memoized outside component re-render loops | fe | 1 | Project-lead UX audit 2026-11-04 |
+| UX2 | High | Open | WebSocket simulation connection logs a premature closure warning during initial StrictMode mount/unmount | Guard `ws.current.close()` in cleanup so it only fires when readyState is `WebSocket.OPEN` | fe | 1 | Project-lead UX audit 2026-11-04 |
+| UX3 | Medium | Open | Top Menubar shows no active project indicator or quick-switcher before opening a specific drawing | Surface the active project title as a breadcrumb or switcher button in the Menubar | fe | 1 | Project-lead UX audit 2026-11-04 |
 | PF1 | Medium | Review | `build_network` runs on the WebSocket event loop, outside the solve slot and deadline, so a large diagram delays lock and collaboration frames for every connected user | Measure the blocking time at the node limit; if it matters, run it with `asyncio.to_thread` after checking the parser is thread-safe | orch | 1 | Code review 2026-11-04 |
 | KP1 | Medium | Review | The `total_flow_lmin` KPI adds the flow of every pump, so two pumps in series carrying 500 L/min report 1000 L/min in the case comparison | Decide what "total flow" means (for example flow leaving the sources), then change the sum | orch + phys | 1 | Code review 2026-11-04 |
 
@@ -27,9 +29,19 @@ The only place that holds the status.
 
 | Phase | Entries | Why this order | Exit check |
 |---|---|---|---|
-| 1 | PF1, KP1 | Both need a measurement or a decision before any code changes. | Gate green; physics review for KP1; PF1 measured per `walflow-performance`. |
+| 1 | PF1, KP1, UX1, UX2, UX3 | PF1 and KP1 need a measurement/decision; UX issues are clean frontend warning and wayfinding improvements. | Gate green; physics review for KP1; PF1 measured per `walflow-performance`. |
 
 Commit each phase only when the user asks.
+
+## Details: Project Lead UX Audit 2026-11-04
+
+Source: live browser walkthrough and DevTools audit using Chrome DevTools MCP (docs/audit/2026-11-04-project-lead/report.md).
+
+| ID | Details | Where | Test |
+|---|---|---|---|
+| UX1 | React Flow logs warning #002 in development because `nodeTypes` / `edgeTypes` reference equality fails during re-render cycles. | `frontend/src/App.jsx` | Gate (clean console on mount). |
+| UX2 | During React StrictMode mount/unmount cycles, the simulation hook triggers `ws.current.close()` while the socket is still in `CONNECTING` state, logging "WebSocket is closed before the connection is established". | `frontend/src/hooks/useWebSocketSimulation.js` | Vitest / Gate. |
+| UX3 | For the Project Lead persona managing multi-project packages ("Johan Castberg", "Troll C"), the Menubar does not indicate the active project boundary until a diagram is loaded, requiring users to open `File → Open...` to inspect or switch projects. | `frontend/src/components/layout/MenuBar.jsx` | Vitest `MenuBar.test.jsx`. |
 
 ## Details: Systems Engineer UX Audit 2026-11-03
 

@@ -1,8 +1,10 @@
 # UX Audit Report Template (v2)
 
-Write the report to `docs/ux-audit-YYYY-MM-DD.md`. If `.jez/artifacts/` exists in the project, write to `.jez/artifacts/ux-audit-YYYY-MM-DD.md` instead.
+Write the report to `docs/audit/YYYY-MM-DD-<slug>/report.md` with screenshots saved in `docs/audit/YYYY-MM-DD-<slug>/screenshots/`. If `.jez/artifacts/` exists in the project, write to `.jez/artifacts/ux-audit-YYYY-MM-DD.md` instead.
 
 Write incrementally — open the file at the start of the audit, append as you go. Don't batch at the end.
+
+**Crucial**: All captured screenshots must be actively linked and embedded within `report.md` using relative paths (`screenshots/<filename>.png`). Do not leave screenshots unlinked in an external folder.
 
 The report MUST include the verdict block at the top. If any required section is missing, the report is "Incomplete" not "Pass" — even if every observation looked fine.
 
@@ -121,8 +123,8 @@ Each finding follows this format. **A finding without reproduction + evidence + 
 **Expected**: text wraps at word boundaries within the available column width (≥ 260px).
 
 **Evidence**:
-- `.jez/audit-evidence/2026-04-29/spaces-1280-3panes.png`
-- `.jez/audit-evidence/2026-04-29/spaces-1280-3panes-devtools.png`
+- Screenshot: [spaces-1280-3panes.png](screenshots/spaces-1280-3panes.png)
+- DevTools overlay: [spaces-1280-3panes-devtools.png](screenshots/spaces-1280-3panes-devtools.png)
 - Console: 0 errors at point of capture
 - Layout-detection JS output: `[{ selector: "main.flex-1.min-w-0", width: "184.5", height: "612.0", textPreview: "h\ne\nl\nl\no\n…" }]`
 
@@ -178,7 +180,7 @@ Each finding follows this format. **A finding without reproduction + evidence + 
 #### [L-1] [Short title]
 [Same format as above, abbreviated for polish-class findings]
 
-## Thread Results
+## Walkthrough Key Threads & Screenshots
 
 ### Thread 1: [e.g. "Send a message in a space"]
 
@@ -190,7 +192,13 @@ Each finding follows this format. **A finding without reproduction + evidence + 
 - **Did it end clearly?**: [Yes/No — detail]
 - **Would I come back?**: [Yes/Maybe/No — why]
 - **One thing to make it twice as easy**: [single highest-impact suggestion]
-- **Screenshots**: [folder path or numbered list]
+
+#### Embedded Screenshots
+![Thread 1 Initial State](screenshots/thread1_initial_state.png)
+*Figure 1: Initial state before action.*
+
+![Thread 1 Completed Action](screenshots/thread1_action_completed.png)
+*Figure 2: State after action completed.*
 
 ### Thread 2: [...]
 
@@ -206,15 +214,18 @@ INTERACTION MANIFEST — Coverage
   Pages with incomplete manifest: 0
 ```
 
-Detailed manifest per page is at `.jez/audit-evidence/2026-04-29/manifests/`. Verdict cannot be Pass without complete coverage.
+Detailed manifest per page is at `audit-raw-data.json` or inline. Manifest steps cite screenshot destinations (e.g. `-> screenshots/thread1_action.png`). Verdict cannot be Pass without complete coverage.
 
-## Multi-Pane Stress Matrix
+## Multi-Pane & Responsive Stress Matrix
 
-| Route | 1920 all open | 1440 all | 1280 all | 1024 all | 1024 2-pane | 1024 1-pane | 768 default | 375 mobile |
-|-------|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| / | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| /dashboard/spaces/:id | ✓ | ✓ | ✗ (C-1 vertical text) | ✗ (C-1) | ✓ | ✓ | ✓ | ✓ |
-| /dashboard/inbox | ✓ | ✓ | ✓ | ✓ | n/a | n/a | ✓ | ✓ |
+| Viewport / Configuration | Screenshot Evidence | Result |
+|---|---|---|
+| 1920×1080 (Desktop Ultra) | [screenshots/stress_viewport_1920x1080.png](screenshots/stress_viewport_1920x1080.png) | ✅ Clean |
+| 1440×900 (Standard Laptop) | [screenshots/stress_viewport_1440x900.png](screenshots/stress_viewport_1440x900.png) | ✅ Clean |
+| 1280×800 (High-bug threshold) | [screenshots/stress_viewport_1280x800.png](screenshots/stress_viewport_1280x800.png) | ❌ Layout overflow (C-1) |
+| 1024×768 (Catastrophic-bug threshold) | [screenshots/stress_viewport_1024x768.png](screenshots/stress_viewport_1024x768.png) | ❌ Vertical stack |
+| 768×1024 (Tablet Portrait) | [screenshots/stress_viewport_768x1024.png](screenshots/stress_viewport_768x1024.png) | ✅ Clean |
+| 375×667 (Mobile) | [screenshots/stress_viewport_375x667.png](screenshots/stress_viewport_375x667.png) | ✅ Clean |
 
 ## Scenario Battery Results
 
@@ -436,7 +447,8 @@ See [playwright-killer-flows.md](playwright-killer-flows.md) for starter test co
 
 - **Verdict block goes at the top.** First thing the reader sees. No exceptions.
 - **Hard gates can't be downgraded.** A console warning is High minimum. A 5xx is Critical automatically.
-- **Every finding cites proof.** Screenshot path + console line / DOM selector / network response. No proof = rejected.
+- **Every finding cites proof.** Screenshot markdown link + console line / DOM selector / network response. No proof = rejected.
+- **Screenshots MUST be linked and embedded in report.md.** Never leave screenshots as unlinked files in a detached directory. Embed key state changes inline in the walkthrough threads (`![Caption](screenshots/<file>.png)`) and markdown-link screenshots in findings evidence and stress tables.
 - **Reproduction steps are mandatory.** A finding without "1. Sign in 2. Click X 3. Observe Y" is rejected.
 - **Suspected location** must be `file:line` not "the chat module somewhere".
 - **Coverage publishes ratios.** Inventoried ÷ tested. Readers can see what wasn't tested.

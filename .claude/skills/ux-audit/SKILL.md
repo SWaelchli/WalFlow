@@ -180,7 +180,7 @@ For each thread:
 
 1. **Start from the app entry point** — not mid-thread. Real users land at `/` or `/dashboard`.
 2. **Walk as the persona** — if they'd skim, skim. If they'd misread a label, misread it. Note hesitations.
-3. **Screenshot every state change** — default → hover/focus → active → after click → after load → confirmation. The filmstrip is the evidence.
+3. **Screenshot every state change** — default → hover/focus → active → after click → after load → confirmation. Save to `screenshots/<filename>.png`. The filmstrip is the evidence, and **must be embedded directly in `report.md`** under the thread's narrative section using markdown image syntax (`![Caption](screenshots/<filename>.png)` and `*Figure N: Caption.*`).
 4. **Track the cost** — click count, decision points, dead ends, interrupt recovery (close tab at step 3, return at step 4 — did state survive?)
 5. **Hand screenshots to a sub-agent for review** at the end of each thread.
 
@@ -373,7 +373,33 @@ A fresh sub-agent works because the original drafter is invested in its own outp
 
 ### Findings format (mandatory per finding)
 
-Every finding must include: **ID** (severity-letter + number), **Layer** (Architecture / Interaction / Visual / Feedback / Delight), **Severity**, **Surface** (route + viewport + panes), **Persona**, **Reproduce** (numbered steps), **Observed**, **Expected**, **Evidence** (screenshot paths + console / network captures), **Suspected location** (`file:line`), **Smallest possible patch** (concrete + committable — *not* "Suggested fix" / "Consider X"). A finding without reproduction + evidence + suspected location is rejected. Filler patches ("improve X", "consider Y", "make Z better") get flipped to Incomplete by the self-critique pass. Worked example + Five-Layer Hierarchy in [references/report-template.md](references/report-template.md) and [references/perfection-checklist.md](references/perfection-checklist.md). Discipline rules in [references/audit-output-discipline.md](references/audit-output-discipline.md).
+Every finding must include: **ID** (severity-letter + number), **Layer** (Architecture / Interaction / Visual / Feedback / Delight), **Severity**, **Surface** (route + viewport + panes), **Persona**, **Reproduce** (numbered steps), **Observed**, **Expected**, **Evidence** (explicit markdown links to screenshot files e.g. `[thread3_locked_diagram.png](screenshots/thread3_locked_diagram_view.png)` + console / network captures), **Suspected location** (`file:line`), **Smallest possible patch** (concrete + committable — *not* "Suggested fix" / "Consider X"). A finding without reproduction + evidence + suspected location is rejected. Filler patches ("improve X", "consider Y", "make Z better") get flipped to Incomplete by the self-critique pass. Worked example + Five-Layer Hierarchy in [references/report-template.md](references/report-template.md) and [references/perfection-checklist.md](references/perfection-checklist.md). Discipline rules in [references/audit-output-discipline.md](references/audit-output-discipline.md).
+
+### Screenshot Linking in report.md (mandatory)
+
+All audit deliverables must save screenshots in a local `screenshots/` directory relative to `report.md` (standard path: `docs/audit/YYYY-MM-DD-<slug>/report.md` with `docs/audit/YYYY-MM-DD-<slug>/screenshots/`). **Every screenshot must be actively linked or embedded within `report.md`** so the report stands as a self-contained visual document:
+
+1. **Walkthrough Key Threads & Screenshots**: Embed images directly beneath each walkthrough thread narrative with figures and captions:
+   ```markdown
+   ![Landing Screen](screenshots/phase1_initial_landing.png)
+   *Figure 1: Initial landing screen.*
+   ```
+2. **Stress & Responsive Tables**: Link screenshots in the evidence column of matrix tables:
+   ```markdown
+   | Viewport | Screenshot Evidence | Result |
+   |---|---|---|
+   | 1920×1080 | [screenshots/stress_viewport_1920x1080_desktop.png](screenshots/stress_viewport_1920x1080_desktop.png) | ✅ Clean |
+   ```
+3. **Findings Evidence**: Under each finding's `**Evidence:**` field, link the specific screenshot showing the bug:
+   ```markdown
+   * **Evidence:** Screenshot [thread3_locked_diagram_view.png](screenshots/thread3_locked_diagram_view.png) (`hasLockBanner: false, bannerText: null`).
+   ```
+4. **Interaction Manifest**: Include the relative path for each screenshot captured:
+   ```text
+   [✓] 15:14:01 Captured initial landing screenshot (viewport) -> screenshots/phase1_initial_landing.png
+   ```
+
+Do not leave screenshots orphaned or unlinked in a detached folder. A report that takes screenshots but fails to link and embed them in `report.md` is incomplete.
 
 ### Hold this in your hands (mandatory closing paragraph)
 
