@@ -89,6 +89,12 @@ async def websocket_endpoint(websocket: WebSocket):
                     user_id = user.id if allowed else None
                 except Exception as e:
                     print(f"Error resolving diagram access: {e}")
+                    traceback.print_exc()
+                    await websocket.send_text(json.dumps({
+                        "status": "error", "context": "join_diagram",
+                        "message": "Could not check access to this diagram. Please try again."
+                    }))
+                    continue
                 finally:
                     db.close()
 

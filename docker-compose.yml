@@ -16,8 +16,9 @@ services:
     environment:
       - DATABASE_PATH=/app/data/walflow.db
       - TZ=${TZ}
-      - PUID=${PUID}
-      - PGID=${PGID}
+      # User the backend runs as. Unset: the non-root owner of the data folder (see .env.example)
+      - PUID=${PUID:-}
+      - PGID=${PGID:-}
       - PYTHONUNBUFFERED=1
       - ENVIRONMENT=production
       # Required: signs login tokens. Put it in .env, e.g. WALFLOW_SECRET_KEY=<output of: openssl rand -hex 32>

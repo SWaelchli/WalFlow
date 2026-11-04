@@ -32,6 +32,9 @@ Items move between releases as priorities change.
 - [ ] **🎯 Scroll the Data List to the Selected Item**
   * **Concept:** When a pipe or piece of equipment is selected on the canvas and its data list tab (Pipes or Equipment) is open, the list scrolls to that item.
 
+- [ ] **🐛 Bug: Pipe Class Selection in Project Settings Not Saved**
+  * **Today:** the pipe classes selected in Project settings are not being saved.
+
 ---
 
 ## 0.2.x

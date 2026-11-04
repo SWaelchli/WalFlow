@@ -87,12 +87,15 @@ Copy [`.env.example`](./.env.example) to `.env` next to `docker-compose.yml` and
 
 > **Upgrading from an earlier compose file:** add `WALFLOW_SECRET_KEY` to `.env` before `docker compose pull`. All users are logged out once, because the previously random key is replaced. The backend port 5701 is now published on `127.0.0.1` only; use port 5702 (the frontend) for users.
 
+> **Upgrading to 0.2.1:** the backend no longer runs as root. A data folder owned by root is handed to user `1000`, so set `PUID`/`PGID` if another user must own it. On a volume that refuses `chown` (NFS with `root_squash`, CIFS), make the folder writable for that user first, otherwise the backend stops with an error naming the folder.
+
 **Backend (`walflow-backend`)**
 
 | Variable | Default | What it does |
 |---|---|---|
 | `WALFLOW_SECRET_KEY` | none, **required** in compose | Key that signs login tokens. Generate with `openssl rand -hex 32`. Changing it logs everybody out. Without it the backend would invent a random key at each start and, with `ENVIRONMENT=production`, refuses to start. |
 | `WALFLOW_ADMIN_SETUP_TOKEN` | none | Optional secret that creating the first administrator asks for. Generate with `openssl rand -hex 32`. Left out, whoever opens a new install first can become its administrator, so set it when others can reach the site before you have created the admin. Not used once an administrator exists. |
+| `PUID` / `PGID` | owner of the data folder | User and group the backend runs as, which also own the data folder after each start. Left out, the backend takes the folder's current non-root owner; a new or root-owned folder goes to `1000`. |
 | `ENVIRONMENT` | `production` in compose | `production` enforces the checks above. |
 | `WALFLOW_SECURE_COOKIES` | `true` | Login cookies are sent over HTTPS only. Set to `false` for a plain-HTTP LAN install, otherwise login does not work. |
 | `WALFLOW_TRUSTED_PROXY_HOPS` | `1` | Number of reverse proxies that append the client address to `X-Forwarded-For` (the bundled nginx is 1; use `2` when another proxy such as Traefik or Nginx Proxy Manager sits in front of it; `0` ignores the header). The login rate limit uses this address, so a wrong value either lets clients spoof their address or puts all users into one bucket. |
@@ -127,7 +130,7 @@ To run backend and frontend dev servers locally:
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1   # Linux/macOS: source .venv/bin/activate
 pip install -r requirements-dev.txt   # runtime plus test dependencies
-uvicorn main:app --app-dir backend --reload --port 8000
+uvicorn main:app --app-dir backend --reload --reload-dir backend --port 8000
 
 # 2. Start Frontend (Vite + React)
 cd frontend

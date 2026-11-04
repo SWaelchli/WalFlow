@@ -275,6 +275,21 @@ def test_join_diagram_needs_access_and_owner_gets_in(client, monkeypatch):
         assert json.loads(ws.receive_text())["status"] == "waiting"
 
 
+def test_join_diagram_server_fault_is_not_reported_as_a_login_problem(monkeypatch):
+    monkeypatch.delenv("WALFLOW_REQUIRE_WS_AUTH", raising=False)
+
+    def _broken(token, db):
+        raise RuntimeError("database exploded 7f3a")
+
+    monkeypatch.setattr("routers.ws_simulation.get_user_from_token", _broken)
+    with TestClient(app).websocket_connect("/ws/simulate?token=whatever") as ws:
+        ws.send_text(json.dumps({"action": "join_diagram", "diagram_id": "x"}))
+        reply = json.loads(ws.receive_text())
+    assert reply["status"] == "error" and reply["context"] == "join_diagram"
+    assert "Sign in" not in reply["message"]
+    assert "database exploded" not in reply["message"] and "RuntimeError" not in reply["message"]
+
+
 class _FakeSocket:
     def __init__(self):
         self.sent = []

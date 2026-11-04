@@ -4,7 +4,7 @@ name: walflow
 services:
   walflow-backend:
     build:
-      context: ..
+      context: .
       dockerfile: deploy/Dockerfile.backend
     container_name: walflow-backend
     restart: unless-stopped
@@ -24,7 +24,7 @@ services:
 
   walflow-frontend:
     build:
-      context: ..
+      context: .
       dockerfile: deploy/Dockerfile.frontend
     container_name: walflow-frontend
     restart: unless-stopped

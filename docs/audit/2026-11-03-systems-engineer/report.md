@@ -172,7 +172,7 @@ INTERACTION MANIFEST — / (main canvas)
   `WebSocket connection to 'ws://localhost:5173/ws/simulate' failed: WebSocket is closed before the connection is established.`
 * **Expected:** WebSocket client should initiate cleanly without an immediate abort/retry cycle during initial React StrictMode mounting.
 * **Evidence:** Console log timestamp `01:20:16.212Z`.
-* **Suspected location:** `frontend/src/hooks/useSimulationWebSocket.js` (cleanup in React StrictMode unmounts the socket before the handshake completes).
+* **Suspected location:** `frontend/src/hooks/useWebSocketSimulation.js` (cleanup in React StrictMode unmounts the socket before the handshake completes).
 * **Smallest possible patch:**
   Add connection-ready state guarding in the WebSocket setup effect to avoid aborting in-flight connections during StrictMode fast-mount cycles.
 
@@ -211,9 +211,9 @@ INTERACTION MANIFEST — / (main canvas)
 * **Observed:** Contrast ratio is below 4.5:1 against the menu item background.
 * **Expected:** WCAG AA 4.5:1 minimum contrast for normal text.
 * **Evidence:** axe-core `color-contrast` violation on `kbd` and `.status-chip-time`.
-* **Suspected location:** `frontend/src/components/layout/MenuBar.css` or design tokens for muted shortcut text.
+* **Suspected location:** `frontend/src/index.css` (`.menu-item kbd`, `.status-chip-time`) or design tokens for muted shortcut text.
 * **Smallest possible patch:**
-  Adjust the font color of `.menu-shortcut kbd` from `var(--color-text-tertiary)` to `var(--color-text-secondary)`.
+  Adjust the font color of `.menu-item kbd` from `var(--color-text-muted)` to `var(--color-text-secondary)`.
 
 ---
 
@@ -278,7 +278,7 @@ INTERACTION MANIFEST — / (main canvas)
 
 ### Structural (1–2 weeks)
 * **F-H1**: Memoize `nodeTypes` and `edgeTypes` in React Flow canvas initialization to prevent unnecessary component remounts during zoom/pan.
-* **F-H2**: Harden `useSimulationWebSocket` initialization effect against StrictMode aborts on clean initial page loads.
+* **F-H2**: Harden `useWebSocketSimulation` initialization effect against StrictMode aborts on clean initial page loads.
 
 ### Advanced Polish (Post-Launch)
 * **F-L1**: Normalize heading hierarchy (`h2` → `h3`) across all Activity Rail side panes and inspector tabs.

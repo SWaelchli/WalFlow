@@ -102,7 +102,7 @@ applied to the outlet for $Q \ge 0$ and to the inlet for $Q < 0$. A closed valve
 | `backend/tests/unit/solver/test_check_valve_mcp.py::test_fischer_burmeister_check_valve` | Cv 10, 0.05 bar, 60 L/min water: with $\Delta p$ = cracking + friction the MCP form returns that drop within 1 Pa; closed with 0.5 bar reverse difference it returns $\Delta p$ within 1 Pa |
 | `test_check_valve_mcp.py::test_check_valve_mcp_in_solver` | Source tank 1 m, sink tank 10 m: the valve closes, flow below $10^{-5}$ m³/s |
 | `test_check_valve_mcp.py::test_dynamic_topology_reduction` | A valve in a dead end is pruned; zero flow on its pipe |
-| `backend/tests/unit/equipment/test_check_valve.py::test_check_valve_forward_and_reverse` | Smoothed curve: forward drop at 60 L/min above the cracking pressure; reverse drop negative |
+| `backend/tests/unit/equipment/test_check_valve.py::test_smoothed_curve_without_pressures` | Smoothed curve: forward drop at 60 L/min above the cracking pressure; reverse drop negative |
 | `backend/tests/unit/solver/test_stagnant_branches.py::test_dead_leg_behind_a_check_valve_takes_the_header_pressure` | A dead leg behind a closed check valve takes the header pressure |
 | `backend/tests/unit/fluids/test_throttling_heat.py::test_f1_16_throttling_heat_magnitude` | Open valve: outlet temperature rise $= \Delta P/(\rho c_p)$ within 2 % |
 

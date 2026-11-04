@@ -21,7 +21,7 @@ The application allows users to drag various hydraulic components (pumps, valves
 ```bash
 # Backend (FastAPI, use a virtual environment): http://localhost:8000
 pip install -r requirements-dev.txt
-uvicorn main:app --app-dir backend --reload --port 8000
+uvicorn main:app --app-dir backend --reload --reload-dir backend --port 8000
 # Frontend (Vite): http://localhost:5173, connects to ws://localhost:8000/ws/simulate
 cd frontend && npm install && npm run dev
 ```

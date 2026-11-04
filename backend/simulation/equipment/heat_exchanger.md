@@ -126,8 +126,8 @@ A missing rated drop is 0.5 bar, not zero. The parser rejects a rated flow $\le 
 
 | Test | Benchmark |
 | :--- | :--- |
-| `backend/tests/unit/fluids/test_thermal.py::test_cooler_sizing_modes` | `design_temps`, ISO VG 46, 387 L/min, 65 → 40 °C, medium 10 °C: at rated flow the outlet is 40 °C within $10^{-5}$ K; `ua_direct` 2000 W/K gives an outlet between 10 and 65 °C |
-| `test_thermal.py::test_water_and_air_coolers` | Water- and air-cooled, cooling and heating: outlet between inlet and medium |
+| `backend/tests/unit/equipment/test_heat_exchanger_thermal.py::test_cooler_sizing_modes` | `design_temps`, ISO VG 46, 387 L/min, 65 → 40 °C, medium 10 °C: at rated flow the outlet is 40 °C within $10^{-5}$ K; `ua_direct` 2000 W/K gives an outlet between 10 and 65 °C |
+| `test_heat_exchanger_thermal.py::test_water_and_air_coolers` | Water- and air-cooled, cooling and heating: outlet between inlet and medium |
 | `backend/tests/unit/equipment/test_heat_exchanger_rating.py::test_f1_40_audit_case_is_infeasible` | 300 kW from 100 L/min of oil with 40 K available: `infeasible`, $\varepsilon_d > 1$ |
 | `test_heat_exchanger_rating.py::test_f1_40_modest_rating_is_ok` | 30 kW: `ok`, $0 < \varepsilon_d < 0.95$ |
 | `backend/tests/unit/equipment/test_heat_exchanger_default.py` | Missing rated drop: 0.5 bar at rated flow in water at 50 °C within 0.1 %; an explicit value is kept |

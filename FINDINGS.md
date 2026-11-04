@@ -22,10 +22,11 @@ The only place that holds the status.
 | UX1 | High | Open | React Flow warns on every render that `nodeTypes` and `edgeTypes` are created anew | Define `nodeTypes` and `edgeTypes` outside the component scope or memoize with `useMemo` | fe | 1 | Systems-engineer UX audit 2026-11-03 |
 | UX2 | High | Open | MenuBar brand button accessible name does not contain the visible text "v0.2.1 • Beta" (WCAG 2.5.3) | Include visible version string in `aria-label` or align label with visible text | fe | 1 | axe-core audit 2026-11-03 |
 | UX3 | High | Open | WebSocket throws premature connection closure warning during React StrictMode mount | Guard initialization effect cleanup so socket handshake is not aborted in-flight on mount | fe | 1 | Systems-engineer UX audit 2026-11-03 |
-| UX4 | High | Open | Menu keyboard shortcuts (`kbd`) and status timestamp have contrast below 4.5:1 | Adjust text color tokens from tertiary to secondary to meet WCAG AA | fe | 1 | axe-core audit 2026-11-03 |
+| UX4 | High | Open | Menu keyboard shortcuts (`kbd`) and status timestamp have contrast below 4.5:1 | Adjust the shortcut text color token from muted to secondary and remove the timestamp opacity to meet WCAG AA | fe | 1 | axe-core audit 2026-11-03 |
 | UX5 | Medium | Open | `NewDrawingModal` and `LoginModal` containers lack `role="dialog"` and `aria-modal="true"` | Add `role="dialog"` and `aria-modal="true"` to `.modal-container` in both modals | fe | 1 | Systems-engineer UX audit 2026-11-03 |
 | UX6 | Medium | Open | `LoginModal` inputs trigger browser DOM autocomplete warning | Add `autoComplete="username"` and `autoComplete="current-password"` | fe | 1 | Systems-engineer UX audit 2026-11-03 |
 | UX7 | Low | Open | Side pane categories jump heading levels (`h4` used without intermediate `h3`) | Standardize heading hierarchy to `h3` in sidebar group titles | fe | 2 | axe-core audit 2026-11-03 |
+| RF1 | Low | Deferred | `ws_simulation.py` imports solver helpers from `routers/simulation.py` and repeats the parse-and-build block in `update_graph` and `run_simulation` | To decide: move the helpers to `services/` and extract one network build helper | orch | — | Code review 2026-11-04 |
 
 ## Roadmap
 
@@ -44,11 +45,19 @@ Source: live browser walkthrough and axe-core audit using Puppeteer on Chrome (d
 |---|---|---|---|
 | UX1 | Move `nodeTypes` and `edgeTypes` declarations out of the component body or wrap them in `useMemo`. Eliminates React Flow warning #002 and prevents re-mounting all canvas nodes on zoom/pan. | `frontend/src/App.jsx` | Gate (`npm run build`, `npm run lint`). |
 | UX2 | `.menubar-brand` has visible text `v{APP_VERSION} • {RELEASE_STAGE}` but `aria-label="About WälFlow, version 0.2.1"`. Change `aria-label` to include the visible string so voice navigation works (`About WälFlow v0.2.1 • Beta`). | `frontend/src/components/layout/MenuBar.jsx` | `MenuBar.test.jsx`. |
-| UX3 | In `useSimulationWebSocket`, connection initialization triggers `WebSocket is closed before the connection is established` during StrictMode mount. Check connection state before closing in cleanup. | `frontend/src/hooks/useSimulationWebSocket.js` | Component test or manual verification. |
-| UX4 | Contrast on `.menu-item-shortcut kbd` and `.status-chip-time` falls below 4.5:1. Switch text token to `--color-text-secondary` to satisfy WCAG AA. | `frontend/src/components/layout/MenuBar.css`, `frontend/src/index.css` | Gate. |
+| UX3 | In `useWebSocketSimulation`, connection initialization triggers `WebSocket is closed before the connection is established` during StrictMode mount. Check connection state before closing in cleanup. | `frontend/src/hooks/useWebSocketSimulation.js` | Component test or manual verification. |
+| UX4 | Contrast on `.menu-item kbd` (`--color-text-muted`) and `.status-chip-time` (`opacity: 0.8`) falls below 4.5:1. Switch to `--color-text-secondary` and remove the opacity to satisfy WCAG AA. | `frontend/src/index.css` | Gate. |
 | UX5 | `.modal-container` lacks `role="dialog"` and `aria-modal="true"`. Screen readers and automation harnesses cannot detect the dialog container. | `frontend/src/components/modals/NewDrawingModal.jsx`, `frontend/src/components/modals/LoginModal.jsx` | Vitest modal tests. |
 | UX6 | Browser logs DOM warning: `Input elements should have autocomplete attributes`. Add `autoComplete="username"` and `autoComplete="current-password"` to form fields. | `frontend/src/components/modals/LoginModal.jsx` | Vitest modal tests. |
 | UX7 | Category group headers in `Sidebar.jsx` render as `h4` while the parent container has no `h3`. Use `h3` for group headers. | `frontend/src/components/panels/Sidebar.jsx` | Gate. |
+
+## Details: Code review 2026-11-04
+
+Source: code review of `v0.2.0..HEAD` (2026-11-04). No published report.
+
+| ID | Details | Where | Test |
+|---|---|---|---|
+| RF1 | Limit or validation changes must be made twice, and the WebSocket module also loads the HTTP router's limiter and FastAPI setup. | `backend/routers/ws_simulation.py`, `backend/routers/simulation.py` | Refactor: no new test, existing ones pass unchanged. |
 
 ## Details: Layout review 2026-10-30
 
