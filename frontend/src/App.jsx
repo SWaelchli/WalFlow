@@ -76,7 +76,7 @@ import { useWebSocketSimulation } from './hooks/useWebSocketSimulation';
 import { useCanvasHistory } from './hooks/useCanvasHistory';
 import { getDefaultPipeData, DEFAULT_PIPE_LENGTH_M } from './utils/pipeDefaults';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
-import { runCommand } from './commands/commandList';
+import { runCommand, getCommand } from './commands/commandList';
 import { buildContextMenuItems } from './commands';
 import { instrumentPinsOf } from './commands/context';
 import { useAutoSaveSession } from './hooks/useAutoSaveSession';
@@ -190,9 +190,21 @@ function WalFlowContent() {
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   const fitViewPendingRef = useRef(false);
   
+  const [isBoxSelecting, setIsBoxSelecting] = useState(false); // rubber-band selection in progress
   const [selectedNode, setSelectedNode] = useState(null);
   const [settingsRequest, setSettingsRequest] = useState(null); // { n, tab }: asks the Settings pane to show a tab
   const [sidePane, setSidePane] = useState('components');
+  // React Flow reports the end of a box selection only while the pointer is over the pane; a release elsewhere ends it too
+  useEffect(() => {
+    if (!isBoxSelecting) return undefined;
+    const end = () => setIsBoxSelecting(false);
+    window.addEventListener('mouseup', end);
+    window.addEventListener('blur', end);
+    return () => {
+      window.removeEventListener('mouseup', end);
+      window.removeEventListener('blur', end);
+    };
+  }, [isBoxSelecting]);
   // The side pane remembers its docked and its overlay state apart: it starts closed when it overlays the canvas
   const [dockedPaneOpen, setDockedPaneOpen] = useState(true);
   const [overlayPaneOpen, setOverlayPaneOpen] = useState(false);
@@ -2034,6 +2046,8 @@ function WalFlowContent() {
               requestSnapshot();
             }}
             onPaneClick={onPaneClick}
+            onSelectionStart={() => setIsBoxSelecting(true)}
+            onSelectionEnd={() => setIsBoxSelecting(false)}
             onInit={setReactFlowInstance}
             onDrop={onDrop}
             onDragOver={onDragOver}
@@ -2295,6 +2309,9 @@ function WalFlowContent() {
           onSetCaseOverride={handleSetCaseOverride}
           runSimulation={runChecked}
           commandsRef={resultsCommandsRef}
+          onSelectCase={(caseId) => getCommand('simulation.active-case').children(commandCtx).find((c) => c.id === `simulation.active-case.${caseId}`)?.run()}
+          isBoxSelecting={isBoxSelecting}
+          onSolveAll={() => runCommand('simulation.solve-all', commandCtx)}
           availablePipeClasses={availablePipeClasses}
           catalogPipeClasses={pipeClasses}
           projectRulesLoaded={projectRulesLoaded}

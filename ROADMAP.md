@@ -23,13 +23,13 @@ Items move between releases as priorities change.
   * **Concept:** Give the 3-way temperature control valve a sensing pin on each of its 3 ports.
   * **Today:** it has only 2 sensing pin options.
 
-- [ ] **🔀 Switch Cases from the Data List Header**
+- [x] **🔀 Switch Cases from the Data List Header**
   * **Concept:** In the Cases, Measurements and Relief tabs of the data list, selecting a case header switches to that case.
 
-- [ ] **▶️ Solve All Cases Button in the Data List**
+- [x] **▶️ Solve All Cases Button in the Data List**
   * **Concept:** Add the Solve all cases button back to the Cases, Measurements and Relief tabs of the data list, at the top right and with the same styling as the Auto sort button.
 
-- [ ] **🎯 Scroll the Data List to the Selected Item**
+- [x] **🎯 Scroll the Data List to the Selected Item**
   * **Concept:** When a pipe or piece of equipment is selected on the canvas and its data list tab (Pipes or Equipment) is open, the list scrolls to that item.
 
 - [x] **🐛 Bug: Pipe Class Selection in Project Settings Not Saved**
@@ -54,6 +54,40 @@ Items move between releases as priorities change.
   * **Steps:** with a drawing with content open, switch to a drawing with an empty canvas, then switch back.
   * **Today:** the empty canvas opens as it should, but the original drawing is now empty too and its content is lost.
   * **Expected:** the original drawing keeps its content.
+
+---
+
+## 0.2.2
+
+
+### 📊 Analytics & Telemetry
+
+- [ ] **📏 Valve Results Chart (Differential Pressure & Flow vs. Cv Characteristic)**
+  * **Concept:** Switch the Results tab chart for control valves and regulators (`linear_control_valve`, `linear_regulator`, `remote_control_valve`) from an absolute pressure envelope ($P_{\text{in}}$ or $P_{\text{out}}$ in bara/psia) to an interactive, dual-mode performance chart with a toggle button:
+    1. **$\Delta P$ vs. Flow ($Q$) mode:** Hydraulic resistance curve at current opening vs. wide-open limit curve ($\Delta P_{\text{100\%}}$), operating point $(Q_{\text{op}}, \Delta P_{\text{op}})$, and flow capacity headroom.
+    2. **Flow ($Q$) vs. $C_v$ mode:** Valve travel characteristic with $C_v$ on the X-axis (from 0 to $C_{v,\max}$, representing 0% to 100% opening) and Flow $Q$ on the Y-axis under the current operating $\Delta P_{\text{op}}$, pinpointing the operating point $(C_{v,\text{op}}, Q_{\text{op}})$ along the sizing and controllability range.
+  * **Today:** The chart converts backend differential pressures into absolute pressures ($P_{\text{in}}$ or $P_{\text{out}}$), assuming a fixed boundary pressure upstream or downstream. At high operating pressures (e.g. 50 bara), small valve pressure drops (e.g. 0.5 bar) appear virtually flat. Furthermore, the curve sample grid cuts off at $2 \times Q_{\text{op}}$, so when a valve is throttled low (e.g. 15% opening), the 100% full-open operating capacity is clipped off-screen. There is no visualization of flow vs. valve $C_v$ / travel.
+  * **Change:**
+    1. **Chart View Switcher Button:** Add a compact toggle button group (e.g. `ΔP – Flow` / `Flow – Cv`) in the Results card header to easily switch between the hydraulic loss curve and the sizing travel curve.
+    2. **Mode 1 ($\Delta P$ vs. Flow $Q$):**
+       - **Y-Axis:** Valve differential pressure $\Delta P$ in display units (`labels.pressureDiff`, e.g. bar or psi) starting from 0.
+       - **Curves:** Current opening resistance $\Delta P_{\text{current}}(Q)$, wide-open body limit $\Delta P_{\text{100\%}}(Q)$, operating point cross marker $(Q_{\text{op}}, \Delta P_{\text{op}})$, and a horizontal dashed headroom vector from $(Q_{\text{op}}, \Delta P_{\text{op}})$ to $(Q_{\text{max, 100\%}}, \Delta P_{\text{op}})$.
+       - **Flow Range:** Extended in `valve_curves()` to span from 0 to $\max(2 \times Q_{\text{op}}, 1.25 \times Q_{\text{max, 100\%}})$.
+    3. **Mode 2 (Flow $Q$ vs. $C_v$ / Travel):**
+       - **X-Axis:** Valve flow coefficient $C_v$ from 0 to $C_{v,\max}$ (0% to 100% travel), with dual tick markers indicating opening percentage.
+       - **Y-Axis:** Flow rate $Q$ in display units (`labels.flow`, e.g. L/min, m³/h, US gpm) from 0 to $Q_{\text{max, 100\%}}$.
+       - **Curve:** Flow $Q(C_v)$ through the valve across the travel range under the current solved $\Delta P_{\text{op}}$, computed using the IEC 60534-2-1 formulation with Reynolds factor $F_R$.
+       - **Operating Point:** Highlighted operating marker at $(C_{v,\text{op}}, Q_{\text{op}})$, clearly indicating whether the valve operates in the recommended control band (20%–80%) or risks poor control (<20%) or saturation (>80%).
+    4. **Telemetry & Result Table Additions:**
+       - $\Delta P$ across the valve (`formatDiffPressurePa`).
+       - Max flow at current $\Delta P$ ($Q_{\text{max, 100\%}}$).
+       - Valve capacity utilization %: $Q_{\text{op}} / Q_{\text{max, 100\%}}$ (flow headroom indicator).
+       - Cavitation / choked flow alert indicator when $\Delta P \ge F_L^2 (P_1 - F_F P_v)$ (IEC 60534-2-1).
+  * **Implementation notes:** 
+    - Frontend: `frontend/src/components/details/ValveDetails.jsx` (view toggle state, dual Recharts configurations) and `ValveDetails.test.jsx`.
+    - Backend: `backend/services/simulation_service.py` (`valve_curves` returning extended flow points and $C_v$ grid points) and `backend/tests/scenarios/test_valve_curves.py`.
+    - Component docs: `backend/simulation/equipment/{linear_control_valve,linear_regulator,remote_control_valve}.md`.
+  * **Engineering Value:** Delivers a complete valve evaluation tool: the $\Delta P$ chart shows hydraulic system loss and wide-open flow capacity, while the $C_v$ chart gives immediate insight into valve sizing quality, travel margin, and throttling authority.
 
 ---
 

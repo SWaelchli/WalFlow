@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
+import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 import DataList from './DataList';
 import { UnitProvider } from '../../context/UnitContext';
 import { UNIT_SYSTEMS } from '../../utils/converters';
@@ -68,8 +68,10 @@ describe('results toolbar and case columns', () => {
     const toolbar = document.querySelector('.datalist-toolbar');
     expect(!!screen.queryByLabelText('Filter list')).toBe(hasControls);
     expect(!!screen.queryByRole('button', { name: 'Auto sort' })).toBe(hasControls);
-    expect(toolbar.querySelectorAll('button').length).toBe(hasControls ? 1 : 0);
-    expect(screen.queryByRole('button', { name: /New case|Case manager|Solve all|Export CSV|Switch/i })).toBeNull();
+    // Auto sort on the list tabs, Solve all cases on the case tabs: one toolbar button either way
+    expect(!!screen.queryByRole('button', { name: 'Solve all cases' })).toBe(!hasControls);
+    expect(toolbar.querySelectorAll('button').length).toBe(1);
+    expect(screen.queryByRole('button', { name: /New case|Case manager|Export CSV|Switch/i })).toBeNull();
   });
 
   it.each(['Cases', 'Relief'])('%s tab marks the active case column with aria-current and has no Switch button or Active badge', (tab) => {
@@ -84,6 +86,332 @@ describe('results toolbar and case columns', () => {
     expect(current[0].textContent + (current[0].querySelector('input')?.value ?? '')).toMatch(/Case 2/);
     expect(screen.queryByRole('button', { name: /Switch/ })).toBeNull();
     expect(screen.queryByText('Active')).toBeNull();
+  });
+});
+
+describe('case column headers and Solve all cases', () => {
+  const instrumentNodes = [
+    { id: 'psv', type: 'pressure_safety_valve', position: { x: 0, y: 0 }, data: { label: 'PSV-1', set_pressure_barg: 5 } },
+    { id: 'mp', type: 'measure_point', position: { x: 0, y: 0 }, data: { label: 'TAP-1' } },
+    { id: 'i', type: 'instrument', position: { x: 0, y: 80 }, data: { label: 'PIT 1', variable: 'P', pressure_basis: 'gauge' } },
+  ];
+  const signal = [{ id: 's', source: 'mp', sourceHandle: 'signal-inlet-0', target: 'i', targetHandle: 'signal-in', data: { type: 'SIGNAL' } }];
+  const mkCase = (id, name, extra = {}) => ({ id, name, overrides: { nodes: {} }, kpis: {}, telemetry: { nodes: {}, edges: {}, relief: {} }, ...extra });
+  const caseList = [mkCase('case_base', 'Case 1', { is_base: true }), mkCase('case_2', 'Case 2'), mkCase('case_3', 'Case 3')];
+
+  const mount = (tab, props = {}) => {
+    const handlers = { onSelectCase: vi.fn(), onSolveAll: vi.fn(), onDeleteCase: vi.fn() };
+    render(
+      <UnitProvider initialUnitSystem={UNIT_SYSTEMS.METRIC}>
+        <DataList nodes={instrumentNodes} edges={signal} rawNodes={instrumentNodes} rawEdges={signal} cases={caseList} activeCaseId="case_2"
+          onSelectNode={vi.fn()} onSelectEdge={vi.fn()} {...handlers} {...props} />
+      </UnitProvider>
+    );
+    fireEvent.click(screen.getByRole('button', { name: tab }));
+    return handlers;
+  };
+  const header = (name) => screen.getByTitle(`Switch to case "${name}"`);
+
+  describe.each(['Cases', 'Relief', 'Measurements'])('%s tab', (tab) => {
+    it('a header of another case selects it by click, Enter and Space', () => {
+      const { onSelectCase } = mount(tab);
+      fireEvent.click(header('Case 1'));
+      expect(onSelectCase).toHaveBeenLastCalledWith('case_base');
+      header('Case 3').focus();
+      fireEvent.keyDown(header('Case 3'), { key: 'Enter' });
+      expect(onSelectCase).toHaveBeenLastCalledWith('case_3');
+      fireEvent.keyDown(header('Case 1'), { key: ' ' });
+      expect(onSelectCase).toHaveBeenLastCalledWith('case_base');
+      expect(onSelectCase).toHaveBeenCalledTimes(3);
+    });
+
+    it('the header of the active case is inert: not focusable, no switch tooltip, selects nothing', () => {
+      const { onSelectCase } = mount(tab);
+      const active = document.querySelector('th[aria-current="true"]');
+      expect(active.textContent + (active.querySelector('input')?.value ?? '')).toMatch(/Case 2/);
+      expect(active.hasAttribute('tabindex')).toBe(false);
+      expect(active.title).not.toMatch(/Switch to case/);
+      fireEvent.click(active);
+      fireEvent.keyDown(active, { key: 'Enter' });
+      expect(onSelectCase).not.toHaveBeenCalled();
+    });
+  });
+
+  it.each([
+    ['Cases', 'case_base', 'active', 'default'],   // the base case cannot be dragged
+    ['Cases', 'case_2', 'active', 'grab'],         // a draggable case keeps its grab cursor even when active
+    ['Cases', 'case_2', 'Case 3', 'pointer'],
+    ['Relief', 'case_2', 'active', 'default'],
+    ['Measurements', 'case_2', 'Case 1', 'pointer'],
+  ])('%s tab, active %s: the %s header has cursor %s', (tab, activeCaseId, which, cursor) => {
+    mount(tab, { activeCaseId });
+    const th = which === 'active' ? document.querySelector('th[aria-current="true"]') : header(which);
+    expect(th.style.cursor).toBe(cursor);
+  });
+
+  describe('batch feedback', () => {
+    const solved = (id, name, extra = {}) => mkCase(id, name, {
+      ...extra,
+      telemetry: { nodes: { mp: { inlets: [{ pressure: 201325 }] } }, edges: {}, relief: {} },
+    });
+    const solvedCases = [solved('case_base', 'Case 1', { is_base: true }), solved('case_2', 'Case 2')];
+    const noRelief = instrumentNodes.slice(1);
+    afterEach(() => vi.unstubAllGlobals());
+
+    // Starts a batch through the command list, the path that still starts one, and leaves the fetch pending or failed
+    const startBatch = async (tab, fetchMock, props = {}) => {
+      vi.stubGlobal('fetch', fetchMock);
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      const commandsRef = { current: null };
+      mount(tab, { commandsRef, cases: solvedCases, ...props });
+      await act(async () => { commandsRef.current.solveAll(); });
+    };
+    const failing = () => vi.fn(() => Promise.resolve({ ok: false, status: 500 }));
+    const pending = () => vi.fn(() => new Promise(() => {}));
+
+    it.each([
+      ['Cases', {}],
+      ['Relief', {}],
+      ['Relief', { nodes: noRelief, rawNodes: noRelief }],
+      ['Measurements', {}],
+    ])('a failed batch shows its error on the %s tab %j', async (tab, props) => {
+      await startBatch(tab, failing(), props);
+      expect(screen.getByRole('alert').textContent).toMatch(/Batch server error \(500\)/);
+      expect(screen.queryByRole('status')).toBeNull();
+    });
+
+    it.each(['Cases', 'Relief', 'Measurements'])('a running batch shows the solving status on the %s tab', async (tab) => {
+      await startBatch(tab, pending());
+      expect(screen.getByRole('status').textContent).toMatch(/Running batch simulations/);
+      expect(screen.queryByRole('alert')).toBeNull();
+    });
+
+    it.each([['Relief', 'PSV-1'], ['Measurements', 'PIT 1']])('the %s tab keeps its existing results visible while a batch runs', async (tab, text) => {
+      await startBatch(tab, pending());
+      expect(screen.getByRole('status')).toBeTruthy();
+      expect(screen.getByText(text)).toBeTruthy();
+    });
+  });
+
+  it('Cases tab: the name input switches case but keeps its element and focus; keys typed in it do not switch', () => {
+    const { onSelectCase } = mount('Cases');
+    const input = screen.getAllByLabelText('Case name')[0];
+    input.focus();
+    fireEvent.click(input);
+    expect(onSelectCase).toHaveBeenCalledWith('case_base');
+    expect(screen.getAllByLabelText('Case name')[0]).toBe(input);
+    expect(document.body.contains(input)).toBe(true);
+    expect(document.activeElement).toBe(input);
+
+    onSelectCase.mockClear();
+    fireEvent.keyDown(input, { key: ' ' });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(onSelectCase).not.toHaveBeenCalled();
+  });
+
+  it('Cases tab: the delete button in a header does not switch case', () => {
+    const { onSelectCase } = mount('Cases');
+    fireEvent.click(screen.getAllByLabelText('Delete this operating case')[0]);
+    expect(onSelectCase).not.toHaveBeenCalled();
+  });
+
+  it('Solve all cases calls onSolveAll and uses the same button style as Auto sort', () => {
+    const { onSolveAll } = mount('Cases');
+    const button = screen.getByRole('button', { name: 'Solve all cases' });
+    expect(button.classList.contains('btn-secondary')).toBe(true);
+    expect(button.classList.contains('btn-compact')).toBe(true);
+    fireEvent.click(button);
+    expect(onSolveAll).toHaveBeenCalledTimes(1);
+  });
+
+  it('Solve all cases is disabled while a batch solve is running', () => {
+    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})));
+    try {
+      // The button only calls onSolveAll; a batch started through the command list is what the button reflects
+      const commandsRef = { current: null };
+      mount('Cases', { commandsRef });
+      expect(screen.getByRole('button', { name: 'Solve all cases' }).disabled).toBe(false);
+      act(() => { commandsRef.current.solveAll(); });
+      expect(screen.getByRole('button', { name: 'Solve all cases' }).disabled).toBe(true);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+});
+
+describe('scroll to the selected row', () => {
+  // jsdom has no layout: the box spans y 100..300 (200 px high), the thead is 40 px, so rows show between 140 and 300
+  const ROW_TOP = { A: 200, B: 400, C: 110 };
+  const ROW_H = 30;
+  const scrollTops = new WeakMap();
+  const saved = {};
+  const emptyRect = { top: 0, bottom: 0, height: 0, left: 0, right: 0, width: 0 };
+
+  beforeEach(() => {
+    saved.rect = Element.prototype.getBoundingClientRect;
+    saved.scrollTop = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollTop');
+    saved.clientHeight = Object.getOwnPropertyDescriptor(Element.prototype, 'clientHeight');
+    saved.offsetHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight');
+    Element.prototype.getBoundingClientRect = function rect() {
+      if (this.classList?.contains('matrix-scroll-container')) return { ...emptyRect, top: 100, bottom: 300, height: 200 };
+      const name = this.tagName === 'TR' ? this.querySelector('input')?.value : null;
+      const top = name ? ROW_TOP[name.slice(-1)] : undefined;
+      return top === undefined ? emptyRect : { ...emptyRect, top, bottom: top + ROW_H, height: ROW_H };
+    };
+    Object.defineProperty(Element.prototype, 'scrollTop', { configurable: true, get() { return scrollTops.get(this) ?? 0; }, set(v) { scrollTops.set(this, v); } });
+    Object.defineProperty(Element.prototype, 'clientHeight', { configurable: true, get() { return 200; } });
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, get() { return 40; } });
+  });
+  afterEach(() => {
+    Element.prototype.getBoundingClientRect = saved.rect;
+    Object.defineProperty(Element.prototype, 'scrollTop', saved.scrollTop);
+    Object.defineProperty(Element.prototype, 'clientHeight', saved.clientHeight);
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', saved.offsetHeight);
+    localStorage.clear();
+  });
+
+  const box = () => document.querySelector('.matrix-scroll-container');
+  // Three rows per tab: row-A is in view, row-B is below the box, row-C is hidden under the thead
+  const build = (tab, selected, data = {}, reversed = false) => {
+    const ids = reversed ? ['C', 'B', 'A'] : ['A', 'B', 'C'];
+    if (tab === 'Pipes') {
+      return {
+        nodes,
+        edges: ids.map((x) => ({ id: `e${x}`, source: 'n1', target: 'n2', selected: selected.includes(x), data: { type: 'PIPE', label: `row-${x}`, length_m: 25, diameter_m: 0.1, ...data } })),
+      };
+    }
+    return {
+      nodes: ids.map((x) => ({ id: `n${x}`, type: 'tank', position: { x: 0, y: 0 }, selected: selected.includes(x), data: { label: `row-${x}`, ...data } })),
+      edges: [],
+    };
+  };
+  const tree = (tab, selected, data, reversed, isBoxSelecting = false) => {
+    const g = build(tab, selected, data, reversed);
+    return (
+      <UnitProvider initialUnitSystem={UNIT_SYSTEMS.METRIC}>
+        <DataList nodes={g.nodes} edges={g.edges} rawNodes={g.nodes} rawEdges={g.edges} onUpdateEdge={vi.fn()} onUpdateNode={vi.fn()} onSelectNode={vi.fn()} onSelectEdge={vi.fn()} isBoxSelecting={isBoxSelecting} />
+      </UnitProvider>
+    );
+  };
+  // Opens the tab with a scrolled list; the selection changes afterwards through rerender
+  const open = (tab, selected = [], reversed = false) => {
+    const view = render(tree(tab, selected, undefined, reversed));
+    if (tab === 'Equipment') fireEvent.click(screen.getByRole('button', { name: 'Equipment' }));
+    box().scrollTop = 100;
+    return view;
+  };
+
+  it.each([
+    ['Pipes', 'A', 100],  // fully visible: untouched
+    ['Pipes', 'B', 230],  // below: its bottom edge (430) is brought to the box bottom (300)
+    ['Pipes', 'C', 70],   // under the thead: its top (110) is brought to the thead bottom (140)
+    ['Equipment', 'A', 100],
+    ['Equipment', 'B', 230],
+    ['Equipment', 'C', 70],
+  ])('%s tab: selecting row-%s leaves scrollTop at %i', (tab, row, expected) => {
+    const { rerender } = open(tab);
+    rerender(tree(tab, [row]));
+    expect(box().scrollTop).toBe(expected);
+  });
+
+  it('a selection hidden by the filter does not scroll and leaves the filter alone', () => {
+    const { rerender } = open('Pipes');
+    fireEvent.change(screen.getByLabelText('Filter list'), { target: { value: 'row-a' } });
+    rerender(tree('Pipes', ['B']));
+    expect(screen.queryByDisplayValue('row-B')).toBeNull();
+    expect(box().scrollTop).toBe(100);
+    expect(screen.getByLabelText('Filter list').value).toBe('row-a');
+  });
+
+  it('with several selected, the newly added one is the target', () => {
+    const { rerender } = open('Pipes', ['A']);
+    rerender(tree('Pipes', ['A', 'B']));
+    expect(box().scrollTop).toBe(230);
+  });
+
+  it('the same selection in a reordered nodes/edges array does not scroll', () => {
+    const { rerender } = open('Pipes', ['B']);
+    expect(box().scrollTop).toBe(100);
+    rerender(tree('Pipes', ['B'], undefined, true));
+    expect(box().scrollTop).toBe(100);
+  });
+
+  it('removing one id from a multi-selection does not scroll', () => {
+    const { rerender } = open('Pipes', ['A', 'B']);
+    rerender(tree('Pipes', ['A']));
+    expect(box().scrollTop).toBe(100);
+  });
+
+  it('several ids added at once target the first of them in list order', () => {
+    // list order is C, B, A: C (under the thead, 70) wins over B (below, 230)
+    const { rerender } = open('Pipes', [], true);
+    rerender(tree('Pipes', ['B', 'C'], undefined, true));
+    expect(box().scrollTop).toBe(70);
+  });
+
+  it('when the first added row is hidden by the filter, the next visible one is the target', () => {
+    const { rerender } = open('Pipes');
+    fireEvent.change(screen.getByLabelText('Filter list'), { target: { value: 'row-b' } });
+    rerender(tree('Pipes', ['A', 'B']));
+    expect(box().scrollTop).toBe(230);
+  });
+
+  it('opening the Equipment tab with a row selected scrolls to it', () => {
+    render(tree('Equipment', ['B']));
+    fireEvent.click(screen.getByRole('button', { name: 'Equipment' }));
+    expect(box().scrollTop).toBe(130);
+  });
+
+  it('a list mounted with a row already selected scrolls to it', () => {
+    render(tree('Pipes', ['B']));
+    expect(box().scrollTop).toBe(130);
+  });
+
+  it('a re-render with the same selection but new data does not scroll again', () => {
+    const { rerender } = open('Pipes');
+    rerender(tree('Pipes', ['B']));
+    expect(box().scrollTop).toBe(230);
+    box().scrollTop = 0; // the user scrolled away
+    rerender(tree('Pipes', ['B'], { length_m: 40 }));
+    expect(box().scrollTop).toBe(0);
+  });
+
+  describe('while a box selection is dragged', () => {
+    it('the list stays put, and on release scrolls once to the first added row in list order', () => {
+      // list order is C, B, A: after release C (under the thead, 70) wins over B (below, 230) and A (visible, 100)
+      const { rerender } = open('Pipes', [], true);
+      rerender(tree('Pipes', ['B'], undefined, true, true));
+      rerender(tree('Pipes', ['B', 'C'], undefined, true, true));
+      rerender(tree('Pipes', ['A', 'B', 'C'], undefined, true, true));
+      expect(box().scrollTop).toBe(100);
+      rerender(tree('Pipes', ['A', 'B', 'C'], undefined, true, false));
+      expect(box().scrollTop).toBe(70);
+    });
+
+    it('a gesture that ends with nothing added relative to before it does not scroll', () => {
+      const { rerender } = open('Pipes', ['A']);
+      rerender(tree('Pipes', ['A', 'B', 'C'], undefined, false, true));
+      rerender(tree('Pipes', ['A'], undefined, false, true));
+      rerender(tree('Pipes', ['A'], undefined, false, false));
+      expect(box().scrollTop).toBe(100);
+    });
+
+    it('after release, a re-render with the same selection and new data does not scroll again', () => {
+      const { rerender } = open('Pipes');
+      rerender(tree('Pipes', ['B'], undefined, false, true));
+      rerender(tree('Pipes', ['B'], undefined, false, false));
+      expect(box().scrollTop).toBe(230);
+      box().scrollTop = 0;
+      rerender(tree('Pipes', ['B'], { length_m: 40 }, false, false));
+      expect(box().scrollTop).toBe(0);
+    });
+  });
+
+  it('a collapsed panel does not scroll', () => {
+    localStorage.setItem('walflow_datalist_panel', JSON.stringify({ collapsed: true }));
+    const { rerender } = render(tree('Pipes', []));
+    rerender(tree('Pipes', ['B']));
+    expect(box()?.scrollTop ?? 0).toBe(0);
   });
 });
 

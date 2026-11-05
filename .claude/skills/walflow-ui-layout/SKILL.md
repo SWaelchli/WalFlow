@@ -146,6 +146,7 @@ Only view controls belong on the canvas. Commands that change the drawing go thr
 - Tabs: Pipes, Equipment, Cases, Relief, Measurements (short labels; the full title is the tooltip). Labels never
   wrap; at narrow widths the tab strip scrolls.
 - Toolbar on the right holds only view controls of the active tab (filter, auto sort); commands live in their menus.
+  One exception: Cases, Relief and Measurements also show Solve all cases, which runs the Simulation menu's command.
   When it does not fit beside the tabs it wraps onto its own row, never clipped. Hidden while the panel is collapsed.
 - Collapsible to its tab strip; size and collapsed state are remembered (`usePanelHeight`). Its height is clamped
   so the canvas keeps its minimum height.

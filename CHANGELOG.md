@@ -17,6 +17,11 @@ All notable changes to the WälFlow project will be documented in this file.
 - **Simulation service layer**: moved the telemetry, KPI and result helpers into `services/simulation_service.py`, with one network build helper, so the WebSocket router no longer depends on the HTTP router.
 - **Code hygiene**: eliminated dead scratch tests, obsolete React hooks, unused CSS rules, and unified equipment defaults.
 
+### Features
+- **Switch cases from the data list**: selecting a case header in the Cases, Relief or Measurements tab makes that case active.
+- **Solve all cases in the data list**: the Cases, Relief and Measurements tabs have a Solve all cases button again.
+- **Data list follows the selection**: selecting a pipe or piece of equipment scrolls the open Pipes or Equipment tab to its row.
+
 ### Fixes
 - **Local Docker build**: the documented `deploy/docker-compose.local.yml` command finds its build context again.
 - **Collaboration errors**: a server fault while joining a diagram is logged in full and no longer reported as a sign-in problem.

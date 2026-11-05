@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { confirmDialog } from '../../utils/dialogs';
 import { componentLabel } from '../../constants/componentLabels';
 import { NEUTRAL_TYPES } from '../../utils/networkValidation';
@@ -22,6 +22,7 @@ import { computeCaseInputHashes, isCaseResultStale } from '../../utils/resultHas
 
 
 import { clickableProps, clickableRowProps } from '../../utils/a11yProps';
+import { caseHeaderProps } from '../../utils/caseHeaderProps';
 
 // Short tab labels; the full title is the accessible name and the tooltip
 // Column highlight of the active operating case
@@ -68,6 +69,25 @@ const autoSortLogic = (nodes, edges) => {
   edges.forEach(e => { if (!visitedEdges.has(e.id)) { ordered.push({ type: 'edge', id: e.id }); visitedEdges.add(e.id); } });
   return ordered;
 };
+
+// Shared by the Cases, Relief and Measurements tabs: the solving state or the batch error, one rendering for all three
+function BatchStatus({ isLoading, error }) {
+  if (isLoading) {
+    return (
+      <div role="status" style={{ padding: 'var(--space-xl)', color: 'var(--color-text-secondary)', fontSize: 'var(--fs-base)', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-md)' }}>
+        <SpinnerIcon size={14} color="var(--color-text-secondary)" /> Running batch simulations across all operating cases...
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div role="alert" style={{ margin: 'var(--space-md) var(--space-lg)', padding: 'var(--space-md) var(--space-lg)', color: 'var(--color-danger-text)', background: 'var(--color-danger-tint)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-danger-border)' }}>
+        <strong>Batch Simulation Error:</strong> {error}
+      </div>
+    );
+  }
+  return null;
+}
 
 function SortHeader({ label, sortKey, sortConfig, requestSort, align = 'left' }) {
   const isSorted = sortConfig.key === sortKey;
@@ -204,7 +224,10 @@ export default function DataList({
   catalogPipeClasses = [],
   projectRulesLoaded = true,
   allowCustomPipes = true,
-  commandsRef
+  commandsRef,
+  onSelectCase,
+  isBoxSelecting = false,
+  onSolveAll
 }) {
   const { labels, isImperial, unitSystem, pressureBasis, lminToDisplay, formatPressure, formatDiffPressure, formatPressureGauge, formatFlow, formatFlowM3s, formatPower, formatTemperatureK, formatVelocity } = useUnits();
 
@@ -506,6 +529,79 @@ export default function DataList({
     return items;
   }, [manualOrder, nodes, edges, activeTab, filterText, sortConfig]);
 
+  // Rows by id, so the selected row is found without building a selector from an id
+  const rowRefs = useRef(new Map());
+  const scrollRef = useRef(null);
+  const processedRef = useRef(processedItems);
+  processedRef.current = processedItems;
+  const prevSelectedRef = useRef({ tab: null, ids: [], collapsed: false });
+  const manualOrderRef = useRef(manualOrder);
+  manualOrderRef.current = manualOrder;
+  const pendingScrollRef = useRef(null);
+  // Bring a row fully into view under the sticky header; false when the row is not rendered
+  const scrollRowIntoView = (id) => {
+    const row = rowRefs.current.get(id);
+    const box = scrollRef.current;
+    if (!row || !box) return false;
+    const headH = box.querySelector('thead')?.offsetHeight || 0;
+    const boxRect = box.getBoundingClientRect();
+    const rowRect = row.getBoundingClientRect();
+    const top = boxRect.top + headH;
+    const bottom = boxRect.top + box.clientHeight;
+    if (rowRect.top < top) box.scrollTop -= top - rowRect.top;
+    else if (rowRect.bottom > bottom) box.scrollTop += rowRect.bottom - bottom;
+    return true;
+  };
+  const isRowTab = activeTab === 'pipes' || activeTab === 'all';
+  // Ids selected on the canvas that belong to the open tab, sorted so a reorder of nodes/edges does not change the key
+  const selectedKey = useMemo(() => {
+    if (!isRowTab) return '';
+    const ids = activeTab === 'pipes'
+      ? edges.filter(e => e.selected && e.data?.type !== 'SIGNAL').map(e => e.id)
+      : nodes.filter(n => n.selected && n.type !== 'text_bubble' && n.type !== 'note').map(n => n.id);
+    return JSON.stringify(ids.sort());
+  }, [isRowTab, activeTab, nodes, edges]);
+
+  // First of the given ids that is in the visible list, in list order (filter-hidden rows are not in it)
+  const firstVisibleInListOrder = (idSet) => processedRef.current.find(i => idSet.has(i.id))?.id;
+
+  // Scroll to a newly selected row when the selection grows, or when the tab opens or the panel is expanded
+  // (all selected then count as new). Removing a selection never scrolls.
+  // While a box selection is being dragged the baseline stays frozen, so on release every id caught counts as added.
+  useEffect(() => {
+    if (isBoxSelecting) return;
+    const ids = selectedKey ? JSON.parse(selectedKey) : [];
+    const prev = prevSelectedRef.current;
+    prevSelectedRef.current = { tab: activeTab, ids, collapsed: panel.collapsed };
+    pendingScrollRef.current = null;
+    if (ids.length === 0 || panel.collapsed) return;
+    const prevSet = new Set(prev.tab === activeTab && !prev.collapsed ? prev.ids : []);
+    const added = ids.filter(id => !prevSet.has(id));
+    if (added.length === 0) return;
+    const addedSet = new Set(added);
+    const targetId = firstVisibleInListOrder(addedSet);
+    if (targetId !== undefined) {
+      scrollRowIntoView(targetId);
+    } else if (added.some(id => !manualOrderRef.current.some(item => item.id === id))) {
+      // None rendered and some not in the row list yet (it is filled after nodes/edges arrive): retry when the list changes.
+      // All known but hidden by the filter: leave the list alone.
+      pendingScrollRef.current = addedSet;
+    }
+  }, [selectedKey, activeTab, panel.collapsed, isBoxSelecting]);
+
+  // Complete a scroll that found no row yet, once a row appears
+  useEffect(() => {
+    const idSet = pendingScrollRef.current;
+    if (!idSet || panel.collapsed) return;
+    const targetId = firstVisibleInListOrder(idSet);
+    if (targetId !== undefined) {
+      scrollRowIntoView(targetId);
+      pendingScrollRef.current = null;
+    } else if ([...idSet].every(id => manualOrder.some(item => item.id === id))) {
+      pendingScrollRef.current = null;
+    }
+  }, [processedItems, manualOrder, panel.collapsed]);
+
   const selectTab = (tab) => {
     if (panel.collapsed) panel.setCollapsed(false);
     setActiveTab(tab);
@@ -606,22 +702,26 @@ export default function DataList({
                 Auto sort
               </button>
             </>
-          ) : null}
+          ) : (
+            <button
+              type="button"
+              onClick={onSolveAll}
+              disabled={isBatchLoading}
+              title={isBatchLoading ? 'Cases are being solved' : 'Solve every operating case'}
+              className="btn-secondary btn-compact"
+            >
+              Solve all cases
+            </button>
+          )}
         </div>
         )}
       </div>
 
-      <div className="matrix-scroll-container" style={{ flexGrow: 1, overflowY: 'auto', overflowX: 'auto', maxWidth: '100%', display: 'block' }}>
+      <div ref={scrollRef} className="matrix-scroll-container" style={{ flexGrow: 1, overflowY: 'auto', overflowX: 'auto', maxWidth: '100%', display: 'block' }}>
         {activeTab === 'cases' ? (
           <div style={{ display: 'inline-block', minWidth: '100%', boxSizing: 'border-box', verticalAlign: 'top' }}>
-            {isBatchLoading ? (
-              <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--color-text-secondary)', fontSize: 'var(--fs-base)', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                <SpinnerIcon size={14} color="var(--color-text-secondary)" /> Running batch simulations across all operating cases...
-              </div>
-            ) : batchError ? (
-              <div style={{ padding: '16px', color: 'var(--color-danger-text)', background: '#fef2f2', borderRadius: '8px', border: '1px solid #fee2e2' }}>
-                <strong>Batch Simulation Error:</strong> {batchError}
-              </div>
+            {isBatchLoading || batchError ? (
+              <BatchStatus isLoading={isBatchLoading} error={batchError} />
             ) : (
               <table style={{ width: '100%', height: 'max-content', borderCollapse: 'collapse', fontSize: 'var(--fs-xs)', textAlign: 'left', tableLayout: 'auto' }}>
                 <thead>
@@ -633,10 +733,12 @@ export default function DataList({
                       const isBase = c.is_base;
                       const isActive = caseId === activeCaseId;
                       const inputWidth = Math.max(65, Math.min(220, (caseName.length || 6) * 8 + 14));
+                      const headerProps = caseHeaderProps({ caseId, caseName, isActive, onSelectCase, draggable: !isBase });
 
                       return (
                         <th 
                           key={caseId}
+                          {...headerProps}
                           aria-current={isActive ? 'true' : undefined}
                           draggable={!isBase}
                           onDragStart={(e) => onCaseDragStart(e, colIdx)}
@@ -647,7 +749,7 @@ export default function DataList({
                             background: isActive ? ACTIVE_CASE_BG : 'inherit',
                             borderLeft: caseDragOverIdx === colIdx ? '3px solid var(--color-primary)' : '1px solid var(--color-border)',
                             opacity: caseDragIdx === colIdx ? 0.5 : 1,
-                            cursor: isBase ? 'default' : 'grab',
+                            ...headerProps.style,
                             verticalAlign: 'middle',
                             whiteSpace: 'nowrap'
                           }}
@@ -680,7 +782,8 @@ export default function DataList({
                             {isBase && <span style={{ fontSize: 'var(--fs-xs)', fontWeight: '800', color: 'var(--color-brand-dark)' }}>(Base)</span>}
                             {!isBase && onDeleteCase && (
                               <button aria-label="Delete this operating case"
-                                onClick={async () => {
+                                onClick={async (e) => {
+                                  e.stopPropagation();
                                   const ok = await confirmDialog({
                                     title: 'Delete case?',
                                     message: `Delete case "${caseName}"?`,
@@ -797,16 +900,13 @@ export default function DataList({
           </div>
         ) : activeTab === 'measurements' ? (
           <div style={{ display: 'inline-block', minWidth: '100%', boxSizing: 'border-box', verticalAlign: 'top' }}>
-            {batchError && (
-              <div style={{ margin: '8px 12px', padding: '8px 12px', color: 'var(--color-danger-text)', background: '#fef2f2', borderRadius: '8px', border: '1px solid #fee2e2' }}>
-                <strong>Batch Simulation Error:</strong> {batchError}
-              </div>
-            )}
+            <BatchStatus isLoading={isBatchLoading} error={batchError} />
             <MeasurementsTable
               nodes={rawNodes || nodes}
               edges={rawEdges || edges}
               cases={displayCases}
               activeCaseId={activeCaseId}
+              onSelectCase={onSelectCase}
               onSelectNode={onSelectNode}
               onUpdateNode={onUpdateNode}
               caseInputHashes={caseInputHashes}
@@ -817,6 +917,7 @@ export default function DataList({
           </div>
         ) : activeTab === 'relief' ? (
           <div style={{ display: 'inline-block', minWidth: '100%', boxSizing: 'border-box', verticalAlign: 'top' }}>
+            <BatchStatus isLoading={isBatchLoading} error={batchError} />
             {reliefDevices.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--color-text-secondary)', fontSize: 'var(--fs-base)', fontWeight: '600' }}>
                 ℹ No Pressure Safety Valves or Rupture Discs in the current diagram. Drag a PSV or Rupture Disc from the sidebar onto the canvas to enable relief contingency analysis.
@@ -837,8 +938,9 @@ export default function DataList({
                     {displayCases.map(c => {
                       const caseId = c.id || c.case_id;
                       const isActive = caseId === activeCaseId;
+                      const headerProps = caseHeaderProps({ caseId, caseName: c.name || c.case_name || '', isActive, onSelectCase });
                       return (
-                        <th key={caseId} aria-current={isActive ? 'true' : undefined} style={{ padding: '6px 12px', verticalAlign: 'middle', minWidth: '160px', background: isActive ? ACTIVE_CASE_BG : 'inherit', borderLeft: '1px solid var(--color-border)', whiteSpace: 'nowrap' }}>
+                        <th key={caseId} {...headerProps} aria-current={isActive ? 'true' : undefined} style={{ ...headerProps.style, padding: '6px 12px', verticalAlign: 'middle', minWidth: '160px', background: isActive ? ACTIVE_CASE_BG : 'inherit', borderLeft: '1px solid var(--color-border)', whiteSpace: 'nowrap' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'nowrap', whiteSpace: 'nowrap' }}>
                             <span>{c.name || c.case_name} {c.is_base ? '(Base)' : ''}</span>
                             {isCaseResultStale(c, caseInputHashes) && (
@@ -1116,7 +1218,7 @@ export default function DataList({
               const hoverBg = item.selected ? '#FFEAD1' : '#F0F4F4';
 
               return (
-                <tr {...clickableRowProps} key={item.id} draggable={!sortConfig.key && !isEditing} onDragStart={(e) => onDragStart(e, entry.originalIndex)}
+                <tr {...clickableRowProps} key={item.id} ref={(el) => { if (el) rowRefs.current.set(item.id, el); else rowRefs.current.delete(item.id); }} draggable={!sortConfig.key && !isEditing} onDragStart={(e) => onDragStart(e, entry.originalIndex)}
                   onDragOver={(e) => onDragOver(e, entry.originalIndex)} onDrop={(e) => onDrop(e, entry.originalIndex)}
                   onClick={() => handleRowClick(entry)}
                   style={{ 

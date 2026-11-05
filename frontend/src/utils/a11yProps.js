@@ -1,6 +1,8 @@
 // Keyboard support for elements that react to clicks but are not native buttons.
 const activate = (e) => {
   if (e.target !== e.currentTarget) return;
+  // A modified key is a shortcut (Ctrl+Enter runs the simulation), not an activation
+  if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
   if (e.key === 'Enter' || e.key === ' ') {
     e.preventDefault();
     e.currentTarget.click();

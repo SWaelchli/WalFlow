@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { notify } from '../../utils/dialogs';
 import { useUnits } from '../../context/UnitContext';
 import { clickableProps } from '../../utils/a11yProps';
+import { caseHeaderProps } from '../../utils/caseHeaderProps';
 import { getCaseTelemetrySet } from '../../utils/case_resolver';
 import { isCaseResultStale } from '../../utils/resultHash';
 import {
@@ -37,7 +38,7 @@ const locationText = (inst, nodes, edges) => {
  * so it shows which case trips an alarm. Limits are stored on the instrument, so they are the same in every case.
  */
 export default function MeasurementsTable({
-  nodes = [], edges = [], cases = [], activeCaseId, onSelectNode, onUpdateNode,
+  nodes = [], edges = [], cases = [], activeCaseId, onSelectCase, onSelectNode, onUpdateNode,
   caseInputHashes = {}, telemetryMode = 'mitigated', globalSettings, isImperial,
 }) {
   const { flowUnit } = useUnits();
@@ -104,8 +105,10 @@ export default function MeasurementsTable({
           {cases.map((c) => {
             const caseId = c.id || c.case_id;
             const isActive = caseId === activeCaseId;
+            const headerProps = caseHeaderProps({ caseId, caseName: c.name || c.case_name || '', isActive, onSelectCase });
             return (
-              <th key={caseId} aria-current={isActive ? 'true' : undefined} style={{ ...th, minWidth: '140px', background: isActive ? ACTIVE_BG : 'inherit', borderLeft: '1px solid var(--color-border)' }}>
+              <th key={caseId} {...headerProps}
+                aria-current={isActive ? 'true' : undefined} style={{ ...th, ...headerProps.style, minWidth: '140px', background: isActive ? ACTIVE_BG : 'inherit', borderLeft: '1px solid var(--color-border)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span>{c.name || c.case_name} {c.is_base ? '(Base)' : ''}</span>
                   {isCaseResultStale(c, caseInputHashes) && (
