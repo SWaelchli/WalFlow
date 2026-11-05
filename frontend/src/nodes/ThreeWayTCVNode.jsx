@@ -5,6 +5,13 @@ import { SensingPin } from '../components/canvas/SensingPin';
 import BaseNode from './BaseNode';
 import NodeReadout from './NodeReadout';
 import { useUnits } from '../context/UnitContext';
+import { PIN_TIP, PIN_LENGTH } from '../utils/junctionLayout';
+import { boundaryFooterOffset } from '../utils/boundaryLayout';
+
+const INLET_1_PIN_ANGLE = 45;
+const INLET_1_PIN_RAD = (INLET_1_PIN_ANGLE * Math.PI) / 180;
+// The angled inlet 2 needle, in the shape boundaryFooterOffset reads, so the readout drops below its head
+const PIN_LAYOUT = { width: 60, height: 60, ports: [{ id: 'inlet-1', x: 30, y: 60, pinAngle: INLET_1_PIN_ANGLE }] };
 
 /**
  * 3-Way Temperature Control Valve (ISA PFD Style)
@@ -30,6 +37,7 @@ export default function ThreeWayTCVNode({ id, data, selected }) {
       selected={selected}
       width={60}
       height={60}
+      footerOffset={boundaryFooterOffset(PIN_LAYOUT, rotation, sensing)}
       footer={
         <NodeReadout
           name={data.label || '3-WAY TCV'}
@@ -100,7 +108,16 @@ export default function ThreeWayTCVNode({ id, data, selected }) {
           background: 'var(--color-inlet)', width: '8px', height: '8px' 
         }} 
       />
-      {sensing['inlet-1'] && <SensingPin portId="inlet-1" offset={{ x: 0, y: 25 }} />}
+      {/* The bottom port sits on the symbol's base, so its needle leans down-right, clear of the symbol (as on a junction) */}
+      {sensing['inlet-1'] && (
+        <SensingPin
+          portId="inlet-1"
+          angle={INLET_1_PIN_ANGLE}
+          length={PIN_LENGTH}
+          rotation={rotation}
+          offset={{ x: Math.cos(INLET_1_PIN_RAD) * PIN_TIP, y: 30 + Math.sin(INLET_1_PIN_RAD) * PIN_TIP }}
+        />
+      )}
       
       <Handle 
         type="source" 

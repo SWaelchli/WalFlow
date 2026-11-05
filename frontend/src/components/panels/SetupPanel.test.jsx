@@ -302,6 +302,27 @@ describe('flow boundary inspector', () => {
   });
 });
 
+describe('sensing toggles name the ports', () => {
+  const sensingButtons = () => {
+    const heading = screen.getByText(/Sensing nodes/);
+    return [...heading.parentElement.querySelectorAll('button[aria-pressed]')];
+  };
+
+  it('three-way TCV offers Inlet 1, Inlet 2, Outlet and Inlet 2 writes sensing["inlet-1"]', () => {
+    const onUpdate = renderNodePanel({ id: 'v1', type: 'three_way_tcv', data: { label: 'TCV' } });
+    const buttons = sensingButtons();
+    expect(buttons.map((b) => b.textContent.trim())).toEqual(['Inlet 1', 'Inlet 2', 'Outlet']);
+    expect(buttons.every((b) => b.getAttribute('aria-pressed') === 'false')).toBe(true);
+    fireEvent.click(buttons[1]);
+    expect(onUpdate).toHaveBeenCalledWith('v1', { sensing: { 'inlet-1': true } });
+  });
+
+  it.each(['check_valve', 'centrifugal_pump'])('%s offers Inlet and Outlet', (type) => {
+    renderNodePanel({ id: 'n1', type, data: { label: 'N' } });
+    expect(sensingButtons().map((b) => b.textContent.trim())).toEqual(['Inlet', 'Outlet']);
+  });
+});
+
 describe('flow boundary with several ports', () => {
   const renderWithEdges = (node, allEdges = []) => {
     const onUpdate = vi.fn();

@@ -89,6 +89,8 @@ export default function CustomEquipmentNode({ id, data, selected }) {
 }
 ```
 
+**Sensing pin toggles and labels:** the inspector (`SetupPanel.jsx`) offers one sensing toggle per role port, taken from `sensingPortsFor(type)` in `frontend/src/utils/portLabels.js` (default `['inlet-0', 'outlet-0']`; role-port types only, neutral types list their `port-k` ids in `SetupPanel.jsx`). If the component has more role ports, such as the 3-way TCV's `inlet-1`, add them to `ROLE_SENSING_PORTS` there. Labels come from `sensingPinLabel(type, handle)`: "Inlet" / "Outlet" when there is one port of that role, "Inlet 1" / "Inlet 2" when there are several, and "Port N" for neutral ports. Never show raw handle ids such as `outlet-0` to the user.
+
 ### 1b. Neutral-port components
 
 A component built on `InlineNode` (see backend Archetype 1) has no inlet or outlet. Reference: `frontend/src/nodes/OrificeNode.jsx`.

@@ -22,7 +22,8 @@ import InstrumentSetup from './InstrumentSetup';
 
 
 import { clickableProps } from '../../utils/a11yProps';
-import { portNumberLabel } from '../../utils/portLabels';
+import { portNumberLabel, sensingPortLabel, sensingPortsFor } from '../../utils/portLabels';
+
 const FLOW_SPLIT_OPTIONS = [
   ['common_pressure', 'Calculate flow per port based on equal pressure'],
   ['total_split', 'Distribute flow equally between ports'],
@@ -392,8 +393,8 @@ export default function SetupPanel({
 
   const sensingPorts = type === 'junction' ? junctionPortIds(junctionPortCount(data))
     : isBoundaryType ? junctionPortIds(boundaryPortCount(data))
-    : NEUTRAL_TYPES.has(type) ? ['port-0', 'port-1'] : ['inlet-0', 'outlet-0'];
-  const sensingLabel = (portId) => (portId.startsWith('port-') ? portNumberLabel(Number(portId.slice(5))).toUpperCase() : portId.toUpperCase());
+    : NEUTRAL_TYPES.has(type) ? ['port-0', 'port-1'] : sensingPortsFor(type);
+  const sensingLabel = (portId) => sensingPortLabel(portId, sensingPorts);
 
   const handleSensingToggle = (portId) => {
     const sensing = data.sensing || {};
@@ -503,6 +504,7 @@ export default function SetupPanel({
                 {sensingPorts.map(portId => (
                   <button
                     key={portId}
+                    aria-pressed={!!data.sensing?.[portId]}
                     onClick={() => handleSensingToggle(portId)}
                     style={{
                       fontSize: 'var(--fs-xs)', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer',

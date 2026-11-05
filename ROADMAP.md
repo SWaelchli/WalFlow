@@ -15,11 +15,7 @@ Items move between releases as priorities change.
 
 ## 0.2.1
 
-- [ ] **💤 Stagnant Sections in the User Interface**
-  * **Concept:** Show ports and pipes that the solver marks `stagnant: true` (sections shut in by a stopped PD pump, a check valve without flow or a closed relief device, see Undefined Pressure in Stagnant Branches) on the canvas and in the results, so a zero-flow branch reads as shut in rather than as a result.
-  * **Today:** the flag is in the telemetry; the frontend does not show it.
-
-- [ ] **🌡️ Sensing Pins on All Three 3-Way TCV Ports**
+- [x] **🌡️ Sensing Pins on All Three 3-Way TCV Ports**
   * **Concept:** Give the 3-way temperature control valve a sensing pin on each of its 3 ports.
   * **Today:** it has only 2 sensing pin options.
 
@@ -243,6 +239,10 @@ Items move between releases as priorities change.
 - [ ] **🌡️ Temperature in Stagnant Sections**
   * **Concept:** Define the temperature of a section shut in at zero flow explicitly, as the pressure already is (see Undefined Pressure in Stagnant Branches).
   * **Today (2026-10-20):** ports without flow take the temperature of their nearest live neighbour or boundary; a physically defined value (e.g. ambient after heat loss, or the leak-path temperature) is open.
+
+- [ ] **💤 Stagnant Sections in the User Interface**
+  * **Concept:** Mark ports and pipes that the solver flags `stagnant: true` (sections shut in by a stopped PD pump, a check valve without flow or a closed relief device, see Undefined Pressure in Stagnant Branches) with a "shut in" flag, and grey out their values in the data list, so an assumed zero-flow pressure and temperature do not read as calculated results.
+  * **Today (2026-11-05):** the flag is in the telemetry; the frontend does not show it. Do together with Temperature in Stagnant Sections.
 
 ### 📊 Analytics & Telemetry
 

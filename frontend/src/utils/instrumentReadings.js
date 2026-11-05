@@ -2,7 +2,7 @@
 // Values and alarm limits are kept in fixed base units: bar (gauge or absolute), bar, L/min, °C, m/s, cSt.
 import { barToPsi, psiToBar, lminToGpm, gpmToLmin, lminToM3h, m3hToLmin, cToF, fToC, msToFts, ftsToMs, FLOW_UNITS, DEFAULT_ATM_PA, pressureBasisLabel, flowUnitLabel } from './converters';
 import { nextNumberedTag } from './autoTag';
-import { portNumberLabel } from './portLabels';
+import { portNumberLabel, sensingPinLabel } from './portLabels';
 import { NEUTRAL_TYPES } from './networkValidation';
 
 export const INSTRUMENT_VARIABLES = {
@@ -54,14 +54,14 @@ export const instrumentInput = (instrumentId, edges, targetHandle = 'signal-in')
   return pin ? { nodeId: edge.source, ...pin } : null;
 };
 
-/** "Measurement Tap 1" for a tap's own pin, "P-101 · outlet 0" for a pin on a component; null when unwired. */
+/** "Measurement Tap 1" for a tap's own pin, "P-101 · Outlet" for a pin on a component; null when unwired. */
 export const describeInstrumentInput = (input, nodes) => {
   if (!input) return null;
   const host = nodes.find((n) => n.id === input.nodeId);
   const name = host?.data?.label || input.nodeId;
   if (host?.type === 'measure_point') return name;
   // A junction port is shown 1-based ("Port 3" for port-2), like the rest of the UI
-  const port = input.side === 'ports' ? portNumberLabel(input.idx) : input.handle.replace('-', ' ');
+  const port = input.side === 'ports' ? portNumberLabel(input.idx) : sensingPinLabel(host?.type, input.handle);
   return `${name} · ${port}`;
 };
 

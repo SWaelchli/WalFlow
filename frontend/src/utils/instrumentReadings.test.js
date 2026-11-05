@@ -79,9 +79,17 @@ describe('readInstrument', () => {
   });
 
   it('names a junction pin 1-based and a component pin by its handle', () => {
-    const nodes = [{ id: 'j', type: 'junction', data: { label: 'J-1' } }, { id: 'f', type: 'filter', data: { label: 'F-1' } }];
+    const nodes = [
+      { id: 'j', type: 'junction', data: { label: 'J-1' } },
+      { id: 'f', type: 'filter', data: { label: 'F-1' } },
+      { id: 'tcv', type: 'three_way_tcv', data: { label: 'TCV' } },
+    ];
+    const tcvEdges = ['inlet-0', 'inlet-1', 'outlet-0'].map((h) => (
+      { id: `t-${h}`, source: 'tcv', target: `t-${h}`, sourceHandle: `signal-${h}`, targetHandle: 'signal-in', data: { type: 'SIGNAL' } }));
     expect(describeInstrumentInput(instrumentInput('js', edges), nodes)).toBe('J-1 · Port 3');
-    expect(describeInstrumentInput(instrumentInput('d', edges), nodes)).toBe('F-1 · inlet 0');
+    expect(describeInstrumentInput(instrumentInput('d', edges), nodes)).toBe('F-1 · Inlet');
+    expect(['inlet-0', 'inlet-1', 'outlet-0'].map((h) => describeInstrumentInput(instrumentInput(`t-${h}`, tcvEdges), nodes)))
+      .toEqual(['TCV · Inlet 1', 'TCV · Inlet 2', 'TCV · Outlet']);
     expect(describeInstrumentInput(null, nodes)).toBeNull();
   });
 

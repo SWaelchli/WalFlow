@@ -21,6 +21,8 @@ All notable changes to the WälFlow project will be documented in this file.
 - **Switch cases from the data list**: selecting a case header in the Cases, Relief or Measurements tab makes that case active.
 - **Solve all cases in the data list**: the Cases, Relief and Measurements tabs have a Solve all cases button again.
 - **Data list follows the selection**: selecting a pipe or piece of equipment scrolls the open Pipes or Equipment tab to its row.
+- **Sensing pins on all 3-way TCV ports**: the 3-way TCV inspector offers a sensing pin on each of its three ports.
+- **Sensing pin labels**: the sensing pin buttons read "Inlet" and "Outlet" ("Inlet 1", "Inlet 2" where there are two) instead of "INLET-0" and "OUTLET-0".
 
 ### Fixes
 - **Local Docker build**: the documented `deploy/docker-compose.local.yml` command finds its build context again.

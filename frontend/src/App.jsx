@@ -17,7 +17,7 @@ import { validateNetwork, checkNewConnection, normalizeConnection, flipBoundaryE
 import { junctionLayout, junctionPortCount, PIN_TIP, PIN_LENGTH } from './utils/junctionLayout';
 import { boundaryLayout, boundaryPortCount, BOUNDARY_PORT_TYPES } from './utils/boundaryLayout';
 import { summarizeStats, deriveRunState } from './utils/runStatus';
-import { portNumberLabel } from './utils/portLabels';
+import { sensingPinLabel } from './utils/portLabels';
 import { MIN_ZOOM, fitDiagram, fitWhenDrawn, sameViewport } from './utils/canvasFit';
 import RunBanners from './components/overlays/RunBanners';
 import 'reactflow/dist/style.css'; 
@@ -1748,7 +1748,7 @@ function WalFlowContent() {
       instrumentTarget: instrumentNode
         ? { nodeId: instrumentNode.id, pins: instrumentPinsOf(instrumentNode), isTap: instrumentNode.type === 'measure_point' }
         : null,
-      pinLabel: (port) => (port.startsWith('port-') ? portNumberLabel(Number(port.slice(5))) : port.replace('-', ' ')),
+      pinLabel: (port) => sensingPinLabel(instrumentNode?.type, port),
       tapTarget: tapEdge ? {
         edgeId: tapEdge.id,
         canTap: canInsertTap(tapEdge),
