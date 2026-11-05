@@ -182,6 +182,14 @@ export function findPipeClass(pipeClasses, classId) {
   return list.find(c => c.id === classId) || list.find(c => c.code === classId) || null;
 }
 
+/** Text of the disabled option that keeps a pipe's class when the project does not offer it. */
+export function unavailablePipeClassLabel(shownCode, classId, catalogPipeClasses) {
+  if (!catalogPipeClasses || catalogPipeClasses.length === 0) return `[${shownCode}]`;
+  return findPipeClass(catalogPipeClasses, classId)
+    ? `[${shownCode}] not allowed in this project`
+    : `[${shownCode}] not in catalogue`;
+}
+
 /**
  * How a pipe's sizing is shown in the inspector and the DataList.
  * Pipes without a class reference show as Manual; pipes without a stored

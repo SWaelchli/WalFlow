@@ -31,5 +31,7 @@ All notable changes to the WälFlow project will be documented in this file.
 - **New drawings**: a drawing created in the Project Manager starts empty instead of copying the open canvas.
 - **Project pipe classes after a reload**: restoring a drawing now reloads its project, so the allowed pipe classes and the custom dimensions setting apply again, and the next click can no longer overwrite the saved selection.
 - **Project settings for members**: only project owners can edit project settings in the sidebar; other members see them read-only instead of getting an error when they try to save.
+- **Pipe class labels**: a pipe whose class exists but is not allowed in the project now says "not allowed in this project" instead of "not in catalogue".
+- **Project pipe rules while loading**: until a project's settings have loaded, new pipes cannot be connected and pipe classes cannot be changed, so a forbidden class cannot slip in. If loading fails, Retry in Settings › Project tries again without a page reload.
 
 ---

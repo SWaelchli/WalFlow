@@ -113,7 +113,7 @@ import {
 } from './utils/case_resolver';
 
 import greetingCanvas from './data/GreetingCanvas.wlf';
-import { activeProjectFromDetail } from './utils/activeProject';
+import { activeProjectFromDetail, pipeConnectionBlockMessage } from './utils/activeProject';
 
 const nodeTypes = {
   tank: TankNode,
@@ -237,8 +237,8 @@ function WalFlowContent() {
     setCurrentPath(path);
   }, []);
 
-  const { fetchPipeClasses, availablePipeClasses, allowCustomPipes } = usePipeClasses(activeProject);
-  const { projectDetailsFailed } = useProjectDetails({ activeProject, setActiveProject, currentUser });
+  const { pipeClasses, fetchPipeClasses, availablePipeClasses, allowCustomPipes, projectRulesLoaded } = usePipeClasses(activeProject);
+  const { projectDetailsFailed, retryProjectDetails } = useProjectDetails({ activeProject, setActiveProject, currentUser });
   // Load the fitting catalogs (database) early: new pipes and reducers take their sizes from them
   useFittingStandards('pipe_schedule');
   useFittingStandards('reducer');
@@ -1107,6 +1107,14 @@ function WalFlowContent() {
       notify(PORT_TAKEN_MESSAGE, 'warning');
       return;
     }
+    // A new pipe takes its class from the project's rules, which must be loaded first
+    if (!isSignal) {
+      const blocked = pipeConnectionBlockMessage({ projectRulesLoaded, projectDetailsFailed, currentUser });
+      if (blocked) {
+        notify(blocked, 'warning');
+        return;
+      }
+    }
     const pipeData = isSignal ? {} : getDefaultPipeData(availablePipeClasses, allowCustomPipes);
 
     setEdges((eds) => {
@@ -1131,7 +1139,7 @@ function WalFlowContent() {
       return addEdge(newEdge, eds);
     });
     requestSnapshot();
-  }, [setEdges, edges, nodes, activeDiagram, hasLock, notifyReadOnly, availablePipeClasses, allowCustomPipes, requestSnapshot]);
+  }, [setEdges, edges, nodes, activeDiagram, hasLock, notifyReadOnly, availablePipeClasses, allowCustomPipes, projectRulesLoaded, projectDetailsFailed, currentUser, requestSnapshot]);
 
   // A port takes one pipe. The red handle while dragging comes from isValidConnection; the reason is
   // shown when the drag ends on a handle that was refused.
@@ -1898,6 +1906,7 @@ function WalFlowContent() {
           activeProject={activeProject}
           setActiveProject={setActiveProject}
           projectDetailsFailed={projectDetailsFailed}
+          onRetryProjectDetails={retryProjectDetails}
           activeDiagram={activeDiagram}
           setActiveDiagram={setActiveDiagram}
           saveStatus={saveStatus}
@@ -2255,6 +2264,8 @@ function WalFlowContent() {
           allEdges={styledEdges}
           unmitigatedTelemetry={unmitigatedTelemetry}
           availablePipeClasses={availablePipeClasses}
+          catalogPipeClasses={pipeClasses}
+          projectRulesLoaded={projectRulesLoaded}
           allowCustomPipes={allowCustomPipes}
           activeTab={inspectorTab}
           setActiveTab={setInspectorTab}
@@ -2285,6 +2296,8 @@ function WalFlowContent() {
           runSimulation={runChecked}
           commandsRef={resultsCommandsRef}
           availablePipeClasses={availablePipeClasses}
+          catalogPipeClasses={pipeClasses}
+          projectRulesLoaded={projectRulesLoaded}
           allowCustomPipes={allowCustomPipes}
         />
       }

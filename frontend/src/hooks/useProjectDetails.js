@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { activeProjectFromDetail } from '../utils/activeProject';
 
@@ -8,6 +8,8 @@ import { activeProjectFromDetail } from '../utils/activeProject';
  */
 export function useProjectDetails({ activeProject, setActiveProject, currentUser }) {
   const [failedProjectId, setFailedProjectId] = useState(null);
+
+  const [attempt, setAttempt] = useState(0);
 
   const projectId = activeProject?.id;
   const userId = currentUser?.id;
@@ -28,10 +30,18 @@ export function useProjectDetails({ activeProject, setActiveProject, currentUser
         setFailedProjectId(projectId);
       });
     return () => { superseded = true; };
-  }, [projectId, userId, detailsMissing, setActiveProject]);
+  }, [projectId, userId, detailsMissing, setActiveProject, attempt]);
 
   const projectDetailsFailed = !!projectId && failedProjectId === projectId && detailsMissing;
-  return { projectDetailsFailed };
+
+  // Clears the failure and lets the effect above send one new request
+  const retryProjectDetails = useCallback(() => {
+    if (!projectDetailsFailed) return;
+    setFailedProjectId(null);
+    setAttempt(n => n + 1);
+  }, [projectDetailsFailed]);
+
+  return { projectDetailsFailed, retryProjectDetails };
 }
 
 export default useProjectDetails;

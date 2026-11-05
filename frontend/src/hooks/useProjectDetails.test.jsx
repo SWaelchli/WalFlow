@@ -24,8 +24,8 @@ const deferred = () => {
 
 const harness = (initial, user = USER) => renderHook(({ currentUser }) => {
   const [activeProject, setActiveProject] = useState(initial);
-  const { projectDetailsFailed } = useProjectDetails({ activeProject, setActiveProject, currentUser });
-  return { activeProject, setActiveProject, projectDetailsFailed };
+  const { projectDetailsFailed, retryProjectDetails } = useProjectDetails({ activeProject, setActiveProject, currentUser });
+  return { activeProject, setActiveProject, projectDetailsFailed, retryProjectDetails };
 }, { initialProps: { currentUser: user } });
 
 beforeEach(() => {
@@ -114,5 +114,38 @@ describe('useProjectDetails', () => {
     await waitFor(() => expect(result.current.projectDetailsFailed).toBe(true));
     act(() => result.current.setActiveProject(draft('p2')));
     expect(result.current.projectDetailsFailed).toBe(false);
+  });
+
+  describe('retryProjectDetails', () => {
+    it('makes exactly one more request, clears the failure while loading, then holds the details', async () => {
+      const d = deferred();
+      axios.get.mockRejectedValueOnce({ response: { status: 500 } }).mockReturnValueOnce(d.promise);
+      const { result } = harness(draft('p1'));
+      await waitFor(() => expect(result.current.projectDetailsFailed).toBe(true));
+      act(() => result.current.retryProjectDetails());
+      await waitFor(() => expect(axios.get).toHaveBeenCalledTimes(2));
+      expect(result.current.projectDetailsFailed).toBe(false);
+      await act(async () => { d.resolve({ data: detail('p1', [1]) }); });
+      expect(result.current.activeProject.members).toEqual(MEMBERS);
+      expect(result.current.projectDetailsFailed).toBe(false);
+      expect(axios.get).toHaveBeenCalledTimes(2);
+    });
+
+    it('reports a second failure without looping', async () => {
+      axios.get.mockRejectedValue({ response: { status: 500 } });
+      const { result } = harness(draft('p1'));
+      await waitFor(() => expect(result.current.projectDetailsFailed).toBe(true));
+      act(() => result.current.retryProjectDetails());
+      await waitFor(() => expect(axios.get).toHaveBeenCalledTimes(2));
+      await waitFor(() => expect(result.current.projectDetailsFailed).toBe(true));
+      await act(async () => { await new Promise((r) => setTimeout(r, 30)); });
+      expect(axios.get).toHaveBeenCalledTimes(2);
+    });
+
+    it('makes no request when nothing has failed', async () => {
+      const { result } = harness(complete('p1', [1]));
+      await act(async () => { result.current.retryProjectDetails(); });
+      expect(axios.get).not.toHaveBeenCalled();
+    });
   });
 });

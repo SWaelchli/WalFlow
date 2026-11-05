@@ -356,6 +356,45 @@ describe('pipe rows', () => {
   });
 });
 
+describe('pipe class label and project rules', () => {
+  const CLASS = { id: 7, code: 'CS01', name: 'Carbon', roughness_mm: 0.045, sizes: [
+    { dn: 50, nps: '2', sch: 'STD', od_mm: 60.3, wt_mm: 3.91 }, { dn: 80, nps: '3', sch: 'STD', od_mm: 88.9, wt_mm: 5.49 },
+  ] };
+  const classPipe = { id: 'e1', source: 'n1', target: 'n2', data: { type: 'PIPE', label: 'Pipe 1', length_m: 25, pipe_class_id: 7, pipe_class_code: 'CS01', standardDn: 50, standardSch: 'STD', diameter_m: 0.0525 } };
+  const manualPipe = { ...classPipe, data: { ...classPipe.data, pipe_class_id: 'manual', pipe_class_code: 'CUSTOM' } };
+  const renderPipe = (edge, props) => render(
+    <UnitProvider initialUnitSystem={UNIT_SYSTEMS.METRIC}>
+      <DataList nodes={nodes} edges={[edge]} rawNodes={nodes} rawEdges={[edge]} onUpdateEdge={vi.fn()} onSelectNode={vi.fn()} onSelectEdge={vi.fn()} {...props} />
+    </UnitProvider>
+  );
+
+  it.each([
+    ['in the catalogue but not allowed in the project', [CLASS], '[CS01] not allowed in this project'],
+    ['not in a loaded catalogue', [{ ...CLASS, id: 8, code: 'OTHER' }], '[CS01] not in catalogue'],
+    ['catalogue not loaded', [], '[CS01]'],
+  ])('a pipe whose class is %s keeps its value as a disabled option with the right text', (_n, catalog, text) => {
+    renderPipe(classPipe, { catalogPipeClasses: catalog, availablePipeClasses: [] });
+    const option = screen.getByRole('option', { name: text });
+    expect(option.disabled).toBe(true);
+    expect(screen.getByRole('combobox', { name: 'Pipe 1 pipe class' }).value).toBe(option.value);
+  });
+
+  it.each([
+    ['class pipe, rules not loaded', classPipe, false, true, true],
+    ['manual pipe, rules not loaded', manualPipe, false, true, true],
+    ['class pipe, rules loaded', classPipe, true, false, true],
+    ['manual pipe, rules loaded', manualPipe, true, false, false],
+  ])('class, size and schedule selects: %s', (_n, edge, loaded, disabled, scheduleDisabled) => {
+    renderPipe(edge, { catalogPipeClasses: [CLASS], availablePipeClasses: [CLASS], projectRulesLoaded: loaded });
+    expect(screen.getByRole('combobox', { name: 'Pipe 1 pipe class' }).disabled).toBe(disabled);
+    expect(screen.getByRole('combobox', { name: 'Pipe 1 nominal size' }).disabled).toBe(disabled);
+    expect(screen.getByRole('combobox', { name: 'Pipe 1 nominal size' }).value).toBe('50');
+    const schedule = screen.getByRole('combobox', { name: 'Pipe 1 schedule' });
+    expect(schedule.disabled).toBe(scheduleDisabled || disabled);
+    expect(schedule.value).toBe('STD');
+  });
+});
+
 describe('two-port neutral component row', () => {
   const rowCells = (p0Flow) => {
     const port = (flow_rate, pressure, temperature) => ({ flow_rate, pressure, temperature });

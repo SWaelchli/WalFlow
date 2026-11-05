@@ -12,7 +12,7 @@ import { useFittingStandards } from '../../hooks/useFittingStandards';
 import { updateCaseOverride, effectiveForcedState } from '../../utils/case_resolver';
 import { useUnits } from '../../context/UnitContext';
 import { BAR_TO_PA, absPaToDisplayPressure, formatAbsPressureFromBar } from '../../utils/converters';
-import { resolvePipeSelection, findPipeClass, manualSelectionPatch, classSelectionPatch, classSizePatch, schedulePatch, matchScheduleByInnerDiameter, nearestDnByInnerDiameter } from '../../utils/pipeDefaults';
+import { resolvePipeSelection, findPipeClass, manualSelectionPatch, classSelectionPatch, classSizePatch, schedulePatch, matchScheduleByInnerDiameter, nearestDnByInnerDiameter, unavailablePipeClassLabel } from '../../utils/pipeDefaults';
 import DraftNumberInput from '../common/DraftNumberInput';
 import MeasurementsTable from './MeasurementsTable';
 import { buildCsv, buildCsvFileName } from '../../utils/csvExport';
@@ -201,6 +201,8 @@ export default function DataList({
   onSetCaseOverride,
   runSimulation,
   availablePipeClasses = [],
+  catalogPipeClasses = [],
+  projectRulesLoaded = true,
   allowCustomPipes = true,
   commandsRef
 }) {
@@ -1157,8 +1159,8 @@ export default function DataList({
                           aria-label={`${rowLabel} nominal size`}
                           style={{ fontSize: 'var(--fs-xs)', padding: '2px 6px', height: '26px' }}
                           value={isCustomId ? '' : currentDn}
-                          disabled={currentClassId !== 'manual' && !selectedClass}
-                          title={currentClassId !== 'manual' && !selectedClass ? 'Pipe class not available: choose another pipe class to change the size.' : undefined}
+                          disabled={!projectRulesLoaded || (currentClassId !== 'manual' && !selectedClass)}
+                          title={!projectRulesLoaded ? 'Project settings are not loaded.' : currentClassId !== 'manual' && !selectedClass ? 'Pipe class not available: choose another pipe class to change the size.' : undefined}
                           onChange={(e) => { handleDnChange(e.target.value); }}
                           onFocus={() => { handleRowClick(entry); setIsEditing(true); }}
                           onBlur={() => setIsEditing(false)}
@@ -1187,8 +1189,8 @@ export default function DataList({
                           aria-label={`${rowLabel} schedule`}
                           style={{ fontSize: 'var(--fs-xs)', padding: '2px 6px', height: '26px' }}
                           value={currentSch}
-                          disabled={scheduleLocked}
-                          title={scheduleLocked ? 'Schedule is defined by the pipe class. Select Custom / Manual to change it.' : undefined}
+                          disabled={!projectRulesLoaded || scheduleLocked}
+                          title={!projectRulesLoaded ? 'Project settings are not loaded.' : scheduleLocked ? 'Schedule is defined by the pipe class. Select Custom / Manual to change it.' : undefined}
                           onChange={(e) => handleScheduleChange(e.target.value)}
                           onFocus={() => { handleRowClick(entry); setIsEditing(true); }}
                           onBlur={() => setIsEditing(false)}
@@ -1216,7 +1218,8 @@ export default function DataList({
                           aria-label={`${rowLabel} pipe class`}
                           style={{ fontSize: 'var(--fs-xs)', padding: '2px 6px', height: '26px', minWidth: '160px' }}
                           value={selectedClass ? selectedClass.id : currentClassId}
-                          onChange={(e) => handleClassChange(e.target.value)} 
+                          disabled={!projectRulesLoaded}
+                          onChange={(e) => handleClassChange(e.target.value)}
                           onFocus={() => { handleRowClick(entry); setIsEditing(true); }}
                           onBlur={() => setIsEditing(false)}
                           onPointerDown={(e) => e.stopPropagation()}
@@ -1229,7 +1232,7 @@ export default function DataList({
                           ))}
                           {!isNode && currentClassId !== 'manual' && !selectedClass && (
                             <option value={currentClassId} disabled>
-                              [{item.data.pipe_class_code || currentClassId}] not in catalogue
+                              {unavailablePipeClassLabel(item.data.pipe_class_code || currentClassId, currentClassId, catalogPipeClasses)}
                             </option>
                           )}
                           {(allowCustomPipes || currentClassId === 'manual') && (

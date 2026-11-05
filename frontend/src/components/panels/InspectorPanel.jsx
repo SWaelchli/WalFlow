@@ -23,6 +23,8 @@ export default function InspectorPanel({
   allEdges,
   unmitigatedTelemetry,
   availablePipeClasses = [],
+  catalogPipeClasses = [],
+  projectRulesLoaded = true,
   allowCustomPipes = true,
   activeTab = 'setup',
   setActiveTab
@@ -111,6 +113,8 @@ export default function InspectorPanel({
             activeCaseId={activeCaseId}
             onResetCaseOverride={onResetCaseOverride}
             availablePipeClasses={availablePipeClasses}
+            catalogPipeClasses={catalogPipeClasses}
+            projectRulesLoaded={projectRulesLoaded}
             allowCustomPipes={allowCustomPipes}
             allNodes={allNodes}
             allEdges={allEdges}

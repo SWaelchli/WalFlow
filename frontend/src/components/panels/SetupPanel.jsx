@@ -41,6 +41,8 @@ export default function SetupPanel({
   activeCaseId = 'case_base',
   onResetCaseOverride,
   availablePipeClasses = [],
+  catalogPipeClasses = [],
+  projectRulesLoaded = true,
   allowCustomPipes = true,
   allNodes = [],
   allEdges = [],
@@ -532,7 +534,9 @@ export default function SetupPanel({
                 {renderLabel('Pipe Class & Dimensions', 'diameter_m')}
                 <PipeSelector 
                   data={data} 
-                  availablePipeClasses={availablePipeClasses} 
+                  availablePipeClasses={availablePipeClasses}
+                  catalogPipeClasses={catalogPipeClasses}
+                  projectRulesLoaded={projectRulesLoaded}
                   allowCustomPipes={allowCustomPipes} 
                   onChange={(updates) => onUpdateEdge(id, updates)} // already SI, bypass fromInputValue
                 />

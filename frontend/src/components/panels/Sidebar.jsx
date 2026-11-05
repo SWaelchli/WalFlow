@@ -387,6 +387,7 @@ export default function Sidebar({
   activeProject,
   setActiveProject,
   projectDetailsFailed = false,
+  onRetryProjectDetails,
   activeDiagram,
   setActiveDiagram,
   markLoaded,
@@ -1208,15 +1209,27 @@ export default function Sidebar({
                         )}
                       </div>
 
-                      <p style={{ margin: 0, fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
-                        {projectDetailsFailed
-                          ? "Could not load this project's settings. Reload the page to try again."
-                          : !pipeClassesLoaded
-                          ? "Loading project pipe classes…"
-                          : !activeProject.allowed_pipe_classes
-                          ? "All pipe classes are active for this project."
-                          : `${activeProject.allowed_pipe_classes.length} of ${pipeClasses.length} pipe classes enabled.`}
-                      </p>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px' }}>
+                        <p style={{ margin: 0, fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
+                          {projectDetailsFailed
+                            ? "Could not load this project's settings."
+                            : !pipeClassesLoaded
+                            ? "Loading project pipe classes…"
+                            : !activeProject.allowed_pipe_classes
+                            ? "All pipe classes are active for this project."
+                            : `${activeProject.allowed_pipe_classes.length} of ${pipeClasses.length} pipe classes enabled.`}
+                        </p>
+                        {projectDetailsFailed && (
+                          <button
+                            type="button"
+                            onClick={onRetryProjectDetails}
+                            className="btn-secondary"
+                            style={{ height: '20px', fontSize: 'var(--fs-xs)', padding: '0 6px', borderRadius: '4px', backgroundColor: 'var(--color-surface-muted)', border: '1px solid var(--color-border)' }}
+                          >
+                            Retry
+                          </button>
+                        )}
+                      </div>
 
                       {/* Pipe class search filter */}
                       <div>

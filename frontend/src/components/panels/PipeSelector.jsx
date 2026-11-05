@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useUnits } from '../../context/UnitContext';
 import { mToIn } from '../../utils/converters';
-import { resolvePipeSelection, findPipeClass, matchScheduleByInnerDiameter, manualSelectionPatch, classSelectionPatch, classSizePatch, schedulePatch } from '../../utils/pipeDefaults';
+import { resolvePipeSelection, findPipeClass, matchScheduleByInnerDiameter, manualSelectionPatch, classSelectionPatch, classSizePatch, schedulePatch, unavailablePipeClassLabel } from '../../utils/pipeDefaults';
 import { getScheduleStandardOptions, getScheduleStandardName, getScheduleDataset, getScheduleBore, listSchedules, scheduleLabel, classScheduleCodes, classReducerCodes } from '../../utils/pipe_schedules';
 import { formatDnOption, normalizeReducerStandard, getReducerStandardOptions } from '../../utils/reducer_catalog';
 import { useFittingStandards } from '../../hooks/useFittingStandards';
@@ -12,7 +12,7 @@ import DraftNumberInput from '../common/DraftNumberInput';
  * (ASME B36.10M / B36.19M, DIN EN 10220 / EN ISO 1127), all read from the fitting catalog API.
  * Emits SI values (diameter_m in m, roughness_mm in mm).
  */
-const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPipes = true }) => {
+const PipeSelector = ({ data, onChange, availablePipeClasses = [], catalogPipeClasses = [], projectRulesLoaded = true, allowCustomPipes = true }) => {
   const { isImperial, gaugeLabel } = useUnits();
   const classList = availablePipeClasses || [];
   const scheduleOptions = getScheduleStandardOptions(useFittingStandards('pipe_schedule'));
@@ -75,6 +75,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
           className="form-select"
           style={{ width: '100%', height: '32px', fontSize: 'var(--fs-xs)' }}
           value={selectedClass ? selectedClass.id : currentClassId}
+          disabled={!projectRulesLoaded}
           onChange={(e) => handleClassChange(e.target.value)}
         >
           {classList.map(c => (
@@ -84,7 +85,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
           ))}
           {isUnknownClass && (
             <option value={currentClassId} disabled>
-              [{data.pipe_class_code || currentClassId}] not in catalogue
+              {unavailablePipeClassLabel(data.pipe_class_code || currentClassId, currentClassId, catalogPipeClasses)}
             </option>
           )}
           {(allowCustomPipes || isManual) && (
@@ -104,6 +105,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
               className="form-select"
               style={{ width: '100%', height: '32px', fontSize: 'var(--fs-xs)' }}
               value={currentDn}
+              disabled={!projectRulesLoaded}
               onChange={(e) => handleSpecSizeChange(e.target.value)}
             >
               {selectedClass.sizes.map(s => (
@@ -233,6 +235,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
                   style={{ width: '100%', height: '30px', fontSize: 'var(--fs-xs)' }}
                   value={scheduleStandard}
                   onChange={(e) => handleScheduleStandardChange(e.target.value)}
+                  disabled={!projectRulesLoaded}
                 >
                   {scheduleOptions.map(o => (
                     <option key={o.code} value={o.code}>{o.name}</option>
@@ -249,6 +252,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
                     style={{ width: '100%', height: '30px', fontSize: 'var(--fs-xs)' }}
                     value={currentDn}
                     onChange={(e) => handleManualPresetChange(e.target.value, currentSch)}
+                    disabled={!projectRulesLoaded}
                   >
                     {scheduleDataset.map(s => (
                       <option key={s.dn} value={s.dn}>
@@ -264,6 +268,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
                     style={{ width: '100%', height: '30px', fontSize: 'var(--fs-xs)' }}
                     value={currentSch}
                     onChange={(e) => handleManualPresetChange(currentDn, e.target.value)}
+                    disabled={!projectRulesLoaded}
                   >
                     {(currentSchedules.includes(currentSch) ? currentSchedules : [currentSch, ...currentSchedules]).map(schKey => (
                       <option key={schKey} value={schKey}>
@@ -283,6 +288,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
                       key={schKey}
                       type="button"
                       onClick={() => handleManualPresetChange(currentDn, schKey)}
+                      disabled={!projectRulesLoaded}
                       style={{
                         flex: 1,
                         padding: '2px 4px',
@@ -292,7 +298,8 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
                         border: isCurrent ? '1px solid var(--color-primary)' : '1px solid var(--color-border)',
                         backgroundColor: isCurrent ? 'rgba(250, 133, 7, 0.12)' : 'var(--color-surface-muted)',
                         color: isCurrent ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-                        cursor: 'pointer'
+                        cursor: projectRulesLoaded ? 'pointer' : 'not-allowed',
+                        opacity: projectRulesLoaded ? 1 : 0.6
                       }}
                     >
                       {scheduleLabel(schKey)}
@@ -327,6 +334,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], allowCustomPi
                 step="0.1"
                 className="form-input"
                 style={{ width: '100%' }}
+                disabled={!projectRulesLoaded}
                 displayValue={value > 0 ? (isImperial ? (value * 39.37007874).toFixed(3) : (value * 1000).toFixed(2)) : ''}
                 onCommit={(text) => {
                   const raw = parseFloat(text);

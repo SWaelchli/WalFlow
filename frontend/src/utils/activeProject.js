@@ -9,3 +9,11 @@ export function activeProjectFromDetail(detail) {
     members: detail.members,
   };
 }
+
+// Why a new pipe cannot be drawn yet: the project's pipe rules are not known. Null when they are.
+export function pipeConnectionBlockMessage({ projectRulesLoaded, projectDetailsFailed, currentUser }) {
+  if (projectRulesLoaded) return null;
+  if (!currentUser) return "Sign in to load this project's settings before connecting pipes.";
+  if (projectDetailsFailed) return "Could not load this project's settings. Use Retry in Settings › Project before connecting pipes.";
+  return "This project's settings are still loading. Try again in a moment.";
+}

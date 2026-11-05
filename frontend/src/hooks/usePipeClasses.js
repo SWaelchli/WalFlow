@@ -37,7 +37,10 @@ export function usePipeClasses(activeProject) {
     return activeProject.allow_custom_pipes !== false;
   }, [activeProject]);
 
-  return { pipeClasses, fetchPipeClasses, availablePipeClasses, allowCustomPipes };
+  // undefined means the project's details (and so its pipe class list) have not been loaded yet
+  const projectRulesLoaded = !activeProject || activeProject.allowed_pipe_classes !== undefined;
+
+  return { pipeClasses, fetchPipeClasses, availablePipeClasses, allowCustomPipes, projectRulesLoaded };
 }
 
 export default usePipeClasses;

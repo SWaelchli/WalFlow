@@ -97,12 +97,23 @@ describe('Sidebar project pipe classes', () => {
 
   it('a failed details load says so instead of "Loading", and stays read-only', async () => {
     const boxes = await openProjectPane(project({}), { projectDetailsFailed: true });
-    expect(screen.getByText("Could not load this project's settings. Reload the page to try again.")).toBeTruthy();
+    expect(screen.getByText("Could not load this project's settings.")).toBeTruthy();
     expect(screen.queryByText(/Loading project pipe classes/)).toBeNull();
     boxes.forEach((b) => expect(b.disabled).toBe(true));
     boxes[0].click();
     screen.getByRole('button', { name: 'No' }).click();
     expect(axios.put).not.toHaveBeenCalled();
+  });
+
+  it('a failed details load offers Retry, which calls back once and sends nothing; no Retry otherwise', async () => {
+    const onRetryProjectDetails = vi.fn();
+    await openProjectPane(project({}), { projectDetailsFailed: true, onRetryProjectDetails });
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(onRetryProjectDetails).toHaveBeenCalledTimes(1);
+    expect(axios.put).not.toHaveBeenCalled();
+    cleanup();
+    await openProjectPane(project({ members: OWNER, allowed_pipe_classes: null }), { projectDetailsFailed: false, onRetryProjectDetails });
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
   });
 
   const hintShown = () => screen.queryByText(HINT) || document.querySelector(`[title="${HINT}"]`);
