@@ -211,3 +211,40 @@ describe('boot with a stored draft that holds no usable drawing', () => {
     expect(localStorage.getItem('walflow_draft_gone')).toBe(raw);
   }, 40000);
 });
+
+describe('boot with a draft that belongs to a project', () => {
+  it('the restored project carries its saved pipe classes, not an implicit "all"', async () => {
+    const user = { id: 'u1', username: 'me', role: 'user' };
+    const classes = [1, 2].map((id) => ({ id, code: `C${id}`, name: `Class ${id}`, rating_class: 'R', material_grade: 'M', roughness_mm: 0.05 }));
+    const note = { id: 'note1', type: 'text_bubble', position: { x: 0, y: 0 }, data: { text: 'remember' } };
+    sessionStorage.setItem('walflow_tab_id', 'tab1');
+    resetTabIdCache();
+    localStorage.setItem('walflow_draft_tab1', JSON.stringify({
+      version: '0.2', nodes: [note], edges: [], globalSettings: {}, cases: [], timestamp: new Date().toISOString(),
+      active_project_id: 'p1', active_project_title: 'P',
+    }));
+    const originalGet = axios.get.getMockImplementation();
+    axios.get.mockImplementation((url) => {
+      if (url.includes('/api/auth/admin-status')) return Promise.resolve({ data: { admin_exists: true } });
+      if (url === '/api/auth/me') return Promise.resolve({ data: user });
+      if (url === '/api/pipe-classes') return Promise.resolve({ data: classes });
+      if (url === '/api/projects/p1') {
+        return Promise.resolve({ data: { id: 'p1', title: 'P', description: '', allowed_pipe_classes: [1], allow_custom_pipes: true, members: [{ user_id: 'u1', role: 'owner' }] } });
+      }
+      return originalGet(url);
+    });
+    try {
+      const { default: App } = await import('./App.jsx');
+      render(<App />);
+      const rail = await screen.findByRole('navigation', { name: 'Side panes' }, { timeout: 8000 });
+      fireEvent.click(Array.from(rail.querySelectorAll('button')).find((b) => b.getAttribute('aria-label') === 'Settings'));
+      fireEvent.click(await screen.findByRole('button', { name: 'Project' }));
+      await waitFor(() => {
+        const box = (code) => screen.getByText(`[${code}]`).closest('label').querySelector('input');
+        expect([box('C1').checked, box('C2').checked]).toEqual([true, false]);
+      }, { timeout: 8000 });
+    } finally {
+      axios.get.mockImplementation(originalGet);
+    }
+  }, 40000);
+});

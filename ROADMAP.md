@@ -32,7 +32,7 @@ Items move between releases as priorities change.
 - [ ] **🎯 Scroll the Data List to the Selected Item**
   * **Concept:** When a pipe or piece of equipment is selected on the canvas and its data list tab (Pipes or Equipment) is open, the list scrolls to that item.
 
-- [ ] **🐛 Bug: Pipe Class Selection in Project Settings Not Saved**
+- [x] **🐛 Bug: Pipe Class Selection in Project Settings Not Saved**
   * **Today:** the pipe classes selected in Project settings are not being saved.
 
 - [x] **🐛 Bug: New Drawing Opens with the Content of the Previous Drawing**
@@ -90,6 +90,11 @@ Items move between releases as priorities change.
   * **Concept:** Let users explicitly create a new drawing as a copy of an existing one. Every other new drawing starts empty.
   * **Today:** only the admin area has a duplicate action (`POST /api/admin/diagrams/{id}/duplicate`); regular users have none.
   * **Engineering Value:** Variants of a system can start from an existing drawing without redrawing it.
+
+- [ ] **🧰 Allowed Pipe Classes in the Project Manager**
+  * **Concept:** Let project owners change the allowed pipe classes in the Project Manager modal.
+  * **Today:** they can only be changed in the sidebar, under Settings › Project.
+  * **To decide:** whether the Project Manager adds to the sidebar control or replaces it.
 
 ### 🐛 Maintenance
 

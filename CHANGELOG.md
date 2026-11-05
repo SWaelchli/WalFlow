@@ -29,5 +29,7 @@ All notable changes to the WälFlow project will be documented in this file.
 - **Case comparison label**: "Total Pump Flow" is now "Sum of Pump Flows", because the value adds every pump and so counts pumps in series more than once.
 - **Switching drawings**: opening a drawing can no longer be cancelled by a validation problem on the current canvas, which left the old canvas showing under the new drawing, so the next edit saved it over that drawing. Cloud saves now also wait until an opened drawing has landed on the canvas.
 - **New drawings**: a drawing created in the Project Manager starts empty instead of copying the open canvas.
+- **Project pipe classes after a reload**: restoring a drawing now reloads its project, so the allowed pipe classes and the custom dimensions setting apply again, and the next click can no longer overwrite the saved selection.
+- **Project settings for members**: only project owners can edit project settings in the sidebar; other members see them read-only instead of getting an error when they try to save.
 
 ---

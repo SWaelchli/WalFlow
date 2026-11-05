@@ -9,6 +9,7 @@ import { CloudIcon, ExportIcon, TrashIcon, CrossIcon, PlusIcon } from '../symbol
 
 import { modalA11yRef } from '../../hooks/useModalA11y';
 import { clickableProps } from '../../utils/a11yProps';
+import { activeProjectFromDetail } from '../../utils/activeProject';
 const ProjectManagerModal = ({
   isOpen,
   onClose,
@@ -222,13 +223,7 @@ const ProjectManagerModal = ({
 
       // Link Active contexts
       if (setActiveProject) {
-        setActiveProject({
-          id: projectDetail.id,
-          title: projectDetail.title,
-          description: projectDetail.description,
-          allowed_pipe_classes: projectDetail.allowed_pipe_classes,
-          allow_custom_pipes: projectDetail.allow_custom_pipes !== false
-        });
+        setActiveProject(activeProjectFromDetail(projectDetail));
       }
 
       if (setActiveDiagram) {

@@ -17,6 +17,7 @@ import DraftNumberInput from '../common/DraftNumberInput';
 
 
 import { clickableProps } from '../../utils/a11yProps';
+import { activeProjectFromDetail } from '../../utils/activeProject';
 const categorizedEquipment = [
   {
     name: 'Boundaries',
@@ -385,6 +386,7 @@ export default function Sidebar({
   currentUser,
   activeProject,
   setActiveProject,
+  projectDetailsFailed = false,
   activeDiagram,
   setActiveDiagram,
   markLoaded,
@@ -476,14 +478,15 @@ export default function Sidebar({
     }
   }, [activeTab, settingsSubTab, fetchPipeClasses]);
 
+  // Owner only: a project without its members loaded (still loading) is read-only
   const isOwnerOfActiveProject = Boolean(
-    activeProject?.members
-      ? activeProject.members.some(m => m.user_id === currentUser?.id && m.role === 'owner')
-      : true
+    activeProject?.members?.some(m => m.user_id === currentUser?.id && m.role === 'owner')
   );
+  // undefined: the saved list has not arrived yet; null: all allowed; []: none
+  const pipeClassesLoaded = activeProject?.allowed_pipe_classes !== undefined;
 
   const handleTogglePipeClass = async (classId) => {
-    if (!activeProject) return;
+    if (!activeProject || !isOwnerOfActiveProject || !pipeClassesLoaded) return;
     setSavingPipeSpecs(true);
     try {
       // Allow-lists may hold class codes (older projects); toggle on ids so both forms are handled
@@ -506,10 +509,10 @@ export default function Sidebar({
       });
 
       if (setActiveProject) {
-        setActiveProject(prev => ({
+        setActiveProject(prev => (prev && prev.id === activeProject.id ? {
           ...prev,
           allowed_pipe_classes: res.data.allowed_pipe_classes
-        }));
+        } : prev));
       }
     } catch {
       notify("Failed to update the project pipe classes.", 'error');
@@ -519,7 +522,7 @@ export default function Sidebar({
   };
 
   const handleSetAllPipeClasses = async (enableAll) => {
-    if (!activeProject) return;
+    if (!activeProject || !isOwnerOfActiveProject || !pipeClassesLoaded) return;
     setSavingPipeSpecs(true);
     try {
       const finalAllowed = enableAll ? null : [];
@@ -527,10 +530,10 @@ export default function Sidebar({
         allowed_pipe_classes: finalAllowed
       });
       if (setActiveProject) {
-        setActiveProject(prev => ({
+        setActiveProject(prev => (prev && prev.id === activeProject.id ? {
           ...prev,
           allowed_pipe_classes: res.data.allowed_pipe_classes
-        }));
+        } : prev));
       }
     } catch {
       notify("Failed to update the project pipe classes.", 'error');
@@ -540,7 +543,7 @@ export default function Sidebar({
   };
 
   const handleSetAllowCustomPipes = async (allow) => {
-    if (!activeProject) return;
+    if (!activeProject || !isOwnerOfActiveProject || !pipeClassesLoaded) return;
     if ((activeProject.allow_custom_pipes !== false) === allow) return;
     setSavingPipeSpecs(true);
     try {
@@ -548,10 +551,10 @@ export default function Sidebar({
         allow_custom_pipes: allow
       });
       if (setActiveProject) {
-        setActiveProject(prev => ({
+        setActiveProject(prev => (prev && prev.id === activeProject.id ? {
           ...prev,
           allow_custom_pipes: res.data.allow_custom_pipes !== false
-        }));
+        } : prev));
       }
     } catch {
       notify("Failed to update custom dimensions setting.", 'error');
@@ -792,13 +795,7 @@ export default function Sidebar({
         if (project) {
           try {
             const freshProj = await axios.get(`/api/projects/${project.id}`);
-            setActiveProject({
-              id: freshProj.data.id,
-              title: freshProj.data.title,
-              description: freshProj.data.description,
-              allowed_pipe_classes: freshProj.data.allowed_pipe_classes,
-              allow_custom_pipes: freshProj.data.allow_custom_pipes !== false
-            });
+            setActiveProject(activeProjectFromDetail(freshProj.data));
           } catch {
             setActiveProject({
               id: project.id,
@@ -1187,7 +1184,7 @@ export default function Sidebar({
                         <h3 style={{ margin: 0, color: 'var(--color-primary-text)', fontSize: 'var(--fs-xs)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                           Available Pipe Classes
                         </h3>
-                        {isOwnerOfActiveProject && (
+                        {isOwnerOfActiveProject && pipeClassesLoaded && (
                           <div style={{ display: 'flex', gap: '4px' }}>
                             <button
                               type="button"
@@ -1212,7 +1209,11 @@ export default function Sidebar({
                       </div>
 
                       <p style={{ margin: 0, fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
-                        {!activeProject.allowed_pipe_classes
+                        {projectDetailsFailed
+                          ? "Could not load this project's settings. Reload the page to try again."
+                          : !pipeClassesLoaded
+                          ? "Loading project pipe classes…"
+                          : !activeProject.allowed_pipe_classes
                           ? "All pipe classes are active for this project."
                           : `${activeProject.allowed_pipe_classes.length} of ${pipeClasses.length} pipe classes enabled.`}
                       </p>
@@ -1246,7 +1247,7 @@ export default function Sidebar({
                               );
                             })
                             .map(pc => {
-                              const isAllowed = !activeProject.allowed_pipe_classes || activeProject.allowed_pipe_classes.includes(pc.id) || activeProject.allowed_pipe_classes.includes(pc.code);
+                              const isAllowed = pipeClassesLoaded && (!activeProject.allowed_pipe_classes || activeProject.allowed_pipe_classes.includes(pc.id) || activeProject.allowed_pipe_classes.includes(pc.code));
                               return (
                                 <label
                                   key={pc.id}
@@ -1267,7 +1268,7 @@ export default function Sidebar({
                                   <input
                                     type="checkbox"
                                     checked={isAllowed}
-                                    disabled={!isOwnerOfActiveProject || savingPipeSpecs}
+                                    disabled={!isOwnerOfActiveProject || !pipeClassesLoaded || savingPipeSpecs}
                                     onChange={() => handleTogglePipeClass(pc.id)}
                                     style={{ cursor: isOwnerOfActiveProject ? 'pointer' : 'default' }}
                                   />
@@ -1307,7 +1308,7 @@ export default function Sidebar({
                           <button
                             type="button"
                             onClick={() => handleSetAllowCustomPipes(true)}
-                            disabled={!isOwnerOfActiveProject || savingPipeSpecs}
+                            disabled={!isOwnerOfActiveProject || !pipeClassesLoaded || savingPipeSpecs}
                             style={{
                               padding: '2px 10px',
                               fontSize: 'var(--fs-xs)',
@@ -1326,7 +1327,7 @@ export default function Sidebar({
                           <button
                             type="button"
                             onClick={() => handleSetAllowCustomPipes(false)}
-                            disabled={!isOwnerOfActiveProject || savingPipeSpecs}
+                            disabled={!isOwnerOfActiveProject || !pipeClassesLoaded || savingPipeSpecs}
                             style={{
                               padding: '2px 10px',
                               fontSize: 'var(--fs-xs)',
@@ -1356,7 +1357,8 @@ export default function Sidebar({
                           onChange: toggleProjectSolver,
                           label: 'Use project solver settings (overrides global)',
                           disabled: !isOwnerOfActiveProject,
-                          disabledHint: 'Only project owners can change the project solver settings.',
+                          // no owner-only hint while the members are still missing
+                          disabledHint: activeProject.members === undefined ? undefined : 'Only project owners can change the project solver settings.',
                         }}
                         inheritedFrom={solverBelowProject.source}
                         overriddenBy={projectSolverOn && drawingSolverOn ? 'drawing' : null}

@@ -87,6 +87,7 @@ import { solverMessageKey } from './utils/graphSignature';
 import { mapCached } from './utils/itemMemo';
 import { useHeatmapSettings } from './hooks/useHeatmapSettings';
 import { usePipeClasses } from './hooks/usePipeClasses';
+import { useProjectDetails } from './hooks/useProjectDetails';
 import { useFittingStandards } from './hooks/useFittingStandards';
 import { useCanvasLoading } from './hooks/useCanvasLoading';
 import { useModalManager } from './hooks/useModalManager';
@@ -112,6 +113,7 @@ import {
 } from './utils/case_resolver';
 
 import greetingCanvas from './data/GreetingCanvas.wlf';
+import { activeProjectFromDetail } from './utils/activeProject';
 
 const nodeTypes = {
   tank: TankNode,
@@ -236,6 +238,7 @@ function WalFlowContent() {
   }, []);
 
   const { fetchPipeClasses, availablePipeClasses, allowCustomPipes } = usePipeClasses(activeProject);
+  const { projectDetailsFailed } = useProjectDetails({ activeProject, setActiveProject, currentUser });
   // Load the fitting catalogs (database) early: new pipes and reducers take their sizes from them
   useFittingStandards('pipe_schedule');
   useFittingStandards('reducer');
@@ -1049,6 +1052,7 @@ function WalFlowContent() {
           description: '',
           updated_at: draft.timestamp || new Date().toISOString()
         });
+        // The draft holds only id and title; useProjectDetails fetches the pipe classes and members
       }
       if (attachDiagram && draft.active_diagram_id && draft.active_diagram_title) {
         setActiveDiagram({
@@ -1421,13 +1425,7 @@ function WalFlowContent() {
 
       if (project_id) {
         const projRes = await axios.get(`/api/projects/${project_id}`);
-        setActiveProject({
-          id: projRes.data.id,
-          title: projRes.data.title,
-          description: projRes.data.description,
-          allowed_pipe_classes: projRes.data.allowed_pipe_classes,
-          allow_custom_pipes: projRes.data.allow_custom_pipes !== false
-        });
+        setActiveProject(activeProjectFromDetail(projRes.data));
       } else {
         setActiveProject(null);
       }
@@ -1462,13 +1460,7 @@ function WalFlowContent() {
       let project = null;
       if (project_id) {
         const projRes = await axios.get(`/api/projects/${project_id}`);
-        project = {
-          id: projRes.data.id,
-          title: projRes.data.title,
-          description: projRes.data.description,
-          allowed_pipe_classes: projRes.data.allowed_pipe_classes,
-          allow_custom_pipes: projRes.data.allow_custom_pipes !== false
-        };
+        project = activeProjectFromDetail(projRes.data);
       }
 
       // Load first; the drawing becomes active only once its content is on its way to the canvas
@@ -1905,6 +1897,7 @@ function WalFlowContent() {
           currentUser={currentUser}
           activeProject={activeProject}
           setActiveProject={setActiveProject}
+          projectDetailsFailed={projectDetailsFailed}
           activeDiagram={activeDiagram}
           setActiveDiagram={setActiveDiagram}
           saveStatus={saveStatus}
