@@ -4,52 +4,11 @@ This document outlines planned features, overlays, and enhancements for the WalF
 
 | Release | Scope |
 |---|---|
-| **0.2.1** | Patch: bug fixes and small finishing work after 0.2.0. |
 | **0.2.x** | Small additive features; no file format change. |
 | **0.3.0** | Next feature release: physics depth (elevation, fittings, valves, pumps) and result warnings. |
 | **Later** | Not scheduled yet. |
 
 Items move between releases as priorities change.
-
----
-
-## 0.2.1
-
-- [x] **🌡️ Sensing Pins on All Three 3-Way TCV Ports**
-  * **Concept:** Give the 3-way temperature control valve a sensing pin on each of its 3 ports.
-  * **Today:** it has only 2 sensing pin options.
-
-- [x] **🔀 Switch Cases from the Data List Header**
-  * **Concept:** In the Cases, Measurements and Relief tabs of the data list, selecting a case header switches to that case.
-
-- [x] **▶️ Solve All Cases Button in the Data List**
-  * **Concept:** Add the Solve all cases button back to the Cases, Measurements and Relief tabs of the data list, at the top right and with the same styling as the Auto sort button.
-
-- [x] **🎯 Scroll the Data List to the Selected Item**
-  * **Concept:** When a pipe or piece of equipment is selected on the canvas and its data list tab (Pipes or Equipment) is open, the list scrolls to that item.
-
-- [x] **🐛 Bug: Pipe Class Selection in Project Settings Not Saved**
-  * **Today:** the pipe classes selected in Project settings are not being saved.
-
-- [x] **🐛 Bug: New Drawing Opens with the Content of the Previous Drawing**
-  * **Steps:** with a drawing open on the canvas, create a new project, create a new drawing in it and open that drawing.
-  * **Today:** the new drawing opens with the same content as the drawing that was open before.
-  * **Expected:** a new drawing is always empty, unless it was explicitly created as a copy (see Create a Drawing as a Copy under 0.2.x).
-
-- [x] **🐛 Bug: File › New Drawing Deletes the Content of the Previous Drawing**
-  * **Steps:** with a drawing open, create a new drawing with File › New Drawing, then switch back to the old drawing.
-  * **Today:** the new drawing opens with an empty canvas as it should, but the old drawing is now empty too and its content is lost.
-  * **Expected:** the old drawing keeps its content.
-
-- [x] **🐛 Bug: Empty Drawing Receives a Copy of the Drawing Opened After It**
-  * **Steps:** with a drawing with an empty canvas open, switch to a drawing with content, then switch back.
-  * **Today:** the formerly empty drawing now contains a copy of the drawing just opened.
-  * **Expected:** the empty drawing stays empty.
-
-- [x] **🐛 Bug: Switching to an Empty Drawing Deletes the Content of the Previous Drawing**
-  * **Steps:** with a drawing with content open, switch to a drawing with an empty canvas, then switch back.
-  * **Today:** the empty canvas opens as it should, but the original drawing is now empty too and its content is lost.
-  * **Expected:** the original drawing keeps its content.
 
 ---
 

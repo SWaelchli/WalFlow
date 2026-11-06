@@ -4,6 +4,45 @@ All notable changes to the WälFlow project will be documented in this file.
 
 ---
 
+## [0.2.1]
+
+### Security
+- **Backend runs unprivileged**: the backend container now drops from root to an unprivileged user before starting the app, so the network-facing process is no longer root. `PUID`/`PGID` set the user; left out, it takes the data folder's non-root owner. It stops with a clear message if the database folder is not writable.
+- **Pinned CI actions**: all GitHub Actions in the release workflow are pinned to commit SHAs, so a moved tag on a third-party action can no longer change what runs with registry-publish rights.
+
+### Architecture & Refactoring
+- **Deployment assets relocated**: moved Dockerfiles, entrypoints, and local Docker Compose into `deploy/` to keep the project root clean.
+- **WebSocket router extraction**: separated the `/ws/simulate` endpoint from `main.py` into dedicated router `routers/ws_simulation.py`.
+- **Project service layer**: extracted project role checks and permission helpers into `services/project_service.py`, so routers no longer share them with each other.
+- **Simulation service layer**: moved the telemetry, KPI and result helpers into `services/simulation_service.py`, with one network build helper, so the WebSocket router no longer depends on the HTTP router.
+- **Code hygiene**: eliminated dead scratch tests, obsolete React hooks, unused CSS rules, and unified equipment defaults.
+
+### Features
+- **Switch cases from the data list**: selecting a case header in the Cases, Relief or Measurements tab makes that case active.
+- **Solve all cases in the data list**: the Cases, Relief and Measurements tabs have a Solve all cases button again.
+- **Data list follows the selection**: selecting a pipe or piece of equipment scrolls the open Pipes or Equipment tab to its row.
+- **Sensing pins on all 3-way TCV ports**: the 3-way TCV inspector offers a sensing pin on each of its three ports.
+- **Sensing pin labels**: the sensing pin buttons read "Inlet" and "Outlet" ("Inlet 1", "Inlet 2" where there are two) instead of "INLET-0" and "OUTLET-0".
+
+### Fixes
+- **Local Docker build**: the documented `deploy/docker-compose.local.yml` command finds its build context again.
+- **Collaboration errors**: a server fault while joining a diagram is logged in full and no longer reported as a sign-in problem.
+- **Dev server**: `--reload` watches only `backend/`.
+- **Accessibility**: the About button's name matches its visible text, menu shortcuts and status times meet AA contrast, settings headings no longer skip a level, and password fields carry autocomplete hints.
+- **WebSocket start-up**: a socket still connecting is closed once it opens, which removes the browser's premature-close warning.
+- **WebSocket replacement**: a socket being replaced after sign-in or sign-out can no longer mark the new connection as disconnected or deliver a late result.
+- **Rejected diagrams**: a run whose diagram fails to parse now clears the previous model, so a later run cannot return results for the old diagram.
+- **Active project in the menu bar**: the project name shows whenever a project is active, also without an open drawing, and opens the Project Manager when clicked.
+- **Case comparison label**: "Total Pump Flow" is now "Sum of Pump Flows", because the value adds every pump and so counts pumps in series more than once.
+- **Switching drawings**: opening a drawing can no longer be cancelled by a validation problem on the current canvas, which left the old canvas showing under the new drawing, so the next edit saved it over that drawing. Cloud saves now also wait until an opened drawing has landed on the canvas.
+- **New drawings**: a drawing created in the Project Manager starts empty instead of copying the open canvas.
+- **Project pipe classes after a reload**: restoring a drawing now reloads its project, so the allowed pipe classes and the custom dimensions setting apply again, and the next click can no longer overwrite the saved selection.
+- **Project settings for members**: only project owners can edit project settings in the sidebar; other members see them read-only instead of getting an error when they try to save.
+- **Pipe class labels**: a pipe whose class exists but is not allowed in the project now says "not allowed in this project" instead of "not in catalogue".
+- **Project pipe rules while loading**: until a project's settings have loaded, new pipes cannot be connected and pipe classes cannot be changed, so a forbidden class cannot slip in. If loading fails, Retry in Settings › Project tries again without a page reload.
+
+---
+
 ## [0.2.0]
 
 ### Upgrade notes (breaking changes)
