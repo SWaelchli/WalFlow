@@ -1,4 +1,4 @@
-import { SwapIcon } from '../symbols/IconLibrary';
+import { BoltIcon, CrossIcon, SwapIcon, WarningIcon } from '../symbols/IconLibrary';
 import React from 'react';
 import {
   DEFAULT_REDUCER_STANDARD,

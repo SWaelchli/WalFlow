@@ -1,4 +1,5 @@
 import js from '@eslint/js'
+import react from 'eslint-plugin-react'
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
@@ -13,6 +14,7 @@ export default defineConfig([
       reactHooks.configs.flat.recommended,
       reactRefresh.configs.vite,
     ],
+    plugins: { react },
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,
@@ -24,6 +26,8 @@ export default defineConfig([
     },
     rules: {
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      // Core no-undef does not see JSX component names; an unimported component crashes the app on render
+      'react/jsx-no-undef': 'error',
     },
   },
 ])

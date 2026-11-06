@@ -63,11 +63,11 @@ describe('free inner diameter commits on blur', () => {
   });
 });
 
-const renderNodePanel = (node, unitSystem = UNIT_SYSTEMS.METRIC) => {
+const renderNodePanel = (node, unitSystem = UNIT_SYSTEMS.METRIC, allEdges = []) => {
   const onUpdate = vi.fn();
   render(
     <UnitProvider initialUnitSystem={unitSystem}>
-      <SetupPanel node={node} onUpdate={onUpdate} />
+      <SetupPanel node={node} onUpdate={onUpdate} allEdges={allEdges} />
     </UnitProvider>
   );
   return onUpdate;
@@ -169,6 +169,15 @@ describe('custom reducer geometry is stored in m in imperial mode', () => {
   it('shows the length the solver uses, not a stale catalogue length', () => {
     renderNodePanel({ ...reducer(), data: { ...reducer().data, length_m: 0.12 } });
     expect(screen.getByDisplayValue('120.0')).toBeTruthy();
+  });
+
+  it('renders the connected-line card and the size-mismatch alert for a reducer with a pipe on its inlet', () => {
+    const catalog = { ...reducer(), data: { ...reducer().data, label: 'Reducer 1', standard: 'ASME_B16_9', reducer_type: 'concentric',
+      dn_large: 80, nps_large: '3', dn_small: 50, nps_small: '2', sch_large: 'STD', sch_small: 'STD', orientation: 'reducing' } };
+    const inletPipe = { id: 'e1', source: 'n1', target: 'r1', targetHandle: 'inlet-0', data: { type: 'PIPE', length_m: 5, diameter_m: 0.1 } };
+    renderNodePanel(catalog, UNIT_SYSTEMS.METRIC, [inletPipe]);
+    expect(screen.getByText('Connected Lines Spec')).toBeTruthy();
+    expect(screen.getByText('Pipe Size Mismatch Detected')).toBeTruthy();
   });
 });
 
