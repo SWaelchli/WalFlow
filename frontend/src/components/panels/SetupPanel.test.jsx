@@ -106,7 +106,7 @@ describe('leaving an untouched field does not rewrite it', () => {
 describe('cracking pressure is labelled as a differential', () => {
   it.each(['check_valve', 'check_valve_orifice'])('%s shows Cracking ΔP in psi when imperial', (type) => {
     renderNodePanel({ id: 'cv1', type, data: { cv: 10, cracking_pressure_bar: 0.05 } }, UNIT_SYSTEMS.IMPERIAL);
-    expect(screen.getByText('Cracking ΔP (psi)')).toBeTruthy();
+    expect(screen.getByText('Cracking ΔP [psi]')).toBeTruthy();
     expect(screen.queryByText(/Cracking Pressure|psig/)).toBeNull();
   });
 });
@@ -115,7 +115,7 @@ describe('zero is a legitimate value', () => {
   it('accepts a check valve cracking pressure of 0', () => {
     const node = { id: 'cv1', type: 'check_valve', data: { cv: 10, cracking_pressure_bar: 0.05 } };
     const onUpdate = renderNodePanel(node);
-    expect(screen.getByText('Cracking ΔP (bar)')).toBeTruthy();   // a differential, not barg
+    expect(screen.getByText('Cracking ΔP [bar]')).toBeTruthy();   // a differential, not barg
     const input = screen.getByDisplayValue('0.05');
     fireEvent.change(input, { target: { value: '0' } });
     fireEvent.blur(input);

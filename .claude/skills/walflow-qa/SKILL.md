@@ -1,8 +1,6 @@
 ---
 name: walflow-qa
 description: WalFlow test strategy and rules (replaces TESTING.md). Use whenever writing, changing, moving or deleting a test, fixing a bug, adding equipment, or deciding whether a change needs a test, in the backend (pytest, hypothesis) or the frontend (Vitest). Covers the test pyramid, where a test belongs, the bug-fix decision tree, property tests, golden examples and the local release gate.
-metadata:
-  version: "1.1.0"
 ---
 
 # WalFlow QA
@@ -28,7 +26,7 @@ From the base (most checks, cheapest) to the top (fewest):
 | 3 Scenarios | Interactions only a specific topology shows (controllers, relief, islands) | `scenarios/` | pytest |
 | 4 Golden | Every shipped example against reviewed results | `regression/test_golden_examples.py` | golden JSON |
 | 5 API | HTTP / WebSocket / database behaviour | `api/` | pytest, httpx |
-| Frontend | Components with logic (inspectors, panels, conversions) | `frontend/src/**/*.test.jsx` | Vitest |
+| Frontend | Components with logic (inspectors, panels, conversions) | `frontend/src/**/*.test.{js,jsx}` | Vitest |
 
 Push every check as low as it can go. A wrong number for one component is a layer 2 row, not a scenario. A
 law that should hold for all components is a layer 1 property, not one assertion per component file.
@@ -70,7 +68,8 @@ All backend tests live in `backend/tests`. The folder sets the layer marker auto
 
 Hypothesis tests also get the `property` marker. Select layers with `pytest -m unit`, `-m property`, etc.
 
-Frontend tests sit next to the component they test: `Component.test.jsx`. Shared fixtures are in `frontend/src/test`.
+Frontend tests sit next to the file they test: `Component.test.jsx` for components, `module.test.js` for plain
+modules. Shared fixtures and cross-cutting guards (such as `styleGuard.test.js`) are in `frontend/src/test`.
 Keep them lean: the physics is tested in the backend, and the gate's `npm run build` is the main frontend check.
 Test only logic that can break silently (conversions, file export/import, inspector rules). No end-to-end or
 browser tests.
@@ -112,7 +111,7 @@ template: the header, the section headings and the table header rows stay. Layou
 
    | ID | Severity | Status | Finding | Proposed solution | Owner | Phase | Source |
    |---|---|---|---|---|---|---|---|
-   | H1 | High | Open | A failed solve shows raw exception text and names no component. | Two messages by failure kind naming the largest-imbalance component; "Show" selects it. | orch + phys, fe | 6 | UX audit 2026-10-28 |
+   | U-01 | High | Open | A failed solve shows raw exception text and names no component. | Two messages by failure kind naming the largest-imbalance component; "Show" selects it. | orch + phys, fe | 6 | UX audit 2026-10-28 |
 
    - **Finding**: one sentence, the observed behaviour, readable without the details section.
    - **Proposed solution**: one sentence. Mark it `Decided:` once the user has agreed to it; write `To decide`
@@ -120,8 +119,12 @@ template: the header, the section headings and the table header rows stay. Layou
    - **Severity**: Critical, High, Medium or Low (as in the source; `—` for a pure check).
    - **Status**: `Open` (agreed, to implement) · `Review` (needs a decision or physics check first) ·
      `In progress` · `Fixed` (remove the entry at commit) · `Deferred` · `Rejected`.
-   - **Owner**: `orch` (orchestrator: backend/simulation, API) · `fe` (`walflow-frontend-dev`) ·
-     `phys` (`walflow-physics-reviewer` after the change).
+   - **Owner**: `orch` (orchestrator: backend/simulation, API, docs) · `fe` (`walflow-frontend-dev`) ·
+     `test` (`walflow-test-author`) · `phys` (`walflow-physics-reviewer` after the change).
+   - **ID**: a prefix for the source and a running number: `D-` deviation from a standard (`standard-verification`
+     skill), `U-` UX audit, `R-` physics review, `S-` solver failure on a generated network, `F-` anything else.
+     Numbers are not reused while the list holds the prefix. (`P-` is taken by the separate performance findings
+     file of the `walflow-performance` skill.)
    - **Phase**: the roadmap phase, or `—` when unscheduled.
 3. **Roadmap** (when there is more than one phase): phase, entries, why this order, exit check.
 4. **Details**, one section per source (link to the report and its verdict): a table with ID, Details (the full
@@ -221,12 +224,15 @@ elsewhere before deleting.
 
 ## The gate
 
-Run before finishing any change. All of it must pass:
+Run before finishing any change, through `walflow-gate-runner`. This is the only definition of the gate; other
+files link here. All four stages must pass. Run each from the repo root:
 
 ```bash
 pip install -r requirements-dev.txt      # once
-cd backend && python -m pytest           # backend, ~1.5 min
-cd frontend && npm run lint && npm test && npm run build
+cd backend && python -m pytest           # 1. backend, ~1.5 min
+cd frontend && npm run lint              # 2. lint
+cd frontend && npm test                  # 3. Vitest
+cd frontend && npm run build             # 4. build
 ```
 
 After a physics change, also run `HYPOTHESIS_PROFILE=explore python -m pytest -m property` (a few minutes).

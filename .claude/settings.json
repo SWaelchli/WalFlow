@@ -6,7 +6,12 @@
       "Bash(npm run lint)",
       "Bash(npm test)",
       "Bash(npm test *)",
-      "mcp__claude-in-chrome__find"
+      "mcp__claude-in-chrome__find",
+      "Bash(npm run build)",
+      "Bash(cd backend && python -m pytest *)",
+      "Bash(cd frontend && npm run lint)",
+      "Bash(cd frontend && npm test *)",
+      "Bash(cd frontend && npm run build)"
     ]
   },
   "hooks": {

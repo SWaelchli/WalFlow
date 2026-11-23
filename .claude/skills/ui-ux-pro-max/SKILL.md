@@ -45,9 +45,9 @@ Run the scripts from the repository root: `python .claude/skills/ui-ux-pro-max/s
 
 | Scenario | Trigger examples | Start from |
 |----------|-----------------|------------|
-| **New project / page** | "Build a dashboard", "Add an admin page" | Step 1 → Step 2 (design system) |
+| **New page** | "Build a dashboard", "Add an admin page" | WalFlow: MASTER.md + `walflow-ui-layout`, then Step 3. Step 2 only for a new project outside WalFlow |
 | **New component** | "Add a results table", "Add a modal" | Step 3 (domain search: style, ux) |
-| **Choose style / color / font** | "What style fits an engineering tool?" | Step 2 (design system) |
+| **Choose style / color / font** | "What style fits an engineering tool?" | WalFlow: MASTER.md decides. Step 3 for options to propose to the user |
 | **Review existing UI** | "Review this page for UX issues", "Check accessibility" | Desktop rules and checklist below |
 | **Fix a UI bug** | "Button hover is broken", "Layout shifts on load" | Desktop rules → relevant section |
 | **Improve / optimize** | "Make the table faster", "Fix the layout on small windows" | Step 3 (domain search: ux, react) |
@@ -67,7 +67,10 @@ Extract from the request:
 - **Platform**: desktop unless the user says otherwise. Mobile-only concerns (safe areas, haptics, bottom
   navigation, Dynamic Type, 44 pt touch targets) do not apply.
 
-### Step 2: Generate Design System (new projects only)
+### Step 2: Generate Design System (new projects only, never for WalFlow)
+
+WalFlow's design system exists (`design-system/walflow/MASTER.md`). Skip Steps 2 and 2b for WalFlow work; to
+compare options, run `--design-system` **without** `--persist` and propose changes to MASTER.md to the user.
 
 **Start a new project with `--design-system`** to get recommendations with reasoning:
 
@@ -88,7 +91,11 @@ python .claude/skills/ui-ux-pro-max/scripts/search.py "engineering simulation de
 
 ### Step 2b: Persist Design System (Master + Overrides Pattern)
 
-To save the design system for retrieval across sessions, add `--persist`:
+**Never run `--persist` (and never `--force`) in the WalFlow repo.** The generator writes its own `MASTER.md`
+and a `design-system/pages/` folder, which would replace or compete with `design-system/walflow/`. A WalFlow page
+override is written by hand in `design-system/walflow/pages/<page>.md`.
+
+For other projects: to save the design system for retrieval across sessions, add `--persist`:
 
 ```bash
 python .claude/skills/ui-ux-pro-max/scripts/search.py "<query>" --design-system --persist -p "Project Name"
@@ -110,7 +117,7 @@ This also creates `design-system/<project>/pages/dashboard.md`: page-specific de
 2. If the page file exists, its rules **override** the Master file
 3. If not, use `design-system/<project>/MASTER.md` exclusively
 
-Persisted files are edited by hand afterwards. Re-running `--persist` overwrites them.
+Persisted files are edited by hand afterwards. `--persist` skips an existing `MASTER.md`; `--force` overwrites it.
 
 ### Step 2c: Design Dials (optional)
 

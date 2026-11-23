@@ -11,7 +11,9 @@ skill, "Findings list".
 
 Status: `Open` (agreed, to implement) · `Review` (needs a decision or a physics check first) · `In progress` · `Fixed` (remove at commit) · `Deferred` · `Rejected`
 
-Owner: `orch` (orchestrator: backend/simulation, API) · `fe` (`walflow-frontend-dev`) · `phys` (`walflow-physics-reviewer` after the change)
+Owner: `orch` (orchestrator: backend/simulation, API, docs) · `fe` (`walflow-frontend-dev`) · `test` (`walflow-test-author`) · `phys` (`walflow-physics-reviewer` after the change)
+
+ID prefixes: `D-` standard deviation · `U-` UX audit · `R-` physics review · `S-` solver failure on a generated network · `F-` other
 
 ## Overview
 

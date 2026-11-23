@@ -1,8 +1,6 @@
 ---
 name: walflow-test-users
 description: Standard WalFlow test accounts (admin, two users, pipe manager) with their passwords, the shared test project, and how to create or reset them. Use before any test, audit or check that signs in to the running app (browser walkthrough, UX audit, lock or multi-user check, API call with a login), and whenever a second user is needed. Test environments only.
-metadata:
-  version: "1.0.0"
 ---
 
 # WalFlow test users
@@ -46,17 +44,17 @@ the password, role and "approved" status of existing ones. It never touches othe
 - To add a test account, add a row to `TEST_USERS` in the script and to the table above.
 
 Without shell access to the server (a hosted test environment), create accounts in the app instead: sign in as
-the admin, have the account register on the sign-in page, approve it in the Admin Hub (Users tab), set its role, and add
-it to the test project in the Project manager. Use the same names and password.
+the admin, have the account register on the sign-in page, approve it in **Tools > Admin hub…** (Users tab), set its role, and add
+it to the test project in **Tools > Manage projects…**. Use the same names and password.
 
 ## Sign in for a test (browser)
 
 Auth is a cookie per host, so **every tab on the same host is the same user**.
 
 1. Run the seed script (above) so the accounts exist.
-2. Note who is signed in (username next to the **Sign out** button in the navbar). Report it at the end; you
+2. Note who is signed in (the user name in the account area at the right end of the menu bar). Report it at the end; you
    cannot sign the user back in, because you do not know their password.
-3. Click **Sign out** in the navbar, or in the page console: `await fetch('/api/auth/logout', {method: 'POST'})`
+3. Open the account menu (click the user name) and choose **Sign out**, or in the page console: `await fetch('/api/auth/logout', {method: 'POST'})`
    and reload.
 4. Sign in on the sign-in dialog with a test username and the password above.
 5. After the test: sign out, and tell the user that they were signed out and need to sign in again.

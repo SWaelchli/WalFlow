@@ -1,10 +1,7 @@
 ---
 name: equipment-creation
-description: Guide and instructions for creating, modeling, testing, and registering new hydraulic equipment components in WalFlow across both Python backend and React frontend.
+description: How to add or change a WalFlow equipment type end to end - backend model class, its explanatory .md, graph parser registration, tests, frontend node and registration. Use whenever the user asks for a new component (pump, valve, filter, exchanger, junction, boundary...), changes an equipment model's physics, parameters or ports, renames an equipment data field, or asks how equipment is wired between backend and frontend.
 argument-hint: "[equipment-name or equipment-type]"
-license: MIT
-metadata:
-  version: "1.0.0"
 ---
 
 # Equipment Creation Guide for WalFlow
@@ -36,8 +33,22 @@ flowchart TD
     C --> D[4. Write Backend Physics Tests]
     D --> E[5. Build Frontend ReactFlow Node]
     E --> F[6. Register Frontend Wiring]
-    F --> G[7. Verify with pytest & npm run lint]
+    F --> G[7. Run the gate]
 ```
+
+### Who does what
+
+Per the Orchestrator Delegation Protocol in `AGENTS.md`. Confirm the requirements with the user before Step 2.
+
+| Step | Who |
+|---|---|
+| 1 Clarify physics and specs | orchestrator, with the user |
+| 2, 2b, 3 Backend class, its `.md`, parser registration | orchestrator |
+| Review of steps 2-3 | `walflow-physics-reviewer` |
+| 4 Backend tests (strategy entry, reference rows) | `walflow-test-author` |
+| 5, 6 Frontend node and registration | `walflow-frontend-dev` |
+| Frontend tests, if any | `walflow-test-author` |
+| 7 Gate | `walflow-gate-runner` |
 
 ### Step 1: Clarify Physics & Specs
 Before writing code, define the component requirements:

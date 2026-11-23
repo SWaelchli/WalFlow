@@ -7,7 +7,6 @@
 ---
 
 **Project:** WälFlow
-**Version:** 0.2.0
 **Platform:** desktop web app (mouse and keyboard, windows from 768 px wide). Mobile rules do not apply.
 **Design Dials:** Variance 3/10 (Clean Minimalism) | Motion 3/10 (Subtle Micro-interactions) | Density 8/10 (Compact Editor Density)
 
@@ -105,11 +104,11 @@ regenerate it with `--persist`.
 
   /* Type Scale (nothing below 11px in UI chrome) */
   --fs-xs: 11px;   /* captions, badges, table meta */
-  --fs-sm: 12px;   /* labels, secondary text, dense tables */
-  --fs-base: 13px; /* body, inputs, buttons */
+  --fs-sm: 12px;   /* labels, buttons, inputs, secondary text, dense tables */
+  --fs-base: 13px; /* body text */
   --fs-md: 14px;   /* emphasised body, modal subtitles */
-  --fs-lg: 16px;   /* section and panel titles */
-  --fs-xl: 20px;   /* modal titles */
+  --fs-lg: 16px;   /* section, panel and modal titles */
+  --fs-xl: 20px;   /* headings in full-page modals and pages */
   --fs-2xl: 24px;  /* page titles, empty-state glyphs */
 
   /* Canvas text (zooms with the drawing; see "Canvas values") */
@@ -177,7 +176,7 @@ regenerate it with `--persist`.
   height: 30px;
   padding: 0 12px;
   font-family: var(--font-sans);
-  font-size: 12px;
+  font-size: var(--fs-sm);
   font-weight: 600;
   border-radius: var(--radius-sm);
   cursor: pointer;
@@ -252,7 +251,7 @@ regenerate it with `--persist`.
   border: 1px solid var(--color-border);
   background-color: var(--color-surface);
   color: var(--color-text-primary);
-  font-size: 12px;
+  font-size: var(--fs-sm);
   font-family: inherit;
   outline: none;
   box-sizing: border-box;
@@ -318,7 +317,7 @@ regenerate it with `--persist`.
   background-color: transparent;
   border: none;
   border-radius: var(--radius-sm);
-  font-size: 12px;
+  font-size: var(--fs-sm);
   text-align: left;
   cursor: pointer;
   color: var(--color-text-primary);
@@ -378,7 +377,7 @@ regenerate it with `--persist`.
 /* Modal Title */
 .modal-title {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--fs-lg);
   font-weight: 700;
   color: var(--color-text-primary);
 }
@@ -408,7 +407,7 @@ regenerate it with `--persist`.
   border-radius: var(--radius-sm);
   padding: 2px 6px;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--fs-xs);
 }
 ```
 
@@ -611,7 +610,7 @@ everything and never block input.
 ## Style Guidelines
 
 *   **Exaggerated Minimalism:** Leverage plenty of empty canvas workspace offset by tight, functional editor sidebars. High contrast borders and flat colors are preferred over heavy shadows and background gradients.
-*   **SVG-Only Rule:** All structural icons must be vector-based. Use Phase 1 SVG symbols from `IconLibrary.jsx`. Do not use emojis inside structural buttons or navigation blocks.
+*   **SVG-Only Rule:** All structural icons must be vector-based. Use Phosphor icons, or hand-drawn SVG on the same grid, through `IconLibrary.jsx`. Do not use emojis inside structural buttons or navigation blocks.
 *   **Focus Ring Accessibility:** Keyboard outlines must always be visible. Always define `:focus-visible` styling using `outline` offsets or shadow glow rings.
 *   **Consistent Motion Ease:** CSS transition durations must stay in the 150-200ms range using native `cubic-bezier(0.4, 0, 0.2, 1)` easing.
 

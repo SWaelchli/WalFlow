@@ -1,8 +1,6 @@
 ---
 name: walflow-performance
 description: Find, assess and implement performance improvements in the WalFlow backend solver (backend/simulation - solver, graph parser, equipment, fluids). Use whenever the user asks to make the simulation faster, profile or benchmark the solver, reduce solve time, memory or iterations, review code for performance, or when a change is motivated by speed. Every finding must prove it is faster and that the physics is unchanged.
-metadata:
-  version: "1.0.0"
 ---
 
 # WalFlow Performance

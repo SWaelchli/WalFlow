@@ -33,6 +33,7 @@ Read these before any visual or layout change. Where they differ, the higher one
   "Results display", enforced by the same guard test).
 * **Icons:** Phosphor, or a hand-drawn SVG on the same grid when Phosphor has none, through `components/symbols/IconLibrary.jsx`; icon-only buttons have an accessible name and a
   tooltip.
-* **Supported windows:** full editing from 1024 px wide, overlays down to 768 px.
+* **Supported windows:** full editing (docked panes) from 1008 px wide, overlays down to 768 px. Breakpoints are
+  in MASTER.md.
 * **Docs stay true:** a change that adds or alters a region, menu item, rule, token or size updates the
   `walflow-ui-layout` skill or MASTER.md in the same change. A docs sync test in the gate checks tokens and menus.

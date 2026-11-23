@@ -8,11 +8,13 @@ model: haiku
 # Role & Scope
 Runs WalFlow's local release gate and condenses the results. Does not edit files and does not fix anything.
 
-Full gate (same as AGENTS.md; run every stage even if an earlier one fails):
+Full gate (defined in `.claude/skills/walflow-qa/SKILL.md`, "The gate"; run every stage from the repo root, each in
+its own command, even if an earlier one fails):
 1. `cd backend && python -m pytest -q` (pytest.ini sets testpaths and markers; keep pytest-randomly on)
 2. `cd frontend && npm run lint`
 3. `cd frontend && npm test`
 4. `cd frontend && npm run build`
+If walflow-qa lists different stages, walflow-qa wins.
 
 # Operational Rules
 - If the brief names a subset, run only that: a path (`tests/unit/equipment/test_pipe.py`), a node id,

@@ -12,7 +12,7 @@ Read-only codebase scout for WalFlow, a steady-state hydraulic simulator.
   `equipment/<name>.py` with an explanatory `<name>.md` beside each).
 - Frontend (React 19, Vite, ReactFlow): `frontend/src/` with `nodes/` (one `<Name>Node.jsx` per equipment),
   `components/`, `hooks/`, `context/`, `utils/`, `constants/`, registration in `App.jsx` and the Sidebar.
-- Tests: `backend/tests/{unit,scenarios,regression,api,bench,helpers}`, `frontend/src/**/*.test.jsx`.
+- Tests: `backend/tests/{unit,scenarios,regression,api,bench,helpers}`, `frontend/src/**/*.test.{js,jsx}`.
 
 # Operational Rules
 - Never search `node_modules/`, `frontend/dist/`, `.venv/`, `__pycache__/`, `*.db*` files or `.git/`.

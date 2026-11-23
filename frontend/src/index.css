@@ -61,11 +61,11 @@
 
   /* Type scale - use these instead of raw px values. Nothing below 11px. */
   --fs-xs: 11px;   /* captions, badges, table meta */
-  --fs-sm: 12px;   /* labels, secondary text, dense tables */
-  --fs-base: 13px; /* body, inputs, buttons */
+  --fs-sm: 12px;   /* labels, buttons, inputs, secondary text, dense tables */
+  --fs-base: 13px; /* body text */
   --fs-md: 14px;   /* emphasised body, modal subtitles */
-  --fs-lg: 16px;   /* section and panel titles */
-  --fs-xl: 20px;   /* modal titles */
+  --fs-lg: 16px;   /* section, panel and modal titles */
+  --fs-xl: 20px;   /* headings in full-page modals and pages */
   --fs-2xl: 24px;  /* page titles, empty-state glyphs */
 
   /* Canvas text (zooms with the drawing; see MASTER.md "Canvas values") */

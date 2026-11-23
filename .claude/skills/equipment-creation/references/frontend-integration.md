@@ -12,18 +12,21 @@ The template below is for a component with role ports (`inlet-0`, `outlet-0`). F
 
 Text under the symbol goes through `NodeReadout` (values) and `StatusBadge` (states) only, as in MASTER.md "Canvas
 values": every number in one style and one colour, colour only on a state badge, no hex or numeric `fontSize` in
-the node. `src/test/styleGuard.test.js` checks this.
+the node. `src/test/styleGuard.test.js` checks this for `nodes/` and `components/details/`. Values reach
+`NodeReadout` already formatted by the `useUnits()` formatters, with the unit from `labels` (never a hard-coded unit
+string, never `toFixed`). Units follow MASTER.md: `bar(a)`, `bar(g)`, and plain `bar` for a pressure difference.
 
 ```jsx
 import { Handle, Position } from 'reactflow';
 import { useMemo } from 'react';
-import { paToBar } from '../utils/converters';
 import { getRotatedPosition } from '../components/canvas/NodeRotationHandle';
 import { SensingPin } from '../components/canvas/SensingPin';
 import BaseNode from './BaseNode';
 import NodeReadout from './NodeReadout';
+import { useUnits } from '../context/UnitContext';
 
 export default function CustomEquipmentNode({ id, data, selected }) {
+  const { formatDiffPressurePa, labels } = useUnits();
   const telemetry = data.telemetry;
   const rotation = data.rotation || 0;
   const sensing = useMemo(() => data.sensing || {}, [data.sensing]);
@@ -31,7 +34,6 @@ export default function CustomEquipmentNode({ id, data, selected }) {
   // Extract inlet/outlet telemetry
   const pIn = telemetry?.inlets?.[0]?.pressure || 0;
   const pOut = telemetry?.outlets?.[0]?.pressure || 0;
-  const flowRate = telemetry?.inlets?.[0]?.flow_rate || 0;
   const dP = pIn - pOut;
 
   return (
@@ -44,18 +46,21 @@ export default function CustomEquipmentNode({ id, data, selected }) {
       footer={
         <NodeReadout
           name={data.label || 'EQUIPMENT'}
-          rows={[{ label: 'ΔP', value: paToBar(dP), unit: 'bar(d)' }]}
-          // states only, e.g. badges={[{ kind: 'success', label: 'OPEN' }]}; BaseNode already shows OFF
+          rows={[{ label: 'ΔP', value: formatDiffPressurePa(dP), unit: labels.pressureDiff }]}
+          // states only: badges={[{ kind: 'success', label: 'OPEN' }]} (kinds: neutral, success, warning,
+          // danger, info); BaseNode already shows OFF
         />
       }
     >
       {/* 1. Component SVG Graphic */}
       <svg width="60" height="60" viewBox="0 0 60 60">
         <rect x="10" y="10" width="40" height="40" rx="4" fill="var(--color-surface)" stroke="var(--color-brand-dark)" strokeWidth="2" />
-        <circle cx="30" cy="30" r="12" fill="white" stroke="var(--color-brand-dark)" strokeWidth="2" />
+        <circle cx="30" cy="30" r="12" fill="var(--color-surface)" stroke="var(--color-brand-dark)" strokeWidth="2" />
       </svg>
 
-      {/* 2. Inlet Handle with Rotation Support */}
+      {/* 2. Inlet Handle with Rotation Support. The inline position style is the current pattern in every node
+          (the handle sits on the symbol's port, which differs per symbol); keep the 8px size and the colour
+          variables, and copy the offsets from a similar node. */}
       <Handle 
         type="target" 
         position={getRotatedPosition(Position.Left, rotation)} 
@@ -118,14 +123,10 @@ A component built on `InlineNode` (see backend Archetype 1) has no inlet or outl
    };
    ```
 
-3. **Define Default Parameters in `onDrop`:**
-   In the `onDrop` handler inside `App.jsx`, add default properties for the new equipment type:
-   ```jsx
-   ...(type === 'custom_equipment' && { 
-     param1: 10.0, 
-     param2: 2.5,
-     active: true 
-   }),
+3. **Default parameters:** add the type to `DEFAULTS_BY_TYPE` in `frontend/src/utils/nodeDefaults.js`, with the
+   same field names and defaults as the parser and the `## Data Fields` table of the equipment `.md`:
+   ```js
+   custom_equipment: { cv: 10.0, flow_rated_lmin: 100.0 },
    ```
 
 ---
@@ -135,10 +136,12 @@ A component built on `InlineNode` (see backend Archetype 1) has no inlet or outl
 In `categorizedEquipment`, add an entry under the appropriate category:
 ```jsx
 {
-  name: 'Pressure & Flow Control', // or 'Fluid Sources', 'Power & Drive', 'Auxiliary', 'Distribution'
+  // Categories: 'Boundaries', 'Power & Drive', 'Pressure & Flow Control', 'Piping & Fittings',
+  // 'Instrumentation', 'Distribution & Manifolds', 'Auxiliary', 'Documentation & Notes'
+  name: 'Pressure & Flow Control',
   items: [
     // ...
-    { type: 'custom_equipment', label: 'Custom Equipment', description: 'Clearance restrictor' },
+    { type: 'custom_equipment', label: 'Custom Equipment', description: 'Clearance restrictor', keywords: ['cr', 'restriction'] },
   ]
 }
 ```
@@ -147,52 +150,53 @@ In `categorizedEquipment`, add an entry under the appropriate category:
 
 ## 4. Adding Properties in `frontend/src/components/panels/SetupPanel.jsx`
 
-Render parameter inputs inside the `SetupPanel`:
+Render parameter inputs inside the `SetupPanel`. Copy the pattern of an existing field: `renderLabel(text, field)`
+gives the label (token styles) and the operating-case badge, the input uses `.form-input`, the value is shown in
+the user's units through `toDisplayValue` and committed through `validateAndCommit`. A unit goes in square brackets
+from `labels` (MASTER.md), never hard-coded:
 
 ```jsx
 {isNode && type === 'custom_equipment' && (
-  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-      <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--color-text-secondary)' }}>
-        Flow Coefficient (Cv)
-      </label>
+  <>
+    <div>
+      {renderLabel('Flow Coefficient Cv', 'cv')}
       <input
-        type="number"
-        step="0.1"
-        value={data.cv ?? 10.0}
-        onChange={(e) => handleNumericChange('cv', e.target.value)}
-        className="form-control"
+        type="number" step="0.1"
+        className="form-input" style={{ width: '100%' }}
+        value={localDrafts.cv !== undefined ? localDrafts.cv : (effectiveData.cv ?? 10)}
+        onChange={(e) => handleDraftChange('cv', e.target.value)}
+        onBlur={(e) => validateAndCommit('cv', e.target.value)}
       />
     </div>
-
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-      <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--color-text-secondary)' }}>
-        Set Pressure (bar)
-      </label>
+    <div>
+      {renderLabel(`Rated Flow [${labels.flow}]`, 'flow_rated_lmin')}
       <input
         type="number"
-        step="0.1"
-        value={data.set_pressure_bar ?? 3.5}
-        onChange={(e) => handleNumericChange('set_pressure_bar', e.target.value)}
-        className="form-control"
+        className="form-input" style={{ width: '100%' }}
+        value={localDrafts.flow_rated_lmin !== undefined ? localDrafts.flow_rated_lmin : toDisplayValue('flow_rated_lmin', effectiveData.flow_rated_lmin || 100)}
+        onChange={(e) => handleDraftChange('flow_rated_lmin', e.target.value)}
+        onBlur={(e) => validateAndCommit('flow_rated_lmin', e.target.value, true)}
       />
     </div>
-  </div>
+  </>
 )}
 ```
+
+Mirror the spacing wrapper of the neighbouring equipment blocks in `SetupPanel.jsx`; do not add new inline sizes.
 
 ---
 
 ## 5. Adding SVG Symbol in `frontend/src/components/symbols/SymbolLibrary.jsx`
 
-Add a case under `EquipmentSymbol`:
+Add a case under `EquipmentSymbol`. Colours are design tokens in the attribute form, as in the existing cases and
+the canvas nodes; no hex or rgb literals (the style guard scans `components/symbols/`):
 
 ```jsx
 case 'custom_equipment':
   return (
     <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
-      <rect x="10" y="10" width="40" height="40" rx="4" fill="white" stroke="#334155" strokeWidth="2.5" />
-      <circle cx="30" cy="30" r="10" fill="none" stroke="#334155" strokeWidth="2" />
+      <rect x="10" y="10" width="40" height="40" rx="4" fill="var(--color-surface)" stroke="var(--color-brand-dark)" strokeWidth="2.5" />
+      <circle cx="30" cy="30" r="10" fill="none" stroke="var(--color-brand-dark)" strokeWidth="2" />
     </svg>
   );
 ```

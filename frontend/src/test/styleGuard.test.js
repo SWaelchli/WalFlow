@@ -12,9 +12,13 @@ const here = dirname(fileURLToPath(import.meta.url));
 const NODES_DIR = join(here, '..', 'nodes');
 const DETAILS_DIR = join(here, '..', 'components', 'details');
 
-const RULES = [
+const COLOUR_RULES = [
   { name: 'hex colour', re: /#[0-9a-fA-F]{3,8}\b/ },
   { name: 'rgb/rgba colour', re: /\brgba?\s*\(/ },
+];
+
+const RULES = [
+  ...COLOUR_RULES,
   // style property or JSX attribute with a numeric size; `data.fontSize` (a data field) has no `:` or `=` after it
   { name: 'numeric fontSize', re: /\bfontSize\s*(?::|=)\s*(?:\{\s*)?['"]?\d/ },
 ];
@@ -77,12 +81,15 @@ describe('style guard: matcher for details views and readout labels', () => {
 });
 
 const PANELS_DIR = join(here, '..', 'components', 'panels');
+const SYMBOLS_DIR = join(here, '..', 'components', 'symbols');
 
 const SCANS = [
   { dir: NODES_DIR, label: 'nodes', rules: nodeViolations, what: 'colour literal, numeric fontSize or readout label colon' },
   { dir: DETAILS_DIR, label: 'components/details', rules: detailsViolations, what: 'colour literal, numeric fontSize, toFixed or weight 800' },
   // Only the panels already cleaned up are listed; do not widen to the whole folder
   { dir: PANELS_DIR, label: 'components/panels', rules: violations, what: 'colour literal or numeric fontSize', only: ['MeasurementsTable.jsx'] },
+  // Palette symbols: colours come from design tokens only (hex and rgb/rgba rules, nothing else)
+  { dir: SYMBOLS_DIR, label: 'components/symbols', rules: check(COLOUR_RULES), what: 'colour literal' },
 ];
 
 describe('style guard: real source files', () => {

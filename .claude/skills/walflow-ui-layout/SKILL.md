@@ -1,8 +1,6 @@
 ---
 name: walflow-ui-layout
 description: Where things go in the WalFlow user interface - the app shell regions (menu bar, command bar, activity rail and side pane, canvas, inspector, results panel, status bar, pages, dialogs), the placement rule for new features, the command list and menu structure, responsive behaviour, and the layout checklist and verification. Use whenever adding or moving a button, menu item, panel, tab, overlay, dialog, toast or status display, adding a feature that needs UI, or reviewing the layout.
-metadata:
-  version: "1.0.0"
 ---
 
 # WalFlow UI Layout

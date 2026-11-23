@@ -30,11 +30,11 @@ cd frontend && npm install && npm run dev
 
 ### Adding New Equipment
 
-Follow the `equipment-creation` skill ([.claude/skills/equipment-creation/SKILL.md](./.claude/skills/equipment-creation/SKILL.md)): backend class and its `<name>.md`, graph parser registration, tests, frontend node and registration.
+Follow the `equipment-creation` skill ([.claude/skills/equipment-creation/SKILL.md](./.claude/skills/equipment-creation/SKILL.md)): backend class and its `<name>.md`, graph parser registration, tests, frontend node and registration. Its "Who does what" table maps each step to the orchestrator or a subagent.
 
 ### Testing
 
-Always read and follow the `walflow-qa` skill ([.claude/skills/walflow-qa/SKILL.md](./.claude/skills/walflow-qa/SKILL.md)) before writing, changing or deleting any test, fixing a bug, or adding equipment. It holds the test strategy (test pyramid, property tests with hypothesis), where each test belongs, the bug-fix decision tree, naming and audit-marker rules, and the gate. Prefer strengthening an existing property or adding a reference-table row over adding a new test function.
+Always read and follow the `walflow-qa` skill ([.claude/skills/walflow-qa/SKILL.md](./.claude/skills/walflow-qa/SKILL.md)) before writing, changing or deleting any test, fixing a bug, or adding equipment. It holds the test strategy (test pyramid, property tests with hypothesis), where each test belongs, the bug-fix decision tree, naming rules (no finding or audit IDs in tests), and the gate. Prefer strengthening an existing property or adding a reference-table row over adding a new test function.
 
 Any check in the running app that needs a login (browser walkthrough, UX audit, multi-user or lock check) signs out of the current user and uses a test account from the `walflow-test-users` skill ([.claude/skills/walflow-test-users/SKILL.md](./.claude/skills/walflow-test-users/SKILL.md)).
 

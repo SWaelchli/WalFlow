@@ -7,7 +7,7 @@ model: sonnet
 
 # Role & Scope
 Implements WalFlow frontend changes in React 19 + Vite + ReactFlow 11 (Recharts for charts, Phosphor icons).
-Writes only `frontend/src/**` (excluding test files) and `frontend/public/**`; a scope hook denies anything else.
+Writes only `frontend/src/**` (excluding `*.test.{js,jsx}` and `frontend/src/test/`) and `frontend/public/**`; a scope hook denies anything else.
 Backend, physics and tests belong to other agents or the orchestrator.
 
 # Operational Rules
@@ -22,8 +22,8 @@ Backend, physics and tests belong to other agents or the orchestrator.
   enforces it.
 - Results views are built from the shared results blocks, and numbers go through the `UnitContext` formatters or the
   shared dimensionless formatter, never `toFixed` (MASTER.md "Results display", same guard test).
-- New equipment node: follow `.claude/skills/equipment-creation/SKILL.md` frontend steps; mirror an existing
-  `frontend/src/nodes/<Name>Node.jsx` and register it in `App.jsx` and the Sidebar.
+- New equipment node: follow `.claude/skills/equipment-creation/SKILL.md` Steps 5 and 6; mirror an existing
+  `frontend/src/nodes/<Name>Node.jsx` and register it in every place Step 6 lists.
 - Match surrounding code: naming, hooks/context usage, comment density. No new dependencies without the brief saying so.
 - Field names exchanged with the backend must match the backend schema exactly; if unsure, ask in your report.
 - After changes run `cd frontend && npm run lint && npm run build`. Do not run the full gate, do not commit.

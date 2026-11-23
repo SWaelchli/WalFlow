@@ -99,7 +99,7 @@ export default function SetupPanel({
   const renderNpshFields = () => (
     <>
       <div>
-        {renderLabel(`NPSHr (${isImperial ? 'ft' : 'm'}, 0 = not entered)`, 'npshr_m')}
+        {renderLabel(`NPSHr [${isImperial ? 'ft' : 'm'}] (0 = not entered)`, 'npshr_m')}
         <input
           type="number" min="0" step="0.1" placeholder="0"
           className="form-input" style={{ width: '100%' }}
@@ -109,7 +109,7 @@ export default function SetupPanel({
         />
       </div>
       <div>
-        {renderLabel(`NPSH margin (${isImperial ? 'ft' : 'm'})`, 'npsh_margin_m')}
+        {renderLabel(`NPSH margin [${isImperial ? 'ft' : 'm'}]`, 'npsh_margin_m')}
         <input
           type="number" min="0" step="0.1"
           className="form-input" style={{ width: '100%' }}
@@ -523,7 +523,7 @@ export default function SetupPanel({
           {!isNode && data.type !== 'SIGNAL' && (
             <>
               <div>
-                {renderLabel(`Pipe Length (${isImperial ? 'ft' : 'm'})`, 'length_m')}
+                {renderLabel(`Pipe Length [${isImperial ? 'ft' : 'm'}]`, 'length_m')}
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
@@ -551,7 +551,7 @@ export default function SetupPanel({
           {isNode && type === 'tank' && (
             <>
               <div>
-                {renderLabel(`Fluid Level (${isImperial ? 'ft' : 'm'})`, 'level_m')}
+                {renderLabel(`Fluid Level [${isImperial ? 'ft' : 'm'}]`, 'level_m')}
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
@@ -561,7 +561,7 @@ export default function SetupPanel({
                 />
               </div>
               <div>
-                {renderLabel(`Elevation (${isImperial ? 'ft' : 'm'})`, 'elevation_m')}
+                {renderLabel(`Elevation [${isImperial ? 'ft' : 'm'}]`, 'elevation_m')}
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
@@ -571,7 +571,7 @@ export default function SetupPanel({
                 />
               </div>
               <div>
-                {renderLabel(`Temp (${isImperial ? '°F' : '°C'})`, 'temperature_k')}
+                {renderLabel(`Temp [${isImperial ? '°F' : '°C'}]`, 'temperature_k')}
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
@@ -611,7 +611,7 @@ export default function SetupPanel({
                 />
               </div>
               <div>
-                {renderLabel(`Rated Head (${isImperial ? 'ft' : 'm'})`, 'head_rated_m')}
+                {renderLabel(`Rated Head [${isImperial ? 'ft' : 'm'}]`, 'head_rated_m')}
                 <input
                   type="number"
                   step="0.1"
@@ -728,7 +728,7 @@ export default function SetupPanel({
                 </p>
               </div>
               <div>
-                {renderLabel(`Motor Rating (${isImperial ? 'HP' : 'kW'})`, 'motor_power_kw')}
+                {renderLabel(`Motor Rating [${isImperial ? 'HP' : 'kW'}]`, 'motor_power_kw')}
                 <input 
                   type="number" 
                   step="0.1"
@@ -772,7 +772,7 @@ export default function SetupPanel({
               </div>
 
               <div>
-                {renderLabel(`Injected Temp (${isImperial ? '°F' : '°C'})`, 'temperature_k')}
+                {renderLabel(`Injected Temp [${isImperial ? '°F' : '°C'}]`, 'temperature_k')}
                 <input
                   type="number"
                   className="form-input" style={{ width: '100%' }}
@@ -967,7 +967,7 @@ export default function SetupPanel({
 
                 {!isDraw && (
                   <div>
-                    {renderLabel(`Injected Temp (${isImperial ? '°F' : '°C'})`, 'temperature_k')}
+                    {renderLabel(`Injected Temp [${isImperial ? '°F' : '°C'}]`, 'temperature_k')}
                     <input
                       type="number"
                       className="form-input" style={{ width: '100%' }}
@@ -1060,7 +1060,7 @@ export default function SetupPanel({
               </div>
               {renderValveStyle()}
               <div>
-                {renderLabel(`Set Temperature (${isImperial ? '°F' : '°C'})`, 'set_temperature_c')}
+                {renderLabel(`Set Temperature [${isImperial ? '°F' : '°C'}]`, 'set_temperature_c')}
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
@@ -1329,7 +1329,7 @@ export default function SetupPanel({
                 />
               </div>
               <div>
-                {renderLabel(`Cracking ΔP (${isImperial ? 'psi' : 'bar'})`, 'cracking_pressure_bar')}
+                {renderLabel(`Cracking ΔP [${isImperial ? 'psi' : 'bar'}]`, 'cracking_pressure_bar')}
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
@@ -1356,7 +1356,7 @@ export default function SetupPanel({
                 />
               </div>
               <div>
-                {renderLabel(`Cracking ΔP (${isImperial ? 'psi' : 'bar'})`, 'cracking_pressure_bar')}
+                {renderLabel(`Cracking ΔP [${isImperial ? 'psi' : 'bar'}]`, 'cracking_pressure_bar')}
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
@@ -1432,7 +1432,7 @@ export default function SetupPanel({
               </div>
               {(effectiveData.rating_method || "rated_duty") === "rated_duty" && (
                 <div>
-                  {renderLabel(`Rated Cooling (${isImperial ? 'BTU/h' : 'kW'})`, 'rated_cooling_kw')}
+                  {renderLabel(`Rated Cooling [${isImperial ? 'BTU/h' : 'kW'}]`, 'rated_cooling_kw')}
                   <input 
                     type="number" 
                     className="form-input" style={{ width: '100%' }} 
@@ -1444,7 +1444,7 @@ export default function SetupPanel({
               )}
               {((effectiveData.rating_method || "rated_duty") === "rated_duty" || (effectiveData.rating_method || "rated_duty") === "design_temps") && (
                 <div>
-                  {renderLabel(`Design Inlet Temp (${isImperial ? '°F' : '°C'})`, 'design_inlet_temp_c')}
+                  {renderLabel(`Design Inlet Temp [${isImperial ? '°F' : '°C'}]`, 'design_inlet_temp_c')}
                   <input 
                     type="number" 
                     className="form-input" style={{ width: '100%' }} 
@@ -1456,7 +1456,7 @@ export default function SetupPanel({
               )}
               {(effectiveData.rating_method || "rated_duty") === "design_temps" && (
                 <div>
-                  {renderLabel(`Design Outlet Temp (${isImperial ? '°F' : '°C'})`, 'design_outlet_temp_c')}
+                  {renderLabel(`Design Outlet Temp [${isImperial ? '°F' : '°C'}]`, 'design_outlet_temp_c')}
                   <input 
                     type="number" 
                     className="form-input" style={{ width: '100%' }} 
@@ -1494,7 +1494,7 @@ export default function SetupPanel({
               </div>
               {(effectiveData.cooler_type || "water_cooled") === "water_cooled" && (
                 <div>
-                  {renderLabel(`Cooling Medium Temp (${isImperial ? '°F' : '°C'})`, 'medium_temp_c')}
+                  {renderLabel(`Cooling Medium Temp [${isImperial ? '°F' : '°C'}]`, 'medium_temp_c')}
                   <input 
                     type="number" 
                     className="form-input" style={{ width: '100%' }} 
@@ -1505,7 +1505,7 @@ export default function SetupPanel({
                 </div>
               )}
               <div>
-                {renderLabel(`Rated ΔP (${isImperial ? 'psi' : 'bar'})`, 'rated_dp_bar')}
+                {renderLabel(`Rated ΔP [${isImperial ? 'psi' : 'bar'}]`, 'rated_dp_bar')}
                 <input 
                   type="number" step="0.01" 
                   className="form-input" style={{ width: '100%' }} 
@@ -1520,7 +1520,7 @@ export default function SetupPanel({
           {isNode && type === 'filter' && (
             <>
               <div>
-                {renderLabel(`Clean ΔP (${isImperial ? 'psi' : 'bar'})`, 'dp_clean_bar')}
+                {renderLabel(`Clean ΔP [${isImperial ? 'psi' : 'bar'}]`, 'dp_clean_bar')}
                 <input 
                   type="number" step="0.01" 
                   className="form-input" style={{ width: '100%' }} 
@@ -1530,7 +1530,7 @@ export default function SetupPanel({
                 />
               </div>
               <div>
-                {renderLabel(`Terminal ΔP (${isImperial ? 'psi' : 'bar'})`, 'dp_terminal_bar')}
+                {renderLabel(`Terminal ΔP [${isImperial ? 'psi' : 'bar'}]`, 'dp_terminal_bar')}
                 <input 
                   type="number" step="0.1" 
                   className="form-input" style={{ width: '100%' }} 
@@ -1749,7 +1749,7 @@ export default function SetupPanel({
                 />
               </div>
               <div>
-                {renderLabel(`Baseline Temp (${isImperial ? '°F' : '°C'})`, 'temp_base_c')}
+                {renderLabel(`Baseline Temp [${isImperial ? '°F' : '°C'}]`, 'temp_base_c')}
                 <input 
                   type="number" 
                   step="0.5"

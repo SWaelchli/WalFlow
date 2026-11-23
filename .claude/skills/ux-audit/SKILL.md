@@ -6,6 +6,9 @@ compatibility: claude-code-only
 
 # UX Audit
 
+> **WalFlow:** read [references/walflow.md](references/walflow.md) before anything else. It overrides this file and
+> every reference file (desktop only, Chrome only, test accounts, no dialogs, thresholds, no fixing during the audit).
+
 Walk through a live web app AS a real user. The audit is **interaction-first** — typing, clicking, sending, watching, screenshotting. A static DOM sweep cannot produce a verdict.
 
 ## Verdict states
@@ -15,7 +18,7 @@ The audit ends in exactly one of:
 - **Pass** — Critical = 0, High = 0, all hard gates green, Interaction Manifest complete.
 - **Conditional Pass** — Critical = 0, High = 0, all hard gates green, but Medium/Low present.
 - **Fail** — at least one Critical or High finding, OR a hard gate red.
-- **Incomplete** — Interaction Manifest missing required entries, a phase wasn't run, OR the audit-the-audit meta-check fires (manifest timestamps clustered < 0.5s apart, screenshots fewer than 2 × routes, console reads fewer than 1 × routes, Phase 3 took < 1m for an exhaustive audit). Not legal to upgrade to Pass even if everything observed looked fine.
+- **Incomplete** — Interaction Manifest missing required entries, a phase wasn't run, OR the audit-the-audit meta-check fires (manifest timestamps clustered < 0.5s apart, screenshots fewer than 2 × routes, console reads fewer than 1 × routes, Phase 3 took < 5m for an exhaustive audit). Not legal to upgrade to Pass even if everything observed looked fine.
 
 If the work doesn't include a complete Interaction Manifest, the only legal verdict is **Incomplete**. "It looked OK" is not Pass. A clean Pass with implausible timings is rejected — the agent must redo the audit with real interaction.
 
@@ -40,7 +43,7 @@ These auto-fail the audit. They cannot be downgraded.
 
 A console warning is High *minimum*. A 5xx is Critical *automatically*. There is no "Medium console error" — that category does not exist in this skill.
 
-axe-core thresholds are run **per page** (>1 violation on any single page fails). Performance thresholds are run **once on a representative route** (per-page is overkill); pragmatic budget is well above broken, well below CWV-strict. Full thresholds + rationale in [references/performance-budget.md](references/performance-budget.md). Full a11y wiring + severity mapping in [references/a11y-automation.md](references/a11y-automation.md).
+axe-core thresholds are run **per page** (any Critical or Serious violation on a single page fails). Performance thresholds are run **once on a representative route** (per-page is overkill); pragmatic budget is well above broken, well below CWV-strict. Full thresholds + rationale in [references/performance-budget.md](references/performance-budget.md). Full a11y wiring + severity mapping in [references/a11y-automation.md](references/a11y-automation.md).
 
 ### Allowlist for known noise
 
@@ -56,7 +59,7 @@ Default without a config: every console error / warning is a finding. Format, se
 4. **Polish** — visual polish sweep, component perfection checklist
 5. **Stress** — scenario battery (11 scenarios) + extended stress recipes
 6. **Verdict** — verdict state, hard-gate scorecard, perfection roadmap, findings with reproduction
-7. **Fix-and-verify** — patch findings, re-walk affected slices, update report
+7. **Fix-and-verify** — patch findings, re-walk affected slices, update report (WalFlow: replaced by "No fixing during the audit" in `references/walflow.md`)
 
 For a 30-second pre-deploy check, use the dogfood drill at the bottom of this file — a project-level rule, not a skill invocation.
 
@@ -105,7 +108,7 @@ Prefer the deployed/live version — real auth, real latency, real CDN and CORS.
 
 ### 4. Viewport
 
-Pin the window at 1440×900 to start. Phase 3 multi-pane stress tests 375 / 768 / 1024 / 1280 / 1440 / 1920. **Do not go above 2000px** — it breaks the harness.
+Pin the window at 1440×900 to start. Phase 3 multi-pane stress tests 375 / 768 / 1024 / 1280 / 1440 / 1920 (WalFlow: no 375, see `references/walflow.md`). **Do not go above 2000px** — it breaks the harness.
 
 ### 5. Capability tests
 
@@ -182,7 +185,7 @@ For each thread:
 2. **Walk as the persona** — if they'd skim, skim. If they'd misread a label, misread it. Note hesitations.
 3. **Screenshot every state change** — default → hover/focus → active → after click → after load → confirmation. Save to `screenshots/<filename>.png`. The filmstrip is the evidence, and **must be embedded directly in `report.md`** under the thread's narrative section using markdown image syntax (`![Caption](screenshots/<filename>.png)` and `*Figure N: Caption.*`).
 4. **Track the cost** — click count, decision points, dead ends, interrupt recovery (close tab at step 3, return at step 4 — did state survive?)
-5. **Hand screenshots to a sub-agent for review** at the end of each thread.
+5. **Optionally hand the thread's screenshots to a sub-agent for a second look** at the end of each thread. The browser itself stays in the main session (see Execution discipline).
 
 At the end of each thread, answer (as the persona): *Did it end clearly? Would I come back? One thing to make this twice as easy?*
 
@@ -258,7 +261,7 @@ Component-level granularity that page-level audits miss. Six categories, each wi
 2. **Inputs & Forms** — persistent labels, masks, inline validation, error clarity, defaulting
 3. **Navigation & Hierarchy** — Where am I?, click depth, search logic, sticky headers
 4. **Visual Coherence** — icon consistency, empty states, border radii, contrast ratio
-5. **Mobile & Touch** — tappable surface (≥ 48×48), keyboard optimisation, swipe gestures
+5. **Mobile & Touch** — tappable surface (≥ 44×44, as in the reference checklists), keyboard optimisation, swipe gestures (skip for desktop-only apps)
 6. **Performance & Feedback** — skeleton screens, success toasts, confirmation modals only for high-stakes
 
 Plus six visual states per major component (default, skeleton, empty, partial, error, disabled) — skeleton-on-blank is not a skeleton.
@@ -282,7 +285,7 @@ Total runtime for a 16-route audit is ~16 seconds. Allowlist via the project's a
 
 ### Performance budget (pragmatic, mandatory)
 
-Run the Performance API capture once on a representative route (the page real users hit most — usually dashboard or main work surface). Pragmatic thresholds (LCP < 4.0s, CLS < 0.25, INP < 500ms) sit well above broken and well below Google's CWV "Good" tier. CWV-strict is for landing pages and marketing teams; for app interiors that real users sit inside, pragmatic is the right bar.
+Run the Performance API capture once on a representative route (the page real users hit most — usually dashboard or main work surface). Pragmatic thresholds (LCP < 4.0s, CLS ≤ 0.25, INP < 500ms) sit well above broken and well below Google's CWV "Good" tier. CWV-strict is for landing pages and marketing teams; for app interiors that real users sit inside, pragmatic is the right bar.
 
 Add to verdict block. Hard-gate any threshold breach. Diagnose with Chrome DevTools Performance trace (large hero, late font, heavy click handler, hydration cost). Full measurement snippet, throttling spec, and common offenders in [references/performance-budget.md](references/performance-budget.md).
 
@@ -290,7 +293,7 @@ Add to verdict block. Hard-gate any threshold breach. Diagnose with Chrome DevTo
 
 ### Scenario Battery (11 scenarios)
 
-All eleven, always. They catch what screen-by-screen testing misses. Full protocols in [references/scenario-tests.md](references/scenario-tests.md).
+All eleven, unless the project's adaptation file narrows one (WalFlow: Scenario 11). They catch what screen-by-screen testing misses. Full protocols in [references/scenario-tests.md](references/scenario-tests.md).
 
 1. **First Contact** — figure out the app with zero prior knowledge, write a 2-min plain-English guide to each thread.
 2. **Interrupted Workflow** — start a task, close the tab, refresh, navigate away mid-form. Does state survive?
@@ -362,7 +365,7 @@ A fresh sub-agent works because the original drafter is invested in its own outp
 
 | Signal | Implies |
 |---|---|
-| Phase 3 took < 1m / manifest first→last span < 5m for exhaustive | Walkthrough skipped or rushed |
+| Phase 3 took < 5m (manifest first→last span) for an exhaustive audit | Walkthrough skipped or rushed |
 | Median gap between manifest entries < 0.5s | Entries batch-emitted, no real interaction |
 | Screenshots fewer than 2 × routes / console reads fewer than 1 × routes | Pages weren't actually checked |
 | Top 5 missing or padded with filler slots | Discipline broken (see [audit-output-discipline.md](references/audit-output-discipline.md)) |
@@ -417,7 +420,9 @@ Full report structure in [references/report-template.md](references/report-templ
 
 ## Phase 7 — Fix-and-verify
 
-After the report, offer the loop:
+**WalFlow: skip this phase.** Follow "No fixing during the audit" in [references/walflow.md](references/walflow.md).
+
+Elsewhere, after the report, offer the loop:
 
 > *"Found N Critical and M High issues. Fix them now and re-verify?"*
 
@@ -453,7 +458,7 @@ Six steps, ~30 seconds. Catches behavioural bugs that surface immediately. Pair 
 
 ## Playwright killer-flow tests
 
-Audits find what's broken now. Tests prevent regressions. Recommend writing 10-15 Playwright tests for the killer flows — see [references/playwright-killer-flows.md](references/playwright-killer-flows.md) for starter examples (input clears after send, no console warnings on mount, message column width ≥ 200px after thread open, @-mention exactly one pill, etc.). Run on every deploy via CI.
+Audits find what's broken now. Tests prevent regressions. (Not for WalFlow, which has no end-to-end tests; see `references/walflow.md`.) Recommend writing 10-15 Playwright tests for the killer flows — see [references/playwright-killer-flows.md](references/playwright-killer-flows.md) for starter examples (input clears after send, no console warnings on mount, message column width ≥ 200px after thread open, @-mention exactly one pill, etc.). Run on every deploy via CI.
 
 ## Autonomy
 
@@ -464,7 +469,7 @@ Audits find what's broken now. Tests prevent regressions. Recommend writing 10-1
 ## Execution discipline
 
 1. **Drive the audit from the main session, not a sub-agent.** Cross-interaction state lives in the session that's been watching. A fresh sub-agent starts cold and misses second-order findings.
-2. **Use the browser tool directly.** Chrome MCP or Playwright MCP from the main session. Don't hand screenshots to a fresh agent for opinions.
+2. **Use the browser tool directly.** Chrome MCP or Playwright MCP from the main session. A sub-agent may review screenshots as a second opinion, but the findings and the verdict come from the session that drove the browser.
 3. **Loop to exhaustion with variations.** After each pass, generate a new angle (different persona, different workflow, different input volume, different starting point). Stop only when a full pass produces no new findings.
 
 For audits expected to run > 30 minutes, set up a 15-min `/loop` check-in alongside the main session — it journals findings, grounds the session, and provides a natural termination signal. See [references/long-running-check-in-pattern.md](references/long-running-check-in-pattern.md).
@@ -473,6 +478,7 @@ For audits expected to run > 30 minutes, set up a 15-min `/loop` check-in alongs
 
 | When | Read |
 |------|------|
+| **WalFlow overrides (read first in this repo)** | [references/walflow.md](references/walflow.md) |
 | **Cross-skill output discipline** (Top 5, self-critique, smallest-patch, proof-PASS, hold-this) | [references/audit-output-discipline.md](references/audit-output-discipline.md) |
 | **Project adaptation** — non-default stacks (NextAuth/Lucia/Devise/Django auth, Prisma/TypeORM/ActiveRecord seeds, WordPress/Rails/Django URL discovery, persona library by app type) | [references/project-adaptation.md](references/project-adaptation.md) |
 | Persona library + writing protocol + persona-overload pattern | [references/persona-lock.md](references/persona-lock.md) |

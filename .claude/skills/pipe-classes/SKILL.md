@@ -1,10 +1,7 @@
 ---
 name: pipe-classes
-description: Knowledge and operational guide for managing and modeling pipe classes in WalFlow, integrating with Equinor TR2000 REST API, project-level spec filtering, and edge hydraulic properties.
+description: Pipe classes in WalFlow - the pipe class and fitting catalogue database, sizes and schedules, the /api/pipe-classes endpoints, the Equinor TR2000 sync, project-level allowed classes, and the pipe (edge) fields in a saved drawing. Use whenever a task touches pipe classes, schedules or reducer catalogues, surface roughness per material, TR2000 import, the Catalogue page, or how a pipe edge gets its diameter and roughness.
 argument-hint: "[pipe-class-code or standard-name]"
-license: MIT
-metadata:
-  version: "1.0.0"
 ---
 
 # Pipe Classes in WalFlow
@@ -104,9 +101,9 @@ API responses add `nps`, `od_mm`, `wt_mm`, `id_mm` to every row (looked up in th
 
 ---
 
-## 🎨 Diagram Format (.wlf v0.2) Edge Representation
+## 🎨 Diagram Format (.wlf) Edge Representation
 
-Hydraulic edges in WalFlow format version `0.2` store (field list: `backend/simulation/equipment/pipe.md`):
+Hydraulic edges in a saved drawing (file format version: `FILE_FORMAT_VERSION` in `backend/constants.py`) store (field list: `backend/simulation/equipment/pipe.md`):
 
 ```json
 {
@@ -129,6 +126,13 @@ Hydraulic edges in WalFlow format version `0.2` store (field list: `backend/simu
   }
 }
 ```
+
+---
+
+### TR2000 on the corporate network
+
+On a corporate PC the TR2000 calls can fail with a TLS certificate error (an intercepting proxy). That is the
+environment, not an app bug: the import cannot be checked there. Test TR2000 sync on another network.
 
 ---
 
