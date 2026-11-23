@@ -161,7 +161,7 @@ export default function SetupPanel({
         }
       } else if (field === 'max_discharge_pressure_bara') {
         if (isNaN(numericValue) || numericValue <= 1.0) {
-          notify(`Max. discharge pressure must be above 1 bar absolute (14.5 psia).`, 'warning');
+          notify(`Max. discharge pressure must be above 1 bar(a) (14.5 psia).`, 'warning');
           setLocalDrafts({});
           return;
         }
@@ -601,7 +601,7 @@ export default function SetupPanel({
                 </select>
               </div>
               <div>
-                {renderLabel(`Rated Flow (${labels.flow})`, 'flow_rated_lmin')}
+                {renderLabel(`Rated Flow [${labels.flow}]`, 'flow_rated_lmin')}
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
@@ -636,7 +636,7 @@ export default function SetupPanel({
                 )}
               </div>
               <div>
-                {renderLabel('Rise to Shut-off (%)', 'rise_to_shutoff_pct')}
+                {renderLabel('Rise to Shut-off [%]', 'rise_to_shutoff_pct')}
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
@@ -646,7 +646,7 @@ export default function SetupPanel({
                 />
               </div>
               <div>
-                {renderLabel('Pump Efficiency (%)', 'efficiency_pct')}
+                {renderLabel('Pump Efficiency [%]', 'efficiency_pct')}
                 <input
                   type="number"
                   min="1" max="100" step="1"
@@ -685,7 +685,7 @@ export default function SetupPanel({
                 </select>
               </div>
               <div>
-                {renderLabel(`Rated Flow (${labels.flow})`, 'flow_rated_lmin')}
+                {renderLabel(`Rated Flow [${labels.flow}]`, 'flow_rated_lmin')}
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
@@ -712,7 +712,7 @@ export default function SetupPanel({
                 </p>
               </div>
               <div>
-                {renderLabel(`Max. Discharge Pressure (${labels.pressureAbs})`, 'max_discharge_pressure_bara')}
+                {renderLabel(`Max. Discharge Pressure [${labels.pressureAbs}]`, 'max_discharge_pressure_bara')}
                 <input
                   type="number"
                   step="1"
@@ -739,7 +739,7 @@ export default function SetupPanel({
                 />
               </div>
               <div>
-                {renderLabel('Pump Efficiency (%)', 'efficiency_pct')}
+                {renderLabel('Pump Efficiency [%]', 'efficiency_pct')}
                 <input
                   type="number"
                   className="form-input" style={{ width: '100%' }}
@@ -758,7 +758,7 @@ export default function SetupPanel({
           {isNode && type === 'pressure_boundary' && (
             <>
               <div>
-                {renderLabel(`Set Pressure (${labels.pressureAbs})`, 'set_pressure_bara')}
+                {renderLabel(`Set Pressure [${labels.pressureAbs}]`, 'set_pressure_bara')}
                 <input
                   type="number"
                   className="form-input" style={{ width: '100%' }}
@@ -854,7 +854,7 @@ export default function SetupPanel({
 
                 {!perPort && (
                 <div>
-                  {renderLabel(`Set Flow (${labels.flow})`, 'set_flow_lmin')}
+                  {renderLabel(`Set Flow [${labels.flow}]`, 'set_flow_lmin')}
                   <input
                     type="number"
                     min="0"
@@ -899,7 +899,7 @@ export default function SetupPanel({
                 {perPort && (
                   <div>
                     <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>
-                      {`Flow per port (${labels.flow})`}
+                      {`Flow per port [${labels.flow}]`}
                     </label>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '2px' }}>
                       {Array.from({ length: nPorts }, (_, k) => {
@@ -936,7 +936,7 @@ export default function SetupPanel({
 
                 {!isDraw && (
                   <div>
-                    {renderLabel(`Max. Discharge Pressure (${pressureUnit})`, 'max_discharge_pressure_bara')}
+                    {renderLabel(`Max. Discharge Pressure [${pressureUnit}]`, 'max_discharge_pressure_bara')}
                     <input
                       type="number"
                       className="form-input" style={{ width: '100%' }}
@@ -951,7 +951,7 @@ export default function SetupPanel({
 
                 {isDraw && (
                   <div>
-                    {renderLabel(`Min. Suction Pressure (${pressureUnit})`, 'min_suction_pressure_bara')}
+                    {renderLabel(`Min. Suction Pressure [${pressureUnit}]`, 'min_suction_pressure_bara')}
                     <input
                       type="number"
                       min="0"
@@ -1030,7 +1030,7 @@ export default function SetupPanel({
                 </select>
               </div>
               <div>
-                {renderLabel(`Set Point (${labels.pressureAbs})`, 'set_pressure_pa')}
+                {renderLabel(`Set Point [${labels.pressureAbs}]`, 'set_pressure_pa')}
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
@@ -1098,7 +1098,7 @@ export default function SetupPanel({
               </div>
               {renderValveStyle()}
               <div>
-                {renderLabel('Opening (%)', 'opening_pct')}
+                {renderLabel('Opening [%]', 'opening_pct')}
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
@@ -1118,7 +1118,7 @@ export default function SetupPanel({
           {isNode && (type === 'pressure_safety_valve' || type === 'psv') && (
             <>
               <div>
-                {renderLabel(`Set Pressure (${gaugeLabel})`, 'set_pressure_barg')}
+                {renderLabel(`Set Pressure [${gaugeLabel}]`, 'set_pressure_barg')}
                 <input
                   type="number" step="0.1" min="0.01"
                   className="form-input" style={{ width: '100%' }}
@@ -1131,7 +1131,7 @@ export default function SetupPanel({
                   <div role="alert" style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', marginTop: '6px', padding: '6px 8px', borderRadius: '6px', backgroundColor: '#FEF3C7', border: '1px solid #FCD34D', fontSize: 'var(--fs-xs)', color: 'var(--color-warning-text-strong)' }}>
                     <WarningIcon size={12} color="var(--color-warning-text-strong)" style={{ flexShrink: 0, marginTop: '1px' }} />
                     <span>
-                      Set Pressure ({gaugeLabel}) missing. Relief devices are set in gauge pressure since v0.2; this device{effectiveData.set_pressure_bar ? ` had ${effectiveData.set_pressure_bar} bar a` : ''}. Enter the set pressure from the datasheet; the simulation will not run until then.
+                      Set Pressure [{gaugeLabel}] missing. Relief devices are set in gauge pressure since v0.2; this device{effectiveData.set_pressure_bar ? ` had ${effectiveData.set_pressure_bar} bar(a)` : ''}. Enter the set pressure from the datasheet; the simulation will not run until then.
                     </span>
                   </div>
                 ) : (
@@ -1141,7 +1141,7 @@ export default function SetupPanel({
                 )}
               </div>
               <div>
-                {renderLabel('Flow Coefficient (Cv)', 'cv')}
+                {renderLabel('Flow Coefficient [Cv]', 'cv')}
                 <input 
                   type="number" step="0.1" min="0.001"
                   className="form-input" style={{ width: '100%' }} 
@@ -1171,7 +1171,7 @@ export default function SetupPanel({
               </div>
               {psvValveType === 'conventional' && (
                 <div>
-                  {renderLabel(`Design Superimposed Backpressure (${gaugeLabel})`, 'design_superimposed_bp_barg')}
+                  {renderLabel(`Design Superimposed Backpressure [${gaugeLabel}]`, 'design_superimposed_bp_barg')}
                   <input
                     type="number" step="0.1" min="0"
                     className="form-input" style={{ width: '100%' }}
@@ -1205,7 +1205,7 @@ export default function SetupPanel({
               </div>
               {psvActionMode === 'pop_action' && (
                 <div>
-                  {renderLabel('Blowdown (% of set)', 'blowdown_pct')}
+                  {renderLabel('Blowdown [% of set]', 'blowdown_pct')}
                   <input 
                     type="number" step="0.5" min="0" max="50"
                     className="form-input" style={{ width: '100%' }} 
@@ -1241,7 +1241,7 @@ export default function SetupPanel({
           {isNode && type === 'rupture_disc' && (
             <>
               <div>
-                {renderLabel(`Burst Pressure (${gaugeLabel})`, 'burst_pressure_barg')}
+                {renderLabel(`Burst Pressure [${gaugeLabel}]`, 'burst_pressure_barg')}
                 <input
                   type="number" step="0.1" min="0.01"
                   className="form-input" style={{ width: '100%' }}
@@ -1254,7 +1254,7 @@ export default function SetupPanel({
                   <div role="alert" style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', marginTop: '6px', padding: '6px 8px', borderRadius: '6px', backgroundColor: '#FEF3C7', border: '1px solid #FCD34D', fontSize: 'var(--fs-xs)', color: 'var(--color-warning-text-strong)' }}>
                     <WarningIcon size={12} color="var(--color-warning-text-strong)" style={{ flexShrink: 0, marginTop: '1px' }} />
                     <span>
-                      Burst Pressure ({gaugeLabel}) missing. Relief devices are set in gauge pressure since v0.2; this device{effectiveData.burst_pressure_bar ? ` had ${effectiveData.burst_pressure_bar} bar a` : ''}. Enter the burst pressure from the datasheet; the simulation will not run until then.
+                      Burst Pressure [{gaugeLabel}] missing. Relief devices are set in gauge pressure since v0.2; this device{effectiveData.burst_pressure_bar ? ` had ${effectiveData.burst_pressure_bar} bar(a)` : ''}. Enter the burst pressure from the datasheet; the simulation will not run until then.
                     </span>
                   </div>
                 ) : (
@@ -1276,7 +1276,7 @@ export default function SetupPanel({
               </div>
               {effectiveData.bore_type === 'reduced_bore' ? (
                 <div>
-                  {renderLabel(`Orifice Restriction Diameter (${isImperial ? 'in' : 'mm'})`, 'orifice_diameter_m')}
+                  {renderLabel(`Orifice Restriction Diameter [${isImperial ? 'in' : 'mm'}]`, 'orifice_diameter_m')}
                   <input 
                     type="number" 
                     className="form-input" style={{ width: '100%' }} 
@@ -1290,7 +1290,7 @@ export default function SetupPanel({
                 </div>
               ) : (
                 <div>
-                  {renderLabel('Flow Coefficient (Cv)', 'cv')}
+                  {renderLabel('Flow Coefficient [Cv]', 'cv')}
                   <input 
                     type="number" step="0.1" min="0.001"
                     className="form-input" style={{ width: '100%' }} 
@@ -1318,7 +1318,7 @@ export default function SetupPanel({
           {isNode && type === 'check_valve' && (
             <>
               <div>
-                {renderLabel('Flow Coefficient (Cv)', 'cv')}
+                {renderLabel('Flow Coefficient [Cv]', 'cv')}
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
@@ -1345,7 +1345,7 @@ export default function SetupPanel({
           {isNode && type === 'check_valve_orifice' && (
             <>
               <div>
-                {renderLabel('Flow Coefficient (Cv)', 'cv')}
+                {renderLabel('Flow Coefficient [Cv]', 'cv')}
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
@@ -1367,7 +1367,7 @@ export default function SetupPanel({
                 />
               </div>
               <div>
-                {renderLabel(`Orifice Diameter (${isImperial ? 'in' : 'mm'})`, 'orifice_diameter_m')}
+                {renderLabel(`Orifice Diameter [${isImperial ? 'in' : 'mm'}]`, 'orifice_diameter_m')}
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
@@ -1421,7 +1421,7 @@ export default function SetupPanel({
                 </select>
               </div>
               <div>
-                {renderLabel(`Rated Flow (${labels.flow})`, 'rated_flow_lmin')}
+                {renderLabel(`Rated Flow [${labels.flow}]`, 'rated_flow_lmin')}
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
@@ -1468,7 +1468,7 @@ export default function SetupPanel({
               )}
               {(effectiveData.rating_method || "rated_duty") === "ua_direct" && (
                 <div>
-                  {renderLabel('Heat Transfer Coeff (UA, W/K)', 'ua_direct_w_k')}
+                  {renderLabel('Heat Transfer Coeff [UA, W/K]', 'ua_direct_w_k')}
                   <input 
                     type="number" 
                     className="form-input" style={{ width: '100%' }} 
@@ -1540,7 +1540,7 @@ export default function SetupPanel({
                 />
               </div>
               <div>
-                {renderLabel(`Rated Flow (${labels.flow})`, 'flow_ref_lmin')}
+                {renderLabel(`Rated Flow [${labels.flow}]`, 'flow_ref_lmin')}
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
@@ -1550,7 +1550,7 @@ export default function SetupPanel({
                 />
               </div>
               <div>
-                {renderLabel('Clogging Level (%)', 'clogging_pct')}
+                {renderLabel('Clogging Level [%]', 'clogging_pct')}
                 <input 
                   type="number" 
                   className="form-input" style={{ width: '100%' }} 
@@ -1560,7 +1560,7 @@ export default function SetupPanel({
                 />
               </div>
               <div>
-                {renderLabel('Reference viscosity (mPa·s, 0 = auto)', 'ref_viscosity_mpas')}
+                {renderLabel('Reference viscosity [mPa·s] (0 = auto)', 'ref_viscosity_mpas')}
                 <input 
                   type="number" min="0" step="1" placeholder="auto"
                   className="form-input" style={{ width: '100%' }} 
@@ -1620,7 +1620,7 @@ export default function SetupPanel({
                 </div>
 
                 <div>
-                  {renderLabel(`Orifice Restriction Diameter (${isImperial ? 'in' : 'mm'})`, 'orifice_diameter_m')}
+                  {renderLabel(`Orifice Restriction Diameter [${isImperial ? 'in' : 'mm'}]`, 'orifice_diameter_m')}
                   <input 
                     type="number" 
                     className="form-input" style={{ width: '100%' }} 
@@ -1716,7 +1716,7 @@ export default function SetupPanel({
                 </select>
               </div>
               <div>
-                {renderLabel(`Baseline Flow (${labels.flow})`, 'flow_base_lmin')}
+                {renderLabel(`Baseline Flow [${labels.flow}]`, 'flow_base_lmin')}
                 <input 
                   type="number" 
                   step="0.1"
@@ -1727,7 +1727,7 @@ export default function SetupPanel({
                 />
               </div>
               <div>
-                {renderLabel(`Baseline Inlet Pressure (${labels.pressureAbs})`, 'inlet_pressure_base_bara')}
+                {renderLabel(`Baseline Inlet Pressure [${labels.pressureAbs}]`, 'inlet_pressure_base_bara')}
                 <input 
                   type="number" 
                   step="0.05"
@@ -1738,7 +1738,7 @@ export default function SetupPanel({
                 />
               </div>
               <div>
-                {renderLabel(`Baseline Outlet Pressure (${labels.pressureAbs})`, 'outlet_pressure_base_bara')}
+                {renderLabel(`Baseline Outlet Pressure [${labels.pressureAbs}]`, 'outlet_pressure_base_bara')}
                 <input 
                   type="number" 
                   step="0.05"

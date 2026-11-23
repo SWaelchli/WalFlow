@@ -100,8 +100,8 @@ const UnitContext = createContext({
   setFlowUnit: () => {},
   atmosphericPa: DEFAULT_ATM_PA,
   setAtmosphericPressure: () => {},
-  basisLabel: 'bar a',
-  gaugeLabel: 'bar g',
+  basisLabel: 'bar(a)',
+  gaugeLabel: 'bar(g)',
   formatPressure: () => '',
   formatPressurePa: () => '',
   formatDiffPressure: () => '',
@@ -220,7 +220,7 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
     return formatDiffPressureFromPa(valPa, unitSystem, decimals);
   }, [unitSystem]);
 
-  // Gauge-only pressure (relief set / burst pressure) with its unit: "18.99 bar g" / "275.4 psig"
+  // Gauge-only pressure (relief set / burst pressure) with its unit: "18.99 bar(g)" / "275.4 psig"
   const formatPressureGauge = useCallback((valBarg, decimals = 2) => {
     return formatGaugeBarWithUnit(valBarg, unitSystem, decimals);
   }, [unitSystem]);

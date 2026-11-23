@@ -76,7 +76,7 @@ const renderNodePanel = (node, unitSystem = UNIT_SYSTEMS.METRIC, allEdges = []) 
 describe('leaving an untouched field does not rewrite it', () => {
   const regulator = { id: 'r1', type: 'linear_regulator', data: { max_cv: 0.05, set_pressure_pa: 225000, label: 'PRV' } };
 
-  it('keeps a 2.25 bar a setpoint exact and shows it without rounding to 2.3', () => {
+  it('keeps a 2.25 bar(a) setpoint exact and shows it without rounding to 2.3', () => {
     const onUpdate = renderNodePanel(regulator);
     const input = screen.getByDisplayValue('2.25');
     fireEvent.focus(input);

@@ -102,7 +102,7 @@ export default function InstrumentSetup({ id, data, allNodes = [], allEdges = []
       </div>
 
       <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '8px' }}>
-        <span style={{ ...fieldLabel, fontWeight: 'bold' }}>Alarm limits ({unit})</span>
+        <span style={{ ...fieldLabel, fontWeight: 'bold' }}>Alarm limits [{unit}]</span>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', marginTop: '4px' }}>
           {ALARM_KEYS.map((key) => (
             <div key={key}>

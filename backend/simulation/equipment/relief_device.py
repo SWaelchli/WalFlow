@@ -13,7 +13,7 @@ class ReliefDevice(HydraulicNode):
     """
     Shared model of the pressure relief devices (PSV, rupture disc).
 
-    Set pressures are gauge (barg, API 520 / ISO 4126); a device opens when its inlet gauge pressure
+    Set pressures are gauge (bar(g), API 520 / ISO 4126); a device opens when its inlet gauge pressure
     P_in − P_atm reaches the set pressure. Whether a device is open is decided between hydraulic
     solves (update_relief_state) and held fixed during a Newton solve, so its branch never flips
     mid-iteration. Inside a solve the device is a flow equation

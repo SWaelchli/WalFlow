@@ -14,7 +14,7 @@ class PressureBoundary(NeutralPortNode):
     def __init__(
         self,
         name: str,
-        set_pressure: float = 600_000.0,   # 6 bara default
+        set_pressure: float = 600_000.0,   # 6 bar(a) default
         temperature: float = 293.15,       # 20 °C default
         num_ports: int = 1,
     ):

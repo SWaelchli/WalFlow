@@ -7,7 +7,7 @@ class RuptureDisc(ReliefDevice):
     """
     Dedicated Rupture Disc (Burst Diaphragm) safety equipment node.
     Evaluates as intact at the start of each simulation run; if the inlet gauge pressure reaches the burst
-    pressure (barg) it bursts open and stays open for the run. Supports Full Bore (Cv-governed) vs
+    pressure (bar(g)) it bursts open and stays open for the run. Supports Full Bore (Cv-governed) vs
     Reduced Bore (Orifice-governed) flow math.
     """
     def __init__(

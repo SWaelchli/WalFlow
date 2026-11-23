@@ -23,11 +23,11 @@ Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_RE
 
 ### 3.1 Set pressure
 
-Set and burst pressures are entered in **barg**. A device acts on its inlet gauge pressure:
+Set and burst pressures are entered in **bar(g)**. A device acts on its inlet gauge pressure:
 
 $$P_{\text{set,abs}} = P_{\text{set,g}} \cdot 10^5 + P_{\text{atm}}$$
 
-$P_{\text{atm}}$ is the atmospheric pressure from the global settings. A set pressure below 0.01 barg is raised to 0.01 barg. Older files with an absolute set pressure under another key are not converted; the parser asks for the gauge value.
+$P_{\text{atm}}$ is the atmospheric pressure from the global settings. A set pressure below 0.01 bar(g) is raised to 0.01 bar(g). Older files with an absolute set pressure under another key are not converted; the parser asks for the gauge value.
 
 A device opens on its **opening margin** (`opening_margin_pa`):
 
@@ -136,7 +136,7 @@ Shared inputs (the component documents list the full tables):
 
 | Parameter (UI Label) | UI Unit | Backend Var | SI Unit | Default | Valid Range | Description |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| Set Pressure / Burst Pressure | barg (psig) | `self.set_pressure_barg` | barg (→ Pa abs) | required | $> 0$ | Opening pressure, gauge |
+| Set Pressure / Burst Pressure | bar(g) (psig) | `self.set_pressure_barg` | bar(g) (→ Pa abs) | required | $> 0$ | Opening pressure, gauge |
 | Forced state | text | `self.forced_state` | - | auto | auto, forced_open, forced_closed | Contingency override |
 | Ramp during relief analysis | bool | `self.relief_ramp_enabled` | - | true | - | On the drivers (pumps, supplies; not a drawing flow boundary), not on the device (see [base_node.md](base_node.md)) |
 
@@ -152,13 +152,13 @@ Shared inputs (the component documents list the full tables):
 
 | Test | Benchmark |
 | :--- | :--- |
-| `backend/tests/unit/equipment/test_relief_devices.py::test_f1_09_set_10_barg_opens_at_11_013_bara` | 10 barg modulating PSV: set 11.01325 bar(a); closed at 10.99 bar(a), open at 11.03 bar(a) |
+| `backend/tests/unit/equipment/test_relief_devices.py::test_f1_09_set_10_barg_opens_at_11_013_bara` | 10 bar(g) modulating PSV: set 11.01325 bar(a); closed at 10.99 bar(a), open at 11.03 bar(a) |
 | `test_relief_devices.py::test_f1_09_opening_follows_the_atmospheric_pressure_setting` | The opening follows the atmospheric pressure setting |
-| `test_relief_devices.py::test_f1_38_capacity_is_100_pct_at_10_pct_overpressure` | 20 barg, Cv 10, at 110 % set: flow and rated flow within 0.5 %, utilisation 100 % within 0.5, lift > 99.9 % |
+| `test_relief_devices.py::test_f1_38_capacity_is_100_pct_at_10_pct_overpressure` | 20 bar(g), Cv 10, at 110 % set: flow and rated flow within 0.5 %, utilisation 100 % within 0.5, lift > 99.9 % |
 | `test_relief_devices.py::test_f1_38_overcapacity_above_rated_flow` | Forced open at 30 bar Δp vs 22 bar rated: utilisation $100\sqrt{30/22}$ % within 0.5 %, `overcapacity` |
-| `test_relief_devices.py::test_rated_flow_uses_the_full_lift_overpressure` | 0.05 barg set (10 mbar overpressure floor): flow at full lift equals the rated flow within 1 % |
+| `test_relief_devices.py::test_rated_flow_uses_the_full_lift_overpressure` | 0.05 bar(g) set (10 mbar overpressure floor): flow at full lift equals the rated flow within 1 % |
 | `test_relief_devices.py::test_relief_state_is_held_during_each_hydraulic_solve` | The held state does not change inside a solve; a pop valve goes closed → open → cycling between solves |
-| `test_relief_devices.py::test_f1_03_forced_open_relieves_below_set_pressure`, `test_f1_03_forced_closed_stays_closed` | Forced open relieves at 50 barg set with a low pressure (no flow in the unmitigated pass); forced closed passes no flow |
+| `test_relief_devices.py::test_f1_03_forced_open_relieves_below_set_pressure`, `test_f1_03_forced_closed_stays_closed` | Forced open relieves at 50 bar(g) set with a low pressure (no flow in the unmitigated pass); forced closed passes no flow |
 | `test_relief_devices.py::test_sequential_relief_run_leaves_the_users_forced_states_on_the_network` | The user's `forced_state` is restored on the network and in both telemetries |
 | `test_relief_devices.py::test_open_device_without_flow_is_not_reported_closed` | An open disc without flow is not reported intact; utilisation 0 % |
 | `backend/tests/scenarios/test_relief_peak.py::test_ramp_scales_and_restores_drivers` | Pump at $\lambda$ = 0.5: shutoff head $30 \cdot 1.2 \cdot 0.25$ m, flow halved, curve shape kept; restored afterwards; source ramp $P_{\text{atm}} + 5$ bar |

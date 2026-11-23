@@ -146,7 +146,7 @@ const PumpDetails = memo(function PumpDetails({ node }) {
           <ResultRow label="Pressure Increase" value={formatDiffPressurePa(currentDpPa)} unit={labels.pressureDiff} />
           <ResultRow label="Hydraulic Power" value={formatPower(Math.max(0, hydraulicPowerKW))} unit={labels.power} />
           {isVolumetric ? (
-            <ResultRow label="Motor Load (% of rating)" title="Shaft power as a percentage of the motor rating"
+            <ResultRow label="Motor Load [% of rating]" title="Shaft power as a percentage of the motor rating"
               value={motorLoadPct !== undefined ? formatDimensionless(motorLoadPct, 'percentWhole') : null} unit="%" />
           ) : (
             <ResultRow label="Shaft Power" value={shaftPowerKW !== undefined ? formatPower(shaftPowerKW) : null} unit={labels.power} />

@@ -89,13 +89,13 @@ An **undersized** valve stays open at full lift with its driver above the reseat
 
 **Status** (`open_status`): `modulating` below 99.9 % lift (`FULL_LIFT_PCT`), `open` at full lift, `cycling` for a cycling pop valve; `overcapacity` above the rated flow, `closed` without lift.
 
-### 3.4 Example: pop action, balanced, set 3 barg, blowdown 7 %
+### 3.4 Example: pop action, balanced, set 3 bar(g), blowdown 7 %
 
 | Valve | Full-lift inlet | Result |
 | :--- | :--- | :--- |
-| Cv 0.5 (undersized) | above 2.79 barg | `open`, lift 100 %, flow = Cv flow at the actual $\Delta p$ |
-| Cv 15 (oversized) | would be below 2.79 barg | `cycling`, inlet held at 3.0-3.03 barg, range 2.79-3.0 barg, flow = average relief load |
-| Cv 15, `pop_latching` | below 2.79 barg | `open`, lift 100 %, inlet below reseat |
+| Cv 0.5 (undersized) | above 2.79 bar(g) | `open`, lift 100 %, flow = Cv flow at the actual $\Delta p$ |
+| Cv 15 (oversized) | would be below 2.79 bar(g) | `cycling`, inlet held at 3.0-3.03 bar(g), range 2.79-3.0 bar(g), flow = average relief load |
+| Cv 15, `pop_latching` | below 2.79 bar(g) | `open`, lift 100 %, inlet below reseat |
 
 ### 3.5 Derivative
 
@@ -109,10 +109,10 @@ When open with forward flow the valve throttles: $\Delta T = \max(0, \Delta p)/(
 
 | Parameter (UI Label) | UI Unit | Backend Var | SI Unit | Default | Valid Range | Description |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| Set Pressure | barg (psig) | `self.set_pressure_barg` | barg (→ Pa abs) | required (new PSV in the UI: 20 barg) | $> 0$ | Opening pressure, gauge |
+| Set Pressure | bar(g) (psig) | `self.set_pressure_barg` | bar(g) (→ Pa abs) | required (new PSV in the UI: 20 bar(g)) | $> 0$ | Opening pressure, gauge |
 | Flow Coefficient (Cv) | Cv | `self.cv` | Cv | 10 | $\ge 0.001$ | Cv at full lift |
 | Valve Type | text | `self.valve_type` | - | conventional | conventional, balanced_bellows, pilot | Backpressure dependency / pilot sensing |
-| Design superimposed backpressure | barg (psig) | `self.design_superimposed_bp_barg` | barg | 0 | $\ge 0$ | Conventional only: CDTP = set − this |
+| Design superimposed backpressure | bar(g) (psig) | `self.design_superimposed_bp_barg` | bar(g) | 0 | $\ge 0$ | Conventional only: CDTP = set − this |
 | Relief Action Mode | text | `self.action_mode` | - | pop_action | pop_action, pop_latching, modulating | Opening behaviour |
 | Blowdown (% of set) | % | `self.blowdown_pct` | % | 7 | 0-50 | Reseat below set (pop action, reseating) |
 | Contingency Test Mode | text | `self.forced_state` | - | auto | auto, forced_closed, forced_open | Override for contingency cases |
@@ -133,10 +133,10 @@ An unknown action mode is read as `pop_action` and an unknown valve type as `con
 
 | Test | Benchmark |
 | :--- | :--- |
-| `backend/tests/unit/equipment/test_pressure_safety_valve.py::test_psv_pop_action_cracking` | 5 bar pump, 2 barg pop PSV, Cv 10: `open`, inlet above 2.2 barg, `overcapacity`, utilisation $100\sqrt{\Delta p / (2.2\ \text{barg} - P_{\text{out}})}$ within 0.1 |
-| `test_pressure_safety_valve.py::test_psv_modulating_and_pop_latching` | 4 bar pump, 2.5 barg modulating balanced: inlet between 2.5 and 2.75 barg, lift $= 100 (P_{\text{in,g}} - 2.5)/0.25$ % within 0.01; pop latching opens with 100 % lift |
+| `backend/tests/unit/equipment/test_pressure_safety_valve.py::test_psv_pop_action_cracking` | 5 bar pump, 2 bar(g) pop PSV, Cv 10: `open`, inlet above 2.2 bar(g), `overcapacity`, utilisation $100\sqrt{\Delta p / (2.2\ \text{bar(g)} - P_{\text{out}})}$ within 0.1 |
+| `test_pressure_safety_valve.py::test_psv_modulating_and_pop_latching` | 4 bar pump, 2.5 bar(g) modulating balanced: inlet between 2.5 and 2.75 bar(g), lift $= 100 (P_{\text{in,g}} - 2.5)/0.25$ % within 0.01; pop latching opens with 100 % lift |
 | `test_pressure_safety_valve.py::test_psv_unmitigated_higher_pressure` | Unmitigated pressure above the relieved pressure |
-| `test_pressure_safety_valve.py::test_conventional_opening_shifts_with_backpressure` | Backpressure 20 m water ($\rho g h$ ≈ 1.96 bar), set 5 barg: conventional closed at 6.5 and open at 7.3 barg header; with 2 barg design backpressure open at 5.2, closed at 4.8; balanced open at 5.2, closed at 4.8 |
+| `test_pressure_safety_valve.py::test_conventional_opening_shifts_with_backpressure` | Backpressure 20 m water ($\rho g h$ ≈ 1.96 bar), set 5 bar(g): conventional closed at 6.5 and open at 7.3 bar(g) header; with 2 bar(g) design backpressure open at 5.2, closed at 4.8; balanced open at 5.2, closed at 4.8 |
 | `test_pressure_safety_valve.py::test_backpressure_result_and_limit` | Superimposed 0 within 1 mbar, built-up = outlet gauge pressure within 1 mbar; conventional above 10 % flagged, balanced 30 % below 50 %, pilot without limit |
 | `test_pressure_safety_valve.py::test_pilot_lift_follows_the_remote_sensing_point` | Modulating pilot sensing a junction upstream of a lossy line: lift $= 100 (P_{\text{sense,g}} - 10)/1$ % within 0.05; without a line the lift follows its own inlet and is lower |
 | `test_pressure_safety_valve.py::test_pilot_line_is_ignored_unless_the_valve_is_pilot_operated` | A signal line to a balanced valve is not read |
@@ -147,12 +147,12 @@ An unknown action mode is read as `pop_action` and an unknown valve type as `con
 | `test_pressure_safety_valve.py::test_signal_handle_parsing` | `signal-<inlet\|outlet>-<n>` and `<inlet\|outlet>-<n>` read; anything else senses outlet 0 |
 | `test_pressure_safety_valve.py::test_example_pilot_senses_the_pump_discharge` | Shipped example, PSV-101 blocked: PSV-102 lift $= 100 (P_{\text{pump out,g}} - 24)/2.4$ % within 0.05 |
 | `test_pressure_safety_valve.py::test_example_pop_and_modulating_differ` | Shipped example: PSV-101 pop `open` at full lift, modulating below 99 % lift with the inlet more than 3 bar higher |
-| `test_pressure_safety_valve.py::test_cycling_reports_reseat_to_set_range_and_average_load` | 3 barg, Cv 15, balanced: `cycling`, range $3 \cdot 0.93$-3.0 barg, lift none, inlet 3.0-3.03 barg, flow above $10^{-4}$ m³/s |
+| `test_pressure_safety_valve.py::test_cycling_reports_reseat_to_set_range_and_average_load` | 3 bar(g), Cv 15, balanced: `cycling`, range $3 \cdot 0.93$-3.0 bar(g), lift none, inlet 3.0-3.03 bar(g), flow above $10^{-4}$ m³/s |
 | `test_pressure_safety_valve.py::test_pop_latching_stays_open_below_reseat` | Same valve latching: `open`, lift 100 %, inlet below reseat |
-| `backend/tests/unit/equipment/test_relief_devices.py::test_f1_04_undersized_pop_valve_stays_open_at_full_lift` | 3 barg, Cv 0.5: `open`, lift 100 %, inlet at or above reseat, flow = Cv flow within 1 % |
-| `test_relief_devices.py::test_f1_04_oversized_pop_valve_cycles_near_set_pressure` | 3 barg, Cv 15: `cycling`, inlet 3.0-3.3 barg, flow above $10^{-4}$ m³/s (6 L/min); reseat $3.0 \cdot 0.93$ barg + outlet gauge pressure, equal to `cycle_low_barg` (and opening to `cycle_high_barg`) within 5 mbar |
+| `backend/tests/unit/equipment/test_relief_devices.py::test_f1_04_undersized_pop_valve_stays_open_at_full_lift` | 3 bar(g), Cv 0.5: `open`, lift 100 %, inlet at or above reseat, flow = Cv flow within 1 % |
+| `test_relief_devices.py::test_f1_04_oversized_pop_valve_cycles_near_set_pressure` | 3 bar(g), Cv 15: `cycling`, inlet 3.0-3.3 bar(g), flow above $10^{-4}$ m³/s (6 L/min); reseat $3.0 \cdot 0.93$ bar(g) + outlet gauge pressure, equal to `cycle_low_barg` (and opening to `cycle_high_barg`) within 5 mbar |
 | `test_relief_devices.py::test_f1_04_result_does_not_depend_on_the_previous_run` | Two consecutive runs give the same state, flow ($10^{-6}$) and pressure ($10^{-5}$) |
-| `test_relief_devices.py::test_f1_09_pop_opening_snapshot_in_gauge` | 3 barg pop PSV: opening snapshot inlet at 4.01325 bar(a) within 10 mbar |
+| `test_relief_devices.py::test_f1_09_pop_opening_snapshot_in_gauge` | 3 bar(g) pop PSV: opening snapshot inlet at 4.01325 bar(a) within 10 mbar |
 | `test_relief_devices.py::test_d1_old_bar_a_key_is_not_converted`, `test_d1_barg_key_is_read` | An old absolute key is rejected; `set_pressure_barg` 12.5 and `forced_state` are read |
 | `backend/tests/unit/fluids/test_throttling_heat.py::test_f1_16_throttling_heat_magnitude` | Open PSV: outlet temperature rise $= \Delta P/(\rho c_p)$ within 2 % |
 
@@ -164,10 +164,10 @@ Node type: `pressure_safety_valve`, `psv`. Field names follow the naming rule in
 
 | Field | Unit in file | Default |
 |---|---|---|
-| `set_pressure_barg` | barg | required |
+| `set_pressure_barg` | bar(g) | required |
 | `cv` | Cv | 10 |
 | `valve_type` | text (`conventional` / `balanced_bellows` / `pilot`) | conventional |
-| `design_superimposed_bp_barg` | barg | 0 |
+| `design_superimposed_bp_barg` | bar(g) | 0 |
 | `action_mode` | text (`pop_action` / `pop_latching` / `modulating`) | pop_action |
 | `blowdown_pct` | % | 7 |
 | `forced_state` | text (`auto` / `forced_closed` / `forced_open`) | auto |

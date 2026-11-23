@@ -63,7 +63,7 @@ A burst disc with forward flow throttles: $\Delta T = \max(0, \Delta p)/(\rho\, 
 
 | Parameter (UI Label) | UI Unit | Backend Var | SI Unit | Default | Valid Range | Description |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| Burst Pressure | barg (psig) | `self.burst_pressure_barg` | barg (→ Pa abs) | required (new disc in the UI: 25 barg) | $> 0$ | Burst pressure, gauge |
+| Burst Pressure | bar(g) (psig) | `self.burst_pressure_barg` | bar(g) (→ Pa abs) | required (new disc in the UI: 25 bar(g)) | $> 0$ | Burst pressure, gauge |
 | Bore Configuration | text | `self.bore_type` | - | full_bore | full_bore, reduced_bore | Open loss model |
 | Flow Coefficient (Cv) | Cv | `self.cv` | Cv | 10 | $\ge 0.001$ | Cv of the burst disc (full bore) |
 | Orifice Restriction Diameter | mm (in) | `self.orifice_diameter` | m | 10 mm | $\ge 1$ mm, $< D$ | Restriction bore (reduced bore) |
@@ -86,10 +86,10 @@ An unknown bore type is read as `full_bore`. A missing burst pressure is an inpu
 
 | Test | Benchmark |
 | :--- | :--- |
-| `backend/tests/unit/equipment/test_rupture_disc.py::test_rupture_disc_intact_and_burst` | 15 barg disc: intact at 14.99 barg, bursts at 15.00 barg, stays burst at atmospheric pressure; reset gives `intact` |
-| `test_rupture_disc.py::test_burst_full_bore_disc_follows_the_cv_definition` | 10 bar(a) header → 5 barg disc (Cv 10) → drain, DN200: disc $\Delta p$ = header − atmospheric within 200 Pa; flow = Cv flow at that $\Delta p$ within 0.5 % |
+| `backend/tests/unit/equipment/test_rupture_disc.py::test_rupture_disc_intact_and_burst` | 15 bar(g) disc: intact at 14.99 bar(g), bursts at 15.00 bar(g), stays burst at atmospheric pressure; reset gives `intact` |
+| `test_rupture_disc.py::test_burst_full_bore_disc_follows_the_cv_definition` | 10 bar(a) header → 5 bar(g) disc (Cv 10) → drain, DN200: disc $\Delta p$ = header − atmospheric within 200 Pa; flow = Cv flow at that $\Delta p$ within 0.5 % |
 | `test_rupture_disc.py::test_rupture_disc_full_bore_vs_reduced_bore` | Oil at 60 L/min: reduced bore (8 mm in DN50) drop above full bore (Cv 10) drop, both positive |
-| `backend/tests/unit/equipment/test_relief_devices.py::test_f1_38_reduced_bore_disc_capacity` | 10 barg reduced bore (20 mm in DN50) at 12.1 barg: utilisation $100\sqrt{\Delta p / 11\ \text{bar}}$ within 0.5 %, `overcapacity` |
+| `backend/tests/unit/equipment/test_relief_devices.py::test_f1_38_reduced_bore_disc_capacity` | 10 bar(g) reduced bore (20 mm in DN50) at 12.1 bar(g): utilisation $100\sqrt{\Delta p / 11\ \text{bar}}$ within 0.5 %, `overcapacity` |
 | `test_relief_devices.py::test_open_device_without_flow_is_not_reported_closed` | Forced-open disc without flow: not `intact`, utilisation 0 % |
 | `backend/tests/scenarios/test_relief_peak.py::test_rupture_disc_on_pressure_boundary` | Disc on a ramped pressure boundary: opening snapshot at 5.0 bar(a) within 10 mbar |
 | `backend/tests/unit/fluids/test_throttling_heat.py::test_f1_16_throttling_heat_magnitude` | Burst disc: outlet temperature rise $= \Delta P/(\rho c_p)$ within 2 % |
@@ -100,7 +100,7 @@ Node type: `rupture_disc`. Field names follow the naming rule in [base_node.md](
 
 | Field | Unit in file | Default |
 |---|---|---|
-| `burst_pressure_barg` | barg | required |
+| `burst_pressure_barg` | bar(g) | required |
 | `bore_type` | text (`full_bore` / `reduced_bore`) | full_bore |
 | `cv` | Cv | 10 |
 | `pipe_diameter_m` | m | 0.05248 |

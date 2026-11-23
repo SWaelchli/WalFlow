@@ -609,8 +609,8 @@ export default function DataList({
   };
 
   const exportCSV = useCallback(() => {
-    const headers = ["Type", "Name", `Flow (${labels.flow})`, `Velocity (${labels.velocity})`, `ΔP (${labels.pressureDiff})`, `P Start (${labels.pressureAbs})`, `P End (${labels.pressureAbs})`, `Temp (${labels.temperature})`];
-    if (activeTab === 'pipes') headers.push(`Length (${labels.length})`);
+    const headers = ["Type", "Name", `Flow [${labels.flow}]`, `Velocity [${labels.velocity}]`, `ΔP [${labels.pressureDiff}]`, `P Start [${labels.pressureAbs}]`, `P End [${labels.pressureAbs}]`, `Temp [${labels.temperature}]`];
+    if (activeTab === 'pipes') headers.push(`Length [${labels.length}]`);
     const rows = processedItems.map(i => {
       const lenDisplay = isImperial ? (i.length * 3.280839895).toFixed(2) : i.length;
       const row = [i.displayType, i.label, formatFlowM3s(i.flow), formatVelocity(i.velocity), formatDiffPressure(i.dp, 3), formatPressure(i.pStart), formatPressure(i.pEnd), formatTemperatureK(i.temp)];
@@ -726,7 +726,7 @@ export default function DataList({
               <table style={{ width: '100%', height: 'max-content', borderCollapse: 'collapse', fontSize: 'var(--fs-xs)', textAlign: 'left', tableLayout: 'auto' }}>
                 <thead>
                   <tr style={{ background: 'var(--color-border-hover)', borderBottom: '2px solid var(--color-border)', color: 'var(--color-brand-dark)', fontWeight: '700', height: '40px' }}>
-                    <th style={{ padding: '6px 12px', verticalAlign: 'middle', width: '200px', minWidth: '200px', maxWidth: '200px', whiteSpace: 'nowrap' }}>Performance Metric</th>
+                    <th style={{ padding: '6px 12px', verticalAlign: 'middle', minWidth: '200px', whiteSpace: 'nowrap' }}>Performance Metric</th>
                     {displayCases.map((c, colIdx) => {
                       const caseId = c.case_id || c.id;
                       const caseName = c.case_name || c.name || '';
@@ -810,7 +810,7 @@ export default function DataList({
                 <tbody>
                   {/* Max Pressure */}
                   <tr style={{ borderBottom: '1px solid var(--color-border-hover)', height: '36px' }}>
-                    <td style={{ padding: '6px 12px', fontWeight: '700', color: 'var(--color-text-primary)', verticalAlign: 'middle', width: '200px', minWidth: '200px', maxWidth: '200px', whiteSpace: 'nowrap' }}>System Max Pressure ({labels.pressureAbs})</td>
+                    <td style={{ padding: '6px 12px', fontWeight: '700', color: 'var(--color-text-primary)', verticalAlign: 'middle', minWidth: '200px', whiteSpace: 'nowrap' }}>System Max Pressure [{labels.pressureAbs}]</td>
                     {displayCases.map((c, colIdx) => {
                       const baseKpis = displayCases.find(b => b.is_base)?.kpis;
                       const kpis = c.kpis || {};
@@ -826,7 +826,7 @@ export default function DataList({
                   </tr>
                   {/* Min Pressure */}
                   <tr style={{ borderBottom: '1px solid var(--color-border-hover)', background: '#F8FAFA', height: '36px' }}>
-                    <td style={{ padding: '6px 12px', fontWeight: '700', color: 'var(--color-text-primary)', verticalAlign: 'middle', width: '200px', minWidth: '200px', maxWidth: '200px', whiteSpace: 'nowrap' }}>System Min Pressure ({labels.pressureAbs})</td>
+                    <td style={{ padding: '6px 12px', fontWeight: '700', color: 'var(--color-text-primary)', verticalAlign: 'middle', minWidth: '200px', whiteSpace: 'nowrap' }}>System Min Pressure [{labels.pressureAbs}]</td>
                     {displayCases.map((c, colIdx) => {
                       const baseKpis = displayCases.find(b => b.is_base)?.kpis;
                       const kpis = c.kpis || {};
@@ -842,7 +842,7 @@ export default function DataList({
                   </tr>
                   {/* Sum of Pump Flows */}
                   <tr style={{ borderBottom: '1px solid var(--color-border-hover)', height: '36px' }}>
-                    <td style={{ padding: '6px 12px', fontWeight: '700', color: 'var(--color-text-primary)', verticalAlign: 'middle', width: '200px', minWidth: '200px', maxWidth: '200px', whiteSpace: 'nowrap' }}>Sum of Pump Flows ({labels.flow})</td>
+                    <td style={{ padding: '6px 12px', fontWeight: '700', color: 'var(--color-text-primary)', verticalAlign: 'middle', minWidth: '200px', whiteSpace: 'nowrap' }}>Sum of Pump Flows [{labels.flow}]</td>
                     {displayCases.map((c, colIdx) => {
                       const baseKpis = displayCases.find(b => b.is_base)?.kpis;
                       const kpis = c.kpis || {};
@@ -858,7 +858,7 @@ export default function DataList({
                   </tr>
                   {/* Total Pump Power */}
                   <tr style={{ borderBottom: '1px solid var(--color-border-hover)', background: '#F8FAFA', height: '36px' }}>
-                    <td style={{ padding: '6px 12px', fontWeight: '700', color: 'var(--color-text-primary)', verticalAlign: 'middle', width: '200px', minWidth: '200px', maxWidth: '200px', whiteSpace: 'nowrap' }}>Total Pump Power ({labels.power})</td>
+                    <td style={{ padding: '6px 12px', fontWeight: '700', color: 'var(--color-text-primary)', verticalAlign: 'middle', minWidth: '200px', whiteSpace: 'nowrap' }}>Total Pump Power [{labels.power}]</td>
                     {displayCases.map((c, colIdx) => {
                       const baseKpis = displayCases.find(b => b.is_base)?.kpis;
                       const kpis = c.kpis || {};
@@ -874,7 +874,7 @@ export default function DataList({
                   </tr>
                   {/* Cavitation Warning */}
                   <tr style={{ borderBottom: '1px solid var(--color-border-hover)', height: '36px' }}>
-                    <td style={{ padding: '6px 12px', fontWeight: '700', color: 'var(--color-text-primary)', verticalAlign: 'middle', width: '200px', minWidth: '200px', maxWidth: '200px', whiteSpace: 'nowrap' }}>Cavitation Risk Status</td>
+                    <td style={{ padding: '6px 12px', fontWeight: '700', color: 'var(--color-text-primary)', verticalAlign: 'middle', minWidth: '200px', whiteSpace: 'nowrap' }}>Cavitation Risk Status</td>
                     {displayCases.map((c, colIdx) => {
                       const hasCav = c.kpis?.has_cavitation_warning;
                       return (
@@ -1028,7 +1028,7 @@ export default function DataList({
                    {/* Relieved System Pressure */}
                    <tr style={{ borderBottom: '1px solid var(--color-border-hover)', height: '36px', background: telemetryMode === 'mitigated' ? '#ECFDF5' : '#ffffff' }}>
                      <td colSpan={3} title="Steady-state maximum pressure with the relief devices in their final state" style={{ padding: '6px 12px', fontWeight: '700', color: '#047857', verticalAlign: 'middle' }}>
-                       Relieved system pressure ({labels.pressureAbs})
+                       Relieved system pressure [{labels.pressureAbs}]
                      </td>
                      {displayCases.map(c => {
                        const pRelieved = c.kpis?.relieved_pressure_bara ?? c.kpis?.max_pressure_bar ?? calculateMaxPressureBar(c.telemetry);
@@ -1043,7 +1043,7 @@ export default function DataList({
                    {/* Peak System Pressure */}
                    <tr style={{ borderBottom: '1px solid var(--color-border-hover)', height: '36px', background: telemetryMode === 'peak' ? 'var(--color-warning-bg)' : '#ffffff' }}>
                      <td colSpan={3} title="Highest steady-state pressure at the moment a relief device reaches its set pressure (pumps and sources ramped up), or the relieved pressure if higher" style={{ padding: '6px 12px', fontWeight: '700', color: '#B45309', verticalAlign: 'middle' }}>
-                       Peak system pressure ({labels.pressureAbs})
+                       Peak system pressure [{labels.pressureAbs}]
                      </td>
                      {displayCases.map(c => {
                        const caseId = c.id || c.case_id;
@@ -1070,7 +1070,7 @@ export default function DataList({
                    {/* Unmitigated Peak Pressure */}
                    <tr style={{ borderBottom: '1px solid var(--color-border-hover)', height: '36px', background: telemetryMode === 'unmitigated_global' ? '#FEF2F2' : '#ffffff' }}>
                      <td colSpan={3} title="Steady-state maximum pressure with all relief devices held closed" style={{ padding: '6px 12px', fontWeight: '700', color: '#DC2626', verticalAlign: 'middle' }}>
-                       Unmitigated peak pressure ({labels.pressureAbs})
+                       Unmitigated peak pressure [{labels.pressureAbs}]
                      </td>
                      {displayCases.map(c => {
                        const caseId = c.id || c.case_id;
@@ -1110,7 +1110,7 @@ export default function DataList({
 
                   {/* Total Relief Flow */}
                   <tr style={{ borderBottom: '1px solid var(--color-border-hover)', background: '#F8FAFA', height: '36px' }}>
-                    <td colSpan={3} style={{ padding: '6px 12px', fontWeight: '700', color: 'var(--color-text-primary)', verticalAlign: 'middle' }}>Total Relief Flow ({labels.flow})</td>
+                    <td colSpan={3} style={{ padding: '6px 12px', fontWeight: '700', color: 'var(--color-text-primary)', verticalAlign: 'middle' }}>Total Relief Flow [{labels.flow}]</td>
                     {displayCases.map(c => {
                       const totalReliefFlow = reliefDevices.reduce((sum, dev) => {
                         const devTel = c.telemetry?.nodes?.[dev.id];
@@ -1138,17 +1138,17 @@ export default function DataList({
               <th style={{ padding: '8px', width: '40px' }}></th>
               <SortHeader label="Type" sortKey="displayType" sortConfig={sortConfig} requestSort={requestSort} />
               <SortHeader label="Name" sortKey="label" sortConfig={sortConfig} requestSort={requestSort} />
-              <SortHeader label={`Flow (${labels.flow})`} sortKey="flow" align="right" sortConfig={sortConfig} requestSort={requestSort} />
-              <SortHeader label={`Velocity (${labels.velocity})`} sortKey="velocity" align="right" sortConfig={sortConfig} requestSort={requestSort} />
+              <SortHeader label={`Flow [${labels.flow}]`} sortKey="flow" align="right" sortConfig={sortConfig} requestSort={requestSort} />
+              <SortHeader label={`Velocity [${labels.velocity}]`} sortKey="velocity" align="right" sortConfig={sortConfig} requestSort={requestSort} />
 
-              <SortHeader label={`ΔP (${labels.pressureDiff})`} sortKey="dp" align="right" sortConfig={sortConfig} requestSort={requestSort} />
-              <SortHeader label={`P Start (${labels.pressureAbs})`} sortKey="pStart" align="right" sortConfig={sortConfig} requestSort={requestSort} />
-              <SortHeader label={`P End (${labels.pressureAbs})`} sortKey="pEnd" align="right" sortConfig={sortConfig} requestSort={requestSort} />
-              <SortHeader label={`Temp (${labels.temperature})`} sortKey="temp" align="right" sortConfig={sortConfig} requestSort={requestSort} />
+              <SortHeader label={`ΔP [${labels.pressureDiff}]`} sortKey="dp" align="right" sortConfig={sortConfig} requestSort={requestSort} />
+              <SortHeader label={`P Start [${labels.pressureAbs}]`} sortKey="pStart" align="right" sortConfig={sortConfig} requestSort={requestSort} />
+              <SortHeader label={`P End [${labels.pressureAbs}]`} sortKey="pEnd" align="right" sortConfig={sortConfig} requestSort={requestSort} />
+              <SortHeader label={`Temp [${labels.temperature}]`} sortKey="temp" align="right" sortConfig={sortConfig} requestSort={requestSort} />
               {activeTab === 'pipes' && <th style={{ padding: '8px' }}>NPS / Size</th>}
               {activeTab === 'pipes' && <th style={{ padding: '8px' }}>Schedule</th>}
               {activeTab === 'pipes' && <th style={{ padding: '8px' }}>Pipe Class</th>}
-              {activeTab === 'pipes' && <SortHeader label={`Length (${labels.length})`} sortKey="length" align="right" sortConfig={sortConfig} requestSort={requestSort} />}
+              {activeTab === 'pipes' && <SortHeader label={`Length [${labels.length}]`} sortKey="length" align="right" sortConfig={sortConfig} requestSort={requestSort} />}
             </tr>
           </thead>
           <tbody>

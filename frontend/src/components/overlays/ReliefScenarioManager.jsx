@@ -17,7 +17,7 @@ export default function ReliefScenarioManager({
   const reliefModes = [
     {
       id: 'mitigated',
-      label: `Relieved system pressure (${basisLabel})`,
+      label: `Relieved system pressure [${basisLabel}]`,
       desc: 'Steady state with the relief devices in their final state',
       color: 'var(--color-success)',
       bgActive: 'var(--color-success-tint)',
@@ -26,7 +26,7 @@ export default function ReliefScenarioManager({
     },
     {
       id: 'peak',
-      label: `Peak system pressure (${basisLabel})`,
+      label: `Peak system pressure [${basisLabel}]`,
       desc: 'Steady state at the moment the governing relief device reaches its set pressure (pumps and sources ramped up)',
       color: 'var(--color-warning-text)',
       bgActive: 'var(--color-warning-bg)',
@@ -35,7 +35,7 @@ export default function ReliefScenarioManager({
     },
     {
       id: 'unmitigated_global',
-      label: `Unmitigated peak pressure (${basisLabel})`,
+      label: `Unmitigated peak pressure [${basisLabel}]`,
       desc: 'Steady state with all relief devices held closed',
       color: 'var(--color-danger)',
       bgActive: 'var(--color-danger-tint)',

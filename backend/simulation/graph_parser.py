@@ -32,14 +32,14 @@ class ModelInputError(ValueError):
 
 
 def _relief_pressure_barg(d: dict, key: str, name: str, what: str) -> float:
-    """Relief set / burst pressure in barg. Files from before the switch store bar(a) under
+    """Relief set / burst pressure in bar(g). Files from before the switch store bar(a) under
     another key and are not converted: the device must be re-entered from its datasheet."""
     value = d.get(key)
     if value is None or value == '':
-        raise ModelInputError(f"'{name}': {what} (barg) missing. Enter the {what} from the datasheet as gauge pressure.")
+        raise ModelInputError(f"'{name}': {what} in bar(g) missing. Enter the {what} from the datasheet as gauge pressure.")
     value = float(value)
     if value <= 0.0:
-        raise ModelInputError(f"'{name}': {what} must be above 0 barg.")
+        raise ModelInputError(f"'{name}': {what} must be above 0 bar(g).")
     return value
 
 def _parse_signal_handle(handle) -> tuple:

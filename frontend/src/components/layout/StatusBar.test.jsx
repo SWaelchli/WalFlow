@@ -44,13 +44,13 @@ describe('StatusBar', () => {
     expect(screen.queryByRole('button', { name: /Case: Base/ })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: /percent, fit view/ }));
     expect(ctx.actions.fitView).toHaveBeenCalledTimes(1);
-    fireEvent.click(screen.getByRole('button', { name: 'bar a · L/min · °C' }));
+    fireEvent.click(screen.getByRole('button', { name: 'bar(a) · L/min · °C' }));
     expect(onOpenUnits).toHaveBeenCalledTimes(1);
   });
 
   it('displays pressure, flow, and temperature units in the units slot for metric and imperial', () => {
     setup({}, {}, 'metric');
-    expect(screen.getByRole('button', { name: 'bar a · L/min · °C' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'bar(a) · L/min · °C' })).toBeTruthy();
     cleanup();
     setup({}, {}, 'imperial');
     expect(screen.getByRole('button', { name: /psia · gpm · °F/i })).toBeTruthy();

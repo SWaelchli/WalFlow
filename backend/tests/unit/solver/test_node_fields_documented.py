@@ -14,7 +14,7 @@ EQUIPMENT_DIR = os.path.join(REPO_ROOT, "backend", "simulation", "equipment")
 UNITLESS = ("text", "bool", "Cv", "DN", "index", "catalogue id", "factor", "count")
 # Unit in the table -> suffixes a field with that unit may end with
 SUFFIX_FOR_UNIT = {
-    "Pa": ("_pa",), "bar": ("_bar",), "barg": ("_barg",), "bar(a)": ("_bara",), "L/min": ("_lmin",),
+    "Pa": ("_pa",), "bar": ("_bar",), "bar(g)": ("_barg",), "bar(a)": ("_bara",), "L/min": ("_lmin",),
     "°C": ("_c",), "K": ("_k",), "m": ("_m",), "mm": ("_mm",), "kW": ("_kw",), "W/K": ("_w_k",),
     "%": ("_pct",), "deg": ("_deg",), "mPa·s": ("_mpas",),
 }

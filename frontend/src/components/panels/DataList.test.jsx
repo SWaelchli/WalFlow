@@ -461,16 +461,16 @@ describe('relief analysis matrix', () => {
     expect(screen.getByText('Re-run the simulation')).toBeTruthy();
   });
 
-  it('Shows the set pressure in bar g and a cycling result as text', () => {
+  it('Shows the set pressure in bar(g) and a cycling result as text', () => {
     renderRelief([reliefCase({
       peak: { available: true, pressure_bara: 4.2, source: 'relieved', device_ids: [] },
       devices: { psv: { status: 'cycling', forced_state: 'auto', opening_order: 1, opening_ramp_pct: 62.3, inlet_at_opening_bara: 4.0, inlet_relieved_bara: 4.21,
         cycle_low_barg: 2.78, cycle_high_barg: 2.99, relief_flow_lmin: 12.0, lift_pct: null } },
     })]);
-    expect(screen.getByText('2.99 bar g')).toBeTruthy();
+    expect(screen.getByText('2.99 bar(g)')).toBeTruthy();
     const badge = screen.getByText('Cycling #1');
     expect(badge.closest('div[title]').title).toMatch(/cycles between reseat and set pressure/);
-    expect(screen.getByText('Cycles 2.78 bar g–2.99 bar g · avg 12.0 L/min')).toBeTruthy();
+    expect(screen.getByText('Cycles 2.78 bar(g)–2.99 bar(g) · avg 12.0 L/min')).toBeTruthy();
   });
 
   it('shows the lift of a modulating valve and a backpressure limit breach', () => {
@@ -518,7 +518,7 @@ describe('operating cases matrix without results', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Relief' }));
     expect(rowCell('Total Relief Flow')).toMatch(relief);
     // The unit sits in the row label only
-    expect(screen.getByText(/^Total Relief Flow \(L\/min\)$/)).toBeTruthy();
+    expect(screen.getByText(/^Total Relief Flow \[L\/min\]$/)).toBeTruthy();
   });
 });
 
@@ -541,9 +541,9 @@ describe('operating cases matrix in gauge basis', () => {
 
   it.each([['case_base'], ['case_2']])('converts each case with its own atmospheric pressure, active case %s', (active) => {
     const [base, other] = maxPressureRow(active);
-    expect(screen.getByText(/^System Max Pressure \(bar g\)$/)).toBeTruthy();
-    expect(base).toMatch(/^3\.99$/);        // 5 bar a - 1.01325
-    expect(other).toMatch(/^4\.15\s*\+0\.16 bar/);   // 5 bar a - 0.85, delta is the atmospheric difference
+    expect(screen.getByText(/^System Max Pressure \[bar\(g\)\]$/)).toBeTruthy();
+    expect(base).toMatch(/^3\.99$/);        // 5 bar(a) - 1.01325
+    expect(other).toMatch(/^4\.15\s*\+0\.16 bar/);   // 5 bar(a) - 0.85, delta is the atmospheric difference
   });
 });
 
@@ -634,8 +634,8 @@ describe('Measurements tab', () => {
     renderMeasurements();
     expect(screen.getByText('PIT 1')).toBeTruthy();
     expect(screen.getByText('TAP-1')).toBeTruthy();
-    expect(screen.getByText('2.50').closest('td').textContent).toMatch(/^H2\.50bar g$/);
-    expect(screen.getByText('1.50').closest('td').textContent).toBe('1.50bar g');
+    expect(screen.getByText('2.50').closest('td').textContent).toMatch(/^H2\.50bar\(g\)$/);
+    expect(screen.getByText('1.50').closest('td').textContent).toBe('1.50bar(g)');
     // The active case is marked for assistive tech; there is no Switch button or Active badge
     expect(document.querySelectorAll('th[aria-current="true"]').length).toBe(1);
     expect(screen.queryByRole('button', { name: /Switch/ })).toBeNull();
@@ -644,7 +644,7 @@ describe('Measurements tab', () => {
 
   it('commits an edited limit to the instrument and rejects limits out of order', () => {
     const onUpdateNode = renderMeasurements();
-    const hh = screen.getByLabelText('HH limit of PIT 1 (bar g)');
+    const hh = screen.getByLabelText('HH limit of PIT 1 [bar(g)]');
 
     fireEvent.change(hh, { target: { value: '1' } });
     fireEvent.blur(hh);

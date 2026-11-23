@@ -30,7 +30,7 @@ export default function RuptureDiscDetails({ node, unmitigatedTelemetry }) {
 
   const pIn = telemetry.inlets?.[0]?.pressure || 0;
   const pInBar = pIn / 100000.0;
-  // Gauge line pressure for comparison with the burst pressure; atmosphere from the solver's bar a / bar g pair
+  // Gauge line pressure for comparison with the burst pressure; atmosphere from the solver's bar(a) / bar(g) pair
   const pAtmBar = burstPressureBarg !== null && telemetry?.set_pressure_bara != null ? telemetry.set_pressure_bara - burstPressureBarg : atmosphericPa / 100000;
   const pInBarg = pInBar - pAtmBar;
   const pUnmitigatedIn = unmitTelemetry.inlets?.[0]?.pressure || pIn;

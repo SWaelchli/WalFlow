@@ -357,7 +357,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], catalogPipeCl
 
           {/* Roughness & Design Ratings */}
           <div>
-            <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '600' }}>Surface roughness ε (mm)</label>
+            <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '600' }}>Surface roughness ε [mm]</label>
             <input
               type="number"
               step="0.001"
@@ -398,7 +398,7 @@ const PipeSelector = ({ data, onChange, availablePipeClasses = [], catalogPipeCl
               />
             </div>
             <div>
-              <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '600' }}>Design pressure ({gaugeLabel})</label>
+              <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', fontWeight: '600' }}>Design pressure [{gaugeLabel}]</label>
               <input
                 type="number"
                 step="0.1"

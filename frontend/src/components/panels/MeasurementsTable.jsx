@@ -137,7 +137,7 @@ export default function MeasurementsTable({
                 {tag}
               </td>
               <td style={{ ...td, color: 'var(--color-text-secondary)' }}>
-                {(INSTRUMENT_VARIABLES[variable] || INSTRUMENT_VARIABLES.P).name} ({unit})
+                {(INSTRUMENT_VARIABLES[variable] || INSTRUMENT_VARIABLES.P).name} [{unit}]
               </td>
               <td style={{ ...td, color: location ? 'var(--color-text-primary)' : 'var(--color-warning-text)' }}>
                 {location || 'Not wired'}
@@ -148,7 +148,7 @@ export default function MeasurementsTable({
                   <td key={key} style={{ ...td, padding: '4px 4px' }}>
                     <input
                       type="number" step="any" placeholder="off"
-                      aria-label={`${ALARM_LABELS[key]} limit of ${tag} (${unit})`}
+                      aria-label={`${ALARM_LABELS[key]} limit of ${tag} [${unit}]`}
                       className="form-input" style={{ width: '68px' }}
                       value={drafts[dk] !== undefined ? drafts[dk] : limitToDisplay(variable, data[key], isImperial, flowUnit)}
                       onChange={(e) => setDrafts((prev) => ({ ...prev, [dk]: e.target.value }))}

@@ -242,7 +242,7 @@ def _graph(data):
 
 
 def test_old_bar_a_key_is_not_converted():
-    with pytest.raises(ModelInputError, match="PSV-7.*set pressure \\(barg\\) missing"):
+    with pytest.raises(ModelInputError, match="PSV-7.*set pressure in bar\\(g\\) missing"):
         GraphParser.parse_graph(_graph({"set_pressure_bar": 20.0}))
 
 

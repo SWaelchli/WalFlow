@@ -14,7 +14,7 @@ const stored = (prefs, key, typed) => {
 };
 
 describe('values typed in gauge or m3/h are stored without float noise', () => {
-  it('stores 8.2 bar g as 9.21325 bar a, not 9.213249999999999', () => {
+  it('stores 8.2 bar(g) as 9.21325 bar(a), not 9.213249999999999', () => {
     expect(stored({ walflow_pressure_basis: 'gauge' }, 'max_discharge_pressure_bara', '8.2')).toBe(9.21325);
   });
 

@@ -61,7 +61,7 @@ describe('pressure basis (absolute / gauge) and flow unit', () => {
   });
 
   it.each([
-    [M, 'absolute', 'bar a'], [M, 'gauge', 'bar g'], [I, 'absolute', 'psia'], [I, 'gauge', 'psig'],
+    [M, 'absolute', 'bar(a)'], [M, 'gauge', 'bar(g)'], [I, 'absolute', 'psia'], [I, 'gauge', 'psig'],
   ])('labels the pressure basis %s %s as %s', (unitSystem, basis, label) => {
     expect(pressureBasisLabel(unitSystem, basis)).toBe(label);
   });

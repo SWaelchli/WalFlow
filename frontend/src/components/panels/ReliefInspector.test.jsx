@@ -26,18 +26,18 @@ const disc = (data) => ({ id: 'rd', type: 'rupture_disc', position: { x: 0, y: 0
 describe('relief set pressure in gauge', () => {
   it('warns when an older PSV only has a set pressure in bar(a)', () => {
     renderInspector(psv({ set_pressure_bar: 20 }));
-    expect(screen.getAllByText(/Set Pressure \(bar g\)/).length).toBe(2);   // label and alert
-    expect(screen.getByRole('alert').textContent).toMatch(/Set Pressure \(bar g\) missing.*had 20 bar a/);
+    expect(screen.getAllByText(/Set Pressure \[bar\(g\)\]/).length).toBe(2);   // label and alert
+    expect(screen.getByRole('alert').textContent).toMatch(/Set Pressure \[bar\(g\)\] missing.*had 20 bar\(a\)/);
   });
 
   it('warns when an older rupture disc only has a burst pressure in bar(a)', () => {
     renderInspector(disc({ burst_pressure_bar: 30 }));
-    expect(screen.getByRole('alert').textContent).toMatch(/Burst Pressure \(bar g\) missing.*had 30 bar a/);
+    expect(screen.getByRole('alert').textContent).toMatch(/Burst Pressure \[bar\(g\)\] missing.*had 30 bar\(a\)/);
   });
 
   it('stores a set pressure typed in psig as barg', () => {
     const onUpdate = renderInspector(psv({ set_pressure_barg: 10 }), UNIT_SYSTEMS.IMPERIAL);
-    expect(screen.getByText(/Set Pressure \(psig\)/)).toBeTruthy();
+    expect(screen.getByText(/Set Pressure \[psig\]/)).toBeTruthy();
     const input = screen.getByDisplayValue('145.04');
     fireEvent.change(input, { target: { value: '290' } });
     fireEvent.blur(input);
@@ -46,26 +46,26 @@ describe('relief set pressure in gauge', () => {
 
   it('shows the pop valve reseat pressure in gauge', () => {
     renderInspector(psv({ set_pressure_barg: 10, action_mode: 'pop_action', blowdown_pct: 7 }));
-    expect(screen.getByText(/Reseats at 9\.30 bar g/)).toBeTruthy();
+    expect(screen.getByText(/Reseats at 9\.30 bar\(g\)/)).toBeTruthy();
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
-  it.each([['absolute'], ['gauge']])('keeps the stored gauge set pressure and its bar g label under the %s basis', (basis) => {
+  it.each([['absolute'], ['gauge']])('keeps the stored gauge set pressure and its bar(g) label under the %s basis', (basis) => {
     localStorage.setItem('walflow_pressure_basis', basis);
     renderInspector(psv({ set_pressure_barg: 7.5 }));
-    expect(screen.getByText(/Set Pressure \(bar g\)/)).toBeTruthy();
+    expect(screen.getByText(/Set Pressure \[bar\(g\)\]/)).toBeTruthy();
     expect(screen.getByDisplayValue('7.5')).toBeTruthy();
   });
-  it.each([['absolute'], ['gauge']])('keeps the rupture disc burst pressure in bar g under the %s basis', (basis) => {
+  it.each([['absolute'], ['gauge']])('keeps the rupture disc burst pressure in bar(g) under the %s basis', (basis) => {
     localStorage.setItem('walflow_pressure_basis', basis);
     renderInspector(disc({ burst_pressure_barg: 12 }));
-    expect(screen.getByText(/Burst Pressure \(bar g\)/)).toBeTruthy();
+    expect(screen.getByText(/Burst Pressure \[bar\(g\)\]/)).toBeTruthy();
     expect(screen.getByDisplayValue('12')).toBeTruthy();
   });
 });
 
 describe('relief line pressure under the pressure basis', () => {
-  // 4 bar a at the inlet, 1.01325 bar atmosphere implied by set pressure 5 bar g = 6.01325 bar a
+  // 4 bar(a) at the inlet, 1.01325 bar atmosphere implied by set pressure 5 bar(g) = 6.01325 bar(a)
   const inlet = [{ pressure: 400000 }];
   // gauge value of the pressure is its own row beside the absolute one
   const rowTexts = (Component, node, label) => {
@@ -76,8 +76,8 @@ describe('relief line pressure under the pressure basis', () => {
   const discNode = disc({ burst_pressure_barg: 5, telemetry: { status: 'intact', set_pressure_bara: 6.01325, inlets: inlet, outlets: [{ flow_rate: 0 }] } });
 
   it.each([
-    ['absolute', [/^4\.00\s*bar a$/, /^2\.99\s*bar g$/]],
-    ['gauge', [/^2\.99\s*bar g$/, null]],
+    ['absolute', [/^4\.00\s*bar\(a\)$/, /^2\.99\s*bar\(g\)$/]],
+    ['gauge', [/^2\.99\s*bar\(g\)$/, null]],
   ])('shows the PSV inlet pressure under the %s basis', (basis, expected) => {
     localStorage.setItem('walflow_pressure_basis', basis);
     const [abs, gauge] = rowTexts(PressureSafetyValveDetails, psvNode, 'Inlet pressure');
@@ -86,8 +86,8 @@ describe('relief line pressure under the pressure basis', () => {
   });
 
   it.each([
-    ['absolute', [/^4\.00\s*bar a$/, /^2\.99\s*bar g$/]],
-    ['gauge', [/^2\.99\s*bar g$/, null]],
+    ['absolute', [/^4\.00\s*bar\(a\)$/, /^2\.99\s*bar\(g\)$/]],
+    ['gauge', [/^2\.99\s*bar\(g\)$/, null]],
   ])('shows the rupture disc mitigated line pressure under the %s basis', (basis, expected) => {
     localStorage.setItem('walflow_pressure_basis', basis);
     const [abs, gauge] = rowTexts(RuptureDiscDetails, discNode, 'Mitigated Line Pressure');

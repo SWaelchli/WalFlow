@@ -311,7 +311,7 @@ def extract_telemetry(network) -> Dict[str, Any]:
         if hasattr(node, 'action_mode'):
             node_tel["action_mode"] = node.action_mode
         if hasattr(node, 'set_pressure_barg'):
-            # Relief devices: set pressure in barg, plus bar(a) to compare with port pressures
+            # Relief devices: set pressure in bar(g), plus bar(a) to compare with port pressures
             node_tel["set_pressure_barg"] = node.set_pressure_barg
             node_tel["set_pressure_bara"] = node.set_pressure_bara
             node_tel["rated_flow_lmin"] = node.rated_flow_lmin

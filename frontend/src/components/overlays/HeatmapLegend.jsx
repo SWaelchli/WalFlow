@@ -229,7 +229,7 @@ export default function HeatmapLegend({
             <input
               type="number"
               step="0.5"
-              aria-label={`Minimum (${config.unit})`}
+              aria-label={`Minimum [${config.unit}]`}
               value={customToDisplay(customRange?.min ?? 0)}
               onChange={(e) => onUpdateCustomRange && onUpdateCustomRange(displayToBase(parseOr(e.target.value, 0)), customRange?.max ?? 10)}
               className="form-input"
@@ -252,7 +252,7 @@ export default function HeatmapLegend({
             <input
               type="number"
               step="0.5"
-              aria-label={`Maximum (${config.unit})`}
+              aria-label={`Maximum [${config.unit}]`}
               value={customToDisplay(customRange?.max ?? 10)}
               onChange={(e) => onUpdateCustomRange && onUpdateCustomRange(customRange?.min ?? 0, displayToBase(parseOr(e.target.value, 10)))}
               className="form-input"

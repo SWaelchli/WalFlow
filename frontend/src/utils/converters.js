@@ -231,8 +231,8 @@ export const UNIT_SYSTEMS = {
 export const UNIT_LABELS = {
   [UNIT_SYSTEMS.METRIC]: {
     pressure: 'bar',
-    pressureAbs: 'bar a',
-    pressureGauge: 'bar g',
+    pressureAbs: 'bar(a)',
+    pressureGauge: 'bar(g)',
     pressureDiff: 'bar',
     flow: 'L/min',
     flowM3h: 'm³/h',
@@ -295,7 +295,7 @@ const validAtm = (atmPa) => {
 const isImperialSystem = (unitSystem) => unitSystem === UNIT_SYSTEMS.IMPERIAL;
 const missing = (v) => v === null || v === undefined || v === '' || isNaN(v);
 
-/** Unit label of an absolute-pressure readout in the chosen basis: "bar a", "bar g", "psia", "psig". */
+/** Unit label of an absolute-pressure readout in the chosen basis: "bar(a)", "bar(g)", "psia", "psig". */
 export const pressureBasisLabel = (unitSystem = UNIT_SYSTEMS.METRIC, basis = PRESSURE_BASES.ABSOLUTE) => {
   const labels = UNIT_LABELS[isImperialSystem(unitSystem) ? UNIT_SYSTEMS.IMPERIAL : UNIT_SYSTEMS.METRIC];
   return normalizePressureBasis(basis) === PRESSURE_BASES.GAUGE ? labels.pressureGauge : labels.pressureAbs;
@@ -353,13 +353,13 @@ export const formatDiffPressureFromPa = (valPa, unitSystem = UNIT_SYSTEMS.METRIC
   return paToBar(valPa, decimals);
 };
 
-/** Gauge-only pressure (relief set / burst pressure, given in bar g) as a number, no unit text: "18.99" / "275.4". */
+/** Gauge-only pressure (relief set / burst pressure, given in bar(g)) as a number, no unit text: "18.99" / "275.4". */
 export const formatGaugeBar = (valBarg, unitSystem = UNIT_SYSTEMS.METRIC, decimals = 2) => {
   if (missing(valBarg)) return '—';
   return formatDiffPressureFromBar(valBarg, unitSystem, isImperialSystem(unitSystem) ? 1 : decimals);
 };
 
-/** Gauge-only pressure (relief set / burst pressure, given in bar g) with its unit: "18.99 bar g" / "275.4 psig". */
+/** Gauge-only pressure (relief set / burst pressure, given in bar(g)) with its unit: "18.99 bar(g)" / "275.4 psig". */
 export const formatGaugeBarWithUnit = (valBarg, unitSystem = UNIT_SYSTEMS.METRIC, decimals = 2) => {
   if (missing(valBarg)) return '—';
   return `${formatGaugeBar(valBarg, unitSystem, decimals)} ${pressureBasisLabel(unitSystem, PRESSURE_BASES.GAUGE)}`;

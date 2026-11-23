@@ -83,7 +83,7 @@ Example: ISO VG 46 from a hot tank at 80 °C and a cold tank at 20 °C; the outg
 | `backend/tests/unit/fluids/test_mixing.py::test_f1_42_mixing_conserves_enthalpy_with_variable_cp` | ISO VG 46 from tanks at 80 °C and 20 °C: outgoing temperature matches an independent enthalpy balance with $c_p(T)$ within 0.1 K; outgoing mass flow equals the incoming within 0.5 % |
 | `backend/tests/unit/solver/test_stagnant_branches.py::test_dead_tee_branch_reads_the_static_pressure_of_the_flowing_run` | A port with a pipe but no flow reports the lowest static pressure of the flowing ports within $10^{-3}$ Pa |
 | `backend/tests/scenarios/test_junction_ports.py::test_telemetry_ports_report_flow_into_the_junction_per_port` | `ports[k]` flow positive into the junction, `None` without a pipe, mass sum zero within $10^{-6}$ of the throughput |
-| `test_junction_ports.py::test_remote_control_valve_holds_the_pressure_of_a_junction_port` | A remote control valve sensing a junction port (`signal-port-k`) holds its 3 bara setpoint within 0.05 bar |
+| `test_junction_ports.py::test_remote_control_valve_holds_the_pressure_of_a_junction_port` | A remote control valve sensing a junction port (`signal-port-k`) holds its 3 bar(a) setpoint within 0.05 bar |
 | `backend/tests/regression/test_model_input_errors.py::test_bad_junction_wiring_is_a_model_input_error` | `num_ports` 2 and 9, a handle other than `port-k`, a port beyond `num_ports` and two pipes on one port are input errors |
 | `backend/tests/scenarios/test_literature_networks.py::test_jeppson_48_pipe_network_draws_each_literature_junction_as_one_node` | The Jeppson 48-pipe example draws each literature junction as one node (no tee chains); its published flows and losses hold in the other tests of that file |
 

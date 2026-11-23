@@ -468,8 +468,12 @@ themselves.
 
 Rules:
 
-* **A readout label has no colon**: "ΔT -21.5 K", "ΔP 4.93 bar", "Set 19.00 bar g". The guard test fails on a label
+* **A readout label has no colon**: "ΔT -21.5 K", "ΔP 4.93 bar", "Set 19.00 bar(g)". The guard test fails on a label
   ending in a colon.
+* **Pressure units**: absolute "bar(a)", gauge "bar(g)", difference "bar"; imperial "psia", "psig", "psi". Any other
+  pressure unit follows the metric pattern ("kPa(a)", "kPa(g)").
+* **A unit beside a label goes in square brackets**, for every unit: "Set Pressure [bar(g)]", "Flow [m³/h]",
+  "Temperature [°C]". A unit after a value has no brackets: "19.00 bar(g)".
 * **A number never carries colour**, whatever its sign, size or state: heater duty, a setpoint, an outlet
   temperature, an alarm limit are all values in `.node-readout-value`. A sign stays a sign (heating positive).
 * **Relief devices show the set or burst pressure and their state only.** Relief flow belongs in the inspector and

@@ -514,7 +514,7 @@ export default function ReducerSetup({ ctx }) {
                 ) : (
                   <>
                     <div>
-                      {renderLabel(`Inlet Diameter (${isImperial ? 'in' : 'mm'})`, 'diameter_in_m')}
+                      {renderLabel(`Inlet Diameter [${isImperial ? 'in' : 'mm'}]`, 'diameter_in_m')}
                       <input
                         type="number"
                         step="0.1"
@@ -527,7 +527,7 @@ export default function ReducerSetup({ ctx }) {
                     </div>
 
                     <div>
-                      {renderLabel(`Outlet Diameter (${isImperial ? 'in' : 'mm'})`, 'diameter_out_m')}
+                      {renderLabel(`Outlet Diameter [${isImperial ? 'in' : 'mm'}]`, 'diameter_out_m')}
                       <input
                         type="number"
                         step="0.1"
@@ -540,7 +540,7 @@ export default function ReducerSetup({ ctx }) {
                     </div>
 
                     <div>
-                      {renderLabel(`Transition Length (${isImperial ? 'in' : 'mm'})`, 'length_m')}
+                      {renderLabel(`Transition Length [${isImperial ? 'in' : 'mm'}]`, 'length_m')}
                       <input
                         type="number"
                         step="1.0"

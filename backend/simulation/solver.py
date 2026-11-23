@@ -2443,7 +2443,7 @@ BACKPRESSURE_LIMITS = {"conventional": ("built_up", 10.0), "balanced_bellows": (
 
 
 def _backpressure_result(node, k, tel_relieved, tel_closed):
-    """Superimposed (device closed), built-up (relieving) and total backpressure of a PSV, in barg and % of set."""
+    """Superimposed (device closed), built-up (relieving) and total backpressure of a PSV, in bar(g) and % of set."""
     valve_type = getattr(node, "valve_type", None)
     if valve_type is None:
         return {}

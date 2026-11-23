@@ -88,7 +88,7 @@ const PressureSafetyValveDetails = memo(function PressureSafetyValveDetails({ no
   const hasResult = telemetry.inlets?.[0]?.pressure != null;
   const currentQ = Math.abs(telemetry?.outlets?.[0]?.flow_rate || 0);
   const pIn = telemetry?.inlets?.[0]?.pressure || atmosphericPa;
-  // Set pressure is gauge; the atmospheric pressure follows from the solver's absolute set pressure (bar a), else the site value
+  // Set pressure is gauge; the atmospheric pressure follows from the solver's absolute set pressure (bar(a)), else the site value
   const pAtmBar = setPressureBarg !== null && telemetry.set_pressure_bara != null ? telemetry.set_pressure_bara - setPressureBarg : atmosphericPa / 100000;
   const inletBarg = hasResult ? pIn / 100000 - pAtmBar : null;
   const ratedFlowLmin = parseFloat(telemetry?.rated_flow_lmin || 0.0);
@@ -147,7 +147,7 @@ const PressureSafetyValveDetails = memo(function PressureSafetyValveDetails({ no
           {reseatBarg !== null && (
             <ResultRow label="Reseat at inlet" value={formatGaugeValue(reseatBarg)} unit={`${gaugeUnit} (${blowdownPct} % blowdown)`} />
           )}
-          <ResultRow label="Flow coefficient (Cv)" value={formatDimensionless(cv, 'cv')} />
+          <ResultRow label="Flow coefficient [Cv]" value={formatDimensionless(cv, 'cv')} />
         </ResultTable>
       </ResultSection>
 
