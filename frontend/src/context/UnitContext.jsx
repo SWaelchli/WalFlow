@@ -17,6 +17,7 @@ import {
   pressureBasisLabel,
   flowUnitLabel,
   absPaToDisplayPressure,
+  diffPaToDisplayPressure,
   displayPressureToAbsPa,
   lminToDisplayFlow,
   displayFlowToLmin,
@@ -108,6 +109,7 @@ const UnitContext = createContext({
   formatDiffPressurePa: () => '',
   formatPressureGauge: () => '',
   absPaToDisplay: () => null,
+  diffPaToDisplay: () => null,
   displayToAbsPa: () => 0,
   lminToDisplay: () => null,
   displayToLmin: () => 0,
@@ -229,6 +231,9 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
   const absPaToDisplay = useCallback((pa) => {
     return absPaToDisplayPressure(pa, { unitSystem, basis: pressureBasis, atmPa: atmosphericPa });
   }, [unitSystem, pressureBasis, atmosphericPa]);
+
+  // Differential Pa -> number in the display unit (bar or psi), no basis offset
+  const diffPaToDisplay = useCallback((pa) => diffPaToDisplayPressure(pa, unitSystem), [unitSystem]);
 
   const displayToAbsPa = useCallback((value) => {
     return displayPressureToAbsPa(value, { unitSystem, basis: pressureBasis, atmPa: atmosphericPa });
@@ -461,6 +466,7 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
     basisLabel,
     gaugeLabel,
     absPaToDisplay,
+    diffPaToDisplay,
     displayToAbsPa,
     lminToDisplay,
     displayToLmin,
@@ -500,6 +506,7 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
     basisLabel,
     gaugeLabel,
     absPaToDisplay,
+    diffPaToDisplay,
     displayToAbsPa,
     lminToDisplay,
     displayToLmin,

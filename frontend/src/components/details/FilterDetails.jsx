@@ -10,7 +10,7 @@ import { ResultSection, ResultTable, ResultRow, ResultChart } from './ResultBloc
 import { CHART_TICK, CHART_MARGIN, CHART_GRID, chartAxisLabel, CHART_Y_WIDTH } from './chartProps';
 
 const FilterDetails = memo(function FilterDetails({ node }) {
-  const { labels, isImperial, lminToDisplay, formatDiffPressurePa, formatDimensionless } = useUnits();
+  const { labels, lminToDisplay, diffPaToDisplay, formatDiffPressurePa, formatDimensionless } = useUnits();
   const { clogging_pct, telemetry } = node.data;
   
   const neutral = neutralPorts(telemetry);
@@ -18,10 +18,8 @@ const FilterDetails = memo(function FilterDetails({ node }) {
 
   const portTotal = (p) => p?.total_pressure ?? p?.pressure ?? 0;
   const currentDpMeasuredPa = neutral ? Math.max(0, portTotal(neutral.up) - portTotal(neutral.down)) : 0;
-  const currentDpBar = currentDpMeasuredPa / 100000;
 
   const flowMultiplier = lminToDisplay(1);
-  const pressMultiplier = isImperial ? 14.5037738 : 1.0;
 
   const curves = telemetry?.filter_curves;
 
@@ -29,11 +27,11 @@ const FilterDetails = memo(function FilterDetails({ node }) {
     if (!curves?.flow_m3s?.length) return null;
     return curves.flow_m3s.map((qM3s, i) => ({
       q: qM3s * 60000 * flowMultiplier,
-      clean: (curves.dp_clean_pa[i] / 100000) * pressMultiplier,
-      current: (curves.dp_current_pa[i] / 100000) * pressMultiplier,
-      terminal: (curves.dp_terminal_pa[i] / 100000) * pressMultiplier,
+      clean: diffPaToDisplay(curves.dp_clean_pa[i]),
+      current: diffPaToDisplay(curves.dp_current_pa[i]),
+      terminal: diffPaToDisplay(curves.dp_terminal_pa[i]),
     }));
-  }, [curves, flowMultiplier, pressMultiplier]);
+  }, [curves, flowMultiplier, diffPaToDisplay]);
 
   const xMaxDisplay = chartData ? chartData[chartData.length - 1].q : 0;
   const xTicks = useMemo(
@@ -43,8 +41,8 @@ const FilterDetails = memo(function FilterDetails({ node }) {
 
   const opPoint = useMemo(() => [{
     q: actualFlowLmin * flowMultiplier,
-    dp: currentDpBar * pressMultiplier,
-  }], [actualFlowLmin, currentDpBar, flowMultiplier, pressMultiplier]);
+    dp: diffPaToDisplay(currentDpMeasuredPa),
+  }], [actualFlowLmin, currentDpMeasuredPa, flowMultiplier, diffPaToDisplay]);
 
   const legendPayload = [
     { value: 'Clean', type: 'plainline', color: 'var(--color-success)' },

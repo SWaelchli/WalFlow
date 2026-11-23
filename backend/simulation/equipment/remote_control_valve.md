@@ -31,7 +31,7 @@ $$\Delta P = \frac{K_{Cv}\, \rho\, Q|Q|}{\big(C_{v,\max} \cdot \tfrac{\text{open
 
 with the opening clamped to 0.1-100 % and the IEC 60534-2-1 Annex A Reynolds number factor $F_R$ of the [linear control valve](linear_control_valve.md#33-reynolds-number-factor-f_r-fluidpropertiesget_iec_valve_fr): same $F_L$, $F_d$ defaults, valve size from the connected pipe.
 
-The Results tab chart draws this equation at the current and the full opening; the curve points come from `calculate_delta_p` with the results (`valve_curves`).
+The Results tab chart has two views, both computed from `calculate_delta_p` at the solved upstream fluid (`valve_curves` in `backend/services/simulation_service.py`): **ΔP – Flow** draws this equation at the current and the full opening, from 0 to $\max(2\,Q_{\text{op}},\ 1.25\,Q_{\text{full open}})$, where $Q_{\text{full open}}$ is the flow at full opening under the operating $\Delta P$; **Flow – Cv** draws the flow at the operating $\Delta P$ over $C_v = 0 \dots C_{v,\max}$ (linear trim), found by inverting the same equation (`valve_flow_at_dp`), with the 20-80 % opening control range marked. Without flow there is no operating $\Delta P$ and no Flow – Cv curve.
 
 ### 3.2 Sensed pressure
 

@@ -10,7 +10,7 @@ import { ResultSection, ResultTable, ResultRow, ResultChart } from './ResultBloc
 import { CHART_TICK, CHART_MARGIN, CHART_GRID, chartAxisLabel, CHART_Y_WIDTH } from './chartProps';
 
 const OrificeDetails = memo(function OrificeDetails({ node }) {
-  const { labels, isImperial, lminToDisplay, formatDiffPressurePa, formatDimensionless } = useUnits();
+  const { labels, isImperial, lminToDisplay, diffPaToDisplay, formatDiffPressurePa, formatDimensionless } = useUnits();
   const { pipe_diameter_m, orifice_diameter_m, telemetry } = node.data;
   
   const neutral = neutralPorts(telemetry);
@@ -18,14 +18,12 @@ const OrificeDetails = memo(function OrificeDetails({ node }) {
 
   const portTotal = (p) => p?.total_pressure ?? p?.pressure ?? 0;
   const currentDpPa = neutral ? Math.max(0, portTotal(neutral.up) - portTotal(neutral.down)) : 0;
-  const currentDpBar = currentDpPa / 100000;
 
   const D = (telemetry?.pipe_diameter ?? pipe_diameter_m) || 0.1;
   const d = orifice_diameter_m || 0.07;
   const beta = d / D;
 
   const flowMultiplier = lminToDisplay(1);
-  const pressMultiplier = isImperial ? 14.5037738 : 1.0;
 
   const curves = telemetry?.orifice_curves;
 
@@ -33,9 +31,9 @@ const OrificeDetails = memo(function OrificeDetails({ node }) {
     if (!curves?.flow_m3s?.length) return null;
     return curves.flow_m3s.map((qM3s, i) => ({
       q: qM3s * 60000 * flowMultiplier,
-      dp: (curves.dp_pa[i] / 100000) * pressMultiplier,
+      dp: diffPaToDisplay(curves.dp_pa[i]),
     }));
-  }, [curves, flowMultiplier, pressMultiplier]);
+  }, [curves, flowMultiplier, diffPaToDisplay]);
 
   const xMaxDisplay = chartData ? chartData[chartData.length - 1].q : 0;
   const xTicks = useMemo(
@@ -44,7 +42,7 @@ const OrificeDetails = memo(function OrificeDetails({ node }) {
   );
 
   const maxY = useMemo(() => {
-    let maxVal = currentDpBar * pressMultiplier;
+    let maxVal = diffPaToDisplay(currentDpPa);
     if (chartData?.length) {
       for (const pt of chartData) {
         if (pt.dp > maxVal) maxVal = pt.dp;
@@ -52,12 +50,12 @@ const OrificeDetails = memo(function OrificeDetails({ node }) {
     }
     const rawMax = Math.max(maxVal * 1.1, maxVal + (isImperial ? 5 : 0.5));
     return niceTicks(rawMax, 5).pop() || 1;
-  }, [chartData, currentDpBar, pressMultiplier, isImperial]);
+  }, [chartData, currentDpPa, diffPaToDisplay, isImperial]);
 
   const opPoint = useMemo(() => [{
     q: actualFlowLmin * flowMultiplier,
-    dp: currentDpBar * pressMultiplier,
-  }], [actualFlowLmin, currentDpBar, flowMultiplier, pressMultiplier]);
+    dp: diffPaToDisplay(currentDpPa),
+  }], [actualFlowLmin, currentDpPa, flowMultiplier, diffPaToDisplay]);
 
   const legendPayload = [
     { value: 'Pressure Loss', type: 'plainline', color: 'var(--color-primary)' },

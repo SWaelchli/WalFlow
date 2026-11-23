@@ -22,6 +22,7 @@ Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_RE
 | REG-01 | Standard | IEC 60534-2-1:2011; ANSI/ISA-75.01.01-2012 | Liquid Cv equation, as in the [linear control valve](linear_control_valve.md#3-physical--mathematical-implementation) | ✅ IEC 60534-2-1:2011 §6.1 Eq. (1) |
 | REG-02 | Standard | ANSI/ISA-75.11.01-2013 | Linear inherent characteristic | ⚪ Unverified |
 | REG-03 | Standard | EN 334:2019+A1:2024 | Lock-up: closed tight at zero demand (EN 334 covers fuel-gas regulators) | ⚪ Unverified 🚩 |
+| REG-04 | Standard | IEC 60534-2-1:2011 | Reynolds number factor $F_R$ (Annex A) and default $F_L$, $F_d$ (Table D.2), as in the [linear control valve](linear_control_valve.md#33-reynolds-number-factor-f_r-fluidpropertiesget_iec_valve_fr). IEC 60534 is written for control valves; a self-acting regulator is sized with the same liquid equations | ✅ IEC 60534-2-1:2011 §9 Eq. (23), Annex A, Table D.2 |
 
 The regulator is an ideal controller: no droop (proportional band), no hysteresis. It holds the setpoint exactly whenever the trim can.
 
@@ -29,13 +30,13 @@ The regulator is an ideal controller: no droop (proportional band), no hysteresi
 
 ### 3.1 Valve equation (`calculate_delta_p`)
 
-The same Cv equation as the [linear control valve](linear_control_valve.md#32-pressure-drop-calculate_delta_p), but with the smooth viscosity correction of the [check valve](check_valve.md#31-open-valve-loss-open_seat_dp) (`FluidProperties.get_valve_fr`), not the IEC 60534-2-1 Annex A factor of the control valves. A regulator standard may replace it later.
+The same Cv equation as the [linear control valve](linear_control_valve.md#32-pressure-drop-calculate_delta_p), with its IEC 60534-2-1 Annex A Reynolds number factor $F_R$ (`FluidProperties.get_iec_valve_fr`): same $F_L$, $F_d$ defaults, valve size from the connected pipe. For water at normal flow $F_R \approx 1$; it matters for viscous liquids and very low flow.
 
 $$\Delta P = \frac{K_{Cv}\, \rho\, Q|Q|}{\big(C_{v,\max} \cdot \tfrac{\text{opening}}{100} \cdot F_R\big)^2}, \qquad K_{Cv} = 1.732 \times 10^9$$
 
 The opening is clamped to 0.1-100 % inside the equation; a closed regulator is represented by lock-up (3.4), not by 0 %.
 
-The Results tab chart draws this equation at the current and the full opening; the curve points come from `calculate_delta_p` with the results (`valve_curves`).
+The Results tab chart has two views, both computed from `calculate_delta_p` at the solved upstream fluid (`valve_curves` in `backend/services/simulation_service.py`): **ΔP – Flow** draws this equation at the current and the full opening, from 0 to $\max(2\,Q_{\text{op}},\ 1.25\,Q_{\text{full open}})$, where $Q_{\text{full open}}$ is the flow at full opening under the operating $\Delta P$; **Flow – Cv** draws the flow at the operating $\Delta P$ over $C_v = 0 \dots C_{v,\max}$ (linear trim), found by inverting the same equation (`valve_flow_at_dp`), with the 20-80 % opening control range marked. Without flow there is no operating $\Delta P$ and no Flow – Cv curve.
 
 ### 3.2 Control error
 
@@ -94,6 +95,9 @@ applied to the outlet for $Q \ge 0$ and to the inlet for $Q < 0$. A PRV reducing
 | Max Cv | Cv | `self.max_cv` | Cv | 50 | $> 0$ | Flow coefficient at 100 % |
 | Mode | text | `self.backpressure` | bool | Pressure Reducing (Downstream) | Pressure Reducing / Backpressure | `false` = PRV, `true` = BPR |
 | Set Point | bar(a) (psi(a)) | `self.set_pressure` | Pa (absolute) | 5.0 bar(a) | $> 0$ | Pressure held at the sensed port |
+| Valve style | catalogue entry or Custom | `valve_style_id` | – | IEC Table D.2 globe single port, contoured plug, flow to open | catalogue `control_valve` rows, `custom` | Sets $F_L$ and $F_d$ from the [catalogue](../../../frontend/src/pages/CataloguePage.jsx) (Control valve styles); Custom makes them editable |
+| F_L (from the style, or Custom) | – | `self.fl` | – | 0.9 | $(0, 1]$ | Liquid pressure recovery factor $F_L$ (Table D.2) |
+| F_d (from the style, or Custom) | – | `self.fd` | – | 0.46 | $> 0$ | Valve style modifier $F_d$ (Table D.2) |
 
 The opening (`self.opening_pct`) is a result, not an input.
 
@@ -134,3 +138,7 @@ Node type: `linear_regulator`. Field names follow the naming rule in [base_node.
 | `max_cv` | Cv | 50 |
 | `set_pressure_pa` | Pa | 500000 |
 | `backpressure` | bool | false |
+| `fl` | factor $F_L$ (IEC 60534-2-1) | 0.9 |
+| `fd` | factor $F_d$ (IEC 60534-2-1) | 0.46 |
+
+The node data also carries `valve_style_id` (`<catalogue code>:<row code>` or `custom`, default `IEC_60534_2_1_TABLE_D2:globe_single_contoured_open`) for the inspector's valve style; the parser reads only `fl` and `fd`. Files saved before these fields existed load with the defaults.

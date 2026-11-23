@@ -317,6 +317,12 @@ export const absPaToDisplayPressure = (pa, { unitSystem = UNIT_SYSTEMS.METRIC, b
   return shifted * (isImperialSystem(unitSystem) ? PA_TO_PSI : PA_TO_BAR);
 };
 
+/** Differential pressure in Pa as a number in the display unit (bar or psi); no atmospheric offset. */
+export const diffPaToDisplayPressure = (pa, unitSystem = UNIT_SYSTEMS.METRIC) => {
+  if (missing(pa)) return null;
+  return Number(pa) * (isImperialSystem(unitSystem) ? PA_TO_PSI : PA_TO_BAR);
+};
+
 /** Pressure typed in the display unit and basis back to absolute Pa (inverse of absPaToDisplayPressure). */
 export const displayPressureToAbsPa = (value, { unitSystem = UNIT_SYSTEMS.METRIC, basis = PRESSURE_BASES.ABSOLUTE, atmPa = DEFAULT_ATM_PA } = {}) => {
   const pa = Number(value) * (isImperialSystem(unitSystem) ? PSI_TO_PA : BAR_TO_PA);

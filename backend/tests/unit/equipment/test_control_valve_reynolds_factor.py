@@ -1,4 +1,4 @@
-"""Linear control valve, remote control valve and 3-way TCV paths use the IEC 60534-2-1 Annex A Reynolds
+"""Linear control valve, linear regulator, remote control valve and 3-way TCV paths use the IEC 60534-2-1 Annex A Reynolds
 number factor: laws of their pressure drop in the laminar region and in both flow directions,
 and the F_L / F_d / line size inputs the parser feeds them."""
 from networks import neutral_graph
@@ -11,9 +11,10 @@ from strategies import build, fluid_states, log_uniform
 from simulation.graph_parser import GraphParser, ModelInputError
 from simulation.schemas import ReactFlowGraph
 
-VALVE_TYPES = ["linear_control_valve", "remote_control_valve", "three_way_tcv"]
+VALVE_TYPES = ["linear_control_valve", "linear_regulator", "remote_control_valve", "three_way_tcv"]
 VALVE_DATA = {
     "linear_control_valve": st.fixed_dictionaries({"max_cv": log_uniform(0.01, 50.0)}),
+    "linear_regulator": st.fixed_dictionaries({"max_cv": log_uniform(0.01, 50.0)}),
     "remote_control_valve": st.fixed_dictionaries({"max_cv": log_uniform(0.01, 50.0)}),
     "three_way_tcv": st.fixed_dictionaries({"max_cv": log_uniform(0.01, 50.0)}),
 }

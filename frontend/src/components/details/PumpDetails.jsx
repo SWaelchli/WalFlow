@@ -11,7 +11,7 @@ import { isNodeOff } from '../../utils/nodeReadouts';
 const OFF_BADGE = { text: 'OFF', kind: 'danger', title: 'Component is currently inactive (Off)' };
 
 const PumpDetails = memo(function PumpDetails({ node }) {
-  const { labels, isImperial, lminToDisplay, formatDiffPressurePa, formatPressure, formatFlowM3s, formatPower, formatLength, formatDimensionless } = useUnits();
+  const { labels, isImperial, lminToDisplay, diffPaToDisplay, formatDiffPressurePa, formatPressure, formatFlowM3s, formatPower, formatLength, formatDimensionless } = useUnits();
   const { type, data } = node;
   const { max_discharge_pressure_bara, telemetry } = data;
   const maxDischargeBara = parseFloat(max_discharge_pressure_bara ?? 50) || 50;
@@ -29,7 +29,7 @@ const PumpDetails = memo(function PumpDetails({ node }) {
   const isVolumetric = type === 'volumetric_pump';
 
   const flowMultiplier = lminToDisplay(1);
-  const pressMultiplier = isImperial ? 14.5037738 : 1.0;
+  const pressMultiplier = diffPaToDisplay(100000);
 
   const curves = telemetry?.pump_curves;
 

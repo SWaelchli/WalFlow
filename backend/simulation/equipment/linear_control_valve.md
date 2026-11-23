@@ -35,7 +35,7 @@ with $\Delta P$ in Pa, $Q$ in m³/s and $\rho$ in kg/m³. $K_{Cv} = 15\,850.32^2
 
 **An opening below 0.1 %** (including 0 %) is a closed valve: $\Delta P = 10^{12}\, Q$, a linear stiffness that blocks the flow (leakage below $10^{-7}$ L/min per bar).
 
-The Results tab chart draws this equation at the current and the full opening; the curve points come from `calculate_delta_p` with the results (`valve_curves`).
+The Results tab chart has two views, both computed from `calculate_delta_p` at the solved upstream fluid (`valve_curves` in `backend/services/simulation_service.py`): **ΔP – Flow** draws this equation at the current and the full opening, from 0 to $\max(2\,Q_{\text{op}},\ 1.25\,Q_{\text{full open}})$, where $Q_{\text{full open}}$ is the flow at full opening under the operating $\Delta P$; **Flow – Cv** draws the flow at the operating $\Delta P$ over $C_v = 0 \dots C_{v,\max}$ (linear trim), found by inverting the same equation (`valve_flow_at_dp`), with the 20-80 % opening control range marked. Without flow there is no operating $\Delta P$ and no Flow – Cv curve.
 
 ### 3.3 Reynolds number factor $F_R$ (`FluidProperties.get_iec_valve_fr`)
 

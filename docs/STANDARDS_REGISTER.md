@@ -135,6 +135,7 @@ Doc § is section 2 of the equipment document. "Verified against" names the exac
 | REG-01 | linear_regulator | Liquid Cv equation | `IEC-60534-2-1`, `ISA-75.01.01` | ✅ | IEC 60534-2-1:2011 + Cor.:2015 | §6.1 Eq. (1), Tab. 1 | 2026-10-23 | Same as LCV-01 |
 | REG-02 | linear_regulator | Linear inherent characteristic | `ISA-75.11.01` | ⚪ | | | | Same clause as LCV-03 |
 | REG-03 | linear_regulator | Lock-up: closed tight at zero demand | `EN-334` | ⚪ 🚩 | | | | `EN-334` covers fuel-gas regulators |
+| REG-04 | linear_regulator | Reynolds number factor $F_R$ and default $F_L$, $F_d$ | `IEC-60534-2-1` | ✅ | IEC 60534-2-1:2011 + Cor.:2015 | §9 Eq. (23), Annex A, Tab. D.2 | 2026-10-23 | Same as LCV-02 and LCV-04; IEC 60534 is written for control valves, applied to the self-acting regulator with the same liquid equations |
 | ORI-01 | orifice | Reader-Harris/Gallagher discharge coefficient | `ISO-5167-2` | ✅ | ISO 5167-2:2022 | §5.3.2.1 F(4) | 2026-10-23 | Corner tappings ($L_1 = L_2' = 0$), incl. the $D < 71.12$ mm term |
 | ORI-02 | orifice | Permanent pressure loss, §5.4 Formula (7) | `ISO-5167-2` | ✅ | ISO 5167-2:2022 | §5.4.1 F(7) | 2026-10-23 | Evaluated with $C_d$, not $C_m$ |
 | ORI-03 | orifice | Validity $\beta \in [0.1, 0.75]$, $d \ge 12.5$ mm, $50 \le D \le 1000$ mm | `ISO-5167-2` | ✅ | ISO 5167-2:2022 | §5.3.1 | 2026-10-23 | Geometry limits ✅. Reynolds limit $16\,000\beta^2$ for β > 0.56 (was a flat 16 000). Roughness limits (Tables 1, 2) not modelled |

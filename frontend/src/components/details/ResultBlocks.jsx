@@ -6,13 +6,18 @@ import ChartLegend from './ChartLegend';
 // Shared blocks of the inspector Results tab (MASTER.md "Results display"). Views pass data; the look is in index.css.
 
 /** A group of results: the one section header (title, optional state badge) plus content. */
-export function ResultSection({ title, badge, children }) {
+export function ResultSection({ title, badge, actions, children }) {
   const { text, kind, title: badgeTitle } = badge || {};
   return (
     <section className="result-section">
       <div className="result-section-head">
         <h4 className="result-section-title">{title}</h4>
-        {badge && <StatusBadge kind={kind} title={badgeTitle}>{text}</StatusBadge>}
+        {(badge || actions) && (
+          <div className="result-section-head-end">
+            {actions}
+            {badge && <StatusBadge kind={kind} title={badgeTitle}>{text}</StatusBadge>}
+          </div>
+        )}
       </div>
       <div className="result-section-body">{children}</div>
     </section>

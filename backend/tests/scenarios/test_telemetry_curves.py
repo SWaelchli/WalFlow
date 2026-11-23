@@ -112,7 +112,7 @@ VALVE_TYPES = ["linear_control_valve", "linear_regulator", "remote_control_valve
 
 @pytest.mark.parametrize("valve_type", VALVE_TYPES)
 def test_valve_curves_small_forward_flow(valve_type):
-    """Small forward flow (< 5 L/min): flow_m3s scales to 2 * q_op and includes q_op."""
+    """Small forward flow (< 5 L/min): flow_m3s spans max(2 * q_op, 1.25 * q_full_open) and includes q_op."""
     nodes = [
         {"id": "t1", "type": "tank", "position": {"x": 0, "y": 0}, "data": {"label": "T1", "level_m": 3.0}},
         {"id": "v", "type": valve_type, "position": {"x": 1, "y": 0}, "data": {"label": "V", "max_cv": 2.0, "opening_pct": 50.0, "set_pressure_pa": 120000.0}},
@@ -137,8 +137,9 @@ def test_valve_curves_small_forward_flow(valve_type):
     assert q_op < 5.0 / 60000.0, f"Flow {q_op * 60000} L/min must be under 5 L/min"
 
     flows = curves["flow_m3s"]
-    assert math.isclose(flows[-1], 2.0 * q_op, rel_tol=1e-6)
+    assert math.isclose(flows[-1], max(2.0 * q_op, 1.25 * curves["flow_full_open_m3s"]), rel_tol=1e-6)
     assert q_op in flows
+    assert curves["flow_full_open_m3s"] in flows
 
 
 @pytest.mark.parametrize("valve_type", VALVE_TYPES)

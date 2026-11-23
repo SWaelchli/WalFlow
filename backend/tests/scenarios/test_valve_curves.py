@@ -10,7 +10,8 @@ from hypothesis import given, strategies as st
 
 
 from strategies import build, fluid_states, log_uniform
-from services.simulation_service import VALVE_CURVE_MIN_FLOW, VALVE_CURVE_POINTS, extract_telemetry, valve_curves
+from services.simulation_service import (VALVE_CURVE_MIN_FLOW, VALVE_CURVE_POINTS, extract_telemetry, valve_curves,
+                                         valve_flow_at_dp)
 from simulation.equipment.base_node import Q_DEAD_LEG
 from simulation.graph_parser import GraphParser
 from simulation.schemas import ReactFlowGraph
@@ -32,18 +33,22 @@ def _valve(node_type, state, flow, opening_pct, cv=1.0, **data):
 @pytest.mark.parametrize("node_type", CURVE_TYPES)
 @given(state=fluid_states(), flow=st.one_of(st.just(0.0), st.sampled_from([-1, 1]).flatmap(
            lambda s: log_uniform(1e-6, 0.05).map(lambda q: s * q))),
-       opening=st.floats(5.0, 100.0), cv=log_uniform(0.01, 50.0))
-def test_curve_points_are_the_valves_own_delta_p_over_the_documented_range(node_type, state, flow, opening, cv):
+       opening=st.floats(5.0, 100.0), cv=log_uniform(0.01, 50.0), locked=st.booleans())
+def test_curve_points_are_the_valves_own_delta_p_over_the_documented_range(node_type, state, flow, opening, cv,
+                                                                           locked):
     valve = _valve(node_type, state, flow, opening, cv)
+    if node_type != "linear_control_valve":
+        valve.locked_up = locked  # a closed PRV holding its setpoint has no operating dp: drawn like no flow
     rho, mu = state[2], state[3]
     curves = valve_curves(valve)
-    q_max = 2.0 * abs(flow) if abs(flow) > Q_DEAD_LEG else VALVE_CURVE_MIN_FLOW
+    flowing = abs(flow) > Q_DEAD_LEG and not (locked and node_type != "linear_control_valve")
     flows = curves["flow_m3s"]
 
-    assert len(flows) == len(curves["dp_current_pa"]) == len(curves["dp_full_open_pa"]) == VALVE_CURVE_POINTS == 61
+    assert len(flows) == len(curves["dp_current_pa"]) == len(curves["dp_full_open_pa"])
+    assert VALVE_CURVE_POINTS <= len(flows) <= VALVE_CURVE_POINTS + 2  # Q_op and Q_full_open may add a point
     assert flows[0] == 0.0
-    assert flows[-1] == pytest.approx(q_max, rel=1e-12)
     assert flows == sorted(flows)
+    assert curves["cv_max"] == cv
     for q, dp_cur, dp_full in zip(flows, curves["dp_current_pa"], curves["dp_full_open_pa"]):
         assert dp_cur == valve.calculate_delta_p(q, rho, mu)
         valve.opening_pct = 100.0
@@ -51,6 +56,70 @@ def test_curve_points_are_the_valves_own_delta_p_over_the_documented_range(node_
         valve.opening_pct = opening
         assert dp_full == expected_full
     assert valve.opening_pct == opening  # drawing the chart must not move the valve
+
+    if not flowing:
+        assert flows[-1] == pytest.approx(VALVE_CURVE_MIN_FLOW, rel=1e-12)
+        assert curves["dp_op_pa"] is None and curves["flow_full_open_m3s"] is None
+        assert curves["opening_pct"] == curves["cv"] == curves["flow_at_dp_op_m3s"] == []
+        return
+
+    q_op, q_full, dp_op = abs(flow), curves["flow_full_open_m3s"], curves["dp_op_pa"]
+    assert dp_op == valve.calculate_delta_p(q_op, rho, mu)
+    assert q_full >= q_op * (1 - 1e-9)  # a fully open valve passes at least as much at the same dp
+    assert flows[-1] == pytest.approx(max(2.0 * q_op, 1.25 * q_full), rel=1e-12)
+    assert q_op in flows and q_full in flows
+    assert valve.calculate_delta_p(q_full, rho, mu, opening_pct=100.0) == pytest.approx(dp_op, rel=1e-6)
+
+    # Flow over Cv at the operating dp: the operating point (Cv_op, Q_op) lies on it, and it rises with Cv
+    openings, cvs, qs = curves["opening_pct"], curves["cv"], curves["flow_at_dp_op_m3s"]
+    assert len(openings) == len(cvs) == len(qs) >= VALVE_CURVE_POINTS
+    assert openings[0] == 0.0 and qs[0] == 0.0 and openings[-1] == 100.0
+    assert openings == sorted(openings)
+    assert cvs == pytest.approx([cv * o / 100.0 for o in openings], rel=1e-12)
+    assert qs[openings.index(pytest.approx(opening, abs=1e-9))] == q_op
+    assert qs[-1] == pytest.approx(q_full, rel=1e-6)
+    assert all(a <= b * (1 + 1e-9) for a, b in zip(qs, qs[1:]))
+
+
+@pytest.mark.parametrize("node_type", CURVE_TYPES)
+@given(state=fluid_states(), dp=log_uniform(1e2, 1e7), opening=st.floats(0.5, 100.0), cv=log_uniform(0.01, 50.0))
+def test_flow_at_dp_is_the_inverse_of_the_valves_delta_p(node_type, state, dp, opening, cv):
+    """Viscous fluids and low openings put the root deep in the F_R region, where a bracket that is too
+    tight or a one-sided F_R would return a flow the valve does not give that dp at."""
+    valve = _valve(node_type, state, 0.0, opening, cv)
+    rho, mu = state[2], state[3]
+    q = valve_flow_at_dp(valve, dp, rho, mu, opening)
+    assert q > 0.0
+    assert valve.calculate_delta_p(q, rho, mu, opening_pct=opening) == pytest.approx(dp, rel=1e-6)
+    assert valve_flow_at_dp(valve, 0.0, rho, mu, opening) == 0.0
+    assert valve_flow_at_dp(valve, -dp, rho, mu, opening) == 0.0
+    assert valve_flow_at_dp(valve, dp, rho, mu, 0.0) == 0.0
+
+
+@pytest.mark.parametrize("failure", ["nan_delta_p", "never_reaches_target"])
+@pytest.mark.parametrize("node_type", CURVE_TYPES)
+def test_unsolvable_inverse_raises_in_flow_at_dp_and_draws_the_no_flow_chart(node_type, failure, monkeypatch):
+    """A non-finite dp or a valve whose dp never reaches the target must not raise out of the telemetry."""
+    water = ("water", 293.15, 998.0, 1.0e-3)
+    valve = _valve(node_type, water, 1e-3, 50.0)
+    rho, mu = water[2], water[3]
+    for bad_dp in (float("nan"), float("inf")):
+        with pytest.raises(ValueError):
+            valve_flow_at_dp(valve, bad_dp, rho, mu, 100.0)
+
+    if failure == "nan_delta_p":
+        monkeypatch.setattr(valve, "calculate_delta_p", lambda q, rho, mu, opening_pct=None: float("nan"))
+    else:  # the operating dp is 1e4 Pa, but an explicit opening (the inverse) never gets there
+        monkeypatch.setattr(valve, "calculate_delta_p",
+                            lambda q, rho, mu, opening_pct=None: 1e4 if opening_pct is None else 1.0)
+    with pytest.raises(ValueError):
+        valve_flow_at_dp(valve, 1e4, rho, mu, 100.0)
+
+    curves = valve_curves(valve)  # must not raise
+    assert curves["dp_op_pa"] is None and curves["flow_full_open_m3s"] is None
+    assert curves["opening_pct"] == curves["cv"] == curves["flow_at_dp_op_m3s"] == []
+    assert curves["flow_m3s"][-1] == pytest.approx(VALVE_CURVE_MIN_FLOW, rel=1e-12)
+    assert len(curves["dp_current_pa"]) == len(curves["dp_full_open_pa"]) == len(curves["flow_m3s"])
 
 
 @pytest.mark.parametrize("node_type", CURVE_TYPES)
@@ -66,7 +135,7 @@ def test_opening_argument_equals_setting_the_opening_and_leaves_it_alone(node_ty
     assert by_argument == valve.calculate_delta_p(flow, rho, mu)
 
 
-@pytest.mark.parametrize("node_type", ["linear_control_valve", "remote_control_valve"])  # the regulator has no style input
+@pytest.mark.parametrize("node_type", CURVE_TYPES)
 def test_valve_style_shows_in_the_curve_at_low_reynolds_and_vanishes_at_high(node_type):
     """Two valves differing only in F_d: the viscous (F_R) region separates them, turbulent flow does not.
     The old browser formula drew the same curve for both."""
@@ -114,7 +183,8 @@ def test_solved_operating_point_lies_on_the_current_curve(node_type):
 
     # The shipped points bracket the operating point: linear interpolation lands near it
     flows, dps = curves["flow_m3s"], curves["dp_current_pa"]
-    assert flows[-1] == pytest.approx(2.0 * q if q > Q_DEAD_LEG else VALVE_CURVE_MIN_FLOW)
+    assert flows[-1] == pytest.approx(max(2.0 * q, 1.25 * curves["flow_full_open_m3s"]))
+    assert curves["dp_op_pa"] == pytest.approx(dp_solved, rel=1e-6)
     i = max(k for k, f in enumerate(flows) if f <= q)
     interp = dps[i] if q == flows[i] else dps[i] + (dps[i + 1] - dps[i]) * (q - flows[i]) / (flows[i + 1] - flows[i])
     assert interp == pytest.approx(dp_solved, rel=2e-3)

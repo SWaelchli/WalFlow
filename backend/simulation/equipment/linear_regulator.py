@@ -1,18 +1,23 @@
 from simulation.equipment.base_node import HydraulicNode
 from simulation.fluid_utils import FluidProperties
-import math
 
 class LinearRegulator(HydraulicNode):
     """
     A Pressure Regulator that maintains a set point by varying its internal resistance.
     Its opening_pct is adjusted by the solver in an outer loop.
     """
-    def __init__(self, name: str, max_cv: float, set_pressure: float = 500000.0, backpressure: bool = False):
+    def __init__(self, name: str, max_cv: float, set_pressure: float = 500000.0, backpressure: bool = False,
+                 fl: float = 0.9, fd: float = 0.46):
         super().__init__(name, node_type="linear_regulator")
         self.max_cv = max_cv
         self.set_pressure = set_pressure
         self.backpressure = backpressure # True: senses upstream, False: senses downstream
-        
+        # IEC 60534-2-1 Table D.2 style factors; default globe single port, contoured plug, flow to open
+        self.fl = fl
+        self.fd = fd
+        # Valve size for F_R, set by the graph parser from the connected pipe; default DN50
+        self.pipe_diameter = 0.05248
+
         # Current physical opening (adjusted by solver)
         self.opening_pct = 100.0
         self.locked_up = False  # closed PRV holding its setpoint downstream, set by the solver
@@ -22,21 +27,18 @@ class LinearRegulator(HydraulicNode):
 
     def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001,
                           opening_pct: float | None = None) -> float:
-        """Standard Cv-based dP at the current opening_pct (or the given one) with IEC viscosity correction."""
+        """Standard Cv-based dP at the current opening_pct (or the given one) with the IEC 60534-2-1 Annex A F_R."""
         if opening_pct is None:
             opening_pct = self.opening_pct
         # Clamp opening to physical limits
         eff_opening = max(0.001, min(100.0, opening_pct)) / 100.0
         cv_eff = self.max_cv * eff_opening
-        
-        # Viscosity correction via Valve Reynolds number (IEC 60534-2-1 principle)
-        d_v = max(0.002, 0.01 * math.sqrt(cv_eff))
-        v_v = flow_rate / (0.25 * math.pi * d_v**2)
-        re_v = (density * abs(v_v) * d_v) / max(1e-7, viscosity)
-        
-        fr = FluidProperties.get_valve_fr(re_v)
-        cv_eff_adj = max(0.0001, cv_eff * fr)
-        
+
+        # Reynolds number factor, IEC 60534-2-1 Annex A
+        fr = FluidProperties.get_iec_valve_fr(flow_rate, viscosity / density, cv_eff, self.max_cv,
+                                              self.fl, self.fd, self.pipe_diameter)
+        cv_eff_adj = max(1e-10, cv_eff * fr)  # F_R is floored; keeps laminar Δp linear in Q
+
         K_CV_SI = 1.732e9
         dp = (K_CV_SI * density * flow_rate * abs(flow_rate)) / (cv_eff_adj**2)
         

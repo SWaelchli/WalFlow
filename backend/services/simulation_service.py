@@ -3,6 +3,7 @@ from typing import List, Dict, Any, Tuple
 import math
 
 import numpy as np
+from scipy.optimize import brentq
 
 from simulation.schemas import ReactFlowGraph, HydraulicNetwork
 from simulation.graph_parser import GraphParser, ModelInputError
@@ -147,6 +148,7 @@ VALVE_CURVE_TYPES = {"linear_control_valve", "linear_regulator", "remote_control
 CURVE_POINTS = 61
 VALVE_CURVE_POINTS = CURVE_POINTS
 VALVE_CURVE_MIN_FLOW = 0.005  # m^3/s (300 L/min), zero-flow fallback range for valve curves
+VALVE_BRACKET_DOUBLINGS = 200  # widening steps for the valve_flow_at_dp root bracket (2**200: far beyond any flow)
 
 
 def _curve_flows(q_max: float, *exact_flows: float, points: int = CURVE_POINTS) -> List[float]:
@@ -225,23 +227,84 @@ def pump_curves(node) -> Dict[str, List[float]]:
     return {"flow_m3s": flows, "dp_pa": dps}
 
 
-def valve_curves(node) -> Dict[str, List[float]]:
-    """Δp over flow at the current and the full opening, from the valve's own calculate_delta_p.
+def valve_flow_at_dp(node, dp_pa: float, rho: float, mu: float, opening_pct: float) -> float:
+    """Flow (m³/s, >= 0) at which the valve's own calculate_delta_p at `opening_pct` equals `dp_pa`.
 
-    Uses the solved upstream fluid, so F_R, F_L, F_d and the valve size match the solve. Range 0 to
-    2 × |Q| when flowing (300 L/min without flow).
+    The inverse of the Cv equation with the same F_R, F_L, F_d and valve size as the solve; Δp rises
+    strictly with flow, so the root is unique. 0 for a closed valve or no pressure drop. Raises
+    ValueError for a non-finite Δp or when no root can be bracketed.
+    """
+    if not math.isfinite(dp_pa):
+        raise ValueError("pressure drop is not finite")
+    if dp_pa <= 0.0 or opening_pct <= 0.0:
+        return 0.0
+    def mismatch(q):
+        return node.calculate_delta_p(q, rho, mu, opening_pct=opening_pct) - dp_pa
+    # F_R <= 1, so the flow without the viscosity correction is an upper bound; widen it if not
+    cv_eff = node.max_cv * max(0.001, min(100.0, opening_pct)) / 100.0
+    hi = max(1e-12, cv_eff * math.sqrt(dp_pa / (1.732e9 * rho)))
+    for _ in range(VALVE_BRACKET_DOUBLINGS):
+        m = mismatch(hi)
+        if not math.isfinite(m):
+            raise ValueError("valve pressure drop is not finite")
+        if m >= 0.0:
+            return float(brentq(mismatch, 0.0, hi, xtol=1e-15, rtol=1e-12))
+        hi *= 2.0
+    raise ValueError("no flow reaches the pressure drop")
+
+
+def valve_curves(node) -> Dict[str, Any]:
+    """Valve chart data from the valve's own calculate_delta_p at the solved upstream fluid, so F_R, F_L,
+    F_d and the valve size match the solve.
+
+    - Δp over flow at the current and the full opening; range 0 to max(2 × Q_op, 1.25 × Q_full_open)
+      when flowing (300 L/min without flow), with Q_op and Q_full_open on grid points.
+    - Flow over Cv (0 to Cv_max, linear trim) at the operating Δp, with the operating opening on a grid
+      point. Without flow, or locked up, there is no operating Δp: the Cv curve is empty and the Δp-related
+      values are None. The same applies when the inverse fails, so a chart problem never fails the run.
     """
     inlet = node.inlets[0]
     q_op = abs(inlet.flow_rate)
     rho, mu = node.upstream_fluid()
-    q_max = 2.0 * q_op if q_op > Q_DEAD_LEG else VALVE_CURVE_MIN_FLOW
-    flows = _curve_flows(q_max, q_op)
-    # Grid includes q_op explicitly so the operating point sits on a curve vertex
-    return {
+    # A locked-up regulator holds its setpoint, not the Cv equation: no operating point on these curves
+    flowing = q_op > Q_DEAD_LEG and not getattr(node, "locked_up", False)
+    dp_op = q_full = None
+    if flowing:
+        try:
+            dp_op = node.calculate_delta_p(q_op, rho, mu)
+            q_full = valve_flow_at_dp(node, dp_op, rho, mu, 100.0)
+        except ValueError:
+            flowing, dp_op, q_full = False, None, None
+
+    q_max = max(2.0 * q_op, 1.25 * q_full) if flowing else VALVE_CURVE_MIN_FLOW
+    flows = _curve_flows(q_max, q_op, q_full)
+    curves = {
         "flow_m3s": flows,
         "dp_current_pa": [node.calculate_delta_p(q, rho, mu) for q in flows],
         "dp_full_open_pa": [node.calculate_delta_p(q, rho, mu, opening_pct=100.0) for q in flows],
+        "cv_max": node.max_cv,
+        "dp_op_pa": dp_op,
+        "flow_full_open_m3s": q_full,
+        "opening_pct": [],
+        "cv": [],
+        "flow_at_dp_op_m3s": [],
     }
+    if flowing:
+        opening_op = max(0.0, min(100.0, node.opening_pct))
+        openings = [100.0 * i / (CURVE_POINTS - 1) for i in range(CURVE_POINTS)]
+        if not any(abs(o - opening_op) <= 1e-9 for o in openings):
+            openings = sorted(openings + [opening_op])
+        try:
+            # The operating opening gives back Q_op exactly (it is the root of the same equation)
+            flows_cv = [q_op if abs(o - opening_op) <= 1e-9 else valve_flow_at_dp(node, dp_op, rho, mu, o)
+                        for o in openings]
+        except ValueError:
+            flows_cv = None
+        if flows_cv is not None:
+            curves["opening_pct"] = openings
+            curves["cv"] = [node.max_cv * o / 100.0 for o in openings]
+            curves["flow_at_dp_op_m3s"] = flows_cv
+    return curves
 
 
 def extract_telemetry(network) -> Dict[str, Any]:

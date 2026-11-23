@@ -24,7 +24,7 @@ const DEFAULTS_BY_TYPE = {
   pump: PUMP_DEFAULTS,
   volumetric_pump: { flow_rated_lmin: 100.0, motor_power_kw: 5.0, efficiency_pct: 85.0, drive_type: 'fixed_speed', max_discharge_pressure_bara: 50.0, active: true },
   linear_control_valve: { max_cv: 50.0, opening_pct: 50.0, ...CONTROL_VALVE_STYLE_DEFAULTS },
-  linear_regulator: { max_cv: 50.0, set_pressure_pa: 500000.0, backpressure: false },
+  linear_regulator: { max_cv: 50.0, set_pressure_pa: 500000.0, backpressure: false, ...CONTROL_VALVE_STYLE_DEFAULTS },
   orifice: { pipe_diameter_m: 0.05248, orifice_diameter_m: 0.02, standard: 'iso_5167', standardDn: 50, standardSch: '40' },
   calibrated_restriction: { flow_base_lmin: 10.0, inlet_pressure_base_bara: 3.5, outlet_pressure_base_bara: 1.0, temp_base_c: 45.0, restriction_model: 'orifice', fluid_type: 'system' },
   reducer: {

@@ -501,6 +501,7 @@ Every view in the inspector Results tab is a list of `ResultSection`s built from
 | `ResultCallout` | Warnings, errors and notices (cavitation, overload, no results) | Info-bar style; tone `warning`, `danger` or `info`; icon plus words |
 | `ResultChart` | Every chart frame, 240px high, or 150px with `compact` | Chart font sizes and colours from tokens; shared axis and grid props in `chartProps.js` |
 | `ResultMeter` | A share or utilisation bar | State colour on the bar, never on the number |
+| `SegmentedToggle` | Switching one section between views, such as the valve chart's `ΔP – Flow` / `Flow – Cv` | `.segmented`; buttons with `aria-pressed`, tokens only; sits in the `ResultSection` header through its `actions` slot, next to the badge. View state is local, not saved |
 
 Rules:
 
@@ -524,6 +525,8 @@ Rules:
 * A chart legend sits above the plot in normal flow (`ResultChart`'s `legend` prop), never inside the plot, and
   curves are clipped to the plot area. The y-range contains every curve the legend lists. With nothing to draw, such as
   an OFF pump, the chart shows `ResultChart`'s `empty` text instead of an empty plot and legend.
+* Shaded ranges in a plot (such as the valve's control range by opening) use the tint tokens and appear in the legend
+  as a `swatch` entry (`ChartLegend`); a marker in a range takes that range's state colour.
 * Equipment without a dedicated view gets the generic view, which is itself built from these blocks.
 * The results panel tables (`DataList.jsx`) use the same value cell style (`.result-value`); their table layout stays.
 * Classes live in `index.css` under the `.result-` prefix (`result-section`, `result-table`, `result-label`,

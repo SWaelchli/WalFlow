@@ -27,13 +27,12 @@ describe('defaultNodeData', () => {
     expect(defaultNodeData('pressure_safety_valve', ctx)).toMatchObject({ valve_type: 'conventional', design_superimposed_bp_barg: 0, action_mode: 'pop_action' });
   });
 
-  it('gives the three IEC control valves the backend valve style defaults (F_L 0.9, F_d 0.46), not the regulator', () => {
-    for (const type of ['linear_control_valve', 'remote_control_valve', 'three_way_tcv']) {
+  it('gives every IEC control valve and the linear regulator the backend valve style defaults (F_L 0.9, F_d 0.46)', () => {
+    for (const type of ['linear_control_valve', 'linear_regulator', 'remote_control_valve', 'three_way_tcv']) {
       expect(defaultNodeData(type, ctx)).toMatchObject({
         valve_style_id: 'IEC_60534_2_1_TABLE_D2:globe_single_contoured_open', fl: 0.9, fd: 0.46
       });
     }
-    expect(defaultNodeData('linear_regulator', ctx)).not.toHaveProperty('valve_style_id');
   });
 
   it.each(['linear_control_valve', 'linear_regulator', 'remote_control_valve'])('sizes a new %s with a Cv of 50', (type) => {

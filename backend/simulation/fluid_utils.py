@@ -436,7 +436,7 @@ class FluidProperties:
     def get_valve_fr(reynolds_number: float) -> float:
         """
         Smooth viscosity correction factor Fr for valves outside the scope of IEC 60534
-        (check valves, regulators). Not the standard's formula: control valves use
+        (check valves). Not the standard's formula: control valves and regulators use
         get_iec_valve_fr. Scales effective Cv down smoothly in the transition
         and laminar regimes, with a floor of 0.4.
         """

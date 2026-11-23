@@ -1014,7 +1014,7 @@ export default function SetupPanel({
                   onBlur={(e) => validateAndCommit('max_cv', e.target.value, true)}
                 />
               </div>
-              {type === 'remote_control_valve' && renderValveStyle()}
+              {renderValveStyle()}
               <div>
                 <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)' }}>Regulation mode</label>
                 <select 

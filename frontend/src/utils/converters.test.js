@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { inToM, mToIn, psiToPa, gpmToLmin, fToK, cToK, paToBar, m3sToLmin, kwToBtuh, btuhToKw,
-  pressureBasisLabel, flowUnitLabel, absPaToDisplayPressure, displayPressureToAbsPa, formatAbsPressureFromPa,
+  pressureBasisLabel, flowUnitLabel, absPaToDisplayPressure, diffPaToDisplayPressure, displayPressureToAbsPa, formatAbsPressureFromPa,
   formatDiffPressureFromPa, lminToDisplayFlow, displayFlowToLmin, formatFlowFromLmin,
   formatDimensionless, formatGaugeBar, formatLengthFromM, formatDiameterFromM, formatPressureGradientFromPa, UNIT_SYSTEMS } from './converters';
 
@@ -58,6 +58,17 @@ describe('pressure basis (absolute / gauge) and flow unit', () => {
     expect(formatDiffPressureFromPa(500000, M)).toBe('5.00');
     expect(formatAbsPressureFromPa(500000, M, 'gauge', 101325)).toBe('3.99');
     expect(formatAbsPressureFromPa(500000, M, 'absolute', 101325)).toBe('5.00');
+  });
+
+  it.each([
+    ['metric bar', 500000, M, 5],
+    ['imperial psi', 6894.757293, I, 1],
+    ['negative difference', -100000, M, -1],
+    ['missing', null, M, null],
+  ])('converts a pressure difference without offset: %s', (_n, pa, unitSystem, expected) => {
+    const out = diffPaToDisplayPressure(pa, unitSystem);
+    if (expected === null) expect(out).toBeNull();
+    else expect(out).toBeCloseTo(expected, 6);
   });
 
   it.each([

@@ -204,14 +204,12 @@ describe('control valve style picker in the inspector', () => {
   beforeEach(() => { primeFittingStandards('control_valve', [catalogue]); vi.mocked(notify).mockClear(); });
   afterEach(() => primeFittingStandards('control_valve', []));
 
-  it('offers the picker on the three IEC valves but not on the linear regulator', () => {
-    for (const type of ['linear_control_valve', 'remote_control_valve', 'three_way_tcv']) {
+  it('offers the picker on every IEC valve, the linear regulator included', () => {
+    for (const type of ['linear_control_valve', 'linear_regulator', 'remote_control_valve', 'three_way_tcv']) {
       renderNodePanel(valve(type, styled));
       expect(screen.getByLabelText('Valve style')).toBeTruthy();
       cleanup();
     }
-    renderNodePanel(valve('linear_regulator', {}));
-    expect(screen.queryByLabelText('Valve style')).toBeNull();
   });
 
   it('writes the style id with the row F_L and F_d, and shows them read-only', () => {

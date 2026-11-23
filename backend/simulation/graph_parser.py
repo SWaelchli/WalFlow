@@ -25,6 +25,9 @@ from simulation.equipment.base_node import HydraulicNode, InlineNode, NeutralPor
 from simulation.equipment.component_link import ComponentLink, BoundaryLink
 from simulation.fluid_utils import FluidProperties
 
+# Valves whose pressure drop uses the IEC 60534-2-1 Annex A F_R: they carry F_L, F_d and the connected pipe bore
+IEC_VALVE_TYPES = ('linear_control_valve', 'linear_regulator', 'remote_control_valve', 'three_way_tcv')
+
 
 class ModelInputError(ValueError):
     """Invalid or missing user input in the diagram. The message names the component and is
@@ -235,7 +238,7 @@ class GraphParser:
         for node_id, node in nodes_dict.items():
             if (hasattr(node, 'orifice_diameter') or node.node_type == 'calibrated_restriction'
                     or getattr(node, 'bore_type', '') == 'reduced_bore'
-                    or node.node_type in ('linear_control_valve', 'remote_control_valve', 'three_way_tcv')):
+                    or node.node_type in IEC_VALVE_TYPES):
                 if isinstance(node, InlineNode):
                     ends = [(e, side) for side in ('source', 'target') for e in parsed_edges if e[side] == node_id]
                     ends.sort(key=lambda es: str(es[0][f"{es[1]}_port"]))
@@ -454,7 +457,7 @@ class GraphParser:
         name = (node_data.data or {}).get('label') or f"{node_data.type}_{node_data.id}"
         if node_data.type == 'heat_exchanger' and node.rated_flow_lmin <= 0.0:
             raise ModelInputError(f"'{name}': rated flow must be above 0 L/min.")
-        if node_data.type in ('linear_control_valve', 'remote_control_valve', 'three_way_tcv'):
+        if node_data.type in IEC_VALVE_TYPES:
             # IEC 60534-2-1 style factors divide and take roots in F_R
             if not 0.0 < node.fl <= 1.0:
                 raise ModelInputError(f"'{name}': F_L must be above 0 and at most 1.")
@@ -559,7 +562,9 @@ class GraphParser:
                 name=name,
                 max_cv=float(d.get('max_cv', 50.0)),
                 set_pressure=float(d.get('set_pressure_pa', 500000.0)),
-                backpressure=bool(d.get('backpressure', False))
+                backpressure=bool(d.get('backpressure', False)),
+                fl=float(d.get('fl', 0.9)),
+                fd=float(d.get('fd', 0.46))
             )
         elif t == 'orifice':
             node = Orifice(
