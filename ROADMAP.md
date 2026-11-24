@@ -5,7 +5,7 @@ This document outlines planned features, overlays, and enhancements for the WalF
 | Release | Scope |
 |---|---|
 | **0.2.x** | Small additive features; no file format change. |
-| **0.3.0** | Next feature release: physics depth (elevation, fittings, valves, pumps) and result warnings. |
+| **0.3.0** | Next feature release: physics depth (elevation, fittings, valves, pumps), multiple fluids per drawing and result warnings. |
 | **Later** | Not scheduled yet. |
 
 Items move between releases as priorities change.
@@ -91,6 +91,13 @@ Items move between releases as priorities change.
   * **Physics:** Computes effective flow coefficient $C_v(x)$ dynamic curves based on valve stem opening percentage $x$, with optional choked flow detection for compressible/high-$\Delta P$ regimes.
   * **Engineering Value:** Enables accurate modeling of dynamic process control loops, valve sizing, and loop gain linearity across varying valve positions.
 
+- [ ] **🧪 Multiple Fluids per Drawing (Separate Loops)**
+  * **Concept:** Pick the fluid on each pressure boundary instead of one system fluid for the whole drawing, so loops that are not connected can carry different liquids. Example: a lube oil loop through a cooler and the cooling water loop on its other side, solved together. A pre-solve check finds every connected network and rejects any network fed by more than one fluid (an input error that names the boundaries involved), because mixing is not modelled.
+  * **Today (2026-11-24):** one system fluid per drawing (`global_settings.fluid_type`); tanks always use it, and a per-tank `fluid_type` in old files is ignored (`graph_parser.py`).
+  * **To decide:** whether tanks and flow boundaries also get a fluid picker or take the fluid of their network; whether "system fluid" stays as the default choice; what a network with no pressure boundary uses; how a heat exchanger couples the two loops (today its utility side is an infinite-capacity medium, see Direction-Dependent Heat Exchanger Behaviour); whether this needs a file format bump.
+  * **Later:** mixing of different liquids at junctions (mixture properties) as a separate feature.
+  * **Engineering Value:** Lube oil, seal oil and cooling water systems in one drawing, with one simulation run.
+
 ### 📁 Project Management & Collaboration
 
 - [ ] **⚙️ User & Project Hierarchical Default Settings**
@@ -145,13 +152,6 @@ Items move between releases as priorities change.
   * **Concept:** A heat exchanger's process nozzles have fixed roles; with a finite utility stream, reversing the process flow turns counter-current into co-current (or the reverse), which lowers or raises the effectiveness. Model the utility side as a finite capacity rate with its own flow direction, and the flow arrangement (counter-current, co-current, cross-flow, TEMA shell passes), and pick the effectiveness-NTU relation from the actual flow direction.
   * **Today (2026-10-27):** the utility side is an infinite-capacity medium ($C_{\min}/C_{\max} \to 0$), where every arrangement has the same effectiveness, so forward and reverse flow give the same duty (`heat_exchanger.md` reverse-flow note). The ports keep the inlet / outlet role (see Neutral Ports).
   * **Engineering Value:** Realistic duty for exchangers with a limited utility flow, and for exchangers operated in reverse.
-
-- [ ] **🧪 Multiple Fluids per Drawing (Separate Loops)**
-  * **Concept:** Pick the fluid on each pressure boundary instead of one system fluid for the whole drawing, so loops that are not connected can carry different liquids. Example: a lube oil loop through a cooler and the cooling water loop on its other side, solved together. A pre-solve check finds every connected network and rejects any network fed by more than one fluid (an input error that names the boundaries involved), because mixing is not modelled.
-  * **Today (2026-11-24):** one system fluid per drawing (`global_settings.fluid_type`); tanks always use it, and a per-tank `fluid_type` in old files is ignored (`graph_parser.py`).
-  * **To decide:** whether tanks and flow boundaries also get a fluid picker or take the fluid of their network; whether "system fluid" stays as the default choice; what a network with no pressure boundary uses; how a heat exchanger couples the two loops (today its utility side is an infinite-capacity medium, see Direction-Dependent Heat Exchanger Behaviour); whether this needs a file format bump.
-  * **Later:** mixing of different liquids at junctions (mixture properties) as a separate feature.
-  * **Engineering Value:** Lube oil, seal oil and cooling water systems in one drawing, with one simulation run.
 
 - [ ] 🔬 **Relief Device Capacity Sizing Investigation (PSVs & Rupture Discs)**
   * **Concept:** Detailed technical investigation into industry standard methodologies (e.g. API 520/526, ISO 4126, ASME Section VIII) for determining rated relief capacity ($Q_{\text{rated}}$), allowable overpressure accumulation (e.g., 10% for non-fire, 21% for fire case), and liquid vs. gas $C_v$ / coefficient of discharge ($K_d$) orifice sizing models across relief valves and burst diaphragms.
