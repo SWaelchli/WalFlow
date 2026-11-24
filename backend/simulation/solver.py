@@ -739,6 +739,7 @@ class NetworkSolver:
     def solve(self, method=None):
         self.prune_topology()
         self._clear_stagnant_flags()   # a failed solve leaves no flags from the previous run
+        self._update_pump_system_slopes(None)   # nor system slopes of the previous operating point
         self.properties_frozen = False
         start_time = time.perf_counter()
         max_outer_iterations = 100
@@ -975,6 +976,7 @@ class NetworkSolver:
                 for node in self.nodes_list:
                     if isinstance(node, (CentrifugalPump, VolumetricPump)) and node.inlets:
                         node.update_npsh(node.inlets[0])   # NPSHa from the reported suction pressure
+                self._update_pump_system_slopes(sol if state["error"] is None else None)
             finally:
                 self.properties_frozen = False
             if controllers:
@@ -1666,6 +1668,57 @@ class NetworkSolver:
             msg = getattr(sol, 'message', 'Residuals did not converge to tolerance')
             raise SolveNotConvergedError(f"Solver failed to converge: message='{msg}', max_residual={max_res:.6f} (scaled)")
 
+
+    def _update_pump_system_slopes(self, sol) -> None:
+        """Slope of the system curve each pump works against, dΔP_sys/dQ in Pa per m3/s of pump inlet flow, stored
+        as node.system_slope (None when not available). The pump's pressure balance row gets a constant extra rise ε;
+        one linear solve with the Jacobian at the solved point gives the change of every unknown, so of the pump
+        flow and of the rise the rest of the network asks for (ΔP_pump + ε). Device states, control positions and
+        fluid properties are held, so the slope is exact at the operating point only."""
+        for node in self.network.nodes.values():
+            if isinstance(node, (CentrifugalPump, VolumetricPump)):
+                node.system_slope = None
+        x_scaled = getattr(self, '_last_x_scaled', None)
+        if sol is None or x_scaled is None or len(x_scaled) != len(sol):
+            return
+        p_scale, q_scale = 100000.0, 0.001
+        num_internal = len(self.internal_node_indices)
+        x_unscaled = np.concatenate([x_scaled[:num_internal] * p_scale, x_scaled[num_internal:] * q_scale])
+        if not np.allclose(x_unscaled, sol, rtol=1e-9, atol=1e-9):
+            return   # the last Jacobian state is not the reported solution
+        rows = [(j, row) for j, row in enumerate(self._edge_rows)
+                if row[8] == "law" and isinstance(row[4], (CentrifugalPump, VolumetricPump))
+                and getattr(row[4], 'active', True) and not getattr(row[4], 'locked_up', False)]   # a stopped pump has no duty
+        if not rows:
+            return
+        try:
+            jac = sp.csc_matrix(self.calculate_jacobian(x_scaled))
+            lu = spla.splu(jac)
+        except (RuntimeError, ValueError):
+            return   # singular at the solved point
+        p_all = self._all_pressures(x_unscaled[:num_internal])
+        f_comp = self._current_weights()[1]
+        for j, (src_idx, _, src_pos, _, pump, _, _, _, _) in rows:
+            q_comp = f_comp[j] * x_unscaled[num_internal + j]
+            if q_comp <= Q_DEAD_LEG:
+                continue   # no forward flow: no system curve
+            rhs = np.zeros(jac.shape[0])
+            rhs[num_internal + j] = -1.0 / p_scale   # d(row)/dε for ε in Pa
+            dx = lu.solve(rhs)
+            dq = f_comp[j] * dx[num_internal + j] * q_scale       # m3/s per Pa of ε
+            dp_in = dx[src_pos] * p_scale if src_pos >= 0 else 0.0  # Pa per Pa of ε
+            if not np.isfinite(dq) or abs(dq) < 1e-30:
+                continue
+            p_in = p_all[src_idx]
+            out = self._outlet_of(self.edges_list[j])
+            # The pump's own rise along the response, from its curve (a volumetric pump's also follows its inlet)
+            step = 1e-6 * max(abs(q_comp), 1e-9) / abs(dq)
+            rise = lambda e: (self._get_node_p_out(pump, p_in + dp_in * e, q_comp + dq * e, q_comp + dq * e, outlet=out)
+                              - (p_in + dp_in * e))
+            d_rise = (rise(step) - rise(-step)) / (2.0 * step)
+            slope = (d_rise + 1.0) / dq   # d(ΔP_pump + ε)/dQ
+            if np.isfinite(slope):
+                pump.system_slope = float(slope)
 
     def _pilot_point(self, node):
         """(node index, node id, port type) of a pilot PSV's remote sensing point in the solve, else None."""

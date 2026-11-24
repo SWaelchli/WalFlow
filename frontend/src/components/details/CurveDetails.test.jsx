@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { UnitProvider } from '../../context/UnitContext';
 import OrificeDetails from './OrificeDetails';
 import FilterDetails from './FilterDetails';
@@ -198,6 +198,74 @@ describe('CurveDetails equipment curves and operating points', () => {
       ['negative operating point (-1.3 bar) floors below it', -30000, -2],
     ])('%s', (_name, outletPa, expectedMin) => {
       expect(yDomain(outletPa)[0]).toBe(expectedMin);
+    });
+  });
+
+  describe('centrifugal pump chart', () => {
+    const telemetry = (overrides = {}) => ({
+      inlets: [{ flow_rate: 0.001, pressure: 100000, total_pressure: 100000, density: 1000 }],
+      outlets: [{ flow_rate: 0.001, pressure: 300000, total_pressure: 300000, density: 1000 }],
+      pump_curves: {
+        flow_m3s: [0, 0.001, 0.002, 0.003],
+        dp_pa: [300000, 200000, 50000, -100000],
+        system_dp_pa: [10000, 20000, 50000, 90000],
+      },
+      ...overrides,
+    });
+    const renderPump = (tel, data = {}) => render(
+      <UnitProvider>
+        <PumpDetails node={{ type: 'centrifugal_pump', data: { ...data, telemetry: tel } }} />
+      </UnitProvider>
+    );
+
+    it('ends the curve on the zero-head flow, starts the axis at 0 and takes the system curve from the backend', () => {
+      renderPump(telemetry());
+      const rows = JSON.parse(screen.getByTestId('chart').dataset.rows);
+      expect(rows.every((r) => r.pump >= 0)).toBe(true);
+      expect(rows).toHaveLength(4);
+      // Interpolated zero-head point: 50000 / 150000 of the way from 120 to 180 L/min
+      expect(rows[3].q).toBeCloseTo(140, 6);
+      expect(rows[3].pump).toBe(0);
+      expect(rows[1].system).toBeCloseTo(0.2, 6);
+      expect(JSON.parse(screen.getByTestId('y-axis').dataset.domain)[0]).toBe(0);
+      expect(screen.queryByText('System (estimate)')).not.toBeNull();
+    });
+
+    it('shows head in metres of the inlet fluid when switched to Head', () => {
+      renderPump(telemetry({
+        outlets: [{ flow_rate: 0.001, pressure: 200000, total_pressure: 200000, density: 1000 }],
+      }));
+      fireEvent.click(screen.getByText('Head'));
+      const op = JSON.parse(screen.getByTestId('scatter-Operating Point').dataset.points)[0];
+      expect(op.p).toBeCloseTo(100000 / (1000 * 9.80665), 6);
+    });
+
+    it('shows the flow as a share of the rated flow', () => {
+      renderPump(telemetry(), { flow_rated_lmin: 120 });
+      expect(rowText('Flow (% of rated)')).toMatch(/50/);
+    });
+
+    it('warns about reverse flow through a running pump', () => {
+      renderPump(telemetry({
+        inlets: [{ flow_rate: -0.001, pressure: 100000, total_pressure: 100000, density: 1000 }],
+      }));
+      expect(screen.queryByText('REVERSE FLOW')).not.toBeNull();
+    });
+
+    it('warns when a forward-flow pump is driven past its zero-head flow', () => {
+      renderPump(telemetry({
+        outlets: [{ flow_rate: 0.001, pressure: 50000, total_pressure: 50000, density: 1000 }],
+      }));
+      expect(screen.queryByText('PAST ZERO-HEAD FLOW')).not.toBeNull();
+      expect(screen.queryByText('REVERSE FLOW')).toBeNull();
+    });
+
+    it('draws no system curve without flow', () => {
+      renderPump(telemetry({
+        inlets: [{ flow_rate: 0, pressure: 100000, total_pressure: 100000, density: 1000 }],
+        pump_curves: { flow_m3s: [0, 0.001], dp_pa: [300000, 200000] },
+      }));
+      expect(screen.queryByText('System (estimate)')).toBeNull();
     });
   });
 });

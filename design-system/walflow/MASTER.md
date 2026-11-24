@@ -501,7 +501,7 @@ Every view in the inspector Results tab is a list of `ResultSection`s built from
 | `ResultCallout` | Warnings, errors and notices (cavitation, overload, no results) | Info-bar style; tone `warning`, `danger` or `info`; icon plus words |
 | `ResultChart` | Every chart frame, 240px high, or 150px with `compact` | Chart font sizes and colours from tokens; shared axis and grid props in `chartProps.js` |
 | `ResultMeter` | A share or utilisation bar | State colour on the bar, never on the number |
-| `SegmentedToggle` | Switching one section between views, such as the valve chart's `ΔP – Flow` / `Flow – Cv` | `.segmented`; buttons with `aria-pressed`, tokens only; sits in the `ResultSection` header through its `actions` slot, next to the badge. View state is local, not saved |
+| `SegmentedToggle` | Switching one section between views, such as the valve chart's `ΔP – Flow` / `Flow – Cv` or the pump chart's `Pressure` / `Head` | `.segmented`; buttons with `aria-pressed`, tokens only; sits in the `ResultSection` header through its `actions` slot, next to the badge. View state is local, not saved |
 
 Rules:
 

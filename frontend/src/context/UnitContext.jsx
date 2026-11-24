@@ -46,6 +46,7 @@ import {
   formatDimensionless,
   hpToKw,
   mToFt,
+  M_TO_FT,
   ftToM,
   inToM,
   mmToM
@@ -121,6 +122,7 @@ const UnitContext = createContext({
   formatPower: () => '',
   formatHeatDuty: () => '',
   formatGaugeValue: () => '',
+  lengthToDisplay: (m) => m,
   formatLength: () => '',
   formatDiameter: () => '',
   formatPressureGradient: () => '',
@@ -272,6 +274,7 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
 
   // Number-only formatters for results views; the unit comes from labels
   const formatGaugeValue = useCallback((valBarg, decimals = 2) => formatGaugeBar(valBarg, unitSystem, decimals), [unitSystem]);
+  const lengthToDisplay = useCallback((m) => (isImperial ? m * M_TO_FT : m), [isImperial]);
   const formatLength = useCallback((valM, decimals = 1) => formatLengthFromM(valM, unitSystem, decimals), [unitSystem]);
   const formatDiameter = useCallback((valM, decimals = 1) => formatDiameterFromM(valM, unitSystem, decimals), [unitSystem]);
   const formatPressureGradient = useCallback((valPa, lengthM) => formatPressureGradientFromPa(valPa, lengthM, unitSystem), [unitSystem]);
@@ -478,6 +481,7 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
     formatPower,
     formatHeatDuty,
     formatGaugeValue,
+    lengthToDisplay,
     formatLength,
     formatDiameter,
     formatPressureGradient,
@@ -518,6 +522,7 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
     formatPower,
     formatHeatDuty,
     formatGaugeValue,
+    lengthToDisplay,
     formatLength,
     formatDiameter,
     formatPressureGradient,

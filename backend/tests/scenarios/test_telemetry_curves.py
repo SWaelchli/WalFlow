@@ -202,6 +202,16 @@ def _build_centrifugal_stopped():
     return neutral_graph(nodes=nodes, edges=edges)
 
 
+def _build_centrifugal_reverse():
+    graph = _build_centrifugal_running()
+    for n in graph.nodes:
+        if n.id == "p":
+            n.data["head_rated_m"] = 3.0
+        elif n.id == "t2":
+            n.data["level_m"] = 40.0
+    return graph
+
+
 def _build_volumetric_capped():
     nodes = [
         {"id": "t1", "type": "tank", "position": {"x": 0, "y": 0}, "data": {"label": "T1", "level_m": 2.0}},
@@ -215,12 +225,14 @@ def _build_volumetric_capped():
     return neutral_graph(nodes=nodes, edges=edges)
 
 
-@pytest.mark.parametrize("case_name, build_fn, expect_negative, expect_cap", [
-    ("running_unequal_pipes", _build_centrifugal_running, False, False),
-    ("stopped_pump", _build_centrifugal_stopped, True, False),
-    ("pressure_capped_volumetric", _build_volumetric_capped, False, True),
+@pytest.mark.parametrize("case_name, build_fn, expect_negative, expect_cap, range_factor, expect_system", [
+    ("running_unequal_pipes", _build_centrifugal_running, False, False, 1.3, True),
+    ("stopped_pump", _build_centrifugal_stopped, True, False, 1.3, False),
+    ("running_reverse_flow", _build_centrifugal_reverse, False, False, 1.3, False),
+    ("pressure_capped_volumetric", _build_volumetric_capped, False, True, 1.5, None),
 ])
-def test_pump_curves_contain_operating_point_and_match_total_pressure_rise(case_name, build_fn, expect_negative, expect_cap):
+def test_pump_curves_contain_operating_point_and_match_total_pressure_rise(
+        case_name, build_fn, expect_negative, expect_cap, range_factor, expect_system):
     graph = build_fn()
     net = GraphParser.parse_graph(graph)
     stats = NetworkSolver(net).solve()
@@ -246,6 +258,52 @@ def test_pump_curves_contain_operating_point_and_match_total_pressure_rise(case_
     assert math.isclose(dps[idx], dp_total, rel_tol=1e-4, abs_tol=1.0)
     if expect_negative:
         assert dps[idx] < 0.0
+
+    # Range follows the rated flow, with no fixed 200 L/min floor for a 100 L/min pump
+    assert flows[-1] == pytest.approx(max(range_factor * 100.0 / 60000.0, 1.2 * q_op), rel=1e-9)
+
+    if expect_system is not None:
+        assert ("system_dp_pa" in curves) is expect_system
+    if "system_dp_pa" in curves:
+        system = curves["system_dp_pa"]
+        assert len(system) == len(flows)
+        assert system[idx] == pytest.approx(dps[idx], rel=1e-9, abs=1e-6)
+        assert all(system[i] <= system[i + 1] for i in range(len(system) - 1))
+
+
+def _lift_graph(head_rated_m):
+    nodes = [
+        {"id": "t1", "type": "tank", "position": {"x": 0, "y": 0}, "data": {"label": "T1", "level_m": 2.0}},
+        {"id": "p", "type": "centrifugal_pump", "position": {"x": 1, "y": 0}, "data": {"label": "P", "flow_rated_lmin": 300.0, "head_rated_m": head_rated_m, "active": True}},
+        {"id": "t2", "type": "tank", "position": {"x": 2, "y": 0}, "data": {"label": "T2", "level_m": 21.0}},
+    ]
+    edges = [
+        {"id": "e1", "source": "t1", "target": "p", "sourceHandle": "outlet-0", "targetHandle": "inlet-0", "data": {"diameter_m": 0.05, "length_m": 5.0}},
+        {"id": "e2", "source": "p", "target": "t2", "sourceHandle": "outlet-0", "targetHandle": "inlet-0", "data": {"diameter_m": 0.05, "length_m": 200.0}},
+    ]
+    return neutral_graph(nodes=nodes, edges=edges)
+
+
+def test_pump_system_curve_slope_matches_the_slope_of_the_solved_system():
+    """Raising the pump head slightly moves the operating point along the real system curve; the secant of the
+    two solved (flow, rise) points equals the slope of the reported system curve at the operating point."""
+    results = []
+    for head in (40.0, 40.4):
+        net = GraphParser.parse_graph(_lift_graph(head))
+        assert NetworkSolver(net).solve()["success"]
+        p_tel = extract_telemetry(net)["nodes"]["p"]
+        inlet, outlet = p_tel["inlets"][0], p_tel["outlets"][0]
+        q = abs(inlet["flow_rate"])
+        rise = outlet["total_pressure"] - inlet["total_pressure"]
+        results.append((q, rise, p_tel["pump_curves"]))
+    (q1, r1, curves), (q2, r2, _) = results
+    assert q2 > q1
+    secant = (r2 - r1) / (q2 - q1)
+
+    flows, system = curves["flow_m3s"], curves["system_dp_pa"]
+    i = flows.index(q1)
+    k = (system[i] - system[0]) / q1 ** 2
+    assert 2.0 * k * q1 == pytest.approx(secant, rel=0.03)
 
 
 PD_Q_RATED = 100.0 / 60000.0

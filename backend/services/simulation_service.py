@@ -147,6 +147,7 @@ def calculate_case_kpis(network, telemetry: Dict[str, Any], stats: Dict[str, Any
 VALVE_CURVE_TYPES = {"linear_control_valve", "linear_regulator", "remote_control_valve"}
 CURVE_POINTS = 61
 VALVE_CURVE_POINTS = CURVE_POINTS
+PUMP_CURVE_FALLBACK_FLOW = 200.0 / 60000.0  # m^3/s (200 L/min), curve range of a pump without rated or solved flow
 VALVE_CURVE_MIN_FLOW = 0.005  # m^3/s (300 L/min), zero-flow fallback range for valve curves
 VALVE_BRACKET_DOUBLINGS = 200  # widening steps for the valve_flow_at_dp root bracket (2**200: far beyond any flow)
 
@@ -206,7 +207,10 @@ def pump_curves(node) -> Dict[str, List[float]]:
     q_op = abs(q_in)
     rho, mu = node.upstream_fluid()
     q_rated = max(0.0, getattr(node, "flow_rated", 0.0))
-    q_max = max(200.0 / 60000.0, 1.5 * q_rated, 1.2 * q_op)
+    # The usable range around the rated point: a centrifugal curve beyond ~130 % of rated flow heads for zero head
+    q_max = max((1.3 if isinstance(node, CentrifugalPump) else 1.5) * q_rated, 1.2 * q_op)
+    if q_max <= 0.0:
+        q_max = PUMP_CURVE_FALLBACK_FLOW
 
     knees = [q_op, q_rated]
     p_in_total = total_of(inlet)
@@ -224,7 +228,26 @@ def pump_curves(node) -> Dict[str, List[float]]:
         ]
     else:
         dps = [node.calculate_delta_p(sign * q, rho, mu) for q in flows]
-    return {"flow_m3s": flows, "dp_pa": dps}
+    curves = {"flow_m3s": flows, "dp_pa": dps}
+    system = _system_curve(node, flows, dps, q_in)
+    if system is not None:
+        curves["system_dp_pa"] = system
+    return curves
+
+
+def _system_curve(node, flows, dps, q_in) -> List[float] | None:
+    """System curve estimate ΔP_static + K·Q² through the operating point with the solved system slope there
+    (node.system_slope, NetworkSolver._update_pump_system_slopes): K = slope / (2 Q_op). A falling slope (pumps in
+    parallel) clamps K to 0. None without forward flow or without a slope."""
+    slope = getattr(node, "system_slope", None)
+    if slope is None or q_in <= Q_DEAD_LEG:
+        return None
+    q_op = abs(q_in)
+    # Nearest grid flow: a knee within float noise of q_op may have taken its place (_curve_flows)
+    dp_op = dps[min(range(len(flows)), key=lambda i: abs(flows[i] - q_op))]
+    k = max(0.0, slope / (2.0 * q_op))
+    dp_static = dp_op - k * q_op * q_op
+    return [dp_static + k * q * q for q in flows]
 
 
 def valve_flow_at_dp(node, dp_pa: float, rho: float, mu: float, opening_pct: float) -> float:

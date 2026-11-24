@@ -86,6 +86,12 @@ NPSHr = 0 means "not entered"; the warning then fires only when NPSHa falls belo
 
 The pump is a relief driver. `apply_relief_ramp(λ)` scales the speed by the affinity laws: $Q_r \to \lambda Q_r$, $H_r \to \lambda^2 H_r$, $H_0 \to \lambda^2 H_0$ ($C$ unchanged). A stopped pump is not ramped. See [relief_device.md](relief_device.md).
 
+### 3.7 System curve on the results chart
+
+The chart's system curve is an estimate $\Delta P_{sys} = \Delta P_{static} + K Q^2$, fitted to the operating point and to the slope of the system there. After the solve, `NetworkSolver._update_pump_system_slopes` adds a constant rise $\varepsilon$ to the pump's pressure-balance row and solves the linear system once with the Jacobian at the solved point. This gives $dQ/d\varepsilon$ and the pump's own change of rise. The slope is $S = d(\Delta P_{pump} + \varepsilon)/dQ$, stored as `system_slope` (Pa per m³/s). Telemetry `pump_curves.system_dp_pa` then uses $K = \max(0, S / 2Q_{op})$ and $\Delta P_{static} = \Delta P_{op} - K Q_{op}^2$. Relief states, control positions and fluid properties are held at their solved values.
+
+The curve is exact at the operating point only. Pipe friction grows with about $Q^{1.8\text{-}2}$, not exactly $Q^2$, so part of the friction shows up in $\Delta P_{static}$: in a pure friction system it reads a few percent of the operating rise instead of 0. With no forward flow there is no system curve.
+
 ## 4. Thermal & Energy Balance
 
 The share of the shaft power that is not hydraulic power heats the fluid:
