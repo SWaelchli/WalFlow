@@ -15,7 +15,7 @@ Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_RE
 | Claim | Type | Source (edition) | Used for | Status |
 | :--- | :--- | :--- | :--- | :--- |
 | CP-01 | Principle | Pump affinity laws | $Q \propto n$, $H \propto n^2$ for the relief-analysis speed ramp | ➖ Principle |
-| CP-02 | Standard / Literature | ISO 9906:2012; ANSI/HI 14.6-2022 | Definitions of rated flow, rated head, shutoff head and pump efficiency | ⚪ Unverified |
+| CP-02 | Standard / Literature | ISO 9906:2012; ANSI/HI 14.6-2022 | Definitions of rated flow, rated head, shutoff head and pump efficiency | ✅ ISO 9906:2012 §3.2.15, §3.2.26, §3.2.29, §4.2 (shutoff head: the model's own curve parameter, not defined there) |
 | CP-03 | Standard | ANSI/HI 9.6.1-2024 | NPSHa compared with NPSHr plus a user margin | ⚪ Unverified |
 | CP-04 | Literature | Gülich, *Centrifugal Pumps*, 4th ed. (2020) | Quadratic head curve and locked-rotor resistance as an engineering approximation | ⚪ Unverified |
 

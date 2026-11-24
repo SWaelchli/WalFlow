@@ -41,9 +41,9 @@ The workflow for checking a source is the `standard-verification` skill ([.claud
 | `API-661` | API Standard 661, *Petroleum, Petrochemical, and Natural Gas Industries — Air-cooled Heat Exchangers* | 7th ed., July 2013, reaffirmed 2024 | |
 | `API-674` | API Standard 674, *Positive Displacement Pumps — Reciprocating* | 3rd ed., 2010, errata to November 2025 | |
 | `API-676` | API Standard 676, *Positive Displacement Pumps — Rotary* | 4th ed., February 2022 | |
-| `ISO-4126-1` | ISO 4126-1, *Safety devices for protection against excessive pressure — Part 1: Safety valves* | ISO 4126-1:2013 + Amd 1:2016 (confirmed 2025) | EN ISO 4126-1:2013 also has A2:2019 |
-| `ISO-4126-2` | ISO 4126-2, *… — Part 2: Bursting disc safety devices* | ISO 4126-2:2018 | |
-| `ISO-4126-6` | ISO 4126-6, *… — Part 6: Application, selection and installation of bursting disc safety devices* | ISO 4126-6:2014 (confirmed 2022) | |
+| `ISO-4126-1` | ISO 4126-1, *Safety devices for protection against excessive pressure — Part 1: Safety valves* | ISO 4126-1:2013 + Amd 1:2016 (confirmed 2025) | EN ISO 4126-1:2013 also has A2:2019 (Annex ZA only). Read: EVS-EN ISO 4126-1:2013 + A1:2016 + A2:2019 (English) |
+| `ISO-4126-2` | ISO 4126-2, *… — Part 2: Bursting disc safety devices* | ISO 4126-2:2018 | Read: DIN EN ISO 4126-2:2019-08, German version (= EN ISO 4126-2:2019, ISO text without modification). Covers definitions, types, testing and marking; no sizing |
+| `ISO-4126-6` | ISO 4126-6, *… — Part 6: Application, selection and installation of bursting disc safety devices* | ISO 4126-6:2014 (confirmed 2022) | Read: DIN EN ISO 4126-6:2014-10, German version (= ISO 4126-6:2014 without modification) |
 | `ISO-23251` | ISO 23251, *Petroleum, petrochemical and natural gas industries — Pressure-relieving and depressuring systems* | ISO 23251:2019 (2nd ed.); EN ISO 23251:2020 | |
 | `ASME-VIII-1` | ASME Boiler and Pressure Vessel Code, Section VIII, Division 1, *Rules for Construction of Pressure Vessels* | Biennial; edition to be fixed when read | 🚩 Cited for UG-127. From the 2021 edition the overpressure protection rules are in Section XIII (`ASME-XIII`) |
 | `ASME-XIII` | ASME Boiler and Pressure Vessel Code, Section XIII, *Rules for Overpressure Protection* | 2025 edition (first issued 2021) | Not cited yet; likely replacement for `ASME-VIII-1` UG-127 |
@@ -55,7 +55,7 @@ The workflow for checking a source is the `standard-verification` skill ([.claud
 | `ISA-75.01.01` | ANSI/ISA-75.01.01 (60534-2-1 MOD), *Industrial-Process Control Valves — Part 2-1: Flow capacity — Sizing equations for fluid flow under installed conditions* | 2012 | US adoption of `IEC-60534-2-1` |
 | `ISA-75.11.01` | ANSI/ISA-75.11.01, *Inherent Flow Characteristic and Rangeability of Control Valves* | 2013 | |
 | `ISA-5.1` | ANSI/ISA-5.1, *Instrumentation and Control Symbols and Identification* | 2024 | 2022 edition historical |
-| `ISO-9906` | ISO 9906, *Rotodynamic pumps — Hydraulic performance acceptance tests — Grades 1, 2 and 3* | ISO 9906:2012 | |
+| `ISO-9906` | ISO 9906, *Rotodynamic pumps — Hydraulic performance acceptance tests — Grades 1, 2 and 3* | ISO 9906:2012 | Read: DIN EN ISO 9906:2013-03, English translation (= EN ISO 9906:2012, ISO text without modification) |
 | `HI-14.6` | ANSI/HI 14.6, *Rotodynamic Pumps for Hydraulic Performance Acceptance Tests* | 2022 | |
 | `HI-9.6.1` | ANSI/HI 9.6.1, *Rotodynamic Pumps Guideline for NPSH Margin* | 2024 | 2024 changed the margin basis from NPSH3 to NPSHR. 🚩 Rotodynamic pumps only, but also cited for the volumetric pump |
 | `HI-3.1-3.5` | ANSI/HI 3.1-3.5, *Rotary Pumps for Nomenclature, Definitions, Application, and Operation* | 2021 | |
@@ -80,9 +80,9 @@ The workflow for checking a source is the `standard-verification` skill ([.claud
 | `GULICH` | Gülich, J.F., *Centrifugal Pumps*, 4th ed., Springer, Cham, 2020, ISBN 978-3-030-14787-7, doi:10.1007/978-3-030-14788-4 | |
 | `KAYS-LONDON` | Kays, W.M., London, A.L., *Compact Heat Exchangers*, 3rd ed., McGraw-Hill, New York, 1984 | |
 | `INCROPERA` | Bergman, T.L., Lavine, A.S., Incropera, F.P., DeWitt, D.P., *Fundamentals of Heat and Mass Transfer*, 8th ed., Wiley, 2017, ISBN 978-1-118-98917-3 | The docs cite "Incropera & DeWitt" (authors of the editions before 2011) |
-| `CHURCHILL-1977` | Churchill, S.W. (1977). Friction-factor equation spans all fluid-flow regimes. *Chemical Engineering*, 84(24), 91–92 | |
+| `CHURCHILL-1977` | Churchill, S.W. (1977). Friction-factor equation spans all fluid-flow regimes. *Chemical Engineering*, 84(24), 91–92 | Read: a 2-page reprint marked "Originally published November 7, 1977" (reprint pp. 94–95; volume, issue and original pages not printed on it) |
 | `COLEBROOK-1939` | Colebrook, C.F. (1939). Turbulent flow in pipes, with particular reference to the transition region between the smooth and rough pipe laws. *Journal of the Institution of Civil Engineers*, 11(4), 133–156 | Start page consistent across sources; end page unconfirmed |
-| `JEPPSON-1974` | Jeppson, R.W. (1974). *Steady Flow Analysis of Pipe Networks: An Instructional Manual*. Utah Water Research Laboratory, Utah State University, Reports, Paper 300 | Worked network examples for validation, no equipment claims. The 7-pipe network of Ch. V, problems 1–3 (pp. 47–48), is AFT Fathom Verification Case 63, which AFT cites from Jeppson, *Analysis of Flow in Pipe Networks*, Ann Arbor Science, 1976, p. 94. The 48-pipe network of Ch. VI, problem 3 (pp. 70–71), is a second example |
+| `JEPPSON-1974` | Jeppson, R.W. (1974). *Steady Flow Analysis of Pipe Networks: An Instructional Manual*. Utah Water Research Laboratory, Utah State University, Reports, Paper 300 | Worked network examples for validation, no equipment claims. The 7-pipe network of Ch. V, problems 1–3 (pp. 47–48), is AFT Fathom Verification Case 63, which AFT cites from Jeppson, *Analysis of Flow in Pipe Networks*, Ann Arbor Science, 1976, p. 94. The 48-pipe network of Ch. VI, problem 3 (pp. 70–71), is a second example. No copy in the private library yet |
 | `FISCHER-1992` | Fischer, A. (1992). A special Newton-type optimization method. *Optimization*, 24(3–4), 269–284 | |
 | `DITTUS-BOELTER-1930` | Dittus, F.W., Boelter, L.M.K. (1930). Heat transfer in automobile radiators of the tubular type. *University of California Publications in Engineering*, 2(13), 443–461. Reprinted in *Int. Commun. Heat Mass Transfer*, 12(1), 3–22 (1985) | 🚩 The common form $\mathrm{Nu} = 0.023\,\mathrm{Re}^{0.8}\mathrm{Pr}^n$ is often attributed to McAdams rather than to this paper; check the attribution |
 | `WUEST-1954` | Wuest, W. (1954): cited for the laminar discharge coefficient $C_d \approx 0.2\sqrt{\mathrm{Re}}$ | 🚩 Not found by the web check: title and journal unknown. Do not rely on it until it is identified |
@@ -108,19 +108,19 @@ Doc § is section 2 of the equipment document. "Verified against" names the exac
 | Claim | Doc | Claim as the doc states it | Ref ID | Status | Verified against | Clause | Date | Note / finding |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | CR-01 | calibrated_restriction | Orifice flow equation for the equivalent orifice | `ISO-5167-1`, `ISO-5167-2` | ✅ | ISO 5167-1:2022, ISO 5167-2:2022 | 5167-1 §5.1 F(1); 5167-2 F(1) | 2026-10-23 | Form of the equation only ($\varepsilon = 1$); $C_d$ is WalFlow's own (CR-03), not Formula (4) |
-| CR-02 | calibrated_restriction | Permanent pressure loss ratio, §5.4 Formula (7) with the model's $C_d$ | `ISO-5167-2` | ✅ | ISO 5167-2:2022 | §5.4 F(7) | 2026-10-23 | The code uses F(7) (was $1-\beta^2$, within ±2.5 % of F(7) for β 0.2-0.75) |
+| CR-02 | calibrated_restriction | Permanent pressure loss ratio, §5.4 Formula (7) with the model's $C_d$ | `ISO-5167-2` | ✅ | ISO 5167-2:2022 | §5.4 F(7) | 2026-10-23 | The code uses F(7) (was $1-\beta^2$, within ±2.5 % of F(7) for β 0.2-0.75). Was ❌ |
 | CR-03 | calibrated_restriction | Laminar discharge coefficient $C_d \approx 0.2\sqrt{\mathrm{Re}}$ of small orifices | `WUEST-1954`, `IDELCHIK` | ⚪ 🚩 | | | | `WUEST-1954` not found |
 | CR-04 | calibrated_restriction | Laminar law $\Delta P \propto \mu Q$ | `HAGEN-POISEUILLE` | ➖ | | | | |
 | CR-05 | calibrated_restriction | Resistance coefficient $K$ for the quadratic law | `CRANE-TP410` | ⚪ | | | | |
-| CP-01 | centrifugal_pump | Affinity laws $Q \propto n$, $H \propto n^2$ for the relief-analysis speed ramp | `AFFINITY-LAWS` | ➖ | | | | |
-| CP-02 | centrifugal_pump | Definitions of rated flow, rated head, shutoff head and pump efficiency | `ISO-9906`, `HI-14.6` | ⚪ | | | | |
-| CP-03 | centrifugal_pump | NPSHa compared with NPSHr plus a user margin | `HI-9.6.1` | ⚪ | | | | 2024 edition: margin on NPSHR, not NPSH3 |
+| CP-01 | centrifugal_pump | Affinity laws $Q \propto n$, $H \propto n^2$ for the relief-analysis speed ramp | `AFFINITY-LAWS` | ➖ | | | | Also stated in ISO 9906:2012 §6.1.1 Eq. (27)-(28) for translating test results, within 50-120 % of rated speed; the relief ramp goes below that |
+| CP-02 | centrifugal_pump | Definitions of rated flow, rated head, shutoff head and pump efficiency | `ISO-9906`, `HI-14.6` | ✅ | ISO 9906:2012 | §3.2.15 Eq. (11), §3.2.26 Eq. (15), §3.2.29 Eq. (16), §4.1-4.2 | 2026-11-24 | Rated flow and head = guarantee point $Q_G$, $H_G$ at rated speed; head is the pump total head incl. velocity heads (solver nodes at total pressure); shaft power $\lvert Q\rvert\Delta P_{\text{total}}/\eta$ = Eq. (15)-(16), $\eta$ excludes the driver. Shutoff head is not defined in ISO 9906: the model's own curve parameter $H_0 = H_r(1 + r/100)$. `HI-14.6` not read |
+| CP-03 | centrifugal_pump | NPSHa compared with NPSHr plus a user margin | `HI-9.6.1` | ⚪ | | | | 2024 edition: margin on NPSHR, not NPSH3. The NPSHa formula agrees with ISO 9906:2012 §3.2.20 Eq. (13) with $z_D = 0$; ISO 9906 defines NPSHA, NPSHR and NPSH3 (§3.2.21-3.2.23), not the margin |
 | CP-04 | centrifugal_pump | Quadratic head curve and locked-rotor resistance as an engineering approximation | `GULICH` | ⚪ | | | | |
 | CV-01 | check_valve | Liquid Cv equation for the open valve loss | `IEC-60534-2-1` | ✅ | IEC 60534-2-1:2011 + Cor.:2015 | §6.1 Eq. (1), Tab. 1 | 2026-10-23 | K_Cv = 1.732e9 is Eq. (1) inverted with N1 = 8.65e-2 (−0.1 %, N1 rounding); Annex E Ex. 1 reproduced (459.5 vs 460 kPa). Choked flow (§6.2) and $F_P$ (§8) not modelled; IEC scope is control valves (§1): verifies the equation form only |
 | CV-02 | check_valve | Cracking pressure and non-return function of check valves | `API-594`, `API-6D` | ⚪ | | | | |
 | CV-03 | check_valve | Fischer-Burmeister function for complementarity problems | `FISCHER-1992` | ⚪ | | | | |
 | CVO-01 | check_valve_orifice | Liquid Cv equation for the open seat | `IEC-60534-2-1` | ✅ | IEC 60534-2-1:2011 + Cor.:2015 | §6.1 Eq. (1), Tab. 1 | 2026-10-23 | Same as CV-01; IEC scope is control valves (§1): verifies the equation form only |
-| CVO-02 | check_valve_orifice | Orifice equation and permanent loss ratio (Formula (7)) for the bypass | `ISO-5167-1`, `ISO-5167-2` | ✅ | ISO 5167-1:2022, ISO 5167-2:2022 | F(1); §5.4 F(7) | 2026-10-23 | Equation ✅ as CR-01; loss ratio F(7) |
+| CVO-02 | check_valve_orifice | Orifice equation and permanent loss ratio (Formula (7)) for the bypass | `ISO-5167-1`, `ISO-5167-2` | ✅ | ISO 5167-1:2022, ISO 5167-2:2022 | F(1); §5.4 F(7) | 2026-10-23 | Equation ✅ as CR-01; loss ratio F(7). Was ❌ |
 | CVO-03 | check_valve_orifice | Cracking pressure of check valves | `API-594` | ⚪ | | | | |
 | FLT-01 | filter | Datasheet drop at a rated flow in a reference fluid | `ISO-3968` | ⚪ | | | | |
 | FLT-02 | filter | Terminal differential pressure as the change-out point | `ISO-16889` | ⚪ | | | | |
@@ -135,18 +135,18 @@ Doc § is section 2 of the equipment document. "Verified against" names the exac
 | REG-01 | linear_regulator | Liquid Cv equation | `IEC-60534-2-1`, `ISA-75.01.01` | ✅ | IEC 60534-2-1:2011 + Cor.:2015 | §6.1 Eq. (1), Tab. 1 | 2026-10-23 | Same as LCV-01 |
 | REG-02 | linear_regulator | Linear inherent characteristic | `ISA-75.11.01` | ⚪ | | | | Same clause as LCV-03 |
 | REG-03 | linear_regulator | Lock-up: closed tight at zero demand | `EN-334` | ⚪ 🚩 | | | | `EN-334` covers fuel-gas regulators |
-| REG-04 | linear_regulator | Reynolds number factor $F_R$ and default $F_L$, $F_d$ | `IEC-60534-2-1` | ✅ | IEC 60534-2-1:2011 + Cor.:2015 | §9 Eq. (23), Annex A, Tab. D.2 | 2026-10-23 | Same as LCV-02 and LCV-04; IEC 60534 is written for control valves, applied to the self-acting regulator with the same liquid equations |
+| REG-04 | linear_regulator | Reynolds number factor $F_R$ and default $F_L$, $F_d$ | `IEC-60534-2-1` | ✅ | IEC 60534-2-1:2011 + Cor.:2015 | §9 Eq. (23), Annex A, Tab. D.2 | 2026-11-23 | Same as LCV-02 and LCV-04; IEC 60534 is written for control valves, applied to the self-acting regulator with the same liquid equations. Lock-up (REG-03) bypasses the Cv equation |
 | ORI-01 | orifice | Reader-Harris/Gallagher discharge coefficient | `ISO-5167-2` | ✅ | ISO 5167-2:2022 | §5.3.2.1 F(4) | 2026-10-23 | Corner tappings ($L_1 = L_2' = 0$), incl. the $D < 71.12$ mm term |
 | ORI-02 | orifice | Permanent pressure loss, §5.4 Formula (7) | `ISO-5167-2` | ✅ | ISO 5167-2:2022 | §5.4.1 F(7) | 2026-10-23 | Evaluated with $C_d$, not $C_m$ |
 | ORI-03 | orifice | Validity $\beta \in [0.1, 0.75]$, $d \ge 12.5$ mm, $50 \le D \le 1000$ mm | `ISO-5167-2` | ✅ | ISO 5167-2:2022 | §5.3.1 | 2026-10-23 | Geometry limits ✅. Reynolds limit $16\,000\beta^2$ for β > 0.56 (was a flat 16 000). Roughness limits (Tables 1, 2) not modelled |
 | ORI-04 | orifice | General principles and requirements | `ISO-5167-1` | ✅ | ISO 5167-1:2022 | §5.1 F(1), §6.3 | 2026-10-23 | Tap Δp is F(1) inverted with $\varepsilon = 1$. Steady, single-phase flow (§6.3) consistent; cavitation (§6.3.2) not checked |
 | PIPE-01 | pipe | Friction pressure drop | `DARCY-WEISBACH` | ➖ | | | | |
-| PIPE-02 | pipe | One continuous friction-factor expression for laminar, transition and turbulent flow | `CHURCHILL-1977` | ⚪ | | | | |
+| PIPE-02 | pipe | One continuous friction-factor expression for laminar, transition and turbulent flow | `CHURCHILL-1977` | ✅ | Churchill (1977), reprint | Eq. (5), (18) | 2026-11-24 | Code = 8 × Eq. (18) (Darcy, Eq. (5)), all constants; 64/Re below Re = 10 equals Eq. (18) there. Colebrook within 2 % for Re ≥ 10⁴, up to 3 % at Re = 4000. No worked example in the source |
 | PIPE-03 | pipe | Turbulent limit reproduced by Churchill; independent reference in the tests | `COLEBROOK-1939` | ⚪ | | | | |
 | PIPE-04 | pipe | Sharp-edged pipe entrance $K = 0.5$ (A-29) | `CRANE-TP410` | ⚪ 🚩 | | | | Page number depends on the edition |
-| PSV-01 | pressure_safety_valve | Set pressure (gauge) | `API-520-1`, `ISO-4126-1` | ⚪ | | | | |
-| PSV-02 | pressure_safety_valve | 10 % overpressure for liquid service | `API-520-1`, `ISO-4126-1` | ⚪ | | | | |
-| PSV-03 | pressure_safety_valve | Blowdown and reseat pressure | `API-520-1`, `ISO-4126-1` | ⚪ | | | | |
+| PSV-01 | pressure_safety_valve | Set pressure (gauge) | `API-520-1`, `ISO-4126-1` | ✅ | ISO 4126-1:2013 + Amd 1:2016 | §3.5, §3.9 | 2026-11-24 | Gauge pressure at the valve inlet; the conventional valve's CDTP with back-pressure correction matches §3.9. `API-520-1` not read |
+| PSV-02 | pressure_safety_valve | 10 % overpressure for liquid service | `API-520-1`, `ISO-4126-1` | ✅ | ISO 4126-1:2013 + Amd 1:2016 | §3.7, §7.2.1 c) | 2026-11-24 | ISO limit for all fluids: 10 % of set or 0.1 bar, whichever is greater. The model uses 10 % (floor 10 mbar): equal above 1 bar(g), within the limit and conservative for the capacity check below. `API-520-1` not read |
+| PSV-03 | pressure_safety_valve | Blowdown and reseat pressure | `API-520-1`, `ISO-4126-1` | ✅ | ISO 4126-1:2013 + Amd 1:2016 | §3.8, §3.15, §7.2.1 d) | 2026-11-24 | Reseat = set · (1 − blowdown); default 7 % inside the ISO liquid range (2.5-20 % or 0.6 bar). The input accepts 0-50 % without a warning. `API-520-1` not read |
 | PSV-04 | pressure_safety_valve | Cold differential test pressure (CDTP) of conventional valves | `API-520-1` | ⚪ | | | | |
 | PSV-05 | pressure_safety_valve | Built-up backpressure of conventional valves at most 10 % of set | `API-520-2`, `API-521` | ⚪ | | | | |
 | PSV-06 | pressure_safety_valve | Balanced bellows valves usable up to about 50 % of set | `API-520-2`, `API-521` | ⚪ | | | | |
@@ -155,16 +155,16 @@ Doc § is section 2 of the equipment document. "Verified against" names the exac
 | PSV-09 | pressure_safety_valve | Liquid Cv equation for the open valve loss | `IEC-60534-2-1` | ✅ | IEC 60534-2-1:2011 + Cor.:2015 | §6.1 Eq. (1), Tab. 1 | 2026-10-23 | Same as LCV-01; IEC scope is control valves (§1): verifies the equation form only; PSV capacity is rated by $K_d$ and area (API 520) |
 | RED-01 | reducer | Gradual contraction and enlargement loss coefficients, referenced to the small bore (A-26) | `CRANE-TP410` | ⚪ 🚩 | | | | Page number depends on the edition |
 | RED-02 | reducer | Background for conical contractions and diffusers | `IDELCHIK`, `MILLER` | ⚪ | | | | |
-| RED-03 | reducer | Darcy friction factor for the transition wall friction | `CHURCHILL-1977` | ⚪ | | | | Same as PIPE-02 |
+| RED-03 | reducer | Darcy friction factor for the transition wall friction | `CHURCHILL-1977` | ✅ | Churchill (1977), reprint | Eq. (5), (18) | 2026-11-24 | Same as PIPE-02 |
 | RED-04 | reducer | Reducer and pipe dimensions (geometry only) | `ASME-B16.9`, `ASME-B36.10M`, `ASME-B36.19M` | ⚪ | | | | Catalogue data, not hydraulics |
 | RED-05 | reducer | Reducer and pipe dimensions (geometry only) | `EN-10253-2`, `EN-10220`, `EN-ISO-1127` | ⚪ | | | | Catalogue data, not hydraulics |
-| RLF-01 | relief_device | Gauge set pressure, 10 % overpressure at rated capacity for liquid, blowdown, reseat | `API-520-1`, `ISO-4126-1` | ⚪ | | | | Shares clauses with PSV-01..03 |
+| RLF-01 | relief_device | Gauge set pressure, 10 % overpressure at rated capacity for liquid, blowdown, reseat | `API-520-1`, `ISO-4126-1` | ✅ | ISO 4126-1:2013 + Amd 1:2016 | §3.5, §3.7, §3.8, §3.15, §7.2.1 | 2026-11-24 | As PSV-01..03. `API-520-1` not read |
 | RLF-02 | relief_device | Relieved pressure, accumulation and overpressure scenarios | `API-521`, `ISO-23251` | ⚪ | | | | |
-| RLF-03 | relief_device | Bursting discs: burst pressure, open after burst | `ISO-4126-2`, `ASME-VIII-1` | ⚪ 🚩 | | | | Section VIII rules moved to `ASME-XIII` |
+| RLF-03 | relief_device | Bursting discs: burst pressure, open after burst | `ISO-4126-2`, `ASME-VIII-1` | ⚠️ 🚩 | ISO 4126-2:2018 | §3.1, §3.10 | 2026-11-24 | Non-reclosing ✅ (§3.1). Burst pressure: ISO defines it as the inlet − outlet differential (§3.10); the model bursts on inlet gauge pressure, so it bursts early by $P_{\text{out}} - P_{\text{atm}}$ against a pressurised outlet. Section VIII rules moved to `ASME-XIII` (not read) |
 | RCV-01 | remote_control_valve | Liquid Cv equation | `IEC-60534-2-1`, `ISA-75.01.01` | ✅ | IEC 60534-2-1:2011 + Cor.:2015 | §6.1 Eq. (1), Tab. 1 | 2026-10-23 | Same as LCV-01 |
 | RCV-02 | remote_control_valve | PC → PCV loop notation | `ISA-5.1` | ⚪ | | | | Notation only; the controller is an idealisation |
 | RCV-03 | remote_control_valve | Reynolds number factor $F_R$ and default $F_L$, $F_d$ | `IEC-60534-2-1` | ✅ | IEC 60534-2-1:2011 + Cor.:2015 | §9 Eq. (23), Annex A, Tab. D.2 | 2026-10-23 | Same as LCV-02 and LCV-04 |
-| RD-01 | rupture_disc | Burst pressure, application and sizing of bursting discs | `ISO-4126-2`, `ISO-4126-6` | ⚪ | | | | |
+| RD-01 | rupture_disc | Burst pressure, application and sizing of bursting discs | `ISO-4126-2`, `ISO-4126-6` | ⚠️ | ISO 4126-2:2018; ISO 4126-6:2014 | 4126-2 §3.1, §3.10, §12; 4126-6 §3.21, §6.1.2, §6.2, Annex C | 2026-11-24 | Burst pressure is the inlet − outlet differential (§3.10); the model uses inlet gauge pressure (same only for an atmospheric outlet; 10 bar(g) disc, outlet 3 bar(g): ISO bursts at 13 bar(g), the model at 10 bar(g)). Burst tolerance and coincident temperature (§3.11-3.15) not modelled, stated in the doc. ISO 4126-6 §3.21 and §6.1.2 confirm the differential basis. Sizing ✅: the open disc is a Cv or orifice resistance in the system solve, the extended method of Annex C (C.3.1.2); $K_R$ not modelled, stated in the doc |
 | RD-02 | rupture_disc | Rupture disc devices (UG-127) | `ASME-VIII-1` | ⚪ 🚩 | | | | Moved to `ASME-XIII` from 2021 |
 | RD-03 | rupture_disc | 10 % overpressure for liquid relief capacity | `API-520-1` | ⚪ | | | | |
 | RD-04 | rupture_disc | Flow resistance method ($K_R$) for discs | `API-520-1` | ⚪ | | | | |
@@ -177,7 +177,7 @@ Doc § is section 2 of the equipment document. "Verified against" names the exac
 | PDP-02 | volumetric_pump | Definitions of displacement, slip and pump efficiency | `HI-3.1-3.5` | ⚪ | | | | |
 | PDP-03 | volumetric_pump | NPSHa compared with NPSHr plus a user margin | `HI-9.6.1` | ⚪ 🚩 | | | | HI 9.6.1 covers rotodynamic pumps; rotary PD pumps use NPIP in HI 3.1-3.5 |
 
-Documents with no source: `base_node`, `flow_boundary`, `pressure_boundary`, `measure_point`, `junction`, `tank` (idealisations; principles `MASS-ENERGY`, `GLOBAL-GRADIENT`).
+Documents with no source: `base_node`, `component_link`, `flow_boundary`, `pressure_boundary`, `measure_point`, `junction`, `tank` (idealisations; principles `MASS-ENERGY`, `GLOBAL-GRADIENT`).
 
 ## Part C: Verification log
 
@@ -190,6 +190,11 @@ Documents with no source: `base_node`, `flow_boundary`, `pressure_boundary`, `me
 | 2026-10-26 | Jeppson (1974), USU instructional manual, Sept. 1974 (intake) | none | Added to Part A as a source of worked network examples; no claims checked | Claude |
 | 2026-10-26 | Jeppson (1974), Ch. V problems 2 and 3, p. 48 (network validation, not a claim check) | none | WalFlow (Churchill friction, entrance loss K = 0.5) reproduces the 7-pipe network: flows within 0.005 cfs, friction losses within 0.07 ft, junction pressures within 0.05 psi; held by `scenarios/test_literature_networks.py` | Claude; second opinion `walflow-physics-reviewer` on the flow-source withdrawal the case needs (agreed) |
 | 2026-10-26 | Jeppson (1974), Ch. VI problem 3, pp. 70–71 (48-pipe network validation, not a claim check) | none | WalFlow reproduces all 48 pipe flows within 0.02 cfs (0.7 %) and friction losses within 0.6 % (water 68 °F; no heads published, one supply is the tank head reference); four-pipe junctions are chained tees; held by `scenarios/test_literature_networks.py` | Claude |
+| 2026-11-23 | IEC 60534-2-1:2011 + Cor.:2015 (no new reading; clauses of the 2026-10-23 sessions) | REG-04 (new) | ✅ after the regulator moved from the smooth viscosity correction to the Annex A $F_R$ of the control valves, with the same arguments, valve size and $F_L$, $F_d$ defaults | Claude; second opinion `walflow-physics-reviewer` on 2026-11-24 (agreed) |
+| 2026-11-24 | Register audit against section 2 of all equipment documents and the private library (no source text read) | all | Statuses and claim IDs match the docs 1:1; REG-04 date and log entry corrected; `component_link` added to the documents with no source; former ❌ noted on CR-02, CVO-02; `JEPPSON-1974` has no copy in the private library | Claude |
+| 2026-11-24 | ISO 9906:2012, read as DIN EN ISO 9906:2013-03 (English); Churchill (1977), read as reprint | CP-02, PIPE-02, RED-03 (notes on CP-01, CP-03) | ✅ CP-02 (shutoff head not in ISO 9906), ✅ PIPE-02, RED-03; numerical comparison with Colebrook added to pipe.md §3.3 | Claude; second opinion `walflow-physics-reviewer` (agreed; read code and docs, not the PDFs) |
+| 2026-11-24 | ISO 4126-2:2018, read as DIN EN ISO 4126-2:2019-08 (German) | RD-01, RLF-03 | ⚠️ RD-01, RLF-03: burst on inlet gauge pressure instead of the inlet − outlet differential; non-reclosing ✅; finding opened in `FINDINGS.md` | Claude; second opinion `walflow-physics-reviewer` (agreed; not a documented simplification) |
+| 2026-11-24 | ISO 4126-1:2013 + Amd 1:2016 (+ A2:2019), read as EVS-EN (English); ISO 4126-6:2014, read as DIN EN (German) | PSV-01..03, RLF-01, RD-01 | ✅ PSV-01..03, RLF-01 (ISO part; API 520 not read); RD-01 sizing consistent with Annex C.3, stays ⚠️ for the burst-pressure basis (§3.21 confirms it) | Claude; second opinion `walflow-physics-reviewer` (agreed) |
 
 ## Private reference library
 

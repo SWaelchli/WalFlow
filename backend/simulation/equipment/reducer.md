@@ -17,7 +17,7 @@ Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_RE
 | :--- | :--- | :--- | :--- | :--- |
 | RED-01 | Literature | Crane TP-410, *Flow of Fluids* (edition not fixed; newest confirmed 2018) | Loss coefficients of gradual contractions and enlargements, referenced to the small bore (A-26, page depends on the edition) | ⚪ Unverified 🚩 |
 | RED-02 | Literature | Idelchik, *Handbook of Hydraulic Resistance*, 4th ed. (2008); Miller, *Internal Flow Systems*, 2nd ed. (1990) | Background for conical contractions and diffusers | ⚪ Unverified |
-| RED-03 | Literature | Churchill (1977), *Chem. Eng.* 84(24), 91–92 | Darcy friction factor for the transition wall friction, shared with the [pipe](pipe.md#33-friction-factor-_friction_factor-churchill-1977) | ⚪ Unverified |
+| RED-03 | Literature | Churchill (1977), *Chem. Eng.* 84(24), 91–92 | Darcy friction factor for the transition wall friction, shared with the [pipe](pipe.md#33-friction-factor-_friction_factor-churchill-1977) | ✅ Churchill (1977) Eq. (18), Darcy = 8f (Eq. (5)) |
 | RED-04 | Standard | ASME B16.9-2024; ASME B36.10M (edition not fixed); ASME B36.19M-2018 | Reducer and pipe dimensions (geometry only, not used in the hydraulics) | ⚪ Unverified |
 | RED-05 | Standard / Literature | EN 10253-2:2021; EN 10220:2002; EN ISO 1127:1996 | Reducer and pipe dimensions (geometry only, not used in the hydraulics) | ⚪ Unverified |
 

@@ -26,9 +26,9 @@ Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_RE
 
 | Claim | Type | Source (edition) | Used for | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| PSV-01 | Standard | API Std 520 Part I, 10th ed. (2020); ISO 4126-1:2013 + Amd 1:2016 | Set pressure (gauge) | ⚪ Unverified |
-| PSV-02 | Standard | API Std 520 Part I, 10th ed. (2020); ISO 4126-1:2013 + Amd 1:2016 | 10 % overpressure for liquid service | ⚪ Unverified |
-| PSV-03 | Standard | API Std 520 Part I, 10th ed. (2020); ISO 4126-1:2013 + Amd 1:2016 | Blowdown and reseat pressure | ⚪ Unverified |
+| PSV-01 | Standard | API Std 520 Part I, 10th ed. (2020); ISO 4126-1:2013 + Amd 1:2016 | Set pressure (gauge) | ✅ ISO 4126-1:2013 §3.5, §3.9; API 520 unverified |
+| PSV-02 | Standard | API Std 520 Part I, 10th ed. (2020); ISO 4126-1:2013 + Amd 1:2016 | 10 % overpressure for liquid service | ✅ ISO 4126-1:2013 + Amd 1 §7.2.1 c) (max 10 % or 0.1 bar); API 520 unverified |
+| PSV-03 | Standard | API Std 520 Part I, 10th ed. (2020); ISO 4126-1:2013 + Amd 1:2016 | Blowdown and reseat pressure | ✅ ISO 4126-1:2013 §3.8, §3.15; API 520 unverified |
 | PSV-04 | Standard | API Std 520 Part I, 10th ed. (2020) | Cold differential test pressure (CDTP) of conventional valves | ⚪ Unverified |
 | PSV-05 | Standard | API Std 520 Part II, 7th ed. (2020); API Std 521, 7th ed. (2020) | Built-up backpressure of conventional valves at most 10 % of set | ⚪ Unverified |
 | PSV-06 | Standard | API Std 520 Part II, 7th ed. (2020); API Std 521, 7th ed. (2020) | Balanced bellows valves usable up to about 50 % of set | ⚪ Unverified |

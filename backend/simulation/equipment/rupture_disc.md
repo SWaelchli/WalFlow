@@ -17,7 +17,7 @@ Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_RE
 
 | Claim | Type | Source (edition) | Used for | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| RD-01 | Standard | ISO 4126-2:2018; ISO 4126-6:2014 | Bursting disc safety devices: burst pressure, application and sizing | ⚪ Unverified |
+| RD-01 | Standard | ISO 4126-2:2018; ISO 4126-6:2014 | Bursting disc safety devices: burst pressure, application and sizing | ⚠️ Burst on inlet gauge pressure; ISO 4126-2:2018 §3.10 defines the burst pressure as the inlet − outlet differential. ISO 4126-6:2014 §3.21 agrees. Sizing ✅ ISO 4126-6 Annex C.3.1.2 |
 | RD-02 | Standard | ASME BPVC Section VIII Div. 1, UG-127 (edition not fixed; moved to Section XIII from 2021) | Rupture disc devices | ⚪ Unverified 🚩 |
 | RD-03 | Standard | API Std 520 Part I, 10th ed. (2020) | 10 % overpressure for liquid relief capacity | ⚪ Unverified |
 | RD-04 | Standard | API Std 520 Part I, 10th ed. (2020) | Flow resistance method ($K_R$) for discs | ⚪ Unverified |

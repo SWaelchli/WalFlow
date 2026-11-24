@@ -15,9 +15,9 @@ Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_RE
 
 | Claim | Type | Source (edition) | Used for | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| RLF-01 | Standard | API Std 520 Part I, 10th ed. (2020); ISO 4126-1:2013 + Amd 1:2016 | Set pressure in gauge, 10 % overpressure for liquid service at rated capacity, blowdown and reseat pressure | ⚪ Unverified |
+| RLF-01 | Standard | API Std 520 Part I, 10th ed. (2020); ISO 4126-1:2013 + Amd 1:2016 | Set pressure in gauge, 10 % overpressure for liquid service at rated capacity, blowdown and reseat pressure | ✅ ISO 4126-1:2013 + Amd 1 §3.5, §3.15, §7.2.1; API 520 unverified |
 | RLF-02 | Standard | API Std 521, 7th ed. (2020); ISO 23251:2019 | Relieved pressure, accumulation and overpressure scenarios | ⚪ Unverified |
-| RLF-03 | Standard | ISO 4126-2:2018; ASME BPVC Section VIII Div. 1, UG-127 (edition not fixed; moved to Section XIII from 2021) | Bursting disc devices: burst pressure, open after burst | ⚪ Unverified 🚩 |
+| RLF-03 | Standard | ISO 4126-2:2018; ASME BPVC Section VIII Div. 1, UG-127 (edition not fixed; moved to Section XIII from 2021) | Bursting disc devices: burst pressure, open after burst | ⚠️ Non-reclosing ✅ ISO 4126-2:2018 §3.1; burst on inlet gauge pressure, §3.10 gives the inlet − outlet differential. ASME part unverified 🚩 |
 
 ## 3. Physical & Mathematical Implementation
 
@@ -65,7 +65,7 @@ with $P_{\text{out}}$ estimated as the downstream node pressure plus the outlet 
 
 $$\Delta P_{\text{ol}} = \max(1000\ \text{Pa},\ 0.10 \cdot P_{\text{set,g}} \cdot 10^5)$$
 
-is the full-lift overpressure: 10 % of the gauge set pressure (`RATED_OVERPRESSURE`, API 520 liquid service), at least 10 mbar. The band $\Delta P_{\text{band}}$ (`modulating_band_pa`) is $\Delta P_{\text{ol}}$; a cycling PSV narrows it (see [pressure_safety_valve.md](pressure_safety_valve.md)). Each component decides which mode applies.
+is the full-lift overpressure: 10 % of the gauge set pressure (`RATED_OVERPRESSURE`; ISO 4126-1 §7.2.1 c) allows at most 10 % or 0.1 bar, whichever is greater), at least 10 mbar. The band $\Delta P_{\text{band}}$ (`modulating_band_pa`) is $\Delta P_{\text{ol}}$; a cycling PSV narrows it (see [pressure_safety_valve.md](pressure_safety_valve.md)). Each component decides which mode applies.
 
 ### 3.5 Rated capacity
 

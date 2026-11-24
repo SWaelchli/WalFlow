@@ -13,7 +13,7 @@ Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_RE
 | Claim | Type | Source (edition) | Used for | Status |
 | :--- | :--- | :--- | :--- | :--- |
 | PIPE-01 | Principle | Darcy-Weisbach equation | Friction pressure drop | ➖ Principle |
-| PIPE-02 | Literature | Churchill (1977), *Chem. Eng.* 84(24), 91–92 | One continuous friction factor for laminar, transition and turbulent flow | ⚪ Unverified |
+| PIPE-02 | Literature | Churchill (1977), *Chem. Eng.* 84(24), 91–92 | One continuous friction factor for laminar, transition and turbulent flow | ✅ Churchill (1977) Eq. (18), Darcy = 8f (Eq. (5)) |
 | PIPE-03 | Literature | Colebrook (1939), *J. Inst. Civ. Eng.* 11(4), 133–156 | Turbulent limit that Churchill reproduces; independent reference in the tests | ⚪ Unverified |
 | PIPE-04 | Literature | Crane TP-410, *Flow of Fluids* (edition not fixed; newest confirmed 2018) | Sharp-edged pipe entrance, $K = 0.5$ (A-29, page depends on the edition) | ⚪ Unverified 🚩 |
 
@@ -40,7 +40,7 @@ $$f = 8\left[\left(\frac{8}{\mathrm{Re}}\right)^{12} + \frac{1}{(a + b)^{1.5}}\r
 $$a = \left[2.457 \ln\frac{1}{(7/\mathrm{Re})^{0.9} + 0.27\,\varepsilon/D}\right]^{16}, \qquad b = \left(\frac{37530}{\mathrm{Re}}\right)^{16}$$
 
 - Laminar limit: $f \to 64/\mathrm{Re}$. Below $\mathrm{Re} = 10$ the code uses $64/\mathrm{Re}$ directly (Churchill gives the same value there).
-- Turbulent limit: Colebrook-White within about 2 %.
+- Turbulent limit: Colebrook-White within 2 % for $\mathrm{Re} \ge 10^4$ ($\varepsilon/D$ 0-0.05), up to 3 % at $\mathrm{Re} = 4000$.
 - Transition (Re 2000-4000): one smooth curve, so the solver never sees a switch or a blend band. It differs from a "64/Re, then Colebrook" reference by a few percent in this band.
 
 Typical values, 100 m of steel pipe ($\varepsilon$ = 0.045 mm) at 20 °C:
