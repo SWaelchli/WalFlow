@@ -16,6 +16,8 @@ SKIP_CHARS = ("<", ">", "*", "{", "}", "[", "]", "$", "...", "…", " ")
 # such a path, with a one-line reason.
 ALLOWED_MISSING = {
     "backend/tests/bench/performance_findings.md",  # temporary performance findings file, git-ignored
+    "frontend/dist",  # Vite build output, git-ignored
+    "backend/walflow.db",  # local SQLite database, created at run time, git-ignored
 }
 
 _LINK_RE = re.compile(r"\[[^\]\n]*\]\(([^)\s]+)\)")
