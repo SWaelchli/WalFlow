@@ -17,10 +17,10 @@ Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_RE
 
 | Claim | Type | Source (edition) | Used for | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| RD-01 | Standard | ISO 4126-2:2018; ISO 4126-6:2014 | Bursting disc safety devices: burst pressure, application and sizing | ⚠️ Burst on inlet gauge pressure; ISO 4126-2:2018 §3.10 defines the burst pressure as the inlet − outlet differential. ISO 4126-6:2014 §3.21 agrees. Sizing ✅ ISO 4126-6 Annex C.3.1.2 |
+| RD-01 | Standard | ISO 4126-2:2018; ISO 4126-6:2014 | Bursting disc safety devices: burst pressure, application and sizing | ⚠️ Burst on inlet gauge pressure; ISO 4126-2:2018 §3.10 defines the burst pressure as the inlet − outlet differential. ISO 4126-6:2014 §3.21 and API RP 520-1 7th ed. §1.2.3.3 c agree. Sizing ✅ ISO 4126-6 Annex C.3.1.2 |
 | RD-02 | Standard | ASME BPVC Section VIII Div. 1, UG-127 (edition not fixed; moved to Section XIII from 2021) | Rupture disc devices | ⚪ Unverified 🚩 |
-| RD-03 | Standard | API Std 520 Part I, 10th ed. (2020) | 10 % overpressure for liquid relief capacity | ⚪ Unverified |
-| RD-04 | Standard | API Std 520 Part I, 10th ed. (2020) | Flow resistance method ($K_R$) for discs | ⚪ Unverified |
+| RD-03 | Standard | API Std 520 Part I, 10th ed. (2020) | 10 % overpressure for liquid relief capacity | ✅ API RP 520-1 7th ed. (2000) Fig. 26, §3.11.1.2 🚩 10th ed. unverified |
+| RD-04 | Standard | API Std 520 Part I, 10th ed. (2020) | Flow resistance method ($K_R$) for discs | ✅ API RP 520-1 7th ed. (2000) §3.11.1.3 (system resistance; $K_R$ and 0.90 factor not applied) 🚩 10th ed. unverified |
 | RD-05 | Standard | ISO 5167-2:2022 | Orifice flow equation for the reduced bore, as for the [calibrated restriction](calibrated_restriction.md#32-pressure-drop-calculate_delta_p) | ✅ ISO 5167-2:2022 F(1) (equation form) |
 | RD-06 | Standard | IEC 60534-2-1:2011 | Liquid Cv equation for the full bore | ✅ IEC 60534-2-1:2011 §6.1 Eq. (1) |
 
@@ -80,7 +80,7 @@ An unknown bore type is read as `full_bore`. A missing burst pressure is an inpu
 - **Non-reclosing:** once burst, open for the rest of the run; a new run starts intact.
 - **Reverse flow:** none.
 - **Operating cases:** all fields can be overridden per case.
-- **Not modelled:** burst tolerance and manufacturing range, reverse-acting versus forward-acting discs, disc fragments, the API 520 $K_R$ resistance factor (the Cv or orifice stands in for it), gas or two-phase relief.
+- **Not modelled:** burst tolerance and manufacturing range, reverse-acting versus forward-acting discs, disc fragments, the API 520 $K_R$ resistance factor (the Cv or orifice stands in for it), the API 520 factor of 0.90 on the calculated capacity of the flow resistance method (the rated flow and utilisation are not derated, so utilisation reads up to about 11 % higher than against the derated capacity), gas or two-phase relief.
 
 ## 7. Verification & Benchmarks
 

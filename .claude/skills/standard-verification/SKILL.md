@@ -29,7 +29,7 @@ Copyright: in the public repo cite the clause, equation, table or figure number 
    - the **code**: does the implementation in `backend/simulation/equipment/` match (constants, units, gauge or absolute, validity limits, regime boundaries).
    Where the source gives a worked example or test value, compute the model's result for it and compare.
 4. **Classify** each claim: ✅ Verified, ⚠️ Deviation, ❌ Not in source, or ➖ Principle (see the register legend). A deliberate simplification already stated in the doc (e.g. the smooth $F_R$ of the linear control valve) is ✅ when the source and the doc agree on what is simplified; quantify the difference in the note.
-5. **Second opinion.** For any ⚠️ or ❌, and for every claim that sets a number in the code, brief `walflow-physics-reviewer` with the claim, the clause paraphrase, the PDF path and pages, and the doc and code locations.
+5. **Second opinion.** For any ⚠️ or ❌, and for every claim that sets a number in the code, brief `walflow-physics-reviewer` with the claim, the clause paraphrase, the PDF path and pages, and the doc and code locations. Reading a PDF needs poppler (`pdftoppm`) on the PATH; if the reviewer cannot open it, put the clause text in the brief and note in the log row that the reviewer checked code and docs, not the PDF.
 6. **Record** (public repo):
    - register Part B: status, "Verified against" (edition), clause, date, note;
    - register Part C: one log row for the session;
