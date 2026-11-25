@@ -146,7 +146,8 @@ Read [references/property-testing.md](references/property-testing.md) before wri
 - Draw values where behaviour switches: flows relative to the rated flow (`flow_ratios()`), pressures relative
   to a limit. Absolute ranges over many decades rarely reach those branches.
 - Profiles: `default` (60 examples, derandomized, used by the gate) and `explore`
-  (`HYPOTHESIS_PROFILE=explore`, 2000 random examples) to hunt for new failures after a physics change.
+  (`HYPOTHESIS_PROFILE=explore`, 2000 random examples) to hunt for new failures after a physics change; run it
+  only after the user confirms (see "The gate").
 
 ### Network properties
 
@@ -235,7 +236,9 @@ cd frontend && npm test                  # 3. Vitest
 cd frontend && npm run build             # 4. build
 ```
 
-After a physics change, also run `HYPOTHESIS_PROFILE=explore python -m pytest -m property` (a few minutes).
+After a physics change, the explore run `HYPOTHESIS_PROFILE=explore python -m pytest -m property` (a few minutes)
+is recommended, but it is not part of the gate: **ask the user first** and run it only after they confirm. Never add it
+to a `walflow-gate-runner` brief unless the user has confirmed that run.
 
 GitHub Actions does not run on pushes. `.github/workflows/ci.yml` runs the same gate only when a release tag
 triggers `docker-publish.yml`, and blocks the Docker images if it fails. So a broken `main` is only caught
