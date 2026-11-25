@@ -13,8 +13,8 @@ class ReliefDevice(HydraulicNode):
     """
     Shared model of the pressure relief devices (PSV, rupture disc).
 
-    Set pressures are gauge (bar(g), API 520 / ISO 4126); a device opens when its inlet gauge pressure
-    P_in − P_atm reaches the set pressure. Whether a device is open is decided between hydraulic
+    Set pressures are entered in bar(g) (API 520 / ISO 4126); a device opens when its opening driver reaches
+    the set pressure (see below). Whether a device is open is decided between hydraulic
     solves (update_relief_state) and held fixed during a Newton solve, so its branch never flips
     mid-iteration. Inside a solve the device is a flow equation
 
@@ -24,7 +24,8 @@ class ReliefDevice(HydraulicNode):
     passes exactly no flow and a device never passes reverse flow.
 
     Opening is decided on the margin driver − threshold. Here the driver is the inlet gauge pressure and the
-    threshold the set pressure; a PSV overrides both for its valve type (backpressure, pilot sensing).
+    threshold the set pressure; a rupture disc uses the differential P_in − P_out (ISO 4126-2 §3.10), and a
+    PSV overrides both for its valve type (backpressure, pilot sensing).
     """
 
     def __init__(self, name: str, node_type: str, set_pressure_barg: float, forced_state: str):
@@ -129,9 +130,13 @@ class ReliefDevice(HydraulicNode):
         c = self._loss_coefficient(flow_rate, density, viscosity)
         return lift * dp / ((dp + DP_SQRT_REG) ** 0.5 * c ** 0.5)
 
+    def rated_inlet_pressure_pa(self, p_out_pa: float) -> float:
+        """Absolute inlet pressure of the rated condition: set pressure plus the full-lift overpressure."""
+        return self.set_pressure_pa + self.full_lift_overpressure_pa
+
     def rated_flow(self, flow_rate, density, viscosity, p_out_pa) -> float:
         """Flow at full lift with the inlet at 110 % of set pressure (gauge) against the actual outlet."""
-        dp_rated = self.set_pressure_pa + self.full_lift_overpressure_pa - p_out_pa
+        dp_rated = self.rated_inlet_pressure_pa(p_out_pa) - p_out_pa
         if dp_rated <= 0.0:
             return 0.0
         # The loss coefficient depends on Q through the Reynolds correction: evaluate it at the rated flow

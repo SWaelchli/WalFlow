@@ -2496,9 +2496,11 @@ BACKPRESSURE_LIMITS = {"conventional": ("built_up", 10.0), "balanced_bellows": (
 
 
 def _backpressure_result(node, k, tel_relieved, tel_closed):
-    """Superimposed (device closed), built-up (relieving) and total backpressure of a PSV, in bar(g) and % of set."""
+    """Superimposed (device closed), built-up (relieving) and total backpressure of a PSV, in bar(g) and % of set.
+    A rupture disc gets the pressures without a limit: its burst pressure is a differential, so the superimposed
+    backpressure raises the inlet pressure at which it bursts."""
     valve_type = getattr(node, "valve_type", None)
-    if valve_type is None:
+    if valve_type is None and getattr(node, "node_type", None) != "rupture_disc":
         return {}
     p_atm = node.p_atm
     total = _outlet_pressure_barg(tel_relieved, k, p_atm)

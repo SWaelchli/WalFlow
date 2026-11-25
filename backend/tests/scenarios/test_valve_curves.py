@@ -6,11 +6,13 @@ import io
 
 from networks import neutral_graph
 import pytest
-from hypothesis import given, strategies as st
+import math
+
+from hypothesis import example, given, strategies as st
 
 
 from strategies import build, fluid_states, log_uniform
-from services.simulation_service import (VALVE_CURVE_MIN_FLOW, VALVE_CURVE_POINTS, extract_telemetry, valve_curves,
+from services.simulation_service import (VALVE_CURVE_MIN_FLOW, VALVE_CURVE_POINTS, _curve_flows, extract_telemetry, valve_curves,
                                          valve_flow_at_dp)
 from simulation.equipment.base_node import Q_DEAD_LEG
 from simulation.graph_parser import GraphParser
@@ -31,6 +33,8 @@ def _valve(node_type, state, flow, opening_pct, cv=1.0, **data):
 
 
 @pytest.mark.parametrize("node_type", CURVE_TYPES)
+@example(state=("crude_heavy", 283.15, 933.72, 0.37193), flow=-0.006737946999085467, opening=100.0,
+         cv=math.exp(-1.0), locked=False)  # Q_op and Q_full_open one ulp apart on the same grid point
 @given(state=fluid_states(), flow=st.one_of(st.just(0.0), st.sampled_from([-1, 1]).flatmap(
            lambda s: log_uniform(1e-6, 0.05).map(lambda q: s * q))),
        opening=st.floats(5.0, 100.0), cv=log_uniform(0.01, 50.0), locked=st.booleans())
@@ -79,6 +83,25 @@ def test_curve_points_are_the_valves_own_delta_p_over_the_documented_range(node_
     assert qs[openings.index(pytest.approx(opening, abs=1e-9))] == q_op
     assert qs[-1] == pytest.approx(q_full, rel=1e-6)
     assert all(a <= b * (1 + 1e-9) for a, b in zip(qs, qs[1:]))
+
+
+@pytest.mark.parametrize("exact", [
+    pytest.param((0.5,), id="single_flow_on_grid"),
+    pytest.param((0.5, 0.5), id="two_equal_flows"),
+    pytest.param((0.5, 0.5 * (1 + 3e-16)), id="two_flows_one_ulp_apart"),
+    pytest.param((0.5 * (1 + 3e-16), 0.5), id="two_flows_one_ulp_apart_reversed"),
+    pytest.param((0.0, 1.0, 0.123456789), id="ends_and_off_grid"),
+    pytest.param((0.123456789, 0.123456789), id="two_equal_off_grid_flows"),
+])
+@given(q_end=log_uniform(1e-6, 1.0))
+def test_curve_flow_grid_keeps_every_exact_flow(exact, q_end):
+    """A chart is drawn through the solved operating point: each exact flow in range must be in the grid itself."""
+    exact = tuple(q_end * x for x in exact)
+    grid = _curve_flows(q_end, *exact)
+    assert grid == sorted(grid) and grid[0] == 0.0
+    assert len(set(grid)) == len(grid)      # an exact flow given twice appears once
+    for q in exact:
+        assert q in grid
 
 
 @pytest.mark.parametrize("node_type", CURVE_TYPES)

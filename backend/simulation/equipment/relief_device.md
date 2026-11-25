@@ -17,13 +17,13 @@ Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_RE
 | :--- | :--- | :--- | :--- | :--- |
 | RLF-01 | Standard | API Std 520 Part I, 10th ed. (2020); ISO 4126-1:2013 + Amd 1:2016 | Set pressure in gauge, 10 % overpressure for liquid service at rated capacity, blowdown and reseat pressure | ✅ ISO 4126-1:2013 + Amd 1 §3.5, §3.15, §7.2.1; API RP 520-1 7th ed. (2000) agrees, 10th ed. unverified |
 | RLF-02 | Standard | API Std 521, 7th ed. (2020); ISO 23251:2019 | Relieved pressure, accumulation and overpressure scenarios | ✅ API 521 6th ed. (2014) §4.4.2, §4.9.4; ASME VIII-1 2010 UG-125(c) (no MAWP, so no accumulation in WalFlow) 🚩 7th ed. and ISO 23251 unverified |
-| RLF-03 | Standard | ISO 4126-2:2018; ASME BPVC Section VIII Div. 1, UG-127 (edition not fixed; moved to Section XIII from 2021) | Bursting disc devices: burst pressure, open after burst | ⚠️ Non-reclosing ✅ ISO 4126-2:2018 §3.1; burst on inlet gauge pressure, §3.10 gives the inlet − outlet differential. ASME VIII-1 2010 UG-127 read: does not contradict ISO 🚩 Section XIII unverified |
+| RLF-03 | Standard | ISO 4126-2:2018; ASME BPVC Section VIII Div. 1, UG-127 (edition not fixed; moved to Section XIII from 2021) | Bursting disc devices: burst pressure, open after burst | ✅ Non-reclosing ISO 4126-2:2018 §3.1; burst on the inlet − outlet differential §3.10, ISO 4126-6:2014 §3.21. ASME VIII-1 2010 UG-127 read: does not contradict ISO 🚩 Section XIII unverified |
 
 ## 3. Physical & Mathematical Implementation
 
 ### 3.1 Set pressure
 
-Set and burst pressures are entered in **bar(g)**. A device acts on its inlet gauge pressure:
+Set and burst pressures are entered in **bar(g)**; a PSV's set pressure is a gauge inlet pressure (with the driver of its valve type), a disc's burst pressure a differential (equal to the inlet gauge pressure against an atmospheric outlet):
 
 $$P_{\text{set,abs}} = P_{\text{set,g}} \cdot 10^5 + P_{\text{atm}}$$
 
@@ -33,7 +33,7 @@ A device opens on its **opening margin** (`opening_margin_pa`):
 
 $$m = \text{driver} - \text{threshold} \ge 0$$
 
-For the rupture disc (and this base class) the driver is the inlet gauge pressure $P_{\text{in}} - P_{\text{atm}}$ and the threshold is the set pressure. A PSV replaces both according to its valve type (conventional: differential against the CDTP; pilot: the sensed pressure); see [pressure_safety_valve.md](pressure_safety_valve.md#32-opening-driver-by-valve-type). Every opening decision (held state, relief passes, opening snapshots) and the modulating lift use this margin, on total pressures (`total_of`, the same values the solve's row uses; [base_node.md](base_node.md#36-total-pressure-at-nodes-static-pressure-at-ports)). A closed device passes no flow, so at its set point the total equals the static pressure. `inlet_opening_pressure_pa` gives the inlet pressure at which a closed device opens (used to hold a stagnant section just below it), or none for a pilot sensing a remote point.
+For this base class the driver is the inlet gauge pressure $P_{\text{in}} - P_{\text{atm}}$ and the threshold is the set pressure. The rupture disc uses the differential $P_{\text{in}} - P_{\text{out}}$ against the burst pressure (ISO 4126-2 §3.10; see [rupture_disc.md](rupture_disc.md#31-burst-logic-update_relief_state-lift_mode)). A PSV replaces both according to its valve type (conventional: differential against the CDTP; pilot: the sensed pressure); see [pressure_safety_valve.md](pressure_safety_valve.md#32-opening-driver-by-valve-type). Every opening decision (held state, relief passes, opening snapshots) and the modulating lift use this margin, on total pressures (`total_of`, the same values the solve's row uses; [base_node.md](base_node.md#36-total-pressure-at-nodes-static-pressure-at-ports)). A closed device passes no flow, so at its set point the total equals the static pressure. `inlet_opening_pressure_pa` gives the inlet pressure at which a closed device opens (used to hold a stagnant section just below it), or none for a pilot sensing a remote point.
 
 ### 3.2 Held state
 
@@ -69,9 +69,11 @@ is the full-lift overpressure: 10 % of the gauge set pressure (`RATED_OVERPRESSU
 
 ### 3.5 Rated capacity
 
-The rated flow is the flow at full lift with the inlet at 110 % of the set pressure (gauge) against the actual outlet pressure:
+The rated flow is the flow at full lift with the inlet at the rated pressure $P_{\text{rated}}$ (`rated_inlet_pressure_pa`) against the actual outlet pressure:
 
-$$Q_{\text{rated}} = \sqrt{\frac{P_{\text{set,abs}} + \Delta P_{\text{ol}} - P_{\text{out}}}{c(Q_{\text{rated}})}}$$
+$$Q_{\text{rated}} = \sqrt{\frac{P_{\text{rated}} - P_{\text{out}}}{c(Q_{\text{rated}})}}$$
+
+For a PSV $P_{\text{rated}} = P_{\text{set,abs}} + \Delta P_{\text{ol}}$ (110 % of the gauge set pressure). A rupture disc bursts on the differential, so $P_{\text{rated}} = P_{\text{out}} + P_{\text{burst,g}} \cdot 10^5 + \Delta P_{\text{ol}}$: its rated $\Delta p$ is 110 % of the burst pressure whatever the outlet pressure.
 
 (four fixed-point steps, because $c$ depends on $Q$ through the Reynolds correction). Reported:
 
@@ -93,7 +95,7 @@ A network with relief devices runs three kinds of solves. All are steady states;
 
 1. **Unmitigated:** every device held closed. Gives the pressure the system would reach without protection.
 2. **Relieved (sequential passes):** user-forced devices return to their forced state; `auto` devices start held closed. After each solve, the closed `auto` devices whose opening margin reached zero are found; the group with the lowest set pressure is released (state `auto`) and the network is solved again. Higher-set devices are released only if the lower ones cannot hold the pressure. Leakage alone (a stagnant section's pressure) does not lift a held device.
-3. **Opening snapshots:** for each released group, the relief drivers (pumps and sources with `is_relief_driver` and "Ramp during relief analysis" on) are scaled by a factor $\lambda$ from 0 to their case value. $\lambda$ is bisected (up to 24 solves, until the margin is below 1 mbar or $\Delta\lambda < 10^{-4}$) until the group's opening margin is zero (for an inlet-gauge device, the inlet is exactly at set pressure), with earlier groups free to relieve and later devices held closed. This runs on a copy of the network.
+3. **Opening snapshots:** for each released group, the relief drivers (pumps and sources with `is_relief_driver` and "Ramp during relief analysis" on) are scaled by a factor $\lambda$ from 0 to their case value. $\lambda$ is bisected (up to 24 solves, until the margin is below 1 mbar or $\Delta\lambda < 10^{-4}$) until the group's opening margin is zero (for an inlet-gauge device, the inlet is exactly at set pressure; for a disc, the differential is at burst pressure), with earlier groups free to relieve and later devices held closed. This runs on a copy of the network.
 
 | Driver | Ramp $\lambda$ |
 | :--- | :--- |
@@ -112,14 +114,14 @@ Reported pressures (bar(a), the maximum over all ports):
 
 Per device: opening order, ramp at opening, inlet pressure at opening, relieved and unmitigated, relief flow, `lift_pct`, and for a cycling PSV `cycle_low_barg` / `cycle_high_barg`.
 
-PSV backpressure (`_backpressure_result`, gauge at the valve outlet; also on the PSV's node telemetry as `backpressure`):
+PSV and rupture disc backpressure (`_backpressure_result`, gauge at the device outlet; also on the node telemetry as `backpressure`). A disc gets the three pressures without a basis or limit: its burst pressure is a differential, so the superimposed backpressure raises the inlet pressure at which it bursts. Every relief device also reports `opening_pressure_barg`, the inlet gauge pressure at which it opens at the current outlet (and pilot) pressure:
 
 | Field | Meaning |
 | :--- | :--- |
 | `superimposed_bp_barg` | outlet while the valve is still closed: its opening snapshot, else the unmitigated pass; a valve that stays closed takes the final outlet (including what other devices relieve into its header) |
 | `built_up_bp_barg` | relieved outlet − superimposed (0 while closed) |
 | `total_bp_barg` | outlet in the relieved state |
-| `bp_basis`, `bp_pct_of_set`, `bp_limit_pct` | conventional: built-up, limit 10 % of set; balanced bellows: total, limit 50 %; pilot: none |
+| `bp_basis`, `bp_pct_of_set`, `bp_limit_pct` | conventional: built-up, limit 10 % of set; balanced bellows: total, limit 50 %; pilot and rupture disc: none |
 | `bp_exceeded` | relieving and above the limit |
 
 ## 4. Thermal & Energy Balance
@@ -136,7 +138,7 @@ Shared inputs (the component documents list the full tables):
 
 | Parameter (UI Label) | UI Unit | Backend Var | SI Unit | Default | Valid Range | Description |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| Set Pressure / Burst Pressure | bar(g) (psig) | `self.set_pressure_barg` | bar(g) (→ Pa abs) | required | $> 0$ | Opening pressure, gauge |
+| Set Pressure / Burst Pressure | bar(g) (psig); disc: bar, differential | `self.set_pressure_barg` | bar(g) (→ Pa abs); disc: bar (→ Pa differential) | required | $> 0$ | Opening pressure: gauge (PSV), inlet − outlet (disc) |
 | Forced state | text | `self.forced_state` | - | auto | auto, forced_open, forced_closed | Contingency override |
 | Ramp during relief analysis | bool | `self.relief_ramp_enabled` | - | true | - | On the drivers (pumps, supplies; not a drawing flow boundary), not on the device (see [base_node.md](base_node.md)) |
 

@@ -1,4 +1,5 @@
-from simulation.equipment.relief_device import ReliefDevice
+from simulation.equipment.base_node import total_of
+from simulation.equipment.relief_device import ReliefDevice, P_SCALE
 from simulation.equipment.check_valve import open_seat_dp
 from simulation.fluid_utils import FluidProperties
 
@@ -6,8 +7,9 @@ from simulation.fluid_utils import FluidProperties
 class RuptureDisc(ReliefDevice):
     """
     Dedicated Rupture Disc (Burst Diaphragm) safety equipment node.
-    Evaluates as intact at the start of each simulation run; if the inlet gauge pressure reaches the burst
-    pressure (bar(g)) it bursts open and stays open for the run. Supports Full Bore (Cv-governed) vs
+    Evaluates as intact at the start of each simulation run; if the differential inlet − outlet reaches the
+    burst pressure (bar) it bursts open and stays open for the run (ISO 4126-2 §3.10; with an atmospheric
+    outlet this is the inlet gauge pressure). Supports Full Bore (Cv-governed) vs
     Reduced Bore (Orifice-governed) flow math.
     """
     def __init__(
@@ -37,6 +39,26 @@ class RuptureDisc(ReliefDevice):
     @burst_pressure_barg.setter
     def burst_pressure_barg(self, value: float):
         self.set_pressure_barg = max(0.01, float(value))
+
+    # --- burst on the differential across the disc (ISO 4126-2 §3.10) ---------------------------
+    @property
+    def opening_depends_on_outlet(self) -> bool:
+        return True
+
+    def driver_pa(self, p_in_pa: float, p_out_pa: float, p_sense_pa: float) -> float:
+        return p_in_pa - p_out_pa
+
+    def inlet_opening_pressure_pa(self):
+        return total_of(self.outlets[0]) + self.threshold_pa
+
+    @property
+    def opening_pressure_barg(self) -> float:
+        """Inlet gauge pressure at which the intact disc bursts, at the current outlet pressure."""
+        return (self.inlet_opening_pressure_pa() - self.p_atm) / P_SCALE
+
+    def rated_inlet_pressure_pa(self, p_out_pa: float) -> float:
+        # Rated at the burst differential plus the overpressure, against the actual outlet
+        return p_out_pa + self.threshold_pa + self.full_lift_overpressure_pa
 
     def reset_run_state(self):
         """Resets transient run states (Rupture Disc evaluates as intact at start of each run)."""

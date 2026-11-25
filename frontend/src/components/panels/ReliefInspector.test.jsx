@@ -32,7 +32,7 @@ describe('relief set pressure in gauge', () => {
 
   it('warns when an older rupture disc only has a burst pressure in bar(a)', () => {
     renderInspector(disc({ burst_pressure_bar: 30 }));
-    expect(screen.getByRole('alert').textContent).toMatch(/Burst Pressure \[bar\(g\)\] missing.*had 30 bar\(a\)/);
+    expect(screen.getByRole('alert').textContent).toMatch(/Burst Pressure \(Δp\) \[bar\] missing\..*had 30 bar\(a\)/);
   });
 
   it('stores a set pressure typed in psig as barg', () => {
@@ -56,10 +56,10 @@ describe('relief set pressure in gauge', () => {
     expect(screen.getByText(/Set Pressure \[bar\(g\)\]/)).toBeTruthy();
     expect(screen.getByDisplayValue('7.5')).toBeTruthy();
   });
-  it.each([['absolute'], ['gauge']])('keeps the rupture disc burst pressure in bar(g) under the %s basis', (basis) => {
+  it.each([['absolute'], ['gauge']])('keeps the rupture disc burst pressure as a bar differential under the %s basis', (basis) => {
     localStorage.setItem('walflow_pressure_basis', basis);
     renderInspector(disc({ burst_pressure_barg: 12 }));
-    expect(screen.getByText(/Burst Pressure \[bar\(g\)\]/)).toBeTruthy();
+    expect(screen.getByText(/Burst Pressure \(Δp\) \[bar\]/)).toBeTruthy();
     expect(screen.getByDisplayValue('12')).toBeTruthy();
   });
 });

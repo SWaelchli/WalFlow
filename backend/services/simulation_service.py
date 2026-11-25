@@ -158,13 +158,17 @@ def _curve_flows(q_max: float, *exact_flows: float, points: int = CURVE_POINTS) 
     q_end = max(1e-9, float(q_max))
     flows = [q_end * i / (points - 1) for i in range(points)]
     tol = 1e-12 * max(1.0, q_end)
+    taken = set()  # grid points already replaced by an exact flow: never overwrite one
     for q_ex in exact_flows:
         if q_ex is not None and 0.0 <= q_ex <= q_end:
             q_val = float(q_ex)
-            nearest = min(range(len(flows)), key=lambda idx: abs(flows[idx] - q_val))
-            if abs(flows[nearest] - q_val) <= tol:
+            nearest = min(range(points), key=lambda idx: abs(flows[idx] - q_val))
+            if flows[nearest] == q_val:
+                taken.add(nearest)
+            elif nearest not in taken and abs(flows[nearest] - q_val) <= tol:
                 flows[nearest] = q_val
-            else:
+                taken.add(nearest)
+            elif q_val not in flows:
                 flows.append(q_val)
     flows.sort()
     return flows
@@ -243,7 +247,7 @@ def _system_curve(node, flows, dps, q_in) -> List[float] | None:
     if slope is None or q_in <= Q_DEAD_LEG:
         return None
     q_op = abs(q_in)
-    # Nearest grid flow: a knee within float noise of q_op may have taken its place (_curve_flows)
+    # _curve_flows keeps q_op exactly in the grid; the nearest-index lookup also covers callers passing their own grid
     dp_op = dps[min(range(len(flows)), key=lambda i: abs(flows[i] - q_op))]
     k = max(0.0, slope / (2.0 * q_op))
     dp_static = dp_op - k * q_op * q_op
@@ -404,11 +408,13 @@ def extract_telemetry(network) -> Dict[str, Any]:
             node_tel["lift_pct"] = node.lift_pct
             if hasattr(node, 'reseat_pressure_barg'):
                 node_tel["reseat_pressure_barg"] = node.reseat_pressure_barg
+            if hasattr(node, 'opening_pressure_barg'):
+                # Inlet gauge pressure at which the device opens, at the current outlet (and pilot) pressure
+                node_tel["opening_pressure_barg"] = node.opening_pressure_barg
             if hasattr(node, 'valve_type'):
                 # PSV type, conventional spring setting, pilot sensing point and the cycling inlet range
                 node_tel["valve_type"] = node.valve_type
                 node_tel["cdtp_barg"] = node.cdtp_barg
-                node_tel["opening_pressure_barg"] = node.opening_pressure_barg
                 node_tel["pilot_sensing_node_id"] = canvas_id(node.remote_sensing_config["node_id"]) if node.has_remote_pilot and node.remote_sensing_config else None
                 node_tel["cycle_low_barg"] = node.cycle_low_barg
                 node_tel["cycle_high_barg"] = node.cycle_high_barg

@@ -1241,11 +1241,11 @@ export default function SetupPanel({
           {isNode && type === 'rupture_disc' && (
             <>
               <div>
-                {renderLabel(`Burst Pressure [${gaugeLabel}]`, 'burst_pressure_barg')}
+                {renderLabel(`Burst Pressure (Δp) [${labels.pressureDiff}]`, 'burst_pressure_barg')}
                 <input
                   type="number" step="0.1" min="0.01"
                   className="form-input" style={{ width: '100%' }}
-                  placeholder={effectiveData.burst_pressure_barg ? undefined : 'Enter burst pressure (gauge)'}
+                  placeholder={effectiveData.burst_pressure_barg ? undefined : 'Enter burst pressure (inlet − outlet)'}
                   value={localDrafts.burst_pressure_barg !== undefined ? localDrafts.burst_pressure_barg : (effectiveData.burst_pressure_barg ? toDisplayValue('burst_pressure_barg', effectiveData.burst_pressure_barg) : '')}
                   onChange={(e) => handleDraftChange('burst_pressure_barg', e.target.value)}
                   onBlur={(e) => { if (e.target.value !== '' || effectiveData.burst_pressure_barg) validateAndCommit('burst_pressure_barg', e.target.value, true); }}
@@ -1254,12 +1254,12 @@ export default function SetupPanel({
                   <div role="alert" style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', marginTop: '6px', padding: '6px 8px', borderRadius: '6px', backgroundColor: '#FEF3C7', border: '1px solid #FCD34D', fontSize: 'var(--fs-xs)', color: 'var(--color-warning-text-strong)' }}>
                     <WarningIcon size={12} color="var(--color-warning-text-strong)" style={{ flexShrink: 0, marginTop: '1px' }} />
                     <span>
-                      Burst Pressure [{gaugeLabel}] missing. Relief devices are set in gauge pressure since v0.2; this device{effectiveData.burst_pressure_bar ? ` had ${effectiveData.burst_pressure_bar} bar(a)` : ''}. Enter the burst pressure from the datasheet; the simulation will not run until then.
+                      Burst Pressure (Δp) [{labels.pressureDiff}] missing. Relief devices are set in gauge pressure since v0.2; this device{effectiveData.burst_pressure_bar ? ` had ${effectiveData.burst_pressure_bar} bar(a)` : ''}. Enter the burst pressure from the datasheet; the simulation will not run until then.
                     </span>
                   </div>
                 ) : (
                   <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
-                    Bursts when the inlet gauge pressure reaches the burst pressure and stays open for the run.
+                    Bursts when the pressure difference across the disc (inlet − outlet) reaches the burst pressure and stays open for the run. With an atmospheric outlet this is the inlet gauge pressure.
                   </p>
                 )}
               </div>

@@ -14,7 +14,7 @@ const STATUS_BADGES = {
  * Inspector detail card for Rupture Disc (Burst Diaphragm) equipment nodes.
  */
 export default function RuptureDiscDetails({ node, unmitigatedTelemetry }) {
-  const { labels, formatGaugeValue, formatPressurePa, formatFlowM3s, formatDiameter, formatDimensionless, atmosphericPa } = useUnits();
+  const { labels, formatDiffPressure, formatGaugeValue, formatPressurePa, formatFlowM3s, formatDiameter, formatDimensionless, atmosphericPa } = useUnits();
   if (!node) return null;
 
   const data = node.data || {};
@@ -22,6 +22,8 @@ export default function RuptureDiscDetails({ node, unmitigatedTelemetry }) {
   const unmitTelemetry = unmitigatedTelemetry?.nodes?.[node.id] || telemetry;
 
   const burstPressureBarg = data.burst_pressure_barg ? Number(data.burst_pressure_barg) : null;
+  const openingBarg = telemetry.opening_pressure_barg;
+  const bp = telemetry.backpressure;
   const boreType = data.bore_type || 'full_bore';
   const cv = data.cv || 10.0;
   const orificeDiameterM = data.orifice_diameter_m || 0.01;
@@ -46,7 +48,10 @@ export default function RuptureDiscDetails({ node, unmitigatedTelemetry }) {
     <>
       <ResultSection title="Safety Relief Assessment" badge={badge}>
         <ResultTable>
-          <ResultRow label="Burst Pressure" text={burstPressureBarg === null} {...(burstPressureBarg !== null ? { value: formatGaugeValue(burstPressureBarg), unit: labels.pressureGauge } : { value: 'missing' })} />
+          <ResultRow label="Burst Pressure (Δp)" text={burstPressureBarg === null} {...(burstPressureBarg !== null ? { value: formatDiffPressure(burstPressureBarg), unit: labels.pressureDiff } : { value: 'missing' })} />
+          {openingBarg != null && (
+            <ResultRow label="Bursts at inlet" value={formatGaugeValue(openingBarg)} unit={labels.pressureGauge} />
+          )}
           <ResultRow label="Bore Configuration" text value={boreDisplay} />
         </ResultTable>
       </ResultSection>
@@ -60,6 +65,16 @@ export default function RuptureDiscDetails({ node, unmitigatedTelemetry }) {
         </ResultTable>
         <ResultMeter value={capacityPct} tone={utilisationTone(capacityPct)} />
       </ResultSection>
+
+      {bp && (
+        <ResultSection title="Backpressure">
+          <ResultTable>
+            <ResultRow label="Superimposed" value={formatGaugeValue(bp.superimposed_bp_barg)} unit={labels.pressureGauge} />
+            <ResultRow label="Built-up" value={formatGaugeValue(bp.built_up_bp_barg)} unit={labels.pressureGauge} />
+            <ResultRow label="Total" value={formatGaugeValue(bp.total_bp_barg)} unit={labels.pressureGauge} />
+          </ResultTable>
+        </ResultSection>
+      )}
     </>
   );
 }

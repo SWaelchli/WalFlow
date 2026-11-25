@@ -2,7 +2,7 @@
 
 ## 1. Overview & Purpose
 
-A bursting disc (rupture disc): a non-reclosing pressure relief device. It is intact (no flow) at the start of each run. When the inlet gauge pressure reaches the burst pressure it bursts and stays fully open for the rest of the run, even if the pressure falls again.
+A bursting disc (rupture disc): a non-reclosing pressure relief device. It is intact (no flow) at the start of each run. When the pressure difference across it (inlet − outlet) reaches the burst pressure it bursts and stays fully open for the rest of the run, even if the pressure falls again.
 
 | `bore_type` | Open pressure loss |
 | :--- | :--- |
@@ -17,7 +17,7 @@ Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_RE
 
 | Claim | Type | Source (edition) | Used for | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| RD-01 | Standard | ISO 4126-2:2018; ISO 4126-6:2014 | Bursting disc safety devices: burst pressure, application and sizing | ⚠️ Burst on inlet gauge pressure; ISO 4126-2:2018 §3.10 defines the burst pressure as the inlet − outlet differential. ISO 4126-6:2014 §3.21 and API RP 520-1 7th ed. §1.2.3.3 c agree. Sizing ✅ ISO 4126-6 Annex C.3.1.2 |
+| RD-01 | Standard | ISO 4126-2:2018; ISO 4126-6:2014 | Bursting disc safety devices: burst pressure, application and sizing | ✅ Burst on the inlet − outlet differential, ISO 4126-2:2018 §3.10, ISO 4126-6:2014 §3.21; API RP 520-1 7th ed. §1.2.3.3 c agrees. Sizing ✅ ISO 4126-6 Annex C.3.1.2 |
 | RD-02 | Standard | ASME BPVC Section VIII Div. 1, UG-127 (edition not fixed; moved to Section XIII from 2021) | Rupture disc devices | ✅ ASME VIII-1 2010 + 2011a UG-127 (sole device, flow resistance method, burst tolerance not modelled) 🚩 Section XIII unverified |
 | RD-03 | Standard | API Std 520 Part I, 10th ed. (2020) | 10 % overpressure for liquid relief capacity | ✅ API RP 520-1 7th ed. (2000) Fig. 26, §3.11.1.2 🚩 10th ed. unverified |
 | RD-04 | Standard | API Std 520 Part I, 10th ed. (2020) | Flow resistance method ($K_R$) for discs | ✅ API RP 520-1 7th ed. (2000) §3.11.1.3 (system resistance; $K_R$ and 0.90 factor not applied) 🚩 10th ed. unverified |
@@ -30,10 +30,10 @@ Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_RE
 
 | State | Lift | Changes to | When |
 | :--- | :--- | :--- | :--- |
-| intact | 0 | burst | $P_{\text{in}} \ge P_{\text{burst,abs}}$ |
+| intact | 0 | burst | $P_{\text{in}} - P_{\text{out}} \ge P_{\text{burst,g}} \cdot 10^5$ |
 | burst | full | (latched for the run) | |
 
-$P_{\text{burst,abs}} = P_{\text{burst,g}} \cdot 10^5 + P_{\text{atm}}$. `forced_open` is a burst disc from the start; `forced_closed` removes it from the solve. Every run starts intact (`reset_run_state`).
+The burst pressure is the differential across the disc (ISO 4126-2 §3.10): against an atmospheric outlet the disc bursts at inlet gauge pressure $P_{\text{burst,g}}$; against an outlet at 3 bar(g) a 10 bar disc bursts at 13 bar(g). Pressures are total pressures at the ports (`driver_pa`, `opening_margin_pa`). Because the opening follows the outlet (`opening_depends_on_outlet`), the solver holds a stagnant inlet section just below the outlet pressure + burst pressure (`inlet_opening_pressure_pa`) only once the outlet section is resolved. The rated condition is the burst differential + 10 % against the actual outlet (`rated_inlet_pressure_pa`, see [relief_device.md](relief_device.md#35-rated-capacity)). `forced_open` is a burst disc from the start; `forced_closed` removes it from the solve. Every run starts intact (`reset_run_state`).
 
 ### 3.2 Open pressure loss (`open_dp`)
 
@@ -63,7 +63,7 @@ A burst disc with forward flow throttles: $\Delta T = \max(0, \Delta p)/(\rho\, 
 
 | Parameter (UI Label) | UI Unit | Backend Var | SI Unit | Default | Valid Range | Description |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| Burst Pressure | bar(g) (psig) | `self.burst_pressure_barg` | bar(g) (→ Pa abs) | required (new disc in the UI: 25 bar(g)) | $> 0$ | Burst pressure, gauge |
+| Burst Pressure | bar (psi), differential | `self.burst_pressure_barg` (key kept for files) | bar (→ Pa differential) | required (new disc in the UI: 25 bar) | $> 0$ | Burst pressure: differential inlet − outlet (inlet gauge pressure against an atmospheric outlet) |
 | Bore Configuration | text | `self.bore_type` | - | full_bore | full_bore, reduced_bore | Open loss model |
 | Flow Coefficient (Cv) | Cv | `self.cv` | Cv | 10 | $\ge 0.001$ | Cv of the burst disc (full bore) |
 | Orifice Restriction Diameter | mm (in) | `self.orifice_diameter` | m | 10 mm | $\ge 1$ mm, $< D$ | Restriction bore (reduced bore) |
@@ -76,9 +76,9 @@ An unknown bore type is read as `full_bore`. A missing burst pressure is an inpu
 
 - **Steady state:** the burst is a state change between solves; no burst dynamics or pressure wave ($\Delta t = 0$).
 - **Solver flags:** see [relief_device.md](relief_device.md#6-operating-modes--model-boundaries).
-- **Status:** `intact`, `burst`, `overcapacity` (flow above the rated flow at 110 % of burst pressure).
+- **Status:** `intact`, `burst`, `overcapacity` (flow above the rated flow at a differential of 110 % of the burst pressure).
 - **Non-reclosing:** once burst, open for the rest of the run; a new run starts intact.
-- **Reverse flow:** none.
+- **Reverse flow:** none. An outlet above the inlet gives a negative differential: the disc stays intact (reverse-acting discs are not modelled).
 - **Operating cases:** all fields can be overridden per case.
 - **Not modelled:** burst tolerance and manufacturing range, reverse-acting versus forward-acting discs, disc fragments, the API 520 $K_R$ resistance factor (the Cv or orifice stands in for it), the API 520 factor of 0.90 on the calculated capacity of the flow resistance method (the rated flow and utilisation are not derated, so utilisation reads up to about 11 % higher than against the derated capacity), gas or two-phase relief.
 
@@ -86,7 +86,8 @@ An unknown bore type is read as `full_bore`. A missing burst pressure is an inpu
 
 | Test | Benchmark |
 | :--- | :--- |
-| `backend/tests/unit/equipment/test_rupture_disc.py::test_rupture_disc_intact_and_burst` | 15 bar(g) disc: intact at 14.99 bar(g), bursts at 15.00 bar(g), stays burst at atmospheric pressure; reset gives `intact` |
+| `backend/tests/unit/equipment/test_rupture_disc.py::test_rupture_disc_intact_and_burst` | 10 bar disc, outlet 3 bar(g): intact at 10.0 and 12.9 bar(g), bursts at 13.0 bar(g); atmospheric outlet: intact at 9.9, bursts at 10.0 bar(g); stays burst once burst; reset gives `intact` |
+| `test_rupture_disc.py::test_rupture_disc_opening_pressure_and_rated_flow_follow_the_outlet` | Opening follows the outlet; inlet opening pressure = outlet + burst pressure (`opening_pressure_barg` 13.0 bar(g) at outlet 3 bar(g)); rated flow the same against 3 bar(g) and atmospheric outlet (rated $\Delta p$ 11 bar) |
 | `test_rupture_disc.py::test_burst_full_bore_disc_follows_the_cv_definition` | 10 bar(a) header → 5 bar(g) disc (Cv 10) → drain, DN200: disc $\Delta p$ = header − atmospheric within 200 Pa; flow = Cv flow at that $\Delta p$ within 0.5 % |
 | `test_rupture_disc.py::test_rupture_disc_full_bore_vs_reduced_bore` | Oil at 60 L/min: reduced bore (8 mm in DN50) drop above full bore (Cv 10) drop, both positive |
 | `backend/tests/unit/equipment/test_relief_devices.py::test_f1_38_reduced_bore_disc_capacity` | 10 bar(g) reduced bore (20 mm in DN50) at 12.1 bar(g): utilisation $100\sqrt{\Delta p / 11\ \text{bar}}$ within 0.5 %, `overcapacity` |

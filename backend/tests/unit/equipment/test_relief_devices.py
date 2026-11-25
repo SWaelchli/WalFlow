@@ -192,6 +192,7 @@ def test_forced_open_relieves_below_set_pressure(make):
     # The unmitigated reference still holds every device closed
     assert tel_unmit["nodes"]["psv"]["outlets"][0]["flow_rate"] == 0.0
     assert tel["relief"]["devices"]["psv"]["forced_state"] == "forced_open"
+    assert tel["nodes"]["psv"]["opening_pressure_barg"] == dev.opening_pressure_barg   # in the telemetry for both types
 
 
 def test_forced_closed_stays_closed():

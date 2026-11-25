@@ -17371,7 +17371,7 @@
     "has_cavitation_warning": false,
     "max_pressure_bar": 6.99,
     "min_pressure_bar": 1.13,
-    "peak_pressure_bara": 30.03,
+    "peak_pressure_bara": 30.2,
     "relieved_pressure_bara": 6.99,
     "total_flow_lmin": 119.94,
     "total_pump_power_kw": 1.38,

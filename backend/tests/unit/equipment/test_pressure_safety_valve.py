@@ -5,6 +5,7 @@ from simulation.equipment.base_node import total_of
 from simulation.equipment.tank import Tank
 from simulation.equipment.centrifugal_pump import CentrifugalPump
 from simulation.equipment.pressure_safety_valve import PressureSafetyValve
+from simulation.equipment.rupture_disc import RuptureDisc
 from simulation.equipment.pipe import Pipe
 from simulation.schemas import HydraulicNetwork
 from simulation.solver import NetworkSolver
@@ -178,16 +179,21 @@ def test_conventional_opening_shifts_with_backpressure(valve_type, design_sb_bar
     ("conventional", 10.0, True),         # built-up backpressure against 10 % of set
     ("balanced_bellows", 50.0, False),    # total backpressure against 50 % of set
     ("pilot", None, False),               # independent of backpressure
+    ("rupture_disc", None, False),        # pressures reported, no limit: the burst pressure is a differential
 ])
 def test_backpressure_result_and_limit(valve_type, limit, exceeded):
     """Header 6 barg → PSV set 5 barg → 5 m of 15 mm pipe → drain at level 0: built-up = outlet line loss."""
-    psv = PressureSafetyValve("PSV", set_pressure_barg=5.0, cv=2.0, action_mode="modulating", valve_type=valve_type)
+    if valve_type == "rupture_disc":
+        psv = RuptureDisc("PSV", burst_pressure_barg=5.0, cv=2.0)
+    else:
+        psv = PressureSafetyValve("PSV", set_pressure_barg=5.0, cv=2.0, action_mode="modulating", valve_type=valve_type)
     tel = _relief_run(*_header_psv_tank(psv, 6.0, outlet_pipe=(5.0, 0.015)))
     dev = tel["relief"]["devices"]["psv"]
     p_out_g = (psv.outlets[0].pressure - P_ATM) / 1e5
     assert dev["superimposed_bp_barg"] == pytest.approx(0.0, abs=1e-3)   # drain at level 0, no flow while closed
     assert dev["built_up_bp_barg"] == pytest.approx(p_out_g, abs=1e-3)
     assert dev["bp_limit_pct"] == limit and dev["bp_exceeded"] is exceeded
+    assert (dev["bp_basis"] is None) == (limit is None)
     assert tel["nodes"]["psv"]["backpressure"]["built_up_bp_barg"] == dev["built_up_bp_barg"]   # same result on the node
     if limit is None:
         assert dev["bp_pct_of_set"] is None

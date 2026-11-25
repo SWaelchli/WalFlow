@@ -1,5 +1,6 @@
 import math
 
+import pytest
 from physics_refs import solve
 from simulation.equipment.pressure_boundary import PressureBoundary
 from simulation.equipment.tank import Tank
@@ -17,17 +18,40 @@ def cv_flow_m3s(cv: float, dp_pa: float, rho: float) -> float:
     return cv * math.sqrt((dp_pa / PSI) / (rho / 999.0)) / GPM
 
 
-def test_rupture_disc_intact_and_burst():
-    """The disc bursts when the inlet gauge pressure reaches the burst pressure (barg) and stays burst."""
-    rd = RuptureDisc(name="RD_FULL", burst_pressure_barg=15.0, bore_type="full_bore", cv=10.0)
+@pytest.mark.parametrize("outlet_barg, inlet_barg, bursts", [
+    pytest.param(3.0, 12.9, False, id="pressurised_outlet_intact_below_differential"),
+    pytest.param(3.0, 13.0, True, id="pressurised_outlet_bursts_at_burst_plus_backpressure"),
+    pytest.param(3.0, 10.0, False, id="pressurised_outlet_intact_at_gauge_burst_pressure"),
+    pytest.param(0.0, 9.99, False, id="atmospheric_outlet_intact_below_burst"),
+    pytest.param(0.0, 10.0, True, id="atmospheric_outlet_bursts_at_burst"),
+])
+def test_rupture_disc_intact_and_burst(outlet_barg, inlet_barg, bursts):
+    """ISO 4126-2: the burst pressure is the differential inlet - outlet, so a back pressure raises the inlet needed.
+    A burst disc stays burst for the run until the run state is reset."""
+    rd = RuptureDisc("RD", burst_pressure_barg=10.0, bore_type="full_bore", cv=10.0)
     assert rd.lift_mode() == "closed"
-    assert not rd.update_relief_state(P_ATM + 14.99e5)      # 14.99 barg
-    assert not rd.is_burst
-    assert rd.update_relief_state(P_ATM + 15.0e5)           # 15.00 barg
-    assert rd.is_burst and rd.lift_mode() == "full"
-    assert not rd.update_relief_state(P_ATM)                # latched for the run
+    assert rd.update_relief_state(P_ATM + inlet_barg * 1e5, P_ATM + outlet_barg * 1e5) is bursts
+    assert rd.is_burst is bursts
+    if bursts:
+        assert rd.lift_mode() == "full"
+        assert not rd.update_relief_state(P_ATM, P_ATM)     # latched for the run
+        assert rd.is_burst
     rd.reset_run_state()
     assert not rd.is_burst and rd.status == "intact"
+
+
+def test_rupture_disc_opening_pressure_and_rated_flow_follow_the_outlet():
+    """The inlet opening pressure is outlet + burst pressure; the rated condition is the differential 1.1 x burst
+    pressure whatever the outlet pressure."""
+    rd = RuptureDisc("RD", burst_pressure_barg=10.0, cv=10.0)
+    rd.outlets[0].pressure = P_ATM + 3e5
+    assert rd.opening_depends_on_outlet is True
+    assert rd.inlet_opening_pressure_pa() == pytest.approx(P_ATM + 13e5, abs=1.0)
+    assert rd.opening_pressure_barg == pytest.approx(13.0, abs=1e-6)     # outlet gauge 3 + burst 10
+    rho, mu = 998.0, 0.001
+    q_atm = rd.rated_flow(0.001, rho, mu, P_ATM)
+    assert q_atm > 0.0
+    assert rd.rated_flow(0.001, rho, mu, P_ATM + 3e5) == pytest.approx(q_atm, rel=1e-9)
 
 
 def test_burst_full_bore_disc_follows_the_cv_definition():
