@@ -84,7 +84,8 @@ Rules:
 2. **File Format Version**: The current version is `FILE_FORMAT_VERSION` in `backend/constants.py`, mirrored in `frontend/src/constants.js`. The file format version should ONLY be raised when there would otherwise be a data format incompatibility.
 3. **Version Alignment**: The major (first) digit of the App Version and File Format Version must always match (e.g., App `0.2.0` maps to File Format `0.2`). When the App Version reaches `1.0.0`, the File Format Version must advance to `1.0`.
 4. **Git Release Tags**: Always use the `vX.X.X` format (e.g., `v0.1.1`) when creating and pushing new release tags to trigger automated Docker image builds via GitHub Actions.
-5. **Changelog Maintenance**: All implemented features and updates must be tracked in `CHANGELOG.md`. Keep changelog entries brief, concise, and high-level without going overboard with details. The changelog must be emptied after the version number is increased.
+5. **Changelog Maintenance**: All implemented features and updates must be tracked in `CHANGELOG.md`. Keep changelog entries brief, concise, and high-level without going overboard with details. The app version is raised at the start of a release cycle, so `CHANGELOG.md` holds the changes of that version under `## [X.Y.Z] - Unreleased` until it is released. Only when the version is released (its `vX.Y.Z` tag is pushed) does its entry move to the top of `docs/change_log_history.md`, without "- Unreleased", and `CHANGELOG.md` starts again empty.
+6. **Release Stage**: `RELEASE_STAGE` in `frontend/src/constants.js` is shown next to the version in the menu bar. Set it to `'Dev'` while the current app version is not yet released, and to `''` in the release commit, just before the tag is pushed.
 
 ## Design & Styling
 
