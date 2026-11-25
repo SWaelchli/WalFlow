@@ -109,6 +109,20 @@ describe('ResultsPanel dispatches each node type to its view', () => {
       expect(limit.querySelectorAll('td').length).toBe(3);   // label, pressure, % of set
     });
 
+    it.each([
+      ['pop action with a blowdown outside the ISO range shows the issue', 'pop_action', { valid: false, issues: ['X'] }, true],
+      ['pop action with a valid blowdown shows nothing', 'pop_action', { valid: true, issues: [] }, false],
+      ['modulating valve ignores blowdown', 'modulating', { valid: false, issues: ['X'] }, false],
+    ])('blowdown check: %s', (_n, action_mode, blowdown_check, shown) => {
+      const { container } = renderPanel(psv({ set_pressure_barg: 5, action_mode }, { ...psvTel(bp), blowdown_check }));
+      expect(container.textContent.includes('X')).toBe(shown);
+    });
+
+    it('a blowdown above 100 % is shown as 100 % when the result carries no reseat pressure', () => {
+      const { container } = renderPanel(psv({ set_pressure_barg: 5, action_mode: 'pop_action', blowdown_pct: 150 }, psvTel(bp)));
+      expect(container.textContent).toContain('(100 % blowdown)');
+    });
+
     it('without a set pressure the Limit row is absent and the badge still shows', () => {
       const { container } = renderPanel(psv({}, psvTel(bp)));
       const section = sectionOf(container, 'Backpressure');

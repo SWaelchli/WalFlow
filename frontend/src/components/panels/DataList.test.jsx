@@ -483,6 +483,17 @@ describe('relief analysis matrix', () => {
     expect(screen.getByText(/BP 14 % > 10 %/)).toBeTruthy();
   });
 
+  it.each([
+    ['outside the ISO range', { valid: false, issues: ['X'] }, true],
+    ['inside the ISO range', { valid: true, issues: [] }, false],
+  ])('blowdown check %s', (_n, blowdown_check, shown) => {
+    renderRelief([reliefCase({
+      peak: { available: true, pressure_bara: 4.2, source: 'relieved', device_ids: [] },
+      devices: { psv: { status: 'open', forced_state: 'auto', opening_order: 1, opening_ramp_pct: 62.3, inlet_at_opening_bara: 4.0, inlet_relieved_bara: 4.21, blowdown_check } },
+    })]);
+    expect(screen.queryByText('Blowdown outside ISO range') !== null).toBe(shown);
+  });
+
   it('shows "missing" for a device from an older file without a gauge set pressure', () => {
     const oldNodes = [{ id: 'psv', type: 'pressure_safety_valve', position: { x: 0, y: 0 }, data: { label: 'PSV-1', set_pressure_bar: 20.0 } }];
     render(

@@ -18,6 +18,7 @@ from simulation.equipment.linear_regulator import LinearRegulator
 from simulation.equipment.pipe import Pipe
 from simulation.equipment.pressure_safety_valve import PressureSafetyValve
 from simulation.equipment.pressure_boundary import PressureBoundary
+from simulation.equipment.rupture_disc import RuptureDisc
 from simulation.equipment.tank import Tank
 from simulation.equipment.volumetric_pump import VolumetricPump
 from simulation.fluid_utils import FluidProperties
@@ -379,3 +380,68 @@ def test_dead_leg_behind_a_check_valve_takes_the_temperature_of_its_nearest_live
             assert abs(port.flow_rate) <= 1e-7
             assert port.temperature == pytest.approx(expected, abs=0.1)
             assert port.density == pytest.approx(FluidProperties.get_density("crude_heavy", expected), rel=1e-3)
+
+
+def _disc():
+    return RuptureDisc("Disc", burst_pressure_barg=5.0, cv=10.0)
+
+
+def _conventional_psv():
+    return PressureSafetyValve("PSV", set_pressure_barg=5.0, valve_type="conventional")
+
+
+def _deadheaded_pump():
+    return CentrifugalPump("Booster", flow_rated=10.0 / 60000.0, head_rated=60.0)
+
+
+@pytest.mark.parametrize("mode", ["held_closed", "auto", "relief_passes"])
+@pytest.mark.parametrize("device, middle, outlet_lower", [
+    pytest.param(_disc, None, False, id="rupture_disc_ring_leak_path_kept"),
+    pytest.param(_conventional_psv, None, False, id="conventional_psv_ring_leak_path_kept"),
+    pytest.param(_disc, _deadheaded_pump, True, id="rupture_disc_outlet_lower_than_inlet_leak_path"),
+    pytest.param(_conventional_psv, _deadheaded_pump, True, id="conventional_psv_outlet_lower_than_inlet_leak_path"),
+])
+def test_relief_device_between_sections_leaning_on_each_other_never_lifts_on_leakage(device, middle, outlet_lower, mode):
+    """Stopped pump (suction at 10 bar) -> tee -> closed relief device -> [deadheaded pump] -> check valve back
+    into the tee. The device's outlet section only leaks through the device's inlet section and vice versa. The
+    inlet section first takes the suction pressure, never the atmospheric outlet plus the set pressure while the
+    outlet is unresolved. Without a middle element both sections stay level and the device shut. With a pump
+    that drops the outlet 6 bar below its discharge, the seat bound applies after the ring is resolved: the
+    inlet section ends just below outlet plus set pressure, so leakage alone never opens the device."""
+    NetworkSolver.clear_warm_start_cache()
+    pump = _stopped_pump()
+    nodes = {"suction": Tank("Suction", fluid_level=100.0), "pump": pump, "tee": make_junction("Tee", 2, 1),
+             "device": device(), "nrv": CheckValve("NRV")}
+    edges = [{"id": "e1", "source": "suction", "target": "pump", "pipe": Pipe("suction", 1, ID)},
+             {"id": "e2", "source": "pump", "target": "tee", "target_port": "inlet-0", "pipe": Pipe("discharge", 1, ID)},
+             {"id": "e3", "source": "tee", "target": "device", "pipe": Pipe("to device", 1, ID)}]
+    last = "device"
+    if middle:
+        nodes["middle"] = middle()
+        edges.append({"id": "e3b", "source": "device", "target": "middle", "pipe": Pipe("device outlet", 1, ID)})
+        last = "middle"
+    edges += [{"id": "e4", "source": last, "target": "nrv", "pipe": Pipe("to NRV", 1, ID)},
+              {"id": "e5", "source": "nrv", "target": "tee", "target_port": "inlet-1", "pipe": Pipe("recycle", 1, ID)}]
+    network = _network(nodes, edges)
+    device_node = nodes["device"]
+    if mode == "relief_passes":
+        stats, relieved, _, _, _ = run_sequential_relief_simulation(network, NetworkSolver(network), lambda net: {})
+        assert relieved["relief"]["devices"]["device"]["opening_order"] is None
+    else:
+        solver = NetworkSolver(network)
+        if mode == "held_closed":
+            device_node.forced_state = "forced_closed"
+            solver.held_closed_ids = {"device"}   # as in a relief pass before it opens
+        stats = solver.solve()
+    assert stats["success"], stats.get("error")
+    p_suction = pump.inlets[0].pressure
+    assert p_suction > 6e5 + 1e5
+    inlet, outlet = device_node.inlets[0].pressure, device_node.outlets[0].pressure
+    if outlet_lower:
+        assert nodes["middle"].calculate_delta_p(0.0, device_node.inlets[0].density) > 5e5
+        assert outlet < p_suction - 1e5
+        assert 5e5 - 1000.0 <= inlet - outlet < 5e5   # opens at the 5 barg differential over the outlet
+        assert inlet < p_suction
+    else:
+        assert inlet == pytest.approx(p_suction, abs=1.0)
+        assert outlet == pytest.approx(p_suction, abs=1.0)

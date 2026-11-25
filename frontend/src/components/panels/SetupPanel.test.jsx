@@ -407,3 +407,37 @@ describe('flow boundary with several ports', () => {
     expect(onUpdate).toHaveBeenCalledWith('fb1', expected);
   });
 });
+
+describe('safety valve blowdown input', () => {
+  const psv = (blowdown_pct, extra = {}) => ({ id: 'psv1', type: 'pressure_safety_valve', data: { label: 'PSV-1', set_pressure_barg: 5, valve_type: 'conventional', action_mode: 'pop_action', blowdown_pct, ...extra } });
+  const ISO = 'Outside the ISO 4126-1 range for liquids: 2.5 to 20.0 % at this set pressure.';
+
+  it('accepts up to 100 % of the set pressure', () => {
+    renderNodePanel(psv(7));
+    expect(document.querySelector('input[max="100"]')).not.toBeNull();
+  });
+
+  it.each([
+    ['1 % is below the range', 1, true, {}],
+    ['25 % is above the range', 25, true, {}],
+    ['7 % is inside the range', 7, false, {}],
+    ['25 % is inside the range of a conventional valve with design backpressure (15 to 120 % of the spring setting)', 25, false, { set_pressure_barg: 3, design_superimposed_bp_barg: 2.5 }],
+  ])('ISO 4126-1 liquid range alert: %s', (_n, blowdown, alert, extra) => {
+    renderNodePanel(psv(blowdown, extra));
+    expect(screen.queryByText(ISO) !== null).toBe(alert);
+  });
+
+  it('an emptied field shows no range alert', () => {
+    renderNodePanel(psv(7));
+    fireEvent.change(document.querySelector('input[max="100"]'), { target: { value: '' } });
+    expect(screen.queryByText(/Outside the ISO 4126-1 range/)).toBeNull();
+  });
+
+  it('commits an input above 100 as 100', () => {
+    const onUpdate = renderNodePanel(psv(7));
+    const input = document.querySelector('input[max="100"]');
+    fireEvent.change(input, { target: { value: '150' } });
+    fireEvent.blur(input);
+    expect(onUpdate).toHaveBeenCalledWith('psv1', { blowdown_pct: 100 });
+  });
+});

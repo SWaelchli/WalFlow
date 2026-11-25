@@ -314,13 +314,11 @@ def test_pop_latching_stays_open_below_reseat():
     assert psv.cycle_low_barg is None
 
 
-def test_closed_valve_sees_the_header_pressure_of_a_relieving_neighbour():
-    """PSV-A relieves into a shared header with a lossy line to the drain; PSV-B stays closed on that header.
-    Its superimposed (= total) backpressure is the final header pressure, not the one without relief."""
+def _shared_header(a, b, header_a_barg, header_b_barg):
+    """Sources → PSV A and PSV B → one header junction → lossy line (5 m of 15 mm) → drain at level 0."""
     from networks import make_junction
-    a = PressureSafetyValve("A", set_pressure_barg=5.0, cv=2.0, action_mode="modulating", valve_type="balanced_bellows")
-    b = PressureSafetyValve("B", set_pressure_barg=10.0, cv=2.0, action_mode="modulating", valve_type="balanced_bellows")
-    nodes = {"sa": PressureBoundary("SA", set_pressure=P_ATM + 6e5), "sb": PressureBoundary("SB", set_pressure=P_ATM + 2e5),
+    nodes = {"sa": PressureBoundary("SA", set_pressure=P_ATM + header_a_barg * 1e5),
+             "sb": PressureBoundary("SB", set_pressure=P_ATM + header_b_barg * 1e5),
              "a": a, "b": b, "hdr": make_junction("Header", 2, 1), "t": Tank("Drain", fluid_level=0.0)}
     edges = [
         {"id": "e1", "source": "sa", "target": "a", "pipe": Pipe("p1", 1.0, BIG)},
@@ -329,13 +327,111 @@ def test_closed_valve_sees_the_header_pressure_of_a_relieving_neighbour():
         {"id": "e4", "source": "b", "target": "hdr", "target_port": "inlet-1", "pipe": Pipe("p4", 1.0, BIG)},
         {"id": "e5", "source": "hdr", "target": "t", "pipe": Pipe("p5", 5.0, 0.015)},
     ]
-    tel = _relief_run(nodes, edges)
+    return nodes, edges
+
+
+def test_closed_valve_sees_the_header_pressure_of_a_relieving_neighbour():
+    """PSV-A relieves into a shared header with a lossy line to the drain; PSV-B stays closed on that header.
+    Its superimposed (= total) backpressure is the final header pressure, not the one without relief."""
+    a = PressureSafetyValve("A", set_pressure_barg=5.0, cv=2.0, action_mode="modulating", valve_type="balanced_bellows")
+    b = PressureSafetyValve("B", set_pressure_barg=10.0, cv=2.0, action_mode="modulating", valve_type="balanced_bellows")
+    tel = _relief_run(*_shared_header(a, b, 6.0, 2.0))
     dev_b = tel["relief"]["devices"]["b"]
     hdr_g = (b.outlets[0].pressure - P_ATM) / 1e5
     assert a.status != "closed" and b.status == "closed"
     assert hdr_g > 0.2
     assert dev_b["superimposed_bp_barg"] == pytest.approx(hdr_g, abs=1e-3)
     assert dev_b["total_bp_barg"] == dev_b["superimposed_bp_barg"] and dev_b["built_up_bp_barg"] == 0.0
+
+
+def test_built_up_backpressure_covers_the_flow_of_valves_that_opened_earlier():
+    """Two conventional valves into one header: B opens second, but its built-up backpressure is the whole header
+    rise over the no-relief state (API Std 521 §4.9.4.3), not just the rise from its own flow."""
+    def valve(name, set_barg, forced="auto"):
+        return PressureSafetyValve(name, set_pressure_barg=set_barg, cv=2.0, action_mode="modulating",
+                                   valve_type="conventional", forced_state=forced)
+    a, b = valve("A", 3.0), valve("B", 5.0)
+    dev_b = _relief_run(*_shared_header(a, b, 6.0, 8.0))["relief"]["devices"]["b"]
+    assert a.status != "closed" and b.status != "closed"
+    assert a.outlets[0].flow_rate > 1e-4 and b.outlets[0].flow_rate > 1e-4
+    # Nothing relieves: no flow through the header, so it sits at the drain level (0 barg)
+    out_g = (b.outlets[0].pressure - P_ATM) / 1e5
+    assert dev_b["built_up_bp_barg"] == pytest.approx(out_g, abs=1e-3)
+    assert dev_b["total_bp_barg"] - dev_b["superimposed_bp_barg"] == pytest.approx(dev_b["built_up_bp_barg"], abs=1e-3)
+
+    solo = valve("B", 5.0)
+    dev_solo = _relief_run(*_shared_header(valve("A", 3.0, "forced_closed"), solo, 6.0, 8.0))["relief"]["devices"]["b"]
+    assert dev_b["built_up_bp_barg"] > dev_solo["built_up_bp_barg"] + 0.5
+
+
+def test_forced_open_neighbour_is_superimposed_for_an_automatic_valve():
+    """A is forced open (a permanent source into the header), B opens on its own: A's header rise is superimposed
+    for B, only B's own flow on top of it is built-up."""
+    def valve(name, set_barg, forced):
+        return PressureSafetyValve(name, set_pressure_barg=set_barg, cv=2.0, action_mode="modulating",
+                                   valve_type="conventional", forced_state=forced)
+    a, b = valve("A", 3.0, "forced_open"), valve("B", 5.0, "auto")
+    dev_b = _relief_run(*_shared_header(a, b, 6.0, 8.0))["relief"]["devices"]["b"]
+    assert b.status != "closed" and b.outlets[0].flow_rate > 1e-4
+    # Reference: the header with only A flowing and B held closed
+    a_only, b_closed = valve("A", 3.0, "forced_open"), valve("B", 5.0, "forced_closed")
+    assert solve(*_shared_header(a_only, b_closed, 6.0, 8.0))["success"]
+    a_rise_g = (b_closed.outlets[0].pressure - P_ATM) / 1e5
+    total_g = (b.outlets[0].pressure - P_ATM) / 1e5
+    assert a_rise_g > 0.2 and total_g > a_rise_g + 0.1
+    assert dev_b["superimposed_bp_barg"] == pytest.approx(a_rise_g, abs=1e-3)
+    assert dev_b["built_up_bp_barg"] == pytest.approx(total_g - a_rise_g, abs=1e-3)
+
+
+def test_forced_open_valve_own_flow_is_built_up_backpressure():
+    """A valve the user forced open has no closed state to take the outlet from: the unmitigated pass is the basis,
+    so the outlet rise from its own flow is built-up and counts against the 10 % limit."""
+    psv = PressureSafetyValve("PSV", set_pressure_barg=5.0, cv=2.0, action_mode="modulating",
+                              valve_type="conventional", forced_state="forced_open")
+    dev = _relief_run(*_header_psv_tank(psv, 6.0, outlet_pipe=(5.0, 0.015)))["relief"]["devices"]["psv"]
+    out_g = (psv.outlets[0].pressure - P_ATM) / 1e5
+    assert out_g > 0.15 * 5.0
+    assert dev["superimposed_bp_barg"] == pytest.approx(0.0, abs=1e-3)
+    assert dev["built_up_bp_barg"] == pytest.approx(out_g, abs=1e-3)
+    assert dev["bp_exceeded"] is True
+
+
+def test_rupture_disc_superimposed_is_the_header_pressure_at_its_burst():
+    """PSV A opens first into the shared header, the disc B bursts later: B's burst differential acts against the
+    header pressure at that moment, which already holds A's rise."""
+    a = PressureSafetyValve("A", set_pressure_barg=3.0, cv=2.0, action_mode="modulating", valve_type="balanced_bellows")
+    b = RuptureDisc("B", burst_pressure_barg=5.0, cv=2.0)
+    dev_b = _relief_run(*_shared_header(a, b, 6.0, 7.5))["relief"]["devices"]["b"]
+    assert a.status != "closed" and b.status != "intact"
+    # A relieves at the burst, so the header already sits above the drain: not the ~0 of the state without relief
+    assert dev_b["superimposed_bp_barg"] > 0.5
+    assert dev_b["superimposed_bp_barg"] < dev_b["total_bp_barg"]
+
+
+@pytest.mark.parametrize("set_barg, action_mode, blowdown, warns, kept, range_pct, extra", [
+    (10.0, "pop_action", 1.0, "below", 1.0, (2.5, 20.0), {}),             # under the 2.5 % minimum
+    (10.0, "pop_action", 25.0, "above", 25.0, (2.5, 20.0), {}),           # over 20 % of set
+    (10.0, "pop_action", 7.0, None, 7.0, (2.5, 20.0), {}),
+    (1.0, "pop_action", 40.0, None, 40.0, (2.5, 60.0), {}),               # 0.6 bar exceeds 20 % at a low set pressure
+    (1.0, "pop_action", 70.0, "above", 70.0, (2.5, 60.0), {}),
+    (10.0, "modulating", 1.0, None, 1.0, (2.5, 20.0), {}),                # a modulating valve does not reseat: no check
+    (5.0, "pop_action", 60.0, "above", 60.0, (2.5, 20.0), {}),            # input above 50 % is kept, not clamped
+    (5.0, "pop_action", 150.0, "above", 100.0, (2.5, 20.0), {}),          # physical limit 100 %
+    # Conventional: limits in % of the spring setting CDTP = 3 − 2.5 = 0.5 bar (2.5 % of set = 0.075 bar; 0.6 bar max)
+    (3.0, "pop_action", 25.0, None, 25.0, (15.0, 120.0), {"valve_type": "conventional", "design_superimposed_bp_barg": 2.5}),
+    (3.0, "pop_action", 25.0, "above", 25.0, (2.5, 20.0), {"valve_type": "balanced_bellows"}),
+])
+def test_blowdown_range_warning_and_clamp(set_barg, action_mode, blowdown, warns, kept, range_pct, extra):
+    psv = PressureSafetyValve("PSV", set_pressure_barg=set_barg, cv=2.0, action_mode=action_mode, blowdown_pct=blowdown, **extra)
+    assert psv.blowdown_pct == kept
+    assert psv.iso_blowdown_range_pct() == pytest.approx(range_pct)
+    issues = psv.blowdown_issues()
+    assert len(issues) == (warns is not None)
+    if warns:
+        assert warns in issues[0]
+    assert psv.reseat_threshold_pa == pytest.approx(psv.threshold_pa * (1.0 - kept / 100.0))   # reseat = threshold·(1 − blowdown)
+    if blowdown == 60.0:
+        assert psv.reseat_threshold_pa == pytest.approx(psv.threshold_pa * 0.4)
 
 
 def test_pilot_result_does_not_depend_on_node_order():

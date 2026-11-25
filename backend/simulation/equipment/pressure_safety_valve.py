@@ -6,6 +6,12 @@ FULL_LIFT_PCT = 99.9          # lift reported as full ("open") from here; below 
 CYCLING_BAND = 0.01           # cycling stand-in: lift band as a fraction of set, so the average holds the driver at set
 
 
+# ISO 4126-1:2013 §7.2.1 d), incompressible fluids: blowdown at least 2.5 % and at most 20 % of set or 0.6 bar,
+# whichever is greater. A warning only: the solver uses the entered blowdown (0-100 %, the physical range)
+ISO_LIQUID_BLOWDOWN_MIN_PCT = 2.5
+ISO_LIQUID_BLOWDOWN_MAX_PCT = 20.0
+ISO_LIQUID_BLOWDOWN_MAX_BAR = 0.6
+
 VALVE_TYPES = ("conventional", "balanced_bellows", "pilot")
 ACTION_MODES = ("pop_action", "pop_latching", "modulating")
 
@@ -44,7 +50,8 @@ class PressureSafetyValve(ReliefDevice):
         super().__init__(name, "pressure_safety_valve", set_pressure_barg, forced_state)
         self.cv = max(0.001, float(cv))
         self.action_mode = action_mode if action_mode in ACTION_MODES else "pop_action"
-        self.blowdown_pct = max(0.0, min(50.0, float(blowdown_pct)))
+        # Physical range only: 0 % reseats at the threshold, 100 % when the driver falls to zero; ISO range: a warning
+        self.blowdown_pct = max(0.0, min(100.0, float(blowdown_pct)))
         self.valve_type = valve_type if valve_type in VALVE_TYPES else "conventional"
         self.design_superimposed_bp_barg = max(0.0, float(design_superimposed_bp_barg or 0.0))
 
@@ -76,6 +83,33 @@ class PressureSafetyValve(ReliefDevice):
         """Inlet gauge pressure less the opening driver (the outlet gauge pressure for a conventional valve)."""
         p_in, p_out, p_sense = self.port_pressures(p_in_pa, p_out_pa, p_sense_pa)
         return (p_in - self.p_atm) - self.driver_pa(p_in, p_out, p_sense)
+
+    def iso_blowdown_range_pct(self) -> tuple:
+        """(min, max) ISO 4126-1 §7.2.1 d) liquid blowdown in the basis of the input, % of the opening threshold.
+
+        ISO gives the limits in % of set or in bar (at least 2.5 % of set; at most 20 % of set or 0.6 bar). The
+        model applies the blowdown to the opening threshold, which for a conventional valve is the spring setting
+        CDTP = set − design superimposed backpressure, so the limits are converted to % of that threshold (the
+        same as % of set for balanced and pilot valves and for a conventional valve without design backpressure).
+        """
+        set_bar = self.set_pressure_barg
+        thr_bar = self.threshold_pa / P_SCALE
+        lo_bar = ISO_LIQUID_BLOWDOWN_MIN_PCT / 100.0 * set_bar
+        hi_bar = max(ISO_LIQUID_BLOWDOWN_MAX_PCT / 100.0 * set_bar, ISO_LIQUID_BLOWDOWN_MAX_BAR)
+        return 100.0 * lo_bar / thr_bar, 100.0 * hi_bar / thr_bar
+
+    def blowdown_issues(self) -> list:
+        """Warnings when the blowdown of a reseating (pop action) valve is outside the ISO liquid range."""
+        if self.action_mode != "pop_action":
+            return []
+        lo, hi = self.iso_blowdown_range_pct()
+        if self.blowdown_pct < lo:
+            return [f"Blowdown {self.blowdown_pct:g} % is below the ISO 4126-1 minimum of {lo:.3g} % for liquids "
+                    f"(2.5 % of set)"]
+        if self.blowdown_pct > hi:
+            return [f"Blowdown {self.blowdown_pct:g} % is above the ISO 4126-1 maximum of {hi:.3g} % for liquids "
+                    f"(20 % of set or 0.6 bar, whichever is greater)"]
+        return []
 
     # --- opening driver by valve type ------------------------------------------------------------
     @property

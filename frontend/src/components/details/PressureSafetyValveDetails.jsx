@@ -82,7 +82,7 @@ const PressureSafetyValveDetails = memo(function PressureSafetyValveDetails({ no
   const actionMode = data.action_mode || 'pop_action';
   const valveType = data.valve_type || 'conventional';
   const cv = parseFloat(data.cv || 10.0);
-  const blowdownPct = parseFloat(data.blowdown_pct ?? 7.0);
+  const blowdownPct = Math.min(100, Math.max(0, parseFloat(data.blowdown_pct ?? 7.0)));
   const cdtpBarg = telemetry.cdtp_barg ?? (setPressureBarg !== null ? Math.max(0.01, setPressureBarg - Number(data.design_superimposed_bp_barg || 0)) : null);
 
   const hasResult = telemetry.inlets?.[0]?.pressure != null;
@@ -99,7 +99,8 @@ const PressureSafetyValveDetails = memo(function PressureSafetyValveDetails({ no
   // conventional valve and the sensed pressure of a pilot); before a result, the set pressure
   const openBarg = telemetry.opening_pressure_barg ?? setPressureBarg;
   const reseatBarg = actionMode !== 'pop_action' || setPressureBarg === null ? null
-    : (telemetry.reseat_pressure_barg ?? setPressureBarg * (1 - blowdownPct / 100));
+    : (telemetry.reseat_pressure_barg
+      ?? setPressureBarg - (valveType === 'conventional' ? cdtpBarg : setPressureBarg) * blowdownPct / 100);
 
   const status = telemetry?.status === 'cracked' ? 'open' : (telemetry?.status || 'closed');
   const isCycling = status === 'cycling' && cycleLow != null && cycleHigh != null;
@@ -179,6 +180,11 @@ const PressureSafetyValveDetails = memo(function PressureSafetyValveDetails({ no
           <div className="result-caption-sm">
             Rated {formatFlow(ratedFlowLmin)} {labels.flow} at full lift, 10 % overpressure
           </div>
+        )}
+        {actionMode === 'pop_action' && telemetry.blowdown_check && telemetry.blowdown_check.valid === false && (
+          <ResultCallout tone="warning" role="status">
+            {(telemetry.blowdown_check.issues || []).join(' ')}
+          </ResultCallout>
         )}
         {isCycling && (
           <ResultCallout tone="warning" role="status">

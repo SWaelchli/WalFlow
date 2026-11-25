@@ -184,6 +184,15 @@ function ReliefDeviceResult({ result, hasResults, formatPressure, unit, formatPr
           Cycles {formatPressureGauge(result.cycle_low_barg)}–{formatPressureGauge(result.cycle_high_barg)} · avg {formatFlow(result.relief_flow_lmin)} {flowUnit}
         </span>
       )}
+      {result.blowdown_check?.valid === false && (
+        <span
+          title={(result.blowdown_check.issues || []).join(' ')}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: 'var(--fs-xs)', fontWeight: '700', color: 'var(--color-warning-text-strong)', whiteSpace: 'nowrap' }}
+        >
+          <WarningIcon size={11} color="var(--color-warning-text-strong)" />
+          Blowdown outside ISO range
+        </span>
+      )}
       {result.bp_exceeded && (
         <span
           title={result.bp_basis === 'built_up' ? 'Built-up backpressure above 10 % of set (conventional valve)' : 'Total backpressure above 50 % of set (balanced bellows valve)'}

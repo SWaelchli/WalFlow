@@ -418,6 +418,9 @@ def extract_telemetry(network) -> Dict[str, Any]:
                 node_tel["pilot_sensing_node_id"] = canvas_id(node.remote_sensing_config["node_id"]) if node.has_remote_pilot and node.remote_sensing_config else None
                 node_tel["cycle_low_barg"] = node.cycle_low_barg
                 node_tel["cycle_high_barg"] = node.cycle_high_barg
+                issues = node.blowdown_issues()
+                node_tel["blowdown_check"] = {"valid": not issues, "issues": issues,
+                                              "range_pct": list(node.iso_blowdown_range_pct())}
         if hasattr(node, 'forced_state'):
             node_tel["forced_state"] = node.forced_state
         if hasattr(node, 'cv'):

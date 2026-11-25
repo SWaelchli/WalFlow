@@ -194,3 +194,26 @@ def test_staggered_devices_open_in_order():
     assert d1["opening_ramp_pct"] < d2["opening_ramp_pct"]
     peak = tel["relief"]["peak"]
     assert peak["available"] and peak["pressure_bara"] >= 6.0 - 0.02
+
+
+def test_device_opening_at_lower_inlet_pressure_opens_first():
+    """A disc venting into a pressurised header opens at outlet + burst, so a disc with a higher burst
+    pressure that vents to atmosphere opens first."""
+    nodes = {
+        "src": PressureBoundary("Source", set_pressure=2_001_325.0),                       # 20 bar(a)
+        "rd_a": RuptureDisc("RD-A", burst_pressure_barg=5.0, cv=10.0),                     # opens at 8 + 5 bar(g)
+        "rd_b": RuptureDisc("RD-B", burst_pressure_barg=10.0, cv=10.0),                    # opens at 10 bar(g)
+        "header": PressureBoundary("Header", set_pressure=P_ATM_BAR * 1e5 + 800_000.0),    # 8 bar(g)
+        "t2": Tank("Drain", fluid_level=0.0),
+    }
+    edges = [
+        {"id": "e1", "source": "src", "target": "rd_a", "pipe": Pipe("p1", 5.0, ID)},
+        {"id": "e2", "source": "src", "target": "rd_b", "pipe": Pipe("p2", 5.0, ID)},
+        {"id": "e3", "source": "rd_a", "target": "header", "pipe": Pipe("p3", 5.0, ID)},
+        {"id": "e4", "source": "rd_b", "target": "t2", "pipe": Pipe("p4", 5.0, ID)},
+    ]
+    stats, tel, *_ = _run(_network(nodes, edges))
+    assert stats["success"]
+    devs = tel["relief"]["devices"]
+    assert devs["rd_b"]["opening_order"] == 1
+    assert devs["rd_a"]["opening_order"] != 1

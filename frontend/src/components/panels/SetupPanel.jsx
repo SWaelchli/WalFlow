@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from 'react';
 
 import { notify, confirmDialog } from '../../utils/dialogs';
-import { mToMm, mToIn } from '../../utils/converters';
+import { mToMm, mToIn, formatDimensionless } from '../../utils/converters';
 import { RELIEF_DRIVER_TYPES } from '../../constants/case_constants';
 import { FLUID_CATEGORIES, FLUID_LIBRARY } from '../../constants/fluid_library';
 import { getEffectiveNodeData } from '../../utils/case_resolver';
 import { WarningIcon, CaretDownIcon } from '../symbols/IconLibrary';
+import { ResultCallout } from '../details/ResultBlocks';
 import { componentLabel } from '../../constants/componentLabels';
 import { validPortCount, NEUTRAL_TYPES } from '../../utils/networkValidation';
 import { MIN_JUNCTION_PORTS, MAX_JUNCTION_PORTS, junctionPortCount, junctionPortIds } from '../../utils/junctionLayout';
@@ -211,7 +212,10 @@ export default function SetupPanel({
       }
     }
 
-    const processedValue = isNaN(numericValue) ? convertedVal : numericValue;
+    // Blowdown is a percentage of the opening threshold; the solver clamps it to 0..100
+    const processedValue = isNaN(numericValue)
+      ? convertedVal
+      : (field === 'blowdown_pct' ? Math.min(100, Math.max(0, numericValue)) : numericValue);
     const updates = { [field]: processedValue };
 
     // Clear local draft for this field once committed
@@ -1207,20 +1211,42 @@ export default function SetupPanel({
                 <div>
                   {renderLabel('Blowdown [% of set]', 'blowdown_pct')}
                   <input 
-                    type="number" step="0.5" min="0" max="50"
+                    type="number" step="0.5" min="0" max="100"
                     className="form-input" style={{ width: '100%' }} 
                     value={localDrafts.blowdown_pct !== undefined ? localDrafts.blowdown_pct : (effectiveData.blowdown_pct ?? 7.0)} 
                     onChange={(e) => handleDraftChange('blowdown_pct', e.target.value)}
                     onBlur={(e) => validateAndCommit('blowdown_pct', e.target.value)}
                   />
-                  {effectiveData.set_pressure_barg ? (
-                    <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
-                      {/* blowdown applies to the opening driver: the spring setting (CDTP) of a conventional valve */}
-                      Reseats at {formatPressureGauge(Number(effectiveData.set_pressure_barg) - (psvValveType === 'conventional'
-                        ? Math.max(0.01, Number(effectiveData.set_pressure_barg) - Number(effectiveData.design_superimposed_bp_barg ?? 0))
-                        : Number(effectiveData.set_pressure_barg)) * Number(effectiveData.blowdown_pct ?? 7.0) / 100)}{psvValveType === 'conventional' ? ' at the design backpressure' : ''}. If full lift would drop the inlet below that, the valve cycles between reseat and set; the result shows the average relief load.
-                    </p>
-                  ) : null}
+                  {(() => {
+                    const clampBd = (v) => Math.min(100, Math.max(0, Number(v)));
+                    const setBarg = Number(effectiveData.set_pressure_barg);
+                    // Opening threshold: the spring setting (CDTP) of a conventional valve, else the set pressure
+                    const threshold = psvValveType === 'conventional'
+                      ? Math.max(0.01, setBarg - Number(effectiveData.design_superimposed_bp_barg ?? 0))
+                      : setBarg;
+                    const committedBd = clampBd(effectiveData.blowdown_pct ?? 7.0);
+                    const draft = localDrafts.blowdown_pct;
+                    const bd = draft !== undefined ? (draft === '' ? NaN : clampBd(draft)) : committedBd;
+                    // ISO 4126-1 7.2.1 d) liquids: 2.5 % to max(20 %, 0.6 bar) of the opening threshold
+                    const isoLo = 2.5 * setBarg / threshold;
+                    const isoHi = Math.max(0.2 * setBarg, 0.6) / threshold * 100;
+                    const outside = setBarg > 0 && !isNaN(bd) && (bd < isoLo || bd > isoHi);
+                    return (
+                      <>
+                        {effectiveData.set_pressure_barg ? (
+                          <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
+                            {/* blowdown applies to the opening driver: the spring setting (CDTP) of a conventional valve */}
+                            Reseats at {formatPressureGauge(setBarg - threshold * committedBd / 100)}{psvValveType === 'conventional' ? ' at the design backpressure' : ''}. If full lift would drop the inlet below that, the valve cycles between reseat and set; the result shows the average relief load.
+                          </p>
+                        ) : null}
+                        {outside && (
+                          <ResultCallout tone="warning">
+                            {`Outside the ISO 4126-1 range for liquids: ${formatDimensionless(isoLo, 'percent')} to ${formatDimensionless(isoHi, 'percent')} % at this set pressure.`}
+                          </ResultCallout>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               )}
               <div>

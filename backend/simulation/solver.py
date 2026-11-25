@@ -2076,7 +2076,9 @@ class NetworkSolver:
         negligible flow, so the section is held just below the set pressure and the relief passes see no
         breach (no opening at zero flow). This holds for devices in 'auto', also while the relief passes hold
         them closed (held_closed_ids), but not for the unmitigated pass or a device the user forced closed:
-        there the device has failed and the leak brings the section to the full leak-path pressure.
+        there the device has failed and the leak brings the section to the full leak-path pressure. Where the
+        opening follows the outlet (rupture disc, conventional PSV) the inlet section waits for the outlet section;
+        in a ring (sections waiting on each other) its bound is applied after the ring is resolved.
 
         Returns the ids of the nodes in a stagnant group."""
         nodes = self.network.nodes
@@ -2134,8 +2136,9 @@ class NetworkSolver:
         unresolved = dict(groups)
 
         def evaluate(members, wait_on_outlet=True):
-            """(best leak path as (rank, -pressure, side), strongest rank still waiting, [(side, lo, hi)])"""
-            best, pending, bounds = None, None, []
+            """(best leak path as (rank, -pressure, side), strongest rank still waiting, [(side, lo, hi)],
+            [relief devices whose seat bound waits for their outlet section])"""
+            best, pending, bounds, deferred = None, None, [], []
             for nid, side in members:
                 rank = leak_rank.get(nid)
                 if rank is None:
@@ -2144,9 +2147,15 @@ class NetworkSolver:
                 other = 'out' if side == 'in' else 'in'
                 if rank == LEAK_RELIEF_SEAT and side == 'in' and \
                         (node.forced_state == 'auto' or nid in self.held_closed_ids):
-                    if wait_on_outlet and getattr(node, 'opening_depends_on_outlet', False) and find((nid, other)) in unresolved:
+                    outlet_unresolved = (getattr(node, 'opening_depends_on_outlet', False)
+                                         and find((nid, other)) in unresolved)
+                    if outlet_unresolved and wait_on_outlet:
                         # The opening pressure follows the outlet: wait until the outlet section is resolved
                         pending = -math.inf
+                        continue
+                    if outlet_unresolved:
+                        # In a ring the outlet has no solved pressure yet: apply the seat bound once it has
+                        deferred.append(nid)
                         continue
                     p_open = node.inlet_opening_pressure_pa()
                     if p_open is not None:
@@ -2164,7 +2173,7 @@ class NetworkSolver:
                                   else ((nid, side), p_other - crack, math.inf))
                 if best is None or (rank, -p_other) < best[:2]:
                     best = (rank, -p_other, (nid, side))
-            return best, pending, bounds
+            return best, pending, bounds, deferred
 
         def passes(nid):
             return nid not in leak_rank
@@ -2174,9 +2183,22 @@ class NetworkSolver:
                 port.pressure = p
             self._carry_at_rest([entry], set(members) - {entry}, passes)
 
+        def shift_into_bounds(entry, members, bounds):
+            """Shift the section to its limits, each taken at its own port. lo above hi: a check valve pushes the
+            section above a relief set pressure. lo wins, so the breach stays visible and the relief passes open
+            the device"""
+            if not bounds:
+                return
+            at = [self._side_ports(*side)[0].pressure for side, _, _ in bounds]
+            shift = max(min(0.0, min(hi - p for (_, _, hi), p in zip(bounds, at))),
+                        max(lo - p for (_, lo, _), p in zip(bounds, at)))
+            if shift != 0.0:
+                settle(entry, self._side_ports(*entry)[0].pressure + shift, members)
+
+        deferred_seats = []   # (entry, members, bounds, relief ids) of ring sections whose seat bound waits
         while unresolved:
             evals = {root: evaluate(members) for root, members in unresolved.items()}
-            ready = [r for r, (best, pending, _) in evals.items()
+            ready = [r for r, (best, pending, _, _) in evals.items()
                      if best is not None and (pending is None or pending > best[0])]
             if not ready:
                 candidates = [r for r, e in evals.items() if e[0] is not None]
@@ -2185,19 +2207,25 @@ class NetworkSolver:
                 ready = [min(candidates, key=lambda r: evals[r][0])]
                 evals[ready[0]] = evaluate(unresolved[ready[0]], wait_on_outlet=False)
             for root in ready:
-                best, _, bounds = evals[root]
+                best, _, bounds, deferred = evals[root]
                 members = unresolved.pop(root)
                 settle(best[2], -best[1], members)
-                if not bounds:
-                    continue
-                # Shift the section to its limits, each taken at its own port. lo above hi: a check valve pushes
-                # the section above a relief set pressure. lo wins, so the breach stays visible and the relief
-                # passes open the device
-                at = [self._side_ports(*side)[0].pressure for side, _, _ in bounds]
-                shift = max(min(0.0, min(hi - p for (_, _, hi), p in zip(bounds, at))),
-                            max(lo - p for (_, lo, _), p in zip(bounds, at)))
-                if shift != 0.0:
-                    settle(best[2], -best[1] + shift, members)
+                if deferred:
+                    deferred_seats.append((best[2], members, bounds, deferred))
+                shift_into_bounds(best[2], members, bounds)
+
+        # Seat bounds deferred in a ring, now that the outlet sections have a pressure: leakage alone never lifts
+        # a held device, also when its outlet settled lower than the inlet section's leak path
+        for entry, members, bounds, deferred in deferred_seats:
+            seats = []
+            for nid in deferred:
+                if find((nid, 'out')) in unresolved:
+                    continue   # the outlet found no leak path: its opening pressure stays unknown
+                p_open = nodes[nid].inlet_opening_pressure_pa()
+                if p_open is not None:
+                    seats.append(((nid, 'in'), -math.inf, p_open - RELIEF_SEAT_MARGIN_PA))
+            if seats:
+                shift_into_bounds(entry, members, bounds + seats)
         return {nid for members in groups.values() for nid, _ in members}
 
     def _outlet_of(self, edge) -> int:
@@ -2492,11 +2520,14 @@ def _outlet_pressure_barg(tel, node_id, p_atm):
 
 # Backpressure limit (% of set) per PSV type: conventional on the built-up, balanced bellows on the total
 # backpressure; a pilot valve is independent of backpressure
+OPENING_GROUP_TOL_PA = 10.0   # relief devices whose inlet opening pressures differ by less open in one group
+
 BACKPRESSURE_LIMITS = {"conventional": ("built_up", 10.0), "balanced_bellows": ("total", 50.0)}
 
 
-def _backpressure_result(node, k, tel_relieved, tel_closed):
-    """Superimposed (device closed), built-up (relieving) and total backpressure of a PSV, in bar(g) and % of set.
+def _backpressure_result(node, k, tel_relieved, tel_before):
+    """Superimposed (outlet before the device relieves, from `tel_before` chosen by the caller), built-up
+    (relieving) and total backpressure of a PSV, in bar(g) and % of set.
     A rupture disc gets the pressures without a limit: its burst pressure is a differential, so the superimposed
     backpressure raises the inlet pressure at which it bursts."""
     valve_type = getattr(node, "valve_type", None)
@@ -2506,7 +2537,7 @@ def _backpressure_result(node, k, tel_relieved, tel_closed):
     total = _outlet_pressure_barg(tel_relieved, k, p_atm)
     relieving = node.status not in ("closed", "intact")
     # A closed valve sees the final outlet pressure, including what other devices relieve into its header
-    superimposed = _outlet_pressure_barg(tel_closed, k, p_atm) if relieving else total
+    superimposed = _outlet_pressure_barg(tel_before, k, p_atm) if relieving else total
     if total is None or superimposed is None:
         return {}
     built_up = max(0.0, total - superimposed) if relieving else 0.0
@@ -2668,30 +2699,35 @@ def _run_sequential_relief_passes(network, solver, extract_telemetry_fn):
     max_passes = len(auto_psv_nodes) + 1
     opening_groups = []   # device ids unlocked per pass, in opening order
 
+    telemetry_baseline = None   # no contingency device relieving, user-forced devices as set: superimposed basis
     for pass_idx in range(max_passes):
         # 1. Solve current state
         stats = solver.solve()
+        if pass_idx == 0 and stats.get("success"):
+            telemetry_baseline = extract_telemetry_fn(network)
 
         # 2. Check inlet pressures of closed auto relief nodes
         breached_nodes = []
         for node in auto_psv_nodes:
             if node.forced_state == "forced_closed":
-                set_p = node.set_pressure_bara
                 # The opening driver (inlet gauge, differential or pilot pressure) reaches its threshold
                 if node.inlets and node.opening_margin_pa() >= 0.0:
-                    breached_nodes.append((set_p, node))
+                    # Rank by the inlet pressure at which the device opens: outlet + set for a disc or a
+                    # conventional PSV, the set pressure where the inlet does not decide it (remote pilot)
+                    p_open = node.inlet_opening_pressure_pa()
+                    breached_nodes.append((node.set_pressure_pa if p_open is None else p_open, node))
 
         # 3. If no closed relief devices breached set pressure, steady-state equilibrium achieved!
         if not breached_nodes:
             break
 
-        # 4. Find lowest set pressure among breached closed devices
-        min_set_p = min(item[0] for item in breached_nodes)
+        # 4. Lowest inlet opening pressure among breached closed devices
+        min_open_p = min(item[0] for item in breached_nodes)
 
-        # 5. Unlock all breached closed devices sharing this minimum set pressure
+        # 5. Unlock all breached closed devices that open at that pressure (within 10 Pa)
         group = []
-        for set_p, node in breached_nodes:
-            if abs(set_p - min_set_p) < 1e-4:
+        for open_p, node in breached_nodes:
+            if open_p - min_open_p < OPENING_GROUP_TOL_PA:
                 node.forced_state = "auto"
                 node.reset_run_state()
                 group.append(key_of[id(node)])
@@ -2751,8 +2787,19 @@ def _run_sequential_relief_passes(network, solver, extract_telemetry_fn):
         outlets = node_tel.get("outlets") or []
         flow = outlets[0].get("flow_rate", 0.0) if outlets else 0.0
         order, op = opening_by_id.get(k, (None, None))
-        # Superimposed backpressure: the outlet while the device is still closed, at its opening snapshot
-        backpressure = _backpressure_result(node, k, telemetry_mitigated, op["telemetry"] if op else telemetry_unmitigated)
+        # Superimposed backpressure (outlet before the device relieves):
+        # - PSV: no automatic relief device relieving (first relieved pass; a device the user forced open is a
+        #   permanent source and stays open), so built-up covers the flow of every device of the contingency,
+        #   including those that opened earlier into the same header (API Std 521 §4.9.4.3);
+        # - a PSV the user forced open: every device closed (unmitigated pass), so its own flow is built-up;
+        # - rupture disc: the outlet when it bursts (opening snapshot), the pressure its differential burst acts against
+        if original_states[k] == "forced_open" or telemetry_baseline is None:
+            tel_before = telemetry_unmitigated
+        elif node.node_type == "rupture_disc" and op:
+            tel_before = op["telemetry"]
+        else:
+            tel_before = telemetry_baseline
+        backpressure = _backpressure_result(node, k, telemetry_mitigated, tel_before)
         if backpressure and k in telemetry_mitigated.get("nodes", {}):
             telemetry_mitigated["nodes"][k]["backpressure"] = backpressure
         devices[k] = {
@@ -2770,6 +2817,7 @@ def _run_sequential_relief_passes(network, solver, extract_telemetry_fn):
             "cycle_low_barg": node_tel.get("cycle_low_barg"),
             "cycle_high_barg": node_tel.get("cycle_high_barg"),
             "valve_type": node_tel.get("valve_type"),
+            "blowdown_check": node_tel.get("blowdown_check"),
             **backpressure,
         }
     telemetry_mitigated["relief"] = {"peak": peak, "devices": devices}
