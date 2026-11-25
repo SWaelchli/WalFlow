@@ -1,3 +1,5 @@
+from typing import Optional
+
 from simulation.equipment.base_node import total_of
 from simulation.equipment.relief_device import ReliefDevice, P_SCALE
 from simulation.equipment.check_valve import open_seat_dp
@@ -48,7 +50,7 @@ class RuptureDisc(ReliefDevice):
     def driver_pa(self, p_in_pa: float, p_out_pa: float, p_sense_pa: float) -> float:
         return p_in_pa - p_out_pa
 
-    def inlet_opening_pressure_pa(self):
+    def inlet_opening_pressure_pa(self) -> Optional[float]:
         return total_of(self.outlets[0]) + self.threshold_pa
 
     @property

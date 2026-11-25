@@ -1,3 +1,5 @@
+from typing import Optional
+
 from simulation.equipment.relief_device import ReliefDevice, P_SCALE
 from simulation.equipment.check_valve import open_seat_dp
 from simulation.equipment.base_node import total_of
@@ -57,7 +59,7 @@ class PressureSafetyValve(ReliefDevice):
 
         # Pilot sensing line, set by the graph parser from a signal edge: (node, "inlet"|"outlet", port index)
         self.remote_sensing_config = None
-        self.pilot_source = None
+        self.pilot_source: Optional[tuple] = None
         # Set by the solver: False when the sensing point is left out of the solve (the pilot then senses its inlet)
         self.pilot_in_solve = True
 
@@ -143,13 +145,14 @@ class PressureSafetyValve(ReliefDevice):
         return p_in_pa - self.p_atm
 
     def sensed_port_pressure(self, p_in_pa: float) -> float:
-        if not self.has_remote_pilot:
+        source = self.pilot_source
+        if not self.has_remote_pilot or source is None:
             return p_in_pa
-        node, port_type, idx = self.pilot_source
+        node, port_type, idx = source
         ports = node.inlets if port_type == "inlet" else node.outlets
         return total_of(ports[idx]) if idx < len(ports) else p_in_pa
 
-    def inlet_opening_pressure_pa(self):
+    def inlet_opening_pressure_pa(self) -> Optional[float]:
         if self.has_remote_pilot:
             return None
         if self.valve_type == "conventional":
@@ -209,7 +212,7 @@ class PressureSafetyValve(ReliefDevice):
     def open_status(self) -> str:
         if self.is_cycling():
             return "cycling"
-        return "open" if self.lift_pct >= FULL_LIFT_PCT else "modulating"
+        return "open" if (self.lift_pct or 0.0) >= FULL_LIFT_PCT else "modulating"
 
     def report(self, flow_rate, density, viscosity, p_in_pa, p_out_pa, p_sense_pa=None):
         super().report(flow_rate, density, viscosity, p_in_pa, p_out_pa, p_sense_pa)

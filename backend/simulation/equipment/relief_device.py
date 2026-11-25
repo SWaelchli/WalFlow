@@ -1,3 +1,5 @@
+from typing import Optional
+
 from simulation.equipment.base_node import HydraulicNode, total_of
 from simulation.fluid_utils import FluidProperties
 
@@ -34,7 +36,7 @@ class ReliefDevice(HydraulicNode):
         self.forced_state = forced_state if forced_state in RELIEF_FORCED_STATES else "auto"
         self.capacity_utilization_pct = 0.0
         self.rated_flow_lmin = 0.0
-        self.lift_pct = 0.0
+        self.lift_pct: Optional[float] = 0.0   # None for a cycling PSV (the averaged lift is no position)
         self.add_inlet()
         self.add_outlet()
 
@@ -82,7 +84,7 @@ class ReliefDevice(HydraulicNode):
         """driver − threshold: the device opens at a margin of zero or more."""
         return self.driver_pa(*self.port_pressures(p_in_pa, p_out_pa, p_sense_pa)) - self.threshold_pa
 
-    def inlet_opening_pressure_pa(self):
+    def inlet_opening_pressure_pa(self) -> Optional[float]:
         """Absolute inlet pressure at which the closed device opens, or None when the inlet does not decide it."""
         return self.set_pressure_pa
 
@@ -105,7 +107,7 @@ class ReliefDevice(HydraulicNode):
         self.lift_pct = 0.0
 
     # --- flow equation ---------------------------------------------------------------------------
-    def lift(self, p_in_pa: float, p_out_pa: float = None, p_sense_pa: float = None) -> float:
+    def lift(self, p_in_pa: float, p_out_pa: Optional[float] = None, p_sense_pa: Optional[float] = None) -> float:
         mode = self.lift_mode()
         if mode == "closed":
             return 0.0
@@ -122,7 +124,8 @@ class ReliefDevice(HydraulicNode):
         q = max(abs(flow_rate), Q_COEFF_MIN)
         return self.open_dp(q, density, viscosity) / (q * q)
 
-    def model_flow(self, flow_rate, density, viscosity, p_in_pa, p_out_pa, p_sense_pa=None) -> float:
+    def model_flow(self, flow_rate, density, viscosity, p_in_pa, p_out_pa,
+                   p_sense_pa: Optional[float] = None) -> float:
         lift = self.lift(p_in_pa, p_out_pa, p_sense_pa)
         dp = p_in_pa - p_out_pa
         if lift <= 0.0 or dp <= 0.0:
@@ -146,8 +149,8 @@ class ReliefDevice(HydraulicNode):
         return q_rated
 
     def calculate_delta_p(self, flow_rate: float, density: float, viscosity: float = 0.001,
-                          p_in_pa: float = None, p_out_pa: float = None, update_state: bool = True,
-                          p_sense_pa: float = None) -> float:
+                          p_in_pa: Optional[float] = None, p_out_pa: Optional[float] = None,
+                          update_state: bool = True, p_sense_pa: Optional[float] = None) -> float:
         p_in, p_out, p_sense = self.port_pressures(p_in_pa, p_out_pa, p_sense_pa)
         dp_valve = p_in - p_out
         g = (flow_rate - self.model_flow(flow_rate, density, viscosity, p_in, p_out, p_sense)) / Q_SCALE

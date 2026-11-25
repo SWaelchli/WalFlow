@@ -4,7 +4,6 @@ import pytest
 
 
 from simulation.graph_parser import GraphParser
-from simulation.schemas import ReactFlowGraph
 
 
 def _hx(data):

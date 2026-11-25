@@ -54,6 +54,6 @@ def test_rating_with_medium_on_wrong_side_of_inlet(kind, medium_c, rated_kw, sta
     if effectiveness_sign is None:
         assert hx.design_effectiveness is None
     elif effectiveness_sign < 0:
-        assert hx.design_effectiveness < 0.0
+        assert hx.design_effectiveness is not None and hx.design_effectiveness < 0.0
     else:
         assert hx.design_effectiveness == 0.0

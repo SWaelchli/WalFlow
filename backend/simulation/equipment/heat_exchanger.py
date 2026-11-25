@@ -1,6 +1,7 @@
 from simulation.equipment.base_node import HydraulicNode, Q_DEAD_LEG
 from simulation.fluid_utils import FluidProperties
 import math
+from typing import Optional
 
 class HeatExchanger(HydraulicNode):
     """
@@ -51,7 +52,7 @@ class HeatExchanger(HydraulicNode):
         # Internal State
         self.actual_duty_kw = 0.0
         # Design effectiveness of the rating and the resulting feasibility status
-        self.design_effectiveness = None
+        self.design_effectiveness: Optional[float] = None
         self.rating_status = "ok"   # "ok" | "high_effectiveness" (> 0.95) | "infeasible" (>= 1)
 
         self.add_inlet()

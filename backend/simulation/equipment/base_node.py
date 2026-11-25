@@ -1,8 +1,8 @@
-from typing import List
+from typing import List, Optional
 import uuid
 
 # Import the Port schema from our sibling file
-from simulation.schemas import Port
+from simulation.schemas import GlobalSettings, Port
 from simulation.fluid_utils import FluidProperties
 
 # Two "no flow" thresholds for two questions, kept apart on purpose:
@@ -61,7 +61,7 @@ class HydraulicNode:
         self.id = str(uuid.uuid4())  # Unique ID for the React Flow canvas to track
         self.name = name
         self.node_type = node_type   # e.g., "centrifugal_pump", "gate_valve"
-        self.global_settings = None # To be injected by GraphParser
+        self.global_settings: Optional[GlobalSettings] = None  # To be injected by GraphParser
         self.active = True          # Component active status (can be overridden per case)
         
         # Solver categorization properties (overridden by subclasses to support solver dynamic pruning and MCP)
@@ -157,7 +157,8 @@ class HydraulicNode:
         fluid_type = getattr(self.global_settings, 'fluid_type', 'water')
         pv = FluidProperties.get_vapor_pressure(fluid_type, inlet.temperature)
         self.npsha_m = (total_of(inlet) - pv) / (max(1.0, inlet.density) * 9.81)
-        required = (self.npshr_m or 0.0) + self.npsh_margin_m
+        # Pump attributes (only pumps call this)
+        required = (getattr(self, 'npshr_m', None) or 0.0) + getattr(self, 'npsh_margin_m', 0.0)
         self.cavitation_warning = bool(getattr(self, 'active', True) and self.npsha_m < required)
 
     def apply_relief_ramp(self, lam: float) -> None:
@@ -194,12 +195,14 @@ class HydraulicNode:
         dq = 1e-6
         has_update_state = getattr(self, 'has_update_state_param', False) or (self.node_type in ['pressure_safety_valve', 'rupture_disc', 'check_valve'])
 
+        # Provided by resistive subclasses; not defined here, as hasattr(node, 'calculate_delta_p') tells them apart
+        delta_p = getattr(self, 'calculate_delta_p')
         if has_update_state:
-            dp_plus = self.calculate_delta_p(flow_rate + dq, density, viscosity, update_state=False)
-            dp_minus = self.calculate_delta_p(flow_rate - dq, density, viscosity, update_state=False)
+            dp_plus = delta_p(flow_rate + dq, density, viscosity, update_state=False)
+            dp_minus = delta_p(flow_rate - dq, density, viscosity, update_state=False)
         else:
-            dp_plus = self.calculate_delta_p(flow_rate + dq, density, viscosity)
-            dp_minus = self.calculate_delta_p(flow_rate - dq, density, viscosity)
+            dp_plus = delta_p(flow_rate + dq, density, viscosity)
+            dp_minus = delta_p(flow_rate - dq, density, viscosity)
 
         return (dp_plus - dp_minus) / (2.0 * dq)
 
@@ -270,5 +273,5 @@ class NeutralPortNode(HydraulicNode):
         slot = self.port_slots.get(port_idx)
         if slot is None:
             return 0.0
-        q = self.port(port_idx).flow_rate
+        q = (self.inlets if slot[0] == "inlet" else self.outlets)[slot[1]].flow_rate
         return q if slot[0] == "inlet" else -q
