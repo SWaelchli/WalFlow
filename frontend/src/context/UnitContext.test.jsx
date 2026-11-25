@@ -5,10 +5,10 @@ import { UNIT_SYSTEMS } from '../utils/converters';
 
 afterEach(() => { cleanup(); localStorage.clear(); });
 
-const stored = (prefs, key, typed) => {
+const stored = (prefs, key, typed, system = UNIT_SYSTEMS.METRIC) => {
   Object.entries(prefs).forEach(([k, v]) => localStorage.setItem(k, v));
   const { result } = renderHook(() => useUnits(), {
-    wrapper: ({ children }) => <UnitProvider initialUnitSystem={UNIT_SYSTEMS.METRIC}>{children}</UnitProvider>,
+    wrapper: ({ children }) => <UnitProvider initialUnitSystem={system}>{children}</UnitProvider>,
   });
   return result.current.fromInputValue(key, typed);
 };
@@ -22,5 +22,15 @@ describe('values typed in gauge or m3/h are stored without float noise', () => {
     const v = stored({ walflow_flow_unit: 'm3h' }, 'flow_rated_lmin', '0.1');
     expect(v).toBe(1.66666666667);
     expect(String(v).length).toBeLessThanOrEqual(14);
+  });
+});
+
+describe('temperatures typed in degF are stored in degC', () => {
+  it.each([
+    ['medium_temp_c', '95', 35],
+    ['design_air_temp_c', '95', 35],
+    ['design_air_temp_c', '32', 0],
+  ])('stores %s typed as %s degF as %s degC', (key, typed, expected) => {
+    expect(stored({}, key, typed, UNIT_SYSTEMS.IMPERIAL)).toBeCloseTo(expected, 6);
   });
 });

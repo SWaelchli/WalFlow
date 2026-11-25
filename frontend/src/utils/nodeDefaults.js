@@ -7,6 +7,7 @@ export const HEAT_EXCHANGER_DEFAULTS = {
   design_inlet_temp_c: 50.0,
   design_outlet_temp_c: 40.0,
   medium_temp_c: 10.0,
+  design_air_temp_c: 20.0,
   ua_direct_w_k: 1000.0,
   rated_dp_bar: 0.5,
 };

@@ -330,6 +330,7 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
       case 'set_temperature_c':
       case 'design_inlet_temp_c':
       case 'design_outlet_temp_c':
+      case 'design_air_temp_c':
       case 'medium_temp_c':
       case 'temp_base_c':
         return Number(cToF(num, 1));
@@ -412,6 +413,7 @@ export function UnitProvider({ children, initialUnitSystem, onUnitSystemChange }
       case 'set_temperature_c':
       case 'design_inlet_temp_c':
       case 'design_outlet_temp_c':
+      case 'design_air_temp_c':
       case 'medium_temp_c':
       case 'temp_base_c':
         return fToC(num);

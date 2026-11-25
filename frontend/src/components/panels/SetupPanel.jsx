@@ -140,6 +140,11 @@ export default function SetupPanel({
         setLocalDrafts({}); 
         return;
       }
+      // A cleared temperature is not 0 (0 °F would become -17.8 °C): keep the stored value
+      if (/temp/.test(field)) {
+        setLocalDrafts({});
+        return;
+      }
       finalValue = 0;
     }
 
@@ -1411,11 +1416,13 @@ export default function SetupPanel({
           {isNode && type === 'heat_exchanger' && (
             <>
               {node?.data?.telemetry?.rating_status && node.data.telemetry.rating_status !== 'ok' && (
-                <div role="alert" style={{ background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: '4px', padding: '8px', fontSize: 'var(--fs-xs)', color: 'var(--color-warning-text-strong)' }}>
+                <ResultCallout tone="warning">
                   {node.data.telemetry.rating_status === 'infeasible'
-                    ? 'Rating is not achievable: the rated duty needs a larger temperature change than the fluid and medium temperatures allow. The result is limited by the heat balance, not the rating.'
+                    ? (node.data.telemetry.design_effectiveness == null || node.data.telemetry.design_effectiveness <= 0
+                      ? 'Rating is not achievable: the cooling medium (design air for an air cooler) is not colder than the design inlet temperature, so the exchanger gives almost no duty. Check the design temperatures.'
+                      : 'Rating is not achievable: the rated duty needs a larger temperature change than the fluid and medium temperatures allow. The result is limited by the heat balance, not the rating.')
                     : 'Rating needs an effectiveness above 0.95: very large heat transfer area. Check the rated duty and temperatures.'}
-                </div>
+                </ResultCallout>
               )}
               <div>
                 {renderLabel('Operating Status', 'active')}
@@ -1528,6 +1535,21 @@ export default function SetupPanel({
                     onChange={(e) => handleDraftChange('medium_temp_c', e.target.value)}
                     onBlur={(e) => validateAndCommit('medium_temp_c', e.target.value)}
                   />
+                </div>
+              )}
+              {(effectiveData.cooler_type || "water_cooled") === "air_cooled" && (effectiveData.rating_method || "rated_duty") !== "ua_direct" && (
+                <div>
+                  {renderLabel(`Design Air Inlet Temp [${isImperial ? '°F' : '°C'}]`, 'design_air_temp_c')}
+                  <input
+                    type="number"
+                    className="form-input" style={{ width: '100%' }}
+                    value={localDrafts.design_air_temp_c !== undefined ? localDrafts.design_air_temp_c : (isImperial ? (Number(effectiveData.design_air_temp_c ?? 20.0) * 1.8 + 32).toFixed(1) : (effectiveData.design_air_temp_c ?? 20.0))}
+                    onChange={(e) => handleDraftChange('design_air_temp_c', e.target.value)}
+                    onBlur={(e) => validateAndCommit('design_air_temp_c', e.target.value)}
+                  />
+                  <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                    Site design dry-bulb air temperature the rated duty refers to (API 661). The cooler runs at the drawing's ambient temperature.
+                  </div>
                 </div>
               )}
               <div>

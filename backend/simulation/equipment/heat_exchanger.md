@@ -20,13 +20,13 @@ Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_RE
 | :--- | :--- | :--- | :--- | :--- |
 | HX-01 | Literature / Principle | Kays & London, *Compact Heat Exchangers*, 3rd ed. (1984); Bergman, Lavine, Incropera & DeWitt, *Fundamentals of Heat and Mass Transfer*, 8th ed. (2017); Effectiveness-NTU method | Effectiveness-NTU method, limit $C_{\min}/C_{\max} \to 0$ | ⚪ Unverified |
 | HX-02 | Literature | Dittus & Boelter (1930), *Univ. Calif. Publ. Eng.* 2(13), 443–461 | Flow scaling of UA ($\mathrm{Nu} \propto \mathrm{Re}^{0.8}$) for liquid-cooled exchangers | ⚪ Unverified 🚩 |
-| HX-03 | Standard | API Std 661, 7th ed. (2013, R2024); TEMA Standards, 11th ed. (2024) | Background for the rated duty, design temperatures and allowable pressure drop | ⚠️ API 661 7th ed. (R2018) Annex B, A.3.9: air coolers are rated at the site design air temperature, the model at a fixed 20 °C. TEMA unverified |
+| HX-03 | Standard | API Std 661, 7th ed. (2013, R2018; R2024 same text, not read); TEMA Standards, 11th ed. (2024) | Background for the rated duty, design temperatures and allowable pressure drop | ✅ API 661 7th ed. (R2018) Annex B data sheet (heat exchanged, process flow and temperatures, allowable pressure drop, air inlet design dry bulb), A.3.9 (site design air temperature); API 661 prescribes no rating method. TEMA unverified 🚩 |
 
 ## 3. Physical & Mathematical Implementation
 
 ### 3.1 Rated UA (`_calculate_ua_rated`)
 
-Medium temperature for sizing: $T_{m,\text{rated}}$ = the cooling medium temperature (water-cooled) or 20 °C (air-cooled). Rated mass flow $\dot m_r = Q_r\, \rho(T_{\text{in,design}})$.
+Medium temperature for sizing: $T_{m,\text{rated}}$ = the cooling medium temperature (water-cooled) or the design air inlet temperature `design_air_temp_c` (air-cooled; the site design dry-bulb temperature of the API 661 data sheet, A.3.9; default 20 °C). With the drawing's ambient equal to the design air temperature the rated duty is reproduced at the rating point. Rated mass flow $\dot m_r = Q_r\, \rho(T_{\text{in,design}})$.
 
 For `rated_duty` the design outlet temperature is $T_{\text{out}} = T_{\text{in}} - \dot Q_r / (\dot m_r\, c_p)$. Then, for `rated_duty` and `design_temps`, the exact inversion for an infinite-capacity medium:
 
@@ -38,7 +38,7 @@ $\varepsilon_d$ is clamped to $10^{-5} \dots 0.999$ for the calculation. The unc
 | :--- | :--- | :--- |
 | `ok` | $\varepsilon_d \le 0.95$ | feasible rating |
 | `high_effectiveness` | $0.95 < \varepsilon_d < 1$ | needs a very large exchanger |
-| `infeasible` | $\varepsilon_d \ge 1$ | the rated duty needs the fluid colder than the medium |
+| `infeasible` | $\varepsilon_d \ge 1$, or $\varepsilon_d \le 0$ (or no temperature difference to the medium) with a non-zero duty | the rated duty needs the fluid colder than the medium, or the medium is on the wrong side of the design inlet (e.g. design air at or above the design inlet temperature); `design_effectiveness` is empty when inlet and medium are equal |
 
 $c_p$ and $\rho$ are evaluated in the system fluid at the design inlet temperature, so $UA_r$ is a fixed property of the exchanger and does not drift with the operating temperature. The rating is cached and recomputed only when an input changes.
 
@@ -107,6 +107,7 @@ Section 3.3 is the energy balance: the duty $\dot Q$ leaves the process fluid to
 | Heat Transfer Coeff (UA) | W/K | `self.ua_direct_w_k` | W/K | 1000 | $\ge 0$ | UA at rated flow (`ua_direct`) |
 | Cooler Type | text | `self.cooler_type` | - | water_cooled | water_cooled, air_cooled | UA exponent and medium temperature |
 | Cooling Medium Temp | °C (°F) | `self.medium_temp_c` | °C | 10 | any | Medium temperature (water-cooled) |
+| Design Air Inlet Temp | °C (°F) | `self.design_air_temp_c` | °C | 20 | any | Site design dry-bulb air temperature the rating refers to (air-cooled, API 661 A.3.9) |
 | Rated ΔP | bar (psi) | `self.rated_dp_bar` | bar | 0.5 | $\ge 0$ | Process-side drop at rated flow |
 
 A missing rated drop is 0.5 bar, not zero. The parser rejects a rated flow $\le 0$.
@@ -118,7 +119,13 @@ A missing rated drop is 0.5 bar, not zero. The parser rejects a rated flow $\le 
 - **Inactive:** no heat transfer ($T_{\text{out}} = T_{\text{in}}$, duty 0); the pressure drop stays.
 - **Zero flow:** no heat transfer at $|Q| \le$ `Q_DEAD_LEG` (1e-9 m³/s, solver noise, see `base_node.md` §4.1); the leaving port takes the entering temperature until the dead-leg fill sets it.
 - **Reverse flow:** the hydraulic drop is symmetric. The thermal calculation takes the port the fluid enters by (the outlet port in reverse flow) and writes the cooled temperature to the port it leaves by, so duty and temperatures are the same as in forward flow.
-- **Air-cooled:** the rating uses 20 °C ambient; operation uses the drawing's ambient temperature. The medium temperature field is not used.
+- **Air-cooled:** the rating uses the design air inlet temperature (default 20 °C, also for older files without the field); operation uses the drawing's ambient temperature, so at another ambient the duty differs from the rated duty. The medium temperature field is not used. Boundaries against API Std 661 (7th ed.), which prescribes no thermal rating method:
+  - the air is an infinite-capacity medium: no air flow, air outlet temperature or air-side pressure drop (data sheet results); away from the rating point the duty is therefore somewhat high where the real air would warm up;
+  - fixed airflow: no fan speed or pitch control, louvres or recirculation holding the process outlet temperature (API 661 §7.2.1.6, Annex C); at low ambient the model overcools where a controlled cooler would hold its set point;
+  - hot-air recirculation between bays (A.3.10.2) and altitude are not modelled: include them in the design air temperature and the drawing's ambient;
+  - the rated duty is taken as the service (fouled) rating; clean performance, fouling resistances and tube velocity limits of the data sheet are not modelled;
+  - single pass against a uniform air temperature: no air temperature rise along the bundle and no cross-flow or pass-arrangement correction (the data sheet's effective MTD); exact at the rating point, where UA is calibrated;
+  - the UA exponent 0.6 on the process flow is an uncited default (API 661 gives no air-side or tube-side correlation). Where the air side dominates the resistance, the true exponent is often about 0.1-0.3, so below rated flow the model cools somewhat less than a real air cooler (conservative) and above rated flow somewhat more. The water-cooled 0.8 rests on HX-02 (unverified).
 - **Operating cases:** status, rating and medium temperature can be overridden per case (e.g. summer and winter cooling water).
 - **Not modelled:** the utility side (its flow, temperature rise and pressure drop), fouling, phase change, throttling heat of the pressure drop.
 
@@ -127,9 +134,12 @@ A missing rated drop is 0.5 bar, not zero. The parser rejects a rated flow $\le 
 | Test | Benchmark |
 | :--- | :--- |
 | `backend/tests/unit/equipment/test_heat_exchanger_thermal.py::test_cooler_sizing_modes` | `design_temps`, ISO VG 46, 387 L/min, 65 → 40 °C, medium 10 °C: at rated flow the outlet is 40 °C within $10^{-5}$ K; `ua_direct` 2000 W/K gives an outlet between 10 and 65 °C |
+| `test_heat_exchanger_thermal.py::test_rating_is_reproduced_at_rated_flow_and_design_air_temperature` | Air cooler rated 300 kW (or 50 → 40 °C) at design air 35 °C, ambient 35 °C: duty within 0.1 % (outlet within $10^{-5}$ K); default 20 °C at 20 °C ambient; a water cooler ignores the field |
+| `test_heat_exchanger_default.py::test_design_air_temperature_is_read_from_node_data_and_defaults_to_20c` | Parser reads `design_air_temp_c`; missing key gives 20 °C |
 | `test_heat_exchanger_thermal.py::test_water_and_air_coolers` | Water- and air-cooled, cooling and heating: outlet between inlet and medium |
-| `backend/tests/unit/equipment/test_heat_exchanger_rating.py::test_f1_40_audit_case_is_infeasible` | 300 kW from 100 L/min of oil with 40 K available: `infeasible`, $\varepsilon_d > 1$ |
-| `test_heat_exchanger_rating.py::test_f1_40_modest_rating_is_ok` | 30 kW: `ok`, $0 < \varepsilon_d < 0.95$ |
+| `backend/tests/unit/equipment/test_heat_exchanger_rating.py::test_infeasible_rating_is_reported` | 300 kW from 100 L/min of oil with 40 K available: `infeasible`, $\varepsilon_d > 1$ |
+| `test_heat_exchanger_rating.py::test_rating_with_medium_on_wrong_side_of_inlet` | Design inlet 40 °C: air at 45 °C or water at 45 °C with 300 kW `infeasible` ($\varepsilon_d < 0$); air at 40 °C `infeasible`, `design_effectiveness` empty; zero duty with air above the inlet `ok` |
+| `test_heat_exchanger_rating.py::test_modest_rating_is_ok` | 30 kW: `ok`, $0 < \varepsilon_d < 0.95$ |
 | `backend/tests/unit/equipment/test_heat_exchanger_default.py` | Missing rated drop: 0.5 bar at rated flow in water at 50 °C within 0.1 %; an explicit value is kept |
 | `test_heat_exchanger_default.py::test_rated_dp_is_reproduced_at_the_design_inlet_temperature` | Water and ISO VG 46 at the design inlet temperature: rated drop at rated flow within 0.1 % |
 | `test_heat_exchanger_default.py::test_rated_ua_uses_the_design_inlet_state_not_the_operating_temperature` | ISO VG 46 at 80 °C, rating at 50 °C: outlet equals an independent ε-NTU calculation with $UA_r$ from the design state within 0.01 K |
@@ -149,6 +159,7 @@ Node type: `heat_exchanger`. Field names follow the naming rule in [base_node.md
 | `design_inlet_temp_c` | °C | 50 |
 | `design_outlet_temp_c` | °C | 40 |
 | `medium_temp_c` | °C | 10 |
+| `design_air_temp_c` | °C | 20 |
 | `cooler_type` | text (`water_cooled` / `air_cooled`) | water_cooled |
 | `rating_method` | text (`rated_duty` / `design_temps` / `ua_direct`) | rated_duty |
 | `ua_direct_w_k` | W/K | 1000 |

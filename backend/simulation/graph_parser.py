@@ -618,6 +618,7 @@ class GraphParser:
                 rated_flow_lmin=rated_flow,
                 design_inlet_temp_c=float(d.get('design_inlet_temp_c', 50.0)),
                 medium_temp_c=float(d.get('medium_temp_c', 10.0)),
+                design_air_temp_c=float(d.get('design_air_temp_c', 20.0)),
                 rated_dp_bar=rated_dp,
                 cooler_type=str(d.get('cooler_type', 'water_cooled')),
                 rating_method=str(d.get('rating_method', 'rated_duty')),

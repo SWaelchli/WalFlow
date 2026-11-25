@@ -25,6 +25,15 @@ def test_explicit_rated_dp_is_kept():
     assert _hx({"rated_dp_bar": 1.2}).rated_dp_bar == 1.2
 
 
+@pytest.mark.parametrize("data, expected", [
+    pytest.param({"design_air_temp_c": 35}, 35.0, id="stored_value_is_read"),
+    pytest.param({"design_air_temp_c": 0}, 0.0, id="stored_zero_is_kept"),
+    pytest.param({"rated_flow_lmin": 500.0}, 20.0, id="missing_defaults_to_20c"),
+])
+def test_design_air_temperature_is_read_from_node_data_and_defaults_to_20c(data, expected):
+    assert _hx(data).design_air_temp_c == expected
+
+
 # The rated ΔP is reproduced in the system fluid at the design inlet temperature,
 # and the rated UA does not drift with the operating temperature.
 import math

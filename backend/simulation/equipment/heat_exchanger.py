@@ -22,7 +22,8 @@ class HeatExchanger(HydraulicNode):
                  pressure_drop_factor: float = None,
                  rating_method: str = "rated_duty",
                  design_outlet_temp_c: float = 40.0,
-                 ua_direct_w_k: float = 1000.0):
+                 ua_direct_w_k: float = 1000.0,
+                 design_air_temp_c: float = 20.0):
 
         super().__init__(name, node_type="heat_exchanger")
 
@@ -40,6 +41,8 @@ class HeatExchanger(HydraulicNode):
         self.rating_method = rating_method  # "rated_duty", "design_temps", "ua_direct"
         self.design_outlet_temp_c = design_outlet_temp_c
         self.ua_direct_w_k = ua_direct_w_k
+        # Air coolers: site design dry-bulb air temperature the rating refers to (API Std 661 data sheet, A.3.9)
+        self.design_air_temp_c = design_air_temp_c
 
         # Explicit resistance override [Pa/(m3/s)^2 at 1000 kg/m3]; None = calibrate from the rated dP
         self.pressure_drop_factor = pressure_drop_factor
@@ -55,13 +58,20 @@ class HeatExchanger(HydraulicNode):
         self.add_outlet()
 
     def _calculate_ua_from_temps(self, t_in, t_out, tm, m_dot, cp):
+        duty = abs(t_in - t_out) > 1e-5   # same tolerance as the driving temperature difference below
         if abs(t_in - tm) <= 1e-5:
+            # No driving temperature difference at the rating point: any duty is impossible
+            self.design_effectiveness = None
+            self.rating_status = "infeasible" if duty else "ok"
             return 0.0
         # For a single-phase utility medium with infinite capacity (C_max = inf):
         # effectiveness = (t_in - t_out) / (t_in - tm)
         effectiveness = (t_in - t_out) / (t_in - tm)
         self.design_effectiveness = effectiveness
-        self.rating_status = "infeasible" if effectiveness >= 1.0 else ("high_effectiveness" if effectiveness > 0.95 else "ok")
+        # effectiveness <= 0 with a duty: the outlet moves away from the medium (e.g. an air cooler rated with the
+        # design air at or above the design inlet temperature), which no exchanger can do
+        infeasible = effectiveness >= 1.0 or (effectiveness <= 0.0 and duty)
+        self.rating_status = "infeasible" if infeasible else ("high_effectiveness" if effectiveness > 0.95 else "ok")
         # Bounded between 0 and 1
         effectiveness = max(1e-5, min(0.999, effectiveness))
         ntu = -math.log(1.0 - effectiveness)
@@ -81,7 +91,7 @@ class HeatExchanger(HydraulicNode):
         """The rating depends only on the inputs; recompute when one of them changes."""
         key = (name, self._fluid_type(), self.rating_method, self.rated_cooling_kw, self.rated_flow_lmin,
                self.design_inlet_temp_c, self.design_outlet_temp_c, self.medium_temp_c, self.cooler_type,
-               self.ua_direct_w_k, self.rated_dp_bar, self.pressure_drop_factor)
+               self.ua_direct_w_k, self.rated_dp_bar, self.pressure_drop_factor, self.design_air_temp_c)
         if key not in self._rating_cache:
             self._rating_cache[key] = compute()
         return self._rating_cache[key]
@@ -120,7 +130,8 @@ class HeatExchanger(HydraulicNode):
 
         # Determine medium temperature tm_rated for UA sizing calculations
         if getattr(self, 'cooler_type', 'water_cooled') == 'air_cooled':
-            tm_rated = 20.0 + 273.15 # Design ambient standard
+            # Rated at the site design air temperature; operation follows the drawing's ambient
+            tm_rated = self.design_air_temp_c + 273.15
         else:
             tm_rated = self.medium_temp_c + 273.15
 

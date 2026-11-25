@@ -186,6 +186,38 @@ describe('the heat exchanger inspector shows what the solver uses', () => {
     renderNodePanel({ id: 'hx1', type: 'heat_exchanger', data: {} });
     expect(screen.getByDisplayValue('0.5')).toBeTruthy();
   });
+
+  it.each([
+    ['air cooled, rated duty', { cooler_type: 'air_cooled', rating_method: 'rated_duty' }, true],
+    ['air cooled, design temperatures', { cooler_type: 'air_cooled', rating_method: 'design_temps' }, true],
+    ['water cooled', { cooler_type: 'water_cooled', rating_method: 'rated_duty' }, false],
+    ['air cooled, UA direct', { cooler_type: 'air_cooled', rating_method: 'ua_direct' }, false],
+  ])('design air inlet temperature field: %s', (_name, data, shown) => {
+    renderNodePanel({ id: 'hx1', type: 'heat_exchanger', data });
+    expect(screen.queryByText(/Design Air Inlet Temp/) !== null).toBe(shown);
+  });
+
+  it.each([
+    ['medium not colder than the inlet (negative effectiveness)', -0.2, /cooling medium .* is not colder than the design inlet temperature/],
+    ['medium equals the inlet (no effectiveness)', null, /cooling medium .* is not colder than the design inlet temperature/],
+    ['duty larger than the temperatures allow', 1.4, /needs a larger temperature change than the fluid and medium temperatures allow/],
+  ])('infeasible rating alert: %s', (_name, design_effectiveness, text) => {
+    renderNodePanel({ id: 'hx1', type: 'heat_exchanger', data: { telemetry: { rating_status: 'infeasible', design_effectiveness } } });
+    expect(screen.getByText(text)).toBeTruthy();
+    expect(screen.queryAllByText(/Rating is not achievable/)).toHaveLength(1);
+  });
+
+  it.each([
+    ['metric', UNIT_SYSTEMS.METRIC, '20'],
+    ['imperial', UNIT_SYSTEMS.IMPERIAL, '68.0'],
+  ])('clearing the design air temperature keeps the previous value, not 0 (%s)', (_name, units, shown) => {
+    const onUpdate = renderNodePanel({ id: 'hx1', type: 'heat_exchanger', data: { cooler_type: 'air_cooled', rating_method: 'rated_duty' } }, units);
+    const input = screen.getByDisplayValue(shown);
+    fireEvent.change(input, { target: { value: '' } });
+    fireEvent.blur(input);
+    expect(onUpdate.mock.calls.some(([, updates]) => updates.design_air_temp_c === 0)).toBe(false);
+    expect(screen.getByDisplayValue(shown)).toBeTruthy();
+  });
 });
 
 describe('control valve style picker in the inspector', () => {

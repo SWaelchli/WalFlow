@@ -39,6 +39,10 @@ describe('defaultNodeData', () => {
     expect(defaultNodeData(type, ctx).max_cv).toBe(50.0);
   });
 
+  it('gives a new heat exchanger a design air inlet temperature of 20 degC', () => {
+    expect(defaultNodeData('heat_exchanger', ctx).design_air_temp_c).toBe(20);
+  });
+
   it('only sets fields the backend reads (Data Fields tables in backend/simulation/equipment/*.md)', () => {
     expect(defaultNodeData('junction', ctx)).toEqual({ label: 'X', rotation: 0, onRotate: ctx.onRotate, onChange: undefined, num_ports: 3 });
   });

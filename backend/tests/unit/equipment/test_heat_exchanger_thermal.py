@@ -1,4 +1,6 @@
+import pytest
 
+from simulation.fluid_utils import FluidProperties
 from simulation.schemas import GlobalSettings
 from simulation.equipment.heat_exchanger import HeatExchanger
 
@@ -76,6 +78,35 @@ def test_water_and_air_coolers():
     
     t_out_air_heating = hx_air_heating.outlets[0].temperature - 273.15
     assert 10.0 < t_out_air_heating < 25.0
+
+@pytest.mark.parametrize("cooler_type, method_kw, design_air_c, ambient_c, expected", [
+    pytest.param("air_cooled", {"rating_method": "rated_duty", "rated_cooling_kw": 300.0}, 35.0, 35.0,
+                 ("duty_kw", 300.0), id="air_rated_duty_at_site_design_air_temperature"),
+    pytest.param("air_cooled", {"rating_method": "design_temps", "design_outlet_temp_c": 40.0}, 35.0, 35.0,
+                 ("outlet_c", 40.0), id="air_design_temps_at_site_design_air_temperature"),
+    pytest.param("air_cooled", {"rating_method": "rated_duty", "rated_cooling_kw": 300.0}, None, 20.0,
+                 ("duty_kw", 300.0), id="air_default_design_air_is_20c"),
+    pytest.param("water_cooled", {"rating_method": "rated_duty", "rated_cooling_kw": 300.0, "medium_temp_c": 30.0},
+                 35.0, 35.0, ("duty_kw", 300.0), id="water_cooled_ignores_design_air_temperature"),
+])
+def test_rating_is_reproduced_at_rated_flow_and_design_air_temperature(
+        cooler_type, method_kw, design_air_c, ambient_c, expected):
+    hx = HeatExchanger("hx", rated_flow_lmin=500.0, design_inlet_temp_c=50.0,
+                       cooler_type=cooler_type, **{"medium_temp_c": 10.0, **method_kw})
+    if design_air_c is not None:
+        hx.design_air_temp_c = design_air_c
+    hx.global_settings = GlobalSettings(fluid_type="water", ambient_temperature=ambient_c + 273.15)
+    hx.inlets[0].flow_rate = 500.0 / 60000.0
+    hx.inlets[0].density = FluidProperties.get_density("water", 323.15)
+    hx.inlets[0].temperature = 323.15
+    hx.calculate_temperature()
+
+    key, target = expected
+    if key == "duty_kw":
+        assert hx.actual_duty_kw == pytest.approx(target, rel=1e-3)
+    else:
+        assert hx.outlets[0].temperature - 273.15 == pytest.approx(target, abs=1e-5)
+
 
 def test_cooler_sizing_modes():
     
