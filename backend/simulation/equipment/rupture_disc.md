@@ -18,7 +18,7 @@ Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_RE
 | Claim | Type | Source (edition) | Used for | Status |
 | :--- | :--- | :--- | :--- | :--- |
 | RD-01 | Standard | ISO 4126-2:2018; ISO 4126-6:2014 | Bursting disc safety devices: burst pressure, application and sizing | ⚠️ Burst on inlet gauge pressure; ISO 4126-2:2018 §3.10 defines the burst pressure as the inlet − outlet differential. ISO 4126-6:2014 §3.21 and API RP 520-1 7th ed. §1.2.3.3 c agree. Sizing ✅ ISO 4126-6 Annex C.3.1.2 |
-| RD-02 | Standard | ASME BPVC Section VIII Div. 1, UG-127 (edition not fixed; moved to Section XIII from 2021) | Rupture disc devices | ⚪ Unverified 🚩 |
+| RD-02 | Standard | ASME BPVC Section VIII Div. 1, UG-127 (edition not fixed; moved to Section XIII from 2021) | Rupture disc devices | ✅ ASME VIII-1 2010 + 2011a UG-127 (sole device, flow resistance method, burst tolerance not modelled) 🚩 Section XIII unverified |
 | RD-03 | Standard | API Std 520 Part I, 10th ed. (2020) | 10 % overpressure for liquid relief capacity | ✅ API RP 520-1 7th ed. (2000) Fig. 26, §3.11.1.2 🚩 10th ed. unverified |
 | RD-04 | Standard | API Std 520 Part I, 10th ed. (2020) | Flow resistance method ($K_R$) for discs | ✅ API RP 520-1 7th ed. (2000) §3.11.1.3 (system resistance; $K_R$ and 0.90 factor not applied) 🚩 10th ed. unverified |
 | RD-05 | Standard | ISO 5167-2:2022 | Orifice flow equation for the reduced bore, as for the [calibrated restriction](calibrated_restriction.md#32-pressure-drop-calculate_delta_p) | ✅ ISO 5167-2:2022 F(1) (equation form) |

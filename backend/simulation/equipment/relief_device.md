@@ -16,8 +16,8 @@ Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_RE
 | Claim | Type | Source (edition) | Used for | Status |
 | :--- | :--- | :--- | :--- | :--- |
 | RLF-01 | Standard | API Std 520 Part I, 10th ed. (2020); ISO 4126-1:2013 + Amd 1:2016 | Set pressure in gauge, 10 % overpressure for liquid service at rated capacity, blowdown and reseat pressure | ✅ ISO 4126-1:2013 + Amd 1 §3.5, §3.15, §7.2.1; API RP 520-1 7th ed. (2000) agrees, 10th ed. unverified |
-| RLF-02 | Standard | API Std 521, 7th ed. (2020); ISO 23251:2019 | Relieved pressure, accumulation and overpressure scenarios | ⚪ Unverified |
-| RLF-03 | Standard | ISO 4126-2:2018; ASME BPVC Section VIII Div. 1, UG-127 (edition not fixed; moved to Section XIII from 2021) | Bursting disc devices: burst pressure, open after burst | ⚠️ Non-reclosing ✅ ISO 4126-2:2018 §3.1; burst on inlet gauge pressure, §3.10 gives the inlet − outlet differential. ASME part unverified 🚩 |
+| RLF-02 | Standard | API Std 521, 7th ed. (2020); ISO 23251:2019 | Relieved pressure, accumulation and overpressure scenarios | ✅ API 521 6th ed. (2014) §4.4.2, §4.9.4; ASME VIII-1 2010 UG-125(c) (no MAWP, so no accumulation in WalFlow) 🚩 7th ed. and ISO 23251 unverified |
+| RLF-03 | Standard | ISO 4126-2:2018; ASME BPVC Section VIII Div. 1, UG-127 (edition not fixed; moved to Section XIII from 2021) | Bursting disc devices: burst pressure, open after burst | ⚠️ Non-reclosing ✅ ISO 4126-2:2018 §3.1; burst on inlet gauge pressure, §3.10 gives the inlet − outlet differential. ASME VIII-1 2010 UG-127 read: does not contradict ISO 🚩 Section XIII unverified |
 
 ## 3. Physical & Mathematical Implementation
 

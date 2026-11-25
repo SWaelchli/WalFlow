@@ -20,7 +20,7 @@ Each claim is tracked in [docs/STANDARDS_REGISTER.md](../../../docs/STANDARDS_RE
 | :--- | :--- | :--- | :--- | :--- |
 | HX-01 | Literature / Principle | Kays & London, *Compact Heat Exchangers*, 3rd ed. (1984); Bergman, Lavine, Incropera & DeWitt, *Fundamentals of Heat and Mass Transfer*, 8th ed. (2017); Effectiveness-NTU method | Effectiveness-NTU method, limit $C_{\min}/C_{\max} \to 0$ | ⚪ Unverified |
 | HX-02 | Literature | Dittus & Boelter (1930), *Univ. Calif. Publ. Eng.* 2(13), 443–461 | Flow scaling of UA ($\mathrm{Nu} \propto \mathrm{Re}^{0.8}$) for liquid-cooled exchangers | ⚪ Unverified 🚩 |
-| HX-03 | Standard | API Std 661, 7th ed. (2013, R2024); TEMA Standards, 11th ed. (2024) | Background for the rated duty, design temperatures and allowable pressure drop | ⚪ Unverified |
+| HX-03 | Standard | API Std 661, 7th ed. (2013, R2024); TEMA Standards, 11th ed. (2024) | Background for the rated duty, design temperatures and allowable pressure drop | ⚠️ API 661 7th ed. (R2018) Annex B, A.3.9: air coolers are rated at the site design air temperature, the model at a fixed 20 °C. TEMA unverified |
 
 ## 3. Physical & Mathematical Implementation
 
